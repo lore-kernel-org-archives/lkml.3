@@ -1,36 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988AbaHODjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 23:39:54 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:61519 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583AbaHODjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 23:39:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <53ED67A1.3080607@hitachi.com>
-References: <53ED627E.2090804@hitachi.com>
-	<20140815014432.29869.57941.stgit@kbuild-fedora.novalocal>
-	<53ED67A1.3080607@hitachi.com>
-Date: Thu, 14 Aug 2014 20:39:51 -0700
-Message-ID: <CAE40pdcAoBzFAd1i7B2Q6BMPrxvYkwYd7FP5XFjF-waGosF0Gw@mail.gmail.com>
-Subject: Re: [PATCH] perf probe: Warn user to rebuild target with debuginfo
-From: Brendan Gregg <brendan.d.gregg@gmail.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Namhyung Kim <namhyung@gmail.com>, David Ahern <dsahern@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, yrl.pp-manager.tt@hitachi.com,
-        Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S932283AbaHODkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 23:40:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65262 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754589AbaHODkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 23:40:19 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net-next] vhost_net: stop rx net polling when possible
+Date: Fri, 15 Aug 2014 11:40:08 +0800
+Message-Id: <1408074008-4357-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 6:51 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> Here is v2 patch, which I've added "or install an appropriate debuginfo pacakge." :)
-[...]
+After rx vq was enabled, we never stop polling its socket. This is sub optimal
+when may lead unnecessary wake-ups after the rx net work has already been
+queued. This could be optimized by stopping polling the rx net sock when
+processing both rx and tx and restart it afterward. This could save unnecessary
+wake-ups and even unnecessary spin locks acquiring with the help of commit
+9e641bdcfa4ef4d6e2fbaa59c1be0ad5d1551fd5 "net-tun: restructure tun_do_read for
+better sleep/wakeup efficiency".
 
-Looks good, thanks.
+Test shows significant CPU% savings during almost all the cases:
 
-Brendan
+Guest rx stream:
+size(B)/sessions/throughput/cpu/normalized thru/
+64/1/+0.7773%   -8.6224%     +10.2866%
+64/2/+0.6335%   -13.9109%    +16.8946%
+64/4/-0.8182%   -14.8336%    +16.4565%
+64/8/+0.4830%   -13.7675%    +16.5256%
+256/1/-7.0963%  -12.6880%    +6.4043%
+256/2/-1.3982%  -11.5424%    +11.4678%
+256/4/-0.0350%  -11.8323%    +13.3806%
+256/8/-1.5830%  -12.7693%    +12.8238%
+1024/1/-7.4895% -19.1449%       +14.4152%
+1024/2/-7.4575% -19.4018%       +14.8195%
+1024/4/-0.3881% -9.1183%        +9.6061%
+1024/8/+0.4713% -11.0155%       +12.9087%
+4096/1/+0.8786%  -8.4050%        +10.1355%
+4096/2/+0.0098%  -15.3094%       +18.0885%
+4096/4/+0.0445%  -10.8247%       +12.1886%
+4096/8/-2.1317%  -12.5111%       +11.8637%
+16384/1/-0.0008% -6.1891%        +6.5966%
+16384/2/-0.0117% -16.2716%       +19.4198%
+16384/4/+0.0001% -5.9197%        +6.2923%
+16384/8/+0.0173% -7.6681%        +8.3236%
+65535/1/+0.0011% -10.3594%       +11.5578%
+65535/2/-0.4108%  -14.4304%       +16.3838%
+65535/4/+0.0011%  -10.3594%       +11.5578%
+65535/8/-0.4108%  -14.4304%       +16.3838%
+
+Guest tx stream:
+size(B)/sessions/throughput/cpu/normalized thru/
+64/1/-0.6228%     -2.1936%     +1.6060%
+64/2/+0.8646%     -3.5063%     +4.5297%
+64/4/+0.8733%     -3.2495%     +4.2613%
+64/8/+1.4290%     -3.5593%     +5.1724%
+256/1/+7.2098%    -3.1122%     +10.6535%
+256/2/-10.1408%   -6.8230%     -3.5607%
+256/4/-11.3531%   -6.7085%     -4.9785%
+256/8/-10.2723%   -6.5628%     -3.9701%
+1024/1/-18.9329%  -13.6162%    -6.1547%
+1024/2/-0.3728%   -1.3181%     +0.9580%
+1024/4/+0.0125%   -3.6338%     +3.7838%
+1024/8/-0.0030%   -2.7282%     +2.8017%
+4096/1/+16.9367%  -1.9435%     +19.2543%
+4096/2/+0.0121%   -6.1682%     +6.5866%
+4096/4/+0.0019%   -3.8510%     +4.0072%
+4096/8/-0.0222%   -4.1368%     +4.2922%
+16384/1/-0.0026%  -8.6892%     +9.5132%
+16384/2/-0.0012%  -10.1676%    +11.3171%
+16384/4/+0.0196%  -1.2551%     +1.2908%
+16384/8/+0.1303%  -3.2634%     +3.5082%
+65535/1/+0.0019%  -3.4694%     +3.5961%
+65535/2/-0.0003%  -0.7635%     +0.7690%
+65535/4/-0.0219%  -2.7875%     +2.8448%
+65535/8/+0.1137%  -2.7922%     +2.9894%
+
+TCP_RR:
+size(B)/sessions/throughput/cpu/normalized thru/
+256/1/+1.9004%    -4.7985%     +7.0366%
+256/25/-4.7366%   -11.0809%    +7.1349%
+256/50/+3.9808%   -5.2037%     +9.6887%
+4096/1/+2.1619%   -0.7303%     +2.9134%
+4096/25/-13.1836% -14.7298%    +1.8134%
+4096/50/-11.1990% -15.4763%    +5.0605%
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/vhost/net.c | 26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 8dae2f7..d4a9742 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -334,6 +334,8 @@ static void vhost_zerocopy_callback(struct ubuf_info *ubuf, bool success)
+ static void handle_tx(struct vhost_net *net)
+ {
+ 	struct vhost_net_virtqueue *nvq = &net->vqs[VHOST_NET_VQ_TX];
++	struct vhost_virtqueue *rx_vq = &net->vqs[VHOST_NET_VQ_RX].vq;
++	struct vhost_poll *rx_poll = &net->poll[VHOST_NET_VQ_RX];
+ 	struct vhost_virtqueue *vq = &nvq->vq;
+ 	unsigned out, in, s;
+ 	int head;
+@@ -348,15 +350,18 @@ static void handle_tx(struct vhost_net *net)
+ 	size_t len, total_len = 0;
+ 	int err;
+ 	size_t hdr_size;
+-	struct socket *sock;
++	struct socket *sock, *rxsock;
+ 	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
+-	bool zcopy, zcopy_used;
++	bool zcopy, zcopy_used, poll = false;
+ 
+ 	mutex_lock(&vq->mutex);
++	mutex_lock(&rx_vq->mutex);
+ 	sock = vq->private_data;
++	rxsock = rx_vq->private_data;
+ 	if (!sock)
+ 		goto out;
+ 
++	vhost_poll_stop(rx_poll);
+ 	vhost_disable_notify(&net->dev, vq);
+ 
+ 	hdr_size = nvq->vhost_hlen;
+@@ -451,11 +456,17 @@ static void handle_tx(struct vhost_net *net)
+ 		total_len += len;
+ 		vhost_net_tx_packet(net);
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+-			vhost_poll_queue(&vq->poll);
++			poll = true;
+ 			break;
+ 		}
+ 	}
++
++	if (rxsock)
++		vhost_poll_start(rx_poll, rxsock->file);
++	if (poll)
++		vhost_poll_queue(&vq->poll);
+ out:
++	mutex_unlock(&rx_vq->mutex);
+ 	mutex_unlock(&vq->mutex);
+ }
+ 
+@@ -554,6 +565,7 @@ err:
+ static void handle_rx(struct vhost_net *net)
+ {
+ 	struct vhost_net_virtqueue *nvq = &net->vqs[VHOST_NET_VQ_RX];
++	struct vhost_poll *poll = &net->poll[VHOST_NET_VQ_RX];
+ 	struct vhost_virtqueue *vq = &nvq->vq;
+ 	unsigned uninitialized_var(in), log;
+ 	struct vhost_log *vq_log;
+@@ -580,6 +592,8 @@ static void handle_rx(struct vhost_net *net)
+ 	sock = vq->private_data;
+ 	if (!sock)
+ 		goto out;
++
++	vhost_poll_stop(poll);
+ 	vhost_disable_notify(&net->dev, vq);
+ 
+ 	vhost_hlen = nvq->vhost_hlen;
+@@ -660,10 +674,12 @@ static void handle_rx(struct vhost_net *net)
+ 			vhost_log_write(vq, vq_log, log, vhost_len);
+ 		total_len += vhost_len;
+ 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+-			vhost_poll_queue(&vq->poll);
+-			break;
++			vhost_poll_queue(poll);
++			goto out;
+ 		}
+ 	}
++
++	vhost_poll_start(poll, sock->file);
+ out:
+ 	mutex_unlock(&vq->mutex);
+ }
+-- 
+1.9.1
+
