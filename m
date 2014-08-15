@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaHORlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 13:41:37 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:46580 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaHORlg (ORCPT
+	id S1751508AbaHORm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 13:42:26 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:40396 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751063AbaHORmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 13:41:36 -0400
-X-Greylist: delayed 87236 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Aug 2014 13:41:36 EDT
-Message-ID: <53EE464D.7060803@hp.com>
-Date: Fri, 15 Aug 2014 13:41:33 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Fri, 15 Aug 2014 13:42:25 -0400
+Date: Fri, 15 Aug 2014 13:42:21 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        Vaibhav Hiremath <hvaibhav@ti.com>,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Robert Nelson <robertcnelson@gmail.com>, Felipe Balbi <balbi@ti.com>
+Subject: Random MAC address on my BeagleBone White
+Message-ID: <20140815134221.08c546a0@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: peterz@infradead.org, mingo@kernel.org, jason.low2@hp.com,
-        scott.norton@hp.com, aswin@hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -tip] locking/mutexes: Avoid bogus wakeups after lock
- stealing
-References: <1407995870-4268-1-git-send-email-davidlohr@hp.com>  <53ECEF32.6010706@hp.com> <1408037423.12776.6.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1408037423.12776.6.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2014 01:30 PM, Davidlohr Bueso wrote:
-> On Thu, 2014-08-14 at 13:17 -0400, Waiman Long wrote:
->>
->> I still think it is better to do that after spin_lock_mutex().
-> As mentioned, this causes all sorts of hung tasks when the another task
-> enters the slowpath when locking. There's a big fat comment above.
->
->> In
->> addition, the atomic_set() is racy. It is better to something like
-> Why is it racy? Atomically setting the lock to -1 given that the lock
-> was stolen should be safe. The alternative we discussed with Jason was
-> to set the counter to -1 in the spinning path. But given that we need to
-> serialize the counter check with the list_empty() check that would
-> require the wait_lock. This is very messy and unnecessarily complicates
-> things.
->
-Let's consider the following scenario:
+Hi,
 
-   Task 1                                  Task 2
-   ------                                  ------
-                                         steal the lock
-if (mutex_has_owner) {                       :
-         : <---- a long interrupt        mutex_unlock() [cnt = 1]
-     atomic_set(cnt, -1);
-     return;
-}
+I'm using my BeagleBone White to debug some ftrace code and with the
+help from people like Robert Nelson I was finally able to boot it and
+test my kernel.
 
-Now the lock is no longer available and all the tasks that are trying
-to get it will hang. IOW, you cannot set the count to -1 unless you
-are sure it is 0 to begin with.
+But I'm still having some other issues. The most annoying one is that
+the new kernel assigns some random MAC address to my NIC and I can't
+give my board the proper IP address via DHCP.
 
->>     if (atomic_cmpxchg(&lock->count, 0, -1)<= 0)
->>       return;
-> Not really because some archs leave the lock at 1 after the unlock
-> fastpath.
+Seems there was talk about adding this via the device tree, but it was
+rejected because U-Boot can do it. The problem I have is that U-Boot
+doesn't!
 
-Yes, I know that. I am saying x86 won't get any benefit from this patch.
+I downloaded the latest U-Boot from git://git.denx.de/u-boot.git (Is
+that the right place?) and had to tweak it so that I can boot a kernel
+via tftp and still use the filesystem on the SD card.
 
--Longman
+When I place the 3.2 kernel that came with the board on my tftp server,
+all works fine. I get the same MAC addr each boot and things just work.
+But if I place the 3.16 kernel that I build on the tftp server, I get
+some random MAC address, and then a dynamic IP to go with it :-(
+
+This is in my dmesg:
+
+[    2.304970] cpsw 4a100000.ethernet: Random MACID = 8a:fc:f5:aa:b6:e1
+
+I can also see in the file arch/arm/boot/dts/am33xx.dtsi:
+
+
+                        cpsw_emac0: slave@4a100200 {
+                                /* Filled in by U-Boot */
+                                mac-address = [ 00 00 00 00 00 00 ];
+                        };
+
+Well, it's not filled in by U-Boot.
+
+My question to all of you is, how do I fix this? I need a static mac
+addr.
+
+One way is that I might have to update that file myself with a temp
+patch, but I think that's a hack and not something worth doing.
+
+What's the proper way to have the board always come up with the same
+MAC addr?
+
+Thanks, this is rather annoying.
+
+-- Steve
