@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaHOOgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:36:44 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:57586 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884AbaHOOgn (ORCPT
+	id S1751556AbaHOOhf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:37:35 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:58491 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaHOOhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:36:43 -0400
-Message-ID: <53EE1AF7.4030206@cogentembedded.com>
-Date: Fri, 15 Aug 2014 18:36:39 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Fri, 15 Aug 2014 10:37:33 -0400
 MIME-Version: 1.0
-To: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>,
-        linux-kernel@vger.kernel.org
-CC: Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH] net: phy: smsc: move smsc_phy_config_init reset part
- in a soft_reset function
-References: <1408089161-94989-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
-In-Reply-To: <1408089161-94989-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140815140741.GI19379@twins.programming.kicks-ass.net>
+References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
+	<20140814205143.GY6758@twins.programming.kicks-ass.net>
+	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
+	<20140815061917.GX19379@twins.programming.kicks-ass.net>
+	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
+	<20140815140741.GI19379@twins.programming.kicks-ass.net>
+Date: Fri, 15 Aug 2014 10:37:32 -0400
+Message-ID: <CAJ5Y-eZhAX47v4SjsW4T6PUaiMqC9wHcMDS8p+sL4_cReZpbyw@mail.gmail.com>
+Subject: Re: [RFC 0/3] Experimental patchset for CPPC
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, mingo@kernel.org,
+        len.brown@intel.com, rjw@rjwysocki.net,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
+        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Peter,
 
-On 08/15/2014 11:52 AM, Gwenhael Goavec-Merou wrote:
+On 15 August 2014 10:07, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Aug 15, 2014 at 09:08:50AM -0400, Ashwin Chaugule wrote:
+>> If the OS only looks at Highest, Lowest, Delivered registers and only
+>> writes to Desired, then we're not really any different than how we do
+>> things today in the CPUFreq layer.
+>
+> The thing is; we're already struggling to make 'sense' of x86 as it
+> stands today. And it looks like this CPPC stuff makes the behaviour even
+> less certain.
 
-> On the one hand, phy_device.c provides a generic reset function if the phy
-> driver does not provide a soft_reset pointer. This generic reset does not take
-> into account the state of the phy, with a potential failure if the phy is in
-> powerdown mode. On the other hand, smsc driver provides a function with both
-> correct reset behaviour and configuration.
+I think its still better than the "p-state" thing we have going today,
+where the algorithms are making their decisions based on the incorrect
+assumption that the CPU got what it requested for. (among other things
+listed earlier.) CPPC at least gives you a guarantee that the
+delivered performance will be within a range you requested. It can
+even force the platform to deliver a specific performance value if you
+choose over a specific time window.
 
-> This patch moves the reset part into a new smsc_phy_reset function and provides
-> the soft_reset pointer to have a correct reset behaviour by default.
+>
+>> Or even in the case of
+>> intel_pstate, if you map Desired to PERF_CTL and get value of
+>> Delivered by using aperf/mperf ratios (as my experimental driver
+>> does), then we can still maintain the existing system performance. It
+>> seems like if an OS can make use of the additional information then it
+>> should be net win for overall power savings and performance
+>> enhancement. Also, using the CPPC descriptors, we should be able to
+>> have one driver across X86 and ARM64. (possibly others too.)
+>
+> Yikes, so aaargh64 will go do creative power management too?
 
-> Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
-> ---
->   drivers/net/phy/smsc.c | 33 +++++++++++++++++++++------------
->   1 file changed, 21 insertions(+), 12 deletions(-)
+Nice use or aargh. ;) Strangely hadn't seen that before.
 
-> diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
-> index 180c494..fda13f4 100644
-> --- a/drivers/net/phy/smsc.c
-> +++ b/drivers/net/phy/smsc.c
-[...]
-> @@ -142,6 +147,7 @@ static struct phy_driver smsc_phy_driver[] = {
->   	.config_aneg	= genphy_config_aneg,
->   	.read_status	= genphy_read_status,
->   	.config_init	= smsc_phy_config_init,
-> +	.soft_reset		= smsc_phy_reset,
+>
+> And worse; it will go do ACPI? Welcome to the world of guaranteed BIOS
+> fail :-(
 
-    Please align with the other ='s above here and below.
+ACPI or not, I think leads to a rather different kind of debate. :) If
+all ARM implementations could include the CP15 equivalents of the CPPC
+MSRs that Intel has, then we wouldn't need this CPPC table. But
+that'll remain a pipe dream. So I'd prefer to think of CPPC as a
+simple wrapper of registers descriptions which allows implementations
+to choose how and where to get their CPPC information. However they
+choose to implement the registers, I think theres a lot of potential
+power savings and performance optimization on the table which can be
+acquired through CPPC. Given the platforms some amount of freedom to
+optimize things in a platform specific way helps them differentiate
+themselves (a key thing with ARM esp.) and keeping the idea of CPU
+performance abstract rather than tied to Frequency should help to keep
+things unified in the OS, so we avoid the driver bloat that ARM
+historically has had.
 
-WBR, Sergei
-
+Cheers,
+Ashwin
