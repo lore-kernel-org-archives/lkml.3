@@ -1,130 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaHOTN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:13:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34868 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117AbaHOTL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:11:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,872,1400050800"; 
-   d="scan'208";a="588727955"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 15/24] perf tools: Add branch type to db export
-Date: Fri, 15 Aug 2014 22:08:50 +0300
-Message-Id: <1408129739-17368-16-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
-References: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1752501AbaHOTOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:14:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58108 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628AbaHOTOK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:14:10 -0400
+Message-ID: <53EE5BF8.3010007@linutronix.de>
+Date: Fri, 15 Aug 2014 21:14:00 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v7] 8250-core based serial driver for OMAP + DMA
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <20140815181704.GH17769@csclub.uwaterloo.ca>
+In-Reply-To: <20140815181704.GH17769@csclub.uwaterloo.ca>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the ability to export branch types through the
-database export facility.
+On 08/15/2014 08:17 PM, Lennart Sorensen wrote:
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/db-export.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/db-export.h |  6 ++++++
- 2 files changed, 54 insertions(+)
+> Are you saying that with the new driver you have to respond to the RX
+> irq faster than before to avoid overflows?  It is not quite clear.
 
-diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
-index 53d0e75..c5b6e02 100644
---- a/tools/perf/util/db-export.c
-+++ b/tools/perf/util/db-export.c
-@@ -205,6 +205,15 @@ static int db_ids_from_al(struct db_export *dbe, struct addr_location *al,
- 	return 0;
- }
- 
-+int db_export__branch_type(struct db_export *dbe, u32 branch_type,
-+			   const char *name)
-+{
-+	if (dbe->export_branch_type)
-+		return dbe->export_branch_type(dbe, branch_type, name);
-+
-+	return 0;
-+}
-+
- int db_export__sample(struct db_export *dbe, union perf_event *event,
- 		      struct perf_sample *sample, struct perf_evsel *evsel,
- 		      struct thread *thread, struct addr_location *al)
-@@ -266,3 +275,42 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
- 
- 	return 0;
- }
-+
-+static struct {
-+	u32 branch_type;
-+	const char *name;
-+} branch_types[] = {
-+	{0, "no branch"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_CALL, "call"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_RETURN, "return"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_CONDITIONAL, "conditional jump"},
-+	{PERF_FLAG_BRANCH, "unconditional jump"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_CALL | PERF_FLAG_INTERRUPT,
-+	 "software interrupt"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_RETURN | PERF_FLAG_INTERRUPT,
-+	 "return from interrupt"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_CALL | PERF_FLAG_SYSCALLRET,
-+	 "system call"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_RETURN | PERF_FLAG_SYSCALLRET,
-+	 "return from system call"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_ASYNC, "asynchronous branch"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_CALL | PERF_FLAG_ASYNC |
-+	 PERF_FLAG_INTERRUPT, "hardware interrupt"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_TX_ABORT, "transaction abort"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_TRACE_BEGIN, "trace begin"},
-+	{PERF_FLAG_BRANCH | PERF_FLAG_TRACE_END, "trace end"},
-+	{0, NULL}
-+};
-+
-+int db_export__branch_types(struct db_export *dbe)
-+{
-+	int i, err = 0;
-+
-+	for (i = 0; branch_types[i].name ; i++) {
-+		err = db_export__branch_type(dbe, branch_types[i].branch_type,
-+					     branch_types[i].name);
-+		if (err)
-+			break;
-+	}
-+	return err;
-+}
-diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
-index b3643e8..e4baa45 100644
---- a/tools/perf/util/db-export.h
-+++ b/tools/perf/util/db-export.h
-@@ -54,6 +54,8 @@ struct db_export {
- 			  struct machine *machine);
- 	int (*export_symbol)(struct db_export *dbe, struct symbol *sym,
- 			     struct dso *dso);
-+	int (*export_branch_type)(struct db_export *dbe, u32 branch_type,
-+				  const char *name);
- 	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
- 	u64 evsel_last_db_id;
- 	u64 machine_last_db_id;
-@@ -79,8 +81,12 @@ int db_export__dso(struct db_export *dbe, struct dso *dso,
- 		   struct machine *machine);
- int db_export__symbol(struct db_export *dbe, struct symbol *sym,
- 		      struct dso *dso);
-+int db_export__branch_type(struct db_export *dbe, u32 branch_type,
-+			   const char *name);
- int db_export__sample(struct db_export *dbe, union perf_event *event,
- 		      struct perf_sample *sample, struct perf_evsel *evsel,
- 		      struct thread *thread, struct addr_location *al);
- 
-+int db_export__branch_types(struct db_export *dbe);
-+
- #endif
--- 
-1.8.3.2
+Yes. The irq fires 46 bytes giving you 16 bytes buffer before overflow
+vs 63 bytes buffer the old one had.
 
+> I do think 40000 interrupts to handle 40000 bytes of date does seem a
+> tad inefficient, so dropping to 854 looks a lot nicer.  Was the omap
+> driver not using the fifo trigger levels at all?
+
+It configured the trigger levels to 1 for RX and 16 for TX.
+
+Sebastian
