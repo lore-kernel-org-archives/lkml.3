@@ -1,290 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaHOPOQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 11:14:16 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:32808 "EHLO bear.ext.ti.com"
+	id S1751941AbaHOPOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 11:14:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28104 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765AbaHOPNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 11:13:46 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <sandeep_n@ti.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v2 1/3] Documentation: dt: net: Add binding doc for Keystone NetCP ethernet driver
-Date: Fri, 15 Aug 2014 11:12:40 -0400
-Message-ID: <1408115562-22487-2-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751063AbaHOPO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 11:14:29 -0400
+Subject: Re: [RFC PATCH 06/10] scsi/sd: Delete extra scsi_show_extd_sense()
+ in sd_print_sense_hdr()
+From: Ewan Milne <emilne@redhat.com>
+Reply-To: emilne@redhat.com
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20140808115019.6768.99063.stgit@yuno-kbuild.novalocal>
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
+	 <20140808115019.6768.99063.stgit@yuno-kbuild.novalocal>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 15 Aug 2014 11:14:18 -0400
+Message-ID: <1408115658.1223.150.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sandeep Nair <sandeep_n@ti.com>
+On Fri, 2014-08-08 at 11:50 +0000, Yoshihiro YUNOMAE wrote:
+> sd_print_sense_hdr() calls scsi_show_extd_sense(),
+> but scsi_print_sense_hdr() also calls scsi_show_extd_sense().
+> We can get same result, so we delete it.
+> 
+> Note:
+> Calling scsi_show_extd_sense() is introduced in fdd8b297.
+> 
+> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Doug Gilbert <dgilbert@interlog.com>
+> Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> ---
+>  drivers/scsi/sd.c |    2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index 8d7204a..22dd214 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -3286,8 +3286,6 @@ static void sd_print_sense_hdr(struct scsi_disk *sdkp,
+>  			       struct scsi_sense_hdr *sshdr)
+>  {
+>  	scsi_print_sense_hdr(sdkp->device, sdkp->disk->disk_name, sshdr);
+> -	scsi_show_extd_sense(sdkp->device, sdkp->disk->disk_name,
+> -			     sshdr->asc, sshdr->ascq);
+>  }
+>  
+>  static void sd_print_result(struct scsi_disk *sdkp, int result)
+> 
+> --
 
-The network coprocessor (NetCP) is a hardware accelerator that processes
-Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
-switch sub-module to send and receive packets. NetCP also includes a packet
-accelerator (PA) module to perform packet classification operations such as
-header matching, and packet modification operations such as checksum
-generation. NetCP can also optionally include a Security Accelerator(SA)
-capable of performing IPSec operations on ingress/egress packets.
+Looks fine, but again, Hannes should probably update his tree.
 
-Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
-includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
-1Gb/s rates per Ethernet port.
+Reviewed-by: Ewan D. Milne <emilne@redhat.com>
 
-NetCP Subsystem device tree layout looks something like below:
-
------------------------------
-  NetCP subsystem(10G or 1G)
------------------------------
-	|
-	|-> NetCP Devices ->	|
-	|			|-> GBE/XGBE Switch
-	|			|
-	|			|-> Packet Accelerator
-	|			|
-	|			|-> Security Accelerator
-	|
-	|
-	|
-	|-> NetCP Interfaces ->	|
-				|-> Ethernet Port 0
-				|
-				|-> Ethernet Port 1
-				|
-				|-> Ethernet Port 2
-				|
-				|-> Ethernet Port 3
-
-Common driver supports GBE as well XGBE network processors.
-
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: David Miller <davem@davemloft.net>
-
-Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- .../devicetree/bindings/net/keystone-netcp.txt     |  197 ++++++++++++++++++++
- 1 file changed, 197 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/keystone-netcp.txt
-
-diff --git a/Documentation/devicetree/bindings/net/keystone-netcp.txt b/Documentation/devicetree/bindings/net/keystone-netcp.txt
-new file mode 100644
-index 0000000..a7d061b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/keystone-netcp.txt
-@@ -0,0 +1,197 @@
-+This document describes the device tree bindings associated with the
-+keystone network coprocessor(NetCP) driver support.
-+
-+The network coprocessor (NetCP) is a hardware accelerator that processes
-+Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsytem with a ethernet
-+switch sub-module to send and receive packets. NetCP also includes a packet
-+accelerator (PA) module to perform packet classification operations such as
-+header matching, and packet modification operations such as checksum
-+generation. NetCP can also optionally include a Security Accelerator (SA)
-+capable of performing IPSec operations on ingress/egress packets.
-+
-+Keystone II SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
-+includes a 3-port Ethernet switch sub-module capable of 10Gb/s and 1Gb/s rates
-+per Ethernet port.
-+
-+Keystone NetCP driver has a plug-in module architecture where each of the NetCP
-+sub-modules exist as a loadable kernel module which plug in to the netcp core.
-+These sub-modules are represented as "netcp-devices" in the dts bindings. It is
-+mandatory to have the ethernet switch sub-module for the ethernet interface to
-+be operational. Any other sub-module like the PA is optional.
-+
-+NetCP Ethernet SubSystem Layout:
-+
-+-----------------------------
-+  NetCP subsystem(10G or 1G)
-+-----------------------------
-+	|
-+	|-> NetCP Devices ->	|
-+	|			|-> GBE/XGBE Switch
-+	|			|
-+	|			|-> Packet Accelerator
-+	|			|
-+	|			|-> Security Accelerator
-+	|
-+	|
-+	|
-+	|-> NetCP Interfaces ->	|
-+				|-> Ethernet Port 0
-+				|
-+				|-> Ethernet Port 1
-+				|
-+				|-> Ethernet Port 2
-+				|
-+				|-> Ethernet Port 3
-+
-+
-+NetCP subsystem properties:
-+Required properties:
-+- compatible:	Should be "ti,netcp-1.0"
-+- clocks:	phandle to the reference clocks for the subsystem.
-+- dma-id:	Navigator packet dma instance id.
-+
-+Optional properties:
-+- reg:		register location and the size for the following register
-+		regions in the specified order.
-+		- Efuse MAC address register
-+- dma-coherent:	Present if dma operations are coherent
-+- big-endian:	Keystone devices can be operated in a mode where the DSP is in
-+		the big endian mode. In such cases enable this option. This
-+		option should also be enabled if the ARM is operated in
-+		big endian mode with the DSP in little endian.
-+
-+NetCP device properties: Device specification for NetCP sub-modules.
-+1Gb/10Gb (gbe/xgbe) ethernet switch sub-module specifications.
-+Required properties:
-+- label:	Must be "netcp-gbe" for 1Gb & "netcp-xgbe" for 10Gb.
-+- reg:		register location and the size for the following register
-+		regions in the specified order.
-+		- subsystem registers
-+		- serdes registers
-+- tx-channel:	the navigator packet dma channel number for tx.
-+- tx-queue:	the navigator queue number associated with the tx dma channel.
-+- interfaces:	specification for each of the switch port to be registered as a
-+		network interface in the stack.
-+-- slave-port:	Switch port number, 0 based numbering.
-+-- link-interface:	type of link interface, supported options are
-+			- mac<->mac auto negotiate mode: 0
-+			- mac<->phy mode: 1
-+			- mac<->mac forced mode: 2
-+			- mac<->fiber mode: 3
-+			- mac<->phy mode with no mdio: 4
-+			- 10Gb mac<->phy mode : 10
-+			- 10Gb mac<->mac forced mode : 11
-+----phy-handle:	phandle to PHY device
-+
-+Optional properties:
-+- enable-ale:	NetCP driver keeps the address learning feature in the ethernet
-+		switch module disabled. This attribute is to enable the address
-+		learning.
-+- secondary-slave-ports:	specification for each of the switch port not be
-+				registered as a network interface. NetCP driver
-+				will only initialize these ports and attach PHY
-+				driver to them if needed.
-+
-+NetCP interface properties: Interface specification for NetCP sub-modules.
-+Required properties:
-+- rx-channel:	the navigator packet dma channel number for rx.
-+- rx-queue:	the navigator queue number associated with rx dma channel.
-+- rx-pool:	specifies the number of descriptors to be used & the region-id
-+		for creating the rx descriptor pool.
-+- tx-pool:	specifies the number of descriptors to be used & the region-id
-+		for creating the tx descriptor pool.
-+- rx-queue-depth:	number of descriptors in each of the free descriptor
-+			queue (FDQ) for the pktdma Rx flow. There can be at
-+			present a maximum of 4 queues per Rx flow.
-+- rx-buffer-size:	the buffer size for each of the Rx flow FDQ.
-+- tx-completion-queue:	the navigator queue number where the descriptors are
-+			recycled after Tx DMA completion.
-+
-+Optional properties:
-+- efuse-mac:	If this is 1, then the MAC address for the interface is
-+		obtained from the device efuse mac address register
-+- local-mac-address:	the driver is designed to use the of_get_mac_address api
-+			only if efuse-mac is 0. When efuse-mac is 0, the MAC
-+			address is obtained from local-mac-address. If this
-+			attribute is not present, then the driver will use a
-+			random MAC address.
-+- "netcp-device label":	phandle to the device specification for each of NetCP
-+			sub-module attached to this interface.
-+
-+Example binding:
-+
-+netcp: netcp@2090000 {
-+	reg = <0x2620110 0x8>;
-+	reg-names = "efuse";
-+	compatible = "ti,netcp-1.0";
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+
-+	clocks = <&papllclk>, <&clkcpgmac>, <&chipclk12>;
-+	dma-coherent;
-+	/* big-endian; */
-+	dma-id = <0>;
-+
-+	netcp-devices {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		gbe@0x2090000 {
-+			label = "netcp-gbe";
-+			reg = <0x2090000 0xf00>;
-+			/* enable-ale; */
-+			tx-queue = <648>;
-+			tx-channel = <8>;
-+
-+			interfaces {
-+				gbe0: interface-0 {
-+					slave-port = <0>;
-+					link-interface	= <4>;
-+				};
-+				gbe1: interface-1 {
-+					slave-port = <1>;
-+					link-interface	= <4>;
-+				};
-+			};
-+
-+			secondary-slave-ports {
-+				port-2 {
-+					slave-port = <2>;
-+					link-interface	= <2>;
-+				};
-+				port-3 {
-+					slave-port = <3>;
-+					link-interface	= <2>;
-+				};
-+			};
-+		};
-+	};
-+
-+	netcp-interfaces {
-+		interface-0 {
-+			rx-channel = <22>;
-+			rx-pool = <1024 12>;
-+			tx-pool = <1024 12>;
-+			rx-queue-depth = <128 128 0 0>;
-+			rx-buffer-size = <1518 4096 0 0>;
-+			rx-queue = <8704>;
-+			tx-completion-queue = <8706>;
-+			efuse-mac = <1>;
-+			netcp-gbe = <&gbe0>;
-+
-+		};
-+		interface-1 {
-+			rx-channel = <23>;
-+			rx-pool = <1024 12>;
-+			tx-pool = <1024 12>;
-+			rx-queue-depth = <128 128 0 0>;
-+			rx-buffer-size = <1518 4096 0 0>;
-+			rx-queue = <8705>;
-+			tx-completion-queue = <8707>;
-+			efuse-mac = <0>;
-+			local-mac-address = [02 18 31 7e 3e 6f];
-+			netcp-gbe = <&gbe1>;
-+		};
-+	};
-+};
--- 
-1.7.9.5
 
