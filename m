@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaHOTK0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:10:26 -0400
+	id S1751890AbaHOTKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:10:41 -0400
 Received: from mga09.intel.com ([134.134.136.24]:59367 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210AbaHOTKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:10:22 -0400
+	id S1751827AbaHOTKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:10:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,872,1400050800"; 
-   d="scan'208";a="588727731"
+   d="scan'208";a="588727747"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/24] perf scripting: Add 'flush' callback to scripting API
-Date: Fri, 15 Aug 2014 22:08:37 +0300
-Message-Id: <1408129739-17368-3-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 03/24] perf tools: Rename machine__get_kernel_start_addr()
+Date: Fri, 15 Aug 2014 22:08:38 +0300
+Message-Id: <1408129739-17368-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
 References: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
@@ -27,164 +27,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to defer some output via the scripting API, there needs to be a
-callback after session processing but before the session is deleted.
+Rename machine__get_kernel_start_addr() to
+machine__get_running_kernel_start() so that
+a new function, with a similar name to the
+original name, can be added that gets the
+kernel start address from the kernel map.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1406786474-9306-28-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c                            | 13 +++++++++++++
- tools/perf/util/scripting-engines/trace-event-perl.c   |  6 ++++++
- tools/perf/util/scripting-engines/trace-event-python.c |  6 ++++++
- tools/perf/util/trace-event-scripting.c                |  7 +++++++
- tools/perf/util/trace-event.h                          |  1 +
- 5 files changed, 33 insertions(+)
+ tools/perf/util/machine.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index c1b7029..02dce92 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -485,6 +485,11 @@ static int default_start_script(const char *script __maybe_unused,
- 	return 0;
- }
- 
-+static int default_flush_script(void)
-+{
-+	return 0;
-+}
-+
- static int default_stop_script(void)
- {
- 	return 0;
-@@ -498,6 +503,7 @@ static int default_generate_script(struct pevent *pevent __maybe_unused,
- 
- static struct scripting_ops default_scripting_ops = {
- 	.start_script		= default_start_script,
-+	.flush_script		= default_flush_script,
- 	.stop_script		= default_stop_script,
- 	.process_event		= process_event,
- 	.generate_script	= default_generate_script,
-@@ -513,6 +519,11 @@ static void setup_scripting(void)
- 	scripting_ops = &default_scripting_ops;
- }
- 
-+static int flush_scripting(void)
-+{
-+	return scripting_ops->flush_script();
-+}
-+
- static int cleanup_scripting(void)
- {
- 	pr_debug("\nperf script stopped\n");
-@@ -1813,6 +1824,8 @@ int cmd_script(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	err = __cmd_script(&script);
- 
-+	flush_scripting();
-+
- out_delete:
- 	perf_session__delete(session);
- 
-diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-index b2dba9c..0a01bac 100644
---- a/tools/perf/util/scripting-engines/trace-event-perl.c
-+++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-@@ -432,6 +432,11 @@ error:
- 	return err;
- }
- 
-+static int perl_flush_script(void)
-+{
-+	return 0;
-+}
-+
- /*
-  * Stop trace script
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index b093b93..37f8dc5 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -593,8 +593,8 @@ const char *ref_reloc_sym_names[] = {"_text", "_stext", NULL};
+  * Returns the name of the start symbol in *symbol_name. Pass in NULL as
+  * symbol_name if it's not that important.
   */
-@@ -633,6 +638,7 @@ static int perl_generate_script(struct pevent *pevent, const char *outfile)
- struct scripting_ops perl_scripting_ops = {
- 	.name = "Perl",
- 	.start_script = perl_start_script,
-+	.flush_script = perl_flush_script,
- 	.stop_script = perl_stop_script,
- 	.process_event = perl_process_event,
- 	.generate_script = perl_generate_script,
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 26e5f14..56ba07c 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -639,6 +639,11 @@ error:
- 	return err;
- }
- 
-+static int python_flush_script(void)
-+{
-+	return 0;
-+}
-+
- /*
-  * Stop trace script
-  */
-@@ -823,6 +828,7 @@ static int python_generate_script(struct pevent *pevent, const char *outfile)
- struct scripting_ops python_scripting_ops = {
- 	.name = "Python",
- 	.start_script = python_start_script,
-+	.flush_script = python_flush_script,
- 	.stop_script = python_stop_script,
- 	.process_event = python_process_event,
- 	.generate_script = python_generate_script,
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index 57aaccc..5c9bdd1 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -30,6 +30,11 @@
- 
- struct scripting_context *scripting_context;
- 
-+static int flush_script_unsupported(void)
-+{
-+	return 0;
-+}
-+
- static int stop_script_unsupported(void)
+-static u64 machine__get_kernel_start_addr(struct machine *machine,
+-					  const char **symbol_name)
++static u64 machine__get_running_kernel_start(struct machine *machine,
++					     const char **symbol_name)
  {
- 	return 0;
-@@ -74,6 +79,7 @@ static int python_generate_script_unsupported(struct pevent *pevent
- struct scripting_ops python_scripting_unsupported_ops = {
- 	.name = "Python",
- 	.start_script = python_start_script_unsupported,
-+	.flush_script = flush_script_unsupported,
- 	.stop_script = stop_script_unsupported,
- 	.process_event = process_event_unsupported,
- 	.generate_script = python_generate_script_unsupported,
-@@ -137,6 +143,7 @@ static int perl_generate_script_unsupported(struct pevent *pevent
- struct scripting_ops perl_scripting_unsupported_ops = {
- 	.name = "Perl",
- 	.start_script = perl_start_script_unsupported,
-+	.flush_script = flush_script_unsupported,
- 	.stop_script = stop_script_unsupported,
- 	.process_event = process_event_unsupported,
- 	.generate_script = perl_generate_script_unsupported,
-diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
-index 7b6d686..52aaa19 100644
---- a/tools/perf/util/trace-event.h
-+++ b/tools/perf/util/trace-event.h
-@@ -64,6 +64,7 @@ struct perf_session;
- struct scripting_ops {
+ 	char filename[PATH_MAX];
+ 	int i;
+@@ -621,7 +621,7 @@ static u64 machine__get_kernel_start_addr(struct machine *machine,
+ int __machine__create_kernel_maps(struct machine *machine, struct dso *kernel)
+ {
+ 	enum map_type type;
+-	u64 start = machine__get_kernel_start_addr(machine, NULL);
++	u64 start = machine__get_running_kernel_start(machine, NULL);
+ 
+ 	for (type = 0; type < MAP__NR_TYPES; ++type) {
+ 		struct kmap *kmap;
+@@ -940,7 +940,7 @@ int machine__create_kernel_maps(struct machine *machine)
+ {
+ 	struct dso *kernel = machine__get_kernel(machine);
  	const char *name;
- 	int (*start_script) (const char *script, int argc, const char **argv);
-+	int (*flush_script) (void);
- 	int (*stop_script) (void);
- 	void (*process_event) (union perf_event *event,
- 			       struct perf_sample *sample,
+-	u64 addr = machine__get_kernel_start_addr(machine, &name);
++	u64 addr = machine__get_running_kernel_start(machine, &name);
+ 	if (!addr)
+ 		return -1;
+ 
 -- 
 1.8.3.2
 
