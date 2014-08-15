@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaHOQc1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:32:27 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:34299 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbaHOQcY (ORCPT
+	id S1752131AbaHOQcG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:32:06 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40840 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaHOQ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:32:24 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: linux@arm.linux.org.uk, Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Will Deacon <will.deacon@arm.com>, Chao Xie <chao.xie@marvell.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Chao Xie Linux <xiechao.mail@gmail.com>,
-        Juri Lelli <juri.lelli@gmail.com>, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] cpuidle/cpuidle-big_little: fix reading cpu id part number
-References: <1408004865-27525-1-git-send-email-juri.lelli@arm.com>
-Date: Fri, 15 Aug 2014 09:32:16 -0700
-In-Reply-To: <1408004865-27525-1-git-send-email-juri.lelli@arm.com> (Juri
-	Lelli's message of "Thu, 14 Aug 2014 09:27:45 +0100")
-Message-ID: <7hwqa9ww6n.fsf@paris.lan>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 15 Aug 2014 12:28:56 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v6 tip/core/rcu 09/17] rcu: Improve RCU-tasks energy efficiency
+Date: Fri, 15 Aug 2014 09:28:37 -0700
+Message-Id: <1408120125-30479-9-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140815162820.GA28967@linux.vnet.ibm.com>
+ <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081516-6688-0000-0000-0000040AF657
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Juri Lelli <juri.lelli@arm.com> writes:
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-> Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part number
-> correctly") changed ARM_CPU_PART_X masks, and the way they are returned and
-> checked against. Usage of read_cpuid_part_number() is now deprecated, and
-> calling places updated accordingly. This actually broke cpuidle-big_little
-> initialization, as bl_idle_driver_init() performs a check using an hardcoded
-> mask on cpu_id.
->
-> Create an interface to perform the check (that is now even easier to read).
-> Define also a proper mask (ARM_CPU_PART_MASK) that makes this kind of checks
-> cleaner and helps preventing bugs in the future. Update usage accordingly.
+The current RCU-tasks implementation uses strict polling to detect
+callback arrivals.  This works quite well, but is not so good for
+energy efficiency.  This commit therefore replaces the strict polling
+with a wait queue.
 
-[...]
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcu/update.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index ced80324b6c8..ff01b3c3e1f6 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -368,6 +368,7 @@ early_initcall(check_cpu_stall_init);
+ /* Global list of callbacks and associated lock. */
+ static struct rcu_head *rcu_tasks_cbs_head;
+ static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
++static DECLARE_WAIT_QUEUE_HEAD(rcu_tasks_cbs_wq);
+ static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
+ 
+ /* Track exiting tasks in order to allow them to be waited for. */
+@@ -381,13 +382,17 @@ module_param(rcu_task_stall_timeout, int, 0644);
+ void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
+ {
+ 	unsigned long flags;
++	bool needwake;
+ 
+ 	rhp->next = NULL;
+ 	rhp->func = func;
+ 	raw_spin_lock_irqsave(&rcu_tasks_cbs_lock, flags);
++	needwake = !rcu_tasks_cbs_head;
+ 	*rcu_tasks_cbs_tail = rhp;
+ 	rcu_tasks_cbs_tail = &rhp->next;
+ 	raw_spin_unlock_irqrestore(&rcu_tasks_cbs_lock, flags);
++	if (needwake)
++		wake_up(&rcu_tasks_cbs_wq);
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_tasks);
+ 
+@@ -498,8 +503,12 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 
+ 		/* If there were none, wait a bit and start over. */
+ 		if (!list) {
+-			schedule_timeout_interruptible(HZ);
+-			WARN_ON(signal_pending(current));
++			wait_event_interruptible(rcu_tasks_cbs_wq,
++						 rcu_tasks_cbs_head);
++			if (!rcu_tasks_cbs_head) {
++				WARN_ON(signal_pending(current));
++				schedule_timeout_interruptible(HZ/10);
++			}
+ 			continue;
+ 		}
+ 
+@@ -605,6 +614,7 @@ static int __noreturn rcu_tasks_kthread(void *arg)
+ 			list = next;
+ 			cond_resched();
+ 		}
++		schedule_timeout_uninterruptible(HZ/10);
+ 	}
+ }
+ 
+-- 
+1.8.1.5
 
-FWIW, I can confirm that this patch is needed for cpuidle-big_little to
-work on the Exynos5800/Chromebook2.
-
-Kevin
