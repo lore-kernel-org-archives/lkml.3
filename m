@@ -1,102 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaHOQqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:46:31 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:55666 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaHOQqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:46:30 -0400
-Message-ID: <53EE3966.60609@kernel.dk>
-Date: Fri, 15 Aug 2014 10:46:30 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, Ming Lei <ming.lei@canonical.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com> <1408031441-31156-6-git-send-email-ming.lei@canonical.com> <20140815163111.GA16652@infradead.org> <53EE370D.1060106@kernel.dk>
-In-Reply-To: <53EE370D.1060106@kernel.dk>
-Content-Type: multipart/mixed;
- boundary="------------030301080607020805050407"
+	id S1751371AbaHOQsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:48:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44462 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954AbaHOQsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:48:31 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alex Converse <aconverse@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Arun Sharma <asharma@fb.com>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Elliott Hughes <enh@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Haren Myneni <hbabu@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        linuxppc-dev@lists.ozlabs.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Naohiro Aota <naota@elisp.net>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/18] perf/core improvements and fixes
+Date: Fri, 15 Aug 2014 13:48:00 -0300
+Message-Id: <1408121298-11636-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030301080607020805050407
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Hi Ingo,
 
-On 08/15/2014 10:36 AM, Jens Axboe wrote:
-> On 08/15/2014 10:31 AM, Christoph Hellwig wrote:
->>> +static void loop_queue_work(struct work_struct *work)
->>
->> Offloading work straight to a workqueue dosn't make much sense
->> in the blk-mq model as we'll usually be called from one.  If you
->> need to avoid the cases where we are called directly a flag for
->> the blk-mq code to always schedule a workqueue sounds like a much
->> better plan.
-> 
-> That's a good point - would clean up this bit, and be pretty close to a
-> one-liner to support in blk-mq for the drivers that always need blocking
-> context.
+	Please consider pulling,
 
-Something like this should do the trick - totally untested. But with
-that, loop would just need to add BLK_MQ_F_WQ_CONTEXT to it's tag set
-flags and it could always do the work inline from ->queue_rq().
+- Arnaldo
 
--- 
-Jens Axboe
+The following changes since commit f373da34282560c60f0c197690eecb1b2dc49fc0:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-08-14 10:38:40 +0200)
+
+are available in the git repository at:
 
 
---------------030301080607020805050407
-Content-Type: text/x-patch;
- name="blk-mq-wq.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="blk-mq-wq.patch"
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 5189cb1e478a..a97eb9a4af60 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -803,6 +803,9 @@ void blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx, bool async)
- 	if (unlikely(test_bit(BLK_MQ_S_STOPPED, &hctx->state)))
- 		return;
- 
-+	if (hctx->flags & BLK_MQ_F_WQ_CONTEXT)
-+		async = true;
-+
- 	if (!async && cpumask_test_cpu(smp_processor_id(), hctx->cpumask))
- 		__blk_mq_run_hw_queue(hctx);
- 	else if (hctx->queue->nr_hw_queues == 1)
-@@ -1173,7 +1176,7 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
- 		goto run_queue;
- 	}
- 
--	if (is_sync) {
-+	if (is_sync && !(data.hctx->flags & BLK_MQ_F_WQ_CONTEXT)) {
- 		int ret;
- 
- 		blk_mq_bio_to_request(rq, bio);
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index eb726b9c5762..c7a8c5fdd380 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -127,7 +127,8 @@ enum {
- 	BLK_MQ_RQ_QUEUE_ERROR	= 2,	/* end IO with error */
- 
- 	BLK_MQ_F_SHOULD_MERGE	= 1 << 0,
--	BLK_MQ_F_SHOULD_SORT	= 1 << 1,
-+	BLK_MQ_F_WQ_CONTEXT	= 1 << 1,	/* ->queue_rq() must run from
-+						 * a blocking context */
- 	BLK_MQ_F_TAG_SHARED	= 1 << 2,
- 	BLK_MQ_F_SG_MERGE	= 1 << 3,
- 	BLK_MQ_F_SYSFS_UP	= 1 << 4,
+for you to fetch changes up to 759e612bf96627b64fcafe4174b3f6f2dedf2c0d:
 
---------------030301080607020805050407--
+  perf stat: Use strerror_r instead of strerror (2014-08-15 13:08:40 -0300)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+User visible:
+
+. Warn user to rebuild target with debuginfo in 'perf probe' (Masami Hiramatsu)
+
+. Don't truncate Intel style addresses in 'annotate'. (Alex Converse)
+
+Developer stuff:
+
+. Annotate PMU related list_head members with type info. (Cody P Schafer)
+
+. Add the triplet used for arm64 by Android (Elliott Hughes)
+
+. Replace thread unsafe strerror() with strerror_r() accross the
+  whole tools/perf/ tree (Masami Hiramatsu)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Alex Converse (1):
+      perf annotate: Don't truncate Intel style addresses
+
+Cody P Schafer (1):
+      perf tools: Annotate PMU related list_head members with type info
+
+Elliott Hughes (1):
+      perf tools: Add arm64 triplets
+
+Masami Hiramatsu (14):
+      perf probe: Warn user to rebuild target with debuginfo
+      perf probe: Don't use strerror if strlist__add failed
+      perf: Use strerror_r instead of strerror
+      perf probe: Make error messages thread-safe
+      perf util: Replace strerror with strerror_r for thread-safety
+      perf top: Use strerror_r instead of strerror
+      perf trace: Use strerror_r instead of strerror
+      perf record: Use strerror_r instead of strerror
+      perf test: Use strerror_r instead of strerror
+      perf sched: Use strerror_r instead of strerror
+      perf buildid-cache: Use strerror_r instead of strerror
+      perf kvm: Use strerror_r instead of strerror
+      perf help: Use strerror_r instead of strerror
+      perf stat: Use strerror_r instead of strerror
+
+Namhyung Kim (1):
+      perf report: Relax -g option parsing not to limit the option order
+
+ tools/perf/arch/common.c                  |  9 +++
+ tools/perf/builtin-buildid-cache.c        |  7 ++-
+ tools/perf/builtin-help.c                 | 20 +++++--
+ tools/perf/builtin-kvm.c                  |  7 ++-
+ tools/perf/builtin-probe.c                |  5 +-
+ tools/perf/builtin-record.c               |  7 ++-
+ tools/perf/builtin-sched.c                |  4 +-
+ tools/perf/builtin-stat.c                 |  2 +-
+ tools/perf/builtin-top.c                  |  2 +-
+ tools/perf/builtin-trace.c                |  6 +-
+ tools/perf/perf.c                         | 10 +++-
+ tools/perf/tests/builtin-test.c           |  4 +-
+ tools/perf/tests/mmap-basic.c             |  7 ++-
+ tools/perf/tests/open-syscall-all-cpus.c  |  5 +-
+ tools/perf/tests/open-syscall-tp-fields.c |  7 ++-
+ tools/perf/tests/open-syscall.c           |  3 +-
+ tools/perf/tests/perf-record.c            | 13 +++--
+ tools/perf/tests/rdpmc.c                  |  6 +-
+ tools/perf/tests/sw-clock.c               |  6 +-
+ tools/perf/tests/task-exit.c              |  6 +-
+ tools/perf/util/annotate.c                | 12 +++-
+ tools/perf/util/callchain.c               | 95 +++++++++++++------------------
+ tools/perf/util/cloexec.c                 |  6 +-
+ tools/perf/util/data.c                    |  8 ++-
+ tools/perf/util/debug.h                   |  3 +
+ tools/perf/util/dso.c                     |  8 ++-
+ tools/perf/util/evlist.c                  |  2 +-
+ tools/perf/util/evsel.c                   |  7 ++-
+ tools/perf/util/parse-events.c            |  5 +-
+ tools/perf/util/pmu.c                     |  4 +-
+ tools/perf/util/pmu.h                     |  6 +-
+ tools/perf/util/probe-event.c             | 75 +++++++++++++-----------
+ tools/perf/util/probe-finder.c            |  7 ++-
+ tools/perf/util/run-command.c             |  9 ++-
+ tools/perf/util/util.c                    |  5 +-
+ 35 files changed, 234 insertions(+), 154 deletions(-)
