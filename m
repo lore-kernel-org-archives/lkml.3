@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaHOG7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 02:59:34 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57222 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaHOG7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 02:59:32 -0400
-References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com> <1407770293-27190-3-git-send-email-tthayer@opensource.altera.com>
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: tthayer@opensource.altera.com
-Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, atull@opensource.altera.com,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        dougthompson@xmission.com, grant.likely@linaro.org, bp@alien8.de,
-        sameo@linux.intel.com, lee.jones@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tthayer.linux@gmail.com
-Subject: Re: [PATCHv10 2/2] arm: dts: Add Altera SDRAM EDAC bindings & devicetree entries.
-Date: Fri, 15 Aug 2014 08:42:19 +0200
-In-reply-to: <1407770293-27190-3-git-send-email-tthayer@opensource.altera.com>
-Message-ID: <73vbputf04.fsf@dude.hi.pengutronix.de>
+	id S1754120AbaHOHPc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 03:15:32 -0400
+Received: from ozlabs.org ([103.22.144.67]:49665 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172AbaHOHPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 03:15:31 -0400
+Date: Fri, 15 Aug 2014 17:15:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: linux-next: few releases for the next week
+Message-ID: <20140815171524.5b7e197d@canb.auug.org.au>
+In-Reply-To: <20140815134711.7d63bcc5@canb.auug.org.au>
+References: <20140815134711.7d63bcc5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:a236:9fff:fe00:814
-X-SA-Exim-Mail-From: s.trumtrar@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Z+z140MBQvxKA9TRBQHaRA5"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/Z+z140MBQvxKA9TRBQHaRA5
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi!
+Hi all,
 
-tthayer@opensource.altera.com writes:
+linux-next releases will be intermittent at best over the next week
+while I, and others, are at Kernel Summit.
 
-> From: Thor Thayer <tthayer@opensource.altera.com>
->
-> Add the Altera SDRAM EDAC bindings and device tree changes to the Altera SoC project.
->
-> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
-> ---
-> v2: Changes to SoC SDRAM EDAC code.
->
-> v3: Implement code suggestions for SDRAM EDAC code.
->
-> v4: Remove syscon from SDRAM controller bindings.
->
-> v5: No Change, bump version for consistency.
->
-> v6: Only map the ctrlcfg register as syscon.
->
-> v7: No change. Bump for consistency.
->
-> v8: No change. Bump for consistency.
->
-> v9: Changes to support a MFD SDRAM controller with nested EDAC.
->
-> v10: Revert to using syscon based on feedback.
-> ---
->  .../bindings/arm/altera/socfpga-sdram-edac.txt     |   15 +++++++++++++++
->  arch/arm/boot/dts/socfpga.dtsi                     |   11 +++++++++++
->  2 files changed, 26 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
->
-> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-> new file mode 100644
-> index 0000000..d0ce01d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-> @@ -0,0 +1,15 @@
-> +Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
-> +The EDAC accesses a range of registers in the SDRAM controller.
-> +
-> +Required properties:
-> +- compatible : should contain "altr,sdram-edac";
-> +- altr,sdr-syscon : phandle of the sdr module
-> +- interrupts : Should contain the SDRAM ECC IRQ in the
-> +	appropriate format for the IRQ controller.
-> +
-> +Example:
-> +	sdramedac {
-> +		compatible = "altr,sdram-edac";
-> +		altr,sdr-syscon = <&sdr>;
-> +		interrupts = <0 39 4>;
-> +	};
-> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> index 4676f25..45b361e 100644
-> --- a/arch/arm/boot/dts/socfpga.dtsi
-> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> @@ -603,6 +603,17 @@
->  			};
->  		};
->  
-> +		sdr: sdr@ffc25000 {
-> +			compatible = "syscon";
-> +			reg = <0xffc25000 0x1000>;
-> +		};
-> +
-> +		sdramedac {
-> +			compatible = "altr,sdram-edac";
-> +			altr,sdr-syscon = <&sdr>;
-> +			interrupts = <0 39 4>;
-> +		};
-> +
->  		L2: l2-cache@fffef000 {
->  			compatible = "arm,pl310-cache";
->  			reg = <0xfffef000 0x1000>;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Sorry, but I personally still don't like this approach.
+--Sig_/Z+z140MBQvxKA9TRBQHaRA5
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-If we do it like this however, shouldn't the different regions of the
-SDR (EDAC, FPGAPORTRST, ...) at least be child nodes of the syscon?
-That seems to match the syscon binding and describes the actual hardware
-better IMHO.
-Oh, and "reg = <...>" for the sdram-edac, maybe ?
-How would I know where the start address of the EDAC is, if I would use
-this DT on another OS where I don't have the same driver?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Regards,
-Steffen
+iQIcBAEBCAAGBQJT7bORAAoJEMDTa8Ir7ZwVKFYP/RI2LJELksPIuihqnm+gqs5W
+uXCD21m25c0ApEngk+NimlFBrEMVRWqDImlH+yC/ujLGdsNnm8Yhvkx3KaOFXIFx
+CsLlzw50732tHIbzwK0xBZhn+SmUDmp0MaSv13+A32n0dsPflOL5F5HUL9oDIhA5
+LRYnNJyCjhwqCL2H/j2ueyRb2jPFayyFMp5rpwowN1UsWlxHWivq8yP+LW5D67oc
+TXZXz39C1dGK2TrCtop/4/Xg7pyKOwTSql4vZY9kjjfKmqmimEaYC8BzpVQI+2u8
+jbGquqacIwR2ErjoaweAQQCRHpg6keRTKAYpsS+4cj80RlMM8VjmwwFwA/za+Vg/
+S/YdnTSa7bl7d4Hg0X1Z7N/ceLvuAvNjUMxUlpRGfRCSMPm/Vf6L2NiBXVZinEBX
+oH0qgGCffgS5pqPPiYsp2P980RX3CZvaUK4QMO7stEhf7CZUj0hHcN5hLcalyHzJ
+RtaNEIAyqV9wifZzbKj+ev966tPdagpBNuKVuNnDF2uChAGCGIpFSojw7W0my829
+2cVPRBlZOurzKdsaCLmUhKkVTghHadrBj/95nG+oeqAKocj3U10/7w5wVa4RDNyp
+G8frVmHg4LRCrVV/P5sjsWc6N/mAQTljj1yk544iL4aSFyS42mh1ziOwHaROIbo3
+M1io+2k/UWnm3U27Goqd
+=TXS9
+-----END PGP SIGNATURE-----
 
--- 
-Pengutronix e.K.                           | Steffen Trumtrar            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+--Sig_/Z+z140MBQvxKA9TRBQHaRA5--
