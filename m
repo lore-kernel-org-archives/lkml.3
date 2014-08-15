@@ -1,419 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaHOOEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:04:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44850 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaHOODm (ORCPT
+	id S1751295AbaHOOIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:08:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54419 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaHOOH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:03:42 -0400
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
-        patrice.chotard@st.com
-Cc: peter.griffin@linaro.org, lee.jones@linaro.org, linux-usb@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH v5 2/5] usb: host: ohci-st: Add OHCI driver support for ST STB devices
-Date: Fri, 15 Aug 2014 15:03:27 +0100
-Message-Id: <1408111410-14375-3-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408111410-14375-1-git-send-email-peter.griffin@linaro.org>
-References: <1408111410-14375-1-git-send-email-peter.griffin@linaro.org>
+	Fri, 15 Aug 2014 10:07:59 -0400
+Date: Fri, 15 Aug 2014 16:07:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>, mingo@kernel.org,
+        len.brown@intel.com, rjw@rjwysocki.net,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
+        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [RFC 0/3] Experimental patchset for CPPC
+Message-ID: <20140815140741.GI19379@twins.programming.kicks-ass.net>
+References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
+ <20140814205143.GY6758@twins.programming.kicks-ass.net>
+ <CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
+ <20140815061917.GX19379@twins.programming.kicks-ass.net>
+ <CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iDeshIghY55r3+AG"
+Content-Disposition: inline
+In-Reply-To: <CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the glue code required to ensure the on-chip OHCI
-controller works on STi consumer electronics SoC's from STMicroelectronics.
 
-It mainly manages the setting and enabling of the relevant clocks and manages
-the reset / power signals to the IP block.
+--iDeshIghY55r3+AG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
----
- drivers/usb/host/Kconfig   |   8 ++
- drivers/usb/host/Makefile  |   1 +
- drivers/usb/host/ohci-st.c | 339 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 348 insertions(+)
- create mode 100644 drivers/usb/host/ohci-st.c
+On Fri, Aug 15, 2014 at 09:08:50AM -0400, Ashwin Chaugule wrote:
+> If the OS only looks at Highest, Lowest, Delivered registers and only
+> writes to Desired, then we're not really any different than how we do
+> things today in the CPUFreq layer.
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 03314f8..4b577f6 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -753,6 +753,14 @@ config USB_HCD_SSB
- 
- 	  If unsure, say N.
- 
-+config USB_HCD_ST
-+	tristate "ST USB driver for ST SoC Series"
-+	depends on ARCH_STI && OF
-+	select GENERIC_PHY
-+	help
-+	  Enable support for the on-chip OHCI & EHCI controller found on
-+	  STMicroelectronics consumer electronics SoC's.
-+
- config USB_HCD_TEST_MODE
- 	bool "HCD test mode support"
- 	---help---
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index af89a90..df7e5ac 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -74,3 +74,4 @@ obj-$(CONFIG_USB_HCD_SSB)	+= ssb-hcd.o
- obj-$(CONFIG_USB_FUSBH200_HCD)	+= fusbh200-hcd.o
- obj-$(CONFIG_USB_FOTG210_HCD)	+= fotg210-hcd.o
- obj-$(CONFIG_USB_MAX3421_HCD)	+= max3421-hcd.o
-+obj-$(CONFIG_USB_HCD_ST)	+= ehci-st.o ohci-st.o
-diff --git a/drivers/usb/host/ohci-st.c b/drivers/usb/host/ohci-st.c
-new file mode 100644
-index 0000000..738d6c6
---- /dev/null
-+++ b/drivers/usb/host/ohci-st.c
-@@ -0,0 +1,339 @@
-+/*
-+ * ST OHCI driver
-+ *
-+ * Copyright (C) 2014 STMicroelectronics – All Rights Reserved
-+ *
-+ * Author: Peter Griffin <peter.griffin@linaro.org>
-+ *
-+ * Derived from ohci-platform.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/hrtimer.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/reset.h>
-+#include <linux/usb/ohci_pdriver.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+
-+#include "ohci.h"
-+#include "usb-st-common.h"
-+
-+#define DRIVER_DESC "OHCI STMicroelectronics driver"
-+
-+#define hcd_to_ohci_priv(h) ((struct st_platform_priv *)hcd_to_ohci(h)->priv)
-+
-+static const char hcd_name[] = "ohci-st";
-+
-+static int st_ohci_platform_power_on(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
-+	int clk, ret;
-+
-+	ret = reset_control_deassert(priv->pwr);
-+	if (ret)
-+		return ret;
-+
-+	ret = reset_control_deassert(priv->rst);
-+	if (ret)
-+		goto err_assert_power;
-+
-+	/* some SoCs don't have a dedicated 48Mhz clock, but those that do
-+	   need the rate to be explicitly set */
-+	if (priv->clk48) {
-+		ret = clk_set_rate(priv->clk48, 48000000);
-+		if (ret)
-+			goto err_assert_reset;
-+	}
-+
-+	for (clk = 0; clk < USB_MAX_CLKS && priv->clks[clk]; clk++) {
-+		ret = clk_prepare_enable(priv->clks[clk]);
-+		if (ret)
-+			goto err_disable_clks;
-+	}
-+
-+	ret = phy_init(priv->phy);
-+	if (ret)
-+		goto err_disable_clks;
-+
-+	ret = phy_power_on(priv->phy);
-+	if (ret)
-+		goto err_exit_phy;
-+
-+	return 0;
-+
-+err_exit_phy:
-+	phy_exit(priv->phy);
-+err_disable_clks:
-+	while (--clk >= 0)
-+		clk_disable_unprepare(priv->clks[clk]);
-+err_assert_reset:
-+	reset_control_assert(priv->rst);
-+err_assert_power:
-+	reset_control_assert(priv->pwr);
-+
-+	return ret;
-+}
-+
-+static void st_ohci_platform_power_off(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
-+
-+	int clk;
-+
-+	reset_control_assert(priv->pwr);
-+
-+	reset_control_assert(priv->rst);
-+
-+	phy_power_off(priv->phy);
-+
-+	phy_exit(priv->phy);
-+
-+	for (clk = USB_MAX_CLKS - 1; clk >= 0; clk--)
-+		if (priv->clks[clk])
-+			clk_disable_unprepare(priv->clks[clk]);
-+}
-+
-+static struct hc_driver __read_mostly ohci_platform_hc_driver;
-+
-+static const struct ohci_driver_overrides platform_overrides __initconst = {
-+	.product_desc =		"ST OHCI controller",
-+	.extra_priv_size =	sizeof(struct st_platform_priv),
-+};
-+
-+static struct usb_ohci_pdata ohci_platform_defaults = {
-+	.power_on =		st_ohci_platform_power_on,
-+	.power_suspend =	st_ohci_platform_power_off,
-+	.power_off =		st_ohci_platform_power_off,
-+};
-+
-+static int st_ohci_platform_probe(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd;
-+	struct resource *res_mem;
-+	struct usb_ohci_pdata *pdata = &ohci_platform_defaults;
-+	struct st_platform_priv *priv;
-+	struct ohci_hcd *ohci;
-+	int err, irq, clk = 0;
-+
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	irq = platform_get_irq(dev, 0);
-+	if (irq < 0) {
-+		dev_err(&dev->dev, "no irq provided");
-+		return irq;
-+	}
-+
-+	res_mem = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	if (!res_mem) {
-+		dev_err(&dev->dev, "no memory resource provided");
-+		return -ENXIO;
-+	}
-+
-+	hcd = usb_create_hcd(&ohci_platform_hc_driver, &dev->dev,
-+			dev_name(&dev->dev));
-+	if (!hcd)
-+		return -ENOMEM;
-+
-+	platform_set_drvdata(dev, hcd);
-+	dev->dev.platform_data = pdata;
-+	priv = hcd_to_ohci_priv(hcd);
-+	ohci = hcd_to_ohci(hcd);
-+
-+	priv->phy = devm_phy_get(&dev->dev, "usb");
-+	if (IS_ERR(priv->phy)) {
-+		err = PTR_ERR(priv->phy);
-+		goto err_put_hcd;
-+	}
-+
-+	for (clk = 0; clk < USB_MAX_CLKS; clk++) {
-+		priv->clks[clk] = of_clk_get(dev->dev.of_node, clk);
-+		if (IS_ERR(priv->clks[clk])) {
-+			err = PTR_ERR(priv->clks[clk]);
-+			if (err == -EPROBE_DEFER)
-+				goto err_put_clks;
-+			priv->clks[clk] = NULL;
-+			break;
-+		}
-+	}
-+
-+	/* some SoCs don't have a dedicated 48Mhz clock, but those that
-+	   do need the rate to be explicitly set */
-+	priv->clk48 = devm_clk_get(&dev->dev, "clk48");
-+	if (IS_ERR(priv->clk48)) {
-+		dev_info(&dev->dev, "48MHz clk not found\n");
-+		priv->clk48 = NULL;
-+	}
-+
-+	priv->pwr = devm_reset_control_get_optional(&dev->dev, "power");
-+	if (IS_ERR(priv->pwr)) {
-+		err = PTR_ERR(priv->pwr);
-+		goto err_put_clks;
-+	}
-+
-+	priv->rst = devm_reset_control_get_optional(&dev->dev, "softreset");
-+	if (IS_ERR(priv->rst)) {
-+		err = PTR_ERR(priv->rst);
-+		goto err_put_clks;
-+	}
-+
-+	if (pdata->power_on) {
-+		err = pdata->power_on(dev);
-+		if (err < 0)
-+			goto err_power;
-+	}
-+
-+	hcd->rsrc_start = res_mem->start;
-+	hcd->rsrc_len = resource_size(res_mem);
-+
-+	hcd->regs = devm_ioremap_resource(&dev->dev, res_mem);
-+	if (IS_ERR(hcd->regs)) {
-+		err = PTR_ERR(hcd->regs);
-+		goto err_power;
-+	}
-+	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
-+	if (err)
-+		goto err_power;
-+
-+	device_wakeup_enable(hcd->self.controller);
-+
-+	platform_set_drvdata(dev, hcd);
-+
-+	return err;
-+
-+err_power:
-+	if (pdata->power_off)
-+		pdata->power_off(dev);
-+
-+err_put_clks:
-+	while (--clk >= 0)
-+		clk_put(priv->clks[clk]);
-+err_put_hcd:
-+	if (pdata == &ohci_platform_defaults)
-+		dev->dev.platform_data = NULL;
-+
-+	usb_put_hcd(hcd);
-+
-+	return err;
-+}
-+
-+static int st_ohci_platform_remove(struct platform_device *dev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(dev);
-+	struct usb_ohci_pdata *pdata = dev_get_platdata(&dev->dev);
-+	struct st_platform_priv *priv = hcd_to_ohci_priv(hcd);
-+	int clk;
-+
-+	usb_remove_hcd(hcd);
-+
-+	if (pdata->power_off)
-+		pdata->power_off(dev);
-+
-+
-+	for (clk = 0; clk < USB_MAX_CLKS && priv->clks[clk]; clk++)
-+		clk_put(priv->clks[clk]);
-+
-+	usb_put_hcd(hcd);
-+
-+	if (pdata == &ohci_platform_defaults)
-+		dev->dev.platform_data = NULL;
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int st_ohci_suspend(struct device *dev)
-+{
-+	struct usb_hcd *hcd = dev_get_drvdata(dev);
-+	struct usb_ohci_pdata *pdata = dev->platform_data;
-+	struct platform_device *pdev =
-+		container_of(dev, struct platform_device, dev);
-+	bool do_wakeup = device_may_wakeup(dev);
-+	int ret;
-+
-+	ret = ohci_suspend(hcd, do_wakeup);
-+	if (ret)
-+		return ret;
-+
-+	if (pdata->power_suspend)
-+		pdata->power_suspend(pdev);
-+
-+	return ret;
-+}
-+
-+static int st_ohci_resume(struct device *dev)
-+{
-+	struct usb_hcd *hcd = dev_get_drvdata(dev);
-+	struct usb_ohci_pdata *pdata = dev_get_platdata(dev);
-+	struct platform_device *pdev =
-+		container_of(dev, struct platform_device, dev);
-+	int err;
-+
-+	if (pdata->power_on) {
-+		err = pdata->power_on(pdev);
-+		if (err < 0)
-+			return err;
-+	}
-+
-+	ohci_resume(hcd, false);
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(st_ohci_pm_ops, st_ohci_suspend, st_ohci_resume);
-+
-+#endif /* CONFIG_PM_SLEEP */
-+
-+static const struct of_device_id st_ohci_platform_ids[] = {
-+	{ .compatible = "st,st-ohci-300x", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, st_ohci_platform_ids);
-+
-+static struct platform_driver ohci_platform_driver = {
-+	.probe		= st_ohci_platform_probe,
-+	.remove		= st_ohci_platform_remove,
-+	.shutdown	= usb_hcd_platform_shutdown,
-+	.driver		= {
-+		.name	= "st-ohci",
-+#ifdef CONFIG_PM_SLEEP
-+		.pm	= &st_ohci_pm_ops,
-+#endif
-+		.of_match_table = st_ohci_platform_ids,
-+	}
-+};
-+
-+static int __init ohci_platform_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+
-+	ohci_init_driver(&ohci_platform_hc_driver, &platform_overrides);
-+	return platform_driver_register(&ohci_platform_driver);
-+}
-+module_init(ohci_platform_init);
-+
-+static void __exit ohci_platform_cleanup(void)
-+{
-+	platform_driver_unregister(&ohci_platform_driver);
-+}
-+module_exit(ohci_platform_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_AUTHOR("Peter Griffin <peter.griffin@linaro.org>");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
+The thing is; we're already struggling to make 'sense' of x86 as it
+stands today. And it looks like this CPPC stuff makes the behaviour even
+less certain.
 
+> Or even in the case of
+> intel_pstate, if you map Desired to PERF_CTL and get value of
+> Delivered by using aperf/mperf ratios (as my experimental driver
+> does), then we can still maintain the existing system performance. It
+> seems like if an OS can make use of the additional information then it
+> should be net win for overall power savings and performance
+> enhancement. Also, using the CPPC descriptors, we should be able to
+> have one driver across X86 and ARM64. (possibly others too.)
+
+Yikes, so aaargh64 will go do creative power management too?
+
+And worse; it will go do ACPI? Welcome to the world of guaranteed BIOS
+fail :-(
+
+--iDeshIghY55r3+AG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT7hQtAAoJEHZH4aRLwOS6/DIP/AmupGzWkhlSymd3IklcJwAz
+/gsXPBhhpiM/2NlUzpHjx3yYXoGodNf0Agi0hTxKgEYhdOYnW1Dcq1mNmaFGZQtC
+ygootTjLffyxYypXW4JxsteqY+5S6Nb6l7sjHkO+VA5ZMSsH4elaehcruOoPfvk5
+mF40F8gNdTHhNq1ev0PEa5LDws4KnqNk7gZDZzFeFdSaDkZNnZ4RuVWof8vHIBh8
+CNqVv13a5MzJXr8iDBwNuXdHRetFr2zih+/bw6wXAaTal3D2R4dz+zdPCW5JgKqx
+TLZpFIAeGt35sg6gdmL9wifKSnZ9sif+Ic1D4tfTSnbA3ufrUW1vqqDD0vIrQ9bd
+yaK17HG7TZLjGXIqNT6SotccmQdqTFnHAQZi24QrGWnJCJZUz8offICAXs37lN5M
+wBlruD3wM7mlIjBXzi0OhKoPMrlcY3c15InqZPbGYzrv8CNDlZfkMHVtfR8JxBbv
+UxIYL7+DnOU18wxP+bGcTo3jqu35fGf6iVifskBwHhciTmj1LDk59HhsM4Oilw7X
+IWzBH1/ARwhr6KFQd56GJCn9JaoaGtKe7GIbabtp054jSIqfK2NTICxK0vQyatjN
++RwM8i6runTP7A+CyAKeIBIT3RdMa527U4BTEUZ55rWcG5d5CFGxCMPMsvNwaSjl
+ZGBYTbwl4wVw7cuhB2nh
+=7wyo
+-----END PGP SIGNATURE-----
+
+--iDeshIghY55r3+AG--
