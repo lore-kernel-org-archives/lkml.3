@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaHOMxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 08:53:15 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:54847 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141AbaHOMwu (ORCPT
+	id S1751589AbaHOMzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 08:55:48 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:42572 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaHOMzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 08:52:50 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-pm@vger.kernel.org
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?q?Terje=20Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [RFC v2 2/3] drm/tegra: Request memory bandwidth for the display controller
-Date: Fri, 15 Aug 2014 14:52:08 +0200
-Message-Id: <1408107129-29516-3-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408107129-29516-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1408107129-29516-1-git-send-email-tomeu.vizoso@collabora.com>
+	Fri, 15 Aug 2014 08:55:47 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        chris@printf.net, ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
+        zhangfei.gao@marvell.com, prakity@marvell.com,
+        rmk+kernel@arm.linux.org.uk
+Cc: peter.griffin@linaro.org, patches@linaro.org, lee.jones@linaro.org
+Subject: [PATCH v2] mmc: sdhci-pxav3: set_uhs_signaling is initialized twice differently
+Date: Fri, 15 Aug 2014 13:55:42 +0100
+Message-Id: <1408107342-20318-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For now the amount requested is based solely on the current mode's refresh
-rate.
+.set_uhs_signaling field is currently initialised twice once to the
+arch specific callback pxav3_set_uhs_signaling, and also to the generic
+sdhci_set_uhs_signaling callback.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+This means that uhs is currently broken for this platform currently, as pxav3
+has some special constriants which means it can't use the generic callback.
+
+This happened in
+commit 96d7b78cfc2f ("mmc: sdhci: convert sdhci_set_uhs_signaling() into a library function")
+commit a702c8abb2a9 ("mmc: host: split up sdhci-pxa, create sdhci-pxav3.c")'
+
+Fix this and hopefully prevent it happening in the future by ensuring named
+initialisers always follow the declaration order in the structure definition.
+
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
 ---
- drivers/gpu/drm/tegra/dc.c  | 11 +++++++++++
- drivers/gpu/drm/tegra/drm.h |  2 ++
- 2 files changed, 13 insertions(+)
+ drivers/mmc/host/sdhci-pxav3.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index ef40381..4bcf09b 100644
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@ -683,6 +683,8 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
- 	}
- 
- 	drm_vblank_off(drm, dc->pipe);
-+
-+	pm_qos_update_request(&dc->qos_request, PM_QOS_DEFAULT_VALUE);
- }
- 
- static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
-@@ -769,6 +771,7 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
- 	struct tegra_dc *dc = to_tegra_dc(crtc);
- 	struct tegra_dc_window window;
- 	u32 value;
-+	unsigned long bandwidth;
- 	int err;
- 
- 	drm_vblank_pre_modeset(crtc->dev, dc->pipe);
-@@ -809,6 +812,9 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
- 	if (err < 0)
- 		dev_err(dc->dev, "failed to enable root plane\n");
- 
-+	bandwidth = mode->clock * window.bits_per_pixel / 8;
-+	pm_qos_update_request(&dc->qos_request, bandwidth);
-+
- 	return 0;
- }
- 
-@@ -1407,6 +1413,9 @@ static int tegra_dc_probe(struct platform_device *pdev)
- 		return err;
- 	}
- 
-+	pm_qos_add_request(&dc->qos_request, PM_QOS_MEMORY_BANDWIDTH,
-+			   PM_QOS_DEFAULT_VALUE);
-+
- 	platform_set_drvdata(pdev, dc);
- 
- 	return 0;
-@@ -1417,6 +1426,8 @@ static int tegra_dc_remove(struct platform_device *pdev)
- 	struct tegra_dc *dc = platform_get_drvdata(pdev);
- 	int err;
- 
-+	pm_qos_remove_request(&dc->qos_request);
-+
- 	err = host1x_client_unregister(&dc->client);
- 	if (err < 0) {
- 		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
-diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
-index 6b8fe9d..6029693 100644
---- a/drivers/gpu/drm/tegra/drm.h
-+++ b/drivers/gpu/drm/tegra/drm.h
-@@ -116,6 +116,8 @@ struct tegra_dc {
- 	struct drm_pending_vblank_event *event;
- 
- 	const struct tegra_dc_soc_info *soc;
-+
-+	struct pm_qos_request qos_request;
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index 6f842fb..3f350ea 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -229,7 +229,6 @@ static const struct sdhci_ops pxav3_sdhci_ops = {
+ 	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
+ 	.set_bus_width = sdhci_set_bus_width,
+ 	.reset = pxav3_reset,
+-	.set_uhs_signaling = sdhci_set_uhs_signaling,
  };
  
- static inline struct tegra_dc *
+ static struct sdhci_pltfm_data sdhci_pxav3_pdata = {
 -- 
-1.9.3
+1.9.1
 
