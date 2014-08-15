@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651AbaHOQi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:38:56 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:40755 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaHOQiy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:38:54 -0400
+	id S1751810AbaHOQjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102AbaHOQjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:39:21 -0400
+Date: Fri, 15 Aug 2014 18:36:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140815163651.GA19331@redhat.com>
+References: <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814132239.GA24465@redhat.com> <20140814174849.GA5091@redhat.com> <1408079971.5536.37.camel@marge.simpson.net> <20140815062819.GY19379@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <1407897037-6037-1-git-send-email-stepanm@codeaurora.org>
-References: <53EAC37C.4020203@codeaurora.org> <1407897037-6037-1-git-send-email-stepanm@codeaurora.org>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 15 Aug 2014 11:38:33 -0500
-Message-ID: <CAL_JsqKoikzLsXmXrm0GDM=+5ofX=OvrmvUTw3O-qX2hSTztcw@mail.gmail.com>
-Subject: Re: [PATCH v2] of: Deep-copy names of platform devices
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140815062819.GY19379@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Greg...
+On 08/15, Peter Zijlstra wrote:
+>
+> Also; why do we care about PROCESS_CPUTIME? People should really not use
+> it. What are the 'valid' usecases you guys care about?
 
-On Tue, Aug 12, 2014 at 9:30 PM, Stepan Moskovchenko
-<stepanm@codeaurora.org> wrote:
-> When we parse the device tree and allocate platform
-> devices, the 'name' of the newly-created platform_device
-> is set to point to the 'name' field of the 'struct device'
-> embedded within the platform_device. This is dangerous,
-> because the name of the 'struct device' is dynamically
-> allocated. Drivers may call dev_set_name() on the device,
-> which will free and reallocate the name of the device,
-> leaving the 'name' of the platform_device pointing to the
-> now-freed memory.
->
-> Furthermore, if the dev_set_name() call is made from a
-> driver's probe() function and a subsequent request results
-> in probe deferral, the dangling 'name' reference may lead
-> to the device being re-probed using the wrong driver.
+I do not really know. IIUC, the problematic usecase is sys_times().
 
-This seems wrong. I don't think we want drivers to change their own
-device's name. The name is not supposed to change after registration.
+I agree with Mike, "don't do this if you have a lot of threads". But
+perhaps the kernel can help to applications which already abuse times().
 
-Rob
+However, if we only want to make sys_times() more scalable(), then
+perhaps the "lockless" version of thread_group_cputime() makes more
+sense. And given that do_sys_times() uses current we can simplify it;
+is_dead is not possible and we do not need to take ->siglock twice:
 
-> To mitigate these scenarios, we use kstrdup to perform a
-> deep copy of the device name when assigning the name of the
-> platform_device, so that the platform_device name is
-> unaffected by any calls to dev_set_name() that might made
-> by drivers to rename the embedded 'struct device'.
->
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> ---
-> * v2 - swap cleanup order
->
->  drivers/of/device.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/of/device.c b/drivers/of/device.c
-> index f685e55..e9beae6 100644
-> --- a/drivers/of/device.c
-> +++ b/drivers/of/device.c
-> @@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
->
->         /* name and id have to be set so that the platform bus doesn't get
->          * confused on matching */
-> -       ofdev->name = dev_name(&ofdev->dev);
-> +       ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
->         ofdev->id = -1;
->
->         /* device_add will assume that this device is on the same node as
-> @@ -75,6 +75,7 @@ EXPORT_SYMBOL(of_device_register);
->
->  void of_device_unregister(struct platform_device *ofdev)
->  {
-> +       kfree(ofdev->name);
->         device_unregister(&ofdev->dev);
->  }
->  EXPORT_SYMBOL(of_device_unregister);
-> --
-> The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
->
+	void current_group_cputime(struct task_cputime *times)
+	{
+		struct task_struct *tsk = current, *t;
+		struct spinlock_t *siglock = &tsk->sighand->siglock;
+		struct signal_struct *sig = tsk->signal;
+		bool lockless = true;
+		u64 exec;
+
+	 retry:
+		spin_lock_irq(siglock);
+		times->utime = sig->utime;
+		times->stime = sig->stime;
+		times->sum_exec_runtime = exec = sig->sum_sched_runtime;
+
+		if (lockless)
+			spin_unlock_irq(siglock);
+
+		rcu_read_lock();
+		for_each_thread(tsk, t) {
+			cputime_t utime, stime;
+			task_cputime(t, &utime, &stime);
+			times->utime += utime;
+			times->stime += stime;
+			times->sum_exec_runtime += task_sched_runtime(t);
+		}
+		rcu_read_unlock();
+
+		if (lockless) {
+			lockless = false;
+			spin_unlock_wait(siglock);
+			smp_rmb();
+			if (exec != sig->sum_sched_runtime)
+				goto retry;
+		} else {
+			spin_unlock_irq(siglock);
+		}
+	}
+
+Oleg.
+
