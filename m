@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaHOQ25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:28:57 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52343 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379AbaHOQ2z (ORCPT
+	id S1751940AbaHOQak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:30:40 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49900 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555AbaHOQ27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:28:55 -0400
+	Fri, 15 Aug 2014 12:28:59 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,182 +15,256 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v6 tip/core/rcu 02/17] rcu: Provide cond_resched_rcu_qs() to force quiescent states in long loops
-Date: Fri, 15 Aug 2014 09:28:30 -0700
-Message-Id: <1408120125-30479-2-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v6 tip/core/rcu 17/17] rcu: Per-CPU operation cleanups to rcu_*_qs() functions
+Date: Fri, 15 Aug 2014 09:28:45 -0700
+Message-Id: <1408120125-30479-17-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140815162820.GA28967@linux.vnet.ibm.com>
  <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081516-3532-0000-0000-000003E07B8A
+x-cbid: 14081516-8236-0000-0000-000004A2F58D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-RCU-tasks requires the occasional voluntary context switch
-from CPU-bound in-kernel tasks.  In some cases, this requires
-instrumenting cond_resched().  However, there is some reluctance
-to countenance unconditionally instrumenting cond_resched() (see
-http://lwn.net/Articles/603252/), so this commit creates a separate
-cond_resched_rcu_qs() that may be used in place of cond_resched() in
-locations prone to long-duration in-kernel looping.
+The rcu_bh_qs(), rcu_preempt_qs(), and rcu_sched_qs() functions use
+old-style per-CPU variable access and write to ->passed_quiesce even
+if it is already set.  This commit therefore updates to use the new-style
+per-CPU variable access functions and avoids the spurious writes.
+This commit also eliminates the "cpu" argument to these functions because
+they are always invoked on the indicated CPU.
 
-This commit currently instruments only RCU-tasks.  Future possibilities
-include also instrumenting RCU, RCU-bh, and RCU-sched in order to reduce
-IPI usage.
-
+Reported-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- fs/file.c                |  2 +-
- include/linux/rcupdate.h | 13 +++++++++++++
- kernel/rcu/rcutorture.c  |  4 ++--
- kernel/rcu/tree.c        | 12 ++++++------
- kernel/rcu/tree_plugin.h |  2 +-
- mm/mlock.c               |  2 +-
- 6 files changed, 24 insertions(+), 11 deletions(-)
+ include/linux/rcupdate.h |  4 ++--
+ include/linux/rcutiny.h  |  2 +-
+ kernel/rcu/tiny.c        | 10 +++++-----
+ kernel/rcu/tree.c        | 34 ++++++++++++++++++----------------
+ kernel/rcu/tree_plugin.h | 27 +++++++++++++++------------
+ kernel/softirq.c         |  2 +-
+ 6 files changed, 42 insertions(+), 37 deletions(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 66923fe3176e..1cafc4c9275b 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -367,7 +367,7 @@ static struct fdtable *close_files(struct files_struct * files)
- 				struct file * file = xchg(&fdt->fd[i], NULL);
- 				if (file) {
- 					filp_close(file, files);
--					cond_resched();
-+					cond_resched_rcu_qs();
- 				}
- 			}
- 			i++;
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 027a7228d6d3..41db3fca1e7f 100644
+index cc6858666b6d..160bc1718070 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -330,6 +330,19 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
- #define rcu_note_voluntary_context_switch(t)	do { } while (0)
- #endif /* #else #ifdef CONFIG_TASKS_RCU */
+@@ -261,8 +261,8 @@ static inline int rcu_preempt_depth(void)
  
-+/**
-+ * cond_resched_rcu_qs - Report potential quiescent states to RCU
-+ *
-+ * This macro resembles cond_resched(), except that it is defined to
-+ * report potential quiescent states to RCU-tasks even if the cond_resched()
-+ * machinery were to be shut off, as some advocate for PREEMPT kernels.
-+ */
-+#define cond_resched_rcu_qs() \
-+do { \
-+	rcu_note_voluntary_context_switch(current); \
-+	cond_resched(); \
-+} while (0)
-+
- #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
- bool __rcu_is_watching(void);
- #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 7fa34f86e5ba..febe07062ac5 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -667,7 +667,7 @@ static int rcu_torture_boost(void *arg)
- 				}
- 				call_rcu_time = jiffies;
- 			}
--			cond_resched();
-+			cond_resched_rcu_qs();
- 			stutter_wait("rcu_torture_boost");
- 			if (torture_must_stop())
- 				goto checkwait;
-@@ -1019,7 +1019,7 @@ rcu_torture_reader(void *arg)
- 		__this_cpu_inc(rcu_torture_batch[completed]);
- 		preempt_enable();
- 		cur_ops->readunlock(idx);
--		cond_resched();
-+		cond_resched_rcu_qs();
- 		stutter_wait("rcu_torture_reader");
- 	} while (!torture_must_stop());
- 	if (irqreader && cur_ops->irq_capable) {
+ /* Internal to kernel */
+ void rcu_init(void);
+-void rcu_sched_qs(int cpu);
+-void rcu_bh_qs(int cpu);
++void rcu_sched_qs(void);
++void rcu_bh_qs(void);
+ void rcu_check_callbacks(int cpu, int user);
+ struct notifier_block;
+ void rcu_idle_enter(void);
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index d40a6a451330..38cc5b1e252d 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -80,7 +80,7 @@ static inline void kfree_call_rcu(struct rcu_head *head,
+ 
+ static inline void rcu_note_context_switch(int cpu)
+ {
+-	rcu_sched_qs(cpu);
++	rcu_sched_qs();
+ }
+ 
+ /*
+diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
+index 717f00854fc0..61b8d2ccc2cb 100644
+--- a/kernel/rcu/tiny.c
++++ b/kernel/rcu/tiny.c
+@@ -72,7 +72,7 @@ static void rcu_idle_enter_common(long long newval)
+ 			  current->pid, current->comm,
+ 			  idle->pid, idle->comm); /* must be idle task! */
+ 	}
+-	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
++	rcu_sched_qs(); /* implies rcu_bh_inc() */
+ 	barrier();
+ 	rcu_dynticks_nesting = newval;
+ }
+@@ -217,7 +217,7 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
+  * are at it, given that any rcu quiescent state is also an rcu_bh
+  * quiescent state.  Use "+" instead of "||" to defeat short circuiting.
+  */
+-void rcu_sched_qs(int cpu)
++void rcu_sched_qs(void)
+ {
+ 	unsigned long flags;
+ 
+@@ -231,7 +231,7 @@ void rcu_sched_qs(int cpu)
+ /*
+  * Record an rcu_bh quiescent state.
+  */
+-void rcu_bh_qs(int cpu)
++void rcu_bh_qs(void)
+ {
+ 	unsigned long flags;
+ 
+@@ -251,9 +251,9 @@ void rcu_check_callbacks(int cpu, int user)
+ {
+ 	RCU_TRACE(check_cpu_stalls());
+ 	if (user || rcu_is_cpu_rrupt_from_idle())
+-		rcu_sched_qs(cpu);
++		rcu_sched_qs();
+ 	else if (!in_softirq())
+-		rcu_bh_qs(cpu);
++		rcu_bh_qs();
+ 	if (user)
+ 		rcu_note_voluntary_context_switch(current);
+ }
 diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index f958c52f644d..645a33efc0d4 100644
+index 0d9ee1e4f446..de234008e2c5 100644
 --- a/kernel/rcu/tree.c
 +++ b/kernel/rcu/tree.c
-@@ -1650,7 +1650,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 		    system_state == SYSTEM_RUNNING)
- 			udelay(200);
- #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
--		cond_resched();
-+		cond_resched_rcu_qs();
- 	}
+@@ -188,22 +188,24 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
+  * one since the start of the grace period, this just sets a flag.
+  * The caller must have disabled preemption.
+  */
+-void rcu_sched_qs(int cpu)
++void rcu_sched_qs(void)
+ {
+-	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
+-
+-	if (rdp->passed_quiesce == 0)
+-		trace_rcu_grace_period(TPS("rcu_sched"), rdp->gpnum, TPS("cpuqs"));
+-	rdp->passed_quiesce = 1;
++	if (!__this_cpu_read(rcu_sched_data.passed_quiesce)) {
++		trace_rcu_grace_period(TPS("rcu_sched"),
++				       __this_cpu_read(rcu_sched_data.gpnum),
++				       TPS("cpuqs"));
++		__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
++	}
+ }
  
- 	mutex_unlock(&rsp->onoff_mutex);
-@@ -1739,7 +1739,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
- 		/* smp_mb() provided by prior unlock-lock pair. */
- 		nocb += rcu_future_gp_cleanup(rsp, rnp);
- 		raw_spin_unlock_irq(&rnp->lock);
--		cond_resched();
-+		cond_resched_rcu_qs();
- 	}
- 	rnp = rcu_get_root(rsp);
- 	raw_spin_lock_irq(&rnp->lock);
-@@ -1788,7 +1788,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 			/* Locking provides needed memory barrier. */
- 			if (rcu_gp_init(rsp))
- 				break;
--			cond_resched();
-+			cond_resched_rcu_qs();
- 			flush_signals(current);
- 			trace_rcu_grace_period(rsp->name,
- 					       ACCESS_ONCE(rsp->gpnum),
-@@ -1831,10 +1831,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 				trace_rcu_grace_period(rsp->name,
- 						       ACCESS_ONCE(rsp->gpnum),
- 						       TPS("fqsend"));
--				cond_resched();
-+				cond_resched_rcu_qs();
- 			} else {
- 				/* Deal with stray signal. */
--				cond_resched();
-+				cond_resched_rcu_qs();
- 				flush_signals(current);
- 				trace_rcu_grace_period(rsp->name,
- 						       ACCESS_ONCE(rsp->gpnum),
-@@ -2437,7 +2437,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
- 	struct rcu_node *rnp;
+-void rcu_bh_qs(int cpu)
++void rcu_bh_qs(void)
+ {
+-	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
+-
+-	if (rdp->passed_quiesce == 0)
+-		trace_rcu_grace_period(TPS("rcu_bh"), rdp->gpnum, TPS("cpuqs"));
+-	rdp->passed_quiesce = 1;
++	if (!__this_cpu_read(rcu_bh_data.passed_quiesce)) {
++		trace_rcu_grace_period(TPS("rcu_bh"),
++				       __this_cpu_read(rcu_bh_data.gpnum),
++				       TPS("cpuqs"));
++		__this_cpu_write(rcu_bh_data.passed_quiesce, 1);
++	}
+ }
  
- 	rcu_for_each_leaf_node(rsp, rnp) {
--		cond_resched();
-+		cond_resched_rcu_qs();
- 		mask = 0;
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		smp_mb__after_unlock_lock();
+ static DEFINE_PER_CPU(int, rcu_sched_qs_mask);
+@@ -278,7 +280,7 @@ static void rcu_momentary_dyntick_idle(void)
+ void rcu_note_context_switch(int cpu)
+ {
+ 	trace_rcu_utilization(TPS("Start context switch"));
+-	rcu_sched_qs(cpu);
++	rcu_sched_qs();
+ 	rcu_preempt_note_context_switch(cpu);
+ 	if (unlikely(raw_cpu_read(rcu_sched_qs_mask)))
+ 		rcu_momentary_dyntick_idle();
+@@ -2398,8 +2400,8 @@ void rcu_check_callbacks(int cpu, int user)
+ 		 * at least not while the corresponding CPU is online.
+ 		 */
+ 
+-		rcu_sched_qs(cpu);
+-		rcu_bh_qs(cpu);
++		rcu_sched_qs();
++		rcu_bh_qs();
+ 
+ 	} else if (!in_softirq()) {
+ 
+@@ -2410,7 +2412,7 @@ void rcu_check_callbacks(int cpu, int user)
+ 		 * critical section, so note it.
+ 		 */
+ 
+-		rcu_bh_qs(cpu);
++		rcu_bh_qs();
+ 	}
+ 	rcu_preempt_check_callbacks(cpu);
+ 	if (rcu_pending(cpu))
 diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 02ac0fb186b8..a86a363ea453 100644
+index 2a6509581f40..e25aaf235ca9 100644
 --- a/kernel/rcu/tree_plugin.h
 +++ b/kernel/rcu/tree_plugin.h
-@@ -1842,7 +1842,7 @@ static int rcu_oom_notify(struct notifier_block *self,
- 	get_online_cpus();
- 	for_each_online_cpu(cpu) {
- 		smp_call_function_single(cpu, rcu_oom_notify_cpu, NULL, 1);
--		cond_resched();
-+		cond_resched_rcu_qs();
- 	}
- 	put_online_cpus();
+@@ -157,14 +157,16 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed);
+  * As with the other rcu_*_qs() functions, callers to this function
+  * must disable preemption.
+  */
+-static void rcu_preempt_qs(int cpu)
+-{
+-	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
+-
+-	if (rdp->passed_quiesce == 0)
+-		trace_rcu_grace_period(TPS("rcu_preempt"), rdp->gpnum, TPS("cpuqs"));
+-	rdp->passed_quiesce = 1;
+-	current->rcu_read_unlock_special.b.need_qs = false;
++static void rcu_preempt_qs(void)
++{
++	if (!__this_cpu_read(rcu_preempt_data.passed_quiesce)) {
++		trace_rcu_grace_period(TPS("rcu_preempt"),
++				       __this_cpu_read(rcu_preempt_data.gpnum),
++				       TPS("cpuqs"));
++		__this_cpu_write(rcu_preempt_data.passed_quiesce, 1);
++		barrier(); /* Coordinate with rcu_preempt_check_callbacks(). */
++		current->rcu_read_unlock_special.b.need_qs = false;
++	}
+ }
  
-diff --git a/mm/mlock.c b/mm/mlock.c
-index b1eb53634005..bc386a22d647 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -782,7 +782,7 @@ static int do_mlockall(int flags)
+ /*
+@@ -255,7 +257,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 	 * grace period, then the fact that the task has been enqueued
+ 	 * means that we continue to block the current grace period.
+ 	 */
+-	rcu_preempt_qs(cpu);
++	rcu_preempt_qs();
+ }
  
- 		/* Ignore errors */
- 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
--		cond_resched();
-+		cond_resched_rcu_qs();
+ /*
+@@ -351,7 +353,7 @@ void rcu_read_unlock_special(struct task_struct *t)
+ 	 */
+ 	special = t->rcu_read_unlock_special;
+ 	if (special.b.need_qs) {
+-		rcu_preempt_qs(smp_processor_id());
++		rcu_preempt_qs();
+ 		if (!t->rcu_read_unlock_special.s) {
+ 			local_irq_restore(flags);
+ 			return;
+@@ -651,11 +653,12 @@ static void rcu_preempt_check_callbacks(int cpu)
+ 	struct task_struct *t = current;
+ 
+ 	if (t->rcu_read_lock_nesting == 0) {
+-		rcu_preempt_qs(cpu);
++		rcu_preempt_qs();
+ 		return;
  	}
- out:
- 	return 0;
+ 	if (t->rcu_read_lock_nesting > 0 &&
+-	    per_cpu(rcu_preempt_data, cpu).qs_pending)
++	    per_cpu(rcu_preempt_data, cpu).qs_pending &&
++	    !per_cpu(rcu_preempt_data, cpu).passed_quiesce)
+ 		t->rcu_read_unlock_special.b.need_qs = true;
+ }
+ 
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 5918d227730f..348ec763b104 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -278,7 +278,7 @@ restart:
+ 		pending >>= softirq_bit;
+ 	}
+ 
+-	rcu_bh_qs(smp_processor_id());
++	rcu_bh_qs();
+ 	local_irq_disable();
+ 
+ 	pending = local_softirq_pending();
 -- 
 1.8.1.5
 
