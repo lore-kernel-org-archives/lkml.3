@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087AbaHOG3E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 02:29:04 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55945 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581AbaHOG3C (ORCPT
+	id S1754544AbaHOGfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 02:35:31 -0400
+Received: from dehamd003.servertools24.de ([31.47.254.18]:53571 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751135AbaHOGfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 02:29:02 -0400
-Date: Thu, 14 Aug 2014 23:28:56 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Chris Mason <clm@fb.com>, jbacik@fb.com, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Mahoney <jeffm@suse.com>, fdmanana@suse.com
-Subject: Re: [RFC v2 0/2] vfs / btrfs: add support for ustat()
-Message-ID: <20140815062856.GA27487@infradead.org>
-References: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
- <20140717080301.GA14263@infradead.org>
- <20140717174940.GR10393@wotan.suse.de>
- <CAB=NE6WaQqp52MfZfjcShAUchj-1B+ZMsF1r6HabSiUxFLb7jQ@mail.gmail.com>
+	Fri, 15 Aug 2014 02:35:30 -0400
+Message-ID: <53EDAA24.3080705@ladisch.de>
+Date: Fri, 15 Aug 2014 08:35:16 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        linux@roeck-us.net, jdelvare@suse.de, rdunlap@infradead.org,
+        bp@suse.de
+CC: lm-sensors@lm-sensors.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] hwmon, k10temp: Add support for F15h M60h
+References: <1408058127-19374-1-git-send-email-aravind.gopalakrishnan@amd.com>
+In-Reply-To: <1408058127-19374-1-git-send-email-aravind.gopalakrishnan@amd.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAB=NE6WaQqp52MfZfjcShAUchj-1B+ZMsF1r6HabSiUxFLb7jQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 10:48:05PM -0400, Luis R. Rodriguez wrote:
-> Any further advice? I'll submit a v3 for RFC with some small change
-> for a fix for stress testing identified by Filipe Manana.
+Aravind Gopalakrishnan wrote:
+> This patch adds temperature monitoring support for F15h M60h processor.
+>  - Add new pci device id for the relevant processor
+>  - The functionality of REG_REPORTED_TEMPERATURE is moved to
+>    D0F0xBC_xD820_0CA4 [Reported Temperature Control]
+>    - So, use this to get CUR_TEMP value
+>    - Since we need an indirect register access, protect this with
+>      a mutex lock
+>  - Add Kconfig, Doc entries to indicate support for this processor.
+>
+> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+> ---
+> Changes in V3:
+>  - Move helper function that protects indirect register access locally
+>    until a time when others outside k10temp may need it
+>
+> Changes in V2:
+>  - Prevent race with other code that may require indirect NB_SMU_REG access
+>  - Fix some minor style issues
+>
+>  Documentation/hwmon/k10temp |  2 +-
+>  drivers/hwmon/Kconfig       |  4 ++--
+>  drivers/hwmon/k10temp.c     | 35 ++++++++++++++++++++++++++++++++---
+>  3 files changed, 35 insertions(+), 6 deletions(-)
 
-The advice is to stop setting different dev_t values for different
-files in btrfs.
-
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
