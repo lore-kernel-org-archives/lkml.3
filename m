@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaHOQsj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:48:39 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:41225 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751424AbaHOQsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751478AbaHOQsh (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 15 Aug 2014 12:48:37 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:41214 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954AbaHOQse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:48:34 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: "John L. Hammond" <john.hammond@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 02/10] staging/lustre/mdc: cleanup intent if mdc_finish_enqueue() fails
-Date: Fri, 15 Aug 2014 12:48:07 -0400
-Message-Id: <1408121295-29115-3-git-send-email-green@linuxhacker.ru>
+Cc: Oleg Drokin <green@linuxhacker.ru>
+Subject: [PATCH 00/10] Catchup lustre fixes
+Date: Fri, 15 Aug 2014 12:48:05 -0400
+Message-Id: <1408121295-29115-1-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408121295-29115-1-git-send-email-green@linuxhacker.ru>
-References: <1408121295-29115-1-git-send-email-green@linuxhacker.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John L. Hammond" <john.hammond@intel.com>
+In this batch there are eight recent bugfixes to lustre client,
+also adds Lustre MAINTAINERS entry and a bit of documention
+in Documentation.filesystems with some basic info.
 
-In mdc_enqueue() clear the lock handle, lock mode, and request stored
-in the lookup intent if mdc_finish_enqueue() fails.
+Patch #4 generates checkpatch warning about to long split message,
+but it is genuinely long and won't fit into 80 columns considering indenting
+and such.
 
-Signed-off-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-on: http://review.whamcloud.com/10963
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-5289
-Reviewed-by: Lai Siyao <lai.siyao@intel.com>
-Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
----
- drivers/staging/lustre/lustre/mdc/mdc_locks.c | 5 +++++
- 1 file changed, 5 insertions(+)
+Please consider.
 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index c64a38e..d02bf31 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -944,7 +944,12 @@ resend:
- 			memset(lockh, 0, sizeof(*lockh));
- 		}
- 		ptlrpc_req_finished(req);
-+
-+		it->d.lustre.it_lock_handle = 0;
-+		it->d.lustre.it_lock_mode = 0;
-+		it->d.lustre.it_data = NULL;
- 	}
-+
- 	return rc;
- }
- 
+Fan Yong (1):
+  staging/lustre/ldlm: drop redundant ibits lock interoperability check
+
+Frank Zago (1):
+  staging/lustre/llite: optimize ll_fid2path()
+
+John L. Hammond (3):
+  staging/lustre/mdc: cleanup intent if mdc_finish_enqueue() fails
+  staging/lustre/clio: reorder initialization in cl_req_alloc()
+  staging/lustre/llite: hold inode mutex around ll_setattr_raw()
+
+Nathaniel Clark (1):
+  staging/lustre/llite: check for integer overflow in hsm user request
+
+Oleg Drokin (3):
+  staging/lustre/llite: Fix integer overflow in ll_fid2path
+  lustre: Add MAINTAINERS entry
+  lustre: Add some basic documentation
+
+Paul Cassella (1):
+  staging/lustre/llite: Make sure ft_flags is valid
+
+ Documentation/filesystems/lustre.txt               | 87 ++++++++++++++++++++++
+ MAINTAINERS                                        |  8 ++
+ .../lustre/lustre/include/lustre/lustre_user.h     | 23 ++++--
+ .../staging/lustre/lustre/include/obd_support.h    |  1 +
+ drivers/staging/lustre/lustre/ldlm/ldlm_lock.c     | 50 ++-----------
+ drivers/staging/lustre/lustre/ldlm/ldlm_request.c  | 15 +---
+ drivers/staging/lustre/lustre/llite/dir.c          |  4 +-
+ drivers/staging/lustre/lustre/llite/file.c         | 41 +++++-----
+ .../staging/lustre/lustre/llite/llite_internal.h   |  6 +-
+ drivers/staging/lustre/lustre/llite/llite_mmap.c   |  8 +-
+ drivers/staging/lustre/lustre/llite/vvp_io.c       |  1 +
+ drivers/staging/lustre/lustre/mdc/mdc_locks.c      |  5 ++
+ drivers/staging/lustre/lustre/obdclass/cl_io.c     |  7 +-
+ drivers/staging/lustre/lustre/ptlrpc/import.c      | 15 +++-
+ 14 files changed, 180 insertions(+), 91 deletions(-)
+ create mode 100644 Documentation/filesystems/lustre.txt
+
 -- 
 1.9.3
 
