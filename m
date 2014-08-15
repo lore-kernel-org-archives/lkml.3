@@ -1,115 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaHOGMn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 02:12:43 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:48518 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992AbaHOGMm (ORCPT
+	id S1754407AbaHOGMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 02:12:49 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:35193 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaHOGMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 02:12:42 -0400
-Date: Fri, 15 Aug 2014 15:11:38 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        ngupta@vflare.org, "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
-Message-ID: <20140815061138.GA940@swordfish>
-References: <001201cfb838$fb0ac4a0$f1204de0$@samsung.com>
+	Fri, 15 Aug 2014 02:12:47 -0400
+Date: Thu, 14 Aug 2014 23:12:42 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.17-rc0 (part 2)
+Message-ID: <20140815061242.GA23913@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
 Content-Disposition: inline
-In-Reply-To: <001201cfb838$fb0ac4a0$f1204de0$@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/15/14 11:27), Chao Yu wrote:
-> Now we have supported handling discard request which is sended by filesystem,
-> but no interface could be used to show information of discard.
-> This patch adds num_discards to stat discarded pages, then export it to sysfs
-> for displaying.
-> 
 
-a side question: we account discarded pages via slot free notify in
-notify_free and via req_discard in num_discards. how about accounting
-both of them in num_discards? because, after all, they account a number
-of discarded pages (zram_free_page()). or there any particular reason we
-want to distinguish.
+--envbJBWh7q8WU6mo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	-ss
+Hi Linus,
 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
->  drivers/block/zram/zram_drv.c              |  3 +++
->  drivers/block/zram/zram_drv.h              |  1 +
->  3 files changed, 14 insertions(+)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> index 70ec992..fa8936e 100644
-> --- a/Documentation/ABI/testing/sysfs-block-zram
-> +++ b/Documentation/ABI/testing/sysfs-block-zram
-> @@ -57,6 +57,16 @@ Description:
->  		The failed_writes file is read-only and specifies the number of
->  		failed writes happened on this device.
->  
-> +
-> +What:		/sys/block/zram<id>/num_discards
-> +Date:		August 2014
-> +Contact:	Chao Yu <chao2.yu@samsung.com>
-> +Description:
-> +		The num_discards file is read-only and specifies the number of
-> +		physical blocks which are discarded by this device. These blocks
-> +		are included in discard request which is sended by filesystem as
-> +		the blocks are no longer used.
-> +
->  What:		/sys/block/zram<id>/max_comp_streams
->  Date:		February 2014
->  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index d00831c..904e7a5 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
->  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
->  		zram_free_page(zram, index);
->  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
-> +		atomic64_inc(&zram->stats.num_discards);
->  		index++;
->  		n -= PAGE_SIZE;
->  	}
-> @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
->  ZRAM_ATTR_RO(num_writes);
->  ZRAM_ATTR_RO(failed_reads);
->  ZRAM_ATTR_RO(failed_writes);
-> +ZRAM_ATTR_RO(num_discards);
->  ZRAM_ATTR_RO(invalid_io);
->  ZRAM_ATTR_RO(notify_free);
->  ZRAM_ATTR_RO(zero_pages);
-> @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
->  	&dev_attr_num_writes.attr,
->  	&dev_attr_failed_reads.attr,
->  	&dev_attr_failed_writes.attr,
-> +	&dev_attr_num_discards.attr,
->  	&dev_attr_invalid_io.attr,
->  	&dev_attr_notify_free.attr,
->  	&dev_attr_zero_pages.attr,
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index e0f725c..2994aaf 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -86,6 +86,7 @@ struct zram_stats {
->  	atomic64_t num_writes;	/* --do-- */
->  	atomic64_t failed_reads;	/* can happen when memory is too low */
->  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> +	atomic64_t num_discards;	/* no. of discarded pages */
->  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
->  	atomic64_t notify_free;	/* no. of swap slot free notifications */
->  	atomic64_t zero_pages;		/* no. of zero filled pages */
-> -- 
-> 2.0.1.474.g72c7794
-> 
-> 
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive 2nd round of updates for the input subsystem. Mostly small
+fixups to the code merged in the first round (atmel_mxt_ts, wacom) but
+also a smallish patch to xbox driver to support Xbox One controllers and
+a patch to better handle Synaptics profile sensors found in Cr-48
+Chromebooks that should not affect any other devices.
+
+Changelog:
+---------
+
+Dmitry Torokhov (5):
+      Input: synaptics - properly initialize slots for semi-MT
+      Input: cap1106 - allow changing key mapping from userspace
+      Input: atmel_mxt_ts - simplify mxt_initialize a bit
+      Input: atmel_mxt_ts - split config update a bit
+      Input: atmel_mxt_ts - fix a few issues reported by Coverity
+
+Geert Uytterhoeven (1):
+      Input: wacom - fix compiler warning if !CONFIG_PM
+
+Henrik Rydberg (2):
+      Input: MT - make slot cleanup callable outside mt_sync_frame()
+      Input: synaptics - use firmware data for Cr-48
+
+Maks Naumov (1):
+      Input: edt-ft5x06 - remove superfluous assignment
+
+Mark Brown (1):
+      Input: joystick - use get_cycles on ARMv8
+
+Nick Dyer (1):
+      Input: atmel_mxt_ts - mXT224 DMA quirk was fixed in firmware v2.0.AA
+
+Ted Mielczarek (1):
+      Input: xpad - add support for Xbox One controllers
+
+
+Diffstat:
+--------
+
+ drivers/hid/wacom_sys.c                  |   2 +
+ drivers/input/input-mt.c                 |  38 +++-
+ drivers/input/joystick/analog.c          |   2 +-
+ drivers/input/joystick/xpad.c            | 174 +++++++++++++--
+ drivers/input/keyboard/cap1106.c         |   8 +-
+ drivers/input/mouse/synaptics.c          |  72 +++++-
+ drivers/input/touchscreen/atmel_mxt_ts.c | 366 +++++++++++++++++----------=
+----
+ drivers/input/touchscreen/edt-ft5x06.c   |   1 -
+ include/linux/input/mt.h                 |   1 +
+ 9 files changed, 462 insertions(+), 202 deletions(-)
+
+--=20
+Dmitry
+
+
+--envbJBWh7q8WU6mo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT7aTaAAoJEH70+W8r6ZYqo6cP/iO58RX8EBi/8uxrrTMNoSZ3
+2M3xzW7loj5hdQKNz4tyOXMBM63t7Ax7y74OlS+iTvHaAxe6KxXzmYacHMn+zDBd
++VCD/Jz3I3Q+OC7FPbK7V1Iw8N1N/bq/a3xGsY8eXguSuBryHP5A+3XmG9VamkTh
+3xTnQBhLcPTb0986+ogKwsnmY9k+iUzGye5V/8kS6zTyvTlBfjVr2fofPD8KHtWC
+DJhQhF1pJyZRjBUavaoZenCwC/gN8vTgpLb+oyOsY+/VqjTKh3oWCpUxC1nWB69d
+Eng5XrQhBbtxY2ShqxFAO6l8vs8nhdHnW5qihdlTFKJkBOxQq8JycFqpjjamjpoT
+qVdBY2OkgEbNRgfgXPum63uVZ0sZaMjyeSggEJDIhQFkhiq+lUpbSc4kVHdoV9Qo
+gDbhfYL6UTilYlNhzLkElYi5t1vixL6dKr5JT5tYdT2b+YU4l+hOUarYemqxBET/
+QtSMakO8F6c5C5BhHoFVbvadwW6iE4pmU6I9CaYMlIB50pUmL8BAk2wPo7MD73zp
+4rv8B/2IUkmUSE7wnoZRRRw0MNysFwzHR0uBWHAHS29o8NYiD2vTI/YMHtd+F54e
+CRMR/4SuYj931CHbAn4Y6xvBvdtvzsFDBAV9e4NRlJbbkw4/M561vkOJWGSLJPSC
+jSK6PORfDUxxXXd1szh8
+=894H
+-----END PGP SIGNATURE-----
+
+--envbJBWh7q8WU6mo--
