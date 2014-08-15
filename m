@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455AbaHOSe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 14:34:28 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:47173 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaHOSe0 (ORCPT
+	id S1751481AbaHOShN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 14:37:13 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:63264 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaHOShL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 14:34:26 -0400
-Message-ID: <53EE52AE.4050006@kernel.dk>
-Date: Fri, 15 Aug 2014 12:34:22 -0600
+	Fri, 15 Aug 2014 14:37:11 -0400
+Message-ID: <53EE534F.2040208@kernel.dk>
+Date: Fri, 15 Aug 2014 12:37:03 -0600
 From: Jens Axboe <axboe@kernel.dk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Hannes Reinecke <hare@suse.de>,
-        Webb Scales <webbnh@hp.com>
-Subject: Re: [PATCH] scsi: Fix qemu boot hang problem
-References: <1407675265-29192-1-git-send-email-linux@roeck-us.net> <53EE4FDE.2070904@roeck-us.net>
-In-Reply-To: <53EE4FDE.2070904@roeck-us.net>
+To: Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org
+CC: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] blk-mq: fix WARNING "percpu_ref_kill() called more than
+ once!"
+References: <1408115792-3311-1-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1408115792-3311-1-git-send-email-ming.lei@canonical.com>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-15 12:22, Guenter Roeck wrote:
-> ping ... the problem fixed by this patch still affects the upstream kernel
-> (v3.16-11383-gc9d2642) as well as -next (20140815).
+On 2014-08-15 09:16, Ming Lei wrote:
+> Before doing queue release, the queue has been freezed already
+> by blk_cleanup_queue(), so needn't to freeze queue for deleting
+> tag set.
+>
+> This patch fixes the WARNING of "percpu_ref_kill() called more than once!"
+> which is triggered during unloading block driver.
 
-James, could you upstream this one in time for -rc1?
+Thanks, you are right, we need not call it there. I'll apply this for 3.17.
 
 -- 
 Jens Axboe
