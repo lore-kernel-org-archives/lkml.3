@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbaHOIgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 04:36:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45003 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817AbaHOIge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 04:36:34 -0400
-Date: Fri, 15 Aug 2014 10:36:29 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch] x86,mm: check freeze request in page fault handler
-Message-ID: <20140815083629.GB24624@dhcp22.suse.cz>
-References: <1407804835-24763-1-git-send-email-xiyou.wangcong@gmail.com>
- <1407804835-24763-2-git-send-email-xiyou.wangcong@gmail.com>
- <20140812120905.GB7049@dhcp22.suse.cz>
- <CAM_iQpWV8DRGBQ-Brz=_Nqen0fNPDk+6kn_Og3HnXnujmgA+JA@mail.gmail.com>
- <20140813093613.GB2775@dhcp22.suse.cz>
- <CAM_iQpX2J8E_N0t5bxBVF_rO_FiFujKuXFMLg47fgL580u+gGw@mail.gmail.com>
+	id S1753236AbaHOIh2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 04:37:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51073 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815AbaHOIhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 04:37:25 -0400
+Message-ID: <53EDC6BD.6060200@pengutronix.de>
+Date: Fri, 15 Aug 2014 10:37:17 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM_iQpX2J8E_N0t5bxBVF_rO_FiFujKuXFMLg47fgL580u+gGw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] can: dev: remove unused variable from can_calc_bittiming()
+ function
+References: <1407399444-16427-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1407399444-16427-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="u6QTOxh7TXJHV5hNdxQ4D5e3T1fw3ToAP"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 13-08-14 17:26:48, Cong Wang wrote:
-> On Wed, Aug 13, 2014 at 2:36 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Tue 12-08-14 17:47:02, Cong Wang wrote:
-> > [...]
-> >> Does the following updated patch make any sense to you? If not, I will just
-> >> drop it.
-> >
-> > Not really to be honest. I do not see what problem you are trying to fix.
-> >
-> 
-> In my case, a page faulted process triggered OOM, kernel kept retrying
-> this fault since without my fix oom killer couldn't kill a frozen
-> process.
-> This led to that this process is always running even after we tried to
-> freeze it, the whole memory cgroup just stayed in FREEZING state.
-> 
-> Although with my fix, OOM will kill the frozen process so that the
-> page faulted process could probably stop retrying the fault finally,
-> the question is that is OOM the only case blocks page fault? Looking
-> at the code, there could be other case blocking page fault handler
-> as well, so instead of keep retrying for unknown times with ignoring
-> freeze request, why not just freeze it since this is not dangerous?
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--u6QTOxh7TXJHV5hNdxQ4D5e3T1fw3ToAP
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-I do not think that spreading freezing points is a good idea. The task
-can be blocked during page fault for many other reasons so this point
-doesn't solve anything IMO.
+On 08/07/2014 10:17 AM, Lad, Prabhakar wrote:
+> this patch removes best_rate variable from can_calc_bittiming()
+> function which was set but was never used.
+>=20
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-> Or I am missing anything?
+Applied to can-next.
 
-Page fault shouldn't retry too many times without returning to
-userspace.
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--u6QTOxh7TXJHV5hNdxQ4D5e3T1fw3ToAP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iEYEARECAAYFAlPtxr0ACgkQjTAFq1RaXHMZYQCggxNa5yiPtv05eVkZ8KNvnz7s
+Z3IAnAhSG4zxlIPIu/db2fcQ0toeJq7i
+=6nTI
+-----END PGP SIGNATURE-----
+
+--u6QTOxh7TXJHV5hNdxQ4D5e3T1fw3ToAP--
