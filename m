@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751333AbaHOQ22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:28:28 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52162 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaHOQ21 (ORCPT
+	id S1751876AbaHOQ3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:29:08 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47761 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaHOQ25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:28:27 -0400
-Date: Fri, 15 Aug 2014 09:28:20 -0700
+	Fri, 15 Aug 2014 12:28:57 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,201 +14,120 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: [PATCH v6 tip/core/rcu 0/17] RCU-tasks implementation
-Message-ID: <20140815162820.GA28967@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v6 tip/core/rcu 06/17] rcutorture: Add torture tests for RCU-tasks
+Date: Fri, 15 Aug 2014 09:28:34 -0700
+Message-Id: <1408120125-30479-6-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140815162820.GA28967@linux.vnet.ibm.com>
+ <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081516-3532-0000-0000-000003E07AA1
+x-cbid: 14081516-1542-0000-0000-0000040983AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This series provides v5 of a prototype of an RCU-tasks implementation,
-which has been requested to assist with tramopoline removal.  This flavor
-of RCU is task-based rather than CPU-based, and has voluntary context
-switch, usermode execution, and the idle loops as its only quiescent
-states.  This selection of quiescent states ensures that at the end
-of a grace period, there will no longer be any tasks depending on a
-trampoline that was removed before the beginning of that grace period.
-This works because such trampolines do not contain function calls,
-do not contain voluntary context switches, do not switch to usermode,
-and do not switch to idle.
+This commit adds torture tests for RCU-tasks.  It also fixes a bug that
+would segfault for an RCU flavor lacking a callback-barrier function.
 
-The patches in this series are as follows:
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+---
+ include/linux/rcupdate.h |  1 +
+ kernel/rcu/rcutorture.c  | 50 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 50 insertions(+), 1 deletion(-)
 
-1.	Adds the basic call_rcu_tasks() functionality.
-
-2.	Provides cond_resched_rcu_qs() to force quiescent states, including
-	RCU-tasks quiescent states, in long loops.
-
-3.	Adds synchronous APIs: synchronize_rcu_tasks() and
-	rcu_barrier_tasks().
-
-4.	Handle the possibility of tasks being preempted for extended
-	periods of time after being removed from the task list.
-
-5.	Adds GPL exports for the above APIs, courtesy of Steven Rostedt.
-
-6.	Adds rcutorture tests for RCU-tasks.
-
-7.	Adds RCU-tasks test cases to rcutorture scripting.
-
-8.	Adds stall-warning checks for RCU-tasks.
-
-9.	Improves RCU-tasks energy efficiency by replacing polling with
-	wait/wakeup.
-
-10.	Document RCU-tasks stall-warning messages.
-
-11.	Defer rcu_tasks_kthread() creation until first call_rcu_tasks()
-	to avoid populating systems with unneeded kthreads.
-
-12.	Treat nohz_full= operation by a given task on a given CPU as
-	an RCU-tasks quiescent state.  (In previous versions, RCU-tasks
-	would wait for a context switch or non-nohz_full operation in
-	this case.)
-
-13.	Allow preemption while looping over holdout tasks while waiting
-	for grace-period to end.
-
-14.	Remove redundant preempt_disable() from
-	rcu_note_voluntary_context_switch().
-
-15.	Add additional task-specific information on RCU-tasks stall-warning
-	messages.
-
-16.	Improve context-switch latency by removing local_irq_disable()
-	in rcu_preempt_note_context_switch().
-
-17.	Move rcu_*_qs() functions to the new-style per-CPU operations,
-	also adding the requirement that they be invoked on the indicated
-	CPU (met by all callers).
-
-Changes from v5:
-
-o	Drop tracking of idle tasks.  Steven Rostedt is willing to
-	handle this by scheduling on all the CPUs.  There is some
-	discussion of reworking the idle-loop code to allow more
-	straightforward tracking of idle tasks, which might allow
-	idle-tracking to be re-introduced.
-
-o	Added #16 and #17 to clean up RCU's context-switch code.
-
-o	Incorporated feedback from Pranith Kumar.
-
-Changes from v4:
-
-o       CONFIG_PROVE_RCU added to one of the test scenarios.
-
-o	Moved from srcu_read_lock() and srcu_read_unlock to __srcu_read_lock()
-	and __srcu_read_unlock() to avoid CONFIG_PROVE_RCU false positives
-	in do_exit().
-
-o	Added tracking of idle tasks.
-
-o	Improved tracking of nohz_full tasks (and by extension, idle tasks)
-	by having RCU's dyntick-idle transitions store the CPU number into
-	the task structure instead of the previous choice of storing the
-	task pointer into the per-CPU rcu_dynticks data structure.
-
-o	Changed timings to reduce overhead.  The loop scanning the list
-	of holdout tasks is now done once per second instead of ten times
-	a second, and stall warnings are emitted ten minutes into the
-	grace period instead of three minutes into the grace period.
-
-o	Added more task-state information on stall warnings.
-
-Changes from v3:
-
-o	Add do_exit() SRCU hooks to handle tasks being preempted after
-	having removed themselves from the task list.  The need for this
-	was pointed out by Oleg Nesterov, and the implmentation suggested
-	by Lai Jiangshan.
-
-o	Create rcu_tasks_kthread only if call_rcu_tasks() is invoked.
-
-Changes from v2:
-
-o	Use get_task_struct() instead of do_exit() hooks to synchronize
-	with exiting tasks, as suggested by Lai Jiangshan.
-
-o	Add checks of ->on_rq to the grace-period-wait polling, again
-	as suggested by Lai Jiangshan.
-
-o	Repositioned synchronize_sched() calls and improved their
-	comments.
-
-Changes from v1:
-
-o	The lockdep issue with list locking was finessed by ditching
-	list locking in favor of having the list manipulated by a single
-	kthread.  This change trimmed about 150 highly concurrent lines
-	from the implementation.
-
-o	Get rid of the scheduler hooks in favor of polling the
-	per-task count of voluntary context switches, in response
-	to Peter Zijlstra's concerns about scheduler overhead.
-
-o	Passes more aggressive rcutorture runs, which indicates that
-	an increase in rcutorture's aggression is called for.
-
-o	Handled review comments from Peter Zijlstra, Lai Jiangshan,
-	Frederic Weisbecker, and Oleg Nesterov.
-
-o	Added RCU-tasks stall-warning documentation.
-
-Remaining issues include:
-
-o	The current implementation does not yet recognize tasks that start
-	out executing is usermode.  Instead, it waits for the next
-	scheduling-clock tick to note them.
-
-o	If a task is preempted while executing in usermode, the RCU-tasks
-	grace period will not end until that task resumes.
-
-o	More about RCU-tasks needs to be added to Documentation/RCU.
-
-o	Idle tasks are not tracked, so callers who care about idle tasks
-	should handle this themselves, for example, by scheduling on all
-	idle CPUs.
-
-o	There are probably still bugs, though long-term rcutorture tests
-	are passing, so this is getting reasonably robust.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/Documentation/RCU/stallwarn.txt                             |   33 
- b/Documentation/kernel-parameters.txt                         |    5 
- b/fs/file.c                                                   |    2 
- b/include/linux/init_task.h                                   |   14 
- b/include/linux/rcupdate.h                                    |   61 +
- b/include/linux/rcutiny.h                                     |    2 
- b/include/linux/sched.h                                       |   41 -
- b/init/Kconfig                                                |   10 
- b/kernel/exit.c                                               |    3 
- b/kernel/rcu/rcutorture.c                                     |   54 +
- b/kernel/rcu/tiny.c                                           |   12 
- b/kernel/rcu/tree.c                                           |   50 -
- b/kernel/rcu/tree.h                                           |    2 
- b/kernel/rcu/tree_plugin.h                                    |   77 +-
- b/kernel/rcu/update.c                                         |  351 +++++++++-
- b/kernel/softirq.c                                            |    2 
- b/mm/mlock.c                                                  |    2 
- b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01      |    9 
- b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02      |    5 
- b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot |    1 
- b/tools/testing/selftests/rcutorture/configs/rcu/TASKS03      |   13 
- b/tools/testing/selftests/rcutorture/configs/rcu/TASKS03.boot |    1 
- 23 files changed, 634 insertions(+), 117 deletions(-)
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index eb9f5244dd4b..494b1b512c81 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -55,6 +55,7 @@ enum rcutorture_type {
+ 	RCU_FLAVOR,
+ 	RCU_BH_FLAVOR,
+ 	RCU_SCHED_FLAVOR,
++	RCU_TASKS_FLAVOR,
+ 	SRCU_FLAVOR,
+ 	INVALID_RCU_FLAVOR
+ };
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index febe07062ac5..52423f2c74da 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -601,6 +601,52 @@ static struct rcu_torture_ops sched_ops = {
+ 	.name		= "sched"
+ };
+ 
++#ifdef CONFIG_TASKS_RCU
++
++/*
++ * Definitions for RCU-tasks torture testing.
++ */
++
++static int tasks_torture_read_lock(void)
++{
++	return 0;
++}
++
++static void tasks_torture_read_unlock(int idx)
++{
++}
++
++static void rcu_tasks_torture_deferred_free(struct rcu_torture *p)
++{
++	call_rcu_tasks(&p->rtort_rcu, rcu_torture_cb);
++}
++
++static struct rcu_torture_ops tasks_ops = {
++	.ttype		= RCU_TASKS_FLAVOR,
++	.init		= rcu_sync_torture_init,
++	.readlock	= tasks_torture_read_lock,
++	.read_delay	= rcu_read_delay,  /* just reuse rcu's version. */
++	.readunlock	= tasks_torture_read_unlock,
++	.completed	= rcu_no_completed,
++	.deferred_free	= rcu_tasks_torture_deferred_free,
++	.sync		= synchronize_rcu_tasks,
++	.exp_sync	= synchronize_rcu_tasks,
++	.call		= call_rcu_tasks,
++	.cb_barrier	= rcu_barrier_tasks,
++	.fqs		= NULL,
++	.stats		= NULL,
++	.irq_capable	= 1,
++	.name		= "tasks"
++};
++
++#define RCUTORTURE_TASKS_OPS &tasks_ops,
++
++#else /* #ifdef CONFIG_TASKS_RCU */
++
++#define RCUTORTURE_TASKS_OPS
++
++#endif /* #else #ifdef CONFIG_TASKS_RCU */
++
+ /*
+  * RCU torture priority-boost testing.  Runs one real-time thread per
+  * CPU for moderate bursts, repeatedly registering RCU callbacks and
+@@ -1295,7 +1341,8 @@ static int rcu_torture_barrier_cbs(void *arg)
+ 		if (atomic_dec_and_test(&barrier_cbs_count))
+ 			wake_up(&barrier_wq);
+ 	} while (!torture_must_stop());
+-	cur_ops->cb_barrier();
++	if (cur_ops->cb_barrier != NULL)
++		cur_ops->cb_barrier();
+ 	destroy_rcu_head_on_stack(&rcu);
+ 	torture_kthread_stopping("rcu_torture_barrier_cbs");
+ 	return 0;
+@@ -1534,6 +1581,7 @@ rcu_torture_init(void)
+ 	int firsterr = 0;
+ 	static struct rcu_torture_ops *torture_ops[] = {
+ 		&rcu_ops, &rcu_bh_ops, &rcu_busted_ops, &srcu_ops, &sched_ops,
++		RCUTORTURE_TASKS_OPS
+ 	};
+ 
+ 	if (!torture_init_begin(torture_type, verbose, &rcutorture_runnable))
+-- 
+1.8.1.5
 
