@@ -1,144 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaHOB1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 21:27:44 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:49564 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaHOB1n (ORCPT
+	id S1753323AbaHOB3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 21:29:42 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:52711 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaHOB3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 21:27:43 -0400
+	Thu, 14 Aug 2014 21:29:41 -0400
+Message-ID: <53ED627E.2090804@hitachi.com>
+Date: Fri, 15 Aug 2014 10:29:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01E5BA34@SHSMSX101.ccr.corp.intel.com>
-References: <1407982309-4863-1-git-send-email-chuansheng.liu@intel.com>
- <CAKnoXLw3DrBAxCUWEkXtvCTf+E1w0xTHJSiSUY6Qd6xHXeGaoQ@mail.gmail.com>
- <20140814110040.GI16043@twins.programming.kicks-ass.net> <53EC9A29.8090408@linaro.org>
- <53ED263B.7030703@mit.edu> <20140814211656.GV19379@twins.programming.kicks-ass.net>
- <CALCETrUEWAbzk3S=T93qh-j4xhwoVrUCqhybr_rr1n-uynQTvw@mail.gmail.com> <27240C0AC20F114CBF8149A2696CBE4A01E5BA34@SHSMSX101.ccr.corp.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 14 Aug 2014 18:27:21 -0700
-Message-ID: <CALCETrUxw-Z7Tb-BJvbz9VR5uuMQy54FBHvSBicirpscoFc7mA@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
- back to DEFAULT
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Liu, Changcheng" <changcheng.liu@intel.com>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: Re: [PATCH] perf probe: Warn user to rebuild target with debuginfo
+References: <53ECF7E9.3050200@hitachi.com> <20140814182938.13429.90615.stgit@kbuild-fedora.novalocal> <CAE40pdd_Fy-x5VuhAt46YWSAWmd3z6C5A3DeB6AjBQF4YDZKXw@mail.gmail.com> <20140815010716.GA3148@kernel.org>
+In-Reply-To: <20140815010716.GA3148@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 6:21 PM, Liu, Chuansheng
-<chuansheng.liu@intel.com> wrote:
->
->
->> -----Original Message-----
->> From: Andy Lutomirski [mailto:luto@amacapital.net]
->> Sent: Friday, August 15, 2014 5:23 AM
->> To: Peter Zijlstra
->> Cc: Daniel Lezcano; Liu, Chuansheng; Rafael J. Wysocki;
->> linux-pm@vger.kernel.org; LKML; Liu, Changcheng; Wang, Xiaoming;
->> Chakravarty, Souvik K
->> Subject: Re: [PATCH] cpuidle: Fix the CPU stuck at C0 for 2-3s after PM_QOS
->> back to DEFAULT
->>
->> On Thu, Aug 14, 2014 at 2:16 PM, Peter Zijlstra <peterz@infradead.org>
->> wrote:
->> > On Thu, Aug 14, 2014 at 02:12:27PM -0700, Andy Lutomirski wrote:
->> >> On 08/14/2014 04:14 AM, Daniel Lezcano wrote:
->> >> > On 08/14/2014 01:00 PM, Peter Zijlstra wrote:
->> >> >>
->> >> >> So seeing how you're from @intel.com I'm assuming you're using x86
->> here.
->> >> >>
->> >> >> I'm not seeing how this can be possible, MWAIT is interrupted by IPIs
->> >> >> just fine, which means we'll fall out of the cpuidle_enter(), which
->> >> >> means we'll cpuidle_reflect(), and then leave cpuidle_idle_call().
->> >> >>
->> >> >> It will indeed not leave the cpu_idle_loop() function and go right back
->> >> >> into cpuidle_idle_call(), but that will then call cpuidle_select() which
->> >> >> should pick a new C state.
->> >> >>
->> >> >> So the interrupt _should_ work. If it doesn't you need to explain why.
->> >> >
->> >> > I think the issue is related to the poll_idle state, in
->> >> > drivers/cpuidle/driver.c. This state is x86 specific and inserted in the
->> >> > cpuidle table as the state 0 (POLL). There is no mwait for this state.
->> >> > It is a bit confusing because this state is not listed in the acpi /
->> >> > intel idle driver but inserted implicitly at the beginning of the idle
->> >> > table by the cpuidle framework when the driver is registered.
->> >> >
->> >> > static int poll_idle(struct cpuidle_device *dev,
->> >> >                 struct cpuidle_driver *drv, int index)
->> >> > {
->> >> >         local_irq_enable();
->> >> >         if (!current_set_polling_and_test()) {
->> >> >                 while (!need_resched())
->> >> >                         cpu_relax();
->> >> >         }
->> >> >         current_clr_polling();
->> >> >
->> >> >         return index;
->> >> > }
->> >>
->> >> As the most recent person to have modified this function, and as an
->> >> avowed hater of pointless IPIs, let me ask a rather different question:
->> >> why are you sending IPIs at all?  As of Linux 3.16, poll_idle actually
->> >> supports the polling idle interface :)
->> >>
->> >> Can't you just do:
->> >>
->> >> if (set_nr_if_polling(rq->idle)) {
->> >>       trace_sched_wake_idle_without_ipi(cpu);
->> >> } else {
->> >>       spin_lock_irqsave(&rq->lock, flags);
->> >>       if (rq->curr == rq->idle)
->> >>               smp_send_reschedule(cpu);
->> >>       // else the CPU wasn't idle; nothing to do
->> >>       raw_spin_unlock_irqrestore(&rq->lock, flags);
->> >> }
->> >>
->> >> In the common case (wake from C0, i.e. polling idle), this will skip the
->> >> IPI entirely unless you race with idle entry/exit, saving a few more
->> >> precious electrons and all of the latency involved in poking the APIC
->> >> registers.
->> >
->> > They could and they probably should, but that logic should _not_ live in
->> > the cpuidle driver.
->>
->> Sure.  My point is that fixing the IPI handler is, I think, totally
->> bogus, because the IPI API isn't the right way to do this at all.
->>
->> It would be straightforward to add a new function wake_if_idle(int
->> cpu) to sched/core.c.
->>
-> Thanks Andy and Peter's suggestion, it will save some IPI things in case the cores are not
-> in idle.
+(2014/08/15 10:07), Arnaldo Carvalho de Melo wrote:
+> Em Thu, Aug 14, 2014 at 01:07:28PM -0700, Brendan Gregg escreveu:
+>> On Thu, Aug 14, 2014 at 11:29 AM, Masami Hiramatsu
+>> <masami.hiramatsu.pt@hitachi.com> wrote:
+>> [...]
+>>> The "rebuild with ..." part changes to "rebuild with CONFIG_DEBUG_INFO"
+>>> if the target is the kernel or a kernel module.
+>  
+>> Thanks, definitely an improvement! Should the kernel message also
+>> mention kernel debuginfo packages? Depends on the distribution and
+>> environment, but I think for some users the solution is to add the
+>> package.
 
-This isn't quite right.  Using the polling interface correctly will
-save IPIs in case the core *is* idle.  But, given that you are trying
-to upgrade the chosen idle state, I don't think you need to kick
-non-idle CPUs at all, and my example contains that optimization.
+I see, and at least fedora/rhel has debuginfo for all packages.
+So, not only for the kernel, but also for user applications,
+we'll need to do that.
 
-Presumably the function should be named something like wake_up_if_idle.
+> Yeah, something like what is suggested by gdb and documented here:
+> 
+> https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Developer_Guide/intro.debuginfo.html
+> 
+> --------------------------------------------------------------------
+> In some cases (such as loading a core file), GDB does not know the
+> name, version, or release of a name-debuginfo-version-release.rpm
+> package; it only knows the build-id. In such cases, GDB suggests a
+> different command:
+> 
+> gdb -c ./core
+> [...]
+> Missing separate debuginfo for the main executable filename
+> Try: yum --disablerepo='*' --enablerepo='*debug*' install /usr/lib/debug/.build-id/ef/dd0b5e69b0742fa5e5bad0771df4d1df2459d1
+> ---------------------------------------------------------------------
 
->
-> There is one similar API in sched/core.c wake_up_idle_cpu(),
-> then just need add one new common smp API:
->
-> smp_wake_up_cpus() {
-> for_each_online_cpu()
->   wake_up_idle_cpu();
-> }
->
-> Will try one patch for it.
+ah, that's nice :)
 
-This will have lots of extra overhead if the cpu is *not* idle.  I
-think my example will be a lot more efficient.
+> 
+> This is something I want to have eventually, i.e. to have per distro
+> plugins to automatically download packages required for some features,
+> like probing and annotation, for instance.
 
---Andy
+Yeah, however, it depends on the distro. AFAIK, ubuntu provides
+debuginfo package only for the kernel. So, at this point, I think
+what we can do is just say "please install debuginfo package"
+as below.
+
+  $ ./perf probe -x perf -L argv_split
+  The /home/fedora/ksrc/linux-3/tools/perf/perf file has no debug information, rebuild with -g.
+  Or install appropriate debuginfo package.
+    Error: Failed to show lines.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
