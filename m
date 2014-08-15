@@ -1,109 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaHOUHX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 16:07:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55273 "EHLO mx1.redhat.com"
+	id S1751531AbaHOUHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 16:07:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359AbaHOUHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 16:07:19 -0400
+	id S1751268AbaHOUHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 16:07:18 -0400
 From: riel@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: oleg@redhat.com, peterz@infradead.org, umgwanakikbuti@gmail.com,
         fweisbec@gmail.com, akpm@linux-foundation.org, srao@redhat.com,
         lwoodman@redhat.com, atheurer@redhat.com
-Subject: [PATCH 0/3] lockless sys_times and posix_cpu_clock_get
-Date: Fri, 15 Aug 2014 16:05:35 -0400
-Message-Id: <1408133138-22048-1-git-send-email-riel@redhat.com>
+Subject: [PATCH 2/3] time,signal: protect resource use statistics with seqlock
+Date: Fri, 15 Aug 2014 16:05:37 -0400
+Message-Id: <1408133138-22048-3-git-send-email-riel@redhat.com>
+In-Reply-To: <1408133138-22048-1-git-send-email-riel@redhat.com>
+References: <1408133138-22048-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks to the feedback from Oleg, Peter, Mike, and Frederic,
-I seem to have a patch series that manages to do times()
-locklessly, and apparently correctly.
+From: Rik van Riel <riel@redhat.com>
 
-Oleg points out that the monotonicity alone is not enough of a
-guarantee, but that should probably be attacked separately, since
-that issue is equally present with and without these patches...
+Both times() and clock_gettime(CLOCK_PROCESS_CPUTIME_ID) have scalability
+issues on large systems, due to both functions being serialized with a
+lock.
 
-The test case below, slightly changed from the one posted by Spencer
-Candland in 2009, now runs in 11 seconds instead of 5 minutes.
+The lock protects against reporting a wrong value, due to a thread in the
+task group exiting, its statistics reporting up to the signal struct, and
+that exited task's statistics being counted twice (or not at all).
 
-Is it worthwhile?  There apparently are some real workloads that call
-times() a lot, and I believe Sanjay and Andrew have one sitting around.
+Protecting that with a lock results in times and clock_gettime being
+completely serialized on large systems.
 
---------
+This can be fixed by using a seqlock around the events that gather and
+propagate statistics. As an additional benefit, the protection code can
+be moved into thread_group_cputime, slightly simplifying the calling
+functions.
 
-/*
+In the case of posix_cpu_clock_get_task things can be simplified a
+lot, because the calling function already ensures tsk sticks around,
+and the rest is now taken care of in thread_group_cputime.
 
-Based on the test case from the following bug report, but changed
-to measure utime on a per thread basis. (Rik van Riel)
+This way the statistics reporting code can run lockless.
 
-https://lkml.org/lkml/2009/11/3/522
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/sched.h          |  1 +
+ kernel/exit.c                  |  4 ++++
+ kernel/fork.c                  |  1 +
+ kernel/sched/cputime.c         | 36 +++++++++++++++++++++++-------------
+ kernel/sys.c                   |  2 --
+ kernel/time/posix-cpu-timers.c | 14 --------------
+ 6 files changed, 29 insertions(+), 29 deletions(-)
 
-From: Spencer Candland
-Subject: utime/stime decreasing on thread exit
-
-I am seeing a problem with utime/stime decreasing on thread exit in a
-multi-threaded process.  I have been able to track this regression down
-to the "process wide cpu clocks/timers" changes introduces in
-2.6.29-rc5, specifically when I revert the following commits I know
-longer see decreasing utime/stime values:
-
-4da94d49b2ecb0a26e716a8811c3ecc542c2a65d
-3fccfd67df79c6351a156eb25a7a514e5f39c4d9
-7d8e23df69820e6be42bcc41d441f4860e8c76f7
-4cd4c1b40d40447fb5e7ba80746c6d7ba91d7a53
-32bd671d6cbeda60dc73be77fa2b9037d9a9bfa0
-
-I poked around a little, but I am afraid I have to admit that I am not
-familiar enough with how this works to resolve this or suggest a fix.
-
-I have verified this in happening in kernels 2.6.29-rc5 - 2.6.32-rc6, I
-have been testing this on x86 vanilla kernels, but have also verified it
-on several x86 2.6.29+ distro kernels (fedora and ubuntu).
-
-I first noticed this on a production environment running Apache with the
-worker MPM, however while tracking this down I put together a simple
-program that has been reliable in showing me utime decreasing, hopefully
-it will be helpful in demonstrating the issue:
-*/
-
-#include <stdio.h>
-#include <pthread.h>
-#include <sys/times.h>
-
-#define NUM_THREADS 500
-
-struct tms start;
-
-void *pound (void *threadid)
-{
-  struct tms end;
-  int oldutime = 0;
-  int utime;
-  int c, i;
-  for (i = 0; i < 10000; i++) {
-	  for (c = 0; c < 10000; c++);
-	  times(&end);
-	  utime = ((int)end.tms_utime - (int)start.tms_utime);
-	  if (oldutime > utime) {
-	    printf("utime decreased, was %d, now %d!\n", oldutime, utime);
-	  }
-	  oldutime = utime;
-  }
-  pthread_exit(NULL);
-}
-
-int main()
-{
-  pthread_t th[NUM_THREADS];
-  long i;
-  times(&start);
-  for (i = 0; i < NUM_THREADS; i++) {
-    pthread_create (&th[i], NULL, pound, (void *)i);
-  }
-  pthread_exit(NULL);
-  return 0;
-}
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 857ba40..91f9209 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -646,6 +646,7 @@ struct signal_struct {
+ 	 * Live threads maintain their own counters and add to these
+ 	 * in __exit_signal, except for the group leader.
+ 	 */
++	seqlock_t stats_lock;
+ 	cputime_t utime, stime, cutime, cstime;
+ 	cputime_t gtime;
+ 	cputime_t cgtime;
+diff --git a/kernel/exit.c b/kernel/exit.c
+index b93d46d..fa09b86 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -127,6 +127,7 @@ static void __exit_signal(struct task_struct *tsk)
+ 	 * the signal_struct.
+ 	 */
+ 	task_cputime(tsk, &utime, &stime);
++	write_seqlock(&sig->stats_lock);
+ 	sig->utime += utime;
+ 	sig->stime += stime;
+ 	sig->gtime += task_gtime(tsk);
+@@ -140,6 +141,7 @@ static void __exit_signal(struct task_struct *tsk)
+ 	sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
+ 	sig->nr_threads--;
+ 	__unhash_process(tsk, group_dead);
++	write_sequnlock(&sig->stats_lock);
+ 
+ 	/*
+ 	 * Do this under ->siglock, we can race with another thread
+@@ -1042,6 +1044,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 		spin_lock_irq(&p->real_parent->sighand->siglock);
+ 		psig = p->real_parent->signal;
+ 		sig = p->signal;
++		write_seqlock(&psig->stats_lock);
+ 		psig->cutime += tgutime + sig->cutime;
+ 		psig->cstime += tgstime + sig->cstime;
+ 		psig->cgtime += task_gtime(p) + sig->gtime + sig->cgtime;
+@@ -1064,6 +1067,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 			psig->cmaxrss = maxrss;
+ 		task_io_accounting_add(&psig->ioac, &p->ioac);
+ 		task_io_accounting_add(&psig->ioac, &sig->ioac);
++		write_sequnlock(&psig->stats_lock);
+ 		spin_unlock_irq(&p->real_parent->sighand->siglock);
+ 	}
+ 
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 1380d8a..5d7cf2b 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1068,6 +1068,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
+ 	sig->curr_target = tsk;
+ 	init_sigpending(&sig->shared_pending);
+ 	INIT_LIST_HEAD(&sig->posix_timers);
++	seqlock_init(&sig->stats_lock);
+ 
+ 	hrtimer_init(&sig->real_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	sig->real_timer.function = it_real_fn;
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 3e52836..b5f1c58 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -288,18 +288,31 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+ 	struct signal_struct *sig = tsk->signal;
+ 	cputime_t utime, stime;
+ 	struct task_struct *t;
+-
+-	times->utime = sig->utime;
+-	times->stime = sig->stime;
+-	times->sum_exec_runtime = sig->sum_sched_runtime;
++	unsigned int seq, nextseq;
+ 
+ 	rcu_read_lock();
+-	for_each_thread(tsk, t) {
+-		task_cputime(t, &utime, &stime);
+-		times->utime += utime;
+-		times->stime += stime;
+-		times->sum_exec_runtime += task_sched_runtime(t);
+-	}
++	/* Attempt a lockless read on the first round. */
++	nextseq = 0;
++	do {
++		seq = nextseq;
++		read_seqbegin_or_lock(&sig->stats_lock, &seq);
++		times->utime = sig->utime;
++		times->stime = sig->stime;
++		times->sum_exec_runtime = sig->sum_sched_runtime;
++
++		for_each_thread(tsk, t) {
++			task_cputime(t, &utime, &stime);
++			times->utime += utime;
++			times->stime += stime;
++			times->sum_exec_runtime += task_sched_runtime(t);
++		}
++		/*
++		 * If a writer is currently active, seq will be odd, and
++		 * read_seqbegin_or_lock will take the lock.
++		 */
++		nextseq = raw_read_seqcount(&sig->stats_lock.seqcount);
++	} while (need_seqretry(&sig->stats_lock, seq));
++	done_seqretry(&sig->stats_lock, seq);
+ 	rcu_read_unlock();
+ }
+ 
+@@ -611,9 +624,6 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	cputime_adjust(&cputime, &p->prev_cputime, ut, st);
+ }
+ 
+-/*
+- * Must be called with siglock held.
+- */
+ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ {
+ 	struct task_cputime cputime;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index ce81291..b663664 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -862,11 +862,9 @@ void do_sys_times(struct tms *tms)
+ {
+ 	cputime_t tgutime, tgstime, cutime, cstime;
+ 
+-	spin_lock_irq(&current->sighand->siglock);
+ 	thread_group_cputime_adjusted(current, &tgutime, &tgstime);
+ 	cutime = current->signal->cutime;
+ 	cstime = current->signal->cstime;
+-	spin_unlock_irq(&current->sighand->siglock);
+ 	tms->tms_utime = cputime_to_clock_t(tgutime);
+ 	tms->tms_stime = cputime_to_clock_t(tgstime);
+ 	tms->tms_cutime = cputime_to_clock_t(cutime);
+diff --git a/kernel/time/posix-cpu-timers.c b/kernel/time/posix-cpu-timers.c
+index 3b89464..492b986 100644
+--- a/kernel/time/posix-cpu-timers.c
++++ b/kernel/time/posix-cpu-timers.c
+@@ -272,22 +272,8 @@ static int posix_cpu_clock_get_task(struct task_struct *tsk,
+ 		if (same_thread_group(tsk, current))
+ 			err = cpu_clock_sample(which_clock, tsk, &rtn);
+ 	} else {
+-		unsigned long flags;
+-		struct sighand_struct *sighand;
+-
+-		/*
+-		 * while_each_thread() is not yet entirely RCU safe,
+-		 * keep locking the group while sampling process
+-		 * clock for now.
+-		 */
+-		sighand = lock_task_sighand(tsk, &flags);
+-		if (!sighand)
+-			return err;
+-
+ 		if (tsk == current || thread_group_leader(tsk))
+ 			err = cpu_clock_sample_group(which_clock, tsk, &rtn);
+-
+-		unlock_task_sighand(tsk, &flags);
+ 	}
+ 
+ 	if (!err)
+-- 
+1.8.3.1
 
