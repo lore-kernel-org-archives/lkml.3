@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaHOQgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:36:03 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52255 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbaHOQgB convert rfc822-to-8bit (ORCPT
+	id S1751716AbaHOQg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:36:29 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:34470 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616AbaHOQg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:36:01 -0400
-Message-ID: <53EE36F5.7000801@arm.com>
-Date: Fri, 15 Aug 2014 17:36:05 +0100
-From: Juri Lelli <juri.lelli@arm.com>
+	Fri, 15 Aug 2014 12:36:27 -0400
+Message-ID: <53EE370D.1060106@kernel.dk>
+Date: Fri, 15 Aug 2014 10:36:29 -0600
+From: Jens Axboe <axboe@kernel.dk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Will Deacon <Will.Deacon@arm.com>, Chao Xie <chao.xie@marvell.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Chao Xie Linux <xiechao.mail@gmail.com>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] cpuidle/cpuidle-big_little: fix reading cpu id part
- number
-References: <1408004865-27525-1-git-send-email-juri.lelli@arm.com> <7hwqa9ww6n.fsf@paris.lan>
-In-Reply-To: <7hwqa9ww6n.fsf@paris.lan>
-X-OriginalArrivalTime: 15 Aug 2014 16:35:56.0890 (UTC) FILETIME=[FD300BA0:01CFB8A6]
-X-MC-Unique: 114081517355801201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: Christoph Hellwig <hch@infradead.org>, Ming Lei <ming.lei@canonical.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
+References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com> <1408031441-31156-6-git-send-email-ming.lei@canonical.com> <20140815163111.GA16652@infradead.org>
+In-Reply-To: <20140815163111.GA16652@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/08/14 17:32, Kevin Hilman wrote:
-> Juri Lelli <juri.lelli@arm.com> writes:
+On 08/15/2014 10:31 AM, Christoph Hellwig wrote:
+>> +static void loop_queue_work(struct work_struct *work)
 > 
->> Commit af040ffc9ba1 ("ARM: make it easier to check the CPU part number
->> correctly") changed ARM_CPU_PART_X masks, and the way they are returned and
->> checked against. Usage of read_cpuid_part_number() is now deprecated, and
->> calling places updated accordingly. This actually broke cpuidle-big_little
->> initialization, as bl_idle_driver_init() performs a check using an hardcoded
->> mask on cpu_id.
->>
->> Create an interface to perform the check (that is now even easier to read).
->> Define also a proper mask (ARM_CPU_PART_MASK) that makes this kind of checks
->> cleaner and helps preventing bugs in the future. Update usage accordingly.
-> 
-> [...]
-> 
-> Tested-by: Kevin Hilman <khilman@linaro.org>
-> 
+> Offloading work straight to a workqueue dosn't make much sense
+> in the blk-mq model as we'll usually be called from one.  If you
+> need to avoid the cases where we are called directly a flag for
+> the blk-mq code to always schedule a workqueue sounds like a much
+> better plan.
 
-Great, thanks!
+That's a good point - would clean up this bit, and be pretty close to a
+one-liner to support in blk-mq for the drivers that always need blocking
+context.
 
-> FWIW, I can confirm that this patch is needed for cpuidle-big_little to
-> work on the Exynos5800/Chromebook2.
-> 
-
-Ok, the patch has been already sent to Russell's patch system.
-
-Best,
-
-- Juri
-
-> Kevin
-> 
+-- 
+Jens Axboe
 
