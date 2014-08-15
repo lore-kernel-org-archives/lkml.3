@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaHOVqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 17:46:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52934 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaHOVqd (ORCPT
+	id S1751481AbaHOVru (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 17:47:50 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:46410 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaHOVrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 17:46:33 -0400
-Message-ID: <53EE7FC9.5010509@wwwdotorg.org>
-Date: Fri, 15 Aug 2014 15:46:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mikko Perttunen <mperttunen@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c: i2c-tegra: Move clk_prepare/clk_set_rate to probe
-References: <1408096034-17270-1-git-send-email-mperttunen@nvidia.com> <53EE32C7.6000500@wwwdotorg.org> <20140815180218.GH1626@tbergstrom-lnx.Nvidia.com> <53EE4C45.5080805@wwwdotorg.org> <20140815194546.GI1626@tbergstrom-lnx.Nvidia.com> <20140815213442.GJ1626@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20140815213442.GJ1626@tbergstrom-lnx.Nvidia.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Fri, 15 Aug 2014 17:47:49 -0400
+Message-ID: <1408138647.26567.42.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
+From: Toshi Kani <toshi.kani@hp.com>
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        David Rientjes <rientjes@google.com>, isimatu.yasuaki@jp.fujitsu.com,
+        n-horiguchi@ah.jp.nec.com, wangnan0@huawei.com,
+        linux-kernel@vger.kernel.org, Linux MM <linux-mm@kvack.org>
+Date: Fri, 15 Aug 2014 15:37:27 -0600
+In-Reply-To: <53EAE534.8030303@huawei.com>
+References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com>
+	 <53EAE534.8030303@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2014 03:34 PM, Peter De Schrijver wrote:
-> On Fri, Aug 15, 2014 at 09:45:46PM +0200, Peter De Schrijver wrote:
->> On Fri, Aug 15, 2014 at 08:07:01PM +0200, Stephen Warren wrote:
->>>>> However, the new code sets the clock rate after the clock is prepared. I
->>>>> think the rate should be set first, then the clock prepared. While this
->>>>> likely doesn't apply to the Tegra clock controller, prepare() is allowed
->>>>> to enable the clock if enable() can't be implemented in an atomic
->>>>> fashion (in which case enable/disable would be no-ops), and we should
->>>>> make sure that the driver correctly configures the clock before
->>>>> potentially enabling it.
->>>>>
->>>>> I'm not sure if a similar change to our SPI drivers is possible; after
->>>>> all, the SPI transfer rate can vary per message, so if clk_set_rate()
->>>>> acquires a lock, it seems there's no way to avoid the issue there.
->>>>
->>>> Even for i2c this could be the case I think if you use the highspeed (3.4Mhz)
->>>> mode? From what I remember, a highspeed i2c transaction starts with a lower
->>>> speed preamble to make sure non highspeed slaves don't get confused? Which
->>>> means you could change the bus speed depending on the slave you're addressing.
->>>
->>> Since there's no separate chip-select for I2C, I believe all I2C devices
->>> need to be able to understand the entire transaction, so the I2C bus
->>> speed is fixed.
->>>
->>
->> Does it? I would assume the slave only needs to check if the address matches
->> its own address after a START condition and if not can just wait until the
->> STOP condition appears on the bus?
->>
->
-> http://www.nxp.com/documents/user_manual/UM10204.pdf says you can mix them by
-> using an interconnect bridge between the highspeed and the non-highspeed
-> capable slaves. The bridge uses the special preamble to disconnect the non-
-> highspeed part of the bus when a highspeed transaction is ongoing. It's afaics
-> transparent to the master.
+On Wed, 2014-08-13 at 12:10 +0800, Zhang Zhen wrote:
+> Currently memory-hotplug has two limits:
+> 1. If the memory block is in ZONE_NORMAL, you can change it to
+> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+> 2. If the memory block is in ZONE_MOVABLE, you can change it to
+> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
+> 
+> With this patch, we can easy to know a memory block can be onlined to
+> which zone, and don't need to know the above two limits.
+> 
+> Updated the related Documentation.
+> 
+> Change v1 -> v2:
+> - optimize the implementation following Dave Hansen's suggestion
+> 
+> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+> ---
+>  Documentation/ABI/testing/sysfs-devices-memory |  8 ++++
+>  Documentation/memory-hotplug.txt               |  4 +-
+>  drivers/base/memory.c                          | 62 ++++++++++++++++++++++++++
+>  include/linux/memory_hotplug.h                 |  1 +
+>  mm/memory_hotplug.c                            |  2 +-
+>  5 files changed, 75 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
+> index 7405de2..2b2a1d7 100644
+> --- a/Documentation/ABI/testing/sysfs-devices-memory
+> +++ b/Documentation/ABI/testing/sysfs-devices-memory
+> @@ -61,6 +61,14 @@ Users:		hotplug memory remove tools
+>  		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
+> 
+> 
+> +What:           /sys/devices/system/memory/memoryX/zones_online_to
 
-I expect that works by echoing the slow-speed pre-amble to the 
-slow-speed bus segment, then emitting a stop and turning off the echo. 
-For actual slow-speed transactions, the whole thing would be echo'd. 
-That way the slow-speed devices don't ever see any high-speed pulses.
+I think this name is a bit confusing.  How about "valid_online_types"?
 
-That all said, that does indeed imply that a master supporting the 
-high-speed transactions would need to emit a varying-speed signal. My 
-assumption would be that this happens inside the I2C HW, rather than 
-under SW control though, since the transition would need to happen 
-mid-protocol. Still, perhaps the selection between low-speed and 
-high-speed-with-a-slow-preamble might need SW clock programming 
-depending on the HW though... Who knows.
+Thanks,
+-Toshi
+
+
 
