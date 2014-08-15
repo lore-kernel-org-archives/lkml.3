@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101AbaHOLtV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 07:49:21 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36638 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaHOLtT (ORCPT
+	id S1751104AbaHOL6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 07:58:03 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:44649 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795AbaHOL6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 07:49:19 -0400
-Date: Fri, 15 Aug 2014 12:48:57 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Dan Murphy <dmurphy@ti.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-sound@vger.kernel.org
-Message-ID: <20140815114857.GL17528@sirena.org.uk>
-References: <1406908624-15290-1-git-send-email-dmurphy@ti.com>
+	Fri, 15 Aug 2014 07:58:00 -0400
+Date: Fri, 15 Aug 2014 13:57:53 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Vojtech Pavlik <vojtech@suse.cz>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] s390: add support for DYNAMIC_FTRACE_WITH_REGS
+Message-ID: <20140815115753.GA4215@osiris>
+References: <20140703120046.GA10664@suse.cz>
+ <20140708080740.GA4491@osiris>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oNEXPFkTTJNzq0nB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406908624-15290-1-git-send-email-dmurphy@ti.com>
-X-Cookie: 98% lean.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v2] ASoC: tas2552: Add DAPM calls for amp
- and PLL
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140708080740.GA4491@osiris>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081511-2966-0000-0000-000000D5C4BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 08, 2014 at 10:07:40AM +0200, Heiko Carstens wrote:
+> On Thu, Jul 03, 2014 at 02:00:46PM +0200, Vojtech Pavlik wrote:
+> > Add support for DYNAMIC_FTRACE_WITH_REGS to 64-bit and 31-bit s390
+> > architectures. This is required for kGraft and kpatch to work on s390.
+> > 
+> > It's done by adding a _regs variant of ftrace_caller that preserves
+> > registers and puts them on stack in a struct pt_regs layout and
+> > allows modification of return address by changing the PSW (instruction
+> > pointer) member od struct pt_regs. 
+> >
+> > Signed-off-by: Vojtech Pavlik <vojtech@suse.cz>
+> > Reviewed-by: Jiri Kosina <jkosina@suse.cz>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> 
+> So I assume you use the instruction_pointer() macro to access the
+> return address then?
+> 
+> All of this seems a bit of a hack to me.. the natural place of the
+> return address of a function would be register 14, and not the
+> psw member of the pt_regs structure.
+> 
+> It's then also inconsistent to only save register r0-r13 to the
+> gprs member.. well, you can't save r14, since what should
+> happen if both r14 in the gprs member of pt_regs and in the psw
+> part would have been changed?
+> 
+> Besides that a couple more comments below.
 
---oNEXPFkTTJNzq0nB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+[...]
 
-On Fri, Aug 01, 2014 at 10:57:04AM -0500, Dan Murphy wrote:
-> Add DAPM calls to enable/disable the Class D amp.
-> Also add a DAPM call to turn off the PLL upon
-> the stream completing.
+> Some objections: this code assumes that sizeof(struct pt_regs) does not
+> change, which is not correct. So as soon as we touch struct pt_regs this
+> code would be broken. Also the order of the members within struct pt_regs
+> is not necessarily static (pt_regs is not ABI).
 
-Applied, thanks.
+FWIW, this already happened with d3a73acbc26a4a81a01a35fd162973e53d0386f5
+"s390: split TIF bits into CIF, PIF and TIF bits".
 
---oNEXPFkTTJNzq0nB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Anyway, since I didn't got any response from you during the last couple of
+weeks, I changed the ftrace code so it should fit your needs.
+I will send five patches in reply to this mail - patch 4 of 5 is the one
+that implements the DYNAMIC_FTRACE_WITH_REGS functionality, how differently
+to your patch, especially possible return address changing.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT7fOmAAoJELSic+t+oim9/EMP/RrdGdpVSZkouR+8lEqqcvS3
-cObTqI5nyZ8PS96rwfDepITbN1wY34raeUuHH4mxWmHaIN8lIcrfunzf9pSORAe/
-daTqtmYTnhx0uBtxkw+Z8ijZq/58PmWBNrCmiro8waMLdUJzwFqwGKT7aTvGVqck
-uJ3g34MKZ7kTwz00AeWptxw81de2Te0EGfycJ/DoPI0lJmKuapacXU2proB+12ty
-RG/OEjgl5RgdgA8m0K5lyvps/EYqancG4Z+G6xxSiy0DMiKLKGxdVZPmaI8E9yHJ
-WC2JWaVzU9CngvtqE0qsLFxWDCI6xl3iATfpEjwdrL5tnyDJBG9D77zqFDtuj5Zw
-8k1ZJiwNytczzhbIcpdaJHlF1wA1bnK/pQ3N2htyVS8yrDu9vugiK8Uj0scPPoiv
-M5oKZGGGQZUhH0Q5wfeTshDW+D6JzeaHQWmw0+avjr/JmGtHXYjBCE50+Jts2ayS
-NWc69D6JEmfRQ1dvwMivKuJIgGxBJlgfSnR4oR/sdZDzuIh2EUtZ+/L/vIkIbD5z
-b+slvnqNpzmE9bUMj0CU1VPPudhk/SXnjIGNfCMy7BI8r2u0KJEcMo8jn7/8/qYH
-PNE/2hXKDa+OLZdxow3GQc2rINQUJGiP38wA89eRQoH+v5Qc6wFTzL9u2Lzf03eB
-/kYDNsbltZcQXZWRroW7
-=06hE
------END PGP SIGNATURE-----
-
---oNEXPFkTTJNzq0nB--
