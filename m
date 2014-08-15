@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507AbaHOSCZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 14:02:25 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:2828 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaHOSCX (ORCPT
+	id S1751536AbaHOSEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 14:04:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57819 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaHOSEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 14:02:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 15 Aug 2014 10:53:00 -0700
-Date: Fri, 15 Aug 2014 21:02:18 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mikko Perttunen <mperttunen@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c: i2c-tegra: Move clk_prepare/clk_set_rate to probe
-Message-ID: <20140815180218.GH1626@tbergstrom-lnx.Nvidia.com>
-References: <1408096034-17270-1-git-send-email-mperttunen@nvidia.com>
- <53EE32C7.6000500@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53EE32C7.6000500@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 15 Aug 2014 14:04:32 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 10/15] tty: serial: 8250_dma: Add a TX trigger workaround for AM33xx
+Date: Fri, 15 Aug 2014 19:42:38 +0200
+Message-Id: <1408124563-31541-11-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 06:18:15PM +0200, Stephen Warren wrote:
-> On 08/15/2014 03:47 AM, Mikko Perttunen wrote:
-> > Currently the i2c-tegra bus driver prepares, enables
-> > and set_rates its clocks separately for each transfer.
-> > This causes locking problems when doing I2C transfers
-> > from clock notifiers; see
-> > http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/268653.html
-> >
-> > This patch moves clk_prepare/unprepare and clk_set_rate calls to
-> > the probe function, leaving only clk_enable/disable to be
-> > done on each transfer. This solves the locking issue.
-> 
-> > diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> 
-> > @@ -380,34 +380,33 @@ static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
-> >   {
-> >   	int ret;
-> >   	if (!i2c_dev->hw->has_single_clk_source) {
-> > -		ret = clk_prepare_enable(i2c_dev->fast_clk);
-> > +		ret = clk_enable(i2c_dev->fast_clk);
-> 
-> Here, both the prepare and enable wrap just the I2C transfer, ...
-> 
-> > @@ -428,9 +427,6 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
-> >   	i2c_writel(i2c_dev, val, I2C_CNFG);
-> >   	i2c_writel(i2c_dev, 0, I2C_INT_MASK);
-> >
-> > -	clk_multiplier *= (i2c_dev->hw->clk_divisor_std_fast_mode + 1);
-> > -	clk_set_rate(i2c_dev->div_clk, i2c_dev->bus_clk_rate * clk_multiplier);
-> 
-> ... whereas the rate is set up when the controller is initialized, i.e. 
-> much earlier.
-> 
-> > @@ -777,17 +774,39 @@ static int tegra_i2c_probe(struct platform_device *pdev)
-> 
-> > +	if (!i2c_dev->hw->has_single_clk_source) {
-> > +		ret = clk_prepare(i2c_dev->fast_clk);
-> > +		if (ret < 0) {
-> > +			dev_err(i2c_dev->dev, "Clock prepare failed %d\n", ret);
-> > +			return ret;
-> > +		}
-> > +	}
-> > +
-> > +	ret = clk_prepare(i2c_dev->div_clk);
-> > +	if (ret < 0) {
-> > +		dev_err(i2c_dev->dev, "Clock prepare failed %d\n", ret);
-> > +		goto unprepare_fast_clk;
-> > +	}
-> > +
-> > +	clk_multiplier *= (i2c_dev->hw->clk_divisor_std_fast_mode + 1);
-> > +	ret = clk_set_rate(i2c_dev->div_clk,
-> > +			   i2c_dev->bus_clk_rate * clk_multiplier);
-> > +	if (ret) {
-> > +		dev_err(i2c_dev->dev, "Clock rate change failed %d\n", ret);
-> > +		goto unprepare_div_clk;
-> > +	}
-> 
-> However, the new code sets the clock rate after the clock is prepared. I 
-> think the rate should be set first, then the clock prepared. While this 
-> likely doesn't apply to the Tegra clock controller, prepare() is allowed 
-> to enable the clock if enable() can't be implemented in an atomic 
-> fashion (in which case enable/disable would be no-ops), and we should 
-> make sure that the driver correctly configures the clock before 
-> potentially enabling it.
-> 
-> I'm not sure if a similar change to our SPI drivers is possible; after 
-> all, the SPI transfer rate can vary per message, so if clk_set_rate() 
-> acquires a lock, it seems there's no way to avoid the issue there. 
+At least on AM335x the following problem exists: Even if the TX FIFO is
+empty and a TX transfer is programmed (and started) the UART does not
+trigger the DMA transfer.
+After $TRESHOLD number of bytes have been written to the FIFO manually the
+UART reevaluates the whole situation and decides that now there is enough
+room in the FIFO and so the transfer begins.
+This problem has not been seen on DRA7 or beaglebone (OMAP3).
 
-Even for i2c this could be the case I think if you use the highspeed (3.4Mhz)
-mode? From what I remember, a highspeed i2c transaction starts with a lower
-speed preamble to make sure non highspeed slaves don't get confused? Which
-means you could change the bus speed depending on the slave you're addressing.
+The workaround is to use a threshold of one byte, program the DMA
+transfer minus one byte and then to put the first byte into the FIFO to
+kick start the transfer.
 
-> Luckily, we don't have any SPI-based chips that do anything related to 
-> clocks on any of our current boards...
-> 
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/serial/8250/8250.h     |  1 +
+ drivers/tty/serial/8250/8250_dma.c | 18 +++++++++++++++---
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
-And we don't use SPI to talk to the PMIC, which is the usecase were actually
-run into problems with the locking.
-
-Cheers,
-
-Peter.
+diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
+index 1bcb4b2..d6a3f5c 100644
+--- a/drivers/tty/serial/8250/8250.h
++++ b/drivers/tty/serial/8250/8250.h
+@@ -79,6 +79,7 @@ struct serial8250_config {
+ #define UART_BUG_NOMSR	(1 << 2)	/* UART has buggy MSR status bits (Au1x00) */
+ #define UART_BUG_THRE	(1 << 3)	/* UART has buggy THRE reassertion */
+ #define UART_BUG_PARITY	(1 << 4)	/* UART mishandles parity if FIFO enabled */
++#define UART_BUG_DMATX	(1 << 5)	/* UART needs one byte in FIFO for kickstart */
+ 
+ #define PROBE_RSA	(1 << 0)
+ #define PROBE_ANY	(~0)
+diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
+index 7417ed5..dc1294b 100644
+--- a/drivers/tty/serial/8250/8250_dma.c
++++ b/drivers/tty/serial/8250/8250_dma.c
+@@ -83,6 +83,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
+ 	struct uart_8250_dma		*dma = p->dma;
+ 	struct circ_buf			*xmit = &p->port.state->xmit;
+ 	struct dma_async_tx_descriptor	*desc;
++	unsigned int			skip_byte = 0;
+ 	int ret;
+ 
+ 	if (uart_tx_stopped(&p->port) || dma->tx_running ||
+@@ -91,10 +92,18 @@ int serial8250_tx_dma(struct uart_8250_port *p)
+ 
+ 	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
+ 
++	if (p->bugs & UART_BUG_DMATX) {
++		if (dma->tx_size < 4) {
++			ret = -EINVAL;
++			goto err;
++		}
++		skip_byte = 1;
++	}
++
+ 	desc = dmaengine_prep_slave_single(dma->txchan,
+-					   dma->tx_addr + xmit->tail,
+-					   dma->tx_size, DMA_MEM_TO_DEV,
+-					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++			dma->tx_addr + xmit->tail + skip_byte,
++			dma->tx_size - skip_byte, DMA_MEM_TO_DEV,
++			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	if (!desc) {
+ 		ret = -EBUSY;
+ 		goto err;
+@@ -118,6 +127,9 @@ int serial8250_tx_dma(struct uart_8250_port *p)
+ 			serial_out(p, UART_IER, p->ier);
+ 		}
+ 	}
++	if (skip_byte)
++		serial_out(p, UART_TX, xmit->buf[xmit->tail]);
++
+ 	return 0;
+ err:
+ 	p->dma_tx_err = 1;
+-- 
+2.0.1
 
