@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaHORgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 13:36:20 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:48046 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaHORgS (ORCPT
+	id S1751380AbaHORlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 13:41:37 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:46580 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaHORlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 13:36:18 -0400
+	Fri, 15 Aug 2014 13:41:36 -0400
+X-Greylist: delayed 87236 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Aug 2014 13:41:36 EDT
+Message-ID: <53EE464D.7060803@hp.com>
+Date: Fri, 15 Aug 2014 13:41:33 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVH8KXr8uSHAVy5eBsqmi1LjB5QZpboAGcjYswXvW1opA@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-18-git-send-email-ast@plumgrid.com>
-	<CAE40pdf0pNYyazjpdkzxNJi7iC4LOOr_XEu078OUqP_uoCXnHg@mail.gmail.com>
-	<CAMEtUuymPDhYBe42i4DJNXsdgZRaq9LuEU_nGSsqrY1FcFHqhQ@mail.gmail.com>
-	<CALCETrVH8KXr8uSHAVy5eBsqmi1LjB5QZpboAGcjYswXvW1opA@mail.gmail.com>
-Date: Fri, 15 Aug 2014 10:36:17 -0700
-Message-ID: <CAMEtUuzey7PanznrAguOpvPLxyhgJB++ovE8RNys7srs=EY1qg@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 17/26] tracing: allow eBPF programs to be
- attached to events
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Brendan Gregg <brendan.d.gregg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: peterz@infradead.org, mingo@kernel.org, jason.low2@hp.com,
+        scott.norton@hp.com, aswin@hp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -tip] locking/mutexes: Avoid bogus wakeups after lock
+ stealing
+References: <1407995870-4268-1-git-send-email-davidlohr@hp.com>  <53ECEF32.6010706@hp.com> <1408037423.12776.6.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1408037423.12776.6.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 10:20 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> The downside of this approach is that compat support might be
-> difficult or impossible.
+On 08/14/2014 01:30 PM, Davidlohr Bueso wrote:
+> On Thu, 2014-08-14 at 13:17 -0400, Waiman Long wrote:
+>>
+>> I still think it is better to do that after spin_lock_mutex().
+> As mentioned, this causes all sorts of hung tasks when the another task
+> enters the slowpath when locking. There's a big fat comment above.
+>
+>> In
+>> addition, the atomic_set() is racy. It is better to something like
+> Why is it racy? Atomically setting the lock to -1 given that the lock
+> was stolen should be safe. The alternative we discussed with Jason was
+> to set the counter to -1 in the spinning path. But given that we need to
+> serialize the counter check with the list_empty() check that would
+> require the wait_lock. This is very messy and unnecessarily complicates
+> things.
+>
+Let's consider the following scenario:
 
-Would do you mean by compat? 32-bit programs on 64-bit kernels?
-There is no such concept for eBPF. All eBPF programs are always
-operating on 64-bit registers.
+   Task 1                                  Task 2
+   ------                                  ------
+                                         steal the lock
+if (mutex_has_owner) {                       :
+         : <---- a long interrupt        mutex_unlock() [cnt = 1]
+     atomic_set(cnt, -1);
+     return;
+}
+
+Now the lock is no longer available and all the tasks that are trying
+to get it will hang. IOW, you cannot set the count to -1 unless you
+are sure it is 0 to begin with.
+
+>>     if (atomic_cmpxchg(&lock->count, 0, -1)<= 0)
+>>       return;
+> Not really because some archs leave the lock at 1 after the unlock
+> fastpath.
+
+Yes, I know that. I am saying x86 won't get any benefit from this patch.
+
+-Longman
