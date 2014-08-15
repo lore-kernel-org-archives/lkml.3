@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381AbaHOTMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:12:24 -0400
+	id S1752432AbaHOTMs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:12:48 -0400
 Received: from mga02.intel.com ([134.134.136.20]:34930 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198AbaHOTLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:11:38 -0400
+	id S1752191AbaHOTLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:11:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,872,1400050800"; 
-   d="scan'208";a="588728122"
+   d="scan'208";a="588728088"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 22/24] perf tools: Build programs to copy 32-bit compatibility VDSOs
-Date: Fri, 15 Aug 2014 22:08:57 +0300
-Message-Id: <1408129739-17368-23-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 21/24] perf tools: Add perf-with-kcore script
+Date: Fri, 15 Aug 2014 22:08:56 +0300
+Message-Id: <1408129739-17368-22-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
 References: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
@@ -27,341 +27,365 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf tools copy VDSO out of memory.  However, on 64-bit
-machines there may be 32-bit compatibility VDOs also.  To
-copy those requires separate 32-bit executables.  This
-patch adds to the build additional programs perf-read-vdso32
-and perf-read-vdsox32 for 32-bit and x32 respectively.
+Decoding an Intel PT trace of the kernel requires
+an accurate kernel object image.  This is provided
+by making a copy of kcore.  However the copy needs
+to be made under the same conditions as the original
+recording, and then it needs to be associated with
+the perf.data file. The perf-with-kcore script does
+that.
+
+The script also checks the permissions on the buildid
+cache and can be used to fix them.  That is needed
+for distributions where root does not have a home
+directory and consequently writes to the same
+buildid cache as the user, resulting in cached files
+that the user does not have access to.
+
+Example:
+
+$ ./perf-with-kcore
+Usage: perf-with-kcore <perf sub-command> <perf.data directory> [<sub-command options> [ -- <workload>]]
+       <perf sub-command> can be record, script, report or inject
+   or: perf-with-kcore fix_buildid_cache_permissions
+$ ./perf-with-kcore record pt_uname -e intel_pt// -- uname
+Recording
+Using /home/ahunter/bin/perf
+perf version 3.15.rc3.g4549ba
+/home/ahunter/bin/perf record -o pt_uname/perf.data -e intel_pt//  -- uname
+Linux
+[ perf record: Woken up 3 times to write data ]
+[ perf record: Captured and wrote 0.023 MB pt_uname/perf.data ]
+Copying kcore
+[sudo] password for ahunter:
+Done
+$ tools/perf/perf-with-kcore.sh script pt_uname | head
+Using /home/ahunter/bin/perf
+perf version 3.15.rc3.g4549ba
+/home/ahunter/bin/perf script -i pt_uname/perf.data --kallsyms=pt_uname/kcore_dir/kallsyms
+         swapper     0 [002] 161533.969666: sched:sched_switch: swapper/2:0 [120] R ==> perf:11316 [120]
+          :11315 11315 [003] 161533.969704: sched:sched_switch: perf:11315 [120] S ==> swapper/3:0 [120]
+          :11316 11316 [002] 161533.969783: sched:sched_switch: perf:11316 [120] R ==> migration/2:33 [0]
+             :33    33 [002] 161533.969791: sched:sched_switch: migration/2:33 [0] S ==> swapper/2:0 [120]
+         swapper     0 [003] 161533.969792: sched:sched_switch: swapper/3:0 [120] R ==> perf:11316 [120]
+          :11316 11316 [003] 161533.970062: branches:                 0 [unknown] ([unknown]) => ffffffff810532fa native_write_msr_safe ([kernel.kallsyms])
+          :11316 11316 [003] 161533.970062: branches:  ffffffff810532fd native_write_msr_safe ([kernel.kallsyms]) => ffffffff81035b31 pt_config_start ([kernel.kallsyms])
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Makefile.perf                        | 38 ++++++++++++++++++++++---
- tools/perf/config/Makefile                      | 25 +++++++++++++++-
- tools/perf/config/Makefile.arch                 |  8 ++++++
- tools/perf/config/feature-checks/Makefile       | 10 ++++++-
- tools/perf/config/feature-checks/test-compile.c |  4 +++
- tools/perf/perf-read-vdso.c                     | 34 ++++++++++++++++++++++
- tools/perf/util/find-vdso-map.c                 | 30 +++++++++++++++++++
- tools/perf/util/vdso.c                          | 37 ++++--------------------
- 8 files changed, 149 insertions(+), 37 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-compile.c
- create mode 100644 tools/perf/perf-read-vdso.c
- create mode 100644 tools/perf/util/find-vdso-map.c
+ tools/perf/.gitignore         |   1 +
+ tools/perf/Makefile.perf      |   5 +-
+ tools/perf/perf-with-kcore.sh | 259 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 264 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/perf-with-kcore.sh
 
+diff --git a/tools/perf/.gitignore b/tools/perf/.gitignore
+index 782d86e..717221e 100644
+--- a/tools/perf/.gitignore
++++ b/tools/perf/.gitignore
+@@ -15,6 +15,7 @@ perf.data
+ perf.data.old
+ output.svg
+ perf-archive
++perf-with-kcore
+ tags
+ TAGS
+ cscope*
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index fd76af2..731785e 100644
+index df1b164..fd76af2 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -60,6 +60,12 @@ include config/utilities.mak
- #
- # Define NO_LIBDW_DWARF_UNWIND if you do not want libdw support
- # for dwarf backtrace post unwind.
-+#
-+# Define NO_PERF_READ_VDSO32 if you do not want to build perf-read-vdso32
-+# for reading the 32-bit compatibility VDSO in 64-bit mode
-+#
-+# Define NO_PERF_READ_VDSOX32 if you do not want to build perf-read-vdsox32
-+# for reading the x32 mode 32-bit compatibility VDSO in 64-bit mode
+@@ -126,6 +126,7 @@ PYRF_OBJS =
+ SCRIPT_SH =
  
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-@@ -171,11 +177,16 @@ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+ SCRIPT_SH += perf-archive.sh
++SCRIPT_SH += perf-with-kcore.sh
  
- SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- 
--#
--# Single 'perf' binary right now:
--#
- PROGRAMS += $(OUTPUT)perf
- 
-+ifndef NO_PERF_READ_VDSO32
-+PROGRAMS += $(OUTPUT)perf-read-vdso32
-+endif
-+
-+ifndef NO_PERF_READ_VDSOX32
-+PROGRAMS += $(OUTPUT)perf-read-vdsox32
-+endif
-+
- # what 'all' will build and 'install' will install, in perfexecdir
- ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
- 
-@@ -306,6 +317,7 @@ LIB_H += util/data.h
- LIB_H += util/kvm-stat.h
- LIB_H += util/thread-stack.h
- LIB_H += util/db-export.h
-+LIB_H += util/find-vdso-map.c
- 
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -735,6 +747,16 @@ $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Uti
- $(OUTPUT)perf-%: %.o $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
- 
-+ifndef NO_PERF_READ_VDSO32
-+$(OUTPUT)perf-read-vdso32: perf-read-vdso.c util/find-vdso-map.c
-+	$(QUIET_CC)$(CC) -m32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
-+endif
-+
-+ifndef NO_PERF_READ_VDSOX32
-+$(OUTPUT)perf-read-vdsox32: perf-read-vdso.c util/find-vdso-map.c
-+	$(QUIET_CC)$(CC) -mx32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
-+endif
-+
- $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
- $(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
- 
-@@ -879,6 +901,14 @@ install-bin: all install-gtk
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'; \
- 		$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'; \
- 		$(LN) '$(DESTDIR_SQ)$(bindir_SQ)/perf' '$(DESTDIR_SQ)$(bindir_SQ)/trace'
-+ifndef NO_PERF_READ_VDSO32
-+	$(call QUIET_INSTALL, perf-read-vdso32) \
-+		$(INSTALL) $(OUTPUT)perf-read-vdso32 '$(DESTDIR_SQ)$(bindir_SQ)';
-+endif
-+ifndef NO_PERF_READ_VDSOX32
-+	$(call QUIET_INSTALL, perf-read-vdsox32) \
-+		$(INSTALL) $(OUTPUT)perf-read-vdsox32 '$(DESTDIR_SQ)$(bindir_SQ)';
-+endif
- 	$(call QUIET_INSTALL, libexec) \
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+@@ -882,6 +883,8 @@ install-bin: all install-gtk
  		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
  	$(call QUIET_INSTALL, perf-archive) \
-@@ -931,7 +961,7 @@ config-clean:
+ 		$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
++	$(call QUIET_INSTALL, perf-with-kcore) \
++		$(INSTALL) $(OUTPUT)perf-with-kcore -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+ ifndef NO_LIBPERL
+ 	$(call QUIET_INSTALL, perl-scripts) \
+ 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'; \
+@@ -927,7 +930,7 @@ config-clean:
+ 	@$(MAKE) -C config/feature-checks clean >/dev/null
  
  clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
- 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
--	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
-+	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
+-	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
++	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
+ 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
  	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
  	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
- 	$(python-clean)
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 75d4c23..48a5251 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -234,7 +234,9 @@ VF_FEATURE_TESTS =			\
- 	bionic				\
- 	liberty				\
- 	liberty-z			\
--	cplus-demangle
-+	cplus-demangle			\
-+	compile-32			\
-+	compile-x32
- 
- # Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
- # If in the future we need per-feature checks/flags for features not
-@@ -620,6 +622,27 @@ ifdef HAVE_KVM_STAT_SUPPORT
-     CFLAGS += -DHAVE_KVM_STAT_SUPPORT
- endif
- 
-+ifeq (${IS_64_BIT}, 1)
-+  ifndef NO_PERF_READ_VDSO32
-+    $(call feature_check,compile-32)
-+    ifneq ($(feature-compile-32), 1)
-+      NO_PERF_READ_VDSO32 := 1
-+    endif
-+  endif
-+  ifneq (${IS_X86_64}, 1)
-+    NO_PERF_READ_VDSOX32 := 1
-+  endif
-+  ifndef NO_PERF_READ_VDSOX32
-+    $(call feature_check,compile-x32)
-+    ifneq ($(feature-compile-x32), 1)
-+      NO_PERF_READ_VDSOX32 := 1
-+    endif
-+  endif
-+else
-+  NO_PERF_READ_VDSO32 := 1
-+  NO_PERF_READ_VDSOX32 := 1
-+endif
-+
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
-index 4b06719..851cd01 100644
---- a/tools/perf/config/Makefile.arch
-+++ b/tools/perf/config/Makefile.arch
-@@ -21,3 +21,11 @@ ifeq ($(ARCH),x86_64)
-     RAW_ARCH := x86_64
-   endif
- endif
-+
-+ifeq (${IS_X86_64}, 1)
-+  IS_64_BIT := 1
-+else ifeq ($(ARCH),x86)
-+  IS_64_BIT := 0
-+else
-+  IS_64_BIT := $(shell echo __LP64__ | ${CC} ${CFLAGS} -E -x c - | tail -n 1)
-+endif
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 72ab298..7c68ec7 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -27,7 +27,9 @@ FILES=					\
- 	test-libunwind-debug-frame.bin	\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
--	test-libdw-dwarf-unwind.bin
-+	test-libdw-dwarf-unwind.bin	\
-+	test-compile-32.bin		\
-+	test-compile-x32.bin
- 
- CC := $(CROSS_COMPILE)gcc -MD
- PKG_CONFIG := $(CROSS_COMPILE)pkg-config
-@@ -131,6 +133,12 @@ test-libdw-dwarf-unwind.bin:
- test-sync-compare-and-swap.bin:
- 	$(BUILD) -Werror
- 
-+test-compile-32.bin:
-+	$(CC) -m32 -o $(OUTPUT)$@ test-compile.c
-+
-+test-compile-x32.bin:
-+	$(CC) -mx32 -o $(OUTPUT)$@ test-compile.c
-+
- -include *.d
- 
- ###############################
-diff --git a/tools/perf/config/feature-checks/test-compile.c b/tools/perf/config/feature-checks/test-compile.c
+diff --git a/tools/perf/perf-with-kcore.sh b/tools/perf/perf-with-kcore.sh
 new file mode 100644
-index 0000000..31dbf45
+index 0000000..c7ff90a
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-compile.c
-@@ -0,0 +1,4 @@
-+int main(void)
++++ b/tools/perf/perf-with-kcore.sh
+@@ -0,0 +1,259 @@
++#!/bin/bash
++# perf-with-kcore: use perf with a copy of kcore
++# Copyright (c) 2014, Intel Corporation.
++#
++# This program is free software; you can redistribute it and/or modify it
++# under the terms and conditions of the GNU General Public License,
++# version 2, as published by the Free Software Foundation.
++#
++# This program is distributed in the hope it will be useful, but WITHOUT
++# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++# more details.
++
++set -e
++
++usage()
 +{
-+	return 0;
++        echo "Usage: perf-with-kcore <perf sub-command> <perf.data directory> [<sub-command options> [ -- <workload>]]" >&2
++        echo "       <perf sub-command> can be record, script, report or inject" >&2
++        echo "   or: perf-with-kcore fix_buildid_cache_permissions" >&2
++        exit 1
 +}
-diff --git a/tools/perf/perf-read-vdso.c b/tools/perf/perf-read-vdso.c
-new file mode 100644
-index 0000000..764e254
---- /dev/null
-+++ b/tools/perf/perf-read-vdso.c
-@@ -0,0 +1,34 @@
-+#include <stdio.h>
-+#include <string.h>
 +
-+#define VDSO__MAP_NAME "[vdso]"
-+
-+/*
-+ * Include definition of find_vdso_map() also used in util/vdso.c for
-+ * building perf.
-+ */
-+#include "util/find-vdso-map.c"
-+
-+int main(void)
++find_perf()
 +{
-+	void *start, *end;
-+	size_t size, written;
-+
-+	if (find_vdso_map(&start, &end))
-+		return 1;
-+
-+	size = end - start;
-+
-+	while (size) {
-+		written = fwrite(start, 1, size, stdout);
-+		if (!written)
-+			return 1;
-+		start += written;
-+		size -= written;
-+	}
-+
-+	if (fflush(stdout))
-+		return 1;
-+
-+	return 0;
++	if [ -n "$PERF" ] ; then
++		return
++	fi
++	PERF=`which perf || true`
++	if [ -z "$PERF" ] ; then
++		echo "Failed to find perf" >&2
++	        exit 1
++	fi
++	if [ ! -x "$PERF" ] ; then
++		echo "Failed to find perf" >&2
++	        exit 1
++	fi
++	echo "Using $PERF"
++	"$PERF" version
 +}
-diff --git a/tools/perf/util/find-vdso-map.c b/tools/perf/util/find-vdso-map.c
-new file mode 100644
-index 0000000..95ef1cf
---- /dev/null
-+++ b/tools/perf/util/find-vdso-map.c
-@@ -0,0 +1,30 @@
-+static int find_vdso_map(void **start, void **end)
++
++copy_kcore()
 +{
-+	FILE *maps;
-+	char line[128];
-+	int found = 0;
++	echo "Copying kcore"
 +
-+	maps = fopen("/proc/self/maps", "r");
-+	if (!maps) {
-+		fprintf(stderr, "vdso: cannot open maps\n");
-+		return -1;
-+	}
++	if [ $EUID -eq 0 ] ; then
++		SUDO=""
++	else
++		SUDO="sudo"
++	fi
 +
-+	while (!found && fgets(line, sizeof(line), maps)) {
-+		int m = -1;
++	rm -f perf.data.junk
++	("$PERF" record -o perf.data.junk $PERF_OPTIONS -- sleep 60) >/dev/null 2>/dev/null &
++	PERF_PID=$!
 +
-+		/* We care only about private r-x mappings. */
-+		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
-+				start, end, &m))
-+			continue;
-+		if (m < 0)
-+			continue;
++	# Need to make sure that perf has started
++	sleep 1
 +
-+		if (!strncmp(&line[m], VDSO__MAP_NAME,
-+			     sizeof(VDSO__MAP_NAME) - 1))
-+			found = 1;
-+	}
++	KCORE=$(($SUDO "$PERF" buildid-cache -v -f -k /proc/kcore >/dev/null) 2>&1)
++	case "$KCORE" in
++	"kcore added to build-id cache directory "*)
++		KCORE_DIR=${KCORE#"kcore added to build-id cache directory "}
++	;;
++	*)
++		kill $PERF_PID
++		wait >/dev/null 2>/dev/null || true
++		rm perf.data.junk
++		echo "$KCORE"
++		echo "Failed to find kcore" >&2
++		exit 1
++	;;
++	esac
 +
-+	fclose(maps);
-+	return !found;
++	kill $PERF_PID
++	wait >/dev/null 2>/dev/null || true
++	rm perf.data.junk
++
++	$SUDO cp -a "$KCORE_DIR" "$(pwd)/$PERF_DATA_DIR"
++	$SUDO rm -f "$KCORE_DIR/kcore"
++	$SUDO rm -f "$KCORE_DIR/kallsyms"
++	$SUDO rm -f "$KCORE_DIR/modules"
++	$SUDO rmdir "$KCORE_DIR"
++
++	KCORE_DIR_BASENAME=$(basename "$KCORE_DIR")
++	KCORE_DIR="$(pwd)/$PERF_DATA_DIR/$KCORE_DIR_BASENAME"
++
++	$SUDO chown $UID "$KCORE_DIR"
++	$SUDO chown $UID "$KCORE_DIR/kcore"
++	$SUDO chown $UID "$KCORE_DIR/kallsyms"
++	$SUDO chown $UID "$KCORE_DIR/modules"
++
++	$SUDO chgrp $GROUPS "$KCORE_DIR"
++	$SUDO chgrp $GROUPS "$KCORE_DIR/kcore"
++	$SUDO chgrp $GROUPS "$KCORE_DIR/kallsyms"
++	$SUDO chgrp $GROUPS "$KCORE_DIR/modules"
++
++	ln -s "$KCORE_DIR_BASENAME" "$PERF_DATA_DIR/kcore_dir"
 +}
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index adca693..f51390a 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -15,6 +15,12 @@
- #include "linux/string.h"
- #include "debug.h"
- 
-+/*
-+ * Include definition of find_vdso_map() also used in perf-read-vdso.c for
-+ * building perf-read-vdso32 and perf-read-vdsox32.
-+ */
-+#include "find-vdso-map.c"
 +
- #define VDSO__TEMP_FILE_NAME "/tmp/perf-vdso.so-XXXXXX"
- 
- struct vdso_file {
-@@ -40,37 +46,6 @@ static struct vdso_info *vdso_info__new(void)
- 	return memdup(&vdso_info_init, sizeof(vdso_info_init));
- }
- 
--static int find_vdso_map(void **start, void **end)
--{
--	FILE *maps;
--	char line[128];
--	int found = 0;
--
--	maps = fopen("/proc/self/maps", "r");
--	if (!maps) {
--		pr_err("vdso: cannot open maps\n");
--		return -1;
--	}
--
--	while (!found && fgets(line, sizeof(line), maps)) {
--		int m = -1;
--
--		/* We care only about private r-x mappings. */
--		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
--				start, end, &m))
--			continue;
--		if (m < 0)
--			continue;
--
--		if (!strncmp(&line[m], VDSO__MAP_NAME,
--			     sizeof(VDSO__MAP_NAME) - 1))
--			found = 1;
--	}
--
--	fclose(maps);
--	return !found;
--}
--
- static char *get_file(struct vdso_file *vdso_file)
- {
- 	char *vdso = NULL;
++fix_buildid_cache_permissions()
++{
++	if [ $EUID -ne 0 ] ; then
++		echo "This script must be run as root via sudo " >&2
++		exit 1
++	fi
++
++	if [ -z "$SUDO_USER" ] ; then
++		echo "This script must be run via sudo" >&2
++		exit 1
++	fi
++
++	USER_HOME=$(bash <<< "echo ~$SUDO_USER")
++
++	if [ "$HOME" != "$USER_HOME" ] ; then
++		echo "Fix unnecessary because root has a home: $HOME" >&2
++		exit 1
++	fi
++
++	echo "Fixing buildid cache permissions"
++
++	find "$USER_HOME/.debug" -xdev -type d          ! -user "$SUDO_USER" -ls -exec chown    "$SUDO_USER" \{\} \;
++	find "$USER_HOME/.debug" -xdev -type f -links 1 ! -user "$SUDO_USER" -ls -exec chown    "$SUDO_USER" \{\} \;
++	find "$USER_HOME/.debug" -xdev -type l          ! -user "$SUDO_USER" -ls -exec chown -h "$SUDO_USER" \{\} \;
++
++	if [ -n "$SUDO_GID" ] ; then
++		find "$USER_HOME/.debug" -xdev -type d          ! -group "$SUDO_GID" -ls -exec chgrp    "$SUDO_GID" \{\} \;
++		find "$USER_HOME/.debug" -xdev -type f -links 1 ! -group "$SUDO_GID" -ls -exec chgrp    "$SUDO_GID" \{\} \;
++		find "$USER_HOME/.debug" -xdev -type l          ! -group "$SUDO_GID" -ls -exec chgrp -h "$SUDO_GID" \{\} \;
++	fi
++
++	echo "Done"
++}
++
++check_buildid_cache_permissions()
++{
++	if [ $EUID -eq 0 ] ; then
++		return
++	fi
++
++	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type d          ! -user "$USER" -print -quit)
++	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type f -links 1 ! -user "$USER" -print -quit)
++	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type l          ! -user "$USER" -print -quit)
++
++	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type d          ! -group "$GROUPS" -print -quit)
++	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type f -links 1 ! -group "$GROUPS" -print -quit)
++	PERMISSIONS_OK+=$(find "$HOME/.debug" -xdev -type l          ! -group "$GROUPS" -print -quit)
++
++	if [ -n "$PERMISSIONS_OK" ] ; then
++		echo "*** WARNING *** buildid cache permissions may need fixing" >&2
++	fi
++}
++
++record()
++{
++	echo "Recording"
++
++	if [ $EUID -ne 0 ] ; then
++
++		if [ "$(cat /proc/sys/kernel/kptr_restrict)" -ne 0 ] ; then
++			echo "*** WARNING *** /proc/sys/kernel/kptr_restrict prevents access to kernel addresses" >&2
++		fi
++
++		if echo "$PERF_OPTIONS" | grep -q ' -a \|^-a \| -a$\|^-a$\| --all-cpus \|^--all-cpus \| --all-cpus$\|^--all-cpus$' ; then
++			echo "*** WARNING *** system-wide tracing without root access will not be able to read all necessary information from /proc" >&2
++		fi
++
++		if echo "$PERF_OPTIONS" | grep -q 'intel_pt\|intel_bts\| -I\|^-I' ; then
++			if [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -gt -1 ] ; then
++				echo "*** WARNING *** /proc/sys/kernel/perf_event_paranoid restricts buffer size and tracepoint (sched_switch) use" >&2
++			fi
++
++			if echo "$PERF_OPTIONS" | grep -q ' --per-thread \|^--per-thread \| --per-thread$\|^--per-thread$' ; then
++				true
++			elif echo "$PERF_OPTIONS" | grep -q ' -t \|^-t \| -t$\|^-t$' ; then
++				true
++			elif [ ! -r /sys/kernel/debug -o ! -x /sys/kernel/debug ] ; then
++				echo "*** WARNING *** /sys/kernel/debug permissions prevent tracepoint (sched_switch) use" >&2
++			fi
++		fi
++	fi
++
++	if [ -z "$1" ] ; then
++		echo "Workload is required for recording" >&2
++		usage
++	fi
++
++	if [ -e "$PERF_DATA_DIR" ] ; then
++		echo "'$PERF_DATA_DIR' exists" >&2
++		exit 1
++	fi
++
++	find_perf
++
++	mkdir "$PERF_DATA_DIR"
++
++	echo "$PERF record -o $PERF_DATA_DIR/perf.data $PERF_OPTIONS -- $*"
++	"$PERF" record -o "$PERF_DATA_DIR/perf.data" $PERF_OPTIONS -- $* || true
++
++	if rmdir "$PERF_DATA_DIR" > /dev/null 2>/dev/null ; then
++		exit 1
++	fi
++
++	copy_kcore
++
++	echo "Done"
++}
++
++subcommand()
++{
++	find_perf
++	check_buildid_cache_permissions
++	echo "$PERF $PERF_SUB_COMMAND -i $PERF_DATA_DIR/perf.data --kallsyms=$PERF_DATA_DIR/kcore_dir/kallsyms $*"
++	"$PERF" $PERF_SUB_COMMAND -i "$PERF_DATA_DIR/perf.data" "--kallsyms=$PERF_DATA_DIR/kcore_dir/kallsyms" $*
++}
++
++if [ "$1" = "fix_buildid_cache_permissions" ] ; then
++	fix_buildid_cache_permissions
++	exit 0
++fi
++
++PERF_SUB_COMMAND=$1
++PERF_DATA_DIR=$2
++shift || true
++shift || true
++
++if [ -z "$PERF_SUB_COMMAND" ] ; then
++	usage
++fi
++
++if [ -z "$PERF_DATA_DIR" ] ; then
++	usage
++fi
++
++case "$PERF_SUB_COMMAND" in
++"record")
++	while [ "$1" != "--" ] ; do
++		PERF_OPTIONS+="$1 "
++		shift || break
++	done
++	if [ "$1" != "--" ] ; then
++		echo "Options and workload are required for recording" >&2
++		usage
++	fi
++	shift
++	record $*
++;;
++"script")
++	subcommand $*
++;;
++"report")
++	subcommand $*
++;;
++"inject")
++	subcommand $*
++;;
++*)
++	usage
++;;
++esac
 -- 
 1.8.3.2
 
