@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbaHOUF1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 16:05:27 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:50972 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaHOUF0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 16:05:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: location for new bus driver-- drivers/bus? drivers/misc?
-Date: Fri, 15 Aug 2014 22:05:18 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stuart Yoder <stuart.yoder@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jose Rivera <German.Rivera@freescale.com>,
-        Olof Johansson <olof@lixom.net>
-References: <9953b08b77224e738a1a1672dcf209c5@BY2PR0301MB0743.namprd03.prod.outlook.com> <20140811183720.GC32566@kroah.com>
-In-Reply-To: <20140811183720.GC32566@kroah.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201408152205.18871.arnd@arndb.de>
-X-Provags-ID: V02:K0:awEXJDjut4PyGjRQ5eMnAjKodzqmP5youA04SuCipHS
- LE9tbUNpopMSsixE7KVchEI5CByI1aFRnjJQb3jpykvNlYlzVm
- +XaiGIgwTSRKhqapo3t+u+Jz47rq0keSXBD5vF60Hw/W4dmSWV
- jjfwSQO/YxiB3nHojRDpOq0OycnBYOm9sfDV0ghrcXOSdaW34z
- R2RjrMOZdMJHi2vZ13eYyp8OXmX19jcrAgeMqfKbhMPZopVL4v
- 2RXPHNBOq+0paxukRGrbjx0f98yyxCEwfwnWQZgzsSgK/3kX5K
- mw1/ZL8NyJGKlGt0zE99LB7nFhHOrB20c8lwyjxqDV29D4Xkv6
- ja515bhJ6ApeAlzcTH04=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751573AbaHOUHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 16:07:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359AbaHOUHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 16:07:19 -0400
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: oleg@redhat.com, peterz@infradead.org, umgwanakikbuti@gmail.com,
+        fweisbec@gmail.com, akpm@linux-foundation.org, srao@redhat.com,
+        lwoodman@redhat.com, atheurer@redhat.com
+Subject: [PATCH 0/3] lockless sys_times and posix_cpu_clock_get
+Date: Fri, 15 Aug 2014 16:05:35 -0400
+Message-Id: <1408133138-22048-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 11 August 2014, gregkh@linuxfoundation.org wrote:
-> On Mon, Aug 11, 2014 at 04:25:49PM +0000, Stuart Yoder wrote:
-> > Greg,
-> > 
-> > We (Freescale) have a patch series nearly ready to send out
-> > for a new bus driver.  It's for a block we call the Freescale
-> > 'Management Complex' which manages discoverable hardware objects.
-> > The Linux bus driver enumerates these objects, binds discovered
-> > objects to drivers just like PCI or any normal bus driver.
-> 
-> Sounds good.
-> 
-> > Question is-- where should this go in the kernel and who would
-> > the maintainer be to cc: the RFC?  I don't think it warrants
-> > a top level driver directory beside pci, usb, etc.  Most likely
-> > place is drivers/bus or drivers/misc (?).
-> > 
-> > We currently have it in drivers/bus, but as far as I can see
-> > there is no maintainer per se for that directory.  You and 
-> > Arnd manage misc so thought I would ask.
-> 
-> I don't remember why drivers/bus/ came about, Arnd, you created it,
-> should we be putting random bus controllers in this directory?
+Thanks to the feedback from Oleg, Peter, Mike, and Frederic,
+I seem to have a patch series that manages to do times()
+locklessly, and apparently correctly.
 
-I think it would be good to have this new driver in drivers/bus.
+Oleg points out that the monotonicity alone is not enough of a
+guarantee, but that should probably be attacked separately, since
+that issue is equally present with and without these patches...
 
-So far, I think all code in there has been merged through the
-arm-soc tree, mainly because there is no other maintainer for it
-yet. The drivers we have in there are not all the same kind,
-the commonality ends at the point of being something that can
-be considered a bus (so it fits here better than into MFD or misc)
-and not being large enough to justify its own top-level directory.
+The test case below, slightly changed from the one posted by Spencer
+Candland in 2009, now runs in 11 seconds instead of 5 minutes.
 
-I initially suggested actually moving some of the existing top-level
-directories with simple bus drivers here too, but that was a bit
-controversial, so I never followed up on that.
+Is it worthwhile?  There apparently are some real workloads that call
+times() a lot, and I believe Sanjay and Andrew have one sitting around.
 
-> And if so, sure, I can maintain drivers/bus/ along with the misc/char
-> drivers, it's not a big deal.
+--------
 
-Sounds good, I'd be glad to have you listed as the official maintainer
-so we can hand it off from the inofficial arm-soc adoption, and if it's
-listed as part of the char/misc section, I will also be listed by
-scripts/get_maintainer.pl to do reviews.
+/*
 
-	Arnd
+Based on the test case from the following bug report, but changed
+to measure utime on a per thread basis. (Rik van Riel)
+
+https://lkml.org/lkml/2009/11/3/522
+
+From: Spencer Candland
+Subject: utime/stime decreasing on thread exit
+
+I am seeing a problem with utime/stime decreasing on thread exit in a
+multi-threaded process.  I have been able to track this regression down
+to the "process wide cpu clocks/timers" changes introduces in
+2.6.29-rc5, specifically when I revert the following commits I know
+longer see decreasing utime/stime values:
+
+4da94d49b2ecb0a26e716a8811c3ecc542c2a65d
+3fccfd67df79c6351a156eb25a7a514e5f39c4d9
+7d8e23df69820e6be42bcc41d441f4860e8c76f7
+4cd4c1b40d40447fb5e7ba80746c6d7ba91d7a53
+32bd671d6cbeda60dc73be77fa2b9037d9a9bfa0
+
+I poked around a little, but I am afraid I have to admit that I am not
+familiar enough with how this works to resolve this or suggest a fix.
+
+I have verified this in happening in kernels 2.6.29-rc5 - 2.6.32-rc6, I
+have been testing this on x86 vanilla kernels, but have also verified it
+on several x86 2.6.29+ distro kernels (fedora and ubuntu).
+
+I first noticed this on a production environment running Apache with the
+worker MPM, however while tracking this down I put together a simple
+program that has been reliable in showing me utime decreasing, hopefully
+it will be helpful in demonstrating the issue:
+*/
+
+#include <stdio.h>
+#include <pthread.h>
+#include <sys/times.h>
+
+#define NUM_THREADS 500
+
+struct tms start;
+
+void *pound (void *threadid)
+{
+  struct tms end;
+  int oldutime = 0;
+  int utime;
+  int c, i;
+  for (i = 0; i < 10000; i++) {
+	  for (c = 0; c < 10000; c++);
+	  times(&end);
+	  utime = ((int)end.tms_utime - (int)start.tms_utime);
+	  if (oldutime > utime) {
+	    printf("utime decreased, was %d, now %d!\n", oldutime, utime);
+	  }
+	  oldutime = utime;
+  }
+  pthread_exit(NULL);
+}
+
+int main()
+{
+  pthread_t th[NUM_THREADS];
+  long i;
+  times(&start);
+  for (i = 0; i < NUM_THREADS; i++) {
+    pthread_create (&th[i], NULL, pound, (void *)i);
+  }
+  pthread_exit(NULL);
+  return 0;
+}
+
