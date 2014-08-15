@@ -1,133 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaHOTQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:16:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59432 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751AbaHOTK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:10:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,872,1400050800"; 
-   d="scan'208";a="588727761"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/24] perf tools: Add machine__kernel_ip()
-Date: Fri, 15 Aug 2014 22:08:39 +0300
-Message-Id: <1408129739-17368-5-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
-References: <1408129739-17368-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1752519AbaHOTRM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:17:12 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:48906 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaHOTRJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:17:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140815190552.GA11476@ubuntumail>
+References: <CALCETrWT_p1-5nkiAjWoeta19fkO3rDiJe9_mhRVqF8x1zXv2A@mail.gmail.com>
+ <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net> <20140815190552.GA11476@ubuntumail>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 15 Aug 2014 12:16:47 -0700
+Message-ID: <CALCETrVKq1Fxnsd9jKDi5_fcKfCJxBZ1w-zGXD3FR-pF-jLsmQ@mail.gmail.com>
+Subject: Re: [PATCH] fs: Remove implicit nodev for new mounts in non-root userns
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to determine if an address is in
-the kernel.  This is based on the kernel function
-kernel_ip().
+On Fri, Aug 15, 2014 at 12:05 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> Quoting Andy Lutomirski (luto@amacapital.net):
+>> Currently, creating a new mount (as opposed to bindmount) in a
+>> non-root userns will implicitly set nodev unless the fs is devpts.
+>> Something like this will be necessary for file systems that allow
+>> the mounter to create device nodes without using mknod (e.g. FUSE
+>> if/when that is allowed), but none of the currently allowed
+>> filesystems do this.
+>
+> Hi,
+>
+> Sorry, I'm probably thinking stupidly, but I don't see this restriction
+> being the case
+>
+> serge@sl:~$ mount | grep tmp
+> [...]
+> tmpfs on /run type tmpfs (rw,noexec,nosuid,size=10%,mode=0755)
+> serge@sl:~$ sudo mknod /run/kvm c 10 232
+> [sudo] password for serge:
+> serge@sl:~$ echo $?
+> 0
+> serge@sl:~$ ls -l /run/kvm
+> crw-r--r-- 1 root root 10, 232 Aug 15 14:04 /run/kvm
+>
+> But you seem to be saying I shouldn't be allowed to create a device inside
+> a tmpfs.  What am I overlooking?
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/event.c   |  6 +++---
- tools/perf/util/machine.c | 23 +++++++++++++++++++++++
- tools/perf/util/machine.h | 17 +++++++++++++++++
- 3 files changed, 43 insertions(+), 3 deletions(-)
+I assume you're in the root userns.  This patch is unnecessary, and
+has no effect, if you're in the root userns.
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 1398c83..ed55819 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -784,9 +784,9 @@ try_again:
- 		 * "[vdso]" dso, but for now lets use the old trick of looking
- 		 * in the whole kernel symbol list.
- 		 */
--		if ((long long)al->addr < 0 &&
--		    cpumode == PERF_RECORD_MISC_USER &&
--		    machine && mg != &machine->kmaps) {
-+		if (cpumode == PERF_RECORD_MISC_USER && machine &&
-+		    mg != &machine->kmaps &&
-+		    machine__kernel_ip(machine, al->addr)) {
- 			mg = &machine->kmaps;
- 			load_map = true;
- 			goto try_again;
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 37f8dc5..e00daf0 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -32,6 +32,7 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- 	machine->symbol_filter = NULL;
- 	machine->id_hdr_size = 0;
- 	machine->comm_exec = false;
-+	machine->kernel_start = 0;
- 
- 	machine->root_dir = strdup(root_dir);
- 	if (machine->root_dir == NULL)
-@@ -1559,3 +1560,25 @@ int machine__set_current_tid(struct machine *machine, int cpu, pid_t pid,
- 
- 	return 0;
- }
-+
-+int machine__get_kernel_start(struct machine *machine)
-+{
-+	struct map *map = machine__kernel_map(machine, MAP__FUNCTION);
-+	int err = 0;
-+
-+	/*
-+	 * The only addresses above 2^63 are kernel addresses of a 64-bit
-+	 * kernel.  Note that addresses are unsigned so that on a 32-bit system
-+	 * all addresses including kernel addresses are less than 2^32.  In
-+	 * that case (32-bit system), if the kernel mapping is unknown, all
-+	 * addresses will be assumed to be in user space - see
-+	 * machine__kernel_ip().
-+	 */
-+	machine->kernel_start = 1ULL << 63;
-+	if (map) {
-+		err = map__load(map, machine->symbol_filter);
-+		if (map->start)
-+			machine->kernel_start = map->start;
-+	}
-+	return err;
-+}
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 61216e0..6a6bcc1 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -36,6 +36,7 @@ struct machine {
- 	struct list_head  kernel_dsos;
- 	struct map_groups kmaps;
- 	struct map	  *vmlinux_maps[MAP__NR_TYPES];
-+	u64		  kernel_start;
- 	symbol_filter_t	  symbol_filter;
- 	pid_t		  *current_tid;
- };
-@@ -46,6 +47,22 @@ struct map *machine__kernel_map(struct machine *machine, enum map_type type)
- 	return machine->vmlinux_maps[type];
- }
- 
-+int machine__get_kernel_start(struct machine *machine);
-+
-+static inline u64 machine__kernel_start(struct machine *machine)
-+{
-+	if (!machine->kernel_start)
-+		machine__get_kernel_start(machine);
-+	return machine->kernel_start;
-+}
-+
-+static inline bool machine__kernel_ip(struct machine *machine, u64 ip)
-+{
-+	u64 kernel_start = machine__kernel_start(machine);
-+
-+	return ip >= kernel_start;
-+}
-+
- struct thread *machine__find_thread(struct machine *machine, pid_t pid,
- 				    pid_t tid);
- struct comm *machine__thread_exec_comm(struct machine *machine,
--- 
-1.8.3.2
+The code in Sandstorm that's currently broken in Linus' tree runs in a
+new userns with a matching mount ns.  It does (copied verbatim):
 
+      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOSUID | MS_NOEXEC,
+                       "size=1m,nr_inodes=16,mode=755"));
+      makeCharDeviceNode("null", "null", 1, 3);
+      makeCharDeviceNode("zero", "zero", 1, 5);
+      makeCharDeviceNode("random", "urandom", 1, 9);
+      makeCharDeviceNode("urandom", "urandom", 1, 9);
+      KJ_SYSCALL(mount("dev", "dev", nullptr,
+                       MS_REMOUNT | MS_BIND | MS_NOSUID | MS_NOEXEC |
+MS_RDONLY, nullptr));
+
+makeCharDeviceNode is a helper that creates an empty file and mounts a
+device node over it.  This code needs the fs to be read/write, but
+Sandstorm wants to make /dev read-only when it's done.
+
+In Linus' tree, the remount fails with -EPERM because the mount is
+secretly nodev.  It was always secretly nodev, but no one noticed
+because of CVE-2014-5207, which caused that remount to succeed.
+
+(Yay for programs that inadvertently exploited a serious security
+vulnerability for their normal function.)
+
+--Andy
