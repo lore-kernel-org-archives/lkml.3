@@ -1,66 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507AbaHOTDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:03:21 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:9786 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751122AbaHOTDR (ORCPT
+	id S1751593AbaHOTGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:06:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56085 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaHOTF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:03:17 -0400
-Date: Fri, 15 Aug 2014 15:03:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Markus Pargmann <mpa@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        Vaibhav Hiremath <hvaibhav@ti.com>,
-        Robert Nelson <robertcnelson@gmail.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: Random MAC address on my BeagleBone White
-Message-ID: <20140815150314.60d01877@gandalf.local.home>
-In-Reply-To: <20140815184911.GJ17027@pengutronix.de>
-References: <20140815134221.08c546a0@gandalf.local.home>
-	<20140815184911.GJ17027@pengutronix.de>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Fri, 15 Aug 2014 15:05:59 -0400
+Date: Fri, 15 Aug 2014 19:05:52 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kenton Varda <kenton@sandstorm.io>, stable@vger.kernel.org
+Subject: Re: [PATCH] fs: Remove implicit nodev for new mounts in non-root
+ userns
+Message-ID: <20140815190552.GA11476@ubuntumail>
+References: <CALCETrWT_p1-5nkiAjWoeta19fkO3rDiJe9_mhRVqF8x1zXv2A@mail.gmail.com>
+ <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Aug 2014 20:49:11 +0200
-Markus Pargmann <mpa@pengutronix.de> wrote:
+Quoting Andy Lutomirski (luto@amacapital.net):
+> Currently, creating a new mount (as opposed to bindmount) in a
+> non-root userns will implicitly set nodev unless the fs is devpts.
+> Something like this will be necessary for file systems that allow
+> the mounter to create device nodes without using mknod (e.g. FUSE
+> if/when that is allowed), but none of the currently allowed
+> filesystems do this.
 
-> Hi Steven,
+Hi,
+
+Sorry, I'm probably thinking stupidly, but I don't see this restriction
+being the case
+
+serge@sl:~$ mount | grep tmp
+[...]
+tmpfs on /run type tmpfs (rw,noexec,nosuid,size=10%,mode=0755)
+serge@sl:~$ sudo mknod /run/kvm c 10 232
+[sudo] password for serge: 
+serge@sl:~$ echo $?
+0
+serge@sl:~$ ls -l /run/kvm
+crw-r--r-- 1 root root 10, 232 Aug 15 14:04 /run/kvm
+
+But you seem to be saying I shouldn't be allowed to create a device inside
+a tmpfs.  What am I overlooking?
+
+> Implicitly adding nodev is problematic, though.  It will make it
+> unsafe to ever remove the implicit addition, since userspace might
+> start to rely on it.
 > 
- 
-> The am335x SoC already has 4 registers which contain two unique vendor
-> MAC addresses, so they should be used automatically instead of a random
-> one.
+> This fixes a minor regression in:
 > 
-> As you mentioned above, I sent a series to read and use those addresses
-> in the linux kernel. There were some problems with the series which I
-> fixed to send a new version of the series, but I didn't send it yet. I
-> will try to resend it tomorrow and Cc you. It would be great if you
-> could test it.
+>     9566d6742852 mnt: Correct permission checks in do_remount
 > 
-
-Yep, but I don't work on weekends (Chief Home Officer's orders). Well,
-I should say, I don't do computer work on weekends. House work on the
-other hand, plenty (Again, the CHO's orders). It will have to wait till
-Monday.
-
-> As far as I know, barebox also works with the beaglebone white and it
-> should set the correct MAC address as well. So if you need the same IP
-> address in linux as in the bootloader, you could try barebox.
-
-Maybe I'll give it a try. But if your stuff works I'll be fine with
-that.
-
-Thanks! Hopefully I'll be using this board in my ktest tutorial at
-ELCEU in October.
-
--- Steve
+> Prior to that commit, MNT_NODEV wasn't enforced for remounts, so
+> there is existing user code that creates a new mount in a userns
+> without MS_NODEV and then expects a remount with matching options to
+> work.  That commit broke code that does this.
+> 
+> Fortunately, since the implicit nodev has no effect on any existing
+> filesystems, we can still safely remove it.
+> 
+> This replaces the implicit nodev with an explicit nodev requirement:
+> anyone who mounts a filesystem without FS_USERNS_DEV_MOUNT will get
+> -EPERM unless they set nodev.  If they set nodev, that setting will
+> be locked.
+> 
+> As an added benefit, if anything like device namespaces is ever
+> added, then user code will be able to opt out of nodev by clearing
+> nodev.
+> 
+> To keep existing code working, this adds FS_USERNS_DEV_MOUNT to all
+> FS_USERNS_MOUNT filesystems.  All of the current filesystems with
+> FS_USERNS_MOUNT set are safe.
+> 
+> I confirmed that this is compatible with Sandstorm's revision
+> 1bf0c4847b.  That revision of Sandstorm does not work without this
+> fix if 9566d6742852 is applied.
+> 
+> Cc: Kenton Varda <kenton@sandstorm.io>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  fs/namespace.c   | 16 ++++++++++++----
+>  fs/proc/root.c   |  2 +-
+>  fs/ramfs/inode.c |  2 +-
+>  fs/sysfs/mount.c |  2 +-
+>  ipc/mqueue.c     |  2 +-
+>  mm/shmem.c       |  4 ++--
+>  6 files changed, 18 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 0acabea58319..835fa9e8307e 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -2154,12 +2154,20 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
+>  			put_filesystem(type);
+>  			return -EPERM;
+>  		}
+> -		/* Only in special cases allow devices from mounts
+> -		 * created outside the initial user namespace.
+> +
+> +		/*
+> +		 * If a filesystem might allow the mounter to put
+> +		 * device nodes on it without the checks in mknod,
+> +		 * then require MS_NODEV to mount it.
+>  		 */
+>  		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
+> -			flags |= MS_NODEV;
+> -			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
+> +			if (!(mnt_flags & MNT_NODEV)) {
+> +				put_filesystem(type);
+> +				return -EPERM;
+> +			}
+> +
+> +			/* Do not allow nodev to be cleared. */
+> +			mnt_flags |= MNT_LOCK_NODEV;
+>  		}
+>  	}
+>  
+> diff --git a/fs/proc/root.c b/fs/proc/root.c
+> index 094e44d4a6be..2313b280729e 100644
+> --- a/fs/proc/root.c
+> +++ b/fs/proc/root.c
+> @@ -159,7 +159,7 @@ static struct file_system_type proc_fs_type = {
+>  	.name		= "proc",
+>  	.mount		= proc_mount,
+>  	.kill_sb	= proc_kill_sb,
+> -	.fs_flags	= FS_USERNS_MOUNT,
+> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
+>  };
+>  
+>  void __init proc_root_init(void)
+> diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+> index d365b1c4eb3c..b95b7302d4cc 100644
+> --- a/fs/ramfs/inode.c
+> +++ b/fs/ramfs/inode.c
+> @@ -261,7 +261,7 @@ static struct file_system_type ramfs_fs_type = {
+>  	.name		= "ramfs",
+>  	.mount		= ramfs_mount,
+>  	.kill_sb	= ramfs_kill_sb,
+> -	.fs_flags	= FS_USERNS_MOUNT,
+> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
+>  };
+>  
+>  int __init init_ramfs_fs(void)
+> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+> index 8a49486bf30c..56ba59317e24 100644
+> --- a/fs/sysfs/mount.c
+> +++ b/fs/sysfs/mount.c
+> @@ -58,7 +58,7 @@ static struct file_system_type sysfs_fs_type = {
+>  	.name		= "sysfs",
+>  	.mount		= sysfs_mount,
+>  	.kill_sb	= sysfs_kill_sb,
+> -	.fs_flags	= FS_USERNS_MOUNT,
+> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
+>  };
+>  
+>  int __init sysfs_init(void)
+> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+> index 4fcf39af1776..56abbc848d4c 100644
+> --- a/ipc/mqueue.c
+> +++ b/ipc/mqueue.c
+> @@ -1394,7 +1394,7 @@ static struct file_system_type mqueue_fs_type = {
+>  	.name = "mqueue",
+>  	.mount = mqueue_mount,
+>  	.kill_sb = kill_litter_super,
+> -	.fs_flags = FS_USERNS_MOUNT,
+> +	.fs_flags = FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
+>  };
+>  
+>  int mq_init_ns(struct ipc_namespace *ns)
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index a42add14331c..f4a708a8f9e3 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -3149,7 +3149,7 @@ static struct file_system_type shmem_fs_type = {
+>  	.name		= "tmpfs",
+>  	.mount		= shmem_mount,
+>  	.kill_sb	= kill_litter_super,
+> -	.fs_flags	= FS_USERNS_MOUNT,
+> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
+>  };
+>  
+>  int __init shmem_init(void)
+> @@ -3208,7 +3208,7 @@ static struct file_system_type shmem_fs_type = {
+>  	.name		= "tmpfs",
+>  	.mount		= ramfs_mount,
+>  	.kill_sb	= kill_litter_super,
+> -	.fs_flags	= FS_USERNS_MOUNT,
+> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
+>  };
+>  
+>  int __init shmem_init(void)
+> -- 
+> 1.9.3
+> 
