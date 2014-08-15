@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295AbaHOOIA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:08:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54419 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751101AbaHOOH7 (ORCPT
+	id S1751446AbaHOOKU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:10:20 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:56125 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaHOOKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:07:59 -0400
-Date: Fri, 15 Aug 2014 16:07:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, mingo@kernel.org,
-        len.brown@intel.com, rjw@rjwysocki.net,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
-        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [RFC 0/3] Experimental patchset for CPPC
-Message-ID: <20140815140741.GI19379@twins.programming.kicks-ass.net>
-References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
- <20140814205143.GY6758@twins.programming.kicks-ass.net>
- <CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
- <20140815061917.GX19379@twins.programming.kicks-ass.net>
- <CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iDeshIghY55r3+AG"
-Content-Disposition: inline
-In-Reply-To: <CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 15 Aug 2014 10:10:18 -0400
+From: Rob Jones <rob.jones@codethink.co.uk>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
+        ebiederm@xmission.com, swhiteho@redhat.com, ian.molton@codethink.co.uk,
+        rob.jones@codethink.co.uk
+Subject: [PATCH v2] seq_file: Document seq_open_private(), seq_release_private()
+Date: Fri, 15 Aug 2014 15:10:02 +0100
+Message-Id: <1408111802-19281-1-git-send-email-rob.jones@codethink.co.uk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Despite the fact that these functions have been around for years, they are
+little used (only 15 uses in 13 files at the preseht time) even though
+many other files use work-arounds to achieve the same result.
 
---iDeshIghY55r3+AG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+By documenting them, hopefully they will become more widely used.
 
-On Fri, Aug 15, 2014 at 09:08:50AM -0400, Ashwin Chaugule wrote:
-> If the OS only looks at Highest, Lowest, Delivered registers and only
-> writes to Desired, then we're not really any different than how we do
-> things today in the CPUFreq layer.
+Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
 
-The thing is; we're already struggling to make 'sense' of x86 as it
-stands today. And it looks like this CPPC stuff makes the behaviour even
-less certain.
+---
+ Documentation/filesystems/seq_file.txt |   36 ++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
-> Or even in the case of
-> intel_pstate, if you map Desired to PERF_CTL and get value of
-> Delivered by using aperf/mperf ratios (as my experimental driver
-> does), then we can still maintain the existing system performance. It
-> seems like if an OS can make use of the additional information then it
-> should be net win for overall power savings and performance
-> enhancement. Also, using the CPPC descriptors, we should be able to
-> have one driver across X86 and ARM64. (possibly others too.)
+diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
+index a1e2e0d..c68308d8 100644
+--- a/Documentation/filesystems/seq_file.txt
++++ b/Documentation/filesystems/seq_file.txt
+@@ -226,6 +226,42 @@ be used for more than one file, you can store an arbitrary pointer in the
+ private field of the seq_file structure; that value can then be retrieved
+ by the iterator functions.
+ 
++There is also a wrapper function to seq_open() called seq_open_private(). It
++kmallocs a zero filled block of memory and stores a pointer to it in the
++private field of the seq_file structure, returning 0 on success. The
++block size is specified in a third parameter to the function, e.g.:
++
++	static int ct_open(struct inode *inode, struct file *file)
++	{
++		return seq_open_private(file, &ct_seq_ops,
++					sizeof(struct mystruct));
++	}
++
++There is also a variant function, __seq_open_private(), which is functionally
++identical except that, if successful, it returns the pointer to the allocated
++memory block, allowing further initialisation e.g.:
++
++	static int ct_open(struct inode *inode, struct file *file)
++	{
++		struct mystruct *p =
++			__seq_open_private(file, &ct_seq_ops, sizeof(*p));
++
++		if (!p)
++			return -ENOMEM;
++
++		if (IS_ERR(p))
++			return p;
++
++		p->foo = bar; /* initialize my stuff */
++			...
++		p->baz = true;
++
++		return 0;
++	}
++
++A corresponding close function, seq_release_private() is available which
++frees the memory allocated in the corresponding open.
++
+ The other operations of interest - read(), llseek(), and release() - are
+ all implemented by the seq_file code itself. So a virtual file's
+ file_operations structure will look like:
+-- 
+1.7.10.4
 
-Yikes, so aaargh64 will go do creative power management too?
-
-And worse; it will go do ACPI? Welcome to the world of guaranteed BIOS
-fail :-(
-
---iDeshIghY55r3+AG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJT7hQtAAoJEHZH4aRLwOS6/DIP/AmupGzWkhlSymd3IklcJwAz
-/gsXPBhhpiM/2NlUzpHjx3yYXoGodNf0Agi0hTxKgEYhdOYnW1Dcq1mNmaFGZQtC
-ygootTjLffyxYypXW4JxsteqY+5S6Nb6l7sjHkO+VA5ZMSsH4elaehcruOoPfvk5
-mF40F8gNdTHhNq1ev0PEa5LDws4KnqNk7gZDZzFeFdSaDkZNnZ4RuVWof8vHIBh8
-CNqVv13a5MzJXr8iDBwNuXdHRetFr2zih+/bw6wXAaTal3D2R4dz+zdPCW5JgKqx
-TLZpFIAeGt35sg6gdmL9wifKSnZ9sif+Ic1D4tfTSnbA3ufrUW1vqqDD0vIrQ9bd
-yaK17HG7TZLjGXIqNT6SotccmQdqTFnHAQZi24QrGWnJCJZUz8offICAXs37lN5M
-wBlruD3wM7mlIjBXzi0OhKoPMrlcY3c15InqZPbGYzrv8CNDlZfkMHVtfR8JxBbv
-UxIYL7+DnOU18wxP+bGcTo3jqu35fGf6iVifskBwHhciTmj1LDk59HhsM4Oilw7X
-IWzBH1/ARwhr6KFQd56GJCn9JaoaGtKe7GIbabtp054jSIqfK2NTICxK0vQyatjN
-+RwM8i6runTP7A+CyAKeIBIT3RdMa527U4BTEUZ55rWcG5d5CFGxCMPMsvNwaSjl
-ZGBYTbwl4wVw7cuhB2nh
-=7wyo
------END PGP SIGNATURE-----
-
---iDeshIghY55r3+AG--
