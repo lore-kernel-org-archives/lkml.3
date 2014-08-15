@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881AbaHOH0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 03:26:42 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37974 "EHLO e7.ny.us.ibm.com"
+	id S932248AbaHOH0u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 03:26:50 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:34821 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754188AbaHOH0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 03:26:40 -0400
+	id S1754188AbaHOH0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 03:26:43 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
         Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com
 Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2 08/14] tools/perf: document parameterized events and note symbolically formed events
-Date: Fri, 15 Aug 2014 00:26:17 -0700
-Message-Id: <1408087583-32239-9-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v2 11/14] powerpc/perf/hv-24x7: Documentaion for new sysfs entries which expose descriptions
+Date: Fri, 15 Aug 2014 00:26:20 -0700
+Message-Id: <1408087583-32239-12-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081507-5806-0000-0000-000000394950
+x-cbid: 14081507-7182-0000-0000-000000359F9E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,50 +32,39 @@ CC: Cody P Schafer <dev@codyps.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- tools/perf/Documentation/perf-list.txt   | 13 +++++++++++++
- tools/perf/Documentation/perf-record.txt |  5 +++++
- 2 files changed, 18 insertions(+)
+ .../testing/sysfs-bus-event_source-devices-hv_24x7 | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 6fce6a6..626818b 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -89,6 +89,19 @@ raw encoding of 0x1A8 can be used:
- You should refer to the processor specific documentation for getting these
- details. Some of them are referenced in the SEE ALSO section below.
- 
-+PARAMETERIZED EVENTS
-+--------------------
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7 b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
+index e78ee79..5b501d7 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-hv_24x7
+@@ -21,3 +21,25 @@ Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
+ Description:
+ 		Exposes the "version" field of the 24x7 catalog. This is also
+ 		extractable from the provided binary "catalog" sysfs entry.
 +
-+Some pmu events listed by 'perf-list' will be displayed with '?' in them. For
-+example:
++What:		/sys/bus/event_source/devices/hv_24x7/event_descs/<event-name>
++Date:		February 2014
++Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
++Description:
++		Provides the description of a particular event as provided by
++		the firmware. If firmware does not provide a description, no
++		file will be created.
 +
-+  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
++		Note that the event-name lacks the domain suffix appended for
++		events in the events/ dir.
 +
-+This means that when provided as an event, a value for phys_processor_idx must
-+also be supplied. For example:
++What:		/sys/bus/event_source/devices/hv_24x7/event_long_descs/<event-name>
++Date:		February 2014
++Contact:	Cody P Schafer <cody@linux.vnet.ibm.com>
++Description:
++		Provides the "long" description of a particular event as
++		provided by the firmware. If firmware does not provide a
++		description, no file will be created.
 +
-+  perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
-+
- OPTIONS
- -------
- 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index d460049..664f852 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -33,6 +33,11 @@ OPTIONS
-         - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
- 	  hexadecimal event descriptor.
- 
-+	- a symbolicly formed PMU event like 'pmu/value1=0x3,value2/' where
-+	  'value1' and 'value2' are defined as formats in
-+	  /sys/bus/event_sources/devices/pmu/format/* OR are one of 'config',
-+	  'config1', 'config2'.
-+
-         - a hardware breakpoint event in the form of '\mem:addr[:access]'
-           where addr is the address in memory you want to break in.
-           Access is the memory access type (read, write, execute) it can
++		Note that the event-name lacks the domain suffix appended for
++		events in the events/ dir.
 -- 
 1.8.3.1
 
