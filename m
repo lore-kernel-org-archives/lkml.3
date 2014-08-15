@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaHOQ27 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:28:59 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52382 "EHLO
+	id S1751537AbaHOQ25 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:28:57 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:52343 "EHLO
 	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544AbaHOQ26 (ORCPT
+	with ESMTP id S1751379AbaHOQ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:28:58 -0400
+	Fri, 15 Aug 2014 12:28:55 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,88 +15,182 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v6 tip/core/rcu 10/17] documentation: Add verbiage on RCU-tasks stall warning messages
-Date: Fri, 15 Aug 2014 09:28:38 -0700
-Message-Id: <1408120125-30479-10-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v6 tip/core/rcu 02/17] rcu: Provide cond_resched_rcu_qs() to force quiescent states in long loops
+Date: Fri, 15 Aug 2014 09:28:30 -0700
+Message-Id: <1408120125-30479-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140815162820.GA28967@linux.vnet.ibm.com>
  <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081516-3532-0000-0000-000003E07BB9
+x-cbid: 14081516-3532-0000-0000-000003E07B8A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit documents RCU-tasks stall warning messages and also describes
-when to use the new cond_resched_rcu_qs() API.
+RCU-tasks requires the occasional voluntary context switch
+from CPU-bound in-kernel tasks.  In some cases, this requires
+instrumenting cond_resched().  However, there is some reluctance
+to countenance unconditionally instrumenting cond_resched() (see
+http://lwn.net/Articles/603252/), so this commit creates a separate
+cond_resched_rcu_qs() that may be used in place of cond_resched() in
+locations prone to long-duration in-kernel looping.
+
+This commit currently instruments only RCU-tasks.  Future possibilities
+include also instrumenting RCU, RCU-bh, and RCU-sched in order to reduce
+IPI usage.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/stallwarn.txt | 33 ++++++++++++++++++++++++---------
- 1 file changed, 24 insertions(+), 9 deletions(-)
+ fs/file.c                |  2 +-
+ include/linux/rcupdate.h | 13 +++++++++++++
+ kernel/rcu/rcutorture.c  |  4 ++--
+ kernel/rcu/tree.c        | 12 ++++++------
+ kernel/rcu/tree_plugin.h |  2 +-
+ mm/mlock.c               |  2 +-
+ 6 files changed, 24 insertions(+), 11 deletions(-)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 68fe3ad27015..ef5a2fd4ff70 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -56,8 +56,20 @@ RCU_STALL_RAT_DELAY
- 	two jiffies.  (This is a cpp macro, not a kernel configuration
- 	parameter.)
+diff --git a/fs/file.c b/fs/file.c
+index 66923fe3176e..1cafc4c9275b 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -367,7 +367,7 @@ static struct fdtable *close_files(struct files_struct * files)
+ 				struct file * file = xchg(&fdt->fd[i], NULL);
+ 				if (file) {
+ 					filp_close(file, files);
+-					cond_resched();
++					cond_resched_rcu_qs();
+ 				}
+ 			}
+ 			i++;
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 027a7228d6d3..41db3fca1e7f 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -330,6 +330,19 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ #define rcu_note_voluntary_context_switch(t)	do { } while (0)
+ #endif /* #else #ifdef CONFIG_TASKS_RCU */
  
--When a CPU detects that it is stalling, it will print a message similar
--to the following:
-+rcupdate.rcu_task_stall_timeout
++/**
++ * cond_resched_rcu_qs - Report potential quiescent states to RCU
++ *
++ * This macro resembles cond_resched(), except that it is defined to
++ * report potential quiescent states to RCU-tasks even if the cond_resched()
++ * machinery were to be shut off, as some advocate for PREEMPT kernels.
++ */
++#define cond_resched_rcu_qs() \
++do { \
++	rcu_note_voluntary_context_switch(current); \
++	cond_resched(); \
++} while (0)
 +
-+	This boot/sysfs parameter controls the RCU-tasks stall warning
-+	interval.  A value of zero or less suppresses RCU-tasks stall
-+	warnings.  A positive value sets the stall-warning interval
-+	in jiffies.  An RCU-tasks stall warning starts wtih the line:
-+
-+		INFO: rcu_tasks detected stalls on tasks:
-+
-+	And continues with the output of sched_show_task() for each
-+	task stalling the current RCU-tasks grace period.
-+
-+For non-RCU-tasks flavors of RCU, when a CPU detects that it is stalling,
-+it will print a message similar to the following:
+ #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
+ bool __rcu_is_watching(void);
+ #endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 7fa34f86e5ba..febe07062ac5 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -667,7 +667,7 @@ static int rcu_torture_boost(void *arg)
+ 				}
+ 				call_rcu_time = jiffies;
+ 			}
+-			cond_resched();
++			cond_resched_rcu_qs();
+ 			stutter_wait("rcu_torture_boost");
+ 			if (torture_must_stop())
+ 				goto checkwait;
+@@ -1019,7 +1019,7 @@ rcu_torture_reader(void *arg)
+ 		__this_cpu_inc(rcu_torture_batch[completed]);
+ 		preempt_enable();
+ 		cur_ops->readunlock(idx);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 		stutter_wait("rcu_torture_reader");
+ 	} while (!torture_must_stop());
+ 	if (irqreader && cur_ops->irq_capable) {
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f958c52f644d..645a33efc0d4 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1650,7 +1650,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ 		    system_state == SYSTEM_RUNNING)
+ 			udelay(200);
+ #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
  
- INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
+ 	mutex_unlock(&rsp->onoff_mutex);
+@@ -1739,7 +1739,7 @@ static void rcu_gp_cleanup(struct rcu_state *rsp)
+ 		/* smp_mb() provided by prior unlock-lock pair. */
+ 		nocb += rcu_future_gp_cleanup(rsp, rnp);
+ 		raw_spin_unlock_irq(&rnp->lock);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 	rnp = rcu_get_root(rsp);
+ 	raw_spin_lock_irq(&rnp->lock);
+@@ -1788,7 +1788,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 			/* Locking provides needed memory barrier. */
+ 			if (rcu_gp_init(rsp))
+ 				break;
+-			cond_resched();
++			cond_resched_rcu_qs();
+ 			flush_signals(current);
+ 			trace_rcu_grace_period(rsp->name,
+ 					       ACCESS_ONCE(rsp->gpnum),
+@@ -1831,10 +1831,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 				trace_rcu_grace_period(rsp->name,
+ 						       ACCESS_ONCE(rsp->gpnum),
+ 						       TPS("fqsend"));
+-				cond_resched();
++				cond_resched_rcu_qs();
+ 			} else {
+ 				/* Deal with stray signal. */
+-				cond_resched();
++				cond_resched_rcu_qs();
+ 				flush_signals(current);
+ 				trace_rcu_grace_period(rsp->name,
+ 						       ACCESS_ONCE(rsp->gpnum),
+@@ -2437,7 +2437,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
+ 	struct rcu_node *rnp;
  
-@@ -174,8 +186,12 @@ o	A CPU looping with preemption disabled.  This condition can
- o	A CPU looping with bottom halves disabled.  This condition can
- 	result in RCU-sched and RCU-bh stalls.
+ 	rcu_for_each_leaf_node(rsp, rnp) {
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 		mask = 0;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		smp_mb__after_unlock_lock();
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 02ac0fb186b8..a86a363ea453 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -1842,7 +1842,7 @@ static int rcu_oom_notify(struct notifier_block *self,
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu) {
+ 		smp_call_function_single(cpu, rcu_oom_notify_cpu, NULL, 1);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ 	put_online_cpus();
  
--o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
--	without invoking schedule().
-+o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the
-+	kernel without invoking schedule().  Note that cond_resched()
-+	does not necessarily prevent RCU CPU stall warnings.  Therefore,
-+	if the looping in the kernel is really expected and desirable
-+	behavior, you might need to replace some of the cond_resched()
-+	calls with calls to cond_resched_rcu_qs().
+diff --git a/mm/mlock.c b/mm/mlock.c
+index b1eb53634005..bc386a22d647 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -782,7 +782,7 @@ static int do_mlockall(int flags)
  
- o	A CPU-bound real-time task in a CONFIG_PREEMPT kernel, which might
- 	happen to preempt a low-priority task in the middle of an RCU
-@@ -208,11 +224,10 @@ o	A hardware failure.  This is quite unlikely, but has occurred
- 	This resulted in a series of RCU CPU stall warnings, eventually
- 	leading the realization that the CPU had failed.
- 
--The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
--SRCU does not have its own CPU stall warnings, but its calls to
--synchronize_sched() will result in RCU-sched detecting RCU-sched-related
--CPU stalls.  Please note that RCU only detects CPU stalls when there is
--a grace period in progress.  No grace period, no CPU stall warnings.
-+The RCU, RCU-sched, RCU-bh, and RCU-tasks implementations have CPU stall
-+warning.  Note that SRCU does -not- have CPU stall warnings.  Please note
-+that RCU only detects CPU stalls when there is a grace period in progress.
-+No grace period, no CPU stall warnings.
- 
- To diagnose the cause of the stall, inspect the stack traces.
- The offending function will usually be near the top of the stack.
+ 		/* Ignore errors */
+ 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+-		cond_resched();
++		cond_resched_rcu_qs();
+ 	}
+ out:
+ 	return 0;
 -- 
 1.8.1.5
 
