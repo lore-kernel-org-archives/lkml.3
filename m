@@ -1,308 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaHONnJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 09:43:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17348 "EHLO mx1.redhat.com"
+	id S1751576AbaHONnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 09:43:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25199 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134AbaHONnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 09:43:06 -0400
-Date: Fri, 15 Aug 2014 10:42:45 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Rik van Riel <riel@redhat.com>, 1vier1@web.de, serge@hallyn.com,
-        ebiederm@xmission.com, containers@lists.linux-foundation.org
-Subject: Re: [PATCH 3/3] ipc namespace: copy settings from parent namespace
-Message-ID: <20140815134244.GC9918@optiplex.redhat.com>
-References: <1407828557-31995-1-git-send-email-manfred@colorfullife.com>
- <1407828557-31995-2-git-send-email-manfred@colorfullife.com>
- <1407828557-31995-3-git-send-email-manfred@colorfullife.com>
- <1407828557-31995-4-git-send-email-manfred@colorfullife.com>
+	id S1751536AbaHONnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 09:43:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,870,1400050800"; 
+   d="scan'208";a="559019421"
+Message-ID: <53EE0E5B.3050004@linux.intel.com>
+Date: Fri, 15 Aug 2014 06:42:51 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407828557-31995-4-git-send-email-manfred@colorfullife.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
+        len.brown@intel.com, rjw@rjwysocki.net,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
+        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: Re: [RFC 0/3] Experimental patchset for CPPC
+References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>	<20140814205143.GY6758@twins.programming.kicks-ass.net>	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>	<20140815061917.GX19379@twins.programming.kicks-ass.net> <CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
+In-Reply-To: <CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 09:29:17AM +0200, Manfred Spraul wrote:
-> Right now, each new IPC namespace starts with the kernel default values.
-> This means that changes that were made to the limits get overwritten.
-> 
-> With this patch, a new namespace inherits the settings from the parent
-> namespace, which is less surprising.
-> 
-> The patch updates
-> - SysV msg
-> - SysV sem
-> - SysV shm
-> - POSIX mqueues
-> 
-> Cc: serge@hallyn.com
-> Cc: ebiederm@xmission.com
-> Cc: containers@lists.linux-foundation.org
-> Cc: mtk.manpages@gmail.com
-> 
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-> ---
+On 8/15/2014 6:08 AM, Ashwin Chaugule wrote:
+> (b) we come up with ways to provide the bounds around a Desired value
+> using the information from the platform. (long term)
+>
+> I briefly looked at the x86 HWP (Hardware Performance States) in the
+> s/w manual again. Its essentially an implementation of CPPC. It seems
+> like X86 has implemented most if not all these registers as MSRs. I'm
+> really interested in knowing if anyone there is/has been working on
+> using them and what they found.
 
-Acked-by: Rafael Aquini <aquini@redhat.com>
+we've found that so far that there are two reasonable options
+1) Let the OS device (old style)
+2) Let the hardware decide (new style)
+
+2) is there in practice today in the turbo range (which is increasingly the whole thing)
+and the hardware can make decisions about power budgetting on a timescale the OS
+can never even dream of, so once you give control the the hardware (with CPPC or native)
+it's normally better to just get out of the way as OS.
 
 
->  include/linux/ipc_namespace.h |  6 ++++--
->  ipc/mqueue.c                  | 23 ++++++++++++++++-------
->  ipc/msg.c                     | 16 +++++++++++-----
->  ipc/namespace.c               |  8 ++++----
->  ipc/sem.c                     | 19 +++++++++++++------
->  ipc/shm.c                     | 19 +++++++++++++------
->  ipc/util.h                    | 20 ++++++++++++++------
->  7 files changed, 75 insertions(+), 36 deletions(-)
-> 
-> diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-> index e365d5e..1cc36a0 100644
-> --- a/include/linux/ipc_namespace.h
-> +++ b/include/linux/ipc_namespace.h
-> @@ -73,7 +73,7 @@ static inline void shm_destroy_orphaned(struct ipc_namespace *ns) {}
->  #endif /* CONFIG_SYSVIPC */
->  
->  #ifdef CONFIG_POSIX_MQUEUE
-> -extern int mq_init_ns(struct ipc_namespace *ns);
-> +extern int mq_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns);
->  /*
->   * POSIX Message Queue default values:
->   *
-> @@ -108,7 +108,9 @@ extern int mq_init_ns(struct ipc_namespace *ns);
->  #define DFLT_MSGSIZEMAX		     8192
->  #define HARD_MSGSIZEMAX	    (16*1024*1024)
->  #else
-> -static inline int mq_init_ns(struct ipc_namespace *ns) { return 0; }
-> +static inline int mq_init_ns(struct ipc_namespace *ns,
-> +				struct ipc_namespace *old_ns)
-> +{ return 0; }
->  #endif
->  
->  #if defined(CONFIG_IPC_NS)
-> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-> index 4fcf39a..3473072d 100644
-> --- a/ipc/mqueue.c
-> +++ b/ipc/mqueue.c
-> @@ -1397,14 +1397,23 @@ static struct file_system_type mqueue_fs_type = {
->  	.fs_flags = FS_USERNS_MOUNT,
->  };
->  
-> -int mq_init_ns(struct ipc_namespace *ns)
-> +int mq_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns)
->  {
-> +	if (old_ns != NULL) {
-> +		ns->mq_queues_max    = old_ns->mq_queues_max;
-> +		ns->mq_msg_max       = old_ns->mq_msg_max;
-> +		ns->mq_msgsize_max   = old_ns->mq_msgsize_max;
-> +		ns->mq_msg_default   = old_ns->mq_msg_default;
-> +		ns->mq_msgsize_default  = old_ns->mq_msgsize_default;
-> +	} else {
-> +		ns->mq_queues_max    = DFLT_QUEUESMAX;
-> +		ns->mq_msg_max       = DFLT_MSGMAX;
-> +		ns->mq_msgsize_max   = DFLT_MSGSIZEMAX;
-> +		ns->mq_msg_default   = DFLT_MSG;
-> +		ns->mq_msgsize_default  = DFLT_MSGSIZE;
-> +	}
-> +
->  	ns->mq_queues_count  = 0;
-> -	ns->mq_queues_max    = DFLT_QUEUESMAX;
-> -	ns->mq_msg_max       = DFLT_MSGMAX;
-> -	ns->mq_msgsize_max   = DFLT_MSGSIZEMAX;
-> -	ns->mq_msg_default   = DFLT_MSG;
-> -	ns->mq_msgsize_default  = DFLT_MSGSIZE;
->  
->  	ns->mq_mnt = kern_mount_data(&mqueue_fs_type, ns);
->  	if (IS_ERR(ns->mq_mnt)) {
-> @@ -1444,7 +1453,7 @@ static int __init init_mqueue_fs(void)
->  
->  	spin_lock_init(&mq_lock);
->  
-> -	error = mq_init_ns(&init_ipc_ns);
-> +	error = mq_init_ns(&init_ipc_ns, NULL);
->  	if (error)
->  		goto out_filesystem;
->  
-> diff --git a/ipc/msg.c b/ipc/msg.c
-> index a7261d5..3cbd2ad 100644
-> --- a/ipc/msg.c
-> +++ b/ipc/msg.c
-> @@ -990,11 +990,17 @@ SYSCALL_DEFINE5(msgrcv, int, msqid, struct msgbuf __user *, msgp, size_t, msgsz,
->  }
->  
->  
-> -void msg_init_ns(struct ipc_namespace *ns)
-> +void msg_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns)
->  {
-> -	ns->msg_ctlmax = MSGMAX;
-> -	ns->msg_ctlmnb = MSGMNB;
-> -	ns->msg_ctlmni = MSGMNI;
-> +	if (old_ns != NULL) {
-> +		ns->msg_ctlmax = old_ns->msg_ctlmax;
-> +		ns->msg_ctlmnb = old_ns->msg_ctlmnb;
-> +		ns->msg_ctlmni = old_ns->msg_ctlmni;
-> +	} else {
-> +		ns->msg_ctlmax = MSGMAX;
-> +		ns->msg_ctlmnb = MSGMNB;
-> +		ns->msg_ctlmni = MSGMNI;
-> +	}
->  
->  	atomic_set(&ns->msg_bytes, 0);
->  	atomic_set(&ns->msg_hdrs, 0);
-> @@ -1036,7 +1042,7 @@ static int sysvipc_msg_proc_show(struct seq_file *s, void *it)
->  
->  void __init msg_init(void)
->  {
-> -	msg_init_ns(&init_ipc_ns);
-> +	msg_init_ns(&init_ipc_ns, NULL);
->  
->  	ipc_init_proc_interface("sysvipc/msg",
->  				"       key      msqid perms      cbytes       qnum lspid lrpid   uid   gid  cuid  cgid      stime      rtime      ctime\n",
-> diff --git a/ipc/namespace.c b/ipc/namespace.c
-> index 1a3ffd4..97e3332 100644
-> --- a/ipc/namespace.c
-> +++ b/ipc/namespace.c
-> @@ -33,7 +33,7 @@ static struct ipc_namespace *create_ipc_ns(struct user_namespace *user_ns,
->  	}
->  
->  	atomic_set(&ns->count, 1);
-> -	err = mq_init_ns(ns);
-> +	err = mq_init_ns(ns, old_ns);
->  	if (err) {
->  		proc_free_inum(ns->proc_inum);
->  		kfree(ns);
-> @@ -41,9 +41,9 @@ static struct ipc_namespace *create_ipc_ns(struct user_namespace *user_ns,
->  	}
->  	atomic_inc(&nr_ipc_ns);
->  
-> -	sem_init_ns(ns);
-> -	msg_init_ns(ns);
-> -	shm_init_ns(ns);
-> +	sem_init_ns(ns, old_ns);
-> +	msg_init_ns(ns, old_ns);
-> +	shm_init_ns(ns, old_ns);
->  
->  	ns->user_ns = get_user_ns(user_ns);
->  
-> diff --git a/ipc/sem.c b/ipc/sem.c
-> index 454f6c6..f1ded77 100644
-> --- a/ipc/sem.c
-> +++ b/ipc/sem.c
-> @@ -170,12 +170,19 @@ static int sysvipc_sem_proc_show(struct seq_file *s, void *it);
->  #define sc_semopm	sem_ctls[2]
->  #define sc_semmni	sem_ctls[3]
->  
-> -void sem_init_ns(struct ipc_namespace *ns)
-> +void sem_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns)
->  {
-> -	ns->sc_semmsl = SEMMSL;
-> -	ns->sc_semmns = SEMMNS;
-> -	ns->sc_semopm = SEMOPM;
-> -	ns->sc_semmni = SEMMNI;
-> +	if (old_ns != NULL) {
-> +		ns->sc_semmsl = old_ns->sc_semmsl;
-> +		ns->sc_semmns = old_ns->sc_semmns;
-> +		ns->sc_semopm = old_ns->sc_semopm;
-> +		ns->sc_semmni = old_ns->sc_semmni;
-> +	} else {
-> +		ns->sc_semmsl = SEMMSL;
-> +		ns->sc_semmns = SEMMNS;
-> +		ns->sc_semopm = SEMOPM;
-> +		ns->sc_semmni = SEMMNI;
-> +	}
->  	ns->used_sems = 0;
->  	ipc_init_ids(&ns->ids[IPC_SEM_IDS]);
->  }
-> @@ -190,7 +197,7 @@ void sem_exit_ns(struct ipc_namespace *ns)
->  
->  void __init sem_init(void)
->  {
-> -	sem_init_ns(&init_ipc_ns);
-> +	sem_init_ns(&init_ipc_ns, NULL);
->  	ipc_init_proc_interface("sysvipc/sem",
->  				"       key      semid perms      nsems   uid   gid  cuid  cgid      otime      ctime\n",
->  				IPC_SEM_IDS, sysvipc_sem_proc_show);
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 7fc9f9f..7856952 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -72,12 +72,19 @@ static void shm_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp);
->  static int sysvipc_shm_proc_show(struct seq_file *s, void *it);
->  #endif
->  
-> -void shm_init_ns(struct ipc_namespace *ns)
-> +void shm_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns)
->  {
-> -	ns->shm_ctlmax = SHMMAX;
-> -	ns->shm_ctlall = SHMALL;
-> -	ns->shm_ctlmni = SHMMNI;
-> -	ns->shm_rmid_forced = 0;
-> +	if (old_ns != NULL) {
-> +		ns->shm_ctlmax = old_ns->shm_ctlmax;
-> +		ns->shm_ctlall = old_ns->shm_ctlall;
-> +		ns->shm_ctlmni = old_ns->shm_ctlmni;
-> +		ns->shm_rmid_forced = old_ns->shm_rmid_forced;
-> +	} else {
-> +		ns->shm_ctlmax = SHMMAX;
-> +		ns->shm_ctlall = SHMALL;
-> +		ns->shm_ctlmni = SHMMNI;
-> +		ns->shm_rmid_forced = 0;
-> +	}
->  	ns->shm_tot = 0;
->  	ipc_init_ids(&shm_ids(ns));
->  }
-> @@ -110,7 +117,7 @@ void shm_exit_ns(struct ipc_namespace *ns)
->  
->  static int __init ipc_ns_init(void)
->  {
-> -	shm_init_ns(&init_ipc_ns);
-> +	shm_init_ns(&init_ipc_ns, NULL);
->  	return 0;
->  }
->  
-> diff --git a/ipc/util.h b/ipc/util.h
-> index 1a5a0fc..1be9830 100644
-> --- a/ipc/util.h
-> +++ b/ipc/util.h
-> @@ -30,17 +30,25 @@ static inline void mq_put_mnt(struct ipc_namespace *ns) { }
->  #endif
->  
->  #ifdef CONFIG_SYSVIPC
-> -void sem_init_ns(struct ipc_namespace *ns);
-> -void msg_init_ns(struct ipc_namespace *ns);
-> -void shm_init_ns(struct ipc_namespace *ns);
-> +void sem_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns);
-> +void msg_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns);
-> +void shm_init_ns(struct ipc_namespace *ns, struct ipc_namespace *old_ns);
->  
->  void sem_exit_ns(struct ipc_namespace *ns);
->  void msg_exit_ns(struct ipc_namespace *ns);
->  void shm_exit_ns(struct ipc_namespace *ns);
->  #else
-> -static inline void sem_init_ns(struct ipc_namespace *ns) { }
-> -static inline void msg_init_ns(struct ipc_namespace *ns) { }
-> -static inline void shm_init_ns(struct ipc_namespace *ns) { }
-> +static inline void sem_init_ns(struct ipc_namespace *ns,
-> +				struct ipc_namespace *old_ns)
-> +{ }
-> +
-> +static inline void msg_init_ns(struct ipc_namespace *ns,
-> +				struct ipc_namespace *old_ns)
-> +{ }
-> +
-> +static inline void shm_init_ns(struct ipc_namespace *ns,
-> +				struct ipc_namespace *old_ns)
-> +{ }
->  
->  static inline void sem_exit_ns(struct ipc_namespace *ns) { }
->  static inline void msg_exit_ns(struct ipc_namespace *ns) { }
-> -- 
-> 1.9.3
-> 
