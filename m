@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaHOTd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:33:56 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:33575 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaHOTdz (ORCPT
+	id S1751716AbaHOTef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:34:35 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44009 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaHOTed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:33:55 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Fri, 15 Aug 2014 15:33:52 -0400
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 05/15] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140815193352.GC17765@csclub.uwaterloo.ca>
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
- <1408124563-31541-6-git-send-email-bigeasy@linutronix.de>
- <20140815183731.GI17769@csclub.uwaterloo.ca>
- <53EE5F3F.2000707@linutronix.de>
+	Fri, 15 Aug 2014 15:34:33 -0400
+Date: Fri, 15 Aug 2014 12:34:28 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] arch,locking: Ciao arch_mutex_cpu_relax()
+Message-ID: <20140815193428.GA31566@roeck-us.net>
+References: <1403288473.10903.2.camel@buesod1.americas.hpqcorp.net>
+ <20140623065835.GF19860@laptop.programming.kicks-ass.net>
+ <1403622415.15523.4.camel@buesod1.americas.hpqcorp.net>
+ <20140625062510.GB4260@osiris>
+ <1407460714.2513.19.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53EE5F3F.2000707@linutronix.de>
+In-Reply-To: <1407460714.2513.19.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 09:27:59PM +0200, Sebastian Andrzej Siewior wrote:
-> If you want to change this to reduce the gap, then you have first
-> change 8250 core code. Currently it waits until the shift register is
-> empty.
-
-Oh the 8250 normally works this way?  I didn't know that.
-
-> On the other hand if you use DMA then it can handle transfers > 64bytes
-> in one go and you can start transfers while the FIFO is not completely
-> empty.
-
-You can dma more than the fifo size?
-
-> If you use DMA. You program one transfer says 100 bytes. You get an
-> dma-transfer complete once the 100 bytes are transfered which means the
-> FIFO has 63 bytes. From this point on you could enqueue the next
-> transfer with say another 100 bytes. In that scenario you don't see the
-> gap.
+On Thu, Aug 07, 2014 at 06:18:34PM -0700, Davidlohr Bueso wrote:
+> On Tue, 2014-08-05 at 10:42 -0700, Davidlohr Bueso wrote:
+> > On Tue, 2014-08-05 at 15:04 +0200, Geert Uytterhoeven wrote:
+> > > It looks like you forgot to update frv?  It's been failing on -next since a
+> > > few days:
 > 
-> You get only to the gap if you use the non-DMA mode (and not UARTs
-> support DMA). In that case, yes waiting till there only 16 bytes before
-> starting the refill would make sense if you want to utilize the port by
-> 100%. But as I said in 0/15, you need to teach the core this first.
-> Otherwise it will return doing nothing until the shift register is
-> empty (i.e. until the FIFO is completely empty).
+> Anyway developers can be alerted sooner about this (ie: while its still
+> in -next phase), like automated emails or something? This would be extra
+> nice for those archs that are harder to get tested.
+> 
+> > > kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+> > > function 'cpu_relax_lowlatency'
+> > > [-Werror=implicit-function-declaration]
+> > > cc1: some warnings being treated as errors
+> > > kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of
+> > > function 'cpu_relax_lowlatency'
+> > > [-Werror=implicit-function-declaration]
+> > > make[3]: *** [kernel/locking/mcs_spinlock.o] Error 1
+> > > cc1: some warnings being treated as errors
+> > > make[3]: *** [kernel/locking/mutex.o] Error 1
+> > > 
+> > > http://kisskb.ellerman.id.au/kisskb/buildresult/11616307/
+> > 
+> > Ah, indeed. Thanks for the report, afaict this was the only missing
+> > arch .
+> 
+> Adding Guenter who also reported this yesterday.
+> 
+> Linus, since this is build-breaking an entire arch, it might be worth
+> avoiding the whole -tip thing and get the fix in as soon as possible.
+> 
 
-Well if DMA takes care of it, and the normal 8250 is already like this,
-then I suppose it is already better than the typical case.
+Hi Davidlohr,
 
-> There is patch in Greg's tty tree already where you are able to
-> configure the RX trigger level. We could wire this up once we agree
-> which levels we want support. The OMAP supports all levels from 1…63.
+The fix is still not upstream, unfortunately. Maybe the patch got lost because
+it was not sent as separate patch, or maybe it has to go through the frv
+maintainer, or some Cc: was missing. Would be great if you could follow up
+on this.
 
-All? or just every 4 (that's what I just read in the DRA7xx docs).
-
-> Yes, true. However this is only an issue without HW control. With DMA
-> the buffer is slightly larger. The DMA engine starts the transfer on
-> its own once there 48 bytes in the FIFO (except in the few cases where
-> it does not).
-
-That's nice of it.  I will have to give this a try.
-
--- 
-Len Sorensen
+Thanks,
+Guenter
