@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaHOTiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:38:07 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61102 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaHOTiD (ORCPT
+	id S1751779AbaHOTi7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:38:59 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55937 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751210AbaHOTi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:38:03 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53EE6198.9010106@roeck-us.net>
-Date: Fri, 15 Aug 2014 12:38:00 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH] unicore32: Fix build error
-References: <1407684595-30785-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1407684595-30785-1-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 15 Aug 2014 15:38:57 -0400
+Message-ID: <1408131535.11617.27.camel@HansenPartnership.com>
+Subject: [GIT PULL] Final round of SCSI updates for the 3.16+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 15 Aug 2014 12:38:55 -0700
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2014 08:29 AM, Guenter Roeck wrote:
-> unicore32 builds fail with
->
-> arch/unicore32/kernel/signal.c: In function ‘setup_frame’:
-> arch/unicore32/kernel/signal.c:257: error:
-> 			‘usig’ undeclared (first use in this function)
-> arch/unicore32/kernel/signal.c:279: error:
-> 			‘usig’ undeclared (first use in this function)
-> arch/unicore32/kernel/signal.c: In function ‘handle_signal’:
-> arch/unicore32/kernel/signal.c:306: warning: unused variable ‘tsk’
-> arch/unicore32/kernel/signal.c: In function ‘do_signal’:
-> arch/unicore32/kernel/signal.c:376: error:
-> 			implicit declaration of function ‘get_signsl’
-> make[1]: *** [arch/unicore32/kernel/signal.o] Error 1
-> make: *** [arch/unicore32/kernel/signal.o] Error 2
->
-> Bisect points to commit 649671c90eaf ("unicore32: Use get_signal()
-> signal_setup_done()").
->
-> This code never even compiled. Reverting the patch does not work,
-> since previously used functions no longer exist, so try to fix it up.
-> Compile tested only.
->
-> Cc: Richard Weinberger <richard@nod.at>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Just a note, we do have a couple of bug fixes coming under separate
+cover, but they don't have to be part of the merge window
 
-ping ...
+This is a small set of updates which missed the first pull.  It's more
+msix updates, some iscsi and qla4xxx fixes, we also have some string
+null termination fixes a return value fix and a couple of pm8001
+firmware fixes.
 
-Failure is still present in upstream kernel (v3.16-11383-gc9d2642).
+The patch is available here:
 
-Guenter
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-misc
 
-> ---
->   arch/unicore32/kernel/signal.c | 9 +++++----
->   1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/unicore32/kernel/signal.c b/arch/unicore32/kernel/signal.c
-> index 780d773..7c8fb70 100644
-> --- a/arch/unicore32/kernel/signal.c
-> +++ b/arch/unicore32/kernel/signal.c
-> @@ -254,7 +254,8 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set,
->
->   	err |= setup_sigframe(frame, regs, set);
->   	if (err == 0)
-> -		err |= setup_return(regs, &ksig->ka, frame->retcode, frame, usig);
-> +		err |= setup_return(regs, &ksig->ka, frame->retcode, frame,
-> +				    ksig->sig);
->
->   	return err;
->   }
-> @@ -276,7 +277,8 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
->   	err |= __save_altstack(&frame->sig.uc.uc_stack, regs->UCreg_sp);
->   	err |= setup_sigframe(&frame->sig, regs, set);
->   	if (err == 0)
-> -		err |= setup_return(regs, &ksig->ka, frame->sig.retcode, frame, usig);
-> +		err |= setup_return(regs, &ksig->ka, frame->sig.retcode, frame,
-> +				    ksig->sig);
->
->   	if (err == 0) {
->   		/*
-> @@ -303,7 +305,6 @@ static void handle_signal(struct ksignal *ksig, struct pt_regs *regs,
->   			  int syscall)
->   {
->   	struct thread_info *thread = current_thread_info();
-> -	struct task_struct *tsk = current;
->   	sigset_t *oldset = sigmask_to_save();
->   	int usig = ksig->sig;
->   	int ret;
-> @@ -373,7 +374,7 @@ static void do_signal(struct pt_regs *regs, int syscall)
->   	if (!user_mode(regs))
->   		return;
->
-> -	if (get_signsl(&ksig)) {
-> +	if (get_signal(&ksig)) {
->   		handle_signal(&ksig, regs, syscall);
->   		return;
->   	}
->
+The short changelog is:
+
+Alexander Gordeev (2):
+      qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
+      pm8001: Use pci_enable_msix_exact() instead of pci_enable_msix()
+
+Maurizio Lombardi (1):
+      qla4xxx: check the return value of dma_alloc_coherent()
+
+Mike Christie (5):
+      iscsi class: Fix freeing of skb in get host error path
+      libiscsi: return new error code when nop times out
+      iscsi class: fix get_host_stats return code when not supported
+      iscsi class: fix get_host_stats error handling
+      qla4xxx: fix get_host_stats error propagation
+
+Randy Dunlap (1):
+      scsi: fix u14-34f printk format warnings
+
+Rickard Strandqvist (2):
+      scsi: qla4xxx: ql4_mbx.c: Cleaning up missing null-terminate in conjunction with strncpy
+      scsi: qla4xxx: ql4_os.c: Cleaning up missing null-terminate in conjunction with strncpy
+
+Suresh Thiagarajan (1):
+      pm8001: Update MAINTAINERS list
+
+Tomas Henzl (2):
+      pm8001: fix pm8001_store_update_fw
+      pm8001: Fix erratic calculation in update_flash
+
+And the diffstat
+
+ MAINTAINERS                         |   1 +
+ drivers/scsi/libiscsi.c             |   2 +-
+ drivers/scsi/pm8001/pm8001_ctl.c    | 144 ++++++++++++++++++------------------
+ drivers/scsi/pm8001/pm8001_hwi.c    |   4 +-
+ drivers/scsi/pm8001/pm8001_init.c   |  39 +++++-----
+ drivers/scsi/qla4xxx/ql4_init.c     |   6 ++
+ drivers/scsi/qla4xxx/ql4_mbx.c      |  14 ++--
+ drivers/scsi/qla4xxx/ql4_nx.c       |   2 +-
+ drivers/scsi/qla4xxx/ql4_os.c       |  16 ++--
+ drivers/scsi/scsi_transport_iscsi.c |   6 +-
+ drivers/scsi/u14-34f.c              |   4 +-
+ include/scsi/iscsi_if.h             |   1 +
+ 12 files changed, 125 insertions(+), 114 deletions(-)
+
+James
+
 
