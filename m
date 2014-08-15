@@ -1,85 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437AbaHOW3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 18:29:43 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37389 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaHOW3l (ORCPT
+	id S1751410AbaHOWdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 18:33:35 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42135 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaHOWde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 18:29:41 -0400
-Date: Fri, 15 Aug 2014 23:29:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tim Kryger <tim.kryger@gmail.com>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Haijun Zhang <Haijun.Zhang@freescale.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20140815222914.GM17528@sirena.org.uk>
-References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
- <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
- <20140814151958.GY17528@sirena.org.uk>
- <CAD7vxxLHtk2ywHGoBtDp6x3-5BtDdaFnCdc_pfgMwq63Cg8Qow@mail.gmail.com>
- <53EDBB5B.4000209@collabora.co.uk>
- <CAD7vxxKvZCxnDpPn3X1Uch_6m7Hfj_vApNfxUS2Wex9BjjBUdg@mail.gmail.com>
+	Fri, 15 Aug 2014 18:33:34 -0400
+Date: Sat, 16 Aug 2014 00:33:22 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+ seqlock
+Message-ID: <20140815223316.GA1729@lerouge>
+References: <20140813180807.GA8098@redhat.com>
+ <53EBADB1.2020403@redhat.com>
+ <20140813184511.GA9663@redhat.com>
+ <20140813170324.544aaf2d@cuia.bos.redhat.com>
+ <20140814004318.GA2582@lerouge>
+ <53EC176D.6080201@redhat.com>
+ <CAFTL4hwfNyQPMfpca-=Ou7WoPjB6sE_7BVAcQrVDkBjjPVmPRw@mail.gmail.com>
+ <20140814143902.GA29052@redhat.com>
+ <CAFTL4hw2uAmyW61_U-hzmAfTeeAkMUg7OZy8zmbAFfbSLpzcqg@mail.gmail.com>
+ <20140815142601.GA13222@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="l0GZ4SE/qP5NVpaF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD7vxxKvZCxnDpPn3X1Uch_6m7Hfj_vApNfxUS2Wex9BjjBUdg@mail.gmail.com>
-X-Cookie: 98% lean.
+In-Reply-To: <20140815142601.GA13222@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask
- is empty.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 15, 2014 at 04:26:01PM +0200, Oleg Nesterov wrote:
+> On 08/15, Frederic Weisbecker wrote:
+> >
+> > 2014-08-14 16:39 GMT+02:00 Oleg Nesterov <oleg@redhat.com>:
+> > > On 08/14, Frederic Weisbecker wrote:
+> > >>
+> > >> I mean the read side doesn't use a lock with seqlocks. It's only made
+> > >> of barriers and sequence numbers to ensure the reader doesn't read
+> > >> some half-complete update. But other than that it can as well see the
+> > >> update n - 1 since barriers don't enforce latest results.
+> > >
+> > > Yes, sure, read_seqcount_begin/read_seqcount_retry "right after"
+> > > write_seqcount_begin-update-write_seqcount_begin can miss "update" part
+> > > along with ->sequence modifications.
+> > >
+> > > But I still can't understand how this can lead to non-monotonic results,
+> > > could you spell?
+> >
+> > Well lets say clock = T.
+> > CPU 0 updates at T + 1.
+> > Then I call clock_gettime() from CPU 1 and CPU 2. CPU 1 reads T + 1
+> > while CPU 1 still reads T.
+> > If I do yet another round of clock_gettime() on CPU 1 and CPU 2, it's
+> > possible that CPU 2 still sees T. With the spinlocked version that
+> > thing can't happen, the second round would read at least T + 1 for
+> > both CPUs.
+> 
+> But this is fine? And CPU 2 doesn't see a non-monotonic result?
+> 
+> OK, this could be wrong if, say,
+> 
+> 	void print_clock(void)
+> 	{
+> 		lock(SOME_LOCK);
+> 		printk(..., clock_gettime());
+> 		unlock(SOME_LOCK);
+> 	}
+> 	
+> printed the non-monotonic numbers if print_clock() is called on CPU_1 and
+> then on CPU_2. But in this case CPU_2 can't miss the changes on CPU_0 if
+> they were already visible to CPU_1 under the same lock. IOW,
+> 
+> 	int T = 0;	/* can be incremented at any time */
+> 
+> 	void check_monotony(void)
+> 	{
+> 		static int t = 0;
+> 
+> 		lock(SOME_LOCK);
+> 		BUG(t > T);
+> 		T = t;
+> 		unlock(SOME_LOCK);
+> 	}
+> 
+> must work corrrectly (ignoring overflow) even if T is changed without
+> SOME_LOCK.
+> 
+> Otherwise, without some sort of synchronization the different results on
+> CPU_1/2 should be fine.
+> 
+> Or I am still missing your point?
 
---l0GZ4SE/qP5NVpaF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No I think you're right, as long as ordering against something else is involved,
+monotonicity is enforced.
 
-On Fri, Aug 15, 2014 at 07:19:41AM -0700, Tim Kryger wrote:
-
-> That is a little different from my suggestion where the constraints
-> check is skipped when the regulator output is fixed.  It effectively
-> does this now when the regulator itself provides the fixed voltage.
-> However, the checks aren't skipped when that fixed voltage is coming
-> from an ancestor.  Why the difference?
-
-Nobody has written suitable code, and please bear in mind that even if
-the code is written there will probably be cases where it's too
-expensive for whatever reason so Javier's change is going to be needed.
-
---l0GZ4SE/qP5NVpaF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT7om3AAoJELSic+t+oim9h3IP/R1CiGNSrZBydfF6pdNiMt5B
-Z8vjp/9GOdQkZqKc/xgXZc6Gki8n0g6k6VpC+/EPljalIvmIwS3b/Ln94Eu9PhcT
-0kp0WU+zVYkCZ+jX0caIt/O0OIC0yWAsf0VK/OMpcFXQbQYfZRQgeeItYQ/lC8eJ
-nJ18yHXD5eu7dw2CXJtt9jGDkOktC67knVtZHC50gYrEgtMoGG/lxHq0muGvByHT
-InKV339duP9hiNehPotRnuQ50ZM7u4RdWuRlGGOt33s2q7vk876I51cxrjJS0X6v
-zA//XD5QgdjyNhbIe1Q4N04mv+Un240EpqOYl0QdR6FuC/Wg7N/h0j4FSgdLIRCc
-IGKeLE+qRg/j28MQdjxX7dwRJqIv1LWd4WpHFkionkPJoLBcDA/U1N4/EJAxgh6M
-JmSn/g3GVIEEYc4EhVzESctPReGgAmntRBiHDHsW8Dwx2zRN/9jaCwi9vYuIDMke
-4ktZJFHLpmfTeJ6iPt3v4NGRxxglDAGNFrra/keiRwZcpLCoSugERaQkpOmcAyt3
-BrzrgslYLAQS+ubzp/Em5DqwD9Ygz0YdsRhSWCG6jR2JoKMKxJzOy3SFf4qyc1bv
-h05oU6pySwgp5qG8ZOv7SR7d6e8ZxHhr0WvDT4ovPy3ssMMN1S2Kyjn2RPGNWC8S
-n7xCUoG0TJNRH5FIyW1E
-=C0ZE
------END PGP SIGNATURE-----
-
---l0GZ4SE/qP5NVpaF--
+Now I'm trying to think about a case where SMP ordering isn't involved.
+Perhaps some usecase based on coupling CPU local clocks and clock_gettime()
+where a drift between both can appear. Now using a local clock probably only
+makes sense in the context of local usecases where the thread clock update
+would be local as well. So that's probably not a problem. Now what if somebody
+couples multithread process wide clocks with per CPU local clocks. Well that's
+probably too foolish to be considered.
