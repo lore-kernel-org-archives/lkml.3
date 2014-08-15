@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaHOTYb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:24:31 -0400
-Received: from ozlabs.org ([103.22.144.67]:53007 "EHLO ozlabs.org"
+	id S1751773AbaHOTYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:24:30 -0400
+Received: from ozlabs.org ([103.22.144.67]:60281 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176AbaHOTY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751138AbaHOTY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Aug 2014 15:24:28 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: kpark3469@gmail.com, akpm@linux-foundation.org
-Cc: keun-o.park@windriver.com, hpa@zytor.com, rafael.j.wysocki@intel.com,
-        peterz@infradead.org, kirill.shutemov@linux.intel.com, oleg@redhat.com,
-        prarit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] earlyprintk: re-enable earlyprintk calling early_param
-In-Reply-To: <1408011216-8621-1-git-send-email-kpark3469@gmail.com>
-References: <1408011216-8621-1-git-send-email-kpark3469@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org
+Cc: Andy Lutomirski <luto@amacapital.net>, stable@vger.kernel.org
+Subject: Re: [PATCH] module: Clean up ro/nx after early module load failures
+In-Reply-To: <8c275067bad7333e82cb80c993ce23216f41002e.1408065737.git.luto@amacapital.net>
+References: <8c275067bad7333e82cb80c993ce23216f41002e.1408065737.git.luto@amacapital.net>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sat, 16 Aug 2014 04:04:13 +0930
-Message-ID: <87lhqp8uvu.fsf@rustcorp.com.au>
+Date: Sat, 16 Aug 2014 04:19:19 +0930
+Message-ID: <87ha1d8u6o.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kpark3469@gmail.com writes:
-> From: Sahara <keun-o.park@windriver.com>
+Andy Lutomirski <luto@amacapital.net> writes:
+> The commit
 >
-> Although there are many obs_kernel_param and its names are
-> earlyprintk and also EARLY_PRINTK is also enabled, we could not
-> see the early_printk output properly until now. This patch
-> considers earlycon as well as earlyprintk.
+>     4982223e51e8 module: set nx before marking module MODULE_STATE_COMING.
+>
+> introduced a regression: if a module fails to parse its arguments or
+> if mod_sysfs_setup fails, then the module's memory will be freed
+> while still read-only.  Anything that reuses that memory will crash
+> as soon as it tries to write to it.
 
-Hmm, the initial "earlycon" hack slipped in when I wasn't looking.
-I don't think we should extend it.
+Thanks, good catch.
 
-Why not make the thing(s) you want early_param()s?
-
-Cheers,
+Applied,
 Rusty.
-
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -426,7 +426,8 @@ static int __init do_early_param(char *param, char *val, const char *unused)
->  	for (p = __setup_start; p < __setup_end; p++) {
->  		if ((p->early && parameq(param, p->str)) ||
->  		    (strcmp(param, "console") == 0 &&
-> -		     strcmp(p->str, "earlycon") == 0)
-> +		     ((strcmp(p->str, "earlycon") == 0) ||
-> +		     (strcmp(p->str, "earlyprintk") == 0)))
->  		) {
->  			if (p->setup_func(val) != 0)
->  				pr_warn("Malformed early option '%s'\n", param);
-> -- 
-> 1.7.9.5
