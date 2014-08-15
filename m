@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417AbaHOJ4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 05:56:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46261 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716AbaHOJ4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 05:56:20 -0400
-From: Michal Kubecek <mkubecek@suse.cz>
-Subject: [PATCH net] net: fix checksum features handling in
- netif_skb_features()
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-Id: <20140815095617.3006CA0BED@unicorn.suse.cz>
-Date: Fri, 15 Aug 2014 11:56:17 +0200 (CEST)
+	id S1754797AbaHOJ62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 05:58:28 -0400
+Received: from kmf.trabucayre.com ([91.121.117.161]:60137 "EHLO mail"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751347AbaHOJ60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 05:58:26 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Aug 2014 05:58:26 EDT
+From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
+To: linux-kernel@vger.kernel.org
+Cc: Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
+        Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
+Subject: [PATCH] net: phy: smsc: move smsc_phy_config_init reset part in a soft_reset function
+Date: Fri, 15 Aug 2014 09:52:41 +0200
+Message-Id: <1408089161-94989-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
+X-Mailer: git-send-email 1.6.4.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is follow-up to
+On the one hand, phy_device.c provides a generic reset function if the phy
+driver does not provide a soft_reset pointer. This generic reset does not take
+into account the state of the phy, with a potential failure if the phy is in
+powerdown mode. On the other hand, smsc driver provides a function with both
+correct reset behaviour and configuration.
 
-  da08143b8520 ("vlan: more careful checksum features handling")
+This patch moves the reset part into a new smsc_phy_reset function and provides
+the soft_reset pointer to have a correct reset behaviour by default.
 
-which introduced more careful feature intersection in vlan code,
-taking into account that HW_CSUM should be considered superset
-of IP_CSUM/IPV6_CSUM. The same is needed in netif_skb_features()
-in order to avoid offloading mismatch warning when vlan is
-created on top of a bond consisting of slaves supporting IP/IPv6
-checksumming but not vlan Tx offloading.
-
-Signed-off-by: Michal Kubecek <mkubecek@suse.cz>
+Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
 ---
- net/core/dev.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/net/phy/smsc.c | 33 +++++++++++++++++++++------------
+ 1 file changed, 21 insertions(+), 12 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index b65a505..75f0096 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2587,13 +2587,18 @@ netdev_features_t netif_skb_features(struct sk_buff *skb)
- 		return harmonize_features(skb, features);
+diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+index 180c494..fda13f4 100644
+--- a/drivers/net/phy/smsc.c
++++ b/drivers/net/phy/smsc.c
+@@ -43,6 +43,22 @@ static int smsc_phy_ack_interrupt(struct phy_device *phydev)
+ 
+ static int smsc_phy_config_init(struct phy_device *phydev)
+ {
++	int rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
++
++	if (rc < 0)
++		return rc;
++
++	/* Enable energy detect mode for this SMSC Transceivers */
++	rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
++		       rc | MII_LAN83C185_EDPWRDOWN);
++	if (rc < 0)
++		return rc;
++
++	return smsc_phy_ack_interrupt(phydev);
++}
++
++static int smsc_phy_reset(struct phy_device *phydev)
++{
+ 	int rc = phy_read(phydev, MII_LAN83C185_SPECIAL_MODES);
+ 	if (rc < 0)
+ 		return rc;
+@@ -66,18 +82,7 @@ static int smsc_phy_config_init(struct phy_device *phydev)
+ 			rc = phy_read(phydev, MII_BMCR);
+ 		} while (rc & BMCR_RESET);
  	}
- 
--	features &= (skb->dev->vlan_features | NETIF_F_HW_VLAN_CTAG_TX |
--					       NETIF_F_HW_VLAN_STAG_TX);
-+	features = netdev_intersect_features(features, skb->dev->vlan_features |
-+						       NETIF_F_HW_VLAN_CTAG_TX |
-+						       NETIF_F_HW_VLAN_STAG_TX);
- 
- 	if (protocol == htons(ETH_P_8021Q) || protocol == htons(ETH_P_8021AD))
--		features &= NETIF_F_SG | NETIF_F_HIGHDMA | NETIF_F_FRAGLIST |
--				NETIF_F_GEN_CSUM | NETIF_F_HW_VLAN_CTAG_TX |
--				NETIF_F_HW_VLAN_STAG_TX;
-+		features = netdev_intersect_features(features,
-+						     NETIF_F_SG |
-+						     NETIF_F_HIGHDMA |
-+						     NETIF_F_FRAGLIST |
-+						     NETIF_F_GEN_CSUM |
-+						     NETIF_F_HW_VLAN_CTAG_TX |
-+						     NETIF_F_HW_VLAN_STAG_TX);
- 
- 	return harmonize_features(skb, features);
+-
+-	rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
+-	if (rc < 0)
+-		return rc;
+-
+-	/* Enable energy detect mode for this SMSC Transceivers */
+-	rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
+-		       rc | MII_LAN83C185_EDPWRDOWN);
+-	if (rc < 0)
+-		return rc;
+-
+-	return smsc_phy_ack_interrupt (phydev);
++	return 0;
  }
+ 
+ static int lan911x_config_init(struct phy_device *phydev)
+@@ -142,6 +147,7 @@ static struct phy_driver smsc_phy_driver[] = {
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset		= smsc_phy_reset,
+ 
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
+@@ -164,6 +170,7 @@ static struct phy_driver smsc_phy_driver[] = {
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset		= smsc_phy_reset,
+ 
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
+@@ -186,6 +193,7 @@ static struct phy_driver smsc_phy_driver[] = {
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset		= smsc_phy_reset,
+ 
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
+@@ -230,6 +238,7 @@ static struct phy_driver smsc_phy_driver[] = {
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= lan87xx_read_status,
+ 	.config_init	= smsc_phy_config_init,
++	.soft_reset		= smsc_phy_reset,
+ 
+ 	/* IRQ related */
+ 	.ack_interrupt	= smsc_phy_ack_interrupt,
 -- 
-1.8.4.5
+1.8.5.5
 
