@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751193AbaHOLiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 07:38:11 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:35822 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaHOLiJ (ORCPT
+	id S1751168AbaHOLmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 07:42:09 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36623 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751AbaHOLmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 07:38:09 -0400
-Date: Fri, 15 Aug 2014 07:38:04 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull file locking changes for v3.17 (pile #2)
-Message-ID: <20140815073804.76fb9b47@tlielax.poochiereds.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Fri, 15 Aug 2014 07:42:07 -0400
+Date: Fri, 15 Aug 2014 12:41:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        lgirdwood@gmail.com, ldewangan@nvidia.com, patches@linaro.org,
+        lee.jones@linaro.org
+Message-ID: <20140815114147.GK17528@sirena.org.uk>
+References: <1408100984-11757-1-git-send-email-peter.griffin@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eB8m8Syz/ebyX72V"
+Content-Disposition: inline
+In-Reply-To: <1408100984-11757-1-git-send-email-peter.griffin@linaro.org>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: as3722: .name field initialized twice
+ differently
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit c8d6637d0497d62093dbba0694c7b3a80b79bfe1:
 
-  Merge tag 'modules-next-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux (2014-08-10 21:31:58 -0700)
+--eB8m8Syz/ebyX72V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-are available in the git repository at:
+On Fri, Aug 15, 2014 at 12:09:44PM +0100, Peter Griffin wrote:
+> Regulator AS3722_REGULATOR_ID_LDO3 and AS3722_REGULATOR_ID_LDO4
+> have there .name field initialised twice with different values.
+>=20
+> Looking at the code the second entry should have been .sname
+> which is what this patch corrects.
 
+This change appears to already be present in current code - please
+submit against current code, or Linus' tree for bug fixes.
 
-  git://git.samba.org/jlayton/linux.git tags/locks-v3.17-2
+--eB8m8Syz/ebyX72V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-for you to fetch changes up to 2ece173e4715031c031de9114491eee80a69cf68:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-  locks: update Locking documentation to clarify fl_release_private behavior (2014-08-14 10:08:20 -0400)
+iQIcBAEBAgAGBQJT7fH4AAoJELSic+t+oim9FbEP/3afdpg6MC0BT3p0GWWJBcI+
+lsRWgN97L0b2zVDUxiUZGxHVC0Ke9HfkBxcuYTKII9K6i8vTMuk/4Ksbg6yqs7EW
+ApyINS9nebmJJaFFm9N2y9Xcqn3jgrfhzgdVL9WAaiOrwSKIDA8wgqx/UYCwxrkc
+ZvRz1etqx1KyLgOT0mYw1qBnYrYz3EzfasCWvSJuJifLB/t8ukzMv1v9vQZIWb+h
+vevS2Qjt4madJXKfgneuwFngW/FonLHbzn9gUP4rGPjYasD1xhIeFHsCxYL1oMuX
+lbm3CFfm+VfGAjeL9CwM+e9zWbYjh5XBc+spA8VJVLZQCoDoFQZScVOZ4udXPHJ3
+7ARNwnl6JyCU9FG3VnmNJC+KLl7KPt4HEgx51IiaRd1mOJ9rlHqOeqwrFqXlZEXY
+v9kn2XcMZY5arD48EuPGdFD/HNQWT+e7c+q5IugjTV8Arvkuok6Fsxp6Erm9vRI6
+yMr97WHcaEaFiP8CuZukhnpy+qxbQ/E4HayHAPmUeSWAG5DHFmwMOw22kpz4hQ3V
+fbiL5wVT5a1imgY9w+6L59197vDG30eXTr06I/XF240av17TDCcD1uLa5MWR94Fv
+8CvzSLpz2WGa/mBTtCAtqHeN9HtZ+a+v1a0TFAMAF68GGFv73rwcgBdn25/wnsBh
+1zXS7F3ComYsrtY/Lgqu
+=5gp8
+-----END PGP SIGNATURE-----
 
-----------------------------------------------------------------
-File locking related bugfixes for v3.17 (pile #2)
-
-Hi Linus!
-
-Most of these patches are to fix a long-standing regression that crept
-in when the BKL was removed from the file-locking code. The code was
-converted to use a conventional spinlock, but some fl_release_private
-ops can block and you can end up sleeping inside the lock.
-
-There's also a patch to make /proc/locks show delegations as "DELEG".
-
-----------------------------------------------------------------
-Jeff Layton (6):
-      locks: show delegations as "DELEG" in /proc/locks
-      locks: don't call locks_release_private from locks_copy_lock
-      locks: don't reuse file_lock in __posix_lock_file
-      locks: defer freeing locks in locks_delete_lock until after i_lock has been dropped
-      locks: move locks_free_lock calls in do_fcntl_add_lease outside spinlock
-      locks: update Locking documentation to clarify fl_release_private behavior
-
- Documentation/filesystems/Locking |  6 +++++-
- fs/locks.c                        | 86 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------
- 2 files changed, 62 insertions(+), 30 deletions(-)
-
--- 
-Jeff Layton <jlayton@poochiereds.net>
+--eB8m8Syz/ebyX72V--
