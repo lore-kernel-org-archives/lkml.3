@@ -1,85 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaHOTJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:09:03 -0400
-Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:55276 "EHLO
-	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751605AbaHOTJA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:09:00 -0400
-Date: Fri, 15 Aug 2014 15:08:59 -0400 (EDT)
-Subject: Re: [PATCH] ARM: apq8064: Add pinmux and i2c pinctrl nodes
-From: kiran.padwal@smartplayin.com
-To: "Bjorn Andersson" <bjorn@kryo.se>
-Cc: "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "David Brown" <davidb@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm" <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Importance: Normal
-X-Priority: 3 (Normal)
-X-Type: plain
-Message-ID: <1408129739.03949271@apps.rackspace.com>
-X-Mailer: webmail7.0
+	id S1751748AbaHOTJL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:09:11 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:49283 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714AbaHOTJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:09:06 -0400
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
+        Zach Kuznia <zork@chromium.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: [PATCH v2 1/2] [media] V4L: Add camera pan/tilt speed controls
+Date: Fri, 15 Aug 2014 12:08:44 -0700
+Message-Id: <1408129724-17669-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <CACHYQ-rtHfVmF4DstxhWe0zWNH3ujjniVBwONBGW3f4Uw=rvkg@mail.gmail.com>
+References: <CACHYQ-rtHfVmF4DstxhWe0zWNH3ujjniVBwONBGW3f4Uw=rvkg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
+camera by setting its rotation speed around its axis.
 
-On Thursday, August 14, 2014 6:37pm, "Bjorn Andersson" <bjorn@kryo.se> said:
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+---
+Changes from v1:
+- update the documentation wording according to Pawel suggestion.
 
-> On Thu, Aug 14, 2014 at 12:20 AM, Kiran Padwal
-> <kiran.padwal@smartplayin.com> wrote:
->> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi
->> b/arch/arm/boot/dts/qcom-apq8064.dtsi
->> index 92bf793..fbebf5c 100644
->> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
->> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
->> @@ -70,6 +70,17 @@
->>                 ranges;
->>                 compatible = "simple-bus";
->>
->> +               qcom_pinmux: pinmux@800000 {
-> 
-> There are (at least) three different pinmuxes in these platforms: TLMM, PMIC
-> GPIO, PMIC MPP. Also this is the phandle that is used to reference the gpio
-> chip throughout the board.
-> 
-> So I would like to suggest that we name it "tlmm" or like in the downstream
-> kernel "msmgpio".
+ Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
+ Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
+ include/uapi/linux/v4l2-controls.h           |  2 ++
+ 4 files changed, 35 insertions(+)
 
-ok. How about "qcomgpio" or rename it to msmgpio?
-
-> 
->> +                       compatible = "qcom,apq8064-pinctrl";
->> +                       reg = <0x800000 0x4000>;
->> +
->> +                       gpio-controller;
->> +                       #gpio-cells = <2>;
->> +                       interrupt-controller;
->> +                       #interrupt-cells = <2>;
->> +                       interrupts = <0 32 0x4>;
-> 
-> I must have gotten this wrong in the dt binding example, sorry about that.
-> interrupts should be <0 16 0x4>.
-
-Thanks for information. I will update that.
+diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
+index eee6f0f..21910e9 100644
+--- a/Documentation/DocBook/media/v4l/compat.xml
++++ b/Documentation/DocBook/media/v4l/compat.xml
+@@ -2545,6 +2545,16 @@ fields changed from _s32 to _u32.
+       </orderedlist>
+     </section>
  
-> 
->> +               };
-> 
-> Regards,
-> Bjorn
-> 
-
-
++    <section>
++      <title>V4L2 in Linux 3.17</title>
++      <orderedlist>
++	<listitem>
++	  <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
++ <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
++	</listitem>
++      </orderedlist>
++    </section>
++
+     <section id="other">
+       <title>Relation of V4L2 to other Linux multimedia APIs</title>
+ 
+diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+index 47198ee..be88e64 100644
+--- a/Documentation/DocBook/media/v4l/controls.xml
++++ b/Documentation/DocBook/media/v4l/controls.xml
+@@ -3914,6 +3914,27 @@ by exposure, white balance or focus controls.</entry>
+ 	  </row>
+ 	  <row><entry></entry></row>
+ 
++	  <row>
++	    <entry spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
++	    <entry>integer</entry>
++	  </row><row><entry spanname="descr">This control turns the
++camera horizontally at the specific speed. The unit is undefined. A
++positive value moves the camera to the right (clockwise when viewed
++from above), a negative value to the left. A value of zero stops the motion
++if one is in progress and has no effect otherwise.</entry>
++	  </row>
++	  <row><entry></entry></row>
++
++	  <row>
++	    <entry spanname="id"><constant>V4L2_CID_TILT_SPEED</constant>&nbsp;</entry>
++	    <entry>integer</entry>
++	  </row><row><entry spanname="descr">This control turns the
++camera vertically at the specified speed. The unit is undefined. A
++positive value moves the camera up, a negative value down. A value of zero
++stops the motion if one is in progress and has no effect otherwise.</entry>
++	  </row>
++	  <row><entry></entry></row>
++
+ 	</tbody>
+       </tgroup>
+     </table>
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+index 55c6832..57ddaf4 100644
+--- a/drivers/media/v4l2-core/v4l2-ctrls.c
++++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+@@ -787,6 +787,8 @@ const char *v4l2_ctrl_get_name(u32 id)
+ 	case V4L2_CID_AUTO_FOCUS_STOP:		return "Auto Focus, Stop";
+ 	case V4L2_CID_AUTO_FOCUS_STATUS:	return "Auto Focus, Status";
+ 	case V4L2_CID_AUTO_FOCUS_RANGE:		return "Auto Focus, Range";
++	case V4L2_CID_PAN_SPEED:		return "Pan, Speed";
++	case V4L2_CID_TILT_SPEED:		return "Tilt, Speed";
+ 
+ 	/* FM Radio Modulator control */
+ 	/* Keep the order of the 'case's the same as in videodev2.h! */
+diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+index 2ac5597..5576044 100644
+--- a/include/uapi/linux/v4l2-controls.h
++++ b/include/uapi/linux/v4l2-controls.h
+@@ -745,6 +745,8 @@ enum v4l2_auto_focus_range {
+ 	V4L2_AUTO_FOCUS_RANGE_INFINITY		= 3,
+ };
+ 
++#define V4L2_CID_PAN_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+32)
++#define V4L2_CID_TILT_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+33)
+ 
+ /* FM Modulator class control IDs */
+ 
+-- 
+2.1.0.rc2.206.gedb03e5
 
