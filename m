@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaHOMww (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 08:52:52 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:36917 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaHOMws (ORCPT
+	id S1751512AbaHOMw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 08:52:57 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:65302 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaHOMwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 08:52:48 -0400
+	Fri, 15 Aug 2014 08:52:53 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-pm@vger.kernel.org
 Cc: Thierry Reding <thierry.reding@gmail.com>,
@@ -18,9 +18,9 @@ Cc: Thierry Reding <thierry.reding@gmail.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Mikko Perttunen <mperttunen@nvidia.com>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [RFC v2 1/3] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-Date: Fri, 15 Aug 2014 14:52:07 +0200
-Message-Id: <1408107129-29516-2-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [RFC v2 3/3] memory: tegra124-emc: Add EMC driver
+Date: Fri, 15 Aug 2014 14:52:09 +0200
+Message-Id: <1408107129-29516-4-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408107129-29516-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1408107129-29516-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -28,126 +28,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
+Sets the EMC clock rate based on the bandwidth requirements registered by
+memory clients through the PM_QOS_MEMORY_BANDWIDTH class.
 
-It can be used by memory controllers to calculate the optimum clock frequency
-based on the bandwidth needs of the different memory clients.
+Note: this is not a proper driver for a external memory controller. Its only
+purpose is to illustrate how such a driver would set the frequency of the
+external memory clock based on the bandwidth requirements of memory clients.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 ---
- Documentation/power/pm_qos_interface.txt |  4 +++-
- include/linux/pm_qos.h                   |  5 ++++-
- kernel/power/qos.c                       | 27 ++++++++++++++++++++++++++-
- 3 files changed, 33 insertions(+), 3 deletions(-)
+ drivers/memory/Kconfig        |   8 +++
+ drivers/memory/Makefile       |   1 +
+ drivers/memory/tegra124-emc.c | 115 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+)
+ create mode 100644 drivers/memory/tegra124-emc.c
 
-diff --git a/Documentation/power/pm_qos_interface.txt b/Documentation/power/pm_qos_interface.txt
-index a5da5c7..57782e8 100644
---- a/Documentation/power/pm_qos_interface.txt
-+++ b/Documentation/power/pm_qos_interface.txt
-@@ -5,7 +5,8 @@ performance expectations by drivers, subsystems and user space applications on
- one of the parameters.
+diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+index c59e9c9..48fa0dd 100644
+--- a/drivers/memory/Kconfig
++++ b/drivers/memory/Kconfig
+@@ -61,6 +61,14 @@ config TEGRA30_MC
+ 	  analysis, especially for IOMMU/SMMU(System Memory Management
+ 	  Unit) module.
  
- Two different PM QoS frameworks are available:
--1. PM QoS classes for cpu_dma_latency, network_latency, network_throughput.
-+1. PM QoS classes for cpu_dma_latency, network_latency, network_throughput,
-+memory_bandwidth.
- 2. the per-device PM QoS framework provides the API to manage the per-device latency
- constraints and PM QoS flags.
- 
-@@ -13,6 +14,7 @@ Each parameters have defined units:
-  * latency: usec
-  * timeout: usec
-  * throughput: kbs (kilo bit / sec)
-+ * memory bandwidth: kbs (kilo bit / sec)
- 
- 
- 1. PM QoS framework
-diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-index 9ab4bf7..636e828 100644
---- a/include/linux/pm_qos.h
-+++ b/include/linux/pm_qos.h
-@@ -15,6 +15,7 @@ enum {
- 	PM_QOS_CPU_DMA_LATENCY,
- 	PM_QOS_NETWORK_LATENCY,
- 	PM_QOS_NETWORK_THROUGHPUT,
-+	PM_QOS_MEMORY_BANDWIDTH,
- 
- 	/* insert new class ID */
- 	PM_QOS_NUM_CLASSES,
-@@ -32,6 +33,7 @@ enum pm_qos_flags_status {
- #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-+#define PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
- #define PM_QOS_RESUME_LATENCY_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_NO_CONSTRAINT	(-1)
-@@ -69,7 +71,8 @@ struct dev_pm_qos_request {
- enum pm_qos_type {
- 	PM_QOS_UNITIALIZED,
- 	PM_QOS_MAX,		/* return the largest value */
--	PM_QOS_MIN		/* return the smallest value */
-+	PM_QOS_MIN,		/* return the smallest value */
-+	PM_QOS_SUM		/* return the sum */
- };
- 
- /*
-diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-index 884b770..5f4c006 100644
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -105,11 +105,27 @@ static struct pm_qos_object network_throughput_pm_qos = {
- };
- 
- 
-+static BLOCKING_NOTIFIER_HEAD(memory_bandwidth_notifier);
-+static struct pm_qos_constraints memory_bw_constraints = {
-+	.list = PLIST_HEAD_INIT(memory_bw_constraints.list),
-+	.target_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.default_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.no_constraint_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.type = PM_QOS_SUM,
-+	.notifiers = &memory_bandwidth_notifier,
-+};
-+static struct pm_qos_object memory_bandwidth_pm_qos = {
-+	.constraints = &memory_bw_constraints,
-+	.name = "memory_bandwidth",
++config TEGRA124_EMC
++	tristate "Tegra124 External Memory Controller (EMC) driver"
++	default y
++	depends on ARCH_TEGRA_124_SOC
++	help
++	  This driver is for the External Memory Controller (EMC) module
++	  available in Tegra124 SoCs.
++
+ config FSL_IFC
+ 	bool
+ 	depends on FSL_SOC
+diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+index 71160a2..0b7290b 100644
+--- a/drivers/memory/Makefile
++++ b/drivers/memory/Makefile
+@@ -11,3 +11,4 @@ obj-$(CONFIG_FSL_IFC)		+= fsl_ifc.o
+ obj-$(CONFIG_MVEBU_DEVBUS)	+= mvebu-devbus.o
+ obj-$(CONFIG_TEGRA20_MC)	+= tegra20-mc.o
+ obj-$(CONFIG_TEGRA30_MC)	+= tegra30-mc.o
++obj-$(CONFIG_TEGRA124_EMC)	+= tegra124-emc.o
+diff --git a/drivers/memory/tegra124-emc.c b/drivers/memory/tegra124-emc.c
+new file mode 100644
+index 0000000..53a34bd
+--- /dev/null
++++ b/drivers/memory/tegra124-emc.c
+@@ -0,0 +1,115 @@
++/*
++ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/clk.h>
++#include <linux/pm_qos.h>
++
++#define DRV_NAME "tegra124-emc"
++#define EMC_FREQ_CUTOFF_USE_130_PERCENT	100000000
++#define EMC_FREQ_CUTOFF_USE_140_PERCENT	50000000
++#define BYTES_PER_EMC_CLOCK 16
++
++struct tegra124_emc {
++	struct clk *clk;
++	struct notifier_block memory_bw_notifier;
 +};
 +
++static struct platform_device *emc_pdev;
 +
- static struct pm_qos_object *pm_qos_array[] = {
- 	&null_pm_qos,
- 	&cpu_dma_pm_qos,
- 	&network_lat_pm_qos,
--	&network_throughput_pm_qos
-+	&network_throughput_pm_qos,
-+	&memory_bandwidth_pm_qos,
- };
- 
- static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-@@ -130,6 +146,9 @@ static const struct file_operations pm_qos_power_fops = {
- /* unlocked internal variant */
- static inline int pm_qos_get_value(struct pm_qos_constraints *c)
- {
-+	struct plist_node *node;
-+	int total_value = 0;
++static unsigned long tegra124_emc_bw_to_freq_req(unsigned long bw)
++{
++	return (bw + BYTES_PER_EMC_CLOCK - 1) / BYTES_PER_EMC_CLOCK;
++}
 +
- 	if (plist_head_empty(&c->list))
- 		return c->no_constraint_value;
- 
-@@ -140,6 +159,12 @@ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
- 	case PM_QOS_MAX:
- 		return plist_last(&c->list)->prio;
- 
-+	case PM_QOS_SUM:
-+		plist_for_each(node, &c->list)
-+			total_value += node->prio;
++static void tegra124_emc_update_rate(struct tegra124_emc *emc, unsigned long total_bandwidth)
++{
++	struct clk *emc_master;
++	unsigned long freq;
 +
-+		return total_value;
++	emc_master = clk_get_parent(emc->clk);
++	freq = tegra124_emc_bw_to_freq_req(total_bandwidth) * 1000;
++	freq = clk_round_rate(emc_master, freq);
 +
- 	default:
- 		/* runtime check for not using enum */
- 		BUG();
++	/* Depending on frequency value, the amount of bandwidth usage % of
++	 * total we should use is different. Thus we should request a multiple of
++	 * original bandwidth on this.  Use 1.4 for < 50MHz, 1.3 for < 100MHz,
++	 * else 1.1 */
++	if (freq < EMC_FREQ_CUTOFF_USE_140_PERCENT)
++		total_bandwidth += 4 * total_bandwidth / 10; /* 1.4 */
++	else if (freq < EMC_FREQ_CUTOFF_USE_130_PERCENT)
++		total_bandwidth += 3 * total_bandwidth / 10; /* 1.3 */
++	else
++		total_bandwidth += total_bandwidth / 10; /* 1.1 */
++
++	freq = tegra124_emc_bw_to_freq_req(total_bandwidth) * 1000;
++
++	clk_set_floor_rate(emc->clk, freq);
++}
++
++int memory_bw_notify(struct notifier_block *nb, unsigned long total_bw, void *dummy)
++{
++	struct tegra124_emc *emc =
++		container_of(nb, struct tegra124_emc,
++			     memory_bw_notifier);
++
++	tegra124_emc_update_rate(emc, total_bw);
++
++	return NOTIFY_OK;
++}
++
++static int tegra124_emc_probe(struct platform_device *pdev)
++{
++	struct tegra124_emc *emc;
++
++	emc_pdev = pdev;
++
++	emc = devm_kzalloc(&pdev->dev, sizeof(*emc), GFP_KERNEL);
++	if (emc == NULL) {
++		dev_err(&pdev->dev, "Failed to allocate private memory\n");
++		return -ENOMEM;
++	}
++
++	emc->clk = clk_get(&pdev->dev, "emc");
++	if (IS_ERR(emc->clk)) {
++		devm_kfree(&pdev->dev, emc);
++		dev_err(&pdev->dev, "Can not find EMC clock\n");
++		return -EINVAL;
++	}
++
++	platform_set_drvdata(emc_pdev, emc);
++
++	emc->memory_bw_notifier.notifier_call = memory_bw_notify;
++	pm_qos_add_notifier(PM_QOS_MEMORY_BANDWIDTH, &emc->memory_bw_notifier);
++
++	return 0;
++}
++
++static struct platform_driver tegra124_emc_driver = {
++	.driver         = {
++		.name   = DRV_NAME,
++		.owner  = THIS_MODULE,
++	},
++	.probe          = tegra124_emc_probe,
++};
++
++module_platform_driver(tegra124_emc_driver);
++
++MODULE_AUTHOR("Tomeu Vizoso <tomeu.vizoso@collabora.com>");
++MODULE_DESCRIPTION("Tegra124 EMC driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:" DRV_NAME);
 -- 
 1.9.3
 
