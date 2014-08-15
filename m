@@ -1,35 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751193AbaHOOT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:19:28 -0400
-Received: from mailspam01.killeenisd.org ([198.97.37.151]:23668 "EHLO
-	mailspam01.killeenisd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaHOOT1 convert rfc822-to-8bit (ORCPT
+	id S1751199AbaHOOTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:19:39 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49014 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751201AbaHOOTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:19:27 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Aug 2014 10:19:27 EDT
-X-IronPort-AV: E=Sophos;i="5.01,870,1400043600"; 
-   d="scan'208";a="57365543"
-From: "Olson, Margaret" <Margaret.Olson@killeenisd.org>
-Date: Fri, 15 Aug 2014 09:09:48 -0500
-Subject: warning Help-desk Notice
-Thread-Topic: warning Help-desk Notice
-Thread-Index: AQHPuJKSi4Qiuh04wkiscE18ZDEM8w==
-Message-ID: <698EE20937F8CC4286749E027DCBD37A9B99858FDF@MAILBOX02.staff.killeenisd.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Fri, 15 Aug 2014 10:19:32 -0400
+Date: Fri, 15 Aug 2014 10:19:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Du, ChangbinX" <changbinx.du@intel.com>
+cc: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Nyman, Mathias" <mathias.nyman@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "Wu, Hao" <hao.wu@intel.com>
+Subject: Re: [BUG]  usb_dev_resume returns -113 due to work items queued by
+ usb on pm_wq is not executed before suspending.
+In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A01BA6392@SHSMSX103.ccr.corp.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1408151018410.1144-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Help-desk will undergo unscheduled system Maintenance today in order to improve your account. The new Microsoft Outlook Web access 2014 which will be installed on your email account. Your present account will be deactivated to create space for the new web access 2014. Please "CLICK HERE<http://exchangeoutlook.hpage.co.in/>" to Update Your Mailbox. Your account will be inactive if this survey is not completed.
+On Fri, 15 Aug 2014, Du, ChangbinX wrote:
 
-Thank you.
-IT Service Center(@)2014.
+> Hi, All,
+> As described in runtime_pm.txt for pm_wq:
+> The power management work queue pm_wq in which bus types and device
+> drivers can put their PM-related work items. It is strongly recommended that
+> pm_wq be used for queuing all work items related to runtime PM, because
+> this allows them to be synchronized with system-wide power transitions
+> (suspend to RAM, hibernation and resume from system sleep states).
+> 
+> Per my understanding, all runtime PM related works items queued on pm_wq
+> should be completed before suspend to RAM. So to ensure device state is
+> runtime active before suspending. Having checked the pm code, I found this is
+> not true for work items queued by drivers.
+> 
+> Now usb driver has used this pm_wq to run a work item that resumes root hub
+> (see function xhci_resume()->usb_hcd_resume_root_hub()). But sometimes
+> this work is not completed before usb device suspend. That is to say root hub
+> device may still in runtime suspend state before suspending. And this can result
+> in problem. One case is that as below error log shows,
+> 
+> [  108.046248] PM: Entering mem sleep
+> [  108.050487] Suspending console(s) (use no_console_suspend to debug)
+> [  108.426510] active wakeup source: event5-576
+> [  108.426529] PM: Some devices failed to suspend
+> [  108.426887] dpm_run_callback(): usb_dev_resume+0x0/0x20 returns -113
+> [  108.426918] PM: Device 1-2 failed to resume async: error -113
+> [  108.428299] PM: resume of devices complete after 1.755 msecs
+> 
+> The usb_dev_resume() return error -113, which mean host is in suspend state
+> when resuming a device. The scenario is:
+> 1) Just before system suspending, pm core will run hcd runtime resume
+>   routine if host is in runtime suspend state.
+> 2) Hcd runtime resume function xhci_resume() returns, and roothub resume
+>   worker was queued by usb_hcd_resume_root_hub().
+> 3) system suspend continue going before roothub resume worker starts executing.
+>   Thus host is still in runtime suspend state.
+> 4) One event make suspending process aborted before hcd suspended. Then pm
+>   core will call resume routines for just suspended device. But when resuming
+>   a usb device it find the host is in suspended. Then return error -113.
+> 
+> If my analysis is correct, could you share your ideas for this issue?
+
+Hasn't this already been fixed?  See commit d6236f6d1d88 (xhci: Fix 
+runtime suspended xhci from blocking system suspend).
+
+Alan Stern
+
