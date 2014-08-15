@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaHOTRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:17:12 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:48906 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaHOTRJ (ORCPT
+	id S1752095AbaHOTSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:18:37 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:64769 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaHOTSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:17:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140815190552.GA11476@ubuntumail>
-References: <CALCETrWT_p1-5nkiAjWoeta19fkO3rDiJe9_mhRVqF8x1zXv2A@mail.gmail.com>
- <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net> <20140815190552.GA11476@ubuntumail>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 15 Aug 2014 12:16:47 -0700
-Message-ID: <CALCETrVKq1Fxnsd9jKDi5_fcKfCJxBZ1w-zGXD3FR-pF-jLsmQ@mail.gmail.com>
-Subject: Re: [PATCH] fs: Remove implicit nodev for new mounts in non-root userns
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 15 Aug 2014 15:18:35 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next,v3] hyperv: Increase the buffer length for netvsc_channel_cb()
+Date: Fri, 15 Aug 2014 19:18:19 +0000
+Message-Id: <1408130299-50848-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 12:05 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> Quoting Andy Lutomirski (luto@amacapital.net):
->> Currently, creating a new mount (as opposed to bindmount) in a
->> non-root userns will implicitly set nodev unless the fs is devpts.
->> Something like this will be necessary for file systems that allow
->> the mounter to create device nodes without using mknod (e.g. FUSE
->> if/when that is allowed), but none of the currently allowed
->> filesystems do this.
->
-> Hi,
->
-> Sorry, I'm probably thinking stupidly, but I don't see this restriction
-> being the case
->
-> serge@sl:~$ mount | grep tmp
-> [...]
-> tmpfs on /run type tmpfs (rw,noexec,nosuid,size=10%,mode=0755)
-> serge@sl:~$ sudo mknod /run/kvm c 10 232
-> [sudo] password for serge:
-> serge@sl:~$ echo $?
-> 0
-> serge@sl:~$ ls -l /run/kvm
-> crw-r--r-- 1 root root 10, 232 Aug 15 14:04 /run/kvm
->
-> But you seem to be saying I shouldn't be allowed to create a device inside
-> a tmpfs.  What am I overlooking?
+When the buffer is too small for a packet from VMBus, a bigger buffer will be
+allocated in netvsc_channel_cb() and retry reading the packet from VMBus.
+Increasing this buffer size will reduce the retry overhead.
 
-I assume you're in the root userns.  This patch is unnecessary, and
-has no effect, if you're in the root userns.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: Dexuan Cui <decui@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h |    4 ++--
+ drivers/net/hyperv/netvsc.c     |   16 ++++++++++++++--
+ 2 files changed, 16 insertions(+), 4 deletions(-)
 
-The code in Sandstorm that's currently broken in Linus' tree runs in a
-new userns with a matching mount ns.  It does (copied verbatim):
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index d5e07de..2f48f79 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -591,7 +591,7 @@ struct nvsp_message {
+ 
+ #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
+ 
+-#define NETVSC_PACKET_SIZE                      2048
++#define NETVSC_PACKET_SIZE                      4096
+ 
+ #define VRSS_SEND_TAB_SIZE 16
+ 
+@@ -642,7 +642,7 @@ struct netvsc_device {
+ 	int ring_size;
+ 
+ 	/* The primary channel callback buffer */
+-	unsigned char cb_buffer[NETVSC_PACKET_SIZE];
++	unsigned char *cb_buffer;
+ 	/* The sub channel callback buffer */
+ 	unsigned char *sub_cb_buf;
+ };
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 66979cf..5b5644a 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -42,6 +42,12 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
+ 	if (!net_device)
+ 		return NULL;
+ 
++	net_device->cb_buffer = kzalloc(NETVSC_PACKET_SIZE, GFP_KERNEL);
++	if (!net_device->cb_buffer) {
++		kfree(net_device);
++		return NULL;
++	}
++
+ 	init_waitqueue_head(&net_device->wait_drain);
+ 	net_device->start_remove = false;
+ 	net_device->destroy = false;
+@@ -52,6 +58,12 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
+ 	return net_device;
+ }
+ 
++static void free_netvsc_device(struct netvsc_device *nvdev)
++{
++	kfree(nvdev->cb_buffer);
++	kfree(nvdev);
++}
++
+ static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
+ {
+ 	struct netvsc_device *net_device;
+@@ -551,7 +563,7 @@ int netvsc_device_remove(struct hv_device *device)
+ 	if (net_device->sub_cb_buf)
+ 		vfree(net_device->sub_cb_buf);
+ 
+-	kfree(net_device);
++	free_netvsc_device(net_device);
+ 	return 0;
+ }
+ 
+@@ -1093,7 +1105,7 @@ close:
+ 	vmbus_close(device->channel);
+ 
+ cleanup:
+-	kfree(net_device);
++	free_netvsc_device(net_device);
+ 
+ 	return ret;
+ }
+-- 
+1.7.1
 
-      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOSUID | MS_NOEXEC,
-                       "size=1m,nr_inodes=16,mode=755"));
-      makeCharDeviceNode("null", "null", 1, 3);
-      makeCharDeviceNode("zero", "zero", 1, 5);
-      makeCharDeviceNode("random", "urandom", 1, 9);
-      makeCharDeviceNode("urandom", "urandom", 1, 9);
-      KJ_SYSCALL(mount("dev", "dev", nullptr,
-                       MS_REMOUNT | MS_BIND | MS_NOSUID | MS_NOEXEC |
-MS_RDONLY, nullptr));
-
-makeCharDeviceNode is a helper that creates an empty file and mounts a
-device node over it.  This code needs the fs to be read/write, but
-Sandstorm wants to make /dev read-only when it's done.
-
-In Linus' tree, the remount fails with -EPERM because the mount is
-secretly nodev.  It was always secretly nodev, but no one noticed
-because of CVE-2014-5207, which caused that remount to succeed.
-
-(Yay for programs that inadvertently exploited a serious security
-vulnerability for their normal function.)
-
---Andy
