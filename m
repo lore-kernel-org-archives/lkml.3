@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaHOVru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 17:47:50 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:46410 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaHOVrt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 17:47:49 -0400
-Message-ID: <1408138647.26567.42.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
-From: Toshi Kani <toshi.kani@hp.com>
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>,
-        David Rientjes <rientjes@google.com>, isimatu.yasuaki@jp.fujitsu.com,
-        n-horiguchi@ah.jp.nec.com, wangnan0@huawei.com,
-        linux-kernel@vger.kernel.org, Linux MM <linux-mm@kvack.org>
-Date: Fri, 15 Aug 2014 15:37:27 -0600
-In-Reply-To: <53EAE534.8030303@huawei.com>
-References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com>
-	 <53EAE534.8030303@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751380AbaHOVxL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 17:53:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54203 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750763AbaHOVxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 17:53:07 -0400
+Date: Fri, 15 Aug 2014 14:54:00 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev] [PATCH 08/13] f2fs: do checkpoint at f2fs_put_super
+Message-ID: <20140815215027.GA53769@jaegeuk-mac02.mot.com>
+References: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
+ <1407872967-26423-8-git-send-email-jaegeuk@kernel.org>
+ <000401cfb76b$a3957b20$eac07160$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000401cfb76b$a3957b20$eac07160$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-13 at 12:10 +0800, Zhang Zhen wrote:
-> Currently memory-hotplug has two limits:
-> 1. If the memory block is in ZONE_NORMAL, you can change it to
-> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
-> 2. If the memory block is in ZONE_MOVABLE, you can change it to
-> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
-> 
-> With this patch, we can easy to know a memory block can be onlined to
-> which zone, and don't need to know the above two limits.
-> 
-> Updated the related Documentation.
-> 
-> Change v1 -> v2:
-> - optimize the implementation following Dave Hansen's suggestion
-> 
-> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
-> ---
->  Documentation/ABI/testing/sysfs-devices-memory |  8 ++++
->  Documentation/memory-hotplug.txt               |  4 +-
->  drivers/base/memory.c                          | 62 ++++++++++++++++++++++++++
->  include/linux/memory_hotplug.h                 |  1 +
->  mm/memory_hotplug.c                            |  2 +-
->  5 files changed, 75 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
-> index 7405de2..2b2a1d7 100644
-> --- a/Documentation/ABI/testing/sysfs-devices-memory
-> +++ b/Documentation/ABI/testing/sysfs-devices-memory
-> @@ -61,6 +61,14 @@ Users:		hotplug memory remove tools
->  		http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
-> 
-> 
-> +What:           /sys/devices/system/memory/memoryX/zones_online_to
+Hi Chao,
 
-I think this name is a bit confusing.  How about "valid_online_types"?
+On Thu, Aug 14, 2014 at 10:57:10AM +0800, Chao Yu wrote:
+> Hi Jaegeuk,
+> 
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > Sent: Wednesday, August 13, 2014 3:49 AM
+> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> > linux-f2fs-devel@lists.sourceforge.net
+> > Cc: Jaegeuk Kim
+> > Subject: [f2fs-dev] [PATCH 08/13] f2fs: do checkpoint at f2fs_put_super
+> > 
+> > The generic_shutdown_super calls sync_filesystem, evict_inode, and then
+> > f2fs_put_super. In f2fs_evict_inode, we remain some dirty inode information
+> > so we should release them at f2fs_put_super.
+> > 
+> > But normally, it's more reasonable to set its superblock as dirty when
+> > evict_inode is called.
+> 
+> After applying this patch, when we mount and then umount f2fs image without
+> modification, we will write checkpoint in f2fs_put_super even though we have
+> no more dirty data to sync, it's not needed.
+> 
+> "some dirty inode information" you mentioned is inode information in ->ino_root of
+> sbi, right?
+
+Actually this patch is intended to call release_dirty_inode() in
+write_checkpoint, since evict_inode remains information by calling
+add_dirty_inode().
+
+Oh, it'd better set sb dirty only when add_dirty_inode is called.
+Let me send v2 for this. :)
 
 Thanks,
--Toshi
 
-
-
+> 
+> Regards,
+> Yu
+> 
+> > 
+> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > ---
+> >  fs/f2fs/inode.c | 1 +
+> >  fs/f2fs/super.c | 2 +-
+> >  2 files changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
+> > index 2c39999..eeaf5aa 100644
+> > --- a/fs/f2fs/inode.c
+> > +++ b/fs/f2fs/inode.c
+> > @@ -303,6 +303,7 @@ no_delete:
+> >  		add_dirty_inode(sbi, inode->i_ino, APPEND_INO);
+> >  	if (is_inode_flag_set(F2FS_I(inode), FI_UPDATE_WRITE))
+> >  		add_dirty_inode(sbi, inode->i_ino, UPDATE_INO);
+> > +	F2FS_SET_SB_DIRT(sbi);
+> >  out_clear:
+> >  	clear_inode(inode);
+> >  }
+> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> > index 633315a..60e3554 100644
+> > --- a/fs/f2fs/super.c
+> > +++ b/fs/f2fs/super.c
+> > @@ -432,7 +432,7 @@ static void f2fs_put_super(struct super_block *sb)
+> >  	stop_gc_thread(sbi);
+> > 
+> >  	/* We don't need to do checkpoint when it's clean */
+> > -	if (sbi->s_dirty && get_pages(sbi, F2FS_DIRTY_NODES))
+> > +	if (sbi->s_dirty)
+> >  		write_checkpoint(sbi, true);
+> > 
+> >  	iput(sbi->node_inode);
+> > --
+> > 1.8.5.2 (Apple Git-48)
+> > 
+> > 
+> > ------------------------------------------------------------------------------
+> > _______________________________________________
+> > Linux-f2fs-devel mailing list
+> > Linux-f2fs-devel@lists.sourceforge.net
+> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
