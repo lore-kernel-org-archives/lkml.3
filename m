@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbaHOM4o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 08:56:44 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:37450 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaHOM4m (ORCPT
+	id S1751299AbaHONAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 09:00:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54432 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaHOM77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 08:56:42 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH] of/irq: lookup 'interrupts-extended' property first
-To: Florian Fainelli <f.fainelli@gmail.com>, Tim Bird <tbird20d@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <53E2A85A.8030406@gmail.com>
-References: <1403220823-19444-1-git-send-email-f.fainelli@gmail.com>
-	<CAGVrzcYfA8rCXGRW7g0JhT4GQKT8SQj+pMvCh25yoXLFGNM_Pw@mail.gmail.com>
-	<20140806165452.GN3711@ld-irv-0074>
-	<CAL_JsqK8BiffXgpQSig5EbV3FUW7EBOn9YjZGqOcUcEJiCJ0WA@mail.gmail.com>
-	<20140806201256.GO3711@ld-irv-0074>
-	<CA+bK7J7LQq4S70ScSynbLTjNMmP=9n3KD2suYRg9JN+pEv-Y7g@mail.gmail.com>
-	<53E2A85A.8030406@gmail.com>
-Date: Fri, 15 Aug 2014 13:56:38 +0100
-Message-Id: <20140815125638.C4D61C410ED@trevor.secretlab.ca>
+	Fri, 15 Aug 2014 08:59:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <53ECE998.8070407@kernel.dk>
+References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
+	<53ECE998.8070407@kernel.dk>
+Date: Fri, 15 Aug 2014 20:59:56 +0800
+Message-ID: <CACVXFVNGaZ0C1cA5fq0UnEBDPPMpBDqF2PxNk4TAOOCGL3jh5g@mail.gmail.com>
+Subject: Re: [PATCH v1 0/9] block & aio: kernel aio and loop mq conversion
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Kent Overstreet <kmo@daterainc.com>,
+        "open list:AIO" <linux-aio@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Aug 2014 15:12:42 -0700, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> On 08/06/2014 02:50 PM, Tim Bird wrote:
-> > On Wed, Aug 6, 2014 at 1:12 PM, Brian Norris
-> > <computersforpeace@gmail.com> wrote:
-> >> On Wed, Aug 06, 2014 at 01:42:08PM -0500, Rob Herring wrote:
-> >>> On Wed, Aug 6, 2014 at 11:54 AM, Brian Norris <computersforpeace@gmail.com> wrote:
-> >>>> On Thu, Jul 31, 2014 at 11:00:01AM -0700, Florian Fainelli wrote:
-> >>>> I think it is important that a device tree provide some flexibility on
-> >>>> kernel versions. We only invented 'interrupts-extended' in Linux 3.13,
-> >>>> so it's easy to have device trees that could work only on 3.13+.
-> >>>>
-> >>>> Typically, we might say that new features require new kernels, but this
-> >>>> is a very basic piece of the DT infrastructure. In our case, we have
-> >>>> hardware whose basic features can be supported by a single interrupt
-> >>>> parent, and so we used the 'interrupts' property pre-3.13. But when we
-> >>>> want to add some power management features, there's an additional
-> >>>> interrupt parent. Under the current DT binding, we have to switch over
-> >>>> to using 'interrupts-extended' exclusively, and thus we must have a
-> >>>> completely new DTB for >=3.13, and this DTB no longer works with the old
-> >>>> kernels.
-> >>>
-> >>> "Must have" to enable the new features?
-> >>
-> >> Yes. The new feature requires an additional interrupt parent, and so it
-> >> requires interrupts-extended.
-> > 
-> > Hold on there.  What about interrupt-map?  That was the traditional DT
-> > feature for
-> > supporting multi-parented interrupts.  Why couldn't the feature have been added
-> > using that instead of interrupts-extended?
-> 
-> As far as I read it from the ePAPR specification, you have a good point
-> here, it looks like 'interrupt-map' could have been used as-is instead
-> of 'interrupts-extended'. In fact it is a little more general than
-> 'interrupts-extended' since it allows any sort of "child unit address",
-> whether that is an actual interrupt number, or something else, is
-> dependent on the type of node being used.
+On Fri, Aug 15, 2014 at 12:53 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 08/14/2014 09:50 AM, Ming Lei wrote:
+>> Hi,
+>>
+>> The 1st two patches introduce kernel AIO support, most of
+>> is borrowed from Dave's work last year, and thanks to ITER_BVEC,
+>> it is much simper to implement kernel AIO now. AIO model
+>> is quite suitable for implementing kernel stuff, and can
+>> help improve both throughput and CPU utilization. Lots of
+>> kernel components should benefit from it, such as:
+>>       - loop driver,
+>>       - all kinds of kernel I/O target driver(SCSI, USB storage
+>>       or UAS, ...)
+>>       - kernel socket users might benefit from it too if socket
+>>       AIO is mature
+>>
+>> The following 6 patches convert current loop driver into blk-mq:
+>>       - loop's scalability gets improved much
+>>       - loop driver gets quite simplified, and the conversion can
+>>       be throught as cleanup too
+>>
+>> The 9th patch uses kernel AIO with O_DIRECT to improve loop's
+>> performance in single job situation, and avoid double cache
+>> issue for loop driver too.
+>>
+>> With the change, loop block's performance can be doubled in my
+>> fio test(randread, single job, libaio). If more fio jobs are used,
+>> the throughput can be improved much more because of blk-mq.
+>>
+>> Given loop is used quite widely, especially in VM environment,
+>> also the change is quite small, hope it can be merged finally.
+>
+> Looks pretty damn good to me, even the kernel aio bits are nice and
+> simple. Do you have any numbers on loop performance before and after the
+> blk-mq conversion? Just curious.
 
-Not really any more general. The child unit address is for filtering
-which nodes get a particular map entry. That doesn't have any value when
-the routing information is directly in the device node, which is what
-interrupts-extended does.
+Your concern is right, previous I thought that mq conversion wouldn't improve
+throughput, but I did ignore workqueue's concurrency management, it
+turns out blk-mq conversion can improvment throughput close to 10 times in
+my test(loop over virtio-blk which is backed by one image on SSD).  It is like
+POSIX style AIO after mq conversion thanks to workqueue, and I need to
+update the performance data in V2.
 
-interrupt-map certainly still works, but it is quite fiddly to use when
-the use case is merely one device wired to multiple interrupt
-controllers, and it is very easy to get wrong. interrupts-extended is
-far more concise.
+Actually kernel AIO needn't such high concurrency.
 
-g.
+Thanks,
+--
+Ming Lei
