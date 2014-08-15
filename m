@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaHONeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 09:34:20 -0400
-Received: from mail.kernel.org ([198.145.19.201]:36586 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaHONeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 09:34:19 -0400
-Date: Fri, 15 Aug 2014 10:34:14 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, David Ahern <dsahern@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, yrl.pp-manager.tt@hitachi.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf probe: Warn user to rebuild target with debuginfo
-Message-ID: <20140815133414.GA3508@kernel.org>
-References: <53ED627E.2090804@hitachi.com>
- <20140815014432.29869.57941.stgit@kbuild-fedora.novalocal>
- <53ED67A1.3080607@hitachi.com>
- <CAE40pdcAoBzFAd1i7B2Q6BMPrxvYkwYd7FP5XFjF-waGosF0Gw@mail.gmail.com>
+	id S1751318AbaHONjL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 09:39:11 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:63352 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaHONjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 09:39:09 -0400
+Message-ID: <53EE0D79.3020809@cogentembedded.com>
+Date: Fri, 15 Aug 2014 17:39:05 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE40pdcAoBzFAd1i7B2Q6BMPrxvYkwYd7FP5XFjF-waGosF0Gw@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: christophe leroy <christophe.leroy@c-s.fr>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Issue with commit 33c133cc7598e60976a phy: IRQ cannot be shared
+References: <53EC57B9.8080903@c-s.fr> <53EC9783.3020809@cogentembedded.com> <53EDCE6F.9000307@c-s.fr>
+In-Reply-To: <53EDCE6F.9000307@c-s.fr>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Aug 14, 2014 at 08:39:51PM -0700, Brendan Gregg escreveu:
-> On Thu, Aug 14, 2014 at 6:51 PM, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
-> > Here is v2 patch, which I've added "or install an appropriate debuginfo pacakge." :)
-> [...]
-> 
-> Looks good, thanks.
+Hello.
 
-Thanks, applied.
+On 08/15/2014 01:10 PM, christophe leroy wrote:
 
-- Arnaldo
+>>> I have an hardware with two ethernet interfaces, and with the two PHYs inside
+>>> the same component INTEL LXT973 which has only one interrupt.
+>>> I also have another hardware with two ethernet interfaces and two independant
+>>> PHYs. But the two PHYs are wired to the same interrupt.
+>>> This is working perfectly up to Linux 3.12.
+
+>>    Hm, I'm surprised it works. Are you sure you're getting interrupts from
+>> both PHYs? Because if both Ethernet controllers are active simultaneously,
+>> only the first registered PHY IRQ handler should get all the interrupts.
+
+> Yes it works. Why should only the first one get the interrupts ?
+> handle_irq_event_percpu() (from kernel/irq/handle.c, extract below) calls all
+> handlers regardless of whether they answer IRQ_NONE or IRQ_HANDLED. The break
+> applies to the switch(), not to the while(). So all handlers are called.
+
+    Indeed, my reasoning seems obsolete now, if ever valid at all. :-/
+    I couldn't yet remember other reasons that caused me to do that patch last 
+December. Perhaps it was also connected to the "rude" behaviour of the 
+phylib's IRQ handler, which calls disable_irq_nosync()...
+
+[...]
+
+>>> Reading the commit log, I can't really understand the reason for the change.
+
+>>> Is it really worth it, and therefore how shall my case be handled ?
+
+>>    PHY IRQs are not necessary for the phylib state machine.
+
+> However, polling is less efficient than IRQs. It wastes CPU and link loss
+> detection is slower.
+
+    Yes, but you can't avoid it even with valid IRQ, the way phylib is 
+written: the state workqueue is activated once a second even in the absence of 
+interrupts.
+
+    What can also be done is getting rid of the IRQ workqueue and using 
+threaded IRQs,
+
+> BR
+> Christophe
+
+WBR, Sergei
+
