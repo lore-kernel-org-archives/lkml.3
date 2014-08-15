@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371AbaHONc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 09:32:57 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:63976 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaHONcz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 09:32:55 -0400
+	id S1751424AbaHONeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 09:34:20 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36586 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967AbaHONeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 09:34:19 -0400
+Date: Fri, 15 Aug 2014 10:34:14 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, David Ahern <dsahern@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, yrl.pp-manager.tt@hitachi.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] perf probe: Warn user to rebuild target with debuginfo
+Message-ID: <20140815133414.GA3508@kernel.org>
+References: <53ED627E.2090804@hitachi.com>
+ <20140815014432.29869.57941.stgit@kbuild-fedora.novalocal>
+ <53ED67A1.3080607@hitachi.com>
+ <CAE40pdcAoBzFAd1i7B2Q6BMPrxvYkwYd7FP5XFjF-waGosF0Gw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1408034728-4952-2-git-send-email-abrestic@chromium.org>
-References: <1408034728-4952-1-git-send-email-abrestic@chromium.org> <1408034728-4952-2-git-send-email-abrestic@chromium.org>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Fri, 15 Aug 2014 19:02:14 +0530
-Message-ID: <CAGOxZ52wB14=YqjE463p3-0CRWuoDTrbYJ=Q0Mv=hTbkcry8jw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] mmc: dw_mmc: Add support for MIPS
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE40pdcAoBzFAd1i7B2Q6BMPrxvYkwYd7FP5XFjF-waGosF0Gw@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Em Thu, Aug 14, 2014 at 08:39:51PM -0700, Brendan Gregg escreveu:
+> On Thu, Aug 14, 2014 at 6:51 PM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+> > Here is v2 patch, which I've added "or install an appropriate debuginfo pacakge." :)
+> [...]
+> 
+> Looks good, thanks.
 
-On Thu, Aug 14, 2014 at 10:15 PM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
-> There are upcoming MIPS SoCs with dw_mmc hosts.
->
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Thanks, applied.
 
-Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
-> ---
->  drivers/mmc/host/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index 385674b..6acc2ab 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -564,7 +564,7 @@ config SDH_BFIN_MISSING_CMD_PULLUP_WORKAROUND
->  config MMC_DW
->         tristate "Synopsys DesignWare Memory Card Interface"
->         depends on HAS_DMA
-> -       depends on ARC || ARM || COMPILE_TEST
-> +       depends on ARC || ARM || MIPS || COMPILE_TEST
->         help
->           This selects support for the Synopsys DesignWare Mobile Storage IP
->           block, this provides host support for SD and MMC interfaces, in both
-> --
-> 2.1.0.rc2.206.gedb03e5
->
-
-
-
--- 
-Regards,
-Alim
+- Arnaldo
