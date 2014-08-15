@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaHOUHT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 16:07:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109AbaHOUHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 16:07:18 -0400
-From: riel@redhat.com
-To: linux-kernel@vger.kernel.org
-Cc: oleg@redhat.com, peterz@infradead.org, umgwanakikbuti@gmail.com,
-        fweisbec@gmail.com, akpm@linux-foundation.org, srao@redhat.com,
-        lwoodman@redhat.com, atheurer@redhat.com
-Subject: [PATCH 1/3] exit: always reap resource stats in __exit_signal
-Date: Fri, 15 Aug 2014 16:05:36 -0400
-Message-Id: <1408133138-22048-2-git-send-email-riel@redhat.com>
-In-Reply-To: <1408133138-22048-1-git-send-email-riel@redhat.com>
-References: <1408133138-22048-1-git-send-email-riel@redhat.com>
+	id S1751385AbaHOUOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 16:14:43 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:61767 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaHOUOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 16:14:42 -0400
+Date: Fri, 15 Aug 2014 16:14:38 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH percpu/for-3.17-fixes 1/2] percpu: fix pcpu_alloc_pages()
+ failure path
+Message-ID: <20140815201438.GA24716@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rik van Riel <riel@redhat.com>
+Fix for a sneaky bug which has been there for many years.  Applied to
+percpu/for-3.17-fixes.
 
-Oleg pointed out that wait_task_zombie adds a task's usage statistics
-to the parent's signal struct, but the task's own signal struct should
-also propagate the statistics at exit time.
+Thanks.
+------ 8< ------
+>From f0d279654dea22b7a6ad34b9334aee80cda62cde Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 15 Aug 2014 16:06:06 -0400
 
-This allows thread_group_cputime(reaped_zombie) to get the statistics
-after __unhash_process() has made the task invisible to for_each_thread,
-but before the thread has actually been rcu freed, making sure no
-non-monotonic results are returned inside that window.
+When pcpu_alloc_pages() fails midway, pcpu_free_pages() is invoked to
+free what has already been allocated.  The invocation is across the
+whole requested range and pcpu_free_pages() will try to free all
+non-NULL pages; unfortunately, this is incorrect as
+pcpu_get_pages_and_bitmap(), unlike what its comment suggests, doesn't
+clear the pages array and thus the array may have entries from the
+previous invocations making the partial failure path free incorrect
+pages.
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Rik van Riel <riel@redhat.com>
+Fix it by open-coding the partial freeing of the already allocated
+pages.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: stable@vger.kernel.org
 ---
- kernel/exit.c | 43 +++++++++++++++++++++----------------------
- 1 file changed, 21 insertions(+), 22 deletions(-)
+ mm/percpu-vm.c | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 32c58f7..b93d46d 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -115,30 +115,29 @@ static void __exit_signal(struct task_struct *tsk)
+diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
+index 3707c71..8d9bb2c 100644
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -108,7 +108,7 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
+ 			    int page_start, int page_end)
+ {
+ 	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
+-	unsigned int cpu;
++	unsigned int cpu, tcpu;
+ 	int i;
  
- 		if (tsk == sig->curr_target)
- 			sig->curr_target = next_thread(tsk);
--		/*
--		 * Accumulate here the counters for all threads but the
--		 * group leader as they die, so they can be added into
--		 * the process-wide totals when those are taken.
--		 * The group leader stays around as a zombie as long
--		 * as there are other threads.  When it gets reaped,
--		 * the exit.c code will add its counts into these totals.
--		 * We won't ever get here for the group leader, since it
--		 * will have been the last reference on the signal_struct.
--		 */
--		task_cputime(tsk, &utime, &stime);
--		sig->utime += utime;
--		sig->stime += stime;
--		sig->gtime += task_gtime(tsk);
--		sig->min_flt += tsk->min_flt;
--		sig->maj_flt += tsk->maj_flt;
--		sig->nvcsw += tsk->nvcsw;
--		sig->nivcsw += tsk->nivcsw;
--		sig->inblock += task_io_get_inblock(tsk);
--		sig->oublock += task_io_get_oublock(tsk);
--		task_io_accounting_add(&sig->ioac, &tsk->ioac);
--		sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
+ 	for_each_possible_cpu(cpu) {
+@@ -116,14 +116,23 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
+ 			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
+ 
+ 			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
+-			if (!*pagep) {
+-				pcpu_free_pages(chunk, pages, populated,
+-						page_start, page_end);
+-				return -ENOMEM;
+-			}
++			if (!*pagep)
++				goto err;
+ 		}
  	}
+ 	return 0;
++
++err:
++	while (--i >= page_start)
++		__free_page(pages[pcpu_page_idx(cpu, i)]);
++
++	for_each_possible_cpu(tcpu) {
++		if (tcpu == cpu)
++			break;
++		for (i = page_start; i < page_end; i++)
++			__free_page(pages[pcpu_page_idx(tcpu, i)]);
++	}
++	return -ENOMEM;
+ }
  
-+	/*
-+	 * Accumulate here the counters for all threads but the group leader
-+	 * as they die, so they can be added into the process-wide totals
-+	 * when those are taken.  The group leader stays around as a zombie as
-+	 * long as there are other threads.  When it gets reaped, the exit.c
-+	 * code will add its counts into these totals.  We won't ever get here
-+	 * for the group leader, since it will have been the last reference on
-+	 * the signal_struct.
-+	 */
-+	task_cputime(tsk, &utime, &stime);
-+	sig->utime += utime;
-+	sig->stime += stime;
-+	sig->gtime += task_gtime(tsk);
-+	sig->min_flt += tsk->min_flt;
-+	sig->maj_flt += tsk->maj_flt;
-+	sig->nvcsw += tsk->nvcsw;
-+	sig->nivcsw += tsk->nivcsw;
-+	sig->inblock += task_io_get_inblock(tsk);
-+	sig->oublock += task_io_get_oublock(tsk);
-+	task_io_accounting_add(&sig->ioac, &tsk->ioac);
-+	sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
- 	sig->nr_threads--;
- 	__unhash_process(tsk, group_dead);
- 
+ /**
 -- 
-1.8.3.1
+1.9.3
+
 
