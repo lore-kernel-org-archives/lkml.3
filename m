@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaHONx1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 09:53:27 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:39263 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbaHONx0 (ORCPT
+	id S1751508AbaHONyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 09:54:03 -0400
+Received: from p2.i-net.ro ([193.230.184.10]:16649 "EHLO
+	mail.comtelnetworks.ro" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaHONx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 09:53:26 -0400
-Message-ID: <1408110797.6965.1.camel@phoenix>
-Subject: [PATCH] mfd: da9052-i2c: Remove duplicate test for
- I2C_FUNC_SMBUS_BYTE_DATA functionality
-From: Axel Lin <axel.lin@ingics.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: David Dajun Chen <dchen@diasemi.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 15 Aug 2014 21:53:17 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Fri, 15 Aug 2014 09:53:58 -0400
+X-Greylist: delayed 760 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Aug 2014 09:53:52 EDT
+To: undisclosed-recipients:;
+Subject: Transaction XLK-14-TTF/ESP.
+X-PHP-Script: mail.comtelnetworks.ro/index.php for 83.58.173.120
+X-PHP-Originating-Script: 0:rcube.php
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
 Content-Transfer-Encoding: 7bit
+Date: Fri, 15 Aug 2014 15:36:07 +0200
+From: "GVA Abogados." <o.nyvlt@post.cz>
+Organization: GVA Abogados
+Reply-To: gvaintencia@aim.com
+Mail-Reply-To: gvaintencia@aim.com
+Message-ID: <e67c722c0a1c9ab2e433f8853687c1dc@i-net.ro>
+User-Agent: Roundcube Webmail/1.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit b42261078a91 ("regmap: i2c: fallback to SMBus if the adapter
-does not support standard I2C"), regmap-i2c will check the
-I2C_FUNC_SMBUS_[BYTE|WORD]_DATA functionality based on the regmap_config
-setting if the adapter does not support standard I2C.
+Dear Friend,
 
-So remove the I2C_FUNC_SMBUS_BYTE_DATA functionality check in the driver code.
+                  Please acknowledge and accept my proposal.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/mfd/da9052-i2c.c | 7 -------
- 1 file changed, 7 deletions(-)
+My name is Barrister Miguel Martinez Moreno, an Attorney at Law, in 
+Alicante-Spain.
 
-diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
-index 6da8ec8..ec39287 100644
---- a/drivers/mfd/da9052-i2c.c
-+++ b/drivers/mfd/da9052-i2c.c
-@@ -140,13 +140,6 @@ static int da9052_i2c_probe(struct i2c_client *client,
- 	if (!da9052)
- 		return -ENOMEM;
- 
--	if (!i2c_check_functionality(client->adapter,
--				     I2C_FUNC_SMBUS_BYTE_DATA)) {
--		dev_info(&client->dev, "Error in %s:i2c_check_functionality\n",
--			 __func__);
--		return  -ENODEV;
--	}
--
- 	da9052->dev = &client->dev;
- 	da9052->chip_irq = client->irq;
- 	da9052->fix_io = da9052_i2c_fix;
--- 
-1.9.1
+I am writing to notify you of the unclaimed inheritance deposit of our 
+late client, who passed on to Great beyond on August 21st, 2010 in a 
+motor accident in auto pista de Alcala Del Henares, Madrid-Spain.
 
+I got your name and email address through a web search engine in my 
+quest to get a reliable individual who shall work with me in claiming 
+this inheritance deposit since all my efforts to get the biological 
+relative has proved abortive.
 
+Conclusively, I await your urgent response to include the following :( 
+1).Your full Names & Address. (2).Your Telephone and Fax numbers. 
+(3).Your business name if any: for more information on how to release 
+the inheritance deposit, amount, procedure and legality of this claim 
+send me an email via: gva_abogados@aim.com
 
+Have a very nice day my friend!
+
+Regards,
+Miguel Martinez Moreno (Esq)
+Attorney At Law.
+gvaintencia@aim.com
