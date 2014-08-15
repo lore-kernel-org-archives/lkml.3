@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903AbaHOTfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:35:24 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:63983 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaHOTfW (ORCPT
+	id S1751593AbaHOThy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:37:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56239 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199AbaHOThw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:35:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrUqop+UB-BhyX4Y41kELO+6kcFdS1F7ZyN0CzRwg4UGhA@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-18-git-send-email-ast@plumgrid.com>
-	<CAE40pdf0pNYyazjpdkzxNJi7iC4LOOr_XEu078OUqP_uoCXnHg@mail.gmail.com>
-	<CAMEtUuymPDhYBe42i4DJNXsdgZRaq9LuEU_nGSsqrY1FcFHqhQ@mail.gmail.com>
-	<CALCETrVH8KXr8uSHAVy5eBsqmi1LjB5QZpboAGcjYswXvW1opA@mail.gmail.com>
-	<CAMEtUuzey7PanznrAguOpvPLxyhgJB++ovE8RNys7srs=EY1qg@mail.gmail.com>
-	<CALCETrVhjO5c7ob1vntx031c5RmxRHimkRt1F2EsmzdKB53_NA@mail.gmail.com>
-	<CAMEtUuzT53jeH-L+saW-RopSR2EERO5UKVHyeORTGHVMCHbYag@mail.gmail.com>
-	<CALCETrUNvg88_VrwE+9RKnSgts=3zVcXbX6tuNLgUxJU436CrQ@mail.gmail.com>
-	<CAMEtUuwF2_+qzkaW6rkw9cyYJ2eb01B_ZyBcwrJ7nd+GqN5-mQ@mail.gmail.com>
-	<CALCETrUqop+UB-BhyX4Y41kELO+6kcFdS1F7ZyN0CzRwg4UGhA@mail.gmail.com>
-Date: Fri, 15 Aug 2014 12:35:20 -0700
-Message-ID: <CAMEtUuzbP5iUjGZaRxE=gmthpdL37HJkGcOnO5Jxa_7ESGkkgg@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 17/26] tracing: allow eBPF programs to be
- attached to events
-From: Alexei Starovoitov <ast@plumgrid.com>
+	Fri, 15 Aug 2014 15:37:52 -0400
+Date: Fri, 15 Aug 2014 19:37:47 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
 To: Andy Lutomirski <luto@amacapital.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Kenton Varda <kenton@sandstorm.io>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] fs: Remove implicit nodev for new mounts in non-root
+ userns
+Message-ID: <20140815193746.GE11476@ubuntumail>
+References: <CALCETrWT_p1-5nkiAjWoeta19fkO3rDiJe9_mhRVqF8x1zXv2A@mail.gmail.com>
+ <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net>
+ <20140815190552.GA11476@ubuntumail>
+ <CALCETrVKq1Fxnsd9jKDi5_fcKfCJxBZ1w-zGXD3FR-pF-jLsmQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVKq1Fxnsd9jKDi5_fcKfCJxBZ1w-zGXD3FR-pF-jLsmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 12:18 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> clang/llvm has no problem with u64 :)
->> This bpf_context struct for tracing is trying to answer the question:
->>  'what's the most convenient way to access tracepoint arguments
->> from a script'.
->> When kernel code has something like:
->>  trace_kfree_skb(skb, net_tx_action);
->> the script needs to be able to access this 'skb' and 'net_tx_action'
->> values through _single_ data structure.
->> In this proposal they are ctx->arg1 and ctx->arg2.
->> I've considered having different bpf_context's for every event, but
->> the complexity explodes. I need to hack all event definitions and so on.
->> imo it's better to move complexity to userspace, so program author
->> or high level language abstracts these details.
->
-> I still don't understand why making them long instead of u64 is
-> helpful, though.  I feel like I'm missing obvious here.
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On Fri, Aug 15, 2014 at 12:05 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> Currently, creating a new mount (as opposed to bindmount) in a
+> >> non-root userns will implicitly set nodev unless the fs is devpts.
+> >> Something like this will be necessary for file systems that allow
+> >> the mounter to create device nodes without using mknod (e.g. FUSE
+> >> if/when that is allowed), but none of the currently allowed
+> >> filesystems do this.
+> >
+> > Hi,
+> >
+> > Sorry, I'm probably thinking stupidly, but I don't see this restriction
+> > being the case
+> >
+> > serge@sl:~$ mount | grep tmp
+> > [...]
+> > tmpfs on /run type tmpfs (rw,noexec,nosuid,size=10%,mode=0755)
+> > serge@sl:~$ sudo mknod /run/kvm c 10 232
+> > [sudo] password for serge:
+> > serge@sl:~$ echo $?
+> > 0
+> > serge@sl:~$ ls -l /run/kvm
+> > crw-r--r-- 1 root root 10, 232 Aug 15 14:04 /run/kvm
+> >
+> > But you seem to be saying I shouldn't be allowed to create a device inside
+> > a tmpfs.  What am I overlooking?
+> 
+> I assume you're in the root userns.  This patch is unnecessary, and
+> has no effect, if you're in the root userns.
 
-I promise to come back to this... Have to go off grid...
-will think of it in the mean time... Appreciate this discussion!!
+Right, but I thought you were justifying adding FS_USERNS_DEV_MOUNT by saying
+that you cannot mknod in those filesystems.  But I see you actually said
+"without using mknod".  I guess I don't understand that caveat.
+
+-serge
