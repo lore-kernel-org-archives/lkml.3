@@ -1,119 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825AbaHOQlW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:41:22 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:54009 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733AbaHOQlV (ORCPT
+	id S1751565AbaHOQms (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:42:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38583 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaHOQmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:41:21 -0400
-Message-ID: <53EE3826.2040000@gmail.com>
-Date: Sat, 16 Aug 2014 00:41:10 +0800
-From: "zhaoxiu.zeng" <zhaoxiu.zeng@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 15 Aug 2014 12:42:47 -0400
+Date: Fri, 15 Aug 2014 18:41:40 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: atull <atull@opensource.altera.com>
+Cc: tthayer@opensource.altera.com, robherring2@gmail.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, linux@arm.linux.org.uk,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        dougthompson@xmission.com, grant.likely@linaro.org, bp@alien8.de,
+        sameo@linux.intel.com, lee.jones@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tthayer.linux@gmail.com
+Subject: Re: [PATCHv10 2/2] arm: dts: Add Altera SDRAM EDAC bindings &
+ devicetree entries.
+Message-ID: <20140815164140.GA19071@pengutronix.de>
+References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com>
+ <1407770293-27190-3-git-send-email-tthayer@opensource.altera.com>
+ <73vbputf04.fsf@dude.hi.pengutronix.de>
+ <alpine.DEB.2.02.1408151035110.21645@atx-linux-37>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        George Spelvin <linux@horizon.com>,
-        David Howells <dhowells@redhat.com>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] GCD: add binary GCD algorithm
-References: <1408106956-12986-1-git-send-email-zhaoxiu.zeng@gmail.com> <20140815135855.GG19379@twins.programming.kicks-ass.net>
-In-Reply-To: <20140815135855.GG19379@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1408151035110.21645@atx-linux-37>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:27:12 up 42 days,  3:03, 37 users,  load average: 0,01, 0,03,
+ 0,05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2014/8/15 21:58, Peter Zijlstra 写道:
-> On Fri, Aug 15, 2014 at 08:49:16PM +0800, Zhaoxiu Zeng wrote:
->> Because some architectures (alpha, armv6, etc.) don't provide hardware division,
->> the mod operation is slow! Binary GCD algorithm uses simple arithmetic operations,
->> it replaces division with arithmetic shifts, comparisons, and subtraction.
->>
->> Signed-off-by: Zhaoxiu Zeng <zhaoxiu.zeng@gmail.com>
->> ---
->>  lib/Kconfig | 15 +++++++++++++++
->>  lib/gcd.c   | 31 ++++++++++++++++++++++++++++++-
->>  2 files changed, 45 insertions(+), 1 deletion(-)
->>
->> diff --git a/lib/Kconfig b/lib/Kconfig
->> index a5ce0c7..80e8e54 100644
->> --- a/lib/Kconfig
->> +++ b/lib/Kconfig
->> @@ -177,6 +177,21 @@ config CRC8
->>  	  when they need to do cyclic redundancy check according CRC8
->>  	  algorithm. Module will be called crc8.
->>  
->> +#
->> +# GCD
->> +#
->> +choice
->> +	prompt "GCD implementation"
->> +	default GCD_ALGO_EUCLIDEAN
->> +
->> +config GCD_ALGO_EUCLIDEAN
->> +	bool "Euclidean algorithm"
->> +
->> +config GCD_ALGO_BINARY
->> +	bool "Binary GCD algorithm (Stein's algorithm)"
->> +
->> +endchoice
+On Fri, Aug 15, 2014 at 11:07:31AM -0500, atull wrote:
+> On Fri, 15 Aug 2014, Steffen Trumtrar wrote:
 > 
-> Does this result in the user being asked which GCD algo he wants? If so,
-> I think that's bad.
+> > 
+> > Hi!
+> 
+> Hello
+> 
+> Thanks for the feedback...
+> 
+> > 
+> > tthayer@opensource.altera.com writes:
+> > 
+> > > From: Thor Thayer <tthayer@opensource.altera.com>
+> > >
+> > > Add the Altera SDRAM EDAC bindings and device tree changes to the Altera SoC project.
+> > >
+> > > Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
+> > > ---
+> > > v2: Changes to SoC SDRAM EDAC code.
+> > >
+> > > v3: Implement code suggestions for SDRAM EDAC code.
+> > >
+> > > v4: Remove syscon from SDRAM controller bindings.
+> > >
+> > > v5: No Change, bump version for consistency.
+> > >
+> > > v6: Only map the ctrlcfg register as syscon.
+> > >
+> > > v7: No change. Bump for consistency.
+> > >
+> > > v8: No change. Bump for consistency.
+> > >
+> > > v9: Changes to support a MFD SDRAM controller with nested EDAC.
+> > >
+> > > v10: Revert to using syscon based on feedback.
+> > > ---
+> > >  .../bindings/arm/altera/socfpga-sdram-edac.txt     |   15 +++++++++++++++
+> > >  arch/arm/boot/dts/socfpga.dtsi                     |   11 +++++++++++
+> > >  2 files changed, 26 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+> > >
+> > > diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+> > > new file mode 100644
+> > > index 0000000..d0ce01d
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+> > > @@ -0,0 +1,15 @@
+> > > +Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
+> > > +The EDAC accesses a range of registers in the SDRAM controller.
+> > > +
+> > > +Required properties:
+> > > +- compatible : should contain "altr,sdram-edac";
+> > > +- altr,sdr-syscon : phandle of the sdr module
+> > > +- interrupts : Should contain the SDRAM ECC IRQ in the
+> > > +	appropriate format for the IRQ controller.
+> > > +
+> > > +Example:
+> > > +	sdramedac {
+> > > +		compatible = "altr,sdram-edac";
+> > > +		altr,sdr-syscon = <&sdr>;
+> > > +		interrupts = <0 39 4>;
+> > > +	};
+> > > diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> > > index 4676f25..45b361e 100644
+> > > --- a/arch/arm/boot/dts/socfpga.dtsi
+> > > +++ b/arch/arm/boot/dts/socfpga.dtsi
+> > > @@ -603,6 +603,17 @@
+> > >  			};
+> > >  		};
+> > >  
+> > > +		sdr: sdr@ffc25000 {
+> > > +			compatible = "syscon";
+> > > +			reg = <0xffc25000 0x1000>;
+> > > +		};
+> > > +
+> > > +		sdramedac {
+> > > +			compatible = "altr,sdram-edac";
+> > > +			altr,sdr-syscon = <&sdr>;
+> > > +			interrupts = <0 39 4>;
+> > > +		};
+> > > +
+> > >  		L2: l2-cache@fffef000 {
+> > >  			compatible = "arm,pl310-cache";
+> > >  			reg = <0xfffef000 0x1000>;
+> > 
+> > Sorry, but I personally still don't like this approach.
+> 
+> This is a normal use of syscon.  Syscon is great for this case 
+> where multiple drivers need access to an ip block's register
+> range but there is otherwise no need to write a MFD from scratch
+> to allow that.  I think that's the purpose of syscon in the first
+> place.
 > 
 
-For the architecture which doesn't provide hardware division, "GCD_ALGO_BINARY"
-can be selected in arch/???/Kconfig.
+I talked with a co-worker about this. And we came to the conclusion,
+that syscon is wrong and has issues, but we sadly had no better idea.
+
+I'd rather have the whole range be a syscon than some bad MFD implementation.
+
+> > 
+> > If we do it like this however, shouldn't the different regions of the
+> > SDR (EDAC, FPGAPORTRST, ...) at least be child nodes of the syscon?
+> > That seems to match the syscon binding and describes the actual hardware
+> > better IMHO.
+> 
+> I like that; it would be clean and clear, but I don't think syscon is 
+> written such that that would actually work.  I haven't seen anybody else
+> do it that way.
+
+Don't actually know. The documentation says this is possible.
 
 > 
->> +#else
->> +	r = a | b;
->> +
->> +	if (!a || !b)
->> +		return r;
->> +
->> +	r = r ^ (r - 1);
->> +	if (!(a & r))
->> +		goto even_odd; /* a/c even, b/c odd */
->> +	if (!(b & r))
->> +		goto odd_even; /* a/c odd, b/c even */
->> +
->> +	/* a/c and b/c both odd */
->> +	while (a != b) {
->> +		if (a > b) {
->> +			a -= b;
->> +even_odd:
->> +			do
->> +				a >>= 1;
->> +			while (!(a & r));
->> +		} else {
->> +			b -= a;
->> +odd_even:
->> +			do
->> +				b >>= 1;
->> +			while (!(b & r));
->> +		}
->> +	}
->> +#endif
->>  	return b;
->>  }
+> > Oh, and "reg = <...>" for the sdram-edac, maybe ?
 > 
-> So I looked at wikipedia (I wasn't aware of this algorithm, clever
-> though), and am still somewhat puzzled by your 'r'.
-> 
-> What's 'wrong' with their iterative version, or what's better about your
-> 'r' stuff?
+> How would that work?  Syscon is already mapping the whole register range
+> for the sdr block.  Are you proposing a device tree binding that this
+> Linux driver would ignore, but some other driver in some other OS might
+> find useful in the future?  I'd rather not put duplicate information
+> in two places, too easy for it to get out of sync.
 > 
 
-If use "r = (r & -r)" to replace "r = r ^ (r - 1)", the function works fine too.
-"r = (r & -r)" get the lsb of (a | b), it's the largest power of 2 that divides
-a and b. Using r not 1, can avoid pre-shift right and post-shift left.
+Yes. I think you are actually right. This won't work.
 
-The result of "r = r ^ (r - 1)" equal to "lsb | (lsb - 1)". 
-Using "r = r ^ (r - 1)" because it requires fewer instructions than "r = (r & -r)"
-on some architectures.
+> > How would I know where the start address of the EDAC is, if I would use
+> > this DT on another OS where I don't have the same driver?
+> 
+> The start address of the EDAC is an offset into the range mapped by 
+> syscon here.  The driver knows what the register offsets are.
+> 
+> If we are talking about this device tree being used by some other OS
+> that is not aware of syscon, then that OS won't know what's going on and
+> some modification of the DT will be needed.  I have been advised that
+> u-boot will need a significantly different DT, though I don't know
+> what the issues are there.
+> 
 
+That is one issue I personally have with syscon. We are always told to
+only describe the hardware and don't mix Linux specifics in the bindings.
+How is syscon not a Linux specific thing? Maybe I see this wrong though.
+
+Then u-boot has a problem that should be fixed.
+For barebox we try to stay as close to the "official" DT bindings as possible.
+
+Regards,
+Steffen
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
