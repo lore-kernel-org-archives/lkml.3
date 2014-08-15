@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaHORJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 13:09:48 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:43665 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaHORJq (ORCPT
+	id S1751428AbaHORSG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 13:18:06 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:56774 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaHORSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 13:09:46 -0400
+	Fri, 15 Aug 2014 13:18:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140814150425.dfbb6c7eb7ab250e985dac28@linux-foundation.org>
-References: <1407249514-20465-1-git-send-email-akinobu.mita@gmail.com>
-	<20140814150425.dfbb6c7eb7ab250e985dac28@linux-foundation.org>
-Date: Sat, 16 Aug 2014 02:09:44 +0900
-Message-ID: <CAC5umygJozyMs5ybyDjCeZLrPnJOAYoNnjsvAFkYFRfVZiivKQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] implement readpages() for block device to optimize
- sequential read
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Jeff Moyer <jmoyer@redhat.com>, linux-fsdevel@vger.kernel.org
+Reply-To: markus@gutschke.com
+In-Reply-To: <CALGCz1p8=gPBqf6z-YpRzSE=raNJmJw-OKCsLwne3raCr4Y-1g@mail.gmail.com>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+ <1407206650.10148.28.camel@rzhang1-toshiba> <CALGCz1pSpzDVb8sQx=QFKjdR4fi566h42p2nRkFx+RXairbgFQ@mail.gmail.com>
+ <3611647.fAl6g4h0i8@vostro.rjw.lan> <CALGCz1rdyqeK8c_Rtmu88umaZA-pV_2_Q7JcY-kFBwg+QRzArA@mail.gmail.com>
+ <CALGCz1o3_h1AY+7=5KG-5tqb3giUN7eJdymCNeRKg=RkG+g2qw@mail.gmail.com>
+ <1407831975.2339.52.camel@rzhang1-toshiba> <CALGCz1p8=gPBqf6z-YpRzSE=raNJmJw-OKCsLwne3raCr4Y-1g@mail.gmail.com>
+From: Markus Gutschke <markus@gutschke.com>
+Date: Fri, 15 Aug 2014 10:17:42 -0700
+X-Google-Sender-Auth: KSNfnCI4P34WUV5xjt5KuVMjtoI
+Message-ID: <CALGCz1ofVwspov3QU1rk3z5HBRuDuKxwk1Qkx2xM3vFAVLzS2g@mail.gmail.com>
+Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-15 7:04 GMT+09:00 Andrew Morton <akpm@linux-foundation.org>:
-> On Tue,  5 Aug 2014 23:38:31 +0900 Akinobu Mita <akinobu.mita@gmail.com> wrote:
->
->> This patchset implements readpages() operation for block device by
->> using mpage_readpages() which can create multipage BIOs instead of
->> BIOs for each page and reduce system CPU time consumption.
->
-> Patchset is simple and straightforward enough.  But who the
-> heck cares about the performance of buffered reads from /dev/XXX?
+Just wondering if any of you had any other ideas of what I could try
+to help debug this problem?
 
-I tend to consider the block device as a baseline when I measure the
-performance of the storage device.  So I was a bit surprised when I saw
-the performance of buffered reads from filesystem is better than the one
-from block device.  That is the reason about this patch for me.
+Thanks,
+
+
+Markus
+
+On Tue, Aug 12, 2014 at 9:11 AM, Markus Gutschke <markus@gutschke.com> wrote:
+> As I said earlier in this thread, echo'ing "devices" into "pm_test"
+> does not result in a crash; but doing so for "platform" does.
+>
+> Markus
+>
+> On Aug 12, 2014 1:26 AM, "Zhang Rui" <rui.zhang@intel.com> wrote:
+>>
+>> On Sat, 2014-08-09 at 03:14 -0700, Markus Gutschke wrote:
+>> > I am back and have physical access to the machine now.
+>> >
+>> great!
+>>
+>> > I re-ran the test just to be sure, and I can confirm that "platform"
+>> > does in fact result in a crash.
+>> >
+>> what about "devices"?
+>> I mean
+>>
+>> # echo devices > /sys/power/pm_test
+>>
+>> and see if that triggers the crash.
+>>
+>> > Furthermore, I ran the test that Rui asked for. I suspended, resumed,
+>> > and upon crashing power-cycled the machine ASAP. "dmesg" suggests that
+>> > the problem is with LNXSYBUS:00 That doesn't tell me much, but
+>> > hopefully it makes sense to you guys.
+>> >
+>> [    0.930093]   Magic number: 10:810:122
+>> [    0.930185] acpi LNXSYBUS:00: hash matches
+>>
+>> This looks weird, ACPI will do nothing for LNXSYBUS devices during
+>> resume.
+>> Rafael, any thought on this?
+>>
+>> thanks,
+>> rui
+>>
