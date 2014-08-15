@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaHOPER (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 11:04:17 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:40624 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaHOPEP (ORCPT
+	id S1751692AbaHOPFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 11:05:17 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47260 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054AbaHOPFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 11:04:15 -0400
-Date: Fri, 15 Aug 2014 08:04:05 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140815150402.GD4752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140811201845.GG4184@grmbl.mre>
- <20140811203421.GE5821@linux.vnet.ibm.com>
- <20140812034531.GA13801@linux.vnet.ibm.com>
- <20140812053321.GK4184@grmbl.mre>
- <20140812160621.GC4752@linux.vnet.ibm.com>
- <20140812213936.GA3106@linux.vnet.ibm.com>
- <20140812214151.GB3106@linux.vnet.ibm.com>
- <20140813054439.GA29913@grmbl.mre>
- <20140813130049.GS4752@linux.vnet.ibm.com>
- <20140815052411.GF1934@grmbl.mre>
+	Fri, 15 Aug 2014 11:05:15 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/vBILHRvOjn04NwVnq8m48C9NVM26yFM8=
+X-DKIM: OpenDKIM Filter v2.0.1 titan BC3795C6650
+Date: Fri, 15 Aug 2014 11:05:03 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: move of AIC drivers for 3.17: fixes #1
+Message-ID: <20140815150503.GG5063@titan.lakedaemon.net>
+References: <1408031156-13573-1-git-send-email-nicolas.ferre@atmel.com>
+ <20140815142225.GF5063@titan.lakedaemon.net>
+ <20140815164150.5085b324@bbrezillon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140815052411.GF1934@grmbl.mre>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081515-8236-0000-0000-000004A24834
+In-Reply-To: <20140815164150.5085b324@bbrezillon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 10:54:11AM +0530, Amit Shah wrote:
-> On (Wed) 13 Aug 2014 [06:00:49], Paul E. McKenney wrote:
-> > On Wed, Aug 13, 2014 at 11:14:39AM +0530, Amit Shah wrote:
-> > > On (Tue) 12 Aug 2014 [14:41:51], Paul E. McKenney wrote:
-> > > > On Tue, Aug 12, 2014 at 02:39:36PM -0700, Paul E. McKenney wrote:
-> > > > > On Tue, Aug 12, 2014 at 09:06:21AM -0700, Paul E. McKenney wrote:
-> > > > > > On Tue, Aug 12, 2014 at 11:03:21AM +0530, Amit Shah wrote:
-> > > > > 
-> > > > > [ . . . ]
-> > > > > 
-> > > > > > > I know of only virtio-console doing this (via userspace only,
-> > > > > > > though).
-> > > > > > 
-> > > > > > As in userspace within the guest?  That would not work.  The userspace
-> > > > > > that the qemu is running in might.  There is a way to extract ftrace info
-> > > > > > from crash dumps, so one approach would be "sendkey alt-sysrq-c", then
-> > > > > > pull the buffer from the resulting dump.  For all I know, there might also
-> > > > > > be some script that uses the qemu "x" command to get at the ftrace buffer.
-> > > > > > 
-> > > > > > Again, I cannot reproduce this, and I have been through the code several
-> > > > > > times over the past few days, and am not seeing it.  I could start
-> > > > > > sending you random diagnostic patches, but it would be much better if
-> > > > > > we could get the trace data from the failure.
+On Fri, Aug 15, 2014 at 04:41:50PM +0200, Boris BREZILLON wrote:
+> On Fri, 15 Aug 2014 10:22:25 -0400 Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Thu, Aug 14, 2014 at 05:45:56PM +0200, Nicolas Ferre wrote:
+> > > Arnd, Olof, Kevin,
 > > > 
-> > > I think the only recourse I now have is to dump the guest state from
-> > > qemu, and attempt to find the ftrace buffers by poking pages and
-> > > finding some ftrace-like struct... and then dumping the buffers.
+> > > Boris moved both of our AIC drivers to their new home: the drivers/irqchip
+> > > directory taking advantage of the genirc framework. For DT-enabled SoCs, we can
+> > > use these drivers (aic and aic5) right now: Jason merged them and they are
+> > > available in early 3.17 merge window.
+> > > So, I build this pull-request for enabling the use of these drivers now as:
+> > > - we are very early in 3.17 development
+> > > - it allowed us to avoid having to depend on Jason's branch before the opening
+> > >   of the merge window
 > > 
-> > The data exists in the qemu guest state, so it would be good to have
-> > it one way or another.  My current (perhaps self-serving) guess is that
-> > you have come up with a way to trick qemu into dropping IPIs.
-> 
-> I didn't get around to doing this yet; will get to it next week.
-> 
-> In the meantime, I tried this on RHEL6 (with RHEL6 qemu and gcc and
-> seabios), and that exhibits the problem similarly with my .config.
-
-And I am running my tests successfully on an x86_64 system running
-Ubuntu 12.04.  Some testing on 14.04 seems to require booting with
-acpi=off, leading to my perhaps self-serving guess above.
-
-> <snip>
-> 
-> > > > +
-> > > >  	return true;
-> > > 
-> > > I have return 1; here.
-> > > 
-> > > I'm on linux.git, c8d6637d0497d62093dbba0694c7b3a80b79bfe1.
+> > Then why did I create a topic branch for you to base on?
 > > 
-> > I am working on top of my -rcu tree, which contains the fix from "1" to
-> > "true" compared to current mainline.  So this will resolve itself, and
-> > you should be OK fixing up conflict in either direction.
+> >   git://git.infradead.org/users/jcooper/linux.git irqchip/atmel-aic
 > 
-> Yep, I did do that.  Just noted here that the hunk didn't directly
-> apply.
+> Don't blame Nicolas for this, he was in vacation when you created this
+> branch (he came back this week), and I should have told you that he
+> couldn't use it for this release cycle.
 
-Fair enough, thank you for letting me know.
+'Blame' is too strong a word. :)  It was more of a friendly, "wtf?"  I
+guess I could have worded it better...
 
-							Thanx, Paul
+> > > - it removes some code from the mach-at91 directory: including the whole
+> > >   aic5 driver
+> > > - we'd have quite a bit of time to solve issues if we found a bug
+> > > - the code is basically moved so it should be error free.
+> > 
+> > Well, this is certainly up to Arnd, Olof and Kevin, but it seems a bit
+> > unusual.  You're basically asking to merge changes into the current window
+> > that has had _no_ time in -next...  Sounds like a recipe for trouble to
+> > me.
+> > 
+> > In the future, please let me know if you're not going to need a topic
+> > branch.
+> 
+> This is all my fault, I'm the one who asked Nicolas to get these patches
+> merged in 3.17, and, as I said, I should have told you that he was in
+> vacation and thus could not use your topic branch for this release
+> cycle.
 
+Ah, no problem.  If there was nothing exciting going on in the SoC
+directory, I probably could have kept the whole series together in one
+branch with just an Ack.  But that's water under the bridge now.
+
+We'll see what arm-soc says, but I suspect it's going to be wait for the
+next window...
+
+thx,
+
+Jason.
