@@ -1,132 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346AbaHOH3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 03:29:46 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37928 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054AbaHOH0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 03:26:31 -0400
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
-        Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com
-Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2 01/14] powerpc/perf/hv-24x7: use kmem_cache instead of aligned stack allocations
-Date: Fri, 15 Aug 2014 00:26:10 -0700
-Message-Id: <1408087583-32239-2-git-send-email-sukadev@linux.vnet.ibm.com>
+	id S1754053AbaHOHcf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 03:32:35 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:39507 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750706AbaHOHce (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 03:32:34 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] arm: irq: fix the affinity when migrate a irq
+Date: Fri, 15 Aug 2014 15:31:57 +0800
+Message-ID: <1408087917-22603-1-git-send-email-zhangwm@marvell.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
-References: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081507-5806-0000-0000-000000394931
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-15_02:2014-08-14,2014-08-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408150091
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cody P Schafer <dev@codyps.com>
+Commit ffde1de64012 ("irqchip: Gic: Support forced affinity setting")
+has enable the forcing cpu affinity of interrupts for gic.
 
-Ian pointed out the use of __aligned(4096) caused rather large stack
-consumption in single_24x7_request(), so use the kmem_cache
-hv_page_cache (which we've already got set up for other allocations)
-insead of allocating locally.
+The current code of migrate_one_irq will pass the current affinity mask
+to irq_set_affinity with force is true, it may select the cpu being
+offlined as the target CPU again, then the interrupt won't be migrated
+correctly.
 
-CC: Haren Myneni <hbabu@us.ibm.com>
-CC: Cody P Schafer <dev@codyps.com>
-Reported-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
- arch/powerpc/perf/hv-24x7.c | 52 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 37 insertions(+), 15 deletions(-)
+ arch/arm/kernel/irq.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
-index 66d0f17..13f3131 100644
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -294,7 +294,7 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 					 u16 lpar, u64 *res,
- 					 bool success_expected)
- {
--	unsigned long ret;
-+	unsigned long ret = -ENOMEM;
+diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
+index 2c42576..6f5a878 100644
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -167,11 +167,10 @@ static bool migrate_one_irq(struct irq_desc *desc)
+ 	if (irqd_is_per_cpu(d) || !cpumask_test_cpu(smp_processor_id(), affinity))
+ 		return false;
  
- 	/*
- 	 * request_buffer and result_buffer are not required to be 4k aligned,
-@@ -304,7 +304,27 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 	struct reqb {
- 		struct hv_24x7_request_buffer buf;
- 		struct hv_24x7_request req;
--	} __packed __aligned(4096) request_buffer = {
-+	} __packed *request_buffer;
-+	struct resb {
-+		struct hv_24x7_data_result_buffer buf;
-+		struct hv_24x7_result res;
-+		struct hv_24x7_result_element elem;
-+		__be64 result;
-+	} __packed *result_buffer;
-+
-+	BUILD_BUG_ON(sizeof(*request_buffer) > 4096);
-+	BUILD_BUG_ON(sizeof(*result_buffer) > 4096);
-+
-+	request_buffer = kmem_cache_alloc(hv_page_cache, GFP_USER);
-+
-+	if (!request_buffer)
-+		goto out_reqb;
-+
-+	result_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
-+	if (!result_buffer)
-+		goto out_resb;
-+
-+	*request_buffer = (struct reqb) {
- 		.buf = {
- 			.interface_version = HV_24X7_IF_VERSION_CURRENT,
- 			.num_requests = 1,
-@@ -320,28 +340,30 @@ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 		}
- 	};
+-	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
+-		affinity = cpu_online_mask;
++	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids)
+ 		ret = true;
+-	}
  
--	struct resb {
--		struct hv_24x7_data_result_buffer buf;
--		struct hv_24x7_result res;
--		struct hv_24x7_result_element elem;
--		__be64 result;
--	} __packed __aligned(4096) result_buffer = {};
--
- 	ret = plpar_hcall_norets(H_GET_24X7_DATA,
--			virt_to_phys(&request_buffer), sizeof(request_buffer),
--			virt_to_phys(&result_buffer),  sizeof(result_buffer));
-+			virt_to_phys(request_buffer), sizeof(*request_buffer),
-+			virt_to_phys(result_buffer),  sizeof(*result_buffer));
- 
- 	if (ret) {
- 		if (success_expected)
- 			pr_err_ratelimited("hcall failed: %d %#x %#x %d => 0x%lx (%ld) detail=0x%x failing ix=%x\n",
- 					domain, offset, ix, lpar,
- 					ret, ret,
--					result_buffer.buf.detailed_rc,
--					result_buffer.buf.failing_request_ix);
--		return ret;
-+					result_buffer->buf.detailed_rc,
-+					result_buffer->buf.failing_request_ix);
-+		goto out_hcall;
- 	}
- 
--	*res = be64_to_cpu(result_buffer.result);
-+	*res = be64_to_cpu(result_buffer->result);
-+	kfree(result_buffer);
-+	kfree(request_buffer);
-+	return ret;
-+
-+out_hcall:
-+	kfree(result_buffer);
-+out_resb:
-+	kfree(request_buffer);
-+out_reqb:
- 	return ret;
- }
- 
++	affinity = cpu_online_mask;
+ 	c = irq_data_get_irq_chip(d);
+ 	if (!c->irq_set_affinity)
+ 		pr_debug("IRQ%u: unable to set affinity\n", d->irq);
 -- 
-1.8.3.1
+1.7.9.5
 
