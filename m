@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751199AbaHOOTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:19:39 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49014 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751201AbaHOOTc (ORCPT
+	id S1751482AbaHOOTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:19:44 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:40440 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408AbaHOOTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:19:32 -0400
-Date: Fri, 15 Aug 2014 10:19:31 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Du, ChangbinX" <changbinx.du@intel.com>
-cc: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "Nyman, Mathias" <mathias.nyman@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "Wu, Hao" <hao.wu@intel.com>
-Subject: Re: [BUG]  usb_dev_resume returns -113 due to work items queued by
- usb on pm_wq is not executed before suspending.
-In-Reply-To: <0C18FE92A7765D4EB9EE5D38D86A563A01BA6392@SHSMSX103.ccr.corp.intel.com>
-Message-ID: <Pine.LNX.4.44L0.1408151018410.1144-100000@iolanthe.rowland.org>
+	Fri, 15 Aug 2014 10:19:42 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <53EDBB5B.4000209@collabora.co.uk>
+References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
+	<CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
+	<20140814151958.GY17528@sirena.org.uk>
+	<CAD7vxxLHtk2ywHGoBtDp6x3-5BtDdaFnCdc_pfgMwq63Cg8Qow@mail.gmail.com>
+	<53EDBB5B.4000209@collabora.co.uk>
+Date: Fri, 15 Aug 2014 07:19:41 -0700
+Message-ID: <CAD7vxxKvZCxnDpPn3X1Uch_6m7Hfj_vApNfxUS2Wex9BjjBUdg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask is empty.
+From: Tim Kryger <tim.kryger@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Haijun Zhang <Haijun.Zhang@freescale.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Aug 2014, Du, ChangbinX wrote:
+On Fri, Aug 15, 2014 at 12:48 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Hello Tim,
+>
+> On 08/15/2014 07:36 AM, Tim Kryger wrote:
+>> On Thu, Aug 14, 2014 at 8:19 AM, Mark Brown <broonie@kernel.org> wrote:
+>>
+>>> Right, there's two things going on here.  One is that as you describe we
+>>> shouldn't be putting constraints in .dtsi files if we don't know they're
+>>> OK for a given board.  The other thing is that on this particular board
+>>> it turns out that there's no support for varying the voltages at all so
+>>> it doesn't make sense to have to specify a range, there's only one value
+>>> anyway so the software really should be able to figure out that fixed
+>>> value all by itself.
+>>
+>> If constraints are truly irrelevant when the voltage supplied to
+>> consumers is fixed, why doesn't regulator_list_voltage honor this
+>> exemption and skip the voltage filtering that uses (potentially
+>> unspecified) constraints when output is entirely determined by a
+>> parent (or grandparent) supply that can't change its voltage?
+>>
+>
+> I had a similar thought before and proposed the patch:
+>
+> "[RFC 3/5] regulator: core: Only apply constraints if available on list
+> voltage" [0].
 
-> Hi, All,
-> As described in runtime_pm.txt for pm_wq:
-> The power management work queue pm_wq in which bus types and device
-> drivers can put their PM-related work items. It is strongly recommended that
-> pm_wq be used for queuing all work items related to runtime PM, because
-> this allows them to be synchronized with system-wide power transitions
-> (suspend to RAM, hibernation and resume from system sleep states).
-> 
-> Per my understanding, all runtime PM related works items queued on pm_wq
-> should be completed before suspend to RAM. So to ensure device state is
-> runtime active before suspending. Having checked the pm code, I found this is
-> not true for work items queued by drivers.
-> 
-> Now usb driver has used this pm_wq to run a work item that resumes root hub
-> (see function xhci_resume()->usb_hcd_resume_root_hub()). But sometimes
-> this work is not completed before usb device suspend. That is to say root hub
-> device may still in runtime suspend state before suspending. And this can result
-> in problem. One case is that as below error log shows,
-> 
-> [  108.046248] PM: Entering mem sleep
-> [  108.050487] Suspending console(s) (use no_console_suspend to debug)
-> [  108.426510] active wakeup source: event5-576
-> [  108.426529] PM: Some devices failed to suspend
-> [  108.426887] dpm_run_callback(): usb_dev_resume+0x0/0x20 returns -113
-> [  108.426918] PM: Device 1-2 failed to resume async: error -113
-> [  108.428299] PM: resume of devices complete after 1.755 msecs
-> 
-> The usb_dev_resume() return error -113, which mean host is in suspend state
-> when resuming a device. The scenario is:
-> 1) Just before system suspending, pm core will run hcd runtime resume
->   routine if host is in runtime suspend state.
-> 2) Hcd runtime resume function xhci_resume() returns, and roothub resume
->   worker was queued by usb_hcd_resume_root_hub().
-> 3) system suspend continue going before roothub resume worker starts executing.
->   Thus host is still in runtime suspend state.
-> 4) One event make suspending process aborted before hcd suspended. Then pm
->   core will call resume routines for just suspended device. But when resuming
->   a usb device it find the host is in suspended. Then return error -113.
-> 
-> If my analysis is correct, could you share your ideas for this issue?
+> [0]: https://lkml.org/lkml/2014/7/29/418
 
-Hasn't this already been fixed?  See commit d6236f6d1d88 (xhci: Fix 
-runtime suspended xhci from blocking system suspend).
+You proposed constraints only be applied when they are defined.
 
-Alan Stern
+That is a little different from my suggestion where the constraints
+check is skipped when the regulator output is fixed.  It effectively
+does this now when the regulator itself provides the fixed voltage.
+However, the checks aren't skipped when that fixed voltage is coming
+from an ancestor.  Why the difference?
 
+-Tim
