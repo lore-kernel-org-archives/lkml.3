@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaHOHcf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 03:32:35 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:39507 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750706AbaHOHce (ORCPT
+	id S1751748AbaHOHoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 03:44:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53135 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaHOHod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 03:32:34 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: <linux@arm.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] arm: irq: fix the affinity when migrate a irq
-Date: Fri, 15 Aug 2014 15:31:57 +0800
-Message-ID: <1408087917-22603-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 15 Aug 2014 03:44:33 -0400
+Date: Fri, 15 Aug 2014 09:44:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
+        Jiri Olsa <jolsa@redhat.com>, eranian@google.com, dev@codyps.com,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 00/14] Add support for parameterized events from sysfs
+Message-ID: <20140815074416.GA19379@twins.programming.kicks-ass.net>
+References: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-15_02:2014-08-14,2014-08-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1408150091
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EIpds50fuTT8wE79"
+Content-Disposition: inline
+In-Reply-To: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit ffde1de64012 ("irqchip: Gic: Support forced affinity setting")
-has enable the forcing cpu affinity of interrupts for gic.
 
-The current code of migrate_one_irq will pass the current affinity mask
-to irq_set_affinity with force is true, it may select the cpu being
-offlined as the target CPU again, then the interrupt won't be migrated
-correctly.
+--EIpds50fuTT8wE79
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- arch/arm/kernel/irq.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+On Fri, Aug 15, 2014 at 12:26:09AM -0700, Sukadev Bhattiprolu wrote:
+>  include/linux/perf_event.h                         |  10 +
+>  kernel/events/core.c                               |   8 +
 
-diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index 2c42576..6f5a878 100644
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -167,11 +167,10 @@ static bool migrate_one_irq(struct irq_desc *desc)
- 	if (irqd_is_per_cpu(d) || !cpumask_test_cpu(smp_processor_id(), affinity))
- 		return false;
- 
--	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
--		affinity = cpu_online_mask;
-+	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids)
- 		ret = true;
--	}
- 
-+	affinity = cpu_online_mask;
- 	c = irq_data_get_irq_chip(d);
- 	if (!c->irq_set_affinity)
- 		pr_debug("IRQ%u: unable to set affinity\n", d->irq);
--- 
-1.7.9.5
+Those are patches 9 and 12 iirc, no objection to that.
 
+I've not had time to actually think about the rest, seeing how I need to
+pack today and jump on an airplane tomorrow its unlikely to happen
+soon.
+
+--EIpds50fuTT8wE79
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT7bpQAAoJEHZH4aRLwOS6EcUP/1kZo7AHPBsEtWcPZjpjhe3k
+YKCxgaFiu/+DkWtN/fAkLyyn658cKMgNKRYpwAh8JIJlUTXe9VvL2rtv8bp3NrpI
+KbIYozkoGP2Q4vmIB1hlmWtGBx+9SQyB0AdCmB018mXCBQCEkYhHM44Wxv+Ckw2E
+yGt6JmjwkRY0zBeUSP0ulwhhH3iDOMk8CMzerAyIn/T30kNPBSBE+qDfzvtslLcc
+9Yd1Odl1+13B0SFJGoJSkF5wlJ43jXcXdvJiM1EuKg8opORhFJrbsqovJSWCfL/z
+f03XcZSgGS21YdUAkOmZC/mvf2OcZTw2T2fkaB30ernYLWtqt4IQU0I5d3bL+FW3
+xh7hbxs7+Hawh8qkoqoEFctE27GIxF5ffPu+vSkgt1FXKolwJhj8NvqiKAT8S8BZ
+/GjpLf0dGZYWC1WJo4BKOLVCLcT7dWt/lfoVAamqCzne+4hwviWhonNAlIt8d29o
+nB6ebXvxkJuAFtKU3rIhAGPLGRnUa6GcwksqP3DXNnED5RPd843kcPbf3Vb1zf0E
+FVSgFtNIq/rSiesCi9GMj3xthkA1m2iyVf+F5xLEyPTzEacm+OTjHupjUYPTOVbm
+l3Bmsd3Zjlo2A7TVEwR55tgFoarHTS7Tn/IAwtWzLZdCV39DaK/O8pkMWqX8KgPm
+xBb6NxkcgJlL8CyXZYCX
+=pQfv
+-----END PGP SIGNATURE-----
+
+--EIpds50fuTT8wE79--
