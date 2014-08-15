@@ -1,113 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaHOWdf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 18:33:35 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:42135 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaHOWde (ORCPT
+	id S1751404AbaHOWnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 18:43:13 -0400
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:49260 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaHOWnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 18:33:34 -0400
-Date: Sat, 16 Aug 2014 00:33:22 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
- seqlock
-Message-ID: <20140815223316.GA1729@lerouge>
-References: <20140813180807.GA8098@redhat.com>
- <53EBADB1.2020403@redhat.com>
- <20140813184511.GA9663@redhat.com>
- <20140813170324.544aaf2d@cuia.bos.redhat.com>
- <20140814004318.GA2582@lerouge>
- <53EC176D.6080201@redhat.com>
- <CAFTL4hwfNyQPMfpca-=Ou7WoPjB6sE_7BVAcQrVDkBjjPVmPRw@mail.gmail.com>
- <20140814143902.GA29052@redhat.com>
- <CAFTL4hw2uAmyW61_U-hzmAfTeeAkMUg7OZy8zmbAFfbSLpzcqg@mail.gmail.com>
- <20140815142601.GA13222@redhat.com>
+	Fri, 15 Aug 2014 18:43:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140815142601.GA13222@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1406206825-15590-20-git-send-email-hanjun.guo@linaro.org>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+	<1406206825-15590-20-git-send-email-hanjun.guo@linaro.org>
+Date: Fri, 15 Aug 2014 18:43:10 -0400
+X-Google-Sender-Auth: Pe0Wev12Sa0V1S8Krqjf7Bt4_XA
+Message-ID: <CAJvTdKnTLtozLZnAJcgZODV9-D77u3=hK3d7z-5XCZZTFwhqOg@mail.gmail.com>
+Subject: Re: [PATCH 19/19] Documentation: ACPI for ARM64
+From: Len Brown <lenb@kernel.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux acpi <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linaro-acpi-private@linaro.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 04:26:01PM +0200, Oleg Nesterov wrote:
-> On 08/15, Frederic Weisbecker wrote:
-> >
-> > 2014-08-14 16:39 GMT+02:00 Oleg Nesterov <oleg@redhat.com>:
-> > > On 08/14, Frederic Weisbecker wrote:
-> > >>
-> > >> I mean the read side doesn't use a lock with seqlocks. It's only made
-> > >> of barriers and sequence numbers to ensure the reader doesn't read
-> > >> some half-complete update. But other than that it can as well see the
-> > >> update n - 1 since barriers don't enforce latest results.
-> > >
-> > > Yes, sure, read_seqcount_begin/read_seqcount_retry "right after"
-> > > write_seqcount_begin-update-write_seqcount_begin can miss "update" part
-> > > along with ->sequence modifications.
-> > >
-> > > But I still can't understand how this can lead to non-monotonic results,
-> > > could you spell?
-> >
-> > Well lets say clock = T.
-> > CPU 0 updates at T + 1.
-> > Then I call clock_gettime() from CPU 1 and CPU 2. CPU 1 reads T + 1
-> > while CPU 1 still reads T.
-> > If I do yet another round of clock_gettime() on CPU 1 and CPU 2, it's
-> > possible that CPU 2 still sees T. With the spinlocked version that
-> > thing can't happen, the second round would read at least T + 1 for
-> > both CPUs.
-> 
-> But this is fine? And CPU 2 doesn't see a non-monotonic result?
-> 
-> OK, this could be wrong if, say,
-> 
-> 	void print_clock(void)
-> 	{
-> 		lock(SOME_LOCK);
-> 		printk(..., clock_gettime());
-> 		unlock(SOME_LOCK);
-> 	}
-> 	
-> printed the non-monotonic numbers if print_clock() is called on CPU_1 and
-> then on CPU_2. But in this case CPU_2 can't miss the changes on CPU_0 if
-> they were already visible to CPU_1 under the same lock. IOW,
-> 
-> 	int T = 0;	/* can be incremented at any time */
-> 
-> 	void check_monotony(void)
-> 	{
-> 		static int t = 0;
-> 
-> 		lock(SOME_LOCK);
-> 		BUG(t > T);
-> 		T = t;
-> 		unlock(SOME_LOCK);
-> 	}
-> 
-> must work corrrectly (ignoring overflow) even if T is changed without
-> SOME_LOCK.
-> 
-> Otherwise, without some sort of synchronization the different results on
-> CPU_1/2 should be fine.
-> 
-> Or I am still missing your point?
+> Additional driver specific
+> +data should be passed in the appropriate _DSM (ACPI Section 9.14.1) method or
+> +_DSD (ACPI Section 6.2.5).
 
-No I think you're right, as long as ordering against something else is involved,
-monotonicity is enforced.
+Re: _DSD
 
-Now I'm trying to think about a case where SMP ordering isn't involved.
-Perhaps some usecase based on coupling CPU local clocks and clock_gettime()
-where a drift between both can appear. Now using a local clock probably only
-makes sense in the context of local usecases where the thread clock update
-would be local as well. So that's probably not a problem. Now what if somebody
-couples multithread process wide clocks with per CPU local clocks. Well that's
-probably too foolish to be considered.
+Yes.
+
+Re: _DSM
+
+No, not if it can be handled by _DSD.
+
+cheers,
+Len Brown, Intel Open Source Technology Center
