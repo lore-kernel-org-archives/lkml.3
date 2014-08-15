@@ -1,222 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaHOJaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 05:30:52 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:46479 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaHOJau (ORCPT
+	id S1754266AbaHOJcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 05:32:54 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:60277 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaHOJcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 05:30:50 -0400
+	Fri, 15 Aug 2014 05:32:52 -0400
+Message-ID: <53EDD3B9.9070301@gmail.com>
+Date: Fri, 15 Aug 2014 17:32:41 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140814222119.GD18411@ld-irv-0074>
-References: <20140814222119.GD18411@ld-irv-0074>
-Date: Fri, 15 Aug 2014 02:30:49 -0700
-X-Google-Sender-Auth: A2cBJ0oxrov8zOn9Hpevx9n1tFI
-Message-ID: <CAL3LdT7-Ai7Dv93vrDP1o2BSVrmFAyTN=UAwE8n5+PVjpN1h0Q@mail.gmail.com>
-Subject: Re: Overriding -Werror
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Vlad Yasevich <vyasevich@gmail.com>, tuexen@fh-muenster.de,
+        khandelwal.deepak.1987@gmail.com, "Tao, Yue" <Yue.Tao@windriver.com>,
+        Alexandre Dietsch <alexandre.dietsch@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, zhuyj <zyjzyj2000@gmail.com>
+Subject: Re: SCTP_PEER_ADDR_CHANGE Notification over UNCONFIRMED path
+References: <53EDC9AA.9080500@gmail.com>
+In-Reply-To: <53EDC9AA.9080500@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 3:21 PM, Brian Norris
-<computersforpeace@gmail.com> wrote:
-> Hi all,
->
-> I'm interested in being able to build-test kernels on various
-> architectures while enabling extra warnings (make W=[123]). I'd like to
-> be able to finish the builds and see all warnings, rather than seeing a
-> failed build. However, GCC's -Werror is incompatible with this. There is
-> plenty of code that will produce at least one warning, when warning
-> verbosity is turned up. And GCC's -Werror is not guaranteed to remain
-> stable over time; new versions may develop new warnings that may or may
-> not be legitimate.
->
-> It seems that there are a few problem ARCHes that enable -Werror by
-> default: SuperH (orphaned), SPARC, and MIPS. There are also a few
-> scattered Makefiles throughout the build tree. Developers have
-> previously tried to remove some of the worst offenders [1], but were
-> mostly rejected [2]. It doesn't seem like we can fully prevent
-> maintainers from enabling -Werror on their code--or even on their entire
-> ARCH build, as with MIPS--for better or worse, so I look to other
-> alternatives.
->
-> For the easiest approach, I considered how one might add -Wno-error to
-> the CFLAGS. 'make KCFLAGS=-Wno-error' looked promising, but
-> KBUILD_CFLAGS is applied before the sub-directory Makefiles add their
-> own options to ccflags-y. So it seems like others have come to the same
-> conclusion as me: that Kbuild doesn't seem to provide a way to override
-> the -Werror behvaior from the top level. [3][4]
->
-> So, how can we fix this? -Werror may be useful in some cases to
-> encourage developers to fix up their code immediately, but it is
-> decidedly unhelpful when running code through analysis tools.
->
-> Possibilities include:
->
-> 1. make -Werror be applied only when we do not have W=[123]. [5]
->
-> 2. develop a top-level override for CFLAGS that is applied *after* all
->    sub-directory modifications
->
-> 3. make -Werror opt-in / configurable, like PPC's CONFIG_PPC_WERROR
->    (maybe make it a generic CONFIG_WERROR?), and prevent its
->    unconditional use in Makefiles
->
-> 4. better ideas?
->
-> Regards,
-> Brian
->
-> [1] http://www.linux-mips.org/archives/linux-mips/2012-04/msg00179.html
->     http://patchwork.ozlabs.org/patch/146297/
->
-> [2] http://www.linux-mips.org/archives/linux-mips/2012-05/msg00064.html
->
-> [3] http://lists.linaro.org/pipermail/linaro-toolchain/2011-November/001869.html
->
-> [4] http://lists.linaro.org/pipermail/linaro-dev/2011-December/008880.html
->
-> [5] http://www.linux-mips.org/archives/linux-mips/2012-05/msg00070.html
-> --
+Sorry. I used attachment to send patch. Maybe it is not convenient. Now 
+I resend it again. Please ignore this mail.
 
-Funny that you bring this up because I have ~60 patches in my queue to
-resolve several thousand of these warnings.  Half of the patches
-actually resolve warnings that can be resolved and the other half
-implement compiler diagnostic control macros to help silence warnings.
-All these were the work of a co-worker Mark Rustad, below is the patch
-he put together to implement the compiler diagnostic control macros.
+Best Regards!
+Zhu Yanjun
+On 08/15/2014 04:49 PM, zhuyj wrote:
+> Hi, Vlad && DEEPAK && Michael && David
+>
+> From Michael && DEEPAK
+> "
+>  lxr SCTP implementation, doesn't transit the path state to INACTIVE, 
+> if it was never confirmed. this leads to SCTP_PEER_ADDRESS_CHANGE 
+> notification after each failed probe from this time.
+>  Is there any specific reason to have same notification to SCTP User 
+> with each probe in RTO time period ?
+>  806 case SCTP_TRANSPORT_DOWN:
+>  807 /* If the transport was never confirmed, do not transition it
+>  808 * to inactive state. Also, release the cached route since
+>  809 * there may be a better route next time.
+>  810 */
+>  811 if (transport->state != SCTP_UNCONFIRMED)
+>
+>  812 transport->state = SCTP_INACTIVE;
+>
+>  http://lxr.free-electrons.com/source/net/sctp/associola.c#L806
+>
+>  we checked RFC and here it is mentioned as  Path Verification 
+> Section(5.4) of RFC 4960  http://tools.ietf.org/html/rfc4960
+>
+>  In each RTO, a probe may be sent on an active UNCONFIRMED path in an
+>  attempt to move it to the CONFIRMED state. If during this probing
+>  the path becomes inactive, this rate is lowered to the normal
+>  HEARTBEAT rate. At the expiration of the RTO timer, the error
+>  counter of any path that was probed but not CONFIRMED is incremented
+>  by one and subjected to path failure detection, as defined in
+>  Section
+>
+>
+>  8.2
+>  . When probing UNCONFIRMED addresses, however, the association
+>  overall error counter is not incremented
+>
+>
+>  Does this mean that in attempt to move a UNCONFIRMED path to 
+> CONFIRMED State, the path can become INACTIVE, when transport error 
+> counter reaches to path_max_retrans counter ?
+>  I would say that the path stays UNCONFIRMED.
+>
+>
+>  I would also only expect a  SCTP_PEER_ADDRESS_CHANGE notification 
+> when a path state changes, not on every  try.
+>
+> "
+>
+> I made a patch to disable sending SCTP_PEER_ADDRESS_CHANGE 
+> notification every try. Now the patch is in the attachment. Please 
+> check it.
+>
+> Zhu Yanjun
 
-commit 7b9aace02b2405f0714bc08c424b72e6962f1c2e
-Author: Mark Rustad <mark.d.rustad@intel.com>
-Date:   Fri Aug 15 01:43:44 2014 -0700
-
-    compiler: Add diagnostic control macros
-
-    Add macros to control diagnostic messages where needed. These
-    are used to silence warning messages that are expected, normal
-    and do not indicate any sort of problem. Reducing the stream
-    of messages in this way helps possible problems to stand out.
-
-    The macros provided are:
-        DIAG_PUSH() - to save diagnostic settings
-        DIAG_POP() - to restore diagnostic settings
-        DIAG_IGNORE(option) - to ignore a particular warning
-        DIAG_GCC_IGNORE(option) - DIAG_IGNORE for gcc only
-        DIAG_CLANG_IGNORE(option) - DIAG_IGNORE for clang only
-
-    Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
-
-diff --git a/include/linux/compiler-clang.h b/include/linux/compiler-clang.h
-index d1e49d5..039b112 100644
---- a/include/linux/compiler-clang.h
-+++ b/include/linux/compiler-clang.h
-@@ -10,3 +10,29 @@
- #undef uninitialized_var
- #define uninitialized_var(x) x = *(&(x))
- #endif
-+
-+/*
-+ * Provide macros to manipulate diagnostic messages when possible.
-+ * DIAG_PUSH pushes the diagnostic settings
-+ * DIAG_POP pops the diagnostic settings
-+ * DIAG_IGNORE(x) changes the given diagnostic setting to ignore
-+ *
-+ * Example:
-+ *    DIAG_PUSH DIAG_IGNORE(aggregate-return)
-+ *    struct timespec ns_to_timespec(const s64 nsec)
-+ *    {
-+ *        ...
-+ *    }
-+ *    DIAG_POP
-+ *
-+ * Will prevent the warning on compilation of the function. Other
-+ * steps are necessary to do the same thing for the call sites.
-+ */
-+#define DIAG_STR(x) #x
-+#define DIAG_CAT(x, y) DIAG_STR(x##y)
-+#define DIAG_DO_PRAGMA(x) _Pragma(#x)
-+#define DIAG_PRAGMA(x) DIAG_DO_PRAGMA(clang diagnostic x)
-+#define DIAG_IGNORE(x) DIAG_PRAGMA(ignored DIAG_CAT(-W, x))
-+#define DIAG_PUSH DIAG_PRAGMA(push)
-+#define DIAG_POP DIAG_PRAGMA(pop)
-+#define DIAG_CLANG_IGNORE(x) DIAG_IGNORE(x)
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 2507fd2..78387f6 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -86,3 +86,34 @@
- #define __HAVE_BUILTIN_BSWAP16__
- #endif
- #endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
-+
-+/*
-+ * Provide macros to manipulate diagnostic messages when possible.
-+ * DIAG_PUSH pushes the diagnostic settings
-+ * DIAG_POP pops the diagnostic settings
-+ * DIAG_IGNORE(x) changes the given diagnostic setting to ignore
-+ *
-+ * Example:
-+ *    DIAG_PUSH DIAG_IGNORE(aggregate-return)
-+ *    struct timespec ns_to_timespec(const s64 nsec)
-+ *    {
-+ *        ...
-+ *    }
-+ *    DIAG_POP
-+ *
-+ * Will prevent the warning on compilation of the function. Other
-+ * steps are necessary to do the same thing for the call sites.
-+ */
-+#if GCC_VERSION >= 40600
-+#define DIAG_STR(x) #x
-+#define DIAG_CAT(x, y) DIAG_STR(x##y)
-+#define DIAG_DO_PRAGMA(x) _Pragma(#x)
-+#define DIAG_PRAGMA(x) DIAG_DO_PRAGMA(GCC diagnostic x)
-+#define DIAG_IGNORE(x) DIAG_PRAGMA(ignored DIAG_CAT(-W, x))
-+/* GCC 4.8 - 4.8.2 has issues with pop, so do not define push or pop */
-+#if GCC_VERSION < 40800 || GCC_VERSION >= 40803
-+#define DIAG_PUSH DIAG_PRAGMA(push)
-+#define DIAG_POP DIAG_PRAGMA(pop)
-+#endif /* GCC_VERSION < 40800 || GCC_VERSION >= 40803 */
-+#define DIAG_GCC_IGNORE(x) DIAG_IGNORE(x)
-+#endif /* GCC_VERSION >= 40600 */
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index d5ad7b1..fde7b21 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -94,6 +94,26 @@ struct ftrace_branch_data {
- };
-
- /*
-+ * Provide null definitions for diagnostic manipulation macros not provided
-+ * for a particular compiler.
-+ */
-+#ifndef DIAG_PUSH
-+#define DIAG_PUSH
-+#endif
-+#ifndef DIAG_POP
-+#define DIAG_POP
-+#endif
-+#ifndef DIAG_IGNORE
-+#define DIAG_IGNORE(x)
-+#endif
-+#ifndef DIAG_CLANG_IGNORE
-+#define DIAG_CLANG_IGNORE(x)
-+#endif
-+#ifndef DIAG_GCC_IGNORE
-+#define DIAG_GCC_IGNORE(x)
-+#endif
-+
-+/*
-  * Note: DISABLE_BRANCH_PROFILING can be used by special lowlevel code
-  * to disable branch tracing on a per file basis.
-  */
-
--- 
-Cheers,
-Jeff
