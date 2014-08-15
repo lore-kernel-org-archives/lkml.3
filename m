@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaHOQak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:30:40 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49900 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555AbaHOQ27 (ORCPT
+	id S1751977AbaHOQa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:30:56 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40850 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaHOQ25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:28:59 -0400
+	Fri, 15 Aug 2014 12:28:57 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,256 +15,108 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v6 tip/core/rcu 17/17] rcu: Per-CPU operation cleanups to rcu_*_qs() functions
-Date: Fri, 15 Aug 2014 09:28:45 -0700
-Message-Id: <1408120125-30479-17-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v6 tip/core/rcu 07/17] rcutorture: Add RCU-tasks test cases
+Date: Fri, 15 Aug 2014 09:28:35 -0700
+Message-Id: <1408120125-30479-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140815162820.GA28967@linux.vnet.ibm.com>
  <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081516-8236-0000-0000-000004A2F58D
+x-cbid: 14081516-6688-0000-0000-0000040AF655
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The rcu_bh_qs(), rcu_preempt_qs(), and rcu_sched_qs() functions use
-old-style per-CPU variable access and write to ->passed_quiesce even
-if it is already set.  This commit therefore updates to use the new-style
-per-CPU variable access functions and avoids the spurious writes.
-This commit also eliminates the "cpu" argument to these functions because
-they are always invoked on the indicated CPU.
+This commit adds the TASKS01 and TASKS02 Kconfig fragments, along with
+the corresponding TASKS01.boot and TASKS02.boot boot-parameter files
+specifying that rcutorture test RCU-tasks instead of the default flavor.
 
-Reported-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h |  4 ++--
- include/linux/rcutiny.h  |  2 +-
- kernel/rcu/tiny.c        | 10 +++++-----
- kernel/rcu/tree.c        | 34 ++++++++++++++++++----------------
- kernel/rcu/tree_plugin.h | 27 +++++++++++++++------------
- kernel/softirq.c         |  2 +-
- 6 files changed, 42 insertions(+), 37 deletions(-)
+ tools/testing/selftests/rcutorture/configs/rcu/TASKS01      |  9 +++++++++
+ tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot |  1 +
+ tools/testing/selftests/rcutorture/configs/rcu/TASKS02      |  5 +++++
+ tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot |  1 +
+ tools/testing/selftests/rcutorture/configs/rcu/TASKS03      | 13 +++++++++++++
+ tools/testing/selftests/rcutorture/configs/rcu/TASKS03.boot |  1 +
+ 6 files changed, 30 insertions(+)
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS01
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS02
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS03
+ create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TASKS03.boot
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index cc6858666b6d..160bc1718070 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -261,8 +261,8 @@ static inline int rcu_preempt_depth(void)
- 
- /* Internal to kernel */
- void rcu_init(void);
--void rcu_sched_qs(int cpu);
--void rcu_bh_qs(int cpu);
-+void rcu_sched_qs(void);
-+void rcu_bh_qs(void);
- void rcu_check_callbacks(int cpu, int user);
- struct notifier_block;
- void rcu_idle_enter(void);
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index d40a6a451330..38cc5b1e252d 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -80,7 +80,7 @@ static inline void kfree_call_rcu(struct rcu_head *head,
- 
- static inline void rcu_note_context_switch(int cpu)
- {
--	rcu_sched_qs(cpu);
-+	rcu_sched_qs();
- }
- 
- /*
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index 717f00854fc0..61b8d2ccc2cb 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -72,7 +72,7 @@ static void rcu_idle_enter_common(long long newval)
- 			  current->pid, current->comm,
- 			  idle->pid, idle->comm); /* must be idle task! */
- 	}
--	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
-+	rcu_sched_qs(); /* implies rcu_bh_inc() */
- 	barrier();
- 	rcu_dynticks_nesting = newval;
- }
-@@ -217,7 +217,7 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
-  * are at it, given that any rcu quiescent state is also an rcu_bh
-  * quiescent state.  Use "+" instead of "||" to defeat short circuiting.
-  */
--void rcu_sched_qs(int cpu)
-+void rcu_sched_qs(void)
- {
- 	unsigned long flags;
- 
-@@ -231,7 +231,7 @@ void rcu_sched_qs(int cpu)
- /*
-  * Record an rcu_bh quiescent state.
-  */
--void rcu_bh_qs(int cpu)
-+void rcu_bh_qs(void)
- {
- 	unsigned long flags;
- 
-@@ -251,9 +251,9 @@ void rcu_check_callbacks(int cpu, int user)
- {
- 	RCU_TRACE(check_cpu_stalls());
- 	if (user || rcu_is_cpu_rrupt_from_idle())
--		rcu_sched_qs(cpu);
-+		rcu_sched_qs();
- 	else if (!in_softirq())
--		rcu_bh_qs(cpu);
-+		rcu_bh_qs();
- 	if (user)
- 		rcu_note_voluntary_context_switch(current);
- }
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 0d9ee1e4f446..de234008e2c5 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -188,22 +188,24 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
-  * one since the start of the grace period, this just sets a flag.
-  * The caller must have disabled preemption.
-  */
--void rcu_sched_qs(int cpu)
-+void rcu_sched_qs(void)
- {
--	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
--
--	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period(TPS("rcu_sched"), rdp->gpnum, TPS("cpuqs"));
--	rdp->passed_quiesce = 1;
-+	if (!__this_cpu_read(rcu_sched_data.passed_quiesce)) {
-+		trace_rcu_grace_period(TPS("rcu_sched"),
-+				       __this_cpu_read(rcu_sched_data.gpnum),
-+				       TPS("cpuqs"));
-+		__this_cpu_write(rcu_sched_data.passed_quiesce, 1);
-+	}
- }
- 
--void rcu_bh_qs(int cpu)
-+void rcu_bh_qs(void)
- {
--	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
--
--	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period(TPS("rcu_bh"), rdp->gpnum, TPS("cpuqs"));
--	rdp->passed_quiesce = 1;
-+	if (!__this_cpu_read(rcu_bh_data.passed_quiesce)) {
-+		trace_rcu_grace_period(TPS("rcu_bh"),
-+				       __this_cpu_read(rcu_bh_data.gpnum),
-+				       TPS("cpuqs"));
-+		__this_cpu_write(rcu_bh_data.passed_quiesce, 1);
-+	}
- }
- 
- static DEFINE_PER_CPU(int, rcu_sched_qs_mask);
-@@ -278,7 +280,7 @@ static void rcu_momentary_dyntick_idle(void)
- void rcu_note_context_switch(int cpu)
- {
- 	trace_rcu_utilization(TPS("Start context switch"));
--	rcu_sched_qs(cpu);
-+	rcu_sched_qs();
- 	rcu_preempt_note_context_switch(cpu);
- 	if (unlikely(raw_cpu_read(rcu_sched_qs_mask)))
- 		rcu_momentary_dyntick_idle();
-@@ -2398,8 +2400,8 @@ void rcu_check_callbacks(int cpu, int user)
- 		 * at least not while the corresponding CPU is online.
- 		 */
- 
--		rcu_sched_qs(cpu);
--		rcu_bh_qs(cpu);
-+		rcu_sched_qs();
-+		rcu_bh_qs();
- 
- 	} else if (!in_softirq()) {
- 
-@@ -2410,7 +2412,7 @@ void rcu_check_callbacks(int cpu, int user)
- 		 * critical section, so note it.
- 		 */
- 
--		rcu_bh_qs(cpu);
-+		rcu_bh_qs();
- 	}
- 	rcu_preempt_check_callbacks(cpu);
- 	if (rcu_pending(cpu))
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 2a6509581f40..e25aaf235ca9 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -157,14 +157,16 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed);
-  * As with the other rcu_*_qs() functions, callers to this function
-  * must disable preemption.
-  */
--static void rcu_preempt_qs(int cpu)
--{
--	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
--
--	if (rdp->passed_quiesce == 0)
--		trace_rcu_grace_period(TPS("rcu_preempt"), rdp->gpnum, TPS("cpuqs"));
--	rdp->passed_quiesce = 1;
--	current->rcu_read_unlock_special.b.need_qs = false;
-+static void rcu_preempt_qs(void)
-+{
-+	if (!__this_cpu_read(rcu_preempt_data.passed_quiesce)) {
-+		trace_rcu_grace_period(TPS("rcu_preempt"),
-+				       __this_cpu_read(rcu_preempt_data.gpnum),
-+				       TPS("cpuqs"));
-+		__this_cpu_write(rcu_preempt_data.passed_quiesce, 1);
-+		barrier(); /* Coordinate with rcu_preempt_check_callbacks(). */
-+		current->rcu_read_unlock_special.b.need_qs = false;
-+	}
- }
- 
- /*
-@@ -255,7 +257,7 @@ static void rcu_preempt_note_context_switch(int cpu)
- 	 * grace period, then the fact that the task has been enqueued
- 	 * means that we continue to block the current grace period.
- 	 */
--	rcu_preempt_qs(cpu);
-+	rcu_preempt_qs();
- }
- 
- /*
-@@ -351,7 +353,7 @@ void rcu_read_unlock_special(struct task_struct *t)
- 	 */
- 	special = t->rcu_read_unlock_special;
- 	if (special.b.need_qs) {
--		rcu_preempt_qs(smp_processor_id());
-+		rcu_preempt_qs();
- 		if (!t->rcu_read_unlock_special.s) {
- 			local_irq_restore(flags);
- 			return;
-@@ -651,11 +653,12 @@ static void rcu_preempt_check_callbacks(int cpu)
- 	struct task_struct *t = current;
- 
- 	if (t->rcu_read_lock_nesting == 0) {
--		rcu_preempt_qs(cpu);
-+		rcu_preempt_qs();
- 		return;
- 	}
- 	if (t->rcu_read_lock_nesting > 0 &&
--	    per_cpu(rcu_preempt_data, cpu).qs_pending)
-+	    per_cpu(rcu_preempt_data, cpu).qs_pending &&
-+	    !per_cpu(rcu_preempt_data, cpu).passed_quiesce)
- 		t->rcu_read_unlock_special.b.need_qs = true;
- }
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 5918d227730f..348ec763b104 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -278,7 +278,7 @@ restart:
- 		pending >>= softirq_bit;
- 	}
- 
--	rcu_bh_qs(smp_processor_id());
-+	rcu_bh_qs();
- 	local_irq_disable();
- 
- 	pending = local_softirq_pending();
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TASKS01 b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01
+new file mode 100644
+index 000000000000..97f0a0b27ef7
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01
+@@ -0,0 +1,9 @@
++CONFIG_SMP=y
++CONFIG_NR_CPUS=2
++CONFIG_HOTPLUG_CPU=y
++CONFIG_PREEMPT_NONE=n
++CONFIG_PREEMPT_VOLUNTARY=n
++CONFIG_PREEMPT=y
++CONFIG_DEBUG_LOCK_ALLOC=y
++CONFIG_PROVE_RCU=y
++CONFIG_TASKS_RCU=y
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot
+new file mode 100644
+index 000000000000..cd2a188eeb6d
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS01.boot
+@@ -0,0 +1 @@
++rcutorture.torture_type=tasks
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TASKS02 b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02
+new file mode 100644
+index 000000000000..696d2ea74d13
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02
+@@ -0,0 +1,5 @@
++CONFIG_SMP=n
++CONFIG_PREEMPT_NONE=y
++CONFIG_PREEMPT_VOLUNTARY=n
++CONFIG_PREEMPT=n
++CONFIG_TASKS_RCU=y
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot
+new file mode 100644
+index 000000000000..cd2a188eeb6d
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS02.boot
+@@ -0,0 +1 @@
++rcutorture.torture_type=tasks
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TASKS03 b/tools/testing/selftests/rcutorture/configs/rcu/TASKS03
+new file mode 100644
+index 000000000000..9c60da5b5d1d
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS03
+@@ -0,0 +1,13 @@
++CONFIG_SMP=y
++CONFIG_NR_CPUS=2
++CONFIG_HOTPLUG_CPU=n
++CONFIG_SUSPEND=n
++CONFIG_HIBERNATION=n
++CONFIG_PREEMPT_NONE=n
++CONFIG_PREEMPT_VOLUNTARY=n
++CONFIG_PREEMPT=y
++CONFIG_TASKS_RCU=y
++CONFIG_HZ_PERIODIC=n
++CONFIG_NO_HZ_IDLE=n
++CONFIG_NO_HZ_FULL=y
++CONFIG_NO_HZ_FULL_ALL=y
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TASKS03.boot b/tools/testing/selftests/rcutorture/configs/rcu/TASKS03.boot
+new file mode 100644
+index 000000000000..cd2a188eeb6d
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TASKS03.boot
+@@ -0,0 +1 @@
++rcutorture.torture_type=tasks
 -- 
 1.8.1.5
 
