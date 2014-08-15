@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaHOWSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 18:18:33 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:10823 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaHOWSa (ORCPT
+	id S1751434AbaHOWWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 18:22:13 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:61211 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbaHOWWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 18:18:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 15 Aug 2014 15:09:08 -0700
-Date: Sat, 16 Aug 2014 01:18:09 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Mikko Perttunen <mperttunen@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c: i2c-tegra: Move clk_prepare/clk_set_rate to probe
-Message-ID: <20140815221809.GL1626@tbergstrom-lnx.Nvidia.com>
-References: <1408096034-17270-1-git-send-email-mperttunen@nvidia.com>
- <53EE32C7.6000500@wwwdotorg.org>
- <20140815180218.GH1626@tbergstrom-lnx.Nvidia.com>
- <53EE4C45.5080805@wwwdotorg.org>
- <20140815194546.GI1626@tbergstrom-lnx.Nvidia.com>
- <20140815213442.GJ1626@tbergstrom-lnx.Nvidia.com>
- <53EE7FC9.5010509@wwwdotorg.org>
+	Fri, 15 Aug 2014 18:22:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53EE7FC9.5010509@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
+References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
+Date: Fri, 15 Aug 2014 18:22:10 -0400
+X-Google-Sender-Auth: rdq6kxGc73Q4j5Zt-HfZg1e7sDs
+Message-ID: <CAJvTdK=hYS87BKZ0NcX7U3RJRmUHWGhC6krSTTmN8O2MO9BK=A@mail.gmail.com>
+Subject: Re: [RFC 0/3] Experimental patchset for CPPC
+From: Len Brown <lenb@kernel.org>
+To: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.ne>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux acpi <linux-acpi@vger.kernel.org>,
+        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 11:46:49PM +0200, Stephen Warren wrote:
-> On 08/15/2014 03:34 PM, Peter De Schrijver wrote:
-> > On Fri, Aug 15, 2014 at 09:45:46PM +0200, Peter De Schrijver wrote:
-> >> On Fri, Aug 15, 2014 at 08:07:01PM +0200, Stephen Warren wrote:
-> >>>>> However, the new code sets the clock rate after the clock is prepared. I
-> >>>>> think the rate should be set first, then the clock prepared. While this
-> >>>>> likely doesn't apply to the Tegra clock controller, prepare() is allowed
-> >>>>> to enable the clock if enable() can't be implemented in an atomic
-> >>>>> fashion (in which case enable/disable would be no-ops), and we should
-> >>>>> make sure that the driver correctly configures the clock before
-> >>>>> potentially enabling it.
-> >>>>>
-> >>>>> I'm not sure if a similar change to our SPI drivers is possible; after
-> >>>>> all, the SPI transfer rate can vary per message, so if clk_set_rate()
-> >>>>> acquires a lock, it seems there's no way to avoid the issue there.
-> >>>>
-> >>>> Even for i2c this could be the case I think if you use the highspeed (3.4Mhz)
-> >>>> mode? From what I remember, a highspeed i2c transaction starts with a lower
-> >>>> speed preamble to make sure non highspeed slaves don't get confused? Which
-> >>>> means you could change the bus speed depending on the slave you're addressing.
-> >>>
-> >>> Since there's no separate chip-select for I2C, I believe all I2C devices
-> >>> need to be able to understand the entire transaction, so the I2C bus
-> >>> speed is fixed.
-> >>>
-> >>
-> >> Does it? I would assume the slave only needs to check if the address matches
-> >> its own address after a START condition and if not can just wait until the
-> >> STOP condition appears on the bus?
-> >>
-> >
-> > http://www.nxp.com/documents/user_manual/UM10204.pdf says you can mix them by
-> > using an interconnect bridge between the highspeed and the non-highspeed
-> > capable slaves. The bridge uses the special preamble to disconnect the non-
-> > highspeed part of the bus when a highspeed transaction is ongoing. It's afaics
-> > transparent to the master.
-> 
-> I expect that works by echoing the slow-speed pre-amble to the 
-> slow-speed bus segment, then emitting a stop and turning off the echo. 
-> For actual slow-speed transactions, the whole thing would be echo'd. 
-> That way the slow-speed devices don't ever see any high-speed pulses.
-> 
+> I verified that CPU freq requests were taken by reading out the PERF_STATUS register.
 
-Indeed.
+Don't use the x86 PERF_STATUS register -- it will not tell you what
+you want to know.
 
-> That all said, that does indeed imply that a master supporting the 
-> high-speed transactions would need to emit a varying-speed signal. My 
-> assumption would be that this happens inside the I2C HW, rather than 
-> under SW control though, since the transition would need to happen 
-> mid-protocol. Still, perhaps the selection between low-speed and 
-> high-speed-with-a-slow-preamble might need SW clock programming 
-> depending on the HW though... Who knows.
-> 
+If you want to see the actual frequency, you need to watch how many
+cycles elapse per a known time interval,
+which is how intel_pstate and the turbostat utility do it.
 
-That's true if the master wants to do a high-speed transaction. If the master
-wants to do a normal-speed transaction to a slave on the same bus, the master
-will need to select a lower speed clock under software control I think.
-
-Cheers,
-
-Peter.
+cheers,
+Len Brown
+Intel Open Source Technology Center
