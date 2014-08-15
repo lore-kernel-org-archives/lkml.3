@@ -1,101 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaHOQIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:08:36 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:7612 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751116AbaHOQIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:08:35 -0400
-Message-ID: <53EE307E.8060507@itdev.co.uk>
-Date: Fri, 15 Aug 2014 17:08:30 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751540AbaHOQJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:09:46 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:35249 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954AbaHOQJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:09:45 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kever Yang <kever.yang@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: Move the PMIC interrupt pinctrl line to rk3288-evb common
+Date: Fri, 15 Aug 2014 18:11:13 +0200
+Message-ID: <2248839.hV1QilfnQh@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1407782849-11056-1-git-send-email-dianders@chromium.org>
+References: <1407782849-11056-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Stephen Warren <swarren@nvidia.com>, Yufeng Shen <miletus@chromium.org>,
-        Benson Leung <bleung@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Input: atmel_mxt_ts - Add keycodes array example
-References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk> <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk> <53E37329.4020002@itdev.co.uk> <53E4E41D.4070703@collabora.co.uk> <53EDF6B4.7080804@collabora.co.uk>
-In-Reply-To: <53EDF6B4.7080804@collabora.co.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/08/14 13:01, Javier Martinez Canillas wrote:
->> By passing all these keycodes the touchpad worked as expected for me and the
->> driver did the same than the Chrome OS driver that has these keycodes hardcoded
->> when is_tp is true.
->>
->>> at the protocol guide for T19.
->>
->> I don't have access to proper documentation and I wouldn't expect people to have
->> access to non-public docs in order to use a Device Tree binding.
->>
->> That's why I wanted to document an example, so using this property could be
->> easier for others and they shouldn't have to look at the driver in order to
->> figure it out (and getting it wrong as you said :) )
->>
->> So it would be great if you could provide an example on how this is supposed to
->> be used.
+Am Montag, 11. August 2014, 11:47:29 schrieb Doug Anderson:
+> The PMIC interrupt pinctrl line was added to the rk3288-evb-act8846,
+> but it's the same line on both the ACT8846 version and the RK808
+> version.  This makes a lot of sense since they share the same SoC
+> daugherboard.  Move the pinctrl definition to the common file so we
+> can use it for the RK808 version.
 > 
-> Any comments on this? I would really appreciate if you can expand on how
-> this DT property is supposed to be used so I can re-spin the atmel support
-> patch for Peach boards.
+> NOTE: The PMIC interrupt doesn't _actually_ go to the PMIC on the
+> ACT8846 version of the board (it does on the RK808), but our
+> convention is to label things as they're labelled on the schematics.
+> In the very least you can argue that this is the interrupt from the
+> PMIC daughtercard even if it doesn't actually go to the PMIC chip.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-The below patch improves the documentation for the gpio-property. Stephen
-Warren has a good example here:
-https://github.com/swarren/linux-tegra/commit/09789801
+I've added this to my v3.18 dts branch
 
-trackpad@4b {
-  compatible = "atmel,maxtouch";
-  reg = <0x4b>;
-  interrupt-parent = <&gpio>;
-  interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;
-  linux,gpio-keymap = <0 0 0 BTN_LEFT>;
-};
 
-This maps BTN_LEFT to the 4th bit of the T19 message. I haven't looked up
-what GPIO number that corresponds to on the mXT224SL that he has, it varies
-with the particular maXTouch device you have.
-
-Hope this helps.
-
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
----
- Documentation/devicetree/bindings/input/atmel,maxtouch.txt | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-index baef432..1852906 100644
---- a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-+++ b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-@@ -11,10 +11,17 @@ Required properties:
-
- Optional properties for main touchpad device:
-
--- linux,gpio-keymap: An array of up to 4 entries indicating the Linux
--    keycode generated by each GPIO. Linux keycodes are defined in
-+- linux,gpio-keymap: When enabled, the SPT_GPIOPWN_T19 object sends messages
-+    on GPIO bit changes. An array of up to 8 entries can be provided
-+    indicating the Linux keycode mapped to each bit of the status byte,
-+    starting at the LSB. Linux keycodes are defined in
-     <dt-bindings/input/input.h>.
-
-+    Note: the numbering of the GPIOs and the bit they start at varies between
-+    maXTouch devices. You must either refer to the documentation, or
-+    experiment to determine which bit corresponds to which input. Use
-+    KEY_RESERVED for unused padding values.
-+
- Example:
-
-        touch@4b {
--- 
-1.9.1
+Heiko
