@@ -1,239 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaHOLon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 07:44:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbaHOLok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 07:44:40 -0400
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
-        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com,
-        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
-        hannsj_uhl@de.ibm.com
-Subject: [PATCH V2 2/2] x86: add phys addr validity check for /dev/mem mmap
-Date: Fri, 15 Aug 2014 13:44:03 +0200
-Message-Id: <1408103043-31015-3-git-send-email-fhrbata@redhat.com>
-In-Reply-To: <1408103043-31015-1-git-send-email-fhrbata@redhat.com>
-References: <1408025927-16826-1-git-send-email-fhrbata@redhat.com>
- <1408103043-31015-1-git-send-email-fhrbata@redhat.com>
+	id S1751101AbaHOLtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 07:49:21 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:36638 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaHOLtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 07:49:19 -0400
+Date: Fri, 15 Aug 2014 12:48:57 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-sound@vger.kernel.org
+Message-ID: <20140815114857.GL17528@sirena.org.uk>
+References: <1406908624-15290-1-git-send-email-dmurphy@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oNEXPFkTTJNzq0nB"
+Content-Disposition: inline
+In-Reply-To: <1406908624-15290-1-git-send-email-dmurphy@ti.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v2] ASoC: tas2552: Add DAPM calls for amp
+ and PLL
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent possible PTE corruption while calling mmap on /dev/mem with large
-offset.
 
-oops info, please note the PTE value 8008000000000225.
----------------------------------8<--------------------------------------
-[85739.124496] rep: Corrupted page table at address 7f63852f8000
-[85739.130242] PGD ba2eb067 PUD b99c1067 PMD a2fa5067 PTE 8008000000000225
-[85739.136941] Bad pagetable: 000d [#1] SMP
-[85739.141002] Modules linked in: cfg80211 rfkill x86_pkg_temp_thermal coretemp
-kvm_intel kvm bnx2 crct10dif_pclmul crc32_pclmul crc32c_intel
-ghash_clmulni_intel microcode iTCO_wdt ipmi_si i2c_i801 iTCO_vendor_support
-ipmi_msghandler dcdbas shpchp lpc_ich mfd_core nfsd auth_rpcgss nfs_acl lockd
-sunrpc mgag200 i2c_algo_bit drm_kms_helper ttm drm i2c_core
-[85739.172620] CPU: 3 PID: 21900 Comm: rep Not tainted 3.15.8-200.fc20.x86_64 #1
-[85739.179768] Hardware name: Dell Inc. PowerEdge R210 II/09T7VV, BIOS 2.0.4 02/29/2012
-[85739.187512] task: ffff8800b9b3b160 ti: ffff8800ba270000 task.ti: ffff8800ba270000
-[85739.194988] RIP: 0033:[<0000000000400773>]  [<0000000000400773>] 0x400773
-[85739.201799] RSP: 002b:00007fffe4ca3c80  EFLAGS: 00010213
-[85739.207119] RAX: 00007f63852f8000 RBX: 0000000000000000 RCX: 00007f6384e0b8ca
-[85739.214249] RDX: 0000000000000001 RSI: 0000000000001000 RDI: 0000000000000000
-[85739.221407] RBP: 00007fffe4ca3cc0 R08: 0000000000000003 R09: 0008000000000000
-[85739.228545] R10: 0000000000000001 R11: 0000000000000206 R12: 00000000004005b0
-[85739.235676] R13: 00007fffe4ca3da0 R14: 0000000000000000 R15: 0000000000000000
-[85739.242835] FS:  00007f63852ea740(0000) GS:ffff88013fcc0000(0000) knlGS:0000000000000000
-[85739.250925] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[85739.256669] CR2: 00007f63852f8000 CR3: 00000000b9ba0000 CR4: 00000000001407e0
----------------------------------8<--------------------------------------
+--oNEXPFkTTJNzq0nB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-According to [1] Chapter 4 Paging, some higher bits in 64bit
-PTE(X86_64 || X86_32_PAE) are reserved and have to be set to zero. For example,
-for IA-32e and 4KB page [1] 4.5 IA-32e Paging: Table 4-19, bits 51-M(MAXPHYADDR)
-are reserved. So for a CPU with e.g. 48bit phys addr width, bits 51-48 have to
-be zero. If one of the reserved bits is set, [1] 4.7 Page-Fault Exceptions,
-the #PF is generated with RSVD error code.
+On Fri, Aug 01, 2014 at 10:57:04AM -0500, Dan Murphy wrote:
+> Add DAPM calls to enable/disable the Class D amp.
+> Also add a DAPM call to turn off the PLL upon
+> the stream completing.
 
-<quote>
-RSVD flag (bit 3).
-This flag is 1 if there is no valid translation for the linear address because a
-reserved bit was set in one of the paging-structure entries used to translate
-that address. (Because reserved bits are not checked in a paging-structure entry
-whose P flag is 0, bit 3 of the error code can be set only if bit 0 is also
-set.)
-</quote>
+Applied, thanks.
 
-In mmap_mem() the first check is valid_mmap_phys_addr_range(), but it always
-returns 1 for x86. So it's possible to use any pgoff we want and
-to set the PTE's reserved bits in remap_pfn_range(). Meaning there is a
-possibility to use mmap on /dev/mem and cause system panic. It's probably
-not that serious, because access to /dev/mem is limited and the system has
-to have the panic_on_oops set, but still I think we should check this and
-return error.
+--oNEXPFkTTJNzq0nB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The path for this problem is:
-mmap_mem() => remap_pfn_range() => page present => touch page => tlb miss =>
-walk through paging structures => reserved bit set => #pf with rsvd flag
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-This patch adds check for x86. With this fix mmap returns -EINVAL if the
-requested phys addr is larger then the supported phys addr width.
+iQIcBAEBAgAGBQJT7fOmAAoJELSic+t+oim9/EMP/RrdGdpVSZkouR+8lEqqcvS3
+cObTqI5nyZ8PS96rwfDepITbN1wY34raeUuHH4mxWmHaIN8lIcrfunzf9pSORAe/
+daTqtmYTnhx0uBtxkw+Z8ijZq/58PmWBNrCmiro8waMLdUJzwFqwGKT7aTvGVqck
+uJ3g34MKZ7kTwz00AeWptxw81de2Te0EGfycJ/DoPI0lJmKuapacXU2proB+12ty
+RG/OEjgl5RgdgA8m0K5lyvps/EYqancG4Z+G6xxSiy0DMiKLKGxdVZPmaI8E9yHJ
+WC2JWaVzU9CngvtqE0qsLFxWDCI6xl3iATfpEjwdrL5tnyDJBG9D77zqFDtuj5Zw
+8k1ZJiwNytczzhbIcpdaJHlF1wA1bnK/pQ3N2htyVS8yrDu9vugiK8Uj0scPPoiv
+M5oKZGGGQZUhH0Q5wfeTshDW+D6JzeaHQWmw0+avjr/JmGtHXYjBCE50+Jts2ayS
+NWc69D6JEmfRQ1dvwMivKuJIgGxBJlgfSnR4oR/sdZDzuIh2EUtZ+/L/vIkIbD5z
+b+slvnqNpzmE9bUMj0CU1VPPudhk/SXnjIGNfCMy7BI8r2u0KJEcMo8jn7/8/qYH
+PNE/2hXKDa+OLZdxow3GQc2rINQUJGiP38wA89eRQoH+v5Qc6wFTzL9u2Lzf03eB
+/kYDNsbltZcQXZWRroW7
+=06hE
+-----END PGP SIGNATURE-----
 
-[1] Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
-
-x86_64 reproducer
----------------------------------8<--------------------------------------
- #include <stdio.h>
- #include <unistd.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <err.h>
- #include <stdlib.h>
- #include <sys/mman.h>
-
- #define die(fmt, ...) err(1, fmt, ##__VA_ARGS__)
-
- #define OFFSET 0x8000000000000LL
-
-int main(int argc, char *argv[])
-{
-	int fd;
-	long ps;
-	long pgoff;
-	char *map;
-	char c;
-
-	ps = sysconf(_SC_PAGE_SIZE);
-	if (ps == -1)
-		die("cannot get page size");
-
-	fd = open("/dev/mem", O_RDONLY);
-	if (fd == -1)
-		die("cannot open /dev/mem");
-
-	pgoff = (OFFSET + (ps - 1)) & ~(ps - 1);
-
-	map = mmap(NULL, ps, PROT_READ, MAP_SHARED, fd, pgoff);
-	if (map == MAP_FAILED)
-		die("cannot mmap");
-
-	c = map[0];
-
-	if (munmap(map, ps) == -1)
-		die("cannot munmap");
-
-	if (close(fd) == -1)
-		die("cannot close");
-
-	return 0;
-}
----------------------------------8<--------------------------------------
-
-x86_32_PAE reproducer
----------------------------------8<--------------------------------------
- #define _GNU_SOURCE
- #define _LARGEFILE64_SOURCE
- #include <unistd.h>
- #include <sys/syscall.h>
- #include <stdio.h>
- #include <unistd.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <err.h>
- #include <stdlib.h>
- #include <sys/mman.h>
-
- #define die(fmt, ...) err(1, fmt, ##__VA_ARGS__)
-
- /* 37th bit in PTE */
- #define OFFSET 0x2000000
-
-int main(int argc, char *argv[])
-{
-	int fd;
-	long ps;
-	char *map;
-	char c;
-
-	ps = sysconf(_SC_PAGE_SIZE);
-	if (ps == -1)
-		die("cannot get page size");
-
-	fd = open("/dev/mem", O_RDONLY|O_LARGEFILE);
-	if (fd == -1)
-		die("cannot open /dev/mem");
-
-	map = (char *)syscall(SYS_mmap2, NULL, ps, PROT_READ, MAP_SHARED, fd, OFFSET);
-	if (map == MAP_FAILED)
-		die("cannot mmap");
-
-	c = map[0];
-
-	if (munmap(map, ps) == -1)
-		die("cannot munmap");
-
-	if (close(fd) == -1)
-		die("cannot close");
-
-	return 0;
-}
----------------------------------8<--------------------------------------
-
-V2: fix pfn check in valid_mmap_phys_addr_range, thanks to Dave Hansen
-
-Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
----
- arch/x86/include/asm/io.h |  4 ++++
- arch/x86/mm/mmap.c        | 12 ++++++++++++
- 2 files changed, 16 insertions(+)
-
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index b8237d8..55c59d5 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -243,6 +243,10 @@ static inline void flush_write_buffers(void)
- #endif
- }
- 
-+#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
-+extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
-+extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
-+
- #endif /* __KERNEL__ */
- 
- extern void native_io_delay(void);
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 25e7e13..110473e 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -31,6 +31,8 @@
- #include <linux/sched.h>
- #include <asm/elf.h>
- 
-+#include "physaddr.h"
-+
- struct __read_mostly va_alignment va_align = {
- 	.flags = -1,
- };
-@@ -122,3 +124,13 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
- 	}
- }
-+
-+int valid_phys_addr_range(phys_addr_t addr, size_t count)
-+{
-+	return addr + count <= __pa(high_memory);
-+}
-+
-+int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
-+{
-+	return arch_pfn_possible(pfn + (count >> PAGE_SHIFT));
-+}
--- 
-1.9.3
-
+--oNEXPFkTTJNzq0nB--
