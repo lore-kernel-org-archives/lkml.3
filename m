@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398AbaHOXMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 19:12:12 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45449 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaHOXMK (ORCPT
+	id S1751408AbaHOXWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 19:22:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44432 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaHOXWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 19:12:10 -0400
-Message-ID: <53EE93C9.9060306@codeaurora.org>
-Date: Fri, 15 Aug 2014 16:12:09 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 15 Aug 2014 19:22:24 -0400
+Date: Fri, 15 Aug 2014 16:21:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Hema Prathaban <hemaklnce@gmail.com>
+Cc: devel@driverdev.osuosl.org, oleg.drokin@intel.com,
+        andreas.dilger@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: lustre: lustre: libcfs: pr_warn instead printk
+Message-ID: <20140815232148.GA10600@kroah.com>
+References: <20140815181805.GA4709@hema-Inspiron-3520>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: smp: Update the topology masks before calling
- CPU_STARTING notifiers
-References: <1407892269-28650-1-git-send-email-rvaswani@codeaurora.org> <20140815104333.GH27466@arm.com>
-In-Reply-To: <20140815104333.GH27466@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140815181805.GA4709@hema-Inspiron-3520>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/15/2014 3:43 AM, Will Deacon wrote:
-> On Wed, Aug 13, 2014 at 02:11:09AM +0100, Rohit Vaswani wrote:
->> Currently, the CPU_STARTING notifiers would observe an incorrect sibling
->> mask since the notifier chain is called before the topology masks are updated
->> for the new cpu.
->> Update the topology masks before calling the notifier chain to fix this
->> problem.
->>
->> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
->> ---
->>   arch/arm/kernel/smp.c   | 4 ++--
->>   arch/arm64/kernel/smp.c | 4 ++--
->>   2 files changed, 4 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
->> index 7c4fada..0e2237c 100644
->> --- a/arch/arm/kernel/smp.c
->> +++ b/arch/arm/kernel/smp.c
->> @@ -363,12 +363,12 @@ asmlinkage void secondary_start_kernel(void)
->>   	if (smp_ops.smp_secondary_init)
->>   		smp_ops.smp_secondary_init(cpu);
->>   
->> +	smp_store_cpu_info(cpu);
->> +
->>   	notify_cpu_starting(cpu);
->>   
->>   	calibrate_delay();
->>   
->> -	smp_store_cpu_info(cpu);
->> -
-> Hmm, smp_store_cpu_info takes a copy of loops_per_jiffy. Are you sure it's
-> safe to move the call before calibrate_delay?
+On Fri, Aug 15, 2014 at 11:48:05PM +0530, Hema Prathaban wrote:
+> This patch fixes the following warning using checkpatch.pl
+> WARNING: Prefer [subsystem eg: netdev]_warn([subsystem]dev, ... then
+> dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+> 
+> Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
+> ---
+>  drivers/staging/lustre/lustre/libcfs/debug.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/lustre/lustre/libcfs/debug.c b/drivers/staging/lustre/lustre/libcfs/debug.c
+> index 6b58469..8143ebe 100644
+> --- a/drivers/staging/lustre/lustre/libcfs/debug.c
+> +++ b/drivers/staging/lustre/lustre/libcfs/debug.c
+> @@ -344,7 +344,7 @@ void libcfs_debug_dumplog_internal(void *arg)
+>  		snprintf(debug_file_name, sizeof(debug_file_name) - 1,
+>  			 "%s.%ld.%ld", libcfs_debug_file_path_arr,
+>  			 get_seconds(), (long_ptr_t)arg);
+> -		printk(KERN_ALERT "LustreError: dumping log to %s\n",
+> +		pr_alert(KERN_ALERT "LustreError: dumping log to %s\n",
+>  		       debug_file_name);
+>  		cfs_tracefile_dump_all_pages(debug_file_name);
+>  		libcfs_run_debug_log_upcall(debug_file_name);
+> @@ -376,7 +376,7 @@ void libcfs_debug_dumplog(void)
+>  			     (void *)(long)current_pid(),
+>  			     "libcfs_debug_dumper");
+>  	if (IS_ERR(dumper))
+> -		printk(KERN_ERR "LustreError: cannot start log dump thread:"
+> +		pr_err(KERN_ERR "LustreError: cannot start log dump thread:"
 
-Right! - I had looked at the arm64 version .  I checked for arm32 now 
-and I think we should be
-safe to move calibrate_delay before the smp_store_cpu_info and I can 
-push a v2 version if
-there are no concerns. I did not see calibrate_delay having any 
-dependency for cpu_starting notifiers.
+You need to take the printk prefix off of these types of lines if you
+are using the pr_*() macro, otherwise you will get a mess in the system
+log.
 
--Rohit
-> Will
+thanks,
 
-
-Thanks,
-Rohit Vaswani
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
-
+greg k-h
