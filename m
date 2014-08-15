@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120AbaHOHPc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 03:15:32 -0400
-Received: from ozlabs.org ([103.22.144.67]:49665 "EHLO ozlabs.org"
+	id S1753552AbaHOHTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 03:19:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36831 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751172AbaHOHPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 03:15:31 -0400
-Date: Fri, 15 Aug 2014 17:15:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: linux-next: few releases for the next week
-Message-ID: <20140815171524.5b7e197d@canb.auug.org.au>
-In-Reply-To: <20140815134711.7d63bcc5@canb.auug.org.au>
-References: <20140815134711.7d63bcc5@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/Z+z140MBQvxKA9TRBQHaRA5"; protocol="application/pgp-signature"
+	id S1752094AbaHOHTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 03:19:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,868,1400050800"; 
+   d="scan'208";a="469012655"
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: peterz@infradead.org, luto@amacapital.net, daniel.lezcano@linaro.org,
+        rjw@rjwysocki.net, mingo@redhat.com
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        changcheng.liu@intel.com, xiaoming.wang@intel.com,
+        souvik.k.chakravarty@intel.com,
+        Chuansheng Liu <chuansheng.liu@intel.com>
+Subject: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the idle cpu
+Date: Fri, 15 Aug 2014 15:01:23 +0800
+Message-Id: <1408086085-16691-1-git-send-email-chuansheng.liu@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Z+z140MBQvxKA9TRBQHaRA5
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Implementing one new API wake_up_if_idle(), which is used to
+wake up the idle CPU.
 
-Hi all,
+Suggested-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+---
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |   16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
 
-linux-next releases will be intermittent at best over the next week
-while I, and others, are at Kernel Summit.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 857ba40..3f89ac1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
+ extern struct sched_domain_topology_level *sched_domain_topology;
+ 
+ extern void set_sched_topology(struct sched_domain_topology_level *tl);
++extern void wake_up_if_idle(int cpu);
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+ # define SD_INIT_NAME(type)		.name = #type
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1211575..adf104f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1620,6 +1620,22 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+ 	}
+ }
+ 
++void wake_up_if_idle(int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++	unsigned long flags;
++
++	if (set_nr_if_polling(rq->idle)) {
++		trace_sched_wake_idle_without_ipi(cpu);
++	} else {
++		raw_spin_lock_irqsave(&rq->lock, flags);
++		if (rq->curr == rq->idle)
++			smp_send_reschedule(cpu);
++		/* Else cpu is not in idle, do nothing here */
++		raw_spin_unlock_irqrestore(&rq->lock, flags);
++	}
++}
++
+ bool cpus_share_cache(int this_cpu, int that_cpu)
+ {
+ 	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
+-- 
+1.7.9.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/Z+z140MBQvxKA9TRBQHaRA5
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT7bORAAoJEMDTa8Ir7ZwVKFYP/RI2LJELksPIuihqnm+gqs5W
-uXCD21m25c0ApEngk+NimlFBrEMVRWqDImlH+yC/ujLGdsNnm8Yhvkx3KaOFXIFx
-CsLlzw50732tHIbzwK0xBZhn+SmUDmp0MaSv13+A32n0dsPflOL5F5HUL9oDIhA5
-LRYnNJyCjhwqCL2H/j2ueyRb2jPFayyFMp5rpwowN1UsWlxHWivq8yP+LW5D67oc
-TXZXz39C1dGK2TrCtop/4/Xg7pyKOwTSql4vZY9kjjfKmqmimEaYC8BzpVQI+2u8
-jbGquqacIwR2ErjoaweAQQCRHpg6keRTKAYpsS+4cj80RlMM8VjmwwFwA/za+Vg/
-S/YdnTSa7bl7d4Hg0X1Z7N/ceLvuAvNjUMxUlpRGfRCSMPm/Vf6L2NiBXVZinEBX
-oH0qgGCffgS5pqPPiYsp2P980RX3CZvaUK4QMO7stEhf7CZUj0hHcN5hLcalyHzJ
-RtaNEIAyqV9wifZzbKj+ev966tPdagpBNuKVuNnDF2uChAGCGIpFSojw7W0my829
-2cVPRBlZOurzKdsaCLmUhKkVTghHadrBj/95nG+oeqAKocj3U10/7w5wVa4RDNyp
-G8frVmHg4LRCrVV/P5sjsWc6N/mAQTljj1yk544iL4aSFyS42mh1ziOwHaROIbo3
-M1io+2k/UWnm3U27Goqd
-=TXS9
------END PGP SIGNATURE-----
-
---Sig_/Z+z140MBQvxKA9TRBQHaRA5--
