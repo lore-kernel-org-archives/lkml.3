@@ -1,168 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaHODfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 23:35:21 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:23771 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754265AbaHODfT (ORCPT
+	id S1754960AbaHODgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 23:36:18 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:48615 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135AbaHODgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 23:35:19 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtUGABx/7VN5LDJ8/2dsb2JhbABZgw1TV68QAQEBAQEBBp5Uh1EBgRIXd4QEAQU6HCMQCAMYCSUPBSUDIROIQcU+FxiFZIlQB4RMBY8KhjmCOYFugk6BM5NMg24rL4JPAQEB
-Date: Fri, 15 Aug 2014 13:34:48 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        Scott J Norton <scott.norton@hp.com>
-Subject: Re: [PATCH 2/7] locking/rwsem: more aggressive use of optimistic
- spinning
-Message-ID: <20140815033447.GJ20518@dastard>
-References: <1407119782-41119-1-git-send-email-Waiman.Long@hp.com>
- <1407119782-41119-3-git-send-email-Waiman.Long@hp.com>
- <1407125450.4710.38.camel@j-VirtualBox>
- <53DFAA53.4010003@hp.com>
- <20140813055153.GD20518@dastard>
- <53EB9522.2070804@hp.com>
+	Thu, 14 Aug 2014 23:36:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53EB9522.2070804@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140814220704.GB26367@optiplex.redhat.com>
+References: <CAPAsAGwk7kF6XtJNz6Y41zn0SHHzEt1Nwi_wC0gWgt0fpdp-ZQ@mail.gmail.com>
+	<26c3333933769e4f9d1ed6226962a2f80719146b.1408050002.git.aquini@redhat.com>
+	<20140814220704.GB26367@optiplex.redhat.com>
+Date: Fri, 15 Aug 2014 07:36:16 +0400
+Message-ID: <CALYGNiPbtav_ChUFW_kkh+HOHVmKeupTRsnKsaShK=p8ZKguBg@mail.gmail.com>
+Subject: Re: mm: compaction: buffer overflow in isolate_migratepages_range
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, vbabka@suse.cz,
+        rientjes@google.com, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>, lwoodman@redhat.com,
+        Rik van Riel <riel@redhat.com>, jweiner@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:41:06PM -0400, Waiman Long wrote:
-> On 08/13/2014 01:51 AM, Dave Chinner wrote:
-> >On Mon, Aug 04, 2014 at 11:44:19AM -0400, Waiman Long wrote:
-> >>On 08/04/2014 12:10 AM, Jason Low wrote:
-> >>>On Sun, 2014-08-03 at 22:36 -0400, Waiman Long wrote:
-> >>>>The rwsem_can_spin_on_owner() function currently allows optimistic
-> >>>>spinning only if the owner field is defined and is running. That is
-> >>>>too conservative as it will cause some tasks to miss the opportunity
-> >>>>of doing spinning in case the owner hasn't been able to set the owner
-> >>>>field in time or the lock has just become available.
-> >>>>
-> >>>>This patch enables more aggressive use of optimistic spinning by
-> >>>>assuming that the lock is spinnable unless proved otherwise.
-> >>>>
-> >>>>Signed-off-by: Waiman Long<Waiman.Long@hp.com>
-> >>>>---
-> >>>>  kernel/locking/rwsem-xadd.c |    2 +-
-> >>>>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>>>
-> >>>>diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> >>>>index d058946..dce22b8 100644
-> >>>>--- a/kernel/locking/rwsem-xadd.c
-> >>>>+++ b/kernel/locking/rwsem-xadd.c
-> >>>>@@ -285,7 +285,7 @@ static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-> >>>>  static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-> >>>>  {
-> >>>>  	struct task_struct *owner;
-> >>>>-	bool on_cpu = false;
-> >>>>+	bool on_cpu = true;	/* Assume spinnable unless proved not to be */
-> >>>Hi,
-> >>>
-> >>>So "on_cpu = true" was recently converted to "on_cpu = false" in order
-> >>>to address issues such as a 5x performance regression in the xfs_repair
-> >>>workload that was caused by the original rwsem optimistic spinning code.
-> >>>
-> >>>However, patch 4 in this patchset does address some of the problems with
-> >>>spinning when there are readers. CC'ing Dave Chinner, who did the
-> >>>testing with the xfs_repair workload.
-> >>>
-> >>This patch set enables proper reader spinning and so the problem
-> >>that we see with xfs_repair workload should go away. I should have
-> >>this patch after patch 4 to make it less confusing. BTW, patch 3 can
-> >>significantly reduce spinlock contention in rwsem. So I believe the
-> >>xfs_repair workload should run faster with this patch than both 3.15
-> >>and 3.16.
-> >I see lots of handwaving. I documented the test I ran when I
-> >reported the problem so anyone with a 16p system and an SSD can
-> >reproduce it. I don't have the bandwidth to keep track of the lunacy
-> >of making locks scale these days - that's what you guys are doing.
-> >
-> >I gave you a simple, reliable workload that is extremely sensitive
-> >to rwsem perturbations, so you should be adding it to your
-> >regression tests rather than leaving it for others to notice you
-> >screwed up....
-> >
-> >Cheers,
-> >
-> >Dave.
-> 
-> If you can send me a rwsem workload that I can use for testing
-> purpose, it will be highly appreciated.
+On Fri, Aug 15, 2014 at 2:07 AM, Rafael Aquini <aquini@redhat.com> wrote:
+> On Thu, Aug 14, 2014 at 06:43:50PM -0300, Rafael Aquini wrote:
+>> On Thu, Aug 14, 2014 at 10:07:40PM +0400, Andrey Ryabinin wrote:
+>> > We discussed this with Konstantin and he suggested a better solution for this.
+>> > If I understood him correctly the main idea was to store bit
+>> > identifying ballon page
+>> > in struct page (special value in _mapcount), so we won't need to check
+>> > mapping->flags.
+>> >
+>>
+>> Here goes what I thought doing, following that suggestion of Konstantin and yours. (I didn't tested it yet)
+>>
+>> Comments are welcomed.
+>>
+>> Cheers,
+>> -- Rafael
+>>
+>> ---- 8< ----
+>> From: Rafael Aquini <aquini@redhat.com>
+>> Subject: mm: balloon_compaction: enhance balloon_page_movable() checkpoint against races
+>>
+>> While testing linux-next for the Kernel Address Sanitizer patchset (KASAN)
+>> Sasha Levin reported a buffer overflow warning triggered for
+>> isolate_migratepages_range(), which lated was discovered happening due to
+>> a condition where balloon_page_movable() raced against move_to_new_page(),
+>> while the later was copying the page->mapping of an anon page.
+>>
+>> Because we can perform balloon_page_movable() in a lockless fashion at
+>> isolate_migratepages_range(), the dicovered race has unveiled the scheme
+>> actually used to spot ballooned pages among page blocks that checks for
+>> page_flags_cleared() and dereference page->mapping to check its mapping flags
+>> is weak and potentially prone to stumble across another similar conditions
+>> in the future.
+>>
+>> Following Konstantin Khlebnikov's and Andrey Ryabinin's suggestions,
+>> this patch replaces the old page->flags && mapping->flags checking scheme
+>> with a more simple and strong page->_mapcount read and compare value test.
+>> Similarly to what is done for PageBuddy() checks, BALLOON_PAGE_MAPCOUNT_VALUE
+>> is introduced here to mark balloon pages. This allows balloon_page_movable()
+>> to skip the proven troublesome dereference of page->mapping for flag checking
+>> while it goes on isolate_migratepages_range() lockless rounds.
+>> page->mapping dereference and flag-checking will be performed later, when
+>> all locks are held properly.
+>>
+>> ---
+>>  include/linux/balloon_compaction.h | 61 +++++++++++---------------------------
+>>  mm/balloon_compaction.c            | 53 +++++++++++++++++----------------
+>>  2 files changed, 45 insertions(+), 69 deletions(-)
+>>
+>> diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
+>> index 089743a..1409ccc 100644
+>> --- a/include/linux/balloon_compaction.h
+>> +++ b/include/linux/balloon_compaction.h
+>> @@ -108,54 +108,29 @@ static inline void balloon_mapping_free(struct address_space *balloon_mapping)
+>>  }
+>>
+>>  /*
+>> - * page_flags_cleared - helper to perform balloon @page ->flags tests.
+>> + * balloon_page_movable - identify balloon pages that can be moved by
+>> + *                     compaction / migration.
+>>   *
+>> - * As balloon pages are obtained from buddy and we do not play with page->flags
+>> - * at driver level (exception made when we get the page lock for compaction),
+>> - * we can safely identify a ballooned page by checking if the
+>> - * PAGE_FLAGS_CHECK_AT_PREP page->flags are all cleared.  This approach also
+>> - * helps us skip ballooned pages that are locked for compaction or release, thus
+>> - * mitigating their racy check at balloon_page_movable()
+>> + * BALLOON_PAGE_MAPCOUNT_VALUE must be <= -2 but better not too close to
+>> + * -2 so that an underflow of the page_mapcount() won't be mistaken
+>> + * for a genuine BALLOON_PAGE_MAPCOUNT_VALUE.
+>>   */
+>> -static inline bool page_flags_cleared(struct page *page)
+>> +#define BALLOON_PAGE_MAPCOUNT_VALUE (-256)
+>> +static inline bool balloon_page_movable(struct page *page)
+>>  {
+>> -     return !(page->flags & PAGE_FLAGS_CHECK_AT_PREP);
+>> +     return atomic_read(&page->_mapcount) == BALLOON_PAGE_MAPCOUNT_VALUE;
+>>  }
+>>
+>> -/*
+>> - * __is_movable_balloon_page - helper to perform @page mapping->flags tests
+>> - */
+>> -static inline bool __is_movable_balloon_page(struct page *page)
+>> +static inline void __balloon_page_set(struct page *page)
+>>  {
+>> -     struct address_space *mapping = page->mapping;
+>> -     return mapping_balloon(mapping);
+>> +     VM_BUG_ON_PAGE(!atomic_read(&page->_mapcount) != -1, page);
+>> +     atomic_set(&page->_mapcount, BALLOON_PAGE_MAPCOUNT_VALUE);
+>>  }
+>>
+>> -/*
+>> - * balloon_page_movable - test page->mapping->flags to identify balloon pages
+>> - *                     that can be moved by compaction/migration.
+>> - *
+>> - * This function is used at core compaction's page isolation scheme, therefore
+>> - * most pages exposed to it are not enlisted as balloon pages and so, to avoid
+>> - * undesired side effects like racing against __free_pages(), we cannot afford
+>> - * holding the page locked while testing page->mapping->flags here.
+>> - *
+>> - * As we might return false positives in the case of a balloon page being just
+>> - * released under us, the page->mapping->flags need to be re-tested later,
+>> - * under the proper page lock, at the functions that will be coping with the
+>> - * balloon page case.
+>> - */
+>> -static inline bool balloon_page_movable(struct page *page)
+>> +static inline void __balloon_page_clear(struct page *page)
+>>  {
+>> -     /*
+>> -      * Before dereferencing and testing mapping->flags, let's make sure
+>> -      * this is not a page that uses ->mapping in a different way
+>> -      */
+>> -     if (page_flags_cleared(page) && !page_mapped(page) &&
+>> -         page_count(page) == 1)
+>> -             return __is_movable_balloon_page(page);
+>> -
+>> -     return false;
+>> +     VM_BUG_ON_PAGE(!balloon_page_movable(page), page)
+>> +     atomic_set(&page->_mapcount, -1);
+>>  }
+>>
+>>  /*
+>> @@ -170,10 +145,8 @@ static inline bool balloon_page_movable(struct page *page)
+>>   */
+>>  static inline bool isolated_balloon_page(struct page *page)
+>>  {
+>> -     /* Already isolated balloon pages, by default, have a raised refcount */
+>> -     if (page_flags_cleared(page) && !page_mapped(page) &&
+>> -         page_count(page) >= 2)
+>> -             return __is_movable_balloon_page(page);
+>> +     if (balloon_page_movable && page_count(page) > 1)
+>> +             return true;
+>>
+>>       return false;
+>>  }
+>> @@ -193,6 +166,7 @@ static inline void balloon_page_insert(struct page *page,
+>>                                      struct list_head *head)
+>>  {
+>>       page->mapping = mapping;
+>> +     __balloon_page_set(page);
+>>       list_add(&page->lru, head);
+>>  }
+>>
+>> @@ -207,6 +181,7 @@ static inline void balloon_page_insert(struct page *page,
+>>  static inline void balloon_page_delete(struct page *page)
+>>  {
+>>       page->mapping = NULL;
+>> +     __balloon_page_clear(page);
+>>       list_del(&page->lru);
+>>  }
+>>
+>> diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
+>> index 6e45a50..1cfb254 100644
+>> --- a/mm/balloon_compaction.c
+>> +++ b/mm/balloon_compaction.c
+>> @@ -220,33 +220,32 @@ bool balloon_page_isolate(struct page *page)
+>>        * raise its refcount preventing __free_pages() from doing its job
+>>        * the put_page() at the end of this block will take care of
+>>        * release this page, thus avoiding a nasty leakage.
+>> +      *
+>> +      * As balloon pages are not isolated from LRU lists, concurrent
+>> +      * compaction threads can race against page migration functions
+>> +      * as well as race against the balloon driver releasing a page.
+>> +      * The aforementioned operations are done under the safety of
+>> +      * page lock, so lets be sure we hold it before proceeding the
+>> +      * isolations steps here.
+>>        */
+>> -     if (likely(get_page_unless_zero(page))) {
+>> +     if (get_page_unless_zero(page) && trylock_page(page)) {
+> Oops, I need to change this one, as we can left behind pages with raised
+> refcounts if get_page_unless_zero(page) but trylock_page(page) fails
+> here.
 
-<create sparse vm image file of 500TB on ssd with XFS on it>
-xfs_io -f -c "truncate 500t" -c "extsize 1m" /path/to/vm/image/file
+Don't hurry. The code in this state for years.
+I'm working on patches for this, if everything goes well I'll show it today.
+As usual I couldn't stop myself from cleaning the mess, so it will be
+bigger than yours.
 
-<start 16p/16GB RAM vm with image file configured as:
--drive file=/path/to/vm/image/file,if=virtio,cache=none >
-
-In vm:
-
-download and build fsmark from here:
-
-git://oss.sgi.com/dgc/fs_mark
-
-download and install xfsprogs v3.2.1 from here:
-
-git://oss.sgi.com/xfs/cmds/xfsprogs.git tags/v3.2.1
-
-Setup up the target filesystem:
-
-# mkfs.xfs -f -m "crc=1,finobt=1" /dev/vda
-# mount -o logbsize=262144,nobarrier /dev/vda /mnt/scratch
-
-
-Run:
-
-# fs_mark  -D  10000  -S0  -n  50000  -s  0  -L  32 \
-        -d  /mnt/scratch/0  -d  /mnt/scratch/1 \
-        -d  /mnt/scratch/2  -d  /mnt/scratch/3 \
-        -d  /mnt/scratch/4  -d  /mnt/scratch/5 \
-        -d  /mnt/scratch/6  -d  /mnt/scratch/7 \
-        -d  /mnt/scratch/8  -d  /mnt/scratch/9 \
-        -d  /mnt/scratch/10  -d  /mnt/scratch/11 \
-        -d  /mnt/scratch/12  -d  /mnt/scratch/13 \
-        -d  /mnt/scratch/14  -d  /mnt/scratch/15 \
-
-If you've got everything set up right, that should run at around
-200-250,000 file creates/s. When finished, unmount and run:
-
-# xfs_repair -o bhash=500000 /dev/vda
-
-And that should spend quite a long while pounding on the mmap_sem
-until the the userspace buffer cache stops growing.
-
-I just ran the above on 3.16, saw this from perf:
-
-  37.30%  [kernel]  [k] _raw_spin_unlock_irqrestore
-   - _raw_spin_unlock_irqrestore
-      - 62.00% rwsem_wake
-         - call_rwsem_wake
-            + 83.52% sys_mprotect
-            + 16.23% __do_page_fault
-      + 35.15% try_to_wake_up
-      + 0.96% update_blocked_averages
-      + 0.61% pagevec_lru_move_fn
--  23.35%  [kernel]  [k] _raw_spin_unlock_irq
-   - _raw_spin_unlock_irq
-      + 51.37% finish_task_switch
-      + 39.37% rwsem_down_write_failed
-      + 8.49% rwsem_down_read_failed
-        0.62% run_timer_softirq
-+   5.22%  [kernel]  [k] native_read_tsc
-+   3.89%  [kernel]  [k] rwsem_down_write_failed
-.....
-
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
+>
+>
+>>               /*
+>> -              * As balloon pages are not isolated from LRU lists, concurrent
+>> -              * compaction threads can race against page migration functions
+>> -              * as well as race against the balloon driver releasing a page.
+>> -              *
+>> -              * In order to avoid having an already isolated balloon page
+>> -              * being (wrongly) re-isolated while it is under migration,
+>> -              * or to avoid attempting to isolate pages being released by
+>> -              * the balloon driver, lets be sure we have the page lock
+>> -              * before proceeding with the balloon page isolation steps.
+>> +              * A ballooned page, by default, has just one refcount.
+>> +              * Prevent concurrent compaction threads from isolating
+>> +              * an already isolated balloon page by refcount check.
+>>                */
+>> -             if (likely(trylock_page(page))) {
+>> -                     /*
+>> -                      * A ballooned page, by default, has just one refcount.
+>> -                      * Prevent concurrent compaction threads from isolating
+>> -                      * an already isolated balloon page by refcount check.
+>> -                      */
+>> -                     if (__is_movable_balloon_page(page) &&
+>> -                         page_count(page) == 2) {
+>> +             if (balloon_page_movable(page) && page_count(page) == 2) {
+>> +                     struct address_space *mapping = page_mapping(page);
+>> +                     if (likely(mapping_balloon(mapping))) {
+>>                               __isolate_balloon_page(page);
+>>                               unlock_page(page);
+>>                               return true;
+>> +                     } else {
+>> +                             dump_page(page, "not movable balloon page");
+>> +                             WARN_ON(1);
+>>                       }
+>> -                     unlock_page(page);
+>>               }
+>> +             unlock_page(page);
+>>               put_page(page);
+>>       }
+>>       return false;
+>> @@ -255,19 +254,21 @@ bool balloon_page_isolate(struct page *page)
+>>  /* putback_lru_page() counterpart for a ballooned page */
+>>  void balloon_page_putback(struct page *page)
+>>  {
+>> +     struct address_space *mapping;
+>>       /*
+>>        * 'lock_page()' stabilizes the page and prevents races against
+>>        * concurrent isolation threads attempting to re-isolate it.
+>>        */
+>>       lock_page(page);
+>>
+>> -     if (__is_movable_balloon_page(page)) {
+>> +     mapping = page_mapping(page);
+>> +     if (balloon_page_movable(page) && mapping_balloon(mapping)) {
+>>               __putback_balloon_page(page);
+>>               /* drop the extra ref count taken for page isolation */
+>>               put_page(page);
+>>       } else {
+>> -             WARN_ON(1);
+>>               dump_page(page, "not movable balloon page");
+>> +             WARN_ON(1);
+>>       }
+>>       unlock_page(page);
+>>  }
+>> @@ -286,16 +287,16 @@ int balloon_page_migrate(struct page *newpage,
+>>        */
+>>       BUG_ON(!trylock_page(newpage));
+>>
+>> -     if (WARN_ON(!__is_movable_balloon_page(page))) {
+>> +     mapping = page_mapping(page);
+>> +     if (!(balloon_page_movable(page) && mapping_balloon(mapping))) {
+>>               dump_page(page, "not movable balloon page");
+>> -             unlock_page(newpage);
+>> -             return rc;
+>> +             WARN_ON(1);
+>> +             goto out;
+>>       }
+>>
+>> -     mapping = page->mapping;
+>>       if (mapping)
+>>               rc = __migrate_balloon_page(mapping, newpage, page, mode);
+>> -
+>> +out:
+>>       unlock_page(newpage);
+>>       return rc;
+>>  }
+>> --
+>> 1.9.3
+>>
