@@ -1,186 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691AbaHOKbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 06:31:00 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:36348 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaHOKa6 convert rfc822-to-8bit (ORCPT
+	id S1751740AbaHOKnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 06:43:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38980 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750954AbaHOKny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 06:30:58 -0400
-Date: Fri, 15 Aug 2014 11:30:52 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
+	Fri, 15 Aug 2014 06:43:54 -0400
+Date: Fri, 15 Aug 2014 11:43:34 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 02/12] PCI: OF: Parse and map the IRQ when adding the
- PCI device.
-Message-ID: <20140815103052.GD27553@e106497-lin.cambridge.arm.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-3-git-send-email-Liviu.Dudau@arm.com>
- <20140814145804.GA5586@richard>
- <20140814154959.GG25761@e106497-lin.cambridge.arm.com>
- <20140815085632.GA4954@richard>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: smp: Update the topology masks before calling
+ CPU_STARTING notifiers
+Message-ID: <20140815104333.GH27466@arm.com>
+References: <1407892269-28650-1-git-send-email-rvaswani@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20140815085632.GA4954@richard>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 15 Aug 2014 10:30:53.0592 (UTC) FILETIME=[FDCE0180:01CFB873]
-X-MC-Unique: 114081511305501801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1407892269-28650-1-git-send-email-rvaswani@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 09:56:32AM +0100, Wei Yang wrote:
-> On Thu, Aug 14, 2014 at 04:49:59PM +0100, Liviu Dudau wrote:
-> >On Thu, Aug 14, 2014 at 03:58:04PM +0100, Wei Yang wrote:
-> >> On Tue, Aug 12, 2014 at 05:25:15PM +0100, Liviu Dudau wrote:
-> >> >Enhance the default implementation of pcibios_add_device() to
-> >> >parse and map the IRQ of the device if a DT binding is available.
-> >> >
-> >> >Cc: Bjorn Helgaas <bhelgaas@google.com>
-> >> >Cc: Grant Likely <grant.likely@linaro.org>
-> >> >Cc: Rob Herring <robh+dt@kernel.org>
-> >> >Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> >> >---
-> >> > drivers/pci/pci.c | 3 +++
-> >> > 1 file changed, 3 insertions(+)
-> >> >
-> >> >diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> >> >index 1c8592b..29d1775 100644
-> >> >--- a/drivers/pci/pci.c
-> >> >+++ b/drivers/pci/pci.c
-> >> >@@ -17,6 +17,7 @@
-> >> > #include <linux/spinlock.h>
-> >> > #include <linux/string.h>
-> >> > #include <linux/log2.h>
-> >> >+#include <linux/of_pci.h>
-> >> > #include <linux/pci-aspm.h>
-> >> > #include <linux/pm_wakeup.h>
-> >> > #include <linux/interrupt.h>
-> >> >@@ -1453,6 +1454,8 @@ EXPORT_SYMBOL(pcim_pin_device);
-> >> >  */
-> >> > int __weak pcibios_add_device(struct pci_dev *dev)
-> >> > {
-> >> >+	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
-> >> >+
-> >> > 	return 0;
-> >> > }
-> >> 
-> >> Liviu,
-> >> 
-> >> For this, my suggestion is to add arch dependent function to setup the irq
-> >> line for pci devices. I can't find an obvious reason this won't work on other
-> >> archs, but maybe this will hurt some of them?
-> >
-> >Hi Wei,
-> >
-> >I'm not sure I understand your point. Architectures that support OF will obviously
-> >benefit from this common approach, and for the other ones the function is empty
-> >so it will not change existing behaviour. If you are suggesting that I should
-> >create a new API that each architecture could go and implement for setting up the
-> >IRQ line then I would agree that it would be nice to have that, but the question
-> >is how many architectures are outside OF that need this?
+On Wed, Aug 13, 2014 at 02:11:09AM +0100, Rohit Vaswani wrote:
+> Currently, the CPU_STARTING notifiers would observe an incorrect sibling
+> mask since the notifier chain is called before the topology masks are updated
+> for the new cpu.
+> Update the topology masks before calling the notifier chain to fix this
+> problem.
 > 
-> My suggestion is to define the pcibios_add_device() for arm arch, like the one
-> in arch/powerpc/kernel/pci-common.c. If my understanding is correct, this
-> patch set address the pci bus setup mostly on arm arch.
-
-And also arm64 at the least.
-
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+>  arch/arm/kernel/smp.c   | 4 ++--
+>  arch/arm64/kernel/smp.c | 4 ++--
+>  2 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> For those archs not support OF, this function is empty and has no effect. I
-> agree on this one.
-> 
-> For those archs rely on OF, we still have two cases:
->     1. they would have implement this function like powerpc
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 7c4fada..0e2237c 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -363,12 +363,12 @@ asmlinkage void secondary_start_kernel(void)
+>  	if (smp_ops.smp_secondary_init)
+>  		smp_ops.smp_secondary_init(cpu);
+>  
+> +	smp_store_cpu_info(cpu);
+> +
+>  	notify_cpu_starting(cpu);
+>  
+>  	calibrate_delay();
+>  
+> -	smp_store_cpu_info(cpu);
+> -
 
-Actually, powerpc seems to be the only OF platform reimplementing this function.
-s390 and x86 are not OF platforms.
+Hmm, smp_store_cpu_info takes a copy of loops_per_jiffy. Are you sure it's
+safe to move the call before calibrate_delay?
 
->     2. have other way to fix it up,  otherwise how it works now?
-
-Don't forget that my patchset aims to replace existing house-made code with a more
-generic version. When architectures and platforms switch to my code they will have
-to add this back in their code if it's needed.
-
-> If my assumption is correct, this change will either have no effect, or fix up
-> the irq line the second time. Not harmful, but not necessary.
-
-Well, it will become necessary as old code gets dismantled and converted towards
-this patchset. To give you an example that I'm familiar with, for arch/arm the
-host bridge drivers have moved into drivers/pci/host, but they still depend/use
-the bios32 infrastructure that takes care of setting up the irq. When they switch
-to my version they would have to go and debug the "irq not being assigned" issue
-and it is quite likely that some of the people doing the conversion will complain
-about my code rather than understanding the issue. What I'm trying to do is to
-make switching to my patchset as painless as possible, with a cleanup to remove
-redundant operations coming after the switchover.
-
-Does that sound like a reasonable plan?
-
-Best regards,
-Liviu
-
-> 
-> I am not familiar with other arch, so the second case is my deduction. If this
-> is not correct, please let me know.
-> 
-> >
-> >If I understood you correctly, it is a nice idea but slightly outside the scope
-> >of my current patchset.
-> >
-> >Best regards,
-> >Liviu
-> >
-> >> 
-> >> >
-> >> >-- 
-> >> >2.0.4
-> >> >
-> >> >--
-> >> >To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> >> >the body of a message to majordomo@vger.kernel.org
-> >> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> 
-> >> -- 
-> >> Richard Yang
-> >> Help you, Help me
-> >> 
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> 
-> >
-> 
-> -- 
-> Richard Yang
-> Help you, Help me
-> 
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Will
