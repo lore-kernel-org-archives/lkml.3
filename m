@@ -1,189 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576AbaHOQkf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:40:35 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:14250
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751182AbaHOQkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:40:33 -0400
-Message-ID: <53EE398D.3060509@opensource.altera.com>
-Date: Fri, 15 Aug 2014 11:47:09 -0500
-From: Thor Thayer <tthayer@opensource.altera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751676AbaHOQlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:41:05 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:51790 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaHOQlC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:41:02 -0400
 MIME-Version: 1.0
-To: atull <atull@opensource.altera.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>
-CC: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>,
-        <sameo@linux.intel.com>, <lee.jones@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
-Subject: Re: [PATCHv10 2/2] arm: dts: Add Altera SDRAM EDAC bindings & devicetree
- entries.
-References: <1407770293-27190-1-git-send-email-tthayer@opensource.altera.com> <1407770293-27190-3-git-send-email-tthayer@opensource.altera.com> <73vbputf04.fsf@dude.hi.pengutronix.de> <alpine.DEB.2.02.1408151035110.21645@atx-linux-37>
-In-Reply-To: <alpine.DEB.2.02.1408151035110.21645@atx-linux-37>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BN1PR08CA0038.namprd08.prod.outlook.com (10.242.217.166) To
- BY2PR03MB126.namprd03.prod.outlook.com (10.242.36.21)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0304E36CA3
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009004)(6009001)(6049001)(189002)(51704005)(52604005)(51914003)(51444003)(479174003)(199003)(377454003)(24454002)(92566001)(99396002)(33656002)(31966008)(65816999)(64706001)(64126003)(15202345003)(50986999)(50466002)(21056001)(86362001)(85852003)(92726001)(83072002)(575784001)(101416001)(76176999)(46102001)(80316001)(102836001)(54356999)(83322001)(95666004)(107046002)(76482001)(47776003)(20776003)(105586002)(15975445006)(79102001)(83506001)(87976001)(66066001)(65806001)(59896001)(77982001)(65956001)(80022001)(74662001)(42186005)(4396001)(74502001)(81342001)(81542001)(93886004)(19580405001)(87266999)(106356001)(19580395003)(85306004)(77096002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB126;H:[137.57.160.203];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+In-Reply-To: <53EE2BAA.1020603@linux.intel.com>
+References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
+	<20140814205143.GY6758@twins.programming.kicks-ass.net>
+	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
+	<20140815061917.GX19379@twins.programming.kicks-ass.net>
+	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
+	<53EE0E5B.3050004@linux.intel.com>
+	<53EE10CB.7040001@linux.intel.com>
+	<CAJ5Y-eZiRyGroems7J2oH05ybbbivM-okm3gFz7Mkuu8ceeCDQ@mail.gmail.com>
+	<53EE2BAA.1020603@linux.intel.com>
+Date: Fri, 15 Aug 2014 12:41:00 -0400
+Message-ID: <CAJ5Y-eZZz=SrkONt029eZ0AsEZ6xFhW4cmcaEVZ8=8Ls9r5+zA@mail.gmail.com>
+Subject: Re: [RFC 0/3] Experimental patchset for CPPC
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, lkml <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
+        len.brown@intel.com, rjw@rjwysocki.net,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
+        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-On 08/15/2014 11:07 AM, atull wrote:
-> On Fri, 15 Aug 2014, Steffen Trumtrar wrote:
->
->> Hi!
-> Hello
->
-> Thanks for the feedback...
->
->> tthayer@opensource.altera.com writes:
+On 15 August 2014 11:47, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 8/15/2014 7:24 AM, Ashwin Chaugule wrote:
+>>>> we've found that so far that there are two reasonable options
+>>>> 1) Let the OS device (old style)
+>>>> 2) Let the hardware decide (new style)
+>>>>
+>>>> 2) is there in practice today in the turbo range (which is increasingly
+>>>> the whole thing)
+>>>> and the hardware can make decisions about power budgetting on a
+>>>> timescale
+>>>> the OS
+>>>> can never even dream of, so once you give control the the hardware (with
+>>>> CPPC or native)
+>>>> it's normally better to just get out of the way as OS.
+>>>>
+>>>
 >>
->>> From: Thor Thayer <tthayer@opensource.altera.com>
->>>
->>> Add the Altera SDRAM EDAC bindings and device tree changes to the Altera SoC project.
->>>
->>> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
->>> ---
->>> v2: Changes to SoC SDRAM EDAC code.
->>>
->>> v3: Implement code suggestions for SDRAM EDAC code.
->>>
->>> v4: Remove syscon from SDRAM controller bindings.
->>>
->>> v5: No Change, bump version for consistency.
->>>
->>> v6: Only map the ctrlcfg register as syscon.
->>>
->>> v7: No change. Bump for consistency.
->>>
->>> v8: No change. Bump for consistency.
->>>
->>> v9: Changes to support a MFD SDRAM controller with nested EDAC.
->>>
->>> v10: Revert to using syscon based on feedback.
->>> ---
->>>   .../bindings/arm/altera/socfpga-sdram-edac.txt     |   15 +++++++++++++++
->>>   arch/arm/boot/dts/socfpga.dtsi                     |   11 +++++++++++
->>>   2 files changed, 26 insertions(+)
->>>   create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
->>> new file mode 100644
->>> index 0000000..d0ce01d
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
->>> @@ -0,0 +1,15 @@
->>> +Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
->>> +The EDAC accesses a range of registers in the SDRAM controller.
->>> +
->>> +Required properties:
->>> +- compatible : should contain "altr,sdram-edac";
->>> +- altr,sdr-syscon : phandle of the sdr module
->>> +- interrupts : Should contain the SDRAM ECC IRQ in the
->>> +	appropriate format for the IRQ controller.
->>> +
->>> +Example:
->>> +	sdramedac {
->>> +		compatible = "altr,sdram-edac";
->>> +		altr,sdr-syscon = <&sdr>;
->>> +		interrupts = <0 39 4>;
->>> +	};
->>> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
->>> index 4676f25..45b361e 100644
->>> --- a/arch/arm/boot/dts/socfpga.dtsi
->>> +++ b/arch/arm/boot/dts/socfpga.dtsi
->>> @@ -603,6 +603,17 @@
->>>   			};
->>>   		};
->>>   
->>> +		sdr: sdr@ffc25000 {
->>> +			compatible = "syscon";
->>> +			reg = <0xffc25000 0x1000>;
->>> +		};
->>> +
->>> +		sdramedac {
->>> +			compatible = "altr,sdram-edac";
->>> +			altr,sdr-syscon = <&sdr>;
->>> +			interrupts = <0 39 4>;
->>> +		};
->>> +
->>>   		L2: l2-cache@fffef000 {
->>>   			compatible = "arm,pl310-cache";
->>>   			reg = <0xfffef000 0x1000>;
->> Sorry, but I personally still don't like this approach.
-> This is a normal use of syscon.  Syscon is great for this case
-> where multiple drivers need access to an ip block's register
-> range but there is otherwise no need to write a MFD from scratch
-> to allow that.  I think that's the purpose of syscon in the first
-> place.
+>> Interesting. This sounds like X86 plans to use the Autonomous bits
+>> that got added to the CPPC spec. (v5.1)?
 >
->> If we do it like this however, shouldn't the different regions of the
->> SDR (EDAC, FPGAPORTRST, ...) at least be child nodes of the syscon?
->> That seems to match the syscon binding and describes the actual hardware
->> better IMHO.
-> I like that; it would be clean and clear, but I don't think syscon is
-> written such that that would actually work.  I haven't seen anybody else
-> do it that way.
-Hi Steffen!
-
-Building on Alan's points, I don't see the reference to the child nodes 
-in the syscon.txt binding documentation - can you point out what I'm 
-missing?
-
-I based this patch on other examples of syscon, and there aren't child 
-nodes (exynos5250.dtsi, omap3.dtsi, etc). According to my understanding 
-of the device tree parsing, the parent needs to register child nodes. 
-Since syscon is the parent and doesn't register the child nodes, they 
-won't be automatically probed. The other syscon implementations are at 
-the same level as the syscon and use a phandle to the syscon (for 
-instance the omap3.dtsi).
-
-Thanks for reviewing!
-
-Thor
->> Oh, and "reg = <...>" for the sdram-edac, maybe ?
-> How would that work?  Syscon is already mapping the whole register range
-> for the sdr block.  Are you proposing a device tree binding that this
-> Linux driver would ignore, but some other driver in some other OS might
-> find useful in the future?  I'd rather not put duplicate information
-> in two places, too easy for it to get out of sync.
 >
->> How would I know where the start address of the EDAC is, if I would use
->> this DT on another OS where I don't have the same driver?
-> The start address of the EDAC is an offset into the range mapped by
-> syscon here.  The driver knows what the register offsets are.
+> if and when x86/Intel implement that, we will certainly evaluate it to see
+> how it behaves... but based on todays use of the hw control of the actual
+> p-state... I would expect that evaluation to pass.
 >
-> If we are talking about this device tree being used by some other OS
-> that is not aware of syscon, then that OS won't know what's going on and
-> some modification of the DT will be needed.  I have been advised that
-> u-boot will need a significantly different DT, though I don't know
-> what the issues are there.
 >
->> Regards,
->> Steffen
->>
->> -- 
->> Pengutronix e.K.                           | Steffen Trumtrar            |
->> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
->> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
+> note that on todays multi-core x96 systems, in practice you operate mostly
+> in the turbo range (I am ignoring mostly-idle workloads since there the
+> p-state isn't nearly as relevant anyway); all it takes for one of the cores
+> to request
+> a turbo-range state, and the whole chip operates in turbo mode.. and in
+> turbo mode
+> the hardware already picks the frequency/voltage.
 
+x96 - Wonder what that has! ;)
+
+So, this I think brings back my point of Freq domain awareness (or
+lack of) in todays governors. On X86, it seems as though, the h/w can
+take care of "Freq voting rights" among CPUs and it knows to ignore a
+request after the requestor goes to sleep. That way the other CPUs in
+the domain dont unnecessarily operate under a higher freq/voltage and
+their vote can become current. Also on X86, all CPUs are assumed to
+have the same min, max operating points?
+
+This may not be true on ARM (or others). So if the h/w isnt capable of
+automatically updating freq/voltage for a domain, then the OS needs to
+provide that. And I think we can achieve that through the knowledge of
+system topology and having a centralized CPU policy governor for each
+domain. If each CPU in the domain is capable of making decisions on
+behalf of everyone in that domain, then we can at least get past the
+problem of "stale CPU freq votes". (replace freq with performance in
+CPPC terms).
+
+e.g. to make my point clear, assume there are 3 cpus in the system.
+
+C0, C1 are in one domain and C2 is in another.
+
+If C0 asks for 3Ghz and C1 asks for 1Ghz, the h/w delivers 3Ghz. But
+now C0 goes to sleep. With todays governors, we dont reevaluate and
+so, C1 continues to get 3Ghz even though it doesnt need it. Maybe X86
+can figure out that C0 is asleep and so it should now deliver 1Ghz,
+but ARM does not have that AFAIK. So we need the governor to
+reevaluate between C0 and C1 (preferably through aperf/mperf like
+ratios, rather than the broken p-state assumptions) and send a new
+request to ask for 1Ghz.
+
+>
+> with the current (and more so, past) Linux behavior, even at moderate loads
+> you end up
+> there; the more cores you have the more true that becomes.
+>
+>> I agree that the platform can
+>> make decisions on a much finer timescale. But even in the
+>> non-Autonomous mode, by providing the bounds around a Desired Value,
+>> the OS can get out of the way knowing that the platform would deliver
+>> something in the range it requested. If the OS can provide bounds, it
+>> seems to me that the platform can make more optimum decisions, rather
+>> than trying to guess whats running (or not).
+>
+>
+> I highly question that the OS can provide intelligent bounds.
+>
+
+Agreed. This is a challenging problem. Hence the wider discussion.
+
+> When are you going to request an upper bound that is lower than maximum?
+> (don't say thermals, there are other mechanisms for controlling thermals
+> that work much better than direct P state control). Are you still going to
+> do that
+> even if sometimes lower frequencies end up costing more battery?
+> (race-to-halt and all that)
+
+Maybe the answer is that in the short term, we always request for MAX
+in the (Max, Min, Desired) tuple. Although I suspect some platforms
+will still use P state controls for thermal mitigation.
+
+>
+>
+> I can see cases where you bump the minimum for QoS reasons, but even there I
+> would
+> dare to say that at best the OS will be doing wild-ass guesses.
+
+Right. I see Min being used for QoS too.
+
+Cheers,
+Ashwin
