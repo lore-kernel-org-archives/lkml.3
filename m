@@ -1,97 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428AbaHOOYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:24:36 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:47039 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196AbaHOOYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:24:33 -0400
+	id S1751301AbaHOO2b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:28:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954AbaHOO2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 10:28:30 -0400
+Date: Fri, 15 Aug 2014 16:26:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140815142601.GA13222@redhat.com>
+References: <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814004318.GA2582@lerouge> <53EC176D.6080201@redhat.com> <CAFTL4hwfNyQPMfpca-=Ou7WoPjB6sE_7BVAcQrVDkBjjPVmPRw@mail.gmail.com> <20140814143902.GA29052@redhat.com> <CAFTL4hw2uAmyW61_U-hzmAfTeeAkMUg7OZy8zmbAFfbSLpzcqg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53EE10CB.7040001@linux.intel.com>
-References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
-	<20140814205143.GY6758@twins.programming.kicks-ass.net>
-	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
-	<20140815061917.GX19379@twins.programming.kicks-ass.net>
-	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
-	<53EE0E5B.3050004@linux.intel.com>
-	<53EE10CB.7040001@linux.intel.com>
-Date: Fri, 15 Aug 2014 10:24:32 -0400
-Message-ID: <CAJ5Y-eZiRyGroems7J2oH05ybbbivM-okm3gFz7Mkuu8ceeCDQ@mail.gmail.com>
-Subject: Re: [RFC 0/3] Experimental patchset for CPPC
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, lkml <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        len.brown@intel.com, rjw@rjwysocki.net,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
-        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hw2uAmyW61_U-hzmAfTeeAkMUg7OZy8zmbAFfbSLpzcqg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arjan,
-
-On 15 August 2014 09:53, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 8/15/2014 6:42 AM, Arjan van de Ven wrote:
->> On 8/15/2014 6:08 AM, Ashwin Chaugule wrote:
->>> (b) we come up with ways to provide the bounds around a Desired value
->>> using the information from the platform. (long term)
->>>
->>> I briefly looked at the x86 HWP (Hardware Performance States) in the
->>> s/w manual again. Its essentially an implementation of CPPC. It seems
->>> like X86 has implemented most if not all these registers as MSRs. I'm
->>> really interested in knowing if anyone there is/has been working on
->>> using them and what they found.
->>
->>
->> we've found that so far that there are two reasonable options
->> 1) Let the OS device (old style)
->> 2) Let the hardware decide (new style)
->>
->> 2) is there in practice today in the turbo range (which is increasingly
->> the whole thing)
->> and the hardware can make decisions about power budgetting on a timescale
->> the OS
->> can never even dream of, so once you give control the the hardware (with
->> CPPC or native)
->> it's normally better to just get out of the way as OS.
->>
+On 08/15, Frederic Weisbecker wrote:
 >
-
-Interesting. This sounds like X86 plans to use the Autonomous bits
-that got added to the CPPC spec. (v5.1)? I agree that the platform can
-make decisions on a much finer timescale. But even in the
-non-Autonomous mode, by providing the bounds around a Desired Value,
-the OS can get out of the way knowing that the platform would deliver
-something in the range it requested. If the OS can provide bounds, it
-seems to me that the platform can make more optimum decisions, rather
-than trying to guess whats running (or not).
-
-> I should clarify this; with increasing number of cores, you end up with much
-> more dynamic maximums
-> (e.g. turbo in Intel speak) and the hardware already controls this (yes the
-> OS gives hints, but
-> that's mostly a lot of OS work for little value)
+> 2014-08-14 16:39 GMT+02:00 Oleg Nesterov <oleg@redhat.com>:
+> > On 08/14, Frederic Weisbecker wrote:
+> >>
+> >> I mean the read side doesn't use a lock with seqlocks. It's only made
+> >> of barriers and sequence numbers to ensure the reader doesn't read
+> >> some half-complete update. But other than that it can as well see the
+> >> update n - 1 since barriers don't enforce latest results.
+> >
+> > Yes, sure, read_seqcount_begin/read_seqcount_retry "right after"
+> > write_seqcount_begin-update-write_seqcount_begin can miss "update" part
+> > along with ->sequence modifications.
+> >
+> > But I still can't understand how this can lead to non-monotonic results,
+> > could you spell?
 >
+> Well lets say clock = T.
+> CPU 0 updates at T + 1.
+> Then I call clock_gettime() from CPU 1 and CPU 2. CPU 1 reads T + 1
+> while CPU 1 still reads T.
+> If I do yet another round of clock_gettime() on CPU 1 and CPU 2, it's
+> possible that CPU 2 still sees T. With the spinlocked version that
+> thing can't happen, the second round would read at least T + 1 for
+> both CPUs.
 
-Going completely Autonomous (i.e. letting the platform decide whats
-best w/o OS hints) may be possible only for some platforms. There will
-be several ones which dont have that kind of logic built into the
-hardware. In such cases getting OS hints would be the only option.
+But this is fine? And CPU 2 doesn't see a non-monotonic result?
 
->
-> in a single or even dual core situation you may have a different ballgame
-> with a small turbo range, but even in phones
-> octocores seem to be the norm nowadays ;-)
-> (just finished reading the Samsung announcement)
+OK, this could be wrong if, say,
 
-Yea, its getting crazy out there.
+	void print_clock(void)
+	{
+		lock(SOME_LOCK);
+		printk(..., clock_gettime());
+		unlock(SOME_LOCK);
+	}
+	
+printed the non-monotonic numbers if print_clock() is called on CPU_1 and
+then on CPU_2. But in this case CPU_2 can't miss the changes on CPU_0 if
+they were already visible to CPU_1 under the same lock. IOW,
 
-Cheers,
-Ashwin
+	int T = 0;	/* can be incremented at any time */
+
+	void check_monotony(void)
+	{
+		static int t = 0;
+
+		lock(SOME_LOCK);
+		BUG(t > T);
+		T = t;
+		unlock(SOME_LOCK);
+	}
+
+must work corrrectly (ignoring overflow) even if T is changed without
+SOME_LOCK.
+
+Otherwise, without some sort of synchronization the different results on
+CPU_1/2 should be fine.
+
+Or I am still missing your point?
+
+Oleg.
+
