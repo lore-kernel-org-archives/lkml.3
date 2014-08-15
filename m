@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaHOTY3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:24:29 -0400
-Received: from ozlabs.org ([103.22.144.67]:44440 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaHOTY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:24:28 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PULL] Module fixes
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sat, 16 Aug 2014 04:51:18 +0930
-Message-ID: <87bnrl8spd.fsf@rustcorp.com.au>
+	id S1751938AbaHOTZK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:25:10 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46514 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaHOTZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:25:06 -0400
+Date: Fri, 15 Aug 2014 12:25:05 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [ANNOUNCE] scsi patch queue tree updated
+Message-ID: <20140815192505.GA25198@infradead.org>
+References: <20140708134003.GA7790@infradead.org>
+ <20140801122042.GA10771@infradead.org>
+ <1406925121.2654.21.camel@jarvis>
+ <20140804111147.GA29148@infradead.org>
+ <1407162004.4243.1.camel@jarvis.lan>
+ <20140814125451.GA832@infradead.org>
+ <1408038428.2066.42.camel@jarvis.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408038428.2066.42.camel@jarvis.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit c9d26423e56ce1ab4d786f92aebecf859d419293:
+On Thu, Aug 14, 2014 at 10:47:08AM -0700, James Bottomley wrote:
+> So this is a bit late to get through linux-next and into a pull request.
+> I was planning on sending the final pull tomorrow (in case Linus planned
+> a surprise early release).  Can we redo some of these as bug fixes and
+> send them in for -rc1?
 
-  Merge tag 'pm+acpi-3.17-rc1-2' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm (2014-08-14 18:13:46 -0600)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
-
-for you to fetch changes up to ff7e0055bb5ddbbb320cdd8dfd3e18672bddd2ad:
-
-  module: Clean up ro/nx after early module load failures (2014-08-16 04:47:00 +0930)
-
-----------------------------------------------------------------
-Nasty potential bug if someone uses a known module param with an invalid
-value (we don't fail unknown module params any more, just warn).
-
-Cheers,
-Rusty.
-
-----------------------------------------------------------------
-Andy Lutomirski (1):
-      module: Clean up ro/nx after early module load failures
-
- kernel/module.c | 5 +++++
- 1 file changed, 5 insertions(+)
+core-for-3.17 is entirely bug fixes, the drivers side is all except
+for 4 tiny patches, and even Linus isn't that anal I think.
 
