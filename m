@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaHOKnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 06:43:55 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38980 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750954AbaHOKny (ORCPT
+	id S1753533AbaHOKpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 06:45:14 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50019 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaHOKpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 06:43:54 -0400
-Date: Fri, 15 Aug 2014 11:43:34 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: smp: Update the topology masks before calling
- CPU_STARTING notifiers
-Message-ID: <20140815104333.GH27466@arm.com>
-References: <1407892269-28650-1-git-send-email-rvaswani@codeaurora.org>
+	Fri, 15 Aug 2014 06:45:11 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53EDE4B3.6090903@roeck-us.net>
+Date: Fri, 15 Aug 2014 03:45:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407892269-28650-1-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        clemens@ladisch.de, jdelvare@suse.de, rdunlap@infradead.org,
+        bp@suse.de
+CC: lm-sensors@lm-sensors.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] hwmon, k10temp: Add support for F15h M60h
+References: <1408058127-19374-1-git-send-email-aravind.gopalakrishnan@amd.com>
+In-Reply-To: <1408058127-19374-1-git-send-email-aravind.gopalakrishnan@amd.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 02:11:09AM +0100, Rohit Vaswani wrote:
-> Currently, the CPU_STARTING notifiers would observe an incorrect sibling
-> mask since the notifier chain is called before the topology masks are updated
-> for the new cpu.
-> Update the topology masks before calling the notifier chain to fix this
-> problem.
-> 
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+On 08/14/2014 04:15 PM, Aravind Gopalakrishnan wrote:
+> This patch adds temperature monitoring support for F15h M60h processor.
+>   - Add new pci device id for the relevant processor
+>   - The functionality of REG_REPORTED_TEMPERATURE is moved to
+>     D0F0xBC_xD820_0CA4 [Reported Temperature Control]
+>     - So, use this to get CUR_TEMP value
+>     - Since we need an indirect register access, protect this with
+>       a mutex lock
+>   - Add Kconfig, Doc entries to indicate support for this processor.
+>
+> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
 > ---
->  arch/arm/kernel/smp.c   | 4 ++--
->  arch/arm64/kernel/smp.c | 4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index 7c4fada..0e2237c 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -363,12 +363,12 @@ asmlinkage void secondary_start_kernel(void)
->  	if (smp_ops.smp_secondary_init)
->  		smp_ops.smp_secondary_init(cpu);
->  
-> +	smp_store_cpu_info(cpu);
-> +
->  	notify_cpu_starting(cpu);
->  
->  	calibrate_delay();
->  
-> -	smp_store_cpu_info(cpu);
-> -
+> Changes in V3:
+>   - Move helper function that protects indirect register access locally
+>     until a time when others outside k10temp may need it
+>
 
-Hmm, smp_store_cpu_info takes a copy of loops_per_jiffy. Are you sure it's
-safe to move the call before calibrate_delay?
+Applied, with a small change: I made the mutex and the new function static.
+That can be changed if/when needed, and declaring it static now ensures that
+we'll notice it. Likely the "next" user won't use the function anyway, but
+that is a problem to sort out after it happens.
 
-Will
+Thanks,
+Guenter
+
