@@ -1,108 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaHOVxL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 17:53:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54203 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763AbaHOVxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 17:53:07 -0400
-Date: Fri, 15 Aug 2014 14:54:00 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 08/13] f2fs: do checkpoint at f2fs_put_super
-Message-ID: <20140815215027.GA53769@jaegeuk-mac02.mot.com>
-References: <1407872967-26423-1-git-send-email-jaegeuk@kernel.org>
- <1407872967-26423-8-git-send-email-jaegeuk@kernel.org>
- <000401cfb76b$a3957b20$eac07160$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000401cfb76b$a3957b20$eac07160$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751493AbaHOVxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 17:53:13 -0400
+Received: from ns.horizon.com ([71.41.210.147]:39341 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750763AbaHOVxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 17:53:12 -0400
+Date: 15 Aug 2014 17:53:10 -0400
+Message-ID: <20140815215310.10847.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: peterz@infradead.org, zhaoxiu.zeng@gmail.com
+Subject: Re: [PATCH 1/1] GCD: add binary GCD algorithm
+Cc: akpm@linux-foundation.org, dhowells@redhat.com, jwboyer@redhat.com,
+        linux-kernel@vger.kernel.org, linux@horizon.com, mingo@kernel.org,
+        takahiro.akashi@linaro.org
+In-Reply-To: <53EE3826.2040000@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+Here's a variant using the even-odd speedup:
+(Feel free to add my S-o-b if you use it.)
 
-On Thu, Aug 14, 2014 at 10:57:10AM +0800, Chao Yu wrote:
-> Hi Jaegeuk,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Wednesday, August 13, 2014 3:49 AM
-> > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Cc: Jaegeuk Kim
-> > Subject: [f2fs-dev] [PATCH 08/13] f2fs: do checkpoint at f2fs_put_super
-> > 
-> > The generic_shutdown_super calls sync_filesystem, evict_inode, and then
-> > f2fs_put_super. In f2fs_evict_inode, we remain some dirty inode information
-> > so we should release them at f2fs_put_super.
-> > 
-> > But normally, it's more reasonable to set its superblock as dirty when
-> > evict_inode is called.
-> 
-> After applying this patch, when we mount and then umount f2fs image without
-> modification, we will write checkpoint in f2fs_put_super even though we have
-> no more dirty data to sync, it's not needed.
-> 
-> "some dirty inode information" you mentioned is inode information in ->ino_root of
-> sbi, right?
+/*
+ * This implements Brent & Kung's "even-odd" variant of the binary GCD
+ * algorithm.  (Often attributed to Stein, but as Knith has noted, appears
+ * a first-century Chinese math text.)
+ * 
+ * First, find the common powers of 2 from a and b.  Here, they are not
+ * divided by that common power, but rather we form a bitmap r which
+ * covers the least-significant bit set in either.
+ * Let s = (r+1)/2 be the common factor of 2.
+ *
+ * Then, shift down both a and b until both are odd multiples of s.
+ * Assuming a > b, then gcd(a, b) = gcd(a-b, b).  But a-b is an even
+ * multiple of s and we can divide it by two at least once.
+ *
+ * Further, either a-b or a+b is a multiple of 4s, so by choosing between
+ * the two we can divde by 4.  This is done by (in the case that a > b):
+ * 1. Compute (a - b) / 2
+ * 2. If this is an odd multiple of s (AND with r is non-zero), then
+ *    add b to make an even multiiple of s.  (This cannot overflow,
+ *    as it equals (a + b) / 2, which must be less than max(a, b).)
+ * 3. Divide by 2 one or more more times until we are left with an odd
+ *    multiple of r.
+ * 4. The result replaces a, and we go back to finding the larger.
+ *
+ * While the algorothm is equally correct without step2 and the first
+ * divide by 2, the benefit of adding it it can be evaluated with a CMOV
+ * rather than a full conditional branch.
+ */
+unsigned long bgcd2(unsigned long a, unsigned long b)
+{
+	unsigned long r = a | b;	/* To find common powers of 2 */
 
-Actually this patch is intended to call release_dirty_inode() in
-write_checkpoint, since evict_inode remains information by calling
-add_dirty_inode().
+	if (!a || !b)
+		return r;
 
-Oh, it'd better set sb dirty only when add_dirty_inode is called.
-Let me send v2 for this. :)
+	r ^= r-1;	/* Only the msbit of r (r/2 + 1) really matters */
 
-Thanks,
+	if (!(a & r))
+		goto a_even;
+	if (!(b & r))
+		goto b_even;
 
-> 
-> Regards,
-> Yu
-> 
-> > 
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > ---
-> >  fs/f2fs/inode.c | 1 +
-> >  fs/f2fs/super.c | 2 +-
-> >  2 files changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-> > index 2c39999..eeaf5aa 100644
-> > --- a/fs/f2fs/inode.c
-> > +++ b/fs/f2fs/inode.c
-> > @@ -303,6 +303,7 @@ no_delete:
-> >  		add_dirty_inode(sbi, inode->i_ino, APPEND_INO);
-> >  	if (is_inode_flag_set(F2FS_I(inode), FI_UPDATE_WRITE))
-> >  		add_dirty_inode(sbi, inode->i_ino, UPDATE_INO);
-> > +	F2FS_SET_SB_DIRT(sbi);
-> >  out_clear:
-> >  	clear_inode(inode);
-> >  }
-> > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> > index 633315a..60e3554 100644
-> > --- a/fs/f2fs/super.c
-> > +++ b/fs/f2fs/super.c
-> > @@ -432,7 +432,7 @@ static void f2fs_put_super(struct super_block *sb)
-> >  	stop_gc_thread(sbi);
-> > 
-> >  	/* We don't need to do checkpoint when it's clean */
-> > -	if (sbi->s_dirty && get_pages(sbi, F2FS_DIRTY_NODES))
-> > +	if (sbi->s_dirty)
-> >  		write_checkpoint(sbi, true);
-> > 
-> >  	iput(sbi->node_inode);
-> > --
-> > 1.8.5.2 (Apple Git-48)
-> > 
-> > 
-> > ------------------------------------------------------------------------------
-> > _______________________________________________
-> > Linux-f2fs-devel mailing list
-> > Linux-f2fs-devel@lists.sourceforge.net
-> > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+	while (a != b) {
+		/* (a & r) == (b & r) == (r >> 1) != 0 */
+		if (a > b) {
+			a = (a - b) >> 1;
+			if (a & r)
+				a += b;
+a_even:                 do
+				a >>= 1;
+			while (!(a & r));
+		} else {
+			b = (b - a) >> 1;
+			if (b & r)
+				b += a;
+b_even:                 do
+				b >>= 1;
+			while (!(b & r));
+		}
+	}
+	return b;
+}
