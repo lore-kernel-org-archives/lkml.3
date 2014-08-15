@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaHOTbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:31:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61230 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaHOTbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:31:02 -0400
-Date: Fri, 15 Aug 2014 21:30:43 +0200
-From: Jakub Jelinek <jakub@redhat.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Richard Henderson <rth@twiddle.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1751700AbaHOTcJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:32:09 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55873 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751138AbaHOTcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:32:07 -0400
+Message-ID: <1408131124.11617.25.camel@HansenPartnership.com>
+Subject: Re: [ANNOUNCE] scsi patch queue tree updated
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-scsi <linux-scsi@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] gcc version 5: add basic definition header for latest
- gcc version
-Message-ID: <20140815193043.GU1784@tucnak.redhat.com>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <1408130581-4806-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408130581-4806-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Fri, 15 Aug 2014 12:32:04 -0700
+In-Reply-To: <20140815192505.GA25198@infradead.org>
+References: <20140708134003.GA7790@infradead.org>
+	 <20140801122042.GA10771@infradead.org> <1406925121.2654.21.camel@jarvis>
+	 <20140804111147.GA29148@infradead.org> <1407162004.4243.1.camel@jarvis.lan>
+	 <20140814125451.GA832@infradead.org> <1408038428.2066.42.camel@jarvis.lan>
+	 <20140815192505.GA25198@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 03:23:01PM -0400, Paul Gortmaker wrote:
-> --- /dev/null
-> +++ b/include/linux/compiler-gcc5.h
-> @@ -0,0 +1,52 @@
-> +#ifndef __LINUX_COMPILER_H
-> +#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
-> +#endif
-> +
-> +#define __used			__attribute__((__used__))
-> +#define __must_check		__attribute__((warn_unused_result))
-> +#define __compiler_offsetof(a, b) __builtin_offsetof(a, b)
-> +
-> +/* Mark functions as cold. gcc will assume any path leading to a call
-> +   to them will be unlikely.  This means a lot of manual unlikely()s
-> +   are unnecessary now for any paths leading to the usual suspects
-> +   like BUG(), printk(), panic() etc. [but let's keep them for now for
-> +   older compilers]
-> +
-> +   Early snapshots of gcc 4.3 don't support this and we can't detect this
-> +   in the preprocessor, but we can live with this because they're unreleased.
-> +   Maketime probing would be overkill here.
+On Fri, 2014-08-15 at 12:25 -0700, Christoph Hellwig wrote:
+> On Thu, Aug 14, 2014 at 10:47:08AM -0700, James Bottomley wrote:
+> > So this is a bit late to get through linux-next and into a pull request.
+> > I was planning on sending the final pull tomorrow (in case Linus planned
+> > a surprise early release).  Can we redo some of these as bug fixes and
+> > send them in for -rc1?
+> 
+> core-for-3.17 is entirely bug fixes, the drivers side is all except
+> for 4 tiny patches, and even Linus isn't that anal I think.
 
-The above 4 lines are probably unnecessary.
+You rebased the tree before doing it ... that's the one thing that
+excites his process gene.  I can't send a rebased tree in on the last
+day of merging.
 
-More importantly, is it a good idea to store the gcc major number in the
-header?  gcc 5.x will be released next year, but the year after that we'll
-have gcc 6.x, so you'd need to copy this header each year.
+I'll send in the unrebased tree which has been sitting in linux-next for
+the past week.  The two additional changes in core-for-3.17 can be
+picked out and sent as eligible bug fixes for -rc1.  The only addition
+in drivers-for-3.17 is eata: remove driver_lock ... I'm in two minds
+about whether we treat that as a bug fix or not.
 
-	Jakub
+James
+
+
