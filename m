@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaHOT3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:29:41 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:63876 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaHOT3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:29:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrW4Yscrte9=_ks_1BhSE9FTe-KZTv_a=g5wrwKhKkiuow@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-18-git-send-email-ast@plumgrid.com>
-	<CALCETrV7vO6r--G2ns+A6qmDQYSzNXeemT=x41EF+XWmayM95g@mail.gmail.com>
-	<CAMEtUuzCyxdOo+yYYZfDPRAu2yeQOw8TbUABwU-HD0+78PnV7A@mail.gmail.com>
-	<CALCETrUQN=vt3EUO=jNFC+sDHAiJdNyZWg4rwiEF7WKjPLi8Bg@mail.gmail.com>
-	<CAMEtUuyDJeEJjzsZemFLT_y_QJ+vnJjze=KOxV+7g58Tsf4cTw@mail.gmail.com>
-	<CALCETrW4Yscrte9=_ks_1BhSE9FTe-KZTv_a=g5wrwKhKkiuow@mail.gmail.com>
-Date: Fri, 15 Aug 2014 12:29:38 -0700
-Message-ID: <CAMEtUuzDxzPHsch24U_NjX23r6BvmK9b723HHJeNwQOJeA8r1A@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 17/26] tracing: allow eBPF programs to be
- attached to events
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1751663AbaHOTbF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:31:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61230 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171AbaHOTbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 15:31:02 -0400
+Date: Fri, 15 Aug 2014 21:30:43 +0200
+From: Jakub Jelinek <jakub@redhat.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Richard Henderson <rth@twiddle.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] gcc version 5: add basic definition header for latest
+ gcc version
+Message-ID: <20140815193043.GU1784@tucnak.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <1408130581-4806-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408130581-4806-1-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 12:20 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>
->>> I don't think that fixing this should be a prerequisite for merging,
->>> since the risk is so small.  Nonetheless, it would be nice.  (This
->>> family of attacks has lead to several root vulnerabilities in the
->>> past.)
->>
->> Ok. I think keeping a track of pid between open and write is kinda
->> ugly.
->
-> Agreed.
->
-> TBH, I would just add a comment to the open implementation saying
-> that, if unprivileged or less privileged open is allowed, then this
-> needs to be fixed.
+On Fri, Aug 15, 2014 at 03:23:01PM -0400, Paul Gortmaker wrote:
+> --- /dev/null
+> +++ b/include/linux/compiler-gcc5.h
+> @@ -0,0 +1,52 @@
+> +#ifndef __LINUX_COMPILER_H
+> +#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
+> +#endif
+> +
+> +#define __used			__attribute__((__used__))
+> +#define __must_check		__attribute__((warn_unused_result))
+> +#define __compiler_offsetof(a, b) __builtin_offsetof(a, b)
+> +
+> +/* Mark functions as cold. gcc will assume any path leading to a call
+> +   to them will be unlikely.  This means a lot of manual unlikely()s
+> +   are unnecessary now for any paths leading to the usual suspects
+> +   like BUG(), printk(), panic() etc. [but let's keep them for now for
+> +   older compilers]
+> +
+> +   Early snapshots of gcc 4.3 don't support this and we can't detect this
+> +   in the preprocessor, but we can live with this because they're unreleased.
+> +   Maketime probing would be overkill here.
 
-ok. will do.
+The above 4 lines are probably unnecessary.
 
->> Should we add some new CAP flag and check it for all file
->> ops? Another option is to conditionally make open() of tracing
->> files as cloexec...
->
-> That won't help.  The same attack can be done with SCM_RIGHTS, and
-> cloexec can be cleared.
+More importantly, is it a good idea to store the gcc major number in the
+header?  gcc 5.x will be released next year, but the year after that we'll
+have gcc 6.x, so you'd need to copy this header each year.
 
-ouch, can we then make ebpf FDs and may be debugfs FDs
-not passable at all? Otherwise it feels that generality and
-flexibility of FDs is becoming a burden.
+	Jakub
