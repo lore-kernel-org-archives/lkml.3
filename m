@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437AbaHOKxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 06:53:13 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:36479 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937AbaHOKxL (ORCPT
+	id S1752089AbaHOKza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 06:55:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39072 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751052AbaHOKz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 06:53:11 -0400
+	Fri, 15 Aug 2014 06:55:29 -0400
+Date: Fri, 15 Aug 2014 11:55:38 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Steve Capper <steve.capper@linaro.org>
+Subject: Re: [PATCH v14 6/8] arm: add pmd_mkclean for THP
+Message-ID: <20140815105538.GK27466@arm.com>
+References: <1407981212-17818-1-git-send-email-minchan@kernel.org>
+ <1407981212-17818-7-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20140815104507.E6F84C40A89@trevor.secretlab.ca>
-References: <1407891444-7311-1-git-send-email-stepanm@codeaurora.org>
- <53EAC37C.4020203@codeaurora.org> <20140815104507.E6F84C40A89@trevor.secretlab.ca>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Fri, 15 Aug 2014 11:52:50 +0100
-X-Google-Sender-Auth: -xLPjQdvPkYJoR7sAhBLhkAxS7E
-Message-ID: <CACxGe6tr_hX+XBD=C+y55OixrweVLZvNNFQHxSDHwuHbSYW-XQ@mail.gmail.com>
-Subject: Re: [PATCH] of: Deep-copy names of platform devices
-To: Stephen Boyd <sboyd@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407981212-17818-7-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 11:45 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Tue, 12 Aug 2014 18:46:36 -0700, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> On 08/12/14 17:57, Stepan Moskovchenko wrote:
->> > diff --git a/drivers/of/device.c b/drivers/of/device.c
->> > index f685e55..3e116f6 100644
->> > --- a/drivers/of/device.c
->> > +++ b/drivers/of/device.c
->> > @@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
->> >
->> >     /* name and id have to be set so that the platform bus doesn't get
->> >      * confused on matching */
->> > -   ofdev->name = dev_name(&ofdev->dev);
->> > +   ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
->> >     ofdev->id = -1;
->> >
->> >     /* device_add will assume that this device is on the same node as
->> > @@ -76,6 +76,7 @@ EXPORT_SYMBOL(of_device_register);
->> >  void of_device_unregister(struct platform_device *ofdev)
->> >  {
->> >     device_unregister(&ofdev->dev);
->> > +   kfree(ofdev->name);
->>
->> This probably ought to be swapped because we don't know if ofdev isn't
->> pointing to freed memory after device_unregister().
->
-> Actually, the only safe place to free the memory is inside the
-> platform_device release function. platform_device_release() in
-> drivers/base/platform.c. Unfortunately there isn't a good way from that
-> function to figure out if the name has been allocated the 'OF' way.
->
-> It is not safe to free it here because there could still be references
-> to the platform_device after device_unregister exits.
+On Thu, Aug 14, 2014 at 02:53:30AM +0100, Minchan Kim wrote:
+> MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
+> overwrite of the contents since MADV_FREE syscall is called for
+> THP page.
+> 
+> This patch adds pmd_mkclean for THP page MADV_FREE support.
 
-We could fix the problem by making platform_device_alloc() also do a
-kstrdup() when assigning the name. Then the release function can
-unconditionally free the name field. Care to try that out?
-
-g.
+Acked-by: Will Deacon <will.deacon@arm.com>
