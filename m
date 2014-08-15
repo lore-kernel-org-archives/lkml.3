@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641AbaHOCs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 22:48:29 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:61706 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaHOCs2 (ORCPT
+	id S1754788AbaHOCwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 22:52:39 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:56138 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaHOCwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 22:48:28 -0400
+	Thu, 14 Aug 2014 22:52:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140717174940.GR10393@wotan.suse.de>
-References: <1405546678-7846-1-git-send-email-mcgrof@do-not-panic.com>
- <20140717080301.GA14263@infradead.org> <20140717174940.GR10393@wotan.suse.de>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 14 Aug 2014 22:48:05 -0400
-X-Google-Sender-Auth: Btj8DuXwfm9PSJAKQQ74cAg8GsE
-Message-ID: <CAB=NE6WaQqp52MfZfjcShAUchj-1B+ZMsF1r6HabSiUxFLb7jQ@mail.gmail.com>
-Subject: Re: [RFC v2 0/2] vfs / btrfs: add support for ustat()
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Chris Mason <clm@fb.com>,
-        jbacik@fb.com, linux-fsdevel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeff Mahoney <jeffm@suse.com>, fdmanana@suse.com
+In-Reply-To: <20140814143902.GA29052@redhat.com>
+References: <53EA94DD.5040900@redhat.com>
+	<20140813172230.GA6296@redhat.com>
+	<20140813133526.1eb5526f@cuia.bos.redhat.com>
+	<20140813180807.GA8098@redhat.com>
+	<53EBADB1.2020403@redhat.com>
+	<20140813184511.GA9663@redhat.com>
+	<20140813170324.544aaf2d@cuia.bos.redhat.com>
+	<20140814004318.GA2582@lerouge>
+	<53EC176D.6080201@redhat.com>
+	<CAFTL4hwfNyQPMfpca-=Ou7WoPjB6sE_7BVAcQrVDkBjjPVmPRw@mail.gmail.com>
+	<20140814143902.GA29052@redhat.com>
+Date: Fri, 15 Aug 2014 04:52:36 +0200
+Message-ID: <CAFTL4hw2uAmyW61_U-hzmAfTeeAkMUg7OZy8zmbAFfbSLpzcqg@mail.gmail.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with seqlock
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 1:49 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> On Thu, Jul 17, 2014 at 01:03:01AM -0700, Christoph Hellwig wrote:
->> On Wed, Jul 16, 2014 at 02:37:56PM -0700, Luis R. Rodriguez wrote:
->> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
->> >
->> > This makes the implementation simpler by stuffing the struct on
->> > the driver and just letting the driver iinsert it and remove it
->> > onto the sb list. This avoids the kzalloc() completely.
+2014-08-14 16:39 GMT+02:00 Oleg Nesterov <oleg@redhat.com>:
+> On 08/14, Frederic Weisbecker wrote:
 >>
->> Again, NAK.  Make btrfs report the proper anon dev_t in stat and
->> everything will just work.
+>> 2014-08-14 3:57 GMT+02:00 Rik van Riel <riel@redhat.com>:
+>> > -----BEGIN PGP SIGNED MESSAGE-----
+>> > Hash: SHA1
+>> >
+>> > On 08/13/2014 08:43 PM, Frederic Weisbecker wrote:
+>> >> On Wed, Aug 13, 2014 at 05:03:24PM -0400, Rik van Riel wrote:
+>> >>
+>> >> I'm worried about such lockless solution based on RCU or read
+>> >> seqcount because we lose the guarantee that an update is
+>> >> immediately visible by all subsequent readers.
+>> >>
+>> >> Say CPU 0 updates the thread time and both CPU 1 and CPU 2 right
+>> >> after that call clock_gettime(), with the spinlock we were
+>> >> guaranteed to see the new update. Now with a pure seqlock read
+>> >> approach, we guarantee a read sequence coherency but we don't
+>> >> guarantee the freshest update result.
+>> >>
+>> >> So that looks like a source of non monotonic results.
+>> >
+>> > Which update are you worried about, specifically?
+>> >
+>> > The seq_write_lock to update the usage stat in p->signal will lock out
+>> > the seqlock read side used to check those results.
+>> >
+>> > Is there another kind of thing read by cpu_clock_sample_group that you
+>> > believe is not excluded by the seq_lock?
+>>
+>> I mean the read side doesn't use a lock with seqlocks. It's only made
+>> of barriers and sequence numbers to ensure the reader doesn't read
+>> some half-complete update. But other than that it can as well see the
+>> update n - 1 since barriers don't enforce latest results.
 >
-> Let's consider this userspace case:
+> Yes, sure, read_seqcount_begin/read_seqcount_retry "right after"
+> write_seqcount_begin-update-write_seqcount_begin can miss "update" part
+> along with ->sequence modifications.
 >
->         struct stat buf;
->         struct ustat ubuf;
->
->         /* Find a valid device number */
->         if (stat("/", &buf)) {
->                 fprintf(stderr, "Stat failed: %s\n", strerror(errno));
->                 return 1;
->         }
->
->         /* Call ustat on it */
->         if (ustat(buf.st_dev, &ubuf)) {
->                 fprintf(stderr, "Ustat failed: %s\n", strerror(errno));
->                 return 1;
->         }
->
-> In the btrfs case it has an inode op for getattr, that is used and we set
-> the dev to anonymous dev_t. Later ustat will use user_get_super() which
-> will only be able to work with a userblock if the super block's only
-> dev_t is assigned to it. Since we have many anonymous to dev_t mapping
-> to super block though we can't complete the search for btfs and ustat()
-> fails with -EINVAL. The series expands the number of dev_t's that a super
-> block can have and allows this search to complete.
+> But I still can't understand how this can lead to non-monotonic results,
+> could you spell?
 
-Any further advice? I'll submit a v3 for RFC with some small change
-for a fix for stress testing identified by Filipe Manana.
-
-  Luis
+Well lets say clock = T.
+CPU 0 updates at T + 1.
+Then I call clock_gettime() from CPU 1 and CPU 2. CPU 1 reads T + 1
+while CPU 1 still reads T.
+If I do yet another round of clock_gettime() on CPU 1 and CPU 2, it's
+possible that CPU 2 still sees T. With the spinlocked version that
+thing can't happen, the second round would read at least T + 1 for
+both CPUs.
