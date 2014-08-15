@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaHOSLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 14:11:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2180 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615AbaHOSLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 14:11:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,872,1400050800"; 
-   d="scan'208";a="559134443"
-Message-ID: <53EE4D11.5020001@intel.com>
-Date: Fri, 15 Aug 2014 11:10:25 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Frantisek Hrbata <fhrbata@redhat.com>, linux-kernel@vger.kernel.org
-CC: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
-        hechjie@cn.ibm.com, akpm@linux-foundation.org, dvlasenk@redhat.com,
-        prarit@redhat.com, lwoodman@redhat.com, hannsj_uhl@de.ibm.com
-Subject: Re: [PATCH V2 2/2] x86: add phys addr validity check for /dev/mem
- mmap
-References: <1408025927-16826-1-git-send-email-fhrbata@redhat.com> <1408103043-31015-1-git-send-email-fhrbata@redhat.com> <1408103043-31015-3-git-send-email-fhrbata@redhat.com>
-In-Reply-To: <1408103043-31015-3-git-send-email-fhrbata@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751824AbaHOSLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 14:11:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57891 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaHOSL1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 14:11:27 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
+        Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        devicetree@vger.kernel.org
+Subject: [PATCH 13/15] arm: dts: am33xx: add DMA properties for UART
+Date: Fri, 15 Aug 2014 19:42:41 +0200
+Message-Id: <1408124563-31541-14-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2014 04:44 AM, Frantisek Hrbata wrote:
-> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
-> +{
-> +	return addr + count <= __pa(high_memory);
-> +}
-> +
-> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
-> +{
-> +	return arch_pfn_possible(pfn + (count >> PAGE_SHIFT));
-> +}
+Cc: devicetree@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ arch/arm/boot/dts/am33xx.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-It definitely fixes the issue as you described it.
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 4a4e02d..cdccbd6 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -200,6 +200,8 @@
+ 			reg = <0x44e09000 0x2000>;
+ 			interrupts = <72>;
+ 			status = "disabled";
++			dmas = <&edma 26>, <&edma 27>;
++			dma-names = "tx", "rx";
+ 		};
+ 
+ 		uart1: serial@48022000 {
+@@ -209,6 +211,8 @@
+ 			reg = <0x48022000 0x2000>;
+ 			interrupts = <73>;
+ 			status = "disabled";
++			dmas = <&edma 28>, <&edma 29>;
++			dma-names = "tx", "rx";
+ 		};
+ 
+ 		uart2: serial@48024000 {
+@@ -218,6 +222,8 @@
+ 			reg = <0x48024000 0x2000>;
+ 			interrupts = <74>;
+ 			status = "disabled";
++			dmas = <&edma 30>, <&edma 31>;
++			dma-names = "tx", "rx";
+ 		};
+ 
+ 		uart3: serial@481a6000 {
+-- 
+2.0.1
 
-It's a bit unfortunate that the highmem check isn't tied in to the
-_existing_ /dev/mem limitations in some way, but it's not a deal breaker
-for me.
-
-The only other thing is to make sure this doesn't add some limitation to
-64-bit where we can't map things above the end of memory (end of memory
-== high_memory on 64-bit).  As long as you've done this, I can't see a
-downside.
