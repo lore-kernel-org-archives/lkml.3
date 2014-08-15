@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429AbaHOF4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 01:56:12 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:49187 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaHOF4J (ORCPT
+	id S1752081AbaHOGFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 02:05:49 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:44377 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaHOGFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 01:56:09 -0400
+	Fri, 15 Aug 2014 02:05:48 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7F65DCK011293, This message is accepted by code: ctloc85258
+From: <rogerable@realtek.com>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <rogerable@realtek.com>, Dan Carpenter <dan.carpenter@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <driverdev-devel@linuxdriverproject.org>, <wei_wang@realsil.com.cn>,
+        <micky_ching@realsil.com.cn>
+Subject: [PATCH 0/2] mmc: rtsx: fix incorrect last byte in R2 response
+Date: Fri, 15 Aug 2014 14:05:59 +0800
+Message-ID: <1408082761-15333-1-git-send-email-rogerable@realtek.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <CAE40pddG1e3Q8OZ8t5QQimGhHzS5FbqK3YuvKnFywEEoSUbGzQ@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-24-git-send-email-ast@plumgrid.com>
-	<CAE40pddG1e3Q8OZ8t5QQimGhHzS5FbqK3YuvKnFywEEoSUbGzQ@mail.gmail.com>
-Date: Thu, 14 Aug 2014 22:56:07 -0700
-Message-ID: <CAMEtUux1hK-fU6FHTU3==TW2c50Q-UHEpb=t_d3dG1A7pJM2bA@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 23/26] samples: bpf: elf file loader
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Brendan Gregg <brendan.d.gregg@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.81.121]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 12:29 PM, Brendan Gregg
-<brendan.d.gregg@gmail.com> wrote:
-> On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> [...]
->> +static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
->> +{
->> +       int fd, event_fd, err;
->> +       char fmt[32];
->> +       char path[256] = DEBUGFS;
->> +
->> +       fd = bpf_prog_load(BPF_PROG_TYPE_TRACING_FILTER, prog, size, license);
->> +
->> +       if (fd < 0) {
->> +               printf("err %d errno %d\n", fd, errno);
->> +               return fd;
->> +       }
->
-> Minor suggestion: since this is sample code, I'd always print the bpf
-> log after this this printf() error message:
->
-> printf("%s", bpf_log_buf);
->
-> Which has helped me debug my eBPF programs, as will be the case for
-> anyone hacking on the examples.
+From: Roger Tseng <rogerable@realtek.com>
 
-Good point. Will do in V5.
+(The original patch for PCI and USB was splitted here to make it easier for
+stable tree.)
 
-> Or have a function for logdie(), if
-> the log buffer may be populated with useful messages from other error
-> paths as well.
+Current code erroneously fill the last byte of R2 response with an undefined
+value. In addition, the controller actually 'offloads' the last byte
+(CRC7, end bit) while receiving R2 response and thus it's impossible to get the
+actual value. This could cause mmc stack to obtain inconsistent CID from the
+same card after resume and misidentify it as a different card.
 
-This log buffer is an optional buffer that eBPF verifier is using to
-store its messages. Mainly for humans to understand why verifier
-rejected the program. It's also used by verifier testsuite to check
-that reject reason actually matches the test intent.
+Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
+
+Roger Tseng (2):
+  mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
+  mmc: rtsx_usb_sdmmc: fix incorrect last byte in R2 response
+
+ drivers/mmc/host/rtsx_pci_sdmmc.c |    7 +++++++
+ drivers/mmc/host/rtsx_usb_sdmmc.c |    7 +++++++
+ 2 files changed, 14 insertions(+)
+
+-- 
+1.7.10.4
+
