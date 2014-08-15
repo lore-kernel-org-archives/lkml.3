@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472AbaHOQHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:07:44 -0400
-Received: from smtp.newterm.pl ([79.187.237.18]:51607 "EHLO apollo.newterm.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171AbaHOQHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:07:41 -0400
-Date: Fri, 15 Aug 2014 17:50:47 +0200
-From: Dariusz Marcinkiewicz <reksio@newterm.pl>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] MAINTAINERS: add entry for ec_bhf driver
-Message-ID: <20140815155046.GA16712@newterm.pl>
+	id S1751508AbaHOQIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:08:36 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:7612 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751116AbaHOQIf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:08:35 -0400
+Message-ID: <53EE307E.8060507@itdev.co.uk>
+Date: Fri, 15 Aug 2014 17:08:30 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stephen Warren <swarren@nvidia.com>, Yufeng Shen <miletus@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: atmel_mxt_ts - Add keycodes array example
+References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk> <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk> <53E37329.4020002@itdev.co.uk> <53E4E41D.4070703@collabora.co.uk> <53EDF6B4.7080804@collabora.co.uk>
+In-Reply-To: <53EDF6B4.7080804@collabora.co.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added entry for ec_bhf driver.
+On 15/08/14 13:01, Javier Martinez Canillas wrote:
+>> By passing all these keycodes the touchpad worked as expected for me and the
+>> driver did the same than the Chrome OS driver that has these keycodes hardcoded
+>> when is_tp is true.
+>>
+>>> at the protocol guide for T19.
+>>
+>> I don't have access to proper documentation and I wouldn't expect people to have
+>> access to non-public docs in order to use a Device Tree binding.
+>>
+>> That's why I wanted to document an example, so using this property could be
+>> easier for others and they shouldn't have to look at the driver in order to
+>> figure it out (and getting it wrong as you said :) )
+>>
+>> So it would be great if you could provide an example on how this is supposed to
+>> be used.
+> 
+> Any comments on this? I would really appreciate if you can expand on how
+> this DT property is supposed to be used so I can re-spin the atmel support
+> patch for Peach boards.
 
-Signed-off-by: Dariusz Marcinkiewicz <reksio@newterm.pl>
+The below patch improves the documentation for the gpio-property. Stephen
+Warren has a good example here:
+https://github.com/swarren/linux-tegra/commit/09789801
+
+trackpad@4b {
+  compatible = "atmel,maxtouch";
+  reg = <0x4b>;
+  interrupt-parent = <&gpio>;
+  interrupts = <TEGRA_GPIO(W, 3) IRQ_TYPE_LEVEL_LOW>;
+  linux,gpio-keymap = <0 0 0 BTN_LEFT>;
+};
+
+This maps BTN_LEFT to the 4th bit of the T19 message. I haven't looked up
+what GPIO number that corresponds to on the mXT224SL that he has, it varies
+with the particular maXTouch device you have.
+
+Hope this helps.
+
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- MAINTAINERS |    6 ++++++
- 1 file changed, 6 insertions(+)
+ Documentation/devicetree/bindings/input/atmel,maxtouch.txt | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7e2eb4c..b5416f8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1835,6 +1835,12 @@ S:	Orphan
- F:	Documentation/filesystems/befs.txt
- F:	fs/befs/
- 
-+BECKHOFF CX5020 ETHERCAT MASTER DRIVER
-+M: Dariusz Marcinkiewicz <reksio@newterm.pl>
-+L: netdev@vger.kernel.org
-+S: Maintained
-+F: drivers/net/ethernet/ec_bhf.c
+diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+index baef432..1852906 100644
+--- a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
++++ b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+@@ -11,10 +11,17 @@ Required properties:
+
+ Optional properties for main touchpad device:
+
+-- linux,gpio-keymap: An array of up to 4 entries indicating the Linux
+-    keycode generated by each GPIO. Linux keycodes are defined in
++- linux,gpio-keymap: When enabled, the SPT_GPIOPWN_T19 object sends messages
++    on GPIO bit changes. An array of up to 8 entries can be provided
++    indicating the Linux keycode mapped to each bit of the status byte,
++    starting at the LSB. Linux keycodes are defined in
+     <dt-bindings/input/input.h>.
+
++    Note: the numbering of the GPIOs and the bit they start at varies between
++    maXTouch devices. You must either refer to the documentation, or
++    experiment to determine which bit corresponds to which input. Use
++    KEY_RESERVED for unused padding values.
 +
- BFS FILE SYSTEM
- M:	"Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>
- S:	Maintained
--- 
-1.7.10.4
+ Example:
 
+        touch@4b {
+-- 
+1.9.1
