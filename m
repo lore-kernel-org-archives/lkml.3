@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266AbaHOJcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 05:32:54 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:60277 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaHOJcw (ORCPT
+	id S1753902AbaHOJhj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 05:37:39 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:57098 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319AbaHOJhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 05:32:52 -0400
-Message-ID: <53EDD3B9.9070301@gmail.com>
-Date: Fri, 15 Aug 2014 17:32:41 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        Vlad Yasevich <vyasevich@gmail.com>, tuexen@fh-muenster.de,
-        khandelwal.deepak.1987@gmail.com, "Tao, Yue" <Yue.Tao@windriver.com>,
-        Alexandre Dietsch <alexandre.dietsch@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>, zhuyj <zyjzyj2000@gmail.com>
-Subject: Re: SCTP_PEER_ADDR_CHANGE Notification over UNCONFIRMED path
-References: <53EDC9AA.9080500@gmail.com>
-In-Reply-To: <53EDC9AA.9080500@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+	Fri, 15 Aug 2014 05:37:38 -0400
+Message-ID: <1408095453.5567.6.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+ seqlock
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Date: Fri, 15 Aug 2014 11:37:33 +0200
+In-Reply-To: <20140815062819.GY19379@twins.programming.kicks-ass.net>
+References: <53EA94DD.5040900@redhat.com> <20140813172230.GA6296@redhat.com>
+	 <20140813133526.1eb5526f@cuia.bos.redhat.com>
+	 <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com>
+	 <20140813184511.GA9663@redhat.com>
+	 <20140813170324.544aaf2d@cuia.bos.redhat.com>
+	 <20140814132239.GA24465@redhat.com> <20140814174849.GA5091@redhat.com>
+	 <1408079971.5536.37.camel@marge.simpson.net>
+	 <20140815062819.GY19379@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry. I used attachment to send patch. Maybe it is not convenient. Now 
-I resend it again. Please ignore this mail.
+On Fri, 2014-08-15 at 08:28 +0200, Peter Zijlstra wrote: 
+> On Fri, Aug 15, 2014 at 07:19:31AM +0200, Mike Galbraith wrote:
+> > For the N threads doing this on N cores case, seems rq->lock hammering
+> > will still be a source of major box wide pain.  Is there any correctness
+> > reason to add up unaccounted ->on_cpu beans, or is that just value
+> > added?  
+> 
+> That delta can be arbitrarily large with nohz_full. And without
+> nohz_full the error is nr_cpus*TICK_NSEC, which I bet is larger than the
+> reported clock resolution.
+> 
+> Having a non-constant error bound is annoying for you never quite know
+> what to expect.
 
-Best Regards!
-Zhu Yanjun
-On 08/15/2014 04:49 PM, zhuyj wrote:
-> Hi, Vlad && DEEPAK && Michael && David
->
-> From Michael && DEEPAK
-> "
->  lxr SCTP implementation, doesn't transit the path state to INACTIVE, 
-> if it was never confirmed. this leads to SCTP_PEER_ADDRESS_CHANGE 
-> notification after each failed probe from this time.
->  Is there any specific reason to have same notification to SCTP User 
-> with each probe in RTO time period ?
->  806 case SCTP_TRANSPORT_DOWN:
->  807 /* If the transport was never confirmed, do not transition it
->  808 * to inactive state. Also, release the cached route since
->  809 * there may be a better route next time.
->  810 */
->  811 if (transport->state != SCTP_UNCONFIRMED)
->
->  812 transport->state = SCTP_INACTIVE;
->
->  http://lxr.free-electrons.com/source/net/sctp/associola.c#L806
->
->  we checked RFC and here it is mentioned as  Path Verification 
-> Section(5.4) of RFC 4960  http://tools.ietf.org/html/rfc4960
->
->  In each RTO, a probe may be sent on an active UNCONFIRMED path in an
->  attempt to move it to the CONFIRMED state. If during this probing
->  the path becomes inactive, this rate is lowered to the normal
->  HEARTBEAT rate. At the expiration of the RTO timer, the error
->  counter of any path that was probed but not CONFIRMED is incremented
->  by one and subjected to path failure detection, as defined in
->  Section
->
->
->  8.2
->  . When probing UNCONFIRMED addresses, however, the association
->  overall error counter is not incremented
->
->
->  Does this mean that in attempt to move a UNCONFIRMED path to 
-> CONFIRMED State, the path can become INACTIVE, when transport error 
-> counter reaches to path_max_retrans counter ?
->  I would say that the path stays UNCONFIRMED.
->
->
->  I would also only expect a  SCTP_PEER_ADDRESS_CHANGE notification 
-> when a path state changes, not on every  try.
->
-> "
->
-> I made a patch to disable sending SCTP_PEER_ADDRESS_CHANGE 
-> notification every try. Now the patch is in the attachment. Please 
-> check it.
->
-> Zhu Yanjun
+Ah, yeah, that could get rather large.
+
+> Also; why do we care about PROCESS_CPUTIME? People should really not use
+> it. What are the 'valid' usecases you guys care about?
+
+I don't care much, said "don't do that" before I saw a similar big box
+problem had popped up with times().
+
+-Mike
 
