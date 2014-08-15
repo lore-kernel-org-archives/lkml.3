@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaHOThy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:37:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56239 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaHOThw (ORCPT
+	id S1751805AbaHOTiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:38:07 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61102 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbaHOTiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:37:52 -0400
-Date: Fri, 15 Aug 2014 19:37:47 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Kenton Varda <kenton@sandstorm.io>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] fs: Remove implicit nodev for new mounts in non-root
- userns
-Message-ID: <20140815193746.GE11476@ubuntumail>
-References: <CALCETrWT_p1-5nkiAjWoeta19fkO3rDiJe9_mhRVqF8x1zXv2A@mail.gmail.com>
- <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net>
- <20140815190552.GA11476@ubuntumail>
- <CALCETrVKq1Fxnsd9jKDi5_fcKfCJxBZ1w-zGXD3FR-pF-jLsmQ@mail.gmail.com>
+	Fri, 15 Aug 2014 15:38:03 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53EE6198.9010106@roeck-us.net>
+Date: Fri, 15 Aug 2014 12:38:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVKq1Fxnsd9jKDi5_fcKfCJxBZ1w-zGXD3FR-pF-jLsmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+CC: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH] unicore32: Fix build error
+References: <1407684595-30785-1-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1407684595-30785-1-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Fri, Aug 15, 2014 at 12:05 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> > Quoting Andy Lutomirski (luto@amacapital.net):
-> >> Currently, creating a new mount (as opposed to bindmount) in a
-> >> non-root userns will implicitly set nodev unless the fs is devpts.
-> >> Something like this will be necessary for file systems that allow
-> >> the mounter to create device nodes without using mknod (e.g. FUSE
-> >> if/when that is allowed), but none of the currently allowed
-> >> filesystems do this.
-> >
-> > Hi,
-> >
-> > Sorry, I'm probably thinking stupidly, but I don't see this restriction
-> > being the case
-> >
-> > serge@sl:~$ mount | grep tmp
-> > [...]
-> > tmpfs on /run type tmpfs (rw,noexec,nosuid,size=10%,mode=0755)
-> > serge@sl:~$ sudo mknod /run/kvm c 10 232
-> > [sudo] password for serge:
-> > serge@sl:~$ echo $?
-> > 0
-> > serge@sl:~$ ls -l /run/kvm
-> > crw-r--r-- 1 root root 10, 232 Aug 15 14:04 /run/kvm
-> >
-> > But you seem to be saying I shouldn't be allowed to create a device inside
-> > a tmpfs.  What am I overlooking?
-> 
-> I assume you're in the root userns.  This patch is unnecessary, and
-> has no effect, if you're in the root userns.
+On 08/10/2014 08:29 AM, Guenter Roeck wrote:
+> unicore32 builds fail with
+>
+> arch/unicore32/kernel/signal.c: In function ‘setup_frame’:
+> arch/unicore32/kernel/signal.c:257: error:
+> 			‘usig’ undeclared (first use in this function)
+> arch/unicore32/kernel/signal.c:279: error:
+> 			‘usig’ undeclared (first use in this function)
+> arch/unicore32/kernel/signal.c: In function ‘handle_signal’:
+> arch/unicore32/kernel/signal.c:306: warning: unused variable ‘tsk’
+> arch/unicore32/kernel/signal.c: In function ‘do_signal’:
+> arch/unicore32/kernel/signal.c:376: error:
+> 			implicit declaration of function ‘get_signsl’
+> make[1]: *** [arch/unicore32/kernel/signal.o] Error 1
+> make: *** [arch/unicore32/kernel/signal.o] Error 2
+>
+> Bisect points to commit 649671c90eaf ("unicore32: Use get_signal()
+> signal_setup_done()").
+>
+> This code never even compiled. Reverting the patch does not work,
+> since previously used functions no longer exist, so try to fix it up.
+> Compile tested only.
+>
+> Cc: Richard Weinberger <richard@nod.at>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-Right, but I thought you were justifying adding FS_USERNS_DEV_MOUNT by saying
-that you cannot mknod in those filesystems.  But I see you actually said
-"without using mknod".  I guess I don't understand that caveat.
+ping ...
 
--serge
+Failure is still present in upstream kernel (v3.16-11383-gc9d2642).
+
+Guenter
+
+> ---
+>   arch/unicore32/kernel/signal.c | 9 +++++----
+>   1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/unicore32/kernel/signal.c b/arch/unicore32/kernel/signal.c
+> index 780d773..7c8fb70 100644
+> --- a/arch/unicore32/kernel/signal.c
+> +++ b/arch/unicore32/kernel/signal.c
+> @@ -254,7 +254,8 @@ static int setup_frame(struct ksignal *ksig, sigset_t *set,
+>
+>   	err |= setup_sigframe(frame, regs, set);
+>   	if (err == 0)
+> -		err |= setup_return(regs, &ksig->ka, frame->retcode, frame, usig);
+> +		err |= setup_return(regs, &ksig->ka, frame->retcode, frame,
+> +				    ksig->sig);
+>
+>   	return err;
+>   }
+> @@ -276,7 +277,8 @@ static int setup_rt_frame(struct ksignal *ksig, sigset_t *set,
+>   	err |= __save_altstack(&frame->sig.uc.uc_stack, regs->UCreg_sp);
+>   	err |= setup_sigframe(&frame->sig, regs, set);
+>   	if (err == 0)
+> -		err |= setup_return(regs, &ksig->ka, frame->sig.retcode, frame, usig);
+> +		err |= setup_return(regs, &ksig->ka, frame->sig.retcode, frame,
+> +				    ksig->sig);
+>
+>   	if (err == 0) {
+>   		/*
+> @@ -303,7 +305,6 @@ static void handle_signal(struct ksignal *ksig, struct pt_regs *regs,
+>   			  int syscall)
+>   {
+>   	struct thread_info *thread = current_thread_info();
+> -	struct task_struct *tsk = current;
+>   	sigset_t *oldset = sigmask_to_save();
+>   	int usig = ksig->sig;
+>   	int ret;
+> @@ -373,7 +374,7 @@ static void do_signal(struct pt_regs *regs, int syscall)
+>   	if (!user_mode(regs))
+>   		return;
+>
+> -	if (get_signsl(&ksig)) {
+> +	if (get_signal(&ksig)) {
+>   		handle_signal(&ksig, regs, syscall);
+>   		return;
+>   	}
+>
+
