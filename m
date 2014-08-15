@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaHOR0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 13:26:10 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34417 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940AbaHOR0G (ORCPT
+	id S1752020AbaHOR0r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 13:26:47 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:50576 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751304AbaHOR0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 13:26:06 -0400
+	Fri, 15 Aug 2014 13:26:45 -0400
+Message-ID: <53EE42A9.7000607@fb.com>
+Date: Fri, 15 Aug 2014 13:26:01 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1407916658-8731-18-git-send-email-ast@plumgrid.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com> <1407916658-8731-18-git-send-email-ast@plumgrid.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 15 Aug 2014 10:25:44 -0700
-Message-ID: <CALCETrV7vO6r--G2ns+A6qmDQYSzNXeemT=x41EF+XWmayM95g@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 17/26] tracing: allow eBPF programs to be
- attached to events
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Smaller btrfs pull
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-15_05:2014-08-15,2014-08-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=5.0516923977284e-11 kscore.compositescore=0
+ circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
+ urlsuspect_oldscore=0.998049563855454 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.998049563855454 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408150200
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> User interface:
-> fd = open("/sys/kernel/debug/tracing/__event__/filter")
->
-> write(fd, "bpf_123")
+Hi Linus,
 
-I didn't follow all the code flow leading to parsing the "bpf_123"
-string, but if it works the way I imagine it does, it's a security
-problem.  In general, write(2) should never do anything that involves
-any security-relevant context of the caller.
+I reworked my trees to remove the cleanups and a few of the fixes that
+were doing larger surgery.  This cut the pull in half, and I've pushed
+it out to my integration branch.
 
-Ideally, you would look up fd 123 in the file table of whomever called
-open.  If that's difficult to implement efficiently, then it would be
-nice to have some check that the callers of write(2) and open(2) are
-the same task and that exec wasn't called in between.
+Almost all of them are fit for an rc2 or rc3, so I've shelved most of it
+for later.  I'll go through again and rip a few more of them out for
+the next merge window.
 
-This isn't a very severe security issue because you need privilege to
-open the thing in the first place, but it would still be nice to
-address.
+I also rebased and retested 9 of these that I'd like to see in
+sooner.  They are all fixes I'd like to get out to a broader audience.
 
---Andy
+The biggest of the bunch is Mark's quota fix, which is also in the SUSE
+kernel, and makes our subvolume quotas dramatically more accurate.
+
+I've been running xfstests with these against your current git
+overnight, but I'm queueing up longer tests as well.  I understand
+you may want to wait until rc2, but either way I'll get a sane queue
+into my linux-next branch for the rest of the rcs.
+
+These are all in my for-linus2 branch:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus2
+
+Chris Mason (1) commits (+6/-267):
+    btrfs: disable strict file flushes for renames and truncates
+
+David Sterba (1) commits (+45/-6):
+    btrfs: adjust statfs calculations according to raid profiles
+
+Filipe Manana (2) commits (+4/-1):
+    Btrfs: fix csum tree corruption, duplicate and outdated checksums
+    Btrfs: read lock extent buffer while walking backrefs
+
+Josef Bacik (1) commits (+23/-25):
+    Btrfs: __btrfs_mod_ref should always use no_quota
+
+Liu Bo (1) commits (+12/-0):
+    Btrfs: fix compressed write corruption on enospc
+
+Mark Fasheh (2) commits (+435/-4):
+    btrfs: qgroup: account shared subtrees during snapshot delete
+    btrfs: correctly handle return from ulist_add
+
+Takashi Iwai (1) commits (+20/-6):
+    Btrfs: Fix memory corruption by ulist_add_merge() on 32bit arch
+
+Total: (9) commits
+
+ fs/btrfs/backref.c      |  14 ++-
+ fs/btrfs/btrfs_inode.h  |   6 -
+ fs/btrfs/ctree.c        |  20 ++--
+ fs/btrfs/ctree.h        |   4 +-
+ fs/btrfs/disk-io.c      |  32 ------
+ fs/btrfs/extent-tree.c  | 285 +++++++++++++++++++++++++++++++++++++++++++++---
+ fs/btrfs/file-item.c    |   2 +-
+ fs/btrfs/file.c         |  26 +----
+ fs/btrfs/inode.c        |  59 +++-------
+ fs/btrfs/ordered-data.c | 123 ---------------------
+ fs/btrfs/ordered-data.h |   5 -
+ fs/btrfs/qgroup.c       | 169 ++++++++++++++++++++++++++++
+ fs/btrfs/qgroup.h       |   1 +
+ fs/btrfs/super.c        |  51 ++++++++-
+ fs/btrfs/transaction.c  |  33 +-----
+ fs/btrfs/transaction.h  |   1 -
+ fs/btrfs/ulist.h        |  15 +++
+ 17 files changed, 541 insertions(+), 305 deletions(-)
