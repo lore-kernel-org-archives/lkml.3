@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaHOQvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:51:43 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:36198 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440AbaHOQvk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:51:40 -0400
+	id S1752522AbaHOQwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:52:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751472AbaHOQwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:52:23 -0400
+Date: Fri, 15 Aug 2014 18:49:53 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140815164953.GA20197@redhat.com>
+References: <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814132239.GA24465@redhat.com> <20140814174849.GA5091@redhat.com> <1408079971.5536.37.camel@marge.simpson.net> <20140815062819.GY19379@twins.programming.kicks-ass.net> <20140815163651.GA19331@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140815153353.GG17769@csclub.uwaterloo.ca>
-References: <20140814222119.GD18411@ld-irv-0074>
-	<20140815153353.GG17769@csclub.uwaterloo.ca>
-Date: Fri, 15 Aug 2014 18:51:38 +0200
-X-Google-Sender-Auth: m1rnlc2GVbcIeV-FckgobTamWwk
-Message-ID: <CAMuHMdXicLNuBy+vkGFaaMYrK5OivkpLJaPmCkYZx33P_abHfw@mail.gmail.com>
-Subject: Re: Overriding -Werror
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140815163651.GA19331@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 5:33 PM, Lennart Sorensen
-<lsorense@csclub.uwaterloo.ca> wrote:
-> On Thu, Aug 14, 2014 at 03:21:19PM -0700, Brian Norris wrote:
->> I'm interested in being able to build-test kernels on various
->> architectures while enabling extra warnings (make W=[123]). I'd like to
->> be able to finish the builds and see all warnings, rather than seeing a
->> failed build. However, GCC's -Werror is incompatible with this. There is
->> plenty of code that will produce at least one warning, when warning
->> verbosity is turned up. And GCC's -Werror is not guaranteed to remain
->> stable over time; new versions may develop new warnings that may or may
->> not be legitimate.
+On 08/15, Oleg Nesterov wrote:
 >
-> What ever is wrong with using '-k' with your make command?
+> However, if we only want to make sys_times() more scalable(), then
+> perhaps the "lockless" version of thread_group_cputime() makes more
+> sense. And given that do_sys_times() uses current we can simplify it;
+> is_dead is not possible and we do not need to take ->siglock twice:
+>
+> 	void current_group_cputime(struct task_cputime *times)
+> 	{
+> 		struct task_struct *tsk = current, *t;
+> 		struct spinlock_t *siglock = &tsk->sighand->siglock;
+> 		struct signal_struct *sig = tsk->signal;
+> 		bool lockless = true;
+> 		u64 exec;
+>
+> 	 retry:
+> 		spin_lock_irq(siglock);
+> 		times->utime = sig->utime;
+> 		times->stime = sig->stime;
+> 		times->sum_exec_runtime = exec = sig->sum_sched_runtime;
+>
+> 		if (lockless)
+> 			spin_unlock_irq(siglock);
+>
+> 		rcu_read_lock();
+> 		for_each_thread(tsk, t) {
+> 			cputime_t utime, stime;
+> 			task_cputime(t, &utime, &stime);
+> 			times->utime += utime;
+> 			times->stime += stime;
+> 			times->sum_exec_runtime += task_sched_runtime(t);
+> 		}
+> 		rcu_read_unlock();
+>
+> 		if (lockless) {
+> 			lockless = false;
+> 			spin_unlock_wait(siglock);
+> 			smp_rmb();
+> 			if (exec != sig->sum_sched_runtime)
+> 				goto retry;
+> 		} else {
+> 			spin_unlock_irq(siglock);
+> 		}
+> 	}
 
-While -k helps to get more compiled, and thus see more warnings, you'll still
-be missing the report of missing symbols in the final link/modpost stage.
+Just in case... Yes, sure, "seqlock_t stats_lock" is more scalable. Just
+I do not know it's worth the trouble.
 
-Gr{oetje,eeting}s,
+Oleg.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
