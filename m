@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490AbaHOUPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 16:15:39 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:59965 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaHOUPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 16:15:38 -0400
-Date: Fri, 15 Aug 2014 16:15:34 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH percpu/for-3.17-fixes 2/2] percpu: perform tlb flush after
- pcpu_map_pages() failure
-Message-ID: <20140815201534.GB24716@mtj.dyndns.org>
-References: <20140815201438.GA24716@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140815201438.GA24716@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751529AbaHOUQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 16:16:05 -0400
+Received: from ns.horizon.com ([71.41.210.147]:40720 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751138AbaHOUQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 16:16:03 -0400
+Date: 15 Aug 2014 16:16:01 -0400
+Message-ID: <20140815201601.2497.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: peterz@infradead.org, zhaoxiu.zeng@gmail.com
+Subject: Re: [PATCH 1/1] GCD: add binary GCD algorithm
+Cc: akpm@linux-foundation.org, dhowells@redhat.com, jwboyer@redhat.com,
+        linux-kernel@vger.kernel.org, linux@horizon.com, mingo@kernel.org,
+        takahiro.akashi@linaro.org
+In-Reply-To: <20140815135855.GG19379@twins.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one is most likely harmless but best to be safe.  Applied to
-percpu/for-3.17-fixes.
+> So I looked at wikipedia (I wasn't aware of this algorithm, clever
+> though), and am still somewhat puzzled by your 'r'.
+> 
+> What's 'wrong' with their iterative version, or what's better about your
+> 'r' stuff?
 
-Thanks.
------- 8< ------
->From 849f5169097e1ba35b90ac9df76b5bb6f9c0aabd Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Fri, 15 Aug 2014 16:06:10 -0400
+I need to look more carefully, but it looks nifty.
 
-If pcpu_map_pages() fails midway, it unmaps the already mapped pages.
-Currently, it doesn't flush tlb after the partial unmapping.  This may
-be okay in most cases as the established mapping hasn't been used at
-that point but it can go wrong and when it goes wrong it'd be
-extremely difficult to track down.
+Basically, it's avoiding the usual issue of counting the lsbits to factor
+out a power of 2.
 
-Flush tlb after the partial unmapping.
+Rather than taking out the common factors of 2 a bit at a time, to
+reduce to the case where one is even and one is odd (i.e. ((a ^ b) & 1)
+== 1), just find the low-order differing bit and use that instead of
+"1" in the algorithm.  I.e. ((1 ^ b) & r) == r.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: stable@vger.kernel.org
----
- mm/percpu-vm.c | 1 +
- 1 file changed, 1 insertion(+)
+I have to see if there's a nicer way to arrange things, but it looks good.
 
-diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index 8d9bb2c..5110816 100644
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -272,6 +272,7 @@ err:
- 		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, tcpu, page_start),
- 				   page_end - page_start);
- 	}
-+	pcpu_post_unmap_tlb_flush(chunk, page_start, page_end);
- 	return err;
- }
- 
--- 
-1.9.3
-
+What I'd like is a better way to automatically configure "divide is
+slow" from an architecture.
