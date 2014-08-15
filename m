@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876AbaHORnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 13:43:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57700 "EHLO
+	id S1751886AbaHORoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 13:44:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57669 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaHORna (ORCPT
+	with ESMTP id S1751662AbaHORnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 13:43:30 -0400
+	Fri, 15 Aug 2014 13:43:06 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         Vinod Koul <vinod.koul@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 07/15] tty: serial: 8250_dma: enqueue RX dma again on completion.
-Date: Fri, 15 Aug 2014 19:42:35 +0200
-Message-Id: <1408124563-31541-8-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 04/15] tty: serial: 8250_core: read only RX if there is something in the FIFO
+Date: Fri, 15 Aug 2014 19:42:32 +0200
+Message-Id: <1408124563-31541-5-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
 References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
@@ -27,75 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The omap needs a DMA request pending right away. If it is enqueued once
-the bytes are in the FIFO then nothing will happen and the FIFO will be
-later purged via RX-timeout interrupt.
-This patch enqueues RX-DMA request on completion but not if it was
-aborted on error. The first enqueue will happen in the driver in
-startup.
+The serial8250_do_startup() function unconditionally clears the
+interrupts and for that it reads from the RX-FIFO without checking if
+there is a byte in the FIFO or not. This works fine on OMAP4+ HW like
+AM335x or DRA7.
+OMAP3630 ES1.1 (which means probably all OMAP3 and earlier) does not like
+this:
+
+|Unhandled fault: external abort on non-linefetch (0x1028) at 0xfb020000
+|Internal error: : 1028 [#1] ARM
+|Modules linked in:
+|CPU: 0 PID: 1 Comm: swapper Not tainted 3.16.0-00022-g7edcb57-dirty #1213
+|task: de0572c0 ti: de058000 task.ti: de058000
+|PC is at mem32_serial_in+0xc/0x1c
+|LR is at serial8250_do_startup+0x220/0x85c
+|Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+|Control: 10c5387d  Table: 80004019  DAC: 00000015
+|[<c03051d4>] (mem32_serial_in) from [<c0307fe8>] (serial8250_do_startup+0x220/0x85c)
+|[<c0307fe8>] (serial8250_do_startup) from [<c0309e00>] (omap_8250_startup+0x5c/0xe0)
+|[<c0309e00>] (omap_8250_startup) from [<c030863c>] (serial8250_startup+0x18/0x2c)
+|[<c030863c>] (serial8250_startup) from [<c030394c>] (uart_startup+0x78/0x1d8)
+|[<c030394c>] (uart_startup) from [<c0304678>] (uart_open+0xe8/0x114)
+|[<c0304678>] (uart_open) from [<c02e9e10>] (tty_open+0x1a8/0x5a4)
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/tty/serial/8250/8250_core.c |  3 +++
- drivers/tty/serial/8250/8250_dma.c  | 12 +++++++++---
- 2 files changed, 12 insertions(+), 3 deletions(-)
+ drivers/tty/serial/8250/8250_core.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 7498ce1..ab2de27 100644
+index ae268e3..cc90c19 100644
 --- a/drivers/tty/serial/8250/8250_core.c
 +++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1598,6 +1598,9 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
+@@ -2087,8 +2087,8 @@ int serial8250_do_startup(struct uart_port *port)
+ 	/*
+ 	 * Clear the interrupt registers.
+ 	 */
+-	serial_port_in(port, UART_LSR);
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial_port_in(port, UART_IIR);
+ 	serial_port_in(port, UART_MSR);
  
- 		if (!up->dma || dma_err)
- 			status = serial8250_rx_chars(up, status);
-+
-+		if (dma_err && port->type == PORT_OMAP_16750)
-+			serial8250_rx_dma(up, 0);
- 	}
- 	serial8250_modem_status(up);
- 	if ((!up->dma || up->dma_tx_err) && (status & UART_LSR_THRE))
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index 5c59b15..7417ed5 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -50,9 +50,8 @@ static void __dma_tx_complete(void *param)
- 	spin_unlock_irqrestore(&p->port.lock, flags);
- }
+@@ -2249,8 +2249,8 @@ int serial8250_do_startup(struct uart_port *port)
+ 	 * saved flags to avoid getting false values from polling
+ 	 * routines or the previous session.
+ 	 */
+-	serial_port_in(port, UART_LSR);
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial_port_in(port, UART_IIR);
+ 	serial_port_in(port, UART_MSR);
+ 	up->lsr_saved_flags = 0;
+@@ -2344,7 +2344,8 @@ void serial8250_do_shutdown(struct uart_port *port)
+ 	 * Read data port to reset things, and then unlink from
+ 	 * the IRQ chain.
+ 	 */
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial8250_rpm_put(up);
  
--static void __dma_rx_complete(void *param)
-+static void __dma_rx_do_complete(struct uart_8250_port *p, bool error)
- {
--	struct uart_8250_port	*p = param;
- 	struct uart_8250_dma	*dma = p->dma;
- 	struct tty_port		*tty_port = &p->port.state->port;
- 	struct dma_tx_state	state;
-@@ -68,10 +67,17 @@ static void __dma_rx_complete(void *param)
- 
- 	tty_insert_flip_string(tty_port, dma->rx_buf, count);
- 	p->port.icount.rx += count;
-+	if (!error && p->port.type == PORT_OMAP_16750)
-+		serial8250_rx_dma(p, 0);
- 
- 	tty_flip_buffer_push(tty_port);
- }
- 
-+static void __dma_rx_complete(void *param)
-+{
-+	__dma_rx_do_complete(param, false);
-+}
-+
- int serial8250_tx_dma(struct uart_8250_port *p)
- {
- 	struct uart_8250_dma		*dma = p->dma;
-@@ -139,7 +145,7 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
- 		 */
- 		if (dma_status == DMA_IN_PROGRESS) {
- 			dmaengine_pause(dma->rxchan);
--			__dma_rx_complete(p);
-+			__dma_rx_do_complete(p, true);
- 		}
- 		return -ETIMEDOUT;
- 	default:
+ 	del_timer_sync(&up->timer);
 -- 
 2.0.1
 
