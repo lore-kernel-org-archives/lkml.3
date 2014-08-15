@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaHOPlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 11:41:52 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:55504 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116AbaHOPlu (ORCPT
+	id S1751506AbaHOPmx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 11:42:53 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:61526 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaHOPmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 11:41:50 -0400
-X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Aug 2014 11:41:50 EDT
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Fri, 15 Aug 2014 11:33:53 -0400
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: Overriding -Werror
-Message-ID: <20140815153353.GG17769@csclub.uwaterloo.ca>
-References: <20140814222119.GD18411@ld-irv-0074>
+	Fri, 15 Aug 2014 11:42:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140814222119.GD18411@ld-irv-0074>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408093066-31021-1-git-send-email-stefan.bader@canonical.com>
+References: <1408093066-31021-1-git-send-email-stefan.bader@canonical.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 15 Aug 2014 08:42:30 -0700
+Message-ID: <CALCETrV048o-6nKK3TJXf=mdjARO=KKmbCxAVMYTGPffGNX-vQ@mail.gmail.com>
+Subject: Re: [PATCH] x86_32, entry: Clean up sysenter_badsys declaration
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Roland McGrath <roland@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 03:21:19PM -0700, Brian Norris wrote:
-> I'm interested in being able to build-test kernels on various
-> architectures while enabling extra warnings (make W=[123]). I'd like to
-> be able to finish the builds and see all warnings, rather than seeing a
-> failed build. However, GCC's -Werror is incompatible with this. There is
-> plenty of code that will produce at least one warning, when warning
-> verbosity is turned up. And GCC's -Werror is not guaranteed to remain
-> stable over time; new versions may develop new warnings that may or may
-> not be legitimate.
+On Fri, Aug 15, 2014 at 1:57 AM, Stefan Bader
+<stefan.bader@canonical.com> wrote:
+> commit 554086d85e "x86_32, entry: Do syscall exit work on badsys
+> (CVE-2014-4508)" introduced a new jump label (sysenter_badsys) but
+> somehow the END statements seem to have gone wrong (at least it
+> feels that way to me).
+> This does not seem to be a fatal problem, but just for the sake
+> of symmetry, change the second syscall_badsys to sysenter_badsys.
 
-What ever is wrong with using '-k' with your make command?
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+
+hpa, can you pick up one of the several variants of this patch that
+are floating around?  AFAIK nothing cares about the sizes of these
+symbols, but the current code is clearly wrong even if it's harmless.
+
+--Andy
+
+>
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> ---
+>  arch/x86/kernel/entry_32.S | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> index 47c410d..4b0e1df 100644
+> --- a/arch/x86/kernel/entry_32.S
+> +++ b/arch/x86/kernel/entry_32.S
+> @@ -683,7 +683,7 @@ END(syscall_badsys)
+>  sysenter_badsys:
+>         movl $-ENOSYS,%eax
+>         jmp sysenter_after_call
+> -END(syscall_badsys)
+> +END(sysenter_badsys)
+>         CFI_ENDPROC
+>
+>  .macro FIXUP_ESPFIX_STACK
+> --
+> 1.9.1
+>
+
+
 
 -- 
-Len Sorensen
+Andy Lutomirski
+AMA Capital Management, LLC
