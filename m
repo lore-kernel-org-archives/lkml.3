@@ -1,119 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaHOO7m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:59:42 -0400
-Received: from kmf.trabucayre.com ([91.121.117.161]:64238 "EHLO mail"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750884AbaHOO7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:59:40 -0400
-From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
-To: linux-kernel@vger.kernel.org
-Cc: Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
-        Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
-Subject: [PATCH v2] net: phy: smsc: move smsc_phy_config_init reset part in a soft_reset function
-Date: Fri, 15 Aug 2014 15:00:38 +0200
-Message-Id: <1408107638-96143-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
-X-Mailer: git-send-email 1.6.4.2
+	id S1751589AbaHOPAL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 11:00:11 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:34803 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428AbaHOPAI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 11:00:08 -0400
+Date: Fri, 15 Aug 2014 10:45:45 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth-next 2014-08-14
+Message-ID: <20140815144545.GL4953@tuxdriver.com>
+References: <20140814145000.GA14226@t440s.P-661HNU-F1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140814145000.GA14226@t440s.P-661HNU-F1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the one hand, phy_device.c provides a generic reset function if the phy
-driver does not provide a soft_reset pointer. This generic reset does not take
-into account the state of the phy, with a potential failure if the phy is in
-powerdown mode. On the other hand, smsc driver provides a function with both
-correct reset behaviour and configuration.
+On Thu, Aug 14, 2014 at 05:50:00PM +0300, Johan Hedberg wrote:
+> Hi John,
+> 
+> Here's our first bluetooth-next pull request for the 3.18 kernel. Our
+> tree is based on net-next so you'd need to pull from there first before
+> pulling from our tree.
 
-This patch moves the reset part into a new smsc_phy_reset function and provides
-the soft_reset pointer to have a correct reset behaviour by default.
+What did you need from net-next that made you base on that instead
+of wireless-next?  I generally like to decide for myself what level
+of net-next needs to be the base of wireless-next...
 
-Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
----
-Changes since v1 (as advised by Sergei Shtylyov): 
- * fix '=' alignment
-
- drivers/net/phy/smsc.c | 33 +++++++++++++++++++++------------
- 1 file changed, 21 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
-index 180c494..a4b0819 100644
---- a/drivers/net/phy/smsc.c
-+++ b/drivers/net/phy/smsc.c
-@@ -43,6 +43,22 @@ static int smsc_phy_ack_interrupt(struct phy_device *phydev)
- 
- static int smsc_phy_config_init(struct phy_device *phydev)
- {
-+	int rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
-+
-+	if (rc < 0)
-+		return rc;
-+
-+	/* Enable energy detect mode for this SMSC Transceivers */
-+	rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
-+		       rc | MII_LAN83C185_EDPWRDOWN);
-+	if (rc < 0)
-+		return rc;
-+
-+	return smsc_phy_ack_interrupt(phydev);
-+}
-+
-+static int smsc_phy_reset(struct phy_device *phydev)
-+{
- 	int rc = phy_read(phydev, MII_LAN83C185_SPECIAL_MODES);
- 	if (rc < 0)
- 		return rc;
-@@ -66,18 +82,7 @@ static int smsc_phy_config_init(struct phy_device *phydev)
- 			rc = phy_read(phydev, MII_BMCR);
- 		} while (rc & BMCR_RESET);
- 	}
--
--	rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
--	if (rc < 0)
--		return rc;
--
--	/* Enable energy detect mode for this SMSC Transceivers */
--	rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
--		       rc | MII_LAN83C185_EDPWRDOWN);
--	if (rc < 0)
--		return rc;
--
--	return smsc_phy_ack_interrupt (phydev);
-+	return 0;
- }
- 
- static int lan911x_config_init(struct phy_device *phydev)
-@@ -142,6 +147,7 @@ static struct phy_driver smsc_phy_driver[] = {
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= genphy_read_status,
- 	.config_init	= smsc_phy_config_init,
-+	.soft_reset	= smsc_phy_reset,
- 
- 	/* IRQ related */
- 	.ack_interrupt	= smsc_phy_ack_interrupt,
-@@ -164,6 +170,7 @@ static struct phy_driver smsc_phy_driver[] = {
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= genphy_read_status,
- 	.config_init	= smsc_phy_config_init,
-+	.soft_reset	= smsc_phy_reset,
- 
- 	/* IRQ related */
- 	.ack_interrupt	= smsc_phy_ack_interrupt,
-@@ -186,6 +193,7 @@ static struct phy_driver smsc_phy_driver[] = {
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= genphy_read_status,
- 	.config_init	= smsc_phy_config_init,
-+	.soft_reset	= smsc_phy_reset,
- 
- 	/* IRQ related */
- 	.ack_interrupt	= smsc_phy_ack_interrupt,
-@@ -230,6 +238,7 @@ static struct phy_driver smsc_phy_driver[] = {
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= lan87xx_read_status,
- 	.config_init	= smsc_phy_config_init,
-+	.soft_reset	= smsc_phy_reset,
- 
- 	/* IRQ related */
- 	.ack_interrupt	= smsc_phy_ack_interrupt,
+John
 -- 
-1.8.5.5
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
