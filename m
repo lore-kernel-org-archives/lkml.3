@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212AbaHOGUB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 02:20:01 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:35229 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122AbaHOGT7 (ORCPT
+	id S1753049AbaHOG2k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 02:28:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55939 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaHOG2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 02:19:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE40pdcdgRASVEWCrUjHUH3eHp2ohTrK27FCv=Ji62sKNcKggQ@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
-	<1407916658-8731-26-git-send-email-ast@plumgrid.com>
-	<CAE40pdcdgRASVEWCrUjHUH3eHp2ohTrK27FCv=Ji62sKNcKggQ@mail.gmail.com>
-Date: Thu, 14 Aug 2014 23:19:57 -0700
-Message-ID: <CAMEtUuxFmGz7hEYf+_Kux5ir28ehJjTPFPfc0k4xfSZ6RcbM+g@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 25/26] samples: bpf: counting eBPF example
- in C
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Brendan Gregg <brendan.d.gregg@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	Fri, 15 Aug 2014 02:28:39 -0400
+Date: Fri, 15 Aug 2014 08:28:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
+ seqlock
+Message-ID: <20140815062819.GY19379@twins.programming.kicks-ass.net>
+References: <53EA94DD.5040900@redhat.com>
+ <20140813172230.GA6296@redhat.com>
+ <20140813133526.1eb5526f@cuia.bos.redhat.com>
+ <20140813180807.GA8098@redhat.com>
+ <53EBADB1.2020403@redhat.com>
+ <20140813184511.GA9663@redhat.com>
+ <20140813170324.544aaf2d@cuia.bos.redhat.com>
+ <20140814132239.GA24465@redhat.com>
+ <20140814174849.GA5091@redhat.com>
+ <1408079971.5536.37.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="316gXmQqBlehv1j9"
+Content-Disposition: inline
+In-Reply-To: <1408079971.5536.37.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 3:13 PM, Brendan Gregg
-<brendan.d.gregg@gmail.com> wrote:
-> On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> this example has two probes in C that use two different maps.
->>
->> 1st probe is the similar to dropmon.c. It attaches to kfree_skb tracepoint and
->> count number of packet drops at different locations
->>
->> 2nd probe attaches to kprobe/sys_write and computes a histogram of different
->> write sizes
->>
->> Usage:
->> $ sudo ex2
->>
->> Should see:
->> writing bpf-5 -> /sys/kernel/debug/tracing/events/skb/kfree_skb/filter
->> writing bpf-8 -> /sys/kernel/debug/tracing/events/kprobes/sys_write/filter
->> location 0xffffffff816efc67 count 1
->>
->> location 0xffffffff815d8030 count 1
->> location 0xffffffff816efc67 count 3
->>
->> location 0xffffffff815d8030 count 4
->> location 0xffffffff816efc67 count 9
->>
->>            syscall write() stats
->>      byte_size       : count     distribution
->>        1 -> 1        : 3141     |****                                  |
->>        2 -> 3        : 2        |                                      |
->>        4 -> 7        : 14       |                                      |
->>        8 -> 15       : 3268     |*****                                 |
->>       16 -> 31       : 732      |                                      |
->>       32 -> 63       : 20042    |************************************* |
->>       64 -> 127      : 12154    |**********************                |
->>      128 -> 255      : 2215     |***                                   |
->>      256 -> 511      : 9        |                                      |
->>      512 -> 1023     : 0        |                                      |
->>     1024 -> 2047     : 1        |                                      |
->
-> This is pretty awesome.
->
-> Given that this is tracing two tracepoints at once, I'd like to see a
-> similar example where time is stored on the first tracepoint,
-> retrieved on the second for a delta calculation, then presented with a
-> similar histogram as seen above.
 
-Very good point. The time related helpers are missing. In V5 I'm
-thinking to add something like bpf_ktime_get_ns().
-To associate begin and end events I think bpf_gettid() would be
-needed, but that doesn't feel generic enough for helper function,
-so I'm leaning toward 'bpf_get_current()' helper that will return
-'current' task pointer. eBPF program can use this pointer for
-correlation of events or can go exploring task fields with
-bpf_fetch_() helpers...
+--316gXmQqBlehv1j9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you very much for trying things out and for your feedback!
+On Fri, Aug 15, 2014 at 07:19:31AM +0200, Mike Galbraith wrote:
+> For the N threads doing this on N cores case, seems rq->lock hammering
+> will still be a source of major box wide pain.  Is there any correctness
+> reason to add up unaccounted ->on_cpu beans, or is that just value
+> added? =20
+
+That delta can be arbitrarily large with nohz_full. And without
+nohz_full the error is nr_cpus*TICK_NSEC, which I bet is larger than the
+reported clock resolution.
+
+Having a non-constant error bound is annoying for you never quite know
+what to expect.
+
+Also; why do we care about PROCESS_CPUTIME? People should really not use
+it. What are the 'valid' usecases you guys care about?
+
+--316gXmQqBlehv1j9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT7aiDAAoJEHZH4aRLwOS6vnEP/1sC2CQvMPa86tXhppFwpMgg
+Pc9sg+cmdp2Ozlg/UIr+lOhZTDcDSXuZ7oLvYTIoTPAilEzvI8ZKB6af2LFnHqiD
+QrMgbchBhp/wN+2+yQD+eAoxj7Ekd+R6+nf9wMrFAly5PttvlRusaMBmMOHvVxix
+ljpvgr4MyUSRf0Dh2d9ptMbrFyh7PHXrz15R26GFV1NAoz/18UcYwuBvGwVHsrwB
+odRh4wcxkS47tRf8Neqp8B8Mghk+n4B49afVclmz2d4g5sbYA6Ci+f695ltJl/wP
+C/HHnAuJvfWbhvlbXB6n/c6hi/hbl0vCXwaj+Q/Zta/3B27OaDCIZew2B7B5NgfU
+pM/++igptVnqbpUK9QDnQLzooik9YEbhoGPwVqRXHjTKroFW8F7cYZPUU/KmOfza
+mR9eOcAlYQdbhZkp3eyH+b9hI1DwQwJ2MDsjZs+Hzht56zCZgfOVBGeHIXC9Vpnl
+eHlmBGUkhmUwKoSvJZYT6idWJ0+3IJ2pjXhUFAKscDZg4obKXtZL8c1xez13XL/5
+Vs5uAqgVVsKUHyJWt7ZZlXR0+jEbN57gEzRo7tTEU47wvf+MC7nymceL4KuoYVf4
+lg12fL5tLOWy/Eg6ayfLIaNzKtGJvHLzwwFBHlVF29UD7i3hFB8+Q3Yin50XmPfg
+gGPLEFuHS/JkbPebIl7Y
+=/WAf
+-----END PGP SIGNATURE-----
+
+--316gXmQqBlehv1j9--
