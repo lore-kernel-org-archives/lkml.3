@@ -1,132 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaHOIRQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 04:17:16 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:33008 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbaHOIRM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 04:17:12 -0400
+	id S1752351AbaHOIXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 04:23:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44859 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751703AbaHOIXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 04:23:14 -0400
+Date: Fri, 15 Aug 2014 10:23:10 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v3 2/2] freezer: remove obsolete comments in __thaw_task()
+Message-ID: <20140815082310.GA24624@dhcp22.suse.cz>
+References: <1408050926-9525-1-git-send-email-xiyou.wangcong@gmail.com>
+ <1408050926-9525-2-git-send-email-xiyou.wangcong@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53ECB95F.2030207@neotion.com>
-References: <53C7E45E.2060102@neotion.com>
-	<CAPDyKFoRpQBHGGCMPvEKdeVGjTO-rnyYVostLZGCV3dudD1rmA@mail.gmail.com>
-	<53EB2DC3.2080002@neotion.com>
-	<CAPDyKFpjYqVUZ8GHB76gD8pOx_eMg9ecvbWrMEfbhEd5ffk7mw@mail.gmail.com>
-	<53ECB95F.2030207@neotion.com>
-Date: Fri, 15 Aug 2014 10:17:10 +0200
-Message-ID: <CAPDyKFp2ekmucHVzMWxeKfyTmuFKTXAYwUEpL5QxvEh8AjFopg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: check EXT_CSD_PARTITION_SETTING_COMPLETED before
- creating partitions
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>
-Cc: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408050926-9525-2-git-send-email-xiyou.wangcong@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 August 2014 15:27, Grégory Soutadé <gsoutade@neotion.com> wrote:
-> Le 14/08/2014 13:46, Ulf Hansson a écrit :
->> On 13 August 2014 11:20, Grégory Soutadé <gsoutade@neotion.com> wrote:
->>> Le 13/08/2014 10:36, Ulf Hansson a écrit :
->>>> On 17 July 2014 16:57, Grégory Soutadé <gsoutade@neotion.com> wrote:
->>>>> Create MMC general purpose partitions only if
->>>>> EXT_CSD_PARTITION_SETTING_COMPLETED bit is set.
->>>>> Some tools may set general purpose partition size(s) but fail or stop
->>>>> without finalize.
->>>>> Another case is to set invalid partition size(s).
->>>>>
->>>>> Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
->>>>> ---
->>>>>  drivers/mmc/core/mmc.c  |   15 +++++++++++----
->>>>>  include/linux/mmc/mmc.h |    2 ++
->>>>>  2 files changed, 13 insertions(+), 4 deletions(-)
->>>>>
->>>>> From commit b6603fe574af289dbe9eb9fb4c540bca04f5a053 in master linux tree.
->>>>>
->>>>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
->>>>> index 793c6f7..b9fe211 100644
->>>>> --- a/drivers/mmc/core/mmc.c
->>>>> +++ b/drivers/mmc/core/mmc.c
->>>>> @@ -471,10 +471,17 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
->>>>>                                 ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
->>>>>                                 part_size *= (size_t)(hc_erase_grp_sz *
->>>>>                                         hc_wp_grp_sz);
->>>>> -                               mmc_part_add(card, part_size << 19,
->>>>> -                                       EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
->>>>> -                                       "gp%d", idx, false,
->>>>> -                                       MMC_BLK_DATA_AREA_GP);
->>>>> +                               if (ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED] &
->>>>> +                               EXT_CSD_PART_SETTING_COMPLETED) {
->>>>
->>>> Some minor comments here.
->>>>
->>>> I think you could move this if statement up and into the previous "if"
->>>> where we check for "ext_csd[EXT_CSD_PARTITION_SUPPORT] &
->>>> EXT_CSD_PART_SUPPORT_PART_EN".
->>>>
->>>> Additionally, please run checkpatch.
->>>>
->>>> Kind regards
->>>> Uffe
->>>
->>> Hello,
->>>
->>> I didn't put the if statement above to warn user in case of bad partitioning.
->>> I don't want the kernel to silently ignore this error.
->>
->> Fair enough.
->>
->> Still I am wondering whether hc_erase_grp_sz, hc_wp_grp_sz and
->> enhanced_area_en should be updated if
->> EXT_CSD_PARTITION_SETTING_COMPLETED isn't set.  That's the case in
->> your patch.
->
-> I was focused on partitions and I didn't pay attention on enhanced area.
->
-> JEDEC says that partitioning implies :
-> * Configure general purpose partitions attributes and sizes
-> * Configure enhanced user area offset, attributes and size
->
-> and finally set EXT_CSD_PARTITION_SETTING_COMPLETED.
->
-> Thus these two parts must checks for setting completed before
-> computing values.
->
-> Plus, "enhanced_area_en" attribute is set whether or not there is an
-> enhanced area defined. I looked at the code, and the only usage of it
-> is to set EXT_CSD_ERASE_GROUP_DEF and compute erase size again.
-> I suggest using "partition_setting_completed" identifier which is common
-> to the two functions and requires EXT_CSD_ERASE_GROUP_DEF to be set.
->
-> If you're ok with that, I'll submit another patch.
+On Thu 14-08-14 14:15:26, Cong Wang wrote:
+> __thaw_task() no longer clears frozen flag.
 
-Seems reasonable. Please send a v2.
+since a3201227f803 (freezer: make freezing() test freeze conditions in
+effect instead of TIF_FREEZE).
 
-Kind regards
-Uffe
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 
->
->
-> Best regards
-> Grégory Soutadé
->
->>
->>>
->>> checkpatch has been run before sending this patch, I know there are two lines
->>> with two extra characters, but names used here are quite long. I hope it will
->>> not block upstream inclusion.
->>
->> The mmc_read_ext_csd() is not one of the nicest piece of code, but for
->> sure we should not move on making it worse. If you need to move code
->> into separate function to prevent checkpatch warnings, please do so.
->>
->> Kind regards
->> Uffe
->>
->
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  kernel/freezer.c | 6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index 5b25351..33cbcb0 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -156,12 +156,6 @@ void __thaw_task(struct task_struct *p)
+>  {
+>  	unsigned long flags;
+>  
+> -	/*
+> -	 * Clear freezing and kick @p if FROZEN.  Clearing is guaranteed to
+> -	 * be visible to @p as waking up implies wmb.  Waking up inside
+> -	 * freezer_lock also prevents wakeups from leaking outside
+> -	 * refrigerator.
+> -	 */
+>  	spin_lock_irqsave(&freezer_lock, flags);
+>  	if (frozen(p))
+>  		wake_up_process(p);
+> -- 
+> 1.8.3.1
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
