@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaHOVxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 17:53:13 -0400
-Received: from ns.horizon.com ([71.41.210.147]:39341 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750763AbaHOVxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 17:53:12 -0400
-Date: 15 Aug 2014 17:53:10 -0400
-Message-ID: <20140815215310.10847.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: peterz@infradead.org, zhaoxiu.zeng@gmail.com
-Subject: Re: [PATCH 1/1] GCD: add binary GCD algorithm
-Cc: akpm@linux-foundation.org, dhowells@redhat.com, jwboyer@redhat.com,
-        linux-kernel@vger.kernel.org, linux@horizon.com, mingo@kernel.org,
-        takahiro.akashi@linaro.org
-In-Reply-To: <53EE3826.2040000@gmail.com>
+	id S1751523AbaHOVys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 17:54:48 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:44976
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750763AbaHOVyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 17:54:47 -0400
+Date: Fri, 15 Aug 2014 16:34:49 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Jean Delvare <jdelvare@suse.de>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: power supply gating with ltc2978
+Message-ID: <alpine.DEB.2.02.1408151623140.21645@atx-linux-37>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR08CA0051.namprd08.prod.outlook.com (10.141.200.31) To
+ BY2PR03MB315.namprd03.prod.outlook.com (10.141.139.25)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0304E36CA3
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009004)(6009001)(199003)(164054003)(189002)(20776003)(92566001)(107046002)(80022001)(46102001)(81342001)(33716001)(81542001)(101416001)(77982001)(76482001)(86362001)(50466002)(83506001)(229853001)(102836001)(95666004)(47776003)(99396002)(4396001)(42186005)(69596002)(106356001)(31966008)(74502001)(105586002)(83322001)(81156004)(85852003)(54356999)(74662001)(86152002)(21056001)(23726002)(87976001)(66066001)(79102001)(53416004)(110136001)(85306004)(50986999)(46406003)(83072002)(64706001)(92726001)(77096002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB315;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's a variant using the even-odd speedup:
-(Feel free to add my S-o-b if you use it.)
+Hello,
 
-/*
- * This implements Brent & Kung's "even-odd" variant of the binary GCD
- * algorithm.  (Often attributed to Stein, but as Knith has noted, appears
- * a first-century Chinese math text.)
- * 
- * First, find the common powers of 2 from a and b.  Here, they are not
- * divided by that common power, but rather we form a bitmap r which
- * covers the least-significant bit set in either.
- * Let s = (r+1)/2 be the common factor of 2.
- *
- * Then, shift down both a and b until both are odd multiples of s.
- * Assuming a > b, then gcd(a, b) = gcd(a-b, b).  But a-b is an even
- * multiple of s and we can divide it by two at least once.
- *
- * Further, either a-b or a+b is a multiple of 4s, so by choosing between
- * the two we can divde by 4.  This is done by (in the case that a > b):
- * 1. Compute (a - b) / 2
- * 2. If this is an odd multiple of s (AND with r is non-zero), then
- *    add b to make an even multiiple of s.  (This cannot overflow,
- *    as it equals (a + b) / 2, which must be less than max(a, b).)
- * 3. Divide by 2 one or more more times until we are left with an odd
- *    multiple of r.
- * 4. The result replaces a, and we go back to finding the larger.
- *
- * While the algorothm is equally correct without step2 and the first
- * divide by 2, the benefit of adding it it can be evaluated with a CMOV
- * rather than a full conditional branch.
- */
-unsigned long bgcd2(unsigned long a, unsigned long b)
-{
-	unsigned long r = a | b;	/* To find common powers of 2 */
+I am interested in adding functionality to be able to gate power supplies 
+going through a ltc2978.  I see that there is a hwmon driver already 
+existing (hwmon/pmbus/ltc2978.c).  I see some of the other hwmon drivers 
+have MFD's.  It looks like this ltc driver would need a MFD and a 
+regulator driver added.  However I don't see other pmbus hwmon drivers
+using MFD.
 
-	if (!a || !b)
-		return r;
+So I am asking for recommendations and reservations on how to proceed here 
+before I get too far with this.
 
-	r ^= r-1;	/* Only the msbit of r (r/2 + 1) really matters */
+Thanks,
+Alan Tull
 
-	if (!(a & r))
-		goto a_even;
-	if (!(b & r))
-		goto b_even;
-
-	while (a != b) {
-		/* (a & r) == (b & r) == (r >> 1) != 0 */
-		if (a > b) {
-			a = (a - b) >> 1;
-			if (a & r)
-				a += b;
-a_even:                 do
-				a >>= 1;
-			while (!(a & r));
-		} else {
-			b = (b - a) >> 1;
-			if (b & r)
-				b += a;
-b_even:                 do
-				b >>= 1;
-			while (!(b & r));
-		}
-	}
-	return b;
-}
