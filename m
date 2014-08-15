@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaHOQcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:32:11 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:47736 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaHOQ24 (ORCPT
+	id S1752213AbaHOQcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:32:14 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:35248 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154AbaHOQcL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:28:56 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v6 tip/core/rcu 05/17] rcu: Export RCU-tasks APIs to GPL modules
-Date: Fri, 15 Aug 2014 09:28:33 -0700
-Message-Id: <1408120125-30479-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140815162820.GA28967@linux.vnet.ibm.com>
- <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081516-1542-0000-0000-00000409838D
+	Fri, 15 Aug 2014 12:32:11 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: pull request: bluetooth-next 2014-08-14
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20140815144545.GL4953@tuxdriver.com>
+Date: Fri, 15 Aug 2014 09:32:54 -0700
+Cc: "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3B8964A2-1F51-4C62-969A-41F68B5294FA@holtmann.org>
+References: <20140814145000.GA14226@t440s.P-661HNU-F1> <20140815144545.GL4953@tuxdriver.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+Hi John,
 
-This commit exports the RCU-tasks synchronous APIs,
-synchronize_rcu_tasks() and rcu_barrier_tasks(), to
-GPL-licensed kernel modules.
+>> Here's our first bluetooth-next pull request for the 3.18 kernel. Our
+>> tree is based on net-next so you'd need to pull from there first before
+>> pulling from our tree.
+> 
+> What did you need from net-next that made you base on that instead
+> of wireless-next?  I generally like to decide for myself what level
+> of net-next needs to be the base of wireless-next...
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcu/update.c | 2 ++
- 1 file changed, 2 insertions(+)
+mainly the merge conflict resolution for 6lowpan and all the ieee802154 patches before we ended up taking this through bluetooth-next. It just made sense to start out with a clean base tree in this case.
 
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 9eb6bdd46988..33084d5749d0 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -433,6 +433,7 @@ void synchronize_rcu_tasks(void)
- 	/* Wait for the grace period. */
- 	wait_rcu_gp(call_rcu_tasks);
- }
-+EXPORT_SYMBOL_GPL(synchronize_rcu_tasks);
- 
- /**
-  * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
-@@ -445,6 +446,7 @@ void rcu_barrier_tasks(void)
- 	/* There is only one callback queue, so this is easy.  ;-) */
- 	synchronize_rcu_tasks();
- }
-+EXPORT_SYMBOL_GPL(rcu_barrier_tasks);
- 
- /* See if the current task has stopped holding out, remove from list if so. */
- static void check_holdout_task(struct task_struct *t)
--- 
-1.8.1.5
+If you prefer, then we can just do that against a new wireless-next tree once you have that ready. I honestly just assumed you are going to pull net-next anyway. So my apologizes for that.
+
+Regards
+
+Marcel
 
