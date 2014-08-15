@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaHOPs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 11:48:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40291 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846AbaHOPs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 11:48:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,870,1400050800"; 
-   d="scan'208";a="559062891"
-Message-ID: <53EE2BAA.1020603@linux.intel.com>
-Date: Fri, 15 Aug 2014 08:47:54 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-CC: Peter Zijlstra <peterz@infradead.org>, lkml <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>, mingo@kernel.org,
-        len.brown@intel.com, rjw@rjwysocki.net,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
-        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [RFC 0/3] Experimental patchset for CPPC
-References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>	<20140814205143.GY6758@twins.programming.kicks-ass.net>	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>	<20140815061917.GX19379@twins.programming.kicks-ass.net>	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>	<53EE0E5B.3050004@linux.intel.com>	<53EE10CB.7040001@linux.intel.com> <CAJ5Y-eZiRyGroems7J2oH05ybbbivM-okm3gFz7Mkuu8ceeCDQ@mail.gmail.com>
-In-Reply-To: <CAJ5Y-eZiRyGroems7J2oH05ybbbivM-okm3gFz7Mkuu8ceeCDQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751529AbaHOPs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 11:48:58 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:20011 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaHOPs4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 11:48:56 -0400
+Date: Fri, 15 Aug 2014 10:48:03 -0500
+From: scameron@beardog.cce.hp.com
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH v2 RESEND 09/23] hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
+Message-ID: <20140815154803.GY19666@beardog.cce.hp.com>
+References: <cover.1405533479.git.agordeev@redhat.com> <fa8dc16252a7afa6186b78af4b90590755f45507.1405533479.git.agordeev@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <fa8dc16252a7afa6186b78af4b90590755f45507.1405533479.git.agordeev@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/15/2014 7:24 AM, Ashwin Chaugule wrote:
->>>
->>> we've found that so far that there are two reasonable options
->>> 1) Let the OS device (old style)
->>> 2) Let the hardware decide (new style)
->>>
->>> 2) is there in practice today in the turbo range (which is increasingly
->>> the whole thing)
->>> and the hardware can make decisions about power budgetting on a timescale
->>> the OS
->>> can never even dream of, so once you give control the the hardware (with
->>> CPPC or native)
->>> it's normally better to just get out of the way as OS.
->>>
->>
->
-> Interesting. This sounds like X86 plans to use the Autonomous bits
-> that got added to the CPPC spec. (v5.1)?
+On Wed, Jul 16, 2014 at 08:05:13PM +0200, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+> 
+> Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+> Cc: iss_storagedev@hp.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> ---
+>  drivers/scsi/hpsa.c |   27 ++++++++++++---------------
+>  1 files changed, 12 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index 648dec2..5c4ab6e 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -6160,25 +6160,22 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
+>  		h->msix_vector = MAX_REPLY_QUEUES;
+>  		if (h->msix_vector > num_online_cpus())
+>  			h->msix_vector = num_online_cpus();
+> -		err = pci_enable_msix(h->pdev, hpsa_msix_entries,
+> -				      h->msix_vector);
+> -		if (err > 0) {
+> +		err = pci_enable_msix_range(h->pdev, hpsa_msix_entries,
+> +					    1, h->msix_vector);
+> +		if (err < 0) {
+> +			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
+> +			h->msix_vector = 0;
+> +			goto single_msi_mode;
+> +		} else if (err < h->msix_vector) {
+>  			dev_warn(&h->pdev->dev, "only %d MSI-X vectors "
+>  			       "available\n", err);
+> -			h->msix_vector = err;
+> -			err = pci_enable_msix(h->pdev, hpsa_msix_entries,
+> -					      h->msix_vector);
+> -		}
+> -		if (!err) {
+> -			for (i = 0; i < h->msix_vector; i++)
+> -				h->intr[i] = hpsa_msix_entries[i].vector;
+> -			return;
+> -		} else {
+> -			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
+> -			       err);
+> -			h->msix_vector = 0;
+>  		}
+> +		h->msix_vector = err;
+> +		for (i = 0; i < h->msix_vector; i++)
+> +			h->intr[i] = hpsa_msix_entries[i].vector;
+> +		return;
+>  	}
+> +single_msi_mode:
+>  	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
+>  		dev_info(&h->pdev->dev, "MSI\n");
+>  		if (!pci_enable_msi(h->pdev))
+> -- 
+> 1.7.7.6
 
-if and when x86/Intel implement that, we will certainly evaluate it to see
-how it behaves... but based on todays use of the hw control of the actual
-p-state... I would expect that evaluation to pass.
+Ack. 
 
+I had previously acked an older, but seemingly semantically identical patch.
+Was requested to ack this one as well.
 
-note that on todays multi-core x96 systems, in practice you operate mostly
-in the turbo range (I am ignoring mostly-idle workloads since there the
-p-state isn't nearly as relevant anyway); all it takes for one of the cores to request
-a turbo-range state, and the whole chip operates in turbo mode.. and in turbo mode
-the hardware already picks the frequency/voltage.
-
-with the current (and more so, past) Linux behavior, even at moderate loads you end up
-there; the more cores you have the more true that becomes.
-
-
-
-> I agree that the platform can
-> make decisions on a much finer timescale. But even in the
-> non-Autonomous mode, by providing the bounds around a Desired Value,
-> the OS can get out of the way knowing that the platform would deliver
-> something in the range it requested. If the OS can provide bounds, it
-> seems to me that the platform can make more optimum decisions, rather
-> than trying to guess whats running (or not).
-
-I highly question that the OS can provide intelligent bounds.
-
-When are you going to request an upper bound that is lower than maximum?
-(don't say thermals, there are other mechanisms for controlling thermals
-that work much better than direct P state control). Are you still going to do that
-even if sometimes lower frequencies end up costing more battery?
-(race-to-halt and all that)
-
-
-I can see cases where you bump the minimum for QoS reasons, but even there I would
-dare to say that at best the OS will be doing wild-ass guesses.
-
+-- steve
 
