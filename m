@@ -1,208 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaHOTGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:06:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56085 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaHOTF7 (ORCPT
+	id S1751511AbaHOTHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:07:45 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48675 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaHOTHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:05:59 -0400
-Date: Fri, 15 Aug 2014 19:05:52 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kenton Varda <kenton@sandstorm.io>, stable@vger.kernel.org
-Subject: Re: [PATCH] fs: Remove implicit nodev for new mounts in non-root
- userns
-Message-ID: <20140815190552.GA11476@ubuntumail>
-References: <CALCETrWT_p1-5nkiAjWoeta19fkO3rDiJe9_mhRVqF8x1zXv2A@mail.gmail.com>
- <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net>
+	Fri, 15 Aug 2014 15:07:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2686c32f00b14148379e8cfee9c028c794d4aa1a.1407974494.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrUQN=vt3EUO=jNFC+sDHAiJdNyZWg4rwiEF7WKjPLi8Bg@mail.gmail.com>
+References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
+	<1407916658-8731-18-git-send-email-ast@plumgrid.com>
+	<CALCETrV7vO6r--G2ns+A6qmDQYSzNXeemT=x41EF+XWmayM95g@mail.gmail.com>
+	<CAMEtUuzCyxdOo+yYYZfDPRAu2yeQOw8TbUABwU-HD0+78PnV7A@mail.gmail.com>
+	<CALCETrUQN=vt3EUO=jNFC+sDHAiJdNyZWg4rwiEF7WKjPLi8Bg@mail.gmail.com>
+Date: Fri, 15 Aug 2014 12:07:42 -0700
+Message-ID: <CAMEtUuyDJeEJjzsZemFLT_y_QJ+vnJjze=KOxV+7g58Tsf4cTw@mail.gmail.com>
+Subject: Re: [PATCH RFC v4 net-next 17/26] tracing: allow eBPF programs to be
+ attached to events
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> Currently, creating a new mount (as opposed to bindmount) in a
-> non-root userns will implicitly set nodev unless the fs is devpts.
-> Something like this will be necessary for file systems that allow
-> the mounter to create device nodes without using mknod (e.g. FUSE
-> if/when that is allowed), but none of the currently allowed
-> filesystems do this.
+On Fri, Aug 15, 2014 at 11:53 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Aug 15, 2014 at 10:51 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Fri, Aug 15, 2014 at 10:25 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Wed, Aug 13, 2014 at 12:57 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>>>> User interface:
+>>>> fd = open("/sys/kernel/debug/tracing/__event__/filter")
+>>>>
+>>>> write(fd, "bpf_123")
+>>>
+>>> I didn't follow all the code flow leading to parsing the "bpf_123"
+>>> string, but if it works the way I imagine it does, it's a security
+>>> problem.  In general, write(2) should never do anything that involves
+>>> any security-relevant context of the caller.
+>>>
+>>> Ideally, you would look up fd 123 in the file table of whomever called
+>>> open.  If that's difficult to implement efficiently, then it would be
+>>> nice to have some check that the callers of write(2) and open(2) are
+>>> the same task and that exec wasn't called in between.
+>>>
+>>> This isn't a very severe security issue because you need privilege to
+>>> open the thing in the first place, but it would still be nice to
+>>> address.
+>>
+>> hmm. you need to be root to open the events anyway.
+>> pretty much the whole tracing for root only, since any kernel data
+>> structures can be printed, stored into maps and so on.
+>> So I don't quite follow your security concern here.
+>>
+>> Even say root opens a tracepoint and does exec() of another
+>> app that uploads ebpf program, gets program_fd and does
+>> write into tracepoint fd. The root app that did this open() is
+>> doing exec() on purpose. It's not like it's exec-ing something
+>> it doesn't know about.
+>
+> As long as everyone who can debugfs/tracing/whatever has all
+> privileges, then this is fine.
+>
+> If not, then it's a minor capability or MAC bypass.  Suppose you only
+> have one capability or, more realistically, limited MAC permissions.
 
-Hi,
+Hard to think of MAC abbreviation other than in networking way... ;)
+MAC bypass... kinda sounds like L3 networking without L2... ;)
 
-Sorry, I'm probably thinking stupidly, but I don't see this restriction
-being the case
+> You can still open the tracing file, pass it to an unwitting program
+> with elevated permission (e.g. using selinux's entrypoint mechanism),
+> and trick that program into writing bpf_123.
 
-serge@sl:~$ mount | grep tmp
-[...]
-tmpfs on /run type tmpfs (rw,noexec,nosuid,size=10%,mode=0755)
-serge@sl:~$ sudo mknod /run/kvm c 10 232
-[sudo] password for serge: 
-serge@sl:~$ echo $?
-0
-serge@sl:~$ ls -l /run/kvm
-crw-r--r-- 1 root root 10, 232 Aug 15 14:04 /run/kvm
+hmm, but to open tracing file you'd need to be root already...
+otherwise yeah, if non-root could open it and pass it, then it
+would be nasty.
 
-But you seem to be saying I shouldn't be allowed to create a device inside
-a tmpfs.  What am I overlooking?
+> Admittedly, it's unlikely that fd 123 will be an *eBPF* fd, but the
+> attack is possible.
+>
+> I don't think that fixing this should be a prerequisite for merging,
+> since the risk is so small.  Nonetheless, it would be nice.  (This
+> family of attacks has lead to several root vulnerabilities in the
+> past.)
 
-> Implicitly adding nodev is problematic, though.  It will make it
-> unsafe to ever remove the implicit addition, since userspace might
-> start to rely on it.
-> 
-> This fixes a minor regression in:
-> 
->     9566d6742852 mnt: Correct permission checks in do_remount
-> 
-> Prior to that commit, MNT_NODEV wasn't enforced for remounts, so
-> there is existing user code that creates a new mount in a userns
-> without MS_NODEV and then expects a remount with matching options to
-> work.  That commit broke code that does this.
-> 
-> Fortunately, since the implicit nodev has no effect on any existing
-> filesystems, we can still safely remove it.
-> 
-> This replaces the implicit nodev with an explicit nodev requirement:
-> anyone who mounts a filesystem without FS_USERNS_DEV_MOUNT will get
-> -EPERM unless they set nodev.  If they set nodev, that setting will
-> be locked.
-> 
-> As an added benefit, if anything like device namespaces is ever
-> added, then user code will be able to opt out of nodev by clearing
-> nodev.
-> 
-> To keep existing code working, this adds FS_USERNS_DEV_MOUNT to all
-> FS_USERNS_MOUNT filesystems.  All of the current filesystems with
-> FS_USERNS_MOUNT set are safe.
-> 
-> I confirmed that this is compatible with Sandstorm's revision
-> 1bf0c4847b.  That revision of Sandstorm does not work without this
-> fix if 9566d6742852 is applied.
-> 
-> Cc: Kenton Varda <kenton@sandstorm.io>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->  fs/namespace.c   | 16 ++++++++++++----
->  fs/proc/root.c   |  2 +-
->  fs/ramfs/inode.c |  2 +-
->  fs/sysfs/mount.c |  2 +-
->  ipc/mqueue.c     |  2 +-
->  mm/shmem.c       |  4 ++--
->  6 files changed, 18 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 0acabea58319..835fa9e8307e 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -2154,12 +2154,20 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
->  			put_filesystem(type);
->  			return -EPERM;
->  		}
-> -		/* Only in special cases allow devices from mounts
-> -		 * created outside the initial user namespace.
-> +
-> +		/*
-> +		 * If a filesystem might allow the mounter to put
-> +		 * device nodes on it without the checks in mknod,
-> +		 * then require MS_NODEV to mount it.
->  		 */
->  		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
-> -			flags |= MS_NODEV;
-> -			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
-> +			if (!(mnt_flags & MNT_NODEV)) {
-> +				put_filesystem(type);
-> +				return -EPERM;
-> +			}
-> +
-> +			/* Do not allow nodev to be cleared. */
-> +			mnt_flags |= MNT_LOCK_NODEV;
->  		}
->  	}
->  
-> diff --git a/fs/proc/root.c b/fs/proc/root.c
-> index 094e44d4a6be..2313b280729e 100644
-> --- a/fs/proc/root.c
-> +++ b/fs/proc/root.c
-> @@ -159,7 +159,7 @@ static struct file_system_type proc_fs_type = {
->  	.name		= "proc",
->  	.mount		= proc_mount,
->  	.kill_sb	= proc_kill_sb,
-> -	.fs_flags	= FS_USERNS_MOUNT,
-> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
->  };
->  
->  void __init proc_root_init(void)
-> diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-> index d365b1c4eb3c..b95b7302d4cc 100644
-> --- a/fs/ramfs/inode.c
-> +++ b/fs/ramfs/inode.c
-> @@ -261,7 +261,7 @@ static struct file_system_type ramfs_fs_type = {
->  	.name		= "ramfs",
->  	.mount		= ramfs_mount,
->  	.kill_sb	= ramfs_kill_sb,
-> -	.fs_flags	= FS_USERNS_MOUNT,
-> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
->  };
->  
->  int __init init_ramfs_fs(void)
-> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-> index 8a49486bf30c..56ba59317e24 100644
-> --- a/fs/sysfs/mount.c
-> +++ b/fs/sysfs/mount.c
-> @@ -58,7 +58,7 @@ static struct file_system_type sysfs_fs_type = {
->  	.name		= "sysfs",
->  	.mount		= sysfs_mount,
->  	.kill_sb	= sysfs_kill_sb,
-> -	.fs_flags	= FS_USERNS_MOUNT,
-> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
->  };
->  
->  int __init sysfs_init(void)
-> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-> index 4fcf39af1776..56abbc848d4c 100644
-> --- a/ipc/mqueue.c
-> +++ b/ipc/mqueue.c
-> @@ -1394,7 +1394,7 @@ static struct file_system_type mqueue_fs_type = {
->  	.name = "mqueue",
->  	.mount = mqueue_mount,
->  	.kill_sb = kill_litter_super,
-> -	.fs_flags = FS_USERNS_MOUNT,
-> +	.fs_flags = FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
->  };
->  
->  int mq_init_ns(struct ipc_namespace *ns)
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index a42add14331c..f4a708a8f9e3 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -3149,7 +3149,7 @@ static struct file_system_type shmem_fs_type = {
->  	.name		= "tmpfs",
->  	.mount		= shmem_mount,
->  	.kill_sb	= kill_litter_super,
-> -	.fs_flags	= FS_USERNS_MOUNT,
-> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
->  };
->  
->  int __init shmem_init(void)
-> @@ -3208,7 +3208,7 @@ static struct file_system_type shmem_fs_type = {
->  	.name		= "tmpfs",
->  	.mount		= ramfs_mount,
->  	.kill_sb	= kill_litter_super,
-> -	.fs_flags	= FS_USERNS_MOUNT,
-> +	.fs_flags	= FS_USERNS_MOUNT | FS_USERNS_DEV_MOUNT,
->  };
->  
->  int __init shmem_init(void)
-> -- 
-> 1.9.3
-> 
+Ok. I think keeping a track of pid between open and write is kinda
+ugly. Should we add some new CAP flag and check it for all file
+ops? Another option is to conditionally make open() of tracing
+files as cloexec...
