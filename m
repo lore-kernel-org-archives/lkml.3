@@ -1,107 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaHOR0r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 13:26:47 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:50576 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751304AbaHOR0p (ORCPT
+	id S1751410AbaHORcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 13:32:53 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:44144 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaHORcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 13:26:45 -0400
-Message-ID: <53EE42A9.7000607@fb.com>
-Date: Fri, 15 Aug 2014 13:26:01 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 15 Aug 2014 13:32:52 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Smaller btrfs pull
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-15_05:2014-08-15,2014-08-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=5.0516923977284e-11 kscore.compositescore=0
- circleOfTrustscore=28.9261618248808 compositescore=0.998049563855454
- urlsuspect_oldscore=0.998049563855454 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.998049563855454 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1408150200
-X-FB-Internal: deliver
+In-Reply-To: <CACsCDONU9Zq902rj6aJXGZGnPfAWbxsiFe9mMS8usyyUdTYa9A@mail.gmail.com>
+References: <20140723113314.GA7798@chaz.gmail.com>
+	<53CFCD26.1020409@infradead.org>
+	<CACsCDOP8DOnB0zZtT_WLhiBXjxXh1aH1eGF9_h0dRN1i9YDU-A@mail.gmail.com>
+	<CAHA+R7MLQtYF5vBN0D66Wk8iyGZABf5=Az293gUH6w=4THv8Gw@mail.gmail.com>
+	<CACsCDONU9Zq902rj6aJXGZGnPfAWbxsiFe9mMS8usyyUdTYa9A@mail.gmail.com>
+Date: Fri, 15 Aug 2014 10:32:50 -0700
+Message-ID: <CAHA+R7PpGqNYQcGZrsDB2kfmUM7HdXz2=t2PY8XeouF-PoGOFw@mail.gmail.com>
+Subject: Re: network interfaces called "all", "default" or "config"
+From: Cong Wang <cwang@twopensource.com>
+To: Stephane Chazelas <stephane.chazelas@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Aug 15, 2014 at 1:33 AM, Stephane Chazelas
+<stephane.chazelas@gmail.com> wrote:
+> Yes, I know  those are also used for the eth0:1 "aliases", but the bug
+> is, since it is allowed to do
+>
+>     ip link add link eth0 eth0:123 type vlan id 123
+>
+> Then the
+>
+>     ip link del link eth0 eth0:123
+>
+> should be allowed as well. Or probably better to avoid confusion
+>
+>     ip link add link eth0 foo:bar type vlan id 123
+>
+> should not be allowed.
+>
 
-I reworked my trees to remove the cleanups and a few of the fixes that
-were doing larger surgery.  This cut the pull in half, and I've pushed
-it out to my integration branch.
+Good point! I think the reason is that in the past we used ioctl()
+to add or remove network interface so kernel just checks that
+code path for name alias, so we probably need to check netlink
+path as well since it makes really little sense that we allow create
+names with a colon but disallow to delete them.
 
-Almost all of them are fit for an rc2 or rc3, so I've shelved most of it
-for later.  I'll go through again and rip a few more of them out for
-the next merge window.
-
-I also rebased and retested 9 of these that I'd like to see in
-sooner.  They are all fixes I'd like to get out to a broader audience.
-
-The biggest of the bunch is Mark's quota fix, which is also in the SUSE
-kernel, and makes our subvolume quotas dramatically more accurate.
-
-I've been running xfstests with these against your current git
-overnight, but I'm queueing up longer tests as well.  I understand
-you may want to wait until rc2, but either way I'll get a sane queue
-into my linux-next branch for the rest of the rcs.
-
-These are all in my for-linus2 branch:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus2
-
-Chris Mason (1) commits (+6/-267):
-    btrfs: disable strict file flushes for renames and truncates
-
-David Sterba (1) commits (+45/-6):
-    btrfs: adjust statfs calculations according to raid profiles
-
-Filipe Manana (2) commits (+4/-1):
-    Btrfs: fix csum tree corruption, duplicate and outdated checksums
-    Btrfs: read lock extent buffer while walking backrefs
-
-Josef Bacik (1) commits (+23/-25):
-    Btrfs: __btrfs_mod_ref should always use no_quota
-
-Liu Bo (1) commits (+12/-0):
-    Btrfs: fix compressed write corruption on enospc
-
-Mark Fasheh (2) commits (+435/-4):
-    btrfs: qgroup: account shared subtrees during snapshot delete
-    btrfs: correctly handle return from ulist_add
-
-Takashi Iwai (1) commits (+20/-6):
-    Btrfs: Fix memory corruption by ulist_add_merge() on 32bit arch
-
-Total: (9) commits
-
- fs/btrfs/backref.c      |  14 ++-
- fs/btrfs/btrfs_inode.h  |   6 -
- fs/btrfs/ctree.c        |  20 ++--
- fs/btrfs/ctree.h        |   4 +-
- fs/btrfs/disk-io.c      |  32 ------
- fs/btrfs/extent-tree.c  | 285 +++++++++++++++++++++++++++++++++++++++++++++---
- fs/btrfs/file-item.c    |   2 +-
- fs/btrfs/file.c         |  26 +----
- fs/btrfs/inode.c        |  59 +++-------
- fs/btrfs/ordered-data.c | 123 ---------------------
- fs/btrfs/ordered-data.h |   5 -
- fs/btrfs/qgroup.c       | 169 ++++++++++++++++++++++++++++
- fs/btrfs/qgroup.h       |   1 +
- fs/btrfs/super.c        |  51 ++++++++-
- fs/btrfs/transaction.c  |  33 +-----
- fs/btrfs/transaction.h  |   1 -
- fs/btrfs/ulist.h        |  15 +++
- 17 files changed, 541 insertions(+), 305 deletions(-)
+Stephen should know better than me.
