@@ -1,149 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaHOPAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 11:00:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548AbaHOPAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 11:00:43 -0400
-Date: Fri, 15 Aug 2014 16:58:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
-	seqlock
-Message-ID: <20140815145813.GA15379@redhat.com>
-References: <20140813172230.GA6296@redhat.com> <20140813133526.1eb5526f@cuia.bos.redhat.com> <20140813180807.GA8098@redhat.com> <53EBADB1.2020403@redhat.com> <20140813184511.GA9663@redhat.com> <20140813170324.544aaf2d@cuia.bos.redhat.com> <20140814142404.GA28211@redhat.com> <53ECD7C8.6040202@redhat.com> <20140814161247.GA32715@redhat.com> <20140814221447.7b8cf03f@annuminas.surriel.com>
+	id S1751575AbaHOPDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 11:03:19 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:50187 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaHOPDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 11:03:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140814221447.7b8cf03f@annuminas.surriel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1408107638-96143-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
+References: <1408107638-96143-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Fri, 15 Aug 2014 08:02:36 -0700
+Message-ID: <CAGVrzcYqRXqmQp5T8ULfP9PdUWWbTg0g+NbWuSt9VzcRQcAoQg@mail.gmail.com>
+Subject: Re: [PATCH v2] net: phy: smsc: move smsc_phy_config_init reset part
+ in a soft_reset function
+To: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14, Rik van Riel wrote:
+2014-08-15 6:00 GMT-07:00 Gwenhael Goavec-Merou
+<gwenhael.goavec-merou@armadeus.com>:
+> On the one hand, phy_device.c provides a generic reset function if the phy
+> driver does not provide a soft_reset pointer. This generic reset does not take
+> into account the state of the phy, with a potential failure if the phy is in
+> powerdown mode. On the other hand, smsc driver provides a function with both
+> correct reset behaviour and configuration.
 >
-> @@ -288,18 +288,31 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
->  	struct signal_struct *sig = tsk->signal;
->  	cputime_t utime, stime;
->  	struct task_struct *t;
-> -
-> -	times->utime = sig->utime;
-> -	times->stime = sig->stime;
-> -	times->sum_exec_runtime = sig->sum_sched_runtime;
-> +	unsigned int seq, nextseq;
->  
->  	rcu_read_lock();
-> -	for_each_thread(tsk, t) {
-> -		task_cputime(t, &utime, &stime);
-> -		times->utime += utime;
-> -		times->stime += stime;
-> -		times->sum_exec_runtime += task_sched_runtime(t);
-> -	}
-> +	/* Attempt a lockless read on the first round. */
-> +	nextseq = 0;
-> +	do {
-> +		seq = nextseq;
-> +		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-> +		times->utime = sig->utime;
-> +		times->stime = sig->stime;
-> +		times->sum_exec_runtime = sig->sum_sched_runtime;
+> This patch moves the reset part into a new smsc_phy_reset function and provides
+> the soft_reset pointer to have a correct reset behaviour by default.
+>
+> Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
+
+Reviewed-by: Florian Fainelli <f.fainelli@gmail.com>
+
+> ---
+> Changes since v1 (as advised by Sergei Shtylyov):
+>  * fix '=' alignment
+>
+>  drivers/net/phy/smsc.c | 33 +++++++++++++++++++++------------
+>  1 file changed, 21 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+> index 180c494..a4b0819 100644
+> --- a/drivers/net/phy/smsc.c
+> +++ b/drivers/net/phy/smsc.c
+> @@ -43,6 +43,22 @@ static int smsc_phy_ack_interrupt(struct phy_device *phydev)
+>
+>  static int smsc_phy_config_init(struct phy_device *phydev)
+>  {
+> +       int rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
 > +
-> +		for_each_thread(tsk, t) {
-> +			task_cputime(t, &utime, &stime);
-> +			times->utime += utime;
-> +			times->stime += stime;
-> +			times->sum_exec_runtime += task_sched_runtime(t);
-> +		}
-> +		/*
-> +		 * If a writer is currently active, seq will be odd, and
-> +		 * read_seqbegin_or_lock will take the lock.
-> +		 */
-> +		nextseq = raw_read_seqcount(&sig->stats_lock.seqcount);
-> +	} while (need_seqretry(&sig->stats_lock, seq));
-> +	done_seqretry(&sig->stats_lock, seq);
->  	rcu_read_unlock();
+> +       if (rc < 0)
+> +               return rc;
+> +
+> +       /* Enable energy detect mode for this SMSC Transceivers */
+> +       rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
+> +                      rc | MII_LAN83C185_EDPWRDOWN);
+> +       if (rc < 0)
+> +               return rc;
+> +
+> +       return smsc_phy_ack_interrupt(phydev);
+> +}
+> +
+> +static int smsc_phy_reset(struct phy_device *phydev)
+> +{
+>         int rc = phy_read(phydev, MII_LAN83C185_SPECIAL_MODES);
+>         if (rc < 0)
+>                 return rc;
+> @@ -66,18 +82,7 @@ static int smsc_phy_config_init(struct phy_device *phydev)
+>                         rc = phy_read(phydev, MII_BMCR);
+>                 } while (rc & BMCR_RESET);
+>         }
+> -
+> -       rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
+> -       if (rc < 0)
+> -               return rc;
+> -
+> -       /* Enable energy detect mode for this SMSC Transceivers */
+> -       rc = phy_write(phydev, MII_LAN83C185_CTRL_STATUS,
+> -                      rc | MII_LAN83C185_EDPWRDOWN);
+> -       if (rc < 0)
+> -               return rc;
+> -
+> -       return smsc_phy_ack_interrupt (phydev);
+> +       return 0;
 >  }
+>
+>  static int lan911x_config_init(struct phy_device *phydev)
+> @@ -142,6 +147,7 @@ static struct phy_driver smsc_phy_driver[] = {
+>         .config_aneg    = genphy_config_aneg,
+>         .read_status    = genphy_read_status,
+>         .config_init    = smsc_phy_config_init,
+> +       .soft_reset     = smsc_phy_reset,
+>
+>         /* IRQ related */
+>         .ack_interrupt  = smsc_phy_ack_interrupt,
+> @@ -164,6 +170,7 @@ static struct phy_driver smsc_phy_driver[] = {
+>         .config_aneg    = genphy_config_aneg,
+>         .read_status    = genphy_read_status,
+>         .config_init    = smsc_phy_config_init,
+> +       .soft_reset     = smsc_phy_reset,
+>
+>         /* IRQ related */
+>         .ack_interrupt  = smsc_phy_ack_interrupt,
+> @@ -186,6 +193,7 @@ static struct phy_driver smsc_phy_driver[] = {
+>         .config_aneg    = genphy_config_aneg,
+>         .read_status    = genphy_read_status,
+>         .config_init    = smsc_phy_config_init,
+> +       .soft_reset     = smsc_phy_reset,
+>
+>         /* IRQ related */
+>         .ack_interrupt  = smsc_phy_ack_interrupt,
+> @@ -230,6 +238,7 @@ static struct phy_driver smsc_phy_driver[] = {
+>         .config_aneg    = genphy_config_aneg,
+>         .read_status    = lan87xx_read_status,
+>         .config_init    = smsc_phy_config_init,
+> +       .soft_reset     = smsc_phy_reset,
+>
+>         /* IRQ related */
+>         .ack_interrupt  = smsc_phy_ack_interrupt,
+> --
+> 1.8.5.5
+>
 
-I still think this is not right. Let me quote my previous email,
 
-	> @@ -288,18 +288,31 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-	>  	struct signal_struct *sig = tsk->signal;
-	>  	cputime_t utime, stime;
-	>  	struct task_struct *t;
-	> -
-	> -	times->utime = sig->utime;
-	> -	times->stime = sig->stime;
-	> -	times->sum_exec_runtime = sig->sum_sched_runtime;
-	> +	unsigned int seq, nextseq;
-	>
-	>  	rcu_read_lock();
 
-	Almost cosmetic nit, but afaics this patch expands the rcu critical section
-	for no reason. We only need rcu_read_lock/unlock around for_each_thread()
-	below.
-
-	> +	nextseq = 0;
-	> +	do {
-	> +		seq = nextseq;
-	> +		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-	> +		times->utime = sig->utime;
-	> +		times->stime = sig->stime;
-	> +		times->sum_exec_runtime = sig->sum_sched_runtime;
-	> +
-	> +		for_each_thread(tsk, t) {
-	> +			task_cputime(t, &utime, &stime);
-	> +			times->utime += utime;
-	> +			times->stime += stime;
-	> +			times->sum_exec_runtime += task_sched_runtime(t);
-	> +		}
-	> +		/*
-	> +		 * If a writer is currently active, seq will be odd, and
-	> +		 * read_seqbegin_or_lock will take the lock.
-	> +		 */
-	> +		nextseq = raw_read_seqcount(&sig->stats_lock.seqcount);
-	> +	} while (need_seqretry(&sig->stats_lock, seq));
-	> +	done_seqretry(&sig->stats_lock, seq);
-
-	Hmm. It seems that read_seqbegin_or_lock() is not used correctly. I mean,
-	this code still can livelock in theory. Just suppose that anoter CPU does
-	write_seqlock/write_sequnlock right after read_seqbegin_or_lock(). In this
-	case "seq & 1" will be never true and thus "or_lock" will never happen.
-
-	IMO, this should be fixed. Either we should guarantee the forward progress
-	or we should not play with read_seqbegin_or_lock() at all. This code assumes
-	that sooner or later "nextseq = raw_read_seqcount()" should return the odd
-	counter, but in theory this can never happen.
-
-	And if we want to fix this we do not need 2 counters, just we need to set
-	"seq = 1" manually after need_seqretry() == T. Say, like __dentry_path() does.
-	(but unlike __dentry_path() we do not need to worry about rcu_read_unlock so
-	the code will be simpler).
-
-	I am wondering if it makes sense to introduce
-
-		bool read_seqretry_or_lock(const seqlock_t *sl, int *seq)
-		{
-			if (*seq & 1) {
-				read_sequnlock_excl(lock);
-				return false;
-			}
-		
-			if (!read_seqretry(lock, *seq))
-				return false;
-		
-			*seq = 1;
-			return true;
-		}
-
-Or I missed your reply?
-
-Oleg.
-
+-- 
+Florian
