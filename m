@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751070AbaHOMXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 08:23:31 -0400
-Received: from mailout.ofir.com ([193.138.124.32]:4094 "EHLO mailout.ofir.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884AbaHOMXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 08:23:30 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=192.168.193.2;
-X-Default-Received-SPF: pass (skip=loggedin (res=PASS)) x-ip-name=212.52.159.74;
-From: Lina Tayeb El Safi <linatayeb20@godmail.dk>
-Reply-To: linatayeb1989@gmail.com
-Subject: Hello,
-Date: Fri, 15 Aug 2014 14:16:32 +0200
-Message-ID: <53edfa20.1018.2144.fe4@godmail.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-X-X-Originating-IP: 212.52.159.74
-X-Mailer: SurgeWeb - Ajax Webmail Client
-X-To-Not-Matched: true
-X-X-Authenticated-User: linatayeb20@godmail.dk 
-X-To-Not-Matched: true
-X-Originating-IP: 192.168.193.2
-To: unlisted-recipients:; (no To-header on input)
+	id S1751105AbaHOMkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 08:40:24 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:46867 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaHOMkW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 08:40:22 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, kgene.kim@samsung.com, maxime.ripard@free-electrons.com,
+        linux-samsung-soc@vger.kernel.org
+Cc: peter.griffin@linaro.org, patches@linaro.org, lee.jones@linaro.org
+Subject: [PATCH 0/9] phy: various misc cleanups to phy drivers
+Date: Fri, 15 Aug 2014 13:40:07 +0100
+Message-Id: <1408106416-19044-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
- Hi,
-How are you today? My name is Lina Tayeb El Safi. I saw your email on 
-my search for a nice and trusted person so i decided to write to you. 
-I will like you to write and tell me more about your Self, from there 
-i will reply you with more of my details and pictures. I will be 
-waiting to receive from you. Have a nice day.
-Best regard.
+This series some a few misc cleanups to the PHY drivers: -
 
-Yours sincerely
-Lina Tayeb,
+1) Use module_platform_driver to register spear PHY drivers. This gets rid
+of a lof of boiler plate code.
 
+2) Remove .owner field from drivers using module_platform_driver, as this gets
+overridden anyway in __platform_driver_register.
 
+3) Remove OOM site specific failure messages. These are unecessary and make
+the kernel bigger.
+
+4) Add missing kzalloc error check, which could avoid NULL ptr dereference.
+
+regards,
+
+Peter.
+
+Peter Griffin (9):
+  phy: phy-omap-control: Remove unncessary site specific OOM messages
+  phy: phy-mvebu-sata: Add missing error check for devm_kzalloc
+  phy: phy-omap-usb2: Remove unncessary site specific OOM messages
+  phy: phy-ti-pipe3: Remove unncessary site specific OOM messages
+  phy: phy-spear1310-miphy: Remove unncessary site specific OOM messages
+  phy: phy-spear1340-miphy: Remove unncessary site specific OOM messages
+  phy: remove .owner field for drivers using module_platform_driver
+  phy: phy-spear1310-miphy: Use module_platform_driver to register
+    driver.
+  phy: phy-spear1340-miphy: Use module_platform_driver to register
+    driver.
+
+ drivers/phy/phy-bcm-kona-usb2.c     |  1 -
+ drivers/phy/phy-berlin-sata.c       |  1 -
+ drivers/phy/phy-exynos-dp-video.c   |  1 -
+ drivers/phy/phy-exynos-mipi-video.c |  1 -
+ drivers/phy/phy-exynos5-usbdrd.c    |  1 -
+ drivers/phy/phy-exynos5250-sata.c   |  1 -
+ drivers/phy/phy-hix5hd2-sata.c      |  1 -
+ drivers/phy/phy-miphy365x.c         |  1 -
+ drivers/phy/phy-mvebu-sata.c        |  3 ++-
+ drivers/phy/phy-omap-control.c      |  5 +----
+ drivers/phy/phy-omap-usb2.c         |  9 ++-------
+ drivers/phy/phy-qcom-apq8064-sata.c |  1 -
+ drivers/phy/phy-qcom-ipq806x-sata.c |  1 -
+ drivers/phy/phy-samsung-usb2.c      |  1 -
+ drivers/phy/phy-spear1310-miphy.c   | 17 ++---------------
+ drivers/phy/phy-spear1340-miphy.c   | 17 ++---------------
+ drivers/phy/phy-sun4i-usb.c         |  1 -
+ drivers/phy/phy-ti-pipe3.c          |  6 ++----
+ drivers/phy/phy-twl4030-usb.c       |  1 -
+ drivers/phy/phy-xgene.c             |  1 -
+ 20 files changed, 11 insertions(+), 60 deletions(-)
+
+-- 
+1.9.1
 
