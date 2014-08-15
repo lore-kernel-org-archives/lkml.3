@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbaHOOen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:34:43 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40750 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751005AbaHOOem (ORCPT
+	id S1751529AbaHOOgo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:36:44 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:57586 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaHOOgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:34:42 -0400
-Date: Fri, 15 Aug 2014 15:33:46 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Deepak Saxena <dsaxena@linaro.org>, Lee Campbell <leecam@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 3/3] arm64: Add seccomp support
-Message-ID: <20140815143346.GV27466@arm.com>
-References: <53D082E9.8090303@amacapital.net>
- <53D09C4F.9010104@linaro.org>
- <CALCETrWTDS7VSyuR5wgGxpu-_YMWVUVmv9ht6t1tCSX=GA46cQ@mail.gmail.com>
- <53D2255C.9050006@linaro.org>
- <CAGXu5jJL=zXuSRNomGrB09kqpUhEpkuxDH18JN4NRbWocMw4xg@mail.gmail.com>
- <53E47DCE.4080902@linaro.org>
- <20140811092409.GE15344@arm.com>
- <53E9BAD5.3080201@linaro.org>
- <20140812094058.GD29013@arm.com>
- <53E9F7E1.9090405@linaro.org>
+	Fri, 15 Aug 2014 10:36:43 -0400
+Message-ID: <53EE1AF7.4030206@cogentembedded.com>
+Date: Fri, 15 Aug 2014 18:36:39 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E9F7E1.9090405@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>,
+        linux-kernel@vger.kernel.org
+CC: Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH] net: phy: smsc: move smsc_phy_config_init reset part
+ in a soft_reset function
+References: <1408089161-94989-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
+In-Reply-To: <1408089161-94989-1-git-send-email-gwenhael.goavec-merou@armadeus.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 12:17:53PM +0100, AKASHI Takahiro wrote:
-> On 08/12/2014 06:40 PM, Will Deacon wrote:
-> > On Tue, Aug 12, 2014 at 07:57:25AM +0100, AKASHI Takahiro wrote:
-> >>
-> >>   >     case SECCOMP_MODE_FILTER:
-> >>   >         case SECCOMP_RET_TRACE:
-> >>   >             ...
-> >>   >             if (syscall_get_nr(current, regs) < 0)
-> >>   >                 goto skip;
-> >>
-> >> This implies that we should modify syscallno *before* __secure_computing()
-> >> returns.
-> >
-> > Why does it imply that? There are four competing entities here:
-> >
-> >   - seccomp
-> >   - tracehook
-> >   - ftrace (trace_sys_*)
-> >   - audit
-> >
-> > With the exception of ftrace, they can all potentially rewrite the pt_regs
-> > (the code you cite above is just below a ptrace_event call), so we have
-> > to choose some order in which to call them.
-> 
-> (audit won't change registers.)
+Hello.
 
-Sorry, you're quite right.
+On 08/15/2014 11:52 AM, Gwenhael Goavec-Merou wrote:
 
-> > On entry, x86 and arm call them in the order I listed above, so it seems
-> > sensible to follow that.
-> 
-> Right, but as far as I understand, ptrace_event() in __secure_computing()
-> calls ptrace_notify(), and eventually executes ptrace_stop(), which can
-> be stopped while tracer runs (until ptrace(PTRACE_CONT)?).
-> So syscall_get_nr() is expected to return -1 if trace changes a syscall number to -1
-> (as far as sycall_get_nr() refers to syscallno in pt_regs).
-> 
-> That is why I think we should have PTRACE_SET_SYSCALL.
+> On the one hand, phy_device.c provides a generic reset function if the phy
+> driver does not provide a soft_reset pointer. This generic reset does not take
+> into account the state of the phy, with a potential failure if the phy is in
+> powerdown mode. On the other hand, smsc driver provides a function with both
+> correct reset behaviour and configuration.
 
-Gotcha, yeah that looks like the cleanest approach after all. Thanks for the
-explanation.
+> This patch moves the reset part into a new smsc_phy_reset function and provides
+> the soft_reset pointer to have a correct reset behaviour by default.
 
-Will
+> Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@armadeus.com>
+> ---
+>   drivers/net/phy/smsc.c | 33 +++++++++++++++++++++------------
+>   1 file changed, 21 insertions(+), 12 deletions(-)
+
+> diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+> index 180c494..fda13f4 100644
+> --- a/drivers/net/phy/smsc.c
+> +++ b/drivers/net/phy/smsc.c
+[...]
+> @@ -142,6 +147,7 @@ static struct phy_driver smsc_phy_driver[] = {
+>   	.config_aneg	= genphy_config_aneg,
+>   	.read_status	= genphy_read_status,
+>   	.config_init	= smsc_phy_config_init,
+> +	.soft_reset		= smsc_phy_reset,
+
+    Please align with the other ='s above here and below.
+
+WBR, Sergei
+
