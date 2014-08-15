@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408AbaHOTDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 15:03:15 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:50740 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaHOTDN (ORCPT
+	id S1751507AbaHOTDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 15:03:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:9786 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751122AbaHOTDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 15:03:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMEtUuzT53jeH-L+saW-RopSR2EERO5UKVHyeORTGHVMCHbYag@mail.gmail.com>
-References: <1407916658-8731-1-git-send-email-ast@plumgrid.com>
- <1407916658-8731-18-git-send-email-ast@plumgrid.com> <CAE40pdf0pNYyazjpdkzxNJi7iC4LOOr_XEu078OUqP_uoCXnHg@mail.gmail.com>
- <CAMEtUuymPDhYBe42i4DJNXsdgZRaq9LuEU_nGSsqrY1FcFHqhQ@mail.gmail.com>
- <CALCETrVH8KXr8uSHAVy5eBsqmi1LjB5QZpboAGcjYswXvW1opA@mail.gmail.com>
- <CAMEtUuzey7PanznrAguOpvPLxyhgJB++ovE8RNys7srs=EY1qg@mail.gmail.com>
- <CALCETrVhjO5c7ob1vntx031c5RmxRHimkRt1F2EsmzdKB53_NA@mail.gmail.com> <CAMEtUuzT53jeH-L+saW-RopSR2EERO5UKVHyeORTGHVMCHbYag@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 15 Aug 2014 12:02:51 -0700
-Message-ID: <CALCETrUNvg88_VrwE+9RKnSgts=3zVcXbX6tuNLgUxJU436CrQ@mail.gmail.com>
-Subject: Re: [PATCH RFC v4 net-next 17/26] tracing: allow eBPF programs to be
- attached to events
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+	Fri, 15 Aug 2014 15:03:17 -0400
+Date: Fri, 15 Aug 2014 15:03:14 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
         LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Kees Cook <keescook@chromium.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mugunthan V N <mugunthanvnm@ti.com>,
+        Vaibhav Hiremath <hvaibhav@ti.com>,
+        Robert Nelson <robertcnelson@gmail.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: Random MAC address on my BeagleBone White
+Message-ID: <20140815150314.60d01877@gandalf.local.home>
+In-Reply-To: <20140815184911.GJ17027@pengutronix.de>
+References: <20140815134221.08c546a0@gandalf.local.home>
+	<20140815184911.GJ17027@pengutronix.de>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 11:56 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Fri, Aug 15, 2014 at 11:50 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Aug 15, 2014 10:36 AM, "Alexei Starovoitov" <ast@plumgrid.com> wrote:
->>>
->>> On Fri, Aug 15, 2014 at 10:20 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> > The downside of this approach is that compat support might be
->>> > difficult or impossible.
->>>
->>> Would do you mean by compat? 32-bit programs on 64-bit kernels?
->>> There is no such concept for eBPF. All eBPF programs are always
->>> operating on 64-bit registers.
->>
->> Doesn't the eBPF program need to know sizeof(long) to read these
->> fields correctly?  Or am I misunderstanding what the code does?
->
-> correct. eBPF program would be using 8-byte read on 64-bit kernel
-> and 4-byte read on 32-bit kernel. Same with access to ptrace fields
-> and pretty much all other fields in the kernel. The program will be
-> different on different kernels.
-> Say, this bpf_context struct doesn't exist at all. The programs would
-> still need to be different to walk in-kernel data structures...
+On Fri, 15 Aug 2014 20:49:11 +0200
+Markus Pargmann <mpa@pengutronix.de> wrote:
 
-Hmm.  I guess this isn't so bad.
+> Hi Steven,
+> 
+ 
+> The am335x SoC already has 4 registers which contain two unique vendor
+> MAC addresses, so they should be used automatically instead of a random
+> one.
+> 
+> As you mentioned above, I sent a series to read and use those addresses
+> in the linux kernel. There were some problems with the series which I
+> fixed to send a new version of the series, but I didn't send it yet. I
+> will try to resend it tomorrow and Cc you. It would be great if you
+> could test it.
+> 
 
-What's the actual difficulty with using u64?  ISTM that, if the clang
-front-end can't deal with u64, there's a bigger problem.  Or is it
-something else I don't understand.
+Yep, but I don't work on weekends (Chief Home Officer's orders). Well,
+I should say, I don't do computer work on weekends. House work on the
+other hand, plenty (Again, the CHO's orders). It will have to wait till
+Monday.
 
---Andy
+> As far as I know, barebox also works with the beaglebone white and it
+> should set the correct MAC address as well. So if you need the same IP
+> address in linux as in the bootloader, you could try barebox.
+
+Maybe I'll give it a try. But if your stuff works I'll be fine with
+that.
+
+Thanks! Hopefully I'll be using this board in my ktest tutorial at
+ELCEU in October.
+
+-- Steve
