@@ -1,306 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaHOCPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 22:15:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47896 "EHLO mx1.redhat.com"
+	id S1754254AbaHOCTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 22:19:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32731 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752108AbaHOCPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 22:15:21 -0400
-Date: Thu, 14 Aug 2014 22:14:47 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH RFC] time,signal: protect resource use statistics with
- seqlock
-Message-ID: <20140814221447.7b8cf03f@annuminas.surriel.com>
-In-Reply-To: <20140814161247.GA32715@redhat.com>
-References: <20140812191218.GA15210@redhat.com>
-	<53EA94DD.5040900@redhat.com>
-	<20140813172230.GA6296@redhat.com>
-	<20140813133526.1eb5526f@cuia.bos.redhat.com>
-	<20140813180807.GA8098@redhat.com>
-	<53EBADB1.2020403@redhat.com>
-	<20140813184511.GA9663@redhat.com>
-	<20140813170324.544aaf2d@cuia.bos.redhat.com>
-	<20140814142404.GA28211@redhat.com>
-	<53ECD7C8.6040202@redhat.com>
-	<20140814161247.GA32715@redhat.com>
-Organization: Red Hat, Inc.
+	id S1752781AbaHOCTR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Aug 2014 22:19:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,867,1400050800"; 
+   d="scan'208";a="576977904"
+From: "Du, ChangbinX" <changbinx.du@intel.com>
+To: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Nyman, Mathias" <mathias.nyman@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: "Wu, Hao" <hao.wu@intel.com>
+Subject: [BUG]  usb_dev_resume returns -113 due to work items queued by usb
+ on pm_wq is not executed before suspending.
+Thread-Topic: [BUG]  usb_dev_resume returns -113 due to work items queued by
+ usb on pm_wq is not executed before suspending.
+Thread-Index: Ac+4LQQVPRWYe0VPTy2dChNy4reeFA==
+Date: Fri, 15 Aug 2014 02:19:11 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01BA6392@SHSMSX103.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Aug 2014 18:12:47 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+Hi, All,
+As described in runtime_pm.txt for pm_wq:
+The power management work queue pm_wq in which bus types and device
+drivers can put their PM-related work items. It is strongly recommended that
+pm_wq be used for queuing all work items related to runtime PM, because
+this allows them to be synchronized with system-wide power transitions
+(suspend to RAM, hibernation and resume from system sleep states).
 
-> Or you can expand the scope of write_seqlock/write_sequnlock, so that
-> __unhash_process in called from inside the critical section. This looks
-> simpler at first glance.
-> 
-> Hmm, wait, it seems there is yet another problem ;) Afaics, you also
-> need to modify __exit_signal() so that ->sum_sched_runtime/etc are
-> accounted unconditionally, even if the group leader exits.
+Per my understanding, all runtime PM related works items queued on pm_wq
+should be completed before suspend to RAM. So to ensure device state is
+runtime active before suspending. Having checked the pm code, I found this is
+not true for work items queued by drivers.
 
-OK, this is what I have now.
+Now usb driver has used this pm_wq to run a work item that resumes root hub
+(see function xhci_resume()->usb_hcd_resume_root_hub()). But sometimes
+this work is not completed before usb device suspend. That is to say root hub
+device may still in runtime suspend state before suspending. And this can result
+in problem. One case is that as below error log shows,
 
-I am still getting backwards time sometimes, but only tiny
-increments. This suggests that cputime_adjust() may be the
-culprit, and I have no good idea on how to fix that yet...
+[  108.046248] PM: Entering mem sleep
+[  108.050487] Suspending console(s) (use no_console_suspend to debug)
+[  108.426510] active wakeup source: event5-576
+[  108.426529] PM: Some devices failed to suspend
+[  108.426887] dpm_run_callback(): usb_dev_resume+0x0/0x20 returns -113
+[  108.426918] PM: Device 1-2 failed to resume async: error -113
+[  108.428299] PM: resume of devices complete after 1.755 msecs
 
-Should task_cputime_adjusted and thread_group_cputime_adjusted
-pass in the address of a seqlock to use in case the values in
-prev need to be updated?
+The usb_dev_resume() return error -113, which mean host is in suspend state
+when resuming a device. The scenario is:
+1) Just before system suspending, pm core will run hcd runtime resume
+  routine if host is in runtime suspend state.
+2) Hcd runtime resume function xhci_resume() returns, and roothub resume
+  worker was queued by usb_hcd_resume_root_hub().
+3) system suspend continue going before roothub resume worker starts executing.
+  Thus host is still in runtime suspend state.
+4) One event make suspending process aborted before hcd suspended. Then pm
+  core will call resume routines for just suspended device. But when resuming
+  a usb device it find the host is in suspended. Then return error -113.
 
-Should we check whether the values in prev changed during the
-time spent in the function?
+If my analysis is correct, could you share your ideas for this issue?
 
-Is this a race between task_cputime_adjusted and other writers
-of signal->utime and signal->stime, instead of task_cputime_adjusted
-racing with itself?
+Regards and Thanks!
+Du, Changbin
 
-I am not sure what the best approach here is...
-
----8<---
-
-Subject: time,signal: protect resource use statistics with seqlock
-
-Both times() and clock_gettime(CLOCK_PROCESS_CPUTIME_ID) have scalability
-issues on large systems, due to both functions being serialized with a
-lock.
-
-The lock protects against reporting a wrong value, due to a thread in the
-task group exiting, its statistics reporting up to the signal struct, and
-that exited task's statistics being counted twice (or not at all).
-
-Protecting that with a lock results in times and clock_gettime being
-completely serialized on large systems.
-
-This can be fixed by using a seqlock around the events that gather and
-propagate statistics. As an additional benefit, the protection code can
-be moved into thread_group_cputime, slightly simplifying the calling
-functions.
-
-In the case of posix_cpu_clock_get_task things can be simplified a
-lot, because the calling function already ensures tsk sticks around,
-and the rest is now taken care of in thread_group_cputime.
-
-This way the statistics reporting code can run lockless.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- include/linux/sched.h          |  1 +
- kernel/exit.c                  | 48 +++++++++++++++++++++++-------------------
- kernel/fork.c                  |  1 +
- kernel/sched/cputime.c         | 36 +++++++++++++++++++------------
- kernel/sys.c                   |  2 --
- kernel/time/posix-cpu-timers.c | 14 ------------
- 6 files changed, 51 insertions(+), 51 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 857ba40..91f9209 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -646,6 +646,7 @@ struct signal_struct {
- 	 * Live threads maintain their own counters and add to these
- 	 * in __exit_signal, except for the group leader.
- 	 */
-+	seqlock_t stats_lock;
- 	cputime_t utime, stime, cutime, cstime;
- 	cputime_t gtime;
- 	cputime_t cgtime;
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 32c58f7..c1a0ef2 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -115,32 +115,34 @@ static void __exit_signal(struct task_struct *tsk)
- 
- 		if (tsk == sig->curr_target)
- 			sig->curr_target = next_thread(tsk);
--		/*
--		 * Accumulate here the counters for all threads but the
--		 * group leader as they die, so they can be added into
--		 * the process-wide totals when those are taken.
--		 * The group leader stays around as a zombie as long
--		 * as there are other threads.  When it gets reaped,
--		 * the exit.c code will add its counts into these totals.
--		 * We won't ever get here for the group leader, since it
--		 * will have been the last reference on the signal_struct.
--		 */
--		task_cputime(tsk, &utime, &stime);
--		sig->utime += utime;
--		sig->stime += stime;
--		sig->gtime += task_gtime(tsk);
--		sig->min_flt += tsk->min_flt;
--		sig->maj_flt += tsk->maj_flt;
--		sig->nvcsw += tsk->nvcsw;
--		sig->nivcsw += tsk->nivcsw;
--		sig->inblock += task_io_get_inblock(tsk);
--		sig->oublock += task_io_get_oublock(tsk);
--		task_io_accounting_add(&sig->ioac, &tsk->ioac);
--		sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
- 	}
- 
-+	/*
-+	 * Accumulate here the counters for all threads but the
-+	 * group leader as they die, so they can be added into
-+	 * the process-wide totals when those are taken.
-+	 * The group leader stays around as a zombie as long
-+	 * as there are other threads.  When it gets reaped,
-+	 * the exit.c code will add its counts into these totals.
-+	 * We won't ever get here for the group leader, since it
-+	 * will have been the last reference on the signal_struct.
-+	 */
-+	task_cputime(tsk, &utime, &stime);
-+	write_seqlock(&sig->stats_lock);
-+	sig->utime += utime;
-+	sig->stime += stime;
-+	sig->gtime += task_gtime(tsk);
-+	sig->min_flt += tsk->min_flt;
-+	sig->maj_flt += tsk->maj_flt;
-+	sig->nvcsw += tsk->nvcsw;
-+	sig->nivcsw += tsk->nivcsw;
-+	sig->inblock += task_io_get_inblock(tsk);
-+	sig->oublock += task_io_get_oublock(tsk);
-+	task_io_accounting_add(&sig->ioac, &tsk->ioac);
-+	sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
- 	sig->nr_threads--;
- 	__unhash_process(tsk, group_dead);
-+	write_sequnlock(&sig->stats_lock);
- 
- 	/*
- 	 * Do this under ->siglock, we can race with another thread
-@@ -1043,6 +1045,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
- 		spin_lock_irq(&p->real_parent->sighand->siglock);
- 		psig = p->real_parent->signal;
- 		sig = p->signal;
-+		write_seqlock(&psig->stats_lock);
- 		psig->cutime += tgutime + sig->cutime;
- 		psig->cstime += tgstime + sig->cstime;
- 		psig->cgtime += task_gtime(p) + sig->gtime + sig->cgtime;
-@@ -1065,6 +1068,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
- 			psig->cmaxrss = maxrss;
- 		task_io_accounting_add(&psig->ioac, &p->ioac);
- 		task_io_accounting_add(&psig->ioac, &sig->ioac);
-+		write_sequnlock(&psig->stats_lock);
- 		spin_unlock_irq(&p->real_parent->sighand->siglock);
- 	}
- 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 1380d8a..5d7cf2b 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1068,6 +1068,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
- 	sig->curr_target = tsk;
- 	init_sigpending(&sig->shared_pending);
- 	INIT_LIST_HEAD(&sig->posix_timers);
-+	seqlock_init(&sig->stats_lock);
- 
- 	hrtimer_init(&sig->real_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 	sig->real_timer.function = it_real_fn;
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 3e52836..b5f1c58 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -288,18 +288,31 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
- 	struct signal_struct *sig = tsk->signal;
- 	cputime_t utime, stime;
- 	struct task_struct *t;
--
--	times->utime = sig->utime;
--	times->stime = sig->stime;
--	times->sum_exec_runtime = sig->sum_sched_runtime;
-+	unsigned int seq, nextseq;
- 
- 	rcu_read_lock();
--	for_each_thread(tsk, t) {
--		task_cputime(t, &utime, &stime);
--		times->utime += utime;
--		times->stime += stime;
--		times->sum_exec_runtime += task_sched_runtime(t);
--	}
-+	/* Attempt a lockless read on the first round. */
-+	nextseq = 0;
-+	do {
-+		seq = nextseq;
-+		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-+		times->utime = sig->utime;
-+		times->stime = sig->stime;
-+		times->sum_exec_runtime = sig->sum_sched_runtime;
-+
-+		for_each_thread(tsk, t) {
-+			task_cputime(t, &utime, &stime);
-+			times->utime += utime;
-+			times->stime += stime;
-+			times->sum_exec_runtime += task_sched_runtime(t);
-+		}
-+		/*
-+		 * If a writer is currently active, seq will be odd, and
-+		 * read_seqbegin_or_lock will take the lock.
-+		 */
-+		nextseq = raw_read_seqcount(&sig->stats_lock.seqcount);
-+	} while (need_seqretry(&sig->stats_lock, seq));
-+	done_seqretry(&sig->stats_lock, seq);
- 	rcu_read_unlock();
- }
- 
-@@ -611,9 +624,6 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	cputime_adjust(&cputime, &p->prev_cputime, ut, st);
- }
- 
--/*
-- * Must be called with siglock held.
-- */
- void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
- {
- 	struct task_cputime cputime;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index ce81291..b663664 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -862,11 +862,9 @@ void do_sys_times(struct tms *tms)
- {
- 	cputime_t tgutime, tgstime, cutime, cstime;
- 
--	spin_lock_irq(&current->sighand->siglock);
- 	thread_group_cputime_adjusted(current, &tgutime, &tgstime);
- 	cutime = current->signal->cutime;
- 	cstime = current->signal->cstime;
--	spin_unlock_irq(&current->sighand->siglock);
- 	tms->tms_utime = cputime_to_clock_t(tgutime);
- 	tms->tms_stime = cputime_to_clock_t(tgstime);
- 	tms->tms_cutime = cputime_to_clock_t(cutime);
-diff --git a/kernel/time/posix-cpu-timers.c b/kernel/time/posix-cpu-timers.c
-index 3b89464..492b986 100644
---- a/kernel/time/posix-cpu-timers.c
-+++ b/kernel/time/posix-cpu-timers.c
-@@ -272,22 +272,8 @@ static int posix_cpu_clock_get_task(struct task_struct *tsk,
- 		if (same_thread_group(tsk, current))
- 			err = cpu_clock_sample(which_clock, tsk, &rtn);
- 	} else {
--		unsigned long flags;
--		struct sighand_struct *sighand;
--
--		/*
--		 * while_each_thread() is not yet entirely RCU safe,
--		 * keep locking the group while sampling process
--		 * clock for now.
--		 */
--		sighand = lock_task_sighand(tsk, &flags);
--		if (!sighand)
--			return err;
--
- 		if (tsk == current || thread_group_leader(tsk))
- 			err = cpu_clock_sample_group(which_clock, tsk, &rtn);
--
--		unlock_task_sighand(tsk, &flags);
- 	}
- 
- 	if (!err)
