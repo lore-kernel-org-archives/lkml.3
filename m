@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaHOQ2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:28:55 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40809 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaHOQ2y (ORCPT
+	id S1752179AbaHOQcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:32:11 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:47736 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaHOQ24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:28:54 -0400
+	Fri, 15 Aug 2014 12:28:56 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,138 +15,53 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH v6 tip/core/rcu 04/17] rcu: Make TASKS_RCU handle tasks that are almost done exiting
-Date: Fri, 15 Aug 2014 09:28:32 -0700
-Message-Id: <1408120125-30479-4-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v6 tip/core/rcu 05/17] rcu: Export RCU-tasks APIs to GPL modules
+Date: Fri, 15 Aug 2014 09:28:33 -0700
+Message-Id: <1408120125-30479-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140815162820.GA28967@linux.vnet.ibm.com>
  <1408120125-30479-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081516-6688-0000-0000-0000040AF63E
+x-cbid: 14081516-1542-0000-0000-00000409838D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-Once a task has passed exit_notify() in the do_exit() code path, it
-is no longer on the task lists, and is therefore no longer visible
-to rcu_tasks_kthread().  This means that an almost-exited task might
-be preempted while within a trampoline, and this task won't be waited
-on by rcu_tasks_kthread().  This commit fixes this bug by adding an
-srcu_struct.  An exiting task does srcu_read_lock() just before calling
-exit_notify(), and does the corresponding srcu_read_unlock() after
-doing the final preempt_disable().  This means that rcu_tasks_kthread()
-can do synchronize_srcu() to wait for all mostly-exited tasks to reach
-their final preempt_disable() region, and then use synchronize_sched()
-to wait for those tasks to finish exiting.
+This commit exports the RCU-tasks synchronous APIs,
+synchronize_rcu_tasks() and rcu_barrier_tasks(), to
+GPL-licensed kernel modules.
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Suggested-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/linux/rcupdate.h |  3 +++
- kernel/exit.c            |  3 +++
- kernel/rcu/update.c      | 21 +++++++++++++++++++++
- 3 files changed, 27 insertions(+)
+ kernel/rcu/update.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index ec939440cdb9..eb9f5244dd4b 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -321,6 +321,8 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
-  * macro rather than an inline function to avoid #include hell.
-  */
- #ifdef CONFIG_TASKS_RCU
-+#define TASKS_RCU(x) x
-+extern struct srcu_struct tasks_rcu_exit_srcu;
- #define rcu_note_voluntary_context_switch(t) \
- 	do { \
- 		preempt_disable(); /* Exclude synchronize_sched(); */ \
-@@ -329,6 +331,7 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
- 		preempt_enable(); \
- 	} while (0)
- #else /* #ifdef CONFIG_TASKS_RCU */
-+#define TASKS_RCU(x) do { } while (0)
- #define rcu_note_voluntary_context_switch(t)	do { } while (0)
- #endif /* #else #ifdef CONFIG_TASKS_RCU */
- 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index e5c4668f1799..b63823876afc 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -663,6 +663,7 @@ void do_exit(long code)
- {
- 	struct task_struct *tsk = current;
- 	int group_dead;
-+	TASKS_RCU(int tasks_rcu_i);
- 
- 	profile_task_exit(tsk);
- 
-@@ -772,6 +773,7 @@ void do_exit(long code)
- 	 */
- 	flush_ptrace_hw_breakpoint(tsk);
- 
-+	TASKS_RCU(tasks_rcu_i = __srcu_read_lock(&tasks_rcu_exit_srcu));
- 	exit_notify(tsk, group_dead);
- 	proc_exit_connector(tsk);
- #ifdef CONFIG_NUMA
-@@ -811,6 +813,7 @@ void do_exit(long code)
- 	if (tsk->nr_dirtied)
- 		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
- 	exit_rcu();
-+	TASKS_RCU(__srcu_read_unlock(&tasks_rcu_exit_srcu, tasks_rcu_i));
- 
- 	/*
- 	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
 diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index c3b459f758d6..9eb6bdd46988 100644
+index 9eb6bdd46988..33084d5749d0 100644
 --- a/kernel/rcu/update.c
 +++ b/kernel/rcu/update.c
-@@ -370,6 +370,13 @@ static struct rcu_head *rcu_tasks_cbs_head;
- static struct rcu_head **rcu_tasks_cbs_tail = &rcu_tasks_cbs_head;
- static DEFINE_RAW_SPINLOCK(rcu_tasks_cbs_lock);
+@@ -433,6 +433,7 @@ void synchronize_rcu_tasks(void)
+ 	/* Wait for the grace period. */
+ 	wait_rcu_gp(call_rcu_tasks);
+ }
++EXPORT_SYMBOL_GPL(synchronize_rcu_tasks);
  
-+/* Track exiting tasks in order to allow them to be waited for. */
-+DEFINE_SRCU(tasks_rcu_exit_srcu);
-+
-+/* Control stall timeouts.  Disable with <= 0, otherwise jiffies till stall. */
-+static int rcu_task_stall_timeout __read_mostly = HZ * 60 * 3;
-+module_param(rcu_task_stall_timeout, int, 0644);
-+
- /* Post an RCU-tasks callback. */
- void call_rcu_tasks(struct rcu_head *rhp, void (*func)(struct rcu_head *rhp))
- {
-@@ -521,6 +528,15 @@ static int __noreturn rcu_tasks_kthread(void *arg)
- 		rcu_read_unlock();
+ /**
+  * rcu_barrier_tasks - Wait for in-flight call_rcu_tasks() callbacks.
+@@ -445,6 +446,7 @@ void rcu_barrier_tasks(void)
+ 	/* There is only one callback queue, so this is easy.  ;-) */
+ 	synchronize_rcu_tasks();
+ }
++EXPORT_SYMBOL_GPL(rcu_barrier_tasks);
  
- 		/*
-+		 * Wait for tasks that are in the process of exiting.
-+		 * This does only part of the job, ensuring that all
-+		 * tasks that were previously exiting reach the point
-+		 * where they have disabled preemption, allowing the
-+		 * later synchronize_sched() to finish the job.
-+		 */
-+		synchronize_srcu(&tasks_rcu_exit_srcu);
-+
-+		/*
- 		 * Each pass through the following loop scans the list
- 		 * of holdout tasks, removing any that are no longer
- 		 * holdouts.  When the list is empty, we are done.
-@@ -549,6 +565,11 @@ static int __noreturn rcu_tasks_kthread(void *arg)
- 		 * ->rcu_tasks_holdout accesses to be within the grace
- 		 * period, avoiding the need for memory barriers for
- 		 * ->rcu_tasks_holdout accesses.
-+		 *
-+		 * In addition, this synchronize_sched() waits for exiting
-+		 * tasks to complete their final preempt_disable() region
-+		 * of execution, cleaning up after the synchronize_srcu()
-+		 * above.
- 		 */
- 		synchronize_sched();
- 
+ /* See if the current task has stopped holding out, remove from list if so. */
+ static void check_holdout_task(struct task_struct *t)
 -- 
 1.8.1.5
 
