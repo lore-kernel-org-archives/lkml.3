@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaHORYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 13:24:18 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:34631 "EHLO kanga.kvack.org"
+	id S1751691AbaHORYb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 13:24:31 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:34677 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751122AbaHORYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 13:24:16 -0400
-Date: Fri, 15 Aug 2014 13:24:15 -0400
+	id S1751501AbaHORY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 13:24:29 -0400
+Date: Fri, 15 Aug 2014 13:24:29 -0400
 From: Oleg Nesterov <oleg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-aio@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] aio: change exit_aio() to load mm->ioctx_table once and avoid rcu_read_lock()
-Message-ID: <4b70ac5fd9b58bfaa5f25b4ea48f528aefbf3308.1408122224.git.bcrl@kvack.org>
+Subject: [PATCH 2/7] aio: kill the misleading rcu read locks in ioctx_add_table() and kill_ioctx()
+Message-ID: <855ef0dec7271ff7be7381feaaf3f4aed80bd503.1408122224.git.bcrl@kvack.org>
 References: <cover.1408122224.git.bcrl@kvack.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -22,111 +22,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30, Benjamin LaHaise wrote:
->
-> > -		ctx->mmap_size = 0;
-> > -
-> > -		kill_ioctx(mm, ctx, NULL);
-> > +		if (ctx) {
-> > +			ctx->mmap_size = 0;
-> > +			kill_ioctx(mm, ctx, NULL);
-> > +		}
->
-> Rather than indenting and moving the two lines changing mmap_size and the
-> kill_ioctx() call, why not just do "if (!ctx) ... continue;"?  That reduces
-> the number of lines changed and avoid excessive indentation.
+ioctx_add_table() is the writer, it does not need rcu_read_lock() to
+protect ->ioctx_table. It relies on mm->ioctx_lock and rcu locks just
+add the confusion.
 
-OK. To me the code looks better/simpler with "if (ctx)", but this is subjective
-of course, I won't argue.
+And it doesn't need rcu_dereference() by the same reason, it must see
+any updates previously done under the same ->ioctx_lock. We could use
+rcu_dereference_protected() but the patch uses rcu_dereference_raw(),
+the function is simple enough.
 
-The patch still removes the empty line between mmap_size = 0 and kill_ioctx(),
-we reset mmap_size only for kill_ioctx(). But feel free to remove this change.
-
--------------------------------------------------------------------------------
-Subject: [PATCH v3 1/2] aio: change exit_aio() to load mm->ioctx_table once and avoid rcu_read_lock()
-
-1. We can read ->ioctx_table only once and we do not read rcu_read_lock()
-   or even rcu_dereference().
-
-   This mm has no users, nobody else can play with ->ioctx_table. Otherwise
-   the code is buggy anyway, if we need rcu_read_lock() in a loop because
-   ->ioctx_table can be updated then kfree(table) is obviously wrong.
-
-2. Update the comment. "exit_mmap(mm) is coming" is the good reason to avoid
-   munmap(), but another reason is that we simply can't do vm_munmap() unless
-   current->mm == mm and this is not true in general, the caller is mmput().
-
-3. We do not really need to nullify mm->ioctx_table before return, probably
-   the current code does this to catch the potential problems. But in this
-   case RCU_INIT_POINTER(NULL) looks better.
+The same for kill_ioctx(), although it does not update the pointer.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 ---
- fs/aio.c | 42 ++++++++++++++++--------------------------
- 1 file changed, 16 insertions(+), 26 deletions(-)
+ fs/aio.c | 14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 955947e..b669646 100644
+index b669646..c1d8c48 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -791,40 +791,30 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
-  */
- void exit_aio(struct mm_struct *mm)
- {
--	struct kioctx_table *table;
--	struct kioctx *ctx;
--	unsigned i = 0;
--
--	while (1) {
--		rcu_read_lock();
--		table = rcu_dereference(mm->ioctx_table);
--
--		do {
--			if (!table || i >= table->nr) {
--				rcu_read_unlock();
--				rcu_assign_pointer(mm->ioctx_table, NULL);
--				if (table)
--					kfree(table);
--				return;
--			}
-+	struct kioctx_table *table = rcu_dereference_raw(mm->ioctx_table);
-+	int i;
+@@ -554,8 +554,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 	struct aio_ring *ring;
  
--			ctx = table->table[i++];
--		} while (!ctx);
-+	if (!table)
-+		return;
+ 	spin_lock(&mm->ioctx_lock);
+-	rcu_read_lock();
+-	table = rcu_dereference(mm->ioctx_table);
++	table = rcu_dereference_raw(mm->ioctx_table);
  
+ 	while (1) {
+ 		if (table)
+@@ -563,7 +562,6 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 				if (!table->table[i]) {
+ 					ctx->id = i;
+ 					table->table[i] = ctx;
+-					rcu_read_unlock();
+ 					spin_unlock(&mm->ioctx_lock);
+ 
+ 					/* While kioctx setup is in progress,
+@@ -577,8 +575,6 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 				}
+ 
+ 		new_nr = (table ? table->nr : 1) * 4;
+-
 -		rcu_read_unlock();
-+	for (i = 0; i < table->nr; ++i) {
-+		struct kioctx *ctx = table->table[i];
+ 		spin_unlock(&mm->ioctx_lock);
  
-+		if (!ctx)
-+			continue;
- 		/*
--		 * We don't need to bother with munmap() here -
--		 * exit_mmap(mm) is coming and it'll unmap everything.
--		 * Since aio_free_ring() uses non-zero ->mmap_size
--		 * as indicator that it needs to unmap the area,
--		 * just set it to 0; aio_free_ring() is the only
--		 * place that uses ->mmap_size, so it's safe.
-+		 * We don't need to bother with munmap() here - exit_mmap(mm)
-+		 * is coming and it'll unmap everything. And we simply can't,
-+		 * this is not necessarily our ->mm.
-+		 * Since kill_ioctx() uses non-zero ->mmap_size as indicator
-+		 * that it needs to unmap the area, just set it to 0.
- 		 */
- 		ctx->mmap_size = 0;
+ 		table = kzalloc(sizeof(*table) + sizeof(struct kioctx *) *
+@@ -589,8 +585,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
+ 		table->nr = new_nr;
+ 
+ 		spin_lock(&mm->ioctx_lock);
+-		rcu_read_lock();
+-		old = rcu_dereference(mm->ioctx_table);
++		old = rcu_dereference_raw(mm->ioctx_table);
+ 
+ 		if (!old) {
+ 			rcu_assign_pointer(mm->ioctx_table, table);
+@@ -737,12 +732,9 @@ static int kill_ioctx(struct mm_struct *mm, struct kioctx *ctx,
+ 
+ 
+ 	spin_lock(&mm->ioctx_lock);
+-	rcu_read_lock();
+-	table = rcu_dereference(mm->ioctx_table);
 -
- 		kill_ioctx(mm, ctx, NULL);
- 	}
-+
-+	RCU_INIT_POINTER(mm->ioctx_table, NULL);
-+	kfree(table);
- }
++	table = rcu_dereference_raw(mm->ioctx_table);
+ 	WARN_ON(ctx != table->table[ctx->id]);
+ 	table->table[ctx->id] = NULL;
+-	rcu_read_unlock();
+ 	spin_unlock(&mm->ioctx_lock);
  
- static void put_reqs_available(struct kioctx *ctx, unsigned nr)
+ 	/* percpu_ref_kill() will do the necessary call_rcu() */
 -- 
 1.8.2.1
 
