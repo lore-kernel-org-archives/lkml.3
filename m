@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaHOB3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Aug 2014 21:29:42 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52711 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaHOB3l (ORCPT
+	id S1754068AbaHOBaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Aug 2014 21:30:22 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:51394 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaHOBaU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Aug 2014 21:29:41 -0400
-Message-ID: <53ED627E.2090804@hitachi.com>
-Date: Fri, 15 Aug 2014 10:29:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, yrl.pp-manager.tt@hitachi.com,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: Re: [PATCH] perf probe: Warn user to rebuild target with debuginfo
-References: <53ECF7E9.3050200@hitachi.com> <20140814182938.13429.90615.stgit@kbuild-fedora.novalocal> <CAE40pdd_Fy-x5VuhAt46YWSAWmd3z6C5A3DeB6AjBQF4YDZKXw@mail.gmail.com> <20140815010716.GA3148@kernel.org>
-In-Reply-To: <20140815010716.GA3148@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Aug 2014 21:30:20 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: pull request: bluetooth-next 2014-08-14
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20140815095547.75d9e9d4@canb.auug.org.au>
+Date: Thu, 14 Aug 2014 18:30:54 -0700
+Cc: Johan Hedberg <johan.hedberg@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <027436B7-E5DF-4AFB-B43C-65AB41D0200D@holtmann.org>
+References: <20140814145000.GA14226@t440s.P-661HNU-F1> <20140815095547.75d9e9d4@canb.auug.org.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/15 10:07), Arnaldo Carvalho de Melo wrote:
-> Em Thu, Aug 14, 2014 at 01:07:28PM -0700, Brendan Gregg escreveu:
->> On Thu, Aug 14, 2014 at 11:29 AM, Masami Hiramatsu
->> <masami.hiramatsu.pt@hitachi.com> wrote:
->> [...]
->>> The "rebuild with ..." part changes to "rebuild with CONFIG_DEBUG_INFO"
->>> if the target is the kernel or a kernel module.
->  
->> Thanks, definitely an improvement! Should the kernel message also
->> mention kernel debuginfo packages? Depends on the distribution and
->> environment, but I think for some users the solution is to add the
->> package.
+Hi Stephen,
 
-I see, and at least fedora/rhel has debuginfo for all packages.
-So, not only for the kernel, but also for user applications,
-we'll need to do that.
-
-> Yeah, something like what is suggested by gdb and documented here:
+>> Here's our first bluetooth-next pull request for the 3.18 kernel. Our
+>> tree is based on net-next so you'd need to pull from there first before
+>> pulling from our tree.
 > 
-> https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Developer_Guide/intro.debuginfo.html
-> 
-> --------------------------------------------------------------------
-> In some cases (such as loading a core file), GDB does not know the
-> name, version, or release of a name-debuginfo-version-release.rpm
-> package; it only knows the build-id. In such cases, GDB suggests a
-> different command:
-> 
-> gdb -c ./core
-> [...]
-> Missing separate debuginfo for the main executable filename
-> Try: yum --disablerepo='*' --enablerepo='*debug*' install /usr/lib/debug/.build-id/ef/dd0b5e69b0742fa5e5bad0771df4d1df2459d1
-> ---------------------------------------------------------------------
+> This is in a branch that will be included in linux-next today.  I guess
+> you didn't read my (very often) repeated request that no v3.18 material
+> be included until after v3.17-rc1 is released ... Please do not do that.
 
-ah, that's nice :)
+to be honest I did not know about this rule. Next time, I will create a special tree for the time during the merge window so that we can continue pushing out patches for the next release. For us the world is not standing still just because we have a 2 week merge window.
 
-> 
-> This is something I want to have eventually, i.e. to have per distro
-> plugins to automatically download packages required for some features,
-> like probing and annotation, for instance.
+Regards
 
-Yeah, however, it depends on the distro. AFAIK, ubuntu provides
-debuginfo package only for the kernel. So, at this point, I think
-what we can do is just say "please install debuginfo package"
-as below.
-
-  $ ./perf probe -x perf -L argv_split
-  The /home/fedora/ksrc/linux-3/tools/perf/perf file has no debug information, rebuild with -g.
-  Or install appropriate debuginfo package.
-    Error: Failed to show lines.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Marcel
 
