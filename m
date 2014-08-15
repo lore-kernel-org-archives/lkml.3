@@ -1,171 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaHOQxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:53:41 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:41307 "EHLO fiona.linuxhacker.ru"
+	id S1751857AbaHOQyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:54:51 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44693 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558AbaHOQxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:53:39 -0400
-From: Oleg Drokin <green@linuxhacker.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Fan Yong <fan.yong@intel.com>, Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 04/10] staging/lustre/ldlm: drop redundant ibits lock interoperability check
-Date: Fri, 15 Aug 2014 12:48:09 -0400
-Message-Id: <1408121295-29115-5-git-send-email-green@linuxhacker.ru>
+	id S1751102AbaHOQuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 12:50:37 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 05/18] perf report: Relax -g option parsing not to limit the option order
+Date: Fri, 15 Aug 2014 13:49:50 -0300
+Message-Id: <1408121403-11919-6-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408121295-29115-1-git-send-email-green@linuxhacker.ru>
-References: <1408121295-29115-1-git-send-email-green@linuxhacker.ru>
+In-Reply-To: <1408121403-11919-1-git-send-email-acme@kernel.org>
+References: <1408121403-11919-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fan Yong <fan.yong@intel.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-In very old release (older than Lustre-1.8), if the client talks with
-the server that does not support ibits lock, then the client needs to
-convert it as plain lock. Such interoperability check and convertion
-is out of date for a long time. Drop it.
+Current perf report -g/--call-graph option parser requires for option
+argument having following order:
 
-Signed-off-by: Fan Yong <fan.yong@intel.com>
-Reviewed-on: http://review.whamcloud.com/11004
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4971
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
-Reviewed-by: wangdi <di.wang@intel.com>
-Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+  type,min_percent[,print_limit],order,key
+
+But sometimes it's annoying to type all even if one just wants to change
+the "order" or "key" setting.
+
+This patch fixes it to remove the ordering restriction so that one can
+use just "-g caller", for instance.  The only remaining restriction is
+that the "print_limit" always comes after the "min_percent".
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Arun Sharma <asharma@fb.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rodrigo Campos <rodrigo@sdfg.com.ar>
+Link: http://lkml.kernel.org/r/1407996100-6359-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- .../staging/lustre/lustre/include/obd_support.h    |  1 +
- drivers/staging/lustre/lustre/ldlm/ldlm_lock.c     | 50 +++-------------------
- drivers/staging/lustre/lustre/ldlm/ldlm_request.c  | 15 +------
- drivers/staging/lustre/lustre/ptlrpc/import.c      | 15 +++++--
- 4 files changed, 19 insertions(+), 62 deletions(-)
+ tools/perf/util/callchain.c | 95 ++++++++++++++++++---------------------------
+ 1 file changed, 38 insertions(+), 57 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/include/obd_support.h b/drivers/staging/lustre/lustre/include/obd_support.h
-index 92c8992..874606a 100644
---- a/drivers/staging/lustre/lustre/include/obd_support.h
-+++ b/drivers/staging/lustre/lustre/include/obd_support.h
-@@ -402,6 +402,7 @@ int obd_alloc_fail(const void *ptr, const char *name, const char *type,
- #define OBD_FAIL_TGT_LAST_REPLAY	 0x710
- #define OBD_FAIL_TGT_CLIENT_ADD	  0x711
- #define OBD_FAIL_TGT_RCVG_FLAG	   0x712
-+#define OBD_FAIL_TGT_DELAY_CONDITIONAL	 0x713
- 
- #define OBD_FAIL_MDC_REVALIDATE_PAUSE    0x800
- #define OBD_FAIL_MDC_ENQUEUE_PAUSE       0x801
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-index d022666..3143222 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_lock.c
-@@ -613,50 +613,12 @@ EXPORT_SYMBOL(__ldlm_handle2lock);
-  */
- void ldlm_lock2desc(struct ldlm_lock *lock, struct ldlm_lock_desc *desc)
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 437ee09727e6..08f0fbf5527c 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -28,74 +28,55 @@ __thread struct callchain_cursor callchain_cursor;
+ int
+ parse_callchain_report_opt(const char *arg)
  {
--	struct obd_export *exp = lock->l_export ?: lock->l_conn_export;
+-	char *tok, *tok2;
++	char *tok;
+ 	char *endptr;
++	bool minpcnt_set = false;
+ 
+ 	symbol_conf.use_callchain = true;
+ 
+ 	if (!arg)
+ 		return 0;
+ 
+-	tok = strtok((char *)arg, ",");
+-	if (!tok)
+-		return -1;
 -
--	/* INODEBITS_INTEROP: If the other side does not support
--	 * inodebits, reply with a plain lock descriptor. */
--	if ((lock->l_resource->lr_type == LDLM_IBITS) &&
--	    (exp && !(exp_connect_flags(exp) & OBD_CONNECT_IBITS))) {
--		/* Make sure all the right bits are set in this lock we
--		   are going to pass to client */
--		LASSERTF(lock->l_policy_data.l_inodebits.bits ==
--			 (MDS_INODELOCK_LOOKUP | MDS_INODELOCK_UPDATE |
--			  MDS_INODELOCK_LAYOUT),
--			 "Inappropriate inode lock bits during conversion %llu\n",
--			 lock->l_policy_data.l_inodebits.bits);
+-	/* get the output mode */
+-	if (!strncmp(tok, "graph", strlen(arg))) {
+-		callchain_param.mode = CHAIN_GRAPH_ABS;
 -
--		ldlm_res2desc(lock->l_resource, &desc->l_resource);
--		desc->l_resource.lr_type = LDLM_PLAIN;
--
--		/* Convert "new" lock mode to something old client can
--		   understand */
--		if ((lock->l_req_mode == LCK_CR) ||
--		    (lock->l_req_mode == LCK_CW))
--			desc->l_req_mode = LCK_PR;
--		else
--			desc->l_req_mode = lock->l_req_mode;
--		if ((lock->l_granted_mode == LCK_CR) ||
--		    (lock->l_granted_mode == LCK_CW)) {
--			desc->l_granted_mode = LCK_PR;
--		} else {
--			/* We never grant PW/EX locks to clients */
--			LASSERT((lock->l_granted_mode != LCK_PW) &&
--				(lock->l_granted_mode != LCK_EX));
--			desc->l_granted_mode = lock->l_granted_mode;
--		}
--
--		/* We do not copy policy here, because there is no
--		   policy for plain locks */
+-	} else if (!strncmp(tok, "flat", strlen(arg))) {
+-		callchain_param.mode = CHAIN_FLAT;
+-	} else if (!strncmp(tok, "fractal", strlen(arg))) {
+-		callchain_param.mode = CHAIN_GRAPH_REL;
+-	} else if (!strncmp(tok, "none", strlen(arg))) {
+-		callchain_param.mode = CHAIN_NONE;
+-		symbol_conf.use_callchain = false;
+-		return 0;
 -	} else {
--		ldlm_res2desc(lock->l_resource, &desc->l_resource);
--		desc->l_req_mode = lock->l_req_mode;
--		desc->l_granted_mode = lock->l_granted_mode;
--		ldlm_convert_policy_to_wire(lock->l_resource->lr_type,
--					    &lock->l_policy_data,
--					    &desc->l_policy_data);
+-		return -1;
 -	}
-+	ldlm_res2desc(lock->l_resource, &desc->l_resource);
-+	desc->l_req_mode = lock->l_req_mode;
-+	desc->l_granted_mode = lock->l_granted_mode;
-+	ldlm_convert_policy_to_wire(lock->l_resource->lr_type,
-+				    &lock->l_policy_data,
-+				    &desc->l_policy_data);
- }
- EXPORT_SYMBOL(ldlm_lock2desc);
- 
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_request.c b/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
-index 8867dc1..37b8608 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_request.c
-@@ -876,21 +876,8 @@ int ldlm_cli_enqueue(struct obd_export *exp, struct ptlrpc_request **reqp,
- 		/* for the local lock, add the reference */
- 		ldlm_lock_addref_internal(lock, einfo->ei_mode);
- 		ldlm_lock2handle(lock, lockh);
--		if (policy != NULL) {
--			/* INODEBITS_INTEROP: If the server does not support
--			 * inodebits, we will request a plain lock in the
--			 * descriptor (ldlm_lock2desc() below) but use an
--			 * inodebits lock internally with both bits set.
--			 */
--			if (einfo->ei_type == LDLM_IBITS &&
--			    !(exp_connect_flags(exp) &
--			      OBD_CONNECT_IBITS))
--				lock->l_policy_data.l_inodebits.bits =
--					MDS_INODELOCK_LOOKUP |
--					MDS_INODELOCK_UPDATE;
--			else
-+		if (policy != NULL)
- 				lock->l_policy_data = *policy;
--		}
- 
- 		if (einfo->ei_type == LDLM_EXTENT)
- 			lock->l_req_extent = policy->l_extent;
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/import.c b/drivers/staging/lustre/lustre/ptlrpc/import.c
-index f522fc5..771b213 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/import.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/import.c
-@@ -1024,10 +1024,17 @@ finish:
- 
- 		spin_unlock(&imp->imp_lock);
- 
--		if (!ocd->ocd_ibits_known &&
--		    ocd->ocd_connect_flags & OBD_CONNECT_IBITS)
--			CERROR("Inodebits aware server returned zero compatible"
--			       " bits?\n");
-+		if ((imp->imp_connect_flags_orig & OBD_CONNECT_IBITS) &&
-+		    !(ocd->ocd_connect_flags & OBD_CONNECT_IBITS)) {
-+			LCONSOLE_WARN("%s: MDS %s does not support ibits "
-+				      "lock, either very old or invalid: "
-+				      "requested %llx, replied %llx\n",
-+				      imp->imp_obd->obd_name,
-+				      imp->imp_connection->c_remote_uuid.uuid,
-+				      imp->imp_connect_flags_orig,
-+				      ocd->ocd_connect_flags);
-+			GOTO(out, rc = -EPROTO);
+-
+-	/* get the min percentage */
+-	tok = strtok(NULL, ",");
+-	if (!tok)
+-		goto setup;
+-
+-	callchain_param.min_percent = strtod(tok, &endptr);
+-	if (tok == endptr)
+-		return -1;
++	while ((tok = strtok((char *)arg, ",")) != NULL) {
++		if (!strncmp(tok, "none", strlen(tok))) {
++			callchain_param.mode = CHAIN_NONE;
++			symbol_conf.use_callchain = false;
++			return 0;
 +		}
  
- 		if ((ocd->ocd_connect_flags & OBD_CONNECT_VERSION) &&
- 		    (ocd->ocd_version > LUSTRE_VERSION_CODE +
+-	/* get the print limit */
+-	tok2 = strtok(NULL, ",");
+-	if (!tok2)
+-		goto setup;
++		/* try to get the output mode */
++		if (!strncmp(tok, "graph", strlen(tok)))
++			callchain_param.mode = CHAIN_GRAPH_ABS;
++		else if (!strncmp(tok, "flat", strlen(tok)))
++			callchain_param.mode = CHAIN_FLAT;
++		else if (!strncmp(tok, "fractal", strlen(tok)))
++			callchain_param.mode = CHAIN_GRAPH_REL;
++		/* try to get the call chain order */
++		else if (!strncmp(tok, "caller", strlen(tok)))
++			callchain_param.order = ORDER_CALLER;
++		else if (!strncmp(tok, "callee", strlen(tok)))
++			callchain_param.order = ORDER_CALLEE;
++		/* try to get the sort key */
++		else if (!strncmp(tok, "function", strlen(tok)))
++			callchain_param.key = CCKEY_FUNCTION;
++		else if (!strncmp(tok, "address", strlen(tok)))
++			callchain_param.key = CCKEY_ADDRESS;
++		/* try to get the min percent */
++		else if (!minpcnt_set) {
++			callchain_param.min_percent = strtod(tok, &endptr);
++			if (tok == endptr)
++				return -1;
++			minpcnt_set = true;
++		} else {
++			/* try print limit at last */
++			callchain_param.print_limit = strtoul(tok, &endptr, 0);
++			if (tok == endptr)
++				return -1;
++		}
+ 
+-	if (tok2[0] != 'c') {
+-		callchain_param.print_limit = strtoul(tok2, &endptr, 0);
+-		tok2 = strtok(NULL, ",");
+-		if (!tok2)
+-			goto setup;
++		arg = NULL;
+ 	}
+ 
+-	/* get the call chain order */
+-	if (!strncmp(tok2, "caller", strlen("caller")))
+-		callchain_param.order = ORDER_CALLER;
+-	else if (!strncmp(tok2, "callee", strlen("callee")))
+-		callchain_param.order = ORDER_CALLEE;
+-	else
+-		return -1;
+-
+-	/* Get the sort key */
+-	tok2 = strtok(NULL, ",");
+-	if (!tok2)
+-		goto setup;
+-	if (!strncmp(tok2, "function", strlen("function")))
+-		callchain_param.key = CCKEY_FUNCTION;
+-	else if (!strncmp(tok2, "address", strlen("address")))
+-		callchain_param.key = CCKEY_ADDRESS;
+-	else
+-		return -1;
+-setup:
+ 	if (callchain_register_param(&callchain_param) < 0) {
+ 		pr_err("Can't register callchain params\n");
+ 		return -1;
 -- 
 1.9.3
 
