@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaHOWYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 18:24:35 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:54852
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750848AbaHOWYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 18:24:34 -0400
-From: "J. German Rivera" <German.Rivera@freescale.com>
-To: <stuart.yoder@freescale.com>
-CC: <linux-kernel@vger.kernel.org>,
-        "J. German Rivera" <German.Rivera@freescale.com>
-Subject: [RFC PATCH 4/4] Update MAINTAINERS file
-Date: Fri, 15 Aug 2014 17:09:37 -0500
-Message-ID: <1408140577-24982-5-git-send-email-German.Rivera@freescale.com>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1408140577-24982-1-git-send-email-German.Rivera@freescale.com>
-References: <1408140577-24982-1-git-send-email-German.Rivera@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(189002)(199003)(79102001)(86362001)(93916002)(26826002)(85306004)(76482001)(4396001)(47776003)(62966002)(68736004)(83072002)(102836001)(74662001)(97736001)(50466002)(74502001)(84676001)(69596002)(46102001)(76176999)(6806004)(80022001)(104166001)(48376002)(99396002)(229853001)(104016003)(2351001)(92726001)(95666004)(89996001)(81542001)(44976005)(31966008)(92566001)(77156001)(77982001)(2371004)(50986999)(106466001)(36756003)(87286001)(83322001)(50226001)(19580405001)(87936001)(81156004)(110136001)(20776003)(81342001)(88136002)(85852003)(19580395003)(64706001)(107046002)(21056001)(105606002)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB336;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1751437AbaHOW3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 18:29:43 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37389 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaHOW3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 18:29:41 -0400
+Date: Fri, 15 Aug 2014 23:29:14 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tim Kryger <tim.kryger@gmail.com>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Haijun Zhang <Haijun.Zhang@freescale.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20140815222914.GM17528@sirena.org.uk>
+References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
+ <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
+ <20140814151958.GY17528@sirena.org.uk>
+ <CAD7vxxLHtk2ywHGoBtDp6x3-5BtDdaFnCdc_pfgMwq63Cg8Qow@mail.gmail.com>
+ <53EDBB5B.4000209@collabora.co.uk>
+ <CAD7vxxKvZCxnDpPn3X1Uch_6m7Hfj_vApNfxUS2Wex9BjjBUdg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0304E36CA3
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=German.Rivera@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="l0GZ4SE/qP5NVpaF"
+Content-Disposition: inline
+In-Reply-To: <CAD7vxxKvZCxnDpPn3X1Uch_6m7Hfj_vApNfxUS2Wex9BjjBUdg@mail.gmail.com>
+X-Cookie: 98% lean.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask
+ is empty.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "J. German Rivera" <German.Rivera@freescale.com>
 
-Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
----
- MAINTAINERS |    8 ++++++++
- 1 file changed, 8 insertions(+)
+--l0GZ4SE/qP5NVpaF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7e2eb4c..eb8597d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3841,6 +3841,14 @@ S:	Maintained
- F:	sound/soc/fsl/fsl*
- F:	sound/soc/fsl/mpc8610_hpcd.c
+On Fri, Aug 15, 2014 at 07:19:41AM -0700, Tim Kryger wrote:
 
-+FREESCALE QORIQ MANAGEMENT COMPLEX DRIVER
-+M:	J. German Rivera <German.Rivera@freescale.com>
-+L:	linux-kernel@vger.kernel.org
-+S:	Maintained
-+F:	include/linux/fsl_mc*
-+F:	include/linux/fsl_dp*
-+F:	drivers/bus/fsl-mc/*
-+
- FREEVXFS FILESYSTEM
- M:	Christoph Hellwig <hch@infradead.org>
- W:	ftp://ftp.openlinux.org/pub/people/hch/vxfs
---
-1.7.9.7
+> That is a little different from my suggestion where the constraints
+> check is skipped when the regulator output is fixed.  It effectively
+> does this now when the regulator itself provides the fixed voltage.
+> However, the checks aren't skipped when that fixed voltage is coming
+> from an ancestor.  Why the difference?
 
+Nobody has written suitable code, and please bear in mind that even if
+the code is written there will probably be cases where it's too
+expensive for whatever reason so Javier's change is going to be needed.
+
+--l0GZ4SE/qP5NVpaF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT7om3AAoJELSic+t+oim9h3IP/R1CiGNSrZBydfF6pdNiMt5B
+Z8vjp/9GOdQkZqKc/xgXZc6Gki8n0g6k6VpC+/EPljalIvmIwS3b/Ln94Eu9PhcT
+0kp0WU+zVYkCZ+jX0caIt/O0OIC0yWAsf0VK/OMpcFXQbQYfZRQgeeItYQ/lC8eJ
+nJ18yHXD5eu7dw2CXJtt9jGDkOktC67knVtZHC50gYrEgtMoGG/lxHq0muGvByHT
+InKV339duP9hiNehPotRnuQ50ZM7u4RdWuRlGGOt33s2q7vk876I51cxrjJS0X6v
+zA//XD5QgdjyNhbIe1Q4N04mv+Un240EpqOYl0QdR6FuC/Wg7N/h0j4FSgdLIRCc
+IGKeLE+qRg/j28MQdjxX7dwRJqIv1LWd4WpHFkionkPJoLBcDA/U1N4/EJAxgh6M
+JmSn/g3GVIEEYc4EhVzESctPReGgAmntRBiHDHsW8Dwx2zRN/9jaCwi9vYuIDMke
+4ktZJFHLpmfTeJ6iPt3v4NGRxxglDAGNFrra/keiRwZcpLCoSugERaQkpOmcAyt3
+BrzrgslYLAQS+ubzp/Em5DqwD9Ygz0YdsRhSWCG6jR2JoKMKxJzOy3SFf4qyc1bv
+h05oU6pySwgp5qG8ZOv7SR7d6e8ZxHhr0WvDT4ovPy3ssMMN1S2Kyjn2RPGNWC8S
+n7xCUoG0TJNRH5FIyW1E
+=C0ZE
+-----END PGP SIGNATURE-----
+
+--l0GZ4SE/qP5NVpaF--
