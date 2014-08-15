@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaHOQg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 12:36:29 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:34470 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaHOQg1 (ORCPT
+	id S1751651AbaHOQi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 12:38:56 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:40755 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199AbaHOQiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 12:36:27 -0400
-Message-ID: <53EE370D.1060106@kernel.dk>
-Date: Fri, 15 Aug 2014 10:36:29 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 15 Aug 2014 12:38:54 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, Ming Lei <ming.lei@canonical.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com> <1408031441-31156-6-git-send-email-ming.lei@canonical.com> <20140815163111.GA16652@infradead.org>
-In-Reply-To: <20140815163111.GA16652@infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1407897037-6037-1-git-send-email-stepanm@codeaurora.org>
+References: <53EAC37C.4020203@codeaurora.org> <1407897037-6037-1-git-send-email-stepanm@codeaurora.org>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 15 Aug 2014 11:38:33 -0500
+Message-ID: <CAL_JsqKoikzLsXmXrm0GDM=+5ofX=OvrmvUTw3O-qX2hSTztcw@mail.gmail.com>
+Subject: Re: [PATCH v2] of: Deep-copy names of platform devices
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2014 10:31 AM, Christoph Hellwig wrote:
->> +static void loop_queue_work(struct work_struct *work)
-> 
-> Offloading work straight to a workqueue dosn't make much sense
-> in the blk-mq model as we'll usually be called from one.  If you
-> need to avoid the cases where we are called directly a flag for
-> the blk-mq code to always schedule a workqueue sounds like a much
-> better plan.
+Adding Greg...
 
-That's a good point - would clean up this bit, and be pretty close to a
-one-liner to support in blk-mq for the drivers that always need blocking
-context.
+On Tue, Aug 12, 2014 at 9:30 PM, Stepan Moskovchenko
+<stepanm@codeaurora.org> wrote:
+> When we parse the device tree and allocate platform
+> devices, the 'name' of the newly-created platform_device
+> is set to point to the 'name' field of the 'struct device'
+> embedded within the platform_device. This is dangerous,
+> because the name of the 'struct device' is dynamically
+> allocated. Drivers may call dev_set_name() on the device,
+> which will free and reallocate the name of the device,
+> leaving the 'name' of the platform_device pointing to the
+> now-freed memory.
+>
+> Furthermore, if the dev_set_name() call is made from a
+> driver's probe() function and a subsequent request results
+> in probe deferral, the dangling 'name' reference may lead
+> to the device being re-probed using the wrong driver.
 
--- 
-Jens Axboe
+This seems wrong. I don't think we want drivers to change their own
+device's name. The name is not supposed to change after registration.
 
+Rob
+
+> To mitigate these scenarios, we use kstrdup to perform a
+> deep copy of the device name when assigning the name of the
+> platform_device, so that the platform_device name is
+> unaffected by any calls to dev_set_name() that might made
+> by drivers to rename the embedded 'struct device'.
+>
+> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+> ---
+> * v2 - swap cleanup order
+>
+>  drivers/of/device.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/of/device.c b/drivers/of/device.c
+> index f685e55..e9beae6 100644
+> --- a/drivers/of/device.c
+> +++ b/drivers/of/device.c
+> @@ -54,7 +54,7 @@ int of_device_add(struct platform_device *ofdev)
+>
+>         /* name and id have to be set so that the platform bus doesn't get
+>          * confused on matching */
+> -       ofdev->name = dev_name(&ofdev->dev);
+> +       ofdev->name = kstrdup(dev_name(&ofdev->dev), GFP_KERNEL);
+>         ofdev->id = -1;
+>
+>         /* device_add will assume that this device is on the same node as
+> @@ -75,6 +75,7 @@ EXPORT_SYMBOL(of_device_register);
+>
+>  void of_device_unregister(struct platform_device *ofdev)
+>  {
+> +       kfree(ofdev->name);
+>         device_unregister(&ofdev->dev);
+>  }
+>  EXPORT_SYMBOL(of_device_unregister);
+> --
+> The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+>
