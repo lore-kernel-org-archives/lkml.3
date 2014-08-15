@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaHOXDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 19:03:30 -0400
-Received: from mail-la0-f67.google.com ([209.85.215.67]:36273 "EHLO
-	mail-la0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaHOXD3 (ORCPT
+	id S1751398AbaHOXMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 19:12:12 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45449 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaHOXMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 19:03:29 -0400
+	Fri, 15 Aug 2014 19:12:10 -0400
+Message-ID: <53EE93C9.9060306@codeaurora.org>
+Date: Fri, 15 Aug 2014 16:12:09 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Reply-To: mr.cedriclizin@gmail.com
-Date: Fri, 15 Aug 2014 15:39:42 -0700
-Message-ID: <CAFCuK1gcnSpQFqyHhq5N_R2dv5m7j-FMEG0=9S6PqrPjYjfJFQ@mail.gmail.com>
-Subject: GREETINGS FROM DUBAI
-From: "Mr. Cedric Lizin" <mr.bobdodo11@gmail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=UTF-8
+To: Will Deacon <will.deacon@arm.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: smp: Update the topology masks before calling
+ CPU_STARTING notifiers
+References: <1407892269-28650-1-git-send-email-rvaswani@codeaurora.org> <20140815104333.GH27466@arm.com>
+In-Reply-To: <20140815104333.GH27466@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day Friend,
+On 8/15/2014 3:43 AM, Will Deacon wrote:
+> On Wed, Aug 13, 2014 at 02:11:09AM +0100, Rohit Vaswani wrote:
+>> Currently, the CPU_STARTING notifiers would observe an incorrect sibling
+>> mask since the notifier chain is called before the topology masks are updated
+>> for the new cpu.
+>> Update the topology masks before calling the notifier chain to fix this
+>> problem.
+>>
+>> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+>> ---
+>>   arch/arm/kernel/smp.c   | 4 ++--
+>>   arch/arm64/kernel/smp.c | 4 ++--
+>>   2 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+>> index 7c4fada..0e2237c 100644
+>> --- a/arch/arm/kernel/smp.c
+>> +++ b/arch/arm/kernel/smp.c
+>> @@ -363,12 +363,12 @@ asmlinkage void secondary_start_kernel(void)
+>>   	if (smp_ops.smp_secondary_init)
+>>   		smp_ops.smp_secondary_init(cpu);
+>>   
+>> +	smp_store_cpu_info(cpu);
+>> +
+>>   	notify_cpu_starting(cpu);
+>>   
+>>   	calibrate_delay();
+>>   
+>> -	smp_store_cpu_info(cpu);
+>> -
+> Hmm, smp_store_cpu_info takes a copy of loops_per_jiffy. Are you sure it's
+> safe to move the call before calibrate_delay?
 
-I am Cedric Lizin,Managing Director of Barclays Bank in United Arab
-Emirates .I write you this proposal in good faith hoping that I will
-rely on you in a business transaction that require absolute
-confidentiality and of great interest and benefit to our both
-families.
+Right! - I had looked at the arm64 version .  I checked for arm32 now 
+and I think we should be
+safe to move calibrate_delay before the smp_store_cpu_info and I can 
+push a v2 version if
+there are no concerns. I did not see calibrate_delay having any 
+dependency for cpu_starting notifiers.
 
-In 2007,one Mr. Weimin, an Emirati Citizen whose surname is same as
-yours and has your country in his file as his place of origin, made a
-fixed deposit for 36 months, valued at $26,700,000.00 with my bank. I
-was his account officer before I rose to the position of Managing
-Director. The maturity date for this deposit contract was 27th of
-September 2010.Sadly Mr. Weimin was among the death victims in the
-September 2009 earthquake in Indonesia that left over 1,200 people
-dead while he was there on business trip.
+-Rohit
+> Will
 
-Since the last quarter of 2010 until today, the management of my bank
-has been finding means to reach him so as ascertain if he will roll
-over the Deposit or have the contract sum withdrawn. When I discovered
-that this will happen, I have tried to think up a procedure to
-preserve this fund and use the proceeds for business.
 
-Some directors here have been trying to find out from me the
-information about this account and the owner, but I have kept it
-closed because, I know that if they become aware that Mr. Weimin is
-late, they will corner the funds for themselves. Therefore, am seeking
-your co-operation to present you as the one to benefit from his fund
-at his death since you have the same name, so that my bank
-headquarters will pay the funds to you. I have done enough inside bank
-arrangement and you only have to put in your details into the
-information network in the bank computers and reflect you as his next
-of kin.
+Thanks,
+Rohit Vaswani
 
-If you concur with this proposal, I intend for you to retain 50% of
-the funds while 50% shall be for me. Kindly forward your response to
-me.
-Mr. Cedric Lizin
-Managing Director (Head of Barclays Wealth and Investment Management)
-Email: mr.cedriclizin@gmail.com
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+
