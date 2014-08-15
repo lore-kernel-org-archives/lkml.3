@@ -1,55 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaHOSRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 14:17:09 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:57541 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaHOSRH (ORCPT
+	id S1751508AbaHOSRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 14:17:21 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:38197 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaHOSRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 14:17:07 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Fri, 15 Aug 2014 14:17:04 -0400
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v7] 8250-core based serial driver for OMAP + DMA
-Message-ID: <20140815181704.GH17769@csclub.uwaterloo.ca>
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
+	Fri, 15 Aug 2014 14:17:17 -0400
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: willy@linux.intel.com, keith.busch@intel.com, sbradshaw@micron.com,
+        axboe@fb.com, tom.leiming@gmail.com, hch@infradead.org,
+        rlnelson@google.com
+Cc: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
+        =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [PATCH v12] Convert NVMe driver to blk-mq
+Date: Fri, 15 Aug 2014 20:16:43 +0200
+Message-Id: <1408126604-10611-1-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 07:42:28PM +0200, Sebastian Andrzej Siewior wrote:
-> This is my complete queue fo the omap serial driver based on the 8250 core
-> code. I played with it on beagle bone, am335x-evm and dra7xx including DMA.
-> The uncertain remain the runtime-pm pieces.
-> I hacked a small serial testing application which sent 10x 4KiB of data in
-> raw mode. The number of interrupts in comparison:
-> 
->     serial-omap | 8250 omap | 8250 omap + dma |
->    --------------------------------------------
-> TX |       2558 |       641 |         0 +  30 |
-> RX |      40960 |       854 |         1 + 853 |
-> 
-> So the 8250 version uses less interrupts for the same amount of data.
-> The consequence is that in TX mode there should be "short" periods where
-> no data is sent (before the CPU gets to re-fill the FIFO). On RX we have
-> a smaller time frame where we have to start to purge the FIFO before it
-> overflows.
+Hi all,
 
-Are you saying that with the new driver you have to respond to the RX
-irq faster than before to avoid overflows?  It is not quite clear.
+Thanks to Keith and Jens for feedback. Three fixes have been added. The current
+patch is on top of 3.16-rc6, together with the patches from Willy's master tree.
 
-I do think 40000 interrupts to handle 40000 bytes of date does seem a
-tad inefficient, so dropping to 854 looks a lot nicer.  Was the omap
-driver not using the fifo trigger levels at all?
+A branch with the patch on top can be found here:
+
+  https://github.com/MatiasBjorling/linux-collab nvmemq_review
+
+and the separate changes can be found in the nvmemq_v12 branch.
+
+Changes since v11:
+ * remove unused dev->q_suspended.
+ * remove unused "queued" label.
+ * Revert replacement of nvmeq->hctx with nvmeq->tags. It allowed an
+   use-after-free error to occur when all nvme queues wasn't assigned.
+
+Changes since v10:
+ * Rebased on top of Linus' v3.16-rc6.
+ * Incorporated the feedback from Christoph:
+    a. Insert comment regarding the timeout flow.
+    b. Moved tags into nvmeq instead of hctx.
+    c. Moved initialization of tags and nvmeq outside of init_hctx.
+    d. Refactor submission of commands in the request queue path.
+    e. Fixes for WARN_ON and BUG_ON.
+ * Fixed a missing blk_put_request during abort.
+ * Converted the "Async event request" patch into the request model.
+
+Changes since v9:
+ * Rebased on top of Linus' v3.16-rc3.
+ * Ming noted that we should remember to kick the request queue after requeue.
+ * Jens noted a couple of superfluous warnings.
+ * Christoph is removed from the contribution section. Instead he is going to
+   be added as reviewed-by.
+
+Changes since v8:
+ * QUEUE_FLAG_VIRT_HOLE was renamed to QUEUE_FLAG_SG_GAPS
+ * Previous revertion of patches lost the IRQ affinity hint
+ * Removed test code in nvme_reset_notify
+
+Changes since v7:
+ * Jens implemented support for QUEUE_FLAG_VIRT_HOLE to limit
+   requests to a continuous range of virtual memory.
+ * Keith fixed up the abortion logic.
+ * Usual style fixups
+
+Changes since v6:
+ * Rebased on top of Matthew's master and Jens' for-linus
+ * A couple of style fixups
+
+Changes since v5:
+ * Splits are now supported directly within blk-mq
+ * Remove nvme_queue->cpu_mask variable
+ * Remove unnecessary null check
+ * Style fixups
+
+Changes since v4:
+ * Fix timeout retries
+ * Fix naming in nvme_init_hctx
+ * Fix racy behavior of admin queue in nvme_dev_remove
+ * Fix wrong return values in nvme_queue_request
+ * Put cqe_seen back
+ * Introduce abort_completion for killing timed out I/Os
+ * Move locks outside of nvme_submit_iod
+ * Various renaming and style fixes
+
+Changes since v3:
+ * Added abortion logic
+ * Fixed possible race on abortion
+ * Removed req data with flush. Handled by by blk-mq
+ * Added safety check for submitting user rq to admin queue.
+ * Use dev->online_queues for nr_hw_queues
+ * Fix loop with initialization in nvme_create_io_queues
+ * Style fixups
+
+Changes since v2:
+  * rebased on top of current 3.16/core.
+  * use blk-mq queue management for spreading io queues
+  * removed rcu handling and allocated all io queues up front for mgmt by blk-mq
+  * removed the need for hotplugging notification
+  * fixed flush data handling
+  * fixed double free of spinlock
+  * various cleanup
+Matias Bjørling (1):
+  NVMe: Convert to blk-mq
+
+ drivers/block/nvme-core.c | 1324 ++++++++++++++++++---------------------------
+ drivers/block/nvme-scsi.c |    8 +-
+ include/linux/nvme.h      |   15 +-
+ 3 files changed, 537 insertions(+), 810 deletions(-)
 
 -- 
-Len Sorensen
+1.9.1
