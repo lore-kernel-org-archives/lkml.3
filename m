@@ -1,93 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaHOOl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 10:41:58 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38222 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750884AbaHOOl5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 10:41:57 -0400
-Date: Fri, 15 Aug 2014 16:41:50 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, arm@kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: move of AIC drivers for 3.17: fixes #1
-Message-ID: <20140815164150.5085b324@bbrezillon>
-In-Reply-To: <20140815142225.GF5063@titan.lakedaemon.net>
-References: <1408031156-13573-1-git-send-email-nicolas.ferre@atmel.com>
-	<20140815142225.GF5063@titan.lakedaemon.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751616AbaHOOmM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 10:42:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751480AbaHOOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 10:42:08 -0400
+Date: Fri, 15 Aug 2014 16:39:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        tiwai@suse.de, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init()
+	and module_long_probe_exit()
+Message-ID: <20140815143902.GB13222@redhat.com>
+References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com> <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com> <20140813175101.GA7156@redhat.com> <20140814231028.GQ21930@wotan.suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140814231028.GQ21930@wotan.suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On 08/15, Luis R. Rodriguez wrote:
+>
+> On Wed, Aug 13, 2014 at 07:51:01PM +0200, Oleg Nesterov wrote:
+> > On 08/12, Luis R. Rodriguez wrote:
+> > >
+> > > +/* To be used by modules which can take over 30 seconds at probe */
+> >
+> > Probably the comment should explain that this hack should only be
+> > used if the driver is buggy and is wating for "real fix".
+> >
+> > > +#define module_long_probe_init(initfn)				\
+> > > +	static struct task_struct *__init_thread;		\
+> > > +	static int _long_probe_##initfn(void *arg)		\
+> > > +	{							\
+> > > +		return initfn();				\
+> > > +	}							\
+> > > +	static inline __init int __long_probe_##initfn(void)	\
+> > > +	{							\
+> > > +		__init_thread = kthread_run(_long_probe_##initfn,\
+> > > +					    NULL,		\
+> > > +					    #initfn);		\
+> > > +		if (IS_ERR(__init_thread))			\
+> > > +			return PTR_ERR(__init_thread);		\
+> > > +		return 0;					\
+> > > +	}							\
+> > > +	module_init(__long_probe_##initfn);
+> > > +/* To be used by modules that require module_long_probe_init() */
+> > > +#define module_long_probe_exit(exitfn)				\
+> > > +	static inline void __long_probe_##exitfn(void)		\
+> > > +	{							\
+> > > +		exitfn();					\
+> > > +		if (__init_thread)				\
+> > > +			kthread_stop(__init_thread);		\
+> > > +	}							\
+> >
+> > exitfn() should be called after kthread_stop(), and only if initfn()
+> > returns 0. So it should probably do
+> >
+> > 	int err = kthread_stop(__init_thread);
+> > 	if (!err)
+> > 		exitfn();
+>
+> Thanks! With the check for __init_thread as well as it can be
+> ERR_PTR(-ENOMEM), ERR_PTR(-EINTR), or NULL (for whatever other
+> reason).
 
-On Fri, 15 Aug 2014 10:22:25 -0400
-Jason Cooper <jason@lakedaemon.net> wrote:
+Do you mean __long_probe_##exitfn() should also check ERR_PTR(__init_thread)?
+I don't think so. If kthread_run() above fails, module_init() should return
+the error (it does), so module_exit() won't be called.
 
-> Nicolas,
-> 
-> On Thu, Aug 14, 2014 at 05:45:56PM +0200, Nicolas Ferre wrote:
-> > Arnd, Olof, Kevin,
-> > 
-> > Boris moved both of our AIC drivers to their new home: the drivers/irqchip
-> > directory taking advantage of the genirc framework. For DT-enabled SoCs, we can
-> > use these drivers (aic and aic5) right now: Jason merged them and they are
-> > available in early 3.17 merge window.
-> > So, I build this pull-request for enabling the use of these drivers now as:
-> > - we are very early in 3.17 development
-> > - it allowed us to avoid having to depend on Jason's branch before the opening
-> >   of the merge window
-> 
-> Then why did I create a topic branch for you to base on?
-> 
->   git://git.infradead.org/users/jcooper/linux.git irqchip/atmel-aic
+> > But there is an additional complication, you can't use __init_thread
+> > without get_task_struct(),
+>
+> Can you elaborate why ? kthread_stop() uses get_task_struct(),
 
-Don't blame Nicolas for this, he was in vacation when you created this
-branch (he came back this week), and I should have told you that he
-couldn't use it for this release cycle.
+This is too late. This task_struct can be already freed/reused. See below.
 
-> 
-> > - it removes some code from the mach-at91 directory: including the whole
-> >   aic5 driver
-> > - we'd have quite a bit of time to solve issues if we found a bug
-> > - the code is basically moved so it should be error free.
-> 
-> Well, this is certainly up to Arnd, Olof and Kevin, but it seems a bit
-> unusual.  You're basically asking to merge changes into the current window
-> that has had _no_ time in -next...  Sounds like a recipe for trouble to
-> me.
-> 
-> In the future, please let me know if you're not going to need a topic
-> branch.
+> wake_up_process() and finally put_task_struct(), and we're the
+> only user of this thread. Also kthread_run() ensures wake_up_process()
+> gets called on startup, so not sure where the race would be provided
+> all users here and with the respective helpers on buggy drivers.
+>
+> > so  __long_probe_##initfn() can't use
+> > kthread_run(). It needs kthread_create() + get_task_struct() + wakeup.
+>
+> I fail to see why we'd need to add get_task_struct() on
+> module_long_probe_init(), can you clarify?
 
-This is all my fault, I'm the one who asked Nicolas to get these patches
-merged in 3.17, and, as I said, I should have told you that he was in
-vacation and thus could not use your topic branch for this release
-cycle.
+kthread_stop(kthread_run(callback)) is only safe if callback() can not exit
+on its own, without checking kthread_should_stop(). And btw that is why
+kthread_stop() does get_task_struct()).
 
-Anyway, I understand your concern about merging stuff that have not been
-tested on linux-next.
+If callback() can exit (if it calls do_exit() or simply returns), then nothing
+protects this task_struct, it will be freed.
 
-Arnd, Olof, Kevin, I'd totally understand if you refuses to takes these
-patches for this release cycle.
+Oleg.
 
-Best Regards,
-
-Boris
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
