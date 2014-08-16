@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaHPPzp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 11:55:45 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9513 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523AbaHPPzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 11:55:44 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: axboe@fb.com, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH] brd: add ram disk visibility option
-Date: Sat, 16 Aug 2014 19:55:30 +0400
-Message-Id: <1408204530-16726-1-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1751589AbaHPQBT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 12:01:19 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:43507 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508AbaHPQBR (ORCPT
+	<rfc822;Linux-kernel@vger.kernel.org>);
+	Sat, 16 Aug 2014 12:01:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <53EF7AF6.2000405@gmail.com>
+References: <53EF7AF6.2000405@gmail.com>
+Date: Sat, 16 Aug 2014 13:01:15 -0300
+Message-ID: <CAOMZO5CSGUp5qsgtDtqdoVq69EGmxV=quDD0CBSvHiOL5JNiwg@mail.gmail.com>
+Subject: Re: [RFC] usb issue on imx27: 3 clocks are needed
+From: Fabio Estevam <festevam@gmail.com>
+To: Philippe Reynes <tremyfr@gmail.com>
+Cc: linux-kernel <Linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Peter Chen <Peter.Chen@freescale.com>,
+        gwenhael.goavec-merou@trabucayre.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Hi Philippe,
 
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index c7d138e..3598110 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -442,12 +442,15 @@ static int rd_nr;
- int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
- static int max_part;
- static int part_shift;
-+static int part_show = 0;
- module_param(rd_nr, int, S_IRUGO);
- MODULE_PARM_DESC(rd_nr, "Maximum number of brd devices");
- module_param(rd_size, int, S_IRUGO);
- MODULE_PARM_DESC(rd_size, "Size of each RAM disk in kbytes.");
- module_param(max_part, int, S_IRUGO);
- MODULE_PARM_DESC(max_part, "Maximum number of partitions per RAM disk");
-+module_param(part_show, int, S_IRUGO);
-+MODULE_PARM_DESC(part_show, "Control RAM disk visibility in /proc/partitions");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_BLOCKDEV_MAJOR(RAMDISK_MAJOR);
- MODULE_ALIAS("rd");
-@@ -501,7 +504,8 @@ static struct brd_device *brd_alloc(int i)
- 	disk->fops		= &brd_fops;
- 	disk->private_data	= brd;
- 	disk->queue		= brd->brd_queue;
--	disk->flags |= GENHD_FL_SUPPRESS_PARTITION_INFO;
-+	if (!part_show)
-+		disk->flags |= GENHD_FL_SUPPRESS_PARTITION_INFO;
- 	sprintf(disk->disk_name, "ram%d", i);
- 	set_capacity(disk, rd_size * 2);
- 
--- 
-1.7.1
+On Sat, Aug 16, 2014 at 12:38 PM, Philippe Reynes <tremyfr@gmail.com> wrote:
+> Hi all,
+>
+> i.MX27's usb needs three clocks (usb_ipg_gate, usb_ahb_gate and usb_div)
+> but the current chipidea driver implementation, and devicetree, provides
+> only ipg and ahb. Consequently, if the bootloader don't enable the last
+> one, the kernel will crash.
 
+Which kernel version and what is the crash log you are getting?
+
+I used to get a USB crash on mx27, which was fixed with the following commit:
+
+commit b67b19447eb4f60d4f004f48298154630d4bed39
+Author: Fabio Estevam <fabio.estevam@freescale.com>
+Date:   Wed Apr 16 14:53:18 2014 -0300
+
+    ARM: dts: imx27: Use the correct usb clock gate
+
+    USB Host1, Host2 and OTG are gated via 'usb_ipg_gate' clock, so
+fix it in order
+    to avoid the following kernel oops:
+
+    usbcore: registered new interface driver usb-storage
+    10024000.usb supply vbus not found, using dummy regulator
+    Unhandled fault: external abort on non-linefetch (0x808) at 0xf4424184
+    Internal error: : 808 [#1] PREEMPT ARM
+    Modules linked in:
+    CPU: 0 PID: 1 Comm: swapper Not tainted 3.15.0-rc1-26325-g971f9fd-dirty #64
+    task: c7829aa0 ti: c7836000 task.ti: c7836000
+    PC is at ci_hdrc_probe+0x3a4/0x634
+    LR is at ci_hdrc_probe+0x100/0x634
+    pc : [<c036cc78>]    lr : [<c036c9d4>]    psr: 60000013
+    sp : c7837d48  ip : 00000001  fp : 00000000
+    r10: 00000000  r9 : 00000000  r8 : c791b6c0
+    r7 : c7945000  r6 : f4424000  r5 : c7945010  r4 : c794e010
+    r3 : f4424184  r2 : 00000000  r1 : 8c000004  r0 : 0c000004
+    Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+    Control: 0005317f  Table: a0004000  DAC: 00000017
+    Process swapper (pid: 1, stack limit = 0xc78361c0)
+    Stack: (0xc7837d48 to 0xc7838000)
+
+    Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+    Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
+
+Do you have this one applied?
