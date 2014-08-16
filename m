@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaHPMgi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 08:36:38 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:44347 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaHPMgg (ORCPT
+	id S1751495AbaHPMu3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 08:50:29 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:41083 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389AbaHPMu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 08:36:36 -0400
-Date: Sat, 16 Aug 2014 08:36:33 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Hans de Goede <hdegoede@redhat.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ata: remove deprecated struct ahci_platform_data
-Message-ID: <20140816123633.GE9305@htj.dyndns.org>
-References: <4376282.p3rdI3v8uT@amdc1032>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4376282.p3rdI3v8uT@amdc1032>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 16 Aug 2014 08:50:27 -0400
+From: Arjun Sreedharan <arjun024@gmail.com>
+To: tj@kernel.org
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ata: propagate return value of scc_wait_after_reset
+Date: Sat, 16 Aug 2014 18:20:09 +0530
+Message-Id: <1408193409-1867-1-git-send-email-arjun024@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <CAJFMrCGvj4g+HFgS3sArZHJLH3fO1kAXsQwhTxgvOhbWywUtWw@mail.gmail.com>
+References: <CAJFMrCGvj4g+HFgS3sArZHJLH3fO1kAXsQwhTxgvOhbWywUtWw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 06:22:27PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> The last user of the deprecated struct ahci_platform_data has been
-> cleaned up recently (SPEAr1340 got a proper PHY driver).
-> 
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+scc_bus_softreset not necessarily should return zero.
+Propagate the error code.
 
-Applied to libata/for-3.18.
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+---
+ drivers/ata/pata_scc.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-Thanks!
-
+diff --git a/drivers/ata/pata_scc.c b/drivers/ata/pata_scc.c
+index 4e006d7..b5013dc 100644
+--- a/drivers/ata/pata_scc.c
++++ b/drivers/ata/pata_scc.c
+@@ -585,7 +585,7 @@ static int scc_wait_after_reset(struct ata_link *link, unsigned int devmask,
+  *	Note: Original code is ata_bus_softreset().
+  */
+ 
+-static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
++static int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
+                                       unsigned long deadline)
+ {
+ 	struct ata_ioports *ioaddr = &ap->ioaddr;
+@@ -599,9 +599,7 @@ static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
+ 	udelay(20);
+ 	out_be32(ioaddr->ctl_addr, ap->ctl);
+ 
+-	scc_wait_after_reset(&ap->link, devmask, deadline);
+-
+-	return 0;
++	return scc_wait_after_reset(&ap->link, devmask, deadline);
+ }
+ 
+ /**
+@@ -618,7 +616,8 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
+ {
+ 	struct ata_port *ap = link->ap;
+ 	unsigned int slave_possible = ap->flags & ATA_FLAG_SLAVE_POSS;
+-	unsigned int devmask = 0, err_mask;
++	unsigned int devmask = 0;
++	int rc;
+ 	u8 err;
+ 
+ 	DPRINTK("ENTER\n");
+@@ -634,8 +633,8 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
+ 
+ 	/* issue bus reset */
+ 	DPRINTK("about to softreset, devmask=%x\n", devmask);
+-	err_mask = scc_bus_softreset(ap, devmask, deadline);
+-	if (err_mask) {
++	rc = scc_bus_softreset(ap, devmask, deadline);
++	if (rc) {
+ 		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", err_mask);
+ 		return -EIO;
+ 	}
 -- 
-tejun
+1.7.11.7
+
