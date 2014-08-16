@@ -1,99 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaHPNak (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 09:30:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60379 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaHPNaj (ORCPT
+	id S1751508AbaHPOML (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 10:12:11 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:58784 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaHPOMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 09:30:39 -0400
+	Sat, 16 Aug 2014 10:12:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "J. German Rivera" <German.Rivera@freescale.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        stuart.yoder@freescale.com, linuxppc-release@linux.freescale.net
+Subject: Re: [RFC PATCH 2/4] drivers/bus: Freescale Management Complex (fsl-mc) bus driver
+Date: Sat, 16 Aug 2014 16:12:06 +0200
+Message-ID: <3344352.Av1d0tahxM@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-26-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1408140794-25064-3-git-send-email-German.Rivera@freescale.com>
+References: <1408140794-25064-1-git-send-email-German.Rivera@freescale.com> <1408140794-25064-3-git-send-email-German.Rivera@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <20140816120224.GB9305@htj.dyndns.org>
-References: <1408115792-3311-1-git-send-email-ming.lei@canonical.com>
-	<53EE534F.2040208@kernel.dk>
-	<20140816120224.GB9305@htj.dyndns.org>
-Date: Sat, 16 Aug 2014 21:30:36 +0800
-Message-ID: <CACVXFVN5nRvY-22MUYu0nygBr4CAS-zNmj4VRK1X9aExa410xA@mail.gmail.com>
-Subject: Re: [PATCH] blk-mq: blk_mq_freeze_queue() should allow nesting
-From: Ming Lei <ming.lei@canonical.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:lAYFU5I67q78ctRn/QKcQNkiVqE5d+7crqNn/SjxY5g
+ OoOVgqFP386B4jw0jClzt66EShsr7s8Gl2cME/bEjPACX/UviH
+ 9+bmkKq6QBzdXxvuoHSKvw2f0kKOKtJ0cSEP4HK6bmpvRR68lg
+ t19V42KAhll11GTEikicFUQ3zrb5b/dFseh/QUJN6vO0RqaBaj
+ TxI+i+sDry/MBOD1BQckNxt+oxrD/5A393VjELLOr/7glHcLxA
+ APT29N5MY3jkFKfUvGuFwNNziByf86/rMn95l5L6AGeCOrkjST
+ ZLL/6ItZ6X1Ou7gqxVYn+puE12JrvjCLB5vMx9e0/ku6MYnm6y
+ 3AEAmCkLJpYv7hT3KdJA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/16/14, Tejun Heo <tj@kernel.org> wrote:
-> While converting to percpu_ref for freezing, add703fda981 ("blk-mq:
-> use percpu_ref for mq usage count") incorrectly made
-> blk_mq_freeze_queue() misbehave when freezing is nested due to
-> percpu_ref_kill() being invoked on an already killed ref.
->
-> Fix it by making blk_mq_freeze_queue() kill and kick the queue only
-> for the outermost freeze attempt.  All the nested ones can simply wait
-> for the ref to reach zero.
->
-> While at it, remove unnecessary @wake initialization from
-> blk_mq_unfreeze_queue().
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Ming Lei <ming.lei@canonical.com>
-> ---
-> Hello, Ming, Jens.
->
-> I think something like this is the correct solution.  Freezing should
-> be nestable after all.  Ming, can you please verify whether this fixes
-> the issue you're seeing?
+On Friday 15 August 2014 17:13:12 J. German Rivera wrote:
+> +struct fsl_mc_bus *fsl_mc_bus;
+> +EXPORT_SYMBOL(fsl_mc_bus);
 
-This patch can fix the warning too, and I think freezing should be nestable,
-and in my another patch they are exported.
+This does not look like something that should be exported.
+Or even better, kill this structure entirely and just pass around
+pointers to the fsl_mc_device so you can deal with multiple root
+instances.
 
-Thanks,
-
-> Thanks.
->
->  block/blk-mq.c |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index 5189cb1..5978088 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -112,18 +112,22 @@ static void blk_mq_usage_counter_release(struct
-> percpu_ref *ref)
->   */
->  void blk_mq_freeze_queue(struct request_queue *q)
->  {
-> +	bool freeze;
+> +static struct kmem_cache *mc_dev_cache;
 > +
->  	spin_lock_irq(q->queue_lock);
-> -	q->mq_freeze_depth++;
-> +	freeze = !q->mq_freeze_depth++;
->  	spin_unlock_irq(q->queue_lock);
->
-> -	percpu_ref_kill(&q->mq_usage_counter);
-> -	blk_mq_run_queues(q, false);
-> +	if (freeze) {
-> +		percpu_ref_kill(&q->mq_usage_counter);
-> +		blk_mq_run_queues(q, false);
+> +/**
+> + * fsl_mc_bus_match - device to driver matching callback
+> + * @dev: the MC object device structure to match against
+> + * @drv: the device driver to search for matching MC object device id
+> + * structures
+> + *
+> + * Returns 1 on success, 0 otherwise.
+> + */
+> +static int fsl_mc_bus_match(struct device *dev, struct device_driver *drv)
+> +{
+> +	const struct fsl_mc_device_match_id *id;
+> +	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
+> +	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(drv);
+> +	bool found = false;
+> +
+> +	if (WARN_ON(mc_dev->magic != FSL_MC_DEVICE_MAGIC))
+> +		goto out;
+> +	if (WARN_ON(mc_drv->magic != FSL_MC_DRIVER_MAGIC))
+> +		goto out;
+
+We normally don't do this magic number matching, just remove these
+and rely on the compile-time checks.
+> +struct bus_type fsl_mc_bus_type = {
+> +	.name = "fsl-mc",
+> +	.match = fsl_mc_bus_match,
+> +	.uevent = fsl_mc_bus_uevent,
+> +	.drv_groups = NULL,
+> +	.dev_groups = NULL,
+> +	.bus_groups = NULL,
+> +	.pm = NULL,
+> +};
+> +EXPORT_SYMBOL(fsl_mc_bus_type);
+
+No need to assign NULL members.
+
+Does it need to be exported to drivers? How about making it
+EXPORT_SYMBOL_GPL if it does?
+
+> +static int dprc_parse_dt_node(struct platform_device *pdev,
+> +			      phys_addr_t *mc_portal_phys_addr,
+> +			      uint32_t *mc_portal_size)
+> +{
+> +	struct resource res;
+> +	struct device_node *pdev_of_node = pdev->dev.of_node;
+> +	int error = -EINVAL;
+> +
+> +	error = of_address_to_resource(pdev_of_node, 0, &res);
+> +	if (error < 0) {
+> +		FSL_MC_ERROR(&pdev->dev,
+> +			     "of_address_to_resource() failed for %s\n",
+> +			     pdev_of_node->full_name);
+> +		goto out;
 > +	}
->  	wait_event(q->mq_freeze_wq, percpu_ref_is_zero(&q->mq_usage_counter));
->  }
->
->  static void blk_mq_unfreeze_queue(struct request_queue *q)
->  {
-> -	bool wake = false;
-> +	bool wake;
->
->  	spin_lock_irq(q->queue_lock);
->  	wake = !--q->mq_freeze_depth;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> +
+> +	*mc_portal_phys_addr = res.start;
+> +	*mc_portal_size = resource_size(&res);
+> +	error = 0;
+> +out:
+> +	return error;
+> +}
 
+Why not just call of_address_to_resource in the caller?
 
--- 
-Ming Lei
+> +/**
+> + * __fsl_mc_driver_register - registers a child device driver with the
+> + * MC bus
+> + *
+> + * This function is implicitly invoked from the registration function of
+> + * fsl_mc device drivers, which is generated by the
+> + * module_fsl_mc_driver() macro.
+> + */
+> +int __fsl_mc_driver_register(struct fsl_mc_driver *mc_driver,
+> +			     struct module *owner)
+> +{
+> +	struct fsl_mc_device *root_mc_dev;
+
+Here the root_mc_dev variable isn't really used for much.
+
+> +static int fsl_mc_device_get_mmio_regions(struct fsl_mc_device *mc_dev,
+> +					  struct fsl_mc_device *container_dev)
+> +{
+> +	int i;
+> +	int error;
+> +	struct fsl_mc_device_region *regions;
+> +	struct dprc_obj_desc *obj_desc = &mc_dev->obj_desc;
+> +	struct device *parent_dev = mc_dev->dev.parent;
+> +
+> +	regions = kmalloc_array(obj_desc->region_count,
+> +				sizeof(regions[0]), GFP_KERNEL);
+
+Better use 'struct resource' for the resources than make your own type.
+
+> +		mc_dev->icid = container_dev->icid;
+> +		mc_dev->dma_mask = 0xffffffff;	/* 32bit */
+> +		mc_dev->dev.dma_mask = &mc_dev->dma_mask;
+
+Is 32-bit DMA a fundamental limit of the bus?
+
+> +
+> +static const struct of_device_id fsl_mc_bus_match_table[] = {
+> +	{.compatible = "fsl,qoriq-mc",},
+> +	{},
+> +};
+
+Please add a binding documentation for this device in Documentation/device-tree/
+
+> +#define FSL_MC_MAGIC(_a, _b, _c, _d) \
+> +	(((uint32_t)(_a) << 24) | \
+> +	((uint32_t)(_b) << 16) | \
+> +	((uint32_t)(_c) << 8)  | \
+> +	(uint32_t)(_d))
+
+Can be dropped once you remove all the magic number matching
+
+> +/**
+> + * struct fsl_mc_device_region - MC object device MMIO region
+> + * @addr: base physical address
+> + * @size: size of the region in bytes
+> + */
+> +struct fsl_mc_device_region {
+> +	phys_addr_t paddr;
+> +	uint32_t size;
+> +};
+
+Can be removed when you move to 'struct resource'
+
+> +/**
+> + * struct fsl_mc_device - MC object device object
+> + * @magic: marker to verify identity of this structure
+
+remove
+
+> + * @flags: MC object device flags
+> + * @icid: Isolation context ID for the device
+> + * @mc_handle: MC handle for the corresponding MC object opened
+> + * @mc_io: Pointer to MC IO object assigned to this device or
+> + * NULL if none.
+> + * @driver: Pointer to the MC object device driver for this device
+
+Use container_of(&this->dev.driver, ...) instead
+
+> + * @container: Pointer to the DPRC device that contains this MC object device
+
+Why are there two devices for this? Should this just use dev->parent instead?
+
+> + * @dev_node: Node in the container's child list
+
+Same here: just use the device model's list management instead if you can,
+or explain why this is needed.
+
+> + * @obj_desc: MC description of the DPAA device
+> + * @num_regions: Number of MMIO regions for this MC object device
+
+Doesn't actually exist?
+
+> +#define FSL_MC_ERROR(_dev, _fmt, ...) \
+> +	do {								\
+> +		if ((_dev) != NULL)					\
+> +			dev_err(_dev, "%s:" __stringify(__LINE__) " "   \
+> +				_fmt, __func__, ##__VA_ARGS__);		\
+> +		else							\
+> +			pr_err("%s:" __stringify(__LINE__) " " _fmt,	\
+> +			       __func__, ##__VA_ARGS__);		\
+> +	} while (0)
+
+just use dev_err() directly, it handles the !_dev case already
+
+> +/**
+> + * struct fsl_mc_bus - Management Complex (MC) bus object
+> + * @magic: marker to verify identity of this structure
+> + * @pdev: platform device for this MC bus object
+> + * @root_mc_dev: pointer to root MC object device for this MC bus.
+> + */
+> +struct fsl_mc_bus {
+> +#	define FSL_MC_BUS_MAGIC   FSL_MC_MAGIC('L', 'B', 'U', 'S')
+> +	uint32_t magic;
+> +	struct platform_device *pdev;
+> +	struct fsl_mc_device *root_mc_dev;
+> +};
+
+pdev should be root_mc_dev->dev->parent, and magic seems pointless, so
+no need for this structure at all.
+
+> +/**
+> + * struct fsl_mc_dprc - Data Path Resource Container (DPRC) object
+> + * @magic: marker to verify identity of this structure
+> + * @mc_dev: pointer to MC object device object for this DPRC
+> + * @mutex: mutex to serialize access to the container.
+> + * @child_device_count: have the count of devices in this DPRC
+> + * @child_list:	anchor node of list of child devices on this DPRC
+> + */
+> +struct fsl_mc_dprc {
+> +#	define FSL_MC_DPRC_MAGIC   FSL_MC_MAGIC('D', 'P', 'R', 'C')
+> +	uint32_t magic;
+> +	struct fsl_mc_device *mc_dev;
+> +	struct mutex mutex;	/* serializes access to fields below */
+> +	uint16_t child_device_count;	/* Count of devices in this DPRC */
+> +	struct list_head child_list;
+> +};
+
+It's not clear what this represents to me. mc_dev presumably already
+has a list of children, so why not just use a pointer to mc_dev
+and remove this structure entirely?
+
+	Arnd
