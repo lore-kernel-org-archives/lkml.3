@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751525AbaHPNXx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 09:23:53 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:38496 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaHPNXv (ORCPT
+	id S1751520AbaHPNa2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 09:30:28 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:62777 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431AbaHPNa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 09:23:51 -0400
-Message-ID: <1408195420.21225.2.camel@phoenix>
-Subject: [PATCH] mfd: da9052: Avoid setting read_flag_mask for da9052-i2c
- driver
+	Sat, 16 Aug 2014 09:30:26 -0400
+MIME-Version: 1.0
+X-Originating-IP: [218.164.143.178]
+In-Reply-To: <20140812215515.GC17528@sirena.org.uk>
+References: <1407807429.8958.1.camel@phoenix>
+	<20140812215515.GC17528@sirena.org.uk>
+Date: Sat, 16 Aug 2014 21:30:26 +0800
+Message-ID: <CAFRkauB493XsKvLi_B=rEUdrL84vGDOuEg3e_V+yGQp=QhXxiw@mail.gmail.com>
+Subject: Re: [PATCH v2] regulator: Add stub for devm_regulator_get_exclusive
 From: Axel Lin <axel.lin@ingics.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Support Opensource <support.opensource@diasemi.com>,
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Clark <robdclark@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 16 Aug 2014 21:23:40 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code init regmap with &da9052_regmap_config for both da9052-spi and
-da9052-i2c drivers. da9052-spi sets the read_flag_mask.
-The same setting may be applied for da9052-i2c if da9052-spi driver is loaded
-first because they actually use the same regmap_config setting.
-Fix this issue by using a local variable for regmap_config in da9052-spi driver,
-so the settings in spi driver won't impact the settings in i2c driver.
-Also makes da9052_regmap_config const to avoid similar issue.
+2014-08-13 5:55 GMT+08:00 Mark Brown <broonie@kernel.org>:
+> On Tue, Aug 12, 2014 at 09:37:09AM +0800, Axel Lin wrote:
+>> Fix below build error when !CONFIG_REGULATOR.
+>>
+>>   CC      drivers/gpu/drm/msm/hdmi/hdmi.o
+>> drivers/gpu/drm/msm/hdmi/hdmi.c: In function 'hdmi_init':
+>> drivers/gpu/drm/msm/hdmi/hdmi.c:126:3: error: implicit declaration of function 'devm_regulator_get_exclusive' [-Werror=implicit-function-declaration]
+>
+> So, I just looked at that driver - it errors out on probe without the
+> regualtor.  Are you sure the fix isn't to add a dependency on the
+> regulator API or convert it back to using normal regulator gets (it was
+> converted without comment as part of a DT conversion), or indeed to
+> using the bulk regulator API.  It looks awfully like the driver is just
+> open coding devm_regulator_bulk_get() and friends.
+>
+> There is no explanation at all in either the changelog or the code for
+> why the driver is asking for exclusive regulators.
+Hi Rob,
+Any feedback about Mark's comment?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Adam and Steve,
-Any chance to test this patch?
+Hi Mark,
+Even though not for this build fix, I think the patch is still good.
+Should I remove the build error message and resend the patch to you?
 
-Thanks,
+Regards,
 Axel
- drivers/mfd/da9052-core.c         | 2 +-
- drivers/mfd/da9052-spi.c          | 7 ++++---
- include/linux/mfd/da9052/da9052.h | 2 +-
- 3 files changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-index e8af816..52a0c2f 100644
---- a/drivers/mfd/da9052-core.c
-+++ b/drivers/mfd/da9052-core.c
-@@ -522,7 +522,7 @@ static const struct mfd_cell da9052_subdev_info[] = {
- 	},
- };
- 
--struct regmap_config da9052_regmap_config = {
-+const struct regmap_config da9052_regmap_config = {
- 	.reg_bits = 8,
- 	.val_bits = 8,
- 
-diff --git a/drivers/mfd/da9052-spi.c b/drivers/mfd/da9052-spi.c
-index 17666b4..45ae0b7 100644
---- a/drivers/mfd/da9052-spi.c
-+++ b/drivers/mfd/da9052-spi.c
-@@ -23,6 +23,7 @@
- 
- static int da9052_spi_probe(struct spi_device *spi)
- {
-+	struct regmap_config config;
- 	int ret;
- 	const struct spi_device_id *id = spi_get_device_id(spi);
- 	struct da9052 *da9052;
-@@ -40,10 +41,10 @@ static int da9052_spi_probe(struct spi_device *spi)
- 
- 	spi_set_drvdata(spi, da9052);
- 
--	da9052_regmap_config.read_flag_mask = 1;
--	da9052_regmap_config.write_flag_mask = 0;
-+	config = da9052_regmap_config;
-+	config.read_flag_mask = 1;
- 
--	da9052->regmap = devm_regmap_init_spi(spi, &da9052_regmap_config);
-+	da9052->regmap = devm_regmap_init_spi(spi, &config);
- 	if (IS_ERR(da9052->regmap)) {
- 		ret = PTR_ERR(da9052->regmap);
- 		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
-diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
-index bba65f5..c18a4c1 100644
---- a/include/linux/mfd/da9052/da9052.h
-+++ b/include/linux/mfd/da9052/da9052.h
-@@ -211,7 +211,7 @@ static inline int da9052_reg_update(struct da9052 *da9052, unsigned char reg,
- int da9052_device_init(struct da9052 *da9052, u8 chip_id);
- void da9052_device_exit(struct da9052 *da9052);
- 
--extern struct regmap_config da9052_regmap_config;
-+extern const struct regmap_config da9052_regmap_config;
- 
- int da9052_irq_init(struct da9052 *da9052);
- int da9052_irq_exit(struct da9052 *da9052);
--- 
-1.9.1
-
-
-
