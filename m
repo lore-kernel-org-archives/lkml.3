@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaHPA4a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 20:56:30 -0400
-Received: from smtp.oranet.sk ([213.81.222.1]:34327 "EHLO smtp.oranet.sk"
+	id S1751432AbaHPB1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 21:27:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38100 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347AbaHPA42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 20:56:28 -0400
-X-Greylist: delayed 1432 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Aug 2014 20:56:28 EDT
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Fri, 15 Aug 2014 17:14:05 -0700
-From: =?UTF-8?Q?E-mail_administr=C3=A1tora=2E?= <agro-mutne@oranet.sk>
-To: undisclosed-recipients:;
-Subject: E-mail =?UTF-8?Q?administr=C3=A1tora=2E?=
-Message-ID: <059dfeac9bd62e682ad9707642a46045@oranet.sk>
-User-Agent: Roundcube Webmail
+	id S1751104AbaHPB1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 21:27:00 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: ebiederm@xmission.com, Baoquan He <bhe@redhat.com>
+Subject: [PATCH] kexec: remove the unused function parameter
+Date: Sat, 16 Aug 2014 09:25:34 +0800
+Message-Id: <1408152334-27678-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a cleanup. In function parse_crashkernel_suffix, the
+parameter crash_base is not used. So here remove it.
 
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ kernel/kexec.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 0b49a0a..7c3e72a 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1750,7 +1750,6 @@ static __initdata char *suffix_tbl[] = {
+  */
+ static int __init parse_crashkernel_suffix(char *cmdline,
+ 					   unsigned long long	*crash_size,
+-					   unsigned long long	*crash_base,
+ 					   const char *suffix)
+ {
+ 	char *cur = cmdline;
+@@ -1839,7 +1838,7 @@ static int __init __parse_crashkernel(char *cmdline,
+ 
+ 	if (suffix)
+ 		return parse_crashkernel_suffix(ck_cmdline, crash_size,
+-				crash_base, suffix);
++				suffix);
+ 	/*
+ 	 * if the commandline contains a ':', then that's the extended
+ 	 * syntax -- if not, it must be the classic syntax
 -- 
-POZOR!
+1.8.5.3
 
-=========================
-
-Vážený užívateľ,
-
-Toto je váš správca webmail. Prosím, byť informovaný, že e-mailový 
-server bol práve aktualizovaný a váš e-mail musí byť okamžite obnoviť.
-
-Tento proces je udržiavať aktualizované a chránené ako vždy webmail 
-server.
-
-Kliknite nižšie Ak chcete obnoviť mailovú správu teraz:
-
-http://mailupdattwre22.jigsy.com/
-
-S pozdravom,
-
-E-mail administrátora.
