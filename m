@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893AbaHPS7y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 14:59:54 -0400
-Received: from fr1.as29.net ([62.210.131.231]:51992 "EHLO
-	toothrot.meleeweb.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaHPS7v (ORCPT
+	id S1751699AbaHPTTO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 15:19:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33472 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaHPTTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 14:59:51 -0400
-From: Bertrand Jacquin <beber@meleeweb.net>
-To: Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org
-Cc: Bertrand Jacquin <beber@meleeweb.net>, linux-kernel@vger.kernel.org,
-        Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 0/3] handle module compression at install
-Date: Sat, 16 Aug 2014 20:50:13 +0200
-Message-Id: <1408215016-1848-1-git-send-email-beber@meleeweb.net>
-X-Mailer: git-send-email 1.8.5.5
+	Sat, 16 Aug 2014 15:19:13 -0400
+From: Colin King <colin.king@canonical.com>
+To: David Airlie <airlied@linux.ie>, Thomas Hellstrom <thellstrom@vmware.com>,
+        dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/vmwgfx: fix asssignment of vmw_bo_p to NULL
+Date: Sat, 16 Aug 2014 20:19:08 +0100
+Message-Id: <1408216748-4839-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 2.1.0.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Colin Ian King <colin.king@canonical.com>
 
-Here is patchset based on tag v3.17-rc1 that aims to handle kernel
-modules compression while running make modules_install.
+cppcheck detected an incorrect assignment:
 
-Details about this operation are present in patch 2/3.
+ [drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c:903]: (warning) Assignment
+ of function parameter has no effect outside the function. Did you
+ forget dereferencing it?
 
-Please Cc me, as I'm not subscribed to LKML.
+the original assigment didn't do anything, instead *vmw_bo_p should
+be set to NULL.
 
-Bertrand Jacquin (3):
-  modinst: wrap long lines in order to enhance cmd_modules_install
-  kbuild: handle module compression while running 'make
-    modules_install'.
-  modsign: lookup lines ending in .ko in .mod files
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- Makefile                 | 15 +++++++++++++++
- init/Kconfig             | 43 +++++++++++++++++++++++++++++++++++++++++++
- scripts/Makefile.modinst |  7 ++++++-
- scripts/Makefile.modsign |  2 +-
- 4 files changed, 65 insertions(+), 2 deletions(-)
-
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+index 7bfdaa1..b1632c4 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c
+@@ -917,7 +917,7 @@ static int vmw_translate_mob_ptr(struct vmw_private *dev_priv,
+ 
+ out_no_reloc:
+ 	vmw_dmabuf_unreference(&vmw_bo);
+-	vmw_bo_p = NULL;
++	*vmw_bo_p = NULL;
+ 	return ret;
+ }
+ 
 -- 
-2.0.4
+2.1.0.rc1
 
