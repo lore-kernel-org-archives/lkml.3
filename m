@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747AbaHPUdZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 16:33:25 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:61359 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaHPUdX (ORCPT
+	id S1751741AbaHPVJY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 17:09:24 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44882 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751598AbaHPVJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 16:33:23 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Andreas Ruprecht <rupran@einserver.de>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] media: davinci: remove unneeded dependency ARCH_OMAP3
-Date: Sat, 16 Aug 2014 21:33:18 +0100
-Message-Id: <1408221198-27458-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 16 Aug 2014 17:09:23 -0400
+X-Sasl-enc: KTql/UZCtp2LOiuIWvyaVovp7sRaDT1N57VBhvBIqs9e 1408223361
+From: Alan Ott <alan@signal11.us>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexander Aring <alex.aring@gmail.com>
+Cc: linux-wpan@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH net-next] MAINTAINERS: Add section for MRF24J40 IEEE 802.15.4 radio driver
+Date: Sat, 16 Aug 2014 17:09:03 -0400
+Message-Id: <1408223343-6031-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch removes unneeded dependency of ARCH_OMAP3
-on VIDEO_DM6446_CCDC.
-Also the top level platform Makefile descended into
-davinci/ without any dependency so just drop the
-dependency obj-y, as obj-$(CONFIG_ARCH_DAVINCI)
-already exists.
+Alan is the original author of the driver. This change was discussed
+with the 802.15.4 subsystem maintainer, Alexander Aring.
 
-Reported-by: Andreas Ruprecht <rupran@einserver.de>
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Alan Ott <alan@signal11.us>
 ---
- drivers/media/platform/Makefile        | 2 --
- drivers/media/platform/davinci/Kconfig | 2 +-
- 2 files changed, 1 insertion(+), 3 deletions(-)
+ MAINTAINERS | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/media/platform/Makefile b/drivers/media/platform/Makefile
-index e5269da..13aef34 100644
---- a/drivers/media/platform/Makefile
-+++ b/drivers/media/platform/Makefile
-@@ -47,8 +47,6 @@ obj-$(CONFIG_SOC_CAMERA)		+= soc_camera/
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 2f85f55..c066da4 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5972,6 +5972,12 @@ T:	git git://linuxtv.org/media_tree.git
+ S:	Maintained
+ F:	drivers/media/radio/radio-mr800.c
  
- obj-$(CONFIG_VIDEO_RENESAS_VSP1)	+= vsp1/
- 
--obj-y	+= davinci/
--
- obj-$(CONFIG_ARCH_OMAP)	+= omap/
- 
- ccflags-y += -I$(srctree)/drivers/media/i2c
-diff --git a/drivers/media/platform/davinci/Kconfig b/drivers/media/platform/davinci/Kconfig
-index afb3aec..298e1ee 100644
---- a/drivers/media/platform/davinci/Kconfig
-+++ b/drivers/media/platform/davinci/Kconfig
-@@ -26,7 +26,7 @@ config VIDEO_DAVINCI_VPIF_CAPTURE
- 
- config VIDEO_DM6446_CCDC
- 	tristate "TI DM6446 CCDC video capture driver"
--	depends on VIDEO_V4L2 && (ARCH_DAVINCI || ARCH_OMAP3)
-+	depends on VIDEO_V4L2 && ARCH_DAVINCI
- 	select VIDEOBUF_DMA_CONTIG
- 	help
- 	   Enables DaVinci CCD hw module. DaVinci CCDC hw interfaces
++MRF24J40 IEEE 802.15.4 RADIO DRIVER
++M:	Alan Ott <alan@signal11.us>
++L:	linux-wpan@vger.kernel.org
++S:	Maintained
++F:	drivers/net/ieee802154/mrf24j40.c
++
+ MSI LAPTOP SUPPORT
+ M:	"Lee, Chun-Yi" <jlee@suse.com>
+ L:	platform-driver-x86@vger.kernel.org
 -- 
-1.9.1
+1.8.1.2
 
