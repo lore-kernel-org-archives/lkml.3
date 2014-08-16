@@ -1,43 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaHPVeW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 17:34:22 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38890 "EHLO
+	id S1751784AbaHPVhf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 17:37:35 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38909 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaHPVeT (ORCPT
+	with ESMTP id S1751686AbaHPVhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 17:34:19 -0400
-Date: Sat, 16 Aug 2014 13:59:03 +0100
+	Sat, 16 Aug 2014 17:37:34 -0400
+Date: Sat, 16 Aug 2014 13:02:16 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tim Kryger <tim.kryger@gmail.com>, Chris Ball <chris@printf.net>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Haijun Zhang <Haijun.Zhang@freescale.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20140816125903.GC28623@sirena.org.uk>
-References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
- <CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>
- <20140814151958.GY17528@sirena.org.uk>
- <CAD7vxxLHtk2ywHGoBtDp6x3-5BtDdaFnCdc_pfgMwq63Cg8Qow@mail.gmail.com>
- <53EDBB5B.4000209@collabora.co.uk>
- <20140815095528.GH17528@sirena.org.uk>
- <CAPDyKFpm5nzXp5p0qxDof2NcOML911eYkjPNMsn9a2ttdnW7gQ@mail.gmail.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Markus Pargmann <mpa@pengutronix.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140816120216.GB28623@sirena.org.uk>
+References: <1392729108.18579.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jy6Sn24JjFx/iggw"
+	protocol="application/pgp-signature"; boundary="LyciRD1jyfeSSjG0"
 Content-Disposition: inline
-In-Reply-To: <CAPDyKFpm5nzXp5p0qxDof2NcOML911eYkjPNMsn9a2ttdnW7gQ@mail.gmail.com>
+In-Reply-To: <1392729108.18579.1.camel@phoenix>
 X-Cookie: Don't feed the bats tonight.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 216.80.70.240
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask
- is empty.
+Subject: Re: [PATCH RFT] regulator: tps65910: Allow missing init_data for
+ diagnostics
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -45,42 +33,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---jy6Sn24JjFx/iggw
+--LyciRD1jyfeSSjG0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Aug 15, 2014 at 04:51:38PM +0200, Ulf Hansson wrote:
+On Tue, Feb 18, 2014 at 09:11:48PM +0800, Axel Lin wrote:
+> The regulator core supports this to allow the configuration to be inspected
+> at runtime even if no software management is enabled.
 
-> Just wanted to add some input regarding the errors in the mmc case.
-> These are of high importance. In principle if you get, "Failed getting
-> OCR mask: -22", likely you will be using a wrong OCR mask while
-> negotiating the voltage level with the card.
+Applied, thanks.
 
-> So, somehow we need to address this issue.
-
-Perhaps a WARN_ON() would help here - I'd not blame users for just
-ignoring the current warning?
-
---jy6Sn24JjFx/iggw
+--LyciRD1jyfeSSjG0
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT71WUAAoJELSic+t+oim96VgP/2jbHcBpAmIOtWRxUYHsiKUk
-QAbWtkW+xpUnG9+BGfnGTUKvY9EMl/rIVjyetsxWl85u3l5MxP89XQas59/ftRw5
-DVk/aJEqSP8e5KkPTl9S726ZRjAVAlGzqCFM4EtQfv5ySQH0UYVXsftKSlCkNmFV
-lYfPkEjdT7UuuZ6L2QcitkRTtzpn08rPTx7+e0JCdnO2/mNgu7Kr6z/H45cpuBvW
-UD55rxupcFf+MNQWosj3IscQH2QhT4GQzHcezHRAkoCLHi5BYGauNbjRchvrpFvL
-f0GSyjOSqe3LChIXvXeVL9/2ddypQz84neuC7WkqLkA3GT27t6Fy9Khi8I9f+a2K
-d6eHnaGxQ8HOf++CCF3hu21Vs6sOhSowR0NUJVK/YwtRkpdz4lTJq+MgIa5zv/3I
-Tnme1lvh88yUDWMQrwgq1Y7T97wC+/WKw/vcNKftVh83gnUSHcynB4fHx5qarik6
-x4GYsv8v0DV0XheexiafWZvsKqVxgcLIhlzIpWZSLB096ixCLOFU81LBLTEhCMaV
-p+VBebdR8PbGTs9IUsvvNY8ugaO0qfq7NZAD+ZaQ+aBMLiGL7NZgwmy9nZZHHrlC
-GaVxFULaHO8dhn2KJyMliGW7ZCOfiyFVRmDoFiNCwfz9pxqYxJFLu+YlYwwlluZv
-lAEmAzabsaYjYFsKokea
-=ebub
+iQIcBAEBAgAGBQJT70g+AAoJELSic+t+oim9m/MP+QGLEnX1YMV9Q1prOgIFY7jg
+MaYVShw+nKxNCWfdo2W6OH5zs2PRnT7rUGlFGnJvbJPuZ0PrVOivrwIPeIt0u77x
+mfXp0JbumRyJaA1v7xnBjabQi7Mw8JgMu0jmPuYTi3xEG1789Sk1LuAe/baRCHYW
+SEqKR60nn6AJtFvtdKkSUML9O1RQ40mvK51oE+NPpdvls9sGi4nwZBkHh8IVj9+3
+kbofw7GwQ2w3jc5LsvDyVq211XICC0lQMggZ+Bt/wiU+6HpD2VuTN2kIzaD7NbBN
+zPOLd26Mz9tJn2dP11rkSjQ0g/kV+WJPA0SvqQ+Tc+uedwSYcwYpa7DzkJ9qMwZN
+ElragnYZIqKKa+/qX2vlQ5XX/F6SI+hey4BK0/7lNJ9ci+jZhHJyW6mjkekebORD
++cKj859d6HijDUWCixa/Fs7mociyADXXYr2ntUCu8eL+i4avFtmUVR3wKx3G/+lq
+qVDpNRMNwccMbG4qY1Xx6fnTmF4InAsvSgLa4NAmkdxwDN2vu1Nt+VqEUvr7VqLY
+L1JRC2mCOap7D+dsKtDlos0mbBlrorpbWXvxoH3QVgwLUugyqgHqCI/hM1A0lvCb
+AJXNpnakTjmeI5fkfWM8oCiboAHLtz8AOKGHpLTpCO6G58N5oWmcNauzm/BXcCNG
+OJh1+Vu/kBn0tnhdrTJt
+=44Wd
 -----END PGP SIGNATURE-----
 
---jy6Sn24JjFx/iggw--
+--LyciRD1jyfeSSjG0--
