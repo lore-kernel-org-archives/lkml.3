@@ -1,78 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaHPCow (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 22:44:52 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:42785 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbaHPCov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 22:44:51 -0400
-Message-ID: <53EEC59B.6060101@hitachi.com>
-Date: Sat, 16 Aug 2014 11:44:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751519AbaHPCuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 22:50:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59792 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105AbaHPCuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Aug 2014 22:50:13 -0400
+Date: Sat, 16 Aug 2014 04:50:07 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        tiwai@suse.de, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init()
+	and module_long_probe_exit()
+Message-ID: <20140816025007.GB3347@wotan.suse.de>
+References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com> <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com> <20140813175101.GA7156@redhat.com> <20140814231028.GQ21930@wotan.suse.de> <20140815143902.GB13222@redhat.com>
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>, ananth@in.ibm.com,
-        anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        peifeiyue@huawei.com, lizefan@huawei.com
-Subject: Re: [PATCH v4] kprobes: arm: enable OPTPROBES for ARM 32
-References: <1407819388-52145-1-git-send-email-wangnan0@huawei.com> <53EE25FB.4070201@hitachi.com> <53EEB60D.1030907@huawei.com>
-In-Reply-To: <53EEB60D.1030907@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140815143902.GB13222@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/16 10:38), Wang Nan wrote:
-> On 2014/8/15 23:23, Masami Hiramatsu wrote:
->> (2014/08/12 13:56), Wang Nan wrote:
->>> +/* Caller must ensure addr & 3 == 0 */
->>> +static int can_optimize(unsigned long paddr)
->>> +{
->>> +	return 1;
->>> +}
->>
->> As we have talked on another thread, we'd better filter-out all stack-pushing
->> instructions here, since (as you said) that will corrupt pt_regs on the stack.
->>
->> Thank you,
->>
+On Fri, Aug 15, 2014 at 04:39:02PM +0200, Oleg Nesterov wrote:
+> On 08/15, Luis R. Rodriguez wrote:
+> >
+> > On Wed, Aug 13, 2014 at 07:51:01PM +0200, Oleg Nesterov wrote:
+> > > On 08/12, Luis R. Rodriguez wrote:
+> > > >
+> > > > +/* To be used by modules which can take over 30 seconds at probe */
+> > >
+> > > Probably the comment should explain that this hack should only be
+> > > used if the driver is buggy and is wating for "real fix".
+> > >
+> > > > +#define module_long_probe_init(initfn)				\
+> > > > +	static struct task_struct *__init_thread;		\
+> > > > +	static int _long_probe_##initfn(void *arg)		\
+> > > > +	{							\
+> > > > +		return initfn();				\
+> > > > +	}							\
+> > > > +	static inline __init int __long_probe_##initfn(void)	\
+> > > > +	{							\
+> > > > +		__init_thread = kthread_run(_long_probe_##initfn,\
+> > > > +					    NULL,		\
+> > > > +					    #initfn);		\
+> > > > +		if (IS_ERR(__init_thread))			\
+> > > > +			return PTR_ERR(__init_thread);		\
+> > > > +		return 0;					\
+> > > > +	}							\
+> > > > +	module_init(__long_probe_##initfn);
+> > > > +/* To be used by modules that require module_long_probe_init() */
+> > > > +#define module_long_probe_exit(exitfn)				\
+> > > > +	static inline void __long_probe_##exitfn(void)		\
+> > > > +	{							\
+> > > > +		exitfn();					\
+> > > > +		if (__init_thread)				\
+> > > > +			kthread_stop(__init_thread);		\
+> > > > +	}							\
+> > >
+> > > exitfn() should be called after kthread_stop(), and only if initfn()
+> > > returns 0. So it should probably do
+> > >
+> > > 	int err = kthread_stop(__init_thread);
+> > > 	if (!err)
+> > > 		exitfn();
+> >
+> > Thanks! With the check for __init_thread as well as it can be
+> > ERR_PTR(-ENOMEM), ERR_PTR(-EINTR), or NULL (for whatever other
+> > reason).
 > 
-> So we need to identify the replaced instruction. I think some improvement on
-> arm instruction decoder is required, else we have to implement another (although simpler)
-> decoder for memory accessing instructions.
+> Do you mean __long_probe_##exitfn() should also check ERR_PTR(__init_thread)?
+> I don't think so. If kthread_run() above fails, module_init() should return
+> the error (it does), so module_exit() won't be called.
 
-Since arm32 already have instruction emulator, I guess it's not so hard, we can
-start with using emulator code to find which one will change sp.
+Good point.
 
-> In this situation we are talking about, we need the decoder identify the addressing
-> information for str/stm instroction.
+> > > But there is an additional complication, you can't use __init_thread
+> > > without get_task_struct(),
+> >
+> > Can you elaborate why ? kthread_stop() uses get_task_struct(),
+> 
+> This is too late. This task_struct can be already freed/reused. See below.
+> 
+> > wake_up_process() and finally put_task_struct(), and we're the
+> > only user of this thread. Also kthread_run() ensures wake_up_process()
+> > gets called on startup, so not sure where the race would be provided
+> > all users here and with the respective helpers on buggy drivers.
+> >
+> > > so  __long_probe_##initfn() can't use
+> > > kthread_run(). It needs kthread_create() + get_task_struct() + wakeup.
+> >
+> > I fail to see why we'd need to add get_task_struct() on
+> > module_long_probe_init(), can you clarify?
+> 
+> kthread_stop(kthread_run(callback)) is only safe if callback() can not exit
+> on its own, without checking kthread_should_stop(). And btw that is why
+> kthread_stop() does get_task_struct()).
+> 
+> If callback() can exit (if it calls do_exit() or simply returns), then nothing
+> protects this task_struct, it will be freed.
 
-No, sp register must be always the top of stack, or the code is just broken (breaks
-stack frame). So we need to identify the stm/str instructions which destination is
-sp register.
+OK thanks, yeah I see the issue now, and I was able to create a null
+pointer dereference by simply calling schedule() quite a bit, will
+roll in the required fixes, but come to think of it if there are
+other uses (I haven't SmPLd grep'd for grammar uses yet) perhaps
+generic helpers would be good? kthread_run_alloc() kthread_run_free().
 
-> However, decoder can bring up more information such as
-> instruction type, source/destnation registers, memory access pattern ...
-> With such information, we can further optimize our trampoline code.
-> For example: doesn't protect destnation registers, and for some (most of, I think) instruction,
-> we can direct execute them like x86_64.
-
-Yeah, direct execution may reduce the overhead much :). But anyway, since we need pt_regs,
-we have to store all registers same as pt_regs.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+  Luis
