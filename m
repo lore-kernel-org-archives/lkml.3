@@ -1,251 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaHPOML (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 10:12:11 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:58784 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaHPOMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 10:12:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "J. German Rivera" <German.Rivera@freescale.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        stuart.yoder@freescale.com, linuxppc-release@linux.freescale.net
-Subject: Re: [RFC PATCH 2/4] drivers/bus: Freescale Management Complex (fsl-mc) bus driver
-Date: Sat, 16 Aug 2014 16:12:06 +0200
-Message-ID: <3344352.Av1d0tahxM@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-26-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1408140794-25064-3-git-send-email-German.Rivera@freescale.com>
-References: <1408140794-25064-1-git-send-email-German.Rivera@freescale.com> <1408140794-25064-3-git-send-email-German.Rivera@freescale.com>
+	id S1751543AbaHPOO2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 10:14:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750877AbaHPOO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Aug 2014 10:14:26 -0400
+Date: Sat, 16 Aug 2014 16:11:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
+        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
+        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
+        atheurer@redhat.com
+Subject: Re: [PATCH 2/3] time,signal: protect resource use statistics with
+	seqlock
+Message-ID: <20140816141159.GA8709@redhat.com>
+References: <1408133138-22048-1-git-send-email-riel@redhat.com> <1408133138-22048-3-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:lAYFU5I67q78ctRn/QKcQNkiVqE5d+7crqNn/SjxY5g
- OoOVgqFP386B4jw0jClzt66EShsr7s8Gl2cME/bEjPACX/UviH
- 9+bmkKq6QBzdXxvuoHSKvw2f0kKOKtJ0cSEP4HK6bmpvRR68lg
- t19V42KAhll11GTEikicFUQ3zrb5b/dFseh/QUJN6vO0RqaBaj
- TxI+i+sDry/MBOD1BQckNxt+oxrD/5A393VjELLOr/7glHcLxA
- APT29N5MY3jkFKfUvGuFwNNziByf86/rMn95l5L6AGeCOrkjST
- ZLL/6ItZ6X1Ou7gqxVYn+puE12JrvjCLB5vMx9e0/ku6MYnm6y
- 3AEAmCkLJpYv7hT3KdJA=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408133138-22048-3-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 August 2014 17:13:12 J. German Rivera wrote:
-> +struct fsl_mc_bus *fsl_mc_bus;
-> +EXPORT_SYMBOL(fsl_mc_bus);
-
-This does not look like something that should be exported.
-Or even better, kill this structure entirely and just pass around
-pointers to the fsl_mc_device so you can deal with multiple root
-instances.
-
-> +static struct kmem_cache *mc_dev_cache;
+On 08/15, riel@redhat.com wrote:
+>
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -288,18 +288,31 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+>  	struct signal_struct *sig = tsk->signal;
+>  	cputime_t utime, stime;
+>  	struct task_struct *t;
+> -
+> -	times->utime = sig->utime;
+> -	times->stime = sig->stime;
+> -	times->sum_exec_runtime = sig->sum_sched_runtime;
+> +	unsigned int seq, nextseq;
+>
+>  	rcu_read_lock();
+> -	for_each_thread(tsk, t) {
+> -		task_cputime(t, &utime, &stime);
+> -		times->utime += utime;
+> -		times->stime += stime;
+> -		times->sum_exec_runtime += task_sched_runtime(t);
+> -	}
+> +	/* Attempt a lockless read on the first round. */
+> +	nextseq = 0;
+> +	do {
+> +		seq = nextseq;
+> +		read_seqbegin_or_lock(&sig->stats_lock, &seq);
+> +		times->utime = sig->utime;
+> +		times->stime = sig->stime;
+> +		times->sum_exec_runtime = sig->sum_sched_runtime;
 > +
-> +/**
-> + * fsl_mc_bus_match - device to driver matching callback
-> + * @dev: the MC object device structure to match against
-> + * @drv: the device driver to search for matching MC object device id
-> + * structures
-> + *
-> + * Returns 1 on success, 0 otherwise.
-> + */
-> +static int fsl_mc_bus_match(struct device *dev, struct device_driver *drv)
-> +{
-> +	const struct fsl_mc_device_match_id *id;
-> +	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-> +	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(drv);
-> +	bool found = false;
-> +
-> +	if (WARN_ON(mc_dev->magic != FSL_MC_DEVICE_MAGIC))
-> +		goto out;
-> +	if (WARN_ON(mc_drv->magic != FSL_MC_DRIVER_MAGIC))
-> +		goto out;
+> +		for_each_thread(tsk, t) {
+> +			task_cputime(t, &utime, &stime);
+> +			times->utime += utime;
+> +			times->stime += stime;
+> +			times->sum_exec_runtime += task_sched_runtime(t);
+> +		}
+> +		/*
+> +		 * If a writer is currently active, seq will be odd, and
+> +		 * read_seqbegin_or_lock will take the lock.
+> +		 */
+> +		nextseq = raw_read_seqcount(&sig->stats_lock.seqcount);
+> +	} while (need_seqretry(&sig->stats_lock, seq));
+> +	done_seqretry(&sig->stats_lock, seq);
+>  	rcu_read_unlock();
+>  }
 
-We normally don't do this magic number matching, just remove these
-and rely on the compile-time checks.
-> +struct bus_type fsl_mc_bus_type = {
-> +	.name = "fsl-mc",
-> +	.match = fsl_mc_bus_match,
-> +	.uevent = fsl_mc_bus_uevent,
-> +	.drv_groups = NULL,
-> +	.dev_groups = NULL,
-> +	.bus_groups = NULL,
-> +	.pm = NULL,
-> +};
-> +EXPORT_SYMBOL(fsl_mc_bus_type);
+Rik, I do not understand why did you silently ignore my comments about
+this change twice ;)
 
-No need to assign NULL members.
+Please see
 
-Does it need to be exported to drivers? How about making it
-EXPORT_SYMBOL_GPL if it does?
+	http://marc.info/?l=linux-kernel&m=140802271907396
+	http://marc.info/?l=linux-kernel&m=140811486607850
 
-> +static int dprc_parse_dt_node(struct platform_device *pdev,
-> +			      phys_addr_t *mc_portal_phys_addr,
-> +			      uint32_t *mc_portal_size)
-> +{
-> +	struct resource res;
-> +	struct device_node *pdev_of_node = pdev->dev.of_node;
-> +	int error = -EINVAL;
-> +
-> +	error = of_address_to_resource(pdev_of_node, 0, &res);
-> +	if (error < 0) {
-> +		FSL_MC_ERROR(&pdev->dev,
-> +			     "of_address_to_resource() failed for %s\n",
-> +			     pdev_of_node->full_name);
-> +		goto out;
-> +	}
-> +
-> +	*mc_portal_phys_addr = res.start;
-> +	*mc_portal_size = resource_size(&res);
-> +	error = 0;
-> +out:
-> +	return error;
-> +}
+I still do not think that the read_seqbegin_or_lock logic is correct,
+in a sense that unless I missed something it does not guarantee the
+forward progress.
 
-Why not just call of_address_to_resource in the caller?
+Oleg.
 
-> +/**
-> + * __fsl_mc_driver_register - registers a child device driver with the
-> + * MC bus
-> + *
-> + * This function is implicitly invoked from the registration function of
-> + * fsl_mc device drivers, which is generated by the
-> + * module_fsl_mc_driver() macro.
-> + */
-> +int __fsl_mc_driver_register(struct fsl_mc_driver *mc_driver,
-> +			     struct module *owner)
-> +{
-> +	struct fsl_mc_device *root_mc_dev;
-
-Here the root_mc_dev variable isn't really used for much.
-
-> +static int fsl_mc_device_get_mmio_regions(struct fsl_mc_device *mc_dev,
-> +					  struct fsl_mc_device *container_dev)
-> +{
-> +	int i;
-> +	int error;
-> +	struct fsl_mc_device_region *regions;
-> +	struct dprc_obj_desc *obj_desc = &mc_dev->obj_desc;
-> +	struct device *parent_dev = mc_dev->dev.parent;
-> +
-> +	regions = kmalloc_array(obj_desc->region_count,
-> +				sizeof(regions[0]), GFP_KERNEL);
-
-Better use 'struct resource' for the resources than make your own type.
-
-> +		mc_dev->icid = container_dev->icid;
-> +		mc_dev->dma_mask = 0xffffffff;	/* 32bit */
-> +		mc_dev->dev.dma_mask = &mc_dev->dma_mask;
-
-Is 32-bit DMA a fundamental limit of the bus?
-
-> +
-> +static const struct of_device_id fsl_mc_bus_match_table[] = {
-> +	{.compatible = "fsl,qoriq-mc",},
-> +	{},
-> +};
-
-Please add a binding documentation for this device in Documentation/device-tree/
-
-> +#define FSL_MC_MAGIC(_a, _b, _c, _d) \
-> +	(((uint32_t)(_a) << 24) | \
-> +	((uint32_t)(_b) << 16) | \
-> +	((uint32_t)(_c) << 8)  | \
-> +	(uint32_t)(_d))
-
-Can be dropped once you remove all the magic number matching
-
-> +/**
-> + * struct fsl_mc_device_region - MC object device MMIO region
-> + * @addr: base physical address
-> + * @size: size of the region in bytes
-> + */
-> +struct fsl_mc_device_region {
-> +	phys_addr_t paddr;
-> +	uint32_t size;
-> +};
-
-Can be removed when you move to 'struct resource'
-
-> +/**
-> + * struct fsl_mc_device - MC object device object
-> + * @magic: marker to verify identity of this structure
-
-remove
-
-> + * @flags: MC object device flags
-> + * @icid: Isolation context ID for the device
-> + * @mc_handle: MC handle for the corresponding MC object opened
-> + * @mc_io: Pointer to MC IO object assigned to this device or
-> + * NULL if none.
-> + * @driver: Pointer to the MC object device driver for this device
-
-Use container_of(&this->dev.driver, ...) instead
-
-> + * @container: Pointer to the DPRC device that contains this MC object device
-
-Why are there two devices for this? Should this just use dev->parent instead?
-
-> + * @dev_node: Node in the container's child list
-
-Same here: just use the device model's list management instead if you can,
-or explain why this is needed.
-
-> + * @obj_desc: MC description of the DPAA device
-> + * @num_regions: Number of MMIO regions for this MC object device
-
-Doesn't actually exist?
-
-> +#define FSL_MC_ERROR(_dev, _fmt, ...) \
-> +	do {								\
-> +		if ((_dev) != NULL)					\
-> +			dev_err(_dev, "%s:" __stringify(__LINE__) " "   \
-> +				_fmt, __func__, ##__VA_ARGS__);		\
-> +		else							\
-> +			pr_err("%s:" __stringify(__LINE__) " " _fmt,	\
-> +			       __func__, ##__VA_ARGS__);		\
-> +	} while (0)
-
-just use dev_err() directly, it handles the !_dev case already
-
-> +/**
-> + * struct fsl_mc_bus - Management Complex (MC) bus object
-> + * @magic: marker to verify identity of this structure
-> + * @pdev: platform device for this MC bus object
-> + * @root_mc_dev: pointer to root MC object device for this MC bus.
-> + */
-> +struct fsl_mc_bus {
-> +#	define FSL_MC_BUS_MAGIC   FSL_MC_MAGIC('L', 'B', 'U', 'S')
-> +	uint32_t magic;
-> +	struct platform_device *pdev;
-> +	struct fsl_mc_device *root_mc_dev;
-> +};
-
-pdev should be root_mc_dev->dev->parent, and magic seems pointless, so
-no need for this structure at all.
-
-> +/**
-> + * struct fsl_mc_dprc - Data Path Resource Container (DPRC) object
-> + * @magic: marker to verify identity of this structure
-> + * @mc_dev: pointer to MC object device object for this DPRC
-> + * @mutex: mutex to serialize access to the container.
-> + * @child_device_count: have the count of devices in this DPRC
-> + * @child_list:	anchor node of list of child devices on this DPRC
-> + */
-> +struct fsl_mc_dprc {
-> +#	define FSL_MC_DPRC_MAGIC   FSL_MC_MAGIC('D', 'P', 'R', 'C')
-> +	uint32_t magic;
-> +	struct fsl_mc_device *mc_dev;
-> +	struct mutex mutex;	/* serializes access to fields below */
-> +	uint16_t child_device_count;	/* Count of devices in this DPRC */
-> +	struct list_head child_list;
-> +};
-
-It's not clear what this represents to me. mc_dev presumably already
-has a list of children, so why not just use a pointer to mc_dev
-and remove this structure entirely?
-
-	Arnd
