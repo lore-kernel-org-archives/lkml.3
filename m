@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaHPPI1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 11:08:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507AbaHPPI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 11:08:26 -0400
-Message-ID: <53EF73CB.6020404@redhat.com>
-Date: Sat, 16 Aug 2014 11:07:55 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751641AbaHPPLn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 11:11:43 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:55487 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495AbaHPPLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Aug 2014 11:11:42 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, peterz@infradead.org,
-        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
-        atheurer@redhat.com
-Subject: Re: [PATCH 2/3] time,signal: protect resource use statistics with
- seqlock
-References: <1408133138-22048-1-git-send-email-riel@redhat.com> <1408133138-22048-3-git-send-email-riel@redhat.com> <20140816141159.GA8709@redhat.com>
-In-Reply-To: <20140816141159.GA8709@redhat.com>
+In-Reply-To: <53EE42A9.7000607@fb.com>
+References: <53EE42A9.7000607@fb.com>
+Date: Sat, 16 Aug 2014 09:11:41 -0600
+X-Google-Sender-Auth: BxodZ543G-7Du3sSaejNk3ws5wA
+Message-ID: <CA+55aFz-aSbmLoZv=CGY1bXpQ1zE935-FjTLMZF5=5hteyf9kg@mail.gmail.com>
+Subject: Re: [GIT PULL] Smaller btrfs pull
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Chris Mason <clm@fb.com>
+Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Fri, Aug 15, 2014 at 11:26 AM, Chris Mason <clm@fb.com> wrote:
+>
+> I've been running xfstests with these against your current git
+> overnight, but I'm queueing up longer tests as well.  I understand
+> you may want to wait until rc2, but either way I'll get a sane queue
+> into my linux-next branch for the rest of the rcs.
 
-On 08/16/2014 10:11 AM, Oleg Nesterov wrote:
+You completely mis-understand.
 
->> +		/* +		 * If a writer is currently active, seq will be odd,
->> and +		 * read_seqbegin_or_lock will take the lock. +		 */ +
->> nextseq = raw_read_seqcount(&sig->stats_lock.seqcount); +	} while
->> (need_seqretry(&sig->stats_lock, seq)); +
->> done_seqretry(&sig->stats_lock, seq); rcu_read_unlock(); }
-> 
-> Rik, I do not understand why did you silently ignore my comments
-> about this change twice ;)
+If something isn't appropriate for the merge window, then it sure as
+HELL isn't appropriate for later rc's either.
 
-I can explain why it appears that way.
+So I'm not going to pull some "stragglers" later and just pull some
+initial stuff now. That's not how this works.
 
-I made the fix you suggested in one tree, and did my
-"guilt patchbomb" from another tree.  Doh...
+The changes for the merge window should have been ready *before* the
+merge window even opened. That has always been the rule. We don't do
+random development and re-organization during the merge window, and we
+certainly do not do it *later*.
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+I'm going to pull this reduced set, but that in no way means that I
+will then pull later sets after the merge window.  The stuff after the
+merge window should be pure fixes, and I'm in fact going to be
+stricter with btrfs than usual, because I think this was such a
+disaster. Oopses, regressions, data corruption, security fixes, and
+things like that *only*. No cleanups, no random crap, nothing that
+doesn't count as critical.
 
-iQEcBAEBAgAGBQJT73PLAAoJEM553pKExN6DPNcH/jWQ1qKSyW9rDOETjGAkau2r
-KcVoeaqliqYhNi6IDDpqZb0LvOFp9jD+ykiwxGD4KjoNX3iR0pLE7ymm3mh/dH7q
-0t3zI+640ydbd5WEcVkpPMT6C0pdPNuEM01iuM0YExWErLPbhFuGcgV7fUn1idTx
-L//L9OQNImTxRPPYr+4OEGZh99CqnBG3PjoCtXoa4dvsqsrz2SQ/yUtfAlF4veVY
-C6nLdt5zfehaRypzzufsYbyMjLm2uXufEuqibeJI0G2w/qB4Q0+80d+JytETB9Q3
-R1VWDjQrLjrIPbMNVkXKK+Px/q7d5q+DPE+uB0lmpmcjIqBJjVhviw/wx9AhJc4=
-=Gm8e
------END PGP SIGNATURE-----
+               Linus
