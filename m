@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaHPRwa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 13:52:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688AbaHPRw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 13:52:29 -0400
-Date: Sat, 16 Aug 2014 19:50:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
-        umgwanakikbuti@gmail.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, srao@redhat.com, lwoodman@redhat.com,
-        atheurer@redhat.com
-Subject: Re: [PATCH v2 2/3] time,signal: protect resource use statistics
-	with seqlock
-Message-ID: <20140816175002.GA24994@redhat.com>
-References: <1408133138-22048-1-git-send-email-riel@redhat.com> <1408133138-22048-3-git-send-email-riel@redhat.com> <20140816141159.GA8709@redhat.com> <20140816134010.26a9b572@annuminas.surriel.com>
+	id S1751731AbaHPR5A (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 13:57:00 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:36581 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbaHPR46 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Aug 2014 13:56:58 -0400
+Date: Sat, 16 Aug 2014 20:56:53 +0300
+From: Dan Aloni <dan@kernelim.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: Re: [PATCH] nfs: fix kernel warning when removing proc entry
+Message-ID: <20140816175653.GA3884@gmail.com>
+References: <1408056579-25255-1-git-send-email-xiyou.wangcong@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140816134010.26a9b572@annuminas.surriel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1408056579-25255-1-git-send-email-xiyou.wangcong@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Rik van Riel wrote:
->
-> +	do {
-> +		seq = nextseq;
-> +		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-> +		times->utime = sig->utime;
-> +		times->stime = sig->stime;
-> +		times->sum_exec_runtime = sig->sum_sched_runtime;
-> +
-> +		for_each_thread(tsk, t) {
-> +			task_cputime(t, &utime, &stime);
-> +			times->utime += utime;
-> +			times->stime += stime;
-> +			times->sum_exec_runtime += task_sched_runtime(t);
-> +		}
-> +		/* If lockless access failed, take the lock. */
-> +		nextseq = 1;
+On Thu, Aug 14, 2014 at 03:49:39PM -0700, Cong Wang wrote:
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> ---
+>  fs/nfs/client.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> index 1c5ff6d..1c57202 100644
+> --- a/fs/nfs/client.c
+> +++ b/fs/nfs/client.c
+> @@ -1429,7 +1429,7 @@ void nfs_fs_proc_net_exit(struct net *net)
+>  
+>  	remove_proc_entry("volumes", nn->proc_nfsfs);
+>  	remove_proc_entry("servers", nn->proc_nfsfs);
+> -	remove_proc_entry("fs/nfsfs", NULL);
+> +	remove_proc_entry("nfsfs", net->proc_net);
+>  }
 
-Yes, thanks, this answers my concerns.
+nfs_fs_proc_net_init() has:
 
-Cough... can't resist, and I still think that we should take rcu_read_lock()
-only around for_each_thread() and the patch expands the critical section for
-no reason. But this is minor, I won't insist.
+error_1:
+        remove_proc_entry("fs/nfsfs", NULL);
 
-Oleg.
+I think this needs fixing too, for consistency.
 
+-- 
+Dan Aloni
