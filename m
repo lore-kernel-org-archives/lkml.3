@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaHPS6I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 14:58:08 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:39251 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaHPS6G (ORCPT
+	id S1751797AbaHPS6H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 14:58:07 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33417 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717AbaHPS6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 14:58:06 -0400
+	Sat, 16 Aug 2014 14:58:05 -0400
+Date: Sun, 17 Aug 2014 00:27:48 +0530
+From: Hema Prathaban <hemaklnce@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        andreas.dilger@intel.com, oleg.drokin@intel.com
+Subject: [PATCH] staging: lustre: lustre: libcfs: do not use assignment in if
+ condition
+Message-ID: <20140816185748.GA12707@hema-Inspiron-3520>
 MIME-Version: 1.0
-In-Reply-To: <20140816122028.GC9305@htj.dyndns.org>
-References: <1408050926-9525-1-git-send-email-xiyou.wangcong@gmail.com>
-	<20140816122028.GC9305@htj.dyndns.org>
-Date: Sat, 16 Aug 2014 11:58:05 -0700
-Message-ID: <CAM_iQpVtuMw_yJDJ90LiUzNqL_UBBvrJf8Zd+erD7+iFCxiORg@mail.gmail.com>
-Subject: Re: [Patch v3 1/2] freezer: check OOM kill while being frozen
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Rientjes <rientjes@google.com>,
-        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 16, 2014 at 5:20 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Aug 14, 2014 at 02:15:25PM -0700, Cong Wang wrote:
->> +static bool should_thaw_current(bool check_kthr_stop)
->> +{
->> +     if (!freezing(current) ||
->> +         (check_kthr_stop && kthread_should_stop()) ||
->> +         test_thread_flag(TIF_MEMDIE))
->> +             return true;
->> +     else
->> +             return false;
->> +}
->
-> I'm not sure this is safe w.r.t. hibernation.  Please cc Rafael on
-> freezer related changes.
->
+This patch fixes the following error using checkpatch.pl
+Error: do not use assignment in if condition
 
-Rafael has been Cc'ed from the beginning. :)
+Signed-off-by: Hema Prathaban <hemaklnce@gmail.com>
+---
+ drivers/staging/lustre/lustre/libcfs/debug.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Rafael, any objection?
+diff --git a/drivers/staging/lustre/lustre/libcfs/debug.c b/drivers/staging/lustre/lustre/libcfs/debug.c
+index 43817be..5a5b7fc 100644
+--- a/drivers/staging/lustre/lustre/libcfs/debug.c
++++ b/drivers/staging/lustre/lustre/libcfs/debug.c
+@@ -314,9 +314,8 @@ libcfs_debug_str2mask(int *mask, const char *str, int is_subsys)
+ 		if (!isspace(str[n-1]))
+ 			break;
+ 	matched = n;
+-
+-	if ((t = sscanf(str, "%i%n", &m, &matched)) >= 1 &&
+-	    matched == n) {
++	t = sscanf(str, "%i%n", &m, &matched);
++	if (t >= 1 && matched == n) {
+ 		/* don't print warning for lctl set_param debug=0 or -1 */
+ 		if (m != 0 && m != -1)
+ 			CWARN("You are trying to use a numerical value for the "
+-- 
+1.9.1
+
