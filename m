@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507AbaHPNFD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 09:05:03 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39825 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaHPNFA (ORCPT
+	id S1751525AbaHPNI5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 09:08:57 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:41984 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaHPNI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 09:05:00 -0400
-Date: Sat, 16 Aug 2014 09:04:56 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mem-hotplug: let memblock skip the hotpluggable memory
- regions in __next_mem_range()
-Message-ID: <20140816130456.GH9305@htj.dyndns.org>
-References: <53E8C5AA.5040506@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53E8C5AA.5040506@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 16 Aug 2014 09:08:56 -0400
+From: Arjun Sreedharan <arjun024@gmail.com>
+To: tj@kernel.org
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ata: pata_samsung_cf: change ret type to signed
+Date: Sat, 16 Aug 2014 18:38:34 +0530
+Message-Id: <1408194514-2001-1-git-send-email-arjun024@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 11, 2014 at 09:31:22PM +0800, Xishi Qiu wrote:
-> Let memblock skip the hotpluggable memory regions in __next_mem_range(),
-> it is used to to prevent memblock from allocating hotpluggable memory 
-> for the kernel at early time. The code is the same as __next_mem_range_rev().
-> 
-> Clear hotpluggable flag before releasing free pages to the buddy allocator.
+Change return type to signed int since it could be
+a negative errno.
 
-Please try to explain "why" in addition to "what".  Why do we need to
-clear hotpluggable flag in free_low_memory_core_early() in addition to
-numa_clear_node_hotplug() in x86 numa.c?  Does this make x86 code
-redundant?  If not, why?
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+---
+ drivers/ata/pata_samsung_cf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/ata/pata_samsung_cf.c b/drivers/ata/pata_samsung_cf.c
+index fb52883..0c1c03a 100644
+--- a/drivers/ata/pata_samsung_cf.c
++++ b/drivers/ata/pata_samsung_cf.c
+@@ -361,7 +361,7 @@ static int pata_s3c_wait_after_reset(struct ata_link *link,
+ /*
+  * pata_s3c_bus_softreset - PATA device software reset
+  */
+-static unsigned int pata_s3c_bus_softreset(struct ata_port *ap,
++static int pata_s3c_bus_softreset(struct ata_port *ap,
+ 		unsigned long deadline)
+ {
+ 	struct ata_ioports *ioaddr = &ap->ioaddr;
 -- 
-tejun
+1.7.11.7
+
