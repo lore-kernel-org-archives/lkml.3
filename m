@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaHPVhf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 17:37:35 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38909 "EHLO
+	id S1751895AbaHPVhl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 17:37:41 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38919 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaHPVhe (ORCPT
+	with ESMTP id S1751802AbaHPVhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 17:37:34 -0400
-Date: Sat, 16 Aug 2014 13:02:16 +0100
+	Sat, 16 Aug 2014 17:37:38 -0400
+Date: Sat, 16 Aug 2014 16:21:44 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Markus Pargmann <mpa@pengutronix.de>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140816120216.GB28623@sirena.org.uk>
-References: <1392729108.18579.1.camel@phoenix>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20140816152144.GT28623@sirena.org.uk>
+References: <d35c656e50eb7cc951499f13ef339d6aa1a23deb.1407930755.git.michal.simek@xilinx.com>
+ <20140813123343.GR17528@sirena.org.uk>
+ <b172f93e-b2fb-4cf4-a2de-d2ca62cdb83f@BN1BFFO11FD016.protection.gbl>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LyciRD1jyfeSSjG0"
+	protocol="application/pgp-signature"; boundary="/7+LvQqw8N5lf/3J"
 Content-Disposition: inline
-In-Reply-To: <1392729108.18579.1.camel@phoenix>
+In-Reply-To: <b172f93e-b2fb-4cf4-a2de-d2ca62cdb83f@BN1BFFO11FD016.protection.gbl>
 X-Cookie: Don't feed the bats tonight.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 216.80.70.240
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RFT] regulator: tps65910: Allow missing init_data for
- diagnostics
+Subject: Re: [PATCH 1/2] spi: xilinx: Remove .owner field for driver
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,36 +33,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---LyciRD1jyfeSSjG0
+--/7+LvQqw8N5lf/3J
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Feb 18, 2014 at 09:11:48PM +0800, Axel Lin wrote:
-> The regulator core supports this to allow the configuration to be inspected
-> at runtime even if no software management is enabled.
+On Wed, Aug 13, 2014 at 03:21:29PM +0200, Michal Simek wrote:
+> On 08/13/2014 02:33 PM, Mark Brown wrote:
 
-Applied, thanks.
+> > Would it not be better to do this as a tree wide or at least subsystem
+> > wide sweep with something like cocinelle?
 
---LyciRD1jyfeSSjG0
+> Feel free to use cocinelle for fixing this everywhere.
+> For me was just easier to fix all xilinx drivers to ensure
+> that none else will copy it for new drivers.
+
+I'd expect people would be more likely to copy a random driver for the
+subsystem they're working with than specifically a Xilinx driver...
+
+--/7+LvQqw8N5lf/3J
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT70g+AAoJELSic+t+oim9m/MP+QGLEnX1YMV9Q1prOgIFY7jg
-MaYVShw+nKxNCWfdo2W6OH5zs2PRnT7rUGlFGnJvbJPuZ0PrVOivrwIPeIt0u77x
-mfXp0JbumRyJaA1v7xnBjabQi7Mw8JgMu0jmPuYTi3xEG1789Sk1LuAe/baRCHYW
-SEqKR60nn6AJtFvtdKkSUML9O1RQ40mvK51oE+NPpdvls9sGi4nwZBkHh8IVj9+3
-kbofw7GwQ2w3jc5LsvDyVq211XICC0lQMggZ+Bt/wiU+6HpD2VuTN2kIzaD7NbBN
-zPOLd26Mz9tJn2dP11rkSjQ0g/kV+WJPA0SvqQ+Tc+uedwSYcwYpa7DzkJ9qMwZN
-ElragnYZIqKKa+/qX2vlQ5XX/F6SI+hey4BK0/7lNJ9ci+jZhHJyW6mjkekebORD
-+cKj859d6HijDUWCixa/Fs7mociyADXXYr2ntUCu8eL+i4avFtmUVR3wKx3G/+lq
-qVDpNRMNwccMbG4qY1Xx6fnTmF4InAsvSgLa4NAmkdxwDN2vu1Nt+VqEUvr7VqLY
-L1JRC2mCOap7D+dsKtDlos0mbBlrorpbWXvxoH3QVgwLUugyqgHqCI/hM1A0lvCb
-AJXNpnakTjmeI5fkfWM8oCiboAHLtz8AOKGHpLTpCO6G58N5oWmcNauzm/BXcCNG
-OJh1+Vu/kBn0tnhdrTJt
-=44Wd
+iQIcBAEBAgAGBQJT73cFAAoJELSic+t+oim9/q4P/jiZkU4mlsfHeDEbr0JXZ5Ho
+Y880d/pDNzCzwICdh0IGJoVpVHWnze5eRkbQs2L1SsUaenfo8jwIAceHlE2Kzbuy
+8Q7Ty1Wm+FhAsdqmrznFnxfP3+nvukC+nUpo7DSOkmXIE8k7jgwbBhkOEfiattU3
+sX7fvJ+goqDyQYU4ujF1VJx7FirZwF/i/bL6T/jP1Gu0zqEMjsoMzlrqSg4JsdTH
+cKzTLh27ScjOMdAvkKBFUjaLd2RR7smchX9JsjvFcHkW6OMrloZQ+rGrppiqNkU9
+2nutm4IA7/aHEJ330X/fHQ/CV2Ds+kPeovIu1sxzsBcdQv3jQPfcrtmnFus1cFen
+uUElkzpDBwG2s30SbgKBvxBcob3U4apMe8TplUQvjb/9ubUHmKSvrotnQ/sj3GQy
+SongF9IHk0Z/+LGlTVH9EArzzX2XaChp0NhTE/OV1gb+6cmsSNRK5i1DaOxDtVEV
+pMauVbRu4Ui8akSxMiicQoEil8ClNrfz1fo50lOeOtLemUjHzLnmKUXhIGD2XfOt
+k8r5OEo82U5xlPt19fflmYJZt5zQHdTUd2zuKvjykhLo/LGC+ZVKE/gDQqLkFM6f
+3gZiA7NYzXziaXDA/FWl2tmKgRTsHlRT6V7V/We0Dl8Nb1iNqE9PVLJHZmfDvcSm
+5PcgIz58slOP8XS+bU1X
+=775s
 -----END PGP SIGNATURE-----
 
---LyciRD1jyfeSSjG0--
+--/7+LvQqw8N5lf/3J--
