@@ -1,251 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaHPMGQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 08:06:16 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:56534 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbaHPMGO (ORCPT
+	id S1751487AbaHPMUe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 08:20:34 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:50464 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaHPMUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 08:06:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "J. German Rivera" <German.Rivera@freescale.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        stuart.yoder@freescale.com, linuxppc-release@linux.freescale.net
-Subject: Re: [RFC PATCH 2/4] drivers/bus: Freescale Management Complex (fsl-mc) bus driver
-Date: Sat, 16 Aug 2014 13:09:28 +0200
-Message-ID: <2572797.WbnTU1N0Ng@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-26-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1408140794-25064-3-git-send-email-German.Rivera@freescale.com>
-References: <1408140794-25064-1-git-send-email-German.Rivera@freescale.com> <1408140794-25064-3-git-send-email-German.Rivera@freescale.com>
+	Sat, 16 Aug 2014 08:20:33 -0400
+Date: Sat, 16 Aug 2014 08:20:28 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Michal Hocko <mhocko@suse.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v3 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140816122028.GC9305@htj.dyndns.org>
+References: <1408050926-9525-1-git-send-email-xiyou.wangcong@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:XmF2mZHIWbhU6cgB4SDsYM8KLq4ys5wOqXa8zlWyg0e
- dFbMZPY+NCvkPb0uprxMmbt3zKkQxVcID+wAqOKykkVIkhacYc
- eIIETE10xizta6yiYXAWn5ITDD2R/y46OAkjEKIvQ4lzKLpUz4
- UoKQbmkhiwqtOlSUmm0WqrasNmINb8Hf+cgy/PCsgl/Ihye+Yo
- sLGkCt1d214kacNkhbjbcUm+aKiMwfp//8REiih7BCtxv40vlo
- vSLmcmr+oBHm/p/epZDvefTuFXuGsiAdDdS0PDcOwSHSq9MUpf
- 4rOM813XPsQiqyD9mD9NOwyCwndySroZVt+0akXcm7eU606t9J
- wWXb4IuTJ2bdYh0yL+So=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408050926-9525-1-git-send-email-xiyou.wangcong@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 August 2014 17:13:12 J. German Rivera wrote:
-> +struct fsl_mc_bus *fsl_mc_bus;
-> +EXPORT_SYMBOL(fsl_mc_bus);
-
-This does not look like something that should be exported.
-Or even better, kill this structure entirely and just pass around
-pointers to the fsl_mc_device so you can deal with multiple root
-instances.
-
-> +static struct kmem_cache *mc_dev_cache;
-> +
-> +/**
-> + * fsl_mc_bus_match - device to driver matching callback
-> + * @dev: the MC object device structure to match against
-> + * @drv: the device driver to search for matching MC object device id
-> + * structures
-> + *
-> + * Returns 1 on success, 0 otherwise.
-> + */
-> +static int fsl_mc_bus_match(struct device *dev, struct device_driver *drv)
+On Thu, Aug 14, 2014 at 02:15:25PM -0700, Cong Wang wrote:
+> +static bool should_thaw_current(bool check_kthr_stop)
 > +{
-> +	const struct fsl_mc_device_match_id *id;
-> +	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-> +	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(drv);
-> +	bool found = false;
-> +
-> +	if (WARN_ON(mc_dev->magic != FSL_MC_DEVICE_MAGIC))
-> +		goto out;
-> +	if (WARN_ON(mc_drv->magic != FSL_MC_DRIVER_MAGIC))
-> +		goto out;
-
-We normally don't do this magic number matching, just remove these
-and rely on the compile-time checks.
-> +struct bus_type fsl_mc_bus_type = {
-> +	.name = "fsl-mc",
-> +	.match = fsl_mc_bus_match,
-> +	.uevent = fsl_mc_bus_uevent,
-> +	.drv_groups = NULL,
-> +	.dev_groups = NULL,
-> +	.bus_groups = NULL,
-> +	.pm = NULL,
-> +};
-> +EXPORT_SYMBOL(fsl_mc_bus_type);
-
-No need to assign NULL members.
-
-Does it need to be exported to drivers? How about making it
-EXPORT_SYMBOL_GPL if it does?
-
-> +static int dprc_parse_dt_node(struct platform_device *pdev,
-> +			      phys_addr_t *mc_portal_phys_addr,
-> +			      uint32_t *mc_portal_size)
-> +{
-> +	struct resource res;
-> +	struct device_node *pdev_of_node = pdev->dev.of_node;
-> +	int error = -EINVAL;
-> +
-> +	error = of_address_to_resource(pdev_of_node, 0, &res);
-> +	if (error < 0) {
-> +		FSL_MC_ERROR(&pdev->dev,
-> +			     "of_address_to_resource() failed for %s\n",
-> +			     pdev_of_node->full_name);
-> +		goto out;
-> +	}
-> +
-> +	*mc_portal_phys_addr = res.start;
-> +	*mc_portal_size = resource_size(&res);
-> +	error = 0;
-> +out:
-> +	return error;
+> +	if (!freezing(current) ||
+> +	    (check_kthr_stop && kthread_should_stop()) ||
+> +	    test_thread_flag(TIF_MEMDIE))
+> +		return true;
+> +	else
+> +		return false;
 > +}
 
-Why not just call of_address_to_resource in the caller?
+I'm not sure this is safe w.r.t. hibernation.  Please cc Rafael on
+freezer related changes.
 
-> +/**
-> + * __fsl_mc_driver_register - registers a child device driver with the
-> + * MC bus
-> + *
-> + * This function is implicitly invoked from the registration function of
-> + * fsl_mc device drivers, which is generated by the
-> + * module_fsl_mc_driver() macro.
-> + */
-> +int __fsl_mc_driver_register(struct fsl_mc_driver *mc_driver,
-> +			     struct module *owner)
-> +{
-> +	struct fsl_mc_device *root_mc_dev;
+Thanks.
 
-Here the root_mc_dev variable isn't really used for much.
-
-> +static int fsl_mc_device_get_mmio_regions(struct fsl_mc_device *mc_dev,
-> +					  struct fsl_mc_device *container_dev)
-> +{
-> +	int i;
-> +	int error;
-> +	struct fsl_mc_device_region *regions;
-> +	struct dprc_obj_desc *obj_desc = &mc_dev->obj_desc;
-> +	struct device *parent_dev = mc_dev->dev.parent;
-> +
-> +	regions = kmalloc_array(obj_desc->region_count,
-> +				sizeof(regions[0]), GFP_KERNEL);
-
-Better use 'struct resource' for the resources than make your own type.
-
-> +		mc_dev->icid = container_dev->icid;
-> +		mc_dev->dma_mask = 0xffffffff;	/* 32bit */
-> +		mc_dev->dev.dma_mask = &mc_dev->dma_mask;
-
-Is 32-bit DMA a fundamental limit of the bus?
-
-> +
-> +static const struct of_device_id fsl_mc_bus_match_table[] = {
-> +	{.compatible = "fsl,qoriq-mc",},
-> +	{},
-> +};
-
-Please add a binding documentation for this device in Documentation/device-tree/
-
-> +#define FSL_MC_MAGIC(_a, _b, _c, _d) \
-> +	(((uint32_t)(_a) << 24) | \
-> +	((uint32_t)(_b) << 16) | \
-> +	((uint32_t)(_c) << 8)  | \
-> +	(uint32_t)(_d))
-
-Can be dropped once you remove all the magic number matching
-
-> +/**
-> + * struct fsl_mc_device_region - MC object device MMIO region
-> + * @addr: base physical address
-> + * @size: size of the region in bytes
-> + */
-> +struct fsl_mc_device_region {
-> +	phys_addr_t paddr;
-> +	uint32_t size;
-> +};
-
-Can be removed when you move to 'struct resource'
-
-> +/**
-> + * struct fsl_mc_device - MC object device object
-> + * @magic: marker to verify identity of this structure
-
-remove
-
-> + * @flags: MC object device flags
-> + * @icid: Isolation context ID for the device
-> + * @mc_handle: MC handle for the corresponding MC object opened
-> + * @mc_io: Pointer to MC IO object assigned to this device or
-> + * NULL if none.
-> + * @driver: Pointer to the MC object device driver for this device
-
-Use container_of(&this->dev.driver, ...) instead
-
-> + * @container: Pointer to the DPRC device that contains this MC object device
-
-Why are there two devices for this? Should this just use dev->parent instead?
-
-> + * @dev_node: Node in the container's child list
-
-Same here: just use the device model's list management instead if you can,
-or explain why this is needed.
-
-> + * @obj_desc: MC description of the DPAA device
-> + * @num_regions: Number of MMIO regions for this MC object device
-
-Doesn't actually exist?
-
-> +#define FSL_MC_ERROR(_dev, _fmt, ...) \
-> +	do {								\
-> +		if ((_dev) != NULL)					\
-> +			dev_err(_dev, "%s:" __stringify(__LINE__) " "   \
-> +				_fmt, __func__, ##__VA_ARGS__);		\
-> +		else							\
-> +			pr_err("%s:" __stringify(__LINE__) " " _fmt,	\
-> +			       __func__, ##__VA_ARGS__);		\
-> +	} while (0)
-
-just use dev_err() directly, it handles the !_dev case already
-
-> +/**
-> + * struct fsl_mc_bus - Management Complex (MC) bus object
-> + * @magic: marker to verify identity of this structure
-> + * @pdev: platform device for this MC bus object
-> + * @root_mc_dev: pointer to root MC object device for this MC bus.
-> + */
-> +struct fsl_mc_bus {
-> +#	define FSL_MC_BUS_MAGIC   FSL_MC_MAGIC('L', 'B', 'U', 'S')
-> +	uint32_t magic;
-> +	struct platform_device *pdev;
-> +	struct fsl_mc_device *root_mc_dev;
-> +};
-
-pdev should be root_mc_dev->dev->parent, and magic seems pointless, so
-no need for this structure at all.
-
-> +/**
-> + * struct fsl_mc_dprc - Data Path Resource Container (DPRC) object
-> + * @magic: marker to verify identity of this structure
-> + * @mc_dev: pointer to MC object device object for this DPRC
-> + * @mutex: mutex to serialize access to the container.
-> + * @child_device_count: have the count of devices in this DPRC
-> + * @child_list:	anchor node of list of child devices on this DPRC
-> + */
-> +struct fsl_mc_dprc {
-> +#	define FSL_MC_DPRC_MAGIC   FSL_MC_MAGIC('D', 'P', 'R', 'C')
-> +	uint32_t magic;
-> +	struct fsl_mc_device *mc_dev;
-> +	struct mutex mutex;	/* serializes access to fields below */
-> +	uint16_t child_device_count;	/* Count of devices in this DPRC */
-> +	struct list_head child_list;
-> +};
-
-It's not clear what this represents to me. mc_dev presumably already
-has a list of children, so why not just use a pointer to mc_dev
-and remove this structure entirely?
-
-	Arnd
+-- 
+tejun
