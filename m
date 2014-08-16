@@ -1,95 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaHPA1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Aug 2014 20:27:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51547 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751301AbaHPA1q (ORCPT
+	id S1751468AbaHPAf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Aug 2014 20:35:28 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:34375 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301AbaHPAf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Aug 2014 20:27:46 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: markus@gutschke.com
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
-Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
-Date: Sat, 16 Aug 2014 02:46:39 +0200
-Message-ID: <1558893.86R7jAYGB3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CALGCz1ofVwspov3QU1rk3z5HBRuDuKxwk1Qkx2xM3vFAVLzS2g@mail.gmail.com>
-References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com> <CALGCz1p8=gPBqf6z-YpRzSE=raNJmJw-OKCsLwne3raCr4Y-1g@mail.gmail.com> <CALGCz1ofVwspov3QU1rk3z5HBRuDuKxwk1Qkx2xM3vFAVLzS2g@mail.gmail.com>
+	Fri, 15 Aug 2014 20:35:26 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <00fefb9cf2b5493a86912de55ba912bdfae4a207.1408122224.git.bcrl@kvack.org>
+References: <cover.1408122224.git.bcrl@kvack.org>
+	<00fefb9cf2b5493a86912de55ba912bdfae4a207.1408122224.git.bcrl@kvack.org>
+Date: Fri, 15 Aug 2014 18:35:25 -0600
+X-Google-Sender-Auth: NfWlOpFiXG2counV1Uhb05GbZGg
+Message-ID: <CA+55aFyYt41jie6N1UyawPYYnpRAMKcRG8wRTa_ShPreT24qTw@mail.gmail.com>
+Subject: Re: [PATCH 7/7] aio: use iovec array rather than the single one
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: linux-aio@kvack.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 15, 2014 10:17:42 AM Markus Gutschke wrote:
-> Just wondering if any of you had any other ideas of what I could try
-> to help debug this problem?
+Ben,
 
-My theory is that there is a device in your system that we don't have a driver
-for, but it had been enumerated as a PNP device before the change that triggered
-the problem for you and we turned it off during suspend as part of the default
-ACPI PNP device handling.
+*please* stop doing this kind of crap.
 
-The reason why you're seeing a crash with the "platform" test level is most
-likely that the _WAK control method does something unusual on your system.
+You're creating fake emails with invalid senders. That's simply not acceptable.
 
-The LNXSYBUS:00 thing from dmesg probably is a red herring.
+The way to specify the author of a commit is *not* to fake the email
+sender information, it's to have
 
-I need the output of acpidump from the affected system, but please attach it
-to the bug entry at https://bugzilla.kernel.org/show_bug.cgi?id=80911 that
-Rui has created for this issue.
+   From: Real A U Thor <real.thor@fake.com>
 
-Also please check the list of PNP devices under
+at the top of the message body. NOT by sending fake email from that name.
 
-/sys/bus/pnp/devices/
+Seriously, faking email authorship is too distasteful for words. What
+the F*CK were you thinking? Fix your scripts immediately. I refuse to
+have anything to do with people who send fake emails.
 
-before and after the commit you have found by bisection and let me know if
-there are any differences.
+Not acceptable. Not acceptable AT ALL.
 
+                  Linus
 
-> On Tue, Aug 12, 2014 at 9:11 AM, Markus Gutschke <markus@gutschke.com> wrote:
-> > As I said earlier in this thread, echo'ing "devices" into "pm_test"
-> > does not result in a crash; but doing so for "platform" does.
-> >
-> > Markus
-> >
-> > On Aug 12, 2014 1:26 AM, "Zhang Rui" <rui.zhang@intel.com> wrote:
-> >>
-> >> On Sat, 2014-08-09 at 03:14 -0700, Markus Gutschke wrote:
-> >> > I am back and have physical access to the machine now.
-> >> >
-> >> great!
-> >>
-> >> > I re-ran the test just to be sure, and I can confirm that "platform"
-> >> > does in fact result in a crash.
-> >> >
-> >> what about "devices"?
-> >> I mean
-> >>
-> >> # echo devices > /sys/power/pm_test
-> >>
-> >> and see if that triggers the crash.
-> >>
-> >> > Furthermore, I ran the test that Rui asked for. I suspended, resumed,
-> >> > and upon crashing power-cycled the machine ASAP. "dmesg" suggests that
-> >> > the problem is with LNXSYBUS:00 That doesn't tell me much, but
-> >> > hopefully it makes sense to you guys.
-> >> >
-> >> [    0.930093]   Magic number: 10:810:122
-> >> [    0.930185] acpi LNXSYBUS:00: hash matches
-> >>
-> >> This looks weird, ACPI will do nothing for LNXSYBUS devices during
-> >> resume.
-> >> Rafael, any thought on this?
-> >>
-> >> thanks,
-> >> rui
-> >>
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On Fri, Aug 15, 2014 at 11:25 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
+> Previously, we only offer a single iovec to handle all the read/write cases, so
+> the PREADV/PWRITEV request always need to alloc more iovec buffer when copying
+> user vectors.
+> If we use a tmp iovec array rather than the single one, some small PREADV/PWRITEV
+> workloads(vector size small than the tmp buffer) will not need to alloc more
+> iovec buffer when copying user vectors.
+>
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+> ---
+>  fs/aio.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/fs/aio.c b/fs/aio.c
+> index d6d9520..0fd9181 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -1243,12 +1243,12 @@ static ssize_t aio_setup_vectored_rw(struct kiocb *kiocb,
+>         if (compat)
+>                 ret = compat_rw_copy_check_uvector(rw,
+>                                 (struct compat_iovec __user *)buf,
+> -                               *nr_segs, 1, *iovec, iovec);
+> +                               *nr_segs, UIO_FASTIOV, *iovec, iovec);
+>         else
+>  #endif
+>                 ret = rw_copy_check_uvector(rw,
+>                                 (struct iovec __user *)buf,
+> -                               *nr_segs, 1, *iovec, iovec);
+> +                               *nr_segs, UIO_FASTIOV, *iovec, iovec);
+>         if (ret < 0)
+>                 return ret;
+>
+> @@ -1285,7 +1285,7 @@ static ssize_t aio_run_iocb(struct kiocb *req, unsigned opcode,
+>         fmode_t mode;
+>         aio_rw_op *rw_op;
+>         rw_iter_op *iter_op;
+> -       struct iovec inline_vec, *iovec = &inline_vec;
+> +       struct iovec inline_vecs[UIO_FASTIOV], *iovec = inline_vecs;
+>         struct iov_iter iter;
+>
+>         switch (opcode) {
+> @@ -1320,7 +1320,7 @@ rw_common:
+>                 if (!ret)
+>                         ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
+>                 if (ret < 0) {
+> -                       if (iovec != &inline_vec)
+> +                       if (iovec != inline_vecs)
+>                                 kfree(iovec);
+>                         return ret;
+>                 }
+> @@ -1367,7 +1367,7 @@ rw_common:
+>                 return -EINVAL;
+>         }
+>
+> -       if (iovec != &inline_vec)
+> +       if (iovec != inline_vecs)
+>                 kfree(iovec);
+>
+>         if (ret != -EIOCBQUEUED) {
+> --
+> 1.8.2.1
+>
+>
+> --
+> "Thought is the essence of where you are now."
