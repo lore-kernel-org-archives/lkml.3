@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaHPWU0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 18:20:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39196 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaHPWUZ (ORCPT
+	id S1751883AbaHPWXP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 18:23:15 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:54305 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714AbaHPWXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 18:20:25 -0400
-Date: Sat, 16 Aug 2014 17:20:06 -0500
-From: Mark Brown <broonie@kernel.org>
-To: chiau.ee.chew@intel.com
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>, chiauee85@gmail.com
-Message-ID: <20140816222006.GB14537@sirena.org.uk>
-References: <1406221854-12828-1-git-send-email-chiau.ee.chew@intel.com>
+	Sat, 16 Aug 2014 18:23:13 -0400
+From: Peter Korsgaard <peter@korsgaard.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, arnd@arndb.de,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 2/2] tty: serial: uartlite: Remove .owner field for driver
+References: <54c1e2bd13d6a6e679e1481818d6e068d352ba18.1407930818.git.michal.simek@xilinx.com>
+	<54c1e2bd13d6a6e679e1481818d6e068d352ba18.1407930818.git.michal.simek@xilinx.com>
+	<4af7dab0dcc8e681b14a5167826e65fb146c5040.1407930818.git.michal.simek@xilinx.com>
+Date: Sun, 17 Aug 2014 00:23:06 +0200
+In-Reply-To: <4af7dab0dcc8e681b14a5167826e65fb146c5040.1407930818.git.michal.simek@xilinx.com>
+	(Michal Simek's message of "Wed, 13 Aug 2014 13:53:43 +0200")
+Message-ID: <87mwb4ysz9.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U+BazGySraz5kW0T"
-Content-Disposition: inline
-In-Reply-To: <1406221854-12828-1-git-send-email-chiau.ee.chew@intel.com>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 216.80.70.240
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] spi/pxa2xx-pci: Add common clock framework support in
- PCI glue layer
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>>>> "Michal" == Michal Simek <michal.simek@xilinx.com> writes:
 
---U+BazGySraz5kW0T
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ > There is no need to init .owner field.
+ > Based on the patch from Peter Griffin <peter.griffin@linaro.org>
+ > "mmc: remove .owner field for drivers using module_platform_driver"
 
-On Fri, Jul 25, 2014 at 01:10:54AM +0800, chiau.ee.chew@intel.com wrote:
-> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
->=20
-> SPI PXA2XX core layer has dependency on common clock framework
-> to obtain information on host supported clock rate. Thus, we
-> setup the clock device in the PCI glue layer to enable PCI mode
-> host pass in the clock rate information.
+ > This patch removes the superflous .owner field for drivers which
+ > use the module_platform_driver API, as this is overriden in
+ > platform_driver_register anyway."
 
-Applied, thanks.
+ > Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 
---U+BazGySraz5kW0T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+It would be good with a reference to the commit adding this to
+platform_driver_register (9447057eaff8) - But Ok.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Acked-by: Peter Korsgaard <peter@korsgaard.com>
 
-iQIcBAEBAgAGBQJT79kTAAoJELSic+t+oim9JxAQAIVhzet03FzoVmvW9DMgIE1U
-KYa/40PFVVhdAyu9teEHw7T21Jzv8GMVw6MRRnelVYHpuLiDiabO6SzkzwfZizcw
-R042exNpSMT6TNT1zOffN0q9N3x8Hgkw66P50yC3eYIp4c9tNBVaB5dJq1MqlP0R
-ZQiFRhH32KB/EWoR/RZUBFU3nurftreNpOiI+WzOP3Ohyqw7HcKwlQ8g24Rtmule
-AhUCLe0WN0BKxbvBGwb+uemSOBlqsBUDt3fhXr95PJcroWgxjYhOD65mfC/n8D4l
-dwNd0vz0dtT7uvu6EZ8Y9O1T6jMshE6HKpLYfNckuSN/s09HjLEbjOtF7pL+pyfR
-DmPWlEXWL3lt7OUUlbz4PDOf5pe4l1r75UYjGLBSx80+nYaD5uQl4bS7VrDGiBIX
-l3GV+X7+7ME+KHwwrU+T+UgmV8kc8azl0dk9DwcHa53XsR85VHzzm96NrWu8G4HD
-UC3zLh6ccHOXCv5dxLo0X6vzh3d9KZFDeYlv71X5+yrm7HH7zYVeUYDgaUUX5IyD
-t3YR2Gcts7p8peGnA4/ZeDdr7hJdv4HZ1e0a3jXcs98jUmFUiaDAJ0+U00DUsjVi
-lG5GgmB7JOoYuxcTxVIPOC2VrWGVpyNuhZKO9JmS/eODUDkT1vUb2qcNfUNwv8od
-zicc8iq3w2S45fmtdDE+
-=7buL
------END PGP SIGNATURE-----
+ >  drivers/tty/serial/uartlite.c | 1 -
+ >  1 file changed, 1 deletion(-)
 
---U+BazGySraz5kW0T--
+ > diff --git a/drivers/tty/serial/uartlite.c b/drivers/tty/serial/uartlite.c
+ > index 9fc22f40796e..189f52e3111f 100644
+ > --- a/drivers/tty/serial/uartlite.c
+ > +++ b/drivers/tty/serial/uartlite.c
+ > @@ -665,7 +665,6 @@ static struct platform_driver ulite_platform_driver = {
+ >  	.probe = ulite_probe,
+ >  	.remove = ulite_remove,
+ >  	.driver = {
+ > -		.owner = THIS_MODULE,
+ >  		.name  = "uartlite",
+ >  		.of_match_table = of_match_ptr(ulite_of_match),
+ >  	},
+ > --
+ > 1.8.2.3
+
+
+-- 
+Bye, Peter Korsgaard
