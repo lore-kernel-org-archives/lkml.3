@@ -1,413 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaHPJSJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 05:18:09 -0400
-Received: from sv1-2.x14.eu ([144.76.176.218]:60269 "EHLO sv1-2.x14.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988AbaHPJSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 05:18:06 -0400
-X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Aug 2014 05:18:06 EDT
-From: Krzysztof Majzerowicz-Jaszcz <cristos@vipserv.org>
-To: jeffrey.t.kirsher@intel.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Krzysztof Majzerowicz-Jaszcz <cristos@vipserv.org>
-Subject: [PATCH] drivers: net: ethernet: intel: e1000: e1000_ethtool.c coding style fixes
-Date: Sat, 16 Aug 2014 11:12:08 +0200
-Message-Id: <1408180328-4827-1-git-send-email-cristos@vipserv.org>
-X-Mailer: git-send-email 2.0.3
-X-Assp-Version: 2.4.1(14132) on smtp.x14.eu
-X-Assp-ID: smtp.x14.eu 80338-1553454
-X-Assp-Session: 90F8E58 (mail 1)
-X-Assp-Envelope-From: cristos@vipserv.org
-X-Assp-Intended-For: jeffrey.t.kirsher@intel.com
-X-Assp-Intended-For: netdev@vger.kernel.org
-X-Assp-Intended-For: linux-kernel@vger.kernel.org
-X-Assp-Intended-For: cristos@vipserv.org
-X-Authenticated-User: cristos@vipserv.org
+	id S1751408AbaHPJy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 05:54:59 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:43168 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124AbaHPJy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 16 Aug 2014 05:54:57 -0400
+MIME-Version: 1.0
+Reply-To: markus@gutschke.com
+In-Reply-To: <1558893.86R7jAYGB3@vostro.rjw.lan>
+References: <CALGCz1qs2A7BCbcK3vzYRxJeOESVKc7c9kcSpP0NrQFLr1UpUg@mail.gmail.com>
+ <CALGCz1p8=gPBqf6z-YpRzSE=raNJmJw-OKCsLwne3raCr4Y-1g@mail.gmail.com>
+ <CALGCz1ofVwspov3QU1rk3z5HBRuDuKxwk1Qkx2xM3vFAVLzS2g@mail.gmail.com> <1558893.86R7jAYGB3@vostro.rjw.lan>
+From: Markus Gutschke <markus@gutschke.com>
+Date: Sat, 16 Aug 2014 02:54:35 -0700
+X-Google-Sender-Auth: c2cLdTJ3cTaaNzbOf29oFhbSpxM
+Message-ID: <CALGCz1pk4G3MGiWgabU=qHi9L46Pgp7zJB1TsdKTpiLpd8VgUA@mail.gmail.com>
+Subject: Re: 3.16-rcX crashes on resume from Suspend-To-RAM
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=001a1134b5b8442b460500bc2176
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed many errors/warnings and checks in e1000_ethtool.c reported by checkpatch.pl
+--001a1134b5b8442b460500bc2176
+Content-Type: text/plain; charset=UTF-8
 
-Signed-off-by: Krzysztof Majzerowicz-Jaszcz <cristos@vipserv.org>
----
- drivers/net/ethernet/intel/e1000/e1000_ethtool.c | 135 +++++++++++------------
- 1 file changed, 65 insertions(+), 70 deletions(-)
+I collected all the data that you asked for and attached it to the
+bug: https://bugzilla.kernel.org/show_bug.cgi?id=80911
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_ethtool.c b/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-index cca5bca..d5c5a38 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_ethtool.c
-@@ -1,35 +1,30 @@
- /*******************************************************************************
--
--  Intel PRO/1000 Linux driver
--  Copyright(c) 1999 - 2006 Intel Corporation.
--
--  This program is free software; you can redistribute it and/or modify it
--  under the terms and conditions of the GNU General Public License,
--  version 2, as published by the Free Software Foundation.
--
--  This program is distributed in the hope it will be useful, but WITHOUT
--  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
--  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
--  more details.
--
--  You should have received a copy of the GNU General Public License along with
--  this program; if not, write to the Free Software Foundation, Inc.,
--  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
--
--  The full GNU General Public License is included in this distribution in
--  the file called "COPYING".
--
--  Contact Information:
--  Linux NICS <linux.nics@intel.com>
--  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
--  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
--
--*******************************************************************************/
-+ * Intel PRO/1000 Linux driver
-+ *  Copyright(c) 1999 - 2006 Intel Corporation.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify it
-+ *  under the terms and conditions of the GNU General Public License,
-+ *  version 2, as published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope it will be useful, but WITHOUT
-+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ *  more details.
-+ *
-+ *  The full GNU General Public License is included in this distribution in
-+ *  the file called "COPYING".
-+ *
-+ *  Contact Information:
-+ *  Linux NICS <linux.nics@intel.com>
-+ *  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-+ *  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-+ *
-+ ******************************************************************************/
- 
- /* ethtool support for e1000 */
- 
- #include "e1000.h"
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- 
- enum {NETDEV_STATS, E1000_STATS};
- 
-@@ -42,7 +37,7 @@ struct e1000_stats {
- 
- #define E1000_STAT(m)		E1000_STATS, \
- 				sizeof(((struct e1000_adapter *)0)->m), \
--		      		offsetof(struct e1000_adapter, m)
-+				offsetof(struct e1000_adapter, m)
- #define E1000_NETDEV_STAT(m)	NETDEV_STATS, \
- 				sizeof(((struct net_device *)0)->m), \
- 				offsetof(struct net_device, m)
-@@ -104,6 +99,7 @@ static const char e1000_gstrings_test[][ETH_GSTRING_LEN] = {
- 	"Interrupt test (offline)", "Loopback test  (offline)",
- 	"Link test   (on/offline)"
- };
-+
- #define E1000_TEST_LEN	ARRAY_SIZE(e1000_gstrings_test)
- 
- static int e1000_get_settings(struct net_device *netdev,
-@@ -113,7 +109,6 @@ static int e1000_get_settings(struct net_device *netdev,
- 	struct e1000_hw *hw = &adapter->hw;
- 
- 	if (hw->media_type == e1000_media_type_copper) {
--
- 		ecmd->supported = (SUPPORTED_10baseT_Half |
- 				   SUPPORTED_10baseT_Full |
- 				   SUPPORTED_100baseT_Half |
-@@ -155,9 +150,8 @@ static int e1000_get_settings(struct net_device *netdev,
- 	}
- 
- 	if (er32(STATUS) & E1000_STATUS_LU) {
--
- 		e1000_get_speed_and_duplex(hw, &adapter->link_speed,
--		                                   &adapter->link_duplex);
-+					   &adapter->link_duplex);
- 		ethtool_cmd_speed_set(ecmd, adapter->link_speed);
- 
- 		/* unfortunately FULL_DUPLEX != DUPLEX_FULL
-@@ -247,9 +241,9 @@ static int e1000_set_settings(struct net_device *netdev,
- 	if (netif_running(adapter->netdev)) {
- 		e1000_down(adapter);
- 		e1000_up(adapter);
--	} else
-+	} else {
- 		e1000_reset(adapter);
--
-+	}
- 	clear_bit(__E1000_RESETTING, &adapter->flags);
- 	return 0;
- }
-@@ -279,11 +273,11 @@ static void e1000_get_pauseparam(struct net_device *netdev,
- 	pause->autoneg =
- 		(adapter->fc_autoneg ? AUTONEG_ENABLE : AUTONEG_DISABLE);
- 
--	if (hw->fc == E1000_FC_RX_PAUSE)
-+	if (hw->fc == E1000_FC_RX_PAUSE) {
- 		pause->rx_pause = 1;
--	else if (hw->fc == E1000_FC_TX_PAUSE)
-+	} else if (hw->fc == E1000_FC_TX_PAUSE) {
- 		pause->tx_pause = 1;
--	else if (hw->fc == E1000_FC_FULL) {
-+	} else if (hw->fc == E1000_FC_FULL) {
- 		pause->rx_pause = 1;
- 		pause->tx_pause = 1;
- 	}
-@@ -316,8 +310,9 @@ static int e1000_set_pauseparam(struct net_device *netdev,
- 		if (netif_running(adapter->netdev)) {
- 			e1000_down(adapter);
- 			e1000_up(adapter);
--		} else
-+		} else {
- 			e1000_reset(adapter);
-+		}
- 	} else
- 		retval = ((hw->media_type == e1000_media_type_fiber) ?
- 			  e1000_setup_link(hw) : e1000_force_mac_fc(hw));
-@@ -329,12 +324,14 @@ static int e1000_set_pauseparam(struct net_device *netdev,
- static u32 e1000_get_msglevel(struct net_device *netdev)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
-+
- 	return adapter->msg_enable;
- }
- 
- static void e1000_set_msglevel(struct net_device *netdev, u32 data)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
-+
- 	adapter->msg_enable = data;
- }
- 
-@@ -526,7 +523,7 @@ static int e1000_set_eeprom(struct net_device *netdev,
- 		 * only the first byte of the word is being modified
- 		 */
- 		ret_val = e1000_read_eeprom(hw, last_word, 1,
--		                  &eeprom_buff[last_word - first_word]);
-+					    &eeprom_buff[last_word - first_word]);
- 	}
- 
- 	/* Device's eeprom is always little-endian, word addressable */
-@@ -618,13 +615,12 @@ static int e1000_set_ringparam(struct net_device *netdev,
- 	adapter->tx_ring = txdr;
- 	adapter->rx_ring = rxdr;
- 
--	rxdr->count = max(ring->rx_pending,(u32)E1000_MIN_RXD);
--	rxdr->count = min(rxdr->count,(u32)(mac_type < e1000_82544 ?
-+	rxdr->count = max(ring->rx_pending, (u32)E1000_MIN_RXD);
-+	rxdr->count = min(rxdr->count, (u32)(mac_type < e1000_82544 ?
- 			  E1000_MAX_RXD : E1000_MAX_82544_RXD));
- 	rxdr->count = ALIGN(rxdr->count, REQ_RX_DESCRIPTOR_MULTIPLE);
--
--	txdr->count = max(ring->tx_pending,(u32)E1000_MIN_TXD);
--	txdr->count = min(txdr->count,(u32)(mac_type < e1000_82544 ?
-+	txdr->count = max(ring->tx_pending, (u32)E1000_MIN_TXD);
-+	txdr->count = min(txdr->count, (u32)(mac_type < e1000_82544 ?
- 			  E1000_MAX_TXD : E1000_MAX_82544_TXD));
- 	txdr->count = ALIGN(txdr->count, REQ_TX_DESCRIPTOR_MULTIPLE);
- 
-@@ -680,8 +676,8 @@ static bool reg_pattern_test(struct e1000_adapter *adapter, u64 *data, int reg,
- 			     u32 mask, u32 write)
- {
- 	struct e1000_hw *hw = &adapter->hw;
--	static const u32 test[] =
--		{0x5A5A5A5A, 0xA5A5A5A5, 0x00000000, 0xFFFFFFFF};
-+	static const u32 test[] = {0x5A5A5A5A, 0xA5A5A5A5,
-+				   0x00000000, 0xFFFFFFFF};
- 	u8 __iomem *address = hw->hw_addr + reg;
- 	u32 read;
- 	int i;
-@@ -792,10 +788,9 @@ static int e1000_reg_test(struct e1000_adapter *adapter, u64 *data)
- 		REG_PATTERN_TEST(TDBAL, 0xFFFFFFF0, 0xFFFFFFFF);
- 		REG_PATTERN_TEST(TIDV, 0x0000FFFF, 0x0000FFFF);
- 		value = E1000_RAR_ENTRIES;
--		for (i = 0; i < value; i++) {
--			REG_PATTERN_TEST(RA + (((i << 1) + 1) << 2), 0x8003FFFF,
--			                 0xFFFFFFFF);
--		}
-+		for (i = 0; i < value; i++)
-+			REG_PATTERN_TEST(RA + (((i << 1) + 1) << 2),
-+					 0x8003FFFF, 0xFFFFFFFF);
- 	} else {
- 		REG_SET_AND_CHECK(RCTL, 0xFFFFFFFF, 0x01FFFFFF);
- 		REG_PATTERN_TEST(RDBAL, 0xFFFFF000, 0xFFFFFFFF);
-@@ -877,7 +872,6 @@ static int e1000_intr_test(struct e1000_adapter *adapter, u64 *data)
- 
- 	/* Test each interrupt */
- 	for (; i < 10; i++) {
--
- 		/* Interrupt to test */
- 		mask = 1 << i;
- 
-@@ -1149,8 +1143,7 @@ static void e1000_phy_reset_clk_and_crs(struct e1000_adapter *adapter)
- 	 */
- 	e1000_read_phy_reg(hw, M88E1000_EXT_PHY_SPEC_CTRL, &phy_reg);
- 	phy_reg |= M88E1000_EPSCR_TX_CLK_25;
--	e1000_write_phy_reg(hw,
--		M88E1000_EXT_PHY_SPEC_CTRL, phy_reg);
-+	e1000_write_phy_reg(hw, M88E1000_EXT_PHY_SPEC_CTRL, phy_reg);
- 
- 	/* In addition, because of the s/w reset above, we need to enable
- 	 * CRS on TX.  This must be set for both full and half duplex
-@@ -1158,8 +1151,7 @@ static void e1000_phy_reset_clk_and_crs(struct e1000_adapter *adapter)
- 	 */
- 	e1000_read_phy_reg(hw, M88E1000_PHY_SPEC_CTRL, &phy_reg);
- 	phy_reg |= M88E1000_PSCR_ASSERT_CRS_ON_TX;
--	e1000_write_phy_reg(hw,
--		M88E1000_PHY_SPEC_CTRL, phy_reg);
-+	e1000_write_phy_reg(hw, M88E1000_PHY_SPEC_CTRL, phy_reg);
- }
- 
- static int e1000_nonintegrated_phy_loopback(struct e1000_adapter *adapter)
-@@ -1216,7 +1208,7 @@ static int e1000_nonintegrated_phy_loopback(struct e1000_adapter *adapter)
- 	/* Check Phy Configuration */
- 	e1000_read_phy_reg(hw, PHY_CTRL, &phy_reg);
- 	if (phy_reg != 0x4100)
--		 return 9;
-+		return 9;
- 
- 	e1000_read_phy_reg(hw, M88E1000_EXT_PHY_SPEC_CTRL, &phy_reg);
- 	if (phy_reg != 0x0070)
-@@ -1261,7 +1253,7 @@ static int e1000_integrated_phy_loopback(struct e1000_adapter *adapter)
- 			E1000_CTRL_FD); /* Force Duplex to FULL */
- 
- 	if (hw->media_type == e1000_media_type_copper &&
--	   hw->phy_type == e1000_phy_m88)
-+	    hw->phy_type == e1000_phy_m88)
- 		ctrl_reg |= E1000_CTRL_ILOS; /* Invert Loss of Signal */
- 	else {
- 		/* Set the ILOS bit on the fiber Nic is half
-@@ -1299,7 +1291,7 @@ static int e1000_set_phy_loopback(struct e1000_adapter *adapter)
- 			 * attempt this 10 times.
- 			 */
- 			while (e1000_nonintegrated_phy_loopback(adapter) &&
--			      count++ < 10);
-+			       count++ < 10);
- 			if (count < 11)
- 				return 0;
- 		}
-@@ -1348,8 +1340,9 @@ static int e1000_setup_loopback_test(struct e1000_adapter *adapter)
- 			ew32(RCTL, rctl);
- 			return 0;
- 		}
--	} else if (hw->media_type == e1000_media_type_copper)
-+	} else if (hw->media_type == e1000_media_type_copper) {
- 		return e1000_set_phy_loopback(adapter);
-+	}
- 
- 	return 7;
- }
-@@ -1397,7 +1390,7 @@ static int e1000_check_lbtest_frame(struct sk_buff *skb,
- 	frame_size &= ~1;
- 	if (*(skb->data + 3) == 0xFF) {
- 		if ((*(skb->data + frame_size / 2 + 10) == 0xBE) &&
--		   (*(skb->data + frame_size / 2 + 12) == 0xAF)) {
-+		    (*(skb->data + frame_size / 2 + 12) == 0xAF)) {
- 			return 0;
- 		}
- 	}
-@@ -1410,7 +1403,7 @@ static int e1000_run_loopback_test(struct e1000_adapter *adapter)
- 	struct e1000_tx_ring *txdr = &adapter->test_tx_ring;
- 	struct e1000_rx_ring *rxdr = &adapter->test_rx_ring;
- 	struct pci_dev *pdev = adapter->pdev;
--	int i, j, k, l, lc, good_cnt, ret_val=0;
-+	int i, j, k, l, lc, good_cnt, ret_val = 0;
- 	unsigned long time;
- 
- 	ew32(RDT, rxdr->count - 1);
-@@ -1429,12 +1422,13 @@ static int e1000_run_loopback_test(struct e1000_adapter *adapter)
- 	for (j = 0; j <= lc; j++) { /* loop count loop */
- 		for (i = 0; i < 64; i++) { /* send the packets */
- 			e1000_create_lbtest_frame(txdr->buffer_info[i].skb,
--					1024);
-+						  1024);
- 			dma_sync_single_for_device(&pdev->dev,
- 						   txdr->buffer_info[k].dma,
- 						   txdr->buffer_info[k].length,
- 						   DMA_TO_DEVICE);
--			if (unlikely(++k == txdr->count)) k = 0;
-+			if (unlikely(++k == txdr->count))
-+				k = 0;
- 		}
- 		ew32(TDT, k);
- 		E1000_WRITE_FLUSH();
-@@ -1452,7 +1446,8 @@ static int e1000_run_loopback_test(struct e1000_adapter *adapter)
- 					1024);
- 			if (!ret_val)
- 				good_cnt++;
--			if (unlikely(++l == rxdr->count)) l = 0;
-+			if (unlikely(++l == rxdr->count))
-+				l = 0;
- 			/* time + 20 msecs (200 msecs on 2.4) is more than
- 			 * enough time to complete the receives, if it's
- 			 * exceeded, break and error off
-@@ -1494,6 +1489,7 @@ static int e1000_link_test(struct e1000_adapter *adapter, u64 *data)
- 	*data = 0;
- 	if (hw->media_type == e1000_media_type_internal_serdes) {
- 		int i = 0;
-+
- 		hw->serdes_has_link = false;
- 
- 		/* On some blade server designs, link establishment
-@@ -1512,9 +1508,8 @@ static int e1000_link_test(struct e1000_adapter *adapter, u64 *data)
- 		if (hw->autoneg)  /* if auto_neg is set wait for it */
- 			msleep(4000);
- 
--		if (!(er32(STATUS) & E1000_STATUS_LU)) {
-+		if (!(er32(STATUS) & E1000_STATUS_LU))
- 			*data = 1;
--		}
- 	}
- 	return *data;
- }
-@@ -1665,8 +1660,7 @@ static void e1000_get_wol(struct net_device *netdev,
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
- 	struct e1000_hw *hw = &adapter->hw;
- 
--	wol->supported = WAKE_UCAST | WAKE_MCAST |
--	                 WAKE_BCAST | WAKE_MAGIC;
-+	wol->supported = WAKE_UCAST | WAKE_MCAST | WAKE_BCAST | WAKE_MAGIC;
- 	wol->wolopts = 0;
- 
- 	/* this function will set ->supported = 0 and return 1 if wol is not
-@@ -1819,6 +1813,7 @@ static int e1000_set_coalesce(struct net_device *netdev,
- static int e1000_nway_reset(struct net_device *netdev)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
-+
- 	if (netif_running(netdev))
- 		e1000_reinit_locked(adapter);
- 	return 0;
-@@ -1835,11 +1830,11 @@ static void e1000_get_ethtool_stats(struct net_device *netdev,
- 	for (i = 0; i < E1000_GLOBAL_STATS_LEN; i++) {
- 		switch (e1000_gstrings_stats[i].type) {
- 		case NETDEV_STATS:
--			p = (char *) netdev +
-+			p = (char *)netdev +
- 					e1000_gstrings_stats[i].stat_offset;
- 			break;
- 		case E1000_STATS:
--			p = (char *) adapter +
-+			p = (char *)adapter +
- 					e1000_gstrings_stats[i].stat_offset;
- 			break;
- 		}
-@@ -1859,7 +1854,7 @@ static void e1000_get_strings(struct net_device *netdev, u32 stringset,
- 	switch (stringset) {
- 	case ETH_SS_TEST:
- 		memcpy(data, *e1000_gstrings_test,
--			sizeof(e1000_gstrings_test));
-+		       sizeof(e1000_gstrings_test));
- 		break;
- 	case ETH_SS_STATS:
- 		for (i = 0; i < E1000_GLOBAL_STATS_LEN; i++) {
--- 
-2.0.3
+Yes, both acpidump output and the list of PNP devices changes when I
+update the kernel. I was hoping to give you a brief "diff" output for
+the changes; but there are too many changes for that to make much
+sense. In any case, you can see it by running:
 
+  diff -u last-good/dirtree_\!sys\!devices\!pnp0.txt
+first-bad/dirtree_\!sys\!devices\!pnp0.txt
+
+I included a README.txt that describes the contents of all the files.
+I hope this makes some sense and I hope it is sufficiently complete
+for you to make progress in debugging why my machine is unhappy.
+Please don't hesitate to ask, if you think I can provide other data
+and/or run other tests.
+
+
+Markus
+
+
+On Fri, Aug 15, 2014 at 5:46 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Friday, August 15, 2014 10:17:42 AM Markus Gutschke wrote:
+>> Just wondering if any of you had any other ideas of what I could try
+>> to help debug this problem?
+>
+> My theory is that there is a device in your system that we don't have a driver
+> for, but it had been enumerated as a PNP device before the change that triggered
+> the problem for you and we turned it off during suspend as part of the default
+> ACPI PNP device handling.
+>
+> The reason why you're seeing a crash with the "platform" test level is most
+> likely that the _WAK control method does something unusual on your system.
+>
+> The LNXSYBUS:00 thing from dmesg probably is a red herring.
+>
+> I need the output of acpidump from the affected system, but please attach it
+> to the bug entry at https://bugzilla.kernel.org/show_bug.cgi?id=80911 that
+> Rui has created for this issue.
+>
+> Also please check the list of PNP devices under
+>
+> /sys/bus/pnp/devices/
+>
+> before and after the commit you have found by bisection and let me know if
+> there are any differences.
+>
+>
+>> On Tue, Aug 12, 2014 at 9:11 AM, Markus Gutschke <markus@gutschke.com> wrote:
+>> > As I said earlier in this thread, echo'ing "devices" into "pm_test"
+>> > does not result in a crash; but doing so for "platform" does.
+>> >
+>> > Markus
+>> >
+>> > On Aug 12, 2014 1:26 AM, "Zhang Rui" <rui.zhang@intel.com> wrote:
+>> >>
+>> >> On Sat, 2014-08-09 at 03:14 -0700, Markus Gutschke wrote:
+>> >> > I am back and have physical access to the machine now.
+>> >> >
+>> >> great!
+>> >>
+>> >> > I re-ran the test just to be sure, and I can confirm that "platform"
+>> >> > does in fact result in a crash.
+>> >> >
+>> >> what about "devices"?
+>> >> I mean
+>> >>
+>> >> # echo devices > /sys/power/pm_test
+>> >>
+>> >> and see if that triggers the crash.
+>> >>
+>> >> > Furthermore, I ran the test that Rui asked for. I suspended, resumed,
+>> >> > and upon crashing power-cycled the machine ASAP. "dmesg" suggests that
+>> >> > the problem is with LNXSYBUS:00 That doesn't tell me much, but
+>> >> > hopefully it makes sense to you guys.
+>> >> >
+>> >> [    0.930093]   Magic number: 10:810:122
+>> >> [    0.930185] acpi LNXSYBUS:00: hash matches
+>> >>
+>> >> This looks weird, ACPI will do nothing for LNXSYBUS devices during
+>> >> resume.
+>> >> Rafael, any thought on this?
+>> >>
+>> >> thanks,
+>> >> rui
+>> >>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+
+--001a1134b5b8442b460500bc2176
+Content-Type: text/plain; charset=US-ASCII; name="README.txt"
+Content-Disposition: attachment; filename="README.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hywrp7r00
+
+VGhpcyBhcmNoaXZlIGNvbnRhaW5zIGRlYnVnZ2luZyBpbmZvcm1hdGlvbiByZXRyaWV2ZWQgZm9y
+IHRoZSBmb2xsb3dpbmcga2VybmVsCnZlcnNpb25zOgoKNDU1YzZmZGJkMjE5MTYxYmQwOWIxMTY1
+ZjExNjk5ZDZkNzNkZTExYzogTGludXggMy4xNAoxODYwZTM3OTg3NWRmZTcyNzFjNjQ5MDU4YWVk
+ZGZmZTVhZmQ5ZDBkOiBMaW51eCAzLjE1CmFjYTBhNGViNGUzMjU5MTRkZGIyMmE4ZWQwNmZjYjAy
+MjJkYTJhMjY6IExhc3QgZ29vZCBjb21taXQKZWVjMTVlZGJiMGUxNDQ4NTk5ODYzNWVhN2M2MmUz
+MDkxMWI0NjVmMDogRmlyc3QgYmFkIGNvbW1pdApiMDRjNThiMWVkMjYzMTdiZmI0YjMzZDNhMmQx
+NjM3N2ZjNmFjZDBmOiBTdGlsbCBiYWQgKG1lcmdlIGJyYW5jaCAiYWNwaS1lbnVtZXJhdGlvbiIp
+CmIwNGM1OGIxZWQyNjMxN2JmYjRiMzNkM2EyZDE2Mzc3ZmM2YWNkMGYuUEFUQ0hFRDogUGF0Y2hl
+ZCB3aXRoIGEgZGVidWcgcGF0Y2ggcHJvdmlkZWQgYnkgUnVpCgpBZnRlciBlZWMxNWVkYmIwZTE0
+NDg1OTk4NjM1ZWE3YzYyZTMwOTExYjQ2NWYwLCB0aGUga2VybmVsIGNhbiBubyBsb25nZXIgcmVz
+dW1lCmZyb20gc3VzcGVuZC4gVGhlIGNyYXNoIGxvb2tzIGxpa2Ugd2hhdCBpcyBzaG93biBpbiAi
+Y3Jhc2gucG5nIi4KCkV2ZW4gZm9yIGRlZmVjdGl2ZSBrZXJuZWxzLCAiZWNobyBkZXZpY2VzID4v
+c3lzL3Bvd2VyL3BtX3Rlc3QiIGNvbXBsZXRlcyBzdWNjZXNzZnVsbHksCndoZXJlYXMgImVjaG8g
+cGxhdGZvcm0gPi9zeXMvcG93ZXIvcG1fdGVzdCIgdHJpZ2dlcnMgdGhlIGNyYXNoLgoKQ09ORklH
+X1BNX1RSQUNFX1JUQyBzdWdnZXN0cyB0aGF0IHRoZSBidWcgaXMgY2F1c2VkIGJ5IExOWFNZQlVT
+OjAwOiwgYnV0IHRoYXQgbWlnaHQgYmUKaW5jb3JyZWN0LgoKUGxlYXNlIG5vdGUgdGhhdCAiZG1l
+c2ciIHNob3dzIGFuIGVhcmx5IHN0YWNrIHRyYWNlIGR1cmluZyBib290LiBUaGlzIG1pZ2h0IG9y
+IG1pZ2h0Cm5vdCBiZSByZWxhdGVkLgoKUGxlYXNlIGFsc28gbm90IHRoYXQgdGhlIG91dHB1dCBm
+cm9tICJhY3BpZHVtcCIgY2hhbmdlcyBiZXR3ZWVuIGtlcm5lbCB2ZXJzaW9ucy4KCkkgYWxzbyBp
+bmNsdWRlZCB0aGUgb3V0cHV0IGZyb20KICBncmVwIC4gL3N5cy9idXMvcG5wL2RldmljZXMvKi9m
+aXJtd2FyZV9ub2RlLyoKICBncmVwIC4gL3N5cy9idXMvcG5wL2RldmljZXMvKi8qCiAgZ3JlcCAu
+IC9zeXMvYnVzL3BsYXRmb3JtL2RldmljZXMvKi9maXJtd2FyZV9ub2RlLyoKICBncmVwIC4gL3N5
+cy9idXMvcGxhdGZvcm0vZGV2aWNlcy8qLyoKZm9yIGVhY2ggb2YgdGhlIGtlcm5lbHMuCgpBbmQg
+dGhlIGRpcmVjdG9yeSB0cmVlIHVuZGVybmVhdGggL3N5cy9idXMvcG5wL2RldmljZXMvIC0+IC9z
+eXMvZGV2aWNlcy9wbnAwLy4K
+--001a1134b5b8442b460500bc2176--
