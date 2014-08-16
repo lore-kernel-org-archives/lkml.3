@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728AbaHPU3W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 16:29:22 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:63312 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaHPU3V (ORCPT
+	id S1751747AbaHPUdZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 16:33:25 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:61359 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaHPUdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 16:29:21 -0400
-Message-ID: <53EFBF1C.5060407@colorfullife.com>
-Date: Sat, 16 Aug 2014 22:29:16 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Andrew Vagin <avagin@parallels.com>
-CC: Andrey Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathias Krause <minipli@googlemail.com>, Joe Perches <joe@perches.com>,
-        Davidlohr Bueso <davidlohr@hp.com>
-Subject: Re: [PATCH] ipc: always handle a new value of auto_msgmni
-References: <1407936117-2985-1-git-send-email-avagin@openvz.org> <53EC8369.8030406@colorfullife.com> <20140814133449.GB15307@paralelels.com>
-In-Reply-To: <20140814133449.GB15307@paralelels.com>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 16 Aug 2014 16:33:23 -0400
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Andreas Ruprecht <rupran@einserver.de>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH] media: davinci: remove unneeded dependency ARCH_OMAP3
+Date: Sat, 16 Aug 2014 21:33:18 +0100
+Message-Id: <1408221198-27458-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+this patch removes unneeded dependency of ARCH_OMAP3
+on VIDEO_DM6446_CCDC.
+Also the top level platform Makefile descended into
+davinci/ without any dependency so just drop the
+dependency obj-y, as obj-$(CONFIG_ARCH_DAVINCI)
+already exists.
 
-On 08/14/2014 03:34 PM, Andrew Vagin wrote:
-> On Thu, Aug 14, 2014 at 11:37:45AM +0200, Manfred Spraul wrote:
->> Hi Andrey,
->>
->> [...]
->> What do you use auto_msgmni for? 
-> We disable it to check that criu restores a value of the msgmni sysctl correctly.
->
-> https://github.com/xemul/criu/blob/master/test/zdtm/live/static/ipc_namespace.c
-Thanks for the link, if I see it right, my patch would break your code:
+Reported-by: Andreas Ruprecht <rupran@einserver.de>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/media/platform/Makefile        | 2 --
+ drivers/media/platform/davinci/Kconfig | 2 +-
+ 2 files changed, 1 insertion(+), 3 deletions(-)
 
-http://marc.info/?l=linux-kernel&m=140782863804950
+diff --git a/drivers/media/platform/Makefile b/drivers/media/platform/Makefile
+index e5269da..13aef34 100644
+--- a/drivers/media/platform/Makefile
++++ b/drivers/media/platform/Makefile
+@@ -47,8 +47,6 @@ obj-$(CONFIG_SOC_CAMERA)		+= soc_camera/
+ 
+ obj-$(CONFIG_VIDEO_RENESAS_VSP1)	+= vsp1/
+ 
+-obj-y	+= davinci/
+-
+ obj-$(CONFIG_ARCH_OMAP)	+= omap/
+ 
+ ccflags-y += -I$(srctree)/drivers/media/i2c
+diff --git a/drivers/media/platform/davinci/Kconfig b/drivers/media/platform/davinci/Kconfig
+index afb3aec..298e1ee 100644
+--- a/drivers/media/platform/davinci/Kconfig
++++ b/drivers/media/platform/davinci/Kconfig
+@@ -26,7 +26,7 @@ config VIDEO_DAVINCI_VPIF_CAPTURE
+ 
+ config VIDEO_DM6446_CCDC
+ 	tristate "TI DM6446 CCDC video capture driver"
+-	depends on VIDEO_V4L2 && (ARCH_DAVINCI || ARCH_OMAP3)
++	depends on VIDEO_V4L2 && ARCH_DAVINCI
+ 	select VIDEOBUF_DMA_CONTIG
+ 	help
+ 	   Enables DaVinci CCD hw module. DaVinci CCDC hw interfaces
+-- 
+1.9.1
 
-It removes auto_msgmni - and
-What do you think, should I leave auto_msgmni as a stale variable, 
-perhaps with a pr_info() that it doesn't have any effect?
-
-
---
-     Manfred
