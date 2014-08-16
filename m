@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523AbaHPM7j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 08:59:39 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:46951 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaHPM7h (ORCPT
+	id S1751507AbaHPNFD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 09:05:03 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39825 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaHPNFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 08:59:37 -0400
-Date: Sat, 16 Aug 2014 08:59:34 -0400
+	Sat, 16 Aug 2014 09:05:00 -0400
+Date: Sat, 16 Aug 2014 09:04:56 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Honggang Li <enjoymindful@gmail.com>
-Cc: cl@linux-foundation.org, linux-mm@kvack.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Free percpu allocation info for uniprocessor system
-Message-ID: <20140816125934.GG9305@htj.dyndns.org>
-References: <1407850575-18794-1-git-send-email-enjoymindful@gmail.com>
- <1407850575-18794-2-git-send-email-enjoymindful@gmail.com>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@zytor.com>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mem-hotplug: let memblock skip the hotpluggable memory
+ regions in __next_mem_range()
+Message-ID: <20140816130456.GH9305@htj.dyndns.org>
+References: <53E8C5AA.5040506@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407850575-18794-2-git-send-email-enjoymindful@gmail.com>
+In-Reply-To: <53E8C5AA.5040506@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 09:36:15PM +0800, Honggang Li wrote:
-> Currently, only SMP system free the percpu allocation info.
-> Uniprocessor system should free it too. For example, one x86 UML
-> virtual machine with 256MB memory, UML kernel wastes one page memory.
+On Mon, Aug 11, 2014 at 09:31:22PM +0800, Xishi Qiu wrote:
+> Let memblock skip the hotpluggable memory regions in __next_mem_range(),
+> it is used to to prevent memblock from allocating hotpluggable memory 
+> for the kernel at early time. The code is the same as __next_mem_range_rev().
 > 
-> Signed-off-by: Honggang Li <enjoymindful@gmail.com>
+> Clear hotpluggable flag before releasing free pages to the buddy allocator.
 
-Applied to percpu/for-3.17-fixes w/ stable cc'd.
-
-Thanks.
+Please try to explain "why" in addition to "what".  Why do we need to
+clear hotpluggable flag in free_low_memory_core_early() in addition to
+numa_clear_node_hotplug() in x86 numa.c?  Does this make x86 code
+redundant?  If not, why?
 
 -- 
 tejun
