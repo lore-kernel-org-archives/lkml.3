@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751648AbaHPPmC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 11:42:02 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44937 "EHLO
+	id S1751715AbaHPPmh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 11:42:37 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44947 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaHPPl7 (ORCPT
+	with ESMTP id S1751530AbaHPPmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 11:41:59 -0400
-Date: Sat, 16 Aug 2014 17:41:54 +0200
+	Sat, 16 Aug 2014 11:42:35 -0400
+Date: Sat, 16 Aug 2014 17:42:30 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, David Drysdale <drysdale@google.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [RFC PATCH 00/11] Adding FreeBSD's Capsicum security framework
- (part 1)
-Message-ID: <20140816154154.GA12400@Nokia-N900>
-References: <1404124096-21445-1-git-send-email-drysdale@google.com>
- <53B51E81.4090700@redhat.com>
- <20140703183927.GA1629@google.com>
- <53B651C5.80602@redhat.com>
- <CAHse=S83APPfnEwO1fQbV_tNd=9zsAsZr42KbYM_He-c3C3P6A@mail.gmail.com>
- <53BA9094.9080401@redhat.com>
- <CAADnVQ+c2E6eG_juEDh-GyheveqScxQ=98jqO1ZOjp1PgfVBGQ@mail.gmail.com>
+To: Pali Roh?r <pali.rohar@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: power: swsusp: Fix script for unswapping
+Message-ID: <20140816154230.GB12400@Nokia-N900>
+References: <1399374116-12400-1-git-send-email-pali.rohar@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAADnVQ+c2E6eG_juEDh-GyheveqScxQ=98jqO1ZOjp1PgfVBGQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1399374116-12400-1-git-send-email-pali.rohar@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> >>> I think that's more easily done by opening the file as O_RDONLY/O_WRONLY
-> >>> /O_RDWR.   You could do it by running the file descriptor's seccomp-bpf
-> >>> program once per iocb with synthesized syscall numbers and argument
-> >>> vectors.
-> >>
-> >>
-> >> Right, but generating the equivalent seccomp input environment for an
-> >> equivalent single-fd syscall is going to be subtle and complex (which
-> >> are worrying words to mention in a security context).  And how many
-> >> other syscalls are going to need similar special-case processing?
-> >> (poll? select? send[m]msg? ...)
-> >
-> >
-> > Yeah, the difficult part is getting the right balance between:
-> >
-> > 1) limitations due to seccomp's impossibility to chase pointers (which is
-> > not something that can be lifted, as it's required for correctness)
+On Tue 2014-05-06 13:01:56, Pali Roh?r wrote:
+> System can have mmaped also character devices (e.g dri devices by X) or deleted
+> files. Running cat on character devices is really bad idea (system can hang) so
+> run cat only on regular files. Also mmaped files can have spaces in filenames.
 > 
-> btw once seccomp moves to eBPF it will be able to 'chase pointers',
-> since pointer walking will be possible via bpf_load_pointer() function call,
-> which is a wrapper of:
+> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 
-Even if you could make capscium work with eBPF... please don't.
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
-Capscium is kind of obvious, elegant solution. BPF is quite
-complex. And security semantics should not be pushed to userspace...
+> ---
+>  Documentation/power/swsusp.txt |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/power/swsusp.txt b/Documentation/power/swsusp.txt
+> index 079160e..f732a83 100644
+> --- a/Documentation/power/swsusp.txt
+> +++ b/Documentation/power/swsusp.txt
+> @@ -220,7 +220,10 @@ Q: After resuming, system is paging heavily, leading to very bad interactivity.
+>  
+>  A: Try running
+>  
+> -cat `cat /proc/[0-9]*/maps | grep / | sed 's:.* /:/:' | sort -u` > /dev/null
+> +cat /proc/[0-9]*/maps | grep / | sed 's:.* /:/:' | sort -u | while read file
+> +do
+> +  test -f "$file" && cat "$file" > /dev/null
+> +done
+>  
+>  after resume. swapoff -a; swapon -a may also be useful.
+>  
+> -- 
+> 1.7.9.5
 
-						Pavel
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
