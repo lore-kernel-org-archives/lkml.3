@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaHPQt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 12:49:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:32922 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaHPQt4 (ORCPT
+	id S1751725AbaHPRde (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 13:33:34 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:38485 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605AbaHPRdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 12:49:56 -0400
-From: Colin King <colin.king@canonical.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] UBI: block: fix dereference on uninitialized dev
-Date: Sat, 16 Aug 2014 17:49:53 +0100
-Message-Id: <1408207793-11536-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 2.1.0.rc1
+	Sat, 16 Aug 2014 13:33:31 -0400
+Date: Sat, 16 Aug 2014 20:33:25 +0300
+From: Dan Aloni <dan@kernelim.com>
+To: Yaniv Gardi <ygardi@codeaurora.org>
+Cc: James.Bottomley@HansenPartnership.com, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
+        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
+        noag@codeaurora.org, draviv@codeaurora.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Vinayak Holikatti <vinholikatti@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        Sahitya Tummala <stummala@codeaurora.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3] scsi: ufs-msm: add UFS controller support for
+ Qualcomm MSM chips
+Message-ID: <20140816173325.GA3961@gmail.com>
+References: <1408026157-26972-1-git-send-email-ygardi@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408026157-26972-1-git-send-email-ygardi@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On Thu, Aug 14, 2014 at 05:22:18PM +0300, Yaniv Gardi wrote:
+> diff --git a/drivers/scsi/ufs/ufs-msm.h b/drivers/scsi/ufs/ufs-msm.h
+> new file mode 100644
+> index 0000000..6e93f1e
+> --- /dev/null
+> +++ b/drivers/scsi/ufs/ufs-msm.h
+> @@ -0,0 +1,158 @@
+[...]
+> +};
+> +
+> +static LIST_HEAD(phy_list);
+> +
 
-commit 4df38926f337 ("UBI: block: Avoid disk size integer overflow")
-introduced a dereference on dev (which is not initialized at that
-point) when printing a warning message.  Remove the reference to
-the dev's disk_name.
+Just noticed this via a quick glance - Seems that this variable is not
+referenced by any of the compilation units, what's the purpose of it?
+And as a static global in a shared private, each of the including
+compilation units gets a copy, which I am not sure was intended
+anyway.
 
-Found by cppcheck:
- [drivers/mtd/ubi/block.c:509]: (error) Uninitialized variable: dev
-
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/mtd/ubi/block.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mtd/ubi/block.c b/drivers/mtd/ubi/block.c
-index 33c6495..944bdbd 100644
---- a/drivers/mtd/ubi/block.c
-+++ b/drivers/mtd/ubi/block.c
-@@ -505,8 +505,8 @@ static int ubiblock_resize(struct ubi_volume_info *vi)
- 	u64 disk_capacity = ((u64)vi->size * vi->usable_leb_size) >> 9;
- 
- 	if ((sector_t)disk_capacity != disk_capacity) {
--		ubi_warn("%s: the volume is too big, cannot resize (%d LEBs)",
--			 dev->gd->disk_name, vi->size);
-+		ubi_warn("block: the volume is too big, cannot resize (%d LEBs)",
-+			vi->size);
- 		return -EFBIG;
- 	}
- 	/*
 -- 
-2.1.0.rc1
-
+Dan Aloni
