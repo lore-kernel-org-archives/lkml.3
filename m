@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438AbaHQGEo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 02:04:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19491 "EHLO mga03.intel.com"
+	id S1751945AbaHQGHD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 02:07:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49045 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840AbaHQGE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 02:04:27 -0400
+	id S1751250AbaHQGEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 02:04:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,878,1400050800"; 
-   d="scan'208";a="469518969"
+   d="scan'208";a="577744106"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Darren Hart <dvhart@linux.intel.com>,
         "Rafael J. Wysocki" <rafael@kernel.org>
@@ -16,9 +16,9 @@ Cc: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 6/9] gpiolib: add API to get gpio desc and flags
-Date: Sun, 17 Aug 2014 09:04:16 +0300
-Message-Id: <1408255459-17625-7-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [RFC PATCH 2/9] ACPI: Document ACPI device specific properties
+Date: Sun, 17 Aug 2014 09:04:12 +0300
+Message-Id: <1408255459-17625-3-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 2.1.0.rc1
 In-Reply-To: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -26,233 +26,381 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Lu <aaron.lu@intel.com>
+This document describes the data format and interfaces of ACPI device
+specific properties.
 
-Add a new API to get the GPIO's description pointer and its flags for
-both OF based system and ACPI based system. This is useful in drivers
-that do not need to care about the underlying firmware interface.
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Max Eliaser <max.eliaser@intel.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 ---
- drivers/gpio/gpiolib-acpi.c   | 81 ++++++++++++++++++++++++++++++++-----------
- drivers/gpio/gpiolib.c        | 18 ++++++++++
- drivers/gpio/gpiolib.h        |  8 +++++
- include/linux/gpio/consumer.h | 11 ++++++
- 4 files changed, 97 insertions(+), 21 deletions(-)
+ Documentation/acpi/properties.txt | 359 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 359 insertions(+)
+ create mode 100644 Documentation/acpi/properties.txt
 
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index 4a987917c186..f35e88d29a47 100644
---- a/drivers/gpio/gpiolib-acpi.c
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -293,11 +293,38 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
- 			agpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT;
- 		lookup->info.active_low =
- 			agpio->polarity == ACPI_ACTIVE_LOW;
-+		lookup->info.pin_config = agpio->pin_config;
- 	}
- 
- 	return 1;
- }
- 
-+static struct gpio_desc *
-+__acpi_get_gpiod_by_index(struct acpi_device *adev, int index,
-+			  struct acpi_gpio_info *info)
-+{
-+	struct acpi_gpio_lookup lookup;
-+	struct list_head resource_list;
+diff --git a/Documentation/acpi/properties.txt b/Documentation/acpi/properties.txt
+new file mode 100644
+index 000000000000..a1e93267c1fa
+--- /dev/null
++++ b/Documentation/acpi/properties.txt
+@@ -0,0 +1,359 @@
++ACPI device properties
++======================
++This document describes the format and interfaces of ACPI device
++properties as specified in "Device Properties UUID For _DSD" available
++here:
++
++http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
++
++1. Introduction
++---------------
++In systems that use ACPI and want to take advantage of device specific
++properties, there needs to be a standard way to return and extract
++name-value pairs for a given ACPI device.
++
++An ACPI device that wants to export its properties must implement a
++static name called _DSD that takes no arguments and returns a package of
++packages:
++
++	Name (_DSD, Package () {
++		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++		Package () {
++			Package () {"name1", <VALUE1>},
++			Package () {"name2", <VALUE2>}
++		}
++	})
++
++The UUID identifies contents of the following package. In case of ACPI
++device properties it is daffd814-6eba-4d8c-8a91-bc9bbf4aa301.
++
++In each returned package, the first item is the name and must be a string.
++The corresponding value can be a string, integer, reference, or package. If
++a package it may only contain strings, integers, and references.
++
++An example device where we might need properties is a GPIO keys device.
++In addition to the GpioIo/GpioInt resources the driver needs to know how
++to map each GpioIo resource to the corresponding Linux input event.
++
++To solve this we add the following ACPI device properties from the
++gpio-keys schema:
++
++	Device (KEYS) {
++		Name (_DSD, Package () {
++			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++			Package () {
++				Package () {"poll-interval", 100},
++				Package () {"autorepeat", 1}
++			}
++		})
++
++		Device (BTN0) {
++			Name (_DSD, Package () {
++				ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++				Package () {
++					Package () {"linux,code", 105},
++					Package () {"linux,input-type", 1},
++					...
++				}
++			})
++		}
++
++		...
++	}
++
++Of course the device driver then needs to iterate over these devices but
++it can be done easily via the ->children field of the companion ACPI
++device. This will be demonstrated later on in the document.
++
++If there is an existing Device Tree binding for a device, it is expected
++that the same bindings are used with ACPI properties, so that the driver
++dealing with the device needs only minor modifications if any.
++
++2. Formal definition of properties
++----------------------------------
++The following chapters define the currently supported properties. For
++these there exists a helper function that can be used to extract the
++property value.
++
++2.1 Integer types
++-----------------
++ACPI integers are always 64-bit. However, for drivers the full range is
++typically not needed so we provide a set of functions which convert the
++64-bit integer to a smaller Linux integer type.
++
++An integer property looks like this:
++
++	Package () {"poll-interval", 100},
++	Package () {"i2c-sda-hold-time-ns", 300},
++	Package () {"clock-frequency", 400000},
++
++To read a property value, use a unified property accessor as shown
++below:
++
++	u32 val;
 +	int ret;
 +
-+	memset(&lookup, 0, sizeof(lookup));
-+	lookup.index = index;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
-+				     &lookup);
-+	if (ret < 0)
-+		return ERR_PTR(ret);
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (lookup.desc && info)
-+		*info = lookup.info;
-+
-+	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
-+}
-+
-+
- /**
-  * acpi_get_gpiod_by_index() - get a GPIO descriptor from device resources
-  * @dev: pointer to a device to get GPIO from
-@@ -318,34 +345,46 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
- struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
- 					  struct acpi_gpio_info *info)
- {
--	struct acpi_gpio_lookup lookup;
--	struct list_head resource_list;
--	struct acpi_device *adev;
--	acpi_handle handle;
--	int ret;
--
--	if (!dev)
-+	if (!dev || !ACPI_COMPANION(dev))
- 		return ERR_PTR(-EINVAL);
-+	return __acpi_get_gpiod_by_index(ACPI_COMPANION(dev), index, info);
-+}
- 
--	handle = ACPI_HANDLE(dev);
--	if (!handle || acpi_bus_get_device(handle, &adev))
--		return ERR_PTR(-ENODEV);
--
--	memset(&lookup, 0, sizeof(lookup));
--	lookup.index = index;
-+struct gpio_desc *acpi_get_gpiod_flags(struct device *dev, int idx,
-+				       enum gpio_lookup_flags *flags)
-+{
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
-+	struct acpi_reference_args args;
-+	struct acpi_gpio_info info;
-+	struct gpio_desc *desc;
-+	bool active_low;
-+	int ret;
- 
--	INIT_LIST_HEAD(&resource_list);
--	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
--				     &lookup);
--	if (ret < 0)
-+	ret = acpi_dev_get_property_reference(adev, "gpios", NULL, idx, &args);
++	ret = device_property_read(dev, "poll-interval", DEV_PROP_U32, &val);
 +	if (ret)
- 		return ERR_PTR(ret);
- 
--	acpi_dev_free_resource_list(&resource_list);
-+	desc = __acpi_get_gpiod_by_index(args.adev, args.args[0], &info);
-+	if (IS_ERR(desc))
-+		return desc;
- 
--	if (lookup.desc && info)
--		*info = lookup.info;
-+	/*
-+	 * The 3rd argument optionally specifies the pin polarity. We
-+	 * use that if it exists, otherwise we resort to the pin config.
-+	 * (Note that the first element of the "gpios" package goes into
-+	 * arg.adev, not args.args.)
-+	 */
-+	if (args.nargs >= 3)
-+		active_low = !!args.args[2];
-+	else if (info.gpioint)
-+		active_low = !!info.active_low;
-+	else
-+		active_low = !!(info.pin_config & ACPI_PIN_CONFIG_PULLUP);
- 
--	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
-+	if (active_low)
-+		*flags |= GPIO_ACTIVE_LOW;
++		/* Handle error */
 +
-+	return desc;
- }
- 
- static acpi_status
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 2ebc9071e354..e6c2413a6fbf 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -2644,6 +2644,24 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
- 	return desc;
- }
- 
-+struct gpio_desc *dev_get_gpiod_flags(struct device *dev, unsigned int idx,
-+				      enum gpio_lookup_flags *flags)
-+{
-+	struct gpio_desc *desc = ERR_PTR(-ENOENT);
++The function returns 0 if the property is copied to 'val' or negative
++errno if something went wrong (or the property does not exist).
 +
-+	if (!dev || !flags)
-+		return ERR_PTR(-EINVAL);
++2.2 Integer arrays
++------------------
++An integer array is a package holding only integers. Arrays can be used to
++represent different things like Linux input key codes to GPIO mappings, pin
++control settings, dma request lines, etc.
 +
-+	/* Using device tree? */
-+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-+		desc = of_find_gpio(dev, NULL, idx, flags);
-+	else if (IS_ENABLED(CONFIG_ACPI) && ACPI_COMPANION(dev))
-+		desc = acpi_get_gpiod_flags(dev, idx, flags);
++An integer array looks like this:
 +
-+	return desc;
-+}
-+EXPORT_SYMBOL(dev_get_gpiod_flags);
++	Package () {
++		"max8952,dvs-mode-microvolt",
++		Package () {
++			1250000,
++			1200000,
++			1050000,
++			950000,
++		}
++	}
 +
- static struct gpiod_lookup_table *gpiod_find_lookup_table(struct device *dev)
- {
- 	const char *dev_id = dev ? dev_name(dev) : NULL;
-diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-index 1a4103dd38df..a759db968e51 100644
---- a/drivers/gpio/gpiolib.h
-+++ b/drivers/gpio/gpiolib.h
-@@ -25,6 +25,7 @@ enum of_gpio_flags;
- struct acpi_gpio_info {
- 	bool gpioint;
- 	bool active_low;
-+	u8 pin_config;
- };
- 
- #ifdef CONFIG_ACPI
-@@ -33,6 +34,8 @@ void acpi_gpiochip_remove(struct gpio_chip *chip);
- 
- struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
- 					  struct acpi_gpio_info *info);
-+struct gpio_desc *acpi_get_gpiod_flags(struct device *dev, int index,
-+				       enum gpio_lookup_flags *flags);
- #else
- static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
- static inline void acpi_gpiochip_remove(struct gpio_chip *chip) { }
-@@ -43,6 +46,11 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
- {
- 	return ERR_PTR(-ENOSYS);
- }
-+static struct gpio_desc *acpi_get_gpiod_flags(struct device *dev, int index,
-+					      enum gpio_lookup_flags *flags)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
- #endif
- 
- int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
-diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-index 05e53ccb708b..53f422e4f0c9 100644
---- a/include/linux/gpio/consumer.h
-+++ b/include/linux/gpio/consumer.h
-@@ -7,6 +7,8 @@
- 
- struct device;
- 
-+enum gpio_lookup_flags;
++The above array property can be accessed like:
 +
- /**
-  * Opaque descriptor for a GPIO. These are obtained using gpiod_get() and are
-  * preferable to the old integer-based handles.
-@@ -73,6 +75,9 @@ int gpiod_to_irq(const struct gpio_desc *desc);
- struct gpio_desc *gpio_to_desc(unsigned gpio);
- int desc_to_gpio(const struct gpio_desc *desc);
- 
-+struct gpio_desc *dev_get_gpiod_flags(struct device *dev, unsigned int idx,
-+				      enum gpio_lookup_flags *flags);
++	u32 voltages[4];
++	int ret;
 +
- #else /* CONFIG_GPIOLIB */
- 
- static inline struct gpio_desc *__must_check gpiod_get(struct device *dev,
-@@ -254,6 +259,12 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
- 	return -EINVAL;
- }
- 
-+static inline struct gpio_desc *dev_get_gpiod_flags(struct device *dev,
-+			unsigned int idx, enum gpio_lookup_flags *flags)
-+{
-+	return ERR_PTR(-ENOSYS);
-+}
++	ret = device_property_read_array(dev, "max8952,dvs-mode-microvolt",
++					 DEV_PROP_U32, voltages,
++					 ARRAY_SIZE(voltages));
++	if (ret)
++		/* Handle error */
 +
- 
- #endif /* CONFIG_GPIOLIB */
- 
++
++All functions copy the resulting values cast to a requested type to the
++caller supplied array. If you pass NULL in the value pointer ('voltages' in
++this case), the function returns number of items in the array. This can be
++useful if caller does not know size of the array beforehand.
++
++2.3 Strings
++-----------
++String properties can be used to describe many things like labels for GPIO
++buttons, compability ids, etc.
++
++A string property looks like this:
++
++	Package () {"pwm-names", "backlight"},
++	Package () {"label", "Status-LED"},
++
++You can also use device_property_read() to extract strings:
++
++	const char *val;
++	int ret;
++
++	ret = device_property_read(dev, "label", DEV_PROP_STRING, &val);
++	if (ret)
++		/* Handle error */
++
++Note that the function does not copy the returned string but instead the
++value is modified to point to the string property itself.
++
++The memory is owned by the associated ACPI device object and released
++when it is removed. The user need not free the associated memory.
++
++2.4 String arrays
++-----------------
++String arrays can be useful in describing a list of labels, names for
++DMA channels, etc.
++
++A string array property looks like this:
++
++	Package () {"dma-names", Package () {"tx", "rx", "rx-tx"}},
++	Package () {"clock-output-names", Package () {"pll", "pll-switched"}},
++
++And these can be read in similar way that the integer arrrays:
++
++	const char *dma_names[3];
++	int ret;
++
++	ret = device_property_read_array(dev, "dma-names", DEV_PROP_STRING,
++					 dma_names, ARRAY_SIZE(dma_names));
++	if (ret)
++		/* Handle error */
++
++The memory management rules follow what is specified for single strings.
++Specifically the returned pointers should be treated as constant and not to
++be freed. That is done automatically when the correspondig ACPI device
++object is released.
++
++2.5 Object references
++---------------------
++An ACPI object reference is used to refer to some object in the
++namespace. For example, if a device has dependencies with some other
++object, an object reference can be used.
++
++An object reference looks like this:
++
++	Package () {"clock", \_SB.CLK0},
++
++At the time of writing this, there is no unified device_property_* accessor
++for references so one needs to use the following ACPI helper function:
++
++	int acpi_dev_get_property_reference(struct acpi_device *adev,
++					    const char *name,
++					    const char *size_prop, int index,
++					    struct acpi_reference_args *args);
++
++The referenced ACPI device is returned in args->adev if found.
++
++In addition to simple object references it is also possible to have object
++references with arguments. These are represented in ASL as follows:
++
++	Device (\_SB.PCI0.PWM) {
++		Name (_DSD, Package () {
++			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++			Package () {
++				Package () {"#pwm-cells", 2}
++			}
++		})
++	}
++
++	Device (\_SB.PCI0.BL) {
++		Name (_DSD, Package () {
++			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++			Package () {
++				Package () {
++					"pwms",
++					Package () {
++						\_SB.PCI0.PWM, 0, 5000000,
++						\_SB.PCI0.PWM, 1, 4500000,
++					}
++				}
++			}
++		})
++	}
++
++In the above example, the referenced device declares a property that
++returns the number of expected arguments (here it is "#pwm-cells"). If
++no such property is given we assume that all the integers following the
++reference are arguments.
++
++In the above example PWM device expects 2 additional arguments. This
++will be validated by the ACPI property core.
++
++The additional arguments must be integers. Nothing else is supported.
++
++It is possible, as in the above example, to have multiple references
++with varying number of integer arguments. It is up to the referenced
++device to declare how many arguments it expects. The 'index' parameter
++selects which reference is returned.
++
++One can use acpi_dev_get_property_reference() as well to extract the
++information in additional parameters:
++
++	struct acpi_reference_args args;
++	struct acpi_device *adev = /* this will point to the BL device */
++	int ret;
++
++	/* extract the first reference */
++	acpi_dev_get_property_reference(adev, "pwms", "#pwm-cells", 0, &args);
++
++	BUG_ON(args.nargs != 2);
++	BUG_ON(args.args[0] != 0);
++	BUG_ON(args.args[1] != 5000000);
++
++	/* extract the second reference */
++	acpi_dev_get_property_reference(adev, "pwms", "#pwm-cells", 1, &args);
++
++	BUG_ON(args.nargs != 2);
++	BUG_ON(args.args[0] != 1);
++	BUG_ON(args.args[1] != 4500000);
++
++In addition to arguments, args.adev now points to the ACPI device that
++corresponds to \_SB.PCI0.PWM.
++
++It is intended that this function is not used directly but instead
++subsystems like pwm implement their ACPI support on top of this function
++in such way that it is hidden from the client drivers, such as via
++pwm_get().
++
++3. Device property hierarchies
++------------------------------
++Devices are organized in a tree within the Linux kernel. It follows that
++the configuration data would also be hierarchical. In order to reach
++equivalence with Device Tree, the ACPI mechanism must also provide some
++sort of tree-like representation. Fortunately, the ACPI namespace is
++already such a structure.
++
++For example, we could have the following device in ACPI namespace. The
++KEYS device is much like gpio_keys_polled.c in that it includes "pseudo"
++devices for each GPIO:
++
++	Device (KEYS) {
++		Name (_CRS, ResourceTemplate () {
++			GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
++				"\\_SB.PCI0.LPC", 0, ResourceConsumer,,) { 0 }
++			GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
++				"\\_SB.PCI0.LPC", 0, ResourceConsumer,,) { 1 }
++			...
++		})
++
++		Name (_DSD, Package () {
++			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++			Package () {
++				// Properties for KEYS device
++				Package () {"#gpio-cells", 1}
++			}
++		})
++
++		// "pseudo" devices declared under the parent device
++		Device (BTN0) {
++			Name (_DSD, Package () {
++				ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++				Package () {
++					Package () {"label", "minnow_btn0"}
++					Package () {"gpios", Package () { ^KEYS, 0 0 1 }}
++				}
++			})
++		}
++
++		Device (BTN1) {
++			Name (_DSD, Package () {
++				ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
++				Package () {
++					Package () {"label", "minnow_btn1"}
++					Package () {"gpios", Package () { ^KEYS, 1 0 1 }}
++				}
++			})
++		}
++	}
++
++We can extract the above in gpio_keys_polled.c like:
++
++	void gpio_keys_polled_acpi_probe(struct device *dev)
++	{
++		struct acpi_device *adev = ACPI_COMPANION(dev);
++		struct acpi_device *button;
++
++		/* Properties for the KEYS device itself */
++		device_property_read(dev, ...);
++		/* or acpi_dev_get_property(adev, ...) */
++
++		/*
++		 * Iterate over button devices and extract their
++		 * configuration. Here we need to use ACPI specific
++		 * functions instead because the pseudo devices don't have
++		 * physical device attached to them.
++		 */
++		list_for_each_entry(button, &adev->children, node) {
++			const union acpi_object *label;
++
++			acpi_dev_get_property(button, "label",
++				ACPI_TYPE_STRING, &label);
++			dev_info(dev, "label: %s\n", label->string.pointer);
++		}
++	}
++
++Note that you still need proper error handling which is omitted in the
++above example, and also if possible instead of calling to ACPI specific
++functions, one should add the support to the subsystem in question which
++can then provide this information to the drivers in more generic way.
 -- 
 2.1.0.rc1
 
