@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaHQGFP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 02:05:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51910 "EHLO mga01.intel.com"
+	id S1751839AbaHQGFN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 02:05:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54331 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745AbaHQGFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 02:05:10 -0400
+	id S1751768AbaHQGFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 02:05:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,878,1400050800"; 
-   d="scan'208";a="585897242"
+   d="scan'208";a="589195664"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Darren Hart <dvhart@linux.intel.com>,
         "Rafael J. Wysocki" <rafael@kernel.org>
@@ -16,243 +16,298 @@ Cc: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 0/9] Add ACPI _DSD and unified device properties support
-Date: Sun, 17 Aug 2014 09:04:10 +0300
-Message-Id: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [RFC PATCH 4/9] of: Add property_ops callback for devices with of_node
+Date: Sun, 17 Aug 2014 09:04:14 +0300
+Message-Id: <1408255459-17625-5-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 2.1.0.rc1
+In-Reply-To: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Resending with fewer people in CC list. For some reason the series never
-  reached attented mailing lists. ]
+From: Aaron Lu <aaron.lu@intel.com>
 
-The recent publication of the ACPI 5.1 specification [1] adds a reserved name
-for Device Specific Data (_DSD, Section 6.2.5). This mechanism allows for
-passing arbitrary hardware description data to the OS. The exact format of the
-_DSD data is specific to the UUID paired with it [2].   
+With the unified device properties interface in place, add device tree support.
+By adding the dev_prop_ops for of_node devices, drivers can access properties
+from ACPI or Device Tree in a generic way.
 
-An ACPI Device Properties UUID has been defined [3] to provide a format
-compatible with existing device tree schemas. The purpose for this was to allow
-for the reuse of the existing schemas and encourage the development of firmware
-agnostic device drivers.
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/of/base.c        | 194 ++++++++++++++++++++++++++++++++++++++++++++++-
+ drivers/of/platform.c    |   4 +-
+ include/linux/property.h |   4 +
+ 3 files changed, 200 insertions(+), 2 deletions(-)
 
-This series accomplishes the following (as well as some other dependencies):
-
- * Add _DSD support to the ACPI core
-   This simply reads the UUID and the accompanying Package
-
- * Add ACPI Device Properties _DSD format support
-   This understands the hierarchical key:value pair structure
-   defined by the Device Properties UUID
-
- * Add a unified device properties API with ACPI and OF backends
-   This provides for the firmware agnostic device properties
-   Interface to be used by drivers
-
- * Provides 2 example drivers that were previously Device Tree aware that
-   can now be used with either Device Tree or ACPI Device Properties. The
-   both drivers use an arbitrary _HID.
-
-This has been tested on Minnowboard with relevant parts of the modified
-DSDT at the end of this email.
-
-This series does not provide for a means to append to a system DSDT. That
-will ultimately be required to make the most effective use of the _DSD
-mechanism. Work is underway on that as a separate effort.
-
-[1] http://www.uefi.org/sites/default/files/resources/ACPI_5_1release.pdf
-[2] http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-[3] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-
-Aaron Lu (3):
-  of: Add property_ops callback for devices with of_node
-  gpiolib: add API to get gpio desc and flags
-  Input: gpio_keys_polled - Make use of device property API
-
-Max Eliaser (1):
-  leds: leds-gpio: Make use of device property API
-
-Mika Westerberg (4):
-  ACPI: Add support for device specific properties
-  ACPI: Document ACPI device specific properties
-  mfd: Add ACPI support
-  gpio: sch: Consolidate core and resume banks
-
-Rafael J. Wysocki (1):
-  Driver core: Unified device properties interface for platform firmware
-
- Documentation/acpi/enumeration.txt        |  27 ++
- Documentation/acpi/properties.txt         | 359 ++++++++++++++++++++
- drivers/acpi/Makefile                     |   1 +
- drivers/acpi/glue.c                       |   4 +-
- drivers/acpi/internal.h                   |   6 +
- drivers/acpi/property.c                   | 542 ++++++++++++++++++++++++++++++
- drivers/acpi/scan.c                       |  14 +-
- drivers/base/Makefile                     |   2 +-
- drivers/base/property.c                   |  48 +++
- drivers/gpio/gpio-sch.c                   | 303 ++++++-----------
- drivers/gpio/gpiolib-acpi.c               |  81 +++--
- drivers/gpio/gpiolib.c                    |  18 +
- drivers/gpio/gpiolib.h                    |   8 +
- drivers/input/keyboard/gpio_keys_polled.c | 139 +++++---
- drivers/leds/leds-gpio.c                  | 130 ++++---
- drivers/mfd/mfd-core.c                    |  41 +++
- drivers/of/base.c                         | 194 ++++++++++-
- drivers/of/platform.c                     |   4 +-
- include/acpi/acpi_bus.h                   |   8 +
- include/linux/acpi.h                      |  40 +++
- include/linux/device.h                    |   3 +
- include/linux/gpio/consumer.h             |  11 +
- include/linux/mfd/core.h                  |   3 +
- include/linux/property.h                  |  54 +++
- 24 files changed, 1716 insertions(+), 324 deletions(-)
- create mode 100644 Documentation/acpi/properties.txt
- create mode 100644 drivers/acpi/property.c
- create mode 100644 drivers/base/property.c
- create mode 100644 include/linux/property.h
-
------- DSDT For Minnowboard ------
-
-    Scope (\_SB.PCI0.LPC)
-    {
-        Device (LEDS)
-        {
-            Name (_HID, "MNW0001")
-
-            Name (_CRS, ResourceTemplate ()
-            {
-                GpioIo (Exclusive, PullDown, 0, 0, IoRestrictionOutputOnly,
-                        "\\_SB.PCI0.LPC", 0, ResourceConsumer) {10}
-                GpioIo (Exclusive, PullDown, 0, 0, IoRestrictionOutputOnly,
-                        "\\_SB.PCI0.LPC", 0, ResourceConsumer) {11}
-            })
-
-            Device (LEDH)
-            {
-                Name (_HID, "PRP0000")
-                Name (_DSD, Package ()
-                {
-                    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-                    Package ()
-                    {
-                        Package () {"label", "Heartbeat"},
-                        Package () {"gpios", Package () {^^LEDS, 0, 0, 0}},
-                        Package () {"linux,default-trigger", "heartbeat"},
-                        Package () {"linux,default-state", "off"},
-                        Package () {"linux,retain-state-suspended", 1},
-                    }
-                })
-            }
-
-            Device (LEDM)
-            {
-                Name (_HID, "PRP0000")
-                Name (_DSD, Package ()
-                {
-                    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-                    Package ()
-                    {
-                        Package () {"label", "MMC0 Activity"},
-                        Package () {"gpios", Package () {^^LEDS, 1, 0, 0}},
-                        Package () {"linux,default-trigger", "mmc0"},
-                        Package () {"linux,default-state", "on"},
-                        Package () {"linux,retain-state-suspended", 1},
-                    }
-                })
-            }
-        }
-        
-        Device (BTNS)
-        {
-            Name (_HID, "MNW0002")
-
-            Name (_CRS, ResourceTemplate ()
-            {
-                GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-                        "\\_SB.PCI0.LPC", 0, ResourceConsumer) {0}
-                GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-                        "\\_SB.PCI0.LPC", 0, ResourceConsumer) {1}
-                GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-                        "\\_SB.PCI0.LPC", 0, ResourceConsumer) {2}
-                GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-                        "\\_SB.PCI0.LPC", 0, ResourceConsumer) {3}
-            })
-
-            Name (_DSD, Package ()
-            {
-                ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-                Package ()
-                {
-                    Package () {"poll-interval", 100},
-                    Package () {"autorepeat", 1}
-                }
-            })
-
-            Device (BTN0)
-            {
-                Name (_HID, "PRP0000")
-                Name (_DSD, Package ()
-                {
-                    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-                    Package ()
-                    {
-                        Package () {"linux,code", 105},
-                        Package () {"linux,input-type", 1},
-                        Package () {"gpios", Package () {^^BTNS, 0, 0, 1}},
-                    }
-                })
-            }
-
-            Device (BTN1)
-            {
-                Name (_HID, "PRP0000")
-                Name (_DSD, Package ()
-                {
-                    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-                    Package ()
-                    {
-                        Package () {"linux,code", 108},
-                        Package () {"linux,input-type", 1},
-                        Package () {"gpios", Package (4) {^^BTNS, 1, 0, 1}},
-                    }
-                })
-            }
-            
-            Device (BTN2)
-            {
-                Name (_HID, "PRP0000")
-                Name (_DSD, Package ()
-                {
-                    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-                    Package ()
-                    {
-                        Package () {"linux,code", 103},
-                        Package () {"linux,input-type", 1},
-                        Package () {"gpios", Package () {^^BTNS, 2, 0, 1}},
-                    }
-                })
-            }
-            
-            Device (BTN3)
-            {
-                Name (_HID, "PRP0000")
-                Name (_DSD, Package ()
-                {
-                    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-                    Package ()
-                    {
-                        Package () {"linux,code", 106},
-                        Package () {"linux,input-type", 1},
-                        Package () {"gpios", Package (4) {^^BTNS, 3, 0, 1}},
-                    }
-                })
-            }
-
-        }
-
-    }
-
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index b9864806e9b8..527004d01423 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -20,7 +20,7 @@
+ #include <linux/ctype.h>
+ #include <linux/cpu.h>
+ #include <linux/module.h>
+-#include <linux/of.h>
++#include <linux/property.h>
+ #include <linux/of_graph.h>
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+@@ -1343,6 +1343,39 @@ int of_property_read_u64(const struct device_node *np, const char *propname,
+ EXPORT_SYMBOL_GPL(of_property_read_u64);
+ 
+ /**
++ * of_property_read_u64_array - Find and read an array of 64 bit integers
++ * from a property.
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_values:	pointer to return value, modified only if return value is 0.
++ * @sz:		number of array elements to read
++ *
++ * Search for a property in a device node and read 64-bit value(s) from
++ * it. Returns 0 on success, -EINVAL if the property does not exist,
++ * -ENODATA if property does not have a value, and -EOVERFLOW if the
++ * property data isn't large enough.
++ *
++ * The out_values is modified only if a valid u64 value can be decoded.
++ */
++int of_property_read_u64_array(const struct device_node *np,
++			       const char *propname, u64 *out_values,
++			       size_t sz)
++{
++	const __be32 *val = of_find_property_value_of_size(np, propname,
++						(sz * sizeof(*out_values)));
++
++	if (IS_ERR(val))
++		return PTR_ERR(val);
++
++	while (sz--) {
++		*out_values++ = of_read_number(val, 2);
++		val += 2;
++	};
++	return 0;
++}
++
++/**
+  * of_property_read_string - Find and read a string from a property
+  * @np:		device node from which the property value is to be read.
+  * @propname:	name of the property to be searched.
+@@ -1490,6 +1523,47 @@ int of_property_count_strings(struct device_node *np, const char *propname)
+ }
+ EXPORT_SYMBOL_GPL(of_property_count_strings);
+ 
++/**
++ * of_property_read_string_array - Find and read an array of strings
++ * from a multiple strings property.
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_string:	pointer to null terminated return string, modified only if
++ *		return value is 0.
++ * @sz:		number of array elements to read
++ *
++ * Search for a property in a device tree node and retrieve a list of
++ * terminated string value (pointer to data, not a copy) in that property.
++ * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
++ * property does not have a value, and -EILSEQ if the string is not
++ * null-terminated within the length of the property data.
++ *
++ * The out_string pointer is modified only if a valid string can be decoded.
++ */
++int of_property_read_string_array(struct device_node *np, const char *propname,
++				  char **output, size_t sz)
++{
++	struct property *prop = of_find_property(np, propname, NULL);
++	int i = 0;
++	size_t l = 0, total = 0;
++	char *p;
++
++	if (!prop)
++		return -EINVAL;
++	if (!prop->value)
++		return -ENODATA;
++	if (strnlen(prop->value, prop->length) >= prop->length)
++		return -EILSEQ;
++
++	p = prop->value;
++
++	for (i = 0; total < prop->length; total += l, p += l) {
++		output[i++] = p;
++		l = strlen(p) + 1;
++	}
++	return 0;
++}
++
+ void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
+ {
+ 	int i;
+@@ -2376,3 +2450,121 @@ struct device_node *of_graph_get_remote_port(const struct device_node *node)
+ 	return of_get_next_parent(np);
+ }
+ EXPORT_SYMBOL(of_graph_get_remote_port);
++
++static int of_dev_prop_get(struct device *dev, const char *propname,
++			   void **valptr)
++{
++	struct property *pp = of_find_property(dev->of_node, propname, NULL);
++
++	if (!pp)
++		return -ENODATA;
++
++	if (valptr)
++		*valptr = pp->value;
++	return 0;
++}
++
++static int of_dev_prop_read(struct device *dev, const char *propname,
++			    enum dev_prop_type proptype, void *val)
++{
++	void *value;
++	int ret = of_dev_prop_get(dev, propname, &value);
++
++	if (ret)
++		return ret;
++
++	if (proptype >= DEV_PROP_U8 && proptype <= DEV_PROP_U64) {
++		switch (proptype) {
++		case DEV_PROP_U8:
++			*(u8 *)val = *(u8 *)value;
++			break;
++		case DEV_PROP_U16:
++			*(u16 *)val = *(u16 *)value;
++			break;
++		case DEV_PROP_U32:
++			*(u32 *)val = *(u32 *)value;
++			break;
++		default:
++			*(u64 *)val = *(u64 *)value;
++			break;
++		}
++	} else if (proptype == DEV_PROP_STRING) {
++		*(char **)val = value;
++	}
++	return ret;
++
++}
++
++static int of_dev_prop_read_array(struct device *dev, const char *propname,
++				  enum dev_prop_type proptype, void *val,
++				  size_t nval)
++{
++	int ret, elem_size;
++
++	if (!val) {
++		switch (proptype) {
++		case DEV_PROP_U8:
++			elem_size = sizeof(u8);
++			break;
++		case DEV_PROP_U16:
++			elem_size = sizeof(u16);
++			break;
++		case DEV_PROP_U32:
++			elem_size = sizeof(u32);
++			break;
++		case DEV_PROP_U64:
++			elem_size = sizeof(u64);
++			break;
++		case DEV_PROP_STRING:
++			return of_property_count_strings(dev->of_node,
++							 propname);
++		default:
++			return -EINVAL;
++		}
++		return of_property_count_elems_of_size(dev->of_node, propname,
++						       elem_size);
++	}
++
++	switch (proptype) {
++	case DEV_PROP_U8:
++		ret = of_property_read_u8_array(dev->of_node, propname,
++						(u8 *)val, nval);
++		break;
++	case DEV_PROP_U16:
++		ret = of_property_read_u16_array(dev->of_node, propname,
++						 (u16 *)val, nval);
++		break;
++	case DEV_PROP_U32:
++		ret = of_property_read_u32_array(dev->of_node, propname,
++						 (u32 *)val, nval);
++		break;
++	case DEV_PROP_U64:
++		ret = of_property_read_u64_array(dev->of_node, propname,
++						 (u64 *)val, nval);
++		break;
++	case DEV_PROP_STRING:
++		ret = of_property_read_string_array(dev->of_node, propname,
++						    (char **)val, nval);
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++	return ret;
++}
++
++static int of_dev_get_child_count(struct device *dev)
++{
++	struct device_node *node = dev->of_node;
++
++	if (!node)
++		return -EINVAL;
++	return of_get_child_count(node);
++}
++
++struct dev_prop_ops of_property_ops = {
++	.get = of_dev_prop_get,
++	.read = of_dev_prop_read,
++	.read_array = of_dev_prop_read_array,
++	.child_count = of_dev_get_child_count,
++};
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 500436f9be7f..3113d3704eff 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -14,7 +14,7 @@
+ #include <linux/errno.h>
+ #include <linux/module.h>
+ #include <linux/amba/bus.h>
+-#include <linux/device.h>
++#include <linux/property.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/slab.h>
+ #include <linux/of_address.h>
+@@ -138,6 +138,7 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 	}
+ 
+ 	dev->dev.of_node = of_node_get(np);
++	dev->dev.property_ops = &of_property_ops;
+ 	dev->dev.parent = parent;
+ 
+ 	if (bus_id)
+@@ -293,6 +294,7 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+ 	/* setup generic device info */
+ 	dev->dev.coherent_dma_mask = ~0;
+ 	dev->dev.of_node = of_node_get(node);
++	dev->dev.property_ops = &of_property_ops;
+ 	dev->dev.parent = parent;
+ 	dev->dev.platform_data = platform_data;
+ 	if (bus_id)
+diff --git a/include/linux/property.h b/include/linux/property.h
+index 52ea7fe7fe09..a840c1784c82 100644
+--- a/include/linux/property.h
++++ b/include/linux/property.h
+@@ -38,6 +38,10 @@ struct dev_prop_ops {
+ extern struct dev_prop_ops acpi_property_ops;
+ #endif
+ 
++#ifdef CONFIG_OF
++extern struct dev_prop_ops of_property_ops;
++#endif
++
+ int device_property_get(struct device *dev, const char *propname,
+ 			void **valptr);
+ int device_property_read(struct device *dev, const char *propname,
 -- 
 2.1.0.rc1
 
