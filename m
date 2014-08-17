@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaHQKe6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 06:34:58 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:34565 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133AbaHQKe5 (ORCPT
+	id S1751528AbaHQKsS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 06:48:18 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:48478 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaHQKsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 06:34:57 -0400
-Message-ID: <1408271688.16342.1.camel@phoenix>
-Subject: [PATCH] regulator: da9211: Check return value of devm_kzalloc()
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: James Ban <james.ban.opensource@diasemi.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 17 Aug 2014 18:34:48 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 17 Aug 2014 06:48:16 -0400
+Date: Sun, 17 Aug 2014 13:48:07 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: chunkeey@googlemail.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] carl9170: Replace rcu_dereference() with rcu_access_pointer()
+Message-ID: <20140817104806.GA14533@ada>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/da9211-regulator.c | 2 ++
- 1 file changed, 2 insertions(+)
+The rcu_dereference() call is used directly in a condition.
+Since its return value is never dereferenced it is recommended to use
+"rcu_access_pointer()" instead of "rcu_dereference()".
+Therefore, this patch makes the replacement.
 
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index ccc2e36..a26f1d2 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -343,6 +343,8 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
- 	unsigned int data;
+The following Coccinelle semantic patch was used:
+@@
+@@
+
+(
+ if(
+ (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+|
+  while(
+  (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+)
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ drivers/net/wireless/ath/carl9170/main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
+index f8ded84..12018ff 100644
+--- a/drivers/net/wireless/ath/carl9170/main.c
++++ b/drivers/net/wireless/ath/carl9170/main.c
+@@ -1431,7 +1431,7 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+ 			return -EOPNOTSUPP;
  
- 	chip = devm_kzalloc(&i2c->dev, sizeof(struct da9211), GFP_KERNEL);
-+	if (!chip)
-+		return -ENOMEM;
- 
- 	chip->dev = &i2c->dev;
- 	chip->regmap = devm_regmap_init_i2c(i2c, &da9211_regmap_config);
+ 		rcu_read_lock();
+-		if (rcu_dereference(sta_info->agg[tid])) {
++		if (rcu_access_pointer(sta_info->agg[tid])) {
+ 			rcu_read_unlock();
+ 			return -EBUSY;
+ 		}
 -- 
 1.9.1
-
-
 
