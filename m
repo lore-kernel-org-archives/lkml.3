@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaHQM63 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 08:58:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170AbaHQM61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 08:58:27 -0400
-Date: Sun, 17 Aug 2014 14:55:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init()
-	and module_long_probe_exit()
-Message-ID: <20140817125505.GA32429@redhat.com>
-References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com> <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com> <20140813175101.GA7156@redhat.com> <20140814231028.GQ21930@wotan.suse.de> <20140815143902.GB13222@redhat.com> <20140816025007.GB3347@wotan.suse.de> <s5h1tsfwqi2.wl-tiwai@suse.de> <20140817122527.GA30546@redhat.com> <20140817124803.GA31996@redhat.com>
+	id S1751647AbaHQNSM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 09:18:12 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:59279 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170AbaHQNSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 09:18:10 -0400
+Date: Sun, 17 Aug 2014 16:18:02 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: johannes@sipsolutions.net, linville@tuxdriver.com, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] mac80211: Replace rcu_dereference() with rcu_access_pointer()
+Message-ID: <20140817131801.GA24286@ada>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140817124803.GA31996@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Damn, sorry for noise ;)
+The "rcu_dereference()" calls are used directly in conditions.
+Since their return values are never dereferenced it is recommended to
+use "rcu_access_pointer()" instead of "rcu_dereference()".
+Therefore, this patch makes the replacements.
 
-I was going to suggest to introduce module_put_and_exit() to simplify
-this and potentially other users, but it already exists. So this code
-can use it too without additional complications.
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-On 08/17, Oleg Nesterov wrote:
-> On 08/17, Oleg Nesterov wrote:
-> >
-> > On 08/17, Takashi Iwai wrote:
-> > >
-> > > How about just increasing/decreasing the module count for blocking the
-> > > exit call?  For example:
-> > >
-> > > #define module_long_probe_init(initfn)				\
-> > > 	static int _long_probe_##initfn(void *arg)		\
-> > > 	{							\
-> > > 		int ret = initfn();				\
-> > > 		module_put(THIS_MODULE);			\
-> >
-> > WINDOW, please see below.
-> >
-> > > 		return ret;					\
-> > > 	}							\
-> > > 	static inline __init int __long_probe_##initfn(void)	\
-> > > 	{							\
-> > > 		struct task_struct *__init_thread;		\
-> > > 		__module_get(THIS_MODULE);			\
-> > > 		__init_thread = kthread_run(_long_probe_##initfn,\
-> > > 					    NULL,		\
-> > > 					    #initfn);		\
-> > > 		if (IS_ERR(__init_thread)) {			\
-> > > 			module_put(THIS_MODULE);		\
-> > > 			return PTR_ERR(__init_thread);		\
-> > > 		}						\
-> > > 		return 0;					\
-> > > 	}							\
-> >
-> > I leave this to you and Luis, but personally I think this is very
-> > nice idea, I like it. Because sys_delete_module() won't hang in D
-> > state waiting for initfn().
-> >
-> > There is a small problem. This module can be unloaded right after
-> > module_put() above. In this case its memory can be unmapped and
-> > the exiting thread can crash.
-> >
-> > This is very unlikely, this thread needs to execute just a few insn
-> > and escape from this module's memory. Given that only the buggy
-> > modules should use this hack, perhaps we can even ignore this race.
-> >
-> > But perhaps it makes sense to close this race anyway, and we already
-> > have complete_and_exit() which can be used instead of "return ret"
-> > above. Just we need the additional "static struct completion" and
-> > module_exit() should call wait_for_completion.
-> 
-> Forgot to mention... and __long_probe_##initfn() could be simpler
-> without kthread_run,
-> 
-> 	__init_thread = kthread_create(...);
-> 	if (IS_ERR(__init_thread))
-> 		return PTR_ERR();
-> 
-> 	module_get(THIS_MODULE);
-> 	wake_up_process(__init_thread);
-> 	return 0;
-> 
-> but this is subjective, up to you.
-> 
-> Oleg.
+(
+ if(
+ (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+|
+ while(
+ (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+)
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ net/mac80211/mesh_pathtbl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/mac80211/mesh_pathtbl.c b/net/mac80211/mesh_pathtbl.c
+index cf032a8..a6699dc 100644
+--- a/net/mac80211/mesh_pathtbl.c
++++ b/net/mac80211/mesh_pathtbl.c
+@@ -729,7 +729,7 @@ void mesh_plink_broken(struct sta_info *sta)
+ 	tbl = rcu_dereference(mesh_paths);
+ 	for_each_mesh_entry(tbl, node, i) {
+ 		mpath = node->mpath;
+-		if (rcu_dereference(mpath->next_hop) == sta &&
++		if (rcu_access_pointer(mpath->next_hop) == sta &&
+ 		    mpath->flags & MESH_PATH_ACTIVE &&
+ 		    !(mpath->flags & MESH_PATH_FIXED)) {
+ 			spin_lock_bh(&mpath->state_lock);
+@@ -794,7 +794,7 @@ void mesh_path_flush_by_nexthop(struct sta_info *sta)
+ 	tbl = resize_dereference_mesh_paths();
+ 	for_each_mesh_entry(tbl, node, i) {
+ 		mpath = node->mpath;
+-		if (rcu_dereference(mpath->next_hop) == sta) {
++		if (rcu_access_pointer(mpath->next_hop) == sta) {
+ 			spin_lock(&tbl->hashwlock[i]);
+ 			__mesh_path_del(tbl, node);
+ 			spin_unlock(&tbl->hashwlock[i]);
+-- 
+1.9.1
 
