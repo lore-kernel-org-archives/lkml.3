@@ -1,194 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaHQXjS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 19:39:18 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44039 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbaHQXjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 19:39:17 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 18 Aug 2014 08:39:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>, ds2horner@gmail.com
-Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
-Message-ID: <20140817233940.GD11367@bbox>
-References: <1407978746-20587-1-git-send-email-minchan@kernel.org>
- <1407978746-20587-3-git-send-email-minchan@kernel.org>
- <CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
+	id S1751797AbaHQXlT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 19:41:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50167 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751478AbaHQXlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 19:41:18 -0400
+Date: Mon, 18 Aug 2014 01:41:16 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, clm@fb.com, jbacik@fb.com,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jeffm@suse.com, fdmanana@suse.com
+Subject: Re: [RFC v3 0/2] vfs / btrfs: add support for ustat()
+Message-ID: <20140817234116.GF3347@wotan.suse.de>
+References: <1408071538-14354-1-git-send-email-mcgrof@do-not-panic.com> <20140815092950.GZ18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140815092950.GZ18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan,
+On Fri, Aug 15, 2014 at 10:29:50AM +0100, Al Viro wrote:
+> On Thu, Aug 14, 2014 at 07:58:56PM -0700, Luis R. Rodriguez wrote:
+> 
+> > Christoph had noted that this seemed associated to the problem
+> > that the btrfs uses different assignments for st_dev than s_dev,
+> > but much as I'd like to see that changed based on discussions so
+> > far its unclear if this is going to be possible unless strong
+> > commitment is reached.
+> 
+> Explain, please.  Whose commitment and commitment to what, exactly?
 
-On Thu, Aug 14, 2014 at 11:09:05AM -0400, Dan Streetman wrote:
-> On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > Normally, zram user can get maximum memory zsmalloc consumed via
-> > polling mem_used_total with sysfs in userspace.
-> >
-> > But it has a critical problem because user can miss peak memory
-> > usage during update interval of polling. For avoiding that,
-> > user should poll it frequently with mlocking to avoid delay
-> > when memory pressure is heavy so it would be handy if the
-> > kernel supports the function.
-> >
-> > This patch adds mem_used_max via sysfs.
-> >
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  Documentation/blockdev/zram.txt |  1 +
-> >  drivers/block/zram/zram_drv.c   | 35 +++++++++++++++++++++++++++++++++--
-> >  drivers/block/zram/zram_drv.h   |  2 ++
-> >  3 files changed, 36 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> > index 9f239ff8c444..3b2247c2d4cf 100644
-> > --- a/Documentation/blockdev/zram.txt
-> > +++ b/Documentation/blockdev/zram.txt
-> > @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
-> >                 orig_data_size
-> >                 compr_data_size
-> >                 mem_used_total
-> > +               mem_used_max
-> >
-> >  8) Deactivate:
-> >         swapoff /dev/zram0
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index b48a3d0e9031..311699f18bd5 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -109,6 +109,30 @@ static ssize_t mem_used_total_show(struct device *dev,
-> >         return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> >  }
-> >
-> > +static ssize_t mem_used_max_reset(struct device *dev,
-> > +               struct device_attribute *attr, const char *buf, size_t len)
-> > +{
-> > +       struct zram *zram = dev_to_zram(dev);
-> > +
-> > +       down_write(&zram->init_lock);
-> > +       zram->max_used_bytes = 0;
-> > +       up_write(&zram->init_lock);
-> > +       return len;
-> > +}
-> > +
-> > +static ssize_t mem_used_max_show(struct device *dev,
-> > +               struct device_attribute *attr, char *buf)
-> > +{
-> > +       u64 max_used_bytes;
-> > +       struct zram *zram = dev_to_zram(dev);
-> > +
-> > +       down_read(&zram->init_lock);
-> > +       max_used_bytes = zram->max_used_bytes;
-> > +       up_read(&zram->init_lock);
-> > +
-> > +       return scnprintf(buf, PAGE_SIZE, "%llu\n", max_used_bytes);
-> > +}
-> > +
-> >  static ssize_t max_comp_streams_show(struct device *dev,
-> >                 struct device_attribute *attr, char *buf)
-> >  {
-> > @@ -474,6 +498,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >         struct zram_meta *meta = zram->meta;
-> >         struct zcomp_strm *zstrm;
-> >         bool locked = false;
-> > +       u64 total_bytes;
-> >
-> >         page = bvec->bv_page;
-> >         if (is_partial_io(bvec)) {
-> > @@ -543,8 +568,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >                 goto out;
-> >         }
-> >
-> > -       if (zram->limit_bytes &&
-> > -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
-> > +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
-> > +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
-> 
-> do you need to take the init_lock to read limit_bytes here?  It could
-> be getting changed between these checks...
+There are two folks, one is the btrfs developers, and the others are
+the VFS maintainers to provide proper guidance.
 
-The zram_bvec_write is protected by read-side init_lock while mem_limit_store
-is proteced by write-side init_lock.
+> Having different ->st_dev values for different files on the same
+> fs is a bloody bad idea; why does btrfs do that at all?
 
-> 
-> >                 zs_free(meta->mem_pool, handle);
-> >                 ret = -ENOMEM;
-> >                 goto out;
-> > @@ -578,6 +603,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >         /* Update stats */
-> >         atomic64_add(clen, &zram->stats.compr_data_size);
-> >         atomic64_inc(&zram->stats.pages_stored);
-> > +
-> > +       zram->max_used_bytes = max(zram->max_used_bytes, total_bytes);
-> 
-> shouldn't max_used_bytes be atomic64_t?  Or take the init_lock here?
-> 
-> >  out:
-> >         if (locked)
-> >                 zcomp_strm_release(zram->comp, zstrm);
-> > @@ -656,6 +683,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> >         down_write(&zram->init_lock);
-> >
-> >         zram->limit_bytes = 0;
-> > +       zram->max_used_bytes = 0;
-> >
-> >         if (!init_done(zram)) {
-> >                 up_write(&zram->init_lock);
-> > @@ -897,6 +925,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
-> >  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
-> >  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
-> >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> > +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-> > +               mem_used_max_reset);
-> >  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
-> >                 mem_limit_store);
-> >  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
-> > @@ -927,6 +957,7 @@ static struct attribute *zram_disk_attrs[] = {
-> >         &dev_attr_orig_data_size.attr,
-> >         &dev_attr_compr_data_size.attr,
-> >         &dev_attr_mem_used_total.attr,
-> > +       &dev_attr_mem_used_max.attr,
-> >         &dev_attr_mem_limit.attr,
-> >         &dev_attr_max_comp_streams.attr,
-> >         &dev_attr_comp_algorithm.attr,
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index 086c51782e75..aca09b18fcbd 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -111,6 +111,8 @@ struct zram {
-> >          */
-> >         u64 disksize;   /* bytes */
-> >         u64 limit_bytes;
-> > +       u64 max_used_bytes;
-> > +
-> >         int max_comp_streams;
-> >         struct zram_stats stats;
-> >         char compressor[10];
-> > --
-> > 2.0.0
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+With the disclosure of stating that I'm new to btrfs as I see its been
+done to help cope with the copy on write mechanism, but I welcome btrfs
+folks to chime in if there other reasons this was done from an
+architectural point of view.
 
--- 
-Kind regards,
-Minchan Kim
+Provided all reasons why this was done are clarified what we'd need
+then is proper guidance on what *would* be a much more reasonable
+strategy to do what was desired, and finally commitmen from btrfs
+folks to change btrfs to switch to this new agreed upon strategy.
+
+> If nothing else,
+> it breaks the usual "are those two files on the same fs?" tests...
+
+It would seem that those tests need more context now with copy
+on write, even the notion of disk space is all fucked up now, we
+need to think of it in terms of different possibilities that the
+new filesystems allow us to share data and different outcomes that
+could be possible.
+
+  Luis
