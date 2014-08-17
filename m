@@ -1,391 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbaHQRba (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 13:31:30 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:50333 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751968AbaHQRb1 (ORCPT
+	id S1751956AbaHQRbR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 13:31:17 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:39269 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751368AbaHQRbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 13:31:27 -0400
-Message-Id: <20140817173036.188287809@linux.com>
-Date: Sun, 17 Aug 2014 12:30:44 -0500
+	Sun, 17 Aug 2014 13:31:15 -0400
+Message-Id: <20140817173035.423458762@linux.com>
+Date: Sun, 17 Aug 2014 12:30:39 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 21/35] [PATCH 21/36] mips: Replace __get_cpu_var uses
+        Thomas Gleixner <tglx@linutronix.de>, nicolas.pitre@linaro.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 16/35] [PATCH 16/36] irqchips: Replace __this_cpu_ptr uses
 References: <20140817173023.439660246@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0021-mips-Replace-__get_cpu_var-uses.patch
+Content-Disposition: inline; filename=0016-irqchips-Replace-__this_cpu_ptr-uses.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of
-them is address calculation via the form &__get_cpu_var(x).  This calculates
-the address for the instance of the percpu variable of the current processor
-based on an offset.
+[ARM specific]
 
-Other use cases are for storing and retrieving data from the current
-processors percpu area.  __get_cpu_var() can be used as an lvalue when
-writing data or on the right side of an assignment.
+These are generally replaced with raw_cpu_ptr. However, in
+gic_get_percpu_base() we immediately dereference the pointer. This is
+equivalent to a raw_cpu_read. So use that operation there.
 
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store
-and retrieve operations could use a segment prefix (or global register on
-other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a
-percpu area and use optimized assembly code to read and write per cpu
-variables.
-
-
-This patch converts __get_cpu_var into either an explicit address
-calculation using this_cpu_ptr() or into a use of this_cpu operations that
-use the offset.  Thereby address calculations are avoided and less registers
-are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so
-the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations
-are used throughout then specialized macros can be defined in non -x86
-arches as well in order to optimize per cpu access by f.e.  using a global
-register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu
-variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	__this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	__this_cpu_inc(y)
-
-
-Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: nicolas.pitre@linaro.org
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 ---
- arch/mips/cavium-octeon/octeon-irq.c | 30 +++++++++++++++---------------
- arch/mips/kernel/kprobes.c           |  6 +++---
- arch/mips/kernel/perf_event_mipsxx.c | 14 +++++++-------
- arch/mips/kernel/smp-bmips.c         |  2 +-
- arch/mips/loongson/loongson-3/smp.c  |  6 +++---
- 5 files changed, 29 insertions(+), 29 deletions(-)
+ drivers/irqchip/irq-gic.c | 10 +++++-----
+ kernel/irq/chip.c         |  2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-Index: linux/arch/mips/cavium-octeon/octeon-irq.c
+Index: linux/drivers/irqchip/irq-gic.c
 ===================================================================
---- linux.orig/arch/mips/cavium-octeon/octeon-irq.c
-+++ linux/arch/mips/cavium-octeon/octeon-irq.c
-@@ -264,13 +264,13 @@ static void octeon_irq_ciu_enable_local(
- 	unsigned long *pen;
- 	unsigned long flags;
- 	union octeon_ciu_chip_data cd;
--	raw_spinlock_t *lock = &__get_cpu_var(octeon_irq_ciu_spinlock);
-+	raw_spinlock_t *lock = this_cpu_ptr(&octeon_irq_ciu_spinlock);
- 
- 	cd.p = irq_data_get_irq_chip_data(data);
- 
- 	raw_spin_lock_irqsave(lock, flags);
- 	if (cd.s.line == 0) {
--		pen = &__get_cpu_var(octeon_irq_ciu0_en_mirror);
-+		pen = this_cpu_ptr(&octeon_irq_ciu0_en_mirror);
- 		__set_bit(cd.s.bit, pen);
- 		/*
- 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
-@@ -279,7 +279,7 @@ static void octeon_irq_ciu_enable_local(
- 		wmb();
- 		cvmx_write_csr(CVMX_CIU_INTX_EN0(cvmx_get_core_num() * 2), *pen);
- 	} else {
--		pen = &__get_cpu_var(octeon_irq_ciu1_en_mirror);
-+		pen = this_cpu_ptr(&octeon_irq_ciu1_en_mirror);
- 		__set_bit(cd.s.bit, pen);
- 		/*
- 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
-@@ -296,13 +296,13 @@ static void octeon_irq_ciu_disable_local
- 	unsigned long *pen;
- 	unsigned long flags;
- 	union octeon_ciu_chip_data cd;
--	raw_spinlock_t *lock = &__get_cpu_var(octeon_irq_ciu_spinlock);
-+	raw_spinlock_t *lock = this_cpu_ptr(&octeon_irq_ciu_spinlock);
- 
- 	cd.p = irq_data_get_irq_chip_data(data);
- 
- 	raw_spin_lock_irqsave(lock, flags);
- 	if (cd.s.line == 0) {
--		pen = &__get_cpu_var(octeon_irq_ciu0_en_mirror);
-+		pen = this_cpu_ptr(&octeon_irq_ciu0_en_mirror);
- 		__clear_bit(cd.s.bit, pen);
- 		/*
- 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
-@@ -311,7 +311,7 @@ static void octeon_irq_ciu_disable_local
- 		wmb();
- 		cvmx_write_csr(CVMX_CIU_INTX_EN0(cvmx_get_core_num() * 2), *pen);
- 	} else {
--		pen = &__get_cpu_var(octeon_irq_ciu1_en_mirror);
-+		pen = this_cpu_ptr(&octeon_irq_ciu1_en_mirror);
- 		__clear_bit(cd.s.bit, pen);
- 		/*
- 		 * Must be visible to octeon_irq_ip{2,3}_ciu() before
-@@ -431,11 +431,11 @@ static void octeon_irq_ciu_enable_local_
- 
- 	if (cd.s.line == 0) {
- 		int index = cvmx_get_core_num() * 2;
--		set_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu0_en_mirror));
-+		set_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu0_en_mirror));
- 		cvmx_write_csr(CVMX_CIU_INTX_EN0_W1S(index), mask);
- 	} else {
- 		int index = cvmx_get_core_num() * 2 + 1;
--		set_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu1_en_mirror));
-+		set_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu1_en_mirror));
- 		cvmx_write_csr(CVMX_CIU_INTX_EN1_W1S(index), mask);
- 	}
- }
-@@ -450,11 +450,11 @@ static void octeon_irq_ciu_disable_local
- 
- 	if (cd.s.line == 0) {
- 		int index = cvmx_get_core_num() * 2;
--		clear_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu0_en_mirror));
-+		clear_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu0_en_mirror));
- 		cvmx_write_csr(CVMX_CIU_INTX_EN0_W1C(index), mask);
- 	} else {
- 		int index = cvmx_get_core_num() * 2 + 1;
--		clear_bit(cd.s.bit, &__get_cpu_var(octeon_irq_ciu1_en_mirror));
-+		clear_bit(cd.s.bit, this_cpu_ptr(&octeon_irq_ciu1_en_mirror));
- 		cvmx_write_csr(CVMX_CIU_INTX_EN1_W1C(index), mask);
- 	}
- }
-@@ -1063,7 +1063,7 @@ static void octeon_irq_ip2_ciu(void)
- 	const unsigned long core_id = cvmx_get_core_num();
- 	u64 ciu_sum = cvmx_read_csr(CVMX_CIU_INTX_SUM0(core_id * 2));
- 
--	ciu_sum &= __get_cpu_var(octeon_irq_ciu0_en_mirror);
-+	ciu_sum &= __this_cpu_read(octeon_irq_ciu0_en_mirror);
- 	if (likely(ciu_sum)) {
- 		int bit = fls64(ciu_sum) - 1;
- 		int irq = octeon_irq_ciu_to_irq[0][bit];
-@@ -1080,7 +1080,7 @@ static void octeon_irq_ip3_ciu(void)
+--- linux.orig/drivers/irqchip/irq-gic.c
++++ linux/drivers/irqchip/irq-gic.c
+@@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+ #ifdef CONFIG_GIC_NON_BANKED
+ static void __iomem *gic_get_percpu_base(union gic_base *base)
  {
- 	u64 ciu_sum = cvmx_read_csr(CVMX_CIU_INT_SUM1);
- 
--	ciu_sum &= __get_cpu_var(octeon_irq_ciu1_en_mirror);
-+	ciu_sum &= __this_cpu_read(octeon_irq_ciu1_en_mirror);
- 	if (likely(ciu_sum)) {
- 		int bit = fls64(ciu_sum) - 1;
- 		int irq = octeon_irq_ciu_to_irq[1][bit];
-@@ -1129,10 +1129,10 @@ static void octeon_irq_init_ciu_percpu(v
- 	int coreid = cvmx_get_core_num();
- 
- 
--	__get_cpu_var(octeon_irq_ciu0_en_mirror) = 0;
--	__get_cpu_var(octeon_irq_ciu1_en_mirror) = 0;
-+	__this_cpu_write(octeon_irq_ciu0_en_mirror, 0);
-+	__this_cpu_write(octeon_irq_ciu1_en_mirror, 0);
- 	wmb();
--	raw_spin_lock_init(&__get_cpu_var(octeon_irq_ciu_spinlock));
-+	raw_spin_lock_init(this_cpu_ptr(&octeon_irq_ciu_spinlock));
- 	/*
- 	 * Disable All CIU Interrupts. The ones we need will be
- 	 * enabled later.  Read the SUM register so we know the write
-Index: linux/arch/mips/kernel/kprobes.c
-===================================================================
---- linux.orig/arch/mips/kernel/kprobes.c
-+++ linux/arch/mips/kernel/kprobes.c
-@@ -224,7 +224,7 @@ static void save_previous_kprobe(struct
- 
- static void restore_previous_kprobe(struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
-+	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
- 	kcb->kprobe_old_SR = kcb->prev_kprobe.old_SR;
- 	kcb->kprobe_saved_SR = kcb->prev_kprobe.saved_SR;
-@@ -234,7 +234,7 @@ static void restore_previous_kprobe(stru
- static void set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
- 			       struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = p;
-+	__this_cpu_write(current_kprobe, p);
- 	kcb->kprobe_saved_SR = kcb->kprobe_old_SR = (regs->cp0_status & ST0_IE);
- 	kcb->kprobe_saved_epc = regs->cp0_epc;
- }
-@@ -385,7 +385,7 @@ static int __kprobes kprobe_handler(stru
- 				ret = 1;
- 				goto no_kprobe;
- 			}
--			p = __get_cpu_var(current_kprobe);
-+			p = __this_cpu_read(current_kprobe);
- 			if (p->break_handler && p->break_handler(p, regs))
- 				goto ss_probe;
- 		}
-Index: linux/arch/mips/kernel/perf_event_mipsxx.c
-===================================================================
---- linux.orig/arch/mips/kernel/perf_event_mipsxx.c
-+++ linux/arch/mips/kernel/perf_event_mipsxx.c
-@@ -340,7 +340,7 @@ static int mipsxx_pmu_alloc_counter(stru
- 
- static void mipsxx_pmu_enable_event(struct hw_perf_event *evt, int idx)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	WARN_ON(idx < 0 || idx >= mipspmu.num_counters);
- 
-@@ -360,7 +360,7 @@ static void mipsxx_pmu_enable_event(stru
- 
- static void mipsxx_pmu_disable_event(int idx)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	unsigned long flags;
- 
- 	WARN_ON(idx < 0 || idx >= mipspmu.num_counters);
-@@ -460,7 +460,7 @@ static void mipspmu_stop(struct perf_eve
- 
- static int mipspmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx;
- 	int err = 0;
-@@ -496,7 +496,7 @@ out:
- 
- static void mipspmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
-@@ -1275,7 +1275,7 @@ static int __hw_perf_event_init(struct p
- 
- static void pause_local_counters(void)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	int ctr = mipspmu.num_counters;
- 	unsigned long flags;
- 
-@@ -1291,7 +1291,7 @@ static void pause_local_counters(void)
- 
- static void resume_local_counters(void)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	int ctr = mipspmu.num_counters;
- 
- 	do {
-@@ -1302,7 +1302,7 @@ static void resume_local_counters(void)
- 
- static int mipsxx_pmu_handle_shared_irq(void)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct perf_sample_data data;
- 	unsigned int counters = mipspmu.num_counters;
- 	u64 counter;
-Index: linux/arch/mips/kernel/smp-bmips.c
-===================================================================
---- linux.orig/arch/mips/kernel/smp-bmips.c
-+++ linux/arch/mips/kernel/smp-bmips.c
-@@ -346,7 +346,7 @@ static irqreturn_t bmips43xx_ipi_interru
- 	int action, cpu = irq - IPI0_IRQ;
- 
- 	spin_lock_irqsave(&ipi_lock, flags);
--	action = __get_cpu_var(ipi_action_mask);
-+	action = __this_cpu_read(ipi_action_mask);
- 	per_cpu(ipi_action_mask, cpu) = 0;
- 	clear_c0_cause(cpu ? C_SW1 : C_SW0);
- 	spin_unlock_irqrestore(&ipi_lock, flags);
-Index: linux/arch/mips/loongson/loongson-3/smp.c
-===================================================================
---- linux.orig/arch/mips/loongson/loongson-3/smp.c
-+++ linux/arch/mips/loongson/loongson-3/smp.c
-@@ -299,16 +299,16 @@ static void loongson3_init_secondary(voi
- 	per_cpu(cpu_state, cpu) = CPU_ONLINE;
- 
- 	i = 0;
--	__get_cpu_var(core0_c0count) = 0;
-+	__this_cpu_write(core0_c0count, 0);
- 	loongson3_send_ipi_single(0, SMP_ASK_C0COUNT);
--	while (!__get_cpu_var(core0_c0count)) {
-+	while (!__this_cpu_read(core0_c0count)) {
- 		i++;
- 		cpu_relax();
- 	}
- 
- 	if (i > MAX_LOOPS)
- 		i = MAX_LOOPS;
--	initcount = __get_cpu_var(core0_c0count) + i;
-+	initcount = __this_cpu_read(core0_c0count) + i;
- 	write_c0_count(initcount);
+-	return *__this_cpu_ptr(base->percpu_base);
++	return raw_cpu_read(base->percpu_base);
  }
  
+ static void __iomem *gic_get_common_base(union gic_base *base)
+@@ -504,11 +504,11 @@ static void gic_cpu_save(unsigned int gi
+ 	if (!dist_base || !cpu_base)
+ 		return;
+ 
+-	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
++	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
+ 	for (i = 0; i < DIV_ROUND_UP(32, 32); i++)
+ 		ptr[i] = readl_relaxed(dist_base + GIC_DIST_ENABLE_SET + i * 4);
+ 
+-	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
++	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
+ 	for (i = 0; i < DIV_ROUND_UP(32, 16); i++)
+ 		ptr[i] = readl_relaxed(dist_base + GIC_DIST_CONFIG + i * 4);
+ 
+@@ -530,11 +530,11 @@ static void gic_cpu_restore(unsigned int
+ 	if (!dist_base || !cpu_base)
+ 		return;
+ 
+-	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
++	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_enable);
+ 	for (i = 0; i < DIV_ROUND_UP(32, 32); i++)
+ 		writel_relaxed(ptr[i], dist_base + GIC_DIST_ENABLE_SET + i * 4);
+ 
+-	ptr = __this_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
++	ptr = raw_cpu_ptr(gic_data[gic_nr].saved_ppi_conf);
+ 	for (i = 0; i < DIV_ROUND_UP(32, 16); i++)
+ 		writel_relaxed(ptr[i], dist_base + GIC_DIST_CONFIG + i * 4);
+ 
+Index: linux/kernel/irq/chip.c
+===================================================================
+--- linux.orig/kernel/irq/chip.c
++++ linux/kernel/irq/chip.c
+@@ -669,7 +669,7 @@ void handle_percpu_devid_irq(unsigned in
+ {
+ 	struct irq_chip *chip = irq_desc_get_chip(desc);
+ 	struct irqaction *action = desc->action;
+-	void *dev_id = __this_cpu_ptr(action->percpu_dev_id);
++	void *dev_id = raw_cpu_ptr(action->percpu_dev_id);
+ 	irqreturn_t res;
+ 
+ 	kstat_incr_irqs_this_cpu(irq, desc);
 
