@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaHQCCu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 22:02:50 -0400
-Received: from regular1.263xmail.com ([211.150.99.133]:54854 "EHLO
+	id S1751887AbaHQCFM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 22:05:12 -0400
+Received: from regular1.263xmail.com ([211.150.99.140]:38780 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaHQCCt (ORCPT
+	with ESMTP id S1751536AbaHQCFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 22:02:49 -0400
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Sat, 16 Aug 2014 22:02:48 EDT
+	Sat, 16 Aug 2014 22:05:09 -0400
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -17,7 +16,7 @@ X-RL-SENDER: zyw@rock-chips.com
 X-FST-TO: robh+dt@kernel.org
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <ced6376dbd29c23eda9b8813708d8e99>
+X-UNIQUE-TAG: <7dfc3c4295a76e6bcf65e1518174a44e>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 1
 From: Chris Zhong <zyw@rock-chips.com>
@@ -32,67 +31,67 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
         javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
         Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH 3/4] RK808: Add rk808 regulator driver
-Date: Sun, 17 Aug 2014 10:00:39 +0800
-Message-Id: <1408240839-29512-1-git-send-email-zyw@rock-chips.com>
+Subject: [PATCH 4/4] RTC: rk808: add RTC driver for RK808 PMIC RTC
+Date: Sun, 17 Aug 2014 10:02:59 +0800
+Message-Id: <1408240979-29555-1-git-send-email-zyw@rock-chips.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulator module consists of 4 DCDCs, 8 LDOs and 2 switches.
-The output voltages are configurable and are meant to supply power
-to the main processor and other components
+RK808 PMIC is a MFD with RTC as one of the device. Adding RTC driver
+for supporting RTC device present inside RK808 PMIC.
 
 Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 ---
- drivers/regulator/Kconfig           |   10 +
- drivers/regulator/Makefile          |    1 +
- drivers/regulator/rk808-regulator.c |  420 +++++++++++++++++++++++++++++++++++
- 3 files changed, 431 insertions(+)
- create mode 100644 drivers/regulator/rk808-regulator.c
+ drivers/rtc/Kconfig     |   11 +
+ drivers/rtc/Makefile    |    1 +
+ drivers/rtc/rtc-rk808.c |  564 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 576 insertions(+)
+ create mode 100644 drivers/rtc/rtc-rk808.c
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 2dc8289..fb32bab 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -459,6 +459,16 @@ config REGULATOR_RC5T583
- 	  through regulator interface. The device supports multiple DCDC/LDO
- 	  outputs which can be controlled by i2c communication.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index a168e96..48f61b2 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -288,6 +288,17 @@ config RTC_DRV_MAX77686
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-max77686.
  
-+config REGULATOR_RK808
-+	tristate "Rockchip RK808 Power regulators"
++config RTC_DRV_RK808
++	tristate "Rockchip RK808 RTC"
 +	depends on MFD_RK808
 +	help
-+	  Select this option to enable the power regulator of ROCKCHIP
-+	  PMIC RK808.
-+	  This driver supports the control of different power rails of device
-+	  through regulator interface. The device supports multiple DCDC/LDO
-+	  outputs which can be controlled by i2c communication.
++	  If you say yes here you will get support for the
++	  RTC of Rk808 PMIC.
 +
- config REGULATOR_S2MPA01
- 	tristate "Samsung S2MPA01 voltage regulator"
- 	depends on MFD_SEC_CORE
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index aa4a6aa..236fdbb 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -62,6 +62,7 @@ obj-$(CONFIG_REGULATOR_PBIAS) += pbias-regulator.o
- obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
- obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
- obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
-+obj-$(CONFIG_REGULATOR_RK808)   += rk808-regulator.o
- obj-$(CONFIG_REGULATOR_S2MPA01) += s2mpa01.o
- obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
- obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
-diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-rk808.
++
++
+ config RTC_DRV_RS5C372
+ 	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 56f061c..91fe4647 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -109,6 +109,7 @@ obj-$(CONFIG_RTC_DRV_PUV3)	+= rtc-puv3.o
+ obj-$(CONFIG_RTC_DRV_PXA)	+= rtc-pxa.o
+ obj-$(CONFIG_RTC_DRV_R9701)	+= rtc-r9701.o
+ obj-$(CONFIG_RTC_DRV_RC5T583)	+= rtc-rc5t583.o
++obj-$(CONFIG_RTC_DRV_RK808)	+= rtc-rk808.o
+ obj-$(CONFIG_RTC_DRV_RP5C01)	+= rtc-rp5c01.o
+ obj-$(CONFIG_RTC_DRV_RS5C313)	+= rtc-rs5c313.o
+ obj-$(CONFIG_RTC_DRV_RS5C348)	+= rtc-rs5c348.o
+diff --git a/drivers/rtc/rtc-rk808.c b/drivers/rtc/rtc-rk808.c
 new file mode 100644
-index 0000000..e916850
+index 0000000..0abb919
 --- /dev/null
-+++ b/drivers/regulator/rk808-regulator.c
-@@ -0,0 +1,420 @@
++++ b/drivers/rtc/rtc-rk808.c
+@@ -0,0 +1,564 @@
 +/*
-+ * Regulator driver for Rockchip RK808
++ * RTC driver for Rockchip RK808
 + *
 + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
 + *
@@ -111,406 +110,550 @@ index 0000000..e916850
 + */
 +
 +#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/i2c.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/rk808.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/of_regulator.h>
-+#include <linux/regmap.h>
++#include <linux/kernel.h>
++#include <linux/time.h>
++#include <linux/rtc.h>
 +#include <linux/slab.h>
++#include <linux/bcd.h>
++#include <linux/interrupt.h>
++#include <linux/ioctl.h>
++#include <linux/completion.h>
++#include <linux/mfd/rk808.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/miscdevice.h>
++#include <linux/i2c.h>
++#include <linux/irqdomain.h>
++#include <linux/clk-provider.h>
++
++/* RTC_CTRL_REG bitfields */
++#define BIT_RTC_CTRL_REG_STOP_RTC_M		0x01
++#define BIT_RTC_CTRL_REG_ROUND_30S_M		0x02
++#define BIT_RTC_CTRL_REG_AUTO_COMP_M		0x04
++#define BIT_RTC_CTRL_REG_MODE_12_24_M		0x08
++#define BIT_RTC_CTRL_REG_TEST_MODE_M		0x10
++#define BIT_RTC_CTRL_REG_SET_32_COUNTER_M	0x20
++#define BIT_RTC_CTRL_REG_GET_TIME_M		0x40
++#define BIT_RTC_CTRL_REG_RTC_V_OPT_M		0x80
++
++/* RTC_STATUS_REG bitfields */
++#define BIT_RTC_STATUS_REG_RUN_M		0x02
++#define BIT_RTC_STATUS_REG_1S_EVENT_M		0x04
++#define BIT_RTC_STATUS_REG_1M_EVENT_M		0x08
++#define BIT_RTC_STATUS_REG_1H_EVENT_M		0x10
++#define BIT_RTC_STATUS_REG_1D_EVENT_M		0x20
++#define BIT_RTC_STATUS_REG_ALARM_M		0x40
++#define BIT_RTC_STATUS_REG_POWER_UP_M		0x80
++
++/* RTC_INTERRUPTS_REG bitfields */
++#define BIT_RTC_INTERRUPTS_REG_EVERY_M		0x03
++#define BIT_RTC_INTERRUPTS_REG_IT_TIMER_M	0x04
++#define BIT_RTC_INTERRUPTS_REG_IT_ALARM_M	0x08
++
++/* DEVCTRL bitfields */
++#define BIT_RTC_PWDN				0x40
++
++/* REG_SECONDS_REG through REG_YEARS_REG is how many registers? */
++#define ALL_TIME_REGS				7
++#define ALL_ALM_REGS				6
++
++#define RTC_SET_TIME_RETRIES	5
++#define RTC_GET_TIME_RETRIES	5
++
++struct rk808_rtc {
++	struct rk808 *rk808;
++	struct rtc_device *rtc;
++	unsigned int alarm_enabled:1;
++#ifdef CONFIG_COMMON_CLK
++	struct clk_onecell_data clk_data;
++	struct clk_hw		clkout1_hw;
++	struct clk_hw		clkout2_hw;
++#endif
++};
++
 +/*
-+ * Field Definitions.
++ * Read current time and date in RTC
 + */
-+#define RK808_BUCK_VSEL_MASK	0x3f
-+#define RK808_BUCK4_VSEL_MASK	0xf
-+#define RK808_LDO_VSEL_MASK	0x1f
-+
-+static const int buck_set_vol_base_addr[] = {
-+	RK808_BUCK1_ON_VSEL_REG,
-+	RK808_BUCK2_ON_VSEL_REG,
-+	RK808_BUCK3_CONFIG_REG,
-+	RK808_BUCK4_ON_VSEL_REG,
-+};
-+
-+static const int buck_contr_base_addr[] = {
-+	RK808_BUCK1_CONFIG_REG,
-+	RK808_BUCK2_CONFIG_REG,
-+	RK808_BUCK3_CONFIG_REG,
-+	RK808_BUCK4_CONFIG_REG,
-+};
-+
-+#define rk808_BUCK_SET_VOL_REG(x) (buck_set_vol_base_addr[x])
-+#define rk808_BUCK_CONTR_REG(x) (buck_contr_base_addr[x])
-+#define rk808_LDO_SET_VOL_REG(x) (ldo_set_vol_base_addr[x])
-+
-+static const int ldo_set_vol_base_addr[] = {
-+	RK808_LDO1_ON_VSEL_REG,
-+	RK808_LDO2_ON_VSEL_REG,
-+	RK808_LDO3_ON_VSEL_REG,
-+	RK808_LDO4_ON_VSEL_REG,
-+	RK808_LDO5_ON_VSEL_REG,
-+	RK808_LDO6_ON_VSEL_REG,
-+	RK808_LDO7_ON_VSEL_REG,
-+	RK808_LDO8_ON_VSEL_REG,
-+};
-+
-+/*
-+ * rk808 voltage number
-+ */
-+static const struct regulator_linear_range rk808_buck_voltage_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(700000, 0, 63, 12500),
-+};
-+
-+static const struct regulator_linear_range rk808_buck4_voltage_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(1800000, 0, 15, 100000),
-+};
-+
-+static const struct regulator_linear_range rk808_ldo_voltage_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(1800000, 0, 16, 100000),
-+};
-+
-+static const struct regulator_linear_range rk808_ldo3_voltage_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(800000, 0, 13, 100000),
-+	REGULATOR_LINEAR_RANGE(2500000, 15, 15, 0),
-+};
-+
-+static const struct regulator_linear_range rk808_ldo6_voltage_ranges[] = {
-+	REGULATOR_LINEAR_RANGE(800000, 0, 17, 100000),
-+};
-+
-+static struct regulator_ops rk808_reg_ops = {
-+	.list_voltage		= regulator_list_voltage_linear_range,
-+	.map_voltage		= regulator_map_voltage_linear_range,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+};
-+
-+static struct regulator_ops rk808_switch_ops = {
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+};
-+
-+static const struct regulator_desc rk808_reg[] = {
-+	{
-+		.name = "DCDC_REG1",
-+		.id = RK808_ID_DCDC1,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 64,
-+		.linear_ranges = rk808_buck_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_buck_voltage_ranges),
-+		.vsel_reg = RK808_BUCK1_ON_VSEL_REG,
-+		.vsel_mask = RK808_BUCK_VSEL_MASK,
-+		.enable_reg = RK808_DCDC_EN_REG,
-+		.enable_mask = BIT(0),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "DCDC_REG2",
-+		.id = RK808_ID_DCDC2,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 64,
-+		.linear_ranges = rk808_buck_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_buck_voltage_ranges),
-+		.vsel_reg = RK808_BUCK2_ON_VSEL_REG,
-+		.vsel_mask = RK808_BUCK_VSEL_MASK,
-+		.enable_reg = RK808_DCDC_EN_REG,
-+		.enable_mask = BIT(1),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "DCDC_REG3",
-+		.id = RK808_ID_DCDC3,
-+		.ops = &rk808_switch_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 1,
-+		.enable_reg = RK808_DCDC_EN_REG,
-+		.enable_mask = BIT(2),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "DCDC_REG4",
-+		.id = RK808_ID_DCDC4,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 17,
-+		.linear_ranges = rk808_buck4_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_buck4_voltage_ranges),
-+		.vsel_reg = RK808_BUCK4_ON_VSEL_REG,
-+		.vsel_mask = RK808_BUCK4_VSEL_MASK,
-+		.enable_reg = RK808_DCDC_EN_REG,
-+		.enable_mask = BIT(3),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG1",
-+		.id = RK808_ID_LDO1,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 17,
-+		.linear_ranges = rk808_ldo_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo_voltage_ranges),
-+		.vsel_reg = RK808_LDO1_ON_VSEL_REG,
-+		.vsel_mask = RK808_LDO_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(0),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG2",
-+		.id = RK808_ID_LDO2,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 17,
-+		.linear_ranges = rk808_ldo_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo_voltage_ranges),
-+		.vsel_reg = RK808_LDO2_ON_VSEL_REG,
-+		.vsel_mask = RK808_LDO_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(1),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG3",
-+		.id = RK808_ID_LDO3,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 16,
-+		.linear_ranges = rk808_ldo3_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo3_voltage_ranges),
-+		.vsel_reg = RK808_LDO3_ON_VSEL_REG,
-+		.vsel_mask = RK808_BUCK4_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(2),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG4",
-+		.id = RK808_ID_LDO4,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 17,
-+		.linear_ranges = rk808_ldo_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo_voltage_ranges),
-+		.vsel_reg = RK808_LDO4_ON_VSEL_REG,
-+		.vsel_mask = RK808_LDO_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(3),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG5",
-+		.id = RK808_ID_LDO5,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 17,
-+		.linear_ranges = rk808_ldo_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo_voltage_ranges),
-+		.vsel_reg = RK808_LDO5_ON_VSEL_REG,
-+		.vsel_mask = RK808_LDO_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(4),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG6",
-+		.id = RK808_ID_LDO6,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 18,
-+		.linear_ranges = rk808_ldo6_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo6_voltage_ranges),
-+		.vsel_reg = RK808_LDO6_ON_VSEL_REG,
-+		.vsel_mask = RK808_LDO_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(5),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG7",
-+		.id = RK808_ID_LDO7,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 18,
-+		.linear_ranges = rk808_ldo6_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo6_voltage_ranges),
-+		.vsel_reg = RK808_LDO7_ON_VSEL_REG,
-+		.vsel_mask = RK808_LDO_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(6),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "LDO_REG8",
-+		.id = RK808_ID_LDO8,
-+		.ops = &rk808_reg_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.n_voltages = 17,
-+		.linear_ranges = rk808_ldo_voltage_ranges,
-+		.n_linear_ranges = ARRAY_SIZE(rk808_ldo_voltage_ranges),
-+		.vsel_reg = RK808_LDO8_ON_VSEL_REG,
-+		.vsel_mask = RK808_LDO_VSEL_MASK,
-+		.enable_reg = RK808_LDO_EN_REG,
-+		.enable_mask = BIT(7),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "SWITCH_REG1",
-+		.id = RK808_ID_SWITCH1,
-+		.ops = &rk808_switch_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.enable_reg = RK808_DCDC_EN_REG,
-+		.enable_mask = BIT(5),
-+		.owner = THIS_MODULE,
-+	}, {
-+		.name = "SWITCH_REG2",
-+		.id = RK808_ID_SWITCH2,
-+		.ops = &rk808_switch_ops,
-+		.type = REGULATOR_VOLTAGE,
-+		.enable_reg = RK808_DCDC_EN_REG,
-+		.enable_mask = BIT(6),
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static struct of_regulator_match rk808_reg_matches[] = {
-+	[RK808_ID_DCDC1]	= { .name = "DCDC_REG1" },
-+	[RK808_ID_DCDC2]	= { .name = "DCDC_REG2" },
-+	[RK808_ID_DCDC3]	= { .name = "DCDC_REG3" },
-+	[RK808_ID_DCDC4]	= { .name = "DCDC_REG4" },
-+	[RK808_ID_LDO1]		= { .name = "LDO_REG1" },
-+	[RK808_ID_LDO2]		= { .name = "LDO_REG2" },
-+	[RK808_ID_LDO3]		= { .name = "LDO_REG3" },
-+	[RK808_ID_LDO4]		= { .name = "LDO_REG4" },
-+	[RK808_ID_LDO5]		= { .name = "LDO_REG5" },
-+	[RK808_ID_LDO6]		= { .name = "LDO_REG6" },
-+	[RK808_ID_LDO7]		= { .name = "LDO_REG7" },
-+	[RK808_ID_LDO8]		= { .name = "LDO_REG8" },
-+	[RK808_ID_SWITCH1]	= { .name = "SWITCH_REG1" },
-+	[RK808_ID_SWITCH2]	= { .name = "SWITCH_REG2" },
-+};
-+
-+static int rk808_regulator_dts(struct rk808 *rk808)
++static int rk808_rtc_readtime(struct device *dev, struct rtc_time *tm)
 +{
-+	struct rk808_board *pdata = rk808->pdata;
-+	struct device_node *np, *reg_np;
-+	int i, count;
++	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
++	struct rk808 *rk808 = rk808_rtc->rk808;
++	int ret;
++	u8 rtc_data[ALL_TIME_REGS + 1];
 +
-+	np = rk808->dev->of_node;
-+	if (!np) {
-+		dev_err(rk808->dev, "could not find pmic sub-node\n");
-+		return -ENXIO;
++	/* Has the RTC been programmed? */
++	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
++				 BIT_RTC_CTRL_REG_RTC_V_OPT_M, 0);
++	if (ret < 0) {
++		dev_err(dev, "Failed to update RTC control: %d\n", ret);
++		return ret;
 +	}
 +
-+	reg_np = of_find_node_by_name(np, "regulators");
-+	if (!reg_np)
-+		return -ENXIO;
-+
-+	count = of_regulator_match(rk808->dev, reg_np, rk808_reg_matches,
-+				   rk808_NUM_REGULATORS);
-+	of_node_put(reg_np);
-+
-+	if (count < 0) {
-+		dev_err(rk808->dev,
-+			"failed to parse regulator data: %d\n", count);
-+		return count;
++	ret = regmap_bulk_read(rk808->regmap, RK808_SECONDS_REG, rtc_data, 6);
++	if (ret < 0) {
++		dev_err(dev, "Failed to bulk read rtc_data: %d\n", ret);
++		return ret;
 +	}
-+
-+	if (count > rk808_NUM_REGULATORS) {
-+		dev_err(rk808->dev, "Too many regulators defined (%d, max %d)\n",
-+			count, rk808_NUM_REGULATORS);
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < count; i++) {
-+		if (!rk808_reg_matches[i].init_data ||
-+		    !rk808_reg_matches[i].of_node)
-+			continue;
-+
-+		pdata->rk808_init_data[i] = rk808_reg_matches[i].init_data;
-+		pdata->of_node[i] = rk808_reg_matches[i].of_node;
-+	}
++	tm->tm_sec = bcd2bin(rtc_data[0]);
++	tm->tm_min = bcd2bin(rtc_data[1]);
++	tm->tm_hour = bcd2bin(rtc_data[2]);
++	tm->tm_mday = bcd2bin(rtc_data[3]);
++	tm->tm_mon = bcd2bin(rtc_data[4]) - 1;
++	tm->tm_year = bcd2bin(rtc_data[5]) + 100;
++	tm->tm_wday = bcd2bin(rtc_data[6]);
++	dev_dbg(dev, "RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
++		1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
++		tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
 +
 +	return 0;
 +}
 +
-+static int rk808_regulator_probe(struct platform_device *pdev)
++/*
++ * Set current time and date in RTC
++ */
++static int rk808_rtc_set_time(struct device *dev, struct rtc_time *tm)
 +{
-+	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
-+	struct rk808_board *pdata;
-+	struct regulator_config config;
-+	struct regulator_dev *rk808_rdev;
-+	struct regulator_init_data *reg_data;
-+	const char *rail_name;
-+	int i = 0;
++	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
++	struct rk808 *rk808 = rk808_rtc->rk808;
++	int ret;
++	uint32_t rtc_data[ALL_TIME_REGS + 1];
++
++	rtc_data[0] = bin2bcd(tm->tm_sec);
++	rtc_data[1] = bin2bcd(tm->tm_min);
++	rtc_data[2] = bin2bcd(tm->tm_hour);
++	rtc_data[3] = bin2bcd(tm->tm_mday);
++	rtc_data[4] = bin2bcd(tm->tm_mon + 1);
++	rtc_data[5] = bin2bcd(tm->tm_year - 100);
++	rtc_data[6] = bin2bcd(tm->tm_wday);
++	dev_dbg(dev, "set RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
++		1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
++		tm->tm_wday, tm->tm_hour , tm->tm_min, tm->tm_sec);
++
++	/* Stop RTC while updating the RTC registers */
++	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
++				 BIT_RTC_CTRL_REG_STOP_RTC_M,
++				 BIT_RTC_CTRL_REG_STOP_RTC_M);
++	if (ret < 0) {
++		dev_err(dev, "Failed to update RTC control: %d\n", ret);
++		return ret;
++	}
++
++	ret = regmap_bulk_write(rk808->regmap, RK808_SECONDS_REG, rtc_data, 6);
++	if (ret < 0) {
++		dev_err(dev, "Failed to bull write rtc_data: %d\n", ret);
++		return ret;
++	}
++	/* Start RTC again */
++	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
++				 BIT_RTC_CTRL_REG_STOP_RTC_M, 0);
++	if (ret < 0) {
++		dev_err(dev, "Failed to update RTC control: %d\n", ret);
++		return ret;
++	}
++	return 0;
++}
++
++/*
++ * Read alarm time and date in RTC
++ */
++static int rk808_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
++	struct rk808 *rk808 = rk808_rtc->rk808;
++	int ret;
++	uint32_t int_reg;
++	u8 alrm_data[ALL_ALM_REGS + 1];
++
++	ret = regmap_bulk_read(rk808->regmap,
++			       RK808_ALARM_SECONDS_REG, alrm_data, 6);
++
++	/* some of these fields may be wildcard/"match all" */
++	alrm->time.tm_sec = bcd2bin(alrm_data[0]);
++	alrm->time.tm_min = bcd2bin(alrm_data[1]);
++	alrm->time.tm_hour = bcd2bin(alrm_data[2]);
++	alrm->time.tm_mday = bcd2bin(alrm_data[3]);
++	alrm->time.tm_mon = bcd2bin(alrm_data[4]) - 1;
++	alrm->time.tm_year = bcd2bin(alrm_data[5]) + 100;
++
++	ret = regmap_read(rk808->regmap, RK808_RTC_INT_REG, &int_reg);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read RTC INT REG: %d\n", ret);
++		return ret;
++	}
++
++	dev_dbg(dev, "alrm read RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
++		1900 + alrm->time.tm_year, alrm->time.tm_mon + 1,
++		alrm->time.tm_mday, alrm->time.tm_wday, alrm->time.tm_hour,
++		alrm->time.tm_min, alrm->time.tm_sec);
++
++	alrm->enabled = (int_reg & BIT_RTC_INTERRUPTS_REG_IT_ALARM_M) ? 1 : 0;
++
++	return 0;
++}
++
++static int rk808_rtc_stop_alarm(struct rk808_rtc *rk808_rtc)
++{
 +	int ret = 0;
++	struct rk808 *rk808 = rk808_rtc->rk808;
 +
-+	dev_dbg(rk808->dev, "%s\n", __func__);
++	ret = regmap_update_bits(rk808->regmap, RK808_RTC_INT_REG,
++				 BIT_RTC_INTERRUPTS_REG_IT_ALARM_M, 0);
++	if (!ret)
++		rk808_rtc->alarm_enabled = 0;
 +
-+	if (!rk808) {
-+		dev_err(rk808->dev, "%s no rk808\n", __func__);
-+		return -ENODEV;
++	return ret;
++}
++
++static int rk808_rtc_start_alarm(struct rk808_rtc *rk808_rtc)
++{
++	int ret = 0;
++	struct rk808 *rk808 = rk808_rtc->rk808;
++
++	ret = regmap_update_bits(rk808->regmap, RK808_RTC_INT_REG,
++				 BIT_RTC_INTERRUPTS_REG_IT_ALARM_M,
++				 BIT_RTC_INTERRUPTS_REG_IT_ALARM_M);
++	if (!ret)
++		rk808_rtc->alarm_enabled = 1;
++
++	return ret;
++}
++
++static int rk808_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
++	struct rk808 *rk808 = rk808_rtc->rk808;
++	int ret;
++	unsigned char alrm_data[ALL_TIME_REGS + 1];
++
++	ret = rk808_rtc_stop_alarm(rk808_rtc);
++	if (ret < 0) {
++		dev_err(dev, "Failed to stop alarm: %d\n", ret);
++		return ret;
++	}
++	dev_dbg(dev, "alrm set RTC date/time %4d-%02d-%02d(%d) %02d:%02d:%02d\n",
++		1900 + alrm->time.tm_year, alrm->time.tm_mon + 1,
++		alrm->time.tm_mday, alrm->time.tm_wday, alrm->time.tm_hour,
++		alrm->time.tm_min, alrm->time.tm_sec);
++
++	alrm_data[0] = bin2bcd(alrm->time.tm_sec);
++	alrm_data[1] = bin2bcd(alrm->time.tm_min);
++	alrm_data[2] = bin2bcd(alrm->time.tm_hour);
++	alrm_data[3] = bin2bcd(alrm->time.tm_mday);
++	alrm_data[4] = bin2bcd(alrm->time.tm_mon + 1);
++	alrm_data[5] = bin2bcd(alrm->time.tm_year - 100);
++
++	ret = regmap_bulk_write(rk808->regmap,
++				RK808_ALARM_SECONDS_REG, alrm_data, 6);
++	if (ret < 0) {
++		dev_err(dev, "Failed to bulk write: %d\n", ret);
++		return ret;
++	}
++	if (alrm->enabled) {
++		ret = rk808_rtc_start_alarm(rk808_rtc);
++		if (ret < 0) {
++			dev_err(dev, "Failed to start alarm: %d\n", ret);
++			return ret;
++		}
++	}
++	return 0;
++}
++
++static int rk808_rtc_alarm_irq_enable(struct device *dev,
++				      unsigned int enabled)
++{
++	struct rk808_rtc *rk808_rtc = dev_get_drvdata(dev);
++
++	if (enabled)
++		return rk808_rtc_start_alarm(rk808_rtc);
++
++	return rk808_rtc_stop_alarm(rk808_rtc);
++}
++
++/*
++ * We will just handle setting the frequency and make use the framework for
++ * reading the periodic interupts.
++ *
++ * @freq: Current periodic IRQ freq:
++ * bit 0: every second
++ * bit 1: every minute
++ * bit 2: every hour
++ * bit 3: every day
++ */
++static irqreturn_t rk808_alm_irq(int irq, void *data)
++{
++	struct rk808_rtc *rk808_rtc = data;
++	struct rk808 *rk808 = rk808_rtc->rk808;
++	int ret;
++	uint32_t rtc_ctl;
++
++	ret = regmap_update_bits(rk808->regmap, RK808_RTC_STATUS_REG,
++				 0, 0);
++	if (ret < 0) {
++		dev_err(rk808_rtc->rk808->dev,
++			"%s:Failed to update RTC status: %d\n", __func__, ret);
++		return ret;
 +	}
 +
-+	pdata = rk808->pdata;
-+	if (!pdata) {
-+		dev_err(rk808->dev, "%s no pdata\n", __func__);
-+		return -ENODEV;
++	rtc_update_irq(rk808_rtc->rtc, 1, RTC_IRQF | RTC_AF);
++	dev_info(rk808_rtc->rk808->dev,
++		 "%s:irq=%d,rtc_ctl=0x%x\n", __func__, irq, rtc_ctl);
++	return IRQ_HANDLED;
++}
++
++static const struct rtc_class_ops rk808_rtc_ops = {
++	.read_time = rk808_rtc_readtime,
++	.set_time = rk808_rtc_set_time,
++	.read_alarm = rk808_rtc_readalarm,
++	.set_alarm = rk808_rtc_setalarm,
++	.alarm_irq_enable = rk808_rtc_alarm_irq_enable,
++};
++
++#ifdef CONFIG_PM
++/* Turn off the alarm if it should not be a wake source. */
++static int rk808_rtc_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct rk808_rtc *rk808_rtc = dev_get_drvdata(&pdev->dev);
++	int ret;
++
++	if (rk808_rtc->alarm_enabled && device_may_wakeup(&pdev->dev))
++		ret = rk808_rtc_start_alarm(rk808_rtc);
++	else
++		ret = rk808_rtc_stop_alarm(rk808_rtc);
++
++	if (ret != 0)
++		dev_err(&pdev->dev, "Failed to update RTC alarm: %d\n", ret);
++
++	return 0;
++}
++
++/* Enable the alarm if it should be enabled (in case it was disabled to
++ * prevent use as a wake source).
++ */
++static int rk808_rtc_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct rk808_rtc *rk808_rtc = dev_get_drvdata(&pdev->dev);
++	int ret;
++
++	if (rk808_rtc->alarm_enabled) {
++		ret = rk808_rtc_start_alarm(rk808_rtc);
++		if (ret)
++			dev_err(&pdev->dev,
++				"Failed to restart RTC alarm: %d\n", ret);
 +	}
 +
-+	ret = rk808_regulator_dts(rk808);
-+	if (ret)
++	return 0;
++}
++#else
++#define rk808_rtc_suspend NULL
++#define rk808_rtc_resume NULL
++#endif
++
++static const struct dev_pm_ops rk808_rtc_pm_ops = {
++	.suspend = rk808_rtc_suspend,
++	.resume = rk808_rtc_resume,
++	.poweroff = rk808_rtc_suspend,
++};
++
++#ifdef CONFIG_COMMON_CLK
++static unsigned long rk808_clkout_recalc_rate(struct clk_hw *hw,
++					      unsigned long parent_rate)
++{
++	return 32768;
++}
++
++static int rk808_clkout1_is_prepared(struct clk_hw *hw)
++{
++	return 1;
++}
++
++static int rk808_clkout2_control(struct clk_hw *hw, bool enable)
++{
++	struct rk808_rtc *rk808_rtc = container_of(hw, struct rk808_rtc,
++						   clkout2_hw);
++	struct rk808 *rk808 = rk808_rtc->rk808;
++
++	return regmap_update_bits(rk808->regmap, RK808_CLK32OUT_REG,
++				  CLK32KOUT2_EN, enable ? CLK32KOUT2_EN : 0);
++}
++
++static int rk808_clkout2_prepare(struct clk_hw *hw)
++{
++	return rk808_clkout2_control(hw, 1);
++}
++
++static void rk808_clkout2_unprepare(struct clk_hw *hw)
++{
++	rk808_clkout2_control(hw, 0);
++}
++
++static int rk808_clkout2_is_prepared(struct clk_hw *hw)
++{
++	struct rk808_rtc *rk808_rtc = container_of(hw, struct rk808_rtc,
++						   clkout2_hw);
++	struct rk808 *rk808 = rk808_rtc->rk808;
++	uint32_t val;
++
++	int ret = regmap_read(rk808->regmap, RK808_CLK32OUT_REG, &val);
++
++	if (ret < 0)
 +		return ret;
 +
-+	rk808->num_regulators = rk808_NUM_REGULATORS;
-+	rk808->rdev = kcalloc(rk808_NUM_REGULATORS,
-+		sizeof(struct regulator_dev *), GFP_KERNEL);
-+	if (!rk808->rdev)
-+		return -ENOMEM;
-+
-+	/* Instantiate the regulators */
-+	for (i = 0; i < rk808_NUM_REGULATORS; i++) {
-+		reg_data = pdata->rk808_init_data[i];
-+		if (!reg_data)
-+			continue;
-+
-+		config.dev = rk808->dev;
-+		config.driver_data = rk808;
-+		config.regmap = rk808->regmap;
-+
-+		if (rk808->dev->of_node)
-+			config.of_node = pdata->of_node[i];
-+		if (reg_data->constraints.name)
-+			rail_name = reg_data->constraints.name;
-+		else
-+			rail_name = rk808_reg[i].name;
-+
-+		reg_data->supply_regulator = rail_name;
-+		config.init_data = reg_data;
-+
-+		rk808_rdev = regulator_register(&rk808_reg[i], &config);
-+		if (IS_ERR(rk808_rdev)) {
-+			dev_err(rk808->dev,
-+				"failed to register %d regulator\n", i);
-+			return PTR_ERR(rk808_rdev);
-+		}
-+		rk808->rdev[i] = rk808_rdev;
-+	}
-+	return 0;
++	return (val & CLK32KOUT2_EN) ? 1 : 0;
 +}
 +
-+static struct platform_driver rk808_regulator_driver = {
-+	.probe = rk808_regulator_probe,
++static const struct clk_ops rk808_clkout1_ops = {
++	.recalc_rate = rk808_clkout_recalc_rate,
++	.is_prepared = rk808_clkout1_is_prepared,
++};
++
++static const struct clk_ops rk808_clkout2_ops = {
++	.prepare = rk808_clkout2_prepare,
++	.unprepare = rk808_clkout2_unprepare,
++	.is_prepared = rk808_clkout2_is_prepared,
++	.recalc_rate = rk808_clkout_recalc_rate,
++};
++
++static int register_clocks(struct rk808_rtc *rk808_rtc)
++{
++	struct clk **clk_table;
++	struct clk_init_data init;
++	struct rk808 *rk808 = rk808_rtc->rk808;
++	struct i2c_client *client = rk808->i2c;
++	struct device_node *node = client->dev.of_node;
++
++	clk_table = devm_kzalloc(&client->dev,
++				 2*sizeof(struct clk *), GFP_KERNEL);
++	if (!clk_table)
++		return -ENOMEM;
++
++	init.flags = CLK_IS_ROOT;
++	init.parent_names = NULL;
++	init.num_parents = 0;
++	init.name = "rk808-clkout1";
++	init.ops = &rk808_clkout1_ops;
++	rk808_rtc->clkout1_hw.init = &init;
++	clk_table[0] = clk_register(&client->dev, &rk808_rtc->clkout1_hw);
++
++	init.name = "rk808-clkout2";
++	init.ops = &rk808_clkout2_ops;
++	rk808_rtc->clkout2_hw.init = &init;
++	clk_table[1] = clk_register(&client->dev, &rk808_rtc->clkout2_hw);
++
++	rk808_rtc->clk_data.clks = clk_table;
++	rk808_rtc->clk_data.clk_num = 2;
++	of_clk_add_provider(node, of_clk_src_onecell_get, clk_table);
++
++	return 0;
++}
++#endif
++
++/*2012.1.1 12:00:00 Saturday*/
++struct rtc_time tm_def = {
++			.tm_wday = 6,
++			.tm_year = 112,
++			.tm_mon = 0,
++			.tm_mday = 1,
++			.tm_hour = 12,
++			.tm_min = 0,
++			.tm_sec = 0,
++};
++
++static int rk808_rtc_probe(struct platform_device *pdev)
++{
++	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
++	struct rk808_rtc *rk808_rtc;
++	struct rtc_time tm;
++	int alm_irq;
++	int ret;
++
++	rk808_rtc = devm_kzalloc(&pdev->dev, sizeof(*rk808_rtc), GFP_KERNEL);
++	if (rk808_rtc == NULL)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, rk808_rtc);
++	rk808_rtc->rk808 = rk808;
++
++	/* start rtc default */
++	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
++				 BIT_RTC_CTRL_REG_STOP_RTC_M, 0);
++	if (ret < 0) {
++		dev_err(&pdev->dev,
++			"Failed to read RTC control: %d\n", ret);
++		return ret;
++	}
++
++	ret = regmap_write(rk808->regmap, RK808_RTC_STATUS_REG, 0xfe);
++	if (ret < 0) {
++		dev_err(&pdev->dev,
++			"Failed to write RTC control: %d\n", ret);
++			return ret;
++	}
++
++	/* set init time */
++	ret = rk808_rtc_readtime(&pdev->dev, &tm);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Failed to read RTC time\n");
++		return ret;
++	}
++	ret = rtc_valid_tm(&tm);
++	if (ret) {
++		dev_err(&pdev->dev, "invalid date/time and init time\n");
++		rk808_rtc_set_time(&pdev->dev, &tm_def);
++	}
++
++	device_init_wakeup(&pdev->dev, 1);
++
++	rk808_rtc->rtc = devm_rtc_device_register(&pdev->dev,
++		"rk808", &rk808_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rk808_rtc->rtc)) {
++		ret = PTR_ERR(rk808_rtc->rtc);
++		return ret;
++	}
++
++	alm_irq  = platform_get_irq(pdev, 0);
++	if (alm_irq <= 0) {
++		dev_warn(&pdev->dev, "Wake up is not possible as irq = %d\n",
++			 alm_irq);
++		return -ENXIO;
++	}
++
++	/* request alarm irq of rk808 */
++	ret = devm_request_threaded_irq(&pdev->dev, alm_irq, NULL,
++					rk808_alm_irq,
++					IRQF_TRIGGER_LOW | IRQF_EARLY_RESUME,
++					"RTC alarm", rk808_rtc);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request alarm IRQ %d: %d\n",
++			alm_irq, ret);
++	}
++	device_set_wakeup_capable(&pdev->dev, 1);
++
++#ifdef CONFIG_COMMON_CLK
++	ret = register_clocks(rk808_rtc);
++#endif
++
++	dev_info(rk808->dev, "%s:ok\n", __func__);
++
++	return ret;
++}
++
++static struct platform_driver rk808_rtc_driver = {
++	.probe = rk808_rtc_probe,
 +	.driver = {
-+		.name = "rk808-regulator",
-+		.owner = THIS_MODULE,
++		.name = "rk808-rtc",
++		.pm = &rk808_rtc_pm_ops,
 +	},
 +};
 +
-+module_platform_driver(rk808_regulator_driver);
++module_platform_driver(rk808_rtc_driver);
 +
-+MODULE_DESCRIPTION("regulator driver for the rk808 series PMICs");
-+MODULE_AUTHOR("Chris Zhong<zyw@rock-chips.com>");
-+MODULE_AUTHOR("Zhang Qing<zhanqging@rock-chips.com>");
++MODULE_DESCRIPTION("RTC driver for the rk808 series PMICs");
++MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
++MODULE_AUTHOR("Zhang Qing <zhanqging@rock-chips.com>");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:rk808-regulator");
++MODULE_ALIAS("platform:rk808-rtc");
 -- 
 1.7.9.5
 
