@@ -1,103 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaHQOLR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 10:11:17 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60306 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaHQOLO (ORCPT
+	id S1751773AbaHQOOX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 10:14:23 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41045 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256AbaHQOOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 10:11:14 -0400
-Date: Sun, 17 Aug 2014 07:11:06 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>,
-        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
-        Max Eliaser <max.eliaser@intel.com>,
-        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@linaro.org>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-acpi@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/9] Add ACPI _DSD and unified device properties
- support
-Message-ID: <20140817141106.GA20345@core.coreip.homeip.net>
-References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
- <D014CE66.A19F5%dvhart@linux.intel.com>
+	Sun, 17 Aug 2014 10:14:21 -0400
+Date: Sun, 17 Aug 2014 09:13:41 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        a.zummo@towertech.it, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        grant.likely@linaro.org, hl@rock-chips.com, huangtao@rock-chips.com,
+        cf@rock-chips.com, zhangqing@rock-chips.com, xxx@rock-chips.com,
+        dianders@chromium.org, heiko@sntech.de, olof@lixom.net,
+        sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Message-ID: <20140817141341.GH14537@sirena.org.uk>
+References: <1408240705-29472-1-git-send-email-zyw@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKijDXBCEH69PxaN"
 Content-Disposition: inline
-In-Reply-To: <D014CE66.A19F5%dvhart@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408240705-29472-1-git-send-email-zyw@rock-chips.com>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 216.80.70.240
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/4] MFD: RK808: Add new mfd device for RK808
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 16, 2014 at 09:06:05AM -0700, Darren Hart wrote:
-> On 8/15/14, 23:53, "Mika Westerberg" <mika.westerberg@linux.intel.com>
-> wrote:
-> 
-> >The recent publication of the ACPI 5.1 specification [1] adds a reserved
-> >name
-> >for Device Specific Data (_DSD, Section 6.2.5). This mechanism allows for
-> >passing arbitrary hardware description data to the OS. The exact format
-> >of the
-> >_DSD data is specific to the UUID paired with it [2].
-> >
-> >An ACPI Device Properties UUID has been defined [3] to provide a format
-> >compatible with existing device tree schemas. The purpose for this was to
-> >allow
-> >for the reuse of the existing schemas and encourage the development of
-> >firmware
-> >agnostic device drivers.
-> >
-> >This series accomplishes the following (as well as some other
-> >dependencies):
-> >
-> > * Add _DSD support to the ACPI core
-> >   This simply reads the UUID and the accompanying Package
-> >
-> > * Add ACPI Device Properties _DSD format support
-> >   This understands the hierarchical key:value pair structure
-> >   defined by the Device Properties UUID
-> >
-> > * Add a unified device properties API with ACPI and OF backends
-> >   This provides for the firmware agnostic device properties
-> >   Interface to be used by drivers
-> >
-> > * Provides 2 example drivers that were previously Device Tree aware that
-> >   can now be used with either Device Tree or ACPI Device Properties. The
-> >   both drivers use an arbitrary _HID.
-> >
-> >This has been tested on Minnowboard with relevant parts of the modified
-> >DSDT at the end of this email.
-> 
-> 
-> This eliminates the need for the board files that were the subject of my
-> "How not to write x86 platform drivers" talk at ELC-E last year. With
-> These ACPI core changes and the small changes to the two example drivers,
-> the Minnowboard can now use the GPIO buttons and LEDs through these
-> drivers by adding the ASL fragment below to the DSDT.
 
->From the drivers perspective I am less than impressed with the need to
-reshuffle all the drivers to support ACPI with the new API. I thought the plan
-was to try and keep OF API and try to translate as much as possible to it?
+--gKijDXBCEH69PxaN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The same goes for bringing arbitrary HIDs into the drivers. Can we have HID->OF
-naming hidden in ACPI (define a new property like "dt-name",  "of_compat" or
-whatever) and have ACPI core map one to another.
+On Sun, Aug 17, 2014 at 09:58:25AM +0800, Chris Zhong wrote:
 
-Thanks.
+> +static void rk808_device_shutdown(void)
+> +{
+> +	int ret;
+> +	struct rk808 *rk808 = g_rk808;
+> +
+> +	if (!rk808) {
+> +		dev_err(rk808->dev, "%s have no g_rk808\n", __func__);
+> +		return;
+> +	}
 
--- 
-Dmitry
+This is a bit dodgy but I can't think of a better way of doing it :/
+
+> +
+> +	ret = regmap_update_bits(rk808->regmap,
+> +				 RK808_INT_STS_MSK_REG1,
+> +				 (0x3 << 5), (0x3 << 5));
+> +	/* close rtc int when power off */
+> +	ret = regmap_update_bits(rk808->regmap,
+> +				 RK808_RTC_INT_REG,
+> +				 (0x3 << 2), 0);
+> +	/* close rtc int when power off */
+> +	ret = regmap_update_bits(rk808->regmap,
+> +				 RK808_DEVCTRL_REG,
+> +				 (0x1 << 3), (0x1 << 3));
+> +	if (ret < 0)
+> +		dev_err(rk808->dev, "rk808 power off error!\n");
+
+Defines for these bits would be good, though if this turns off the RTC
+alarm then it might be better not to do it - one thing people do with
+RTC alarms is use them to wake the system up from deep sleep.
+
+> +	while (1)
+> +		wfi();
+> +}
+
+Just let the kernel shut down by itself - or is that last write a system
+power off request?
+
+> +	ret = regmap_read(rk808->regmap, 0x2f, &val);
+> +	if (ret < 0) {
+> +		dev_err(rk808->dev, "The device is not rk808 %d\n", ret);
+> +		return ret;
+> +	}
+
+That error message is misleading - an error from regmap_read() means
+that I/O failed, usually "device is not rk808" would mean that you'd
+read back and ID register on the device and it didn't match what was
+expected.
+
+--gKijDXBCEH69PxaN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT8LiRAAoJELSic+t+oim9kTcP/jVwefUBbKMRbwYGCPiO4OWR
+3rx1WXCQ4fmZNZ9sxKnrxya42W60vluuhddgCEuhn459If/5Ybq83Fe93dEjJyky
+3cYu1CpaC9kdwMwT3iZdqDope3lo8l7njtlI57Z2b+m59Aipa67AkWGCa+53UxZQ
+e87oMR9mfRN1Q8TKofATAr2DuM5+ogOTLwfPXqvfCP/Ei2DNIEuYy2zoqbqNJdLT
+1rh2w/VkFtjnFdFbVX/CvBIA8Sr9tumjP93usrxWH7LmJHUC03ANFBeIDXw1fu2W
+lRdPp1gj3LWK5Q0B/0TSYX2PLa8Hp7znJOyaakh5ClJAseJRC6h1YcdwM2DBSSEq
+EsVxnc1Ann6g2Gco5D6RM0lkogKTW4aYCxYuHn+yJ1oB8zavxTMhByRBAxkeby1P
+dR452/cJwf6Czy9Pkl0Gkfk+iYwl3AyemgZ7ipgL1ZaIOYf2S33Y1k5zvT3zHhWP
+BdVxlV+623XJjpTiLpYMC0fyCUYDL/YV9nLG8S5H+HP9OcaZHWBBKIUdI0f1Q9KA
+U7YAaQO8P9bi1vhJUoV5jGAe7oKBBvvMWMImT79z4f1LMqJ65VDa4JvjxLXdcbBV
+UVmr4571HyKXL/aIBjsxYUY5ZozrNYGWkuPtCd1JxhDFkBodKVLJBbG0u8mwih7k
+vFPk/MI83eF5xp3UF/+J
+=VwfY
+-----END PGP SIGNATURE-----
+
+--gKijDXBCEH69PxaN--
