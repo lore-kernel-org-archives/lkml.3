@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607AbaHQKTY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 06:19:24 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:52261 "EHLO mail.mev.co.uk"
+	id S1751741AbaHQKUU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 06:20:20 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:52267 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282AbaHQKTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 06:19:22 -0400
-Message-ID: <53F081A2.4070409@mev.co.uk>
-Date: Sun, 17 Aug 2014 11:19:14 +0100
+	id S1751159AbaHQKUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 06:20:19 -0400
+Message-ID: <53F081E2.5060207@mev.co.uk>
+Date: Sun, 17 Aug 2014 11:20:18 +0100
 From: Ian Abbott <abbotti@mev.co.uk>
 Organization: MEV Ltd
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
@@ -15,10 +15,9 @@ MIME-Version: 1.0
 To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
 CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
         <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] staging: comedi: addi_apci_1564: correct typo in
- macro definition
-References: <1408249551-903-1-git-send-email-chase.southwood@gmail.com>
-In-Reply-To: <1408249551-903-1-git-send-email-chase.southwood@gmail.com>
+Subject: Re: [PATCH 3/3] staging: comedi: dt3000: remove unneeded variable
+References: <1408249571-1478-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1408249571-1478-1-git-send-email-chase.southwood@gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
@@ -27,17 +26,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/08/14 05:25, Chase Southwood wrote:
-> A recent commit introduced a typo in the definition of
-> APCI1564_DO_CC_INT_DISABLE.  The macro is not use yet, so not a huge deal,
-> but this patch corrects it.
+On 17/08/14 05:26, Chase Southwood wrote:
+> Coccinelle (using scripts/coccinelle/tests/doublebitand.cocci) found this
+> assignment because 0 is or'd twice.  Upon inspection, I found that the
+> variable "mode" is only assigned once and used once, and thus can be
+> cleanly removed.  This patch plugs its value straight into writew() and
+> then removes the variable.
 >
 > Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
 > Cc: Ian Abbott <abbotti@mev.co.uk>
 > Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 > ---
->   drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+> It occurred to me while doing this that zero might be or'd twice to
+> indicate "no information" in order to maintain some three-part structure
+> used elsewhere.  If this is the case, I think that the variable could
+> still be removed and the "| 0 | 0" could be added to the writew().
+>
+>   drivers/staging/comedi/drivers/dt3000.c | 4 +---
+>   1 file changed, 1 insertion(+), 3 deletions(-)
+
+This shouldn't be in the same series as the other two patches, but never 
+mind.
 
 Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
