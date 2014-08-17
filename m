@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaHQPmj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 11:42:39 -0400
-Received: from mail.eperm.de ([89.247.134.16]:37388 "EHLO mail.eperm.de"
+	id S1751768AbaHQPnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 11:43:06 -0400
+Received: from mail.eperm.de ([89.247.134.16]:37392 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286AbaHQPmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 11:42:38 -0400
+	id S1751705AbaHQPnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 11:43:05 -0400
 X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: Herbert Xu <herbert@gondor.apana.org.au>
 Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: [PATCH 8/8] DRBG: remove unnecessary sanity check for shadow state
-Date: Sun, 17 Aug 2014 17:41:38 +0200
-Message-ID: <2900796.YflQD55GTj@myon.chronox.de>
+Subject: [PATCH 7/8] DRBG: remove configuration of fixed values
+Date: Sun, 17 Aug 2014 17:41:10 +0200
+Message-ID: <2234918.GBOPRSmJe3@myon.chronox.de>
 User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
 In-Reply-To: <7044529.FG2KhbPc9P@myon.chronox.de>
 References: <7044529.FG2KhbPc9P@myon.chronox.de>
@@ -23,29 +23,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During creation of the DRBG shadow state, it is ensured that the DRBG
-state structure is already allocated. Thus, a sanity check for verifying
-that the structure is allocated is removed.
+SP800-90A mandates several hard-coded values. The old drbg_cores allows
+the setting of these values per DRBG implementation. However, due to the
+hard requirement of SP800-90A, these values are now returned globally
+for each DRBG.
+
+The ability to set such values per DRBG is therefore removed.
 
 Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- crypto/drbg.c | 3 ---
- 1 file changed, 3 deletions(-)
+ crypto/drbg.c         | 33 ---------------------------------
+ include/crypto/drbg.h | 19 ++++++-------------
+ 2 files changed, 6 insertions(+), 46 deletions(-)
 
 diff --git a/crypto/drbg.c b/crypto/drbg.c
-index a556180..f009939 100644
+index f74859d..a556180 100644
 --- a/crypto/drbg.c
 +++ b/crypto/drbg.c
-@@ -1155,9 +1155,6 @@ static inline int drbg_alloc_state(struct drbg_state *drbg)
- 	int ret = -ENOMEM;
- 	unsigned int sb_size = 0;
+@@ -117,27 +117,18 @@ static const struct drbg_core drbg_cores[] = {
+ 	{
+ 		.flags = DRBG_CTR | DRBG_STRENGTH128,
+ 		.statelen = 32, /* 256 bits as defined in 10.2.1 */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 16,
+ 		.cra_name = "ctr_aes128",
+ 		.backend_cra_name = "ecb(aes)",
+ 	}, {
+ 		.flags = DRBG_CTR | DRBG_STRENGTH192,
+ 		.statelen = 40, /* 320 bits as defined in 10.2.1 */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 16,
+ 		.cra_name = "ctr_aes192",
+ 		.backend_cra_name = "ecb(aes)",
+ 	}, {
+ 		.flags = DRBG_CTR | DRBG_STRENGTH256,
+ 		.statelen = 48, /* 384 bits as defined in 10.2.1 */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 16,
+ 		.cra_name = "ctr_aes256",
+ 		.backend_cra_name = "ecb(aes)",
+@@ -147,36 +138,24 @@ static const struct drbg_core drbg_cores[] = {
+ 	{
+ 		.flags = DRBG_HASH | DRBG_STRENGTH128,
+ 		.statelen = 55, /* 440 bits */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 20,
+ 		.cra_name = "sha1",
+ 		.backend_cra_name = "sha1",
+ 	}, {
+ 		.flags = DRBG_HASH | DRBG_STRENGTH256,
+ 		.statelen = 111, /* 888 bits */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 48,
+ 		.cra_name = "sha384",
+ 		.backend_cra_name = "sha384",
+ 	}, {
+ 		.flags = DRBG_HASH | DRBG_STRENGTH256,
+ 		.statelen = 111, /* 888 bits */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 64,
+ 		.cra_name = "sha512",
+ 		.backend_cra_name = "sha512",
+ 	}, {
+ 		.flags = DRBG_HASH | DRBG_STRENGTH256,
+ 		.statelen = 55, /* 440 bits */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 32,
+ 		.cra_name = "sha256",
+ 		.backend_cra_name = "sha256",
+@@ -186,36 +165,24 @@ static const struct drbg_core drbg_cores[] = {
+ 	{
+ 		.flags = DRBG_HMAC | DRBG_STRENGTH128,
+ 		.statelen = 20, /* block length of cipher */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 20,
+ 		.cra_name = "hmac_sha1",
+ 		.backend_cra_name = "hmac(sha1)",
+ 	}, {
+ 		.flags = DRBG_HMAC | DRBG_STRENGTH256,
+ 		.statelen = 48, /* block length of cipher */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 48,
+ 		.cra_name = "hmac_sha384",
+ 		.backend_cra_name = "hmac(sha384)",
+ 	}, {
+ 		.flags = DRBG_HMAC | DRBG_STRENGTH256,
+ 		.statelen = 64, /* block length of cipher */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 64,
+ 		.cra_name = "hmac_sha512",
+ 		.backend_cra_name = "hmac(sha512)",
+ 	}, {
+ 		.flags = DRBG_HMAC | DRBG_STRENGTH256,
+ 		.statelen = 32, /* block length of cipher */
+-		.max_addtllen = 35,
+-		.max_bits = 19,
+-		.max_req = 48,
+ 		.blocklen_bytes = 32,
+ 		.cra_name = "hmac_sha256",
+ 		.backend_cra_name = "hmac(sha256)",
+diff --git a/include/crypto/drbg.h b/include/crypto/drbg.h
+index 831d786..3d8e73a 100644
+--- a/include/crypto/drbg.h
++++ b/include/crypto/drbg.h
+@@ -82,15 +82,6 @@ typedef uint32_t drbg_flag_t;
+ struct drbg_core {
+ 	drbg_flag_t flags;	/* flags for the cipher */
+ 	__u8 statelen;		/* maximum state length */
+-	/*
+-	 * maximum length of personalization string or additional input
+-	 * string -- exponent for base 2
+-	 */
+-	__u8 max_addtllen;
+-	/* maximum bits per RNG request -- exponent for base 2*/
+-	__u8 max_bits;
+-	/* maximum number of requests -- exponent for base 2 */
+-	__u8 max_req;
+ 	__u8 blocklen_bytes;	/* block size of output in bytes */
+ 	char cra_name[CRYPTO_MAX_ALG_NAME]; /* mapping to kernel crypto API */
+ 	 /* kernel crypto API backend cipher name */
+@@ -156,18 +147,20 @@ static inline __u8 drbg_keylen(struct drbg_state *drbg)
  
--	if (!drbg)
--		return -EINVAL;
--
- 	drbg->V = kmalloc(drbg_statelen(drbg), GFP_KERNEL);
- 	if (!drbg->V)
- 		goto err;
+ static inline size_t drbg_max_request_bytes(struct drbg_state *drbg)
+ {
+-	/* max_bits is in bits, but buflen is in bytes */
+-	return (1 << (drbg->core->max_bits - 3));
++	/* SP800-90A requires the limit 2**19 bits, but we return bytes */
++	return (1 << 16);
+ }
+ 
+ static inline size_t drbg_max_addtl(struct drbg_state *drbg)
+ {
+-	return (1UL<<(drbg->core->max_addtllen));
++	/* SP800-90A requires 2**35 bytes additional info str / pers str */
++	return (1UL<<35);
+ }
+ 
+ static inline size_t drbg_max_requests(struct drbg_state *drbg)
+ {
+-	return (1UL<<(drbg->core->max_req));
++	/* SP800-90A requires 2**48 maximum requests before reseeding */
++	return (1UL<<48);
+ }
+ 
+ /*
 -- 
 1.9.3
 
