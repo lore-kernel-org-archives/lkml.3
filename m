@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbaHQGFN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 02:05:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54331 "EHLO mga02.intel.com"
+	id S1751890AbaHQGF4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 02:05:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9942 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768AbaHQGFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 02:05:11 -0400
+	id S1751795AbaHQGFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 02:05:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,878,1400050800"; 
-   d="scan'208";a="589195664"
+   d="scan'208";a="589195629"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Darren Hart <dvhart@linux.intel.com>,
         "Rafael J. Wysocki" <rafael@kernel.org>
@@ -16,9 +16,9 @@ Cc: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 4/9] of: Add property_ops callback for devices with of_node
-Date: Sun, 17 Aug 2014 09:04:14 +0300
-Message-Id: <1408255459-17625-5-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [RFC PATCH 5/9] mfd: Add ACPI support
+Date: Sun, 17 Aug 2014 09:04:15 +0300
+Message-Id: <1408255459-17625-6-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 2.1.0.rc1
 In-Reply-To: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -26,288 +26,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Lu <aaron.lu@intel.com>
+If an MFD device is backed by ACPI namespace, we should allow subdevice
+drivers to access their corresponding ACPI companion devices through normal
+means (e.g using ACPI_COMPANION()).
 
-With the unified device properties interface in place, add device tree support.
-By adding the dev_prop_ops for of_node devices, drivers can access properties
-from ACPI or Device Tree in a generic way.
+This patch adds such support to the MFD core. If the MFD parent device
+doesn't specify any ACPI _HID/_CID for the child device, the child device
+will share the parent ACPI companion device. Otherwise the child device
+will be assigned with the corresponding ACPI companion, if found in the
+namespace below the parent.
 
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 ---
- drivers/of/base.c        | 194 ++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/of/platform.c    |   4 +-
- include/linux/property.h |   4 +
- 3 files changed, 200 insertions(+), 2 deletions(-)
+ Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
+ drivers/mfd/mfd-core.c             | 41 ++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/core.h           |  3 +++
+ 3 files changed, 71 insertions(+)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index b9864806e9b8..527004d01423 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -20,7 +20,7 @@
- #include <linux/ctype.h>
- #include <linux/cpu.h>
- #include <linux/module.h>
--#include <linux/of.h>
-+#include <linux/property.h>
- #include <linux/of_graph.h>
- #include <linux/spinlock.h>
- #include <linux/slab.h>
-@@ -1343,6 +1343,39 @@ int of_property_read_u64(const struct device_node *np, const char *propname,
- EXPORT_SYMBOL_GPL(of_property_read_u64);
+diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+index e182be5e3c83..74e35c54febf 100644
+--- a/Documentation/acpi/enumeration.txt
++++ b/Documentation/acpi/enumeration.txt
+@@ -312,3 +312,30 @@ a code like this:
  
- /**
-+ * of_property_read_u64_array - Find and read an array of 64 bit integers
-+ * from a property.
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @out_values:	pointer to return value, modified only if return value is 0.
-+ * @sz:		number of array elements to read
-+ *
-+ * Search for a property in a device node and read 64-bit value(s) from
-+ * it. Returns 0 on success, -EINVAL if the property does not exist,
-+ * -ENODATA if property does not have a value, and -EOVERFLOW if the
-+ * property data isn't large enough.
-+ *
-+ * The out_values is modified only if a valid u64 value can be decoded.
-+ */
-+int of_property_read_u64_array(const struct device_node *np,
-+			       const char *propname, u64 *out_values,
-+			       size_t sz)
-+{
-+	const __be32 *val = of_find_property_value_of_size(np, propname,
-+						(sz * sizeof(*out_values)));
+ There are also devm_* versions of these functions which release the
+ descriptors once the device is released.
 +
-+	if (IS_ERR(val))
-+		return PTR_ERR(val);
++MFD devices
++~~~~~~~~~~~
++The MFD devices create platform devices from their children. For the
++child devices there needs to be an ACPI handle that they can use to
++reference parts of the ACPI namespace that relate to them. In the Linux
++MFD subsystem we provide two ways:
 +
-+	while (sz--) {
-+		*out_values++ = of_read_number(val, 2);
-+		val += 2;
++	o The children share the parent ACPI handle.
++	o The MFD cell can specify the ACPI id of the device.
++
++For the first case, the MFD drivers do not need to do anything. The
++resulting child platform device will have its ACPI_COMPANION() set to point
++to the parent device.
++
++If the ACPI namespace has a device that we can match using an ACPI id,
++the id should be set like:
++
++	static struct mfd_cell my_subdevice_cell = {
++		.name = "my_subdevice",
++		/* set the resources relative to the parent */
++		.acpi_pnpid = "XYZ0001",
 +	};
-+	return 0;
-+}
 +
-+/**
-  * of_property_read_string - Find and read a string from a property
-  * @np:		device node from which the property value is to be read.
-  * @propname:	name of the property to be searched.
-@@ -1490,6 +1523,47 @@ int of_property_count_strings(struct device_node *np, const char *propname)
++The ACPI id "XYZ0001" is then used to lookup an ACPI device directly under
++the MFD device and if found, that ACPI companion device is bound to the
++resulting child platform device.
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index 892d343193ad..bb466b28b3b6 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -78,6 +78,45 @@ static int mfd_platform_add_cell(struct platform_device *pdev,
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(of_property_count_strings);
  
-+/**
-+ * of_property_read_string_array - Find and read an array of strings
-+ * from a multiple strings property.
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @out_string:	pointer to null terminated return string, modified only if
-+ *		return value is 0.
-+ * @sz:		number of array elements to read
-+ *
-+ * Search for a property in a device tree node and retrieve a list of
-+ * terminated string value (pointer to data, not a copy) in that property.
-+ * Returns 0 on success, -EINVAL if the property does not exist, -ENODATA if
-+ * property does not have a value, and -EILSEQ if the string is not
-+ * null-terminated within the length of the property data.
-+ *
-+ * The out_string pointer is modified only if a valid string can be decoded.
-+ */
-+int of_property_read_string_array(struct device_node *np, const char *propname,
-+				  char **output, size_t sz)
++#if IS_ENABLED(CONFIG_ACPI)
++static void mfd_acpi_add_device(const struct mfd_cell *cell,
++				struct platform_device *pdev)
 +{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+	int i = 0;
-+	size_t l = 0, total = 0;
-+	char *p;
++	struct acpi_device *parent_adev;
++	struct acpi_device *adev = NULL;
 +
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if (strnlen(prop->value, prop->length) >= prop->length)
-+		return -EILSEQ;
++	parent_adev = ACPI_COMPANION(pdev->dev.parent);
++	if (!parent_adev)
++		return;
 +
-+	p = prop->value;
++	/*
++	 * MFD child device gets its ACPI handle either from the ACPI
++	 * device directly under the parent that matches the acpi_pnpid or
++	 * it will use the parent handle if is no acpi_pnpid is given.
++	 */
++	if (cell->acpi_pnpid) {
++		struct acpi_device_id ids[2] = {};
++		struct acpi_device *child_adev;
 +
-+	for (i = 0; total < prop->length; total += l, p += l) {
-+		output[i++] = p;
-+		l = strlen(p) + 1;
-+	}
-+	return 0;
-+}
-+
- void of_print_phandle_args(const char *msg, const struct of_phandle_args *args)
- {
- 	int i;
-@@ -2376,3 +2450,121 @@ struct device_node *of_graph_get_remote_port(const struct device_node *node)
- 	return of_get_next_parent(np);
- }
- EXPORT_SYMBOL(of_graph_get_remote_port);
-+
-+static int of_dev_prop_get(struct device *dev, const char *propname,
-+			   void **valptr)
-+{
-+	struct property *pp = of_find_property(dev->of_node, propname, NULL);
-+
-+	if (!pp)
-+		return -ENODATA;
-+
-+	if (valptr)
-+		*valptr = pp->value;
-+	return 0;
-+}
-+
-+static int of_dev_prop_read(struct device *dev, const char *propname,
-+			    enum dev_prop_type proptype, void *val)
-+{
-+	void *value;
-+	int ret = of_dev_prop_get(dev, propname, &value);
-+
-+	if (ret)
-+		return ret;
-+
-+	if (proptype >= DEV_PROP_U8 && proptype <= DEV_PROP_U64) {
-+		switch (proptype) {
-+		case DEV_PROP_U8:
-+			*(u8 *)val = *(u8 *)value;
-+			break;
-+		case DEV_PROP_U16:
-+			*(u16 *)val = *(u16 *)value;
-+			break;
-+		case DEV_PROP_U32:
-+			*(u32 *)val = *(u32 *)value;
-+			break;
-+		default:
-+			*(u64 *)val = *(u64 *)value;
-+			break;
-+		}
-+	} else if (proptype == DEV_PROP_STRING) {
-+		*(char **)val = value;
-+	}
-+	return ret;
-+
-+}
-+
-+static int of_dev_prop_read_array(struct device *dev, const char *propname,
-+				  enum dev_prop_type proptype, void *val,
-+				  size_t nval)
-+{
-+	int ret, elem_size;
-+
-+	if (!val) {
-+		switch (proptype) {
-+		case DEV_PROP_U8:
-+			elem_size = sizeof(u8);
-+			break;
-+		case DEV_PROP_U16:
-+			elem_size = sizeof(u16);
-+			break;
-+		case DEV_PROP_U32:
-+			elem_size = sizeof(u32);
-+			break;
-+		case DEV_PROP_U64:
-+			elem_size = sizeof(u64);
-+			break;
-+		case DEV_PROP_STRING:
-+			return of_property_count_strings(dev->of_node,
-+							 propname);
-+		default:
-+			return -EINVAL;
-+		}
-+		return of_property_count_elems_of_size(dev->of_node, propname,
-+						       elem_size);
++		strlcpy(ids[0].id, cell->acpi_pnpid, sizeof(ids[0].id));
++		list_for_each_entry(child_adev, &parent_adev->children, node)
++			if (acpi_match_device_ids(child_adev, ids)) {
++				adev = child_adev;
++				break;
++			}
++	} else {
++		adev = parent_adev;
 +	}
 +
-+	switch (proptype) {
-+	case DEV_PROP_U8:
-+		ret = of_property_read_u8_array(dev->of_node, propname,
-+						(u8 *)val, nval);
-+		break;
-+	case DEV_PROP_U16:
-+		ret = of_property_read_u16_array(dev->of_node, propname,
-+						 (u16 *)val, nval);
-+		break;
-+	case DEV_PROP_U32:
-+		ret = of_property_read_u32_array(dev->of_node, propname,
-+						 (u32 *)val, nval);
-+		break;
-+	case DEV_PROP_U64:
-+		ret = of_property_read_u64_array(dev->of_node, propname,
-+						 (u64 *)val, nval);
-+		break;
-+	case DEV_PROP_STRING:
-+		ret = of_property_read_string_array(dev->of_node, propname,
-+						    (char **)val, nval);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+	return ret;
++	ACPI_COMPANION_SET(&pdev->dev, adev);
 +}
-+
-+static int of_dev_get_child_count(struct device *dev)
++#else
++static inline void mfd_acpi_add_device(const struct mfd_cell *cell,
++				       struct platform_device *pdev)
 +{
-+	struct device_node *node = dev->of_node;
-+
-+	if (!node)
-+		return -EINVAL;
-+	return of_get_child_count(node);
 +}
-+
-+struct dev_prop_ops of_property_ops = {
-+	.get = of_dev_prop_get,
-+	.read = of_dev_prop_read,
-+	.read_array = of_dev_prop_read_array,
-+	.child_count = of_dev_get_child_count,
-+};
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 500436f9be7f..3113d3704eff 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -14,7 +14,7 @@
- #include <linux/errno.h>
- #include <linux/module.h>
- #include <linux/amba/bus.h>
--#include <linux/device.h>
-+#include <linux/property.h>
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
- #include <linux/of_address.h>
-@@ -138,6 +138,7 @@ struct platform_device *of_device_alloc(struct device_node *np,
- 	}
- 
- 	dev->dev.of_node = of_node_get(np);
-+	dev->dev.property_ops = &of_property_ops;
- 	dev->dev.parent = parent;
- 
- 	if (bus_id)
-@@ -293,6 +294,7 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
- 	/* setup generic device info */
- 	dev->dev.coherent_dma_mask = ~0;
- 	dev->dev.of_node = of_node_get(node);
-+	dev->dev.property_ops = &of_property_ops;
- 	dev->dev.parent = parent;
- 	dev->dev.platform_data = platform_data;
- 	if (bus_id)
-diff --git a/include/linux/property.h b/include/linux/property.h
-index 52ea7fe7fe09..a840c1784c82 100644
---- a/include/linux/property.h
-+++ b/include/linux/property.h
-@@ -38,6 +38,10 @@ struct dev_prop_ops {
- extern struct dev_prop_ops acpi_property_ops;
- #endif
- 
-+#ifdef CONFIG_OF
-+extern struct dev_prop_ops of_property_ops;
 +#endif
 +
- int device_property_get(struct device *dev, const char *propname,
- 			void **valptr);
- int device_property_read(struct device *dev, const char *propname,
+ static int mfd_add_device(struct device *parent, int id,
+ 			  const struct mfd_cell *cell, atomic_t *usage_count,
+ 			  struct resource *mem_base,
+@@ -118,6 +157,8 @@ static int mfd_add_device(struct device *parent, int id,
+ 		}
+ 	}
+ 
++	mfd_acpi_add_device(cell, pdev);
++
+ 	if (cell->pdata_size) {
+ 		ret = platform_device_add_data(pdev,
+ 					cell->platform_data, cell->pdata_size);
+diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+index f543de91ce19..73e1709d4c09 100644
+--- a/include/linux/mfd/core.h
++++ b/include/linux/mfd/core.h
+@@ -44,6 +44,9 @@ struct mfd_cell {
+ 	 */
+ 	const char		*of_compatible;
+ 
++	/* Matches ACPI PNP id, either _HID or _CID */
++	const char		*acpi_pnpid;
++
+ 	/*
+ 	 * These resources can be specified relative to the parent device.
+ 	 * For accessing hardware you should use resources from the platform dev
 -- 
 2.1.0.rc1
 
