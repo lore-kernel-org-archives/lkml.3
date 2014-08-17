@@ -1,91 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742AbaHQAhx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 20:37:53 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:50538 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbaHQAhw (ORCPT
+	id S1751761AbaHQAps (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 20:45:48 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:35112 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465AbaHQApq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 20:37:52 -0400
-Date: Sun, 17 Aug 2014 09:37:48 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linaro-kernel@lists.linaro.org,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:ARM/SHMOBILE ARM..." <linux-sh@vger.kernel.org>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: shmobile: defconfig: enable initrd and atag dtb
- compat
-Message-ID: <20140817003748.GA7887@verge.net.au>
-References: <1407974835-11064-1-git-send-email-khilman@linaro.org>
- <20140814052557.GA27045@verge.net.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140814052557.GA27045@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 16 Aug 2014 20:45:46 -0400
+From: Evgeny Boger <boger@contactless.ru>
+X-Google-Original-From: Evgeny Boger <boger@contactless.ru
+To: linux-watchdog@vger.kernel.org, Alexander Shiyan <shc_work@mail.ru>,
+        linux-kernel@vger.kernel.org
+Cc: Evgeny Boger <boger@contactless.ru>
+Subject: [PATCH] Add support for always enabled watchdog timers
+Date: Sun, 17 Aug 2014 04:45:38 +0400
+Message-Id: <1408236338-12555-1-git-send-email-boger@contactless.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 02:25:57PM +0900, Simon Horman wrote:
-> On Wed, Aug 13, 2014 at 05:07:15PM -0700, Kevin Hilman wrote:
-> > Enable ATAG_DTB_COMPAT support for passing commandline from bootloader.
-> > Enable initrd support.
-> > 
-> > Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> > ---
-> > With this, I can finally integrate the kzm9d into the board farm because I use
-> > initrafms for the primary rootfs, and set the command-line from u-boot.
-> > 
-> > Tested on next-20140813
-> 
-> Thanks, I will queue this up for v3.18 and push it to next
-> once v3.17-rc1 has been released.
+From: Evgeny Boger <boger@contactless.ru>
 
-Hi Kevin,
+Add option to use with watchdog timers which are always enabled 
+in hardware, i.e. there is no way to enable/disable it via GPIO pin.
+The driver will start pinging WDT immediately upon loading
+and will continue to do so even after stopping the watchdog.
 
-I have decided to drop this patch for now as it appears to
-cause my kzm9d (of all things) not to boot. And per a follow-up email
-from you it no longer appears to be required in your environment.
+Signed-off-by: Evgeny Boger <boger@contactless.ru>
+---
+ .../devicetree/bindings/watchdog/gpio-wdt.txt      | 14 ++++++-
+ drivers/watchdog/gpio_wdt.c                        | 45 +++++++++++++++++-----
+ 2 files changed, 48 insertions(+), 11 deletions(-)
 
-I'm more than happy to revisit this if it turns out to be useful again.
+diff --git a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+index 37afec1..1f8ca46 100644
+--- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
++++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+@@ -12,8 +12,11 @@ Required Properties:
+     the opposite level disables the WDT. Active level is determined
+     by the GPIO flags.
+ - hw_margin_ms: Maximum time to reset watchdog circuit (milliseconds).
++- always-enabled: Use with wathdog timer which is always enabled
++  in hardware, i.e. there is no way to enable/disable it via GPIO pin.
++  Driver will start pinging WDT immediately upon loading.
+ 
+-Example:
++Examples:
+ 	watchdog: watchdog {
+ 		/* ADM706 */
+ 		compatible = "linux,wdt-gpio";
+@@ -21,3 +24,12 @@ Example:
+ 		hw_algo = "toggle";
+ 		hw_margin_ms = <1600>;
+ 	};
++
++	watchdog: watchdog {
++		/* TPS3813 */
++		compatible = "linux,wdt-gpio";
++		gpios = <&gpio3 9 GPIO_ACTIVE_LOW>;
++		hw_algo = "toggle";
++		hw_margin_ms = <10000>;
++		always-enabled;
++	};
+diff --git a/drivers/watchdog/gpio_wdt.c b/drivers/watchdog/gpio_wdt.c
+index 220a9e0..29f9bff 100644
+--- a/drivers/watchdog/gpio_wdt.c
++++ b/drivers/watchdog/gpio_wdt.c
+@@ -37,6 +37,8 @@ struct gpio_wdt_priv {
+ 	struct notifier_block	notifier;
+ 	struct timer_list	timer;
+ 	struct watchdog_device	wdd;
++	bool		always_enabled;
++	bool		started;
+ };
+ 
+ static void gpio_wdt_disable(struct gpio_wdt_priv *priv)
+@@ -48,10 +50,8 @@ static void gpio_wdt_disable(struct gpio_wdt_priv *priv)
+ 		gpio_direction_input(priv->gpio);
+ }
+ 
+-static int gpio_wdt_start(struct watchdog_device *wdd)
++static int gpio_wdt_start_timer(struct gpio_wdt_priv *priv)
+ {
+-	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+-
+ 	priv->state = priv->active_low;
+ 	gpio_direction_output(priv->gpio, priv->state);
+ 	priv->last_jiffies = jiffies;
+@@ -60,12 +60,28 @@ static int gpio_wdt_start(struct watchdog_device *wdd)
+ 	return 0;
+ }
+ 
+-static int gpio_wdt_stop(struct watchdog_device *wdd)
++static int gpio_wdt_start(struct watchdog_device *wdd)
+ {
+ 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
++	priv->started = true;
++	if (priv->always_enabled) {
++		/* harware ping timer is already enabled */
++		priv->last_jiffies = jiffies;
++	} else {
++		gpio_wdt_start_timer(priv);
++	}
+ 
+-	mod_timer(&priv->timer, 0);
+-	gpio_wdt_disable(priv);
++	return 0;
++}
++
++static int gpio_wdt_stop(struct watchdog_device *wdd)
++{
++	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
++	priv->started = false;
++	if (!priv->always_enabled) {
++		mod_timer(&priv->timer, 0);
++		gpio_wdt_disable(priv);
++	}
+ 
+ 	return 0;
+ }
+@@ -91,10 +107,12 @@ static void gpio_wdt_hwping(unsigned long data)
+ 	struct watchdog_device *wdd = (struct watchdog_device *)data;
+ 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
+ 
+-	if (time_after(jiffies, priv->last_jiffies +
+-		       msecs_to_jiffies(wdd->timeout * 1000))) {
+-		dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
+-		return;
++	if (priv->started) {
++		if (time_after(jiffies, priv->last_jiffies +
++			       msecs_to_jiffies(wdd->timeout * 1000))) {
++			dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
++			return;
++		}
+ 	}
+ 
+ 	/* Restart timer */
+@@ -197,6 +215,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+ 	/* Use safe value (1/2 of real timeout) */
+ 	priv->hw_margin = msecs_to_jiffies(hw_margin / 2);
+ 
++	priv->always_enabled = of_property_read_bool(pdev->dev.of_node,
++						"always-enabled");
++
+ 	watchdog_set_drvdata(&priv->wdd, priv);
+ 
+ 	priv->wdd.info		= &gpio_wdt_ident;
+@@ -207,6 +228,7 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+ 	if (watchdog_init_timeout(&priv->wdd, 0, &pdev->dev) < 0)
+ 		priv->wdd.timeout = SOFT_TIMEOUT_DEF;
+ 
++	priv->started = false;
+ 	setup_timer(&priv->timer, gpio_wdt_hwping, (unsigned long)&priv->wdd);
+ 
+ 	ret = watchdog_register_device(&priv->wdd);
+@@ -218,6 +240,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		watchdog_unregister_device(&priv->wdd);
+ 
++	if (priv->always_enabled)
++		gpio_wdt_start_timer(priv);
++
+ 	return ret;
+ }
+ 
+-- 
+1.9.1
 
-> >  arch/arm/configs/shmobile_defconfig | 2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/arch/arm/configs/shmobile_defconfig b/arch/arm/configs/shmobile_defconfig
-> > index 3b136144cc83..d655f088ac58 100644
-> > --- a/arch/arm/configs/shmobile_defconfig
-> > +++ b/arch/arm/configs/shmobile_defconfig
-> > @@ -3,6 +3,7 @@ CONFIG_NO_HZ=y
-> >  CONFIG_IKCONFIG=y
-> >  CONFIG_IKCONFIG_PROC=y
-> >  CONFIG_LOG_BUF_SHIFT=16
-> > +CONFIG_BLK_DEV_INITRD=y
-> >  CONFIG_CC_OPTIMIZE_FOR_SIZE=y
-> >  CONFIG_SYSCTL_SYSCALL=y
-> >  CONFIG_EMBEDDED=y
-> > @@ -33,6 +34,7 @@ CONFIG_HIGHMEM=y
-> >  CONFIG_ZBOOT_ROM_TEXT=0x0
-> >  CONFIG_ZBOOT_ROM_BSS=0x0
-> >  CONFIG_ARM_APPENDED_DTB=y
-> > +CONFIG_ARM_ATAG_DTB_COMPAT=y
-> >  CONFIG_KEXEC=y
-> >  CONFIG_VFP=y
-> >  CONFIG_NEON=y
-> > -- 
-> > 1.9.2
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
