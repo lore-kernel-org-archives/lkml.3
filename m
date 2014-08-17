@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaHQRbe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 13:31:34 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:48101
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751968AbaHQRba (ORCPT
+	id S1752070AbaHQRbj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 13:31:39 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:47225 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751968AbaHQRbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 13:31:30 -0400
-Message-Id: <20140817173036.329086654@linux.com>
-Date: Sun, 17 Aug 2014 12:30:45 -0500
+	Sun, 17 Aug 2014 13:31:35 -0400
+Message-Id: <20140817173036.664195653@linux.com>
+Date: Sun, 17 Aug 2014 12:30:47 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 22/35] [PATCH 22/36] s390: Replace __get_cpu_var uses
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
+Subject: [PATCH 24/35] [PATCH 24/36] ia64: Replace __get_cpu_var uses
 References: <20140817173023.439660246@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0022-s390-Replace-__get_cpu_var-uses.patch
+Content-Disposition: inline; filename=0024-ia64-Replace-__get_cpu_var-uses.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -117,7 +116,7 @@ variable.
 
    Converts to
 
-	this_cpu_write(y, x);
+	__this_cpu_write(y, x);
 
 
 6. Increment/Decrement etc of a per cpu variable
@@ -127,446 +126,344 @@ variable.
 
    Converts to
 
-	this_cpu_inc(y)
+	__this_cpu_inc(y)
 
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: linux390@de.ibm.com
-Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
 Signed-off-by: Christoph Lameter <cl@linux.com>
 ---
- arch/s390/include/asm/cputime.h |  2 +-
- arch/s390/include/asm/irq.h     |  2 +-
- arch/s390/include/asm/percpu.h  | 16 ++++++++--------
- arch/s390/kernel/irq.c          |  2 +-
- arch/s390/kernel/kprobes.c      |  8 ++++----
- arch/s390/kernel/nmi.c          | 10 +++++++---
- arch/s390/kernel/perf_cpum_cf.c | 22 +++++++++++-----------
- arch/s390/kernel/perf_cpum_sf.c | 16 ++++++++--------
- arch/s390/kernel/processor.c    |  4 ++--
- arch/s390/kernel/time.c         |  6 +++---
- arch/s390/kernel/vtime.c        |  2 +-
- arch/s390/oprofile/hwsampler.c  |  2 +-
- 12 files changed, 48 insertions(+), 44 deletions(-)
+ arch/ia64/include/asm/hw_irq.h     |  2 +-
+ arch/ia64/include/asm/sn/arch.h    |  4 ++--
+ arch/ia64/include/asm/sn/nodepda.h |  2 +-
+ arch/ia64/include/asm/switch_to.h  |  2 +-
+ arch/ia64/include/asm/uv/uv_hub.h  |  2 +-
+ arch/ia64/kernel/irq.c             |  2 +-
+ arch/ia64/kernel/irq_ia64.c        |  4 ++--
+ arch/ia64/kernel/kprobes.c         |  6 +++---
+ arch/ia64/kernel/mca.c             | 16 ++++++++--------
+ arch/ia64/kernel/process.c         |  6 +++---
+ arch/ia64/kernel/traps.c           |  2 +-
+ arch/ia64/sn/kernel/sn2/sn2_smp.c  | 28 ++++++++++++++--------------
+ 12 files changed, 38 insertions(+), 38 deletions(-)
 
-Index: linux/arch/s390/include/asm/cputime.h
+Index: linux/arch/ia64/include/asm/hw_irq.h
 ===================================================================
---- linux.orig/arch/s390/include/asm/cputime.h
-+++ linux/arch/s390/include/asm/cputime.h
-@@ -184,7 +184,7 @@ cputime64_t s390_get_idle_time(int cpu);
- 
- static inline int s390_nohz_delay(int cpu)
+--- linux.orig/arch/ia64/include/asm/hw_irq.h
++++ linux/arch/ia64/include/asm/hw_irq.h
+@@ -159,7 +159,7 @@ static inline ia64_vector __ia64_irq_to_
+ static inline unsigned int
+ __ia64_local_vector_to_irq (ia64_vector vec)
  {
--	return __get_cpu_var(s390_idle).nohz_delay != 0;
-+	return __this_cpu_read(s390_idle.nohz_delay) != 0;
+-	return __get_cpu_var(vector_irq)[vec];
++	return __this_cpu_read(vector_irq[vec]);
  }
+ #endif
  
- #define arch_needs_cpu(cpu) s390_nohz_delay(cpu)
-Index: linux/arch/s390/include/asm/irq.h
+Index: linux/arch/ia64/include/asm/sn/arch.h
 ===================================================================
---- linux.orig/arch/s390/include/asm/irq.h
-+++ linux/arch/s390/include/asm/irq.h
-@@ -81,7 +81,7 @@ DECLARE_PER_CPU_SHARED_ALIGNED(struct ir
+--- linux.orig/arch/ia64/include/asm/sn/arch.h
++++ linux/arch/ia64/include/asm/sn/arch.h
+@@ -57,7 +57,7 @@ struct sn_hub_info_s {
+ 	u16 nasid_bitmask;
+ };
+ DECLARE_PER_CPU(struct sn_hub_info_s, __sn_hub_info);
+-#define sn_hub_info 	(&__get_cpu_var(__sn_hub_info))
++#define sn_hub_info 	this_cpu_ptr(&__sn_hub_info)
+ #define is_shub2()	(sn_hub_info->shub2)
+ #define is_shub1()	(sn_hub_info->shub2 == 0)
  
- static __always_inline void inc_irq_stat(enum interruption_class irq)
- {
--	__get_cpu_var(irq_stat).irqs[irq]++;
-+	__this_cpu_inc(irq_stat.irqs[irq]);
- }
- 
- struct ext_code {
-Index: linux/arch/s390/include/asm/percpu.h
-===================================================================
---- linux.orig/arch/s390/include/asm/percpu.h
-+++ linux/arch/s390/include/asm/percpu.h
-@@ -31,7 +31,7 @@
- 	pcp_op_T__ old__, new__, prev__;				\
- 	pcp_op_T__ *ptr__;						\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp));					\
-+	ptr__ = raw_cpu_ptr(&(pcp));					\
- 	prev__ = *ptr__;						\
- 	do {								\
- 		old__ = prev__;						\
-@@ -70,7 +70,7 @@
- 	pcp_op_T__ val__ = (val);					\
- 	pcp_op_T__ old__, *ptr__;					\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp)); 				\
-+	ptr__ = raw_cpu_ptr(&(pcp)); 				\
- 	if (__builtin_constant_p(val__) &&				\
- 	    ((szcast)val__ > -129) && ((szcast)val__ < 128)) {		\
- 		asm volatile(						\
-@@ -97,7 +97,7 @@
- 	pcp_op_T__ val__ = (val);					\
- 	pcp_op_T__ old__, *ptr__;					\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp)); 				\
-+	ptr__ = raw_cpu_ptr(&(pcp));	 				\
- 	asm volatile(							\
- 		op "    %[old__],%[val__],%[ptr__]\n"			\
- 		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)		\
-@@ -116,7 +116,7 @@
- 	pcp_op_T__ val__ = (val);					\
- 	pcp_op_T__ old__, *ptr__;					\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp)); 				\
-+	ptr__ = raw_cpu_ptr(&(pcp));	 				\
- 	asm volatile(							\
- 		op "    %[old__],%[val__],%[ptr__]\n"			\
- 		: [old__] "=d" (old__), [ptr__] "+Q" (*ptr__)		\
-@@ -138,7 +138,7 @@
- 	pcp_op_T__ ret__;						\
- 	pcp_op_T__ *ptr__;						\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp));					\
-+	ptr__ = raw_cpu_ptr(&(pcp));					\
- 	ret__ = cmpxchg(ptr__, oval, nval);				\
- 	preempt_enable();						\
- 	ret__;								\
-@@ -154,7 +154,7 @@
- 	typeof(pcp) *ptr__;						\
- 	typeof(pcp) ret__;						\
- 	preempt_disable();						\
--	ptr__ = __this_cpu_ptr(&(pcp));					\
-+	ptr__ = raw_cpu_ptr(&(pcp));					\
- 	ret__ = xchg(ptr__, nval);					\
- 	preempt_enable();						\
- 	ret__;								\
-@@ -173,8 +173,8 @@
- 	typeof(pcp2) *p2__;						\
- 	int ret__;							\
- 	preempt_disable();						\
--	p1__ = __this_cpu_ptr(&(pcp1));					\
--	p2__ = __this_cpu_ptr(&(pcp2));					\
-+	p1__ = raw_cpu_ptr(&(pcp1));					\
-+	p2__ = raw_cpu_ptr(&(pcp2));					\
- 	ret__ = __cmpxchg_double(p1__, p2__, o1__, o2__, n1__, n2__);	\
- 	preempt_enable();						\
- 	ret__;								\
-Index: linux/arch/s390/kernel/irq.c
-===================================================================
---- linux.orig/arch/s390/kernel/irq.c
-+++ linux/arch/s390/kernel/irq.c
-@@ -258,7 +258,7 @@ static irqreturn_t do_ext_interrupt(int
- 
- 	ext_code = *(struct ext_code *) &regs->int_code;
- 	if (ext_code.code != EXT_IRQ_CLK_COMP)
--		__get_cpu_var(s390_idle).nohz_delay = 1;
-+		__this_cpu_write(s390_idle.nohz_delay, 1);
- 
- 	index = ext_hash(ext_code.code);
- 	rcu_read_lock();
-Index: linux/arch/s390/kernel/kprobes.c
-===================================================================
---- linux.orig/arch/s390/kernel/kprobes.c
-+++ linux/arch/s390/kernel/kprobes.c
-@@ -366,9 +366,9 @@ static void __kprobes disable_singlestep
+@@ -72,7 +72,7 @@ DECLARE_PER_CPU(struct sn_hub_info_s, __
+  * cpu.
   */
- static void __kprobes push_kprobe(struct kprobe_ctlblk *kcb, struct kprobe *p)
+ DECLARE_PER_CPU(short, __sn_cnodeid_to_nasid[MAX_COMPACT_NODES]);
+-#define sn_cnodeid_to_nasid	(&__get_cpu_var(__sn_cnodeid_to_nasid[0]))
++#define sn_cnodeid_to_nasid	this_cpu_ptr(&__sn_cnodeid_to_nasid[0])
+ 
+ 
+ extern u8 sn_partition_id;
+Index: linux/arch/ia64/include/asm/sn/nodepda.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/sn/nodepda.h
++++ linux/arch/ia64/include/asm/sn/nodepda.h
+@@ -70,7 +70,7 @@ typedef struct nodepda_s nodepda_t;
+  */
+ 
+ DECLARE_PER_CPU(struct nodepda_s *, __sn_nodepda);
+-#define sn_nodepda		(__get_cpu_var(__sn_nodepda))
++#define sn_nodepda		__this_cpu_read(__sn_nodepda)
+ #define	NODEPDA(cnodeid)	(sn_nodepda->pernode_pdaindr[cnodeid])
+ 
+ /*
+Index: linux/arch/ia64/include/asm/switch_to.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/switch_to.h
++++ linux/arch/ia64/include/asm/switch_to.h
+@@ -32,7 +32,7 @@ extern void ia64_load_extra (struct task
+ 
+ #ifdef CONFIG_PERFMON
+   DECLARE_PER_CPU(unsigned long, pfm_syst_info);
+-# define PERFMON_IS_SYSWIDE() (__get_cpu_var(pfm_syst_info) & 0x1)
++# define PERFMON_IS_SYSWIDE() (__this_cpu_read(pfm_syst_info) & 0x1)
+ #else
+ # define PERFMON_IS_SYSWIDE() (0)
+ #endif
+Index: linux/arch/ia64/include/asm/uv/uv_hub.h
+===================================================================
+--- linux.orig/arch/ia64/include/asm/uv/uv_hub.h
++++ linux/arch/ia64/include/asm/uv/uv_hub.h
+@@ -108,7 +108,7 @@ struct uv_hub_info_s {
+ 	unsigned char	n_val;
+ };
+ DECLARE_PER_CPU(struct uv_hub_info_s, __uv_hub_info);
+-#define uv_hub_info 		(&__get_cpu_var(__uv_hub_info))
++#define uv_hub_info 		this_cpu_ptr(&__uv_hub_info)
+ #define uv_cpu_hub_info(cpu)	(&per_cpu(__uv_hub_info, cpu))
+ 
+ /*
+Index: linux/arch/ia64/kernel/irq.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/irq.c
++++ linux/arch/ia64/kernel/irq.c
+@@ -42,7 +42,7 @@ ia64_vector __ia64_irq_to_vector(int irq
+ 
+ unsigned int __ia64_local_vector_to_irq (ia64_vector vec)
  {
--	kcb->prev_kprobe.kp = __get_cpu_var(current_kprobe);
-+	kcb->prev_kprobe.kp = __this_cpu_read(current_kprobe);
- 	kcb->prev_kprobe.status = kcb->kprobe_status;
+-	return __get_cpu_var(vector_irq)[vec];
++	return __this_cpu_read(vector_irq[vec]);
+ }
+ #endif
+ 
+Index: linux/arch/ia64/kernel/irq_ia64.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/irq_ia64.c
++++ linux/arch/ia64/kernel/irq_ia64.c
+@@ -330,7 +330,7 @@ static irqreturn_t smp_irq_move_cleanup_
+ 		int irq;
+ 		struct irq_desc *desc;
+ 		struct irq_cfg *cfg;
+-		irq = __get_cpu_var(vector_irq)[vector];
++		irq = __this_cpu_read(vector_irq[vector]);
+ 		if (irq < 0)
+ 			continue;
+ 
+@@ -344,7 +344,7 @@ static irqreturn_t smp_irq_move_cleanup_
+ 			goto unlock;
+ 
+ 		spin_lock_irqsave(&vector_lock, flags);
+-		__get_cpu_var(vector_irq)[vector] = -1;
++		__this_cpu_write(vector_irq[vector], -1);
+ 		cpu_clear(me, vector_table[vector]);
+ 		spin_unlock_irqrestore(&vector_lock, flags);
+ 		cfg->move_cleanup_count--;
+Index: linux/arch/ia64/kernel/kprobes.c
+===================================================================
+--- linux.orig/arch/ia64/kernel/kprobes.c
++++ linux/arch/ia64/kernel/kprobes.c
+@@ -396,7 +396,7 @@ static void __kprobes restore_previous_k
+ {
+ 	unsigned int i;
+ 	i = atomic_read(&kcb->prev_kprobe_index);
+-	__get_cpu_var(current_kprobe) = kcb->prev_kprobe[i-1].kp;
++	__this_cpu_write(current_kprobe, kcb->prev_kprobe[i-1].kp);
+ 	kcb->kprobe_status = kcb->prev_kprobe[i-1].status;
+ 	atomic_sub(1, &kcb->prev_kprobe_index);
+ }
+@@ -404,7 +404,7 @@ static void __kprobes restore_previous_k
+ static void __kprobes set_current_kprobe(struct kprobe *p,
+ 			struct kprobe_ctlblk *kcb)
+ {
 -	__get_cpu_var(current_kprobe) = p;
 +	__this_cpu_write(current_kprobe, p);
  }
  
- /*
-@@ -378,7 +378,7 @@ static void __kprobes push_kprobe(struct
-  */
- static void __kprobes pop_kprobe(struct kprobe_ctlblk *kcb)
- {
--	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
-+	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
- 	kcb->kprobe_status = kcb->prev_kprobe.status;
- }
- 
-@@ -459,7 +459,7 @@ static int __kprobes kprobe_handler(stru
- 		enable_singlestep(kcb, regs, (unsigned long) p->ainsn.insn);
- 		return 1;
- 	} else if (kprobe_running()) {
--		p = __get_cpu_var(current_kprobe);
-+		p = __this_cpu_read(current_kprobe);
- 		if (p->break_handler && p->break_handler(p, regs)) {
+ static void kretprobe_trampoline(void)
+@@ -823,7 +823,7 @@ static int __kprobes pre_kprobes_handler
  			/*
- 			 * Continuation after the jprobe completed and
-Index: linux/arch/s390/kernel/nmi.c
+ 			 * jprobe instrumented function just completed
+ 			 */
+-			p = __get_cpu_var(current_kprobe);
++			p = __this_cpu_read(current_kprobe);
+ 			if (p->break_handler && p->break_handler(p, regs)) {
+ 				goto ss_probe;
+ 			}
+Index: linux/arch/ia64/kernel/mca.c
 ===================================================================
---- linux.orig/arch/s390/kernel/nmi.c
-+++ linux/arch/s390/kernel/nmi.c
-@@ -53,8 +53,12 @@ void s390_handle_mcck(void)
- 	 */
- 	local_irq_save(flags);
- 	local_mcck_disable();
--	mcck = __get_cpu_var(cpu_mcck);
--	memset(&__get_cpu_var(cpu_mcck), 0, sizeof(struct mcck_struct));
-+	/*
-+	 * Ummm... Does this make sense at all? Copying the percpu struct
-+	 * and then zapping it one statement later?
-+	 */
-+	memcpy(&mcck, this_cpu_ptr(&cpu_mcck), sizeof(mcck));
-+	memset(&mcck, 0, sizeof(struct mcck_struct));
- 	clear_cpu_flag(CIF_MCCK_PENDING);
- 	local_mcck_enable();
- 	local_irq_restore(flags);
-@@ -253,7 +257,7 @@ void notrace s390_do_machine_check(struc
- 	nmi_enter();
- 	inc_irq_stat(NMI_NMI);
- 	mci = (struct mci *) &S390_lowcore.mcck_interruption_code;
--	mcck = &__get_cpu_var(cpu_mcck);
-+	mcck = this_cpu_ptr(&cpu_mcck);
- 	umode = user_mode(regs);
+--- linux.orig/arch/ia64/kernel/mca.c
++++ linux/arch/ia64/kernel/mca.c
+@@ -1341,7 +1341,7 @@ ia64_mca_handler(struct pt_regs *regs, s
+ 		ia64_mlogbuf_finish(1);
+ 	}
  
- 	if (mci->sd) {
-Index: linux/arch/s390/kernel/perf_cpum_cf.c
-===================================================================
---- linux.orig/arch/s390/kernel/perf_cpum_cf.c
-+++ linux/arch/s390/kernel/perf_cpum_cf.c
-@@ -173,7 +173,7 @@ static int validate_ctr_auth(const struc
-  */
- static void cpumf_pmu_enable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	int err;
+-	if (__get_cpu_var(ia64_mca_tr_reload)) {
++	if (__this_cpu_read(ia64_mca_tr_reload)) {
+ 		mca_insert_tr(0x1); /*Reload dynamic itrs*/
+ 		mca_insert_tr(0x2); /*Reload dynamic itrs*/
+ 	}
+@@ -1868,14 +1868,14 @@ ia64_mca_cpu_init(void *cpu_data)
+ 		"MCA", cpu);
+ 	format_mca_init_stack(data, offsetof(struct ia64_mca_cpu, init_stack),
+ 		"INIT", cpu);
+-	__get_cpu_var(ia64_mca_data) = __per_cpu_mca[cpu] = __pa(data);
++	__this_cpu_write(ia64_mca_data, (__per_cpu_mca[cpu] = __pa(data)));
  
- 	if (cpuhw->flags & PMU_F_ENABLED)
-@@ -196,7 +196,7 @@ static void cpumf_pmu_enable(struct pmu
-  */
- static void cpumf_pmu_disable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	int err;
- 	u64 inactive;
- 
-@@ -230,7 +230,7 @@ static void cpumf_measurement_alert(stru
- 		return;
- 
- 	inc_irq_stat(IRQEXT_CMC);
--	cpuhw = &__get_cpu_var(cpu_hw_events);
-+	cpuhw = this_cpu_ptr(&cpu_hw_events);
- 
- 	/* Measurement alerts are shared and might happen when the PMU
- 	 * is not reserved.  Ignore these alerts in this case. */
-@@ -250,7 +250,7 @@ static void cpumf_measurement_alert(stru
- #define PMC_RELEASE   1
- static void setup_pmc_cpu(void *flags)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 
- 	switch (*((int *) flags)) {
- 	case PMC_INIT:
-@@ -475,7 +475,7 @@ static void cpumf_pmu_read(struct perf_e
- 
- static void cpumf_pmu_start(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 
- 	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
-@@ -506,7 +506,7 @@ static void cpumf_pmu_start(struct perf_
- 
- static void cpumf_pmu_stop(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
-@@ -527,7 +527,7 @@ static void cpumf_pmu_stop(struct perf_e
- 
- static int cpumf_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 
- 	/* Check authorization for the counter set to which this
- 	 * counter belongs.
-@@ -551,7 +551,7 @@ static int cpumf_pmu_add(struct perf_eve
- 
- static void cpumf_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 
- 	cpumf_pmu_stop(event, PERF_EF_UPDATE);
- 
-@@ -575,7 +575,7 @@ static void cpumf_pmu_del(struct perf_ev
-  */
- static void cpumf_pmu_start_txn(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 
- 	perf_pmu_disable(pmu);
- 	cpuhw->flags |= PERF_EVENT_TXN;
-@@ -589,7 +589,7 @@ static void cpumf_pmu_start_txn(struct p
-  */
- static void cpumf_pmu_cancel_txn(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 
- 	WARN_ON(cpuhw->tx_state != cpuhw->state);
- 
-@@ -604,7 +604,7 @@ static void cpumf_pmu_cancel_txn(struct
-  */
- static int cpumf_pmu_commit_txn(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuhw = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuhw = this_cpu_ptr(&cpu_hw_events);
- 	u64 state;
- 
- 	/* check if the updated state can be scheduled */
-Index: linux/arch/s390/kernel/perf_cpum_sf.c
-===================================================================
---- linux.orig/arch/s390/kernel/perf_cpum_sf.c
-+++ linux/arch/s390/kernel/perf_cpum_sf.c
-@@ -562,7 +562,7 @@ static DEFINE_MUTEX(pmc_reserve_mutex);
- static void setup_pmc_cpu(void *flags)
- {
- 	int err;
--	struct cpu_hw_sf *cpusf = &__get_cpu_var(cpu_hw_sf);
-+	struct cpu_hw_sf *cpusf = this_cpu_ptr(&cpu_hw_sf);
- 
- 	err = 0;
- 	switch (*((int *) flags)) {
-@@ -849,7 +849,7 @@ static int cpumsf_pmu_event_init(struct
- 
- static void cpumsf_pmu_enable(struct pmu *pmu)
- {
--	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
-+	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
- 	struct hw_perf_event *hwc;
- 	int err;
- 
-@@ -898,7 +898,7 @@ static void cpumsf_pmu_enable(struct pmu
- 
- static void cpumsf_pmu_disable(struct pmu *pmu)
- {
--	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
-+	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
- 	struct hws_lsctl_request_block inactive;
- 	struct hws_qsi_info_block si;
- 	int err;
-@@ -1306,7 +1306,7 @@ static void cpumsf_pmu_read(struct perf_
-  */
- static void cpumsf_pmu_start(struct perf_event *event, int flags)
- {
--	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
-+	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
- 
- 	if (WARN_ON_ONCE(!(event->hw.state & PERF_HES_STOPPED)))
- 		return;
-@@ -1327,7 +1327,7 @@ static void cpumsf_pmu_start(struct perf
-  */
- static void cpumsf_pmu_stop(struct perf_event *event, int flags)
- {
--	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
-+	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
- 
- 	if (event->hw.state & PERF_HES_STOPPED)
- 		return;
-@@ -1346,7 +1346,7 @@ static void cpumsf_pmu_stop(struct perf_
- 
- static int cpumsf_pmu_add(struct perf_event *event, int flags)
- {
--	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
-+	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
- 	int err;
- 
- 	if (cpuhw->flags & PMU_F_IN_USE)
-@@ -1397,7 +1397,7 @@ out:
- 
- static void cpumsf_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_sf *cpuhw = &__get_cpu_var(cpu_hw_sf);
-+	struct cpu_hw_sf *cpuhw = this_cpu_ptr(&cpu_hw_sf);
- 
- 	perf_pmu_disable(event->pmu);
- 	cpumsf_pmu_stop(event, PERF_EF_UPDATE);
-@@ -1470,7 +1470,7 @@ static void cpumf_measurement_alert(stru
- 	if (!(alert & CPU_MF_INT_SF_MASK))
- 		return;
- 	inc_irq_stat(IRQEXT_CMS);
--	cpuhw = &__get_cpu_var(cpu_hw_sf);
-+	cpuhw = this_cpu_ptr(&cpu_hw_sf);
- 
- 	/* Measurement alerts are shared and might happen when the PMU
- 	 * is not reserved.  Ignore these alerts in this case. */
-Index: linux/arch/s390/kernel/processor.c
-===================================================================
---- linux.orig/arch/s390/kernel/processor.c
-+++ linux/arch/s390/kernel/processor.c
-@@ -23,8 +23,8 @@ static DEFINE_PER_CPU(struct cpuid, cpu_
-  */
- void cpu_init(void)
- {
--	struct s390_idle_data *idle = &__get_cpu_var(s390_idle);
--	struct cpuid *id = &__get_cpu_var(cpu_id);
-+	struct s390_idle_data *idle = this_cpu_ptr(&s390_idle);
-+	struct cpuid *id = this_cpu_ptr(&cpu_id);
- 
- 	get_cpu_id(id);
- 	atomic_inc(&init_mm.mm_count);
-Index: linux/arch/s390/kernel/time.c
-===================================================================
---- linux.orig/arch/s390/kernel/time.c
-+++ linux/arch/s390/kernel/time.c
-@@ -92,7 +92,7 @@ void clock_comparator_work(void)
- 	struct clock_event_device *cd;
- 
- 	S390_lowcore.clock_comparator = -1ULL;
--	cd = &__get_cpu_var(comparators);
-+	cd = this_cpu_ptr(&comparators);
- 	cd->event_handler(cd);
- }
- 
-@@ -360,7 +360,7 @@ EXPORT_SYMBOL(get_sync_clock);
-  */
- static void disable_sync_clock(void *dummy)
- {
--	atomic_t *sw_ptr = &__get_cpu_var(clock_sync_word);
-+	atomic_t *sw_ptr = this_cpu_ptr(&clock_sync_word);
  	/*
- 	 * Clear the in-sync bit 2^31. All get_sync_clock calls will
- 	 * fail until the sync bit is turned back on. In addition
-@@ -377,7 +377,7 @@ static void disable_sync_clock(void *dum
-  */
- static void enable_sync_clock(void)
- {
--	atomic_t *sw_ptr = &__get_cpu_var(clock_sync_word);
-+	atomic_t *sw_ptr = this_cpu_ptr(&clock_sync_word);
- 	atomic_set_mask(0x80000000, sw_ptr);
+ 	 * Stash away a copy of the PTE needed to map the per-CPU page.
+ 	 * We may need it during MCA recovery.
+ 	 */
+-	__get_cpu_var(ia64_mca_per_cpu_pte) =
+-		pte_val(mk_pte_phys(__pa(cpu_data), PAGE_KERNEL));
++	__this_cpu_write(ia64_mca_per_cpu_pte,
++		pte_val(mk_pte_phys(__pa(cpu_data), PAGE_KERNEL)));
+ 
+ 	/*
+ 	 * Also, stash away a copy of the PAL address and the PTE
+@@ -1884,10 +1884,10 @@ ia64_mca_cpu_init(void *cpu_data)
+ 	pal_vaddr = efi_get_pal_addr();
+ 	if (!pal_vaddr)
+ 		return;
+-	__get_cpu_var(ia64_mca_pal_base) =
+-		GRANULEROUNDDOWN((unsigned long) pal_vaddr);
+-	__get_cpu_var(ia64_mca_pal_pte) = pte_val(mk_pte_phys(__pa(pal_vaddr),
+-							      PAGE_KERNEL));
++	__this_cpu_write(ia64_mca_pal_base,
++		GRANULEROUNDDOWN((unsigned long) pal_vaddr));
++	__this_cpu_write(ia64_mca_pal_pte, pte_val(mk_pte_phys(__pa(pal_vaddr),
++							      PAGE_KERNEL)));
  }
  
-Index: linux/arch/s390/kernel/vtime.c
+ static void ia64_mca_cmc_vector_adjust(void *dummy)
+Index: linux/arch/ia64/kernel/process.c
 ===================================================================
---- linux.orig/arch/s390/kernel/vtime.c
-+++ linux/arch/s390/kernel/vtime.c
-@@ -154,7 +154,7 @@ EXPORT_SYMBOL_GPL(vtime_account_system);
+--- linux.orig/arch/ia64/kernel/process.c
++++ linux/arch/ia64/kernel/process.c
+@@ -215,7 +215,7 @@ static inline void play_dead(void)
+ 	unsigned int this_cpu = smp_processor_id();
  
- void __kprobes vtime_stop_cpu(void)
- {
--	struct s390_idle_data *idle = &__get_cpu_var(s390_idle);
-+	struct s390_idle_data *idle = this_cpu_ptr(&s390_idle);
- 	unsigned long long idle_time;
- 	unsigned long psw_mask;
+ 	/* Ack it */
+-	__get_cpu_var(cpu_state) = CPU_DEAD;
++	__this_cpu_write(cpu_state, CPU_DEAD);
  
-Index: linux/arch/s390/oprofile/hwsampler.c
+ 	max_xtp();
+ 	local_irq_disable();
+@@ -273,7 +273,7 @@ ia64_save_extra (struct task_struct *tas
+ 	if ((task->thread.flags & IA64_THREAD_PM_VALID) != 0)
+ 		pfm_save_regs(task);
+ 
+-	info = __get_cpu_var(pfm_syst_info);
++	info = __this_cpu_read(pfm_syst_info);
+ 	if (info & PFM_CPUINFO_SYST_WIDE)
+ 		pfm_syst_wide_update_task(task, info, 0);
+ #endif
+@@ -293,7 +293,7 @@ ia64_load_extra (struct task_struct *tas
+ 	if ((task->thread.flags & IA64_THREAD_PM_VALID) != 0)
+ 		pfm_load_regs(task);
+ 
+-	info = __get_cpu_var(pfm_syst_info);
++	info = __this_cpu_read(pfm_syst_info);
+ 	if (info & PFM_CPUINFO_SYST_WIDE) 
+ 		pfm_syst_wide_update_task(task, info, 1);
+ #endif
+Index: linux/arch/ia64/kernel/traps.c
 ===================================================================
---- linux.orig/arch/s390/oprofile/hwsampler.c
-+++ linux/arch/s390/oprofile/hwsampler.c
-@@ -178,7 +178,7 @@ static int smp_ctl_qsi(int cpu)
- static void hws_ext_handler(struct ext_code ext_code,
- 			    unsigned int param32, unsigned long param64)
- {
--	struct hws_cpu_buffer *cb = &__get_cpu_var(sampler_cpu_buffer);
-+	struct hws_cpu_buffer *cb = this_cpu_ptr(&sampler_cpu_buffer);
+--- linux.orig/arch/ia64/kernel/traps.c
++++ linux/arch/ia64/kernel/traps.c
+@@ -299,7 +299,7 @@ handle_fpu_swa (int fp_fault, struct pt_
  
- 	if (!(param32 & CPU_MF_INT_SF_MASK))
+ 	if (!(current->thread.flags & IA64_THREAD_FPEMU_NOPRINT))  {
+ 		unsigned long count, current_jiffies = jiffies;
+-		struct fpu_swa_msg *cp = &__get_cpu_var(cpulast);
++		struct fpu_swa_msg *cp = this_cpu_ptr(&cpulast);
+ 
+ 		if (unlikely(current_jiffies > cp->time))
+ 			cp->count = 0;
+Index: linux/arch/ia64/sn/kernel/sn2/sn2_smp.c
+===================================================================
+--- linux.orig/arch/ia64/sn/kernel/sn2/sn2_smp.c
++++ linux/arch/ia64/sn/kernel/sn2/sn2_smp.c
+@@ -134,8 +134,8 @@ sn2_ipi_flush_all_tlb(struct mm_struct *
+ 	itc = ia64_get_itc();
+ 	smp_flush_tlb_cpumask(*mm_cpumask(mm));
+ 	itc = ia64_get_itc() - itc;
+-	__get_cpu_var(ptcstats).shub_ipi_flushes_itc_clocks += itc;
+-	__get_cpu_var(ptcstats).shub_ipi_flushes++;
++	__this_cpu_add(ptcstats.shub_ipi_flushes_itc_clocks, itc);
++	__this_cpu_inc(ptcstats.shub_ipi_flushes);
+ }
+ 
+ /**
+@@ -199,14 +199,14 @@ sn2_global_tlb_purge(struct mm_struct *m
+ 			start += (1UL << nbits);
+ 		} while (start < end);
+ 		ia64_srlz_i();
+-		__get_cpu_var(ptcstats).ptc_l++;
++		__this_cpu_inc(ptcstats.ptc_l);
+ 		preempt_enable();
  		return;
+ 	}
+ 
+ 	if (atomic_read(&mm->mm_users) == 1 && mymm) {
+ 		flush_tlb_mm(mm);
+-		__get_cpu_var(ptcstats).change_rid++;
++		__this_cpu_inc(ptcstats.change_rid);
+ 		preempt_enable();
+ 		return;
+ 	}
+@@ -250,11 +250,11 @@ sn2_global_tlb_purge(struct mm_struct *m
+ 	spin_lock_irqsave(PTC_LOCK(shub1), flags);
+ 	itc2 = ia64_get_itc();
+ 
+-	__get_cpu_var(ptcstats).lock_itc_clocks += itc2 - itc;
+-	__get_cpu_var(ptcstats).shub_ptc_flushes++;
+-	__get_cpu_var(ptcstats).nodes_flushed += nix;
++	__this_cpu_add(ptcstats.lock_itc_clocks, itc2 - itc);
++	__this_cpu_inc(ptcstats.shub_ptc_flushes);
++	__this_cpu_add(ptcstats.nodes_flushed, nix);
+ 	if (!mymm)
+-		 __get_cpu_var(ptcstats).shub_ptc_flushes_not_my_mm++;
++		 __this_cpu_inc(ptcstats.shub_ptc_flushes_not_my_mm);
+ 
+ 	if (use_cpu_ptcga && !mymm) {
+ 		old_rr = ia64_get_rr(start);
+@@ -299,9 +299,9 @@ sn2_global_tlb_purge(struct mm_struct *m
+ 
+ done:
+ 	itc2 = ia64_get_itc() - itc2;
+-	__get_cpu_var(ptcstats).shub_itc_clocks += itc2;
+-	if (itc2 > __get_cpu_var(ptcstats).shub_itc_clocks_max)
+-		__get_cpu_var(ptcstats).shub_itc_clocks_max = itc2;
++	__this_cpu_add(ptcstats.shub_itc_clocks, itc2);
++	if (itc2 > __this_cpu_read(ptcstats.shub_itc_clocks_max))
++		__this_cpu_write(ptcstats.shub_itc_clocks_max, itc2);
+ 
+ 	if (old_rr) {
+ 		ia64_set_rr(start, old_rr);
+@@ -311,7 +311,7 @@ done:
+ 	spin_unlock_irqrestore(PTC_LOCK(shub1), flags);
+ 
+ 	if (flush_opt == 1 && deadlock) {
+-		__get_cpu_var(ptcstats).deadlocks++;
++		__this_cpu_inc(ptcstats.deadlocks);
+ 		sn2_ipi_flush_all_tlb(mm);
+ 	}
+ 
+@@ -334,7 +334,7 @@ sn2_ptc_deadlock_recovery(short *nasids,
+ 	short nasid, i;
+ 	unsigned long *piows, zeroval, n;
+ 
+-	__get_cpu_var(ptcstats).deadlocks++;
++	__this_cpu_inc(ptcstats.deadlocks);
+ 
+ 	piows = (unsigned long *) pda->pio_write_status_addr;
+ 	zeroval = pda->pio_write_status_val;
+@@ -349,7 +349,7 @@ sn2_ptc_deadlock_recovery(short *nasids,
+ 			ptc1 = CHANGE_NASID(nasid, ptc1);
+ 
+ 		n = sn2_ptc_deadlock_recovery_core(ptc0, data0, ptc1, data1, piows, zeroval);
+-		__get_cpu_var(ptcstats).deadlocks2 += n;
++		__this_cpu_add(ptcstats.deadlocks2, n);
+ 	}
+ 
+ }
 
