@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaHQWix (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 18:38:53 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:61812 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaHQWiw (ORCPT
+	id S1751579AbaHQWp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 18:45:26 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:50210 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464AbaHQWpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 18:38:52 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] infiniband: hw: cxgb3: cxio_hal.c:  Cleaning up missing null-terminate after strncpy call
-Date: Mon, 18 Aug 2014 00:40:24 +0200
-Message-Id: <1408315225-16807-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 17 Aug 2014 18:45:24 -0400
+Date: Sun, 17 Aug 2014 15:45:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Alexey Dobriyan <adobriyan@gmail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] headers: remove fs.h from poll.h
+In-Reply-To: <20140817093348.GA25122@p183.telecom.by>
+Message-ID: <alpine.DEB.2.02.1408171544290.9160@chino.kir.corp.google.com>
+References: <20140816233746.GA32332@p183.telecom.by> <CA+55aFw3B=USNMLdehm+hv9fVWE1yaR42a2y8udcE8QvJfbSPA@mail.gmail.com> <20140817093348.GA25122@p183.telecom.by>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a guaranteed null-terminate after call to strncpy.
+On Sun, 17 Aug 2014, Alexey Dobriyan wrote:
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/infiniband/hw/cxgb3/cxio_hal.c |    1 +
- 1 file changed, 1 insertion(+)
+> > Doors this actually help anything? fs.h tends to get included other ways
+> > anyway, and the double inclusion protection means that the compiler doesn't
+> > even spend extra time on it..
+> > 
+> > IOW, I'd like to see "this improves compile times by xyz" or some other
+> > explanation.
+> 
+> This particular patch doesn't change situation because it is so small and
+> removes only one header from one file.
+> 
+> I can send bigger patch removing fs.h from many possible places.
+> 
 
-diff --git a/drivers/infiniband/hw/cxgb3/cxio_hal.c b/drivers/infiniband/hw/cxgb3/cxio_hal.c
-index de1c61b4..5fc04e4 100644
---- a/drivers/infiniband/hw/cxgb3/cxio_hal.c
-+++ b/drivers/infiniband/hw/cxgb3/cxio_hal.c
-@@ -933,6 +933,7 @@ int cxio_rdev_open(struct cxio_rdev *rdev_p)
- 		netdev_p = rdev_p->t3cdev_p->lldev;
- 		strncpy(rdev_p->dev_name, rdev_p->t3cdev_p->name,
- 			T3_MAX_DEV_NAME_LEN);
-+		rdev_p->dev_name[T3_MAX_DEV_NAME_LEN - 1] = '\0';
- 	} else {
- 		PDBG("%s t3cdev_p or dev_name must be set\n", __func__);
- 		return -EINVAL;
--- 
-1.7.10.4
-
+I extensively build tested your series before and reported the single 
+point of failure.  Once that's fixed and the patches have appropriate 
+changelogs and signed-off-by lines then I can build test and push them for 
+either Andrew or Linus.
