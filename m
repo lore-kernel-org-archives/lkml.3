@@ -1,95 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaHQKM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 06:12:27 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:43546 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaHQKMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 06:12:25 -0400
-Date: Sun, 17 Aug 2014 13:12:09 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: davem@davemloft.net, mchan@broadcom.com, eddie.wai@broadcom.com,
-        joe@perches.com, mingo@kernel.org, peterz@infradead.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH v2] cnic: Replace rcu_dereference() with rcu_access_pointer()
-Message-ID: <20140817101149.GA3692@ada>
+	id S1751757AbaHQKNJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 06:13:09 -0400
+Received: from srv2.trombetti.net ([65.254.53.252]:3818 "EHLO server"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751133AbaHQKNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 06:13:07 -0400
+X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Aug 2014 06:13:07 EDT
+Message-ID: <53F07EB8.5060201@shiftmail.org>
+Date: Sun, 17 Aug 2014 12:06:48 +0200
+From: Ethan Wilson <ethan.wilson@shiftmail.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: How to get kernel stack trace if process not blocked?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "rcu_dereference()" calls are used directly in conditions.
-Since their return values are never dereferenced it is recommended to use
-"rcu_access_pointer()" instead of "rcu_dereference()".
-Therefore, this patch makes the replacements.
+Hello list,
+cat /proc/pid/stack shows the kernel call stack of a process, and this 
+is so good, but it will show just 0xffffffffffffffff if the process is 
+running in kernel space and not blocked (sleeping).
+With just an 0xffffffffffffffff  AFAIU it is also impossible to 
+distinguish a process running in kernel space from a process running in 
+user space.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+It would be *very* useful to get the kernel stack trace for a running 
+process, even if imprecise, or at least knowing the name of the kernel 
+function executing now (top of the stack). Why is it not doable?
 
-(
- if(
- (<+...
-- rcu_dereference
-+ rcu_access_pointer
-  (...)
-  ...+>)) {...}
-|
- while(
- (<+...
-- rcu_dereference
-+ rcu_access_pointer
-  (...)
-  ...+>)) {...}
-)
+I tried to disable CONFIG_SCHED_OMIT_FRAME_POINTER but it didn't allow 
+to print the stack from /proc/pid/stack anyway. What is the benefit of 
+disabling such kernel option (i.e. having the frame pointer)?
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
-v2: Modified subject line from
- "rcu: Replace rcu_dereference() with rcu_access_pointer()"
- to
- "cnic: Replace rcu_dereference() with rcu_access_pointer()",
- noted by David Miller <davem@davemloft.net>
+I guessed that maybe with EIP from /proc/pid/stat it is possible to do 
+something like that but I can't find much information on how to do that.
 
- drivers/net/ethernet/broadcom/cnic.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/cnic.c b/drivers/net/ethernet/broadcom/cnic.c
-index 8244e2b..dad9cb7 100644
---- a/drivers/net/ethernet/broadcom/cnic.c
-+++ b/drivers/net/ethernet/broadcom/cnic.c
-@@ -381,7 +381,7 @@ static int cnic_iscsi_nl_msg_recv(struct cnic_dev *dev, u32 msg_type,
- 			break;
- 
- 		rcu_read_lock();
--		if (!rcu_dereference(cp->ulp_ops[CNIC_ULP_L4])) {
-+		if (!rcu_access_pointer(cp->ulp_ops[CNIC_ULP_L4])) {
- 			rc = -ENODEV;
- 			rcu_read_unlock();
- 			break;
-@@ -525,7 +525,7 @@ int cnic_unregister_driver(int ulp_type)
- 	list_for_each_entry(dev, &cnic_dev_list, list) {
- 		struct cnic_local *cp = dev->cnic_priv;
- 
--		if (rcu_dereference(cp->ulp_ops[ulp_type])) {
-+		if (rcu_access_pointer(cp->ulp_ops[ulp_type])) {
- 			pr_err("%s: Type %d still has devices registered\n",
- 			       __func__, ulp_type);
- 			read_unlock(&cnic_dev_lock);
-@@ -573,7 +573,7 @@ static int cnic_register_device(struct cnic_dev *dev, int ulp_type,
- 		mutex_unlock(&cnic_lock);
- 		return -EAGAIN;
- 	}
--	if (rcu_dereference(cp->ulp_ops[ulp_type])) {
-+	if (rcu_access_pointer(cp->ulp_ops[ulp_type])) {
- 		pr_err("%s: Type %d has already been registered to this device\n",
- 		       __func__, ulp_type);
- 		mutex_unlock(&cnic_lock);
--- 
-1.9.1
+Thanks for any information
+EW
 
