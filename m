@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaHQV46 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 17:56:58 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:60540 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaHQV44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 17:56:56 -0400
-Date: Sun, 17 Aug 2014 09:20:22 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ted Mielczarek <ted@mielczarek.org>
-Cc: linux-input@vger.kernel.org, paul.gortmaker@windriver.com, hor27@gmail.com,
-        petr@scssoft.com, magissia@magissia.com, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] Support Xbox One controllers in xpad driver.
-Message-ID: <20140817162022.GA17367@core.coreip.homeip.net>
-References: <1407509169-6849-1-git-send-email-ted@mielczarek.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407509169-6849-1-git-send-email-ted@mielczarek.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751700AbaHQV5j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 17:57:39 -0400
+Received: from s87.loopia.se ([194.9.94.111]:15839 "EHLO s87.loopia.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575AbaHQV5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 17:57:38 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+From: Hans Wennborg <hans@hanshq.net>
+To: kvalo@qca.qualcomm.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ath6kl@lists.infradead.org
+Cc: Hans Wennborg <hans@hanshq.net>
+Subject: [PATCH 1/1] ath6kl: fix %d confusingly prefixed with 0x in format strings
+Date: Sun, 17 Aug 2014 14:57:11 -0700
+Message-Id: <1408312631-5619-1-git-send-email-hans@hanshq.net>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <8738czmejl.fsf@kamboji.qca.qualcomm.com>
+References: <8738czmejl.fsf@kamboji.qca.qualcomm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 08, 2014 at 10:46:09AM -0400, Ted Mielczarek wrote:
-> Xbox One controllers require an initialization message to start sending data,
-> so xpad_init_output becomes a required function. The Xbox One controller does
-> not have LEDs like the Xbox 360 controller, so that functionality is not
-> implemented. The format of messages controlling rumble is currently
-> undocumented, so rumble support is not yet implemented.
-> 
-> The only thing I'm not certain about in this patch is the check against bInterfaceNumber in xpad_probe. The Xbox One controller advertises three interfaces with the same interface class, subclass and protocol, and I couldn't see any way to match just the first one using usb_device_id.
-> 
-> Signed-off-by: Ted Mielczarek <ted@mielczarek.org>
+Signed-off-by: Hans Wennborg <hans@hanshq.net>
+---
+ drivers/net/wireless/ath/ath6kl/init.c | 2 +-
+ drivers/net/wireless/ath/ath6kl/main.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Applied, thank you.
-
+diff --git a/drivers/net/wireless/ath/ath6kl/init.c b/drivers/net/wireless/ath/ath6kl/init.c
+index fffd523..6e473fa 100644
+--- a/drivers/net/wireless/ath/ath6kl/init.c
++++ b/drivers/net/wireless/ath/ath6kl/init.c
+@@ -1049,7 +1049,7 @@ static int ath6kl_fetch_fw_apin(struct ath6kl *ar, const char *name)
+ 			ar->hw.reserved_ram_size = le32_to_cpup(val);
+ 
+ 			ath6kl_dbg(ATH6KL_DBG_BOOT,
+-				   "found reserved ram size ie 0x%d\n",
++				   "found reserved ram size ie %d\n",
+ 				   ar->hw.reserved_ram_size);
+ 			break;
+ 		case ATH6KL_FW_IE_CAPABILITIES:
+diff --git a/drivers/net/wireless/ath/ath6kl/main.c b/drivers/net/wireless/ath/ath6kl/main.c
+index 21516bc..933aef0 100644
+--- a/drivers/net/wireless/ath/ath6kl/main.c
++++ b/drivers/net/wireless/ath/ath6kl/main.c
+@@ -225,7 +225,7 @@ int ath6kl_diag_write32(struct ath6kl *ar, u32 address, __le32 value)
+ 	ret = ath6kl_hif_diag_write32(ar, address, value);
+ 
+ 	if (ret) {
+-		ath6kl_err("failed to write 0x%x during diagnose window to 0x%d\n",
++		ath6kl_err("failed to write 0x%x during diagnose window to 0x%x\n",
+ 			   address, value);
+ 		return ret;
+ 	}
 -- 
-Dmitry
+2.1.0.rc2.206.gedb03e5
+
