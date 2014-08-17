@@ -1,84 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaHQXRt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 19:17:49 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:57525 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490AbaHQXRs (ORCPT
+	id S1751750AbaHQXRz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 19:17:55 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:63355 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaHQXRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 19:17:48 -0400
+	Sun, 17 Aug 2014 19:17:51 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
         namhyung@kernel.org, dsahern@gmail.com
-Subject: [PATCH v3 0/6] perf: add ability to sample interrupted machine state
-Date: Mon, 18 Aug 2014 01:18:14 +0200
-Message-Id: <1408317500-28146-1-git-send-email-eranian@google.com>
+Subject: [PATCH v3 1/6] perf: add ability to sample machine state on interrupt
+Date: Mon, 18 Aug 2014 01:18:15 +0200
+Message-Id: <1408317500-28146-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408317500-28146-1-git-send-email-eranian@google.com>
+References: <1408317500-28146-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This short patch series add the ability to sample the interrupted
-machine state for each hardware sample. This is useful to analyze
-the state after certain events, for instance for function value
-profiling after a call instruction.
+Enable capture of interrupted machine state for each
+sample.
 
-The patch extends the interface with a new PERF_SAMPLE_REGS_INTR 
-smaple_type flag. The register to sample can be named in the
-sample_regs_intr bitmask for each event. The name and bit
-position for each register is architecture dependent and
-provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
+Registers to sample are passed per event in the
+sample_regs_intr bitmask.
 
-The support is similar to PERF_SAMPLE_REGS_USER.
+To sample interrupt machine state, the
+PERF_SAMPLE_INTR_REGS must be passed in
+sample_type.
 
-On Intel x86, the series includes support for capturing the
-PEBS state as well. When precise sampling is used, the interrupted
-state is collect from the PEBS records, at least partially.
-The PEBS machine state is a subset of the machine state.
+The list of available registers is arch
+dependent and provided by asm/perf_regs.h
 
-The series provides access to this new feature in perf record
-with the -I option. It is possible to display the sampled
-register values using perf report -D.
+Registers are laid out as u64 in the order
+of the bit order of sample_intr_regs.
 
-This patch series is the fundation for a future series adding
-function value profiling.
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ include/linux/perf_event.h      |    7 +++++--
+ include/uapi/linux/perf_event.h |   14 ++++++++++++-
+ kernel/events/core.c            |   44 +++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 60 insertions(+), 5 deletions(-)
 
-In V2, we address the issues raised during reviews:
- - add sample parsing test
- - shorten perf record option to --intr-regs
- - added man page for perf record -I/--intr-regs option
- - refactor register printf code between user and intr regs
- - rebase to v3.16-rc3
-
-In V3, we rebase to 3.16.0+ and made the modifications suggested
-by PeterZ. We also integrated his patch to improve the layout
-of perf_sample_data.
-
-
-Peter Zijlstra (1):
-  perf: improve perf_sample_data struct layout
-
-Stephane Eranian (5):
-  perf: add ability to sample machine state on interrupt
-  perf/x86: add support for sampling PEBS machine state registers
-  perf tools: add core support for sampling intr machine state regs
-  perf/tests: add interrupted state sample parsing test
-  perf record: add new -I option to sample interrupted machine state
-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   17 +++++++++
- include/linux/perf_event.h                |   37 ++++++++++---------
- include/uapi/linux/perf_event.h           |   14 +++++++-
- kernel/events/core.c                      |   49 +++++++++++++++++++++++--
- tools/perf/Documentation/perf-record.txt  |    6 ++++
- tools/perf/builtin-record.c               |    2 ++
- tools/perf/perf.h                         |    1 +
- tools/perf/tests/sample-parsing.c         |   55 +++++++++++++++++++++--------
- tools/perf/util/event.h                   |    1 +
- tools/perf/util/evsel.c                   |   46 +++++++++++++++++++++++-
- tools/perf/util/session.c                 |   44 ++++++++++++++++++++---
- 11 files changed, 230 insertions(+), 42 deletions(-)
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index f0a1036..e043465 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -79,7 +79,7 @@ struct perf_branch_stack {
+ 	struct perf_branch_entry	entries[0];
+ };
+ 
+-struct perf_regs_user {
++struct perf_regs {
+ 	__u64		abi;
+ 	struct pt_regs	*regs;
+ };
+@@ -599,7 +599,8 @@ struct perf_sample_data {
+ 	struct perf_callchain_entry	*callchain;
+ 	struct perf_raw_record		*raw;
+ 	struct perf_branch_stack	*br_stack;
+-	struct perf_regs_user		regs_user;
++	struct perf_regs		regs_user;
++	struct perf_regs		regs_intr;
+ 	u64				stack_user_size;
+ 	u64				weight;
+ 	/*
+@@ -629,6 +630,8 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->weight = 0;
+ 	data->data_src.val = PERF_MEM_NA;
+ 	data->txn = 0;
++	data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
++	data->regs_intr.regs = NULL;
+ }
+ 
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 9269de2..8019505 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -137,8 +137,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
+ 	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
+ 	PERF_SAMPLE_TRANSACTION			= 1U << 17,
++	PERF_SAMPLE_REGS_INTR			= 1U << 18,
+ 
+-	PERF_SAMPLE_MAX = 1U << 18,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 19,		/* non-ABI */
+ };
+ 
+ /*
+@@ -334,6 +335,15 @@ struct perf_event_attr {
+ 
+ 	/* Align to u64. */
+ 	__u32	__reserved_2;
++	/*
++	 * Defines set of regs to dump for each sample
++	 * state captured on:
++	 *  - precise = 0: PMU interrupt
++	 *  - precise > 0: sampled instruction
++	 *
++	 * See asm/perf_regs.h for details.
++	 */
++	__u64	sample_regs_intr;
+ };
+ 
+ #define perf_flags(attr)	(*(&(attr)->read_format + 1))
+@@ -686,6 +696,8 @@ enum perf_event_type {
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+ 	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
+ 	 *	{ u64			transaction; } && PERF_SAMPLE_TRANSACTION
++	 * 	{ u64			abi; # enum perf_sample_regs_abi
++	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_INTR
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2d7363a..5fa8b17 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4395,7 +4395,7 @@ perf_output_sample_regs(struct perf_output_handle *handle,
+ 	}
+ }
+ 
+-static void perf_sample_regs_user(struct perf_regs_user *regs_user,
++static void perf_sample_regs_user(struct perf_regs *regs_user,
+ 				  struct pt_regs *regs)
+ {
+ 	if (!user_mode(regs)) {
+@@ -4411,6 +4411,14 @@ static void perf_sample_regs_user(struct perf_regs_user *regs_user,
+ 	}
+ }
+ 
++static void perf_sample_regs_intr(struct perf_regs *regs_intr,
++				  struct pt_regs *regs)
++{
++	regs_intr->regs = regs;
++	regs_intr->abi  = perf_reg_abi(current);
++}
++
++
+ /*
+  * Get remaining task size from user stack pointer.
+  *
+@@ -4792,6 +4800,22 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 	if (sample_type & PERF_SAMPLE_TRANSACTION)
+ 		perf_output_put(handle, data->txn);
+ 
++	if (sample_type & PERF_SAMPLE_REGS_INTR) {
++		u64 abi = data->regs_intr.abi;
++		/*
++		 * If there are no regs to dump, notice it through
++		 * first u64 being zero (PERF_SAMPLE_REGS_ABI_NONE).
++		 */
++		perf_output_put(handle, abi);
++
++		if (abi) {
++			u64 mask = event->attr.sample_regs_intr;
++			perf_output_sample_regs(handle,
++						data->regs_intr.regs,
++						mask);
++		}
++	}
++
+ 	if (!event->attr.watermark) {
+ 		int wakeup_events = event->attr.wakeup_events;
+ 
+@@ -4878,7 +4902,7 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		 * in case new sample type is added, because we could eat
+ 		 * up the rest of the sample size.
+ 		 */
+-		struct perf_regs_user *uregs = &data->regs_user;
++		struct perf_regs *uregs = &data->regs_user;
+ 		u16 stack_size = event->attr.sample_stack_user;
+ 		u16 size = sizeof(u64);
+ 
+@@ -4899,6 +4923,20 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 		data->stack_user_size = stack_size;
+ 		header->size += size;
+ 	}
++
++	if (sample_type & PERF_SAMPLE_REGS_INTR) {
++		/* regs dump ABI info */
++		int size = sizeof(u64);
++
++		perf_sample_regs_intr(&data->regs_intr, regs);
++
++		if (data->regs_intr.regs) {
++			u64 mask = event->attr.sample_regs_intr;
++			size += hweight64(mask) * sizeof(u64);
++		}
++
++		header->size += size;
++	}
+ }
+ 
+ static void perf_event_output(struct perf_event *event,
+@@ -7099,6 +7137,8 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 			ret = -EINVAL;
+ 	}
+ 
++	if (attr->sample_type & PERF_SAMPLE_REGS_INTR)
++		ret = perf_reg_validate(attr->sample_regs_intr);
+ out:
+ 	return ret;
+ 
 -- 
 1.7.9.5
 
