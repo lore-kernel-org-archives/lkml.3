@@ -1,166 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196AbaHQRcC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 13:32:02 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:54808 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752094AbaHQRb6 (ORCPT
+	id S1752265AbaHQRcu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 13:32:50 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:63993 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752243AbaHQRcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 13:31:58 -0400
-Message-Id: <20140817173038.167918091@linux.com>
-Date: Sun, 17 Aug 2014 12:30:57 -0500
-From: Christoph Lameter <cl@linux.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 34/35] [PATCH 01/36] __get_cpu_var/cpumask_var_t: Resolve ambiguities
-References: <20140817173023.439660246@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-__get_cpu_var-cpumask_var_t-Resolve-ambiguities.patch
+	Sun, 17 Aug 2014 13:32:47 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19gMZ6qKKmgxmTqchroMcT8MKV+OU8rnGI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 7BC1C5C7DE3
+Date: Sun, 17 Aug 2014 13:32:36 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
+ into scheduler
+Message-ID: <20140817173236.GG12769@titan.lakedaemon.net>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var can paper over differences in the definitions
-of cpumask_var_t and either use the address of the cpumask
-variable directly or perform a fetch of the address of the
-struct cpumask allocated elsewhere. This is important
-particularly when using per cpu cpumask_var_t declarations
-because in one case we have an offset into a per cpu area
-to handle and in the other case we need to fetch a pointer
-from the offset.
+Stephen,
 
-This patch introduces a new macro
+On Wed, Aug 13, 2014 at 06:57:18AM -0700, Stephen Boyd wrote:
+> Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
+> 2012-04-12) introduced an acquisition of the irq_controller_lock
+> in gic_raise_softirq() which can lead to a spinlock recursion if
+> the gic_arch_extn hooks call into the scheduler (via complete()
+> or wake_up(), etc.). This happens because gic_arch_extn hooks are
+> normally called with the irq_controller_lock held and calling
+> into the scheduler may cause us to call smp_send_reschedule()
+> which will grab the irq_controller_lock again. Here's an example
+> from a vendor kernel (note that the gic_arch_extn hook code here
+> isn't actually in mainline):
+> 
+> BUG: spinlock recursion on CPU#0, swapper/0/1
+>  lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
+> er_cpu: 0
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
+> 
+> Call trace:
+> [<ffffffc000087e1c>] dump_backtrace+0x0/0x140
+> [<ffffffc000087f6c>] show_stack+0x10/0x1c
+> [<ffffffc00064732c>] dump_stack+0x74/0xc4
+> [<ffffffc0006446c0>] spin_dump+0x78/0x88
+> [<ffffffc0006446f4>] spin_bug+0x24/0x34
+> [<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
+> [<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
+> [<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
+> [<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
+> [<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
+> [<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
+> [<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
+> [<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
+> [<ffffffc0000cf734>] complete+0x3c/0x5c
+> [<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
+> [<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
+> [<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
+> [<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
+> [<ffffffc0000de5f4>] irq_enable+0x2c/0x48
+> [<ffffffc0000de65c>] irq_startup+0x4c/0x74
+> [<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
+> [<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
+> [<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
+> [<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
+> [<ffffffc000337374>] platform_drv_probe+0x20/0x54
+> [<ffffffc00033598c>] driver_probe_device+0x158/0x340
+> [<ffffffc000335c20>] __driver_attach+0x60/0x90
+> [<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
+> [<ffffffc000335304>] driver_attach+0x1c/0x28
+> [<ffffffc000334f14>] bus_add_driver+0x120/0x204
+> [<ffffffc0003362e4>] driver_register+0xbc/0x10c
+> [<ffffffc000337348>] __platform_driver_register+0x5c/0x68
+> [<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
+> [<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
+> [<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
+> [<ffffffc000642578>] kernel_init+0xc/0xd4
+> 
+> We really just want to synchronize the sending of an SGI with the
+> update of the gic_cpu_map[], so introduce a new SGI lock that we
+> can use to synchronize the two code paths. Three main events are
+> happening that we have to consider:
+> 
+> 	1. We're updating the gic_cpu_mask to point to an
+> 	incoming CPU
+> 
+> 	2. We're (potentially) sending an SGI to the outgoing CPU
+> 
+> 	3. We're redirecting any pending SGIs for the outgoing
+> 	CPU to the incoming CPU.
+> 
+> Events 1 and 3 are already ordered within the same CPU by means
+> of program order and use of I/O accessors. Events 1 and 2 don't
+> need to be ordered, but events 2 and 3 do because any SGIs for
+> the outgoing CPU need to be pending before we can redirect them.
+> Synchronize by acquiring a new lock around event 2 and before
+> event 3. Use smp_mb__after_unlock_lock() before event 3 to ensure
+> that event 1 is seen before event 3 on other CPUs that may be
+> executing event 2. We put this all behind the b.L switcher config
+> option so that if we're not using this feature we don't have to
+> acquire any locks at all in the IPI path.
+> 
+> Cc: Nicolas Pitre <nico@linaro.org>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/irqchip/irq-gic.c | 23 +++++++++++++++++++++--
+>  1 file changed, 21 insertions(+), 2 deletions(-)
 
-this_cpu_cpumask_var_t_ptr()
+Applied to irqchip/urgent with Nico's Ack.
 
-that is defined where cpumask_var_t is defined and performs
-the proper actions. All use cases where __get_cpu_var
-is used with cpumask_var_t are converted to the use
-of this_cpu_cpumask_var_t_ptr().
+thx,
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
----
- arch/x86/include/asm/perf_event_p4.h |  2 +-
- arch/x86/oprofile/op_model_p4.c      |  2 +-
- include/linux/cpumask.h              | 11 +++++++++++
- kernel/sched/deadline.c              |  2 +-
- kernel/sched/fair.c                  |  2 +-
- kernel/sched/rt.c                    |  2 +-
- 6 files changed, 16 insertions(+), 5 deletions(-)
-
-Index: linux/arch/x86/include/asm/perf_event_p4.h
-===================================================================
---- linux.orig/arch/x86/include/asm/perf_event_p4.h
-+++ linux/arch/x86/include/asm/perf_event_p4.h
-@@ -189,7 +189,7 @@ static inline int p4_ht_thread(int cpu)
- {
- #ifdef CONFIG_SMP
- 	if (smp_num_siblings == 2)
--		return cpu != cpumask_first(__get_cpu_var(cpu_sibling_map));
-+		return cpu != cpumask_first(this_cpu_cpumask_var_t_ptr(cpu_sibling_map));
- #endif
- 	return 0;
- }
-Index: linux/arch/x86/oprofile/op_model_p4.c
-===================================================================
---- linux.orig/arch/x86/oprofile/op_model_p4.c
-+++ linux/arch/x86/oprofile/op_model_p4.c
-@@ -372,7 +372,7 @@ static unsigned int get_stagger(void)
- {
- #ifdef CONFIG_SMP
- 	int cpu = smp_processor_id();
--	return cpu != cpumask_first(__get_cpu_var(cpu_sibling_map));
-+	return cpu != cpumask_first(this_cpu_cpumask_var_t_ptr(cpu_sibling_map));
- #endif
- 	return 0;
- }
-Index: linux/include/linux/cpumask.h
-===================================================================
---- linux.orig/include/linux/cpumask.h
-+++ linux/include/linux/cpumask.h
-@@ -666,10 +666,19 @@ static inline size_t cpumask_size(void)
-  *
-  * This code makes NR_CPUS length memcopy and brings to a memory corruption.
-  * cpumask_copy() provide safe copy functionality.
-+ *
-+ * Note that there is another evil here: If you define a cpumask_var_t
-+ * as a percpu variable then the way to obtain the address of the cpumask
-+ * structure differently influences what this_cpu_* operation needs to be
-+ * used. Please use this_cpu_cpumask_var_t in those cases. The direct use
-+ * of this_cpu_ptr() or this_cpu_read() will lead to failures when the
-+ * other type of cpumask_var_t implementation is configured.
-  */
- #ifdef CONFIG_CPUMASK_OFFSTACK
- typedef struct cpumask *cpumask_var_t;
- 
-+#define this_cpu_cpumask_var_t_ptr(x) this_cpu_read(x)
-+
- bool alloc_cpumask_var_node(cpumask_var_t *mask, gfp_t flags, int node);
- bool alloc_cpumask_var(cpumask_var_t *mask, gfp_t flags);
- bool zalloc_cpumask_var_node(cpumask_var_t *mask, gfp_t flags, int node);
-@@ -681,6 +690,8 @@ void free_bootmem_cpumask_var(cpumask_va
- #else
- typedef struct cpumask cpumask_var_t[1];
- 
-+#define this_cpu_cpumask_var_t_ptr(x) this_cpu_ptr(x)
-+
- static inline bool alloc_cpumask_var(cpumask_var_t *mask, gfp_t flags)
- {
- 	return true;
-Index: linux/kernel/sched/deadline.c
-===================================================================
---- linux.orig/kernel/sched/deadline.c
-+++ linux/kernel/sched/deadline.c
-@@ -1158,7 +1158,7 @@ static DEFINE_PER_CPU(cpumask_var_t, loc
- static int find_later_rq(struct task_struct *task)
- {
- 	struct sched_domain *sd;
--	struct cpumask *later_mask = __get_cpu_var(local_cpu_mask_dl);
-+	struct cpumask *later_mask = this_cpu_cpumask_var_t_ptr(local_cpu_mask_dl);
- 	int this_cpu = smp_processor_id();
- 	int best_cpu, cpu = task_cpu(task);
- 
-Index: linux/kernel/sched/fair.c
-===================================================================
---- linux.orig/kernel/sched/fair.c
-+++ linux/kernel/sched/fair.c
-@@ -6539,7 +6539,7 @@ static int load_balance(int this_cpu, st
- 	struct sched_group *group;
- 	struct rq *busiest;
- 	unsigned long flags;
--	struct cpumask *cpus = __get_cpu_var(load_balance_mask);
-+	struct cpumask *cpus = this_cpu_cpumask_var_t_ptr(load_balance_mask);
- 
- 	struct lb_env env = {
- 		.sd		= sd,
-Index: linux/kernel/sched/rt.c
-===================================================================
---- linux.orig/kernel/sched/rt.c
-+++ linux/kernel/sched/rt.c
-@@ -1526,7 +1526,7 @@ static DEFINE_PER_CPU(cpumask_var_t, loc
- static int find_lowest_rq(struct task_struct *task)
- {
- 	struct sched_domain *sd;
--	struct cpumask *lowest_mask = __get_cpu_var(local_cpu_mask);
-+	struct cpumask *lowest_mask = this_cpu_cpumask_var_t_ptr(local_cpu_mask);
- 	int this_cpu = smp_processor_id();
- 	int cpu      = task_cpu(task);
- 
-Index: linux/arch/x86/kernel/apic/x2apic_cluster.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/x2apic_cluster.c
-+++ linux/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -42,8 +42,7 @@ __x2apic_send_IPI_mask(const struct cpum
- 	 * We are to modify mask, so we need an own copy
- 	 * and be sure it's manipulated with irq off.
- 	 */
--	ipi_mask_ptr = __raw_get_cpu_var(ipi_mask);
--	cpumask_copy(ipi_mask_ptr, mask);
-+	ipi_mask_ptr = this_cpu_cpumask_var_t_ptr(ipi_mask);
- 
- 	/*
- 	 * The idea is to send one IPI per cluster.
-
+Jason.
