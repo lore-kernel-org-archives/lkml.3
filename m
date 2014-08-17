@@ -1,219 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaHQXSA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 19:18:00 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53309 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaHQXR5 (ORCPT
+	id S1751684AbaHQXVy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 19:21:54 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:34637 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478AbaHQXVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 19:17:57 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
-        namhyung@kernel.org, dsahern@gmail.com
-Subject: [PATCH v3 3/6] perf tools: add core support for sampling intr machine state regs
-Date: Mon, 18 Aug 2014 01:18:17 +0200
-Message-Id: <1408317500-28146-4-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408317500-28146-1-git-send-email-eranian@google.com>
-References: <1408317500-28146-1-git-send-email-eranian@google.com>
+	Sun, 17 Aug 2014 19:21:52 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 18 Aug 2014 08:22:15 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ds2horner@gmail.com
+Subject: Re: [PATCH 2/2] zram: limit memory size for zram
+Message-ID: <20140817232215.GA11367@bbox>
+References: <1407977877-18185-1-git-send-email-minchan@kernel.org>
+ <1407977877-18185-2-git-send-email-minchan@kernel.org>
+ <CALZtONB=t5nivxYTTjqjYO0EQDYvLofKO6kM_xRUn3FT1Dut6A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALZtONB=t5nivxYTTjqjYO0EQDYvLofKO6kM_xRUn3FT1Dut6A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the infrastructure to setup, collect and report the interrupt
-machine state regs which can be captured by the kernel.
+Hi Dan,
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- tools/perf/perf.h         |    1 +
- tools/perf/util/event.h   |    1 +
- tools/perf/util/evsel.c   |   46 ++++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/session.c |   44 ++++++++++++++++++++++++++++++++++++++-----
- 4 files changed, 86 insertions(+), 6 deletions(-)
+On Thu, Aug 14, 2014 at 10:33:29AM -0400, Dan Streetman wrote:
+> On Wed, Aug 13, 2014 at 8:57 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > Since zram has no control feature to limit memory usage,
+> > it makes hard to manage system memrory.
+> >
+> > This patch adds new knob "mem_limit" via sysfs to set up the
+> > limit.
+> >
+> > Note: I added the logic in zram, not zsmalloc because the limit
+> > is requirement of zram, not zsmalloc so I'd like to avoid
+> > unnecessary branch in zsmalloc.
+> >
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  Documentation/blockdev/zram.txt | 20 +++++++++++++++----
+> >  drivers/block/zram/zram_drv.c   | 43 +++++++++++++++++++++++++++++++++++++++++
+> >  drivers/block/zram/zram_drv.h   |  1 +
+> >  3 files changed, 60 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> > index 0595c3f56ccf..9f239ff8c444 100644
+> > --- a/Documentation/blockdev/zram.txt
+> > +++ b/Documentation/blockdev/zram.txt
+> > @@ -74,14 +74,26 @@ There is little point creating a zram of greater than twice the size of memory
+> >  since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
+> >  size of the disk when not in use so a huge zram is wasteful.
+> >
+> > -5) Activate:
+> > +5) Set memory limit: Optional
+> > +       Set memory limit by writing the value to sysfs node 'mem_limit'.
+> > +       The value can be either in bytes or you can use mem suffixes.
+> > +       Examples:
+> > +           # limit /dev/zram0 with 50MB memory
+> > +           echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
+> > +
+> > +           # Using mem suffixes
+> > +           echo 256K > /sys/block/zram0/mem_limit
+> > +           echo 512M > /sys/block/zram0/mem_limit
+> > +           echo 1G > /sys/block/zram0/mem_limit
+> > +
+> > +6) Activate:
+> >         mkswap /dev/zram0
+> >         swapon /dev/zram0
+> >
+> >         mkfs.ext4 /dev/zram1
+> >         mount /dev/zram1 /tmp
+> >
+> > -6) Stats:
+> > +7) Stats:
+> >         Per-device statistics are exported as various nodes under
+> >         /sys/block/zram<id>/
+> >                 disksize
+> > @@ -96,11 +108,11 @@ size of the disk when not in use so a huge zram is wasteful.
+> >                 compr_data_size
+> >                 mem_used_total
+> >
+> > -7) Deactivate:
+> > +8) Deactivate:
+> >         swapoff /dev/zram0
+> >         umount /dev/zram1
+> >
+> > -8) Reset:
+> > +9) Reset:
+> >         Write any positive value to 'reset' sysfs node
+> >         echo 1 > /sys/block/zram0/reset
+> >         echo 1 > /sys/block/zram1/reset
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index d00831c3d731..b48a3d0e9031 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -122,6 +122,35 @@ static ssize_t max_comp_streams_show(struct device *dev,
+> >         return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+> >  }
+> >
+> > +static ssize_t mem_limit_show(struct device *dev,
+> > +               struct device_attribute *attr, char *buf)
+> > +{
+> > +       u64 val;
+> > +       struct zram *zram = dev_to_zram(dev);
+> > +
+> > +       down_read(&zram->init_lock);
+> > +       val = zram->limit_bytes;
+> > +       up_read(&zram->init_lock);
+> > +
+> > +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+> > +}
+> > +
+> > +static ssize_t mem_limit_store(struct device *dev,
+> > +               struct device_attribute *attr, const char *buf, size_t len)
+> > +{
+> > +       u64 limit;
+> > +       struct zram *zram = dev_to_zram(dev);
+> > +
+> > +       limit = memparse(buf, NULL);
+> > +       if (!limit)
+> > +               return -EINVAL;
+> 
+> Shouldn't passing a 0 limit be allowed, to disable the limit?
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 510c65f..309d956 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -54,6 +54,7 @@ struct record_opts {
- 	bool	     sample_weight;
- 	bool	     sample_time;
- 	bool	     period;
-+	bool	     sample_intr_regs;
- 	unsigned int freq;
- 	unsigned int mmap_pages;
- 	unsigned int user_freq;
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 7eb7107..d6e79f3 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -162,6 +162,7 @@ struct perf_sample {
- 	struct ip_callchain *callchain;
- 	struct branch_stack *branch_stack;
- 	struct regs_dump  user_regs;
-+	struct regs_dump  intr_regs;
- 	struct stack_dump user_stack;
- 	struct sample_read read;
- };
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 01ce14c..74b4268 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -628,6 +628,11 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 	if (opts->call_graph_enabled && !evsel->no_aux_samples)
- 		perf_evsel__config_callgraph(evsel, opts);
- 
-+	if (opts->sample_intr_regs) {
-+		attr->sample_regs_intr = PERF_REGS_MASK;
-+		perf_evsel__set_sample_bit(evsel, REGS_INTR);
-+	}
-+
- 	if (target__has_cpu(&opts->target))
- 		perf_evsel__set_sample_bit(evsel, CPU);
- 
-@@ -1005,6 +1010,7 @@ static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
- 	ret += PRINT_ATTR_X64(branch_sample_type);
- 	ret += PRINT_ATTR_X64(sample_regs_user);
- 	ret += PRINT_ATTR_U32(sample_stack_user);
-+	ret += PRINT_ATTR_X64(sample_regs_intr);
- 
- 	ret += fprintf(fp, "%.60s\n", graph_dotted_line);
- 
-@@ -1504,6 +1510,23 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		array++;
- 	}
- 
-+	data->intr_regs.abi = PERF_SAMPLE_REGS_ABI_NONE;
-+	if (type & PERF_SAMPLE_REGS_INTR) {
-+		OVERFLOW_CHECK_u64(array);
-+		data->intr_regs.abi = *array;
-+		array++;
-+
-+		if (data->intr_regs.abi != PERF_SAMPLE_REGS_ABI_NONE) {
-+			u64 mask = evsel->attr.sample_regs_intr;
-+
-+			sz = hweight_long(mask) * sizeof(u64);
-+			OVERFLOW_CHECK(array, sz, max_size);
-+			data->intr_regs.mask = mask;
-+			data->intr_regs.regs = (u64 *)array;
-+			array = (void *)array + sz;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -1599,6 +1622,16 @@ size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
- 	if (type & PERF_SAMPLE_TRANSACTION)
- 		result += sizeof(u64);
- 
-+	if (type & PERF_SAMPLE_REGS_INTR) {
-+		if (sample->intr_regs.abi) {
-+			result += sizeof(u64);
-+			sz = hweight_long(sample->intr_regs.mask) * sizeof(u64);
-+			result += sz;
-+		} else {
-+			result += sizeof(u64);
-+		}
-+	}
-+
- 	return result;
- }
- 
-@@ -1777,6 +1810,17 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 		array++;
- 	}
- 
-+	if (type & PERF_SAMPLE_REGS_INTR) {
-+		if (sample->intr_regs.abi) {
-+			*array++ = sample->intr_regs.abi;
-+			sz = hweight_long(sample->intr_regs.mask) * sizeof(u64);
-+			memcpy(array, sample->intr_regs.regs, sz);
-+			array = (void *)array + sz;
-+		} else {
-+			*array++ = 0;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -1906,7 +1950,7 @@ static int sample_type__fprintf(FILE *fp, bool *first, u64 value)
- 		bit_name(READ), bit_name(CALLCHAIN), bit_name(ID), bit_name(CPU),
- 		bit_name(PERIOD), bit_name(STREAM_ID), bit_name(RAW),
- 		bit_name(BRANCH_STACK), bit_name(REGS_USER), bit_name(STACK_USER),
--		bit_name(IDENTIFIER),
-+		bit_name(IDENTIFIER), bit_name(REGS_INTR),
- 		{ .name = NULL, }
- 	};
- #undef bit_name
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6d2d50d..4eb8ca6 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -581,15 +581,46 @@ static void regs_dump__printf(u64 mask, u64 *regs)
- 	}
- }
- 
-+static const char *regs_abi[]= {
-+ [PERF_SAMPLE_REGS_ABI_NONE] = "none",
-+ [PERF_SAMPLE_REGS_ABI_32] = "32-bit",
-+ [PERF_SAMPLE_REGS_ABI_64] = "64-bit",
-+};
-+
-+static inline const char *regs_dump_abi(struct regs_dump *d)
-+{
-+	if (d->abi > PERF_SAMPLE_REGS_ABI_64)
-+		return "unknown";
-+
-+	return regs_abi[d->abi];
-+}
-+
-+static void regs__printf(const char *type, struct regs_dump *regs)
-+{
-+	u64 mask = regs->mask;
-+
-+	printf("... %s regs: mask 0x%" PRIx64 " ABI %s\n",
-+	       type,
-+	       mask,
-+	       regs_dump_abi(regs));
-+
-+	regs_dump__printf(mask, regs->regs);
-+}
-+
- static void regs_user__printf(struct perf_sample *sample)
- {
- 	struct regs_dump *user_regs = &sample->user_regs;
- 
--	if (user_regs->regs) {
--		u64 mask = user_regs->mask;
--		printf("... user regs: mask 0x%" PRIx64 "\n", mask);
--		regs_dump__printf(mask, user_regs->regs);
--	}
-+	if (user_regs->regs)
-+		regs__printf("user", user_regs);
-+}
-+
-+static void regs_intr__printf(struct perf_sample *sample)
-+{
-+	struct regs_dump *intr_regs = &sample->intr_regs;
-+
-+	if (intr_regs->regs)
-+		regs__printf("intr", intr_regs);
- }
- 
- static void stack_user__printf(struct stack_dump *dump)
-@@ -688,6 +719,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
- 	if (sample_type & PERF_SAMPLE_REGS_USER)
- 		regs_user__printf(sample);
- 
-+	if (sample_type & PERF_SAMPLE_REGS_INTR)
-+		regs_intr__printf(sample);
-+
- 	if (sample_type & PERF_SAMPLE_STACK_USER)
- 		stack_user__printf(&sample->user_stack);
- 
+Sure. Will fix.
+Thanks.
+
 -- 
-1.7.9.5
-
+Kind regards,
+Minchan Kim
