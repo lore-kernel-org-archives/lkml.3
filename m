@@ -1,170 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761AbaHQAps (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 20:45:48 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:35112 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbaHQApq (ORCPT
+	id S1751765AbaHQBE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 16 Aug 2014 21:04:56 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:40560 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaHQBEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 20:45:46 -0400
-From: Evgeny Boger <boger@contactless.ru>
-X-Google-Original-From: Evgeny Boger <boger@contactless.ru
-To: linux-watchdog@vger.kernel.org, Alexander Shiyan <shc_work@mail.ru>,
+	Sat, 16 Aug 2014 21:04:54 -0400
+Date: Sun, 17 Aug 2014 09:04:32 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, gregkh@linuxfoundation.org,
+        jhovold@gmail.com, andi@lisas.de, dforsi@gmail.com,
+        gnomes@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Evgeny Boger <boger@contactless.ru>
-Subject: [PATCH] Add support for always enabled watchdog timers
-Date: Sun, 17 Aug 2014 04:45:38 +0400
-Message-Id: <1408236338-12555-1-git-send-email-boger@contactless.ru>
-X-Mailer: git-send-email 1.9.1
+Subject: Re: [PATCH v7] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140817010432.GA2907@localhost.localdomain>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Johan Hovold <johan@kernel.org>,
+	Linus Walleij <linus.walleij@linaro.org>,
+	gregkh@linuxfoundation.org, jhovold@gmail.com, andi@lisas.de,
+	dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20140809052828.GA28307@udknight>
+ <20140812144625.GB9799@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140812144625.GB9799@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Evgeny Boger <boger@contactless.ru>
+On Tue, Aug 12, 2014 at 04:46:25PM +0200, Johan Hovold wrote:
+> On Sat, Aug 09, 2014 at 01:28:28PM +0800, Wang YanQing wrote:
+> > PL2303 USB Serial devices always has GPIOs,
+> 
+> Always? Are you sure? It's probably better to write "might have" as they
+> are unlikely to be accessible even if the pins exist.
+http://prolificusa.com/docs/2303/all/an_PL2303_GPIO_LED_Indicator_v1.0.pdf
 
-Add option to use with watchdog timers which are always enabled 
-in hardware, i.e. there is no way to enable/disable it via GPIO pin.
-The driver will start pinging WDT immediately upon loading
-and will continue to do so even after stopping the watchdog.
+"
+All of the PL2303
+chips aside from PL2303HXD have two dedicated GPIO pins (GP0 and GP1) while PL2303HXD have
+four GPIO pins (GP0, GP1, GP2, GP3)."
 
-Signed-off-by: Evgeny Boger <boger@contactless.ru>
----
- .../devicetree/bindings/watchdog/gpio-wdt.txt      | 14 ++++++-
- drivers/watchdog/gpio_wdt.c                        | 45 +++++++++++++++++-----
- 2 files changed, 48 insertions(+), 11 deletions(-)
+> 
+> >  enum pl2303_type {
+> >  	TYPE_01,	/* Type 0 and 1 (difference unknown) */
+> > @@ -141,11 +145,15 @@ enum pl2303_type {
+> >  struct pl2303_type_data {
+> >  	speed_t max_baud_rate;
+> >  	unsigned long quirks;
+> > +	u16 ngpio;
+> 
+> u8 should be enough.
 
-diff --git a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
-index 37afec1..1f8ca46 100644
---- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
-+++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
-@@ -12,8 +12,11 @@ Required Properties:
-     the opposite level disables the WDT. Active level is determined
-     by the GPIO flags.
- - hw_margin_ms: Maximum time to reset watchdog circuit (milliseconds).
-+- always-enabled: Use with wathdog timer which is always enabled
-+  in hardware, i.e. there is no way to enable/disable it via GPIO pin.
-+  Driver will start pinging WDT immediately upon loading.
- 
--Example:
-+Examples:
- 	watchdog: watchdog {
- 		/* ADM706 */
- 		compatible = "linux,wdt-gpio";
-@@ -21,3 +24,12 @@ Example:
- 		hw_algo = "toggle";
- 		hw_margin_ms = <1600>;
- 	};
-+
-+	watchdog: watchdog {
-+		/* TPS3813 */
-+		compatible = "linux,wdt-gpio";
-+		gpios = <&gpio3 9 GPIO_ACTIVE_LOW>;
-+		hw_algo = "toggle";
-+		hw_margin_ms = <10000>;
-+		always-enabled;
-+	};
-diff --git a/drivers/watchdog/gpio_wdt.c b/drivers/watchdog/gpio_wdt.c
-index 220a9e0..29f9bff 100644
---- a/drivers/watchdog/gpio_wdt.c
-+++ b/drivers/watchdog/gpio_wdt.c
-@@ -37,6 +37,8 @@ struct gpio_wdt_priv {
- 	struct notifier_block	notifier;
- 	struct timer_list	timer;
- 	struct watchdog_device	wdd;
-+	bool		always_enabled;
-+	bool		started;
- };
- 
- static void gpio_wdt_disable(struct gpio_wdt_priv *priv)
-@@ -48,10 +50,8 @@ static void gpio_wdt_disable(struct gpio_wdt_priv *priv)
- 		gpio_direction_input(priv->gpio);
- }
- 
--static int gpio_wdt_start(struct watchdog_device *wdd)
-+static int gpio_wdt_start_timer(struct gpio_wdt_priv *priv)
- {
--	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
--
- 	priv->state = priv->active_low;
- 	gpio_direction_output(priv->gpio, priv->state);
- 	priv->last_jiffies = jiffies;
-@@ -60,12 +60,28 @@ static int gpio_wdt_start(struct watchdog_device *wdd)
- 	return 0;
- }
- 
--static int gpio_wdt_stop(struct watchdog_device *wdd)
-+static int gpio_wdt_start(struct watchdog_device *wdd)
- {
- 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
-+	priv->started = true;
-+	if (priv->always_enabled) {
-+		/* harware ping timer is already enabled */
-+		priv->last_jiffies = jiffies;
-+	} else {
-+		gpio_wdt_start_timer(priv);
-+	}
- 
--	mod_timer(&priv->timer, 0);
--	gpio_wdt_disable(priv);
-+	return 0;
-+}
-+
-+static int gpio_wdt_stop(struct watchdog_device *wdd)
-+{
-+	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
-+	priv->started = false;
-+	if (!priv->always_enabled) {
-+		mod_timer(&priv->timer, 0);
-+		gpio_wdt_disable(priv);
-+	}
- 
- 	return 0;
- }
-@@ -91,10 +107,12 @@ static void gpio_wdt_hwping(unsigned long data)
- 	struct watchdog_device *wdd = (struct watchdog_device *)data;
- 	struct gpio_wdt_priv *priv = watchdog_get_drvdata(wdd);
- 
--	if (time_after(jiffies, priv->last_jiffies +
--		       msecs_to_jiffies(wdd->timeout * 1000))) {
--		dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
--		return;
-+	if (priv->started) {
-+		if (time_after(jiffies, priv->last_jiffies +
-+			       msecs_to_jiffies(wdd->timeout * 1000))) {
-+			dev_crit(wdd->dev, "Timer expired. System will reboot soon!\n");
-+			return;
-+		}
- 	}
- 
- 	/* Restart timer */
-@@ -197,6 +215,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
- 	/* Use safe value (1/2 of real timeout) */
- 	priv->hw_margin = msecs_to_jiffies(hw_margin / 2);
- 
-+	priv->always_enabled = of_property_read_bool(pdev->dev.of_node,
-+						"always-enabled");
-+
- 	watchdog_set_drvdata(&priv->wdd, priv);
- 
- 	priv->wdd.info		= &gpio_wdt_ident;
-@@ -207,6 +228,7 @@ static int gpio_wdt_probe(struct platform_device *pdev)
- 	if (watchdog_init_timeout(&priv->wdd, 0, &pdev->dev) < 0)
- 		priv->wdd.timeout = SOFT_TIMEOUT_DEF;
- 
-+	priv->started = false;
- 	setup_timer(&priv->timer, gpio_wdt_hwping, (unsigned long)&priv->wdd);
- 
- 	ret = watchdog_register_device(&priv->wdd);
-@@ -218,6 +240,9 @@ static int gpio_wdt_probe(struct platform_device *pdev)
- 	if (ret)
- 		watchdog_unregister_device(&priv->wdd);
- 
-+	if (priv->always_enabled)
-+		gpio_wdt_start_timer(priv);
-+
- 	return ret;
- }
- 
--- 
-1.9.1
+Yes, but struct gpio_chip use u16, so maybe u16 is better?.
 
+> 
+> > +	int (*gpio_startup)(struct usb_serial *serial);
+> > +	void (*gpio_release)(struct usb_serial *serial);
+> 
+> This isn't the right place for this abstraction. Most of the setup code
+> would be common for any device type with GPIOs.
+
+For any pl2303 variant instead of any device type ?
+
+> Just keep the generic gpio_startup and release from v6, and verify that
+> ngpio > 0. Any further abstraction should only be added once we know how
+> the other types handles GPIOs.
+> 
+> >  };
+> >  
+> >  struct pl2303_serial_private {
+> >  	const struct pl2303_type_data *type;
+> >  	unsigned long quirks;
+> > +	void *gpio;
+> 
+> No void pointers, please.
+
+void pointer is abstraction for different pl2303 gpio_data struct, just like driver core or subsystem core does.
+I mean void pointer is right thing when we need abstraction, and we don't need type-specified startup|release, 
+we don't need this void pointer.
+
+> > +
+> > +static int pl2303hx_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
+> > +{
+> > +	struct pl2303hx_gpio_data *gpio = to_pl2303hx_gpio_data(chip);
+> > +	int ret;
+> > +
+> > +	mutex_lock(&gpio->lock);
+> > +	gpio->index &= ~pl2303hx_gpio_dir_mask(offset);
+> > +	ret = pl2303_vendor_write(gpio->serial, PL2303HX_REG_GPIO_CONTROL, gpio->index);
+> 
+> This line is too long.
+> 
+> Apparently you did not run checkpatch on v7 because there are a whole
+> bunch of warning and errors now.
+
+Yes, I haven't run checkpatch on v7, I will do it on v8 if there is one.
+
+> > +static void pl2303hx_gpio_release(struct usb_serial *serial)
+> > +{
+> > +	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
+> > +	struct pl2303hx_gpio_data *gpio = (struct pl2303hx_gpio_data *)spriv->gpio;
+> > +
+> > +	gpiochip_remove(&gpio->gpio_chip);
+> 
+> So this will corrupt the gpiolib structures if there are requested /
+> exported gpios.
+
+We can do nothing here, indeed we must call gpiochip_remove to notify 
+gpio layer our leave, and hope gpio layer could handle it.
+
+Thanks.
