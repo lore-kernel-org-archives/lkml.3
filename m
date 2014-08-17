@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600AbaHQOns (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 10:43:48 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:59584 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaHQOnr (ORCPT
+	id S1751652AbaHQPVI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 11:21:08 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:35926 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaHQPVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 10:43:47 -0400
-From: Phong Tran <tranmanphong@gmail.com>
-To: dh.herrmann@gmail.com, hughd@google.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, shuah.kh@samsung.com, sam@ravnborg.org,
-        mmarek@suse.cz, Phong Tran <tranmanphong@gmail.com>
-Subject: [PATCH] tools: selftests: Fixing build issue with make kselftests target
-Date: Sun, 17 Aug 2014 21:43:29 +0700
-Message-Id: <1408286609-32597-1-git-send-email-tranmanphong@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Sun, 17 Aug 2014 11:21:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140817080204.GY15297@lukather>
+References: <1408247538-16950-1-git-send-email-wens@csie.org>
+ <1408247538-16950-12-git-send-email-wens@csie.org> <20140817080204.GY15297@lukather>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Sun, 17 Aug 2014 23:20:44 +0800
+X-Google-Sender-Auth: uHUu4VUxLuGWCVKFiCuG4PqTmpM
+Message-ID: <CAGb2v67NwsJORoFrgEECDtexXGtF5qOx7NX1PVpZHkjVs-mG2A@mail.gmail.com>
+Subject: Re: [PATCH 11/12] ARM: dts: sun8i: Add i2c controller nodes
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the typo of ARCH when build with 'make kselftests'
-Change the 'X86' to 'x86'. Test by compilation
+Hi,
 
-Signed-off-by: Phong Tran <tranmanphong@gmail.com>
----
- tools/testing/selftests/ipc/Makefile   |  6 +++---
- tools/testing/selftests/kcmp/Makefile  |  6 +++---
- tools/testing/selftests/memfd/Makefile | 10 +++++-----
- 3 files changed, 11 insertions(+), 11 deletions(-)
+On Sun, Aug 17, 2014 at 4:02 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> Hi,
+>
+> On Sun, Aug 17, 2014 at 11:52:17AM +0800, Chen-Yu Tsai wrote:
+>> Add nodes for the 3 i2c controllers found on A23 SoCs to the sun8i DTSI.
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>> ---
+>>  arch/arm/boot/dts/sun8i-a23.dtsi | 36 ++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 36 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/sun8i-a23.dtsi b/arch/arm/boot/dts/sun8i-a23.dtsi
+>> index 4658998..53ef350 100644
+>> --- a/arch/arm/boot/dts/sun8i-a23.dtsi
+>> +++ b/arch/arm/boot/dts/sun8i-a23.dtsi
+>> @@ -387,6 +387,42 @@
+>>                       status = "disabled";
+>>               };
+>>
+>> +             i2c0: i2c@01c2ac00 {
+>> +                     compatible = "allwinner,sun6i-a31-i2c";
+>> +                     reg = <0x01c2ac00 0x400>;
+>> +                     interrupts = <0 6 4>;
+>> +                     clocks = <&apb2_gates 0>;
+>> +                     clock-frequency = <100000>;
+>
+> It's the default, you don't need to set it.
 
-diff --git a/tools/testing/selftests/ipc/Makefile b/tools/testing/selftests/ipc/Makefile
-index 5386fd7..74bbefd 100644
---- a/tools/testing/selftests/ipc/Makefile
-+++ b/tools/testing/selftests/ipc/Makefile
-@@ -1,18 +1,18 @@
- uname_M := $(shell uname -m 2>/dev/null || echo not)
- ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
- ifeq ($(ARCH),i386)
--        ARCH := X86
-+        ARCH := x86
- 	CFLAGS := -DCONFIG_X86_32 -D__i386__
- endif
- ifeq ($(ARCH),x86_64)
--	ARCH := X86
-+	ARCH := x86
- 	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
- endif
- 
- CFLAGS += -I../../../../usr/include/
- 
- all:
--ifeq ($(ARCH),X86)
-+ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) msgque.c -o msgque_test
- else
- 	echo "Not an x86 target, can't build msgque selftest"
-diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
-index d7d6bbe..8aabd82 100644
---- a/tools/testing/selftests/kcmp/Makefile
-+++ b/tools/testing/selftests/kcmp/Makefile
-@@ -1,11 +1,11 @@
- uname_M := $(shell uname -m 2>/dev/null || echo not)
- ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
- ifeq ($(ARCH),i386)
--        ARCH := X86
-+        ARCH := x86
- 	CFLAGS := -DCONFIG_X86_32 -D__i386__
- endif
- ifeq ($(ARCH),x86_64)
--	ARCH := X86
-+	ARCH := x86
- 	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
- endif
- 
-@@ -15,7 +15,7 @@ CFLAGS += -I../../../../usr/include/
- CFLAGS += -I../../../../arch/x86/include/
- 
- all:
--ifeq ($(ARCH),X86)
-+ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) kcmp_test.c -o kcmp_test
- else
- 	echo "Not an x86 target, can't build kcmp selftest"
-diff --git a/tools/testing/selftests/memfd/Makefile b/tools/testing/selftests/memfd/Makefile
-index 6816c49..ad4ab01 100644
---- a/tools/testing/selftests/memfd/Makefile
-+++ b/tools/testing/selftests/memfd/Makefile
-@@ -1,10 +1,10 @@
- uname_M := $(shell uname -m 2>/dev/null || echo not)
- ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
- ifeq ($(ARCH),i386)
--	ARCH := X86
-+	ARCH := x86
- endif
- ifeq ($(ARCH),x86_64)
--	ARCH := X86
-+	ARCH := x86
- endif
- 
- CFLAGS += -D_FILE_OFFSET_BITS=64
-@@ -14,20 +14,20 @@ CFLAGS += -I../../../../include/uapi/
- CFLAGS += -I../../../../include/
- 
- all:
--ifeq ($(ARCH),X86)
-+ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) memfd_test.c -o memfd_test
- else
- 	echo "Not an x86 target, can't build memfd selftest"
- endif
- 
- run_tests: all
--ifeq ($(ARCH),X86)
-+ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) memfd_test.c -o memfd_test
- endif
- 	@./memfd_test || echo "memfd_test: [FAIL]"
- 
- build_fuse:
--ifeq ($(ARCH),X86)
-+ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) fuse_mnt.c `pkg-config fuse --cflags --libs` -o fuse_mnt
- 	gcc $(CFLAGS) fuse_test.c -o fuse_test
- else
--- 
-1.9.3
+Ah, just checked the driver, it is indeed the default.
+All the other sunxi dtsi have it though. Do we want to be consistent?
 
+
+ChenYu
