@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800AbaHQSic (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 14:38:32 -0400
-Received: from mo-online.de ([89.238.66.174]:52757 "EHLO mo-online.de"
+	id S1751765AbaHQSib (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 14:38:31 -0400
+Received: from mo-online.de ([89.238.66.174]:52756 "EHLO mo-online.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552AbaHQSi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751547AbaHQSi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Aug 2014 14:38:26 -0400
-Date: Sun, 17 Aug 2014 20:30:37 +0200
+Date: Sun, 17 Aug 2014 20:30:27 +0200
 From: Markus Osterhoff <mo@mo-online.org>
 To: Randy Dunlap <rdunlap@infradead.org>
 Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [TYPO 5/9] [typo] CREDITS: capitalisation, punctuation
-Message-ID: <20140817183037.GF4077@mo-online.de>
+Subject: [TYPO 3/9] [typo] REPORTING-BUGS
+Message-ID: <20140817183027.GD4077@mo-online.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
@@ -23,25 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... of last line
+- missing word added
+- second blank behind sentence added, as in rest of document
 
 Signed-off-by: Markus Osterhoff <linux-kernel@k-raum.org>
 ---
- CREDITS | 4 ++--
+ REPORTING-BUGS | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/CREDITS b/CREDITS
-index bb62788..87c67fd 100644
---- a/CREDITS
-+++ b/CREDITS
-@@ -4034,5 +4034,5 @@ S: France
- # Don't add your name here, unless you really _are_ after Marc
- # alphabetically. Leonard used to be very proud of being the 
- # last entry, and he'll get positively pissed if he can't even
--# be second-to-last.  (and this file really _is_ supposed to be
--# in alphabetic order)
-+# be second-to-last.  (And this file really _is_ supposed to be
-+# in alphabetic order.)
+diff --git a/REPORTING-BUGS b/REPORTING-BUGS
+index 0cb8cdf..ebac809 100644
+--- a/REPORTING-BUGS
++++ b/REPORTING-BUGS
+@@ -9,7 +9,7 @@ Please see https://www.kernel.org/ for a list of supported kernels.  Any
+ kernel marked with [EOL] is "end of life" and will not have any fixes
+ backported to it.
+ 
+-If you've found a bug on a kernel version isn't listed on kernel.org,
++If you've found a bug on a kernel version that isn't listed on kernel.org,
+ contact your Linux distribution or embedded vendor for support.
+ Alternatively, you can attempt to run one of the supported stable or -rc
+ kernels, and see if you can reproduce the bug on that.  It's preferable
+@@ -88,7 +88,7 @@ step-by-step instructions for how a user can trigger the bug.
+ If the failure includes an "OOPS:", take a picture of the screen, capture
+ a netconsole trace, or type the message from your screen into the bug
+ report.  Please read "Documentation/oops-tracing.txt" before posting your
+-bug report. This explains what you should do with the "Oops" information
++bug report.  This explains what you should do with the "Oops" information
+ to make it useful to the recipient.
+ 
+ This is a suggested format for a bug report sent via email or bugzilla.
 -- 
 1.8.5.5
 
