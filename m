@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaHQNxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 09:53:09 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:49257 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaHQNxC (ORCPT
+	id S1751458AbaHQNxG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 09:53:06 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:37251 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317AbaHQNxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 09:53:02 -0400
+	Sun, 17 Aug 2014 09:53:01 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC PATCH 6/9] gpiolib: add API to get gpio desc and flags
+Subject: Re: [RFC PATCH 3/9] Driver core: Unified device properties
+ interface for platform firmware
 To: Mika Westerberg <mika.westerberg@linux.intel.com>,
         Darren Hart <dvhart@linux.intel.com>,
         "Rafael J. Wysocki" <rafael@kernel.org>
@@ -16,253 +17,521 @@ Cc: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1408255459-17625-7-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1408255459-17625-4-git-send-email-mika.westerberg@linux.intel.com>
 References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1408255459-17625-7-git-send-email-mika.westerberg@linux.intel.com>
-Date: Sun, 17 Aug 2014 14:00:04 +0100
-Message-Id: <20140817130004.4B9FDC4137F@trevor.secretlab.ca>
+	<1408255459-17625-4-git-send-email-mika.westerberg@linux.intel.com>
+Date: Sun, 17 Aug 2014 13:49:13 +0100
+Message-Id: <20140817124913.A597FC40F4B@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Aug 2014 09:04:16 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
-> From: Aaron Lu <aaron.lu@intel.com>
+
+Hi Mika and Rafael,
+
+Comments below...
+
+On Sun, 17 Aug 2014 09:04:13 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 > 
-> Add a new API to get the GPIO's description pointer and its flags for
-> both OF based system and ACPI based system. This is useful in drivers
-> that do not need to care about the underlying firmware interface.
+> Add a uniform interface by which device drivers can request device
+> properties from the platform firmware by providing a property name
+> and the corresponding data type.
+> 
+> Three general helper functions, device_property_get(),
+> device_property_read() and device_property_read_array() are provided.
+> The first one allows the raw value of a given device property to be
+> accessed by the driver.  The remaining two allow the value of a numeric
+> or string property and multiple numeric or string values of one array
+> property to be acquired, respectively.
+> 
+> The interface is supposed to cover both ACPI and Device Trees,
+> although the ACPI part is only implemented at this time.
 
-Hi Mika,
+Nit:
+s/at this time/in this change. The DT component is implemented in a
+subsequent patch./
 
-I've only looked at this one briefly, and noticed one problem below...
-
-g.
+I almost complained that the DT portion must be implemented before this
+series can even be considered, but then I found it in patch 4/9.  :-)
 
 > 
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> Signed-off-by: Max Eliaser <max.eliaser@intel.com>
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > ---
->  drivers/gpio/gpiolib-acpi.c   | 81 ++++++++++++++++++++++++++++++++-----------
->  drivers/gpio/gpiolib.c        | 18 ++++++++++
->  drivers/gpio/gpiolib.h        |  8 +++++
->  include/linux/gpio/consumer.h | 11 ++++++
->  4 files changed, 97 insertions(+), 21 deletions(-)
+>  drivers/acpi/glue.c      |   4 +-
+>  drivers/acpi/property.c  | 179 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/acpi/scan.c      |  12 +++-
+>  drivers/base/Makefile    |   2 +-
+>  drivers/base/property.c  |  48 +++++++++++++
+>  include/acpi/acpi_bus.h  |   1 +
+>  include/linux/device.h   |   3 +
+>  include/linux/property.h |  50 +++++++++++++
+>  8 files changed, 293 insertions(+), 6 deletions(-)
+>  create mode 100644 drivers/base/property.c
+>  create mode 100644 include/linux/property.h
 > 
-> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-> index 4a987917c186..f35e88d29a47 100644
-> --- a/drivers/gpio/gpiolib-acpi.c
-> +++ b/drivers/gpio/gpiolib-acpi.c
-> @@ -293,11 +293,38 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
->  			agpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT;
->  		lookup->info.active_low =
->  			agpio->polarity == ACPI_ACTIVE_LOW;
-> +		lookup->info.pin_config = agpio->pin_config;
->  	}
+> diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
+> index f774c65ecb8b..1df5223bb98d 100644
+> --- a/drivers/acpi/glue.c
+> +++ b/drivers/acpi/glue.c
+> @@ -9,7 +9,7 @@
+>  #include <linux/export.h>
+>  #include <linux/init.h>
+>  #include <linux/list.h>
+> -#include <linux/device.h>
+> +#include <linux/property.h>
+>  #include <linux/slab.h>
+>  #include <linux/rwsem.h>
+>  #include <linux/acpi.h>
+> @@ -220,6 +220,7 @@ int acpi_bind_one(struct device *dev, struct acpi_device *acpi_dev)
+>  	list_add(&physical_node->node, physnode_list);
+>  	acpi_dev->physical_node_count++;
 >  
->  	return 1;
+> +	dev->property_ops = &acpi_property_ops;
+>  	if (!ACPI_COMPANION(dev))
+>  		ACPI_COMPANION_SET(dev, acpi_dev);
+>  
+> @@ -271,6 +272,7 @@ int acpi_unbind_one(struct device *dev)
+>  			acpi_physnode_link_name(physnode_name, entry->node_id);
+>  			sysfs_remove_link(&acpi_dev->dev.kobj, physnode_name);
+>  			sysfs_remove_link(&dev->kobj, "firmware_node");
+> +			dev->property_ops = NULL;
+>  			ACPI_COMPANION_SET(dev, NULL);
+>  			/* Drop references taken by acpi_bind_one(). */
+>  			put_device(dev);
+> diff --git a/drivers/acpi/property.c b/drivers/acpi/property.c
+> index 093e834c35db..bdba5f85c919 100644
+> --- a/drivers/acpi/property.c
+> +++ b/drivers/acpi/property.c
+> @@ -13,8 +13,8 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> +#include <linux/property.h>
+>  #include <linux/acpi.h>
+> -#include <linux/device.h>
+>  #include <linux/export.h>
+>  
+>  #include "internal.h"
+> @@ -363,3 +363,180 @@ int acpi_dev_get_property_reference(struct acpi_device *adev, const char *name,
+>  	return -EPROTO;
 >  }
->  
-> +static struct gpio_desc *
-> +__acpi_get_gpiod_by_index(struct acpi_device *adev, int index,
-> +			  struct acpi_gpio_info *info)
+>  EXPORT_SYMBOL_GPL(acpi_dev_get_property_reference);
+> +
+> +static int acpi_dev_prop_get(struct device *dev, const char *propname,
+> +			     void **valptr)
 > +{
-> +	struct acpi_gpio_lookup lookup;
-> +	struct list_head resource_list;
+> +	return acpi_dev_get_property(ACPI_COMPANION(dev), propname,
+> +				     ACPI_TYPE_ANY,
+> +				     (const union acpi_object **)valptr);
+> +}
+> +
+> +static int acpi_dev_prop_read(struct device *dev, const char *propname,
+> +			      enum dev_prop_type proptype, void *val)
+> +{
+> +	const union acpi_object *obj;
+> +	int ret = -EINVAL;
+> +
+> +	if (!val)
+> +		return -EINVAL;
+> +
+> +	if (proptype >= DEV_PROP_U8 && proptype <= DEV_PROP_U64) {
+> +		ret = acpi_dev_get_property(ACPI_COMPANION(dev), propname,
+> +					    ACPI_TYPE_INTEGER, &obj);
+> +		if (ret)
+> +			return ret;
+> +
+> +		switch (proptype) {
+> +		case DEV_PROP_U8:
+> +			*(u8 *)val = obj->integer.value;
+> +			break;
+> +		case DEV_PROP_U16:
+> +			*(u16 *)val = obj->integer.value;
+> +			break;
+> +		case DEV_PROP_U32:
+> +			*(u32 *)val = obj->integer.value;
+> +			break;
+> +		default:
+> +			*(u64 *)val = obj->integer.value;
+> +			break;
+> +		}
+> +	} else if (proptype == DEV_PROP_STRING) {
+> +		ret = acpi_dev_get_property(ACPI_COMPANION(dev), propname,
+> +					    ACPI_TYPE_STRING, &obj);
+> +		if (ret)
+> +			return ret;
+> +
+> +		*(char **)val = obj->string.pointer;
+> +	}
+> +	return ret;
+> +}
+> +
+> +static int acpi_copy_property_array_u8(const union acpi_object *items, u8 *val,
+> +				       size_t nval)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (items[i].type != ACPI_TYPE_INTEGER)
+> +			return -EPROTO;
+> +
+> +		val[i] = items[i].integer.value;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int acpi_copy_property_array_u16(const union acpi_object *items,
+> +					u16 *val, size_t nval)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (items[i].type != ACPI_TYPE_INTEGER)
+> +			return -EPROTO;
+> +
+> +		val[i] = items[i].integer.value;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int acpi_copy_property_array_u32(const union acpi_object *items,
+> +					u32 *val, size_t nval)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (items[i].type != ACPI_TYPE_INTEGER)
+> +			return -EPROTO;
+> +
+> +		val[i] = items[i].integer.value;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int acpi_copy_property_array_u64(const union acpi_object *items,
+> +					u64 *val, size_t nval)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (items[i].type != ACPI_TYPE_INTEGER)
+> +			return -EPROTO;
+> +
+> +		val[i] = items[i].integer.value;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int acpi_copy_property_array_string(const union acpi_object *items,
+> +					   char **val, size_t nval)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < nval; i++) {
+> +		if (items[i].type != ACPI_TYPE_STRING)
+> +			return -EPROTO;
+> +
+> +		val[i] = items[i].string.pointer;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int acpi_dev_prop_read_array(struct device *dev, const char *propname,
+> +				    enum dev_prop_type proptype, void *val,
+> +				    size_t nval)
+> +{
+> +	const union acpi_object *obj;
+> +	const union acpi_object *items;
 > +	int ret;
 > +
-> +	memset(&lookup, 0, sizeof(lookup));
-> +	lookup.index = index;
+> +	ret = acpi_dev_get_property_array(ACPI_COMPANION(dev), propname,
+> +					  ACPI_TYPE_ANY, &obj);
+> +	if (ret)
+> +		return ret;
 > +
-> +	INIT_LIST_HEAD(&resource_list);
-> +	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
-> +				     &lookup);
-> +	if (ret < 0)
-> +		return ERR_PTR(ret);
+> +	if (!val)
+> +		return obj->package.count;
 > +
-> +	acpi_dev_free_resource_list(&resource_list);
+> +	if (nval > obj->package.count)
+> +		nval = obj->package.count;
 > +
-> +	if (lookup.desc && info)
-> +		*info = lookup.info;
-> +
-> +	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
+> +	items = obj->package.elements;
+> +	switch (proptype) {
+> +	case DEV_PROP_U8:
+> +		ret = acpi_copy_property_array_u8(items, (u8 *)val, nval);
+> +		break;
+> +	case DEV_PROP_U16:
+> +		ret = acpi_copy_property_array_u16(items, (u16 *)val, nval);
+> +		break;
+> +	case DEV_PROP_U32:
+> +		ret = acpi_copy_property_array_u32(items, (u32 *)val, nval);
+> +		break;
+> +	case DEV_PROP_U64:
+> +		ret = acpi_copy_property_array_u64(items, (u64 *)val, nval);
+> +		break;
+> +	case DEV_PROP_STRING:
+> +		ret = acpi_copy_property_array_string(items, (char **)val, nval);
+> +		break;
+> +	default:
+> +		ret = -EINVAL;
+> +		break;
+> +	}
+> +	return ret;
 > +}
 > +
-> +
->  /**
->   * acpi_get_gpiod_by_index() - get a GPIO descriptor from device resources
->   * @dev: pointer to a device to get GPIO from
-> @@ -318,34 +345,46 @@ static int acpi_find_gpio(struct acpi_resource *ares, void *data)
->  struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
->  					  struct acpi_gpio_info *info)
->  {
-> -	struct acpi_gpio_lookup lookup;
-> -	struct list_head resource_list;
-> -	struct acpi_device *adev;
-> -	acpi_handle handle;
-> -	int ret;
-> -
-> -	if (!dev)
-> +	if (!dev || !ACPI_COMPANION(dev))
->  		return ERR_PTR(-EINVAL);
-> +	return __acpi_get_gpiod_by_index(ACPI_COMPANION(dev), index, info);
-> +}
->  
-> -	handle = ACPI_HANDLE(dev);
-> -	if (!handle || acpi_bus_get_device(handle, &adev))
-> -		return ERR_PTR(-ENODEV);
-> -
-> -	memset(&lookup, 0, sizeof(lookup));
-> -	lookup.index = index;
-> +struct gpio_desc *acpi_get_gpiod_flags(struct device *dev, int idx,
-> +				       enum gpio_lookup_flags *flags)
+> +static int acpi_dev_get_child_count(struct device *dev)
 > +{
 > +	struct acpi_device *adev = ACPI_COMPANION(dev);
-> +	struct acpi_reference_args args;
-> +	struct acpi_gpio_info info;
-> +	struct gpio_desc *desc;
-> +	bool active_low;
-> +	int ret;
->  
-> -	INIT_LIST_HEAD(&resource_list);
-> -	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
-> -				     &lookup);
-> -	if (ret < 0)
-> +	ret = acpi_dev_get_property_reference(adev, "gpios", NULL, idx, &args);
-> +	if (ret)
->  		return ERR_PTR(ret);
->  
-> -	acpi_dev_free_resource_list(&resource_list);
-> +	desc = __acpi_get_gpiod_by_index(args.adev, args.args[0], &info);
-> +	if (IS_ERR(desc))
-> +		return desc;
->  
-> -	if (lookup.desc && info)
-> -		*info = lookup.info;
-> +	/*
-> +	 * The 3rd argument optionally specifies the pin polarity. We
-> +	 * use that if it exists, otherwise we resort to the pin config.
-> +	 * (Note that the first element of the "gpios" package goes into
-> +	 * arg.adev, not args.args.)
-> +	 */
-> +	if (args.nargs >= 3)
-> +		active_low = !!args.args[2];
-> +	else if (info.gpioint)
-> +		active_low = !!info.active_low;
-> +	else
-> +		active_low = !!(info.pin_config & ACPI_PIN_CONFIG_PULLUP);
->  
-> -	return lookup.desc ? lookup.desc : ERR_PTR(-ENOENT);
-> +	if (active_low)
-> +		*flags |= GPIO_ACTIVE_LOW;
 > +
-> +	return desc;
->  }
->  
->  static acpi_status
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index 2ebc9071e354..e6c2413a6fbf 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -2644,6 +2644,24 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
->  	return desc;
->  }
->  
-> +struct gpio_desc *dev_get_gpiod_flags(struct device *dev, unsigned int idx,
-> +				      enum gpio_lookup_flags *flags)
-> +{
-> +	struct gpio_desc *desc = ERR_PTR(-ENOENT);
-> +
-> +	if (!dev || !flags)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	/* Using device tree? */
-> +	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-> +		desc = of_find_gpio(dev, NULL, idx, flags);
-
-of_find_gpio() doesn't exist.
-
-> +	else if (IS_ENABLED(CONFIG_ACPI) && ACPI_COMPANION(dev))
-> +		desc = acpi_get_gpiod_flags(dev, idx, flags);
-> +
-> +	return desc;
+> +	if (!adev)
+> +		return -EINVAL;
+> +	return adev->child_count;
 > +}
-> +EXPORT_SYMBOL(dev_get_gpiod_flags);
 > +
->  static struct gpiod_lookup_table *gpiod_find_lookup_table(struct device *dev)
+> +struct dev_prop_ops acpi_property_ops = {
+> +	.get = acpi_dev_prop_get,
+> +	.read = acpi_dev_prop_read,
+> +	.read_array = acpi_dev_prop_read_array,
+> +	.child_count = acpi_dev_get_child_count,
+> +};
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index fc97e6123864..75b1b91e5ab0 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -1035,8 +1035,10 @@ struct bus_type acpi_bus_type = {
+>  static void acpi_device_del(struct acpi_device *device)
 >  {
->  	const char *dev_id = dev ? dev_name(dev) : NULL;
-> diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-> index 1a4103dd38df..a759db968e51 100644
-> --- a/drivers/gpio/gpiolib.h
-> +++ b/drivers/gpio/gpiolib.h
-> @@ -25,6 +25,7 @@ enum of_gpio_flags;
->  struct acpi_gpio_info {
->  	bool gpioint;
->  	bool active_low;
-> +	u8 pin_config;
->  };
+>  	mutex_lock(&acpi_device_lock);
+> -	if (device->parent)
+> +	if (device->parent) {
+>  		list_del(&device->node);
+> +		device->parent->child_count--;
+
+I worry about housekeeping like this. It is easy for bugs to slip in.
+Unless returning the child count is in a critical path (which it
+shouldn't be), I would drop the child_count member and simply count the
+number of items in the list when required.
+
+This of course is not my subsystem, so I won't ACK or NACK the patch over this.
+
+> +	}
 >  
->  #ifdef CONFIG_ACPI
-> @@ -33,6 +34,8 @@ void acpi_gpiochip_remove(struct gpio_chip *chip);
+>  	list_del(&device->wakeup_list);
+>  	mutex_unlock(&acpi_device_lock);
+> @@ -1222,8 +1224,10 @@ int acpi_device_add(struct acpi_device *device,
+>  	}
+>  	dev_set_name(&device->dev, "%s:%02x", acpi_device_bus_id->bus_id, acpi_device_bus_id->instance_no);
 >  
->  struct gpio_desc *acpi_get_gpiod_by_index(struct device *dev, int index,
->  					  struct acpi_gpio_info *info);
-> +struct gpio_desc *acpi_get_gpiod_flags(struct device *dev, int index,
-> +				       enum gpio_lookup_flags *flags);
->  #else
->  static inline void acpi_gpiochip_add(struct gpio_chip *chip) { }
->  static inline void acpi_gpiochip_remove(struct gpio_chip *chip) { }
-> @@ -43,6 +46,11 @@ acpi_get_gpiod_by_index(struct device *dev, int index,
->  {
->  	return ERR_PTR(-ENOSYS);
->  }
-> +static struct gpio_desc *acpi_get_gpiod_flags(struct device *dev, int index,
-> +					      enum gpio_lookup_flags *flags)
+> -	if (device->parent)
+> +	if (device->parent) {
+>  		list_add_tail(&device->node, &device->parent->children);
+> +		device->parent->child_count++;
+> +	}
+>  
+>  	if (device->wakeup.flags.valid)
+>  		list_add_tail(&device->wakeup_list, &acpi_wakeup_device_list);
+> @@ -1248,8 +1252,10 @@ int acpi_device_add(struct acpi_device *device,
+>  
+>   err:
+>  	mutex_lock(&acpi_device_lock);
+> -	if (device->parent)
+> +	if (device->parent) {
+>  		list_del(&device->node);
+> +		device->parent->child_count--;
+> +	}
+>  	list_del(&device->wakeup_list);
+>  	mutex_unlock(&acpi_device_lock);
+>  
+> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+> index 04b314e0fa51..1acd294b6514 100644
+> --- a/drivers/base/Makefile
+> +++ b/drivers/base/Makefile
+> @@ -4,7 +4,7 @@ obj-y			:= component.o core.o bus.o dd.o syscore.o \
+>  			   driver.o class.o platform.o \
+>  			   cpu.o firmware.o init.o map.o devres.o \
+>  			   attribute_container.o transport_class.o \
+> -			   topology.o container.o
+> +			   topology.o container.o property.o
+>  obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+>  obj-$(CONFIG_DMA_CMA) += dma-contiguous.o
+>  obj-y			+= power/
+> diff --git a/drivers/base/property.c b/drivers/base/property.c
+> new file mode 100644
+> index 000000000000..d770b6edc91a
+> --- /dev/null
+> +++ b/drivers/base/property.c
+> @@ -0,0 +1,48 @@
+> +/*
+> + * property.c - Unified device property interface.
+> + *
+> + * Copyright (C) 2014, Intel Corporation
+> + * All rights reserved.
+> + *
+> + * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/property.h>
+> +#include <linux/export.h>
+> +
+> +int device_property_get(struct device *dev, const char *propname, void **valptr)
 > +{
-> +	return ERR_PTR(-ENOSYS);
+> +	return dev->property_ops && dev->property_ops->get ?
+> +		dev->property_ops->get(dev, propname, valptr) : -ENODATA;
 > +}
->  #endif
->  
->  int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
-> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
-> index 05e53ccb708b..53f422e4f0c9 100644
-> --- a/include/linux/gpio/consumer.h
-> +++ b/include/linux/gpio/consumer.h
-> @@ -7,6 +7,8 @@
->  
->  struct device;
->  
-> +enum gpio_lookup_flags;
+> +EXPORT_SYMBOL_GPL(device_property_get);
 > +
->  /**
->   * Opaque descriptor for a GPIO. These are obtained using gpiod_get() and are
->   * preferable to the old integer-based handles.
-> @@ -73,6 +75,9 @@ int gpiod_to_irq(const struct gpio_desc *desc);
->  struct gpio_desc *gpio_to_desc(unsigned gpio);
->  int desc_to_gpio(const struct gpio_desc *desc);
->  
-> +struct gpio_desc *dev_get_gpiod_flags(struct device *dev, unsigned int idx,
-> +				      enum gpio_lookup_flags *flags);
-> +
->  #else /* CONFIG_GPIOLIB */
->  
->  static inline struct gpio_desc *__must_check gpiod_get(struct device *dev,
-> @@ -254,6 +259,12 @@ static inline int desc_to_gpio(const struct gpio_desc *desc)
->  	return -EINVAL;
->  }
->  
-> +static inline struct gpio_desc *dev_get_gpiod_flags(struct device *dev,
-> +			unsigned int idx, enum gpio_lookup_flags *flags)
+> +int device_property_read(struct device *dev, const char *propname,
+> +			 enum dev_prop_type proptype, void *val)
 > +{
-> +	return ERR_PTR(-ENOSYS);
+> +	return dev->property_ops && dev->property_ops->read ?
+> +		dev->property_ops->read(dev, propname, proptype, val) :
+> +		-ENODATA;
 > +}
+> +EXPORT_SYMBOL_GPL(device_property_read);
 > +
+> +int device_property_read_array(struct device *dev, const char *propname,
+> +			       enum dev_prop_type proptype, void *val,
+> +			       size_t nval)
+> +{
+> +	return dev->property_ops && dev->property_ops->read_array ?
+> +		dev->property_ops->read_array(dev, propname, proptype, val, nval) :
+> +		-ENODATA;
+> +}
+> +EXPORT_SYMBOL_GPL(device_property_read_array);
+> +
+> +int device_property_child_count(struct device *dev)
+> +{
+> +	return dev->property_ops && dev->property_ops->child_count ?
+> +		dev->property_ops->child_count(dev) : -ENODATA;
+> +}
+> +EXPORT_SYMBOL_GPL(device_property_child_count);
+> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+> index 348bd260a6b4..312813f60a22 100644
+> --- a/include/acpi/acpi_bus.h
+> +++ b/include/acpi/acpi_bus.h
+> @@ -340,6 +340,7 @@ struct acpi_device_data {
+>  /* Device */
+>  struct acpi_device {
+>  	int device_type;
+> +	int child_count;
+>  	acpi_handle handle;		/* no handle for fixed hardware */
+>  	struct acpi_device *parent;
+>  	struct list_head children;
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index af424acd393d..ea4cf31f8b9e 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -38,6 +38,7 @@ struct class;
+>  struct subsys_private;
+>  struct bus_type;
+>  struct device_node;
+> +struct dev_prop_ops;
+>  struct iommu_ops;
+>  struct iommu_group;
 >  
->  #endif /* CONFIG_GPIOLIB */
+> @@ -701,6 +702,7 @@ struct acpi_dev_node {
+>   * @archdata:	For arch-specific additions.
+>   * @of_node:	Associated device tree node.
+>   * @acpi_node:	Associated ACPI device node.
+> + * @property_ops: Firmware interface for device properties
+>   * @devt:	For creating the sysfs "dev".
+>   * @id:		device instance
+>   * @devres_lock: Spinlock to protect the resource of the device.
+> @@ -777,6 +779,7 @@ struct device {
 >  
+>  	struct device_node	*of_node; /* associated device tree node */
+>  	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
+> +	struct dev_prop_ops	*property_ops;
+
+There are only 2 users of this interface. I don't think adding an ops
+pointer to each and every struct device is warrented when the wrapper
+function can check if of_node or acpi_node is set and call the
+appropriate helper. It is unlikely anything else will use this hook. It
+will result in smaller memory footprint. Also smaller code when only one of
+CONFIG_OF and CONFIG_ACPI are selected, which is almost always. :-)
+
+It can be refactored later if that ever changes.
+
+>  
+>  	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
+>  	u32			id;	/* device instance */
+> diff --git a/include/linux/property.h b/include/linux/property.h
+> new file mode 100644
+> index 000000000000..52ea7fe7fe09
+> --- /dev/null
+> +++ b/include/linux/property.h
+> @@ -0,0 +1,50 @@
+> +/*
+> + * property.h - Unified device property interface.
+> + *
+> + * Copyright (C) 2014, Intel Corporation
+> + * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef _LINUX_PROPERTY_H_
+> +#define _LINUX_PROPERTY_H_
+> +
+> +#include <linux/device.h>
+> +#include <linux/acpi.h>
+> +#include <linux/of.h>
+> +
+> +enum dev_prop_type {
+> +	DEV_PROP_U8,
+> +	DEV_PROP_U16,
+> +	DEV_PROP_U32,
+> +	DEV_PROP_U64,
+> +	DEV_PROP_STRING,
+> +	DEV_PROP_MAX,
+> +};
+> +
+> +struct dev_prop_ops {
+> +	int (*get)(struct device *dev, const char *propname, void **valptr);
+> +	int (*read)(struct device *dev, const char *propname,
+> +		    enum dev_prop_type proptype, void *val);
+> +	int (*read_array)(struct device *dev, const char *propname,
+> +			  enum dev_prop_type proptype, void *val, size_t nval);
+
+The associated DT functions that implement property reads
+(of_property_read_*) were created in part to provide some type safety
+when reading properties. This proposed API throws that away by accepting
+a void* for the data field, which I don't want to do. This API either
+needs to have a separate accessor for each data type, or it needs some
+other mechanism (accessor macros?) to ensure the right type is passed
+in.
+
+> +	int (*child_count)(struct device *dev);
+> +};
+> +
+> +#ifdef CONFIG_ACPI
+> +extern struct dev_prop_ops acpi_property_ops;
+> +#endif
+
+Rendered moot by my comment about eliminating the ops structure, but the
+above shouldn't appear here. acpi_property_ops shouldn't ever be visible
+outside ACPI core code, so it shouldn't be in this header.
+
+> +
+> +int device_property_get(struct device *dev, const char *propname,
+> +			void **valptr);
+> +int device_property_read(struct device *dev, const char *propname,
+> +			 enum dev_prop_type proptype, void *val);
+> +int device_property_read_array(struct device *dev, const char *propname,
+> +			       enum dev_prop_type proptype, void *val,
+> +			       size_t nval);
+> +int device_property_child_count(struct device *dev);
+> +
+> +#endif /* _LINUX_PROPERTY_H_ */
 > -- 
 > 2.1.0.rc1
 > 
