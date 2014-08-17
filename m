@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830AbaHQRbB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 13:31:01 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:54808 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751641AbaHQRar (ORCPT
+	id S1752332AbaHQRi1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 13:38:27 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:48101
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751811AbaHQRbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 13:30:47 -0400
-Message-Id: <20140817173033.713518795@linux.com>
-Date: Sun, 17 Aug 2014 12:30:28 -0500
+	Sun, 17 Aug 2014 13:31:00 -0400
+Message-Id: <20140817173034.662853063@linux.com>
+Date: Sun, 17 Aug 2014 12:30:34 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 05/35] [PATCH 05/36] block: Replace __this_cpu_ptr with raw_cpu_ptr
+        Thomas Gleixner <tglx@linutronix.de>, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org
+Subject: [PATCH 11/35] [PATCH 11/36] watchdog: Replace __raw_get_cpu_var uses
 References: <20140817173023.439660246@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0005-block-Replace-__this_cpu_ptr-with-raw_cpu_ptr.patch
+Content-Disposition: inline; filename=0011-watchdog-Replace-__raw_get_cpu_var-uses.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__this_cpu_ptr is being phased out use raw_cpu_ptr instead which was
-introduced in 3.15-rc1.
+Most of these are the uses of &__raw_get_cpu_var for address calculation.
 
-Cc: Jens Axboe <axboe@kernel.dk>
+touch_softlockup_watchdog_sync() uses __raw_get_cpu_var to write to
+per cpu variables. Use __this_cpu_write instead.
+
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-watchdog@vger.kernel.org
 Signed-off-by: Christoph Lameter <cl@linux.com>
 ---
- fs/ext4/mballoc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/watchdog.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Index: linux/fs/ext4/mballoc.c
+Index: linux/kernel/watchdog.c
 ===================================================================
---- linux.orig/fs/ext4/mballoc.c
-+++ linux/fs/ext4/mballoc.c
-@@ -4129,7 +4129,7 @@ static void ext4_mb_group_or_file(struct
- 	 * per cpu locality group is to reduce the contention between block
- 	 * request from multiple CPUs.
+--- linux.orig/kernel/watchdog.c
++++ linux/kernel/watchdog.c
+@@ -185,7 +185,7 @@ void touch_nmi_watchdog(void)
+ 	 * case we shouldn't have to worry about the watchdog
+ 	 * going off.
  	 */
--	ac->ac_lg = __this_cpu_ptr(sbi->s_locality_groups);
-+	ac->ac_lg = raw_cpu_ptr(sbi->s_locality_groups);
+-	__raw_get_cpu_var(watchdog_nmi_touch) = true;
++	raw_cpu_write(watchdog_nmi_touch, true);
+ 	touch_softlockup_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+@@ -194,8 +194,8 @@ EXPORT_SYMBOL(touch_nmi_watchdog);
  
- 	/* we're going to use group allocation */
- 	ac->ac_flags |= EXT4_MB_HINT_GROUP_ALLOC;
+ void touch_softlockup_watchdog_sync(void)
+ {
+-	__raw_get_cpu_var(softlockup_touch_sync) = true;
+-	__raw_get_cpu_var(watchdog_touch_ts) = 0;
++	__this_cpu_write(softlockup_touch_sync, true);
++	__this_cpu_write(watchdog_touch_ts, 0);
+ }
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+@@ -387,7 +387,7 @@ static void watchdog_set_prio(unsigned i
+ 
+ static void watchdog_enable(unsigned int cpu)
+ {
+-	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
+ 
+ 	/* kick off the timer for the hardlockup detector */
+ 	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+@@ -407,7 +407,7 @@ static void watchdog_enable(unsigned int
+ 
+ static void watchdog_disable(unsigned int cpu)
+ {
+-	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
+ 
+ 	watchdog_set_prio(SCHED_NORMAL, 0);
+ 	hrtimer_cancel(hrtimer);
+@@ -534,7 +534,7 @@ static struct smp_hotplug_thread watchdo
+ 
+ static void restart_watchdog_hrtimer(void *info)
+ {
+-	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
++	struct hrtimer *hrtimer = raw_cpu_ptr(&watchdog_hrtimer);
+ 	int ret;
+ 
+ 	/*
 
