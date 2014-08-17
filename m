@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaHQGF4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 02:05:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9942 "EHLO mga09.intel.com"
+	id S1751579AbaHQGEq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 02:04:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54238 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbaHQGFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 02:05:03 -0400
+	id S1751128AbaHQGE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 02:04:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,878,1400050800"; 
-   d="scan'208";a="589195629"
+   d="scan'208";a="559589070"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Darren Hart <dvhart@linux.intel.com>,
         "Rafael J. Wysocki" <rafael@kernel.org>
@@ -16,9 +16,9 @@ Cc: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 5/9] mfd: Add ACPI support
-Date: Sun, 17 Aug 2014 09:04:15 +0300
-Message-Id: <1408255459-17625-6-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [RFC PATCH 7/9] gpio: sch: Consolidate core and resume banks
+Date: Sun, 17 Aug 2014 09:04:17 +0300
+Message-Id: <1408255459-17625-8-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 2.1.0.rc1
 In-Reply-To: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -26,132 +26,437 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an MFD device is backed by ACPI namespace, we should allow subdevice
-drivers to access their corresponding ACPI companion devices through normal
-means (e.g using ACPI_COMPANION()).
+This is actually a single device with two sets of identical registers,
+which just happen to start from a different offset. Instead of having
+separate GPIO chips created we consolidate them to be single GPIO chip.
 
-This patch adds such support to the MFD core. If the MFD parent device
-doesn't specify any ACPI _HID/_CID for the child device, the child device
-will share the parent ACPI companion device. Otherwise the child device
-will be assigned with the corresponding ACPI companion, if found in the
-namespace below the parent.
+In addition having a single GPIO chip allows us to handle ACPI GPIO
+translation in the core in a more generic way, since the two GPIO chips
+share the same parent ACPI device.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Tested-by: Max Eliaser <max.eliaser@intel.com>
 ---
- Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
- drivers/mfd/mfd-core.c             | 41 ++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/core.h           |  3 +++
- 3 files changed, 71 insertions(+)
+ drivers/gpio/gpio-sch.c | 303 ++++++++++++++++++------------------------------
+ 1 file changed, 112 insertions(+), 191 deletions(-)
 
-diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-index e182be5e3c83..74e35c54febf 100644
---- a/Documentation/acpi/enumeration.txt
-+++ b/Documentation/acpi/enumeration.txt
-@@ -312,3 +312,30 @@ a code like this:
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index a9b1cd16c848..99720c8bc8ed 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -29,300 +29,221 @@
  
- There are also devm_* versions of these functions which release the
- descriptors once the device is released.
+ #include <linux/gpio.h>
+ 
+-static DEFINE_SPINLOCK(gpio_lock);
+-
+-#define CGEN	(0x00)
+-#define CGIO	(0x04)
+-#define CGLV	(0x08)
+-
+-#define RGEN	(0x20)
+-#define RGIO	(0x24)
+-#define RGLV	(0x28)
++#define GEN	0x00
++#define GIO	0x04
++#define GLV	0x08
 +
-+MFD devices
-+~~~~~~~~~~~
-+The MFD devices create platform devices from their children. For the
-+child devices there needs to be an ACPI handle that they can use to
-+reference parts of the ACPI namespace that relate to them. In the Linux
-+MFD subsystem we provide two ways:
-+
-+	o The children share the parent ACPI handle.
-+	o The MFD cell can specify the ACPI id of the device.
-+
-+For the first case, the MFD drivers do not need to do anything. The
-+resulting child platform device will have its ACPI_COMPANION() set to point
-+to the parent device.
-+
-+If the ACPI namespace has a device that we can match using an ACPI id,
-+the id should be set like:
-+
-+	static struct mfd_cell my_subdevice_cell = {
-+		.name = "my_subdevice",
-+		/* set the resources relative to the parent */
-+		.acpi_pnpid = "XYZ0001",
-+	};
-+
-+The ACPI id "XYZ0001" is then used to lookup an ACPI device directly under
-+the MFD device and if found, that ACPI companion device is bound to the
-+resulting child platform device.
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 892d343193ad..bb466b28b3b6 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -78,6 +78,45 @@ static int mfd_platform_add_cell(struct platform_device *pdev,
++struct sch_gpio {
++	struct gpio_chip chip;
++	spinlock_t lock;
++	unsigned short iobase;
++	unsigned short core_base;
++	unsigned short resume_base;
++};
+ 
+-static unsigned short gpio_ba;
++#define to_sch_gpio(c)	container_of(c, struct sch_gpio, chip)
+ 
+-static int sch_gpio_core_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
++static unsigned sch_gpio_offset(struct sch_gpio *sch, unsigned gpio,
++				unsigned reg)
+ {
+-	u8 curr_dirs;
+-	unsigned short offset, bit;
++	unsigned base = 0;
+ 
+-	spin_lock(&gpio_lock);
+-
+-	offset = CGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
+-
+-	curr_dirs = inb(gpio_ba + offset);
+-
+-	if (!(curr_dirs & (1 << bit)))
+-		outb(curr_dirs | (1 << bit), gpio_ba + offset);
++	if (gpio >= sch->resume_base) {
++		gpio -= sch->resume_base;
++		base += 0x20;
++	}
+ 
+-	spin_unlock(&gpio_lock);
+-	return 0;
++	return base + reg + gpio / 8;
+ }
+ 
+-static int sch_gpio_core_get(struct gpio_chip *gc, unsigned gpio_num)
++static unsigned sch_gpio_bit(struct sch_gpio *sch, unsigned gpio)
+ {
+-	int res;
+-	unsigned short offset, bit;
+-
+-	offset = CGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
+-
+-	res = !!(inb(gpio_ba + offset) & (1 << bit));
+-	return res;
++	if (gpio >= sch->resume_base)
++		gpio -= sch->resume_base;
++	return gpio % 8;
+ }
+ 
+-static void sch_gpio_core_set(struct gpio_chip *gc, unsigned gpio_num, int val)
++static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
+ {
+-	u8 curr_vals;
+ 	unsigned short offset, bit;
++	u8 enable;
+ 
+-	spin_lock(&gpio_lock);
++	spin_lock(&sch->lock);
+ 
+-	offset = CGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
++	offset = sch_gpio_offset(sch, gpio, GEN);
++	bit = sch_gpio_bit(sch, gpio);
+ 
+-	curr_vals = inb(gpio_ba + offset);
++	enable = inb(sch->iobase + offset);
++	if (!(enable & (1 << bit)))
++		outb(enable | (1 << bit), sch->iobase + offset);
+ 
+-	if (val)
+-		outb(curr_vals | (1 << bit), gpio_ba + offset);
+-	else
+-		outb((curr_vals & ~(1 << bit)), gpio_ba + offset);
+-	spin_unlock(&gpio_lock);
++	spin_unlock(&sch->lock);
+ }
+ 
+-static int sch_gpio_core_direction_out(struct gpio_chip *gc,
+-					unsigned gpio_num, int val)
++static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	u8 curr_dirs;
+ 	unsigned short offset, bit;
+ 
+-	spin_lock(&gpio_lock);
+-
+-	offset = CGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
++	spin_lock(&sch->lock);
+ 
+-	curr_dirs = inb(gpio_ba + offset);
+-	if (curr_dirs & (1 << bit))
+-		outb(curr_dirs & ~(1 << bit), gpio_ba + offset);
++	offset = sch_gpio_offset(sch, gpio_num, GIO);
++	bit = sch_gpio_bit(sch, gpio_num);
+ 
+-	spin_unlock(&gpio_lock);
+-
+-	/*
+-	 * according to the datasheet, writing to the level register has no
+-	 * effect when GPIO is programmed as input.
+-	 * Actually the the level register is read-only when configured as input.
+-	 * Thus presetting the output level before switching to output is _NOT_ possible.
+-	 * Hence we set the level after configuring the GPIO as output.
+-	 * But we cannot prevent a short low pulse if direction is set to high
+-	 * and an external pull-up is connected.
+-	 */
+-	sch_gpio_core_set(gc, gpio_num, val);
+-	return 0;
+-}
+-
+-static struct gpio_chip sch_gpio_core = {
+-	.label			= "sch_gpio_core",
+-	.owner			= THIS_MODULE,
+-	.direction_input	= sch_gpio_core_direction_in,
+-	.get			= sch_gpio_core_get,
+-	.direction_output	= sch_gpio_core_direction_out,
+-	.set			= sch_gpio_core_set,
+-};
+-
+-static int sch_gpio_resume_direction_in(struct gpio_chip *gc,
+-					unsigned gpio_num)
+-{
+-	u8 curr_dirs;
+-	unsigned short offset, bit;
+-
+-	spin_lock(&gpio_lock);
+-
+-	offset = RGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
+-
+-	curr_dirs = inb(gpio_ba + offset);
++	curr_dirs = inb(sch->iobase + offset);
+ 
+ 	if (!(curr_dirs & (1 << bit)))
+-		outb(curr_dirs | (1 << bit), gpio_ba + offset);
++		outb(curr_dirs | (1 << bit), sch->iobase + offset);
+ 
+-	spin_unlock(&gpio_lock);
++	spin_unlock(&sch->lock);
  	return 0;
  }
  
-+#if IS_ENABLED(CONFIG_ACPI)
-+static void mfd_acpi_add_device(const struct mfd_cell *cell,
-+				struct platform_device *pdev)
-+{
-+	struct acpi_device *parent_adev;
-+	struct acpi_device *adev = NULL;
+-static int sch_gpio_resume_get(struct gpio_chip *gc, unsigned gpio_num)
++static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
++	int res;
+ 	unsigned short offset, bit;
+ 
+-	offset = RGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
++	offset = sch_gpio_offset(sch, gpio_num, GLV);
++	bit = sch_gpio_bit(sch, gpio_num);
+ 
+-	return !!(inb(gpio_ba + offset) & (1 << bit));
++	res = !!(inb(sch->iobase + offset) & (1 << bit));
 +
-+	parent_adev = ACPI_COMPANION(pdev->dev.parent);
-+	if (!parent_adev)
-+		return;
-+
-+	/*
-+	 * MFD child device gets its ACPI handle either from the ACPI
-+	 * device directly under the parent that matches the acpi_pnpid or
-+	 * it will use the parent handle if is no acpi_pnpid is given.
++	return res;
+ }
+ 
+-static void sch_gpio_resume_set(struct gpio_chip *gc,
+-				unsigned gpio_num, int val)
++static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	u8 curr_vals;
+ 	unsigned short offset, bit;
+ 
+-	spin_lock(&gpio_lock);
++	spin_lock(&sch->lock);
+ 
+-	offset = RGLV + gpio_num / 8;
+-	bit = gpio_num % 8;
++	offset = sch_gpio_offset(sch, gpio_num, GLV);
++	bit = sch_gpio_bit(sch, gpio_num);
+ 
+-	curr_vals = inb(gpio_ba + offset);
++	curr_vals = inb(sch->iobase + offset);
+ 
+ 	if (val)
+-		outb(curr_vals | (1 << bit), gpio_ba + offset);
++		outb(curr_vals | (1 << bit), sch->iobase + offset);
+ 	else
+-		outb((curr_vals & ~(1 << bit)), gpio_ba + offset);
++		outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
+ 
+-	spin_unlock(&gpio_lock);
++	spin_unlock(&sch->lock);
+ }
+ 
+-static int sch_gpio_resume_direction_out(struct gpio_chip *gc,
+-					unsigned gpio_num, int val)
++static int sch_gpio_direction_out(struct gpio_chip *gc, unsigned gpio_num,
++				  int val)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	u8 curr_dirs;
+ 	unsigned short offset, bit;
+ 
+-	offset = RGIO + gpio_num / 8;
+-	bit = gpio_num % 8;
++	spin_lock(&sch->lock);
+ 
+-	spin_lock(&gpio_lock);
++	offset = sch_gpio_offset(sch, gpio_num, GIO);
++	bit = sch_gpio_bit(sch, gpio_num);
+ 
+-	curr_dirs = inb(gpio_ba + offset);
++	curr_dirs = inb(sch->iobase + offset);
+ 	if (curr_dirs & (1 << bit))
+-		outb(curr_dirs & ~(1 << bit), gpio_ba + offset);
++		outb(curr_dirs & ~(1 << bit), sch->iobase + offset);
+ 
+-	spin_unlock(&gpio_lock);
++	spin_unlock(&sch->lock);
+ 
+ 	/*
+-	* according to the datasheet, writing to the level register has no
+-	* effect when GPIO is programmed as input.
+-	* Actually the the level register is read-only when configured as input.
+-	* Thus presetting the output level before switching to output is _NOT_ possible.
+-	* Hence we set the level after configuring the GPIO as output.
+-	* But we cannot prevent a short low pulse if direction is set to high
+-	* and an external pull-up is connected.
+-	*/
+-	sch_gpio_resume_set(gc, gpio_num, val);
++	 * according to the datasheet, writing to the level register has no
++	 * effect when GPIO is programmed as input.
++	 * Actually the the level register is read-only when configured as input.
++	 * Thus presetting the output level before switching to output is _NOT_ possible.
++	 * Hence we set the level after configuring the GPIO as output.
++	 * But we cannot prevent a short low pulse if direction is set to high
++	 * and an external pull-up is connected.
 +	 */
-+	if (cell->acpi_pnpid) {
-+		struct acpi_device_id ids[2] = {};
-+		struct acpi_device *child_adev;
++	sch_gpio_set(gc, gpio_num, val);
+ 	return 0;
+ }
+ 
+-static struct gpio_chip sch_gpio_resume = {
+-	.label			= "sch_gpio_resume",
++static struct gpio_chip sch_gpio_chip = {
++	.label			= "sch_gpio",
+ 	.owner			= THIS_MODULE,
+-	.direction_input	= sch_gpio_resume_direction_in,
+-	.get			= sch_gpio_resume_get,
+-	.direction_output	= sch_gpio_resume_direction_out,
+-	.set			= sch_gpio_resume_set,
++	.direction_input	= sch_gpio_direction_in,
++	.get			= sch_gpio_get,
++	.direction_output	= sch_gpio_direction_out,
++	.set			= sch_gpio_set,
+ };
+ 
+ static int sch_gpio_probe(struct platform_device *pdev)
+ {
++	struct sch_gpio *sch;
+ 	struct resource *res;
+-	int err, id;
+ 
+-	id = pdev->id;
+-	if (!id)
+-		return -ENODEV;
++	sch = devm_kzalloc(&pdev->dev, sizeof(*sch), GFP_KERNEL);
++	if (!sch)
++		return -ENOMEM;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+ 	if (!res)
+ 		return -EBUSY;
+ 
+-	if (!request_region(res->start, resource_size(res), pdev->name))
++	if (!devm_request_region(&pdev->dev, res->start, resource_size(res),
++				 pdev->name))
+ 		return -EBUSY;
+ 
+-	gpio_ba = res->start;
++	spin_lock_init(&sch->lock);
++	sch->iobase = res->start;
++	sch->chip = sch_gpio_chip;
++	sch->chip.label = dev_name(&pdev->dev);
++	sch->chip.dev = &pdev->dev;
+ 
+-	switch (id) {
++	switch (pdev->id) {
+ 	case PCI_DEVICE_ID_INTEL_SCH_LPC:
+-		sch_gpio_core.base = 0;
+-		sch_gpio_core.ngpio = 10;
+-		sch_gpio_resume.base = 10;
+-		sch_gpio_resume.ngpio = 4;
++		sch->core_base = 0;
++		sch->resume_base = 10;
++		sch->chip.ngpio = 14;
 +
-+		strlcpy(ids[0].id, cell->acpi_pnpid, sizeof(ids[0].id));
-+		list_for_each_entry(child_adev, &parent_adev->children, node)
-+			if (acpi_match_device_ids(child_adev, ids)) {
-+				adev = child_adev;
-+				break;
-+			}
-+	} else {
-+		adev = parent_adev;
-+	}
-+
-+	ACPI_COMPANION_SET(&pdev->dev, adev);
-+}
-+#else
-+static inline void mfd_acpi_add_device(const struct mfd_cell *cell,
-+				       struct platform_device *pdev)
-+{
-+}
-+#endif
-+
- static int mfd_add_device(struct device *parent, int id,
- 			  const struct mfd_cell *cell, atomic_t *usage_count,
- 			  struct resource *mem_base,
-@@ -118,6 +157,8 @@ static int mfd_add_device(struct device *parent, int id,
- 		}
+ 		/*
+ 		 * GPIO[6:0] enabled by default
+ 		 * GPIO7 is configured by the CMC as SLPIOVR
+ 		 * Enable GPIO[9:8] core powered gpios explicitly
+ 		 */
+-		outb(0x3, gpio_ba + CGEN + 1);
++		sch_gpio_enable(sch, 8);
++		sch_gpio_enable(sch, 9);
+ 		/*
+ 		 * SUS_GPIO[2:0] enabled by default
+ 		 * Enable SUS_GPIO3 resume powered gpio explicitly
+ 		 */
+-		outb(0x8, gpio_ba + RGEN);
++		sch_gpio_enable(sch, 13);
+ 		break;
+ 
+ 	case PCI_DEVICE_ID_INTEL_ITC_LPC:
+-		sch_gpio_core.base = 0;
+-		sch_gpio_core.ngpio = 5;
+-		sch_gpio_resume.base = 5;
+-		sch_gpio_resume.ngpio = 9;
++		sch->core_base = 0;
++		sch->resume_base = 5;
++		sch->chip.ngpio = 14;
+ 		break;
+ 
+ 	case PCI_DEVICE_ID_INTEL_CENTERTON_ILB:
+-		sch_gpio_core.base = 0;
+-		sch_gpio_core.ngpio = 21;
+-		sch_gpio_resume.base = 21;
+-		sch_gpio_resume.ngpio = 9;
++		sch->core_base = 0;
++		sch->resume_base = 21;
++		sch->chip.ngpio = 30;
+ 		break;
+ 
+ 	default:
+-		err = -ENODEV;
+-		goto err_sch_gpio_core;
++		return -ENODEV;
  	}
  
-+	mfd_acpi_add_device(cell, pdev);
-+
- 	if (cell->pdata_size) {
- 		ret = platform_device_add_data(pdev,
- 					cell->platform_data, cell->pdata_size);
-diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-index f543de91ce19..73e1709d4c09 100644
---- a/include/linux/mfd/core.h
-+++ b/include/linux/mfd/core.h
-@@ -44,6 +44,9 @@ struct mfd_cell {
- 	 */
- 	const char		*of_compatible;
+-	sch_gpio_core.dev = &pdev->dev;
+-	sch_gpio_resume.dev = &pdev->dev;
+-
+-	err = gpiochip_add(&sch_gpio_core);
+-	if (err < 0)
+-		goto err_sch_gpio_core;
+-
+-	err = gpiochip_add(&sch_gpio_resume);
+-	if (err < 0)
+-		goto err_sch_gpio_resume;
+-
+-	return 0;
++	platform_set_drvdata(pdev, sch);
  
-+	/* Matches ACPI PNP id, either _HID or _CID */
-+	const char		*acpi_pnpid;
-+
- 	/*
- 	 * These resources can be specified relative to the parent device.
- 	 * For accessing hardware you should use resources from the platform dev
+-err_sch_gpio_resume:
+-	if (gpiochip_remove(&sch_gpio_core))
+-		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
+-
+-err_sch_gpio_core:
+-	release_region(res->start, resource_size(res));
+-	gpio_ba = 0;
+-
+-	return err;
++	return gpiochip_add(&sch->chip);
+ }
+ 
+ static int sch_gpio_remove(struct platform_device *pdev)
+ {
+-	struct resource *res;
+-	if (gpio_ba) {
+-		int err;
+-
+-		err  = gpiochip_remove(&sch_gpio_core);
+-		if (err)
+-			dev_err(&pdev->dev, "%s failed, %d\n",
+-				"gpiochip_remove()", err);
+-		err = gpiochip_remove(&sch_gpio_resume);
+-		if (err)
+-			dev_err(&pdev->dev, "%s failed, %d\n",
+-				"gpiochip_remove()", err);
+-
+-		res = platform_get_resource(pdev, IORESOURCE_IO, 0);
+-
+-		release_region(res->start, resource_size(res));
+-		gpio_ba = 0;
+-
+-		return err;
+-	}
++	struct sch_gpio *sch = platform_get_drvdata(pdev);
+ 
++	gpiochip_remove(&sch->chip);
+ 	return 0;
+ }
+ 
 -- 
 2.1.0.rc1
 
