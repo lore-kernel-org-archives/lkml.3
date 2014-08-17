@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730AbaHQXNM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 19:13:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:45906 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512AbaHQXNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 19:13:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="373527867"
-User-Agent: Microsoft-MacOutlook/14.4.3.140616
-Date: Sun, 17 Aug 2014 12:43:38 -0500
-Subject: Re: [RFC PATCH 6/9] gpiolib: add API to get gpio desc and flags
-From: Darren Hart <dvhart@linux.intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>
-CC: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
-        <linux-acpi@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Message-ID: <D016516D.A1AFA%dvhart@linux.intel.com>
-Thread-Topic: [RFC PATCH 6/9] gpiolib: add API to get gpio desc and flags
-References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
- <1408255459-17625-7-git-send-email-mika.westerberg@linux.intel.com>
- <20140817130004.4B9FDC4137F@trevor.secretlab.ca>
-In-Reply-To: <20140817130004.4B9FDC4137F@trevor.secretlab.ca>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
+	id S1751685AbaHQXRt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 19:17:49 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:57525 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaHQXRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 19:17:48 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
+        namhyung@kernel.org, dsahern@gmail.com
+Subject: [PATCH v3 0/6] perf: add ability to sample interrupted machine state
+Date: Mon, 18 Aug 2014 01:18:14 +0200
+Message-Id: <1408317500-28146-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/17/14, 6:00, "Grant Likely" <grant.likely@secretlab.ca> wrote:
+This short patch series add the ability to sample the interrupted
+machine state for each hardware sample. This is useful to analyze
+the state after certain events, for instance for function value
+profiling after a call instruction.
 
->>
->>+	/* Using device tree? */
->>+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
->>+		desc = of_find_gpio(dev, NULL, idx, flags);
->
->of_find_gpio() doesn't exist.
+The patch extends the interface with a new PERF_SAMPLE_REGS_INTR 
+smaple_type flag. The register to sample can be named in the
+sample_regs_intr bitmask for each event. The name and bit
+position for each register is architecture dependent and
+provided, just like for PERF_SAMPLE_REGS_USER by asm/perf_regs.h.
 
-Hrm... As of 3.16.0 (e64df3ebe8262c8203d1fe4f541e0241c3112c01)
+The support is similar to PERF_SAMPLE_REGS_USER.
 
-$ git blame -L1455,1456 drivers/gpio/gpiolib.c
-bae48da2 (Alexandre Courbot 2013-10-17 10:21:38 -0700 1455) static struct
-gpio_desc *of_find_gpio(struct device *dev, const char *con_id,
+On Intel x86, the series includes support for capturing the
+PEBS state as well. When precise sampling is used, the interrupted
+state is collect from the PEBS records, at least partially.
+The PEBS machine state is a subset of the machine state.
 
-Have we removed this in -next or something? (on the plane, will verify
-upon landing)
+The series provides access to this new feature in perf record
+with the -I option. It is possible to display the sampled
+register values using perf report -D.
+
+This patch series is the fundation for a future series adding
+function value profiling.
+
+In V2, we address the issues raised during reviews:
+ - add sample parsing test
+ - shorten perf record option to --intr-regs
+ - added man page for perf record -I/--intr-regs option
+ - refactor register printf code between user and intr regs
+ - rebase to v3.16-rc3
+
+In V3, we rebase to 3.16.0+ and made the modifications suggested
+by PeterZ. We also integrated his patch to improve the layout
+of perf_sample_data.
 
 
+Peter Zijlstra (1):
+  perf: improve perf_sample_data struct layout
+
+Stephane Eranian (5):
+  perf: add ability to sample machine state on interrupt
+  perf/x86: add support for sampling PEBS machine state registers
+  perf tools: add core support for sampling intr machine state regs
+  perf/tests: add interrupted state sample parsing test
+  perf record: add new -I option to sample interrupted machine state
+
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   17 +++++++++
+ include/linux/perf_event.h                |   37 ++++++++++---------
+ include/uapi/linux/perf_event.h           |   14 +++++++-
+ kernel/events/core.c                      |   49 +++++++++++++++++++++++--
+ tools/perf/Documentation/perf-record.txt  |    6 ++++
+ tools/perf/builtin-record.c               |    2 ++
+ tools/perf/perf.h                         |    1 +
+ tools/perf/tests/sample-parsing.c         |   55 +++++++++++++++++++++--------
+ tools/perf/util/event.h                   |    1 +
+ tools/perf/util/evsel.c                   |   46 +++++++++++++++++++++++-
+ tools/perf/util/session.c                 |   44 ++++++++++++++++++++---
+ 11 files changed, 230 insertions(+), 42 deletions(-)
 
 -- 
-Darren Hart					Open Source Technology Center
-darren.hart@intel.com				            Intel Corporation
-
-
+1.7.9.5
 
