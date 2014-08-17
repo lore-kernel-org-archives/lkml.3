@@ -1,51 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546AbaHQOgo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 10:36:44 -0400
-Received: from vif-relay01.zonnet.isp-net.nl ([217.149.195.15]:35832 "EHLO
-	relay01.zonnet.isp-net.nl" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751282AbaHQOgn (ORCPT
+	id S1751600AbaHQOns (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 10:43:48 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:59584 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaHQOnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 10:36:43 -0400
-X-Greylist: delayed 619 seconds by postgrey-1.27 at vger.kernel.org; Sun, 17 Aug 2014 10:36:43 EDT
-X-Spam-scanned: scanned by InterNLnet Mail Scan System
-X-Spam-Flag: NO
-X-Spam-Score: 2
-X-Spam-Languages: en
-To: undisclosed-recipients:;
-Subject: Dear my love
-X-PHP-Originating-Script: 501:rcube.php
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sun, 17 Aug 2014 16:26:01 +0200
-From: corrado <saro@htp-tel.de>
-X-Orig-Sender: corrado
-Reply-To: jane.ferguson@mail.com
-Mail-Reply-To: jane.ferguson@mail.com
-Message-ID: <6ef7e0e3d6826c6d8470def25ab3400d@zonnet.nl>
-User-Agent: Roundcube Webmail/1.0.1
+	Sun, 17 Aug 2014 10:43:47 -0400
+From: Phong Tran <tranmanphong@gmail.com>
+To: dh.herrmann@gmail.com, hughd@google.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, shuah.kh@samsung.com, sam@ravnborg.org,
+        mmarek@suse.cz, Phong Tran <tranmanphong@gmail.com>
+Subject: [PATCH] tools: selftests: Fixing build issue with make kselftests target
+Date: Sun, 17 Aug 2014 21:43:29 +0700
+Message-Id: <1408286609-32597-1-git-send-email-tranmanphong@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix the typo of ARCH when build with 'make kselftests'
+Change the 'X86' to 'x86'. Test by compilation
 
+Signed-off-by: Phong Tran <tranmanphong@gmail.com>
+---
+ tools/testing/selftests/ipc/Makefile   |  6 +++---
+ tools/testing/selftests/kcmp/Makefile  |  6 +++---
+ tools/testing/selftests/memfd/Makefile | 10 +++++-----
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
+diff --git a/tools/testing/selftests/ipc/Makefile b/tools/testing/selftests/ipc/Makefile
+index 5386fd7..74bbefd 100644
+--- a/tools/testing/selftests/ipc/Makefile
++++ b/tools/testing/selftests/ipc/Makefile
+@@ -1,18 +1,18 @@
+ uname_M := $(shell uname -m 2>/dev/null || echo not)
+ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
+ ifeq ($(ARCH),i386)
+-        ARCH := X86
++        ARCH := x86
+ 	CFLAGS := -DCONFIG_X86_32 -D__i386__
+ endif
+ ifeq ($(ARCH),x86_64)
+-	ARCH := X86
++	ARCH := x86
+ 	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
+ endif
+ 
+ CFLAGS += -I../../../../usr/include/
+ 
+ all:
+-ifeq ($(ARCH),X86)
++ifeq ($(ARCH),x86)
+ 	gcc $(CFLAGS) msgque.c -o msgque_test
+ else
+ 	echo "Not an x86 target, can't build msgque selftest"
+diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
+index d7d6bbe..8aabd82 100644
+--- a/tools/testing/selftests/kcmp/Makefile
++++ b/tools/testing/selftests/kcmp/Makefile
+@@ -1,11 +1,11 @@
+ uname_M := $(shell uname -m 2>/dev/null || echo not)
+ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
+ ifeq ($(ARCH),i386)
+-        ARCH := X86
++        ARCH := x86
+ 	CFLAGS := -DCONFIG_X86_32 -D__i386__
+ endif
+ ifeq ($(ARCH),x86_64)
+-	ARCH := X86
++	ARCH := x86
+ 	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
+ endif
+ 
+@@ -15,7 +15,7 @@ CFLAGS += -I../../../../usr/include/
+ CFLAGS += -I../../../../arch/x86/include/
+ 
+ all:
+-ifeq ($(ARCH),X86)
++ifeq ($(ARCH),x86)
+ 	gcc $(CFLAGS) kcmp_test.c -o kcmp_test
+ else
+ 	echo "Not an x86 target, can't build kcmp selftest"
+diff --git a/tools/testing/selftests/memfd/Makefile b/tools/testing/selftests/memfd/Makefile
+index 6816c49..ad4ab01 100644
+--- a/tools/testing/selftests/memfd/Makefile
++++ b/tools/testing/selftests/memfd/Makefile
+@@ -1,10 +1,10 @@
+ uname_M := $(shell uname -m 2>/dev/null || echo not)
+ ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
+ ifeq ($(ARCH),i386)
+-	ARCH := X86
++	ARCH := x86
+ endif
+ ifeq ($(ARCH),x86_64)
+-	ARCH := X86
++	ARCH := x86
+ endif
+ 
+ CFLAGS += -D_FILE_OFFSET_BITS=64
+@@ -14,20 +14,20 @@ CFLAGS += -I../../../../include/uapi/
+ CFLAGS += -I../../../../include/
+ 
+ all:
+-ifeq ($(ARCH),X86)
++ifeq ($(ARCH),x86)
+ 	gcc $(CFLAGS) memfd_test.c -o memfd_test
+ else
+ 	echo "Not an x86 target, can't build memfd selftest"
+ endif
+ 
+ run_tests: all
+-ifeq ($(ARCH),X86)
++ifeq ($(ARCH),x86)
+ 	gcc $(CFLAGS) memfd_test.c -o memfd_test
+ endif
+ 	@./memfd_test || echo "memfd_test: [FAIL]"
+ 
+ build_fuse:
+-ifeq ($(ARCH),X86)
++ifeq ($(ARCH),x86)
+ 	gcc $(CFLAGS) fuse_mnt.c `pkg-config fuse --cflags --libs` -o fuse_mnt
+ 	gcc $(CFLAGS) fuse_test.c -o fuse_test
+ else
 -- 
-Dear my love Please pardon me if i busted into you in a wrong way but i
-will like to say the truth in my heart that
-I just read through your profile today and i sincerely like you and i 
-would
-like to have a good relationship with you and,
-I will like to know you more better as I am searching for a long lasting
-relationship.
-My name is Jane Ferguson and please tell me more about yourself, and
-everything you think I need to know about you as your good friend.
-and I will tell you more about myself too when I get your reply use this
-email to reply me jane.ferguson@mail.com and also send to you my 
-pictures
-for the both of us to proceed to know each other better in future
-Jane jane.ferguson@mail.com
+1.9.3
 
-Dear my love
