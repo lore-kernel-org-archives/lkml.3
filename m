@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaHQKE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 06:04:26 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:52197 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392AbaHQKEX (ORCPT
+	id S1751505AbaHQKJO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 06:09:14 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:51994 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaHQKJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 06:04:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140816.185002.1499212551659532229.davem@davemloft.net>
-References: <20140816193442.GA6471@ada>
-	<20140816.185002.1499212551659532229.davem@davemloft.net>
-Date: Sun, 17 Aug 2014 13:04:21 +0300
-Message-ID: <CALDM6bov98jkjiUgPevE=Ha0Uh_QDR7Ee-enB5DtQ1WKVLUnig@mail.gmail.com>
-Subject: Re: [PATCH] rcu: Replace rcu_dereference() with rcu_access_pointer()
-From: Andreea Bernat <bernat.ada@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: Jay Vosburgh <j.vosburgh@gmail.com>, vfalico@gmail.com,
-        Andy Gospodarek <andy@greyhouse.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 17 Aug 2014 06:09:11 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-spi@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/2] regmap: Add eplicit dependencies to catch "select" misuse
+Date: Sun, 17 Aug 2014 12:08:57 +0200
+Message-Id: <1408270138-29811-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I will send a version two of the patches with the subject line
-changed.
+Add explicit dependencies for the various regmap modules, so Kconfig
+will print a warning message when another module selects a regmap module
+without fulfilling its dependencies.
 
-Thank you,
-Andreea
+Without this, it's much more difficult to find out which module did the
+offending select.
 
-2014-08-17 4:50 GMT+03:00 David Miller <davem@davemloft.net>:
->
-> Please do not use the same exact Subject line for all of these patches.
->
-> Otherwise nobody reading the shortlog can tell what might be different
-> from one patch to another.
->
-> Instead, use a subsystem prefix for the place where you're making
-> your change.  For example, for the two networking patches you could
-> replace "rcu: " with "bonding: " and "cnic: ".
->
-> Thanks.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/base/regmap/Kconfig | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
+index 4251570610c9..8a3f51f7b1b9 100644
+--- a/drivers/base/regmap/Kconfig
++++ b/drivers/base/regmap/Kconfig
+@@ -11,12 +11,15 @@ config REGMAP
+ 
+ config REGMAP_I2C
+ 	tristate
++	depends on I2C
+ 
+ config REGMAP_SPI
+ 	tristate
++	depends on SPI
+ 
+ config REGMAP_SPMI
+ 	tristate
++	depends on SPMI
+ 
+ config REGMAP_MMIO
+ 	tristate
+-- 
+1.9.1
+
