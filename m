@@ -1,406 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945AbaHQGHD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 02:07:03 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49045 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250AbaHQGEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 02:04:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,878,1400050800"; 
-   d="scan'208";a="577744106"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Darren Hart <dvhart@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>
-Cc: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/9] ACPI: Document ACPI device specific properties
-Date: Sun, 17 Aug 2014 09:04:12 +0300
-Message-Id: <1408255459-17625-3-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.0.rc1
-In-Reply-To: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1751137AbaHQGTo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 02:19:44 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:39408 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaHQGTm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 02:19:42 -0400
+Content-Type: multipart/signed; boundary="Apple-Mail=_7A6157D6-7076-47A7-A4DE-FADB8C4AD908"; protocol="application/pgp-signature"; micalg=pgp-sha1
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: Overriding -Werror
+From: Mark D Rustad <mrustad@gmail.com>
+In-Reply-To: <20140816043415.GL11952@brian-ubuntu>
+Date: Sat, 16 Aug 2014 23:19:37 -0700
+Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Message-Id: <0A4C8E0B-AE00-4979-A961-08FD3A810956@gmail.com>
+References: <20140814222119.GD18411@ld-irv-0074> <CAL3LdT7-Ai7Dv93vrDP1o2BSVrmFAyTN=UAwE8n5+PVjpN1h0Q@mail.gmail.com> <20140815193144.GG18411@ld-irv-0074> <46D9023C-636A-4A09-88DC-9061567B1BAC@gmail.com> <20140816043415.GL11952@brian-ubuntu>
+To: Brian Norris <computersforpeace@gmail.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This document describes the data format and interfaces of ACPI device
-specific properties.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
----
- Documentation/acpi/properties.txt | 359 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 359 insertions(+)
- create mode 100644 Documentation/acpi/properties.txt
+--Apple-Mail=_7A6157D6-7076-47A7-A4DE-FADB8C4AD908
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
 
-diff --git a/Documentation/acpi/properties.txt b/Documentation/acpi/properties.txt
-new file mode 100644
-index 000000000000..a1e93267c1fa
---- /dev/null
-+++ b/Documentation/acpi/properties.txt
-@@ -0,0 +1,359 @@
-+ACPI device properties
-+======================
-+This document describes the format and interfaces of ACPI device
-+properties as specified in "Device Properties UUID For _DSD" available
-+here:
-+
-+http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-+
-+1. Introduction
-+---------------
-+In systems that use ACPI and want to take advantage of device specific
-+properties, there needs to be a standard way to return and extract
-+name-value pairs for a given ACPI device.
-+
-+An ACPI device that wants to export its properties must implement a
-+static name called _DSD that takes no arguments and returns a package of
-+packages:
-+
-+	Name (_DSD, Package () {
-+		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+		Package () {
-+			Package () {"name1", <VALUE1>},
-+			Package () {"name2", <VALUE2>}
-+		}
-+	})
-+
-+The UUID identifies contents of the following package. In case of ACPI
-+device properties it is daffd814-6eba-4d8c-8a91-bc9bbf4aa301.
-+
-+In each returned package, the first item is the name and must be a string.
-+The corresponding value can be a string, integer, reference, or package. If
-+a package it may only contain strings, integers, and references.
-+
-+An example device where we might need properties is a GPIO keys device.
-+In addition to the GpioIo/GpioInt resources the driver needs to know how
-+to map each GpioIo resource to the corresponding Linux input event.
-+
-+To solve this we add the following ACPI device properties from the
-+gpio-keys schema:
-+
-+	Device (KEYS) {
-+		Name (_DSD, Package () {
-+			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+			Package () {
-+				Package () {"poll-interval", 100},
-+				Package () {"autorepeat", 1}
-+			}
-+		})
-+
-+		Device (BTN0) {
-+			Name (_DSD, Package () {
-+				ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+				Package () {
-+					Package () {"linux,code", 105},
-+					Package () {"linux,input-type", 1},
-+					...
-+				}
-+			})
-+		}
-+
-+		...
-+	}
-+
-+Of course the device driver then needs to iterate over these devices but
-+it can be done easily via the ->children field of the companion ACPI
-+device. This will be demonstrated later on in the document.
-+
-+If there is an existing Device Tree binding for a device, it is expected
-+that the same bindings are used with ACPI properties, so that the driver
-+dealing with the device needs only minor modifications if any.
-+
-+2. Formal definition of properties
-+----------------------------------
-+The following chapters define the currently supported properties. For
-+these there exists a helper function that can be used to extract the
-+property value.
-+
-+2.1 Integer types
-+-----------------
-+ACPI integers are always 64-bit. However, for drivers the full range is
-+typically not needed so we provide a set of functions which convert the
-+64-bit integer to a smaller Linux integer type.
-+
-+An integer property looks like this:
-+
-+	Package () {"poll-interval", 100},
-+	Package () {"i2c-sda-hold-time-ns", 300},
-+	Package () {"clock-frequency", 400000},
-+
-+To read a property value, use a unified property accessor as shown
-+below:
-+
-+	u32 val;
-+	int ret;
-+
-+	ret = device_property_read(dev, "poll-interval", DEV_PROP_U32, &val);
-+	if (ret)
-+		/* Handle error */
-+
-+The function returns 0 if the property is copied to 'val' or negative
-+errno if something went wrong (or the property does not exist).
-+
-+2.2 Integer arrays
-+------------------
-+An integer array is a package holding only integers. Arrays can be used to
-+represent different things like Linux input key codes to GPIO mappings, pin
-+control settings, dma request lines, etc.
-+
-+An integer array looks like this:
-+
-+	Package () {
-+		"max8952,dvs-mode-microvolt",
-+		Package () {
-+			1250000,
-+			1200000,
-+			1050000,
-+			950000,
-+		}
-+	}
-+
-+The above array property can be accessed like:
-+
-+	u32 voltages[4];
-+	int ret;
-+
-+	ret = device_property_read_array(dev, "max8952,dvs-mode-microvolt",
-+					 DEV_PROP_U32, voltages,
-+					 ARRAY_SIZE(voltages));
-+	if (ret)
-+		/* Handle error */
-+
-+
-+All functions copy the resulting values cast to a requested type to the
-+caller supplied array. If you pass NULL in the value pointer ('voltages' in
-+this case), the function returns number of items in the array. This can be
-+useful if caller does not know size of the array beforehand.
-+
-+2.3 Strings
-+-----------
-+String properties can be used to describe many things like labels for GPIO
-+buttons, compability ids, etc.
-+
-+A string property looks like this:
-+
-+	Package () {"pwm-names", "backlight"},
-+	Package () {"label", "Status-LED"},
-+
-+You can also use device_property_read() to extract strings:
-+
-+	const char *val;
-+	int ret;
-+
-+	ret = device_property_read(dev, "label", DEV_PROP_STRING, &val);
-+	if (ret)
-+		/* Handle error */
-+
-+Note that the function does not copy the returned string but instead the
-+value is modified to point to the string property itself.
-+
-+The memory is owned by the associated ACPI device object and released
-+when it is removed. The user need not free the associated memory.
-+
-+2.4 String arrays
-+-----------------
-+String arrays can be useful in describing a list of labels, names for
-+DMA channels, etc.
-+
-+A string array property looks like this:
-+
-+	Package () {"dma-names", Package () {"tx", "rx", "rx-tx"}},
-+	Package () {"clock-output-names", Package () {"pll", "pll-switched"}},
-+
-+And these can be read in similar way that the integer arrrays:
-+
-+	const char *dma_names[3];
-+	int ret;
-+
-+	ret = device_property_read_array(dev, "dma-names", DEV_PROP_STRING,
-+					 dma_names, ARRAY_SIZE(dma_names));
-+	if (ret)
-+		/* Handle error */
-+
-+The memory management rules follow what is specified for single strings.
-+Specifically the returned pointers should be treated as constant and not to
-+be freed. That is done automatically when the correspondig ACPI device
-+object is released.
-+
-+2.5 Object references
-+---------------------
-+An ACPI object reference is used to refer to some object in the
-+namespace. For example, if a device has dependencies with some other
-+object, an object reference can be used.
-+
-+An object reference looks like this:
-+
-+	Package () {"clock", \_SB.CLK0},
-+
-+At the time of writing this, there is no unified device_property_* accessor
-+for references so one needs to use the following ACPI helper function:
-+
-+	int acpi_dev_get_property_reference(struct acpi_device *adev,
-+					    const char *name,
-+					    const char *size_prop, int index,
-+					    struct acpi_reference_args *args);
-+
-+The referenced ACPI device is returned in args->adev if found.
-+
-+In addition to simple object references it is also possible to have object
-+references with arguments. These are represented in ASL as follows:
-+
-+	Device (\_SB.PCI0.PWM) {
-+		Name (_DSD, Package () {
-+			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+			Package () {
-+				Package () {"#pwm-cells", 2}
-+			}
-+		})
-+	}
-+
-+	Device (\_SB.PCI0.BL) {
-+		Name (_DSD, Package () {
-+			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+			Package () {
-+				Package () {
-+					"pwms",
-+					Package () {
-+						\_SB.PCI0.PWM, 0, 5000000,
-+						\_SB.PCI0.PWM, 1, 4500000,
-+					}
-+				}
-+			}
-+		})
-+	}
-+
-+In the above example, the referenced device declares a property that
-+returns the number of expected arguments (here it is "#pwm-cells"). If
-+no such property is given we assume that all the integers following the
-+reference are arguments.
-+
-+In the above example PWM device expects 2 additional arguments. This
-+will be validated by the ACPI property core.
-+
-+The additional arguments must be integers. Nothing else is supported.
-+
-+It is possible, as in the above example, to have multiple references
-+with varying number of integer arguments. It is up to the referenced
-+device to declare how many arguments it expects. The 'index' parameter
-+selects which reference is returned.
-+
-+One can use acpi_dev_get_property_reference() as well to extract the
-+information in additional parameters:
-+
-+	struct acpi_reference_args args;
-+	struct acpi_device *adev = /* this will point to the BL device */
-+	int ret;
-+
-+	/* extract the first reference */
-+	acpi_dev_get_property_reference(adev, "pwms", "#pwm-cells", 0, &args);
-+
-+	BUG_ON(args.nargs != 2);
-+	BUG_ON(args.args[0] != 0);
-+	BUG_ON(args.args[1] != 5000000);
-+
-+	/* extract the second reference */
-+	acpi_dev_get_property_reference(adev, "pwms", "#pwm-cells", 1, &args);
-+
-+	BUG_ON(args.nargs != 2);
-+	BUG_ON(args.args[0] != 1);
-+	BUG_ON(args.args[1] != 4500000);
-+
-+In addition to arguments, args.adev now points to the ACPI device that
-+corresponds to \_SB.PCI0.PWM.
-+
-+It is intended that this function is not used directly but instead
-+subsystems like pwm implement their ACPI support on top of this function
-+in such way that it is hidden from the client drivers, such as via
-+pwm_get().
-+
-+3. Device property hierarchies
-+------------------------------
-+Devices are organized in a tree within the Linux kernel. It follows that
-+the configuration data would also be hierarchical. In order to reach
-+equivalence with Device Tree, the ACPI mechanism must also provide some
-+sort of tree-like representation. Fortunately, the ACPI namespace is
-+already such a structure.
-+
-+For example, we could have the following device in ACPI namespace. The
-+KEYS device is much like gpio_keys_polled.c in that it includes "pseudo"
-+devices for each GPIO:
-+
-+	Device (KEYS) {
-+		Name (_CRS, ResourceTemplate () {
-+			GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-+				"\\_SB.PCI0.LPC", 0, ResourceConsumer,,) { 0 }
-+			GpioIo (Exclusive, PullUp, 0, 0, IoRestrictionInputOnly,
-+				"\\_SB.PCI0.LPC", 0, ResourceConsumer,,) { 1 }
-+			...
-+		})
-+
-+		Name (_DSD, Package () {
-+			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+			Package () {
-+				// Properties for KEYS device
-+				Package () {"#gpio-cells", 1}
-+			}
-+		})
-+
-+		// "pseudo" devices declared under the parent device
-+		Device (BTN0) {
-+			Name (_DSD, Package () {
-+				ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+				Package () {
-+					Package () {"label", "minnow_btn0"}
-+					Package () {"gpios", Package () { ^KEYS, 0 0 1 }}
-+				}
-+			})
-+		}
-+
-+		Device (BTN1) {
-+			Name (_DSD, Package () {
-+				ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-+				Package () {
-+					Package () {"label", "minnow_btn1"}
-+					Package () {"gpios", Package () { ^KEYS, 1 0 1 }}
-+				}
-+			})
-+		}
-+	}
-+
-+We can extract the above in gpio_keys_polled.c like:
-+
-+	void gpio_keys_polled_acpi_probe(struct device *dev)
-+	{
-+		struct acpi_device *adev = ACPI_COMPANION(dev);
-+		struct acpi_device *button;
-+
-+		/* Properties for the KEYS device itself */
-+		device_property_read(dev, ...);
-+		/* or acpi_dev_get_property(adev, ...) */
-+
-+		/*
-+		 * Iterate over button devices and extract their
-+		 * configuration. Here we need to use ACPI specific
-+		 * functions instead because the pseudo devices don't have
-+		 * physical device attached to them.
-+		 */
-+		list_for_each_entry(button, &adev->children, node) {
-+			const union acpi_object *label;
-+
-+			acpi_dev_get_property(button, "label",
-+				ACPI_TYPE_STRING, &label);
-+			dev_info(dev, "label: %s\n", label->string.pointer);
-+		}
-+	}
-+
-+Note that you still need proper error handling which is omitted in the
-+above example, and also if possible instead of calling to ACPI specific
-+functions, one should add the support to the subsystem in question which
-+can then provide this information to the drivers in more generic way.
--- 
-2.1.0.rc1
+On Aug 15, 2014, at 9:34 PM, Brian Norris <computersforpeace@gmail.com> =
+wrote:
 
+> Hi Mark,
+>=20
+> (BTW, your mailer is creating some pretty long, unwrapped lines. I've
+> rewrapped them when quoting below.)
+
+Sorry about that. I'll try to remember to deal with it on my end.
+
+> On Fri, Aug 15, 2014 at 08:36:07PM -0700, Mark D Rustad wrote:
+>> On Aug 15, 2014, at 12:33 PM, Brian Norris =
+<computersforpeace@gmail.com> wrote:
+>>> On Fri, Aug 15, 2014 at 02:30:49AM -0700, Jeff Kirsher wrote:
+>>>> Funny that you bring this up because I have ~60 patches in my queue =
+to
+>>>> resolve several thousand of these warnings.  Half of the patches
+>>>> actually resolve warnings that can be resolved and the other half
+>>>> implement compiler diagnostic control macros to help silence =
+warnings.
+>>>> All these were the work of a co-worker Mark Rustad, below is the =
+patch
+>>>> he put together to implement the compiler diagnostic control =
+macros.
+>>>=20
+>>> While fixing warnings is usually a good thing (at least when done =
+right;
+>>> there are plenty of ways to fight with the compiler over silly =
+things,
+>>> but that's another discussion),
+>>=20
+>> I have said at some presentations on the subject that resolving
+>> warnings is not something you want an intern to do.
+>=20
+> Nice.
+>=20
+>>> I think that my issue is still
+>>> orthogonal to the one you're addressing. In my estimation, it is
+>>> impossible to guarantee that the entire kernel (including drivers) =
+will
+>>> build without any warnings, across all levels of warning verbosity.
+>>> Thus, even with a valiant effort to fix or annotate all warnings, we
+>>> still won't get to the point where I can build 'make ARCH=3Dmips =
+W=3D1', if
+>>> -Werror is active.
+>>=20
+>> Actually, some years ago, I got a MIPS Linux kernel to compile clean
+>> with even more warnings than W=3D12 provides.
+>=20
+> Congrats!
+>=20
+>> It can be done, but it certainly is not a state that is required and
+>> cannot be maintained across all configurations, architectures and
+>> compiler versions. This is the real world.
+>=20
+> Right, and this is the crux of why I would like to have the option of
+> disabling -Werror systematically.
+>=20
+>>> Besides, when testing *new* code, it's even more likely to have new
+>>> warnings, and I'd like to see as many as possible, without -Werror
+>>> getting in the way.
+>>=20
+>> I have to say that I rather like -Werror.
+>=20
+> It has its uses. I think it can be a pretty good option whenever the
+> compiler's warning level is kept to a reasonable level.
+>=20
+> -Wextra, for instance, enables a lot of warnings that can be =
+problematic
+> for little practical benefit (like -Wsign-compare, which notably is
+> explicitly overridden for x86).
+
+Hmm. I wasn't aware that x86 had that disabled. Sign-compare actually =
+does
+find some kinds of bugs. Those warnings are worth resolving for that =
+reason.
+Being explicit about whether you want the signed or unsigned comparison =
+is
+a good thing.
+
+>> One thing that not a lot of people are aware of is that you can
+>> selectively allow some warnings. -Wno-error=3Dshadow would allow =
+shadow
+>> warnings to be reported without being treated as errors.
+>=20
+> That's interesting. I glazed over this option because I misinterpreted
+> the second sentence of this note in the gcc manpage:
+>=20
+>  "Note that specifying -Werror=3Dfoo automatically implies -Wfoo.
+>  However, -Wno-error=3Dfoo does not imply anything."
+>=20
+> [ Really, -Wno-error=3Dfoo doesn't imply anything? So why does it =
+exist? ;) ]
+
+Yeah, it means that it doesn't imply anything about whether the warning
+is enabled or not. It will neither enable nor disable the warning as a
+side-effect, unlike -Werror=3D which will enable it. So you can add -Wno
+error=3D... without regard to whether the given warning was enabled or
+not. It kind of makes sense, but is not explained very well.
+
+> But now that you mention it, I think it could work as a hack for my
+> builds right now, since it isn't overridden by a blanket -Werror found
+> later on the command linie. So if I do
+>=20
+>  make ARCH=3Dmips W=3D1 KCFLAGS=3D"-Wno-error=3D...(long list of =
+warnings that break the build)..."
+
+And still be able to see them. Not bad.
+
+> then I can systematically perform the build-tests I'd like.
+
+Yes.
+
+>>> So I still think -Werror is fundamentally wrong in some cases, and I
+>>> would like to pursue some approach like in my original post.
+>>>=20
+>>> BTW, for a little more context: I realize the output of 'make =
+W=3D[123]'
+>>> may not be very useful on its own, sometimes, but it's actually =
+pretty
+>>> useful to quickly catch potential issues in new code, by diff'ing =
+the
+>>> warnings in the before/after build logs. In this case, it's not =
+helpful
+>>> at all if the first build "fails" due to dubious warnings. I'm doing
+>>> this in the context of Aiaiai [1]. Right now, I have to keep around =
+a
+>>> few local patches to remove -Werror from arch/{mips,sh}.
+>>=20
+>> The problem is that when a kernel build throws over 125,000 warnings,
+>> it just becomes completely useless. That was what kind of set me off.
+>=20
+> Yeah that's bad. But it *still* can provide a helpful diff for tools
+> like Aiaiai. The difference between 125,000 and 125,001 warnings still
+> can be determined automatically for new code, although it's not =
+helpful
+> if every "new" warning is actually just because you used a new core
+> header that causes a lot of warnings.
+
+Yes, but it is still a bad situation to have so many. And a lot of them
+are trivial things like nested externs in static inline functions in
+include files. I'm not wild about the nested externs - it means that
+there are multiple sources for the prototype of those functions - but
+since that practice has now been used to disentangle include files, we
+may as well silence the warnings for those usages. The annotations might
+also be a bit of an ongoing reminder that there are issues with having
+done that.
+
+>> I did wind up pushing this rock further up the hill than I really
+>> meant to. Still, I got the build under 1,400 warnings, and I now know
+>> how to address most of them in a systematic way.
+>>=20
+>>>> commit 7b9aace02b2405f0714bc08c424b72e6962f1c2e
+>>>> Author: Mark Rustad <mark.d.rustad@intel.com>
+>>>> Date:   Fri Aug 15 01:43:44 2014 -0700
+>>>>=20
+>>>>   compiler: Add diagnostic control macros
+>>>>=20
+>>>>   Add macros to control diagnostic messages where needed. These
+>>>>   are used to silence warning messages that are expected, normal
+>>>>   and do not indicate any sort of problem. Reducing the stream
+>>>>   of messages in this way helps possible problems to stand out.
+>>>>=20
+>>>>   The macros provided are:
+>>>>       DIAG_PUSH() - to save diagnostic settings
+>>>>       DIAG_POP() - to restore diagnostic settings
+>>>>       DIAG_IGNORE(option) - to ignore a particular warning
+>>>>       DIAG_GCC_IGNORE(option) - DIAG_IGNORE for gcc only
+>>>>       DIAG_CLANG_IGNORE(option) - DIAG_IGNORE for clang only
+>>>>=20
+>>>>   Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+>>>>=20
+>>>> diff --git a/include/linux/compiler-clang.h =
+b/include/linux/compiler-clang.h
+>>>> index d1e49d5..039b112 100644
+>>>> --- a/include/linux/compiler-clang.h
+>>>> +++ b/include/linux/compiler-clang.h
+>>>> @@ -10,3 +10,29 @@
+>>>> #undef uninitialized_var
+>>>> #define uninitialized_var(x) x =3D *(&(x))
+>>>> #endif
+>>>> +
+>>>> +/*
+>>>> + * Provide macros to manipulate diagnostic messages when possible.
+>>>> + * DIAG_PUSH pushes the diagnostic settings
+>>>> + * DIAG_POP pops the diagnostic settings
+>>>> + * DIAG_IGNORE(x) changes the given diagnostic setting to ignore
+>>>> + *
+>>>> + * Example:
+>>>> + *    DIAG_PUSH DIAG_IGNORE(aggregate-return)
+>>>> + *    struct timespec ns_to_timespec(const s64 nsec)
+>>>> + *    {
+>>>> + *        ...
+>>>> + *    }
+>>>> + *    DIAG_POP
+>>>> + *
+>>>> + * Will prevent the warning on compilation of the function. Other
+>>>> + * steps are necessary to do the same thing for the call sites.
+>>>> + */
+>>>=20
+>>> While I do not want to disparage your/Mark's work here, my first =
+thought
+>>> about this kind of annotation is that it seems to be a pretty big =
+burden
+>>> to have to annotate all code with these sorts of things.
+>>=20
+>> I wouldn't suggest annotating everything. However note that the
+>> annotations can serve as a notice that something has been analyzed =
+and
+>> deemed ok. That can be useful as long as that is really true. I
+>> wouldn't take new code from a new developer that included such
+>> annotations.
+>=20
+> Good points. And I'd recommend framing your argument as such if/when =
+you
+> post your patches for real. Maybe even add comments near the macro
+> definitions; "with great power comes great responsibility."
+
+That is not a bad idea. And I do think that checkpatch ought to warn =
+when
+they are added. It certainly is a bigger deal than a too long line!
+
+I am contemplating adding a DIAG_ERROR macro to enable an error on a =
+warning.
+The use case I have come up with is switch-enum. Then, switch statements
+that are expected to itemize every value in an enum can force that error =
+on
+for just those switch statements, because generally that is not needed. =
+At
+least that is the best possible use I have come up with for that kind of
+macro. Haven't tried it yet, but that seems potentially useful to me.
+
+> Thanks for your thoughts,
+> Brian
+
+--=20
+Mark Rustad, MRustad@gmail.com
+
+
+--Apple-Mail=_7A6157D6-7076-47A7-A4DE-FADB8C4AD908
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename=signature.asc
+Content-Type: application/pgp-signature;
+	name=signature.asc
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJT8El5AAoJEDwO/+eO4+5uQaUQAIB6UwfoYwkkB1eEmnVcxCl5
+ZvQuU1bWOKj3lp5YKcCLeVn2BC4ds7uU5MTWA2BQ75WunXuOkXKrysqd18i0IYIA
+Kj5RZpLHZrePEE7lvLiGhlIF289C+UCLCr2ktiG2F1rsS9jUjqPUISQx4eT8nF5Z
+aUhYUICZP4vqMwPx0ecEygCeO/WxJCm9D48vjwEmU6MFMD3cbgEAmP68GIpHpyfT
+bcSUGRaRbjUfdms8dkPvgp27mfQuKRCGWoR6OckbQuiiExC/9MYbkHMBIlF7tFB5
+e0uzWSKYCNLp/JHqqvpGW203pSoWVLcYXRAGw0TxHvOY2vNghlZQs0rXi0QtwDBe
+awPWzI2XTx83sei/MrqmueppMQdOu1lixeQ9LcFxKkh9qET/A8KyQS0lgI+sBJUZ
+U0jPODg2gC6CONvzwUlrxy7hTSSygxwkEPw1xXHOIPozM0AQjrolqcXLpiKZPITW
+carm7b1LGzmbvSDxzMDfOMNQabn5H25NDYoTZkzZ0hdWV2gbkkSq3yO24EAaSGFz
+3bplDSYkaHxwAzt5jp5Wd8tQn5zzUgDk9d3sa1T9u20IYE5fcVcNRZdwk1whqVLH
+64535BW69DZJz9j/NLGqjwU14A60YOovkAfch+is6uDeUKbVZXyLoMENBG4oS8oh
+4SotSweWX4xhU5QGJuCL
+=6cXg
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_7A6157D6-7076-47A7-A4DE-FADB8C4AD908--
