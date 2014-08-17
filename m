@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaHQD5W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 16 Aug 2014 23:57:22 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:58642 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808AbaHQDy2 (ORCPT
+	id S1750880AbaHQEG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 00:06:28 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:57672 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaHQEG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 16 Aug 2014 23:54:28 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/12] ARM: dts: sun8i: Add R_PIO controller node to the dtsi
-Date: Sun, 17 Aug 2014 11:52:08 +0800
-Message-Id: <1408247538-16950-3-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408247538-16950-1-git-send-email-wens@csie.org>
-References: <1408247538-16950-1-git-send-email-wens@csie.org>
+	Sun, 17 Aug 2014 00:06:26 -0400
+From: Arjun Sreedharan <arjun024@gmail.com>
+To: viresh.kumar@linaro.org
+Cc: rjw@rjwysocki.net, kgene.kim@samsung.com, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] cpufreq: exynos: free memory immediately on unknown SoC
+Date: Sun, 17 Aug 2014 09:36:14 +0530
+Message-Id: <1408248374-1638-1-git-send-email-arjun024@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have a driver for the R_PIO controller,
-add the corresponding device node to the dtsi.
-
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
 ---
- arch/arm/boot/dts/sun8i-a23.dtsi | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/cpufreq/exynos-cpufreq.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/sun8i-a23.dtsi b/arch/arm/boot/dts/sun8i-a23.dtsi
-index 41823b1..a40e632 100644
---- a/arch/arm/boot/dts/sun8i-a23.dtsi
-+++ b/arch/arm/boot/dts/sun8i-a23.dtsi
-@@ -353,5 +353,18 @@
- 			resets = <&apb0_rst 4>;
- 			status = "disabled";
- 		};
-+
-+		r_pio: pinctrl@01f02c00 {
-+			compatible = "allwinner,sun8i-a23-r-pinctrl";
-+			reg = <0x01f02c00 0x400>;
-+			interrupts = <0 45 4>;
-+			clocks = <&apb0_gates 0>;
-+			resets = <&apb0_rst 0>;
-+			gpio-controller;
-+			interrupt-controller;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			#gpio-cells = <3>;
-+		};
- 	};
- };
+diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+index 1e0ec57..e47d165 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -178,6 +178,7 @@ static int exynos_cpufreq_probe(struct platform_device *pdev)
+ 		ret = exynos5250_cpufreq_init(exynos_info);
+ 	} else {
+ 		pr_err("%s: Unknown SoC type\n", __func__);
++		kfree(exynos_info);
+ 		return -ENODEV;
+ 	}
+ 
 -- 
-2.1.0
+1.7.11.7
 
