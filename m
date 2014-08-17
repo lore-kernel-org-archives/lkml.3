@@ -1,246 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaHQRea (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 13:34:30 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:45652 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751371AbaHQRbj (ORCPT
+	id S1752414AbaHQRey (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 13:34:54 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:54808 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752028AbaHQRbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 13:31:39 -0400
-Message-Id: <20140817173036.820985097@linux.com>
-Date: Sun, 17 Aug 2014 12:30:48 -0500
+	Sun, 17 Aug 2014 13:31:32 -0400
+Message-Id: <20140817173036.491289559@linux.com>
+Date: Sun, 17 Aug 2014 12:30:46 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>
-Subject: [PATCH 25/35] [PATCH 25/36] alpha: Replace __get_cpu_var
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 23/35] [PATCH 23/36] s390: cio driver &__get_cpu_var replacements
 References: <20140817173023.439660246@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0025-alpha-Replace-__get_cpu_var.patch
+Content-Disposition: inline; filename=0023-s390-cio-driver-__get_cpu_var-replacements.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get_cpu_var() is used for multiple purposes in the kernel source. One of
-them is address calculation via the form &__get_cpu_var(x).  This calculates
-the address for the instance of the percpu variable of the current processor
-based on an offset.
+Use this_cpu_ptr() instead of &__get_cpu_var()
 
-Other use cases are for storing and retrieving data from the current
-processors percpu area.  __get_cpu_var() can be used as an lvalue when
-writing data or on the right side of an assignment.
-
-__get_cpu_var() is defined as :
-
-
-#define __get_cpu_var(var) (*this_cpu_ptr(&(var)))
-
-
-
-__get_cpu_var() always only does an address determination. However, store
-and retrieve operations could use a segment prefix (or global register on
-other platforms) to avoid the address calculation.
-
-this_cpu_write() and this_cpu_read() can directly take an offset into a
-percpu area and use optimized assembly code to read and write per cpu
-variables.
-
-
-This patch converts __get_cpu_var into either an explicit address
-calculation using this_cpu_ptr() or into a use of this_cpu operations that
-use the offset.  Thereby address calculations are avoided and less registers
-are used when code is generated.
-
-At the end of the patch set all uses of __get_cpu_var have been removed so
-the macro is removed too.
-
-The patch set includes passes over all arches as well. Once these operations
-are used throughout then specialized macros can be defined in non -x86
-arches as well in order to optimize per cpu access by f.e.  using a global
-register that may be set to the per cpu base.
-
-
-
-
-Transformations done to __get_cpu_var()
-
-
-1. Determine the address of the percpu instance of the current processor.
-
-	DEFINE_PER_CPU(int, y);
-	int *x = &__get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(&y);
-
-
-2. Same as #1 but this time an array structure is involved.
-
-	DEFINE_PER_CPU(int, y[20]);
-	int *x = __get_cpu_var(y);
-
-    Converts to
-
-	int *x = this_cpu_ptr(y);
-
-
-3. Retrieve the content of the current processors instance of a per cpu
-variable.
-
-	DEFINE_PER_CPU(int, y);
-	int x = __get_cpu_var(y)
-
-   Converts to
-
-	int x = __this_cpu_read(y);
-
-
-4. Retrieve the content of a percpu struct
-
-	DEFINE_PER_CPU(struct mystruct, y);
-	struct mystruct x = __get_cpu_var(y);
-
-   Converts to
-
-	memcpy(&x, this_cpu_ptr(&y), sizeof(x));
-
-
-5. Assignment to a per cpu variable
-
-	DEFINE_PER_CPU(int, y)
-	__get_cpu_var(y) = x;
-
-   Converts to
-
-	__this_cpu_write(y, x);
-
-
-6. Increment/Decrement etc of a per cpu variable
-
-	DEFINE_PER_CPU(int, y);
-	__get_cpu_var(y)++
-
-   Converts to
-
-	__this_cpu_inc(y)
-
-CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Acked-by: Richard Henderson <rth@twiddle.net>
 Signed-off-by: Christoph Lameter <cl@linux.com>
 ---
- arch/alpha/kernel/perf_event.c     | 16 ++++++++--------
- arch/alpha/kernel/time.c           |  6 +++---
- arch/powerpc/include/asm/cputime.h |  6 +++---
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/s390/cio/ccwreq.c     | 2 +-
+ drivers/s390/cio/chsc_sch.c   | 2 +-
+ drivers/s390/cio/cio.c        | 6 +++---
+ drivers/s390/cio/device_fsm.c | 4 ++--
+ drivers/s390/cio/eadm_sch.c   | 2 +-
+ 5 files changed, 8 insertions(+), 8 deletions(-)
 
-Index: linux/arch/alpha/kernel/perf_event.c
+Index: linux/drivers/s390/cio/ccwreq.c
 ===================================================================
---- linux.orig/arch/alpha/kernel/perf_event.c
-+++ linux/arch/alpha/kernel/perf_event.c
-@@ -431,7 +431,7 @@ static void maybe_change_configuration(s
+--- linux.orig/drivers/s390/cio/ccwreq.c
++++ linux/drivers/s390/cio/ccwreq.c
+@@ -252,7 +252,7 @@ static void ccwreq_log_status(struct ccw
   */
- static int alpha_pmu_add(struct perf_event *event, int flags)
+ void ccw_request_handler(struct ccw_device *cdev)
  {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	int n0;
- 	int ret;
-@@ -483,7 +483,7 @@ static int alpha_pmu_add(struct perf_eve
-  */
- static void alpha_pmu_del(struct perf_event *event, int flags)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	unsigned long irq_flags;
- 	int j;
-@@ -531,7 +531,7 @@ static void alpha_pmu_read(struct perf_e
- static void alpha_pmu_stop(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		cpuc->idx_mask &= ~(1UL<<hwc->idx);
-@@ -551,7 +551,7 @@ static void alpha_pmu_stop(struct perf_e
- static void alpha_pmu_start(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
- 		return;
-@@ -724,7 +724,7 @@ static int alpha_pmu_event_init(struct p
-  */
- static void alpha_pmu_enable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (cpuc->enabled)
- 		return;
-@@ -750,7 +750,7 @@ static void alpha_pmu_enable(struct pmu
- 
- static void alpha_pmu_disable(struct pmu *pmu)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct cpu_hw_events *cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	if (!cpuc->enabled)
- 		return;
-@@ -814,8 +814,8 @@ static void alpha_perf_event_irq_handler
- 	struct hw_perf_event *hwc;
- 	int idx, j;
- 
--	__get_cpu_var(irq_pmi_count)++;
--	cpuc = &__get_cpu_var(cpu_hw_events);
-+	__this_cpu_inc(irq_pmi_count);
-+	cpuc = this_cpu_ptr(&cpu_hw_events);
- 
- 	/* Completely counting through the PMC's period to trigger a new PMC
- 	 * overflow interrupt while in this interrupt routine is utterly
-Index: linux/arch/alpha/kernel/time.c
+-	struct irb *irb = &__get_cpu_var(cio_irb);
++	struct irb *irb = this_cpu_ptr(&cio_irb);
+ 	struct ccw_request *req = &cdev->private->req;
+ 	enum io_status status;
+ 	int rc = -EOPNOTSUPP;
+Index: linux/drivers/s390/cio/chsc_sch.c
 ===================================================================
---- linux.orig/arch/alpha/kernel/time.c
-+++ linux/arch/alpha/kernel/time.c
-@@ -56,9 +56,9 @@ unsigned long est_cycle_freq;
- 
- DEFINE_PER_CPU(u8, irq_work_pending);
- 
--#define set_irq_work_pending_flag()  __get_cpu_var(irq_work_pending) = 1
--#define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
--#define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
-+#define set_irq_work_pending_flag()  __this_cpu_write(irq_work_pending, 1)
-+#define test_irq_work_pending()      __this_cpu_read(irq_work_pending)
-+#define clear_irq_work_pending()     __this_cpu_write(irq_work_pending, 0)
- 
- void arch_irq_work_raise(void)
+--- linux.orig/drivers/s390/cio/chsc_sch.c
++++ linux/drivers/s390/cio/chsc_sch.c
+@@ -58,7 +58,7 @@ static void chsc_subchannel_irq(struct s
  {
-Index: linux/arch/powerpc/include/asm/cputime.h
+ 	struct chsc_private *private = dev_get_drvdata(&sch->dev);
+ 	struct chsc_request *request = private->request;
+-	struct irb *irb = &__get_cpu_var(cio_irb);
++	struct irb *irb = this_cpu_ptr(&cio_irb);
+ 
+ 	CHSC_LOG(4, "irb");
+ 	CHSC_LOG_HEX(4, irb, sizeof(*irb));
+Index: linux/drivers/s390/cio/cio.c
 ===================================================================
---- linux.orig/arch/powerpc/include/asm/cputime.h
-+++ linux/arch/powerpc/include/asm/cputime.h
-@@ -56,10 +56,10 @@ static inline unsigned long cputime_to_j
- static inline cputime_t cputime_to_scaled(const cputime_t ct)
- {
- 	if (cpu_has_feature(CPU_FTR_SPURR) &&
--	    __get_cpu_var(cputime_last_delta))
-+	    __this_cpu_read(cputime_last_delta))
- 		return (__force u64) ct *
--			__get_cpu_var(cputime_scaled_last_delta) /
--			__get_cpu_var(cputime_last_delta);
-+			__this_cpu_read(cputime_scaled_last_delta) /
-+			__this_cpu_read(cputime_last_delta);
- 	return ct;
- }
+--- linux.orig/drivers/s390/cio/cio.c
++++ linux/drivers/s390/cio/cio.c
+@@ -563,7 +563,7 @@ static irqreturn_t do_cio_interrupt(int
  
+ 	__this_cpu_write(s390_idle.nohz_delay, 1);
+ 	tpi_info = (struct tpi_info *) &get_irq_regs()->int_code;
+-	irb = &__get_cpu_var(cio_irb);
++	irb = this_cpu_ptr(&cio_irb);
+ 	sch = (struct subchannel *)(unsigned long) tpi_info->intparm;
+ 	if (!sch) {
+ 		/* Clear pending interrupt condition. */
+@@ -613,7 +613,7 @@ void cio_tsch(struct subchannel *sch)
+ 	struct irb *irb;
+ 	int irq_context;
+ 
+-	irb = &__get_cpu_var(cio_irb);
++	irb = this_cpu_ptr(&cio_irb);
+ 	/* Store interrupt response block to lowcore. */
+ 	if (tsch(sch->schid, irb) != 0)
+ 		/* Not status pending or not operational. */
+@@ -751,7 +751,7 @@ __clear_io_subchannel_easy(struct subcha
+ 		struct tpi_info ti;
+ 
+ 		if (tpi(&ti)) {
+-			tsch(ti.schid, &__get_cpu_var(cio_irb));
++			tsch(ti.schid, this_cpu_ptr(&cio_irb));
+ 			if (schid_equal(&ti.schid, &schid))
+ 				return 0;
+ 		}
+Index: linux/drivers/s390/cio/device_fsm.c
+===================================================================
+--- linux.orig/drivers/s390/cio/device_fsm.c
++++ linux/drivers/s390/cio/device_fsm.c
+@@ -739,7 +739,7 @@ ccw_device_irq(struct ccw_device *cdev,
+ 	struct irb *irb;
+ 	int is_cmd;
+ 
+-	irb = &__get_cpu_var(cio_irb);
++	irb = this_cpu_ptr(&cio_irb);
+ 	is_cmd = !scsw_is_tm(&irb->scsw);
+ 	/* Check for unsolicited interrupt. */
+ 	if (!scsw_is_solicited(&irb->scsw)) {
+@@ -805,7 +805,7 @@ ccw_device_w4sense(struct ccw_device *cd
+ {
+ 	struct irb *irb;
+ 
+-	irb = &__get_cpu_var(cio_irb);
++	irb = this_cpu_ptr(&cio_irb);
+ 	/* Check for unsolicited interrupt. */
+ 	if (scsw_stctl(&irb->scsw) ==
+ 	    (SCSW_STCTL_STATUS_PEND | SCSW_STCTL_ALERT_STATUS)) {
+Index: linux/drivers/s390/cio/eadm_sch.c
+===================================================================
+--- linux.orig/drivers/s390/cio/eadm_sch.c
++++ linux/drivers/s390/cio/eadm_sch.c
+@@ -134,7 +134,7 @@ static void eadm_subchannel_irq(struct s
+ {
+ 	struct eadm_private *private = get_eadm_private(sch);
+ 	struct eadm_scsw *scsw = &sch->schib.scsw.eadm;
+-	struct irb *irb = &__get_cpu_var(cio_irb);
++	struct irb *irb = this_cpu_ptr(&cio_irb);
+ 	int error = 0;
+ 
+ 	EADM_LOG(6, "irq");
 
