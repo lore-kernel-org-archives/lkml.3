@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852AbaHQXSE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 19:18:04 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42271 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaHQXSA (ORCPT
+	id S1751878AbaHQXSJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 19:18:09 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:34042 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793AbaHQXSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 19:18:00 -0400
+	Sun, 17 Aug 2014 19:18:06 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, jolsa@redhat.com,
         namhyung@kernel.org, dsahern@gmail.com
-Subject: [PATCH v3 4/6] perf/tests: add interrupted state sample parsing test
-Date: Mon, 18 Aug 2014 01:18:18 +0200
-Message-Id: <1408317500-28146-5-git-send-email-eranian@google.com>
+Subject: [PATCH v3 6/6] perf: improve perf_sample_data struct layout
+Date: Mon, 18 Aug 2014 01:18:20 +0200
+Message-Id: <1408317500-28146-7-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408317500-28146-1-git-send-email-eranian@google.com>
 References: <1408317500-28146-1-git-send-email-eranian@google.com>
@@ -21,149 +21,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates the sample parsing test with support
-for the sampling of machine interrupted state.
+From: Peter Zijlstra <peterz@infradead.org>
 
-The patch modifies the do_test() code to sahred the sample
-regts bitmask between user and intr regs.
+This patch reorders fields in the perf_sample_data
+struct in order to minimize the number of cachelines
+touched in perf_sample_data_init(). It also removes
+some intializations which are redundant with the
+code in kernel/events/core.c
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- tools/perf/tests/sample-parsing.c |   55 +++++++++++++++++++++++++++----------
- 1 file changed, 40 insertions(+), 15 deletions(-)
+ include/linux/perf_event.h |   34 +++++++++++++++++-----------------
+ kernel/events/core.c       |    5 ++++-
+ 2 files changed, 21 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
-index ca292f9..4908c64 100644
---- a/tools/perf/tests/sample-parsing.c
-+++ b/tools/perf/tests/sample-parsing.c
-@@ -126,16 +126,28 @@ static bool samples_same(const struct perf_sample *s1,
- 	if (type & PERF_SAMPLE_TRANSACTION)
- 		COMP(transaction);
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index e043465..57b7efc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -579,35 +579,40 @@ extern u64 perf_event_read_value(struct perf_event *event,
  
-+	if (type & PERF_SAMPLE_REGS_INTR) {
-+		size_t sz = hweight_long(s1->intr_regs.mask) * sizeof(u64);
-+
-+		COMP(intr_regs.mask);
-+		COMP(intr_regs.abi);
-+		if (s1->intr_regs.abi &&
-+		    (!s1->intr_regs.regs || !s2->intr_regs.regs ||
-+		     memcmp(s1->intr_regs.regs, s2->intr_regs.regs, sz))) {
-+			pr_debug("Samples differ at 'intr_regs'\n");
-+			return false;
-+		}
-+	}
-+
- 	return true;
+ 
+ struct perf_sample_data {
+-	u64				type;
++	/*
++	 * Fields set by perf_sample_data_init(), group so as to
++	 * minimize the cachelines touched.
++	 */
++	u64				addr;
++	struct perf_raw_record		*raw;
++	struct perf_branch_stack	*br_stack;
++	u64				period;
++	u64				weight;
++	u64				txn;
++	union  perf_mem_data_src	data_src;
+ 
++	/*
++	 * The other fields, optionally {set,used} by
++	 * perf_{prepare,output}_sample().
++	 */
++	u64				type;
+ 	u64				ip;
+ 	struct {
+ 		u32	pid;
+ 		u32	tid;
+ 	}				tid_entry;
+ 	u64				time;
+-	u64				addr;
+ 	u64				id;
+ 	u64				stream_id;
+ 	struct {
+ 		u32	cpu;
+ 		u32	reserved;
+ 	}				cpu_entry;
+-	u64				period;
+-	union  perf_mem_data_src	data_src;
+ 	struct perf_callchain_entry	*callchain;
+-	struct perf_raw_record		*raw;
+-	struct perf_branch_stack	*br_stack;
+ 	struct perf_regs		regs_user;
+ 	struct perf_regs		regs_intr;
+ 	u64				stack_user_size;
+-	u64				weight;
+-	/*
+-	 * Transaction flags for abort events:
+-	 */
+-	u64				txn;
+-};
++} ____cacheline_aligned;
+ 
+ /* default value for data source */
+ #define PERF_MEM_NA (PERF_MEM_S(OP, NA)   |\
+@@ -624,14 +629,9 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
+ 	data->raw  = NULL;
+ 	data->br_stack = NULL;
+ 	data->period = period;
+-	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
+-	data->regs_user.regs = NULL;
+-	data->stack_user_size = 0;
+ 	data->weight = 0;
+ 	data->data_src.val = PERF_MEM_NA;
+ 	data->txn = 0;
+-	data->regs_intr.abi = PERF_SAMPLE_REGS_ABI_NONE;
+-	data->regs_intr.regs = NULL;
  }
  
--static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
-+static int do_test(u64 sample_type, u64 sample_regs, u64 read_format)
- {
- 	struct perf_evsel evsel = {
- 		.needs_swap = false,
- 		.attr = {
- 			.sample_type = sample_type,
--			.sample_regs_user = sample_regs_user,
- 			.read_format = read_format,
- 		},
- 	};
-@@ -154,7 +166,7 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		/* 1 branch_entry */
- 		.data = {1, 211, 212, 213},
- 	};
--	u64 user_regs[64];
-+	u64 regs[64];
- 	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
- 	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
- 	struct perf_sample sample = {
-@@ -176,8 +188,8 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 		.branch_stack	= &branch_stack.branch_stack,
- 		.user_regs	= {
- 			.abi	= PERF_SAMPLE_REGS_ABI_64,
--			.mask	= sample_regs_user,
--			.regs	= user_regs,
-+			.mask	= sample_regs,
-+			.regs	= regs,
- 		},
- 		.user_stack	= {
- 			.size	= sizeof(data),
-@@ -187,14 +199,25 @@ static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
- 			.time_enabled = 0x030a59d664fca7deULL,
- 			.time_running = 0x011b6ae553eb98edULL,
- 		},
-+		.intr_regs	= {
-+			.abi	= PERF_SAMPLE_REGS_ABI_64,
-+			.mask	= sample_regs,
-+			.regs	= regs,
-+		},
- 	};
- 	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
- 	struct perf_sample sample_out;
- 	size_t i, sz, bufsz;
- 	int err, ret = -1;
- 
--	for (i = 0; i < sizeof(user_regs); i++)
--		*(i + (u8 *)user_regs) = i & 0xfe;
-+	if (sample_type & PERF_SAMPLE_REGS_USER)
-+		evsel.attr.sample_regs_user = sample_regs;
-+
-+	if (sample_type & PERF_SAMPLE_REGS_INTR)
-+		evsel.attr.sample_regs_intr = sample_regs;
-+
-+	for (i = 0; i < sizeof(regs); i++)
-+		*(i + (u8 *)regs) = i & 0xfe;
- 
- 	if (read_format & PERF_FORMAT_GROUP) {
- 		sample.read.group.nr     = 4;
-@@ -271,7 +294,7 @@ int test__sample_parsing(void)
- {
- 	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
- 	u64 sample_type;
--	u64 sample_regs_user;
-+	u64 sample_regs;
- 	size_t i;
- 	int err;
- 
-@@ -280,7 +303,7 @@ int test__sample_parsing(void)
- 	 * were added.  Please actually update the test rather than just change
- 	 * the condition below.
- 	 */
--	if (PERF_SAMPLE_MAX > PERF_SAMPLE_TRANSACTION << 1) {
-+	if (PERF_SAMPLE_MAX > PERF_SAMPLE_REGS_INTR << 1) {
- 		pr_debug("sample format has changed, some new PERF_SAMPLE_ bit was introduced - test needs updating\n");
- 		return -1;
- 	}
-@@ -297,22 +320,24 @@ int test__sample_parsing(void)
- 			}
- 			continue;
- 		}
-+		sample_regs = 0;
- 
- 		if (sample_type == PERF_SAMPLE_REGS_USER)
--			sample_regs_user = 0x3fff;
--		else
--			sample_regs_user = 0;
-+			sample_regs = 0x3fff;
-+
-+		if (sample_type == PERF_SAMPLE_REGS_INTR)
-+			sample_regs = 0xff0fff;
- 
--		err = do_test(sample_type, sample_regs_user, 0);
-+		err = do_test(sample_type, sample_regs, 0);
- 		if (err)
- 			return err;
+ extern void perf_output_sample(struct perf_output_handle *handle,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5fa8b17..696a778 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4406,8 +4406,11 @@ static void perf_sample_regs_user(struct perf_regs *regs_user,
  	}
  
- 	/* Test all sample format bits together */
- 	sample_type = PERF_SAMPLE_MAX - 1;
--	sample_regs_user = 0x3fff;
-+	sample_regs = 0x3fff; /* shared yb intr and user regs */
- 	for (i = 0; i < ARRAY_SIZE(rf); i++) {
--		err = do_test(sample_type, sample_regs_user, rf[i]);
-+		err = do_test(sample_type, sample_regs, rf[i]);
- 		if (err)
- 			return err;
+ 	if (regs) {
+-		regs_user->regs = regs;
+ 		regs_user->abi  = perf_reg_abi(current);
++		regs_user->regs = regs;
++	} else {
++		regs_user->abi = PERF_SAMPLE_REGS_ABI_NONE;
++		regs_user->regs = NULL;
  	}
+ }
+ 
 -- 
 1.7.9.5
 
