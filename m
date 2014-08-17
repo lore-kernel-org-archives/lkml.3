@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaHQP3J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 11:29:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17898 "EHLO mx1.redhat.com"
+	id S1751596AbaHQPmj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 11:42:39 -0400
+Received: from mail.eperm.de ([89.247.134.16]:37388 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaHQP3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 11:29:06 -0400
-Date: Sun, 17 Aug 2014 17:26:37 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>,
-        linux-kernel@vger.kernel.org, Kirill Tkhai <tkhai@yandex.ru>
-Subject: [PATCH 2/2] sched: print_rq: don't use tasklist_lock
-Message-ID: <20140817152637.GC17984@redhat.com>
-References: <20140813191938.GA19301@redhat.com> <20140817152549.GA17984@redhat.com>
+	id S1751286AbaHQPmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 11:42:38 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: [PATCH 8/8] DRBG: remove unnecessary sanity check for shadow state
+Date: Sun, 17 Aug 2014 17:41:38 +0200
+Message-ID: <2900796.YflQD55GTj@myon.chronox.de>
+User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <7044529.FG2KhbPc9P@myon.chronox.de>
+References: <7044529.FG2KhbPc9P@myon.chronox.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140817152549.GA17984@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-read_lock_irqsave(tasklist_lock) in print_rq() looks strange. We do
-not need to disable irqs, and they are already disabled by the caller.
+During creation of the DRBG shadow state, it is ensured that the DRBG
+state structure is already allocated. Thus, a sanity check for verifying
+that the structure is allocated is removed.
 
-And afaics this lock buys nothing, we can rely on rcu_read_lock().
-In this case it makes sense to also move rcu_read_lock/unlock from
-the caller to print_rq().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
 ---
- kernel/sched/debug.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ crypto/drbg.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index c7fe1ea..ce33780 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -150,7 +150,6 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
- static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
- {
- 	struct task_struct *g, *p;
--	unsigned long flags;
+diff --git a/crypto/drbg.c b/crypto/drbg.c
+index a556180..f009939 100644
+--- a/crypto/drbg.c
++++ b/crypto/drbg.c
+@@ -1155,9 +1155,6 @@ static inline int drbg_alloc_state(struct drbg_state *drbg)
+ 	int ret = -ENOMEM;
+ 	unsigned int sb_size = 0;
  
- 	SEQ_printf(m,
- 	"\nrunnable tasks:\n"
-@@ -159,14 +158,14 @@ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
- 	"------------------------------------------------------"
- 	"----------------------------------------------------\n");
- 
--	read_lock_irqsave(&tasklist_lock, flags);
-+	rcu_read_lock();
- 	for_each_process_thread(g, p) {
- 		if (task_cpu(p) != rq_cpu)
- 			continue;
- 
- 		print_task(m, rq, p);
- 	}
--	read_unlock_irqrestore(&tasklist_lock, flags);
-+	rcu_read_unlock();
- }
- 
- void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
-@@ -331,9 +330,7 @@ do {									\
- 	print_cfs_stats(m, cpu);
- 	print_rt_stats(m, cpu);
- 
--	rcu_read_lock();
- 	print_rq(m, rq, cpu);
--	rcu_read_unlock();
- 	spin_unlock_irqrestore(&sched_debug_lock, flags);
- 	SEQ_printf(m, "\n");
- }
+-	if (!drbg)
+-		return -EINVAL;
+-
+ 	drbg->V = kmalloc(drbg_statelen(drbg), GFP_KERNEL);
+ 	if (!drbg->V)
+ 		goto err;
 -- 
-1.5.5.1
+1.9.3
 
 
