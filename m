@@ -1,72 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaHQRse (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 13:48:34 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:41364 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaHQRsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 13:48:33 -0400
-Message-ID: <53F0EAEC.9040505@kernel.dk>
-Date: Sun, 17 Aug 2014 11:48:28 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+	id S1751494AbaHQSYi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 14:24:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14414 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371AbaHQSYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 14:24:37 -0400
+Date: Sun, 17 Aug 2014 20:21:38 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
-        Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>	<20140815163111.GA16652@infradead.org>	<53EE370D.1060106@kernel.dk>	<53EE3966.60609@kernel.dk> <CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
-In-Reply-To: <CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init()
+	and module_long_probe_exit()
+Message-ID: <20140817182138.GA4411@redhat.com>
+References: <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com> <20140813175101.GA7156@redhat.com> <20140814231028.GQ21930@wotan.suse.de> <20140815143902.GB13222@redhat.com> <20140816025007.GB3347@wotan.suse.de> <s5h1tsfwqi2.wl-tiwai@suse.de> <20140817122527.GA30546@redhat.com> <20140817124803.GA31996@redhat.com> <20140817125505.GA32429@redhat.com> <20140817174624.GE3347@wotan.suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140817174624.GE3347@wotan.suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-16 02:06, Ming Lei wrote:
-> On 8/16/14, Jens Axboe <axboe@kernel.dk> wrote:
->> On 08/15/2014 10:36 AM, Jens Axboe wrote:
->>> On 08/15/2014 10:31 AM, Christoph Hellwig wrote:
->>>>> +static void loop_queue_work(struct work_struct *work)
->>>>
->>>> Offloading work straight to a workqueue dosn't make much sense
->>>> in the blk-mq model as we'll usually be called from one.  If you
->>>> need to avoid the cases where we are called directly a flag for
->>>> the blk-mq code to always schedule a workqueue sounds like a much
->>>> better plan.
->>>
->>> That's a good point - would clean up this bit, and be pretty close to a
->>> one-liner to support in blk-mq for the drivers that always need blocking
->>> context.
->>
->> Something like this should do the trick - totally untested. But with
->> that, loop would just need to add BLK_MQ_F_WQ_CONTEXT to it's tag set
->> flags and it could always do the work inline from ->queue_rq().
+On 08/17, Luis R. Rodriguez wrote:
 >
-> I think it is a good idea.
->
-> But for loop, there may be two problems:
->
-> - default max_active for bound workqueue is 256, which means several slow
-> loop devices might slow down whole block system. With kernel AIO, it won't
-> be a big deal, but some block/fs may not support direct I/O and still
-> fallback to
-> workqueue
->
-> - 6. Guidelines of Documentation/workqueue.txt
-> If there is dependency among multiple work items used during memory
-> reclaim, they should be queued to separate wq each with WQ_MEM_RECLAIM.
+> In the last iteration that I have stress tested for corner cases I just
+> get_task_struct() on the init and then put_task_struct() at the exit, is that
+> fine too or are there reasons to prefer the module stuff?
 
-Both are good points. But I think this mainly means that we should 
-support this through a potentially per-dispatch queue workqueue, 
-separate from kblockd. There's no reason blk-mq can't support this with 
-a per-hctx workqueue, for drivers that need it.
+I am fine either way.
 
--- 
-Jens Axboe
+I like the Takashi's idea because if sys_delete_module() is called before
+initfn() completes it will return -EBUSY and not hang in TASK_UNINTERRUPTIBLE
+state. But this is not necessarily good, so I leave this to you and Takashi.
+
+> +/*
+> + * Linux device drivers must strive to handle driver initialization
+> + * within less than 30 seconds,
+
+Well, perhaps the comment should name the reason ;)
+
+> if device probing takes longer
+> + * for whatever reason asynchronous probing of devices / loading
+> + * firmware should be used. If a driver takes longer than 30 second
+> + * on the initialization path
+
+Or if the initialization code can't handle the errors properly (say,
+mptsas can't handle the errors caused by SIGKILL).
+
+> + * Drivers that use this helper should be considered broken and in need
+> + * of some serious love.
+> + */
+
+Yes.
+
+> +#define module_long_probe_init(initfn)				\
+> +	static struct task_struct *__init_thread;		\
+> +	static int _long_probe_##initfn(void *arg)		\
+> +	{							\
+> +		return initfn();				\
+> +	}							\
+> +	static inline __init int __long_probe_##initfn(void)	\
+> +	{							\
+> +		__init_thread = kthread_create(_long_probe_##initfn,\
+> +					       NULL,		\
+> +					       #initfn);	\
+> +		if (IS_ERR(__init_thread))			\
+> +			return PTR_ERR(__init_thread);		\
+> +		/*						\
+> +		 * callback won't check kthread_should_stop()	\
+> +		 * before bailing, so we need to protect it	\
+> +		 * before running it.				\
+> +		 */						\
+> +		get_task_struct(__init_thread); 		\
+> +		wake_up_process(__init_thread);			\
+> +		return 0;					\
+> +	}							\
+> +	module_init(__long_probe_##initfn);
+> +
+> +/* To be used by modules that require module_long_probe_init() */
+> +#define module_long_probe_exit(exitfn)				\
+> +	static inline void __long_probe_##exitfn(void)		\
+> +	{							\
+> +		int err;					\
+> +		/*						\
+> +		 * exitfn() will not be run if the driver's	\
+> +		 * real probe which is run on the kthread	\
+> +		 * failed for whatever reason, this will	\
+> +		 * wait for it to end.				\
+> +		 */						\
+> +		err = kthread_stop(__init_thread);		\
+> +		if (!err)					\
+> +			exitfn();				\
+> +		put_task_struct(__init_thread);	 		\
+> +	}							\
+> +	module_exit(__long_probe_##exitfn);
+
+Both inline's look misleading, gcc will generate the code out-of-line
+anyway. But this is cosmetic. And for cosmetic reasons, since the 1st
+macro uses __init, the 2nd one should probably use __exit.
+
+I believe this version is correct.
+
+Oleg.
 
