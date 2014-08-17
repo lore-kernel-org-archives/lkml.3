@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548AbaHQU6R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 16:58:17 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:43963 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaHQU6Q (ORCPT
+	id S1751599AbaHQVOx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 17:14:53 -0400
+Received: from forward4l.mail.yandex.net ([84.201.143.137]:60732 "EHLO
+	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaHQVOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 16:58:16 -0400
+	Sun, 17 Aug 2014 17:14:52 -0400
+X-Yandex-Uniq: 0521db18-7b31-4c2a-b4d5-19566e37b092
+Authentication-Results: smtp19.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <53F11B45.8070105@yandex.ru>
+Date: Mon, 18 Aug 2014 01:14:45 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <1408308358-27494-1-git-send-email-geert@linux-m68k.org>
-References: <1408308358-27494-1-git-send-email-geert@linux-m68k.org>
-Date: Sun, 17 Aug 2014 22:58:14 +0200
-X-Google-Sender-Auth: g9y5fx8yS09PW30YgTdBFjb1mSQ
-Message-ID: <CAMuHMdUrBYrHiwj=S-kWYEHb+1CX2VUgYmvJhj_aaC-8ChFL_g@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.17-rc1
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Rik van Riel <riel@redhat.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Frank Mayhar <fmayhar@google.com>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] sched: tasklist_lock cleanups (Was: don't use while_each_thread())
+References: <20140813191938.GA19301@redhat.com> <20140817152549.GA17984@redhat.com>
+In-Reply-To: <20140817152549.GA17984@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 10:45 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> 16 regressions:
->   + /scratch/kisskb/src/arch/powerpc/include/asm/floppy.h: error: 'isa_bridge_pcidev' undeclared (first use in this function):  => 142:20
+On 17.08.2014 19:25, Oleg Nesterov wrote:
+> On 08/13, Oleg Nesterov wrote:
+>>
+>> Peter, could you take these simple patches ?
+>>
+>> Better later than never... per-file, but please feel free to join
+>> them in a single patch.
+>>
+>> read_lock_irq*(tasklist_lock) in kernel/sched/ files looks strange.
+>> Why? I'll recheck, but this looks unneeded.
+> 
+> Yes, please consider these minor cleanups on top of for_each_thread
+> conversions.
+> 
+> read_lock_irq(tasklist) in normalize_rt_tasks() doesn't really hurt,
+> but it looks confusing. If we really have a reason to disable irqs
+> this (subtle) reason should be documented.
+> 
+> And I can't understand tg_has_rt_tasks(). Don't we need something
+> like the patch below? If not, please do not ask me why I think so,
+> I don't understand this black magic ;) But the usage of the global
+> "runqueues" array looks suspicious.
 
-powerpc-randconfig
+This function searches RT task which is related to this tg. It's
+opaquely because it looks that there is an error.
 
->   + /scratch/kisskb/src/fs/hostfs/hostfs_user.c: error: 'AT_FDCWD' undeclared (first use in this function):  => 378
->   + /scratch/kisskb/src/fs/hostfs/hostfs_user.c: error: (Each undeclared identifier is reported only once:  => 378
->   + /scratch/kisskb/src/fs/hostfs/hostfs_user.c: error: for each function it appears in.):  => 378
+task_rq(p)->rt.tg is a task group of a top rt_rq, while the task may
+be queued on a child rt_rq instead of this. So, your patch is a BUGFIX,
+not a cleanup.
 
-um-defconfig
-
->   + /scratch/kisskb/src/kernel/locking/mcs_spinlock.h: error: implicit declaration of function 'cpu_relax_lowlatency' [-Werror=implicit-function-declaration]:  => 87:2
-
-frv-defconfig (somehow the fix never made it past Linus' mbox)
-
->   + error: "flush_icache_range" [drivers/misc/lkdtm.ko] undefined!:  => N/A
-
-sh-allmodconfig (woohoo, this means it has reached the link phase!)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> --- x/kernel/sched/core.c
+> +++ x/kernel/sched/core.c
+> @@ -7354,7 +7354,7 @@ static inline int tg_has_rt_tasks(struct
+>  	struct task_struct *g, *p;
+>  
+>  	for_each_process_thread(g, p) {
+> -		if (rt_task(p) && task_rq(p)->rt.tg == tg)
+> +		if (rt_task(p) && task_group(p) == tg)
+>  			return 1;
+>  	}
