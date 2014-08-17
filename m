@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaHQV5j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 17:57:39 -0400
-Received: from s87.loopia.se ([194.9.94.111]:15839 "EHLO s87.loopia.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575AbaHQV5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 17:57:38 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-From: Hans Wennborg <hans@hanshq.net>
-To: kvalo@qca.qualcomm.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ath6kl@lists.infradead.org
-Cc: Hans Wennborg <hans@hanshq.net>
-Subject: [PATCH 1/1] ath6kl: fix %d confusingly prefixed with 0x in format strings
-Date: Sun, 17 Aug 2014 14:57:11 -0700
-Message-Id: <1408312631-5619-1-git-send-email-hans@hanshq.net>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <8738czmejl.fsf@kamboji.qca.qualcomm.com>
-References: <8738czmejl.fsf@kamboji.qca.qualcomm.com>
+	id S1751563AbaHQWIc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 18:08:32 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:61933 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaHQWIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 18:08:30 -0400
+From: Philippe Reynes <tremyfr@gmail.com>
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, andrzej.p@samsung.com,
+        Philippe Reynes <tremyfr@gmail.com>
+Subject: [PATCH] usb: gadget: remove $(PWD) in ccflags-y
+Date: Mon, 18 Aug 2014 00:08:07 +0200
+Message-Id: <1408313287-4999-1-git-send-email-tremyfr@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Hans Wennborg <hans@hanshq.net>
----
- drivers/net/wireless/ath/ath6kl/init.c | 2 +-
- drivers/net/wireless/ath/ath6kl/main.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+The variable $(PWD) is useless, and it may break the compilation.
+For example, it breaks the kernel compilation when it's done with
+buildroot :
 
-diff --git a/drivers/net/wireless/ath/ath6kl/init.c b/drivers/net/wireless/ath/ath6kl/init.c
-index fffd523..6e473fa 100644
---- a/drivers/net/wireless/ath/ath6kl/init.c
-+++ b/drivers/net/wireless/ath/ath6kl/init.c
-@@ -1049,7 +1049,7 @@ static int ath6kl_fetch_fw_apin(struct ath6kl *ar, const char *name)
- 			ar->hw.reserved_ram_size = le32_to_cpup(val);
+  /home/trem/Codes/armadeus/armadeus/buildroot/output/host/usr/bin/ccache
+/home/trem/Codes/armadeus/armadeus/buildroot/output/host/usr/bin/arm-buildroot-linux-uclibcgnueabi-gcc
+-Wp,-MD,drivers/usb/gadget/legacy/.hid.o.d  -nostdinc -isystem
+/home/trem/Codes/armadeus/armadeus/buildroot/output/host/usr/lib/gcc/arm-buildroot-linux-uclibcgnueabi/4.7.3/include
+-I./arch/arm/include -Iarch/arm/include/generated  -Iinclude
+-I./arch/arm/include/uapi -Iarch/arm/include/generated/uapi
+-I./include/uapi -Iinclude/generated/uapi -include
+./include/linux/kconfig.h -D__KERNEL__ -mlittle-endian -Wall -Wundef
+-Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common
+-Werror-implicit-function-declaration -Wno-format-security
+-fno-dwarf2-cfi-asm -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp
+-funwind-tables -marm -D__LINUX_ARM_ARCH__=5 -march=armv5te
+-mtune=arm9tdmi -msoft-float -Uarm -fno-delete-null-pointer-checks -O2
+--param=allow-store-data-races=0 -Wframe-larger-than=1024
+-fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer
+-fno-var-tracking-assignments -g -Wdeclaration-after-statement
+-Wno-pointer-sign -fno-strict-overflow -fconserve-stack
+-Werror=implicit-int -Werror=strict-prototypes -DCC_HAVE_ASM_GOTO
+-I/home/trem/Codes/armadeus/armadeus/buildroot/drivers/usb/gadget/
+-I/home/trem/Codes/armadeus/armadeus/buildroot/drivers/usb/gadget/udc/
+-I/home/trem/Codes/armadeus/armadeus/buildroot/drivers/usb/gadget/function/
+-DMODULE  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(hid)"
+-D"KBUILD_MODNAME=KBUILD_STR(g_hid)" -c -o
+drivers/usb/gadget/legacy/hid.o drivers/usb/gadget/legacy/hid.c
+drivers/usb/gadget/epautoconf.c:23:26: erreur fatale: gadget_chips.h :
+Aucun fichier ou dossier de ce type
+
+This compilation line include :
+..../buildroot/driver/usb/gadget
+but the real path is :
+..../buildroot/output/build/linux-3.17-rc1/driver/usb/gadget
+
+Signed-off-by: Philippe Reynes <tremyfr@gmail.com>
+---
+ drivers/usb/gadget/Makefile          |    2 +-
+ drivers/usb/gadget/function/Makefile |    4 ++--
+ drivers/usb/gadget/legacy/Makefile   |    6 +++---
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
+index a186afe..9add915 100644
+--- a/drivers/usb/gadget/Makefile
++++ b/drivers/usb/gadget/Makefile
+@@ -3,7 +3,7 @@
+ #
+ subdir-ccflags-$(CONFIG_USB_GADGET_DEBUG)	:= -DDEBUG
+ subdir-ccflags-$(CONFIG_USB_GADGET_VERBOSE)	+= -DVERBOSE_DEBUG
+-ccflags-y				+= -I$(PWD)/drivers/usb/gadget/udc
++ccflags-y				+= -Idrivers/usb/gadget/udc
  
- 			ath6kl_dbg(ATH6KL_DBG_BOOT,
--				   "found reserved ram size ie 0x%d\n",
-+				   "found reserved ram size ie %d\n",
- 				   ar->hw.reserved_ram_size);
- 			break;
- 		case ATH6KL_FW_IE_CAPABILITIES:
-diff --git a/drivers/net/wireless/ath/ath6kl/main.c b/drivers/net/wireless/ath/ath6kl/main.c
-index 21516bc..933aef0 100644
---- a/drivers/net/wireless/ath/ath6kl/main.c
-+++ b/drivers/net/wireless/ath/ath6kl/main.c
-@@ -225,7 +225,7 @@ int ath6kl_diag_write32(struct ath6kl *ar, u32 address, __le32 value)
- 	ret = ath6kl_hif_diag_write32(ar, address, value);
+ obj-$(CONFIG_USB_LIBCOMPOSITE)	+= libcomposite.o
+ libcomposite-y			:= usbstring.o config.o epautoconf.o
+diff --git a/drivers/usb/gadget/function/Makefile b/drivers/usb/gadget/function/Makefile
+index 6d91f21..83ae106 100644
+--- a/drivers/usb/gadget/function/Makefile
++++ b/drivers/usb/gadget/function/Makefile
+@@ -2,8 +2,8 @@
+ # USB peripheral controller drivers
+ #
  
- 	if (ret) {
--		ath6kl_err("failed to write 0x%x during diagnose window to 0x%d\n",
-+		ath6kl_err("failed to write 0x%x during diagnose window to 0x%x\n",
- 			   address, value);
- 		return ret;
- 	}
+-ccflags-y			:= -I$(PWD)/drivers/usb/gadget/
+-ccflags-y			+= -I$(PWD)/drivers/usb/gadget/udc/
++ccflags-y			:= -Idrivers/usb/gadget/
++ccflags-y			+= -Idrivers/usb/gadget/udc/
+ 
+ # USB Functions
+ usb_f_acm-y			:= f_acm.o
+diff --git a/drivers/usb/gadget/legacy/Makefile b/drivers/usb/gadget/legacy/Makefile
+index a11aad5..edba2d1 100644
+--- a/drivers/usb/gadget/legacy/Makefile
++++ b/drivers/usb/gadget/legacy/Makefile
+@@ -2,9 +2,9 @@
+ # USB gadget drivers
+ #
+ 
+-ccflags-y			:= -I$(PWD)/drivers/usb/gadget/
+-ccflags-y			+= -I$(PWD)/drivers/usb/gadget/udc/
+-ccflags-y			+= -I$(PWD)/drivers/usb/gadget/function/
++ccflags-y			:= -Idrivers/usb/gadget/
++ccflags-y			+= -Idrivers/usb/gadget/udc/
++ccflags-y			+= -Idrivers/usb/gadget/function/
+ 
+ g_zero-y			:= zero.o
+ g_audio-y			:= audio.o
 -- 
-2.1.0.rc2.206.gedb03e5
+1.7.4.4
 
