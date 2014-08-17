@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaHQP2r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 11:28:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31952 "EHLO mx1.redhat.com"
+	id S1751835AbaHQP3J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 11:29:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17898 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaHQP2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 11:28:45 -0400
-Date: Sun, 17 Aug 2014 17:26:16 +0200
+	id S1751776AbaHQP3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 11:29:06 -0400
+Date: Sun, 17 Aug 2014 17:26:37 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Rik van Riel <riel@redhat.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
@@ -16,9 +16,8 @@ Cc: Rik van Riel <riel@redhat.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>,
         linux-kernel@vger.kernel.org, Kirill Tkhai <tkhai@yandex.ru>
-Subject: [PATCH 1/2] sched: normalize_rt_tasks: don't use _irqsave for
-	tasklist_lock, use task_rq_lock()
-Message-ID: <20140817152616.GB17984@redhat.com>
+Subject: [PATCH 2/2] sched: print_rq: don't use tasklist_lock
+Message-ID: <20140817152637.GC17984@redhat.com>
 References: <20140813191938.GA19301@redhat.com> <20140817152549.GA17984@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,64 +28,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. read_lock(tasklist_lock) does not need to disable irqs.
+read_lock_irqsave(tasklist_lock) in print_rq() looks strange. We do
+not need to disable irqs, and they are already disabled by the caller.
 
-2. ->mm != NULL is the common mistake, use PF_KTHREAD.
-
-3. The second ->mm check can be simply removed.
-
-4. task_rq_lock() looks better than raw_spin_lock(&p->pi_lock) +
-   __task_rq_lock().
+And afaics this lock buys nothing, we can rely on rcu_read_lock().
+In this case it makes sense to also move rcu_read_lock/unlock from
+the caller to print_rq().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/sched/core.c |   16 ++++++----------
- 1 files changed, 6 insertions(+), 10 deletions(-)
+ kernel/sched/debug.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 8a6506f..eee12b3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7137,12 +7137,12 @@ void normalize_rt_tasks(void)
- 	unsigned long flags;
- 	struct rq *rq;
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index c7fe1ea..ce33780 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -150,7 +150,6 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
+ {
+ 	struct task_struct *g, *p;
+-	unsigned long flags;
+ 
+ 	SEQ_printf(m,
+ 	"\nrunnable tasks:\n"
+@@ -159,14 +158,14 @@ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
+ 	"------------------------------------------------------"
+ 	"----------------------------------------------------\n");
  
 -	read_lock_irqsave(&tasklist_lock, flags);
-+	read_lock(&tasklist_lock);
++	rcu_read_lock();
  	for_each_process_thread(g, p) {
- 		/*
- 		 * Only normalize user tasks:
- 		 */
--		if (!p->mm)
-+		if (p->flags & PF_KTHREAD)
+ 		if (task_cpu(p) != rq_cpu)
  			continue;
  
- 		p->se.exec_start		= 0;
-@@ -7157,20 +7157,16 @@ void normalize_rt_tasks(void)
- 			 * Renice negative nice level userspace
- 			 * tasks back to 0:
- 			 */
--			if (task_nice(p) < 0 && p->mm)
-+			if (task_nice(p) < 0)
- 				set_user_nice(p, 0);
- 			continue;
- 		}
- 
--		raw_spin_lock(&p->pi_lock);
--		rq = __task_rq_lock(p);
--
-+		rq = task_rq_lock(p, &flags);
- 		normalize_task(rq, p);
--
--		__task_rq_unlock(rq);
--		raw_spin_unlock(&p->pi_lock);
-+		task_rq_unlock(rq, p, &flags);
+ 		print_task(m, rq, p);
  	}
 -	read_unlock_irqrestore(&tasklist_lock, flags);
-+	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
  }
  
- #endif /* CONFIG_MAGIC_SYSRQ */
+ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+@@ -331,9 +330,7 @@ do {									\
+ 	print_cfs_stats(m, cpu);
+ 	print_rt_stats(m, cpu);
+ 
+-	rcu_read_lock();
+ 	print_rq(m, rq, cpu);
+-	rcu_read_unlock();
+ 	spin_unlock_irqrestore(&sched_debug_lock, flags);
+ 	SEQ_printf(m, "\n");
+ }
 -- 
 1.5.5.1
 
