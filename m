@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438AbaHQM2R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 08:28:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22372 "EHLO mx1.redhat.com"
+	id S1751590AbaHQMbq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 08:31:46 -0400
+Received: from sauhun.de ([89.238.76.85]:42358 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133AbaHQM2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 08:28:15 -0400
-Date: Sun, 17 Aug 2014 14:25:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init() and
-	module_long_probe_exit()
-Message-ID: <20140817122527.GA30546@redhat.com>
-References: <1407882507-325-1-git-send-email-mcgrof@do-not-panic.com> <1407882507-325-2-git-send-email-mcgrof@do-not-panic.com> <20140813175101.GA7156@redhat.com> <20140814231028.GQ21930@wotan.suse.de> <20140815143902.GB13222@redhat.com> <20140816025007.GB3347@wotan.suse.de> <s5h1tsfwqi2.wl-tiwai@suse.de>
+	id S1751159AbaHQMbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 08:31:45 -0400
+Date: Sun, 17 Aug 2014 07:31:33 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-spi@vger.kernel.org
+Subject: Re: [PATCH 1/2] regmap: Add eplicit dependencies to catch "select"
+ misuse
+Message-ID: <20140817123132.GA2863@katana>
+References: <1408270138-29811-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gBBFr7Ir9EOA20Yy"
 Content-Disposition: inline
-In-Reply-To: <s5h1tsfwqi2.wl-tiwai@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1408270138-29811-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17, Takashi Iwai wrote:
->
-> How about just increasing/decreasing the module count for blocking the
-> exit call?  For example:
->
-> #define module_long_probe_init(initfn)				\
-> 	static int _long_probe_##initfn(void *arg)		\
-> 	{							\
-> 		int ret = initfn();				\
-> 		module_put(THIS_MODULE);			\
 
-WINDOW, please see below.
+--gBBFr7Ir9EOA20Yy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 		return ret;					\
-> 	}							\
-> 	static inline __init int __long_probe_##initfn(void)	\
-> 	{							\
-> 		struct task_struct *__init_thread;		\
-> 		__module_get(THIS_MODULE);			\
-> 		__init_thread = kthread_run(_long_probe_##initfn,\
-> 					    NULL,		\
-> 					    #initfn);		\
-> 		if (IS_ERR(__init_thread)) {			\
-> 			module_put(THIS_MODULE);		\
-> 			return PTR_ERR(__init_thread);		\
-> 		}						\
-> 		return 0;					\
-> 	}							\
+On Sun, Aug 17, 2014 at 12:08:57PM +0200, Geert Uytterhoeven wrote:
+> Add explicit dependencies for the various regmap modules, so Kconfig
+> will print a warning message when another module selects a regmap module
+> without fulfilling its dependencies.
+>=20
+> Without this, it's much more difficult to find out which module did the
+> offending select.
+>=20
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-I leave this to you and Luis, but personally I think this is very
-nice idea, I like it. Because sys_delete_module() won't hang in D
-state waiting for initfn().
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
 
-There is a small problem. This module can be unloaded right after
-module_put() above. In this case its memory can be unmapped and
-the exiting thread can crash.
 
-This is very unlikely, this thread needs to execute just a few insn
-and escape from this module's memory. Given that only the buggy
-modules should use this hack, perhaps we can even ignore this race.
+--gBBFr7Ir9EOA20Yy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-But perhaps it makes sense to close this race anyway, and we already
-have complete_and_exit() which can be used instead of "return ret"
-above. Just we need the additional "static struct completion" and
-module_exit() should call wait_for_completion.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Oleg.
+iQIcBAEBAgAGBQJT8KCkAAoJEBQN5MwUoCm2HeIP/2ZIAC6VYd0ayPPUIQl4JQ1n
++YL4tfff/yGSQGWlfci7sbm0RTvrb4sEPF1vsOc0PuTDlwaZKHvYpgYLf9JvZStb
+LqWHI9FF3MgawG45twvM59UifPa48PX949o4zxHQJRcReRWzjDjrkYHImKLGGOUk
+kd7XyfmgHFm6k37u8UF9LkLqTZ4mL/4QbRbQzbiOymohqbO4Wsbgai8ZiKtDVAr9
+hrNCFB0+ZHSVHpfyKuxR8PRNMzSItec6I2NBvd8pdlyRFHJ2u3FUCJMWQSXQVuev
+LqbsNaqeKCOD4Qfxd8yHqmUrNFk3mhzr93JXrmHa++T4OsGU72NZecW2hz8B+UCf
++d6FEggpZWkR6ZNzrzxxTv6/QSJCiXgwxFokoTJuISNwytOdEvfmM/+18Y/EiBdt
+77wDswfxl9Mtu6RRITEShwhsRJ5PaPMB6DnCC2qkOHb2mMrcKlIPF5fVgYLQu+HB
+HS6C0Cq/AcxUmNj1DQ/Ee/38v0aykIKJjnQFlT4wMu+HQWzDoi7t2Avn8aFVNr50
+RMBJjXwX/u+IvtE3ltZNAuInYVdusCxD76MYDpo9ZNv1CbjjOO/QwUzG26dOIgFC
+Q6aLWeIciPUx6qBgY54bFKmd+ngBfZ7GfG5mJpCiRb5T+hUvhU0A0lHdWuyhURsZ
+ISkYA6xWBn85OQSL925Y
+=FsWB
+-----END PGP SIGNATURE-----
 
+--gBBFr7Ir9EOA20Yy--
