@@ -1,101 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719AbaHQMft (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 08:35:49 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:46392 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaHQMfq (ORCPT
+	id S1751516AbaHQMtw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 08:49:52 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:61432 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaHQMtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 08:35:46 -0400
-In-Reply-To: <20140813121550.GA21026@redhat.com>
-References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com> <20140810194559.GA4344@redhat.com> <20140811.124621.576073630604147753.davem@davemloft.net> <20140812091850.GD6440@redhat.com> <OF93E480CE.EFA0854D-ONC2257D32.003BE092-C2257D32.003C1F49@il.ibm.com> <20140813121550.GA21026@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: abel.gordon@gmail.com, Alex Glikson <GLIKSON@il.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Eran Raichstein <ERANRA@il.ibm.com>, Joel Nider <JOELN@il.ibm.com>,
-        kvm@vger.kernel.org, kvm-owner@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
+	Sun, 17 Aug 2014 08:49:51 -0400
+Date: Sun, 17 Aug 2014 15:49:41 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] net/ipv4/igmp.c: Replace rcu_dereference() with
+ rcu_access_pointer()
+Message-ID: <20140817124941.GA14000@ada>
 MIME-Version: 1.0
-Subject: Re: [PATCH] vhost: Add polling mode
-X-KeepSent: FB3DD9F0:3A92A6A0-C2257D37:0043D722;
- type=4; name=$KeepSent
-X-Mailer: IBM Notes Release 9.0.1SHF211 December 19, 2013
-From: Razya Ladelsky <RAZYA@il.ibm.com>
-Message-ID: <OFFB3DD9F0.3A92A6A0-ONC2257D37.0043D722-C2257D37.004522A0@il.ibm.com>
-Date: Sun, 17 Aug 2014 15:35:39 +0300
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5IF1HF3|November 07, 2013) at
- 17/08/2014 15:35:39,
-	Serialize complete at 17/08/2014 15:35:39
-Content-Type: text/plain; charset="US-ASCII"
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081712-4966-0000-0000-0000010B6F0E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > Hi Michael,
-> > 
-> > Sorry for the delay, had some problems with my mailbox, and I realized 
+The "rcu_dereference()" call is used directly in a condition.
+Since its return value is never dereferenced it is recommended to use
+"rcu_access_pointer()" instead of "rcu_dereference()".
+Therefore, this patch makes the replacement.
 
-> > just now that 
-> > my reply wasn't sent.
-> > The vm indeed ALWAYS utilized 100% cpu, whether polling was enabled or 
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-> > not.
-> > The vhost thread utilized less than 100% (of the other cpu) when 
-polling 
-> > was disabled.
-> > Enabling polling increased its utilization to 100% (in which case both 
+(
+ if(
+ (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+|
+ while(
+ (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+)
 
-> > cpus were 100% utilized). 
-> 
-> Hmm this means the testing wasn't successful then, as you said:
-> 
->    The idea was to get it 100% loaded, so we can see that the polling is
->    getting it to produce higher throughput.
-> 
-> in fact here you are producing more throughput but spending more power
-> to produce it, which can have any number of explanations besides polling
-> improving the efficiency. For example, increasing system load might
-> disable host power management.
->
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ net/ipv4/igmp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Hi Michael,
-I re-ran the tests, this time with the  "turbo mode" and  "C-states" 
-features off.
-No Polling:
-1 VM running netperf (msg size 64B): 1107 Mbits/sec
- Polling:
-1 VM running netperf (msg size 64B): 1572 Mbits/sec
-
-
-
-
-
-
-
-
-As you can see from the new results, the numbers are lower, 
-but relatively (polling on/off) there's no change.
-Thank you,
-Razya
-
-
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 6748d42..94a96ad 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -2537,7 +2537,7 @@ static int igmp_mc_seq_show(struct seq_file *seq, void *v)
+ 		querier = "NONE";
+ #endif
  
-
-
- 
-> 
-> > > -- 
-> > > MST
-> > > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-		if (rcu_dereference(state->in_dev->mc_list) == im) {
++		if (rcu_access_pointer(state->in_dev->mc_list) == im) {
+ 			seq_printf(seq, "%d\t%-10s: %5d %7s\n",
+ 				   state->dev->ifindex, state->dev->name, state->in_dev->mc_count, querier);
+ 		}
+-- 
+1.9.1
 
