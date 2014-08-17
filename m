@@ -1,144 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaHQRjA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 13:39:00 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:59127 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751628AbaHQRa6 (ORCPT
+	id S1751776AbaHQRa5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 13:30:57 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:40368 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751628AbaHQRam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 13:30:58 -0400
-Message-Id: <20140817173034.504088649@linux.com>
-Date: Sun, 17 Aug 2014 12:30:33 -0500
+	Sun, 17 Aug 2014 13:30:42 -0400
+Message-Id: <20140817173033.409289172@linux.com>
+Date: Sun, 17 Aug 2014 12:30:26 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH 10/35] [PATCH 10/36] drivers/net/ethernet/tile: Replace __get_cpu_var uses
- for address calculation
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 03/35] time: Convert a bunch of &__get_cpu_var introduced in the 3.16 merge period
 References: <20140817173023.439660246@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0010-drivers-net-ethernet-tile-Replace-__get_cpu_var-uses.patch
+Content-Disposition: inline; filename=fixhrtimer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace with this_cpu_ptr.
-
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Christoph Lameter <cl@linux.com>
----
- drivers/net/ethernet/tile/tilegx.c  | 18 +++++++++---------
- drivers/net/ethernet/tile/tilepro.c |  8 ++++----
- 2 files changed, 13 insertions(+), 13 deletions(-)
 
-Index: linux/drivers/net/ethernet/tile/tilegx.c
+Index: linux/kernel/time/hrtimer.c
 ===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilegx.c
-+++ linux/drivers/net/ethernet/tile/tilegx.c
-@@ -423,7 +423,7 @@ static void tile_net_pop_all_buffers(int
- /* Provide linux buffers to mPIPE. */
- static void tile_net_provide_needed_buffers(void)
+--- linux.orig/kernel/time/hrtimer.c
++++ linux/kernel/time/hrtimer.c
+@@ -558,7 +558,7 @@ hrtimer_force_reprogram(struct hrtimer_c
+ static int hrtimer_reprogram(struct hrtimer *timer,
+ 			     struct hrtimer_clock_base *base)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int instance, kind;
- 	for (instance = 0; instance < NR_MPIPE_MAX &&
- 		     info->mpipe[instance].has_iqueue; instance++)	{
-@@ -585,7 +585,7 @@ static void tile_net_receive_skb(struct
- /* Handle a packet.  Return true if "processed", false if "filtered". */
- static bool tile_net_handle_packet(int instance, gxio_mpipe_idesc_t *idesc)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct mpipe_data *md = &mpipe_data[instance];
- 	struct net_device *dev = md->tile_net_devs_for_channel[idesc->channel];
- 	uint8_t l2_offset;
-@@ -651,7 +651,7 @@ drop:
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	ktime_t expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
+ 	int res;
+ 
+@@ -629,7 +629,7 @@ static inline ktime_t hrtimer_update_bas
   */
- static int tile_net_poll(struct napi_struct *napi, int budget)
+ static void retrigger_next_event(void *arg)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned int work = 0;
- 	gxio_mpipe_idesc_t *idesc;
- 	int instance, i, n;
-@@ -700,7 +700,7 @@ done:
- /* Handle an ingress interrupt from an instance on the current cpu. */
- static irqreturn_t tile_net_handle_ingress_irq(int irq, void *id)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	napi_schedule(&info->mpipe[(uint64_t)id].napi);
- 	return IRQ_HANDLED;
- }
-@@ -763,7 +763,7 @@ static enum hrtimer_restart tile_net_han
- /* Make sure the egress timer is scheduled. */
- static void tile_net_schedule_egress_timer(void)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
+-	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *base = this_cpu_ptr(&hrtimer_bases);
  
- 	if (!info->egress_timer_scheduled) {
- 		hrtimer_start(&info->egress_timer,
-@@ -780,7 +780,7 @@ static void tile_net_schedule_egress_tim
+ 	if (!hrtimer_hres_active())
+ 		return;
+@@ -903,7 +903,7 @@ remove_hrtimer(struct hrtimer *timer, st
+ 		 */
+ 		debug_deactivate(timer);
+ 		timer_stats_hrtimer_clear_start_info(timer);
+-		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
++		reprogram = base->cpu_base == this_cpu_ptr(&hrtimer_bases);
+ 		/*
+ 		 * We must preserve the CALLBACK state flag here,
+ 		 * otherwise we could move the timer base in
+@@ -963,7 +963,7 @@ int __hrtimer_start_range_ns(struct hrti
+ 		 * on dynticks target.
+ 		 */
+ 		wake_up_nohz_cpu(new_base->cpu_base->cpu);
+-	} else if (new_base->cpu_base == &__get_cpu_var(hrtimer_bases) &&
++	} else if (new_base->cpu_base == this_cpu_ptr(&hrtimer_bases) &&
+ 			hrtimer_reprogram(timer, new_base)) {
+ 		/*
+ 		 * Only allow reprogramming if the new base is on this CPU.
+@@ -1103,7 +1103,7 @@ EXPORT_SYMBOL_GPL(hrtimer_get_remaining)
   */
- static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
+ ktime_t hrtimer_get_next_event(void)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	unsigned long irqflags;
- 	bool pending = false;
- 	int i, instance;
-@@ -1996,7 +1996,7 @@ static unsigned int tile_net_tx_frags(st
- /* Help the kernel transmit a packet. */
- static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	struct hrtimer_clock_base *base = cpu_base->clock_base;
+ 	ktime_t delta, mindelta = { .tv64 = KTIME_MAX };
+ 	unsigned long flags;
+@@ -1242,7 +1242,7 @@ static void __run_hrtimer(struct hrtimer
+  */
+ void hrtimer_interrupt(struct clock_event_device *dev)
  {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int instance = priv->instance;
- 	struct mpipe_data *md = &mpipe_data[instance];
-@@ -2138,7 +2138,7 @@ static int tile_net_set_mac_address(stru
- static void tile_net_netpoll(struct net_device *dev)
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	ktime_t expires_next, now, entry_time, delta;
+ 	int i, retries = 0;
+ 
+@@ -1440,7 +1440,7 @@ void hrtimer_run_pending(void)
+ void hrtimer_run_queues(void)
  {
- 	int instance = mpipe_instance(dev);
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	struct mpipe_data *md = &mpipe_data[instance];
+ 	struct timerqueue_node *node;
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
++	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
+ 	struct hrtimer_clock_base *base;
+ 	int index, gettime = 1;
  
- 	disable_percpu_irq(md->ingress_irq);
-@@ -2237,7 +2237,7 @@ static void tile_net_dev_init(const char
- /* Per-cpu module initialization. */
- static void tile_net_init_module_percpu(void *unused)
- {
--	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct tile_net_info *info = this_cpu_ptr(&per_cpu_info);
- 	int my_cpu = smp_processor_id();
- 	int instance;
+@@ -1679,7 +1679,7 @@ static void migrate_hrtimers(int scpu)
  
-Index: linux/drivers/net/ethernet/tile/tilepro.c
-===================================================================
---- linux.orig/drivers/net/ethernet/tile/tilepro.c
-+++ linux/drivers/net/ethernet/tile/tilepro.c
-@@ -996,13 +996,13 @@ static void tile_net_register(void *dev_
- 	PDEBUG("tile_net_register(queue_id %d)\n", queue_id);
- 
- 	if (!strcmp(dev->name, "xgbe0"))
--		info = &__get_cpu_var(hv_xgbe0);
-+		info = this_cpu_ptr(&hv_xgbe0);
- 	else if (!strcmp(dev->name, "xgbe1"))
--		info = &__get_cpu_var(hv_xgbe1);
-+		info = this_cpu_ptr(&hv_xgbe1);
- 	else if (!strcmp(dev->name, "gbe0"))
--		info = &__get_cpu_var(hv_gbe0);
-+		info = this_cpu_ptr(&hv_gbe0);
- 	else if (!strcmp(dev->name, "gbe1"))
--		info = &__get_cpu_var(hv_gbe1);
-+		info = this_cpu_ptr(&hv_gbe1);
- 	else
- 		BUG();
- 
+ 	local_irq_disable();
+ 	old_base = &per_cpu(hrtimer_bases, scpu);
+-	new_base = &__get_cpu_var(hrtimer_bases);
++	new_base = this_cpu_ptr(&hrtimer_bases);
+ 	/*
+ 	 * The caller is globally serialized and nobody else
+ 	 * takes two locks at once, deadlock is not possible.
 
