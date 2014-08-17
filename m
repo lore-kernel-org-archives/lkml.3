@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaHQKVz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 06:21:55 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39059 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaHQKVy (ORCPT
+	id S1751458AbaHQKe6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 06:34:58 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:34565 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaHQKe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 06:21:54 -0400
-Date: Sun, 17 Aug 2014 13:21:45 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: j.vosburgh@gmail.com, vfalico@gmail.com, andy@greyhouse.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH v2] bonding: Replace rcu_dereference() with
- rcu_access_pointer()
-Message-ID: <20140817102145.GA3854@ada>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 17 Aug 2014 06:34:57 -0400
+Message-ID: <1408271688.16342.1.camel@phoenix>
+Subject: [PATCH] regulator: da9211: Check return value of devm_kzalloc()
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: James Ban <james.ban.opensource@diasemi.com>,
+        Support Opensource <support.opensource@diasemi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 17 Aug 2014 18:34:48 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This "rcu_dereference()" call is used directly in a condition.
-Since its return value is never dereferenced it is recommended to use
-"rcu_access_pointer()" instead of "rcu_dereference()".
-Therefore, this patch makes this replacement.
-
-The following Coccinelle semantic patch was used for solving it:
-@@
-@@
-
-(
- if(
- (<+...
-- rcu_dereference
-+ rcu_access_pointer
-  (...)
- ...+>)) {...}
-|
- while(
- (<+...
-- rcu_dereference
-+ rcu_access_pointer
-  (...)
-  ...+>)) {...}
-)
-
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
-Changes in v2:
- - Modified subject line from
- "rcu: Replace rcu_dereference() with rcu_access_pointer()"
- to
- "bonding: Replace rcu_dereference() with rcu_access_pointer()",
- noted by David Miller <davem@davemloft.net>
+ drivers/regulator/da9211-regulator.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
- drivers/net/bonding/bond_alb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
-index 76c0dad..1319c5b 100644
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -1385,7 +1385,7 @@ static int bond_do_alb_xmit(struct sk_buff *skb, struct bonding *bond,
- 	}
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+index ccc2e36..a26f1d2 100644
+--- a/drivers/regulator/da9211-regulator.c
++++ b/drivers/regulator/da9211-regulator.c
+@@ -343,6 +343,8 @@ static int da9211_i2c_probe(struct i2c_client *i2c,
+ 	unsigned int data;
  
- 	if (tx_slave && bond_slave_can_tx(tx_slave)) {
--		if (tx_slave != rcu_dereference(bond->curr_active_slave)) {
-+		if (tx_slave != rcu_access_pointer(bond->curr_active_slave)) {
- 			ether_addr_copy(eth_data->h_source,
- 					tx_slave->dev->dev_addr);
- 		}
+ 	chip = devm_kzalloc(&i2c->dev, sizeof(struct da9211), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
+ 
+ 	chip->dev = &i2c->dev;
+ 	chip->regmap = devm_regmap_init_i2c(i2c, &da9211_regmap_config);
 -- 
 1.9.1
+
+
 
