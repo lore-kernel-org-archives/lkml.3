@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaHQSia (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 14:38:30 -0400
-Received: from mo-online.de ([89.238.66.174]:52752 "EHLO mo-online.de"
+	id S1751706AbaHQSi3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 14:38:29 -0400
+Received: from mo-online.de ([89.238.66.174]:52746 "EHLO mo-online.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482AbaHQSiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751391AbaHQSiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 17 Aug 2014 14:38:24 -0400
-Date: Sun, 17 Aug 2014 20:30:20 +0200
+Date: Sun, 17 Aug 2014 20:30:02 +0200
 From: Markus Osterhoff <mo@mo-online.org>
 To: Randy Dunlap <rdunlap@infradead.org>
 Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: [TYPO 2/9] [typo] MAINTAINERS: redundant full stop removed
-Message-ID: <20140817183020.GC4077@mo-online.de>
+Subject: [TYPO 1/9] [typo] spelling, punctuation in main README file
+Message-ID: <20140817183001.GB4077@mo-online.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
@@ -23,24 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+- the option [...] allow -> allows you to specify
+- no double-space behind etc. since it's not the
+  end of a sentence, but of an acronym
+
 Signed-off-by: Markus Osterhoff <linux-kernel@k-raum.org>
 ---
- MAINTAINERS | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ README | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index aefa948..a0d9c78 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -81,7 +81,7 @@ Descriptions of section entries:
- 	   Supported:	Someone is actually paid to look after this.
- 	   Maintained:	Someone actually looks after it.
- 	   Odd Fixes:	It has a maintainer but they don't have time to do
--			much other than throw the odd patch in. See below..
-+			much other than throw the odd patch in. See below.
- 	   Orphan:	No current maintainer [but maybe you could take the
- 			role as you write your new code].
- 	   Obsolete:	Old code. Something tagged obsolete generally means
+diff --git a/README b/README
+index a24ec89..8ccbd54 100644
+--- a/README
++++ b/README
+@@ -133,7 +133,7 @@ BUILD directory for the kernel:
+ 
+    When compiling the kernel, all output files will per default be
+    stored together with the kernel source code.
+-   Using the option "make O=output/dir" allow you to specify an alternate
++   Using the option "make O=output/dir" allows you to specify an alternate
+    place for the output files (including .config).
+    Example:
+ 
+@@ -320,7 +320,7 @@ COMPILING the kernel:
+    reboot, and enjoy!
+ 
+    If you ever need to change the default root device, video mode,
+-   ramdisk size, etc.  in the kernel image, use the 'rdev' program (or
++   ramdisk size, etc. in the kernel image, use the 'rdev' program (or
+    alternatively the LILO boot options when appropriate).  No need to
+    recompile the kernel to change these parameters. 
+ 
 -- 
 1.8.5.5
 
