@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaHQLI0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 07:08:26 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:63871 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaHQLIZ (ORCPT
+	id S1751496AbaHQLnr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 07:43:47 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:51071 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaHQLnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 07:08:25 -0400
-Date: Sun, 17 Aug 2014 07:08:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mem-hotplug: let memblock skip the hotpluggable memory
- regions in __next_mem_range()
-Message-ID: <20140817110821.GM9305@htj.dyndns.org>
-References: <53E8C5AA.5040506@huawei.com>
- <20140816130456.GH9305@htj.dyndns.org>
- <53EF6C79.3000603@huawei.com>
+	Sun, 17 Aug 2014 07:43:46 -0400
+Date: Sun, 17 Aug 2014 14:43:37 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net, oat.elena@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] rtl8188eu: Replace rcu_dereference() with
+ rcu_access_pointer()
+Message-ID: <20140817114336.GA24984@ada>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53EF6C79.3000603@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The "rcu_dereference()" call is used directly in a condition.
+Since its return value is never dereferenced it is recommended to use
+"rcu_access_pointer()" instead of "rcu_dereference()".
+Therefore, this patch makes the replacement.
 
-On Sat, Aug 16, 2014 at 10:36:41PM +0800, Xishi Qiu wrote:
-> numa_clear_node_hotplug()? There is only numa_clear_kernel_node_hotplug().
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-Yeah, that one.
+(
+ if(
+ (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+|
+ while(
+ (<+...
+- rcu_dereference
++ rcu_access_pointer
+  (...)
+  ...+>)) {...}
+)
 
-> If we don't clear hotpluggable flag in free_low_memory_core_early(), the 
-> memory which marked hotpluggable flag will not free to buddy allocator.
-> Because __next_mem_range() will skip them.
-> 
-> free_low_memory_core_early
-> 	for_each_free_mem_range
-> 		for_each_mem_range
-> 			__next_mem_range		
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ drivers/staging/rtl8188eu/core/rtw_mlme.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ah, okay, so the patch fixes __next_mem_range() and thus makes
-free_low_memory_core_early() to skip hotpluggable regions unlike
-before.  Please explain things like that in the changelog.  Also,
-what's its relationship with numa_clear_kernel_node_hotplug()?  Do we
-still need them?  If so, what are the different roles that these two
-separate places serve?
-
-Thanks.
-
+diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+index 155282e..8643003 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
++++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+@@ -1544,7 +1544,7 @@ void rtw_dynamic_check_timer_handlder(struct adapter *adapter)
+ 
+ 	rcu_read_lock();
+ 
+-	if (rcu_dereference(adapter->pnetdev->rx_handler_data) &&
++	if (rcu_access_pointer(adapter->pnetdev->rx_handler_data) &&
+ 	    (check_fwstate(pmlmepriv, WIFI_STATION_STATE|WIFI_ADHOC_STATE) == true)) {
+ 		/*  expire NAT2.5 entry */
+ 		nat25_db_expire(adapter);
 -- 
-tejun
+1.9.1
+
