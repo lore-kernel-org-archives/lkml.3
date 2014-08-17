@@ -1,245 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706AbaHQWsC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 18:48:02 -0400
-Received: from ozlabs.org ([103.22.144.67]:40106 "EHLO ozlabs.org"
+	id S1751648AbaHQXNI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 19:13:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45906 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751499AbaHQWsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 18:48:00 -0400
-Date: Mon, 18 Aug 2014 08:47:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        navin patidar <navin.patidar@gmail.com>
-Subject: linux-next: build failure after merge of the staging tree
-Message-ID: <20140818084750.28ea751a@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/lNSwixqVJEekdzDC/LctU2c"; protocol="application/pgp-signature"
+	id S1751512AbaHQXNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 19:13:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="373527852"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Sun, 17 Aug 2014 12:31:27 -0500
+Subject: Re: [RFC PATCH 3/9] Driver core: Unified device properties interface
+ for platform firmware
+From: Darren Hart <dvhart@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael@kernel.org>
+CC: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
+        <linux-acpi@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Message-ID: <D016480B.A1AC8%dvhart@linux.intel.com>
+Thread-Topic: [RFC PATCH 3/9] Driver core: Unified device properties interface
+ for platform firmware
+References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408255459-17625-4-git-send-email-mika.westerberg@linux.intel.com>
+ <20140817124913.A597FC40F4B@trevor.secretlab.ca>
+In-Reply-To: <20140817124913.A597FC40F4B@trevor.secretlab.ca>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/lNSwixqVJEekdzDC/LctU2c
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 8/17/14, 5:49, "Grant Likely" <grant.likely@secretlab.ca> wrote:
 
-Hi Greg,
+>
+>Hi Mika and Rafael,
+>
+>Comments below...
+>
+>On Sun, 17 Aug 2014 09:04:13 +0300, Mika Westerberg
+><mika.westerberg@linux.intel.com> wrote:
+>> From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+>> 
+>> Add a uniform interface by which device drivers can request device
+>> properties from the platform firmware by providing a property name
+>> and the corresponding data type.
+>> 
+>> Three general helper functions, device_property_get(),
+>> device_property_read() and device_property_read_array() are provided.
+>> The first one allows the raw value of a given device property to be
+>> accessed by the driver.  The remaining two allow the value of a numeric
+>> or string property and multiple numeric or string values of one array
+>> property to be acquired, respectively.
+>> 
+>> The interface is supposed to cover both ACPI and Device Trees,
+>> although the ACPI part is only implemented at this time.
+>
+>Nit:
+>s/at this time/in this change. The DT component is implemented in a
+>subsequent patch./
+>
+>I almost complained that the DT portion must be implemented before this
+>series can even be considered, but then I found it in patch 4/9.  :-)
+>
+>> 
+>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+>> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> ---
+>>  drivers/acpi/glue.c      |   4 +-
+>>  drivers/acpi/property.c  | 179
+>>++++++++++++++++++++++++++++++++++++++++++++++-
+>>  drivers/acpi/scan.c      |  12 +++-
+>>  drivers/base/Makefile    |   2 +-
+>>  drivers/base/property.c  |  48 +++++++++++++
+>>  include/acpi/acpi_bus.h  |   1 +
+>>  include/linux/device.h   |   3 +
+>>  include/linux/property.h |  50 +++++++++++++
+>>  8 files changed, 293 insertions(+), 6 deletions(-)
+>>  create mode 100644 drivers/base/property.c
+>>  create mode 100644 include/linux/property.h
+>> 
 
-After merging the staging tree, today's linux-next build (powerpc allyescon=
-fig)
-failed like this:
+...
 
-drivers/staging/built-in.o:(.opd+0xaab8): multiple definition of `rtl88e_ph=
-y_rf_config'
-drivers/net/built-in.o:(.opd+0x78840): first defined here
-drivers/staging/built-in.o:(.opd+0xa9f8): multiple definition of `rtl88e_do=
-wnload_fw'
-drivers/net/built-in.o:(.opd+0x781b0): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_phy_rf_config':
-(.text+0xe0a00): multiple definition of `.rtl88e_phy_rf_config'
-drivers/net/built-in.o:(.text+0xe85a48): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_download_fw':
-(.text+0xdf28c): multiple definition of `.rtl88e_download_fw'
-drivers/net/built-in.o:(.text+0xe6f330): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_phy_mac_config':
-(.text+0xdf984): multiple definition of `.rtl88e_phy_mac_config'
-drivers/net/built-in.o:(.text+0xe84a8c): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_phy_bb_config':
-(.text+0xdfa2c): multiple definition of `.rtl88e_phy_bb_config'
-drivers/net/built-in.o:(.text+0xe84d14): first defined here
-drivers/staging/built-in.o:(.opd+0xaa58): multiple definition of `rtl88e_ph=
-y_bb_config'
-drivers/net/built-in.o:(.opd+0x78828): first defined here
-drivers/staging/built-in.o:(.opd+0xaa28): multiple definition of `rtl88e_ph=
-y_mac_config'
+>>
+>>  static void acpi_device_del(struct acpi_device *device)
+>>  {
+>>  	mutex_lock(&acpi_device_lock);
+>> -	if (device->parent)
+>> +	if (device->parent) {
+>>  		list_del(&device->node);
+>> +		device->parent->child_count--;
+>
+>I worry about housekeeping like this. It is easy for bugs to slip in.
+>Unless returning the child count is in a critical path (which it
+>shouldn't be), I would drop the child_count member and simply count the
+>number of items in the list when required.
+>
+>This of course is not my subsystem, so I won't ACK or NACK the patch over
+>this.
 
-Caused by commits d6c28c23f89b ("staging: rtl8188eu: Cleanup firmware
-initialization code") and 586b60877244 ("staging: rtl8188eu: Cleanup
-and simplify RF configuration code") and probably others.
 
-I applied this fix up patch:
+This would be consistent with of_get_child_count() and is unlikely to be
+called much more than once per device. The maintenance however is limited
+to the add/del functions, so it doesn't seem difficult to maintain. I have
+no objections to just walking the list though if that is preferable.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 18 Aug 2014 08:40:48 +1000
-Subject: [PATCH] staging: rtl8188eu: using unique names is good
+...
 
-fixes:
+>> @@ -701,6 +702,7 @@ struct acpi_dev_node {
+>>   * @archdata:	For arch-specific additions.
+>>   * @of_node:	Associated device tree node.
+>>   * @acpi_node:	Associated ACPI device node.
+>> + * @property_ops: Firmware interface for device properties
+>>   * @devt:	For creating the sysfs "dev".
+>>   * @id:		device instance
+>>   * @devres_lock: Spinlock to protect the resource of the device.
+>> @@ -777,6 +779,7 @@ struct device {
+>>  
+>>  	struct device_node	*of_node; /* associated device tree node */
+>>  	struct acpi_dev_node	acpi_node; /* associated ACPI device node */
+>> +	struct dev_prop_ops	*property_ops;
+>
+>There are only 2 users of this interface. I don't think adding an ops
+>pointer to each and every struct device is warrented when the wrapper
+>function can check if of_node or acpi_node is set and call the
+>appropriate helper. It is unlikely anything else will use this hook. It
+>will result in smaller memory footprint. Also smaller code when only one
+>of
+>CONFIG_OF and CONFIG_ACPI are selected, which is almost always. :-)
+>
+>It can be refactored later if that ever changes.
 
-drivers/staging/built-in.o:(.opd+0xaab8): multiple definition of `rtl88e_ph=
-y_rf_config'
-drivers/net/built-in.o:(.opd+0x78840): first defined here
-drivers/staging/built-in.o:(.opd+0xa9f8): multiple definition of `rtl88e_do=
-wnload_fw'
-drivers/net/built-in.o:(.opd+0x781b0): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_phy_rf_config':
-(.text+0xe0a00): multiple definition of `.rtl88e_phy_rf_config'
-drivers/net/built-in.o:(.text+0xe85a48): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_download_fw':
-(.text+0xdf28c): multiple definition of `.rtl88e_download_fw'
-drivers/net/built-in.o:(.text+0xe6f330): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_phy_mac_config':
-(.text+0xdf984): multiple definition of `.rtl88e_phy_mac_config'
-drivers/net/built-in.o:(.text+0xe84a8c): first defined here
-drivers/staging/built-in.o: In function `.rtl88e_phy_bb_config':
-(.text+0xdfa2c): multiple definition of `.rtl88e_phy_bb_config'
-drivers/net/built-in.o:(.text+0xe84d14): first defined here
-drivers/staging/built-in.o:(.opd+0xaa58): multiple definition of `rtl88e_ph=
-y_bb_config'
-drivers/net/built-in.o:(.opd+0x78828): first defined here
-drivers/staging/built-in.o:(.opd+0xaa28): multiple definition of `rtl88e_ph=
-y_mac_config'
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c  | 2 +-
- drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c | 2 +-
- drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c  | 2 +-
- drivers/staging/rtl8188eu/hal/fw.c                | 2 +-
- drivers/staging/rtl8188eu/hal/usb_halinit.c       | 8 ++++----
- drivers/staging/rtl8188eu/include/fw.h            | 2 +-
- drivers/staging/rtl8188eu/include/phy.h           | 6 +++---
- 7 files changed, 12 insertions(+), 12 deletions(-)
+Our intent was to eliminate the #ifdefery in every one of the accessors.
+It was my understanding the ops structures were preferable in such
+situations. For a 64-bit machine with 1000 devices (all of which use
+device properties) with one or the other of ACPI/OF enabled, the
+additional memory requirement here is what... Something like (8*1000 + 4)
+~= 8KB ? That seems worth the arguably more maintainable code to me. Is
+there more to it than this, am I missing some more significant impact?
 
-diff --git a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c b/drivers/sta=
-ging/rtl8188eu/hal/HalHWImg8188E_BB.c
-index 00f9cd737193..0c5dc26fd5a2 100644
---- a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c
-+++ b/drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c
-@@ -687,7 +687,7 @@ static bool config_parafile(struct adapter *adapt)
- 	return true;
- }
-=20
--bool rtl88e_phy_bb_config(struct adapter *adapt)
-+bool rtl88eu_phy_bb_config(struct adapter *adapt)
- {
- 	int rtstatus =3D true;
- 	struct hal_data_8188e	*hal_data =3D GET_HAL_DATA(adapt);
-diff --git a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c b/drivers/st=
-aging/rtl8188eu/hal/HalHWImg8188E_MAC.c
-index ccca6a496b2b..7d22dd1abaed 100644
---- a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c
-+++ b/drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c
-@@ -116,7 +116,7 @@ static u32 array_MAC_REG_8188E[] =3D {
- 		0x70B, 0x00000087,
- };
-=20
--bool rtl88e_phy_mac_config(struct adapter *adapt)
-+bool rtl88eu_phy_mac_config(struct adapter *adapt)
- {
- 	u32 i;
- 	u32 arraylength;
-diff --git a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c b/drivers/sta=
-ging/rtl8188eu/hal/HalHWImg8188E_RF.c
-index 2648840f9e20..94ee740efd1f 100644
---- a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
-+++ b/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
-@@ -312,7 +312,7 @@ static bool rtl88e_phy_rf6052_config(struct adapter *ad=
-apt)
- 	return rf6052_conf_para(adapt);
- }
-=20
--bool rtl88e_phy_rf_config(struct adapter *adapt)
-+bool rtl88eu_phy_rf_config(struct adapter *adapt)
- {
- 	return rtl88e_phy_rf6052_config(adapt);
- }
-diff --git a/drivers/staging/rtl8188eu/hal/fw.c b/drivers/staging/rtl8188eu=
-/hal/fw.c
-index 09324ae80e72..17b7f3750547 100644
---- a/drivers/staging/rtl8188eu/hal/fw.c
-+++ b/drivers/staging/rtl8188eu/hal/fw.c
-@@ -181,7 +181,7 @@ exit:
- 	return err;
- }
-=20
--int rtl88e_download_fw(struct adapter *adapt)
-+int rtl88eu_download_fw(struct adapter *adapt)
- {
- 	struct hal_data_8188e *rtlhal =3D GET_HAL_DATA(adapt);
- 	struct dvobj_priv *dvobj =3D adapter_to_dvobj(adapt);
-diff --git a/drivers/staging/rtl8188eu/hal/usb_halinit.c b/drivers/staging/=
-rtl8188eu/hal/usb_halinit.c
-index c5559dfa4e92..1f057b32876d 100644
---- a/drivers/staging/rtl8188eu/hal/usb_halinit.c
-+++ b/drivers/staging/rtl8188eu/hal/usb_halinit.c
-@@ -743,7 +743,7 @@ static u32 rtl8188eu_hal_init(struct adapter *Adapter)
- 		Adapter->bFWReady =3D false;
- 		haldata->fw_ractrl =3D false;
- 	} else {
--		status =3D rtl88e_download_fw(Adapter);
-+		status =3D rtl88eu_download_fw(Adapter);
-=20
- 		if (status) {
- 			DBG_88E("%s: Download Firmware failed!!\n", __func__);
-@@ -758,11 +758,11 @@ static u32 rtl8188eu_hal_init(struct adapter *Adapter)
- 	}
- 	rtl8188e_InitializeFirmwareVars(Adapter);
-=20
--	rtl88e_phy_mac_config(Adapter);
-+	rtl88eu_phy_mac_config(Adapter);
-=20
--	rtl88e_phy_bb_config(Adapter);
-+	rtl88eu_phy_bb_config(Adapter);
-=20
--	rtl88e_phy_rf_config(Adapter);
-+	rtl88eu_phy_rf_config(Adapter);
-=20
- 	HAL_INIT_PROFILE_TAG(HAL_INIT_STAGES_EFUSE_PATCH);
- 	status =3D rtl8188e_iol_efuse_patch(Adapter);
-diff --git a/drivers/staging/rtl8188eu/include/fw.h b/drivers/staging/rtl81=
-88eu/include/fw.h
-index c7c7e7e5ffac..d5faaff3db59 100644
---- a/drivers/staging/rtl8188eu/include/fw.h
-+++ b/drivers/staging/rtl8188eu/include/fw.h
-@@ -54,6 +54,6 @@ struct rtl92c_firmware_header {
- 	u32 rsvd5;
- };
-=20
--int rtl88e_download_fw(struct adapter *adapt);
-+int rtl88eu_download_fw(struct adapter *adapt);
-=20
- #endif
-diff --git a/drivers/staging/rtl8188eu/include/phy.h b/drivers/staging/rtl8=
-188eu/include/phy.h
-index 676a66c44264..e3efa8fd69a8 100644
---- a/drivers/staging/rtl8188eu/include/phy.h
-+++ b/drivers/staging/rtl8188eu/include/phy.h
-@@ -1,3 +1,3 @@
--bool rtl88e_phy_mac_config(struct adapter *adapt);
--bool rtl88e_phy_rf_config(struct adapter *adapt);
--bool rtl88e_phy_bb_config(struct adapter *adapt);
-+bool rtl88eu_phy_mac_config(struct adapter *adapt);
-+bool rtl88eu_phy_rf_config(struct adapter *adapt);
-+bool rtl88eu_phy_bb_config(struct adapter *adapt);
---=20
-2.1.0.rc1
+  
+>>  	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
+>>  	u32			id;	/* device instance */
+>> diff --git a/include/linux/property.h b/include/linux/property.h
+>> new file mode 100644
+>> index 000000000000..52ea7fe7fe09
+>> --- /dev/null
+>> +++ b/include/linux/property.h
+>> @@ -0,0 +1,50 @@
+>> +/*
+>> + * property.h - Unified device property interface.
+>> + *
+>> + * Copyright (C) 2014, Intel Corporation
+>> + * Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#ifndef _LINUX_PROPERTY_H_
+>> +#define _LINUX_PROPERTY_H_
+>> +
+>> +#include <linux/device.h>
+>> +#include <linux/acpi.h>
+>> +#include <linux/of.h>
+>> +
+>> +enum dev_prop_type {
+>> +	DEV_PROP_U8,
+>> +	DEV_PROP_U16,
+>> +	DEV_PROP_U32,
+>> +	DEV_PROP_U64,
+>> +	DEV_PROP_STRING,
+>> +	DEV_PROP_MAX,
+>> +};
+>> +
+>> +struct dev_prop_ops {
+>> +	int (*get)(struct device *dev, const char *propname, void **valptr);
+>> +	int (*read)(struct device *dev, const char *propname,
+>> +		    enum dev_prop_type proptype, void *val);
+>> +	int (*read_array)(struct device *dev, const char *propname,
+>> +			  enum dev_prop_type proptype, void *val, size_t nval);
+>
+>The associated DT functions that implement property reads
+>(of_property_read_*) were created in part to provide some type safety
+>when reading properties. This proposed API throws that away by accepting
+>a void* for the data field, which I don't want to do. This API either
+>needs to have a separate accessor for each data type, or it needs some
+>other mechanism (accessor macros?) to ensure the right type is passed
+>in.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Sig_/lNSwixqVJEekdzDC/LctU2c
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+OK, this would increase the memory impact by 6-fold for 8,16,32,and 64
+byte integers, strings, and device references if additional typed function
+pointers were added to the dev_prop_ops. The macros could mitigate this I
+suppose.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Type checking and validation was something we had discussed as being
+important to this mechanism. I believe there was some interest in seeing
+this done at the ASL/FDT + Schema level - but that's not justification for
+maintaining it in the kernel interface as well.
 
-iQIcBAEBCAAGBQJT8TEbAAoJEMDTa8Ir7ZwVsQ0P+wbymZFck97zcP4OafY6bBSK
-Rk2jRsuPeyJRjJEfym5Fo05m/eSQix89UeD+8ZFE/5AWjs08gBtpICyff3B0xleR
-wvhHq06SPholCxUopZIlsv9qej4DZI2oaiQNTTaEUJN5jYpzKb3IwD0Fna6IsOSb
-/1I8qzF1sbMRwbOtFmgMFhk/g9MVx4T2BftKxfwugyOl8bbKI2tYbp5I+FWC4Euw
-lLJEIe3w8NmVPPeMQ88S0YTZxnxoXYT2zksO/pZs4YMX+EDhOvIkz7tyWbb/QhHH
-A1o4hoYfli1D3QpE1a1jY/cMaeDSbCy96kfsbQ++IWsGqNcXNCeb5JHHK+Alti7m
-XX17FOeTQySVCe7FLf11gkAblDEqIS5ZysdYIvoxSmS9JPbPrEUqgoA93iMlS6fy
-RrB+OsPby3YhsotjWvPZnSqsmRUyEVfuUPDtmhlyRwTf1hpBPYgA8SU2dPYEXfcL
-tMPqocLbSaHclh6Mr0dSpWpVRjSVHp895IeXmQgS6weCYHxj2TfRD5Rc/WNnSlJK
-lQg7EFa20UrO0oy0dQTxmAjpe2oe7lTQbaJ1H7mNAUlV6x7VSMSIZkizGTwfC+J1
-nJGQS7P6tcaYhYRjvpFcqfsIdtwRsGdSImHKAmvXAPG9NbWTXp2wu/bOLi2rdgn8
-0Yab9K/BcRIUoy3MEJgh
-=dxg6
------END PGP SIGNATURE-----
+Could this be addressed by adding an enum dev_prop_type to the get/read
+calls similar to that of the read_array call? That would keep the call
+count down, maintain the smaller memory footprint, and still allow for
+type verification within the device properties API.
 
---Sig_/lNSwixqVJEekdzDC/LctU2c--
+-- 
+Darren Hart					Open Source Technology Center
+darren.hart@intel.com				            Intel Corporation
+
+
+
