@@ -1,67 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaHRS1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 14:27:53 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:61440 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaHRS1v (ORCPT
+	id S1752136AbaHRS2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 14:28:34 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45839 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaHRS2c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 14:27:51 -0400
-Message-ID: <53F245A4.5010106@samsung.com>
-Date: Mon, 18 Aug 2014 13:27:48 -0500
-From: Kukjin Kim <kgene.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	Mon, 18 Aug 2014 14:28:32 -0400
+Message-ID: <53F24632.7030903@arm.com>
+Date: Mon, 18 Aug 2014 19:30:10 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Kukjin Kim <kgene.kim@samsung.com>,
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RESEND PATCH 1/2] ARM: dts: Improve Peach Pit and Pi power scheme
-References: <1407757091-18730-1-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=UbckfwGucuPjEtHixVgF5K2fD5N3EPS2BH96DRDACuqw@mail.gmail.com>
-In-Reply-To: <CAD=FV=UbckfwGucuPjEtHixVgF5K2fD5N3EPS2BH96DRDACuqw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v2 02/18] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-3-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1407166105-17675-3-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 18 Aug 2014 18:28:27.0317 (UTC) FILETIME=[33FEB650:01CFBB12]
+X-MC-Unique: 114081819282900201
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/14 10:46, Doug Anderson wrote:
-> Javier,
->
-> On Mon, Aug 11, 2014 at 4:38 AM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk>  wrote:
->> The DeviceTree files for the Peach Pit and Pi machines have
->> a simplistic model of the connections between the different
->> regulators since not all the tps65090 regulators get their
->> input supply voltage from the VDC. DCDC1-3, LD0-1 and fet7
->> parent supply is indded VDC but the fet1-6 get their input
->> supply from the DCDC1 and DCDC2 output voltage rails.
->>
->> Update the DeviceTree to better reflect the real connections
->> between tps65090 regulators. Having this information in the
->> DTS is useful since FETs are switches that don't provide an
->> output voltage so the regulator core needs to fetch the FET
->> parent output voltage if the child voltage is queried.
->>
->> Signed-off-by: Javier Martinez Canillas<javier.martinez@collabora.co.uk>
->> Acked-by: Mark Brown<broonie@linaro.org>
->> ---
->>   arch/arm/boot/dts/exynos5420-peach-pit.dts | 12 ++++++------
->>   arch/arm/boot/dts/exynos5800-peach-pi.dts  | 12 ++++++------
->>   2 files changed, 12 insertions(+), 12 deletions(-)
->
-> Matches my schematics.  Kukjin: I think this could be applied to
-> for-next whenever it's convenient.
->
-OK, I've applied this but 2nd in this series...
 
-> Acked-by: Doug Anderson<dianders@chromium.org>
+
+On 04/08/14 16:28, Hanjun Guo wrote:
+> From: Al Stone <al.stone@linaro.org>
 >
-Thanks,
-Kukjin
+> As we want to get ACPI tables to parse and then use the information
+> for system initialization, we should get the RSDP (Root System
+> Description Pointer) first, it then locates Extended Root Description
+> Table (XSDT) which contains all the 64-bit physical address that
+> pointer to other boot-time tables.
+>
+> Introduce acpi.c and its related head file in this patch to provide
+> fundamental needs of extern variables and functions for ACPI core,
+> and then get boot-time tables as needed.
+>    - asm/cpu.h need for ACPI core and will be updated in the future to
+>      add definitions for arch_(un)register_cpu which are required for
+>      ACPI based physical CPU hotplug;
+
+This can go away now, as it's already present in v3.17-rc1
+
+>    - asm/acenv.h for arch specific ACPICA environments and
+>      implementation;
+>    - asm/acpi.h for arch specific variables and functions needed by
+>      ACPI driver core;
+>    - acpi.c for ARM64 related ACPI implementation for ACPI driver
+>      core;
+>
+> acpi_boot_table_init() is introduced to get RSDP and boot-time tables,
+> it will be called in setup_arch() before paging_init(), so we should
+> use eary_memremap() mechanism here to get the RSDP and all the table
+> pointers.
+>
+> Signed-off-by: Al Stone <al.stone@linaro.org>
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>   arch/arm64/include/asm/acenv.h |   18 +++++++++++
+>   arch/arm64/include/asm/acpi.h  |   45 ++++++++++++++++++++++++++
+>   arch/arm64/include/asm/cpu.h   |   11 +++++++
+>   arch/arm64/kernel/Makefile     |    1 +
+>   arch/arm64/kernel/acpi.c       |   69 ++++++++++++++++++++++++++++++++++++++++
+>   arch/arm64/kernel/setup.c      |    4 +++
+>   6 files changed, 148 insertions(+)
+>   create mode 100644 arch/arm64/include/asm/acenv.h
+>   create mode 100644 arch/arm64/include/asm/acpi.h
+>   create mode 100644 arch/arm64/include/asm/cpu.h
+>   create mode 100644 arch/arm64/kernel/acpi.c
+>
+
+[...]
+
+> +
+> +/*
+> + * Checking for the posibility that the CPU can be initialized from the MADT.
+> + * It's used from ACPI core in crash kernel case where boot CPU is not
+> + * necessarily CPU0 like spec demands. Since MADT must provide at least one
+
+Do you mean ACPI spec demands CPU0 to be boot cpu ?
+
+IIUC it's basically to handle UP system with SMP kernel. IWO if all the
+ACPI resources are reused from SMP system to boot UP system with SMP
+kernel, with this check the ACPI core won't override the CPU index
+obtained from GIC/APIC mapping to zero.
+
+> + * GICC structure for GIC initialization, CPU will be always available in
+> + * MADT on ARM64.
+> + */
+> +static inline bool acpi_has_cpu_in_madt(void)
+> +{
+> +	return 1;
+
+probably true instead of 1
+
+> +}
+> +
+> +static inline void arch_fix_phys_package_id(int num, u32 slot) { }
+> +
+> +#endif /* CONFIG_ACPI */
+> +
+> +#endif /*_ASM_ACPI_H*/
+> diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
+> new file mode 100644
+> index 0000000..cee7d3f
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/cpu.h
+> @@ -0,0 +1,11 @@
+> +/*
+> + *  Copyright (C) 2013-2014 ARM Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#ifndef __ASM_CPU_H
+> +#define __ASM_CPU_H
+> +
+> +#endif
+> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+> index cdaedad..b568c26 100644
+> --- a/arch/arm64/kernel/Makefile
+> +++ b/arch/arm64/kernel/Makefile
+> @@ -29,6 +29,7 @@ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
+>   arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
+>   arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
+>   arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
+> +arm64-obj-$(CONFIG_ACPI)		+= acpi.o
+>
+>   obj-y					+= $(arm64-obj-y) vdso/
+>   obj-m					+= $(arm64-obj-m)
+> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> new file mode 100644
+> index 0000000..395778c
+> --- /dev/null
+> +++ b/arch/arm64/kernel/acpi.c
+> @@ -0,0 +1,69 @@
+> +/*
+> + *  ARM64 Specific Low-Level ACPI Boot Support
+> + *
+> + *  Copyright (C) 2013-2014, Linaro Ltd.
+> + *	Author: Al Stone <al.stone@linaro.org>
+> + *	Author: Graeme Gregory <graeme.gregory@linaro.org>
+> + *	Author: Hanjun Guo <hanjun.guo@linaro.org>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/acpi.h>
+> +#include <linux/cpumask.h>
+> +#include <linux/memblock.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/bootmem.h>
+> +#include <linux/smp.h>
+> +
+> +int acpi_noirq;			/* skip ACPI IRQ initialization */
+> +int acpi_disabled;
+> +EXPORT_SYMBOL(acpi_disabled);
+> +
+> +int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
+> +EXPORT_SYMBOL(acpi_pci_disabled);
+> +
+> +/*
+> + * __acpi_map_table() will be called before page_init(), so early_ioremap()
+> + * or early_memremap() should be called here to for ACPI table mapping.
+> + */
+> +char *__init __acpi_map_table(unsigned long phys, unsigned long size)
+> +{
+> +	if (!phys || !size)
+> +		return NULL;
+> +
+> +	return early_memremap(phys, size);
+> +}
+> +
+> +void __init __acpi_unmap_table(char *map, unsigned long size)
+> +{
+> +	if (!map || !size)
+> +		return;
+> +
+> +	early_memunmap(map, size);
+> +}
+> +
+> +/*
+> + * acpi_boot_table_init() called from setup_arch(), always.
+> + *	1. find RSDP and get its address, and then find XSDT
+> + *	2. extract all tables and checksums them all
+> + *
+> + * We can parse ACPI boot-time tables such as FADT, MADT after
+> + * this function is called.
+> + */
+> +void __init acpi_boot_table_init(void)
+> +{
+> +	/* If acpi_disabled, bail out */
+> +	if (acpi_disabled)
+> +		return;
+> +
+> +	/* Initialize the ACPI boot-time table parser. */
+> +	if (acpi_table_init()) {
+
+Can't we call acpi_table_init directly in setup ?
+IIUC x86 has acpi_boot_table_init as it parses Boot Flags
+table(ACPI_SIG_BOOT)
+
+> +		disable_acpi();
+> +		return;
+> +	}
+> +}
+> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+> index fc50461..85c6326 100644
+> --- a/arch/arm64/kernel/setup.c
+> +++ b/arch/arm64/kernel/setup.c
+> @@ -43,6 +43,7 @@
+>   #include <linux/of_fdt.h>
+>   #include <linux/of_platform.h>
+>   #include <linux/efi.h>
+> +#include <linux/acpi.h>
+>
+>   #include <asm/fixmap.h>
+>   #include <asm/cputype.h>
+> @@ -385,6 +386,9 @@ void __init setup_arch(char **cmdline_p)
+>   	efi_init();
+>   	arm64_memblock_init();
+>
+> +	/* Parse the ACPI tables for possible boot-time configuration */
+> +	acpi_boot_table_init();
+> +
+>   	paging_init();
+>   	request_standard_resources();
+>
+>
+
