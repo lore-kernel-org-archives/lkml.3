@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038AbaHRKH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:07:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42455 "EHLO
+	id S1754526AbaHRKCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:02:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42601 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaHRJdo (ORCPT
+	with ESMTP id S1752322AbaHRJeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:44 -0400
+	Mon, 18 Aug 2014 05:34:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 013/137] hwmon: (da9052) Don't use dash in the name attribute
-Date: Mon, 18 Aug 2014 10:31:14 +0100
-Message-Id: <1408354398-10226-14-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 037/137] net: sctp: check proc_dointvec result in proc_sctp_do_auth
+Date: Mon, 18 Aug 2014 10:31:38 +0100
+Message-Id: <1408354398-10226-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,33 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit ee14b644daaa58afe1e91bb9ebd9cf1b18d1f5fa upstream.
+commit 24599e61b7552673dd85971cf5a35369cd8c119e upstream.
 
-Dashes are not allowed in hwmon name attributes.
-Use "da9052" instead of "da9052-hwmon".
+When writing to the sysctl field net.sctp.auth_enable, it can well
+be that the user buffer we handed over to proc_dointvec() via
+proc_sctp_do_auth() handler contains something other than integers.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+In that case, we would set an uninitialized 4-byte value from the
+stack to net->sctp.auth_enable that can be leaked back when reading
+the sysctl variable, and it can unintentionally turn auth_enable
+on/off based on the stack content since auth_enable is interpreted
+as a boolean.
+
+Fix it up by making sure proc_dointvec() returned sucessfully.
+
+Fixes: b14878ccb7fa ("net: sctp: cache auth_enable per endpoint")
+Reported-by: Florian Westphal <fwestpha@redhat.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/da9052-hwmon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sctp/sysctl.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/hwmon/da9052-hwmon.c b/drivers/hwmon/da9052-hwmon.c
-index 960fac3fb166..48044b044b7a 100644
---- a/drivers/hwmon/da9052-hwmon.c
-+++ b/drivers/hwmon/da9052-hwmon.c
-@@ -194,7 +194,7 @@ static ssize_t da9052_hwmon_show_name(struct device *dev,
- 				      struct device_attribute *devattr,
- 				      char *buf)
- {
--	return sprintf(buf, "da9052-hwmon\n");
-+	return sprintf(buf, "da9052\n");
- }
+diff --git a/net/sctp/sysctl.c b/net/sctp/sysctl.c
+index e41a43470b84..1fce794c9274 100644
+--- a/net/sctp/sysctl.c
++++ b/net/sctp/sysctl.c
+@@ -368,8 +368,7 @@ static int proc_sctp_do_auth(struct ctl_table *ctl, int write,
+ 		tbl.data = &net->sctp.auth_enable;
  
- static ssize_t show_label(struct device *dev,
+ 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
+-
+-	if (write) {
++	if (write && ret == 0) {
+ 		struct sock *sk = net->sctp.ctl_sock;
+ 
+ 		net->sctp.auth_enable = new_value;
 -- 
 1.9.1
 
