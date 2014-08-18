@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959AbaHRJfg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:35:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42858 "EHLO
+	id S1752917AbaHRJfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:35:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42856 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaHRJf0 (ORCPT
+	with ESMTP id S1752882AbaHRJfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:26 -0400
+	Mon, 18 Aug 2014 05:35:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+Cc: Michael Brown <mbrown@fensystems.co.uk>,
+        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Matt Fleming <matt.fleming@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/137] iio: buffer: Fix demux table creation
-Date: Mon, 18 Aug 2014 10:32:24 +0100
-Message-Id: <1408354398-10226-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 080/137] x86/efi: Include a .bss section within the PE/COFF headers
+Date: Mon, 18 Aug 2014 10:32:21 +0100
+Message-Id: <1408354398-10226-81-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,36 +33,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Michael Brown <mbrown@fensystems.co.uk>
 
-commit 61bd55ce1667809f022be88da77db17add90ea4e upstream.
+commit c7fb93ec51d462ec3540a729ba446663c26a0505 upstream.
 
-When creating the demux table we need to iterate over the selected scan mask for
-the buffer to get the samples which should be copied to destination buffer.
-Right now the code uses the mask which contains all active channels, which means
-the demux table contains entries which causes it to copy all the samples from
-source to destination buffer one by one without doing any demuxing.
+The PE/COFF headers currently describe only the initialised-data
+portions of the image, and result in no space being allocated for the
+uninitialised-data portions.  Consequently, the EFI boot stub will end
+up overwriting unexpected areas of memory, with unpredictable results.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Fix by including a .bss section in the PE/COFF headers (functionally
+equivalent to the init_size field in the bzImage header).
+
+Signed-off-by: Michael Brown <mbrown@fensystems.co.uk>
+Cc: Thomas Bächler <thomas@archlinux.org>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+[ luis: backported to 3.11: used Michael's backport ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/iio/industrialio-buffer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/boot/header.S      | 26 ++++++++++++++++++++++----
+ arch/x86/boot/tools/build.c | 37 ++++++++++++++++++++++++++++++-------
+ 2 files changed, 52 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
-index 54adea8f0134..45f5c0fd18f5 100644
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -847,7 +847,7 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
+diff --git a/arch/x86/boot/header.S b/arch/x86/boot/header.S
+index 9ec06a1f6d61..425712462178 100644
+--- a/arch/x86/boot/header.S
++++ b/arch/x86/boot/header.S
+@@ -91,10 +91,9 @@ bs_die:
  
- 	/* Now we have the two masks, work from least sig and build up sizes */
- 	for_each_set_bit(out_ind,
--			 indio_dev->active_scan_mask,
-+			 buffer->scan_mask,
- 			 indio_dev->masklength) {
- 		in_ind = find_next_bit(indio_dev->active_scan_mask,
- 				       indio_dev->masklength,
+ 	.section ".bsdata", "a"
+ bugger_off_msg:
+-	.ascii	"Direct floppy boot is not supported. "
+-	.ascii	"Use a boot loader program instead.\r\n"
++	.ascii	"Use a boot loader.\r\n"
+ 	.ascii	"\n"
+-	.ascii	"Remove disk and press any key to reboot ...\r\n"
++	.ascii	"Remove disk and press any key to reboot...\r\n"
+ 	.byte	0
+ 
+ #ifdef CONFIG_EFI_STUB
+@@ -108,7 +107,7 @@ coff_header:
+ #else
+ 	.word	0x8664				# x86-64
+ #endif
+-	.word	3				# nr_sections
++	.word	4				# nr_sections
+ 	.long	0 				# TimeDateStamp
+ 	.long	0				# PointerToSymbolTable
+ 	.long	1				# NumberOfSymbols
+@@ -250,6 +249,25 @@ section_table:
+ 	.word	0				# NumberOfLineNumbers
+ 	.long	0x60500020			# Characteristics (section flags)
+ 
++	#
++	# The offset & size fields are filled in by build.c.
++	#
++	.ascii	".bss"
++	.byte	0
++	.byte	0
++	.byte	0
++	.byte	0
++	.long	0
++	.long	0x0
++	.long	0				# Size of initialized data
++						# on disk
++	.long	0x0
++	.long	0				# PointerToRelocations
++	.long	0				# PointerToLineNumbers
++	.word	0				# NumberOfRelocations
++	.word	0				# NumberOfLineNumbers
++	.long	0xc8000080			# Characteristics (section flags)
++
+ #endif /* CONFIG_EFI_STUB */
+ 
+ 	# Kernel attributes; used by setup.  This is part 1 of the
+diff --git a/arch/x86/boot/tools/build.c b/arch/x86/boot/tools/build.c
+index c941d6a8887f..687dd281c23e 100644
+--- a/arch/x86/boot/tools/build.c
++++ b/arch/x86/boot/tools/build.c
+@@ -141,7 +141,7 @@ static void usage(void)
+ 
+ #ifdef CONFIG_EFI_STUB
+ 
+-static void update_pecoff_section_header(char *section_name, u32 offset, u32 size)
++static void update_pecoff_section_header_fields(char *section_name, u32 vma, u32 size, u32 datasz, u32 offset)
+ {
+ 	unsigned int pe_header;
+ 	unsigned short num_sections;
+@@ -162,10 +162,10 @@ static void update_pecoff_section_header(char *section_name, u32 offset, u32 siz
+ 			put_unaligned_le32(size, section + 0x8);
+ 
+ 			/* section header vma field */
+-			put_unaligned_le32(offset, section + 0xc);
++			put_unaligned_le32(vma, section + 0xc);
+ 
+ 			/* section header 'size of initialised data' field */
+-			put_unaligned_le32(size, section + 0x10);
++			put_unaligned_le32(datasz, section + 0x10);
+ 
+ 			/* section header 'file offset' field */
+ 			put_unaligned_le32(offset, section + 0x14);
+@@ -177,6 +177,11 @@ static void update_pecoff_section_header(char *section_name, u32 offset, u32 siz
+ 	}
+ }
+ 
++static void update_pecoff_section_header(char *section_name, u32 offset, u32 size)
++{
++	update_pecoff_section_header_fields(section_name, offset, size, size, offset);
++}
++
+ static void update_pecoff_setup_and_reloc(unsigned int size)
+ {
+ 	u32 setup_offset = 0x200;
+@@ -201,9 +206,6 @@ static void update_pecoff_text(unsigned int text_start, unsigned int file_sz)
+ 
+ 	pe_header = get_unaligned_le32(&buf[0x3c]);
+ 
+-	/* Size of image */
+-	put_unaligned_le32(file_sz, &buf[pe_header + 0x50]);
+-
+ 	/*
+ 	 * Size of code: Subtract the size of the first sector (512 bytes)
+ 	 * which includes the header.
+@@ -218,6 +220,22 @@ static void update_pecoff_text(unsigned int text_start, unsigned int file_sz)
+ 	update_pecoff_section_header(".text", text_start, text_sz);
+ }
+ 
++static void update_pecoff_bss(unsigned int file_sz, unsigned int init_sz)
++{
++	unsigned int pe_header;
++	unsigned int bss_sz = init_sz - file_sz;
++
++	pe_header = get_unaligned_le32(&buf[0x3c]);
++
++	/* Size of uninitialized data */
++	put_unaligned_le32(bss_sz, &buf[pe_header + 0x24]);
++
++	/* Size of image */
++	put_unaligned_le32(init_sz, &buf[pe_header + 0x50]);
++
++	update_pecoff_section_header_fields(".bss", file_sz, bss_sz, 0, 0);
++}
++
+ #endif /* CONFIG_EFI_STUB */
+ 
+ 
+@@ -269,6 +287,9 @@ int main(int argc, char ** argv)
+ 	int fd;
+ 	void *kernel;
+ 	u32 crc = 0xffffffffUL;
++#ifdef CONFIG_EFI_STUB
++	unsigned int init_sz;
++#endif
+ 
+ 	/* Defaults for old kernel */
+ #ifdef CONFIG_X86_32
+@@ -339,7 +360,9 @@ int main(int argc, char ** argv)
+ 	put_unaligned_le32(sys_size, &buf[0x1f4]);
+ 
+ #ifdef CONFIG_EFI_STUB
+-	update_pecoff_text(setup_sectors * 512, sz + i + ((sys_size * 16) - sz));
++	update_pecoff_text(setup_sectors * 512, i + (sys_size * 16));
++	init_sz = get_unaligned_le32(&buf[0x260]);
++	update_pecoff_bss(i + (sys_size * 16), init_sz);
+ 
+ #ifdef CONFIG_X86_64 /* Yes, this is really how we defined it :( */
+ 	efi_stub_entry -= 0x200;
 -- 
 1.9.1
 
