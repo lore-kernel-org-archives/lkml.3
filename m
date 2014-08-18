@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaHRG1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 02:27:15 -0400
+	id S1751974AbaHRG1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 02:27:20 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:26492 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaHRG1N (ORCPT
+	with ESMTP id S1751066AbaHRG1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 02:27:13 -0400
-X-AuditID: cbfee68d-b7f2f6d0000062f0-0c-53f19cbeec8c
+	Mon, 18 Aug 2014 02:27:16 -0400
+X-AuditID: cbfee691-b7f306d000003d81-85-53f19cbfd67c
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: broonie@kernel.org
 Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
         kyungmin.park@samsung.com, k.kozlowski@samsung.com,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv4 0/2] regulator: of: Add support for pasing regulator suspend
- state
-Date: Mon, 18 Aug 2014 15:27:01 +0900
-Message-id: <1408343223-4043-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv4 2/2] dt-bindings: regulator: Add regulator suspend state for
+ PM state
+Date: Mon, 18 Aug 2014 15:27:03 +0900
+Message-id: <1408343223-4043-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsWyRsSkWHffnI/BBvvuy1lMffiEzeL6l+es
-	FvOPnGO1OPBnB6PF6xeGFmeb3rBbfLvSwWRxedccNovWvUfYHTg9ds66y+6xaVUnm8eda3vY
-	PPq2rGL0+LxJLoA1issmJTUnsyy1SN8ugStj17JzjAWzeCpubm5mbmD8xtnFyMkhIWAi0Tj/
-	GiOELSZx4d56ti5GLg4hgaWMEjsmXWODKer+/oYRIjGdUaLt1BpWkISQQBOTROsjMJtNQEti
-	/4sbYA0iQJNuz+lkBmlgFrjHKPFl9UMWkISwQJjEgzXPgRIcHCwCqhLbbjOBhHkFXCS2TVzD
-	ArFMTuLDnkfsIL0SAv3sEqd/NIEVsQgISHybfIgFpFdCQFZi0wFmiHpJiYMrbrBMYBRcwMiw
-	ilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMwkE//e9a7g/H2AetDjMlA4yYyS4km5wMjIa8k
-	3tDYzMjC1MTU2Mjc0ow0YSVx3qSHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGIvZ7mcU
-	/SmL/JPJE3vuzxWLq8+y5+VNe5915WQr4/bUFRNvPnmfwmTXUmEzUf01957MZpvUSf5NqnP8
-	zXa3WOxoXP/sfXPLxXX3lvjZ/r8br+S8vdhmc9W/bPsZvfbuC35etW11mHzz15ajDZ/NVs1Y
-	dCWyZ12ar9VmO4sVimwNTDY3rszInqLEUpyRaKjFXFScCACilPA1egIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGIsWRmVeSWpSXmKPExsVy+t9jQd19cz4GG8z4LWYx9eETNovrX56z
+In-reply-to: <1408343223-4043-1-git-send-email-cw00.choi@samsung.com>
+References: <1408343223-4043-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42JZI2JSoLt/zsdgg87duhZTHz5hs7j+5Tmr
+	xfwj51gtDvzZwWjx+oWhxdmmN+wW3650MFlc3jWHzaJ17xF2B06PnbPusntsWtXJ5nHn2h42
+	j74tqxg9Pm+SC2CN4rJJSc3JLEst0rdL4Mp49mI7a8F2kYoZ09cwNTBOEexi5OSQEDCReLNs
+	CRuELSZx4d56IJuLQ0hgKaPErZVT2GCKztxtZYJITGeUWN9ygRHCaWKSuPTnPjNIFZuAlsT+
+	FzfAOkSARt2e08kMUsQscI9R4svqhywgCWGBSIlvL/eBNbAIqEr8mv6QHcTmFXCR+D7zOdQ6
+	OYkPex4BxTk4OAVcJSb0iYCEhYBKFjUcZAGZKSGwjl1i+osmVog5AhLfJh9iAamXEJCV2HSA
+	GWKMpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtcmpeul5yfu4kRGPqn/z2buIPx/gHr
+	Q4zJQOMmMkuJJucDYyevJN7Q2MzIwtTE1NjI3NKMNGElcd70R0lBQgLpiSWp2ampBalF8UWl
+	OanFhxiZODilGhj9LR/ufRvMOPHHy6zgLQG3yvWq9d6KPNgdnnt2T4ygL/+0g2U1KX+va0st
+	+S2W/uLs7MLjdj68h5/c1da/5nerwmjRJX1J9fMTOlXaTaOVNy25qca3xzaWWys4NHOP5QrG
+	S3Mnf2uz7XvmtaDp9MZdEyZu9H6rw2e8bT/Hvdeu97u3idoGvolXYinOSDTUYi4qTgQAxPcz
+	D5MCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t9jQd39cz4GGzxbqGox9eETNovrX56z
 	Wsw/co7V4sCfHYwWr18YWpxtesNu8e1KB5PF5V1z2Cxa9x5hd+D02DnrLrvHplWdbB53ru1h
 	8+jbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
-	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGbuWnWMs
-	mMVTcXNzM3MD4zfOLkZODgkBE4nu728YIWwxiQv31rN1MXJxCAlMZ5RoO7WGFSQhJNDEJNH6
-	CMxmE9CS2P/iBhuILQLUcHtOJzNIA7PAPUaJL6sfsoAkhAXCJB6seQ6U4OBgEVCV2HabCSTM
-	K+AisW3iGhaIZXISH/Y8Yp/AyL2AkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnCcPJPe
-	wbiqweIQowAHoxIPr8frD8FCrIllxZW5hxglOJiVRHjXNX0MFuJNSaysSi3Kjy8qzUktPsRo
-	CrR8IrOUaHI+MIbzSuINjU3MjCyNzA0tjIzNlcR5D7ZaBwoJpCeWpGanphakFsH0MXFwSjUw
-	ZiewzFO9fuHuNc/rYmbP465GLclhUVrG1Kb9MEGi+BqHueG9GyFZwfnnVvz8keB2XW2pQ8Tz
-	t8ebFmQ3tDnv6+T7+W3aduUF6vKqRxwcK1aax4ud09jsqnI3MvTlG+875vpWli+vu3iK8KS0
-	3L11d6cw2/rdT/VZ9rwxWJMkzmJ84cTczKkuSizFGYmGWsxFxYkA3WmRO6kCAAA=
+	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGc9ebGct
+	2C5SMWP6GqYGximCXYycHBICJhJn7rYyQdhiEhfurWfrYuTiEBKYziixvuUCI4TTxCRx6c99
+	ZpAqNgEtif0vbrCB2CJAHbfndDKDFDEL3GOU+LL6IQtIQlggUuLby31gDSwCqhK/pj9kB7F5
+	BVwkvs98zgaxTk7iw55HQHEODk4BV4kJfSIgYSGgkkUNB1kmMPIuYGRYxSiaWpBcUJyUnmuo
+	V5yYW1yal66XnJ+7iREcWc+kdjCubLA4xCjAwajEw+vx+kOwEGtiWXFl7iFGCQ5mJRHedU0f
+	g4V4UxIrq1KL8uOLSnNSiw8xmgIdNZFZSjQ5Hxj1eSXxhsYmZkaWRuaGFkbG5krivAdarQOF
+	BNITS1KzU1MLUotg+pg4OKUaGCc9Z9vd39ydKxXl1yplNl0mpnmjaU+Kc5zzjzOrHuuYlvMu
+	fGr7LvpUAVfupD81y78caH+7eRl70lfeWPfNeivO9jBtPn+pZlNlu/mF3fMFtly+O/UTL5OQ
+	muiZsodz/qQum6DU89Wx6cmV+VtXpq4MWbe+rNR7lo+Mvk/x51DRBw//h+5Wk1BiKc5INNRi
+	LipOBADGjgYYwgIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,51 +53,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulators would set different state/mode according to the kind of suspend
-state. So regulation_constraints structure has already regulator suspend state filed.
-This patch parse regulator suspend state from devicetree file.
+This patch add regulator suspend state to constraint in dt file. The regulation_
+constraints structure already has regulator suspend state field as following.
+The regulator suspend state control the state of regulator according to
+PM (Power Management) state.
+- struct regulator_state state_disk
+- struct regulator_state state_mem
 
-For example:
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ .../devicetree/bindings/regulator/regulator.txt    | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-	ldoX_reg: LDOx {
-		regulator-name = "VAP_XXX_1.2V";
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-		regulator-always-on;
-
-		regulator-initial-state = <3>;	/* PM_SUSPEND_MEM */
-		regulator-state-mem {
-			regulator-off-in-suspend;
-		};
-
-		regulator-state-disk {
-			regulator-volt = <1200000>;
-			regulator-on-in-suspend;
-		};
-	};
-
-Changes from v3:
-- Don't support 'regulator-state-standby' mode
-- Remove 'regulator-mode' property
-
-Changes from v2:
-- Fix over 80 lines by using checkpatch script
-- Rebase this patchset on latest for-next branch of regulator.git
-
-Changes from v1:
-- Check whether regulator-initial-state and regulator-mode is correct or not
-- Add more detailed description about regulator-initial-state, regulator-mode
-  and regulator-state-[standby/mem/disk] for devicetree bindings
-- Modify example of regulator suspend state in bindings documentation
-
-Chanwoo Choi (2):
-  regulator: of: Add support for parsing regulator_state for suspend state
-  dt-bindings: regulator: Add regulator suspend state for PM state
-
- .../devicetree/bindings/regulator/regulator.txt    | 22 ++++++++
- drivers/regulator/of_regulator.c                   | 65 +++++++++++++++++++++-
- 2 files changed, 85 insertions(+), 2 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+index 8607433..ccba90b 100644
+--- a/Documentation/devicetree/bindings/regulator/regulator.txt
++++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+@@ -19,6 +19,23 @@ Optional properties:
+   design requires. This property describes the total system ramp time
+   required due to the combination of internal ramping of the regulator itself,
+   and board design issues such as trace capacitance and load on the supply.
++- regulator-initial-state: initial state for suspend state, cnd set initial
++  state among following defined suspend states:
++  <3>: PM_SUSPEND_MEM - Setup regulator according to regulator-state-mem
++  <4>: PM_SUSPEND_MAX - Setup regulator according to regulator-state-disk
++- regulator-state-mem sub-root node for Suspend-to-RAM mode
++  : suspend to memory, the device goes to sleep, but all data stored in memory,
++  only some external interrupt can wake the device.
++- regulator-state-disk sub-root node for Suspend-to-disk mode
++  : suspend to disk, this state operates similarly to Suspend-to-RAM,
++  but includes a final step of writing memory contents to disk.
++- regulator-state-[mem/disk] node has following common properties:
++	- regulator-volt: voltage consumers may set in suspend state.
++	- regulator-on-in-suspend: regulator should be on in suspend state.
++	- regulator-off-in-suspend: regulator should be off in suspend state.
++	If node don't include regulator-[on/off]-in-suspend, can't change
++	regulator state in suspend mode and only should sustain the regulator
++	state of normal state.
+ 
+ Deprecated properties:
+ - regulator-compatible: If a regulator chip contains multiple
+@@ -34,6 +51,11 @@ Example:
+ 		regulator-max-microvolt = <2500000>;
+ 		regulator-always-on;
+ 		vin-supply = <&vin>;
++
++		regulator-state-mem {
++			regulator-volt = <1000000>;
++			regulator-on-in-suspend;
++		};
+ 	};
+ 
+ Regulator Consumers:
 -- 
 1.8.0
 
