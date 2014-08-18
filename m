@@ -1,114 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290AbaHRXC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 19:02:59 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:44799 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaHRXC6 convert rfc822-to-8bit (ORCPT
+	id S1752339AbaHRXNm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 19:13:42 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:33604 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153AbaHRXNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 19:02:58 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>, David Woodhouse <dwmw2@infradead.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
-Thread-Topic: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
-Thread-Index: AQHPusLtJD7eZgXm8U+STnK1YS2mE5vW+l6g
-Date: Mon, 18 Aug 2014 23:01:56 +0000
-Message-ID: <1267BB84A242B24E81E0C0C8955CFFC061A4BA26@G9W0343.americas.hpqcorp.net>
-References: <1408352352-14449-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1408352352-14449-1-git-send-email-zhen-hual@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Aug 2014 19:13:40 -0400
+X-IronPort-AV: E=Sophos;i="5.01,889,1400050800"; 
+   d="scan'208";a="42697588"
+Subject: Re: [PATCH v2] cnic: Replace rcu_dereference() with
+ rcu_access_pointer()
+From: Michael Chan <mchan@broadcom.com>
+To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+CC: <davem@davemloft.net>, <eddie.wai@broadcom.com>, <joe@perches.com>,
+        <mingo@kernel.org>, <peterz@infradead.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20140817101149.GA3692@ada>
+References: <20140817101149.GA3692@ada>
+Content-Type: text/plain; charset="cp1252"
+Date: Mon, 18 Aug 2014 16:13:39 -0700
+Message-ID: <1408403619.7460.1.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug when Linux running on an HP large system: 
-	when kdump kernel runs, the hardware is still using the old 
-root entry. This causes error message when iommu not finished initialization.
+On Sun, 2014-08-17 at 13:12 +0300, Andreea-Cristina Bernat wrote: 
+> The "rcu_dereference()" calls are used directly in conditions.
+> Since their return values are never dereferenced it is recommended to use
+> "rcu_access_pointer()" instead of "rcu_dereference()".
+> Therefore, this patch makes the replacements.
+> 
+> The following Coccinelle semantic patch was used:
+> @@
+> @@
+> 
+> (
+>  if(
+>  (<+...
+> - rcu_dereference
+> + rcu_access_pointer
+>   (...)
+>   ...+>)) {...}
+> |
+>  while(
+>  (<+...
+> - rcu_dereference
+> + rcu_access_pointer
+>   (...)
+>   ...+>)) {...}
+> )
+> 
+> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 
------Original Message-----
-From: Li, Zhen-Hua 
-Sent: Monday, August 18, 2014 4:59 PM
-To: David Woodhouse; Joerg Roedel; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-Cc: Li, Zhen-Hua
-Subject: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
+Acked-by: Michael Chan <mchan@broadcom.com>
 
-If intel_iommu is enabled, when kdump kernel boots, the old root entry
- should be cleared, otherwise it may cause DMAR error.
+> ---
+> v2: Modified subject line from
+>  "rcu: Replace rcu_dereference() with rcu_access_pointer()"
+>  to
+>  "cnic: Replace rcu_dereference() with rcu_access_pointer()",
+>  noted by David Miller <davem@davemloft.net>
+> 
+>  drivers/net/ethernet/broadcom/cnic.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/broadcom/cnic.c b/drivers/net/ethernet/broadcom/cnic.c
+> index 8244e2b..dad9cb7 100644
+> --- a/drivers/net/ethernet/broadcom/cnic.c
+> +++ b/drivers/net/ethernet/broadcom/cnic.c
+> @@ -381,7 +381,7 @@ static int cnic_iscsi_nl_msg_recv(struct cnic_dev *dev, u32 msg_type,
+>  			break;
+>  
+>  		rcu_read_lock();
+> -		if (!rcu_dereference(cp->ulp_ops[CNIC_ULP_L4])) {
+> +		if (!rcu_access_pointer(cp->ulp_ops[CNIC_ULP_L4])) {
+>  			rc = -ENODEV;
+>  			rcu_read_unlock();
+>  			break;
+> @@ -525,7 +525,7 @@ int cnic_unregister_driver(int ulp_type)
+>  	list_for_each_entry(dev, &cnic_dev_list, list) {
+>  		struct cnic_local *cp = dev->cnic_priv;
+>  
+> -		if (rcu_dereference(cp->ulp_ops[ulp_type])) {
+> +		if (rcu_access_pointer(cp->ulp_ops[ulp_type])) {
+>  			pr_err("%s: Type %d still has devices registered\n",
+>  			       __func__, ulp_type);
+>  			read_unlock(&cnic_dev_lock);
+> @@ -573,7 +573,7 @@ static int cnic_register_device(struct cnic_dev *dev, int ulp_type,
+>  		mutex_unlock(&cnic_lock);
+>  		return -EAGAIN;
+>  	}
+> -	if (rcu_dereference(cp->ulp_ops[ulp_type])) {
+> +	if (rcu_access_pointer(cp->ulp_ops[ulp_type])) {
+>  		pr_err("%s: Type %d has already been registered to this device\n",
+>  		       __func__, ulp_type);
+>  		mutex_unlock(&cnic_lock);
 
-To make it works for more enviroments, this patch does not use 
-is_kdump_kernel() to check it,  but reads the register to check whether 
-hardware is using old root entry.
-
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- drivers/iommu/dmar.c | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
-
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 60ab474..7b4fa90 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -66,6 +66,8 @@ static int dmar_dev_scope_status = 1;
- static int alloc_iommu(struct dmar_drhd_unit *drhd);
- static void free_iommu(struct intel_iommu *iommu);
- 
-+static int iommu_check_root_entry(struct intel_iommu *iommu);
-+
- static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
- {
- 	/*
-@@ -987,6 +989,8 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 						       intel_iommu_groups,
- 						       iommu->name);
- 
-+	iommu_check_root_entry(iommu);
-+
- 	return 0;
- 
-  err_unmap:
-@@ -1666,5 +1670,32 @@ static int __init dmar_free_unused_resources(void)
- 	return 0;
- }
- 
-+static int iommu_check_root_entry(struct intel_iommu *iommu)
-+{
-+	u64 re_pa;
-+
-+	re_pa = dmar_readq(iommu->reg + DMAR_RTADDR_REG);
-+
-+	/* This only works for hardware error and kdump kernel */
-+	if (unlikely(re_pa != 0)) {
-+		u32 sts;
-+		unsigned long flag;
-+
-+		raw_spin_lock_irqsave(&iommu->register_lock, flag);
-+		dmar_writeq(iommu->reg + DMAR_RTADDR_REG, 0);
-+
-+		writel(iommu->gcmd | DMA_GCMD_SRTP, iommu->reg + DMAR_GCMD_REG);
-+
-+		/* Make sure hardware complete it */
-+		IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
-+			      readl, (sts & DMA_GSTS_RTPS), sts);
-+
-+		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
-+
-+	}
-+
-+	return 0;
-+}
-+
- late_initcall(dmar_free_unused_resources);
- IOMMU_INIT_POST(detect_intel_iommu);
--- 
-2.0.0-rc0
 
