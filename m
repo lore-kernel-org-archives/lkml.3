@@ -1,55 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaHRO2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:28:53 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44057 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751788AbaHRO2v (ORCPT
+	id S1752162AbaHRO2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:28:38 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:62458 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaHRO2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:28:51 -0400
-Date: Mon, 18 Aug 2014 15:26:48 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9] arm64: Add architectural support for PCIe
-Message-ID: <20140818142648.GQ20043@localhost>
-References: <1407860760-25252-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860760-25252-2-git-send-email-Liviu.Dudau@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407860760-25252-2-git-send-email-Liviu.Dudau@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Aug 2014 10:28:36 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: [PATCH v9 16/16] serial: imx: Add support for KGDB's FIQ/NMI mode
+Date: Mon, 18 Aug 2014 15:28:11 +0100
+Message-Id: <1408372091-12689-17-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
+References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 05:26:00PM +0100, Liviu Dudau wrote:
-> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
-> index e0ecdcf..dc34039 100644
-> --- a/arch/arm64/include/asm/io.h
-> +++ b/arch/arm64/include/asm/io.h
-> @@ -121,7 +121,8 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
->  /*
->   *  I/O port access primitives.
->   */
-> -#define IO_SPACE_LIMIT		0xffff
-> +#define arch_has_dev_port()	(1)
-> +#define IO_SPACE_LIMIT		0x1ffffff
+This patch makes it possible to use the imx uart with KGDB's FIQ/NMI
+mode.
 
-Minor thing, (SZ_32M - 1) may be easier in case we ever change this.
+Main changes are:
 
->  #define PCI_IOBASE		((void __iomem *)(MODULES_VADDR - SZ_32M))
+.poll_init() will, if KGDB+FIQ are enabled, perform deeper hardware
+initialization to ensure the serial port is always active (required
+otherwise FIQ is not triggered by UART activity). This has an impact on
+power usage so it is conservatively enabled.
 
+imx_put_poll_char() has been simplified to remove the code to disable
+interrupts. The present code can corrupt register state when re-entered
+from FIQ handler.
+
+Both imx_put_poll_char() and imx_get_poll_char() adopt _relaxed()
+MMIO functions (which are safe for polled I/O and needed to avoid taking
+spin locks).
+
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
+---
+ drivers/tty/serial/imx.c | 71 +++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 52 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 983668a..a201c61 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -49,6 +49,7 @@
+ #include <linux/of_device.h>
+ #include <linux/io.h>
+ #include <linux/dma-mapping.h>
++#include <linux/kgdb.h>
+ 
+ #include <asm/irq.h>
+ #include <linux/platform_data/serial-imx.h>
+@@ -1505,44 +1506,73 @@ imx_verify_port(struct uart_port *port, struct serial_struct *ser)
+ }
+ 
+ #if defined(CONFIG_CONSOLE_POLL)
++
++#if defined(CONFIG_KGDB_FIQ)
++/*
++ * Prepare the UART to be used from kgdb's NMI support.
++ */
++static int imx_poll_init(struct uart_port *port)
++{
++	struct imx_port *sport = (struct imx_port *)port;
++	unsigned long flags;
++	unsigned long temp;
++	int retval;
++
++	retval = clk_prepare_enable(sport->clk_ipg);
++	if (retval)
++		return retval;
++	retval = clk_prepare_enable(sport->clk_per);
++	if (retval)
++		clk_disable_unprepare(sport->clk_ipg);
++
++	imx_setup_ufcr(sport, 0);
++
++	spin_lock_irqsave(&sport->port.lock, flags);
++
++	temp = readl(sport->port.membase + UCR1);
++	if (is_imx1_uart(sport))
++		temp |= IMX1_UCR1_UARTCLKEN;
++	temp |= UCR1_UARTEN | UCR1_RRDYEN;
++	temp &= ~(UCR1_TXMPTYEN | UCR1_RTSDEN);
++	writel(temp, sport->port.membase + UCR1);
++
++	temp = readl(sport->port.membase + UCR2);
++	temp |= UCR2_RXEN;
++	writel(temp, sport->port.membase + UCR2);
++
++	spin_unlock_irqrestore(&sport->port.lock, flags);
++
++	/* register the FIQ with kgdb */
++	kgdb_register_fiq(sport->port.irq);
++
++	return 0;
++}
++#endif /* CONFIG_KGDB_FIQ */
++
+ static int imx_poll_get_char(struct uart_port *port)
+ {
+-	if (!(readl(port->membase + USR2) & USR2_RDR))
++	if (!(readl_relaxed(port->membase + USR2) & USR2_RDR))
+ 		return NO_POLL_CHAR;
+ 
+-	return readl(port->membase + URXD0) & URXD_RX_DATA;
++	return readl_relaxed(port->membase + URXD0) & URXD_RX_DATA;
+ }
+ 
+ static void imx_poll_put_char(struct uart_port *port, unsigned char c)
+ {
+-	struct imx_port_ucrs old_ucr;
+ 	unsigned int status;
+ 
+-	/* save control registers */
+-	imx_port_ucrs_save(port, &old_ucr);
+-
+-	/* disable interrupts */
+-	writel(UCR1_UARTEN, port->membase + UCR1);
+-	writel(old_ucr.ucr2 & ~(UCR2_ATEN | UCR2_RTSEN | UCR2_ESCI),
+-	       port->membase + UCR2);
+-	writel(old_ucr.ucr3 & ~(UCR3_DCD | UCR3_RI | UCR3_DTREN),
+-	       port->membase + UCR3);
+-
+ 	/* drain */
+ 	do {
+-		status = readl(port->membase + USR1);
++		status = readl_relaxed(port->membase + USR1);
+ 	} while (~status & USR1_TRDY);
+ 
+ 	/* write */
+-	writel(c, port->membase + URTX0);
++	writel_relaxed(c, port->membase + URTX0);
+ 
+ 	/* flush */
+ 	do {
+-		status = readl(port->membase + USR2);
++		status = readl_relaxed(port->membase + USR2);
+ 	} while (~status & USR2_TXDC);
+-
+-	/* restore control registers */
+-	imx_port_ucrs_restore(port, &old_ucr);
+ }
+ #endif
+ 
+@@ -1563,6 +1593,9 @@ static struct uart_ops imx_pops = {
+ 	.config_port	= imx_config_port,
+ 	.verify_port	= imx_verify_port,
+ #if defined(CONFIG_CONSOLE_POLL)
++#if defined(CONFIG_KGDB_FIQ)
++	.poll_init      = imx_poll_init,
++#endif
+ 	.poll_get_char  = imx_poll_get_char,
+ 	.poll_put_char  = imx_poll_put_char,
+ #endif
 -- 
-Catalin
+1.9.3
+
