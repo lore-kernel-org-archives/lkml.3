@@ -1,117 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaHRSVL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 14:21:11 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61470 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaHRSVI convert rfc822-to-8bit (ORCPT
+	id S1752074AbaHRSZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 14:25:11 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:58912 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaHRSZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 14:21:08 -0400
+	Mon, 18 Aug 2014 14:25:09 -0400
+Date: Mon, 18 Aug 2014 14:25:04 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+cc: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
+        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
+        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
+        arjan@linux.intel.com, mingo@kernel.org, len.brown@intel.com,
+        yuyang.du@intel.com, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, corbet@lwn.net, catalin.marinas@arm.com,
+        markgross@thegnar.org, sundar.iyer@intel.com,
+        linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com,
+        Lorenzo.Pieralisi@arm.com, mike.turquette@linaro.org,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de
+Subject: Re: [RFC PATCH V2 02/19] sched/power: Move idle state selection into
+ the scheduler
+In-Reply-To: <53F235B8.8060506@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.11.1408181400220.29347@knanqh.ubzr>
+References: <20140811113000.31956.52857.stgit@preeti.in.ibm.com> <20140811113246.31956.49929.stgit@preeti.in.ibm.com> <alpine.LFD.2.11.1408181140190.29347@knanqh.ubzr> <53F235B8.8060506@linux.vnet.ibm.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com>
-References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com>
-From: David Matlack <dmatlack@google.com>
-Date: Mon, 18 Aug 2014 11:20:41 -0700
-Message-ID: <CALzav=fHM5na-bp0ydVgeYKw5EaO8XD_Z9JxhCbULiPxTPphAw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
- generation number
-To: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Avi Kivity <avi.kivity@gmail.com>, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 9:35 AM, Xiao Guangrong
-<xiaoguangrong.eric@gmail.com> wrote:
->
-> Hi Paolo,
->
-> Thank you to review the patch!
->
-> On Aug 18, 2014, at 9:57 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->
->> Il 14/08/2014 09:01, Xiao Guangrong ha scritto:
->>> -    update_memslots(slots, new, kvm->memslots->generation);
->>> +    /* ensure generation number is always increased. */
->>> +    slots->generation = old_memslots->generation;
->>> +    update_memslots(slots, new);
->>>      rcu_assign_pointer(kvm->memslots, slots);
->>>      synchronize_srcu_expedited(&kvm->srcu);
->>> +    slots->generation++;
->>
->> I don't trust my brain enough to review this patch.
+On Mon, 18 Aug 2014, Preeti U Murthy wrote:
 
-Xiao, I thought about your approach a lot and I can't think of a bad race
-that isn't already possible due to the fact that kvm allows memslot
-mutation to race with vm exits. That being said, it's hard to reason about
-all the other "clients" of memslots and what weirdness (or badness) will
-be caused by updating generation after srcu_synch. I like Paolo's two
-approaches because they fix the bug without any side-effects.
+> On 08/18/2014 09:24 PM, Nicolas Pitre wrote:
+> > On Mon, 11 Aug 2014, Preeti U Murthy wrote:
+> > 
+> >> The goal of the power aware scheduling design is to integrate all
+> >> policy, metrics and averaging into the scheduler. Today the
+> >> cpu power management is fragmented and hence inconsistent.
+> >>
+> >> As a first step towards this integration, rid the cpuidle state management
+> >> of the governors. Retain only the cpuidle driver in the cpu idle
+> >> susbsystem which acts as an interface between the scheduler and low
+> >> level platform specific cpuidle drivers. For all decision making around
+> >> selection of idle states,the cpuidle driver falls back to the scheduler.
+> >>
+> >> The current algorithm for idle state selection is the same as the logic used
+> >> by the menu governor. However going ahead the heuristics will be tuned and
+> >> improved upon with metrics better known to the scheduler.
+> > 
+> > I'd strongly suggest a different approach here.  Instead of copying the 
+> > menu governor code and tweaking it afterwards, it would be cleaner to 
+> > literally start from scratch with a new governor.  Said new governor 
+> > would grow inside the scheduler with more design freedom instead of 
+> > being strapped on the side.
+> > 
+> > By copying existing code, the chance for cruft to remain for a long time 
+> > is close to 100%. We already have one copy of it, let's keep it working 
+> > and start afresh instead.
+> > 
+> > By starting clean it is way easier to explain and justify additions to a 
+> > new design than convincing ourselves about the removal of no longer 
+> > needed pieces from a legacy design.
+> 
+> Ok. The reason I did it this way was that I did not find anything
+> grossly wrong in the current cpuidle governor algorithm. Of course this
+> can be improved but I did not see strong reasons to completely wipe it
+> away. I see good scope to improve upon the existing algorithm with
+> additional knowledge of *the idle states being mapped to scheduling
+> domains*. This will in itself give us a better algorithm and does not
+> mandate significant changes from the current algorithm. So I really
+> don't see why we need to start from scratch.
 
-> Sorry to make you confused. I should expain it more clearly.
->
-> What this patch tried to fix is:  kvm will generate wrong mmio-exit forever
-> if no luck event cleans mmio spte. (eg. if no memory pressure or  no
-> context-sync on that spte.)
->
-> Note, it is hard to do precise sync between kvm_vm_ioctl_set_memory_region
-> and mmio-exit - that means userspace is able to get mmio-exit even if
-> kvm_vm_ioctl_set_memory_region have finished, for example, kvm identifies
-> a mmio access before issuing the ioctl and injects mmio-exit to userspace after
-> ioctl return. So checking if mmio-exit is a real mmio access in userspace is
-> needed anyway.
->
->> kvm_current_mmio_generation seems like a very bad (race-prone) API.  One
->> patch I trust myself reviewing would change a bunch of functions in
->> kvm_main.c to take a memslots struct.  This would make it easy to
->> respect the hard and fast rule of not dereferencing the same pointer
->> twice.  But it would be a tedious change.
->
-> kvm_set_memory_region is the only place updating memslot and
-> kvm_current_mmio_generation accesses memslot by rcu-dereference,
-> i do not know why other places need to take into account.
+Sure the current algorithm can be improved.  But it has its limitations 
+by design.  And simply making it more topology aware wouldn't justify 
+moving it into the scheduler.
 
-If you rcu_dereference() more than once, you can't trust previous
-decisions based on rcu_dereference()'s. If the mmio cache code only
-did one rcu_dereference() per vm exit, this bug would be gone.
+What we're contemplating is something completely integrated with the 
+scheduler where cpuidle and cpufreq (and eventually thermal management) 
+together are part of the same "governor" to provide global decisions on 
+all 
+fronts.
 
-> I think this patch is auditable, page-fault is always called by holding
-> srcu-lock so that a page fault can’t go across synchronize_srcu_expedited.
-> Only these cases can happen:
->
-> 1)  page fault occurs before synchronize_srcu_expedited.
->     In this case, vcpu will generate mmio-exit for the memslot being registered
->     by the ioctl. That’s ok since the ioctl have not finished.
->
-> 2) page fault occurs after synchronize_srcu_expedited and during
->    increasing generation-number.
->    In this case, userspace may get wrong mmio-exit (that happen if handing
->    page-fault is slower that the ioctl), that’s ok too since userspace need do
->   the check anyway like i said above.
->
-> 3) page fault occurs after generation-number update
->    that’s definitely correct. :)
->
->> Another alternative could be to use the low bit to mark an in-progress
->> change, and skip the caching if the low bit is set.  Similar to a
->> seqcount (except if read_seqcount_retry fails, we just punt and not
->> retry anything), you could use it even though the memory barriers
->> provided by write_seqcount_begin/end are not too useful in this case.
+Not only should the next wake-up event be predicted, but also the 
+anticipated system load, etc.  The scheduler may know that a given CPU 
+is unlikely to be used for a while and could call for the deepest 
+C-state right away without waiting for the current menu heuristic to 
+converge.
 
-I like this approach best. It would have the least code changes and provide
-the same guarantees.
+There is also Daniel's I/O latency tracking that could replace the menu 
+governor latency guessing, the later based on heuristics that could be 
+described as black magic.
 
-> I do not know how the bit works, page fault will cache the memslot before
-> the bit set and cache the generation-number after the bit set.
->
-> Maybe i missed your idea, could you please detail it?
+And all this has to eventually be policed by a global performance/power 
+concern that should weight C-states, P-states and task placement 
+together and select the best combination (Morten's work).
 
-In vcpu_cache_mmio_info() if generation is odd, just don't do the caching
-because memslots were changed while we were running and we just assume the
-worst case.
+Therefore the current menu algorithm won't do it. It simply wasn't 
+designed for that.
+
+We'll have the opportunity to discuss this further tomorrow anyway.
+
+> The primary issue that I found was that with the goal being power aware
+> scheduler we must ensure that the possibility of a governor getting
+> registered with cpuidle to choose idle states no longer will exist. The
+> reason being there is just *one entity who will take this decision and
+> there is no option about it*. This patch intends to bring the focus to
+> this specific detail.
+
+I think there is nothing wrong with having multiple governors being 
+registered.  We simply decide at runtime via sysfs which one has control 
+over the low-level cpuidle drivers.
+
+
+Nicolas
