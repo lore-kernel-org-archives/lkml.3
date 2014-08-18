@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaHRKJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:09:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42421 "EHLO
+	id S1754798AbaHRKKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:10:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42405 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaHRJdf (ORCPT
+	with ESMTP id S1751808AbaHRJdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:35 -0400
+	Mon, 18 Aug 2014 05:33:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miklos Szeredi <mszeredi@suse.cz>,
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 008/137] fuse: handle large user and group ID
-Date: Mon, 18 Aug 2014 10:31:09 +0100
-Message-Id: <1408354398-10226-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 005/137] iwlwifi: dvm: don't enable CTS to self
+Date: Mon, 18 Aug 2014 10:31:06 +0100
+Message-Id: <1408354398-10226-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,74 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 233a01fa9c4c7c41238537e8db8434667ff28a2f upstream.
+commit 43d826ca5979927131685cc2092c7ce862cb91cd upstream.
 
-If the number in "user_id=N" or "group_id=N" mount options was larger than
-INT_MAX then fuse returned EINVAL.
+We should always prefer to use full RTS protection. Using
+CTS to self gives a meaningless improvement, but this flow
+is much harder for the firmware which is likely to have
+issues with it.
 
-Fix this to handle all valid uid/gid values.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/fuse/inode.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c | 12 ------------
+ 1 file changed, 12 deletions(-)
 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index e0fe703ee3d6..71501278587a 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -461,6 +461,17 @@ static const match_table_t tokens = {
- 	{OPT_ERR,			NULL}
- };
+diff --git a/drivers/net/wireless/iwlwifi/dvm/rxon.c b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+index cd1ad0019185..ca17e4c9eca2 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1072,13 +1072,6 @@ int iwlagn_commit_rxon(struct iwl_priv *priv, struct iwl_rxon_context *ctx)
+ 	/* recalculate basic rates */
+ 	iwl_calc_basic_rates(priv, ctx);
  
-+static int fuse_match_uint(substring_t *s, unsigned int *res)
-+{
-+	int err = -ENOMEM;
-+	char *buf = match_strdup(s);
-+	if (buf) {
-+		err = kstrtouint(buf, 10, res);
-+		kfree(buf);
-+	}
-+	return err;
-+}
-+
- static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
- {
- 	char *p;
-@@ -471,6 +482,7 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
- 	while ((p = strsep(&opt, ",")) != NULL) {
- 		int token;
- 		int value;
-+		unsigned uv;
- 		substring_t args[MAX_OPT_ARGS];
- 		if (!*p)
- 			continue;
-@@ -494,18 +506,18 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
- 			break;
+-	/*
+-	 * force CTS-to-self frames protection if RTS-CTS is not preferred
+-	 * one aggregation protection method
+-	 */
+-	if (!priv->hw_params.use_rts_for_aggregation)
+-		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+-
+ 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+ 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+ 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
+@@ -1484,11 +1477,6 @@ void iwlagn_bss_info_changed(struct ieee80211_hw *hw,
+ 	else
+ 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
  
- 		case OPT_USER_ID:
--			if (match_int(&args[0], &value))
-+			if (fuse_match_uint(&args[0], &uv))
- 				return 0;
--			d->user_id = make_kuid(current_user_ns(), value);
-+			d->user_id = make_kuid(current_user_ns(), uv);
- 			if (!uid_valid(d->user_id))
- 				return 0;
- 			d->user_id_present = 1;
- 			break;
+-	if (bss_conf->use_cts_prot)
+-		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
+-	else
+-		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
+-
+ 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
  
- 		case OPT_GROUP_ID:
--			if (match_int(&args[0], &value))
-+			if (fuse_match_uint(&args[0], &uv))
- 				return 0;
--			d->group_id = make_kgid(current_user_ns(), value);
-+			d->group_id = make_kgid(current_user_ns(), uv);
- 			if (!gid_valid(d->group_id))
- 				return 0;
- 			d->group_id_present = 1;
+ 	if (vif->type == NL80211_IFTYPE_AP ||
 -- 
 1.9.1
 
