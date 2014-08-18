@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903AbaHRPZY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:25:24 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47074 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaHRPY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:24:59 -0400
-Date: Mon, 18 Aug 2014 10:23:24 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20140818152324.GG14537@sirena.org.uk>
-References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>
- <1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>
+	id S1751788AbaHRP3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:29:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14147 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464AbaHRP3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:29:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,886,1400050800"; 
+   d="scan'208";a="469913469"
+Message-ID: <53F21BEC.2070204@intel.com>
+Date: Mon, 18 Aug 2014 08:29:48 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DEfZqDS1MPR2ysog"
-Content-Disposition: inline
-In-Reply-To: <1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 216.80.64.155
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC
- regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Joe Perches <joe@perches.com>,
+        Krzysztof Majzerowicz-Jaszcz <cristos@vipserv.org>
+CC: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: net: ethernet: intel: e1000: e1000_ethtool.c
+ coding style fixes
+References: <1408180328-4827-1-git-send-email-cristos@vipserv.org> <1408214489.2683.87.camel@joe-AO725>
+In-Reply-To: <1408214489.2683.87.camel@joe-AO725>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/16/2014 11:41 AM, Joe Perches wrote:
+> On Sat, 2014-08-16 at 11:12 +0200, Krzysztof Majzerowicz-Jaszcz wrote:
+>> @@ -1835,11 +1830,11 @@ static void e1000_get_ethtool_stats(struct net_device *netdev,
+>>  	for (i = 0; i < E1000_GLOBAL_STATS_LEN; i++) {
+>>  		switch (e1000_gstrings_stats[i].type) {
+>>  		case NETDEV_STATS:
+>> -			p = (char *) netdev +
+>> +			p = (char *)netdev +
+>>  					e1000_gstrings_stats[i].stat_offset;
+>>  			break;
+>>  		case E1000_STATS:
+>> -			p = (char *) adapter +
+>> +			p = (char *)adapter +
+>>  					e1000_gstrings_stats[i].stat_offset;
+>>  			brseak;
+>>  		}
+> 
+> Maybe use a temporary for &e1000_gstring_stats[i]
+> 
+> Something like: (w/ void * for char *, WARN_ONCE, trigraph->if/else)
+> 
+> static void e1000_get_ethtool_stats(struct net_device *netdev,
+> 				    struct ethtool_stats *stats, u64 *data)
+> {
+> 	struct e1000_adapter *adapter = netdev_priv(netdev);
+> 	int i;
+> 	void *p = NULL;
+> 	const struct e1000_stats *stat = e1000_gstring_stats;
+> 
+> 	e1000_update_stats(adapter);
+> 
+> 	for (i = 0; i < E1000_GLOBAL_STATS_LEN; i++) {
+> 		switch (stat->type) {
+> 		case NETDEV_STATS:
+> 			p = (void *)netdev + stat->stat_offset;
+> 			break;
+> 		case E1000_STATS:
+> 			p = (void *)adapter + stat->stat_offset;
+> 			break;
+> 		default:
+> 			WARN_ONCE(1, "Invalid E1000 stat type: %u index %d\n",
+> 				  stat->type, i);
+> 			break;
+> 		}
+> 
+> 		if (stat->sizeof_stat == sizeof(u64))
+> 			data[i] = *(u64 *)p;
+> 		else
+> 			data[i] = *(u32 *)p;
+> 
+> 		stat++;
+> 	}
+> }
+> 
 
---DEfZqDS1MPR2ysog
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Doing any kind of pointer math on a void pointer is generally unsafe as
+it is an incomplete type.  The only reason why it works in GCC is
+because GCC has a nonstandard extension that makes it report as having a
+size of 1.
 
-On Mon, Aug 18, 2014 at 10:32:41AM +0200, Javier Martinez Canillas wrote:
-> The MAX77802 PMIC has 10 high-efficiency Buck and 32 Low-dropout
-> (LDO) regulators. This patch adds support for all these regulators
-> found on the MAX77802 PMIC and is based on a driver added by Simon
-> Glass to the Chrome OS kernel 3.8 tree.
+This is why the math is being done on a char * as it is a complete type
+with a size of 1.
 
-Applied, thanks.
+Thanks,
 
---DEfZqDS1MPR2ysog
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT8hppAAoJELSic+t+oim96cIP/2zWdpAoNYDihCEHTRBmCpOg
-Bbz0LU5y/CpTrtF8fy6ADVf3c39/c0a7JNdxyUF/VKLtMk9TCw+WnNJ16R+eX+zv
-vqSF+2Vw5dtiEZK7LpygihvTf9IG/iduJoh/dpDT1abAxfDNNz+rduscH4NEnTPi
-IZVk1Hrdyw6MxMEfTp32x5wUSt5QniwpShHphSuGIU9BT1w7YrXw+VzQfJjL1/hw
-XxHfLJgBHovTfTKhuo/p4TmSRoo4yjSu2PV11dlLyTFLO2kZL8DzmwgEgr4DhqTT
-o9gNB2d93NJ1LXw93Nvw2UpNhoC3pjrbc19yNBpmzfLBtHlqErshpSHoo2ysvzO0
-35ob+xaSqDIffCrQCj1go+DGnv0Iba74bH8UyBv25yQ9I1X8eA+CfxTqyjCWB4WU
-o6tY9ogZfV51kLIbJtZLuBEiQJxxuwP0ELLfv+jUjPGt0KmIGPL3U4OcsvLerDuC
-lWhUZhYI/jmxerOcuKzgIrTD2ouUqzwcALvjrZ1RfGntsARTF4RJQK9bun+rWfFq
-Fdzkyx/KmAhpzqIhsZX+fZWwuXzsiK2cKGnxcFEDG8KjIDPgj8QAvU/LJyQ8je6k
-JgH7pkoJRxO5mnr9Q/A0av0s7K+kUVf4+8aA56TRZOZSwCQ2UYHR+1HkmNLDny62
-rWDrd13LSsiQAykU9cmG
-=oKYr
------END PGP SIGNATURE-----
-
---DEfZqDS1MPR2ysog--
+Alex
