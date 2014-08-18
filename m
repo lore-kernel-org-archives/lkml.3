@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807AbaHRPPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:15:30 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40940 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750911AbaHRPP2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:15:28 -0400
-Message-ID: <53F21885.605@hurleysoftware.com>
-Date: Mon, 18 Aug 2014 11:15:17 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751823AbaHRPRo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:17:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751496AbaHRPRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:17:42 -0400
+Date: Mon, 18 Aug 2014 11:17:37 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Ulrich Obergfell <uobergfe@redhat.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH 4/5] watchdog: control hard lockup detection default
+Message-ID: <20140818151737.GT49576@redhat.com>
+References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+ <1407768567-171794-5-git-send-email-dzickus@redhat.com>
+ <20140818091644.GE25495@gmail.com>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v7] 8250-core based serial driver for OMAP + DMA
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <20140815181704.GH17769@csclub.uwaterloo.ca> <53EE5BF8.3010007@linutronix.de> <20140815202826.GC9239@atomide.com>
-In-Reply-To: <20140815202826.GC9239@atomide.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818091644.GE25495@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2014 04:28 PM, Tony Lindgren wrote:
-> * Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140815 12:16]:
->> On 08/15/2014 08:17 PM, Lennart Sorensen wrote:
->>
->>> Are you saying that with the new driver you have to respond to the RX
->>> irq faster than before to avoid overflows?  It is not quite clear.
->>
->> Yes. The irq fires 46 bytes giving you 16 bytes buffer before overflow
->> vs 63 bytes buffer the old one had.
->>
->>> I do think 40000 interrupts to handle 40000 bytes of date does seem a
->>> tad inefficient, so dropping to 854 looks a lot nicer.  Was the omap
->>> driver not using the fifo trigger levels at all?
->>
->> It configured the trigger levels to 1 for RX and 16 for TX.
+On Mon, Aug 18, 2014 at 11:16:44AM +0200, Ingo Molnar wrote:
 > 
-> Hmm that weird RX trigger level is a workaround for lost characters.
+> * Don Zickus <dzickus@redhat.com> wrote:
 > 
-> See commit 0ba5f66836 (tty: serial: OMAP: use a 1-byte RX FIFO
-> threshold in PIO mode :)
+> > The running kernel still has the ability to enable/disable at any
+> > time with /proc/sys/kernel/nmi_watchdog us usual. However even
+> > when the default has been overridden /proc/sys/kernel/nmi_watchdog
+> > will initially show '1'. To truly turn it on one must disable/enable
+> > it, i.e.
+> >   echo 0 > /proc/sys/kernel/nmi_watchdog
+> >   echo 1 > /proc/sys/kernel/nmi_watchdog
+> 
+> This looks like a bug, why is this so?
 
-That commit looks like it should have been specific to the silicon
-exhibiting the rx timeout bug.
+It is, but it always has been there in the case of the PMU not being able
+to provide a resource for the hardlockup.  This change just exposes it
+more.
 
-Regards,
-Peter Hurley
+Originally I wrote the code to keep the softlockup and hardlockup in sync.
+Now this patch attempts to split it up because the guest PMU is still
+flushing out bugs.
+
+The above scenario only really applies to developers.  Their guest boots
+up with the hardlockup disabled.  If they want to enable it to debug or
+develop, they have to go with the above steps.  The idea is once the KVM
+PMU is stable enough, the default switches to hardlockup enabled by
+default and this problem kinda goes back to one it is today.
+
+I guess I was feeling lazy about modifying a bunch of code to separate the
+hard and soft lockup for a temporarily broken feature.  :-/
+
+I thought it would just be easier to put this code in to quickly stabilize
+their PMU and switch the default later.
+
+Thoughts?  I think Uli laid out a more detailed example in his email.
+
+Cheers,
+Don
 
