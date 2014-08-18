@@ -1,100 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbaHRJhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:37:16 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:46714 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525AbaHRJhL (ORCPT
+	id S1753207AbaHRJgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:36:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43040 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105AbaHRJgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:37:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <53E0C70E.2010603@gmail.com>
-References: <1407238791-3370-1-git-send-email-sthokal@xilinx.com>
-	<53E0C70E.2010603@gmail.com>
-Date: Mon, 18 Aug 2014 15:07:08 +0530
-X-Google-Sender-Auth: bS05574w0XCPrzHXu-0eF2F8gYg
-Message-ID: <CA+mB=1+coeN9Qcm_CmEwzK4fETiWdZdcskcxjcFNEomjN98sKA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] dma: Add Xilinx Central DMA DT Binding Documentation
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Varka Bhadram <varkabhadram@gmail.com>
-Cc: Srikanth Thokala <sthokal@xilinx.com>, Vinod Koul <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org, anirudh@xilinx.com, svemula@xilinx.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Aug 2014 05:36:08 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 111/137] x86, espfix: Make it possible to disable 16-bit support
+Date: Mon, 18 Aug 2014 10:32:52 +0100
+Message-Id: <1408354398-10226-112-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Varka Bhadram,
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, Aug 5, 2014 at 5:29 PM, Varka Bhadram <varkabhadram@gmail.com> wrote:
-> On 08/05/2014 05:09 PM, Srikanth Thokala wrote:
->>
->> Device-tree binding documentation of Xilinx Central DMA Engine
->>
->> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
->> ---
->> Changes in v2:
->> - Change property 'xlnx,data-width' to 'xlnx,datawidth' in the description
->>    to match the implementation.
->>
->> ---
->>   .../devicetree/bindings/dma/xilinx/xilinx_cdma.txt |   54
->> ++++++++++++++++++++
->>   1 file changed, 54 insertions(+)
->>   create mode 100644
->> Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
->>
->> diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
->> b/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
->> new file mode 100644
->> index 0000000..b04f76b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_cdma.txt
->> @@ -0,0 +1,54 @@
->> +Xilinx AXI CDMA engine, it does transfers between memory-mapped source
->> +address and a memory-mapped destination address.
->> +
->> +Required properties:
->> +- compatible: Should be "xlnx,axi-cdma-1.00.a"
->> +- #dma-cells: Should be <1>, see "dmas" property below
->> +- reg: Should contain cdma registers location and length.
->> +- dma-channel child node: Should have only one channel
->> +
->> +
->
->
-> proper alignment for all the properties...
-> Required properties:
-> - compatible    : Should be "xlnx,axi-cdma-1.00.a"
->
-> - #dma-cells    : Should be <1>, see "dmas" property below
-> - reg           : Should contain cdma registers location and length.
-> .....
+------------------
 
-I would like to change, but is it documented anywhere? Because, I didn't
-receive any such comments on other drivers, so I am just wondering.
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-Thanks
-Srikanth
+commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
 
->
->
->
-> --
-> Regards,
-> Varka Bhadram.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Embedded systems, which may be very memory-size-sensitive, are
+extremely unlikely to ever encounter any 16-bit software, so make it
+a CONFIG_EXPERT option to turn off support for any 16-bit software
+whatsoever.
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/Kconfig           | 23 ++++++++++++++++++-----
+ arch/x86/kernel/entry_32.S | 12 ++++++++++++
+ arch/x86/kernel/entry_64.S |  8 ++++++++
+ arch/x86/kernel/ldt.c      |  5 +++++
+ 4 files changed, 43 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index ba5fdd09c61e..69d336e6964a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -962,14 +962,27 @@ config VM86
+ 	default y
+ 	depends on X86_32
+ 	---help---
+-	  This option is required by programs like DOSEMU to run 16-bit legacy
+-	  code on X86 processors. It also may be needed by software like
+-	  XFree86 to initialize some video cards via BIOS. Disabling this
+-	  option saves about 6k.
++	  This option is required by programs like DOSEMU to run
++	  16-bit real mode legacy code on x86 processors. It also may
++	  be needed by software like XFree86 to initialize some video
++	  cards via BIOS. Disabling this option saves about 6K.
++
++config X86_16BIT
++	bool "Enable support for 16-bit segments" if EXPERT
++	default y
++	---help---
++	  This option is required by programs like Wine to run 16-bit
++	  protected mode legacy code on x86 processors.  Disabling
++	  this option saves about 300 bytes on i386, or around 6K text
++	  plus 16K runtime memory on x86-64,
++
++config X86_ESPFIX32
++	def_bool y
++	depends on X86_16BIT && X86_32
+ 
+ config X86_ESPFIX64
+ 	def_bool y
+-	depends on X86_64
++	depends on X86_16BIT && X86_64
+ 
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 7b5e08fc505e..8d37c0cf5f1a 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -532,6 +532,7 @@ syscall_exit:
+ restore_all:
+ 	TRACE_IRQS_IRET
+ restore_all_notrace:
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS, SS and CS
+ 	# Warning: PT_OLDSS(%esp) contains the wrong/random values if we
+ 	# are returning to the kernel.
+@@ -542,6 +543,7 @@ restore_all_notrace:
+ 	cmpl $((SEGMENT_LDT << 8) | USER_RPL), %eax
+ 	CFI_REMEMBER_STATE
+ 	je ldt_ss			# returning to user-space with LDT SS
++#endif
+ restore_nocheck:
+ 	RESTORE_REGS 4			# skip orig_eax/error_code
+ irq_return:
+@@ -554,6 +556,7 @@ ENTRY(iret_exc)
+ .previous
+ 	_ASM_EXTABLE(irq_return,iret_exc)
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+ #ifdef CONFIG_PARAVIRT
+@@ -597,6 +600,7 @@ ldt_ss:
+ 	lss (%esp), %esp		/* switch to espfix segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
+ 	jmp restore_nocheck
++#endif
+ 	CFI_ENDPROC
+ ENDPROC(system_call)
+ 
+@@ -709,6 +713,7 @@ END(syscall_badsys)
+  * the high word of the segment base from the GDT and swiches to the
+  * normal stack and adjusts ESP with the matching offset.
+  */
++#ifdef CONFIG_X86_ESPFIX32
+ 	/* fixup the stack */
+ 	mov GDT_ESPFIX_SS + 4, %al /* bits 16..23 */
+ 	mov GDT_ESPFIX_SS + 7, %ah /* bits 24..31 */
+@@ -718,8 +723,10 @@ END(syscall_badsys)
+ 	pushl_cfi %eax
+ 	lss (%esp), %esp		/* switch to the normal stack segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
++#endif
+ .endm
+ .macro UNWIND_ESPFIX_STACK
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl %ss, %eax
+ 	/* see if on espfix stack */
+ 	cmpw $__ESPFIX_SS, %ax
+@@ -730,6 +737,7 @@ END(syscall_badsys)
+ 	/* switch to normal stack */
+ 	FIXUP_ESPFIX_STACK
+ 27:
++#endif
+ .endm
+ 
+ /*
+@@ -1347,11 +1355,13 @@ END(debug)
+ ENTRY(nmi)
+ 	RING0_INT_FRAME
+ 	ASM_CLAC
++#ifdef CONFIG_X86_ESPFIX32
+ 	pushl_cfi %eax
+ 	movl %ss, %eax
+ 	cmpw $__ESPFIX_SS, %ax
+ 	popl_cfi %eax
+ 	je nmi_espfix_stack
++#endif
+ 	cmpl $ia32_sysenter_target,(%esp)
+ 	je nmi_stack_fixup
+ 	pushl_cfi %eax
+@@ -1391,6 +1401,7 @@ nmi_debug_stack_check:
+ 	FIX_STACK 24, nmi_stack_correct, 1
+ 	jmp nmi_stack_correct
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ nmi_espfix_stack:
+ 	/* We have a RING0_INT_FRAME here.
+ 	 *
+@@ -1412,6 +1423,7 @@ nmi_espfix_stack:
+ 	lss 12+4(%esp), %esp		# back to espfix stack
+ 	CFI_ADJUST_CFA_OFFSET -24
+ 	jmp irq_return
++#endif
+ 	CFI_ENDPROC
+ END(nmi)
+ 
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b7b03a91d713..01cbb4eb9179 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1060,8 +1060,10 @@ irq_return:
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+ 	jnz irq_return_ldt
++#endif
+ 
+ irq_return_iret:
+ 	INTERRUPT_RETURN
+@@ -1073,6 +1075,7 @@ ENTRY(native_iret)
+ 	_ASM_EXTABLE(native_iret, bad_iret)
+ #endif
+ 
++#ifdef CONFIG_X86_ESPFIX64
+ irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+@@ -1096,6 +1099,7 @@ irq_return_ldt:
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+ 	jmp irq_return_iret
++#endif
+ 
+ 	.section .fixup,"ax"
+ bad_iret:
+@@ -1169,6 +1173,7 @@ END(common_interrupt)
+ 	 * modify the stack to make it look like we just entered
+ 	 * the #GP handler from user space, similar to bad_iret.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	ALIGN
+ __do_double_fault:
+ 	XCPT_FRAME 1 RDI+8
+@@ -1194,6 +1199,9 @@ __do_double_fault:
+ 	retq
+ 	CFI_ENDPROC
+ END(__do_double_fault)
++#else
++# define __do_double_fault do_double_fault
++#endif
+ 
+ /*
+  * End of kprobes section
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index ebc987398923..c37886d759cc 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,11 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
+ 
++	if (!IS_ENABLED(CONFIG_X86_16BIT) && !ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
++	}
++
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
+-- 
+1.9.1
+
