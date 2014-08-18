@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaHRKBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:01:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42622 "EHLO
+	id S1754254AbaHRJzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:55:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42765 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387AbaHRJeX (ORCPT
+	with ESMTP id S1751091AbaHRJfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:23 -0400
+	Mon, 18 Aug 2014 05:35:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Kevin Hao <haokexin@gmail.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 040/137] ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix
-Date: Mon, 18 Aug 2014 10:31:41 +0100
-Message-Id: <1408354398-10226-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 066/137] libata: support the ata host which implements a queue depth less than 32
+Date: Mon, 18 Aug 2014 10:32:07 +0100
+Message-Id: <1408354398-10226-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,124 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Kevin Hao <haokexin@gmail.com>
 
-commit 7f502361531e9eecb396cf99bdc9e9a59f7ebd7f upstream.
+commit 1871ee134b73fb4cadab75752a7152ed2813c751 upstream.
 
-We have two different ways to handle changes to sk->sk_dst
+The sata on fsl mpc8315e is broken after the commit 8a4aeec8d2d6
+("libata/ahci: accommodate tag ordered controllers"). The reason is
+that the ata controller on this SoC only implement a queue depth of
+16. When issuing the commands in tag order, all the commands in tag
+16 ~ 31 are mapped to tag 0 unconditionally and then causes the sata
+malfunction. It makes no senses to use a 32 queue in software while
+the hardware has less queue depth. So consider the queue depth
+implemented by the hardware when requesting a command tag.
 
-First way (used by TCP) assumes socket lock is owned by caller, and use
-no extra lock : __sk_dst_set() & __sk_dst_reset()
-
-Another way (used by UDP) uses sk_dst_lock because socket lock is not
-always taken. Note that sk_dst_lock is not softirq safe.
-
-These ways are not inter changeable for a given socket type.
-
-ipv4_sk_update_pmtu(), added in linux-3.8, added a race, as it used
-the socket lock as synchronization, but users might be UDP sockets.
-
-Instead of converting sk_dst_lock to a softirq safe version, use xchg()
-as we did for sk_rx_dst in commit e47eb5dfb296b ("udp: ipv4: do not use
-sk_dst_lock from softirq context")
-
-In a follow up patch, we probably can remove sk_dst_lock, as it is
-only used in IPv6.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Fixes: 9cb3a50c5f63e ("ipv4: Invalidate the socket cached route on pmtu events if possible")
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: adjusted context ]
+Fixes: 8a4aeec8d2d6 ("libata/ahci: accommodate tag ordered controllers")
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/net/sock.h | 12 ++++++------
- net/ipv4/route.c   | 15 ++++++++-------
- 2 files changed, 14 insertions(+), 13 deletions(-)
+ drivers/ata/libata-core.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 84e621daed8e..447205545c1c 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1773,9 +1773,11 @@ __sk_dst_set(struct sock *sk, struct dst_entry *dst)
- static inline void
- sk_dst_set(struct sock *sk, struct dst_entry *dst)
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index 6b45338919b7..b53d81fc9dba 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4758,6 +4758,10 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
+  *	ata_qc_new - Request an available ATA command, for queueing
+  *	@ap: target port
+  *
++ *	Some ATA host controllers may implement a queue depth which is less
++ *	than ATA_MAX_QUEUE. So we shouldn't allocate a tag which is beyond
++ *	the hardware limitation.
++ *
+  *	LOCKING:
+  *	None.
+  */
+@@ -4765,14 +4769,16 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
  {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_set(sk, dst);
--	spin_unlock(&sk->sk_dst_lock);
-+	struct dst_entry *old_dst;
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i, tag;
++	unsigned int i, tag, max_queue;
 +
-+	sk_tx_queue_clear(sk);
-+	old_dst = xchg(&sk->sk_dst_cache, dst);
-+	dst_release(old_dst);
- }
++	max_queue = ap->scsi_host->can_queue;
  
- static inline void
-@@ -1787,9 +1789,7 @@ __sk_dst_reset(struct sock *sk)
- static inline void
- sk_dst_reset(struct sock *sk)
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+ 		return NULL;
+ 
+-	for (i = 0; i < ATA_MAX_QUEUE; i++) {
+-		tag = (i + ap->last_tag + 1) % ATA_MAX_QUEUE;
++	for (i = 0, tag = ap->last_tag + 1; i < max_queue; i++, tag++) {
++		tag = tag < max_queue ? tag : 0;
+ 
+ 		/* the last tag is reserved for internal command. */
+ 		if (tag == ATA_TAG_INTERNAL)
+@@ -6155,6 +6161,16 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
  {
--	spin_lock(&sk->sk_dst_lock);
--	__sk_dst_reset(sk);
--	spin_unlock(&sk->sk_dst_lock);
-+	sk_dst_set(sk, NULL);
- }
+ 	int i, rc;
  
- extern struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie);
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 68091be23be2..3f7344fca8f0 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1031,20 +1031,21 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 	const struct iphdr *iph = (const struct iphdr *) skb->data;
- 	struct flowi4 fl4;
- 	struct rtable *rt;
--	struct dst_entry *dst;
-+	struct dst_entry *odst = NULL;
- 	bool new = false;
- 
- 	bh_lock_sock(sk);
--	rt = (struct rtable *) __sk_dst_get(sk);
-+	odst = sk_dst_get(sk);
- 
--	if (sock_owned_by_user(sk) || !rt) {
-+	if (sock_owned_by_user(sk) || !odst) {
- 		__ipv4_sk_update_pmtu(skb, sk, mtu);
- 		goto out;
- 	}
- 
- 	__build_flow_key(&fl4, sk, iph, 0, 0, 0, 0, 0);
- 
--	if (!__sk_dst_check(sk, 0)) {
-+	rt = (struct rtable *)odst;
-+	if (odst->obsolete && odst->ops->check(odst, 0) == NULL) {
- 		rt = ip_route_output_flow(sock_net(sk), &fl4, sk);
- 		if (IS_ERR(rt))
- 			goto out;
-@@ -1054,8 +1055,7 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 
- 	__ip_rt_update_pmtu((struct rtable *) rt->dst.path, &fl4, mtu);
- 
--	dst = dst_check(&rt->dst, 0);
--	if (!dst) {
-+	if (!dst_check(&rt->dst, 0)) {
- 		if (new)
- 			dst_release(&rt->dst);
- 
-@@ -1067,10 +1067,11 @@ void ipv4_sk_update_pmtu(struct sk_buff *skb, struct sock *sk, u32 mtu)
- 	}
- 
- 	if (new)
--		__sk_dst_set(sk, &rt->dst);
-+		sk_dst_set(sk, &rt->dst);
- 
- out:
- 	bh_unlock_sock(sk);
-+	dst_release(odst);
- }
- EXPORT_SYMBOL_GPL(ipv4_sk_update_pmtu);
- 
++	/*
++	 * The max queue supported by hardware must not be greater than
++	 * ATA_MAX_QUEUE.
++	 */
++	if (sht->can_queue > ATA_MAX_QUEUE) {
++		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
+ 	/* host must have been started */
+ 	if (!(host->flags & ATA_HOST_STARTED)) {
+ 		dev_err(host->dev, "BUG: trying to register unstarted host\n");
 -- 
 1.9.1
 
