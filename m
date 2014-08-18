@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaHRXp0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 19:45:26 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:38008 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaHRXpY (ORCPT
+	id S1752475AbaHRXsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 19:48:46 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:44714 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaHRXso convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 19:45:24 -0400
+	Mon, 18 Aug 2014 19:48:44 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>, Joerg Roedel <joro@8bytes.org>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
+Thread-Topic: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
+Thread-Index: AQHPusLtJD7eZgXm8U+STnK1YS2mE5vW+l6ggAAG8ACAAADm4IAAA9cQ
+Date: Mon, 18 Aug 2014 23:47:37 +0000
+Message-ID: <1267BB84A242B24E81E0C0C8955CFFC061A4CA86@G9W0343.americas.hpqcorp.net>
+References: <1408352352-14449-1-git-send-email-zhen-hual@hp.com>
+ <1267BB84A242B24E81E0C0C8955CFFC061A4BA26@G9W0343.americas.hpqcorp.net>
+ <20140818232328.GK9809@8bytes.org> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.201.58.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140818173552.GA2126@drone.musicnaut.iki.fi>
-References: <alpine.SOC.1.00.1407310101550.2065@math.ut.ee>
- <20140730.150722.861254999466992321.davem@davemloft.net> <alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
- <20140813.124611.767426770013677.davem@davemloft.net> <alpine.SOC.1.00.1408151534480.27263@math.ut.ee>
- <alpine.SOC.1.00.1408181528270.2922@math.ut.ee> <20140818173552.GA2126@drone.musicnaut.iki.fi>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Tue, 19 Aug 2014 09:45:03 +1000
-Message-ID: <CAGRGNgUq0-1rDtRJfFQ1ARvPXk6aT+f99-EGCN1vBpd35q2qyg@mail.gmail.com>
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Meelis Roos <mroos@linux.ee>, David Miller <davem@davemloft.net>,
-        sparclinux <sparclinux@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>, hughd@google.com,
-        cat.schulze@alice-dsl.net
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+When the dump kernel boots, it will initialize iommu again, and the root entry will be allocted 
+in another memory region.
 
-On Tue, Aug 19, 2014 at 3:35 AM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
-> Hi,
->
-> On Mon, Aug 18, 2014 at 03:30:16PM +0300, Meelis Roos wrote:
->> > U1, U2, U5, U10, E220R, E420R later or some other day, whenever I get
->> > to them physically.
->>
->> Ultra 5 is bad news with 3.17-rc1: it almost boots up, then aftyer
->> strarting postfix and ntpd, gets RED state exception and contiunes
->> looping with it (before it gor RED state only after prom reboot).
->
-> My Ultra 5 is fine with 3.17-rc1 (I'm writing this mail from it),
-> also Ultra 10 seems to be OK based on quick test.
+That means, no matter kernel clears the old root entry table or not,  the dump kernel will use 
+another memory region when iommu initializing.
 
-Stupid question: aren't the Ultra 5 and Ultra 10 essentially the same hardware?
+-----Original Message-----
+From: Li, Zhen-Hua 
+Sent: Tuesday, August 19, 2014 7:27 AM
+To: 'Joerg Roedel'
+Cc: David Woodhouse; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
 
-Thanks,
+: [fault reason 01] Present bit in root entry is clear
+It appears when iommu initializing in the kdump kernel.
 
--- 
-Julian Calaby
+-----Original Message-----
+From: Joerg Roedel [mailto:joro@8bytes.org] 
+Sent: Tuesday, August 19, 2014 7:23 AM
+To: Li, Zhen-Hua
+Cc: David Woodhouse; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
 
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
+On Mon, Aug 18, 2014 at 11:01:56PM +0000, Li, Zhen-Hua wrote:
+> There is a bug when Linux running on an HP large system: 
+> 	when kdump kernel runs, the hardware is still using the old 
+> root entry. This causes error message when iommu not finished initialization.
+
+What error message are you seeing? When the kdump kernel boots the iommu
+should be still enabled from the old kernel with the old root-entry. So
+any in-flight DMA initiated from the old kernel can still pass and there
+should be no error messages.
+
+When you clear the root-entry that in-flight DMA might go to another
+random location in system memory or just fail, no?
+
+
+	Joerg
+
