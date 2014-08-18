@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaHRJes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42712 "EHLO
+	id S1752659AbaHRJeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42719 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596AbaHRJeq (ORCPT
+	with ESMTP id S1752637AbaHRJes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:46 -0400
+	Mon, 18 Aug 2014 05:34:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+Cc: Ben Hutchings <ben@decadent.org.uk>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 056/137] sunvnet: clean up objects created in vnet_new() on vnet_exit()
-Date: Mon, 18 Aug 2014 10:31:57 +0100
-Message-Id: <1408354398-10226-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 058/137] dns_resolver: Null-terminate the right string
+Date: Mon, 18 Aug 2014 10:31:59 +0100
+Message-Id: <1408354398-10226-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,72 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit a4b70a07ed12a71131cab7adce2ce91c71b37060 upstream.
+commit 640d7efe4c08f06c4ae5d31b79bd8740e7f6790a upstream.
 
-Nothing cleans up the objects created by
-vnet_new(), they are completely leaked.
+*_result[len] is parsed as *(_result[len]) which is not at all what we
+want to touch here.
 
-vnet_exit(), after doing the vio_unregister_driver() to clean
-up ports, should call a helper function that iterates over vnet_list
-and cleans up those objects. This includes unregister_netdevice()
-as well as free_netdev().
-
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Reviewed-by: Karl Volz <karl.volz@oracle.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fixes: 84a7c0b1db1c ("dns_resolver: assure that dns_query() result is null-terminated")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/sun/sunvnet.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ net/dns_resolver/dns_query.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/sun/sunvnet.c b/drivers/net/ethernet/sun/sunvnet.c
-index 3df56840a3b9..398faff8be7a 100644
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -1083,6 +1083,24 @@ static struct vnet *vnet_find_or_create(const u64 *local_mac)
- 	return vp;
- }
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index ede0e2d7412e..2022b46ab38f 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -151,7 +151,7 @@ int dns_query(const char *type, const char *name, size_t namelen,
+ 		goto put;
  
-+static void vnet_cleanup(void)
-+{
-+	struct vnet *vp;
-+	struct net_device *dev;
-+
-+	mutex_lock(&vnet_list_mutex);
-+	while (!list_empty(&vnet_list)) {
-+		vp = list_first_entry(&vnet_list, struct vnet, list);
-+		list_del(&vp->list);
-+		dev = vp->dev;
-+		/* vio_unregister_driver() should have cleaned up port_list */
-+		BUG_ON(!list_empty(&vp->port_list));
-+		unregister_netdev(dev);
-+		free_netdev(dev);
-+	}
-+	mutex_unlock(&vnet_list_mutex);
-+}
-+
- static const char *local_mac_prop = "local-mac-address";
+ 	memcpy(*_result, upayload->data, len);
+-	*_result[len] = '\0';
++	(*_result)[len] = '\0';
  
- static struct vnet *vnet_find_parent(struct mdesc_handle *hp,
-@@ -1240,7 +1258,6 @@ static int vnet_port_remove(struct vio_dev *vdev)
- 
- 		kfree(port);
- 
--		unregister_netdev(vp->dev);
- 	}
- 	return 0;
- }
-@@ -1268,6 +1285,7 @@ static int __init vnet_init(void)
- static void __exit vnet_exit(void)
- {
- 	vio_unregister_driver(&vnet_port_driver);
-+	vnet_cleanup();
- }
- 
- module_init(vnet_init);
+ 	if (_expiry)
+ 		*_expiry = rkey->expiry;
 -- 
 1.9.1
 
