@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052AbaHRJfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:35:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42941 "EHLO
+	id S1752501AbaHRJef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42644 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024AbaHRJfo (ORCPT
+	with ESMTP id S1752431AbaHRJea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:44 -0400
+	Mon, 18 Aug 2014 05:34:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Rientjes <rientjes@google.com>, Bob Liu <lliubbo@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Hedi Berriche <hedi@sgi.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Andrew Vagin <avagin@openvz.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 089/137] mm, thp: do not allow thp faults to avoid cpuset restrictions
-Date: Mon, 18 Aug 2014 10:32:30 +0100
-Message-Id: <1408354398-10226-90-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 043/137] tcp: Fix divide by zero when pushing during tcp-repair
+Date: Mon, 18 Aug 2014 10:31:44 +0100
+Message-Id: <1408354398-10226-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -35,82 +29,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
+commit 5924f17a8a30c2ae18d034a86ee7581b34accef6 upstream.
 
-The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
-should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
-should be restricted only to the set of allowed cpuset mems.
+When in repair-mode and TCP_RECV_QUEUE is set, we end up calling
+tcp_push with mss_now being 0. If data is in the send-queue and
+tcp_set_skb_tso_segs gets called, we crash because it will divide by
+mss_now:
 
-Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
-the fault path from using memory compaction or direct reclaim.  Thus, it
-is unfairly able to allocate outside of its cpuset mems restriction as a
-side-effect.
+[  347.151939] divide error: 0000 [#1] SMP
+[  347.152907] Modules linked in:
+[  347.152907] CPU: 1 PID: 1123 Comm: packetdrill Not tainted 3.16.0-rc2 #4
+[  347.152907] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[  347.152907] task: f5b88540 ti: f3c82000 task.ti: f3c82000
+[  347.152907] EIP: 0060:[<c1601359>] EFLAGS: 00210246 CPU: 1
+[  347.152907] EIP is at tcp_set_skb_tso_segs+0x49/0xa0
+[  347.152907] EAX: 00000b67 EBX: f5acd080 ECX: 00000000 EDX: 00000000
+[  347.152907] ESI: f5a28f40 EDI: f3c88f00 EBP: f3c83d10 ESP: f3c83d00
+[  347.152907]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  347.152907] CR0: 80050033 CR2: 083158b0 CR3: 35146000 CR4: 000006b0
+[  347.152907] Stack:
+[  347.152907]  c167f9d9 f5acd080 000005b4 00000002 f3c83d20 c16013e6 f3c88f00 f5acd080
+[  347.152907]  f3c83da0 c1603b5a f3c83d38 c10a0188 00000000 00000000 f3c83d84 c10acc85
+[  347.152907]  c1ad5ec0 00000000 00000000 c1ad679c 010003e0 00000000 00000000 f3c88fc8
+[  347.152907] Call Trace:
+[  347.152907]  [<c167f9d9>] ? apic_timer_interrupt+0x2d/0x34
+[  347.152907]  [<c16013e6>] tcp_init_tso_segs+0x36/0x50
+[  347.152907]  [<c1603b5a>] tcp_write_xmit+0x7a/0xbf0
+[  347.152907]  [<c10a0188>] ? up+0x28/0x40
+[  347.152907]  [<c10acc85>] ? console_unlock+0x295/0x480
+[  347.152907]  [<c10ad24f>] ? vprintk_emit+0x1ef/0x4b0
+[  347.152907]  [<c1605716>] __tcp_push_pending_frames+0x36/0xd0
+[  347.152907]  [<c15f4860>] tcp_push+0xf0/0x120
+[  347.152907]  [<c15f7641>] tcp_sendmsg+0xf1/0xbf0
+[  347.152907]  [<c116d920>] ? kmem_cache_free+0xf0/0x120
+[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
+[  347.152907]  [<c106a682>] ? __sigqueue_free+0x32/0x40
+[  347.152907]  [<c114f0f0>] ? do_wp_page+0x3e0/0x850
+[  347.152907]  [<c161c36a>] inet_sendmsg+0x4a/0xb0
+[  347.152907]  [<c1150269>] ? handle_mm_fault+0x709/0xfb0
+[  347.152907]  [<c15a006b>] sock_aio_write+0xbb/0xd0
+[  347.152907]  [<c1180b79>] do_sync_write+0x69/0xa0
+[  347.152907]  [<c1181023>] vfs_write+0x123/0x160
+[  347.152907]  [<c1181d55>] SyS_write+0x55/0xb0
+[  347.152907]  [<c167f0d8>] sysenter_do_call+0x12/0x28
 
-This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
-truly GFP_ATOMIC by verifying it is also not a thp allocation.
+This can easily be reproduced with the following packetdrill-script (the
+"magic" with netem, sk_pacing and limit_output_bytes is done to prevent
+the kernel from pushing all segments, because hitting the limit without
+doing this is not so easy with packetdrill):
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Tested-by: Alex Thorlton <athorlton@sgi.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Hedi Berriche <hedi@sgi.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+0   socket(..., SOCK_STREAM, IPPROTO_TCP) = 3
++0  setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+
++0  bind(3, ..., ...) = 0
++0  listen(3, 1) = 0
+
++0  < S 0:0(0) win 32792 <mss 1460>
++0  > S. 0:0(0) ack 1 <mss 1460>
++0.1  < . 1:1(0) ack 1 win 65000
+
++0  accept(3, ..., ...) = 4
+
+// This forces that not all segments of the snd-queue will be pushed
++0 `tc qdisc add dev tun0 root netem delay 10ms`
++0 `sysctl -w net.ipv4.tcp_limit_output_bytes=2`
++0 setsockopt(4, SOL_SOCKET, 47, [2], 4) = 0
+
++0 write(4,...,10000) = 10000
++0 write(4,...,10000) = 10000
+
+// Set tcp-repair stuff, particularly TCP_RECV_QUEUE
++0 setsockopt(4, SOL_TCP, 19, [1], 4) = 0
++0 setsockopt(4, SOL_TCP, 20, [1], 4) = 0
+
+// This now will make the write push the remaining segments
++0 setsockopt(4, SOL_SOCKET, 47, [20000], 4) = 0
++0 `sysctl -w net.ipv4.tcp_limit_output_bytes=130000`
+
+// Now we will crash
++0 write(4,...,1000) = 1000
+
+This happens since ec3423257508 (tcp: fix retransmission in repair
+mode). Prior to that, the call to tcp_push was prevented by a check for
+tp->repair.
+
+The patch fixes it, by adding the new goto-label out_nopush. When exiting
+tcp_sendmsg and a push is not required, which is the case for tp->repair,
+we go to this label.
+
+When repairing and calling send() with TCP_RECV_QUEUE, the data is
+actually put in the receive-queue. So, no push is required because no
+data has been added to the send-queue.
+
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Fixes: ec3423257508 (tcp: fix retransmission in repair mode)
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Acked-by: Andrew Vagin <avagin@openvz.org>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/page_alloc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ net/ipv4/tcp.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1b5e9fb49ed4..04dc7a35e299 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2350,7 +2350,7 @@ static inline int
- gfp_to_alloc_flags(gfp_t gfp_mask)
- {
- 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
--	const gfp_t wait = gfp_mask & __GFP_WAIT;
-+	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 8e5188639d0b..1ee87b1a5126 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1068,7 +1068,7 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	if (unlikely(tp->repair)) {
+ 		if (tp->repair_queue == TCP_RECV_QUEUE) {
+ 			copied = tcp_send_rcvq(sk, msg, size);
+-			goto out;
++			goto out_nopush;
+ 		}
  
- 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
- 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
-@@ -2359,20 +2359,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	 * The caller may dip into page reserves a bit more if the caller
- 	 * cannot run direct reclaim, or if the caller has realtime scheduling
- 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
--	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
-+	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
- 	 */
- 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 		err = -EINVAL;
+@@ -1241,6 +1241,7 @@ wait_for_memory:
+ out:
+ 	if (copied)
+ 		tcp_push(sk, flags, mss_now, tp->nonagle);
++out_nopush:
+ 	release_sock(sk);
+ 	return copied + copied_syn;
  
--	if (!wait) {
-+	if (atomic) {
- 		/*
--		 * Not worth trying to allocate harder for
--		 * __GFP_NOMEMALLOC even if it can't schedule.
-+		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
-+		 * if it can't schedule.
- 		 */
--		if  (!(gfp_mask & __GFP_NOMEMALLOC))
-+		if (!(gfp_mask & __GFP_NOMEMALLOC))
- 			alloc_flags |= ALLOC_HARDER;
- 		/*
--		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
--		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
-+		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
-+		 * comment for __cpuset_node_allowed_softwall().
- 		 */
- 		alloc_flags &= ~ALLOC_CPUSET;
- 	} else if (unlikely(rt_task(current)) && !in_interrupt())
 -- 
 1.9.1
 
