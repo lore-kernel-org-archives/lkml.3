@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbaHRKGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:06:44 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:63080 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754700AbaHRKGm (ORCPT
+	id S1753930AbaHRKEf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:04:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42532 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147AbaHRJeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 06:06:42 -0400
-Date: Mon, 18 Aug 2014 11:06:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 0/8] mtd: nand: Support for new DT NAND driver
-Message-ID: <20140818100636.GB4266@lee--X1>
-References: <1407921127-8590-1-git-send-email-lee.jones@linaro.org>
- <20140814224013.GE18411@ld-irv-0074>
- <20140818083953.GA4266@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140818083953.GA4266@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Aug 2014 05:34:03 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 027/137] drm/radeon: set default bl level to something reasonable
+Date: Mon, 18 Aug 2014 10:31:28 +0100
+Message-Id: <1408354398-10226-28-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Particularly, take a hard look at rewriting
-> > include/linux/mtd/stm_nand_bbt.h.
-> 
-> I don't think there is any need - although this change is required:
-> 
-> -#if defined(MTD_NAND_STM_BBT)
-> +#if defined(MTD_NAND_STM_BCH_BBT)
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Sorry, I mean this:
+------------------
 
--#if defined(MTD_NAND_STM_BBT)
-+#if defined(CONFIG_MTD_NAND_STM_BCH_BBT)
+From: Alex Deucher <alexander.deucher@amd.com>
 
+commit 201bb62402e0227375c655446ea04fcd0acf7287 upstream.
+
+If the value in the scratch register is 0, set it to the
+max level.  This fixes an issue where the console fb blanking
+code calls back into the backlight driver on unblank and then
+sets the backlight level to 0 after the driver has already
+set the mode and enabled the backlight.
+
+bugs:
+https://bugs.freedesktop.org/show_bug.cgi?id=81382
+https://bugs.freedesktop.org/show_bug.cgi?id=70207
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Tested-by: David Heidelberger <david.heidelberger@ixit.cz>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/gpu/drm/radeon/atombios_encoders.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
+index 76e5e29ac46c..af359bae3e6f 100644
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -183,7 +183,6 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
+ 	struct backlight_properties props;
+ 	struct radeon_backlight_privdata *pdata;
+ 	struct radeon_encoder_atom_dig *dig;
+-	u8 backlight_level;
+ 	char bl_name[16];
+ 
+ 	/* Mac laptops with multiple GPUs use the gmux driver for backlight
+@@ -222,12 +221,17 @@ void radeon_atom_backlight_init(struct radeon_encoder *radeon_encoder,
+ 
+ 	pdata->encoder = radeon_encoder;
+ 
+-	backlight_level = radeon_atom_get_backlight_level_from_reg(rdev);
+-
+ 	dig = radeon_encoder->enc_priv;
+ 	dig->bl_dev = bd;
+ 
+ 	bd->props.brightness = radeon_atom_backlight_get_brightness(bd);
++	/* Set a reasonable default here if the level is 0 otherwise
++	 * fbdev will attempt to turn the backlight on after console
++	 * unblanking and it will try and restore 0 which turns the backlight
++	 * off again.
++	 */
++	if (bd->props.brightness == 0)
++		bd->props.brightness = RADEON_MAX_BL_LEVEL;
+ 	bd->props.power = FB_BLANK_UNBLANK;
+ 	backlight_update_status(bd);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
