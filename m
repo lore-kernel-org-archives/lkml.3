@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaHRQww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:52:52 -0400
-Received: from smtp-out-050.synserver.de ([212.40.185.50]:1060 "EHLO
-	smtp-out-045.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751569AbaHRQwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:52:51 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 20540
-Message-ID: <53F22F5E.2090601@metafoo.de>
-Date: Mon, 18 Aug 2014 18:52:46 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	id S1752019AbaHRQxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:53:12 -0400
+Received: from mailsec104.isp.belgacom.be ([195.238.20.100]:37240 "EHLO
+	mailsec104.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751968AbaHRQxK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 12:53:10 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=jFipP9QHR754xD1LIv7lmZBwFoxBoXARoNQ4pF+CvUk= c=1 sm=2
+ a=nKpn-3tZ-F4A:10 a=b6I-f53ZPUcA:10 a=IkcTkHD0fZMA:10 a=Yvs7EeInAAAA:8
+ a=bj6NYayyWSFgEoVOSm4A:9 a=QEXdDO2ut3YA:10 a=myC0mAPUGvMA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvwtAAMv8lPD7hTT/2dsb2JhbABZgw2BKoJ8rFkBAQEBAQEGpHcBgSAWdwQzAoNKAQEEASMEUgULBQYOCgICGA4CAlcGExGIKQysDoZ/jhwXgSyEUIhlODMHgnmBUwWxRYNfOy+CTwEBAQ
+Date: Mon, 18 Aug 2014 18:53:08 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Zach Brown <zab@zabbo.net>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Message-ID: <749953430.240415.1408380788296.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <20140805213214.GH18659@lenny.home.zabbo.net>
+References: <1405451837-8235-1-git-send-email-fabf@skynet.be> <20140716172021.GA10833@lenny.home.zabbo.net> <1762701571.679094.1405622254558.open-xchange@webmail.nmp.skynet.be> <20140717190152.GB24196@lenny.home.zabbo.net> <20140802142449.15f4cfc2c2821e90e04e175e@skynet.be> <20140804183158.GA18659@lenny.home.zabbo.net> <2069847253.202465.1407230425329.open-xchange@webmail.nmp.skynet.be> <20140805213214.GH18659@lenny.home.zabbo.net>
+Subject: Re: [PATCH 1/1] Btrfs: fix sparse warning
 MIME-Version: 1.0
-To: Shengjiu Wang <shengjiu.wang@freescale.com>, lgirdwood@gmail.com,
-        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        nicoleotsuka@gmail.com, Li.Xiubo@freescale.com, shc_work@mail.ru,
-        fabio.estevam@freescale.com, xobs@kosagi.com, arnd@arndb.de,
-        sfr@canb.auug.org.au, timur@tabi.org
-CC: alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
- of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-References: <cover.1408350626.git.shengjiu.wang@freescale.com> <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
-In-Reply-To: <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
-> Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the following
-> error:
+
+
+> On 05 August 2014 at 23:32 Zach Brown <zab@zabbo.net> wrote:
 >
->     sound/built-in.o: In function `fsl_sai_probe':
->>> fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
->     sound/built-in.o: In function `fsl_esai_probe':
->>> fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
 >
-> Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init' which is
-> defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it depends
-> on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
-> selected.
-> So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
+> > > > Hello Zach,
+> > > >
+> > > >     Here's an untested patch which
+> > >
+> > > Try testing it.  It's easy with virtualization and xfstests.
+> > >
+> > > You'll find that sending to a file fails because each individual file
+> > > write call that makes up a send starts at offset 0 -- at the start of
+> > > the file.
+> > >
+> > > Getting this right means getting the semantics around updating the send
+> > > descriptors f_pos right.  It requires having a bit of a think about send
+> > > semantics and f_pos update locking.
+> >
+> > Thanks for those informations Zach,
+> >
+> > I've tried btrfs test scripts related to ioctl in xfstests (tests/btrfs/025,
+> > 035, 052, 055)
+> > but was not able to trigger that problem. Do I have to create another
+> > script,
+> > use some generic one
+> > or maybe use big test/scratch devices ?
 >
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+> No idea, sorry.  Maybe your patch is fine and I'm a dummy.  Maybe you
+> didn't test the kernel you thought you were testing.  Maybe the test
+> doesn't test what you changed.  You'll have to do some investigating to
+> find out.
 
-Those if conditions where just added[1] by Arnd to avoid other build 
-failures. So just removing them again makes little sense.
+After checking both kernel and btrfs-progs, it seems file offset is only being
+passed through TLV(see send.c/ send_write/
+TLV_PUT_U64(BTRFS_SEND_A_FILE_OFFSET). Tell me if I'm wrong but when we do
+'btrfs send backup  | btrfs receive backupvolume',
+btrfs-progs calls btrfs_ioctl_send emitting several BTRFS_SEND_C_WRITE with
+relevant BTRFS_SEND_A_FILE_OFFSET (growing by 48kb). At the other side of | ,
+'btrfs receive' executes read_and_process_cmd which does TLV_GET before
+s->ops->write. All btrfs interactions being done with | maybe we could simply
+replace vfs_write stuff as you suggested and remove sctx->send_off ?
 
-As far as I can see imx_pcm_dma_init() should be stubbed out when 
-SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
+Regards,
+Fabian 
 
-[1] 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40260f79dc0436604452bccd449bffd25ebafb
-
+>
+> - z
