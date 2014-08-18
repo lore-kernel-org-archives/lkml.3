@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751773AbaHRBWP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 21:22:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40276 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaHRBWO (ORCPT
+	id S1751818AbaHRBZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 21:25:27 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38003 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbaHRBZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 21:22:14 -0400
+	Sun, 17 Aug 2014 21:25:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX188qJcQ9+G3E60hqs4RLcYgNxbzM/7ERvI=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 8FAB15C8370
+Date: Sun, 17 Aug 2014 21:25:12 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
+ into scheduler
+Message-ID: <20140818012512.GL12769@titan.lakedaemon.net>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+ <20140817173236.GG12769@titan.lakedaemon.net>
+ <20140817185522.GX30401@n2100.arm.linux.org.uk>
+ <20140817190434.GJ12769@titan.lakedaemon.net>
+ <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
 MIME-Version: 1.0
-In-Reply-To: <53F0EAEC.9040505@kernel.dk>
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
-	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
-	<20140815163111.GA16652@infradead.org>
-	<53EE370D.1060106@kernel.dk>
-	<53EE3966.60609@kernel.dk>
-	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
-	<53F0EAEC.9040505@kernel.dk>
-Date: Mon, 18 Aug 2014 09:22:10 +0800
-Message-ID: <CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        "open list:AIO" <linux-aio@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 1:48 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-08-16 02:06, Ming Lei wrote:
->>
->> On 8/16/14, Jens Axboe <axboe@kernel.dk> wrote:
->>>
->>> On 08/15/2014 10:36 AM, Jens Axboe wrote:
->>>>
->>>> On 08/15/2014 10:31 AM, Christoph Hellwig wrote:
->>>>>>
->>>>>> +static void loop_queue_work(struct work_struct *work)
->>>>>
->>>>>
->>>>> Offloading work straight to a workqueue dosn't make much sense
->>>>> in the blk-mq model as we'll usually be called from one.  If you
->>>>> need to avoid the cases where we are called directly a flag for
->>>>> the blk-mq code to always schedule a workqueue sounds like a much
->>>>> better plan.
->>>>
->>>>
->>>> That's a good point - would clean up this bit, and be pretty close to a
->>>> one-liner to support in blk-mq for the drivers that always need blocking
->>>> context.
->>>
->>>
->>> Something like this should do the trick - totally untested. But with
->>> that, loop would just need to add BLK_MQ_F_WQ_CONTEXT to it's tag set
->>> flags and it could always do the work inline from ->queue_rq().
->>
->>
->> I think it is a good idea.
->>
->> But for loop, there may be two problems:
->>
->> - default max_active for bound workqueue is 256, which means several slow
->> loop devices might slow down whole block system. With kernel AIO, it won't
->> be a big deal, but some block/fs may not support direct I/O and still
->> fallback to
->> workqueue
->>
->> - 6. Guidelines of Documentation/workqueue.txt
->> If there is dependency among multiple work items used during memory
->> reclaim, they should be queued to separate wq each with WQ_MEM_RECLAIM.
->
->
-> Both are good points. But I think this mainly means that we should support
-> this through a potentially per-dispatch queue workqueue, separate from
-> kblockd. There's no reason blk-mq can't support this with a per-hctx
-> workqueue, for drivers that need it.
+On Sun, Aug 17, 2014 at 08:04:45PM -0400, Nicolas Pitre wrote:
+> On Sun, 17 Aug 2014, Jason Cooper wrote:
+> > On Sun, Aug 17, 2014 at 07:55:23PM +0100, Russell King - ARM Linux wrote:
+> > > On Sun, Aug 17, 2014 at 01:32:36PM -0400, Jason Cooper wrote:
+> > > > Applied to irqchip/urgent with Nico's Ack.
+> > > 
+> > > Interesting, so I'm discussing this patch, and it gets applied anyway...
+> > > yes, that's great.
+> > 
+> > Quoting Nico:
+> > 
+> > "Of course it would be good to clarify things wrt Russell's remark
+> > independently from this patch."
+> > 
+> > I took 'independently' to mean "This patch is ok, *and* we need to
+> > address Russell's concerns in a follow-up patch."
+> > 
+> > Nico's Reviewed-by with that comment was sent August 13th.  The most
+> > recent activity on this thread was also August 13th.  After four days, I
+> > reasoned there were no objections to his comment.
+> 
+> Well... I mentioned this patch is a nice cleanup independently of the 
+> reason why it was created in the first place.
 
-Good idea, and per-device workqueue should be enough if
-BLK_MQ_F_WQ_CONTEXT flag is set.
+Ah, fair enough.
 
-Thanks,
+> Maybe that shouldn't be sorted as "urgent" in that case, especially
+> when the code having problem with the current state of things is
+> living out of mainline.
+
+hmmm, yes.  I've been grappling with the semantics of '/urgent' vice
+'/fixes'.  With mvebu, /fixes is the branch for all changes needing to go
+into the current -rcX cycle.  For irqchip, Thomas suggested /urgent for
+the equivalent branch.  To me, they serve the same purpose.
+Unfortunately, I occasionally hear "Well, it's not _urgent_ ...".  I
+suppose I'll put up with it for one more cycle and then change it to
+/fixes. :)
+
+wrt this patch, I need to drop it anyway.  I was a bit rusty (it's been
+a few weeks) and forgot to add the Cc -stable and Fixes: tags.  I do
+agree, though, it's certainly not urgent.
+
+As Russell has raised more issues with this patch as well, I'll hold off
+on re-applying until I see a new version.  Hopefully it'll meet with
+everyones approval.
+
+thx,
+
+Jason.
