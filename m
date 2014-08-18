@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbaHRIZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:25:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51675 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297AbaHRIZj (ORCPT
+	id S1752388AbaHRI0D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:26:03 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46926 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752365AbaHRIZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:25:39 -0400
-Date: Mon, 18 Aug 2014 01:25:14 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-f9f33fdba159a9c163ecf1dc0106ebd4c2498130@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, naota@elisp.net, namhyung@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        naota@elisp.net, namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de
-In-Reply-To: <20140814022251.3545.83718.stgit@kbuild-fedora.novalocal>
-References: <20140814022251.3545.83718.stgit@kbuild-fedora.novalocal>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Use strerror_r instead of strerror
-Git-Commit-ID: f9f33fdba159a9c163ecf1dc0106ebd4c2498130
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Mon, 18 Aug 2014 04:25:59 -0400
+X-Sasl-enc: YoCWsqXzGw8153aUjg+TJCH+2XJj2IWCO+vacKaWMBHC 1408350358
+Message-ID: <1408350340.2533.3.camel@perseus.fritz.box>
+Subject: Re: [PATCH 0/5] RCU-walk support for autofs
+From: Ian Kent <raven@themaw.net>
+To: NeilBrown <neilb@suse.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 18 Aug 2014 16:25:40 +0800
+In-Reply-To: <20140818062844.9860.43007.stgit@notabene.brown>
+References: <20140818062844.9860.43007.stgit@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f9f33fdba159a9c163ecf1dc0106ebd4c2498130
-Gitweb:     http://git.kernel.org/tip/f9f33fdba159a9c163ecf1dc0106ebd4c2498130
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 14 Aug 2014 02:22:51 +0000
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Aug 2014 13:08:14 -0300
+On Mon, 2014-08-18 at 16:33 +1000, NeilBrown wrote:
+> Hi Ian,
+>  Have you had a chance to run your tests in these patches yet?
+>  I've done what testing I can think of and cannot fault them.
 
-perf kvm: Use strerror_r instead of strerror
+I haven't, I've been plagued with illness so I'm not getting nearly
+enough done. I'll try to put a kernel together and run the test in the
+next week or so.
 
-Use strerror_r instead of strerror in error messages for thread-safety.
+> 
+>  This set is against 3.17-rc1 and make use of the new -EISDIR handling
+>  for d_manage() and assumes the other patches which already went in
+>  through Andrew Morton.
+> 
+>  I've added a section to autofs4.txt about mount namespaces, but it is
+>  otherwise unchanged.
+> 
+>  If I could get an {Acked,Reviewed,Tested}-By in the next few weeks so
+>  I can send them on to Andrew I would really appreciate it.
+> 
+> Thanks,
+> NeilBrown
+> 
+> 
+> 
+> ---
+> 
+> NeilBrown (5):
+>       autofs4: allow RCU-walk to walk through autofs4.
+>       autofs4: factor should_expire() out of autofs4_expire_indirect.
+>       autofs4: avoid taking fs_lock during rcu-walk
+>       autofs4: d_manage() should return -EISDIR when appropriate in rcu-walk mode.
+>       autofs: the documentation I wanted to read
+> 
+> 
+>  Documentation/filesystems/autofs4.txt |  520 +++++++++++++++++++++++++++++++++
+>  fs/autofs4/autofs_i.h                 |    6 
+>  fs/autofs4/dev-ioctl.c                |    2 
+>  fs/autofs4/expire.c                   |  200 ++++++++-----
+>  fs/autofs4/root.c                     |   62 +++-
+>  5 files changed, 694 insertions(+), 96 deletions(-)
+>  create mode 100644 Documentation/filesystems/autofs4.txt
+> 
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Naohiro Aota <naota@elisp.net>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140814022251.3545.83718.stgit@kbuild-fedora.novalocal
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-kvm.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 14d03ed..1a4ef9c 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -990,6 +990,7 @@ static int kvm_live_open_events(struct perf_kvm_stat *kvm)
- 	int err, rc = -1;
- 	struct perf_evsel *pos;
- 	struct perf_evlist *evlist = kvm->evlist;
-+	char sbuf[STRERR_BUFSIZE];
- 
- 	perf_evlist__config(evlist, &kvm->opts);
- 
-@@ -1026,12 +1027,14 @@ static int kvm_live_open_events(struct perf_kvm_stat *kvm)
- 
- 	err = perf_evlist__open(evlist);
- 	if (err < 0) {
--		printf("Couldn't create the events: %s\n", strerror(errno));
-+		printf("Couldn't create the events: %s\n",
-+		       strerror_r(errno, sbuf, sizeof(sbuf)));
- 		goto out;
- 	}
- 
- 	if (perf_evlist__mmap(evlist, kvm->opts.mmap_pages, false) < 0) {
--		ui__error("Failed to mmap the events: %s\n", strerror(errno));
-+		ui__error("Failed to mmap the events: %s\n",
-+			  strerror_r(errno, sbuf, sizeof(sbuf)));
- 		perf_evlist__close(evlist);
- 		goto out;
- 	}
