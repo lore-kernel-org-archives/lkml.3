@@ -1,50 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912AbaHRPqN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:46:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16627 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789AbaHRPqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:46:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,886,1400050800"; 
-   d="scan'208";a="469919744"
-Message-ID: <53F21FB1.7060607@intel.com>
-Date: Mon, 18 Aug 2014 08:45:53 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751931AbaHRPsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:48:08 -0400
+Received: from smtp81.iad3a.emailsrvr.com ([173.203.187.81]:58510 "EHLO
+	smtp81.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751066AbaHRPsG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:48:06 -0400
+Date: Mon, 18 Aug 2014 11:48:03 -0400 (EDT)
+Subject: Re: [PATCH] ARM: apq8064: Add pinmux and i2c pinctrl nodes
+From: kiran.padwal@smartplayin.com
+To: "Bjorn Andersson" <bjorn@kryo.se>
+Cc: "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "David Brown" <davidb@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Krzysztof Majzerowicz-Jaszcz <cristos@vipserv.org>,
-        jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: net: ethernet: intel: e1000: e1000_ethtool.c
- coding style fixes
-References: <1408180328-4827-1-git-send-email-cristos@vipserv.org>	 <1408214489.2683.87.camel@joe-AO725> <53F21BEC.2070204@intel.com> <1408375914.2741.1.camel@joe-AO725>
-In-Reply-To: <1408375914.2741.1.camel@joe-AO725>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Importance: Normal
+X-Priority: 3 (Normal)
+X-Type: plain
+In-Reply-To: <1408129739.03949271@apps.rackspace.com>
+References: <1408129739.03949271@apps.rackspace.com>
+Message-ID: <1408376883.684512744@apps.rackspace.com>
+X-Mailer: webmail7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 08:31 AM, Joe Perches wrote:
-> On Mon, 2014-08-18 at 08:29 -0700, Alexander Duyck wrote:
->> Doing any kind of pointer math on a void pointer is generally unsafe as
->> it is an incomplete type.  The only reason why it works in GCC is
->> because GCC has a nonstandard extension that makes it report as having a
->> size of 1.
+
+On Friday, August 15, 2014 3:08pm, kiran.padwal@smartplayin.com said:
+
 > 
-> I know.  It's used in quite a few places in kernel code
-> so I believe it's now a base assumption for the kernel.
+> On Thursday, August 14, 2014 6:37pm, "Bjorn Andersson" <bjorn@kryo.se> said:
+> 
+>> On Thu, Aug 14, 2014 at 12:20 AM, Kiran Padwal
+>> <kiran.padwal@smartplayin.com> wrote:
+>>> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi
+>>> b/arch/arm/boot/dts/qcom-apq8064.dtsi
+>>> index 92bf793..fbebf5c 100644
+>>> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
+>>> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+>>> @@ -70,6 +70,17 @@
+>>>                 ranges;
+>>>                 compatible = "simple-bus";
+>>>
+>>> +               qcom_pinmux: pinmux@800000 {
+>>
+>> There are (at least) three different pinmuxes in these platforms: TLMM, PMIC
+>> GPIO, PMIC MPP. Also this is the phandle that is used to reference the gpio
+>> chip throughout the board.
+>>
+>> So I would like to suggest that we name it "tlmm" or like in the downstream
+>> kernel "msmgpio".
+> 
+> ok. How about "qcomgpio" or rename it to msmgpio?
 
-Well that is something that should probably be fixed then.  I don't
-believe it is safe to be doing any kind of pointer math on a void pointer.
+Thanks for suggestion, I will rename it to "tlmm".
 
-We really shouldn't be using any GCC specific bits unless we absolutely
-have to.
+> 
+>>
+>>> +                       compatible = "qcom,apq8064-pinctrl";
+>>> +                       reg = <0x800000 0x4000>;
+>>> +
+>>> +                       gpio-controller;
+>>> +                       #gpio-cells = <2>;
+>>> +                       interrupt-controller;
+>>> +                       #interrupt-cells = <2>;
+>>> +                       interrupts = <0 32 0x4>;
+>>
+>> I must have gotten this wrong in the dt binding example, sorry about that.
+>> interrupts should be <0 16 0x4>.
+> 
+> Thanks for information. I will update that.
+> 
+>>
+>>> +               };
+>>
+>> Regards,
+>> Bjorn
+>>
+> 
+> 
+> 
 
-Thanks,
-
-Alex
 
