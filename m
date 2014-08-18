@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351AbaHRJ6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:58:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42688 "EHLO
+	id S1754370AbaHRJ6j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:58:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42679 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560AbaHRJek (ORCPT
+	with ESMTP id S1752452AbaHRJei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:40 -0400
+	Mon, 18 Aug 2014 05:34:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Suresh Reddy <Suresh.Reddy@emulex.com>,
-        Sathya Perla <sathya.perla@emulex.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Ben Pfaff <blp@nicira.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 052/137] be2net: set EQ DB clear-intr bit in be_open()
-Date: Mon, 18 Aug 2014 10:31:53 +0100
-Message-Id: <1408354398-10226-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 051/137] netlink: Fix handling of error from netlink_dump().
+Date: Mon, 18 Aug 2014 10:31:52 +0100
+Message-Id: <1408354398-10226-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,37 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Reddy <Suresh.Reddy@emulex.com>
+From: Ben Pfaff <blp@nicira.com>
 
-commit 4cad9f3b61c7268fa89ab8096e23202300399b5d upstream.
+commit ac30ef832e6af0505b6f0251a6659adcfa74975e upstream.
 
-On BE3, if the clear-interrupt bit of the EQ doorbell is not set the first
-time it is armed, ocassionally we have observed that the EQ doesn't raise
-anymore interrupts even if it is in armed state.
-This patch fixes this by setting the clear-interrupt bit when EQs are
-armed for the first time in be_open().
+netlink_dump() returns a negative errno value on error.  Until now,
+netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
+that's wrong since sk_err takes positive errno values.  (This manifests as
+userspace receiving a positive return value from the recv() system call,
+falsely indicating success.) This bug was introduced in the commit that
+started checking the netlink_dump() return value, commit b44d211 (netlink:
+handle errors from netlink_dump()).
 
-Signed-off-by: Suresh Reddy <Suresh.Reddy@emulex.com>
-Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
+Multithreaded Netlink dumps are one way to trigger this behavior in
+practice, as described in the commit message for the userspace workaround
+posted here:
+    http://openvswitch.org/pipermail/dev/2014-June/042339.html
+
+This commit also fixes the same bug in netlink_poll(), introduced in commit
+cd1df525d (netlink: add flow control for memory mapped I/O).
+
+Signed-off-by: Ben Pfaff <blp@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/emulex/benet/be_main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/netlink/af_netlink.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
-index 3d91a5ec61a4..8dee3d9835dd 100644
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -2665,7 +2665,7 @@ static int be_open(struct net_device *netdev)
- 
- 	for_all_evt_queues(adapter, eqo, i) {
- 		napi_enable(&eqo->napi);
--		be_eq_notify(adapter, eqo->q.id, true, false, 0);
-+		be_eq_notify(adapter, eqo->q.id, true, true, 0);
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 7bbc40b63aa4..4a8948b08d1b 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -598,7 +598,7 @@ static unsigned int netlink_poll(struct file *file, struct socket *sock,
+ 		while (nlk->cb != NULL && netlink_dump_space(nlk)) {
+ 			err = netlink_dump(sk);
+ 			if (err < 0) {
+-				sk->sk_err = err;
++				sk->sk_err = -err;
+ 				sk->sk_error_report(sk);
+ 				break;
+ 			}
+@@ -2421,7 +2421,7 @@ static int netlink_recvmsg(struct kiocb *kiocb, struct socket *sock,
+ 	if (nlk->cb && atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
+ 		ret = netlink_dump(sk);
+ 		if (ret) {
+-			sk->sk_err = ret;
++			sk->sk_err = -ret;
+ 			sk->sk_error_report(sk);
+ 		}
  	}
- 	adapter->flags |= BE_FLAGS_NAPI_ENABLED;
- 
 -- 
 1.9.1
 
