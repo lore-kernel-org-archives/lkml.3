@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaHRJdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:33:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42493 "EHLO
+	id S1752262AbaHRJeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42559 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaHRJdx (ORCPT
+	with ESMTP id S1752146AbaHRJeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:53 -0400
+	Mon, 18 Aug 2014 05:34:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Snitzer <snitzer@redhat.com>,
+Cc: Tomasz Figa <t.figa@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 020/137] dm thin metadata: do not allow the data block size to change
-Date: Mon, 18 Aug 2014 10:31:21 +0100
-Message-Id: <1408354398-10226-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 030/137] irqchip: gic: Fix core ID calculation when topology is read from DT
+Date: Mon, 18 Aug 2014 10:31:31 +0100
+Message-Id: <1408354398-10226-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,56 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Tomasz Figa <t.figa@samsung.com>
 
-commit 9aec8629ec829fc9403788cd959e05dd87988bd1 upstream.
+commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
 
-The block size for the thin-pool's data device must remained fixed for
-the life of the thin-pool.  Disallow any attempt to change the
-thin-pool's data block size.
+Certain GIC implementation, namely those found on earlier, single
+cluster, Exynos SoCs, have registers mapped without per-CPU banking,
+which means that the driver needs to use different offset for each CPU.
 
-It should be noted that attempting to change the data block size via
-thin-pool table reload will be ignored as a side-effect of the thin-pool
-handover that the thin-pool target does during thin-pool table reload.
+Currently the driver calculates the offset by multiplying value returned
+by cpu_logical_map() by CPU offset parsed from DT. This is correct when
+CPU topology is not specified in DT and aforementioned function returns
+core ID alone. However when DT contains CPU topology, the function
+changes to return cluster ID as well, which is non-zero on mentioned
+SoCs and so breaks the calculation in GIC driver.
 
-Here is an example outcome of attempting to load a thin-pool table that
-reduced the thin-pool's data block size from 1024K to 512K.
+This patch fixes this by masking out cluster ID in CPU offset
+calculation so that only core ID is considered. Multi-cluster Exynos
+SoCs already have banked GIC implementations, so this simple fix should
+be enough.
 
-Before:
-kernel: device-mapper: thin: 253:4: growing the data device from 204800 to 409600 blocks
-
-After:
-kernel: device-mapper: thin metadata: changing the data block size (from 2048 to 1024) is not supported
-kernel: device-mapper: table: 253:4: thin-pool: Error creating metadata object
-kernel: device-mapper: ioctl: error adding target to table
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
+Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-thin-metadata.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/irqchip/irq-gic.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-thin-metadata.c b/drivers/md/dm-thin-metadata.c
-index 07a6ea3a9820..b63095c73b5f 100644
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -613,6 +613,15 @@ static int __open_metadata(struct dm_pool_metadata *pmd)
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 97fd4bf56f3e..4e2347ad869d 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -42,6 +42,7 @@
+ #include <linux/irqchip/chained_irq.h>
+ #include <linux/irqchip/arm-gic.h>
  
- 	disk_super = dm_block_data(sblock);
++#include <asm/cputype.h>
+ #include <asm/irq.h>
+ #include <asm/exception.h>
+ #include <asm/smp_plat.h>
+@@ -754,7 +755,9 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 		}
  
-+	/* Verify the data block size hasn't changed */
-+	if (le32_to_cpu(disk_super->data_block_size) != pmd->data_block_size) {
-+		DMERR("changing the data block size (from %u to %llu) is not supported",
-+		      le32_to_cpu(disk_super->data_block_size),
-+		      (unsigned long long)pmd->data_block_size);
-+		r = -EINVAL;
-+		goto bad_unlock_sblock;
-+	}
-+
- 	r = __check_incompat_features(disk_super, pmd);
- 	if (r < 0)
- 		goto bad_unlock_sblock;
+ 		for_each_possible_cpu(cpu) {
+-			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
++			u32 mpidr = cpu_logical_map(cpu);
++			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
++			unsigned long offset = percpu_offset * core_id;
+ 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
+ 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
+ 		}
 -- 
 1.9.1
 
