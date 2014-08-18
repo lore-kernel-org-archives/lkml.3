@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaHRIzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:55:38 -0400
+	id S1752231AbaHRI51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:57:27 -0400
 Received: from p50936449.dip0.t-ipconnect.de ([80.147.100.73]:30499 "EHLO
 	dhcp-27-160.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752456AbaHRIzf (ORCPT
+	by vger.kernel.org with ESMTP id S1752383AbaHRIzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:55:35 -0400
+	Mon, 18 Aug 2014 04:55:24 -0400
 X-Greylist: delayed 10355 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Aug 2014 04:55:02 EDT
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Naresh Kumar Inna <naresh@chelsio.com>,
-        Arvind Bhushan <arvindb@chelsio.com>, linux-scsi@vger.kernel.org,
+        Neela Syam Kolli <megaraidlinux@lsi.com>, linux-scsi@vger.kernel.org,
         linux-pci@vger.kernel.org
-Subject: [PATCH v3 10/13] csiostor: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Mon, 18 Aug 2014 08:01:50 +0200
-Message-Id: <3ddc5fb60e32d05996a539d7007bfb3a5e5f09b2.1408335523.git.agordeev@redhat.com>
+Subject: [PATCH v3 04/13] megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Mon, 18 Aug 2014 08:01:44 +0200
+Message-Id: <53f5625fafdf27f7404efd9ec497a718a2465dc2.1408335523.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1408335523.git.agordeev@redhat.com>
 References: <cover.1408335523.git.agordeev@redhat.com>
@@ -32,69 +31,52 @@ and pci_enable_msix_range() or pci_enable_msix_exact()
 interfaces.
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Naresh Kumar Inna <naresh@chelsio.com>
-Cc: Arvind Bhushan <arvindb@chelsio.com>
+Acked-by: Kashyap Desai <Kashyap.desai@avagotech.com>
+Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/scsi/csiostor/csio_hw.h  |  2 +-
- drivers/scsi/csiostor/csio_isr.c | 22 +++++++++-------------
- 2 files changed, 10 insertions(+), 14 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c | 20 +++++++-------------
+ 1 file changed, 7 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/scsi/csiostor/csio_hw.h b/drivers/scsi/csiostor/csio_hw.h
-index 49b1daa..5db2d85 100644
---- a/drivers/scsi/csiostor/csio_hw.h
-+++ b/drivers/scsi/csiostor/csio_hw.h
-@@ -94,7 +94,7 @@ enum {
- };
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index e4ffae5..a2f4d4f 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4103,17 +4103,11 @@ static int megasas_init_fw(struct megasas_instance *instance)
+ 					     (unsigned int)num_online_cpus());
+ 		for (i = 0; i < instance->msix_vectors; i++)
+ 			instance->msixentry[i].entry = i;
+-		i = pci_enable_msix(instance->pdev, instance->msixentry,
+-				    instance->msix_vectors);
+-		if (i >= 0) {
+-			if (i) {
+-				if (!pci_enable_msix(instance->pdev,
+-						     instance->msixentry, i))
+-					instance->msix_vectors = i;
+-				else
+-					instance->msix_vectors = 0;
+-			}
+-		} else
++		i = pci_enable_msix_range(instance->pdev, instance->msixentry,
++					  1, instance->msix_vectors);
++		if (i)
++			instance->msix_vectors = i;
++		else
+ 			instance->msix_vectors = 0;
  
- struct csio_msix_entries {
--	unsigned short	vector;		/* Vector assigned by pci_enable_msix */
-+	unsigned short	vector;		/* Assigned MSI-X vector */
- 	void		*dev_id;	/* Priv object associated w/ this msix*/
- 	char		desc[24];	/* Description of this vector */
- };
-diff --git a/drivers/scsi/csiostor/csio_isr.c b/drivers/scsi/csiostor/csio_isr.c
-index 91ba91d..a8c748a 100644
---- a/drivers/scsi/csiostor/csio_isr.c
-+++ b/drivers/scsi/csiostor/csio_isr.c
-@@ -499,7 +499,7 @@ csio_reduce_sqsets(struct csio_hw *hw, int cnt)
- static int
- csio_enable_msix(struct csio_hw *hw)
- {
--	int rv, i, j, k, n, min, cnt;
-+	int i, j, k, n, min, cnt;
- 	struct csio_msix_entries *entryp;
- 	struct msix_entry *entries;
- 	int extra = CSIO_EXTRA_VECS;
-@@ -521,19 +521,15 @@ csio_enable_msix(struct csio_hw *hw)
+ 		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
+@@ -5133,8 +5127,8 @@ megasas_resume(struct pci_dev *pdev)
  
- 	csio_dbg(hw, "FW supp #niq:%d, trying %d msix's\n", hw->cfg_niq, cnt);
+ 	/* Now re-enable MSI-X */
+ 	if (instance->msix_vectors &&
+-	    pci_enable_msix(instance->pdev, instance->msixentry,
+-			    instance->msix_vectors))
++	    pci_enable_msix_exact(instance->pdev, instance->msixentry,
++				  instance->msix_vectors))
+ 		goto fail_reenable_msix;
  
--	while ((rv = pci_enable_msix(hw->pdev, entries, cnt)) >= min)
--		cnt = rv;
--	if (!rv) {
--		if (cnt < (hw->num_sqsets + extra)) {
--			csio_dbg(hw, "Reducing sqsets to %d\n", cnt - extra);
--			csio_reduce_sqsets(hw, cnt - extra);
--		}
--	} else {
--		if (rv > 0)
--			csio_info(hw, "Not using MSI-X, remainder:%d\n", rv);
--
-+	cnt = pci_enable_msix_range(hw->pdev, entries, min, cnt);
-+	if (cnt < 0) {
- 		kfree(entries);
--		return -ENOMEM;
-+		return cnt;
-+	}
-+
-+	if (cnt < (hw->num_sqsets + extra)) {
-+		csio_dbg(hw, "Reducing sqsets to %d\n", cnt - extra);
-+		csio_reduce_sqsets(hw, cnt - extra);
- 	}
- 
- 	/* Save off vectors */
+ 	switch (instance->pdev->device) {
 -- 
 1.9.3
 
