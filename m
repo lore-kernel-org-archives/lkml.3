@@ -1,98 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaHRDzj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 23:55:39 -0400
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:3393
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751716AbaHRDzh convert rfc822-to-8bit (ORCPT
+	id S1751164AbaHREZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 00:25:54 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:57292 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaHREZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 23:55:37 -0400
-From: Dexuan Cui <decui@microsoft.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        KY Srinivasan <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH] Input: hyperv-keyboard - implement Type Clipboard Text
-Thread-Topic: [PATCH] Input: hyperv-keyboard - implement Type Clipboard Text
-Thread-Index: AQHPuKofLzaqUkka1EmYO6oSNGBw9pvVuwLg
-Date: Mon, 18 Aug 2014 03:54:51 +0000
-Message-ID: <EE124450C0AAF944A40DD71E61F878C9933040@SINEX14MBXC417.southpacific.corp.microsoft.com>
-References: <1408095719-19117-1-git-send-email-decui@microsoft.com>
- <20140815165733.GB25225@core.coreip.homeip.net>
-In-Reply-To: <20140815165733.GB25225@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.3.95]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019005)(6009001)(438002)(189002)(13464003)(51914003)(164054003)(199003)(377454003)(51704005)(6806004)(95666004)(44976005)(84676001)(81542001)(81342001)(69596002)(83322001)(68736004)(47776003)(20776003)(64706001)(85806002)(46406003)(81156004)(31966008)(26826002)(16796002)(21056001)(106116001)(110136001)(107046002)(106466001)(85306004)(92726001)(86362001)(97756001)(92566001)(77982001)(97736001)(79102001)(46102001)(87936001)(76482001)(85852003)(86612001)(2656002)(76176999)(55846006)(50986999)(83072002)(99396002)(54356999)(74502001)(80022001)(23726002)(4396001)(50466002)(33656002)(77096002)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB253;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-X-Forefront-PRVS: 03077579FF
-Authentication-Results: spf=pass (sender IP is 131.107.125.37)
- smtp.mailfrom=decui@microsoft.com; 
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	Mon, 18 Aug 2014 00:25:52 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Vineet Gupta <vgupta@synopsys.com>, Steven Miao <realmz6@gmail.com>,
+        David Howells <dhowells@redhat.com>, Richard Kuo <rkuo@codeaurora.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>,
+        Max Filippov <jcmvbkbc@gmail.com>, Noam Camus <noamc@ezchip.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tony Lu <zlu@tilera.com>, Kirill Tkhai <tkhai@yandex.ru>,
+        linux-kernel@vger.kernel.org (open list),
+        adi-buildroot-devel@lists.sourceforge.net (moderated list:BLACKFIN
+	ARCHITEC...),
+        linux-hexagon@vger.kernel.org (open list:QUALCOMM HEXAGON...),
+        linux-metag@vger.kernel.org (open list:METAG ARCHITECTURE),
+        linux-sh@vger.kernel.org (open list:SUPERH),
+        linux-xtensa@linux-xtensa.org (open list:TENSILICA XTENSA...)
+Subject: [PATCH] flush_icache_range: Export symbol to fix build errors
+Date: Mon, 18 Aug 2014 00:24:49 -0400
+Message-Id: <1408335898-3109-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dmitry Torokhov
-> Sent: Saturday, August 16, 2014 0:58 AM
-> To: Dexuan Cui
-> > For each char in the string, the host sends 2 events (key down/up with the
-> > char's UNICODE value) to the guest.
-> > The patch finds each char's scan codes of key down/up, and injects the
-> > scan codes to the serio keyboard module.
-> >
-> > Known issues:
-> > 1) Only printable ASCII chars are supported, and unsupported chars are
-> > ignored. It seems unlikely to support generic UNICODE chars because there
-> > is not a generic API to inject a UNICODE char to text mode console, KDE,
-> > gnome, etc.
-> >
-> > 2) When we use the feature, make sure the CapsLock state of the VM's
-> > (virtual) keyboard is OFF because this patch assumes it -- we'll try to
-> > fix this later, probably by tracking the state of virtual CapsLock, because
-> > it looks the keyboard module doesn't supply an API for us to query the
-> state
-> > of the keyboard.
-> >
-> No way. If you want to do this this way, do it in hypervisor code and keep
-> feeding AT scan codes to hyperv-keyboard, although I am pretty sure users
-Hi Dmitry,
-Yeah, I had the same wish, but later I found this seems unlikely because IMO
-the feature was firstly invented for Windows VM + generic UNICODE chars,
-and we know there is no "scan code" for generic UNICODE chars... :-(
+Fix building errors occuring due to a missing export of flush_icache_range() in
+architectures missing the export.
 
-> of
-> French, Czech and other keyboard layouts with numbers in upper register
-> and
-> symbols in lower will have a few choice words for you.
-Sorry, I can't understand what these are.
-Can you please give more details or a link to further info?
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ arch/arc/mm/cache_arc700.c             |    1 +
+ arch/blackfin/include/asm/cacheflush.h |    1 +
+ arch/frv/include/asm/cacheflush.h      |    1 +
+ arch/hexagon/mm/cache.c                |    1 +
+ arch/metag/include/asm/cacheflush.h    |    1 +
+ arch/sh/mm/cache.c                     |    1 +
+ arch/tile/kernel/smp.c                 |    1 +
+ arch/xtensa/kernel/smp.c               |    1 +
+ 8 files changed, 8 insertions(+)
 
-> If you want real cut-and-paste support in various DEs I'd recommend
-> working
-> with VMware on open-vm-tools package to see what can be shared/reused
-> there.
-> Consider this NACked with prejudice.
-> Dmitry
-Thanks for the suggestion!
-Let me study open-vm-tools and report back.
+diff --git a/arch/arc/mm/cache_arc700.c b/arch/arc/mm/cache_arc700.c
+index 4670afc..e88ddbf 100644
+--- a/arch/arc/mm/cache_arc700.c
++++ b/arch/arc/mm/cache_arc700.c
+@@ -581,6 +581,7 @@ void flush_icache_range(unsigned long kstart, unsigned long kend)
+ 		tot_sz -= sz;
+ 	}
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ /*
+  * General purpose helper to make I and D cache lines consistent.
+diff --git a/arch/blackfin/include/asm/cacheflush.h b/arch/blackfin/include/asm/cacheflush.h
+index 9a5b2c5..0e2eb8c 100644
+--- a/arch/blackfin/include/asm/cacheflush.h
++++ b/arch/blackfin/include/asm/cacheflush.h
+@@ -70,6 +70,7 @@ static inline void flush_icache_range(unsigned start, unsigned end)
+ 	}
+ #endif
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ #define copy_to_user_page(vma, page, vaddr, dst, src, len)		\
+ do { memcpy(dst, src, len);						\
+diff --git a/arch/frv/include/asm/cacheflush.h b/arch/frv/include/asm/cacheflush.h
+index edbac54..07ee4b3 100644
+--- a/arch/frv/include/asm/cacheflush.h
++++ b/arch/frv/include/asm/cacheflush.h
+@@ -72,6 +72,7 @@ static inline void flush_icache_range(unsigned long start, unsigned long end)
+ {
+ 	frv_cache_wback_inv(start, end);
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ #ifdef CONFIG_MMU
+ extern void flush_icache_user_range(struct vm_area_struct *vma, struct page *page,
+diff --git a/arch/hexagon/mm/cache.c b/arch/hexagon/mm/cache.c
+index fe14ccf..0c76c80 100644
+--- a/arch/hexagon/mm/cache.c
++++ b/arch/hexagon/mm/cache.c
+@@ -68,6 +68,7 @@ void flush_icache_range(unsigned long start, unsigned long end)
+ 	);
+ 	local_irq_restore(flags);
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ void hexagon_clean_dcache_range(unsigned long start, unsigned long end)
+ {
+diff --git a/arch/metag/include/asm/cacheflush.h b/arch/metag/include/asm/cacheflush.h
+index 7787ec5..117c212 100644
+--- a/arch/metag/include/asm/cacheflush.h
++++ b/arch/metag/include/asm/cacheflush.h
+@@ -124,6 +124,7 @@ static inline void flush_icache_range(unsigned long address,
+ 	metag_code_cache_flush((void *) address, endaddr - address);
+ #endif
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ static inline void flush_cache_sigtramp(unsigned long addr, int size)
+ {
+diff --git a/arch/sh/mm/cache.c b/arch/sh/mm/cache.c
+index 097c2cd..f770e39 100644
+--- a/arch/sh/mm/cache.c
++++ b/arch/sh/mm/cache.c
+@@ -229,6 +229,7 @@ void flush_icache_range(unsigned long start, unsigned long end)
+ 
+ 	cacheop_on_each_cpu(local_flush_icache_range, (void *)&data, 1);
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ void flush_icache_page(struct vm_area_struct *vma, struct page *page)
+ {
+diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
+index 01e8ab2..19eaa62 100644
+--- a/arch/tile/kernel/smp.c
++++ b/arch/tile/kernel/smp.c
+@@ -183,6 +183,7 @@ void flush_icache_range(unsigned long start, unsigned long end)
+ 		preempt_enable();
+ 	}
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ 
+ /* Called when smp_send_reschedule() triggers IRQ_RESCHEDULE. */
+diff --git a/arch/xtensa/kernel/smp.c b/arch/xtensa/kernel/smp.c
+index 40b5a37..4d02e38 100644
+--- a/arch/xtensa/kernel/smp.c
++++ b/arch/xtensa/kernel/smp.c
+@@ -571,6 +571,7 @@ void flush_icache_range(unsigned long start, unsigned long end)
+ 	};
+ 	on_each_cpu(ipi_flush_icache_range, &fd, 1);
+ }
++EXPORT_SYMBOL(flush_icache_range);
+ 
+ /* ------------------------------------------------------------------------- */
+ 
+-- 
+1.7.9.5
 
-Thanks,
--- Dexuan
