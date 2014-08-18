@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaHRIen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:34:43 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:41468 "EHLO
+	id S1752587AbaHRIfA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:35:00 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41534 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213AbaHRIdW (ORCPT
+	with ESMTP id S1752564AbaHRIe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:33:22 -0400
+	Mon, 18 Aug 2014 04:34:56 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Mike Turquette <mturquette@linaro.org>
+To: Alessandro Zummo <a.zummo@towertech.it>
 Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
-        devicetree@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        rtc-linux@googlegroups.com, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v9 1/6] clk: max77686: Add DT include for MAX77686 PMIC clock
-Date: Mon, 18 Aug 2014 10:32:59 +0200
-Message-Id: <1408350784-15577-2-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v9 3/5] rtc: max77686: Fail to probe if no RTC regmap irqchip is set
+Date: Mon, 18 Aug 2014 10:34:35 +0200
+Message-Id: <1408350877-15921-4-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1408350784-15577-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1408350784-15577-1-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1408350877-15921-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1408350877-15921-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a dt-binding include for Maxim 77686
-PMIC clock IDs that can be used by both the max77686
-clock driver and Device Tree source files.
+The max77686 mfd driver adds a regmap IRQ chip which creates an
+IRQ domain that is used to map the virtual RTC alarm1 interrupt.
 
+The RTC driver assumes that this will always be true since the
+PMIC IRQ is a required property according to the max77686 DT
+binding doc. If an "interrupts" property is not defined for a
+max77686 PMIC, then the mfd probe function will fail and the
+RTC platform driver will never be probed. But even when it is
+not possible to probe the rtc-max77686 driver without a regmap
+IRQ chip, it's better to explicitly check if the IRQ chip data
+is not NULL and gracefully fail instead of getting an OOPS.
+
+Reported-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
-Acked-by: Mike Turquette <mturquette@linaro.org>
 ---
 
-Changes since v6: None
-
-Changes since v5:
- - Improve wording in commit message. Suggested by Andreas Farber.
-
-Changes since v4: None
-
-Changes since v3:
- - Keep the note that this patch needs another change due wakeup
-   ordering problems.
+Fixes the issue reported by Krzystof in: https://lkml.org/lkml/2014/8/8/121
 ---
- drivers/clk/clk-max77686.c                 |  7 +------
- include/dt-bindings/clock/maxim,max77686.h | 23 +++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 6 deletions(-)
- create mode 100644 include/dt-bindings/clock/maxim,max77686.h
+ drivers/rtc/rtc-max77686.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/clk/clk-max77686.c b/drivers/clk/clk-max77686.c
-index 3d7e8dd..185b611 100644
---- a/drivers/clk/clk-max77686.c
-+++ b/drivers/clk/clk-max77686.c
-@@ -30,12 +30,7 @@
- #include <linux/mutex.h>
- #include <linux/clkdev.h>
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index 7bb5433..55396bb 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -466,6 +466,12 @@ static int max77686_rtc_probe(struct platform_device *pdev)
+ 		goto err_rtc;
+ 	}
  
--enum {
--	MAX77686_CLK_AP = 0,
--	MAX77686_CLK_CP,
--	MAX77686_CLK_PMIC,
--	MAX77686_CLKS_NUM,
--};
-+#include <dt-bindings/clock/maxim,max77686.h>
- 
- struct max77686_clk {
- 	struct max77686_dev *iodev;
-diff --git a/include/dt-bindings/clock/maxim,max77686.h b/include/dt-bindings/clock/maxim,max77686.h
-new file mode 100644
-index 0000000..7b28b09
---- /dev/null
-+++ b/include/dt-bindings/clock/maxim,max77686.h
-@@ -0,0 +1,23 @@
-+/*
-+ * Copyright (C) 2014 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Device Tree binding constants clocks for the Maxim 77686 PMIC.
-+ */
++	if (!max77686->rtc_irq_data) {
++		ret = -EINVAL;
++		dev_err(&pdev->dev, "%s: no RTC regmap IRQ chip\n", __func__);
++		goto err_rtc;
++	}
 +
-+#ifndef _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
-+#define _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H
-+
-+/* Fixed rate clocks. */
-+
-+#define MAX77686_CLK_AP		0
-+#define MAX77686_CLK_CP		1
-+#define MAX77686_CLK_PMIC	2
-+
-+/* Total number of clocks. */
-+#define MAX77686_CLKS_NUM		(MAX77686_CLK_PMIC + 1)
-+
-+#endif /* _DT_BINDINGS_CLOCK_MAXIM_MAX77686_CLOCK_H */
+ 	info->virq = regmap_irq_get_virq(max77686->rtc_irq_data,
+ 					 MAX77686_RTCIRQ_RTCA1);
+ 	if (!info->virq) {
 -- 
-2.0.1
+2.0.0.rc2
 
