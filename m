@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751716AbaHQXxE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 19:53:04 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33596 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaHQXxC (ORCPT
+	id S1751640AbaHRAEu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 20:04:50 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:57161 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaHRAEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 19:53:02 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 18 Aug 2014 08:53:24 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Horner <ds2horner@gmail.com>
-Cc: Dan Streetman <ddstreet@ieee.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>
-Subject: Re: [PATCH 3/3] zram: add mem_used_max via sysfs
-Message-ID: <20140817235324.GE11367@bbox>
-References: <1407978746-20587-1-git-send-email-minchan@kernel.org>
- <1407978746-20587-3-git-send-email-minchan@kernel.org>
- <CALZtONDB5q56f1TUHgqbiJ4ZaP6Yk=GcNQw9DhvLhNyExdfQ4w@mail.gmail.com>
- <CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
+	Sun, 17 Aug 2014 20:04:48 -0400
+Date: Sun, 17 Aug 2014 20:04:45 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Jason Cooper <jason@lakedaemon.net>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
+ scheduler
+In-Reply-To: <20140817190434.GJ12769@titan.lakedaemon.net>
+Message-ID: <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140817173236.GG12769@titan.lakedaemon.net> <20140817185522.GX30401@n2100.arm.linux.org.uk> <20140817190434.GJ12769@titan.lakedaemon.net>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAFdhcLQ11MnF7Py+X1wrJMiu0L15-JrV883oYGopdz1oag0njQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 11:32:36AM -0400, David Horner wrote:
-> On Thu, Aug 14, 2014 at 11:09 AM, Dan Streetman <ddstreet@ieee.org> wrote:
-> > On Wed, Aug 13, 2014 at 9:12 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >> -       if (zram->limit_bytes &&
-> >> -               zs_get_total_size_bytes(meta->mem_pool) > zram->limit_bytes) {
-> >> +       total_bytes = zs_get_total_size_bytes(meta->mem_pool);
-> >> +       if (zram->limit_bytes && total_bytes > zram->limit_bytes) {
-> >
-> > do you need to take the init_lock to read limit_bytes here?  It could
-> > be getting changed between these checks...
+On Sun, 17 Aug 2014, Jason Cooper wrote:
+
+> Russell,
 > 
-> There is no real danger in freeing with an error.
-> It is more timing than a race.
+> On Sun, Aug 17, 2014 at 07:55:23PM +0100, Russell King - ARM Linux wrote:
+> > On Sun, Aug 17, 2014 at 01:32:36PM -0400, Jason Cooper wrote:
+> > > Applied to irqchip/urgent with Nico's Ack.
+> > 
+> > Interesting, so I'm discussing this patch, and it gets applied anyway...
+> > yes, that's great.
 > 
-> The max calculation is still ok because committed allocations are
-> added atomically.
-
-There is one problem in below code piece.
-
-zram->max_used_bytes = max(zram->max_used_bytes, total_bytes);
-
-so we should consider this case.
-
-if (zram->max_used_bytes < total_bytes)
-        zram->max_used_bytes = total_bytes;
-
-And we could make the situation like this.
-
-
-if (zram->max_used_bytes < total_bytes)
-        IRQ happen;
-        zram->max_used_bytes = total_bytes
-
-During IRQ, other CPU could consume a lot of zsmalloc memory so that
-zram->max_used_bytes would be increased under the foot so when IRQ is
-finshed, zram->max_used_bytes could be reset with old total_bytes.
-
-To prevent it, we should use the lock I posted RFC version or retry
-logic with atomic opeartion(ie, cmpxchg) and my approach makes it simple
-first and fix it if we see the trouble in future so my preference is
-new spin lock at the moment.
-
-Any comments?
-
-
-
+> Quoting Nico:
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> "Of course it would be good to clarify things wrt Russell's remark
+> independently from this patch."
+> 
+> I took 'independently' to mean "This patch is ok, *and* we need to
+> address Russell's concerns in a follow-up patch."
+> 
+> Nico's Reviewed-by with that comment was sent August 13th.  The most
+> recent activity on this thread was also August 13th.  After four days, I
+> reasoned there were no objections to his comment.
 
--- 
-Kind regards,
-Minchan Kim
+Well... I mentioned this patch is a nice cleanup independently of the 
+reason why it was created in the first place.  Maybe that shouldn't be 
+sorted as "urgent" in that case, especially when the code having problem 
+with the current state of things is living out of mainline.
+
+
+Nicolas
