@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbaHRVkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 17:40:46 -0400
-Received: from mail-yk0-f179.google.com ([209.85.160.179]:55383 "EHLO
-	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131AbaHRVkp (ORCPT
+	id S1752336AbaHRVop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 17:44:45 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41972 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941AbaHRVon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 17:40:45 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Jingoo Han <jg1.han@samsung.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Kukjin Kim <kgene.kim@samsung.com>, Pawel Moll <pawel.moll@arm.com>,
-        linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER),
-        linux-kernel@vger.kernel.org (open list)
-Cc: geert@linux-m68k.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] powerpc: Fix build error caused by vga16fb
-Date: Mon, 18 Aug 2014 17:40:39 -0400
-Message-Id: <1408398042-18241-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 18 Aug 2014 17:44:43 -0400
+Message-ID: <53F27395.5070601@collabora.co.uk>
+Date: Mon, 18 Aug 2014 23:43:49 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>,
+        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RESEND PATCH 1/2] ARM: dts: Improve Peach Pit and Pi power scheme
+References: <1407757091-18730-1-git-send-email-javier.martinez@collabora.co.uk> <CAD=FV=UbckfwGucuPjEtHixVgF5K2fD5N3EPS2BH96DRDACuqw@mail.gmail.com> <53F245A4.5010106@samsung.com>
+In-Reply-To: <53F245A4.5010106@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vga16fb causes a build failure on PPC 32 as follows
+Hello Kukjin,
 
-drivers/built-in.o: In function `vga16fb_probe':
-drivers/video/fbdev/vga16fb.c:1326: undefined reference to `vgacon_remap_base'
-drivers/video/fbdev/vga16fb.c:1326: undefined reference to `vgacon_remap_base'
-make: *** [vmlinux] Error 1
+On 08/18/2014 08:27 PM, Kukjin Kim wrote:
+> On 08/11/14 10:46, Doug Anderson wrote:
+>>
+> OK, I've applied this but 2nd in this series...
+>
 
-It was noted by Geert that in PPC, no one is setting vgacon_remap_base because
-of which it working on PPC is suspect.
+Thanks for picking this and yes PATCH 2/2 from this series was dropped.
 
-Fix the build failure by disabling vga16fb on PPC.
+>> Acked-by: Doug Anderson<dianders@chromium.org>
+>>
+> Thanks,
+> Kukjin
+> 
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- drivers/video/fbdev/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I've posted PATCH "mmc: core: Use regulator_get_voltage() if OCR mask is
+empty." [0] instead to solve the issue that patch 2/2 tried to address.
 
-diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
-index e911b9c..d236fe4 100644
---- a/drivers/video/fbdev/Kconfig
-+++ b/drivers/video/fbdev/Kconfig
-@@ -547,7 +547,7 @@ config FB_IMSTT
- 
- config FB_VGA16
- 	tristate "VGA 16-color graphics support"
--	depends on FB && (X86 || PPC)
-+	depends on FB && X86
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
--- 
-1.9.1
+Best regards,
+Javier
 
+[0]: https://lkml.org/lkml/2014/8/14/200
