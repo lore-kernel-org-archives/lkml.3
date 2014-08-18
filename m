@@ -1,162 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaHRRJV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:09:21 -0400
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:44773 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaHRRJO (ORCPT
+	id S1751977AbaHRRIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:08:40 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:52663 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaHRRIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 13:09:14 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
-        Eddie Cai <eddie.cai@rock-chips.com>,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/4] pwm: rockchip: Allow polarity invert on rk3288
-Date: Mon, 18 Aug 2014 10:09:07 -0700
-Message-Id: <1408381749-14156-3-git-send-email-dianders@chromium.org>
+	Mon, 18 Aug 2014 13:08:36 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH v2 9/9] ARM: tegra: venice2: Add xHCI support
+Date: Mon, 18 Aug 2014 10:08:25 -0700
+Message-Id: <1408381705-3623-10-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408381749-14156-1-git-send-email-dianders@chromium.org>
-References: <1408381749-14156-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rk3288 has the ability to invert the polarity of the PWM.  Let's
-enable that ability.
+Assign ports previously owned by the EHCI controllers to the xHCI
+controller.  There are two external USB ports (UTMI ports 0/2 and
+USB3 ports 0/1) and an internal USB port (UTMI port 1).  PCIe lanes
+0 and 1 are used by the USB3 ports.
 
-To do this we increase the number of pwm_cells to 3 to allow using the
-PWM_POLARITY_INVERTED flag.  Since the PWM driver on rk3288 is very
-new, I thought this was OK.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
- .../devicetree/bindings/pwm/pwm-rockchip.txt       |  4 +--
- drivers/pwm/pwm-rockchip.c                         | 32 ++++++++++++++++++++--
- 2 files changed, 32 insertions(+), 4 deletions(-)
+Changes from v1:
+ - Updated USB power supplies.
+---
+ arch/arm/boot/dts/tegra124-venice2.dts | 79 ++++++++++++++++++++++------------
+ 1 file changed, 51 insertions(+), 28 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-index d47d15a..b8be3d0 100644
---- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-+++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-@@ -7,8 +7,8 @@ Required properties:
-    "rockchip,vop-pwm": found integrated in VOP on RK3288 SoC
-  - reg: physical base address and length of the controller's registers
-  - clocks: phandle and clock specifier of the PWM reference clock
-- - #pwm-cells: should be 2. See pwm.txt in this directory for a
--   description of the cell format.
-+ - #pwm-cells: must be 2 (rk2928) or 3 (rk3288). See pwm.txt in this directory
-+   for a description of the cell format.
+diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
+index 70ad91d..3f706ff 100644
+--- a/arch/arm/boot/dts/tegra124-venice2.dts
++++ b/arch/arm/boot/dts/tegra124-venice2.dts
+@@ -736,7 +736,7 @@
+ 					regulator-always-on;
+ 				};
  
- Example:
+-				ldo0 {
++				avdd_1v05_run: ldo0 {
+ 					regulator-name = "+1.05V_RUN_AVDD";
+ 					regulator-min-microvolt = <1050000>;
+ 					regulator-max-microvolt = <1050000>;
+@@ -878,6 +878,56 @@
+ 		status = "okay";
+ 	};
  
-diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
-index bdd8644..27f20d6 100644
---- a/drivers/pwm/pwm-rockchip.c
-+++ b/drivers/pwm/pwm-rockchip.c
-@@ -24,7 +24,9 @@
- #define PWM_ENABLE		(1 << 0)
- #define PWM_CONTINUOUS		(1 << 1)
- #define PWM_DUTY_POSITIVE	(1 << 3)
-+#define PWM_DUTY_NEGATIVE	(0 << 3)
- #define PWM_INACTIVE_NEGATIVE	(0 << 4)
-+#define PWM_INACTIVE_POSITIVE	(1 << 4)
- #define PWM_OUTPUT_LEFT		(0 << 5)
- #define PWM_LP_DISABLE		(0 << 8)
- 
-@@ -32,6 +34,7 @@ struct rockchip_pwm_chip {
- 	struct pwm_chip chip;
- 	struct clk *clk;
- 	const struct rockchip_pwm_data *data;
-+	enum pwm_polarity polarity;
- 	void __iomem *base;
- };
- 
-@@ -45,6 +48,7 @@ struct rockchip_pwm_regs {
- struct rockchip_pwm_data {
- 	struct rockchip_pwm_regs regs;
- 	unsigned int prescaler;
-+	bool has_invert;
- 
- 	void (*set_enable)(struct pwm_chip *chip, bool enable);
- };
-@@ -74,10 +78,14 @@ static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
- {
- 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
- 	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
--			  PWM_CONTINUOUS | PWM_DUTY_POSITIVE |
--			  PWM_INACTIVE_NEGATIVE;
-+			  PWM_CONTINUOUS;
- 	u32 val;
- 
-+	if (pc->polarity == PWM_POLARITY_INVERSED)
-+		enable_conf |= PWM_DUTY_NEGATIVE | PWM_INACTIVE_POSITIVE;
-+	else
-+		enable_conf |= PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
++	usb@0,70090000 {
++		status = "okay";
++		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P0>, /* 1st USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* Internal USB */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* 2nd USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>, /* 1st USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P1>; /* 2nd USB A */
++		phy-names = "utmi-0", "utmi-1", "utmi-2", "usb3-0", "usb3-1";
++		avddio-pex-supply = <&vdd_1v05_run>;
++		dvddio-pex-supply = <&vdd_1v05_run>;
++		avdd-usb-supply = <&vdd_3v3_lp0>;
++		avdd-pll-utmip-supply = <&vddio_1v8>;
++		avdd-pll-erefe-supply = <&avdd_1v05_run>;
++		avdd-pex-pll-supply = <&vdd_1v05_run>;
++		hvdd-pex-supply = <&vdd_3v3_lp0>;
++		hvdd-pex-plle-supply = <&vdd_3v3_lp0>;
++	};
 +
- 	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
- 
- 	if (enable)
-@@ -124,6 +132,19 @@ static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	return 0;
- }
- 
-+int rockchip_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+			      enum pwm_polarity polarity)
-+{
-+	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
++	padctl@0,7009f000 {
++		pinctrl-0 = <&padctl_default>;
++		pinctrl-names = "default";
 +
-+	if (!pc->data->has_invert)
-+		return -ENOSYS;
++		vbus-otg-0-supply = <&vdd_usb1_vbus>;
++		vbus-otg-1-supply = <&vdd_run_cam>;
++		vbus-otg-2-supply = <&vdd_usb3_vbus>;
++		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
++		nvidia,usb3-port-1-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_1>;
 +
-+	pc->polarity = polarity;
++		padctl_default: pinmux {
++			otg {
++				nvidia,lanes = "otg-0", "otg-1", "otg-2";
++				nvidia,function = "xusb";
++			};
 +
-+	return 0;
-+}
++			usb3p0 {
++				nvidia,lanes = "pcie-0";
++				nvidia,function = "usb3";
++				nvidia,iddq = <0>;
++				nvidia,usb2-port-num = <0>;
++			};
 +
- static int rockchip_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-@@ -149,6 +170,7 @@ static void rockchip_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++			usb3p1 {
++				nvidia,lanes = "pcie-1";
++				nvidia,function = "usb3";
++				nvidia,iddq = <0>;
++				nvidia,usb2-port-num = <2>;
++			};
++		};
++	};
++
+ 	sdhci@0,700b0400 {
+ 		cd-gpios = <&gpio TEGRA_GPIO(V, 2) GPIO_ACTIVE_HIGH>;
+ 		power-gpios = <&gpio TEGRA_GPIO(R, 0) GPIO_ACTIVE_HIGH>;
+@@ -898,33 +948,6 @@
+ 		};
+ 	};
  
- static const struct pwm_ops rockchip_pwm_ops = {
- 	.config = rockchip_pwm_config,
-+	.set_polarity = rockchip_pwm_set_polarity,
- 	.enable = rockchip_pwm_enable,
- 	.disable = rockchip_pwm_disable,
- 	.owner = THIS_MODULE,
-@@ -173,6 +195,7 @@ static const struct rockchip_pwm_data pwm_data_v2 = {
- 		.ctrl = 0x0c,
- 	},
- 	.prescaler = 1,
-+	.has_invert = 1,
- 	.set_enable = rockchip_pwm_set_enable_v2,
- };
- 
-@@ -184,6 +207,7 @@ static const struct rockchip_pwm_data pwm_data_vop = {
- 		.ctrl = 0x00,
- 	},
- 	.prescaler = 1,
-+	.has_invert = 1,
- 	.set_enable = rockchip_pwm_set_enable_v2,
- };
- 
-@@ -228,6 +252,10 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
- 	pc->data = id->data;
- 	pc->chip.dev = &pdev->dev;
- 	pc->chip.ops = &rockchip_pwm_ops;
-+	if (pc->data->has_invert) {
-+		pc->chip.of_xlate = of_pwm_xlate_with_flags;
-+		pc->chip.of_pwm_n_cells = 3;
-+	}
- 	pc->chip.base = -1;
- 	pc->chip.npwm = 1;
+-	usb@0,7d000000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d000000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_usb1_vbus>;
+-	};
+-
+-	usb@0,7d004000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d004000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_run_cam>;
+-	};
+-
+-	usb@0,7d008000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d008000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_usb3_vbus>;
+-	};
+-
+ 	backlight: backlight {
+ 		compatible = "pwm-backlight";
  
 -- 
 2.1.0.rc2.206.gedb03e5
