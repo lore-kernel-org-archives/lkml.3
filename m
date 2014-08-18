@@ -1,78 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751870AbaHRBfR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 21:35:17 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:32928 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaHRBfP (ORCPT
+	id S1751817AbaHRBgN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 21:36:13 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:17901 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaHRBgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 21:35:15 -0400
-Date: Sun, 17 Aug 2014 21:35:11 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Jason Cooper <jason@lakedaemon.net>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
- scheduler
-In-Reply-To: <20140818012512.GL12769@titan.lakedaemon.net>
-Message-ID: <alpine.LFD.2.11.1408172131550.29347@knanqh.ubzr>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140817173236.GG12769@titan.lakedaemon.net> <20140817185522.GX30401@n2100.arm.linux.org.uk> <20140817190434.GJ12769@titan.lakedaemon.net> <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
- <20140818012512.GL12769@titan.lakedaemon.net>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 17 Aug 2014 21:36:11 -0400
+X-AuditID: cbfee690-b7f526d000003627-2f-53f1588992ce
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>
+Cc: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, grant.likely@linaro.org,
+        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        s.nawrocki@samsung.com, k.debski@samsung.com,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1408026240-28365-1-git-send-email-gautam.vivek@samsung.com>
+ <1408026240-28365-7-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1408026240-28365-7-git-send-email-gautam.vivek@samsung.com>
+Subject: Re: [PATCH RFC 6/7] usb: host: ehci-exynos: Remove unnecessary usb-phy
+ support
+Date: Mon, 18 Aug 2014 10:36:08 +0900
+Message-id: <009f01cfba84$c8ebf4f0$5ac3ded0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac+3y37D2Xo/nRV0TcCnGn5ixyfM/ACuRyVg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t8zY93OiI/BBqeeMVscvF9vMf/IOVaL
+	tisH2S0O/NnBaNG8eD2bxeWFl1gtfry+AGTtmsNmsWhZK7PF4TftrBYTfl9gc+D2uHNtD5vH
+	/rlr2D1m3/3B6NG3ZRWjx/Eb25k8Pm+SC2CL4rJJSc3JLEst0rdL4Mr4caeLpWCvesW6OTfZ
+	GhhfyXcxcnJICJhIvGi8zQJhi0lcuLeeDcQWEljGKLHysjdMzfUl/9i7GLmA4osYJRa0LGCE
+	cH4zSmw9cJgVpIpNQE3iy5fD7CC2iICuRM/Ej2BTmQV6mSSuTtWBaGhnlGjaNBVsBaeAp8Ss
+	Y6sYQWxhgUiJY3sugDWzCKhKnH99Cmwor4CtxLQnB9kgbEGJH5PvQQ3Vkli/8zgThC0vsXnN
+	W+YuRg6gU9UlHv3VhbjBSOLTt1lQJSIS+168AztaQqCTQ+LV4vtMELsEJL5NPsQC0SsrsekA
+	M8THkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCelF5noFSfmFpfmpesl5+du
+	YoTE+4QdjPcOWB9iTAZaP5FZSjQ5H5gu8kriDY3NjCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5Y
+	kpqdmlqQWhRfVJqTWnyIkYmDU6qBsaRU91yhyuzuUvV1v0p5vQryNXWbJTlu261OCo3Xl+aq
+	quTQ57hafMhO5/Q2w/tmW3i/8Bh66ds9uRtccyL9qkRP3fcF0bla4hezT2YacV75+PWxqYWs
+	sIHnz5+fP/xb9Lr8opf82utaN95Nsbqz4jjrG9VpxVePezzu1sqcnXBk4pbPflIXlViKMxIN
+	tZiLihMBqVoCNw0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAd2OiI/BBlPPW1scvF9vMf/IOVaL
+	tisH2S0O/NnBaNG8eD2bxeWFl1gtfry+AGTtmsNmsWhZK7PF4TftrBYTfl9gc+D2uHNtD5vH
+	/rlr2D1m3/3B6NG3ZRWjx/Eb25k8Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1
+	MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6T0mhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQ
+	XI+RARpIWMeY8eNOF0vBXvWKdXNusjUwvpLvYuTkkBAwkbi+5B87hC0mceHeerYuRi4OIYFF
+	jBILWhYwQji/GSW2HjjMClLFJqAm8eXLYbAOEQFdiZ6JH1lAbGaBXiaJq1N1IBraGSWaNk1l
+	A0lwCnhKzDq2ihHEFhaIlDi25wJYM4uAqsT516fAhvIK2EpMe3KQDcIWlPgx+R7UUC2J9TuP
+	M0HY8hKb17xl7mLkADpVXeLRX12IG4wkPn2bBVUiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnA
+	yLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzidPJPawbiyweIQowAHoxIPr8frD8FCrIll
+	xZW5hxglOJiVRHgvBQCFeFMSK6tSi/Lji0pzUosPMZoCPTqRWUo0OR+Y6vJK4g2NTcyMLI3M
+	LIxMzM2VxHkPtFoHCgmkJ5akZqemFqQWwfQxcXBKNTAeWvDkxoyNlsnvD7/ZNO3PrIr5BwSn
+	Hes7NC1DYhHXMcng7Q36HE+/7VeaFPp6nv0fTsVXR8/vsg59GvL+6Oa33pKibfYGL+5mxTW1
+	i27R3FPfLVd6n7fY96fAnL0PN83d3H8nMCjHq+170/l508Qd77+fzRmo6TiVTaI7dsOM3Kra
+	C39v9TBdVGIpzkg01GIuKk4EANQ7kXc9AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Aug 2014, Jason Cooper wrote:
-
-> On Sun, Aug 17, 2014 at 08:04:45PM -0400, Nicolas Pitre wrote:
-> > On Sun, 17 Aug 2014, Jason Cooper wrote:
-> > > On Sun, Aug 17, 2014 at 07:55:23PM +0100, Russell King - ARM Linux wrote:
-> > > > On Sun, Aug 17, 2014 at 01:32:36PM -0400, Jason Cooper wrote:
-> > > > > Applied to irqchip/urgent with Nico's Ack.
-> > > > 
-> > > > Interesting, so I'm discussing this patch, and it gets applied anyway...
-> > > > yes, that's great.
-> > > 
-> > > Quoting Nico:
-> > > 
-> > > "Of course it would be good to clarify things wrt Russell's remark
-> > > independently from this patch."
-> > > 
-> > > I took 'independently' to mean "This patch is ok, *and* we need to
-> > > address Russell's concerns in a follow-up patch."
-> > > 
-> > > Nico's Reviewed-by with that comment was sent August 13th.  The most
-> > > recent activity on this thread was also August 13th.  After four days, I
-> > > reasoned there were no objections to his comment.
-> > 
-> > Well... I mentioned this patch is a nice cleanup independently of the 
-> > reason why it was created in the first place.
+On Thursday, August 14, 2014 11:24 PM, Vivek Gautam wrote:
 > 
-> Ah, fair enough.
+> Now that we have completely moved from older USB-PHY drivers
+> to newer GENERIC-PHY drivers for PHYs available with USB controllers
+> on Exynos series of SoCs, we can remove the support for the same
+> in our host drivers too.
+> This should fix the issue on ehci-exynos, wherein in the absence of
+> SAMSUNG_USB2PHY config symbol, we ended up getting the NOP_USB_XCEIV phy
+> when the same is enabled. And thus the PHYs are not configured properly.
 > 
-> > Maybe that shouldn't be sorted as "urgent" in that case, especially
-> > when the code having problem with the current state of things is
-> > living out of mainline.
+> Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+
+Best regards,
+Jingoo Han
+
+> ---
+>  drivers/usb/host/ehci-exynos.c |   53 ++++++----------------------------------
+>  1 file changed, 8 insertions(+), 45 deletions(-)
 > 
-> hmmm, yes.  I've been grappling with the semantics of '/urgent' vice
-> '/fixes'.  With mvebu, /fixes is the branch for all changes needing to go
-> into the current -rcX cycle.  For irqchip, Thomas suggested /urgent for
-> the equivalent branch.  To me, they serve the same purpose.
-> Unfortunately, I occasionally hear "Well, it's not _urgent_ ...".  I
-> suppose I'll put up with it for one more cycle and then change it to
-> /fixes. :)
+> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+> index cda0a2f..54944cc 100644
+> --- a/drivers/usb/host/ehci-exynos.c
+> +++ b/drivers/usb/host/ehci-exynos.c
+> @@ -21,11 +21,8 @@
+>  #include <linux/of_gpio.h>
+>  #include <linux/phy/phy.h>
+>  #include <linux/platform_device.h>
+> -#include <linux/usb/phy.h>
+> -#include <linux/usb/samsung_usb_phy.h>
+>  #include <linux/usb.h>
+>  #include <linux/usb/hcd.h>
+> -#include <linux/usb/otg.h>
 > 
-> wrt this patch, I need to drop it anyway.  I was a bit rusty (it's been
-> a few weeks) and forgot to add the Cc -stable and Fixes: tags.  I do
-> agree, though, it's certainly not urgent.
+>  #include "ehci.h"
+> 
+> @@ -47,9 +44,7 @@ static struct hc_driver __read_mostly exynos_ehci_hc_driver;
+> 
+>  struct exynos_ehci_hcd {
+>  	struct clk *clk;
+> -	struct usb_phy *phy;
+> -	struct usb_otg *otg;
+> -	struct phy *phy_g[PHY_NUMBER];
+> +	struct phy *phy[PHY_NUMBER];
+>  };
+> 
+>  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
+> @@ -62,18 +57,6 @@ static int exynos_ehci_get_phy(struct device *dev,
+>  	int phy_number;
+>  	int ret = 0;
+> 
+> -	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> -	if (IS_ERR(exynos_ehci->phy)) {
+> -		ret = PTR_ERR(exynos_ehci->phy);
+> -		if (ret != -ENXIO && ret != -ENODEV) {
+> -			dev_err(dev, "no usb2 phy configured\n");
+> -			return ret;
+> -		}
+> -		dev_dbg(dev, "Failed to get usb2 phy\n");
+> -	} else {
+> -		exynos_ehci->otg = exynos_ehci->phy->otg;
+> -	}
+> -
+>  	for_each_available_child_of_node(dev->of_node, child) {
+>  		ret = of_property_read_u32(child, "reg", &phy_number);
+>  		if (ret) {
+> @@ -98,7 +81,7 @@ static int exynos_ehci_get_phy(struct device *dev,
+>  			}
+>  			dev_dbg(dev, "Failed to get usb2 phy\n");
+>  		}
+> -		exynos_ehci->phy_g[phy_number] = phy;
+> +		exynos_ehci->phy[phy_number] = phy;
+>  	}
+> 
+>  	return ret;
+> @@ -111,16 +94,13 @@ static int exynos_ehci_phy_enable(struct device *dev)
+>  	int i;
+>  	int ret = 0;
+> 
+> -	if (!IS_ERR(exynos_ehci->phy))
+> -		return usb_phy_init(exynos_ehci->phy);
+> -
+>  	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
+> -		if (!IS_ERR(exynos_ehci->phy_g[i]))
+> -			ret = phy_power_on(exynos_ehci->phy_g[i]);
+> +		if (!IS_ERR(exynos_ehci->phy[i]))
+> +			ret = phy_power_on(exynos_ehci->phy[i]);
+>  	if (ret)
+>  		for (i--; i >= 0; i--)
+> -			if (!IS_ERR(exynos_ehci->phy_g[i]))
+> -				phy_power_off(exynos_ehci->phy_g[i]);
+> +			if (!IS_ERR(exynos_ehci->phy[i]))
+> +				phy_power_off(exynos_ehci->phy[i]);
+> 
+>  	return ret;
+>  }
+> @@ -131,14 +111,9 @@ static void exynos_ehci_phy_disable(struct device *dev)
+>  	struct exynos_ehci_hcd *exynos_ehci = to_exynos_ehci(hcd);
+>  	int i;
+> 
+> -	if (!IS_ERR(exynos_ehci->phy)) {
+> -		usb_phy_shutdown(exynos_ehci->phy);
+> -		return;
+> -	}
+> -
+>  	for (i = 0; i < PHY_NUMBER; i++)
+> -		if (!IS_ERR(exynos_ehci->phy_g[i]))
+> -			phy_power_off(exynos_ehci->phy_g[i]);
+> +		if (!IS_ERR(exynos_ehci->phy[i]))
+> +			phy_power_off(exynos_ehci->phy[i]);
+>  }
+> 
+>  static void exynos_setup_vbus_gpio(struct device *dev)
+> @@ -231,9 +206,6 @@ skip_phy:
+>  		goto fail_io;
+>  	}
+> 
+> -	if (exynos_ehci->otg)
+> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>  	err = exynos_ehci_phy_enable(&pdev->dev);
+>  	if (err) {
+>  		dev_err(&pdev->dev, "Failed to enable USB phy\n");
+> @@ -273,9 +245,6 @@ static int exynos_ehci_remove(struct platform_device *pdev)
+> 
+>  	usb_remove_hcd(hcd);
+> 
+> -	if (exynos_ehci->otg)
+> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>  	exynos_ehci_phy_disable(&pdev->dev);
+> 
+>  	clk_disable_unprepare(exynos_ehci->clk);
+> @@ -298,9 +267,6 @@ static int exynos_ehci_suspend(struct device *dev)
+>  	if (rc)
+>  		return rc;
+> 
+> -	if (exynos_ehci->otg)
+> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>  	exynos_ehci_phy_disable(dev);
+> 
+>  	clk_disable_unprepare(exynos_ehci->clk);
+> @@ -316,9 +282,6 @@ static int exynos_ehci_resume(struct device *dev)
+> 
+>  	clk_prepare_enable(exynos_ehci->clk);
+> 
+> -	if (exynos_ehci->otg)
+> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -
+>  	ret = exynos_ehci_phy_enable(dev);
+>  	if (ret) {
+>  		dev_err(dev, "Failed to enable USB phy\n");
+> --
+> 1.7.10.4
 
-Given the raised issue has to do with out-of-tree code, there is no need 
-to CC stable in that case anyway.
-
-
-Nicolas
