@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaHRJR1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:17:27 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:62859 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaHRJRZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:17:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <53E9E052.3070308@monstr.eu>
-References: <1406131381-25577-1-git-send-email-sthokal@xilinx.com>
-	<CA+mB=1JhDF=BBXcyTbgVB8S7qH=Mb1JH78HLL4pA9OBH19hQvA@mail.gmail.com>
-	<8258903.Rn4s07GKGV@wuerfel>
-	<CA+mB=1LeZn1k2VHNby2TRBcb1xuFFTQio=C845_xe2A=ZciYqg@mail.gmail.com>
-	<53E9E052.3070308@monstr.eu>
-Date: Mon, 18 Aug 2014 14:47:23 +0530
-X-Google-Sender-Auth: lga-eHQnqgDZT2Iu9kwJHxyqvmI
-Message-ID: <CA+mB=1LX=yOqkx1xNoCBQLbYna76qAeRTqiW6SDpb1MYco7ZVQ@mail.gmail.com>
-Subject: Re: [PATCH v5] pcie: Add Xilinx PCIe Host Bridge IP driver
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: monstr@monstr.eu
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Srikanth Thokala <sthokal@xilinx.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	id S1751391AbaHRJ1G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:27:06 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:25142
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750710AbaHRJ1F (ORCPT <rfc822;Linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 05:27:05 -0400
+Date: Mon, 18 Aug 2014 17:26:37 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Peter Chen <peter.chen@freescale.com>
+CC: Philippe Reynes <tremyfr@gmail.com>, <Linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        svemula@xilinx.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>, anirudh@xilinx.com
-Content-Type: text/plain; charset=UTF-8
+        <gwenhael.goavec-merou@trabucayre.com>
+Subject: Re: [RFC] usb issue on imx27: 3 clocks are needed
+Message-ID: <20140818092635.GI2114@dragon>
+References: <53EF7AF6.2000405@gmail.com> <20140818090056.GA29393@peterchendt>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140818090056.GA29393@peterchendt>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019005)(6009001)(24454002)(51704005)(53754006)(189002)(45984002)(199003)(79102001)(92726001)(92566001)(50986999)(77982001)(76176999)(83506001)(104016003)(31966008)(110136001)(87936001)(33716001)(68736004)(21056001)(33656002)(107046002)(54356999)(80022001)(47776003)(4396001)(76482001)(99396002)(6806004)(83072002)(85306004)(44976005)(64706001)(83322001)(20776003)(46406003)(23726002)(81342001)(26826002)(102836001)(50466002)(105606002)(86362001)(106466001)(97756001)(81542001)(95666004)(97736001)(46102001)(85852003)(84676001)(57986006)(74502001)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0784;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 03077579FF
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+On Mon, Aug 18, 2014 at 05:00:59PM +0800, Peter Chen wrote:
+> On Sat, Aug 16, 2014 at 05:38:30PM +0200, Philippe Reynes wrote:
+> > Hi all,
+> > 
+> > i.MX27's usb needs three clocks (usb_ipg_gate, usb_ahb_gate and usb_div)
+> > but the current chipidea driver implementation, and devicetree, provides
+> > only ipg and ahb. Consequently, if the bootloader don't enable the last
+> > one, the kernel will crash.
+> > 
+> > Our approach/idea is to add a second, optionnal, clock in ci_hdrc_imx.c
+> > with 'per' name in devicetree  and to add  clock name 'main_clk' for mandatory clock.
+> > This approach it correct? Or an other approach seems better?
+> > Thank you very much for your point of view.
+> > 
+> 
+> It is ok for me to have ipg, ahb and per clocks at driver, but how can you maintain
+> DT consistent?
 
-On Tue, Aug 12, 2014 at 3:07 PM, Michal Simek <monstr@monstr.eu> wrote:
-> Hi Bjorn,
->
-> On 07/30/2014 01:24 PM, Srikanth Thokala wrote:
->> Hi Arnd,
->>
->> On Mon, Jul 28, 2014 at 6:32 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> On Monday 28 July 2014 18:04:34 Srikanth Thokala wrote:
->>>> Hi Arnd and Rob,
->>>>
->>>> I discussed with Bjorn and we believe this patch is in good shape to
->>>> apply.  And Bjorn requires ACKs to apply this patch.  So, could you
->>>> guys please review this patch and provided your ACKs to this patch.
->>>
->>> Looks great for the most part. I've looked through the whole driver
->>> again, and I have two small issues remaining:
->>>
->>> a) Please clarify in the changeset description why there is no support
->>>    for PCI I/O space.
->>
->> Sure, I will add to my changeset.
->>
->>>
->>> b) I think you should use the 'msi-parent' property, and the
->>>    of_pci_find_msi_chip_by_node() to find the msi_chip for the
->>>    PCI controller. This will make it possible to forward MSIs
->>>    to the main interrupt controller in the system, which is more
->>>    efficient. See the pcie-mvebu driver for an example of this.
->>
->> Ok, I need to look into this and I will plan to implement on top of this patch.
->>
->>>
->>> Other than these:
->>>
->>> Acked-by: Arnd Bergmann <arnd@arndb.de>
->>
->> Thanks Arnd for the Ack.
->
-> What's the status on this one?
+Adding new clock as optional one will just maintain the DT
+compatibility.
 
-It looks like Bjorn is on vacation.  I have sent v6 patch by adding
-Ack from Arnd, which
-I feel is in good shape to be applied.
+> Can you accept open ipg and per always on at clock.c?
 
->
-> Srikanth:
-> Isn't pcie-xilinx.c better name if this is just pcie host bridge?
+No, usb driver should manage its clocks.
 
-Yes, it looks better.  But, many other drivers which are basically
-drivers for PCIe host
-controllers has the prefix 'pci-' in the file name.  So, I feel it
-should be fine and would
-be happy to change if I have to.
-
-Thanks
-Srikanth
-
->
-> Thanks,
-> Michal
->
-> --
-> Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-> w: www.monstr.eu p: +42-0-721842854
-> Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-> Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-> Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
->
->
+Shawn
