@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaHRJvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:51:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42878 "EHLO
+	id S1752786AbaHRJfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:35:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaHRJfc (ORCPT
+	with ESMTP id S1752760AbaHRJfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:32 -0400
+	Mon, 18 Aug 2014 05:35:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: George Cherian <george.cherian@ti.com>,
-        Mugunthan V N <mugunthanvnm@ti.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 087/137] can: c_can_platform: Fix raminit, use devm_ioremap() instead of devm_ioremap_resource()
-Date: Mon, 18 Aug 2014 10:32:28 +0100
-Message-Id: <1408354398-10226-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 068/137] [media] gspca_pac7302: Add new usb-id for Genius i-Look 317
+Date: Mon, 18 Aug 2014 10:32:09 +0100
+Message-Id: <1408354398-10226-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,41 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Cherian <george.cherian@ti.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 33cf75656923ff11d67a937a4f8e9344f58cea77 upstream.
+commit 242841d3d71191348f98310e2d2001e1001d8630 upstream.
 
-The raminit register is shared register for both can0 and can1. Since commit:
+Tested-and-reported-by: yullaw <yullaw@mageia.cz>
 
-    32766ff net: can: Convert to use devm_ioremap_resource
-
-devm_ioremap_resource() is used to map raminit register. When using both
-interfaces the mapping for the can1 interface fails, leading to a non
-functional can interface.
-
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/can/c_can/c_can_platform.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/media/usb/gspca/pac7302.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
-index c6f838d922a5..5d39bc152c5e 100644
---- a/drivers/net/can/c_can/c_can_platform.c
-+++ b/drivers/net/can/c_can/c_can_platform.c
-@@ -194,7 +194,8 @@ static int c_can_plat_probe(struct platform_device *pdev)
- 			priv->instance = pdev->id;
- 
- 		res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--		priv->raminit_ctrlreg = devm_ioremap_resource(&pdev->dev, res);
-+		priv->raminit_ctrlreg = devm_ioremap(&pdev->dev, res->start,
-+						     resource_size(res));
- 		if (IS_ERR(priv->raminit_ctrlreg) || priv->instance < 0)
- 			dev_info(&pdev->dev, "control memory is not used for raminit\n");
- 		else
+diff --git a/drivers/media/usb/gspca/pac7302.c b/drivers/media/usb/gspca/pac7302.c
+index a91509643563..0d4be1d840ab 100644
+--- a/drivers/media/usb/gspca/pac7302.c
++++ b/drivers/media/usb/gspca/pac7302.c
+@@ -928,6 +928,7 @@ static const struct usb_device_id device_table[] = {
+ 	{USB_DEVICE(0x093a, 0x2620)},
+ 	{USB_DEVICE(0x093a, 0x2621)},
+ 	{USB_DEVICE(0x093a, 0x2622), .driver_info = FL_VFLIP},
++	{USB_DEVICE(0x093a, 0x2623), .driver_info = FL_VFLIP},
+ 	{USB_DEVICE(0x093a, 0x2624), .driver_info = FL_VFLIP},
+ 	{USB_DEVICE(0x093a, 0x2625)},
+ 	{USB_DEVICE(0x093a, 0x2626)},
 -- 
 1.9.1
 
