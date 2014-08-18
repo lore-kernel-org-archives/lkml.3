@@ -1,108 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaHRKoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:44:46 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:50799 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaHRKoo (ORCPT
+	id S1751621AbaHRKvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:51:07 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:64599 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710AbaHRKvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 06:44:44 -0400
-Date: Mon, 18 Aug 2014 06:44:41 -0400 (EDT)
-From: Ulrich Obergfell <uobergfe@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Don Zickus <dzickus@redhat.com>, akpm@linux-foundation.org,
-        kvm@vger.kernel.org, pbonzini@redhat.com, mingo@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>, Andrew Jones <drjones@redhat.com>
-Message-ID: <949451551.32876011.1408358681791.JavaMail.zimbra@redhat.com>
-In-Reply-To: <20140818091644.GE25495@gmail.com>
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com> <1407768567-171794-5-git-send-email-dzickus@redhat.com> <20140818091644.GE25495@gmail.com>
-Subject: Re: [PATCH 4/5] watchdog: control hard lockup detection default
+	Mon, 18 Aug 2014 06:51:05 -0400
+Message-ID: <53F1DA94.3090907@redhat.com>
+Date: Mon, 18 Aug 2014 12:51:00 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.7]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF22 (Linux)/8.0.6_GA_5922)
-Thread-Topic: watchdog: control hard lockup detection default
-Thread-Index: 7BJhTpLvqVn4q1q1P+mTvhJdMAC3+g==
+To: Avi Kivity <avi.kivity@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Gleb Natapov <gleb@kernel.org>, hpa@zytor.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] KVM: x86: drop fpu_activate hook
+References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com> <1408355431-115633-2-git-send-email-wanpeng.li@linux.intel.com> <53F1D36C.8070606@redhat.com> <53F1D4E1.7@gmail.com>
+In-Reply-To: <53F1D4E1.7@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->----- Original Message -----
->From: "Ingo Molnar" <mingo@kernel.org>
->To: "Don Zickus" <dzickus@redhat.com>
->Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com, mingo@redhat.com, "LKML" <linux-kernel@vger.kernel.org>, "Ulrich >Obergfell" <uobergfe@redhat.com>, "Andrew Jones" <drjones@redhat.com>
->Sent: Monday, August 18, 2014 11:16:44 AM
->Subject: Re: [PATCH 4/5] watchdog: control hard lockup detection default
->
->
-> * Don Zickus <dzickus@redhat.com> wrote:
->
->> The running kernel still has the ability to enable/disable at any
->> time with /proc/sys/kernel/nmi_watchdog us usual. However even
->> when the default has been overridden /proc/sys/kernel/nmi_watchdog
->> will initially show '1'. To truly turn it on one must disable/enable
->> it, i.e.
->>   echo 0 > /proc/sys/kernel/nmi_watchdog
->>   echo 1 > /proc/sys/kernel/nmi_watchdog
->
-> This looks like a bug, why is this so?
->
-> Thanks,
->
->	Ingo
+Il 18/08/2014 12:26, Avi Kivity ha scritto:
+> 
+> On 08/18/2014 01:20 PM, Paolo Bonzini wrote:
+>> Il 18/08/2014 11:50, Wanpeng Li ha scritto:
+>>> fpu_activate hook is introduced by commit 6b52d186 (KVM: Activate fpu on
+>>> clts), however, there is no user currently, this patch drop it.
+>>>
+>>> Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+>>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>>> ---
+>>>   arch/x86/include/asm/kvm_host.h | 1 -
+>>>   arch/x86/kvm/svm.c              | 1 -
+>>>   arch/x86/kvm/vmx.c              | 1 -
+>>>   3 files changed, 3 deletions(-)
+>>>
+>>> diff --git a/arch/x86/include/asm/kvm_host.h
+>>> b/arch/x86/include/asm/kvm_host.h
+>>> index 5724601..b68f3e5 100644
+>>> --- a/arch/x86/include/asm/kvm_host.h
+>>> +++ b/arch/x86/include/asm/kvm_host.h
+>>> @@ -710,7 +710,6 @@ struct kvm_x86_ops {
+>>>       void (*cache_reg)(struct kvm_vcpu *vcpu, enum kvm_reg reg);
+>>>       unsigned long (*get_rflags)(struct kvm_vcpu *vcpu);
+>>>       void (*set_rflags)(struct kvm_vcpu *vcpu, unsigned long rflags);
+>>> -    void (*fpu_activate)(struct kvm_vcpu *vcpu);
+>>>       void (*fpu_deactivate)(struct kvm_vcpu *vcpu);
+>>>         void (*tlb_flush)(struct kvm_vcpu *vcpu);
+>>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>>> index ddf7427..1f49c86 100644
+>>> --- a/arch/x86/kvm/svm.c
+>>> +++ b/arch/x86/kvm/svm.c
+>>> @@ -4349,7 +4349,6 @@ static struct kvm_x86_ops svm_x86_ops = {
+>>>       .cache_reg = svm_cache_reg,
+>>>       .get_rflags = svm_get_rflags,
+>>>       .set_rflags = svm_set_rflags,
+>>> -    .fpu_activate = svm_fpu_activate,
+>>>       .fpu_deactivate = svm_fpu_deactivate,
+>>>         .tlb_flush = svm_flush_tlb,
+>>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>>> index 71cbee5..2963303 100644
+>>> --- a/arch/x86/kvm/vmx.c
+>>> +++ b/arch/x86/kvm/vmx.c
+>>> @@ -8896,7 +8896,6 @@ static struct kvm_x86_ops vmx_x86_ops = {
+>>>       .cache_reg = vmx_cache_reg,
+>>>       .get_rflags = vmx_get_rflags,
+>>>       .set_rflags = vmx_set_rflags,
+>>> -    .fpu_activate = vmx_fpu_activate,
+>>>       .fpu_deactivate = vmx_fpu_deactivate,
+>>>         .tlb_flush = vmx_flush_tlb,
+>>>
+>> Avi/Gleb, do you remember any particular reason for this?
+>>
+> 
+> IIRC (vaguely) if we expect the fpu to be used in the near future, we
+> activate it eagerly so that we don't fault when it is used.
+> 
+> Prevents the sequence:
+> 
+> guest user: use fpu
+> #NM
+> host: reflect #NM to guest
+> guest kernel: CLTS
+> guest kernel: switch fpu state
+> #NM
+> host: switch fpu
+> guest kernel: switch fpu state (restarted)
+> guest user: use fpu (restarted)
+> 
+> Why was the user removed? Full-time eager fpu?
 
+No, I mean any reason to keep the hooks.  In the meanwhile I found it myself:
 
-This is because the hard lockup detector and the soft lockup detector are
-enabled and disabled at the same time - there isn't a separate 'knob' for
-each of them. Both are controlled via the 'watchdog_user_enabled' variable
-which is 1 by default.
+commit 2d04a05bd7e93c13f13a82ac40de4065a99d069b
+Author: Avi Kivity <avi@redhat.com>
+Date:   Wed Apr 20 15:32:49 2011 +0300
 
-  lockup_detector_init
-    if (watchdog_user_enabled)
-        watchdog_enable_all_cpus
-          smpboot_register_percpu_thread(&watchdog_threads)
+    KVM: x86 emulator: emulate CLTS internally
+    
+    Avoid using ctxt->vcpu; we can do everything with ->get_cr() and ->set_cr().
+    
+    A side effect is that we no longer activate the fpu on emulated CLTS; but that
+    should be very rare.
+    
+    Signed-off-by: Avi Kivity <avi@redhat.com>
 
-At boot time, the above code path lauches a 'watchdog/N' thread for each
-online CPU. The watchdog_enable() function is executed in the context of
-these threads, and this attempts to enable the hard lockup detector and
-the soft lockup detector. [Note: Soft lockup detection is implemented in
-watchdog_timer_fn().]
+vmx_fpu_activate and svm_fpu_activate are still called on #NM and CLTS, but
+never from common code after the above patch.
 
-  watchdog_enable
-    hrtimer_init(hrtimer, ...)
-    hrtimer->function = watchdog_timer_fn
+Activation on CLTS is currently VMX only; I guess on AMD we could check the
+decode assists' CR_VALID bit and instruction length to detect CLTS.
 
-    watchdog_nmi_enable
-      perf_event_create_kernel_counter(..., watchdog_overflow_callback)
-
-    hrtimer_start(hrtimer, ...)
-
-On bare metal systems or in virtual environments where the hypervisor
-does not emulate a PMU, watchdog_nmi_enable() can fail to allocate and
-enable a PMU counter. This is reported by a console message:
-
-  NMI watchdog: disabled (cpu0): hardware events not enabled
-
-Hence, we can end up with a situation where the soft lockup detector is
-enabled and the hard lockup detector is not enabled. However, the output
-of 'cat /proc/sys/kernel/nmi_watchdog' is 1 because it merely shows the
-state of the 'watchdog_user_enabled' variable.
-
-The above is the behaviour even without the proposed patch. The patch
-merely adds the following hunk in watchdog_nmi_enable() to 'fake' a
--ENOENT error return from perf_event_create_kernel_counter().
-
-  +        if (!watchdog_hardlockup_detector_is_enabled()) {
-  +                event = ERR_PTR(-ENOENT);
-  +                goto handle_err;
-  +        }
-
-The patch does not break the output of 'cat /proc/sys/kernel/nmi_watchdog'
-since the discrepancy between the output and the actual state of the hard
-lockup detector is nothing new.
-
-
-Regards,
-
-Uli
+Paolo
