@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaHRJfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:35:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42828 "EHLO
+	id S1752419AbaHRJeZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42610 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824AbaHRJfT (ORCPT
+	with ESMTP id S1752351AbaHRJeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:19 -0400
+	Mon, 18 Aug 2014 05:34:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>,
+Cc: Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 078/137] parisc: Remove SA_RESTORER define
-Date: Mon, 18 Aug 2014 10:32:19 +0100
-Message-Id: <1408354398-10226-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 038/137] 8021q: fix a potential memory leak
+Date: Mon, 18 Aug 2014 10:31:39 +0100
+Message-Id: <1408354398-10226-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit 20dbea494543aefaace874cc3ec93a39b94b1ec4 upstream.
+commit 916c1689a09bc1ca81f2d7a34876f8d35aadd11b upstream.
 
-The sa_restorer field in struct sigaction is obsolete and no longer in
-the parisc implementation.  However, the core code assumes the field is
-present if SA_RESTORER is defined. So, the define needs to be removed.
+skb_cow called in vlan_reorder_header does not free the skb when it failed,
+and vlan_reorder_header returns NULL to reset original skb when it is called
+in vlan_untag, lead to a memory leak.
 
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/parisc/include/uapi/asm/signal.h | 2 --
- 1 file changed, 2 deletions(-)
+ net/8021q/vlan_core.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/arch/parisc/include/uapi/asm/signal.h b/arch/parisc/include/uapi/asm/signal.h
-index a2fa297196bc..f5645d6a89f2 100644
---- a/arch/parisc/include/uapi/asm/signal.h
-+++ b/arch/parisc/include/uapi/asm/signal.h
-@@ -69,8 +69,6 @@
- #define SA_NOMASK	SA_NODEFER
- #define SA_ONESHOT	SA_RESETHAND
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index 6ee48aac776f..7e57135c7cc4 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -108,8 +108,11 @@ EXPORT_SYMBOL(vlan_dev_vlan_id);
  
--#define SA_RESTORER	0x04000000 /* obsolete -- ignored */
--
- #define MINSIGSTKSZ	2048
- #define SIGSTKSZ	8192
- 
+ static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
+ {
+-	if (skb_cow(skb, skb_headroom(skb)) < 0)
++	if (skb_cow(skb, skb_headroom(skb)) < 0) {
++		kfree_skb(skb);
+ 		return NULL;
++	}
++
+ 	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
+ 	skb->mac_header += VLAN_HLEN;
+ 	return skb;
 -- 
 1.9.1
 
