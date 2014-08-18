@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaHRJmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:42:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23428 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753729AbaHRJmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:42:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,885,1400050800"; 
-   d="scan'208";a="578118166"
-Date: Mon, 18 Aug 2014 12:41:13 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [RFC] ACPI: Add GPIO-signaled event simulator.
-Message-ID: <20140818094113.GU2462@lahna.fi.intel.com>
-References: <1406217076-17150-1-git-send-email-tomasz.nowicki@linaro.org>
- <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com>
- <20140812100111.GV1657@lahna.fi.intel.com>
- <53F1C729.7090304@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F1C729.7090304@linaro.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753493AbaHRJpm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:45:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43013 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112AbaHRJf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 05:35:59 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 106/137] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+Date: Mon, 18 Aug 2014 10:32:47 +0100
+Message-Id: <1408354398-10226-107-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 11:28:09AM +0200, Tomasz Nowicki wrote:
-> On 12.08.2014 12:01, Mika Westerberg wrote:
-> >On Fri, Aug 08, 2014 at 02:36:02PM +0200, Linus Walleij wrote:
-> >>On Thu, Jul 24, 2014 at 5:51 PM, Tomasz Nowicki
-> >><tomasz.nowicki@linaro.org> wrote:
-> >>
-> >>>GPIO signaled events is quite new thing in Linux kernel.
-> >>>AFAIK, there are not many board which can take advantage of it.
-> >>>However, GPIO events are very useful feature during work on ACPI
-> >>>subsystems.
-> >>
-> >>Overall this seems like a pretty nice debug feature.
-> >>
-> >>>This commit emulates GPIO h/w behaviour and consists on read/write
-> >>>operation to debugfs file. GPIO device instance is still required in DSDT
-> >>>table along with _AEI resources and event methods.
-> >>>
-> >>>Reading from file provides pin to GPIO device map e.g. :
-> >>>$ cat /sys/kernel/debug/acpi/gpio_event
-> >>>GPIO device name: /__SB.GPI0
-> >>>Available GPIO pin map:
-> >>>/__SB.GPI0 <-> pin 0x100
-> >>>
-> >>>Based on that, user can trigger method corresponding to device pin number:
-> >>>$ echo "/__SB.GPI0 0x100" > /sys/kernel/debug/acpi/gpio_event
-> >>
-> >>I need input from Rafael and Mika as to whether this is a
-> >>good interface.
-> >
-> >Maybe it would make sense to move this into drivers/gpio/gpiolib-acpi.c
-> >and hide it behind some Kconfig entry?
-> >
-> >Since you already need to have DSDT/SSDT table for this to provide the
-> >GPIO device, _AEI and the event methods, I would rather make it so that
-> >acpi_gpiochip_request_interrupt() will add debugfs entry for each GPIO
-> >it finds in _AEI, like:
-> >
-> >/sys/kernel/debug/acpi/events/<GPIO DEVICE>/n
-> >
-> >And you could trigger it by writing '1' or something like that to that
-> >file.
-> >
-> 
-> Thanks for comments. The idea of available gpio events list under
-> /sys/kernel/debug/acpi/events/<GPIO DEVICE>/n is worth adding.
-> 
-> However, acpi_gpiochip_request_interrupt() would be called if we would have
-> real GPIO H/W and related driver. Initial idea of this patch was to avoid
-> that restriction. So there are two cases:
-> 1. If we have GPIO chip, it is already described in DSDT/SSDT and using this
-> patch, user could trigger events by software too.
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Yes, this is what I would be interested in.
+------------------
 
-> 2. None of GPIO chip, so we need to add GPIO/_AEI etc. descrition to
-> DSDT/SSDT and pretend we have GPIO chip on board.
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-OK.
+commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
+
+This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
+preparation of merging in the proper fix (espfix64).
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/kernel/ldt.c        | 4 +---
+ arch/x86/vdso/vdso32-setup.c | 8 --------
+ 2 files changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index dcbbaa165bde..af1d14a9ebda 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,8 +20,6 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
+ 
+-int sysctl_ldt16 = 0;
+-
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
+ {
+@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
++	if (!ldt_info.seg_32bit) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index f1d633a43f8e..d6bfb876cfb0 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,7 +41,6 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
+-extern int sysctl_ldt16;
+ #endif
+ 
+ /*
+@@ -381,13 +380,6 @@ static struct ctl_table abi_table2[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
+-	{
+-		.procname	= "ldt16",
+-		.data		= &sysctl_ldt16,
+-		.maxlen		= sizeof(int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
+-	},
+ 	{}
+ };
+ 
+-- 
+1.9.1
+
