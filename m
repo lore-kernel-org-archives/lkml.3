@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730AbaHRQZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:25:58 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:50277 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaHRQZ5 (ORCPT
+	id S1751747AbaHRQ3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:29:45 -0400
+Received: from smtprelay0101.hostedemail.com ([216.40.44.101]:55624 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750977AbaHRQ3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:25:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <000001cfbaf0$829ba6f0$87d2f4d0$@opengridcomputing.com>
-References: <1408315225-16807-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <000001cfbaf0$829ba6f0$87d2f4d0$@opengridcomputing.com>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 18 Aug 2014 18:25:36 +0200
-Message-ID: <CAFo99gaOdTRp+aHtNJ6vigBXaeFemUWzT62QRRvFUTcF5bSopw@mail.gmail.com>
-Subject: Re: [PATCH] infiniband: hw: cxgb3: cxio_hal.c: Cleaning up missing
- null-terminate after strncpy call
-To: Steve Wise <swise@opengridcomputing.com>
-Cc: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Aug 2014 12:29:43 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3353:3622:3653:3865:3866:3867:3870:3871:3872:3874:4043:4250:4321:5007:6119:7652:7903:8603:10004:10400:10848:11232:11658:11914:12296:12517:12519:12663:12740:13069:13161:13229:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: jump10_3776f88d46c01
+X-Filterd-Recvd-Size: 2228
+Message-ID: <1408379379.2741.9.camel@joe-AO725>
+Subject: Re: [PATCH] drivers: net: ethernet: intel: e1000: e1000_ethtool.c
+ coding style fixes
+From: Joe Perches <joe@perches.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Krzysztof Majzerowicz-Jaszcz <cristos@vipserv.org>,
+        jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 18 Aug 2014 09:29:39 -0700
+In-Reply-To: <53F21FB1.7060607@intel.com>
+References: <1408180328-4827-1-git-send-email-cristos@vipserv.org>
+	 <1408214489.2683.87.camel@joe-AO725> <53F21BEC.2070204@intel.com>
+	 <1408375914.2741.1.camel@joe-AO725> <53F21FB1.7060607@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-18 16:27 GMT+02:00 Steve Wise <swise@opengridcomputing.com>:
->
->
->> -----Original Message-----
->> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org]
->> On Behalf Of Rickard Strandqvist
->> Sent: Sunday, August 17, 2014 5:40 PM
->> To: Steve Wise; Roland Dreier
->> Cc: Rickard Strandqvist; Sean Hefty; Hal Rosenstock; linux-rdma@vger.kernel.org; linux-
->> kernel@vger.kernel.org
->> Subject: [PATCH] infiniband: hw: cxgb3: cxio_hal.c: Cleaning up missing null-terminate
-> after
->> strncpy call
->>
->> Added a guaranteed null-terminate after call to strncpy.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/infiniband/hw/cxgb3/cxio_hal.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/infiniband/hw/cxgb3/cxio_hal.c
->> b/drivers/infiniband/hw/cxgb3/cxio_hal.c
->> index de1c61b4..5fc04e4 100644
->> --- a/drivers/infiniband/hw/cxgb3/cxio_hal.c
->> +++ b/drivers/infiniband/hw/cxgb3/cxio_hal.c
->> @@ -933,6 +933,7 @@ int cxio_rdev_open(struct cxio_rdev *rdev_p)
->>               netdev_p = rdev_p->t3cdev_p->lldev;
->>               strncpy(rdev_p->dev_name, rdev_p->t3cdev_p->name,
->>                       T3_MAX_DEV_NAME_LEN);
->> +             rdev_p->dev_name[T3_MAX_DEV_NAME_LEN - 1] = '\0';
->>       } else {
->>               PDBG("%s t3cdev_p or dev_name must be set\n", __func__);
->>               return -EINVAL;
->
-> cxio_rdev_open() is called only by open_rnic_dev() which allocates the device structure by
-> calling ib_alloc_device() which uses kzalloc().  So this change really isn't needed, is
-> it?
->
-> Steve.
->
+On Mon, 2014-08-18 at 08:45 -0700, Alexander Duyck wrote:
+> On 08/18/2014 08:31 AM, Joe Perches wrote:
+> > On Mon, 2014-08-18 at 08:29 -0700, Alexander Duyck wrote:
+> >> Doing any kind of pointer math on a void pointer is generally unsafe as
+> >> it is an incomplete type.  The only reason why it works in GCC is
+> >> because GCC has a nonstandard extension that makes it report as having a
+> >> size of 1.
+> > 
+> > I know.  It's used in quite a few places in kernel code
+> > so I believe it's now a base assumption for the kernel.
+> 
+> Well that is something that should probably be fixed then.  I don't
+> believe it is safe to be doing any kind of pointer math on a void pointer.
+> 
+> We really shouldn't be using any GCC specific bits unless we absolutely
+> have to.
+
+Good luck with that.
+
+Here's a little coccinelle script to find them:
+
+$ cat void_arithmetic.spatch
+@@
+void *p;
+expression e;
+@@
+
+*	p + e
+$
+
+There are at least 23 uses just in lib/
+
+$ spatch -sp_file void_arithmetic.spatch lib | \
+  grep "^\-[^\-]" | wc -l
+23
+
+I'm fairly confident there are more than that,
+but using spatch with --recursive-includes is
+pretty slow on my machine.
 
 
-
-Hi
-
-Sure, strlcpy is preferable in many ways if we only can guarantee that
-it is safe.
-I have seldom received so much criticism when I start switching to
-strlcpy, although much of it was justified :)
-Even Linus was getting into the debate.  See more:
-
-https://plus.google.com/111049168280159033135/posts/1amLbuhWbh5
-
-
-I change to strlcpy only when I'm sure it will not cause any other problems.
-But if you or anyone else can guarantee that in this case, so I'd make
-a new patch with strlcpy.
-
-And no Steve, or then you have to use:
-strncpy(rdev_p->dev_name, rdev_p->t3cdev_p->name,
-                        T3_MAX_DEV_NAME_LEN - 1);
-
-But the kzalloc should mean that there will not be a problem to switch
-to strlcpy ..
-
-Do we agree, I'll make a new path with strlcpy?
-
-
-I have run a static code analysis programs cppcheck, including finding
-this type of problem.
-But since I noticed that there were so many mistakes in addition, I
-have now looked through all use of strncpy in kernel
-
-
-Kind regards
-Rickard Strandqvist
