@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225AbaHRJyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:54:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42789 "EHLO
+	id S1752719AbaHRJe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42744 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763AbaHRJfH (ORCPT
+	with ESMTP id S1752650AbaHRJez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:07 -0400
+	Mon, 18 Aug 2014 05:34:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 071/137] Input: fix defuzzing logic
-Date: Mon, 18 Aug 2014 10:32:12 +0100
-Message-Id: <1408354398-10226-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 063/137] block: don't assume last put of shared tags is for the host
+Date: Mon, 18 Aug 2014 10:32:04 +0100
+Message-Id: <1408354398-10226-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,58 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dtor@chromium.org>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 50c5d36dab930b1f1b1e3348b8608aa8b9ee7610 upstream.
+commit d45b3279a5a2252cafcd665bbf2db8c9b31ef783 upstream.
 
-We attempt to remove noise from coordinates reported by devices in
-input_handle_abs_event(), unfortunately, unless we were dropping the
-event altogether, we were ignoring the adjusted value and were passing
-on the original value instead.
+There is no inherent reason why the last put of a tag structure must be
+the one for the Scsi_Host, as device model objects can be held for
+arbitrary periods.  Merge blk_free_tags and __blk_free_tags into a single
+funtion that just release a references and get rid of the BUG() when the
+host reference wasn't the last.
 
-Reviewed-by: Andrew de los Reyes <adlr@chromium.org>
-Reviewed-by: Benson Leung <bleung@chromium.org>
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/input.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ block/blk-tag.c | 33 +++++++--------------------------
+ 1 file changed, 7 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index 66984e272c45..a161021c4526 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -257,9 +257,10 @@ static int input_handle_abs_event(struct input_dev *dev,
- }
+diff --git a/block/blk-tag.c b/block/blk-tag.c
+index 3f33d8672268..a185b86741e5 100644
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -27,18 +27,15 @@ struct request *blk_queue_find_tag(struct request_queue *q, int tag)
+ EXPORT_SYMBOL(blk_queue_find_tag);
  
- static int input_get_disposition(struct input_dev *dev,
--			  unsigned int type, unsigned int code, int value)
-+			  unsigned int type, unsigned int code, int *pval)
+ /**
+- * __blk_free_tags - release a given set of tag maintenance info
++ * blk_free_tags - release a given set of tag maintenance info
+  * @bqt:	the tag map to free
+  *
+- * Tries to free the specified @bqt.  Returns true if it was
+- * actually freed and false if there are still references using it
++ * Drop the reference count on @bqt and frees it when the last reference
++ * is dropped.
+  */
+-static int __blk_free_tags(struct blk_queue_tag *bqt)
++void blk_free_tags(struct blk_queue_tag *bqt)
  {
- 	int disposition = INPUT_IGNORE_EVENT;
-+	int value = *pval;
+-	int retval;
+-
+-	retval = atomic_dec_and_test(&bqt->refcnt);
+-	if (retval) {
++	if (atomic_dec_and_test(&bqt->refcnt)) {
+ 		BUG_ON(find_first_bit(bqt->tag_map, bqt->max_depth) <
+ 							bqt->max_depth);
  
- 	switch (type) {
+@@ -50,9 +47,8 @@ static int __blk_free_tags(struct blk_queue_tag *bqt)
  
-@@ -357,6 +358,7 @@ static int input_get_disposition(struct input_dev *dev,
- 		break;
+ 		kfree(bqt);
  	}
+-
+-	return retval;
+ }
++EXPORT_SYMBOL(blk_free_tags);
  
-+	*pval = value;
- 	return disposition;
+ /**
+  * __blk_queue_free_tags - release tag maintenance info
+@@ -69,28 +65,13 @@ void __blk_queue_free_tags(struct request_queue *q)
+ 	if (!bqt)
+ 		return;
+ 
+-	__blk_free_tags(bqt);
++	blk_free_tags(bqt);
+ 
+ 	q->queue_tags = NULL;
+ 	queue_flag_clear_unlocked(QUEUE_FLAG_QUEUED, q);
  }
  
-@@ -365,7 +367,7 @@ static void input_handle_event(struct input_dev *dev,
- {
- 	int disposition;
- 
--	disposition = input_get_disposition(dev, type, code, value);
-+	disposition = input_get_disposition(dev, type, code, &value);
- 
- 	if ((disposition & INPUT_PASS_TO_DEVICE) && dev->event)
- 		dev->event(dev, type, code, value);
+ /**
+- * blk_free_tags - release a given set of tag maintenance info
+- * @bqt:	the tag map to free
+- *
+- * For externally managed @bqt frees the map.  Callers of this
+- * function must guarantee to have released all the queues that
+- * might have been using this tag map.
+- */
+-void blk_free_tags(struct blk_queue_tag *bqt)
+-{
+-	if (unlikely(!__blk_free_tags(bqt)))
+-		BUG();
+-}
+-EXPORT_SYMBOL(blk_free_tags);
+-
+-/**
+  * blk_queue_free_tags - release tag maintenance info
+  * @q:  the request queue for the device
+  *
 -- 
 1.9.1
 
