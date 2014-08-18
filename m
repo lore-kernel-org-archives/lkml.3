@@ -1,39 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaHROZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:25:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18660 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaHROZd (ORCPT
+	id S1752065AbaHRO0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:26:46 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:36093 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751958AbaHRO0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:25:33 -0400
-Date: Mon, 18 Aug 2014 17:21:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/10] lustre: Add MAINTAINERS entry
-Message-ID: <20140818141947.GB5423@mwanda>
-References: <1408121295-29115-1-git-send-email-green@linuxhacker.ru>
- <1408121295-29115-10-git-send-email-green@linuxhacker.ru>
- <20140817163739.GA15982@kroah.com>
- <980AF87D-E1F4-4C0E-AFF3-DB170DB98ADA@linuxhacker.ru>
+	Mon, 18 Aug 2014 10:26:42 -0400
+Date: Mon, 18 Aug 2014 15:25:50 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9 02/12] PCI: OF: Parse and map the IRQ when adding the
+ PCI device.
+Message-ID: <20140818142550.GN20043@localhost>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
+ <1407860725-25202-3-git-send-email-Liviu.Dudau@arm.com>
+ <20140814145804.GA5586@richard>
+ <20140814154959.GG25761@e106497-lin.cambridge.arm.com>
+ <20140815085632.GA4954@richard>
+ <20140815103052.GD27553@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <980AF87D-E1F4-4C0E-AFF3-DB170DB98ADA@linuxhacker.ru>
+In-Reply-To: <20140815103052.GD27553@e106497-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 12:47:57PM -0400, Oleg Drokin wrote:
-> The patches are CCed to linux-kernel by most everybody anyway, so do we really need to
-> spell this out explicitly with an 'L:' line or in some other way?
+On Fri, Aug 15, 2014 at 11:30:52AM +0100, Liviu Dudau wrote:
+> On Fri, Aug 15, 2014 at 09:56:32AM +0100, Wei Yang wrote:
+> > On Thu, Aug 14, 2014 at 04:49:59PM +0100, Liviu Dudau wrote:
+> > >On Thu, Aug 14, 2014 at 03:58:04PM +0100, Wei Yang wrote:
+> > >> On Tue, Aug 12, 2014 at 05:25:15PM +0100, Liviu Dudau wrote:
+> > >> > int __weak pcibios_add_device(struct pci_dev *dev)
+> > >> > {
+> > >> >+	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
+> > >> >+
+> > >> > 	return 0;
+> > >> > }
+> > >> 
+> > >> For this, my suggestion is to add arch dependent function to setup the irq
+> > >> line for pci devices. I can't find an obvious reason this won't work on other
+> > >> archs, but maybe this will hurt some of them?
+> > >
+> > >I'm not sure I understand your point. Architectures that support OF will obviously
+> > >benefit from this common approach, and for the other ones the function is empty
+> > >so it will not change existing behaviour. If you are suggesting that I should
+> > >create a new API that each architecture could go and implement for setting up the
+> > >IRQ line then I would agree that it would be nice to have that, but the question
+> > >is how many architectures are outside OF that need this?
+> > 
+> > My suggestion is to define the pcibios_add_device() for arm arch, like the one
+> > in arch/powerpc/kernel/pci-common.c. If my understanding is correct, this
+> > patch set address the pci bus setup mostly on arm arch.
+> 
+> And also arm64 at the least.
+...
+> Well, it will become necessary as old code gets dismantled and converted towards
+> this patchset. To give you an example that I'm familiar with, for arch/arm the
+> host bridge drivers have moved into drivers/pci/host, but they still depend/use
+> the bios32 infrastructure that takes care of setting up the irq. When they switch
+> to my version they would have to go and debug the "irq not being assigned" issue
+> and it is quite likely that some of the people doing the conversion will complain
+> about my code rather than understanding the issue. What I'm trying to do is to
+> make switching to my patchset as painless as possible, with a cleanup to remove
+> redundant operations coming after the switchover.
 
-driver-devel and linux-kernel are CC'd already.  CC'ing linux-kernel is
-useless anyway, also.
+While the goal is fine, until we see a common pattern for what needs to
+go into pcibios_add_device() I think we should have an arm64-specific
+implementation (and probably an arm32 specific one as well). I can see
+powerpc uses it for setting the DMA ops. Would we have a similar need on
+arm64 to choose between coherent and non-coherent dma_ops?
 
-regards,
-dan carpenter
+Also at some point we'll get ACPI support, so I'm not sure what we do
+with assigning the dev->irq here but definitely of_* functions won't
+work.
+
+-- 
+Catalin
