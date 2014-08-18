@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaHROaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:30:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52917 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751572AbaHROaE (ORCPT
+	id S1751636AbaHRObt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:31:49 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:33913 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaHRObr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:30:04 -0400
-Date: Mon, 18 Aug 2014 16:27:37 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/12] ARM: dts: sun8i: Add i2c controller nodes
-Message-ID: <20140818142737.GC15297@lukather>
-References: <1408247538-16950-1-git-send-email-wens@csie.org>
- <1408247538-16950-12-git-send-email-wens@csie.org>
- <20140817080204.GY15297@lukather>
- <CAGb2v67NwsJORoFrgEECDtexXGtF5qOx7NX1PVpZHkjVs-mG2A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uLm21ivgZj9Xvi41"
-Content-Disposition: inline
-In-Reply-To: <CAGb2v67NwsJORoFrgEECDtexXGtF5qOx7NX1PVpZHkjVs-mG2A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 18 Aug 2014 10:31:47 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] KVM: x86: Increase the number of fixed MTRR regs to 10
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <A04378F6-A6B1-46B8-B306-A9A2115F54C7@gmail.com>
+Date: Mon, 18 Aug 2014 17:31:41 +0300
+Cc: Nadav Amit <namit@cs.technion.ac.il>, "gleb@kernel.org" <gleb@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D020ADA9-A9D5-4F29-911A-4742E64E4DEC@gmail.com>
+References: <1403101279-23759-1-git-send-email-namit@cs.technion.ac.il> <20140818021715.GA7019@kernel> <BA71F1A6-1DF2-4683-9207-2305D1155239@gmail.com> <20140818081115.GA26307@kernel> <A04378F6-A6B1-46B8-B306-A9A2115F54C7@gmail.com>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The cause for the blue-screen appears to be seabios, which leaves only 0x20 slots for “smp_mtrr”s.
+Apparently, the increase in the variable range MTRR count caused it to exhaust the available slots.
+As a result, some MSRs are not initialised by the BIOS (specifically, 3.5-4GB are not marked as UC), and cause Windows to panic.
 
---uLm21ivgZj9Xvi41
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Once we increase the size of the array smp_mtrr in seabios, Windows boots.
 
-On Sun, Aug 17, 2014 at 11:20:44PM +0800, Chen-Yu Tsai wrote:
-> Hi,
->=20
-> On Sun, Aug 17, 2014 at 4:02 PM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
-> > Hi,
-> >
-> > On Sun, Aug 17, 2014 at 11:52:17AM +0800, Chen-Yu Tsai wrote:
-> >> Add nodes for the 3 i2c controllers found on A23 SoCs to the sun8i DTS=
-I.
-> >>
-> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-> >> ---
-> >>  arch/arm/boot/dts/sun8i-a23.dtsi | 36 +++++++++++++++++++++++++++++++=
-+++++
-> >>  1 file changed, 36 insertions(+)
-> >>
-> >> diff --git a/arch/arm/boot/dts/sun8i-a23.dtsi b/arch/arm/boot/dts/sun8=
-i-a23.dtsi
-> >> index 4658998..53ef350 100644
-> >> --- a/arch/arm/boot/dts/sun8i-a23.dtsi
-> >> +++ b/arch/arm/boot/dts/sun8i-a23.dtsi
-> >> @@ -387,6 +387,42 @@
-> >>                       status =3D "disabled";
-> >>               };
-> >>
-> >> +             i2c0: i2c@01c2ac00 {
-> >> +                     compatible =3D "allwinner,sun6i-a31-i2c";
-> >> +                     reg =3D <0x01c2ac00 0x400>;
-> >> +                     interrupts =3D <0 6 4>;
-> >> +                     clocks =3D <&apb2_gates 0>;
-> >> +                     clock-frequency =3D <100000>;
-> >
-> > It's the default, you don't need to set it.
->=20
-> Ah, just checked the driver, it is indeed the default.
-> All the other sunxi dtsi have it though. Do we want to be consistent?
+Paolo, you may wish to revert the patch. Please note that it was applied to some stable branches.
 
-Yep, it's usually a good thing :)
+Nadav
 
-Maxime
+On Aug 18, 2014, at 12:39 PM, Nadav Amit <nadav.amit@gmail.com> wrote:
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> I reproduced the blue-screen. Let me to to figure it out.
+> 
+> Nadav
+> 
+> On Aug 18, 2014, at 11:11 AM, Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
+> 
+>> On Mon, Aug 18, 2014 at 09:39:39AM +0300, Nadav Amit wrote:
+>>> This should have been a benign patch. I'll try to get windows 7 installation disk and check ASAP.
+>>> 
+>> 
+>> In addition, it just can be reproduced on 32bit win7 w/ MP enabled, in
+>> case UP can't be reproduced.
+>> 
+>> Regards,
+>> Wanpeng Li 
+>> 
+>>> Nadav
+>>> 
+>>>> On 18 Aug 2014, at 05:17, Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
+>>>> 
+>>>> Hi Nadav,
+>>>>> On Wed, Jun 18, 2014 at 05:21:19PM +0300, Nadav Amit wrote:
+>>>>> Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
+>>>>> sometime make assumptions on CPUs while they ignore capability MSRs, it is
+>>>>> better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
+>>>>> actually supported has no functional implications.
+>>>>> 
+>>>>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>>>>> ---
+>>>>> arch/x86/include/asm/kvm_host.h | 2 +-
+>>>>> 1 file changed, 1 insertion(+), 1 deletion(-)
+>>>>> 
+>>>>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>>>>> index 4931415..0bab29d 100644
+>>>>> --- a/arch/x86/include/asm/kvm_host.h
+>>>>> +++ b/arch/x86/include/asm/kvm_host.h
+>>>>> @@ -95,7 +95,7 @@ static inline gfn_t gfn_to_index(gfn_t gfn, gfn_t base_gfn, int level)
+>>>>> #define KVM_REFILL_PAGES 25
+>>>>> #define KVM_MAX_CPUID_ENTRIES 80
+>>>>> #define KVM_NR_FIXED_MTRR_REGION 88
+>>>>> -#define KVM_NR_VAR_MTRR 8
+>>>>> +#define KVM_NR_VAR_MTRR 10
+>>>> 
+>>>> We observed that there is obvious regression caused by this commit, 32bit 
+>>>> win7 guest show blue screen during boot.
+>>>> 
+>>>> Regards,
+>>>> Wanpeng Li 
+>>>> 
+>>>>> #define ASYNC_PF_PER_VCPU 64
+>>>>> 
+>>>>> -- 
+>>>>> 1.9.1
+>>>>> 
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
---uLm21ivgZj9Xvi41
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT8g1ZAAoJEBx+YmzsjxAgyacP/3/ko9bcKsX5wzsmI3eSB+mD
-ZXDMvs7HU6LiZsM9F/bwGU7n1+XdAnu6zLPtYaPsfyqzQv4SL09WObo/CDvzdbYR
-QTmUsqW/f+l5dEa59XhpO7kRWzCwsRlhMy6yr7+w1dLUeSLplt82u7WsdaluINre
-ED5eGvHpwXNU/qPyA8nFBGEt30VsGHrww+sSxcg2GRNdME8gmnvmeSbbltx0Ji/u
-5aYR60ImJifDDF/In0ZA9k3Of7NFBtNbBRZ8wBIv0/hF/Q4xuaT6ZeED+/niHsuU
-7D5f7zaF6kYcx2yV2nmAC5YnRE/gtyFFE703j8g/nRGBieGd4AugWPDMoq0l2ZDv
-gX9vvF2exiWIxBEA+Xyl6J6j3m3Y2wyKZ/7/imiZ5bRkgq3todugKRue9h3gNmyf
-JVnYr2bCXFZ1gUuyEALz+3bSvL9T+5G6sTk3HKysVuxCfBAQRo7RZYzMrR2f37IK
-2i5UNBZXgh/tQ6RCZ9fBJUwNdHXK4VNpCeQ59gN/shL1bJK2U23QSXRQQxM1tf8b
-EPrC0fDYvKH0SOU3JT81G3TBhYjJaLKYoPYLSCaV0GeWSXYH4getHy9rw8S38t4T
-xEIbZ9PquZ8dI8FtvZtlAz4kY9bwH0QLNE4KNxivOrPaMLwHjqJjOPYUD3yNFT8Q
-Bnh65Ufi7IxTi3acBts6
-=JASe
------END PGP SIGNATURE-----
-
---uLm21ivgZj9Xvi41--
