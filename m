@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751120AbaHRMVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:21:08 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:49831 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaHRMVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:21:06 -0400
-Date: Mon, 18 Aug 2014 15:20:56 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: joro@8bytes.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] iommu: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-Message-ID: <20140818122056.GA29961@ada>
+	id S1751552AbaHRMZc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:25:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23731 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750762AbaHRMZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 08:25:30 -0400
+Date: Mon, 18 Aug 2014 14:22:17 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init() and
+	module_long_probe_exit()
+Message-ID: <20140818122217.GA12707@redhat.com>
+References: <20140814231028.GQ21930@wotan.suse.de> <20140815143902.GB13222@redhat.com> <20140816025007.GB3347@wotan.suse.de> <s5h1tsfwqi2.wl-tiwai@suse.de> <20140817122527.GA30546@redhat.com> <20140817124803.GA31996@redhat.com> <20140817125505.GA32429@redhat.com> <20140817174624.GE3347@wotan.suse.de> <20140817182138.GA4411@redhat.com> <s5hfvguw570.wl-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hfvguw570.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of "rcu_assign_pointer()" is NULLing out the pointer.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+On 08/18, Takashi Iwai wrote:
+>
+> #define module_long_probe_init(initfn)				\
+> 	static int _long_probe_##initfn(void *arg)		\
+> 	{							\
+> 		module_put_and_exit(initfn());			\
+> 		return 0;					\
+> 	}							\
+> 	static int __init __long_probe_##initfn(void)		\
+> 	{							\
+> 		struct task_struct *__init_thread =		\
+> 			kthread_create(_long_probe_##initfn,	\
+> 				       NULL, #initfn);		\
+> 		if (IS_ERR(__init_thread))			\
+> 			return PTR_ERR(__init_thread);		\
+> 		__module_get(THIS_MODULE);			\
+> 		wake_up_process(__init_thread);			\
+> 		return 0;					\
+> 	}							\
+> 	module_init(__long_probe_##initfn)
+>
+> ... and module_exit() remains identical as the normal version.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+Aaaah. This is not true, module_exit() should not call exitfn() if initfn()
+fails... So _long_probe_##initfn() needs to save the error code which should
+be checked by module_exit().
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+> But, it's really a small difference, and I don't mind much which way
+> to take, too.
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- drivers/iommu/dmar.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Agreed.
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index 9a4f05e..da9220b 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -246,7 +246,7 @@ int dmar_remove_dev_scope(struct dmar_pci_notify_info *info, u16 segment,
- 
- 	for_each_active_dev_scope(devices, count, index, tmp)
- 		if (tmp == &info->dev->dev) {
--			rcu_assign_pointer(devices[index].dev, NULL);
-+			RCU_INIT_POINTER(devices[index].dev, NULL);
- 			synchronize_rcu();
- 			put_device(tmp);
- 			return 1;
--- 
-1.9.1
+Oleg.
 
