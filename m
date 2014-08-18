@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751652AbaHRNa1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 09:30:27 -0400
-Received: from [195.154.187.82] ([195.154.187.82]:57620 "EHLO ou.quest-ce.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709AbaHRNaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 09:30:25 -0400
-Message-ID: <1408368608.3030.4.camel@localhost.localdomain>
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>
-Date: Mon, 18 Aug 2014 15:30:08 +0200
-In-Reply-To: <1408315225-16807-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1408315225-16807-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Organization: OPTEYA
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 92.90.20.119
-X-SA-Exim-Mail-From: ydroneaud@opteya.com
-Subject: Re: [PATCH] infiniband: hw: cxgb3: cxio_hal.c:  Cleaning up missing
- null-terminate after strncpy call
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
+	id S1751685AbaHRNhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 09:37:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709AbaHRNhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 09:37:52 -0400
+From: Pankaj Gupta <pagupta@redhat.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: davem@davemloft.net, jasowang@redhat.com, mst@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
+        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
+        xii@google.com, stephen@networkplumber.org,
+        Pankaj Gupta <pagupta@redhat.com>
+Subject: [RFC 0/4] Increase the limit of tuntap queues
+Date: Mon, 18 Aug 2014 19:07:16 +0530
+Message-Id: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Networking under KVM works best if we allocate a per-vCPU rx and tx
+queue in a virtual NIC. This requires a per-vCPU queue on the host side.
+Modern physical NICs have multiqueue support for large number of queues.
+To scale vNIC to run multiple queues parallel to maximum number of vCPU's
+we need to increase number of queues support in tuntap.   
 
-Le lundi 18 août 2014 à 00:40 +0200, Rickard Strandqvist a écrit :
-> Added a guaranteed null-terminate after call to strncpy.
-> 
+This series is to increase the limit of tuntap queues. Original work is being 
+done by 'jasowang@redhat.com'. I am taking this 'https://lkml.org/lkml/2013/6/19/29' 
+patch series as a reference. As per discussion in the patch series:
 
-Good catch. Do you have an automated way to catch such mistake ?
+There were two reasons which prevented us from increasing number of tun queues:
 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/infiniband/hw/cxgb3/cxio_hal.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/infiniband/hw/cxgb3/cxio_hal.c b/drivers/infiniband/hw/cxgb3/cxio_hal.c
-> index de1c61b4..5fc04e4 100644
-> --- a/drivers/infiniband/hw/cxgb3/cxio_hal.c
-> +++ b/drivers/infiniband/hw/cxgb3/cxio_hal.c
-> @@ -933,6 +933,7 @@ int cxio_rdev_open(struct cxio_rdev *rdev_p)
->  		netdev_p = rdev_p->t3cdev_p->lldev;
->  		strncpy(rdev_p->dev_name, rdev_p->t3cdev_p->name,
->  			T3_MAX_DEV_NAME_LEN);
-> +		rdev_p->dev_name[T3_MAX_DEV_NAME_LEN - 1] = '\0';
+- The netdev_queue array in netdevice were allocated through kmalloc, which may 
+  cause a high order memory allocation too when we have several queues. 
+  E.g. sizeof(netdev_queue) is 320, which means a high order allocation would 
+  happens when the device has more than 16 queues.
 
-Why not replacing this by
+- We store the hash buckets in tun_struct which results a very large size of
+  tun_struct, this high order memory allocation fail easily when the memory is
+  fragmented.
 
-		strlcpy(rdev_p->dev_name, rdev_p->t3cdev_p->name,
-			T3_MAX_DEV_NAME_LEN);
+The patch 60877a32bce00041528576e6b8df5abe9251fa73 increases the number of tx 
+queues. Memory allocation fallback to vzalloc() when kmalloc() fails.
 
-Regards.
+This series tries to address following issues:
 
--- 
-Yann Droneaud
-OPTEYA
+- Increase the number of netdev_queue queues for rx similarly its done for tx 
+  queues by falling back to vzalloc() when memory allocation with kmalloc() fails.
 
+- Switches to use flex array to implement the flow caches to avoid higher order 
+  allocations.
 
+- Publish maximum number of queues as read only module_param so that user space 
+  application like libvirt can use this value to limit number of queues. Also
+  Administrators can specify number of queues at module load time.
+
+- Increase number of queues to 256, maximum number is equal to maximum number 
+  of vCPUS allowed in a guest.
+
+I have done some testing to find out any regression and with sample program
+ which creates tun/tap for single queue / multiqueue device and it seems to be 
+ working fine.
+
+  tuntap: Increase the number of queues in tun
+  tuntap: Reduce the size of tun_struct by using flex array
+  tuntap: Publish tuntap max queue length as module_param
+  net: allow large number of rx queues
+
+ drivers/net/tun.c |   71 ++++++++++++++++++++++++++++++++++++++++--------------
+ net/core/dev.c    |   20 +++++++++------
+ 2 files changed, 66 insertions(+), 25 deletions(-)
