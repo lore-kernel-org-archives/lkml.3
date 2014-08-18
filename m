@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702AbaHRMfy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:35:54 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:44862 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaHRMfw (ORCPT
+	id S1751827AbaHRMgb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:36:31 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:34665 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444AbaHRMg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:35:52 -0400
-Message-ID: <53F14C80.1010308@gmail.com>
-Date: Sun, 17 Aug 2014 19:44:48 -0500
+	Mon, 18 Aug 2014 08:36:29 -0400
+Message-ID: <53F14DC2.70000@gmail.com>
+Date: Sun, 17 Aug 2014 19:50:10 -0500
 From: Rob Herring <robherring2@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>
-CC: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/9] of: Add property_ops callback for devices with
- of_node
-References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com> <1408255459-17625-5-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1408255459-17625-5-git-send-email-mika.westerberg@linux.intel.com>
+To: tthayer@opensource.altera.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        linux@arm.linux.org.uk, atull@altera.com, delicious.quinoa@gmail.com,
+        dinguyen@altera.com, dougthompson@xmission.com,
+        grant.likely@linaro.org, bp@alien8.de, sameo@linux.intel.com,
+        lee.jones@linaro.org
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tthayer.linux@gmail.com
+Subject: Re: [PATCHv9 3/3] arm: dts: Add Altera SDRAM controller bindings
+References: <1406744573-609-1-git-send-email-tthayer@opensource.altera.com> <1406744573-609-4-git-send-email-tthayer@opensource.altera.com>
+In-Reply-To: <1406744573-609-4-git-send-email-tthayer@opensource.altera.com>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2014 01:04 AM, Mika Westerberg wrote:
-> From: Aaron Lu <aaron.lu@intel.com>
+On 07/30/2014 01:22 PM, tthayer@opensource.altera.com wrote:
+> From: Thor Thayer <tthayer@opensource.altera.com>
 > 
-> With the unified device properties interface in place, add device tree support.
-> By adding the dev_prop_ops for of_node devices, drivers can access properties
-> from ACPI or Device Tree in a generic way.
+> Add the Altera SDRAM controller bindings and device tree changes to the Altera SoC project.
 > 
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
 > ---
->  drivers/of/base.c        | 194 ++++++++++++++++++++++++++++++++++++++++++++++-
->  drivers/of/platform.c    |   4 +-
->  include/linux/property.h |   4 +
->  3 files changed, 200 insertions(+), 2 deletions(-)
+> v2: Changes to SoC SDRAM EDAC code.
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index b9864806e9b8..527004d01423 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -20,7 +20,7 @@
->  #include <linux/ctype.h>
->  #include <linux/cpu.h>
->  #include <linux/module.h>
-> -#include <linux/of.h>
-> +#include <linux/property.h>
->  #include <linux/of_graph.h>
->  #include <linux/spinlock.h>
->  #include <linux/slab.h>
-> @@ -1343,6 +1343,39 @@ int of_property_read_u64(const struct device_node *np, const char *propname,
->  EXPORT_SYMBOL_GPL(of_property_read_u64);
+> v3: Implement code suggestions for SDRAM EDAC code.
+> 
+> v4: Remove syscon from SDRAM controller bindings.
+> 
+> v5: No Change, bump version for consistency.
+> 
+> v6: Only map the ctrlcfg register as syscon.
+> 
+> v7: No change. Bump for consistency.
+> 
+> v8: No change. Bump for consistency.
+> 
+> v9: Changes to support a MFD SDRAM controller with nested EDAC.
+> ---
+>  .../devicetree/bindings/arm/altera/socfpga-sdr.txt |   13 +++++++++++++
+>  arch/arm/boot/dts/socfpga.dtsi                     |   10 ++++++++++
+>  2 files changed, 23 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt
+> new file mode 100644
+> index 0000000..2bb1ddf
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdr.txt
+> @@ -0,0 +1,13 @@
+> +Altera SOCFPGA SDRAM Controller
+> +The SDRAM controller is implemented as a MFD so various drivers may
+> +nest under this main SDRAM controller binding.
+> +
+> +Required properties:
+> +- compatible : "altr,sdr";
+> +- reg : Should contain 1 register range(address and length)
+> +
+> +Example:
+> +	sdr@0xffc25000 {
+> +		compatible = "altr,sdr";
+> +		reg = <0xffc25000 0x1000>;
+> +	};
+> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+> index 4676f25..ecb306d 100644
+> --- a/arch/arm/boot/dts/socfpga.dtsi
+> +++ b/arch/arm/boot/dts/socfpga.dtsi
+> @@ -603,6 +603,16 @@
+>  			};
+>  		};
 >  
->  /**
-> + * of_property_read_u64_array - Find and read an array of 64 bit integers
-> + * from a property.
-> + *
-> + * @np:		device node from which the property value is to be read.
-> + * @propname:	name of the property to be searched.
-> + * @out_values:	pointer to return value, modified only if return value is 0.
-> + * @sz:		number of array elements to read
-> + *
-> + * Search for a property in a device node and read 64-bit value(s) from
-> + * it. Returns 0 on success, -EINVAL if the property does not exist,
-> + * -ENODATA if property does not have a value, and -EOVERFLOW if the
-> + * property data isn't large enough.
-> + *
-> + * The out_values is modified only if a valid u64 value can be decoded.
-> + */
-> +int of_property_read_u64_array(const struct device_node *np,
-> +			       const char *propname, u64 *out_values,
-> +			       size_t sz)
+> +		sdr@0xffc25000 {
+> +			compatible = "altr,sdr";
+> +			reg = <0xffc25000 0x1000>;
+> +
+> +			sdramedac@0 {
+> +				compatible = "altr,sdram-edac";
+> +				interrupts = <0 39 4>;
+> +			};
 
-Quite frequently the array functions have turned out to be less useful
-as you often don't know how many elements you have upfront. So you end
-up parsing the property twice. Using for_each iterators has been a
-better fit for most users, so I'd like to see them here. We may need
-both, but read_*_array can be a wrapper around for_each.
+This doesn't match the documentation, but I don't think this is a move
+in the right direction anyway. Because Linux has/wants an MFD driver is
+not a reason to add a sub node. It is a single h/w block and DT should
+reflect that.
 
 Rob
 
