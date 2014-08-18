@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaHRQv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:51:57 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:35660 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843AbaHRQvz (ORCPT
+	id S1751958AbaHRQww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:52:52 -0400
+Received: from smtp-out-050.synserver.de ([212.40.185.50]:1060 "EHLO
+	smtp-out-045.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751569AbaHRQwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:51:55 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/2] ARM: sun8i: Enable pinctrl, i2c and mmc
-Date: Tue, 19 Aug 2014 00:51:49 +0800
-Message-Id: <1408380711-26308-1-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.1.0
+	Mon, 18 Aug 2014 12:52:51 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 20540
+Message-ID: <53F22F5E.2090601@metafoo.de>
+Date: Mon, 18 Aug 2014 18:52:46 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+MIME-Version: 1.0
+To: Shengjiu Wang <shengjiu.wang@freescale.com>, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        nicoleotsuka@gmail.com, Li.Xiubo@freescale.com, shc_work@mail.ru,
+        fabio.estevam@freescale.com, xobs@kosagi.com, arnd@arndb.de,
+        sfr@canb.auug.org.au, timur@tabi.org
+CC: alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
+ of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
+References: <cover.1408350626.git.shengjiu.wang@freescale.com> <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
+In-Reply-To: <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
+> Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the following
+> error:
+>
+>     sound/built-in.o: In function `fsl_sai_probe':
+>>> fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
+>     sound/built-in.o: In function `fsl_esai_probe':
+>>> fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
+>
+> Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init' which is
+> defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it depends
+> on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
+> selected.
+> So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
+>
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
 
-This is v2 of the remaining sun8i series. I've dropped the patches you
-merged. The remaining patches have been rebased onto sunxi-next.
+Those if conditions where just added[1] by Arnd to avoid other build 
+failures. So just removing them again makes little sense.
 
-This series enables all the controllers on sun8i that we already have
-drivers for, excluding SPI as the tablet I have does not use it and
-I cannot test it. If there's a way to test it without external connections
-or devices please let me know.
+As far as I can see imx_pcm_dma_init() should be stubbed out when 
+SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
 
-The commit logs pretty much explain themselves. Note that PLL6 is not
-implemented yet. I've some patches for the clocks that I will send later.
-
-
-Cheers
-ChenYu
-
-
-Changes since v1:
-
-  - Removed clock-frequency from i2c controller nodes, as they match
-    the default value.
-  - Dropped patches that were merged in v1.
-  - Rebased onto sunxi-next.
-
-
-Chen-Yu Tsai (2):
-  ARM: dts: sun8i: Add i2c controller nodes
-  ARM: dts: sun8i: Enable i2c controllers on ippo-q8h-v5
-
- arch/arm/boot/dts/sun8i-a23-ippo-q8h-v5.dts | 19 +++++++++++++++++
- arch/arm/boot/dts/sun8i-a23.dtsi            | 33 +++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+)
-
--- 
-2.1.0
+[1] 
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40260f79dc0436604452bccd449bffd25ebafb
 
