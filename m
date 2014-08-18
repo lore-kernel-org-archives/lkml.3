@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaHRPG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:06:26 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:64105 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaHRPGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:06:25 -0400
-Message-ID: <53F21668.5090500@redhat.com>
-Date: Mon, 18 Aug 2014 17:06:16 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751891AbaHRPHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:07:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750762AbaHRPHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:07:08 -0400
+Date: Mon, 18 Aug 2014 11:06:58 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        chai wen <chaiw.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 2/5] softlockup: make detector be aware of task switch of
+ processes hogging cpu
+Message-ID: <20140818150658.GQ49576@redhat.com>
+References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+ <1407768567-171794-3-git-send-email-dzickus@redhat.com>
+ <20140818090319.GA25495@gmail.com>
 MIME-Version: 1.0
-To: Andreea-Cristina Bernat <bernat.ada@gmail.com>, gleb@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: paulmck@linux.vnet.ibm.com, monamagarwal123@gmail.com
-Subject: Re: [PATCH] eventfd: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-References: <20140818150129.GA14447@ada>
-In-Reply-To: <20140818150129.GA14447@ada>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818090319.GA25495@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/08/2014 17:01, Andreea-Cristina Bernat ha scritto:
-> The uses of "rcu_assign_pointer()" are NULLing out the pointers.
-> According to RCU_INIT_POINTER()'s block comment:
-> "1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-> it is better to use it instead of rcu_assign_pointer() because it has a
-> smaller overhead.
+On Mon, Aug 18, 2014 at 11:03:19AM +0200, Ingo Molnar wrote:
+> * Don Zickus <dzickus@redhat.com> wrote:
 > 
-> The following Coccinelle semantic patch was used:
-> @@
-> @@
+> > From: chai wen <chaiw.fnst@cn.fujitsu.com>
+> > 
+> > For now, soft lockup detector warns once for each case of process softlockup.
+> > But the thread 'watchdog/n' may not always get the cpu at the time slot between
+> > the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
+> > 
+> > An example would be two processes hogging the cpu.  Process A causes the
+> > softlockup warning and is killed manually by a user.  Process B immediately
+> > becomes the new process hogging the cpu preventing the softlockup code from
+> > resetting the soft_watchdog_warn variable.
+> > 
+> > This case is a false negative of "warn only once for a process", as there may
+> > be a different process that is going to hog the cpu.  Resolve this by
+> > saving/checking the pid of the hogging process and use that to reset
+> > soft_watchdog_warn too.
+> > 
+> > Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+> > [modified the comment and changelog to be more specific]
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  kernel/watchdog.c |   20 ++++++++++++++++++--
+> >  1 files changed, 18 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> > index 4c2e11c..6d0a891 100644
+> > --- a/kernel/watchdog.c
+> > +++ b/kernel/watchdog.c
+> > @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+> >  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+> >  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+> >  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
+> > +static DEFINE_PER_CPU(pid_t, softlockup_warn_pid_saved);
+> >  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+> >  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+> >  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+> > @@ -317,6 +318,8 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> >  	 */
+> >  	duration = is_softlockup(touch_ts);
+> >  	if (unlikely(duration)) {
+> > +		pid_t pid = task_pid_nr(current);
+> > +
+> >  		/*
+> >  		 * If a virtual machine is stopped by the host it can look to
+> >  		 * the watchdog like a soft lockup, check to see if the host
+> > @@ -326,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+> >  			return HRTIMER_RESTART;
+> >  
+> >  		/* only warn once */
+> > -		if (__this_cpu_read(soft_watchdog_warn) == true)
+> > +		if (__this_cpu_read(soft_watchdog_warn) == true) {
+> > +
+> > +			/*
+> > +			 * Handle the case where multiple processes are
+> > +			 * causing softlockups but the duration is small
+> > +			 * enough, the softlockup detector can not reset
+> > +			 * itself in time.  Use pids to detect this.
+> > +			 */
+> > +			if (__this_cpu_read(softlockup_warn_pid_saved) != pid) {
 > 
-> - rcu_assign_pointer
-> + RCU_INIT_POINTER
->   (..., NULL)
-> 
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-> ---
->  virt/kvm/eventfd.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> index 20c3af7..a49130f 100644
-> --- a/virt/kvm/eventfd.c
-> +++ b/virt/kvm/eventfd.c
-> @@ -278,7 +278,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
->  	struct kvm_kernel_irq_routing_entry *e;
->  
->  	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
-> -		rcu_assign_pointer(irqfd->irq_entry, NULL);
-> +		RCU_INIT_POINTER(irqfd->irq_entry, NULL);
->  		return;
->  	}
->  
-> @@ -287,7 +287,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
->  		if (e->type == KVM_IRQ_ROUTING_MSI)
->  			rcu_assign_pointer(irqfd->irq_entry, e);
->  		else
-> -			rcu_assign_pointer(irqfd->irq_entry, NULL);
-> +			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
->  	}
->  }
->  
-> @@ -473,7 +473,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
->  			 * It is paired with synchronize_srcu done by caller
->  			 * of that function.
->  			 */
-> -			rcu_assign_pointer(irqfd->irq_entry, NULL);
-> +			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
->  			irqfd_deactivate(irqfd);
->  		}
->  	}
-> 
+> So I agree with the motivation of this improvement, but is this 
+> implementation namespace-safe?
 
-Hi, this patch actually had been submitted already last March.  It
-slipped through the cracks.  I'm now applying both of Monam Agarwal's
-RCU_INIT_POINTER patches.  Sorry. :)
+What namespace are you worried about colliding with?  I thought
+softlockup_ would provide the safety??  Maybe I am missing something
+obvious. :-(
 
-Thanks,
-
-Paolo
+Cheers,
+Don
