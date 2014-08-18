@@ -1,126 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751809AbaHRPEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:04:06 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:46133 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaHRPED (ORCPT
+	id S1752044AbaHRPE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:04:57 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62175 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751802AbaHRPEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:04:03 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Mike Travis <travis@sgi.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [RESEND PATCH v2 3.17rc1] kgdb: Timeout if secondary CPUs ignore the roundup
-Date: Mon, 18 Aug 2014 16:01:50 +0100
-Message-Id: <1408374110-19656-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404310379-30228-1-git-send-email-daniel.thompson@linaro.org>
-References: <1404310379-30228-1-git-send-email-daniel.thompson@linaro.org>
+	Mon, 18 Aug 2014 11:04:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAJvTdKn-NsubOqK9_BOvvmnF9C6cK5tUF22VbWXEaPyXzb0huQ@mail.gmail.com>
+References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
+	<20140814205143.GY6758@twins.programming.kicks-ass.net>
+	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
+	<20140815061917.GX19379@twins.programming.kicks-ass.net>
+	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
+	<53EE0E5B.3050004@linux.intel.com>
+	<53EE10CB.7040001@linux.intel.com>
+	<CAJ5Y-eZiRyGroems7J2oH05ybbbivM-okm3gFz7Mkuu8ceeCDQ@mail.gmail.com>
+	<53EE2BAA.1020603@linux.intel.com>
+	<CAJ5Y-eZZz=SrkONt029eZ0AsEZ6xFhW4cmcaEVZ8=8Ls9r5+zA@mail.gmail.com>
+	<CAJvTdKn-NsubOqK9_BOvvmnF9C6cK5tUF22VbWXEaPyXzb0huQ@mail.gmail.com>
+Date: Mon, 18 Aug 2014 11:04:53 -0400
+Message-ID: <CAJ5Y-ebhE4-9WpB9Z+PO80qZJ2G4+UeK9Q3gk00XL=oO89esbA@mail.gmail.com>
+Subject: Re: [RFC 0/3] Experimental patchset for CPPC
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mike Turquette <mike.turquette@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Ingo Molnar <mingo@kernel.org>, "Brown, Len" <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux acpi <linux-acpi@vger.kernel.org>,
+        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if an active CPU fails to respond to a roundup request the
-CPU that requested the roundup will become stuck. This needlessly
-reduces the robustness of the debugger.
+Hi Len,
 
-This patch introduces a timeout allowing the system state to be examined
-even when the system contains unresponsive processors. It also modifies
-kdb's cpu command to make it censor attempts to switch to unresponsive
-processors and to report their state as (D)ead.
+On 15 August 2014 18:11, Len Brown <lenb@kernel.org> wrote:
+> The Linux team at Intel did not implement ACPI CPPC support
+> because we see no benefit to it over the native hardware interface on x86.
+>
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: kgdb-bugreport@lists.sourceforge.net
-Cc: Ingo Molnar <mingo@kernel.org>
----
+Thanks for sharing Intels observations. I had looked at the SDM [1]
+and found all the CPPC MSRs. I suppose X86 will not use a majority of
+it.
 
-Notes:
-    Changes since v1:
-    - Set CATASTROPHIC if the system contains unresponsive processors
-      (Jason Wessel)
+Cheers,
+Ashwin
 
- kernel/debug/debug_core.c       | 9 +++++++--
- kernel/debug/kdb/kdb_debugger.c | 4 ++++
- kernel/debug/kdb/kdb_main.c     | 4 +++-
- 3 files changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index 1adf62b..acd7497 100644
---- a/kernel/debug/debug_core.c
-+++ b/kernel/debug/debug_core.c
-@@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
- 	int cpu;
- 	int trace_on = 0;
- 	int online_cpus = num_online_cpus();
-+	u64 time_left;
-
- 	kgdb_info[ks->cpu].enter_kgdb++;
- 	kgdb_info[ks->cpu].exception_state |= exception_state;
-@@ -595,9 +596,13 @@ return_normal:
- 	/*
- 	 * Wait for the other CPUs to be notified and be waiting for us:
- 	 */
--	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
--				atomic_read(&slaves_in_kgdb)) != online_cpus)
-+	time_left = loops_per_jiffy * HZ;
-+	while (kgdb_do_roundup && --time_left &&
-+	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
-+		   online_cpus)
- 		cpu_relax();
-+	if (!time_left)
-+		pr_crit("KGDB: Timed out waiting for secondary CPUs.\n");
-
- 	/*
- 	 * At this point the primary processor is completely
-diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
-index 8859ca3..15e1a7a 100644
---- a/kernel/debug/kdb/kdb_debugger.c
-+++ b/kernel/debug/kdb/kdb_debugger.c
-@@ -129,6 +129,10 @@ int kdb_stub(struct kgdb_state *ks)
- 		ks->pass_exception = 1;
- 		KDB_FLAG_SET(CATASTROPHIC);
- 	}
-+	/* set CATASTROPHIC if the system contains unresponsive processors */
-+	for_each_online_cpu(i)
-+		if (!kgdb_info[i].enter_kgdb)
-+			KDB_FLAG_SET(CATASTROPHIC);
- 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
- 		KDB_STATE_CLEAR(SSBPT);
- 		KDB_STATE_CLEAR(DOING_SS);
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 379650b..0633e78 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
- 	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
- 		if (!cpu_online(i)) {
- 			state = 'F';	/* cpu is offline */
-+		} else if (!kgdb_info[i].enter_kgdb) {
-+			state = 'D';	/* cpu is online but unresponsive */
- 		} else {
- 			state = ' ';	/* cpu is responding to kdb */
- 			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
-@@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
- 	/*
- 	 * Validate cpunum
- 	 */
--	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
-+	if ((cpunum > NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
- 		return KDB_BADCPUNUM;
-
- 	dbg_switch_cpu = cpunum;
---
-1.9.3
-
+[1] - HWP section 14.4
+http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-3b-part-2-manual.pdf
