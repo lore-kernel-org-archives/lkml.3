@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979AbaHRJfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:35:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42845 "EHLO
+	id S1752558AbaHRJek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42676 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866AbaHRJfW (ORCPT
+	with ESMTP id S1752517AbaHRJeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:22 -0400
+	Mon, 18 Aug 2014 05:34:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sven Wegener <sven.wegener@stealer.net>, "H. Peter Anvin" <hpa@zytor.com>,
+Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 073/137] x86_32, entry: Store badsys error code in %eax
-Date: Mon, 18 Aug 2014 10:32:14 +0100
-Message-Id: <1408354398-10226-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 049/137] appletalk: Fix socket referencing in skb
+Date: Mon, 18 Aug 2014 10:31:50 +0100
+Message-Id: <1408354398-10226-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,91 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Wegener <sven.wegener@stealer.net>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-commit 8142b215501f8b291a108a202b3a053a265b03dd upstream.
+commit 36beddc272c111689f3042bf3d10a64d8a805f93 upstream.
 
-Commit 554086d ("x86_32, entry: Do syscall exit work on badsys
-(CVE-2014-4508)") introduced a regression in the x86_32 syscall entry
-code, resulting in syscall() not returning proper errors for undefined
-syscalls on CPUs supporting the sysenter feature.
+Setting just skb->sk without taking its reference and setting a
+destructor is invalid. However, in the places where this was done, skb
+is used in a way not requiring skb->sk setting. So dropping the setting
+of skb->sk.
+Thanks to Eric Dumazet <eric.dumazet@gmail.com> for correct solution.
 
-The following code:
-
-> int result = syscall(666);
-> printf("result=%d errno=%d error=%s\n", result, errno, strerror(errno));
-
-results in:
-
-> result=666 errno=0 error=Success
-
-Obviously, the syscall return value is the called syscall number, but it
-should have been an ENOSYS error. When run under ptrace it behaves
-correctly, which makes it hard to debug in the wild:
-
-> result=-1 errno=38 error=Function not implemented
-
-The %eax register is the return value register. For debugging via ptrace
-the syscall entry code stores the complete register context on the
-stack. The badsys handlers only store the ENOSYS error code in the
-ptrace register set and do not set %eax like a regular syscall handler
-would. The old resume_userspace call chain contains code that clobbers
-%eax and it restores %eax from the ptrace registers afterwards. The same
-goes for the ptrace-enabled call chain. When ptrace is not used, the
-syscall return value is the passed-in syscall number from the untouched
-%eax register.
-
-Use %eax as the return value register in syscall_badsys and
-sysenter_badsys, like a real syscall handler does, and have the caller
-push the value onto the stack for ptrace access.
-
-Signed-off-by: Sven Wegener <sven.wegener@stealer.net>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.11.1407221022380.31021@titan.int.lan.stealer.net
-Reviewed-and-tested-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=79441
+Reported-by: Ed Martin <edman007@edman007.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/entry_32.S | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ net/appletalk/ddp.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 4de29bc5a5b4..7b5e08fc505e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -436,8 +436,8 @@ sysenter_do_call:
- 	cmpl $(NR_syscalls), %eax
- 	jae sysenter_badsys
- 	call *sys_call_table(,%eax,4)
--	movl %eax,PT_EAX(%esp)
- sysenter_after_call:
-+	movl %eax,PT_EAX(%esp)
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_OFF
-@@ -517,6 +517,7 @@ ENTRY(system_call)
- 	jae syscall_badsys
- syscall_call:
- 	call *sys_call_table(,%eax,4)
-+syscall_after_call:
- 	movl %eax,PT_EAX(%esp)		# store the return value
- syscall_exit:
- 	LOCKDEP_SYS_EXIT
-@@ -686,12 +687,12 @@ syscall_fault:
- END(syscall_fault)
+diff --git a/net/appletalk/ddp.c b/net/appletalk/ddp.c
+index 7d424ac6e760..43e875c84429 100644
+--- a/net/appletalk/ddp.c
++++ b/net/appletalk/ddp.c
+@@ -1489,8 +1489,6 @@ static int atalk_rcv(struct sk_buff *skb, struct net_device *dev,
+ 		goto drop;
  
- syscall_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
--	jmp syscall_exit
-+	movl $-ENOSYS,%eax
-+	jmp syscall_after_call
- END(syscall_badsys)
+ 	/* Queue packet (standard) */
+-	skb->sk = sock;
+-
+ 	if (sock_queue_rcv_skb(sock, skb) < 0)
+ 		goto drop;
  
- sysenter_badsys:
--	movl $-ENOSYS,PT_EAX(%esp)
-+	movl $-ENOSYS,%eax
- 	jmp sysenter_after_call
- END(syscall_badsys)
- 	CFI_ENDPROC
+@@ -1644,7 +1642,6 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
+ 	if (!skb)
+ 		goto out;
+ 
+-	skb->sk = sk;
+ 	skb_reserve(skb, ddp_dl->header_length);
+ 	skb_reserve(skb, dev->hard_header_len);
+ 	skb->dev = dev;
 -- 
 1.9.1
 
