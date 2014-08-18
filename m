@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034AbaHRJdv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:33:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42468 "EHLO
+	id S1754660AbaHRKDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:03:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42546 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaHRJdr (ORCPT
+	with ESMTP id S1752205AbaHRJeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:47 -0400
+	Mon, 18 Aug 2014 05:34:08 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Abbas Raza <Abbas_Raza@mentor.com>, Peter Chen <peter.chen@freescale.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 016/137] PM / sleep: Fix request_firmware() error at resume
-Date: Mon, 18 Aug 2014 10:31:17 +0100
-Message-Id: <1408354398-10226-17-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 028/137] usb: chipidea: udc: Disable auto ZLP generation on ep0
+Date: Mon, 18 Aug 2014 10:31:29 +0100
+Message-Id: <1408354398-10226-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Abbas Raza <Abbas_Raza@mentor.com>
 
-commit 4320f6b1d9db4ca912c5eb6ecb328b2e090e1586 upstream.
+commit 953c66469735aed8d2ada639a72b150f01dae605 upstream.
 
-The commit [247bc037: PM / Sleep: Mitigate race between the freezer
-and request_firmware()] introduced the finer state control, but it
-also leads to a new bug; for example, a bug report regarding the
-firmware loading of intel BT device at suspend/resume:
-  https://bugzilla.novell.com/show_bug.cgi?id=873790
+There are 2 methods for ZLP (zero-length packet) generation:
+1) In software
+2) Automatic generation by device controller
 
-The root cause seems to be a small window between the process resume
-and the clear of usermodehelper lock.  The request_firmware() function
-checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
-is for avoiding the invalid  f/w loading during suspend/resume phase.
-The problem is, however, that usermodehelper_enable() is called at the
-end of thaw_processes().  Thus, a thawed process in between can kick
-off the f/w loader code path (in this case, via btusb_setup_intel())
-even before the call of usermodehelper_enable().  Then
-usermodehelper_read_trylock() returns an error and request_firmware()
-spews WARN_ON() in the end.
+1) is implemented in UDC driver and it attaches ZLP to IN packet if
+   descriptor->size < wLength
+2) can be enabled/disabled by setting ZLT bit in the QH
 
-This oneliner patch fixes the issue just by setting to UMH_FREEZING
-state again before restarting tasks, so that the call of
-request_firmware() will be blocked until the end of this function
-instead of returning an error.
+When gadget ffs is connected to ubuntu host, the host sends
+get descriptor request and wLength in setup packet is 255 while the
+size of descriptor which will be sent by gadget in IN packet is
+64 byte. So the composite driver sets req->zero = 1.
+In UDC driver following code will be executed then
 
-Fixes: 247bc0374254 (PM / Sleep: Mitigate race between the freezer and request_firmware())
-Link: https://bugzilla.novell.com/show_bug.cgi?id=873790
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+        if (hwreq->req.zero && hwreq->req.length
+            && (hwreq->req.length % hwep->ep.maxpacket == 0))
+                add_td_to_list(hwep, hwreq, 0);
+
+Case-A:
+So in case of ubuntu host, UDC driver will attach a ZLP to the IN packet.
+ubuntu host will request 255 byte in IN request, gadget will send 64 byte
+with ZLP and host will come to know that there is no more data.
+But hold on, by default ZLT=0 for endpoint 0 so hardware also tries to
+automatically generate the ZLP which blocks enumeration for ~6 seconds due
+to endpoint 0 STALL, NAKs are sent to host for any requests (OUT/PING)
+
+Case-B:
+In case when gadget ffs is connected to Apple device, Apple device sends
+setup packet with wLength=64. So descriptor->size = 64 and wLength=64
+therefore req->zero = 0 and UDC driver will not attach any ZLP to the
+IN packet. Apple device requests 64 bytes, gets 64 bytes and doesn't
+further request for IN data. But ZLT=0 by default for endpoint 0 so
+hardware tries to automatically generate the ZLP which blocks enumeration
+for ~6 seconds due to endpoint 0 STALL, NAKs are sent to host for any
+requests (OUT/PING)
+
+According to USB2.0 specs:
+
+    8.5.3.2 Variable-length Data Stage
+    A control pipe may have a variable-length data phase in which the
+    host requests more data than is contained in the specified data
+    structure. When all of the data structure is returned to the host,
+    the function should indicate that the Data stage is ended by
+    returning a packet that is shorter than the MaxPacketSize for the
+    pipe. If the data structure is an exact multiple of wMaxPacketSize
+    for the pipe, the function will return a zero-length packet to indicate
+    the end of the Data stage.
+
+In Case-A mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint 0 OR if software
+ZLP generation is not disabled but we set ZLT=1 for endpoint 0 then
+enumeration doesn't block for 6 seconds.
+
+In Case-B mentioned above:
+If we disable software ZLP generation & ZLT=0 for endpoint then enumeration
+still blocks due to ZLP automatically generated by hardware and host not needing
+it. But if we keep software ZLP generation enabled but we set ZLT=1 for
+endpoint 0 then enumeration doesn't block for 6 seconds.
+
+So the proper solution for this issue seems to disable automatic ZLP generation
+by hardware (i.e by setting ZLT=1 for endpoint 0) and let software (UDC driver)
+handle the ZLP generation based on req->zero field.
+
+Signed-off-by: Abbas Raza <Abbas_Raza@mentor.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/power/process.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/chipidea/udc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 06ec8869dbf1..14f9a8d4725d 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -184,6 +184,7 @@ void thaw_processes(void)
+diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
+index 592022c92652..fa30f736c2db 100644
+--- a/drivers/usb/chipidea/udc.c
++++ b/drivers/usb/chipidea/udc.c
+@@ -1175,8 +1175,8 @@ static int ep_enable(struct usb_ep *ep,
  
- 	printk("Restarting tasks ... ");
- 
-+	__usermodehelper_set_disable_depth(UMH_FREEZING);
- 	thaw_workqueues();
- 
- 	read_lock(&tasklist_lock);
+ 	if (hwep->type == USB_ENDPOINT_XFER_CONTROL)
+ 		cap |= QH_IOS;
+-	if (hwep->num)
+-		cap |= QH_ZLT;
++
++	cap |= QH_ZLT;
+ 	cap |= (hwep->ep.maxpacket << __ffs(QH_MAX_PKT)) & QH_MAX_PKT;
+ 	/*
+ 	 * For ISO-TX, we set mult at QH as the largest value, and use
 -- 
 1.9.1
 
