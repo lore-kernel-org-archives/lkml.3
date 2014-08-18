@@ -1,118 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaHRUJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 16:09:16 -0400
-Received: from mail.kmu-office.ch ([178.209.48.102]:60777 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047AbaHRUH2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 16:07:28 -0400
-From: Stefan Agner <stefan@agner.ch>
-To: peter.chen@freescale.com, s.hauer@pengutronix.de, kernel@pengutronix.de,
-        shawn.guo@freescale.com, balbi@ti.com, gregkh@linuxfoundation.org
-Cc: jingchang.lu@freescale.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stefan@agner.ch
-Subject: [PATCH RESEND v2 1/7] ARM: dts: vf610: Add USB PHY and controller
-Date: Mon, 18 Aug 2014 22:07:11 +0200
-Message-Id: <240a6eadc0050de82af3e174a999f67e0ca27afa.1408391385.git.stefan@agner.ch>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cover.1408391385.git.stefan@agner.ch>
-References: <cover.1408391385.git.stefan@agner.ch>
+	id S1752134AbaHRUNq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 16:13:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39113 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751423AbaHRUNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 16:13:45 -0400
+Message-ID: <53F25E72.4080205@suse.de>
+Date: Mon, 18 Aug 2014 22:13:38 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: Tomasz Figa <tomasz.figa@gmail.com>, Doug Anderson <dianders@chromium.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephan van Schaik <stephan@synkhronix.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 01/10] ARM: dts: Fix MMC pinctrl for exynos5250-snow
+References: <1406868897-26874-1-git-send-email-afaerber@suse.de>	<1406868897-26874-2-git-send-email-afaerber@suse.de> <CAD=FV=VBa5rs_woj0mshFFbA69Nhyi3hXK_XX7-54T3vFyKYHA@mail.gmail.com> <53F247E2.2070007@samsung.com> <53F24A80.4000607@gmail.com> <53F25C25.4070602@samsung.com>
+In-Reply-To: <53F25C25.4070602@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds USB PHY and USB controller nodes. Vybrid SoCs have two
-independent USB cores which each supports DR (dual role). However,
-real OTG is not supported since the OTG ID pin is not available.
+Hi,
 
-The PHYs are located within the anadig register range, hence we need
-to change the length of the anadig registers.
+Am 18.08.2014 22:03, schrieb Kukjin Kim:
+> On 08/18/14 13:48, Tomasz Figa wrote:
+>> On 18.08.2014 20:37, Kukjin Kim wrote:
+>>> On 08/01/14 11:26, Doug Anderson wrote:
+>>>> On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber<afaerber@suse.de>  
+>>>> wrote:
+>>>>> The pinctrl properties should be on the device directly and not on the
+>>>>> slot sub-node.
+>>>>>
+>>>>> Reported-by: Doug Anderson<dianders@chromium.org>
+>>>>> Cc: Jaehoon Chung<jh80.chung@samsung.com>
+>>>>> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
+>>>>> Signed-off-by: Andreas Färber<afaerber@suse.de>
+>>>>
+>>>> Let's land this one before Jaehoon's, since it was a hidden
+>>>> functionality change in his patch.  It will be an easy conflict to
+>>>> resolve when his patch is applied.
+>>>>
+>>> Sounds good to me, I've applied this before Jaehoon's change.
+>>>
+>>>> Reviewed-by: Doug Anderson<dianders@chromium.org>
+>>
+>> Version 6 of this series has been already posted. However this
+>> particular patch has not changed, so it's fine.
+>>
+> Oh, got it. Hope this and 2nd should be same with version 6 ;)
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- arch/arm/boot/dts/vf610.dtsi | 46 +++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 43 insertions(+), 3 deletions(-)
+It is documented as such. :) Others did have changes, of course.
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index 6a6190c..f36acb5 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -25,6 +25,8 @@
- 		gpio2 = &gpio3;
- 		gpio3 = &gpio4;
- 		gpio4 = &gpio5;
-+		usbphy0 = &usbphy0;
-+		usbphy1 = &usbphy1;
- 	};
- 
- 	cpus {
-@@ -285,9 +287,25 @@
- 				gpio-ranges = <&iomuxc 0 128 7>;
- 			};
- 
--			anatop@40050000 {
--				compatible = "fsl,vf610-anatop";
--				reg = <0x40050000 0x1000>;
-+			anatop: anatop@40050000 {
-+				compatible = "fsl,vf610-anatop", "syscon";
-+				reg = <0x40050000 0x400>;
-+			};
-+
-+			usbphy0: usbphy@40050800 {
-+				compatible = "fsl,vf610-usbphy";
-+				reg = <0x40050800 0x400>;
-+				interrupts = <0 50 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBPHY0>;
-+				fsl,anatop = <&anatop>;
-+			};
-+
-+			usbphy1: usbphy@40050c00 {
-+				compatible = "fsl,vf610-usbphy";
-+				reg = <0x40050c00 0x400>;
-+				interrupts = <0 51 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBPHY1>;
-+				fsl,anatop = <&anatop>;
- 			};
- 
- 			i2c0: i2c@40066000 {
-@@ -309,6 +327,18 @@
- 				reg = <0x4006b000 0x1000>;
- 				#clock-cells = <1>;
- 			};
-+
-+			usbdev0: usb@40034000 {
-+				compatible = "fsl,vf610-usb", "fsl,imx27-usb";
-+				reg = <0x40034000 0x800>;
-+				interrupts = <0 75 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBC0>;
-+				fsl,usbphy = <&usbphy0>;
-+				dr_mode = "peripheral";
-+				status = "disabled";
-+			};
-+
-+
- 		};
- 
- 		aips1: aips-bus@40080000 {
-@@ -371,6 +401,16 @@
- 				status = "disabled";
- 			};
- 
-+			usbh1: usb@400b4000 {
-+				compatible = "fsl,vf610-usb", "fsl,imx27-usb";
-+				reg = <0x400b4000 0x800>;
-+				interrupts = <0 76 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&clks VF610_CLK_USBC1>;
-+				fsl,usbphy = <&usbphy1>;
-+				dr_mode = "host";
-+				status = "disabled";
-+			};
-+
- 			ftm: ftm@400b8000 {
- 				compatible = "fsl,ftm-timer";
- 				reg = <0x400b8000 0x1000 0x400b9000 0x1000>;
+I've started looking into rebasing myself: beware that the smdk5250
+cleanup has an additional conflict in the spi node (cs-gpios movement).
+
+http://git.kernel.org/cgit/linux/kernel/git/kgene/linux-samsung.git/commit/arch/arm/boot/dts/exynos5250-smdk5250.dts?h=v3.18-next/dt-samsung&id=e138d4333aa02a3daa12c04192bc5c842bffee74
+
+Thanks,
+Andreas
+
 -- 
-2.0.4
-
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
