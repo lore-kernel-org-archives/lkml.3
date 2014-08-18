@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193AbaHRUYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 16:24:43 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:56348 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155AbaHRUYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 16:24:42 -0400
-Message-ID: <53F26105.9000907@cogentembedded.com>
-Date: Tue, 19 Aug 2014 00:24:37 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752171AbaHRUiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 16:38:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930AbaHRUiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 16:38:16 -0400
+Date: Mon, 18 Aug 2014 16:38:08 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        chai wen <chaiw.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 2/5] softlockup: make detector be aware of task switch of
+ processes hogging cpu
+Message-ID: <20140818203801.GE49576@redhat.com>
+References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+ <1407768567-171794-3-git-send-email-dzickus@redhat.com>
+ <20140818090319.GA25495@gmail.com>
+ <20140818150658.GQ49576@redhat.com>
+ <20140818180158.GA4540@gmail.com>
+ <20140818184339.GB49576@redhat.com>
+ <20140818190200.GB5074@gmail.com>
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>, peter.chen@freescale.com,
-        s.hauer@pengutronix.de, kernel@pengutronix.de, shawn.guo@freescale.com,
-        balbi@ti.com, gregkh@linuxfoundation.org
-CC: jingchang.lu@freescale.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 7/7] ARM: dts: vf610-twr: Add USB support
-References: <cover.1408391385.git.stefan@agner.ch> <07491836b9c23a82b7a33972a5c71f2676ceaf71.1408391385.git.stefan@agner.ch>
-In-Reply-To: <07491836b9c23a82b7a33972a5c71f2676ceaf71.1408391385.git.stefan@agner.ch>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818190200.GB5074@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Aug 18, 2014 at 09:02:00PM +0200, Ingo Molnar wrote:
+> 
+> * Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > > > > So I agree with the motivation of this improvement, but 
+> > > > > is this implementation namespace-safe?
+> > > > 
+> > > > What namespace are you worried about colliding with?  I 
+> > > > thought softlockup_ would provide the safety??  Maybe I 
+> > > > am missing something obvious. :-(
+> > > 
+> > > I meant PID namespaces - a PID in itself isn't guaranteed 
+> > > to be unique across the system.
+> > 
+> > Ah, I don't think we thought about that.  Is there a better 
+> > way to do this?  Is there a domain id or something that can 
+> > be OR'd with the pid?
+> 
+> What is always unique is the task pointer itself. We use pids 
+> when we interface with user-space - but we don't really do that 
+> here, right?
 
-On 08/19/2014 12:07 AM, Stefan Agner wrote:
+No, I don't believe so.  Ok, so saving 'current' and comparing that should
+be enough, correct?
 
-> Add USB support for Freescale Vybrid tower. The USB hosts over-current
-> protection signal is not connected is not connected to the PHY's over-
-
-    Yes, we all understood that it's not connected, no need to repeat. ;-)
-
-> current protection, hence we need to disable it.
-
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-
-WBR, Sergei
-
+Cheers,
+Don
