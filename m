@@ -1,137 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaHRJPQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:15:16 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:42817 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843AbaHRJPO (ORCPT
+	id S1751850AbaHRJQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:16:45 -0400
+Received: from mail.aswsp.com ([193.34.35.150]:24457 "EHLO mail.aswsp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906AbaHRJQn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:15:14 -0400
+	Mon, 18 Aug 2014 05:16:43 -0400
+Date: Mon, 18 Aug 2014 11:16:56 +0200
+From: Matthieu CASTET <matthieu.castet@parrot.com>
+To: David Ahern <dsahern@gmail.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: perf on biarch
+Message-ID: <20140818111656.40ff6ae7@parrot.com>
+In-Reply-To: <53E52A1C.8010504@gmail.com>
+References: <20140808184049.65e7d32b@parrot.com>
+	<53E52A1C.8010504@gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1407942823-4271-1-git-send-email-dianders@chromium.org>
-References: <1407942823-4271-1-git-send-email-dianders@chromium.org>
-Date: Mon, 18 Aug 2014 11:15:13 +0200
-Message-ID: <CAPDyKFpX0PmpuPvgc0WizXAizNiCiqj2y0y4GzcSMt1y4yzyiA@mail.gmail.com>
-Subject: Re: [REPOST PATCH v2] mmc: dw_mmc: Make sure we don't get stuck when
- we get an error
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Ball <cjb@laptop.org>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [46.218.109.88]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 August 2014 17:13, Doug Anderson <dianders@chromium.org> wrote:
-> If we happened to get a data error at just the wrong time the dw_mmc
-> driver could get into a state where it would never complete its
-> request.  That would leave the caller just hanging there.
->
-> We fix this two ways and both of the two fixes on their own appear to
-> fix the problems we've seen:
->
-> 1. Fix a race in the tasklet where the interrupt setting the data
->    error happens _just after_ we check for it, then we get a
->    EVENT_XFER_COMPLETE.  We fix this by repeating a bit of code.
-> 2. Fix it so that if we detect that we've got an error in the "data
->    busy" state and we're not going to do anything else we end the
->    request and unblock anyone waiting.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>
-> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+Le Fri, 8 Aug 2014 13:50:52 -0600,
+David Ahern <dsahern@gmail.com> a écrit :
 
-Thanks! Applied for next.
+> On 8/8/14, 10:40 AM, Matthieu CASTET wrote:
+> > Hi,
+> >
+> > I have a 64 bits kernel running with 32 bits binaries.
+> > If I run 32 bits perf on this 64 bits kernel 3.14, I got weird result :
+> >
+> > - perf trace doesn't work [1]
+> 
+> I have patches that fix that:
+>      git clone https://github.com/dsahern/linux.git
+>      git checkout perf-full-monty
+> 
+> And if autodetection fails you can manually force it with -M x86.
+> 
+Thanks david. 
+It is better, but it seems there are problem with argument parsing.
 
-Kind regards
-Uffe
+For example for 
+"mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
+0) = 0xf77e2000"
+I got :
+- 2.847 ( 0.004 ms): mmap2(arg0: 0, arg1: 0, arg2: 4096, arg3: 0, arg4:
+3, arg5: 0         ) = -143273984
 
-> ---
-> Changes in v2:
-> - Removed TODO
-> - Set cmd to NULL before calling dw_mci_request_end()
->
->  drivers/mmc/host/dw_mmc.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 46 insertions(+)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 8f216ed..7f227e9 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1299,6 +1299,14 @@ static void dw_mci_tasklet_func(unsigned long priv)
->                         /* fall through */
->
->                 case STATE_SENDING_DATA:
-> +                       /*
-> +                        * We could get a data error and never a transfer
-> +                        * complete so we'd better check for it here.
-> +                        *
-> +                        * Note that we don't really care if we also got a
-> +                        * transfer complete; stopping the DMA and sending an
-> +                        * abort won't hurt.
-> +                        */
->                         if (test_and_clear_bit(EVENT_DATA_ERROR,
->                                                &host->pending_events)) {
->                                 dw_mci_stop_dma(host);
-> @@ -1312,7 +1320,29 @@ static void dw_mci_tasklet_func(unsigned long priv)
->                                 break;
->
->                         set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
-> +
-> +                       /*
-> +                        * Handle an EVENT_DATA_ERROR that might have shown up
-> +                        * before the transfer completed.  This might not have
-> +                        * been caught by the check above because the interrupt
-> +                        * could have gone off between the previous check and
-> +                        * the check for transfer complete.
-> +                        *
-> +                        * Technically this ought not be needed assuming we
-> +                        * get a DATA_COMPLETE eventually (we'll notice the
-> +                        * error and end the request), but it shouldn't hurt.
-> +                        *
-> +                        * This has the advantage of sending the stop command.
-> +                        */
-> +                       if (test_and_clear_bit(EVENT_DATA_ERROR,
-> +                                              &host->pending_events)) {
-> +                               dw_mci_stop_dma(host);
-> +                               send_stop_abort(host, data);
-> +                               state = STATE_DATA_ERROR;
-> +                               break;
-> +                       }
->                         prev_state = state = STATE_DATA_BUSY;
-> +
->                         /* fall through */
->
->                 case STATE_DATA_BUSY:
-> @@ -1335,6 +1365,22 @@ static void dw_mci_tasklet_func(unsigned long priv)
->                                 /* stop command for open-ended transfer*/
->                                 if (data->stop)
->                                         send_stop_abort(host, data);
-> +                       } else {
-> +                               /*
-> +                                * If we don't have a command complete now we'll
-> +                                * never get one since we just reset everything;
-> +                                * better end the request.
-> +                                *
-> +                                * If we do have a command complete we'll fall
-> +                                * through to the SENDING_STOP command and
-> +                                * everything will be peachy keen.
-> +                                */
-> +                               if (!test_bit(EVENT_CMD_COMPLETE,
-> +                                             &host->pending_events)) {
-> +                                       host->cmd = NULL;
-> +                                       dw_mci_request_end(host, mrq);
-> +                                       goto unlock;
-> +                               }
->                         }
->
->                         /*
-> --
-> 2.1.0.rc2.206.gedb03e5
->
+
+Note the 4096 position. Running perf trace on a 32 bits kernel give
+4096 at arg1.
+
+
+Matthieu
