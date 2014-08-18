@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbaHRJeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42544 "EHLO
+	id S1753026AbaHRJfo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:35:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42918 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbaHRJeG (ORCPT
+	with ESMTP id S1752987AbaHRJfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:06 -0400
+	Mon, 18 Aug 2014 05:35:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mateusz Guzik <mguzik@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
+Cc: Anssi Hannula <anssi.hannula@iki.fi>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 023/137] sched: Fix possible divide by zero in avg_atom() calculation
-Date: Mon, 18 Aug 2014 10:31:24 +0100
-Message-Id: <1408354398-10226-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 092/137] dm cache: fix race affecting dirty block count
+Date: Mon, 18 Aug 2014 10:32:33 +0100
+Message-Id: <1408354398-10226-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,46 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mateusz Guzik <mguzik@redhat.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit b0ab99e7736af88b8ac1b7ae50ea287fffa2badc upstream.
+commit 44fa816bb778edbab6b6ddaaf24908dd6295937e upstream.
 
-proc_sched_show_task() does:
+nr_dirty is updated without locking, causing it to drift so that it is
+non-zero (either a small positive integer, or a very large one when an
+underflow occurs) even when there are no actual dirty blocks.  This was
+due to a race between the workqueue and map function accessing nr_dirty
+in parallel without proper protection.
 
-  if (nr_switches)
-	do_div(avg_atom, nr_switches);
+People were seeing under runs due to a race on increment/decrement of
+nr_dirty, see: https://lkml.org/lkml/2014/6/3/648
 
-nr_switches is unsigned long and do_div truncates it to 32 bits, which
-means it can test non-zero on e.g. x86-64 and be truncated to zero for
-division.
+Fix this by using an atomic_t for nr_dirty.
 
-Fix the problem by using div64_ul() instead.
-
-As a side effect calculations of avg_atom for big nr_switches are now correct.
-
-Signed-off-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1402750809-31991-1-git-send-email-mguzik@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: roma1390@gmail.com
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/debug.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-cache-target.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 631daf2612c1..8304ee67c56b 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -554,7 +554,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index cb51c1d05417..1ab8cd335d01 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -157,7 +157,7 @@ struct cache {
+ 	/*
+ 	 * cache_size entries, dirty if set
+ 	 */
+-	dm_cblock_t nr_dirty;
++	atomic_t nr_dirty;
+ 	unsigned long *dirty_bitset;
  
- 		avg_atom = p->se.sum_exec_runtime;
- 		if (nr_switches)
--			do_div(avg_atom, nr_switches);
-+			avg_atom = div64_ul(avg_atom, nr_switches);
- 		else
- 			avg_atom = -1LL;
+ 	/*
+@@ -406,7 +406,7 @@ static bool is_dirty(struct cache *cache, dm_cblock_t b)
+ static void set_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cblock)
+ {
+ 	if (!test_and_set_bit(from_cblock(cblock), cache->dirty_bitset)) {
+-		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) + 1);
++		atomic_inc(&cache->nr_dirty);
+ 		policy_set_dirty(cache->policy, oblock);
+ 	}
+ }
+@@ -415,8 +415,7 @@ static void clear_dirty(struct cache *cache, dm_oblock_t oblock, dm_cblock_t cbl
+ {
+ 	if (test_and_clear_bit(from_cblock(cblock), cache->dirty_bitset)) {
+ 		policy_clear_dirty(cache->policy, oblock);
+-		cache->nr_dirty = to_cblock(from_cblock(cache->nr_dirty) - 1);
+-		if (!from_cblock(cache->nr_dirty))
++		if (atomic_dec_return(&cache->nr_dirty) == 0)
+ 			dm_table_event(cache->ti->table);
+ 	}
+ }
+@@ -2003,7 +2002,7 @@ static int cache_create(struct cache_args *ca, struct cache **result)
+ 	atomic_set(&cache->quiescing_ack, 0);
  
+ 	r = -ENOMEM;
+-	cache->nr_dirty = 0;
++	atomic_set(&cache->nr_dirty, 0);
+ 	cache->dirty_bitset = alloc_bitset(from_cblock(cache->cache_size));
+ 	if (!cache->dirty_bitset) {
+ 		*error = "could not allocate dirty bitset";
+@@ -2475,7 +2474,7 @@ static void cache_status(struct dm_target *ti, status_type_t type,
+ 
+ 		residency = policy_residency(cache->policy);
+ 
+-		DMEMIT("%llu/%llu %u %u %u %u %u %u %llu %u ",
++		DMEMIT("%llu/%llu %u %u %u %u %u %u %llu %lu ",
+ 		       (unsigned long long)(nr_blocks_metadata - nr_free_blocks_metadata),
+ 		       (unsigned long long)nr_blocks_metadata,
+ 		       (unsigned) atomic_read(&cache->stats.read_hit),
+@@ -2485,7 +2484,7 @@ static void cache_status(struct dm_target *ti, status_type_t type,
+ 		       (unsigned) atomic_read(&cache->stats.demotion),
+ 		       (unsigned) atomic_read(&cache->stats.promotion),
+ 		       (unsigned long long) from_cblock(residency),
+-		       cache->nr_dirty);
++		       (unsigned long) atomic_read(&cache->nr_dirty));
+ 
+ 		if (cache->features.write_through)
+ 			DMEMIT("1 writethrough ");
 -- 
 1.9.1
 
