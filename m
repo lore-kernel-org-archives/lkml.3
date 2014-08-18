@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaHRXcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 19:32:06 -0400
-Received: from 8bytes.org ([81.169.241.247]:40916 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214AbaHRXcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 19:32:03 -0400
-Date: Tue, 19 Aug 2014 01:32:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Cho KyongHo <pullip.cho@samsung.com>,
-        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Rob Herring <robh@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 00/29] Exynos SYSMMU (IOMMU) integration with DT and
- DMA-mapping subsystem
-Message-ID: <20140818233201.GL9809@8bytes.org>
-References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+	id S1752380AbaHRXp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 19:45:26 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:38008 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaHRXpY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 19:45:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140818173552.GA2126@drone.musicnaut.iki.fi>
+References: <alpine.SOC.1.00.1407310101550.2065@math.ut.ee>
+ <20140730.150722.861254999466992321.davem@davemloft.net> <alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
+ <20140813.124611.767426770013677.davem@davemloft.net> <alpine.SOC.1.00.1408151534480.27263@math.ut.ee>
+ <alpine.SOC.1.00.1408181528270.2922@math.ut.ee> <20140818173552.GA2126@drone.musicnaut.iki.fi>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Tue, 19 Aug 2014 09:45:03 +1000
+Message-ID: <CAGRGNgUq0-1rDtRJfFQ1ARvPXk6aT+f99-EGCN1vBpd35q2qyg@mail.gmail.com>
+Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Meelis Roos <mroos@linux.ee>, David Miller <davem@davemloft.net>,
+        sparclinux <sparclinux@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, hughd@google.com,
+        cat.schulze@alice-dsl.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 12:47:28PM +0200, Marek Szyprowski wrote:
->  .../devicetree/bindings/iommu/samsung,sysmmu.txt   |  93 ++-
->  Documentation/power/notifiers.txt                  |  14 +
->  arch/arm/boot/dts/exynos4.dtsi                     | 118 ++++
->  arch/arm/boot/dts/exynos4210.dtsi                  |  23 +
->  arch/arm/boot/dts/exynos4x12.dtsi                  |  82 +++
->  arch/arm/include/asm/dma-iommu.h                   |  36 ++
->  arch/arm/mach-exynos/pm_domains.c                  |  12 +-
->  arch/arm/mach-integrator/impd1.c                   |   2 +-
->  arch/arm/mm/dma-mapping.c                          |  47 ++
->  drivers/base/bus.c                                 |   4 +-
->  drivers/base/dd.c                                  |  10 +-
->  drivers/base/platform.c                            |   2 +-
->  drivers/base/power/domain.c                        |  70 ++-
->  drivers/clk/samsung/clk-exynos4.c                  |   1 +
->  drivers/gpu/drm/exynos/exynos_drm_fimc.c           |   1 +
->  drivers/gpu/drm/exynos/exynos_drm_fimd.c           |  26 +-
->  drivers/gpu/drm/exynos/exynos_drm_g2d.c            |   1 +
->  drivers/gpu/drm/exynos/exynos_drm_gsc.c            |   1 +
->  drivers/gpu/drm/exynos/exynos_drm_rotator.c        |   1 +
->  drivers/gpu/drm/exynos/exynos_mixer.c              |   1 +
->  drivers/iommu/exynos-iommu.c                       | 663 +++++++++++++--------
->  drivers/iommu/iommu.c                              |   3 +
->  drivers/media/platform/s5p-mfc/s5p_mfc.c           | 107 ++--
->  drivers/pci/host/pci-mvebu.c                       |   2 +-
->  drivers/pci/host/pci-rcar-gen2.c                   |   2 +-
->  drivers/pci/host/pci-tegra.c                       |   2 +-
->  drivers/pci/host/pcie-rcar.c                       |   2 +-
->  drivers/soc/tegra/pmc.c                            |   2 +-
->  include/dt-bindings/clock/exynos4.h                |  10 +-
->  include/linux/device.h                             |  12 +-
->  include/linux/iommu.h                              |   1 +
->  include/linux/pm.h                                 |   2 +
->  include/linux/pm_domain.h                          |  19 +
->  33 files changed, 1016 insertions(+), 356 deletions(-)
+Hi All,
 
-This touches a lot of non-iommu stuff. What is your strategy on getting
-this in, do you plan to get the non-iommu changes merged first or do you
-want to collect the respective Acks and merge this all through one tree?
+On Tue, Aug 19, 2014 at 3:35 AM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> Hi,
+>
+> On Mon, Aug 18, 2014 at 03:30:16PM +0300, Meelis Roos wrote:
+>> > U1, U2, U5, U10, E220R, E420R later or some other day, whenever I get
+>> > to them physically.
+>>
+>> Ultra 5 is bad news with 3.17-rc1: it almost boots up, then aftyer
+>> strarting postfix and ntpd, gets RED state exception and contiunes
+>> looping with it (before it gor RED state only after prom reboot).
+>
+> My Ultra 5 is fine with 3.17-rc1 (I'm writing this mail from it),
+> also Ultra 10 seems to be OK based on quick test.
 
+Stupid question: aren't the Ultra 5 and Ultra 10 essentially the same hardware?
 
-	Joerg
+Thanks,
 
+-- 
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
