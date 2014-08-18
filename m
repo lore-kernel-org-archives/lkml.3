@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372AbaHRAMp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 20:12:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:53632 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750725AbaHRAMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 20:12:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,881,1400050800"; 
-   d="scan'208";a="586122239"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Ingo Molnar" <mingo@redhat.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Liu, Changcheng" <changcheng.liu@intel.com>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>
-Subject: RE: [PATCH 2/3] smp: re-implement the kick_all_cpus_sync() with
- wake_up_if_idle()
-Thread-Topic: [PATCH 2/3] smp: re-implement the kick_all_cpus_sync() with
- wake_up_if_idle()
-Thread-Index: AQHPuJ9b+RaU3y8RsUigiUplyVXz7pvVgIxg
-Date: Mon, 18 Aug 2014 00:12:39 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E5D3FB@SHSMSX101.ccr.corp.intel.com>
-References: <1408086085-16691-1-git-send-email-chuansheng.liu@intel.com>
- <1408086085-16691-2-git-send-email-chuansheng.liu@intel.com>
- <CALCETrUQ7x+kPYewNSUeAX5=0yVmqYWca9XCXtUbM0SNZ2ou+Q@mail.gmail.com>
-In-Reply-To: <CALCETrUQ7x+kPYewNSUeAX5=0yVmqYWca9XCXtUbM0SNZ2ou+Q@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1751613AbaHRARL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 20:17:11 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:34481 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaHRARI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 20:17:08 -0400
+Date: Sun, 17 Aug 2014 20:17:05 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Jason Cooper <jason@lakedaemon.net>, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
+ scheduler
+In-Reply-To: <20140817214123.GY30401@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.11.1408172005070.29347@knanqh.ubzr>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140817173236.GG12769@titan.lakedaemon.net> <20140817185522.GX30401@n2100.arm.linux.org.uk> <20140817190434.GJ12769@titan.lakedaemon.net> <20140817214123.GY30401@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7I0D5pp010871
 
-Hello Andy,
+On Sun, 17 Aug 2014, Russell King - ARM Linux wrote:
 
-> -----Original Message-----
-> From: Andy Lutomirski [mailto:luto@amacapital.net]
-> Sent: Friday, August 15, 2014 11:41 PM
-> To: Liu, Chuansheng
-> Cc: Peter Zijlstra; Daniel Lezcano; Rafael J. Wysocki; Ingo Molnar;
-> linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Liu, Changcheng;
-> Wang, Xiaoming; Chakravarty, Souvik K
-> Subject: Re: [PATCH 2/3] smp: re-implement the kick_all_cpus_sync() with
-> wake_up_if_idle()
+> On Sun, Aug 17, 2014 at 03:04:34PM -0400, Jason Cooper wrote:
+> > Quoting Nico:
+> > 
+> > "Of course it would be good to clarify things wrt Russell's remark
+> > independently from this patch."
+> > 
+> > I took 'independently' to mean "This patch is ok, *and* we need to
+> > address Russell's concerns in a follow-up patch."
+> > 
+> > Nico's Reviewed-by with that comment was sent August 13th.  The most
+> > recent activity on this thread was also August 13th.  After four days, I
+> > reasoned there were no objections to his comment.
 > 
-> On Fri, Aug 15, 2014 at 12:01 AM, Chuansheng Liu
-> <chuansheng.liu@intel.com> wrote:
-> > Currently using smp_call_function() just woke up the corresponding
-> > cpu, but can not break the polling idle loop.
-> >
-> > Here using the new sched API wake_up_if_idle() to implement it.
+> Right, during the merge window, and during merge windows, I tend to
+> ignore almost all email now because people don't stop developing, and
+> they don't take any notice where the mainline cycle is.  In fact, I go
+> off and do non-kernel work during a merge window and only briefly scan
+> for bug fixes.
 > 
-> kick_all_cpus_sync has other callers, and those other callers want the
-> old behavior.  I think this should be a new function.
+> However, I have other concerns with this patch, which I've yet to air.
+> For example, I don't like this crappy conditional locking that people
+> keep dreaming up - that kind of stuff makes the kernel much harder to
+> statically check that everything is correct.  It's an anti-lockdep
+> strategy.
 > 
-Yes, seems some current users of kick_all_cpus_sync() need IPI indeed,
-will try to send out patch V2 with one new function.
+> Secondly, I don't like this:
+> 
+> +       raw_spin_lock(&gic_sgi_lock);
+> +       /*
+> +        * Ensure that the gic_cpu_map update above is seen in
+> +        * gic_raise_softirq() before we redirect any pending SGIs that
+> +        * may have been raised for the outgoing CPU (cur_cpu_id)
+> +        */
+> +       smp_mb__after_unlock_lock();
+> +       raw_spin_unlock(&gic_sgi_lock);
+> 
+> That goes against the principle of locking, that you lock the data,
+> not the code.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I admit I didn't understand the point of that construct on the first 
+read.  Maybe I wouldn't be the only one.  Using Stephen's initial 
+version for that hunk would be preferable as it is straight forward and 
+would mean locking the data instead.
+
+> I have no problem with changing gic_raise_softirq() to use a different
+> lock, which gic_migrate_target(), and gic_set_affinity() can also use.
+> There's no need for horrid locking here, because the only thing we're
+> protecting is gic_map[] and the write to the register to trigger an
+> IPI - and nothing using gic_arch_extn has any business knowing about
+> SGIs.
+> 
+> No need for these crappy sgi_map_lock() macros and all the ifdeffery.
+
+Those macros are there only to conditionalize the locking in 
+gic_raise_softirq() because no locking what so ever is needed there when 
+gic_migrate_target() is configured out.  I suggested the macros to cut 
+down on the #ifdefery in the code.
+
+
+Nicolas
