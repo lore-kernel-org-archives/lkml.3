@@ -1,205 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaHRPb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:31:27 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:56311 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020AbaHRPbV (ORCPT
+	id S1752080AbaHRPcA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:32:00 -0400
+Received: from smtprelay0153.hostedemail.com ([216.40.44.153]:57753 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751882AbaHRPb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:31:21 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v7 8/8] clk: Add floor and ceiling constraints to clock rates
-Date: Mon, 18 Aug 2014 17:30:33 +0200
-Message-Id: <1408375833-10703-8-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
+	Mon, 18 Aug 2014 11:31:58 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2194:2199:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3622:3865:3866:3870:3871:3872:3874:4250:4321:5007:6119:7652:7903:8603:10004:10400:10848:11232:11658:11914:12517:12519:12740:13019:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: plant24_854a31c595021
+X-Filterd-Recvd-Size: 1380
+Message-ID: <1408375914.2741.1.camel@joe-AO725>
+Subject: Re: [PATCH] drivers: net: ethernet: intel: e1000: e1000_ethtool.c
+ coding style fixes
+From: Joe Perches <joe@perches.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Krzysztof Majzerowicz-Jaszcz <cristos@vipserv.org>,
+        jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 18 Aug 2014 08:31:54 -0700
+In-Reply-To: <53F21BEC.2070204@intel.com>
+References: <1408180328-4827-1-git-send-email-cristos@vipserv.org>
+	 <1408214489.2683.87.camel@joe-AO725> <53F21BEC.2070204@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a way for clock consumers to set maximum and minimum rates. This can be
-used for thermal drivers to set ceiling rates, or by misc. drivers to set
-floor rates to assure a minimum performance level.
+On Mon, 2014-08-18 at 08:29 -0700, Alexander Duyck wrote:
+> Doing any kind of pointer math on a void pointer is generally unsafe as
+> it is an incomplete type.  The only reason why it works in GCC is
+> because GCC has a nonstandard extension that makes it report as having a
+> size of 1.
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+I know.  It's used in quite a few places in kernel code
+so I believe it's now a base assumption for the kernel.
 
----
 
-v5: * Move the storage of constraints to the per-user clk struct, as suggested
-      by Stephen Warren.
----
- drivers/clk/clk.c           | 36 ++++++++++++++++++++++++++++++++++++
- drivers/clk/clk.h           |  1 +
- drivers/clk/clkdev.c        |  2 +-
- include/linux/clk-private.h |  4 ++++
- include/linux/clk.h         | 18 ++++++++++++++++++
- 5 files changed, 60 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index f94c444..f743a4a 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -560,6 +560,8 @@ struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 	clk->dev_id = dev;
- 	clk->con_id = con;
- 
-+	hlist_add_head(&clk->child_node, &clk_core->per_user_clks);
-+
- 	return clk;
- }
- 
-@@ -1646,6 +1648,7 @@ static void clk_change_rate(struct clk_core *clk)
- int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- {
- 	struct clk_core *top, *fail_clk;
-+	struct clk *clk_user;
- 	int ret = 0;
- 
- 	if (!clk)
-@@ -1654,6 +1657,13 @@ int clk_provider_set_rate(struct clk_core *clk, unsigned long rate)
- 	/* prevent racing with updates to the clock topology */
- 	clk_prepare_lock();
- 
-+	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
-+		rate = max(rate, clk_user->floor_constraint);
-+
-+		if (clk_user->ceiling_constraint > 0)
-+			rate = min(rate, clk_user->ceiling_constraint);
-+	}
-+
- 	/* bail early if nothing to do */
- 	if (rate == clk_provider_get_rate(clk))
- 		goto out;
-@@ -1720,6 +1730,24 @@ int clk_set_rate(struct clk *clk_user, unsigned long rate)
- }
- EXPORT_SYMBOL_GPL(clk_set_rate);
- 
-+int clk_set_floor_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	clk_user->floor_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_floor_rate);
-+
-+int clk_set_ceiling_rate(struct clk *clk_user, unsigned long rate)
-+{
-+	struct clk_core *clk = clk_to_clk_core(clk_user);
-+
-+	clk_user->ceiling_constraint = rate;
-+	return clk_provider_set_rate(clk, clk_provider_get_rate(clk));
-+}
-+EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
-+
- struct clk_core *clk_provider_get_parent(struct clk_core *clk)
- {
- 	struct clk_core *parent;
-@@ -2064,6 +2092,8 @@ int __clk_init(struct device *dev, struct clk_core *clk)
- 			}
- 	 }
- 
-+	INIT_HLIST_HEAD(&clk->per_user_clks);
-+
- 	/*
- 	 * optional platform-specific magic
- 	 *
-@@ -2514,6 +2544,12 @@ int clk_notifier_unregister(struct clk *clk_user, struct notifier_block *nb)
- }
- EXPORT_SYMBOL_GPL(clk_notifier_unregister);
- 
-+void __clk_free_clk(struct clk *clk_user)
-+{
-+	hlist_del(&clk_user->child_node);
-+	kfree(clk_user);
-+}
-+
- #ifdef CONFIG_OF
- /**
-  * struct of_clk_provider - Clock provider registration structure
-diff --git a/drivers/clk/clk.h b/drivers/clk/clk.h
-index 49eff38..005deb3 100644
---- a/drivers/clk/clk.h
-+++ b/drivers/clk/clk.h
-@@ -21,4 +21,5 @@ void of_clk_unlock(void);
- #if defined(CONFIG_COMMON_CLK)
- struct clk *__clk_create_clk(struct clk_core *clk_core, const char *dev,
- 			     const char *con);
-+void __clk_free_clk(struct clk *clk_user);
- #endif
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 0752cc9..0db829c 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -270,7 +270,7 @@ void clk_put(struct clk *clk)
- #if defined(CONFIG_COMMON_CLK)
- 	clk_core_t *core = clk_to_clk_core(clk);
- 
--	kfree(clk);
-+	__clk_free_clk(clk);
- 	__clk_put(core);
- #else
- 	__clk_put(clk);
-diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-index 9657fc8..c59d000 100644
---- a/include/linux/clk-private.h
-+++ b/include/linux/clk-private.h
-@@ -48,6 +48,7 @@ struct clk_core {
- 	unsigned long		accuracy;
- 	struct hlist_head	children;
- 	struct hlist_node	child_node;
-+	struct hlist_head	per_user_clks;
- 	unsigned int		notifier_count;
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry		*dentry;
-@@ -61,6 +62,9 @@ struct clk {
- 	const char	*dev_id;
- 	const char	*con_id;
- 	void		*last_disable;
-+	unsigned long	floor_constraint;
-+	unsigned long	ceiling_constraint;
-+	struct hlist_node child_node;
- };
- 
- /*
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 0fa20ee..b3eae8d 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -283,6 +283,24 @@ long clk_round_rate(struct clk *clk, unsigned long rate);
- int clk_set_rate(struct clk *clk, unsigned long rate);
- 
- /**
-+ * clk_set_floor_rate - set a minimum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired minimum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_floor_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-+ * clk_set_ceiling_rate - set a maximum clock rate for a clock source
-+ * @clk: clock source
-+ * @rate: desired maximum clock rate in Hz
-+ *
-+ * Returns success (0) or negative errno.
-+ */
-+int clk_set_ceiling_rate(struct clk *clk, unsigned long rate);
-+
-+/**
-  * clk_set_parent - set the parent clock source for this clock
-  * @clk: clock source
-  * @parent: parent clock source
--- 
-1.9.3
 
