@@ -1,201 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaHRMHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:07:41 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:62854 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaHRMHj (ORCPT
+	id S1751882AbaHRMI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:08:26 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:58916 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaHRMIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:07:39 -0400
+	Mon, 18 Aug 2014 08:08:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <53F16D28.5010500@linux.intel.com>
-References: <53E85967.5060503@linux.intel.com>
-	<CAPDyKFqLE-09=3k_6stMXiY3+Ax3xoRBO3q__GHyqH4fd-XmsQ@mail.gmail.com>
-	<53F16D28.5010500@linux.intel.com>
-Date: Mon, 18 Aug 2014 14:07:38 +0200
-Message-ID: <CAPDyKFrfXe0f6S0z8HUG2Mg29JVU39C0VOBimgKtq-HL47HZrA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on
- sdio thread
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Aaron Lu <aaron.lu@intel.com>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jackey Shen <jackey.shen@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In-Reply-To: <CACmBeS1kB4+=CZAtkDkM7F48m3SDgutGWGDHgPWVYDRmsDXBJw@mail.gmail.com>
+References: <CACmBeS1kB4+=CZAtkDkM7F48m3SDgutGWGDHgPWVYDRmsDXBJw@mail.gmail.com>
+Date: Mon, 18 Aug 2014 20:08:23 +0800
+Message-ID: <CACVXFVN5+k90PgZba=g2Pjn7eYdnQ0Xaxv9zfGFLcxzfCjthyQ@mail.gmail.com>
+Subject: Re: fs: panic in mnt_set_mountpoint
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 August 2014 05:04, Fu, Zhonghui <zhonghui.fu@linux.intel.com> wrote:
-> From 21266249bbbaf9407c1e88cd5950e06ac88aeebf Mon Sep 17 00:00:00 2001
-> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
-> Date: Mon, 18 Aug 2014 10:48:14 +0800
-> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
+On Mon, Aug 18, 2014 at 7:09 PM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
+> Hi,
 >
-> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
-> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
-> the use of our own custom threaded IRQ handler, but left in an
-> unconditional wake_up_process() on that handler at resume-time.
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
+> I've run into a kernel panic [1] in next-20140818 you might find interesting.
 >
-> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
-> before enable sdio IRQ.
+> It surprised me because there was never an error in next-20140815, I
+> did a search for related panics but it came up empty.
 >
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Signed-off-by: Chris Ball <chris@printf.net>
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+> The board boots fine after applying the following:
+>
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 1a2bbef..b408a9d 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -746,7 +746,7 @@ static void put_mountpoint(struct mountpoint *mp)
+>  {
+>         if (!--mp->m_count) {
+>                 struct dentry *dentry = mp->m_dentry;
+> -               BUG_ON(!hlist_empty(&mp->m_list));
+> +/*             BUG_ON(!hlist_empty(&mp->m_list));*/
+>                 spin_lock(&dentry->d_lock);
+>                 dentry->d_flags &= ~DCACHE_MOUNTED;
+>                 spin_unlock(&dentry->d_lock);
+> @@ -810,7 +810,7 @@ void mnt_set_mountpoint(struct mount *mnt,
+>         child_mnt->mnt_mountpoint = dget(mp->m_dentry);
+>         child_mnt->mnt_parent = mnt;
+>         child_mnt->mnt_mp = mp;
+> -       hlist_add_head(&child_mnt->mnt_mp_list, &mp->m_list);
+> +/*     hlist_add_head(&child_mnt->mnt_mp_list, &mp->m_list);*/
+>  }
+>
+>
+> [1]
+> Uncompressing Linux... done, booting the kernel.
+> [ 0.000000] Booting Linux on physical CPU 0x0
+> [ 0.000000] Linux version 3.17.0-rc1-next-20140818+ (i@Ildjarn) (gcc
+> version 4.9.0 (crosstool-NG 1.19.0) ) #2691 PREEMPT Mon Aug 18
+> 10:58:16 CEST 2014
+> [ 0.000000] CPU: FA526 [66015261] revision 1 (ARMv4), cr=0000397f
+> [ 0.000000] CPU: VIVT data cache, VIVT instruction cache
+> [ 0.000000] Machine model: MOXA UC-7112-LX
+> [ 0.000000] bootconsole [earlycon0] enabled
+> [ 0.000000] Memory policy: Data cache writeback
+> [ 0.000000] On node 0 totalpages: 8192
+> [ 0.000000] free_area_init_node: node 0, pgdat c035cfb4, node_mem_map c1fba000
+> [ 0.000000] Normal zone: 64 pages used for memmap
+> [ 0.000000] Normal zone: 0 pages reserved
+> [ 0.000000] Normal zone: 8192 pages, LIFO batch:0
+> [ 0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+> [ 0.000000] pcpu-alloc: [0] 0
+> [ 0.000000] Built 1 zonelists in Zone order, mobility grouping on.
+> Total pages: 8128
+> [ 0.000000] Kernel command line: console=ttyS0,115200n8 earlyprintk
+> root=/dev/mmcblk0p1 rw rootwait debug
+> [ 0.000000] PID hash table entries: 128 (order: -3, 512 bytes)
+> [ 0.000000] Dentry cache hash table entries: 4096 (order: 2, 16384 bytes)
+> [ 0.000000] Inode-cache hash table entries: 2048 (order: 1, 8192 bytes)
+> [ 0.000000] Memory: 28852K/32768K available (2718K kernel code, 93K
+> rwdata, 484K rodata, 115K init, 126K bss, 3916K reserved)
+> [ 0.000000] Virtual kernel memory layout:
+> [ 0.000000] vector : 0xffff0000 - 0xffff1000 ( 4 kB)
+> [ 0.000000] fixmap : 0xffc00000 - 0xffe00000 (2048 kB)
+> [ 0.000000] vmalloc : 0xc2800000 - 0xff000000 ( 968 MB)
+> [ 0.000000] lowmem : 0xc0000000 - 0xc2000000 ( 32 MB)
+> [ 0.000000] .text : 0xc0008000 - 0xc0328aec (3203 kB)
+> [ 0.000000] .init : 0xc0329000 - 0xc0345ddc ( 116 kB)
+> [ 0.000000] .data : 0xc0346000 - 0xc035d700 ( 94 kB)
+> [ 0.000000] .bss : 0xc035d700 - 0xc037cf24 ( 127 kB)
+> [ 0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+> [ 0.000000] Preemptible hierarchical RCU implementation.
+> [ 0.000000] NR_IRQS:16 nr_irqs:16 16
+> [ 0.000000] sched_clock: 32 bits at 100 Hz, resolution 10000000ns,
+> wraps every 21474836480000000ns
+> [ 0.010000] Calibrating delay loop... 147.86 BogoMIPS (lpj=739328)
+> [ 0.090000] pid_max: default: 4096 minimum: 301
+> [ 0.090000] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes)
+> [ 0.100000] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes)
+> [ 0.110000] CPU: Testing write buffer coherency: ok
+> [ 0.120000] Setting up static identity map for 0x296938 - 0x296980
+> [ 0.140000] Unhandled fault: alignment exception (0x801) at 0x00000003
+> [ 0.140000] Internal error: : 801 [#1] PREEMPT ARM
+> [ 0.140000] CPU: 0 PID: 11 Comm: kdevtmpfs Not tainted
+> 3.17.0-rc1-next-20140818+ #2691
+> [ 0.140000] task: c184a360 ti: c1850000 task.ti: c1850000
+> [ 0.140000] PC is at mnt_set_mountpoint+0x8c/0x9c
+> [ 0.140000] LR is at mnt_set_mountpoint+0x70/0x9c
+> [ 0.140000] pc : [<c00a8978>] lr : [<c00a895c>] psr: a0000053
+> [ 0.140000] sp : c1851e18 ip : 00000001 fp : 00000000
+> [ 0.140000] r10: c1802ae0 r9 : c1802ba0 r8 : 00000000
+> [ 0.140000] r7 : c1402000 r6 : c1842240 r5 : c1842300 r4 : c1802ba0
+> [ 0.140000] r3 : ffffffff r2 : c184237c r1 : c1802ba0 r0 : c1402054
+> [ 0.140000] Flags: NzCv IRQs on FIQs off Mode SVC_32 ISA ARM Segment kernel
+> [ 0.140000] Control: 0000397f Table: 00004000 DAC: 00000017
+> [ 0.140000] Process kdevtmpfs (pid: 11, stack limit = 0xc18501c0)
+> [ 0.140000] Stack: (0xc1851e18 to 0xc1852000)
+> [ 0.140000] 1e00: 0000000dc1842300
+> [ 0.140000] 1e20:
+> c1842300c1802ba0c1842240c00a9464c184230000000000c1802ba0c1842300
+> [ 0.140000] 1e40:
+> 00000020c1802ba0c1851e70c1802b00c1852000c00a96a400000000c0354690
+> [ 0.140000] 1e60:
+> 00000020c1842310c034db48c00aad54c1842250c1402000c1851ec400000000
+> [ 0.140000] 1e80:
+> 00000000000000000000000000000000c181100000008000c02fdfb900000000
+> [ 0.140000] 1ea0:
+> 000000000000000000000000c00aafccc1852000c1802aa000020200c1802ae0
+> [ 0.140000] 1ec0:
+> c1802b00c185200000000000c182bf5cc1851f06c182bf5cc0172950c017299c
+> [ 0.140000] 1ee0:
+> c1851f06ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+> [ 0.140000] 1f00:
+> ffffffff6f6da000303d65640035353700000000c0029ac40000000000000002
+> [ 0.140000] 1f20:
+> c182a000c182a01cc184a3600000001700000000c184a360c1850000c1828000
+> [ 0.140000] 1f40:
+> c1851f6cc029363c00000000c1802aa000000000c182bf5cc017295000000000
+> [ 0.140000] 1f60:
+> 000000000000000000000000c0028becffffffff00000000ffffffffc182bf5c
+> [ 0.140000] 1f80:
+> 00000000c1851f84c1851f8400000000c1851f90c1851f90c1851facc1802aa0
+> [ 0.140000] 1fa0:
+> c0028b280000000000000000c000925000000000000000000000000000000000
+> [ 0.140000] 1fc0:
+> 0000000000000000000000000000000000000000000000000000000000000000
+> [ 0.140000] 1fe0:
+> 000000000000000000000000000000000000001300000000ffffffffffffffff
+> [ 0.140000] [<c00a8978>] (mnt_set_mountpoint) from [<c00a9464>]
+> (attach_recursive_mnt+0x114/0x22c)
+> [ 0.140000] [<c00a9464>] (attach_recursive_mnt) from [<c00a96a4>]
+> (do_add_mount+0xb8/0xd4)
+> [ 0.140000] [<c00a96a4>] (do_add_mount) from [<c00aad54>] (do_mount+0xa08/0xa48)
+> [ 0.140000] [<c00aad54>] (do_mount) from [<c00aafcc>] (SyS_mount+0x84/0xb8)
+> [ 0.140000] [<c00aafcc>] (SyS_mount) from [<c017299c>] (devtmpfsd+0x4c/0x2fc)
+> [ 0.140000] [<c017299c>] (devtmpfsd) from [<c0028bec>] (kthread+0xc4/0xd8)
+> [ 0.140000] [<c0028bec>] (kthread) from [<c0009250>] (ret_from_fork+0x14/0x24)
+> [ 0.140000] Code: e594300ce285207ce3530000e585307c (15832004)
+> [ 0.140000] ---[ end trace 1298010f773134bc ]---
+> [ 0.140000] Kernel panic - not syncing: Fatal exception
+> [ 0.140000] Rebooting in 10 seconds..Reboot failed -- System halted
 
-Thanks! Applied for next and added a stable tag for v3.16+.
++1
 
-Kind regards
-Uffe
 
-> ---
->  drivers/mmc/core/sdio.c     |   12 ++++++++++--
->  drivers/mmc/core/sdio_irq.c |    4 ++--
->  2 files changed, 12 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-> index e636d9e..3fc40a7 100644
-> --- a/drivers/mmc/core/sdio.c
-> +++ b/drivers/mmc/core/sdio.c
-> @@ -992,8 +992,16 @@ static int mmc_sdio_resume(struct mmc_host *host)
->                 }
->         }
->
-> -       if (!err && host->sdio_irqs)
-> -               wake_up_process(host->sdio_irq_thread);
-> +       if (!err && host->sdio_irqs) {
-> +               if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
-> +                       wake_up_process(host->sdio_irq_thread);
-> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
-> +                       mmc_host_clk_hold(host);
-> +                       host->ops->enable_sdio_irq(host, 1);
-> +                       mmc_host_clk_release(host);
-> +               }
-> +       }
-> +
->         mmc_release_host(host);
->
->         host->pm_flags &= ~MMC_PM_KEEP_POWER;
-> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
-> index 5cc13c8..696eca4 100644
-> --- a/drivers/mmc/core/sdio_irq.c
-> +++ b/drivers/mmc/core/sdio_irq.c
-> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->                                 host->sdio_irqs--;
->                                 return err;
->                         }
-> -               } else {
-> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->                         mmc_host_clk_hold(host);
->                         host->ops->enable_sdio_irq(host, 1);
->                         mmc_host_clk_release(host);
-> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->                 if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->                         atomic_set(&host->sdio_irq_thread_abort, 1);
->                         kthread_stop(host->sdio_irq_thread);
-> -               } else {
-> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->                         mmc_host_clk_hold(host);
->                         host->ops->enable_sdio_irq(host, 0);
->                         mmc_host_clk_release(host);
-> -- 1.7.1
->
-> On 2014/8/12 18:23, Ulf Hansson wrote:
->> On 11 August 2014 07:49, Fu, Zhonghui <zhonghui.fu@linux.intel.com> wrote:
->>> From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
->>> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>> Date: Tue, 5 Aug 2014 12:44:38 +0800
->>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>>
->>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->>> the use of our own custom threaded IRQ handler, but left in an
->>> unconditional wake_up_process() on that handler at resume-time.
->>> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
->>>
->>> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
->>> before enable sdio IRQ.
->>>
->>> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->>> Signed-off-by: Chris Ball <chris@printf.net>
->>> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->>> ---
->>>  drivers/mmc/core/sdio.c     |   14 ++++++++++++--
->>>  drivers/mmc/core/sdio_irq.c |    4 ++--
->>>  2 files changed, 14 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->>> index e636d9e..e04a540 100644
->>> --- a/drivers/mmc/core/sdio.c
->>> +++ b/drivers/mmc/core/sdio.c
->>> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>>                 }
->>>         }
->>>
->>> -       if (!err && host->sdio_irqs)
->>> -               wake_up_process(host->sdio_irq_thread);
->>> +       if (!err && host->sdio_irqs) {
->>> +               if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>> +                       wake_up_process(host->sdio_irq_thread);
->>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>> +                       mmc_release_host(host);
->> Why mmc_release_host() and the corresponding mmc_claim_host() below?
->> Those shouldn't be needed I think.
->
-> You are right. These two functions shouldn't be invoked here. I made a new patch as above.
->
->
-> Thanks,
-> Zhonghui
->>
->>
->>> +                       mmc_host_clk_hold(host);
->>> +                       host->ops->enable_sdio_irq(host, 1);
->>> +                       mmc_host_clk_release(host);
->>> +                       mmc_claim_host(host);
->>> +               }
->>> +       }
->>> +
->>>         mmc_release_host(host);
->>>
->>>         host->pm_flags &= ~MMC_PM_KEEP_POWER;
->>> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
->>> index 5cc13c8..696eca4 100644
->>> --- a/drivers/mmc/core/sdio_irq.c
->>> +++ b/drivers/mmc/core/sdio_irq.c
->>> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->>>                                 host->sdio_irqs--;
->>>                                 return err;
->>>                         }
->>> -               } else {
->>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>>                         mmc_host_clk_hold(host);
->>>                         host->ops->enable_sdio_irq(host, 1);
->>>                         mmc_host_clk_release(host);
->>> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->>>                 if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>>                         atomic_set(&host->sdio_irq_thread_abort, 1);
->>>                         kthread_stop(host->sdio_irq_thread);
->>> -               } else {
->>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>>                         mmc_host_clk_hold(host);
->>>                         host->ops->enable_sdio_irq(host, 0);
->>>                         mmc_host_clk_release(host);
->>> -- 1.7.1
->>>
->> Thanks for working on this!
->>
->> Kind regards
->> Uffe
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks,
+-- 
+Ming Lei
