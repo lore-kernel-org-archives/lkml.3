@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000AbaHRJfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:35:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42844 "EHLO
+	id S1752472AbaHRJed (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42650 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618AbaHRJfW (ORCPT
+	with ESMTP id S1752452AbaHRJeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:22 -0400
+	Mon, 18 Aug 2014 05:34:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Bottomley <JBottomley@Parallels.com>, Christoph Hellwig <hch@lst.de>,
+Cc: Bernd Wachter <bernd.wachter@jolla.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 081/137] scsi: handle flush errors properly
-Date: Mon, 18 Aug 2014 10:32:22 +0100
-Message-Id: <1408354398-10226-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 045/137] net: qmi_wwan: Add ID for Telewell TW-LTE 4G v2
+Date: Mon, 18 Aug 2014 10:31:46 +0100
+Message-Id: <1408354398-10226-46-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Bernd Wachter <bernd.wachter@jolla.com>
 
-commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54 upstream.
+commit 8dcb4b1526747d8431f9895e153dd478c9d16186 upstream.
 
-Flush commands don't transfer data and thus need to be special cased
-in the I/O completion handler so that we can propagate errors to
-the block layer and filesystem.
+There's a new version of the Telewell 4G modem working with, but not
+recognized by this driver.
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Reported-by: Steven Haber <steven@qumulo.com>
-Tested-by: Steven Haber <steven@qumulo.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Bernd Wachter <bernd.wachter@jolla.com>
+Acked-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/scsi_lib.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/usb/qmi_wwan.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 124392f3091e..96e537a8604d 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -831,6 +831,14 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 			scsi_next_command(cmd);
- 			return;
- 		}
-+	} else if (blk_rq_bytes(req) == 0 && result && !sense_deferred) {
-+		/*
-+		 * Certain non BLOCK_PC requests are commands that don't
-+		 * actually transfer anything (FLUSH), so cannot use
-+		 * good_bytes != blk_rq_bytes(req) as the signal for an error.
-+		 * This sets the error explicitly for the problem case.
-+		 */
-+		error = __scsi_error_from_host_byte(cmd, result);
- 	}
- 
- 	/* no bidi support for !REQ_TYPE_BLOCK_PC yet */
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 6fb0082b3308..bf2e5c19b9be 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -721,6 +721,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x19d2, 0x1424, 2)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x1425, 2)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x1426, 2)},	/* ZTE MF91 */
++	{QMI_FIXED_INTF(0x19d2, 0x1428, 2)},	/* Telewell TW-LTE 4G v2 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x2002, 4)},	/* ZTE (Vodafone) K3765-Z */
+ 	{QMI_FIXED_INTF(0x0f3d, 0x68a2, 8)},    /* Sierra Wireless MC7700 */
+ 	{QMI_FIXED_INTF(0x114f, 0x68a2, 8)},    /* Sierra Wireless MC7750 */
 -- 
 1.9.1
 
