@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaHRJdx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:33:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42482 "EHLO
+	id S1752144AbaHRJd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:33:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42509 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013AbaHRJdv (ORCPT
+	with ESMTP id S1752048AbaHRJd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:51 -0400
+	Mon, 18 Aug 2014 05:33:57 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Phil Turnbull <phil.turnbull@oracle.com>,
-        Vegard Nossum <vegard.nossum@oracle.com>, Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Martin Lau <kafai@fb.com>, Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 015/137] net/l2tp: don't fall back on UDP [get|set]sockopt
-Date: Mon, 18 Aug 2014 10:31:16 +0100
-Message-Id: <1408354398-10226-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 022/137] ring-buffer: Fix polling on trace_pipe
+Date: Mon, 18 Aug 2014 10:31:23 +0100
+Message-Id: <1408354398-10226-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,56 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Martin Lau <kafai@fb.com>
 
-commit 3cf521f7dc87c031617fd47e4b7aa2593c2f3daf upstream.
+commit 97b8ee845393701edc06e27ccec2876ff9596019 upstream.
 
-The l2tp [get|set]sockopt() code has fallen back to the UDP functions
-for socket option levels != SOL_PPPOL2TP since day one, but that has
-never actually worked, since the l2tp socket isn't an inet socket.
+ring_buffer_poll_wait() should always put the poll_table to its wait_queue
+even there is immediate data available.  Otherwise, the following epoll and
+read sequence will eventually hang forever:
 
-As David Miller points out:
+1. Put some data to make the trace_pipe ring_buffer read ready first
+2. epoll_ctl(efd, EPOLL_CTL_ADD, trace_pipe_fd, ee)
+3. epoll_wait()
+4. read(trace_pipe_fd) till EAGAIN
+5. Add some more data to the trace_pipe ring_buffer
+6. epoll_wait() -> this epoll_wait() will block forever
 
-  "If we wanted this to work, it'd have to look up the tunnel and then
-   use tunnel->sk, but I wonder how useful that would be"
+~ During the epoll_ctl(efd, EPOLL_CTL_ADD,...) call in step 2,
+  ring_buffer_poll_wait() returns immediately without adding poll_table,
+  which has poll_table->_qproc pointing to ep_poll_callback(), to its
+  wait_queue.
+~ During the epoll_wait() call in step 3 and step 6,
+  ring_buffer_poll_wait() cannot add ep_poll_callback() to its wait_queue
+  because the poll_table->_qproc is NULL and it is how epoll works.
+~ When there is new data available in step 6, ring_buffer does not know
+  it has to call ep_poll_callback() because it is not in its wait queue.
+  Hence, block forever.
 
-Since this can never have worked so nobody could possibly have depended
-on that functionality, just remove the broken code and return -EINVAL.
+Other poll implementation seems to call poll_wait() unconditionally as the very
+first thing to do.  For example, tcp_poll() in tcp.c.
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Acked-by: James Chapman <jchapman@katalix.com>
-Acked-by: David Miller <davem@davemloft.net>
-Cc: Phil Turnbull <phil.turnbull@oracle.com>
-Cc: Vegard Nossum <vegard.nossum@oracle.com>
-Cc: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/p/20140610060637.GA14045@devbig242.prn2.facebook.com
+
+Fixes: 2a2cc8f7c4d0 "ftrace: allow the event pipe to be polled"
+Reviewed-by: Chris Mason <clm@fb.com>
+Signed-off-by: Martin Lau <kafai@fb.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/l2tp/l2tp_ppp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/net/l2tp/l2tp_ppp.c b/net/l2tp/l2tp_ppp.c
-index 9a0e5874e73e..164fa9dcd97d 100644
---- a/net/l2tp/l2tp_ppp.c
-+++ b/net/l2tp/l2tp_ppp.c
-@@ -1365,7 +1365,7 @@ static int pppol2tp_setsockopt(struct socket *sock, int level, int optname,
- 	int err;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 15c4ae203885..a758ec217bc0 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -616,10 +616,6 @@ int ring_buffer_poll_wait(struct ring_buffer *buffer, int cpu,
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct rb_irq_work *work;
  
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
- 
- 	if (optlen < sizeof(int))
- 		return -EINVAL;
-@@ -1491,7 +1491,7 @@ static int pppol2tp_getsockopt(struct socket *sock, int level, int optname,
- 	struct pppol2tp_session *ps;
- 
- 	if (level != SOL_PPPOL2TP)
--		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
-+		return -EINVAL;
- 
- 	if (get_user(len, optlen))
- 		return -EFAULT;
+-	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+-	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+-		return POLLIN | POLLRDNORM;
+-
+ 	if (cpu == RING_BUFFER_ALL_CPUS)
+ 		work = &buffer->irq_work;
+ 	else {
 -- 
 1.9.1
 
