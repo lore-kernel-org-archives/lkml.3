@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaHRR1V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:27:21 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33763 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751597AbaHRR1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 13:27:19 -0400
-Message-ID: <53F23761.6000904@linux.vnet.ibm.com>
-Date: Mon, 18 Aug 2014 22:56:57 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752094AbaHRR3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:29:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42119 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaHRR3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 13:29:47 -0400
+Message-ID: <53F2381B.8020801@wwwdotorg.org>
+Date: Mon, 18 Aug 2014 11:30:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
-        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
-        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
-        arjan@linux.intel.com, mingo@kernel.org, len.brown@intel.com,
-        yuyang.du@intel.com, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, corbet@lwn.net, catalin.marinas@arm.com,
-        markgross@thegnar.org, sundar.iyer@intel.com,
-        linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com,
-        Lorenzo.Pieralisi@arm.com, mike.turquette@linaro.org,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de
-Subject: Re: [RFC PATCH V2 01/19] sched/power: Remove cpu idle state selection
- and cpu frequency tuning
-References: <20140811113000.31956.52857.stgit@preeti.in.ibm.com> <20140811113145.31956.32224.stgit@preeti.in.ibm.com> <alpine.LFD.2.11.1408181125100.29347@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1408181125100.29347@knanqh.ubzr>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 0/9] Tegra xHCI support
+References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081817-0320-0000-0000-000000413C0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 09:09 PM, Nicolas Pitre wrote:
-> On Mon, 11 Aug 2014, Preeti U Murthy wrote:
-> 
->> As a first step towards improving the power awareness of the scheduler,
->> this patch enables a "dumb" state where all power management is turned off.
->> Whatever additionally we put into the kernel for cpu power management must
->> do better than this in terms of performance as well as powersavings.
->> This will enable us to benchmark and optimize the power aware scheduler
->> from scratch.If we are to benchmark it against the performance of the
->> existing design, we will get sufficiently distracted by the performance
->> numbers and get steered away from a sane design.
-> 
-> I understand your goal here, but people *will* compare performance 
-> between the old and the new design anyway.  So I think it would be a 
-> better approach to simply let the existing code be and create a new 
-> scheduler-based governor that can be swapped with the existing ones at 
-> run time.  Eventually we'll want average users to test and compare this, 
-> and asking them to recompile a second kernel and reboot between them 
-> might get unwieldy to many people.
-> 
-> And by allowing both to coexist at run time, we're making sure both the 
-> old and the new code are built helping not breaking the old code.  And 
-> that will also cut down on the number of #ifdefs in many places.
-> 
-> In other words, CONFIG_SCHED_POWER is needed to select the scheduler 
-> based governor but it shouldn't force the existing code disabled.
+On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
+> This series adds support for xHCI on NVIDIA Tegra SoCs.  This includes:
+>   - adding a driver for the mailbox used to communicate with the xHCI
+>     controller's firmware,
+>   - extending the XUSB pad controller driver to support the USB PHY
+>     types (UTMI, HSIC, and USB3), and
+>   - adding a xHCI host-controller driver.
 
-I don't think I understand you here. So are you proposing a runtime
-switch like a sysfs interface instead of a config switch? Wouldn't that
-be unwise given that its a complete turnaround of the behavior kernel
-after the switch? I agree that the first patch is a dummy patch, its
-meant to ensure that we have *atleast* the power efficiency that this
-patch brings in. Of course after that point this patch is a no-op. In
-fact the subsequent patches will mitigate the effect of this.
-
-Regards
-Preeti U Murthy
-> 
-> 
->> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-
+Can you please remind us what dependencies exist between the patches? In 
+other words, is it possible to apply parts of the series to their usual 
+subsystem branches, or does the whole thing need to go into a single 
+topic branch in order to avoid compile-time problems, or run-time 
+problems in features unrelated to the new functionality? Thanks.
