@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaHRBZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 21:25:27 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:38003 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548AbaHRBZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 21:25:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX188qJcQ9+G3E60hqs4RLcYgNxbzM/7ERvI=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 8FAB15C8370
-Date: Sun, 17 Aug 2014 21:25:12 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
- into scheduler
-Message-ID: <20140818012512.GL12769@titan.lakedaemon.net>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
- <20140817173236.GG12769@titan.lakedaemon.net>
- <20140817185522.GX30401@n2100.arm.linux.org.uk>
- <20140817190434.GJ12769@titan.lakedaemon.net>
- <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
+	id S1751852AbaHRBZk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 21:25:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8104 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382AbaHRBZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 21:25:39 -0400
+Date: Mon, 18 Aug 2014 09:24:54 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH 5/7] arm64/efi: do not enter virtual mode in case booting
+ with efi=noruntime or noefi
+Message-ID: <20140818012454.GA3379@darkstar.nay.redhat.com>
+References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
+ <1408007731-15081-5-git-send-email-dyoung@redhat.com>
+ <20140815150952.GY27466@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140815150952.GY27466@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 08:04:45PM -0400, Nicolas Pitre wrote:
-> On Sun, 17 Aug 2014, Jason Cooper wrote:
-> > On Sun, Aug 17, 2014 at 07:55:23PM +0100, Russell King - ARM Linux wrote:
-> > > On Sun, Aug 17, 2014 at 01:32:36PM -0400, Jason Cooper wrote:
-> > > > Applied to irqchip/urgent with Nico's Ack.
-> > > 
-> > > Interesting, so I'm discussing this patch, and it gets applied anyway...
-> > > yes, that's great.
+On 08/15/14 at 04:09pm, Will Deacon wrote:
+> On Thu, Aug 14, 2014 at 10:15:30AM +0100, Dave Young wrote:
+> > In case efi runtime disabled via noefi kernel cmdline arm64_enter_virtual_mode
+> > should error out.
 > > 
-> > Quoting Nico:
+> > At the same time move early_memunmap(memmap.map, mapsize) to the beginning of
+> > the function or it will leak early mem.
 > > 
-> > "Of course it would be good to clarify things wrt Russell's remark
-> > independently from this patch."
+> > Signed-off-by: Dave Young <dyoung@redhat.com>
+> > ---
+> >  arch/arm64/kernel/efi.c | 9 +++++++--
+> >  1 file changed, 7 insertions(+), 2 deletions(-)
 > > 
-> > I took 'independently' to mean "This patch is ok, *and* we need to
-> > address Russell's concerns in a follow-up patch."
-> > 
-> > Nico's Reviewed-by with that comment was sent August 13th.  The most
-> > recent activity on this thread was also August 13th.  After four days, I
-> > reasoned there were no objections to his comment.
+> > diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+> > index 6ed0362..309fab1 100644
+> > --- a/arch/arm64/kernel/efi.c
+> > +++ b/arch/arm64/kernel/efi.c
+> > @@ -392,11 +392,16 @@ static int __init arm64_enter_virtual_mode(void)
+> >  		return -1;
+> >  	}
+> >  
+> > +	mapsize = memmap.map_end - memmap.map;
+> > +	if (efi_runtime_disabled()) {
+> > +		early_memunmap(memmap.map, mapsize);
 > 
-> Well... I mentioned this patch is a nice cleanup independently of the 
-> reason why it was created in the first place.
+> Should this early_memunmap really be conditional? With this change, we no
+> longer unmap it before setting up the permanent mapping below.
 
-Ah, fair enough.
+Ooops, I tested the right version but sent a wrong version for this arm64 patch.
 
-> Maybe that shouldn't be sorted as "urgent" in that case, especially
-> when the code having problem with the current state of things is
-> living out of mainline.
+Thanks for catch.
 
-hmmm, yes.  I've been grappling with the semantics of '/urgent' vice
-'/fixes'.  With mvebu, /fixes is the branch for all changes needing to go
-into the current -rcX cycle.  For irqchip, Thomas suggested /urgent for
-the equivalent branch.  To me, they serve the same purpose.
-Unfortunately, I occasionally hear "Well, it's not _urgent_ ...".  I
-suppose I'll put up with it for one more cycle and then change it to
-/fixes. :)
-
-wrt this patch, I need to drop it anyway.  I was a bit rusty (it's been
-a few weeks) and forgot to add the Cc -stable and Fixes: tags.  I do
-agree, though, it's certainly not urgent.
-
-As Russell has raised more issues with this patch as well, I'll hold off
-on re-applying until I see a new version.  Hopefully it'll meet with
-everyones approval.
-
-thx,
-
-Jason.
+> 
+> Will
+> 
+> > +		pr_info("EFI runtime services will be disabled.\n");
+> > +		return -1;
+> > +	}
+> > +
+> >  	pr_info("Remapping and enabling EFI services.\n");
+> >  
+> >  	/* replace early memmap mapping with permanent mapping */
+> > -	mapsize = memmap.map_end - memmap.map;
+> > -	early_memunmap(memmap.map, mapsize);
+> >  	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
+> >  						   mapsize);
+> >  	memmap.map_end = memmap.map + mapsize;
+> > -- 
+> > 1.8.3.1
+> > 
+> > 
