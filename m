@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaHRO2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:28:33 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:33541 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaHRO2b (ORCPT
+	id S1752187AbaHRO3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:29:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40255 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751572AbaHRO3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:28:31 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, kernel@stlinux.com,
-        linux-serial@vger.kernel.org
-Subject: [PATCH v9 14/16] serial: asc: Adopt readl_/writel_relaxed()
-Date: Mon, 18 Aug 2014 15:28:09 +0100
-Message-Id: <1408372091-12689-15-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
-References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
+	Mon, 18 Aug 2014 10:29:47 -0400
+Date: Mon, 18 Aug 2014 15:29:45 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Inha Song <ideal.song@samsung.com>
+Cc: broonie@kernel.org, alsa-devel@alsa-project.org,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        lee.jones@linaro.org, lgirdwood@gmail.com, sameo@linux.intel.com,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, cw00.choi@samsung.com
+Subject: Re: [alsa-devel] [PATCH v3 2/2] mfd: arizona: Update DT binding to
+	support INn_MODE init_data
+Message-ID: <20140818142945.GD7556@opensource.wolfsonmicro.com>
+References: <20140818200009.12a52dfa@songinha-Samsung-DeskTop-System>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818200009.12a52dfa@songinha-Samsung-DeskTop-System>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The architectures where this peripheral exists (ARM and SH) have expensive
-implementations of writel(), reliant on spin locks and explicit L2 cache
-management. These architectures provide a cheaper writel_relaxed() which
-is much better suited to peripherals that do not perform DMA. The
-situation with readl()/readl_relaxed()is similar although less acute.
+On Mon, Aug 18, 2014 at 08:00:09PM +0900, Inha Song wrote:
+> This patch update DT binding to support INn_MODE init_data. Each
+> input signal path can be configurated either as a Analogue or
+> Digital using the INn_MODE registers.
+> 
+> Signed-off-by: Inha Song <ideal.song@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/arizona.txt | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+> index 5c7e723..0064b21 100644
+> --- a/Documentation/devicetree/bindings/mfd/arizona.txt
+> +++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+> @@ -42,6 +42,14 @@ Optional properties:
+>      the chip default will be used.  If present exactly five values must
+>      be specified.
+>  
+> +  - wlf,inmode : A list of INn_MODE register values, where n is the number
+> +    of input signals. Each input signal path can be configurated either as a
+> +    Analogue or Digital using the INn_MODE registers. If absent, INn_MODE
 
-This driver does not use DMA and will be more power efficient and more
-robust (due to absense of spin locks during console I/O) if it uses the
-relaxed variants.
+I would replace the second sentence here with something like
+"Valid values are 0 (Differential), 1 (Single-ended) and 2 (Digital
+Microphone)."
 
-This change means the driver is no longer portable and therefore no
-longer suitable for compile testing.
+Thanks,
+Charles
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-Cc: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Patrice Chotard <patrice.chotard@st.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: kernel@stlinux.com
-Cc: linux-serial@vger.kernel.org
----
- drivers/tty/serial/Kconfig  | 2 +-
- drivers/tty/serial/st-asc.c | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 26cec64..e9b1735 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1527,7 +1527,7 @@ config SERIAL_FSL_LPUART_CONSOLE
- config SERIAL_ST_ASC
- 	tristate "ST ASC serial port support"
- 	select SERIAL_CORE
--	depends on ARM || COMPILE_TEST
-+	depends on ARM
- 	help
- 	  This driver is for the on-chip Asychronous Serial Controller on
- 	  STMicroelectronics STi SoCs.
-diff --git a/drivers/tty/serial/st-asc.c b/drivers/tty/serial/st-asc.c
-index 2b5eb6e..df709ee 100644
---- a/drivers/tty/serial/st-asc.c
-+++ b/drivers/tty/serial/st-asc.c
-@@ -152,12 +152,12 @@ static inline struct asc_port *to_asc_port(struct uart_port *port)
- 
- static inline u32 asc_in(struct uart_port *port, u32 offset)
- {
--	return readl(port->membase + offset);
-+	return readl_relaxed(port->membase + offset);
- }
- 
- static inline void asc_out(struct uart_port *port, u32 offset, u32 value)
- {
--	writel(value, port->membase + offset);
-+	writel_relaxed(value, port->membase + offset);
- }
- 
- /*
--- 
-1.9.3
-
+> +    registers set to 0 by default. If present, values must be specified less
+> +    than or equal to the number of input singals. If values less than the
+> +    number of input signals, elements that has not been specifed are set to 0
+> +    by default.
+> +
+>    - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
+>      they are being externally supplied. As covered in
+>      Documentation/devicetree/bindings/regulator/regulator.txt
+> -- 
+> 2.0.0.390.gcb682f8
+> 
