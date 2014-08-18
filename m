@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaHRJeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42559 "EHLO
+	id S1754683AbaHRKEu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:04:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42515 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146AbaHRJeK (ORCPT
+	with ESMTP id S1752118AbaHRJd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:10 -0400
+	Mon, 18 Aug 2014 05:33:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomasz Figa <t.figa@samsung.com>, Jason Cooper <jason@lakedaemon.net>,
+Cc: Gerd Hoffmann <kraxel@redhat.com>, Jason Wang <jasowang@redhat.com>,
+        Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 030/137] irqchip: gic: Fix core ID calculation when topology is read from DT
-Date: Mon, 18 Aug 2014 10:31:31 +0100
-Message-Id: <1408354398-10226-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 024/137] drm/qxl: return IRQ_NONE if it was not our irq
+Date: Mon, 18 Aug 2014 10:31:25 +0100
+Message-Id: <1408354398-10226-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,60 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Figa <t.figa@samsung.com>
+From: Jason Wang <jasowang@redhat.com>
 
-commit 29e697b11853d3f83b1864ae385abdad4aa2c361 upstream.
+commit fbb60fe35ad579b511de8604b06a30b43846473b upstream.
 
-Certain GIC implementation, namely those found on earlier, single
-cluster, Exynos SoCs, have registers mapped without per-CPU banking,
-which means that the driver needs to use different offset for each CPU.
+Return IRQ_NONE if it was not our irq. This is necessary for the case
+when qxl is sharing irq line with a device A in a crash kernel. If qxl
+is initialized before A and A's irq was raised during this gap,
+returning IRQ_HANDLED in this case will cause this irq to be raised
+again after EOI since kernel think it was handled but in fact it was
+not.
 
-Currently the driver calculates the offset by multiplying value returned
-by cpu_logical_map() by CPU offset parsed from DT. This is correct when
-CPU topology is not specified in DT and aforementioned function returns
-core ID alone. However when DT contains CPU topology, the function
-changes to return cluster ID as well, which is non-zero on mentioned
-SoCs and so breaks the calculation in GIC driver.
-
-This patch fixes this by masking out cluster ID in CPU offset
-calculation so that only core ID is considered. Multi-cluster Exynos
-SoCs already have banked GIC implementations, so this simple fix should
-be enough.
-
-Reported-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Fixes: db0d4db22a78d ("ARM: gic: allow GIC to support non-banked setups")
-Link: https://lkml.kernel.org/r/1405610624-18722-1-git-send-email-t.figa@samsung.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Cc: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/irqchip/irq-gic.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/qxl/qxl_irq.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 97fd4bf56f3e..4e2347ad869d 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -42,6 +42,7 @@
- #include <linux/irqchip/chained_irq.h>
- #include <linux/irqchip/arm-gic.h>
+diff --git a/drivers/gpu/drm/qxl/qxl_irq.c b/drivers/gpu/drm/qxl/qxl_irq.c
+index 21393dc4700a..f4b6b89b98f3 100644
+--- a/drivers/gpu/drm/qxl/qxl_irq.c
++++ b/drivers/gpu/drm/qxl/qxl_irq.c
+@@ -33,6 +33,9 @@ irqreturn_t qxl_irq_handler(DRM_IRQ_ARGS)
  
-+#include <asm/cputype.h>
- #include <asm/irq.h>
- #include <asm/exception.h>
- #include <asm/smp_plat.h>
-@@ -754,7 +755,9 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
- 		}
+ 	pending = xchg(&qdev->ram_header->int_pending, 0);
  
- 		for_each_possible_cpu(cpu) {
--			unsigned long offset = percpu_offset * cpu_logical_map(cpu);
-+			u32 mpidr = cpu_logical_map(cpu);
-+			u32 core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-+			unsigned long offset = percpu_offset * core_id;
- 			*per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
- 			*per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
- 		}
++	if (!pending)
++		return IRQ_NONE;
++
+ 	atomic_inc(&qdev->irq_received);
+ 
+ 	if (pending & QXL_INTERRUPT_DISPLAY) {
 -- 
 1.9.1
 
