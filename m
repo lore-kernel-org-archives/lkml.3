@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802AbaHRKKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:10:22 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:11421 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaHRKKS (ORCPT
+	id S1751871AbaHRJde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:33:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42394 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaHRJd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 06:10:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 18 Aug 2014 03:00:46 -0700
-Message-ID: <53F1D105.1070107@nvidia.com>
-Date: Mon, 18 Aug 2014 13:10:13 +0300
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, <linux-pm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Subject: Re: [PATCH 1/3] of: Add of_match_machine helper
-References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>	<1407452515-2390-2-git-send-email-ttynkkynen@nvidia.com> <20140817152854.5406BC40ADD@trevor.secretlab.ca>
-In-Reply-To: <20140817152854.5406BC40ADD@trevor.secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Aug 2014 05:33:29 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Amitkumar Karwar <akarwar@marvell.com>,
+        Maithili Hinge <maithili@marvell.com>,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 002/137] mwifiex: fix Tx timeout issue
+Date: Mon, 18 Aug 2014 10:31:03 +0100
+Message-Id: <1408354398-10226-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/08/14 18:28, Grant Likely wrote:
-> On Fri, 8 Aug 2014 02:01:53 +0300, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
-[...]
->> +EXPORT_SYMBOL(of_match_machine);
-> 
-> Too wordy...
-> 
-> 	return of_match_node(matches, of_allnodes);
-> 
-> :-)
-> 
-> It could be a static inline, but I don't think it's even worth having a
-> helper. The callers could just open code the above.
-> 
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Do you mean all the drivers should be referring to of_allnodes directly?
-I see that it's indeed exported, but to me that sounds like relying too
-much on an implementation detail. In fact, Documentation/devicetree/todo.txt
-even seems to have a TODO entry for its removal ("Remove of_allnodes list
-and iterate using list of child nodes alone").
+------------------
 
+From: Amitkumar Karwar <akarwar@marvell.com>
+
+commit d76744a93246eccdca1106037e8ee29debf48277 upstream.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=70191
+https://bugzilla.kernel.org/show_bug.cgi?id=77581
+
+It is observed that sometimes Tx packet is downloaded without
+adding driver's txpd header. This results in firmware parsing
+garbage data as packet length. Sometimes firmware is unable
+to read the packet if length comes out as invalid. This stops
+further traffic and timeout occurs.
+
+The root cause is uninitialized fields in tx_info(skb->cb) of
+packet used to get garbage values. In this case if
+MWIFIEX_BUF_FLAG_REQUEUED_PKT flag is mistakenly set, txpd
+header was skipped. This patch makes sure that tx_info is
+correctly initialized to fix the problem.
+
+Reported-by: Andrew Wiley <wiley.andrew.j@gmail.com>
+Reported-by: Linus Gasser <list@markas-al-nour.org>
+Reported-by: Michael Hirsch <hirsch@teufel.de>
+Tested-by: Xinming Hu <huxm@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Maithili Hinge <maithili@marvell.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/wireless/mwifiex/main.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/wireless/mwifiex/main.c b/drivers/net/wireless/mwifiex/main.c
+index 02cc93b673c1..29cadf29af78 100644
+--- a/drivers/net/wireless/mwifiex/main.c
++++ b/drivers/net/wireless/mwifiex/main.c
+@@ -603,6 +603,7 @@ mwifiex_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	}
+ 
+ 	tx_info = MWIFIEX_SKB_TXCB(skb);
++	memset(tx_info, 0, sizeof(*tx_info));
+ 	tx_info->bss_num = priv->bss_num;
+ 	tx_info->bss_type = priv->bss_type;
+ 
 -- 
-nvpublic
+1.9.1
+
