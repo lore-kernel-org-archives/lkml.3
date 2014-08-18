@@ -1,73 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaHRMm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:42:59 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:43188 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaHRMm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:42:57 -0400
-Date: Mon, 18 Aug 2014 15:42:47 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: infinipath@intel.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] qib_qp: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-Message-ID: <20140818124246.GA18423@ada>
+	id S1751751AbaHRMoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:44:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750977AbaHRMoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 08:44:11 -0400
+Date: Mon, 18 Aug 2014 08:44:06 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Antw: Re: Some problems with HP DL380 G8 BIOS and SLES11 SP3
+Message-ID: <20140818124404.GL49576@redhat.com>
+References: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
+ <20140814174658.GV49576@redhat.com>
+ <53F1B57C020000A100016AD8@gwsmtp1.uni-regensburg.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <53F1B57C020000A100016AD8@gwsmtp1.uni-regensburg.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The uses of "rcu_assign_pointer()" are NULLing out the pointers.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+On Mon, Aug 18, 2014 at 08:12:44AM +0200, Ulrich Windl wrote:
+> >>> Don Zickus <dzickus@redhat.com> schrieb am 14.08.2014 um 19:46 in Nachricht
+> <20140814174658.GV49576@redhat.com>:
+> > On Wed, Aug 13, 2014 at 05:22:17PM +0200, Ulrich Windl wrote:
+> >> Hello!
+> >> 
+> >> Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are 
+> > some kernel messages that indicate a bug either in the kernel or in the HP 
+> > BIOS. Maybe someone can explain, so I can try to get it fixed whatever party 
+> > broke it...
+> >> 
+> >> Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 
+> > [gcc-4_3-branch revision 152973]" (latest).
+> >> HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
+> > 
+> > Yes, it is because you are letting the firmware dynamically control your
+> > cpu frequency.  In order to accomplish they need to use a perf counter or
+> > two, hence the conflict.  Set the firmware setting to OS control and the
+> > problem goes away.  Contact HP for those instructions, they are very aware
+> > of this problem and recommend OS control to all high end servers.
+> 
+> Hi!
+> 
+> Thanks for answering, but the BIOS has set power management to "OS control" (see attachment). So I guess it must be something different.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+Hmm, sounds like it.  Regardless, the error message indicates the counters
+are in use most likely by the BIOS.  So you can ask HP what is going on.
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+I assume this is a normal bootup and not a kdump crash kernel, correct?
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- drivers/infiniband/hw/qib/qib_qp.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Cheers,
+Don
 
-diff --git a/drivers/infiniband/hw/qib/qib_qp.c b/drivers/infiniband/hw/qib/qib_qp.c
-index 7fcc150..17daf42 100644
---- a/drivers/infiniband/hw/qib/qib_qp.c
-+++ b/drivers/infiniband/hw/qib/qib_qp.c
-@@ -255,10 +255,10 @@ static void remove_qp(struct qib_ibdev *dev, struct qib_qp *qp)
- 
- 	if (rcu_dereference_protected(ibp->qp0,
- 			lockdep_is_held(&dev->qpt_lock)) == qp) {
--		rcu_assign_pointer(ibp->qp0, NULL);
-+		RCU_INIT_POINTER(ibp->qp0, NULL);
- 	} else if (rcu_dereference_protected(ibp->qp1,
- 			lockdep_is_held(&dev->qpt_lock)) == qp) {
--		rcu_assign_pointer(ibp->qp1, NULL);
-+		RCU_INIT_POINTER(ibp->qp1, NULL);
- 	} else {
- 		struct qib_qp *q;
- 		struct qib_qp __rcu **qpp;
-@@ -315,7 +315,7 @@ unsigned qib_free_all_qps(struct qib_devdata *dd)
- 	for (n = 0; n < dev->qp_table_size; n++) {
- 		qp = rcu_dereference_protected(dev->qp_table[n],
- 			lockdep_is_held(&dev->qpt_lock));
--		rcu_assign_pointer(dev->qp_table[n], NULL);
-+		RCU_INIT_POINTER(dev->qp_table[n], NULL);
- 
- 		for (; qp; qp = rcu_dereference_protected(qp->next,
- 					lockdep_is_held(&dev->qpt_lock)))
--- 
-1.9.1
+> 
+> Regards,
+> Ulrich
+> 
+> > 
+> > Cheers,
+> > Don
+> > 
+> >> 
+> >> During ACPI init I see:
+> >> [...]
+> >> Reserving 128MB of memory at 752MB for crashkernel (System RAM: 132095MB)
+> >> ACPI: RSDP 00000000000f4f00 00024 (v02 HP    )
+> >> ACPI: XSDT 00000000bddaed00 000D4 (v01 HP     ProLiant 00000002   322? 
+> > 0000162E)
+> >> ACPI: FACP 00000000bddaee40 000F4 (v03 HP     ProLiant 00000002   322? 
+> > 0000162E)
+> >> ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 
+> > (2011041
+> >> 3/tbfadt-611)
+> >> ACPI Warning: Invalid length for Pm2ControlBlock: 32, using default 8 
+> > (20110413/
+> >> tbfadt-611)
+> >> ACPI: DSDT 00000000bddaef40 026DC (v01 HP         DSDT 00000001 INTL 
+> > 20030228)
+> >> ACPI: FACS 00000000bddac140 00040
+> >> ACPI: SPCR 00000000bddac180 00050 (v01 HP     SPCRRBSU 00000001   322? 
+> > 0000162E)
+> >> ACPI: MCFG 00000000bddac200 0003C (v01 HP     ProLiant 00000001      
+> > 00000000)
+> >> [...]
+> >> 
+> >> HPET id 0 under DRHD base 0xf4ffe000
+> >> BIOS requests to not use x2apic
+> >> Use 'intremap=no_x2apic_optout' to override BIOS request
+> >> Enabled IRQ remapping in xapic mode
+> >> x2apic not enabled, IRQ remapping is in xapic mode
+> >> Switched APIC routing to physical flat.
+> >> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> >> CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
+> >> Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS 
+> > detec
+> >> ted, complain to your hardware vendor.
+> >> [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
+> >> Intel PMU driver.
+> >> ... version:                3
+> >> ... bit width:              48
+> >> ... generic registers:      4
+> >> ... value mask:             0000ffffffffffff
+> >> ... max period:             000000007fffffff
+> >> ... fixed-purpose events:   3
+> >> ... event mask:             000000070000000f
+> >> NMI watchdog enabled, takes one hw-pmu counter.
+> >> Booting Node   0, Processors  #1
+> >> [...]
+> >> 
+> >>  pci0000:00: Requesting ACPI _OSC control (0x1d)
+> >>  pci0000:00: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 
+> > 0x00
+> >> ACPI _OSC control for PCIe not granted, disabling ASPM
+> >> [...]
+> >> 
+> >>  pci0000:20: Requesting ACPI _OSC control (0x1d)
+> >>  pci0000:20: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 
+> > 0x00
+> >> ACPI _OSC control for PCIe not granted, disabling ASPM
+> >> [...]
+> >> 
+> >> Regards,
+> >> Ulrich
+> >> P.S. Please CC: me, as I'm not on LKML...
+> >> 
+> >> 
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org 
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html 
+> >> Please read the FAQ at  http://www.tux.org/lkml/ 
+> 
+> 
+> 
+
 
