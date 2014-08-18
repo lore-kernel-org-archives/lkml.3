@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077AbaHRTId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 15:08:33 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:57440 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaHRTIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 15:08:30 -0400
+	id S1751979AbaHRTIZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 15:08:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57004 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751705AbaHRTIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 15:08:23 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: OMAP2+: board-generic: add support for AM57xx family
+Date: Mon, 18 Aug 2014 14:07:55 -0500
+Message-ID: <1408388875-7360-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-X-Originating-IP: [63.138.66.171]
-In-Reply-To: <1408387131-32152-1-git-send-email-agross@codeaurora.org>
-References: <1408387131-32152-1-git-send-email-agross@codeaurora.org>
-Date: Mon, 18 Aug 2014 12:08:29 -0700
-Message-ID: <CAOesGMi1RsP=L2BG5kUfnnjD5B7kW_SDDDiqRrEuY7RvS8HyyA@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: Add entry for SOC Qualcomm drivers
-From: Olof Johansson <olof@lixom.net>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Kumar Gala <galak@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 11:38 AM, Andy Gross <agross@codeaurora.org> wrote:
-> This patch adds a MAINTAINERS entry for the SOC Qualcomm drivers.
->
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
+AM57xx processor family are variants of DRA7 family of processors and
+targetted at industrial and non-automotive applications.
 
-Hm. I always figured the drivers/soc/<platform> hierarchy would be
-maintained by the subplatform maintainers, not by other developers.
-Main thought behind that was that we might want to cause a bit of
-bottle neck here, to make sure that at least one person has the full
-picture of what's going on across the platform as a whole.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
 
-That doesn't mean it _has_ to be that way though. And I'll leave it up
-to Kumar to decide for his platform. I.e. this would need an ack from
-him.
+NOTE: there is no discrenable features yet defined in register set at
+this point in time.
 
+Tested on AM5728 compatible platform and based on v3.17-rc1
 
--Olof
+ .../devicetree/bindings/arm/omap/omap.txt          |   12 ++++++++++++
+ arch/arm/mach-omap2/board-generic.c                |    4 ++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/omap/omap.txt b/Documentation/devicetree/bindings/arm/omap/omap.txt
+index 0edc903..ddd9bcd 100644
+--- a/Documentation/devicetree/bindings/arm/omap/omap.txt
++++ b/Documentation/devicetree/bindings/arm/omap/omap.txt
+@@ -85,6 +85,18 @@ SoCs:
+ - DRA722
+   compatible = "ti,dra722", "ti,dra72", "ti,dra7"
+ 
++- AM5728
++  compatible = "ti,am5728", "ti,dra742", "ti,dra74", "ti,dra7"
++
++- AM5726
++  compatible = "ti,am5726", "ti,dra742", "ti,dra74", "ti,dra7"
++
++- AM5718
++  compatible = "ti,am5718", "ti,dra722", "ti,dra72", "ti,dra7"
++
++- AM5716
++  compatible = "ti,am5716", "ti,dra722", "ti,dra72", "ti,dra7"
++
+ - AM4372
+   compatible = "ti,am4372", "ti,am43"
+ 
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index 9480997..bdb5194 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -241,6 +241,8 @@ MACHINE_END
+ 
+ #ifdef CONFIG_SOC_DRA7XX
+ static const char *dra74x_boards_compat[] __initconst = {
++	"ti,am5728",
++	"ti,am5726",
+ 	"ti,dra742",
+ 	"ti,dra7",
+ 	NULL,
+@@ -260,6 +262,8 @@ DT_MACHINE_START(DRA74X_DT, "Generic DRA74X (Flattened Device Tree)")
+ MACHINE_END
+ 
+ static const char *dra72x_boards_compat[] __initconst = {
++	"ti,am5718",
++	"ti,am5716",
+ 	"ti,dra722",
+ 	NULL,
+ };
+-- 
+1.7.9.5
+
