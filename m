@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaHRO2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:28:31 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:62423 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaHRO22 (ORCPT
+	id S1752120AbaHRO2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:28:33 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:33541 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084AbaHRO2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:28:28 -0400
+	Mon, 18 Aug 2014 10:28:31 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
@@ -28,9 +28,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, kernel@stlinux.com,
         linux-serial@vger.kernel.org
-Subject: [PATCH v9 13/16] serial: asc: Add support for KGDB's FIQ/NMI mode
-Date: Mon, 18 Aug 2014 15:28:08 +0100
-Message-Id: <1408372091-12689-14-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v9 14/16] serial: asc: Adopt readl_/writel_relaxed()
+Date: Mon, 18 Aug 2014 15:28:09 +0100
+Message-Id: <1408372091-12689-15-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
 References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
@@ -38,15 +38,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a .poll_init() function that enables UART RX and registers the
-UART's irq with KGDB. By providing this information to KGDB the serial
-driver offers "permission" for KGDB to route the UART interrupt signal
-from the drivers own handler to KGDBs FIQ handler (which will eventually
-use the UART's polled I/O callbacks to interact with the user).
+The architectures where this peripheral exists (ARM and SH) have expensive
+implementations of writel(), reliant on spin locks and explicit L2 cache
+management. These architectures provide a cheaper writel_relaxed() which
+is much better suited to peripherals that do not perform DMA. The
+situation with readl()/readl_relaxed()is similar although less acute.
 
-Note that the RX is not only enabled but also unmasked. This is required
-because otherwise the FIQ handler could never trigger. This unmask is
-copied from similar code in amba-pl011.c .
+This driver does not use DMA and will be more power efficient and more
+robust (due to absense of spin locks during console I/O) if it uses the
+relaxed variants.
+
+This change means the driver is no longer portable and therefore no
+longer suitable for compile testing.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
@@ -57,57 +60,42 @@ Cc: Jiri Slaby <jslaby@suse.cz>
 Cc: kernel@stlinux.com
 Cc: linux-serial@vger.kernel.org
 ---
- drivers/tty/serial/st-asc.c | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/tty/serial/Kconfig  | 2 +-
+ drivers/tty/serial/st-asc.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 26cec64..e9b1735 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1527,7 +1527,7 @@ config SERIAL_FSL_LPUART_CONSOLE
+ config SERIAL_ST_ASC
+ 	tristate "ST ASC serial port support"
+ 	select SERIAL_CORE
+-	depends on ARM || COMPILE_TEST
++	depends on ARM
+ 	help
+ 	  This driver is for the on-chip Asychronous Serial Controller on
+ 	  STMicroelectronics STi SoCs.
 diff --git a/drivers/tty/serial/st-asc.c b/drivers/tty/serial/st-asc.c
-index 8b2d735..2b5eb6e 100644
+index 2b5eb6e..df709ee 100644
 --- a/drivers/tty/serial/st-asc.c
 +++ b/drivers/tty/serial/st-asc.c
-@@ -30,6 +30,7 @@
- #include <linux/of_platform.h>
- #include <linux/serial_core.h>
- #include <linux/clk.h>
-+#include <linux/kgdb.h>
+@@ -152,12 +152,12 @@ static inline struct asc_port *to_asc_port(struct uart_port *port)
  
- #define DRIVER_NAME "st-asc"
- #define ASC_SERIAL_NAME "ttyAS"
-@@ -607,6 +608,25 @@ asc_verify_port(struct uart_port *port, struct serial_struct *ser)
+ static inline u32 asc_in(struct uart_port *port, u32 offset)
+ {
+-	return readl(port->membase + offset);
++	return readl_relaxed(port->membase + offset);
  }
  
- #ifdef CONFIG_CONSOLE_POLL
-+
-+#ifdef CONFIG_KGDB_FIQ
-+/*
-+ * Prepare the UART to be used from kgdb's NMI support.
-+ */
-+static int asc_poll_init(struct uart_port *port)
-+{
-+	struct asc_port *ascport = container_of(port, struct asc_port, port);
-+
-+	/* register the FIQ with kgdb */
-+	kgdb_register_fiq(ascport->port.irq);
-+
-+	/* enable RX interrupts in case the interrupt is used for NMI entry. */
-+	asc_enable_rx_interrupts(port);
-+
-+	return 0;
-+}
-+#endif /* CONFIG_KGDB_FIQ */
-+
+ static inline void asc_out(struct uart_port *port, u32 offset, u32 value)
+ {
+-	writel(value, port->membase + offset);
++	writel_relaxed(value, port->membase + offset);
+ }
+ 
  /*
-  * Console polling routines for writing and reading from the uart while
-  * in an interrupt or debug context (i.e. kgdb).
-@@ -649,6 +669,9 @@ static struct uart_ops asc_uart_ops = {
- 	.verify_port	= asc_verify_port,
- 	.pm		= asc_pm,
- #ifdef CONFIG_CONSOLE_POLL
-+#ifdef CONFIG_KGDB_FIQ
-+	.poll_init     = asc_poll_init,
-+#endif /* CONFIG_KGDB_FIQ */
- 	.poll_get_char = asc_get_poll_char,
- 	.poll_put_char = asc_put_poll_char,
- #endif /* CONFIG_CONSOLE_POLL */
 -- 
 1.9.3
 
