@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbaHRJxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:53:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42806 "EHLO
+	id S1753904AbaHRJqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:46:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42973 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726AbaHRJfN (ORCPT
+	with ESMTP id S1753029AbaHRJfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:13 -0400
+	Mon, 18 Aug 2014 05:35:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Arnaud Ebalard <arno@natisbad.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Willy Tarreau <w@1wt.eu>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 075/137] drm/radeon: fix irq ring buffer overflow handling
-Date: Mon, 18 Aug 2014 10:32:16 +0100
-Message-Id: <1408354398-10226-76-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 098/137] net: mvneta: replace Tx timer with a real interrupt
+Date: Mon, 18 Aug 2014 10:32:39 +0100
+Message-Id: <1408354398-10226-99-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,73 +31,210 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+From: willy tarreau <w@1wt.eu>
 
-commit e8c214d22e76dd0ead38f97f8d2dc09aac70d651 upstream.
+commit 71f6d1b31fb1f278a345a30a2180515adc7d80ae upstream.
 
-We must mask out the overflow bit as well, otherwise
-the wptr will never match the rptr again and the interrupt
-handler will loop forever.
+Right now the mvneta driver doesn't handle Tx IRQ, and relies on two
+mechanisms to flush Tx descriptors : a flush at the end of mvneta_tx()
+and a timer. If a burst of packets is emitted faster than the device
+can send them, then the queue is stopped until next wake-up of the
+timer 10ms later. This causes jerky output traffic with bursts and
+pauses, making it difficult to reach line rate with very few streams.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+A test on UDP traffic shows that it's not possible to go beyond 134
+Mbps / 12 kpps of outgoing traffic with 1500-bytes IP packets. Routed
+traffic tends to observe pauses as well if the traffic is bursty,
+making it even burstier after the wake-up.
+
+It seems that this feature was inherited from the original driver but
+nothing there mentions any reason for not using the interrupt instead,
+which the chip supports.
+
+Thus, this patch enables Tx interrupts and removes the timer. It does
+the two at once because it's not really possible to make the two
+mechanisms coexist, so a split patch doesn't make sense.
+
+First tests performed on a Mirabox (Armada 370) show that less CPU
+seems to be used when sending traffic. One reason might be that we now
+call the mvneta_tx_done_gbe() with a mask indicating which queues have
+been done instead of looping over all of them.
+
+The same UDP test above now happily reaches 987 Mbps / 87.7 kpps.
+Single-stream TCP traffic can now more easily reach line rate. HTTP
+transfers of 1 MB objects over a single connection went from 730 to
+840 Mbps. It is even possible to go significantly higher (>900 Mbps)
+by tweaking tcp_tso_win_divisor.
+
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Arnaud Ebalard <arno@natisbad.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/cik.c       | 1 +
- drivers/gpu/drm/radeon/evergreen.c | 1 +
- drivers/gpu/drm/radeon/r600.c      | 1 +
- drivers/gpu/drm/radeon/si.c        | 1 +
- 4 files changed, 4 insertions(+)
+ drivers/net/ethernet/marvell/mvneta.c | 71 ++++++-----------------------------
+ 1 file changed, 12 insertions(+), 59 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 85647ab99fb1..0aaaa11b7036 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -5591,6 +5591,7 @@ static inline u32 cik_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
- 	}
- 	return (wptr & rdev->ih.ptr_mask);
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index a10f156430ca..ab630ca3c757 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -216,9 +216,6 @@
+ #define MVNETA_RX_COAL_PKTS		32
+ #define MVNETA_RX_COAL_USEC		100
+ 
+-/* Timer */
+-#define MVNETA_TX_DONE_TIMER_PERIOD	10
+-
+ /* Napi polling weight */
+ #define MVNETA_RX_POLL_WEIGHT		64
+ 
+@@ -274,16 +271,11 @@ struct mvneta_port {
+ 	void __iomem *base;
+ 	struct mvneta_rx_queue *rxqs;
+ 	struct mvneta_tx_queue *txqs;
+-	struct timer_list tx_done_timer;
+ 	struct net_device *dev;
+ 
+ 	u32 cause_rx_tx;
+ 	struct napi_struct napi;
+ 
+-	/* Flags */
+-	unsigned long flags;
+-#define MVNETA_F_TX_DONE_TIMER_BIT  0
+-
+ 	/* Napi weight */
+ 	int weight;
+ 
+@@ -1116,17 +1108,6 @@ static void mvneta_tx_done_pkts_coal_set(struct mvneta_port *pp,
+ 	txq->done_pkts_coal = value;
  }
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index a34e20921711..415ab58594d9 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4597,6 +4597,7 @@ static u32 evergreen_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
+ 
+-/* Trigger tx done timer in MVNETA_TX_DONE_TIMER_PERIOD msecs */
+-static void mvneta_add_tx_done_timer(struct mvneta_port *pp)
+-{
+-	if (test_and_set_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags) == 0) {
+-		pp->tx_done_timer.expires = jiffies +
+-			msecs_to_jiffies(MVNETA_TX_DONE_TIMER_PERIOD);
+-		add_timer(&pp->tx_done_timer);
+-	}
+-}
+-
+-
+ /* Handle rx descriptor fill by setting buf_cookie and buf_phys_addr */
+ static void mvneta_rx_desc_fill(struct mvneta_rx_desc *rx_desc,
+ 				u32 phys_addr, u32 cookie)
+@@ -1618,15 +1599,6 @@ out:
+ 		dev_kfree_skb_any(skb);
  	}
- 	return (wptr & rdev->ih.ptr_mask);
+ 
+-	if (txq->count >= MVNETA_TXDONE_COAL_PKTS)
+-		mvneta_txq_done(pp, txq);
+-
+-	/* If after calling mvneta_txq_done, count equals
+-	 * frags, we need to set the timer
+-	 */
+-	if (txq->count == frags && frags > 0)
+-		mvneta_add_tx_done_timer(pp);
+-
+ 	return NETDEV_TX_OK;
  }
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 33b35c9e82be..af588cf27293 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -4429,6 +4429,7 @@ static u32 r600_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
+ 
+@@ -1902,14 +1874,22 @@ static int mvneta_poll(struct napi_struct *napi, int budget)
+ 
+ 	/* Read cause register */
+ 	cause_rx_tx = mvreg_read(pp, MVNETA_INTR_NEW_CAUSE) &
+-		MVNETA_RX_INTR_MASK(rxq_number);
++		(MVNETA_RX_INTR_MASK(rxq_number) | MVNETA_TX_INTR_MASK(txq_number));
++
++	/* Release Tx descriptors */
++	if (cause_rx_tx & MVNETA_TX_INTR_MASK_ALL) {
++		int tx_todo = 0;
++
++		mvneta_tx_done_gbe(pp, (cause_rx_tx & MVNETA_TX_INTR_MASK_ALL), &tx_todo);
++		cause_rx_tx &= ~MVNETA_TX_INTR_MASK_ALL;
++	}
+ 
+ 	/* For the case where the last mvneta_poll did not process all
+ 	 * RX packets
+ 	 */
+ 	cause_rx_tx |= pp->cause_rx_tx;
+ 	if (rxq_number > 1) {
+-		while ((cause_rx_tx != 0) && (budget > 0)) {
++		while ((cause_rx_tx & MVNETA_RX_INTR_MASK_ALL) && (budget > 0)) {
+ 			int count;
+ 			struct mvneta_rx_queue *rxq;
+ 			/* get rx queue number from cause_rx_tx */
+@@ -1941,7 +1921,7 @@ static int mvneta_poll(struct napi_struct *napi, int budget)
+ 		napi_complete(napi);
+ 		local_irq_save(flags);
+ 		mvreg_write(pp, MVNETA_INTR_NEW_MASK,
+-			    MVNETA_RX_INTR_MASK(rxq_number));
++			    MVNETA_RX_INTR_MASK(rxq_number) | MVNETA_TX_INTR_MASK(txq_number));
+ 		local_irq_restore(flags);
  	}
- 	return (wptr & rdev->ih.ptr_mask);
+ 
+@@ -1949,26 +1929,6 @@ static int mvneta_poll(struct napi_struct *napi, int budget)
+ 	return rx_done;
  }
-diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
-index 3479145e8f47..5a46e269e5d5 100644
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -6052,6 +6052,7 @@ static inline u32 si_get_ih_wptr(struct radeon_device *rdev)
- 		tmp = RREG32(IH_RB_CNTL);
- 		tmp |= IH_WPTR_OVERFLOW_CLEAR;
- 		WREG32(IH_RB_CNTL, tmp);
-+		wptr &= ~RB_OVERFLOW;
+ 
+-/* tx done timer callback */
+-static void mvneta_tx_done_timer_callback(unsigned long data)
+-{
+-	struct net_device *dev = (struct net_device *)data;
+-	struct mvneta_port *pp = netdev_priv(dev);
+-	int tx_done = 0, tx_todo = 0;
+-
+-	if (!netif_running(dev))
+-		return ;
+-
+-	clear_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags);
+-
+-	tx_done = mvneta_tx_done_gbe(pp,
+-				     (((1 << txq_number) - 1) &
+-				      MVNETA_CAUSE_TXQ_SENT_DESC_ALL_MASK),
+-				     &tx_todo);
+-	if (tx_todo > 0)
+-		mvneta_add_tx_done_timer(pp);
+-}
+-
+ /* Handle rxq fill: allocates rxq skbs; called when initializing a port */
+ static int mvneta_rxq_fill(struct mvneta_port *pp, struct mvneta_rx_queue *rxq,
+ 			   int num)
+@@ -2218,7 +2178,7 @@ static void mvneta_start_dev(struct mvneta_port *pp)
+ 
+ 	/* Unmask interrupts */
+ 	mvreg_write(pp, MVNETA_INTR_NEW_MASK,
+-		    MVNETA_RX_INTR_MASK(rxq_number));
++		    MVNETA_RX_INTR_MASK(rxq_number) | MVNETA_TX_INTR_MASK(txq_number));
+ 
+ 	phy_start(pp->phy_dev);
+ 	netif_tx_start_all_queues(pp->dev);
+@@ -2494,8 +2454,6 @@ static int mvneta_stop(struct net_device *dev)
+ 	free_irq(dev->irq, pp);
+ 	mvneta_cleanup_rxqs(pp);
+ 	mvneta_cleanup_txqs(pp);
+-	del_timer(&pp->tx_done_timer);
+-	clear_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags);
+ 
+ 	return 0;
+ }
+@@ -2831,11 +2789,6 @@ static int mvneta_probe(struct platform_device *pdev)
+ 		}
  	}
- 	return (wptr & rdev->ih.ptr_mask);
- }
+ 
+-	pp->tx_done_timer.data = (unsigned long)dev;
+-	pp->tx_done_timer.function = mvneta_tx_done_timer_callback;
+-	init_timer(&pp->tx_done_timer);
+-	clear_bit(MVNETA_F_TX_DONE_TIMER_BIT, &pp->flags);
+-
+ 	pp->tx_ring_size = MVNETA_MAX_TXD;
+ 	pp->rx_ring_size = MVNETA_MAX_RXD;
+ 
 -- 
 1.9.1
 
