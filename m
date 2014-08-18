@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423AbaHRIzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:55:25 -0400
+	id S1752478AbaHRIze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:55:34 -0400
 Received: from p50936449.dip0.t-ipconnect.de ([80.147.100.73]:30499 "EHLO
 	dhcp-27-160.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752371AbaHRIzW (ORCPT
+	by vger.kernel.org with ESMTP id S1752442AbaHRIzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:55:22 -0400
+	Mon, 18 Aug 2014 04:55:32 -0400
 X-Greylist: delayed 10355 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Aug 2014 04:55:02 EDT
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, iss_storagedev@hp.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH v3 02/13] hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Mon, 18 Aug 2014 08:01:42 +0200
-Message-Id: <ad815b18d123f49d95fba82bedd209193e5d4d4e.1408335523.git.agordeev@redhat.com>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Naresh Kumar Inna <naresh@chelsio.com>,
+        Arvind Bhushan <arvindb@chelsio.com>, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v3 09/13] csiostor: Remove superfluous call to pci_disable_msix()
+Date: Mon, 18 Aug 2014 08:01:49 +0200
+Message-Id: <32f317b013341f51bab2a4869108772781862da6.1408335523.git.agordeev@redhat.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1408335523.git.agordeev@redhat.com>
 References: <cover.1408335523.git.agordeev@redhat.com>
@@ -22,64 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+There is no need to call pci_disable_msix() in case
+the previous call to pci_enable_msix() failed
 
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: iss_storagedev@hp.com
+Cc: Naresh Kumar Inna <naresh@chelsio.com>
+Cc: Arvind Bhushan <arvindb@chelsio.com>
 Cc: linux-scsi@vger.kernel.org
 Cc: linux-pci@vger.kernel.org
 ---
- drivers/scsi/hpsa.c | 27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
+ drivers/scsi/csiostor/csio_isr.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index a9c4c9f..8c17c43 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -6159,25 +6159,22 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
- 		h->msix_vector = MAX_REPLY_QUEUES;
- 		if (h->msix_vector > num_online_cpus())
- 			h->msix_vector = num_online_cpus();
--		err = pci_enable_msix(h->pdev, hpsa_msix_entries,
--				      h->msix_vector);
--		if (err > 0) {
-+		err = pci_enable_msix_range(h->pdev, hpsa_msix_entries,
-+					    1, h->msix_vector);
-+		if (err < 0) {
-+			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
-+			h->msix_vector = 0;
-+			goto single_msi_mode;
-+		} else if (err < h->msix_vector) {
- 			dev_warn(&h->pdev->dev, "only %d MSI-X vectors "
- 			       "available\n", err);
--			h->msix_vector = err;
--			err = pci_enable_msix(h->pdev, hpsa_msix_entries,
--					      h->msix_vector);
--		}
--		if (!err) {
--			for (i = 0; i < h->msix_vector; i++)
--				h->intr[i] = hpsa_msix_entries[i].vector;
--			return;
--		} else {
--			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
--			       err);
--			h->msix_vector = 0;
+diff --git a/drivers/scsi/csiostor/csio_isr.c b/drivers/scsi/csiostor/csio_isr.c
+index 7ee9777..91ba91d 100644
+--- a/drivers/scsi/csiostor/csio_isr.c
++++ b/drivers/scsi/csiostor/csio_isr.c
+@@ -529,10 +529,8 @@ csio_enable_msix(struct csio_hw *hw)
+ 			csio_reduce_sqsets(hw, cnt - extra);
  		}
-+		h->msix_vector = err;
-+		for (i = 0; i < h->msix_vector; i++)
-+			h->intr[i] = hpsa_msix_entries[i].vector;
-+		return;
- 	}
-+single_msi_mode:
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
- 		dev_info(&h->pdev->dev, "MSI\n");
- 		if (!pci_enable_msi(h->pdev))
+ 	} else {
+-		if (rv > 0) {
+-			pci_disable_msix(hw->pdev);
++		if (rv > 0)
+ 			csio_info(hw, "Not using MSI-X, remainder:%d\n", rv);
+-		}
+ 
+ 		kfree(entries);
+ 		return -ENOMEM;
 -- 
 1.9.3
 
