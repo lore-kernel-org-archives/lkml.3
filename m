@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546AbaHRJ2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:28:14 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45324 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaHRJ2M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:28:12 -0400
-Message-ID: <53F1C729.7090304@linaro.org>
-Date: Mon, 18 Aug 2014 11:28:09 +0200
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751355AbaHRJ3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:29:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53404 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709AbaHRJ3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 05:29:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,885,1400050800"; 
+   d="scan'208";a="469802248"
+Date: Mon, 18 Aug 2014 12:29:37 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael@kernel.org>, Aaron Lu <aaron.lu@intel.com>,
+        Max Eliaser <max.eliaser@intel.com>, linux-acpi@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 4/9] of: Add property_ops callback for devices with
+ of_node
+Message-ID: <20140818092937.GT2462@lahna.fi.intel.com>
+References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408255459-17625-5-git-send-email-mika.westerberg@linux.intel.com>
+ <20140817125416.348C0C41368@trevor.secretlab.ca>
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [RFC] ACPI: Add GPIO-signaled event simulator.
-References: <1406217076-17150-1-git-send-email-tomasz.nowicki@linaro.org> <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com> <20140812100111.GV1657@lahna.fi.intel.com>
-In-Reply-To: <20140812100111.GV1657@lahna.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140817125416.348C0C41368@trevor.secretlab.ca>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.08.2014 12:01, Mika Westerberg wrote:
-> On Fri, Aug 08, 2014 at 02:36:02PM +0200, Linus Walleij wrote:
->> On Thu, Jul 24, 2014 at 5:51 PM, Tomasz Nowicki
->> <tomasz.nowicki@linaro.org> wrote:
->>
->>> GPIO signaled events is quite new thing in Linux kernel.
->>> AFAIK, there are not many board which can take advantage of it.
->>> However, GPIO events are very useful feature during work on ACPI
->>> subsystems.
->>
->> Overall this seems like a pretty nice debug feature.
->>
->>> This commit emulates GPIO h/w behaviour and consists on read/write
->>> operation to debugfs file. GPIO device instance is still required in DSDT
->>> table along with _AEI resources and event methods.
->>>
->>> Reading from file provides pin to GPIO device map e.g. :
->>> $ cat /sys/kernel/debug/acpi/gpio_event
->>> GPIO device name: /__SB.GPI0
->>> Available GPIO pin map:
->>> /__SB.GPI0 <-> pin 0x100
->>>
->>> Based on that, user can trigger method corresponding to device pin number:
->>> $ echo "/__SB.GPI0 0x100" > /sys/kernel/debug/acpi/gpio_event
->>
->> I need input from Rafael and Mika as to whether this is a
->> good interface.
->
-> Maybe it would make sense to move this into drivers/gpio/gpiolib-acpi.c
-> and hide it behind some Kconfig entry?
->
-> Since you already need to have DSDT/SSDT table for this to provide the
-> GPIO device, _AEI and the event methods, I would rather make it so that
-> acpi_gpiochip_request_interrupt() will add debugfs entry for each GPIO
-> it finds in _AEI, like:
->
-> /sys/kernel/debug/acpi/events/<GPIO DEVICE>/n
->
-> And you could trigger it by writing '1' or something like that to that
-> file.
->
+On Sun, Aug 17, 2014 at 01:54:16PM +0100, Grant Likely wrote:
+> On Sun, 17 Aug 2014 09:04:14 +0300, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> > From: Aaron Lu <aaron.lu@intel.com>
+> > 
+> > With the unified device properties interface in place, add device tree support.
+> > By adding the dev_prop_ops for of_node devices, drivers can access properties
+> > from ACPI or Device Tree in a generic way.
+> > 
+> > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> > Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> Hi Mika,
+> 
+> As commented on patch 3, the new API currently throws away type
+> information so the compiler won't warn on an error. That needs to be
+> fixed and this patch reworked accordingly.
 
-Thanks for comments. The idea of available gpio events list under 
-/sys/kernel/debug/acpi/events/<GPIO DEVICE>/n is worth adding.
+The compiler should warn when we add static inline property accessor
+functions for each type.
 
-However, acpi_gpiochip_request_interrupt() would be called if we would 
-have real GPIO H/W and related driver. Initial idea of this patch was to 
-avoid that restriction. So there are two cases:
-1. If we have GPIO chip, it is already described in DSDT/SSDT and using 
-this patch, user could trigger events by software too.
-2. None of GPIO chip, so we need to add GPIO/_AEI etc. descrition to 
-DSDT/SSDT and pretend we have GPIO chip on board.
+> 
+> g.
+> 
+> ---
+> >  drivers/of/base.c        | 194 ++++++++++++++++++++++++++++++++++++++++++++++-
+> >  drivers/of/platform.c    |   4 +-
+> >  include/linux/property.h |   4 +
+> >  3 files changed, 200 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index b9864806e9b8..527004d01423 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -20,7 +20,7 @@
+> >  #include <linux/ctype.h>
+> >  #include <linux/cpu.h>
+> >  #include <linux/module.h>
+> > -#include <linux/of.h>
+> > +#include <linux/property.h>
+> >  #include <linux/of_graph.h>
+> >  #include <linux/spinlock.h>
+> >  #include <linux/slab.h>
+> > @@ -1343,6 +1343,39 @@ int of_property_read_u64(const struct device_node *np, const char *propname,
+> >  EXPORT_SYMBOL_GPL(of_property_read_u64);
+> >  
+> >  /**
+> > + * of_property_read_u64_array - Find and read an array of 64 bit integers
+> > + * from a property.
+> > + *
+> > + * @np:		device node from which the property value is to be read.
+> > + * @propname:	name of the property to be searched.
+> > + * @out_values:	pointer to return value, modified only if return value is 0.
+> > + * @sz:		number of array elements to read
+> > + *
+> > + * Search for a property in a device node and read 64-bit value(s) from
+> > + * it. Returns 0 on success, -EINVAL if the property does not exist,
+> > + * -ENODATA if property does not have a value, and -EOVERFLOW if the
+> > + * property data isn't large enough.
+> > + *
+> > + * The out_values is modified only if a valid u64 value can be decoded.
+> > + */
+> > +int of_property_read_u64_array(const struct device_node *np,
+> > +			       const char *propname, u64 *out_values,
+> > +			       size_t sz)
+> > +{
+> > +	const __be32 *val = of_find_property_value_of_size(np, propname,
+> > +						(sz * sizeof(*out_values)));
+> > +
+> > +	if (IS_ERR(val))
+> > +		return PTR_ERR(val);
+> > +
+> > +	while (sz--) {
+> > +		*out_values++ = of_read_number(val, 2);
+> > +		val += 2;
+> > +	};
+> > +	return 0;
+> > +}
+> 
+> Considering we don't even have a user of u64 arrays in all of the DT
+> drivers, do we even need this type hook in the generic API?
 
-Regards,
-Tomasz Nowicki
-
+Indeed, I think we can remove it for now.
