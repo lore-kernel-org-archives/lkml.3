@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaHRNKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 09:10:42 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:34600 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490AbaHRNKl (ORCPT
+	id S1751933AbaHRNKx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 09:10:53 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:37613 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903AbaHRNKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 09:10:41 -0400
+	Mon, 18 Aug 2014 09:10:50 -0400
 From: Guodong Xu <guodong.xu@linaro.org>
 To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
@@ -17,9 +17,9 @@ To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-arm-kernel@lists.infradead.org, axel.lin@ingics.com,
         zhangnian@huawei.com
 Cc: Guodong Xu <guodong.xu@linaro.org>
-Subject: [PATCH v6 2/6] regulator: core: factor out delay function from _regulator_do_enable
-Date: Mon, 18 Aug 2014 21:09:12 +0800
-Message-Id: <1408367356-2628-3-git-send-email-guodong.xu@linaro.org>
+Subject: [PATCH v6 3/6] regulator: core: add guard delay between calling regulator_disable and _enable
+Date: Mon, 18 Aug 2014 21:09:13 +0800
+Message-Id: <1408367356-2628-4-git-send-email-guodong.xu@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408367356-2628-1-git-send-email-guodong.xu@linaro.org>
 References: <1408367356-2628-1-git-send-email-guodong.xu@linaro.org>
@@ -27,106 +27,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A common delay function can be helpful when implementing new features. Factor
-it out to maximize code reusability.
+Some regulator require a minimum delay between its disable and next enable.
+This is to avoid damages when out-of-range frequent disable/enable of a
+single regulator can bring to the regulator chip.
+
+Add @off_on_delay to struct regulator_desc. Device drivers' can use this field
+to set this guard time.
+
+Add @last_off_jiffy to struct regulator_dev. When @off_on_delay is set by
+driver, regulator core can store its last off (disable) time into this field.
 
 Signed-off-by: Guodong Xu <guodong.xu@linaro.org>
 ---
- drivers/regulator/core.c | 74 ++++++++++++++++++++++++++----------------------
- 1 file changed, 40 insertions(+), 34 deletions(-)
+ drivers/regulator/core.c         | 31 +++++++++++++++++++++++++++++++
+ include/linux/regulator/driver.h |  6 ++++++
+ 2 files changed, 37 insertions(+)
 
 diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index c4a13db..4976451 100644
+index 4976451..7bce715 100644
 --- a/drivers/regulator/core.c
 +++ b/drivers/regulator/core.c
-@@ -1759,6 +1759,45 @@ static int regulator_ena_gpio_ctrl(struct regulator_dev *rdev, bool enable)
- 	return 0;
- }
+@@ -1813,6 +1813,31 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
  
-+/**
-+ * _regulator_enable_delay - a delay helper function
-+ * @delay: time to delay in microseconds
-+ *
-+ * Delay for the requested amount of time as per the guidelines in:
-+ *
-+ *     Documentation/timers/timers-howto.txt
-+ *
-+ * The assumption here is that regulators will never be enabled in
-+ * atomic context and therefore sleeping functions can be used.
-+ */
-+static void _regulator_enable_delay(unsigned int delay)
-+{
-+	unsigned int ms = delay / 1000;
-+	unsigned int us = delay % 1000;
-+
-+	if (ms > 0) {
-+		/*
-+		 * For small enough values, handle super-millisecond
-+		 * delays in the usleep_range() call below.
+ 	trace_regulator_enable(rdev_get_name(rdev));
+ 
++	if (rdev->desc->off_on_delay) {
++		/* if needed, keep a distance of off_on_delay from last time
++		 * this regulator was disabled.
 +		 */
-+		if (ms < 20)
-+			us += ms * 1000;
-+		else
-+			msleep(ms);
++		unsigned long start_jiffy = jiffies;
++		unsigned long intended, max_delay, remaining;
++
++		max_delay = usecs_to_jiffies(rdev->desc->off_on_delay);
++		intended = rdev->last_off_jiffy + max_delay;
++
++		if (time_before(start_jiffy, intended)) {
++			/* calc remaining jiffies to deal with one-time
++			 * timer wrapping.
++			 * in case of multiple timer wrapping, either it can be
++			 * detected by out-of-range remaining, or it cannot be
++			 * detected and we gets a panelty of
++			 * _regulator_enable_delay().
++			 */
++			remaining = intended - start_jiffy;
++			if (remaining <= max_delay)
++				_regulator_enable_delay(
++						jiffies_to_usecs(remaining));
++		}
 +	}
 +
-+	/*
-+	 * Give the scheduler some room to coalesce with any other
-+	 * wakeup sources. For delays shorter than 10 us, don't even
-+	 * bother setting up high-resolution timers and just busy-
-+	 * loop.
+ 	if (rdev->ena_pin) {
+ 		ret = regulator_ena_gpio_ctrl(rdev, true);
+ 		if (ret < 0)
+@@ -1925,6 +1950,12 @@ static int _regulator_do_disable(struct regulator_dev *rdev)
+ 			return ret;
+ 	}
+ 
++	/* cares about last_off_jiffy only if off_on_delay is required by
++	 * device.
 +	 */
-+	if (us >= 10)
-+		usleep_range(us, us + 100);
-+	else
-+		udelay(us);
-+}
++	if (rdev->desc->off_on_delay)
++		rdev->last_off_jiffy = jiffies;
 +
- static int _regulator_do_enable(struct regulator_dev *rdev)
- {
- 	int ret, delay;
-@@ -1792,40 +1831,7 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
- 	 * together.  */
- 	trace_regulator_enable_delay(rdev_get_name(rdev));
+ 	trace_regulator_disable_complete(rdev_get_name(rdev));
  
--	/*
--	 * Delay for the requested amount of time as per the guidelines in:
--	 *
--	 *     Documentation/timers/timers-howto.txt
--	 *
--	 * The assumption here is that regulators will never be enabled in
--	 * atomic context and therefore sleeping functions can be used.
--	 */
--	if (delay) {
--		unsigned int ms = delay / 1000;
--		unsigned int us = delay % 1000;
--
--		if (ms > 0) {
--			/*
--			 * For small enough values, handle super-millisecond
--			 * delays in the usleep_range() call below.
--			 */
--			if (ms < 20)
--				us += ms * 1000;
--			else
--				msleep(ms);
--		}
--
--		/*
--		 * Give the scheduler some room to coalesce with any other
--		 * wakeup sources. For delays shorter than 10 us, don't even
--		 * bother setting up high-resolution timers and just busy-
--		 * loop.
--		 */
--		if (us >= 10)
--			usleep_range(us, us + 100);
--		else
--			udelay(us);
--	}
-+	_regulator_enable_delay(delay);
+ 	return 0;
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 4b62813..efe058f 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -238,6 +238,7 @@ enum regulator_type {
+  * @bypass_val_off: Disabling value for control when using regmap set_bypass
+  *
+  * @enable_time: Time taken for initial enable of regulator (in uS).
++ * @off_on_delay: guard time (in uS), before re-enabling a regulator
+  */
+ struct regulator_desc {
+ 	const char *name;
+@@ -276,6 +277,8 @@ struct regulator_desc {
+ 	unsigned int bypass_val_off;
  
- 	trace_regulator_enable_complete(rdev_get_name(rdev));
+ 	unsigned int enable_time;
++
++	unsigned int off_on_delay;
+ };
  
+ /**
+@@ -348,6 +351,9 @@ struct regulator_dev {
+ 
+ 	struct regulator_enable_gpio *ena_pin;
+ 	unsigned int ena_gpio_state:1;
++
++	/* time when this regulator was disabled last time */
++	unsigned long last_off_jiffy;
+ };
+ 
+ struct regulator_dev *
 -- 
 1.9.1
 
