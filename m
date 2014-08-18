@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaHRI51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:57:27 -0400
-Received: from p50936449.dip0.t-ipconnect.de ([80.147.100.73]:30499 "EHLO
-	dhcp-27-160.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752383AbaHRIzY (ORCPT
+	id S1752602AbaHRI5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:57:32 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:56694 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189AbaHRI52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:55:24 -0400
-X-Greylist: delayed 10355 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Aug 2014 04:55:02 EDT
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v3 04/13] megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Mon, 18 Aug 2014 08:01:44 +0200
-Message-Id: <53f5625fafdf27f7404efd9ec497a718a2465dc2.1408335523.git.agordeev@redhat.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1408335523.git.agordeev@redhat.com>
-References: <cover.1408335523.git.agordeev@redhat.com>
+	Mon, 18 Aug 2014 04:57:28 -0400
+Date: Mon, 18 Aug 2014 10:57:24 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-pwm@vger.kernel.org, Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] pwm: Fix period and polarity in pwm_get() for
+ non-perfect matches
+Message-ID: <20140818085722.GE31171@ulmo>
+References: <1407943133-18170-1-git-send-email-geert+renesas@glider.be>
+ <20140818082039.GA31171@ulmo>
+ <CAMuHMdVLA4xRGKrsyGTokZvRWkNAFyNv+_JycavfpibO8GXkkQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hwvH6HDNit2nSK4j"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVLA4xRGKrsyGTokZvRWkNAFyNv+_JycavfpibO8GXkkQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Acked-by: Kashyap Desai <Kashyap.desai@avagotech.com>
-Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/megaraid/megaraid_sas_base.c | 20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+--hwvH6HDNit2nSK4j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index e4ffae5..a2f4d4f 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4103,17 +4103,11 @@ static int megasas_init_fw(struct megasas_instance *instance)
- 					     (unsigned int)num_online_cpus());
- 		for (i = 0; i < instance->msix_vectors; i++)
- 			instance->msixentry[i].entry = i;
--		i = pci_enable_msix(instance->pdev, instance->msixentry,
--				    instance->msix_vectors);
--		if (i >= 0) {
--			if (i) {
--				if (!pci_enable_msix(instance->pdev,
--						     instance->msixentry, i))
--					instance->msix_vectors = i;
--				else
--					instance->msix_vectors = 0;
--			}
--		} else
-+		i = pci_enable_msix_range(instance->pdev, instance->msixentry,
-+					  1, instance->msix_vectors);
-+		if (i)
-+			instance->msix_vectors = i;
-+		else
- 			instance->msix_vectors = 0;
- 
- 		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
-@@ -5133,8 +5127,8 @@ megasas_resume(struct pci_dev *pdev)
- 
- 	/* Now re-enable MSI-X */
- 	if (instance->msix_vectors &&
--	    pci_enable_msix(instance->pdev, instance->msixentry,
--			    instance->msix_vectors))
-+	    pci_enable_msix_exact(instance->pdev, instance->msixentry,
-+				  instance->msix_vectors))
- 		goto fail_reenable_msix;
- 
- 	switch (instance->pdev->device) {
--- 
-1.9.3
+On Mon, Aug 18, 2014 at 10:38:00AM +0200, Geert Uytterhoeven wrote:
+> Hi Thierry,
+>=20
+> On Mon, Aug 18, 2014 at 10:20 AM, Thierry Reding
+> <thierry.reding@gmail.com> wrote:
+> > Could we achieve the same by storing a pointer to the best match and
+> > then use that instead of p? Perhaps something like this:
+> >
+> >         struct pwm_lookup *entry;
+> >
+> >         ...
+> >
+> >                 if (match > best) {
+> >                         chip =3D pwmchip_find_by_name(p->provider);
+> >                         entry =3D p;
+> >
+> >                         if (match !=3D 3)
+> >                                 best =3D match;
+> >                         else
+> >                                 break;
+> >                 }
+> >
+> >         ...
+> >
+> >         if (chip)
+> >                 pwm =3D pwm_request_from_chip(chip, entry->index,
+> >                                             con_id ?: dev_id);
+> >         if (IS_ERR(pwm))
+> >                 return pwm;
+> >
+> >         pwm_set_period(pwm, entry->period);
+> >         pwm_set_polarity(pwm, entry->polarity);
+> >
+> > ?
+>=20
+> That's possible. But that will add complexity, as you have to move the
+> "mutex_unlock(&pwm_lookup_lock);" after the last user of "entry" again,
+> and add a goto for the IS_ERR(pwm) case.
+> So I'm not sure it's worth the effort.
 
+Oh, right. It would've been nice to avoid all the temporary variables,
+but we can always refactor if that turns out to become too messy. I'll
+apply this one for now.
+
+I'll shorten the SHA-1 in the Fixes: line to 12 characters if you don't
+mind to match the guidelines in Documentation/SubmittingPatches.
+
+Thierry
+
+--hwvH6HDNit2nSK4j
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT8b/yAAoJEN0jrNd/PrOhzz8QAKuW3G6rd528uRZAFG1NFX0i
+VkZBtkbz86Z+f4b4d3ZDYmDDiwLlPNc2bpkCvXOBG1m/7/Ck2VWOrsSdy00/hmc1
+sdmWVjmrq3OoK6BDj4J+76dSjHhbCpe3yUk1E/fs2U1XurcmFuQtmUcZIlBLMfCZ
+Dsgker/tZgiKklKmaOp+HpasZj3PH/sBXw8Qh2pny2JjUeOw6GLpGgBtE8RA+nqn
+78E2PTOZns7EBqTmuYJA6oHFBp2GPs2ONYuaqcGvQPJ+Wp36E4oOMZfP63JtD51j
+eJ3Glhm57cOKcaTQz/jbDxQOwiaSpG+66M1wBzCZQJ78Oh3nAkJLHvoVwyJPon6o
+rPbwbqbtA2Jx/JV5xIif8EmwZNlQ3gYh49sXiUTewMEmesdkn5jJ22QsFDyRi4pF
+ZT11cpFo+qydH81ytjLASEdKTze/0wPK+pCXcI/muHbhWbyyTwtmgjdj7hWnecrm
+yKzDns+0kRHzuQ7KvQIV1jKmx1is08xLlr8jWkEMglJ5qZptH3ZcxvtepUjOSDfl
+OvK45uTx9A10YNczx9zVQZQnhR7V4d8q9+nqksOjcUMFfCLGfi2NVd3hPrscYOoM
+ELlRr7dTChjshGsdNM1wArYLlt1RwZ7Iy/H7fbf9V2dgwVM+1ha/pFor1/kdJuOf
+4jQx2UI6zoN0eeyJ3m+e
+=U2RX
+-----END PGP SIGNATURE-----
+
+--hwvH6HDNit2nSK4j--
