@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaHRPCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:02:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39770 "EHLO mx1.redhat.com"
+	id S1752138AbaHRPCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:02:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56156 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742AbaHRPCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:02:03 -0400
-Message-ID: <53F2154D.7050600@redhat.com>
-Date: Mon, 18 Aug 2014 17:01:33 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751742AbaHRPCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:02:07 -0400
+Date: Mon, 18 Aug 2014 11:02:01 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Antw: Re: Some problems with HP DL380 G8 BIOS and SLES11 SP3
+Message-ID: <20140818150201.GO49576@redhat.com>
+References: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
+ <20140814174658.GV49576@redhat.com>
+ <53F1B57C020000A100016AD8@gwsmtp1.uni-regensburg.de>
+ <20140818124404.GL49576@redhat.com>
+ <53F22030020000A100016B05@gwsmtp1.uni-regensburg.de>
 MIME-Version: 1.0
-To: Zhu Yanjun <zyjzyj2000@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, vyasevich@gmail.com,
-        tuexen@fh-muenster.de, khandelwal.deepak.1987@gmail.com,
-        Yue.Tao@windriver.com, alexandre.dietsch@windriver.com,
-        davem@davemloft.net, Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Subject: Re: [PATCH 1/1] sctp: not send SCTP_PEER_ADDR_CHANGE notifications
- with failed probe
-References: <1408094820-11725-1-git-send-email-Yanjun.Zhu@windriver.com> <1408094820-11725-2-git-send-email-Yanjun.Zhu@windriver.com>
-In-Reply-To: <1408094820-11725-2-git-send-email-Yanjun.Zhu@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F22030020000A100016B05@gwsmtp1.uni-regensburg.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2014 11:27 AM, Zhu Yanjun wrote:
-> When a failed probe comes along UNCONFIRMED path, it is not necessary
-> to send SCTP_PEER_ADDR_CHANGE notification.
+On Mon, Aug 18, 2014 at 03:48:00PM +0200, Ulrich Windl wrote:
+> >>> Don Zickus <dzickus@redhat.com> schrieb am 18.08.2014 um 14:44 in Nachricht
+> <20140818124404.GL49576@redhat.com>:
+> > On Mon, Aug 18, 2014 at 08:12:44AM +0200, Ulrich Windl wrote:
+> >> >>> Don Zickus <dzickus@redhat.com> schrieb am 14.08.2014 um 19:46 in Nachricht
+> >> <20140814174658.GV49576@redhat.com>:
+> >> > On Wed, Aug 13, 2014 at 05:22:17PM +0200, Ulrich Windl wrote:
+> >> >> Hello!
+> >> >> 
+> >> >> Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are 
+> >> > some kernel messages that indicate a bug either in the kernel or in the HP 
+> >> > BIOS. Maybe someone can explain, so I can try to get it fixed whatever 
+> > party 
+> >> > broke it...
+> >> >> 
+> >> >> Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 
+> >> > [gcc-4_3-branch revision 152973]" (latest).
+> >> >> HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
+> >> > 
+> >> > Yes, it is because you are letting the firmware dynamically control your
+> >> > cpu frequency.  In order to accomplish they need to use a perf counter or
+> >> > two, hence the conflict.  Set the firmware setting to OS control and the
+> >> > problem goes away.  Contact HP for those instructions, they are very aware
+> >> > of this problem and recommend OS control to all high end servers.
+> >> 
+> >> Hi!
+> >> 
+> >> Thanks for answering, but the BIOS has set power management to "OS control" 
+> > (see attachment). So I guess it must be something different.
+> > 
+> > Hmm, sounds like it.  Regardless, the error message indicates the counters
+> > are in use most likely by the BIOS.  So you can ask HP what is going on.
+> > 
+> > I assume this is a normal bootup and not a kdump crash kernel, correct?
+> 
+> Yes, it's a normal boot. I'm afraid the standard hardware support at HP does not care much about such issues (I remember those Xeon bugs that caused memory errors during longer idle phases (in the G7 server) that are fixed be recent microcode updates: HP changed memory modules, and they changed the board, but it took very long until they updated the BIOS).
+> 
+> Is there any more information I can provide to narrow down the problem?
 
-I do not find this in the RFC, but it seems reasonable - at least, I would
-have liked to see a more elaborate commit message from you explaining why
-it's okay to do; at least RFC6458 I read:
+Not really.. see below..
 
-   SCTP_ADDR_UNREACHABLE:
+<snip>
 
-     The address specified can no longer be reached. Any data sent
-     to this address is rerouted to an alternate until this address
-     becomes reachable. This notification is provided whenever an
-     address *becomes* unreachable.
+> >> >> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> >> >> CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
+> >> >> Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS 
+> >> > detec
+> >> >> ted, complain to your hardware vendor.
+> >> >> [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
 
-Given that the transport has always been in state SCTP_UNCONFIRMED, it
-therefore wasn't active before and hasn't been used before, and one could
-argue that it doesn't "become" "unreachable" but always has been, so we
-wouldn't need to bug the user with a notification about it.
+what happens here is we walk the PMU to see if one of them is enabled.
+And sure enough the fixed counters (38d) have counter 1 and 2 enabled
+(330) before the kernel even touches them.
 
-> Reported-by: DEEPAK KHANDELWAL <khandelwal.deepak.1987@gmail.com>
+The assumption is if someone is using them, then anything the kernel does
+with them could be inaccurate.
 
-Nit: please write names normally: Deepak Khandelwal
+My contacts with HP here tell me that if the power control is setting to
+OS, then the counters should be unused and not be set (and we have seen
+that here at Red Hat).
 
-> Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
-> Suggested-by: Michael Tuexen <tuexen@fh-muenster.de>
-> Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-> ---
->   net/sctp/associola.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> index 9de23a2..2e23f6b 100644
-> --- a/net/sctp/associola.c
-> +++ b/net/sctp/associola.c
-> @@ -813,6 +813,7 @@ void sctp_assoc_control_transport(struct sctp_association *asoc,
->   		else {
->   			dst_release(transport->dst);
->   			transport->dst = NULL;
-> +			ulp_notify = false;
->   		}
->
->   		spc_state = SCTP_ADDR_UNREACHABLE;
->
+There isn't much more I can say and I am not really motivated to walk
+through all your BIOS options to verify everything. :-)
+
+At least with RHEL kernels, there is supposed to be published HP
+whitepapers detailing all this and what to do.
+
+Cheers,
+Don
+
+> >> >> Intel PMU driver.
+> >> >> ... version:                3
+> >> >> ... bit width:              48
+> >> >> ... generic registers:      4
+> >> >> ... value mask:             0000ffffffffffff
+> >> >> ... max period:             000000007fffffff
+> >> >> ... fixed-purpose events:   3
+> >> >> ... event mask:             000000070000000f
+> >> >> NMI watchdog enabled, takes one hw-pmu counter.
+> >> >> Booting Node   0, Processors  #1
+> >> >> [...]
