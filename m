@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370AbaHRJ6j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:58:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42679 "EHLO
+	id S1753561AbaHRJ7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:59:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42661 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452AbaHRJei (ORCPT
+	with ESMTP id S1750915AbaHRJed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:38 -0400
+	Mon, 18 Aug 2014 05:34:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Pfaff <blp@nicira.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 051/137] netlink: Fix handling of error from netlink_dump().
-Date: Mon, 18 Aug 2014 10:31:52 +0100
-Message-Id: <1408354398-10226-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 047/137] igmp: fix the problem when mc leave group
+Date: Mon, 18 Aug 2014 10:31:48 +0100
+Message-Id: <1408354398-10226-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,55 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Pfaff <blp@nicira.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-commit ac30ef832e6af0505b6f0251a6659adcfa74975e upstream.
+commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a upstream.
 
-netlink_dump() returns a negative errno value on error.  Until now,
-netlink_recvmsg() directly recorded that negative value in sk->sk_err, but
-that's wrong since sk_err takes positive errno values.  (This manifests as
-userspace receiving a positive return value from the recv() system call,
-falsely indicating success.) This bug was introduced in the commit that
-started checking the netlink_dump() return value, commit b44d211 (netlink:
-handle errors from netlink_dump()).
+The problem was triggered by these steps:
 
-Multithreaded Netlink dumps are one way to trigger this behavior in
-practice, as described in the commit message for the userspace workaround
-posted here:
-    http://openvswitch.org/pipermail/dev/2014-June/042339.html
+1) create socket, bind and then setsockopt for add mc group.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
+   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
 
-This commit also fixes the same bug in netlink_poll(), introduced in commit
-cd1df525d (netlink: add flow control for memory mapped I/O).
+2) drop the mc group for this socket.
+   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
+   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
+   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
 
-Signed-off-by: Ben Pfaff <blp@nicira.com>
+3) and then drop the socket, I found the mc group was still used by the dev:
+
+   netstat -g
+
+   Interface       RefCnt Group
+   --------------- ------ ---------------------
+   eth2		   1	  255.0.0.37
+
+Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
+to be released for the netdev when drop the socket, but this process was broken when
+route default is NULL, the reason is that:
+
+The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
+is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
+then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
+the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
+released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
+when dropping the socket, the mc_list is NULL and the dev still keep this group.
+
+v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
+	so I add the checking for the in_dev before polling the mc_list, make sure when
+	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
+	The problem would never happened again.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/netlink/af_netlink.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/igmp.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 7bbc40b63aa4..4a8948b08d1b 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -598,7 +598,7 @@ static unsigned int netlink_poll(struct file *file, struct socket *sock,
- 		while (nlk->cb != NULL && netlink_dump_space(nlk)) {
- 			err = netlink_dump(sk);
- 			if (err < 0) {
--				sk->sk_err = err;
-+				sk->sk_err = -err;
- 				sk->sk_error_report(sk);
- 				break;
- 			}
-@@ -2421,7 +2421,7 @@ static int netlink_recvmsg(struct kiocb *kiocb, struct socket *sock,
- 	if (nlk->cb && atomic_read(&sk->sk_rmem_alloc) <= sk->sk_rcvbuf / 2) {
- 		ret = netlink_dump(sk);
- 		if (ret) {
--			sk->sk_err = ret;
-+			sk->sk_err = -ret;
- 			sk->sk_error_report(sk);
- 		}
+diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+index 62410fd4ef61..bad83d812afe 100644
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1924,6 +1924,10 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
+ 
+ 	rtnl_lock();
+ 	in_dev = ip_mc_find_dev(net, imr);
++	if (!in_dev) {
++		ret = -ENODEV;
++		goto out;
++	}
+ 	ifindex = imr->imr_ifindex;
+ 	for (imlp = &inet->mc_list;
+ 	     (iml = rtnl_dereference(*imlp)) != NULL;
+@@ -1941,16 +1945,14 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
+ 
+ 		*imlp = iml->next_rcu;
+ 
+-		if (in_dev)
+-			ip_mc_dec_group(in_dev, group);
++		ip_mc_dec_group(in_dev, group);
+ 		rtnl_unlock();
+ 		/* decrease mem now to avoid the memleak warning */
+ 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
+ 		kfree_rcu(iml, rcu);
+ 		return 0;
  	}
+-	if (!in_dev)
+-		ret = -ENODEV;
++out:
+ 	rtnl_unlock();
+ 	return ret;
+ }
 -- 
 1.9.1
 
