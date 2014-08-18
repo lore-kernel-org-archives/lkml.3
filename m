@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbaHRJe7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42749 "EHLO
+	id S1753505AbaHRJgw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:36:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43192 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaHRJe4 (ORCPT
+	with ESMTP id S1753465AbaHRJgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:56 -0400
+	Mon, 18 Aug 2014 05:36:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 062/137] [media] hdpvr: fix two audio bugs
-Date: Mon, 18 Aug 2014 10:32:03 +0100
-Message-Id: <1408354398-10226-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 137/137] sctp: fix possible seqlock seadlock in sctp_packet_transmit()
+Date: Mon, 18 Aug 2014 10:33:18 +0100
+Message-Id: <1408354398-10226-138-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,65 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 3445857b22eafb70a6ac258979e955b116bfd2c6 upstream.
+commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 upstream.
 
-When the audio encoding is changed the driver calls hdpvr_set_audio
-with the current opt->audio_input value. However, that should have
-been opt->audio_input + 1. So changing the audio encoding inadvertently
-changes the input as well. This bug has always been there.
+Dave reported following splat, caused by improper use of
+IP_INC_STATS_BH() in process context.
 
-The second bug was introduced in kernel 3.10 and that broke the
-default_audio_input module option handling: the audio encoding was
-never switched to AC3 if default_audio_input was set to 2 (SPDIF input).
+BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
+caller is __this_cpu_preempt_check+0x13/0x20
+CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
+ ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
+ 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
+ ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
+Call Trace:
+ [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
+ [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
+ [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
+ [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
+ [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
+ [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
+ [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
+ [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
+ [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
+ [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
+ [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
+ [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
+ [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
+ [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
+ [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
+ [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
+ [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
+ [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
+ [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
+ [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
+ [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
+ [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
+ [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
+ [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
 
-In addition, since starting with 3.10 the audio encoding is always set
-at the start the first bug now always happens when the driver is loaded.
-In the past this bug would only surface if the user would change the
-audio encoding after the driver was loaded.
+This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
+seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
+deadlock in ip6_finish_output2")
 
-Also fixes a small trivial typo (bufffer -> buffer).
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Reported-by: Scott Doty <scott@corp.sonic.net>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/usb/hdpvr/hdpvr-video.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/sctp/output.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/usb/hdpvr/hdpvr-video.c b/drivers/media/usb/hdpvr/hdpvr-video.c
-index 4f8567aa99d8..068e9c5bfa7f 100644
---- a/drivers/media/usb/hdpvr/hdpvr-video.c
-+++ b/drivers/media/usb/hdpvr/hdpvr-video.c
-@@ -81,7 +81,7 @@ static void hdpvr_read_bulk_callback(struct urb *urb)
- }
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index 013a07d9c454..543fd836f439 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -612,7 +612,7 @@ out:
+ 	return err;
+ no_route:
+ 	kfree_skb(nskb);
+-	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
++	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
  
- /*=========================================================================*/
--/* bufffer bits */
-+/* buffer bits */
- 
- /* function expects dev->io_mutex to be hold by caller */
- int hdpvr_cancel_queue(struct hdpvr_device *dev)
-@@ -927,7 +927,7 @@ static int hdpvr_s_ctrl(struct v4l2_ctrl *ctrl)
- 	case V4L2_CID_MPEG_AUDIO_ENCODING:
- 		if (dev->flags & HDPVR_FLAG_AC3_CAP) {
- 			opt->audio_codec = ctrl->val;
--			return hdpvr_set_audio(dev, opt->audio_input,
-+			return hdpvr_set_audio(dev, opt->audio_input + 1,
- 					      opt->audio_codec);
- 		}
- 		return 0;
-@@ -1199,7 +1199,7 @@ int hdpvr_register_videodev(struct hdpvr_device *dev, struct device *parent,
- 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
- 		V4L2_CID_MPEG_AUDIO_ENCODING,
- 		ac3 ? V4L2_MPEG_AUDIO_ENCODING_AC3 : V4L2_MPEG_AUDIO_ENCODING_AAC,
--		0x7, V4L2_MPEG_AUDIO_ENCODING_AAC);
-+		0x7, ac3 ? dev->options.audio_codec : V4L2_MPEG_AUDIO_ENCODING_AAC);
- 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
- 		V4L2_CID_MPEG_VIDEO_ENCODING,
- 		V4L2_MPEG_VIDEO_ENCODING_MPEG_4_AVC, 0x3,
+ 	/* FIXME: Returning the 'err' will effect all the associations
+ 	 * associated with a socket, although only one of the paths of the
 -- 
 1.9.1
 
