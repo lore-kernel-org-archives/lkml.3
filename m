@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810AbaHRQMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:12:42 -0400
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:54173 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaHRQMj (ORCPT
+	id S1751860AbaHRQMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:12:47 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:47404 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778AbaHRQMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:12:39 -0400
+	Mon, 18 Aug 2014 12:12:42 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -19,9 +19,9 @@ Cc: Alan Stern <stern@rowland.harvard.edu>,
         Thierry Reding <thierry.reding@gmail.com>,
         linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
         Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH v2 1/4] xhci: Introduce xhci_init_driver()
-Date: Mon, 18 Aug 2014 09:12:20 -0700
-Message-Id: <1408378343-9352-2-git-send-email-abrestic@chromium.org>
+Subject: [PATCH v2 4/4] xhci: Allow xHCI drivers to be built as separate modules
+Date: Mon, 18 Aug 2014 09:12:23 -0700
+Message-Id: <1408378343-9352-5-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1408378343-9352-1-git-send-email-abrestic@chromium.org>
 References: <1408378343-9352-1-git-send-email-abrestic@chromium.org>
@@ -29,303 +29,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the struct hc_driver is mostly the same across the xhci-pci,
-xhci-plat, and the upcoming xhci-tegra driver, introduce the function
-xhci_init_driver() which will populate the hc_driver with the default
-xHCI operations.  The caller must supply a setup function which will
-be used as the hc_driver's reset callback.
-
-Note that xhci-plat also overrides the default ->start() callback so
-that it can do rcar-specific initialization.
+Instead of building all of the xHCI code into a single module, separate
+it out into the core (xhci-hcd), PCI (xhci-pci, now selected by the new
+config option CONFIG_USB_XHCI_PCI), and platform (xhci-plat) drivers.
+Also update the PCI/platform drivers with module descriptions/licenses
+and have them register their respective drivers in their initcalls.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
 Changes from v1:
  - rebased on changes introduced by xhci-rcar driver
 ---
- drivers/usb/host/xhci-pci.c  | 69 +++++---------------------------------------
- drivers/usb/host/xhci-plat.c | 59 ++++---------------------------------
- drivers/usb/host/xhci.c      | 69 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/xhci.h      |  1 +
- 4 files changed, 82 insertions(+), 116 deletions(-)
+ drivers/usb/host/Kconfig     |  5 +++++
+ drivers/usb/host/Makefile    | 12 ++++++------
+ drivers/usb/host/xhci-pci.c  |  9 +++++++--
+ drivers/usb/host/xhci-plat.c |  9 +++++++--
+ drivers/usb/host/xhci.c      | 22 ----------------------
+ drivers/usb/host/xhci.h      | 19 -------------------
+ 6 files changed, 25 insertions(+), 51 deletions(-)
 
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 82800a7..f5a5831 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -26,6 +26,11 @@ config USB_XHCI_HCD
+ 
+ if USB_XHCI_HCD
+ 
++config USB_XHCI_PCI
++       tristate
++       depends on PCI
++       default y
++
+ config USB_XHCI_PLATFORM
+ 	tristate
+ 
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 144c038..702d9b7 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -15,22 +15,22 @@ fhci-$(CONFIG_FHCI_DEBUG) += fhci-dbg.o
+ xhci-hcd-y := xhci.o xhci-mem.o
+ xhci-hcd-y += xhci-ring.o xhci-hub.o xhci-dbg.o
+ xhci-hcd-y += xhci-trace.o
+-xhci-hcd-$(CONFIG_PCI)	+= xhci-pci.o
+ 
+-ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
+-	xhci-hcd-y		+= xhci-plat.o
++xhci-plat-hcd-y := xhci-plat.o
+ ifneq ($(CONFIG_USB_XHCI_MVEBU), )
+-	xhci-hcd-y		+= xhci-mvebu.o
++	xhci-plat-hcd-y		+= xhci-mvebu.o
+ endif
+ ifneq ($(CONFIG_USB_XHCI_RCAR), )
+-	xhci-hcd-y		+= xhci-rcar.o
+-endif
++	xhci-plat-hcd-y		+= xhci-rcar.o
+ endif
+ 
+ obj-$(CONFIG_USB_WHCI_HCD)	+= whci/
+ 
+ obj-$(CONFIG_PCI)		+= pci-quirks.o
+ 
++obj-$(CONFIG_USB_XHCI_PCI)	+= xhci-pci.o
++obj-$(CONFIG_USB_XHCI_PLATFORM) += xhci-plat-hcd.o
++
+ obj-$(CONFIG_USB_EHCI_HCD)	+= ehci-hcd.o
+ obj-$(CONFIG_USB_EHCI_PCI)	+= ehci-pci.o
+ obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)	+= ehci-platform.o
 diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 687d366..88d4553 100644
+index 8093ad6..f97d27c 100644
 --- a/drivers/usb/host/xhci-pci.c
 +++ b/drivers/usb/host/xhci-pci.c
-@@ -40,6 +40,8 @@
+@@ -346,7 +346,7 @@ static struct pci_driver xhci_pci_driver = {
+ #endif
+ };
  
- static const char hcd_name[] = "xhci_hcd";
- 
-+static struct hc_driver __read_mostly xhci_pci_hc_driver;
-+
- /* called after powerup, by probe or system-pm "wakeup" */
- static int xhci_pci_reinit(struct xhci_hcd *xhci, struct pci_dev *pdev)
+-int __init xhci_register_pci(void)
++static int __init xhci_pci_init(void)
  {
-@@ -315,68 +317,6 @@ static int xhci_pci_resume(struct usb_hcd *hcd, bool hibernated)
- }
- #endif /* CONFIG_PM */
- 
--static const struct hc_driver xhci_pci_hc_driver = {
--	.description =		hcd_name,
--	.product_desc =		"xHCI Host Controller",
--	.hcd_priv_size =	sizeof(struct xhci_hcd *),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq =			xhci_irq,
--	.flags =		HCD_MEMORY | HCD_USB3 | HCD_SHARED,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset =		xhci_pci_setup,
--	.start =		xhci_run,
--#ifdef CONFIG_PM
--	.pci_suspend =          xhci_pci_suspend,
--	.pci_resume =           xhci_pci_resume,
--#endif
--	.stop =			xhci_stop,
--	.shutdown =		xhci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue =		xhci_urb_enqueue,
--	.urb_dequeue =		xhci_urb_dequeue,
--	.alloc_dev =		xhci_alloc_dev,
--	.free_dev =		xhci_free_dev,
--	.alloc_streams =	xhci_alloc_streams,
--	.free_streams =		xhci_free_streams,
--	.add_endpoint =		xhci_add_endpoint,
--	.drop_endpoint =	xhci_drop_endpoint,
--	.endpoint_reset =	xhci_endpoint_reset,
--	.check_bandwidth =	xhci_check_bandwidth,
--	.reset_bandwidth =	xhci_reset_bandwidth,
--	.address_device =	xhci_address_device,
--	.enable_device =	xhci_enable_device,
--	.update_hub_device =	xhci_update_hub_device,
--	.reset_device =		xhci_discover_or_reset_device,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number =	xhci_get_frame,
--
--	/* Root hub support */
--	.hub_control =		xhci_hub_control,
--	.hub_status_data =	xhci_hub_status_data,
--	.bus_suspend =		xhci_bus_suspend,
--	.bus_resume =		xhci_bus_resume,
--	/*
--	 * call back when device connected and addressed
--	 */
--	.update_device =        xhci_update_device,
--	.set_usb2_hw_lpm =	xhci_set_usb2_hardware_lpm,
--	.enable_usb3_lpm_timeout =	xhci_enable_usb3_lpm_timeout,
--	.disable_usb3_lpm_timeout =	xhci_disable_usb3_lpm_timeout,
--	.find_raw_port_number =	xhci_find_raw_port_number,
--};
--
- /*-------------------------------------------------------------------------*/
- 
- /* PCI driver selection metadata; PCI hotplugging uses this */
-@@ -408,6 +348,11 @@ static struct pci_driver xhci_pci_driver = {
- 
- int __init xhci_register_pci(void)
- {
-+	xhci_init_driver(&xhci_pci_hc_driver, xhci_pci_setup);
-+#ifdef CONFIG_PM
-+	xhci_pci_hc_driver.pci_suspend = xhci_pci_suspend;
-+	xhci_pci_hc_driver.pci_resume = xhci_pci_resume;
-+#endif
+ 	xhci_init_driver(&xhci_pci_hc_driver, xhci_pci_setup);
+ #ifdef CONFIG_PM
+@@ -355,8 +355,13 @@ int __init xhci_register_pci(void)
+ #endif
  	return pci_register_driver(&xhci_pci_driver);
  }
++module_init(xhci_pci_init);
  
+-void xhci_unregister_pci(void)
++static void __exit xhci_pci_exit(void)
+ {
+ 	pci_unregister_driver(&xhci_pci_driver);
+ }
++module_exit(xhci_pci_exit);
++
++MODULE_DESCRIPTION("xHCI PCI Host Controller Driver");
++MODULE_LICENSE("GPL");
 diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 1a0cf9f..14b22ba 100644
+index 14b22ba..e5e90c7 100644
 --- a/drivers/usb/host/xhci-plat.c
 +++ b/drivers/usb/host/xhci-plat.c
-@@ -23,6 +23,8 @@
- #include "xhci-mvebu.h"
- #include "xhci-rcar.h"
+@@ -247,14 +247,19 @@ static struct platform_driver usb_xhci_driver = {
+ };
+ MODULE_ALIAS("platform:xhci-hcd");
  
-+static struct hc_driver __read_mostly xhci_plat_hc_driver;
-+
- static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
+-int xhci_register_plat(void)
++static int __init xhci_plat_init(void)
  {
- 	/*
-@@ -60,59 +62,6 @@ static int xhci_plat_start(struct usb_hcd *hcd)
- 	return xhci_run(hcd);
- }
- 
--static const struct hc_driver xhci_plat_xhci_driver = {
--	.description =		"xhci-hcd",
--	.product_desc =		"xHCI Host Controller",
--	.hcd_priv_size =	sizeof(struct xhci_hcd *),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq =			xhci_irq,
--	.flags =		HCD_MEMORY | HCD_USB3 | HCD_SHARED,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset =		xhci_plat_setup,
--	.start =		xhci_plat_start,
--	.stop =			xhci_stop,
--	.shutdown =		xhci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue =		xhci_urb_enqueue,
--	.urb_dequeue =		xhci_urb_dequeue,
--	.alloc_dev =		xhci_alloc_dev,
--	.free_dev =		xhci_free_dev,
--	.alloc_streams =	xhci_alloc_streams,
--	.free_streams =		xhci_free_streams,
--	.add_endpoint =		xhci_add_endpoint,
--	.drop_endpoint =	xhci_drop_endpoint,
--	.endpoint_reset =	xhci_endpoint_reset,
--	.check_bandwidth =	xhci_check_bandwidth,
--	.reset_bandwidth =	xhci_reset_bandwidth,
--	.address_device =	xhci_address_device,
--	.enable_device =	xhci_enable_device,
--	.update_hub_device =	xhci_update_hub_device,
--	.reset_device =		xhci_discover_or_reset_device,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number =	xhci_get_frame,
--
--	/* Root hub support */
--	.hub_control =		xhci_hub_control,
--	.hub_status_data =	xhci_hub_status_data,
--	.bus_suspend =		xhci_bus_suspend,
--	.bus_resume =		xhci_bus_resume,
--
--	.enable_usb3_lpm_timeout =	xhci_enable_usb3_lpm_timeout,
--	.disable_usb3_lpm_timeout =	xhci_disable_usb3_lpm_timeout,
--};
--
- static int xhci_plat_probe(struct platform_device *pdev)
- {
- 	struct device_node	*node = pdev->dev.of_node;
-@@ -128,7 +77,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	if (usb_disabled())
- 		return -ENODEV;
- 
--	driver = &xhci_plat_xhci_driver;
-+	driver = &xhci_plat_hc_driver;
- 
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0)
-@@ -300,6 +249,8 @@ MODULE_ALIAS("platform:xhci-hcd");
- 
- int xhci_register_plat(void)
- {
-+	xhci_init_driver(&xhci_plat_hc_driver, xhci_plat_setup);
-+	xhci_plat_hc_drver.start = xhci_plat_start;
+ 	xhci_init_driver(&xhci_plat_hc_driver, xhci_plat_setup);
+ 	xhci_plat_hc_drver.start = xhci_plat_start;
  	return platform_driver_register(&usb_xhci_driver);
  }
++module_init(xhci_plat_init);
  
+-void xhci_unregister_plat(void)
++static void __exit xhci_plat_exit(void)
+ {
+ 	platform_driver_unregister(&usb_xhci_driver);
+ }
++module_exit(xhci_plat_exit);
++
++MODULE_DESCRIPTION("xHCI Platform Host Controller Driver");
++MODULE_LICENSE("GPL");
 diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index b6f2117..f94530a 100644
+index edfc96f..a29cd7d 100644
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
-@@ -4893,6 +4893,75 @@ error:
- 	return retval;
- }
+@@ -4972,18 +4972,6 @@ MODULE_LICENSE("GPL");
  
-+static const struct hc_driver xhci_hc_driver = {
-+	.description =		"xhci-hcd",
-+	.product_desc =		"xHCI Host Controller",
-+	.hcd_priv_size =	sizeof(struct xhci_hcd *),
-+
-+	/*
-+	 * generic hardware linkage
-+	 */
-+	.irq =			xhci_irq,
-+	.flags =		HCD_MEMORY | HCD_USB3 | HCD_SHARED,
-+
-+	/*
-+	 * basic lifecycle operations
-+	 */
-+	.reset =		NULL, /* set in xhci_init_driver() */
-+	.start =		xhci_run,
-+	.stop =			xhci_stop,
-+	.shutdown =		xhci_shutdown,
-+
-+	/*
-+	 * managing i/o requests and associated device resources
-+	 */
-+	.urb_enqueue =		xhci_urb_enqueue,
-+	.urb_dequeue =		xhci_urb_dequeue,
-+	.alloc_dev =		xhci_alloc_dev,
-+	.free_dev =		xhci_free_dev,
-+	.alloc_streams =	xhci_alloc_streams,
-+	.free_streams =		xhci_free_streams,
-+	.add_endpoint =		xhci_add_endpoint,
-+	.drop_endpoint =	xhci_drop_endpoint,
-+	.endpoint_reset =	xhci_endpoint_reset,
-+	.check_bandwidth =	xhci_check_bandwidth,
-+	.reset_bandwidth =	xhci_reset_bandwidth,
-+	.address_device =	xhci_address_device,
-+	.enable_device =	xhci_enable_device,
-+	.update_hub_device =	xhci_update_hub_device,
-+	.reset_device =		xhci_discover_or_reset_device,
-+
-+	/*
-+	 * scheduling support
-+	 */
-+	.get_frame_number =	xhci_get_frame,
-+
-+	/*
-+	 * root hub support
-+	 */
-+	.hub_control =		xhci_hub_control,
-+	.hub_status_data =	xhci_hub_status_data,
-+	.bus_suspend =		xhci_bus_suspend,
-+	.bus_resume =		xhci_bus_resume,
-+
-+	/*
-+	 * call back when device connected and addressed
-+	 */
-+	.update_device =        xhci_update_device,
-+	.set_usb2_hw_lpm =	xhci_set_usb2_hardware_lpm,
-+	.enable_usb3_lpm_timeout =	xhci_enable_usb3_lpm_timeout,
-+	.disable_usb3_lpm_timeout =	xhci_disable_usb3_lpm_timeout,
-+	.find_raw_port_number =	xhci_find_raw_port_number,
-+};
-+
-+void xhci_init_driver(struct hc_driver *drv, int (*setup_fn)(struct usb_hcd *))
-+{
-+	BUG_ON(!setup_fn);
-+	*drv = xhci_hc_driver;
-+	drv->reset = setup_fn;
-+}
-+EXPORT_SYMBOL_GPL(xhci_init_driver);
-+
- MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_LICENSE("GPL");
+ static int __init xhci_hcd_init(void)
+ {
+-	int retval;
+-
+-	retval = xhci_register_pci();
+-	if (retval < 0) {
+-		pr_debug("Problem registering PCI driver.\n");
+-		return retval;
+-	}
+-	retval = xhci_register_plat();
+-	if (retval < 0) {
+-		pr_debug("Problem registering platform driver.\n");
+-		goto unreg_pci;
+-	}
+ 	/*
+ 	 * Check the compiler generated sizes of structures that must be laid
+ 	 * out in specific ways for hardware access.
+@@ -5002,15 +4990,5 @@ static int __init xhci_hcd_init(void)
+ 	/* xhci_run_regs has eight fields and embeds 128 xhci_intr_regs */
+ 	BUILD_BUG_ON(sizeof(struct xhci_run_regs) != (8+8*128)*32/8);
+ 	return 0;
+-unreg_pci:
+-	xhci_unregister_pci();
+-	return retval;
+ }
+ module_init(xhci_hcd_init);
+-
+-static void __exit xhci_hcd_cleanup(void)
+-{
+-	xhci_unregister_pci();
+-	xhci_unregister_plat();
+-}
+-module_exit(xhci_hcd_cleanup);
 diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index dace515..194dbd3 100644
+index 71400b3..d9c9e0a 100644
 --- a/drivers/usb/host/xhci.h
 +++ b/drivers/usb/host/xhci.h
-@@ -1762,6 +1762,7 @@ int xhci_run(struct usb_hcd *hcd);
- void xhci_stop(struct usb_hcd *hcd);
- void xhci_shutdown(struct usb_hcd *hcd);
- int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks);
-+void xhci_init_driver(struct hc_driver *drv, int (*setup_fn)(struct usb_hcd *));
+@@ -1731,25 +1731,6 @@ void xhci_urb_free_priv(struct xhci_hcd *xhci, struct urb_priv *urb_priv);
+ void xhci_free_command(struct xhci_hcd *xhci,
+ 		struct xhci_command *command);
  
- #ifdef	CONFIG_PM
- int xhci_suspend(struct xhci_hcd *xhci);
+-#ifdef CONFIG_PCI
+-/* xHCI PCI glue */
+-int xhci_register_pci(void);
+-void xhci_unregister_pci(void);
+-#else
+-static inline int xhci_register_pci(void) { return 0; }
+-static inline void xhci_unregister_pci(void) {}
+-#endif
+-
+-#if IS_ENABLED(CONFIG_USB_XHCI_PLATFORM)
+-int xhci_register_plat(void);
+-void xhci_unregister_plat(void);
+-#else
+-static inline int xhci_register_plat(void)
+-{ return 0; }
+-static inline void xhci_unregister_plat(void)
+-{  }
+-#endif
+-
+ /* xHCI host controller glue */
+ typedef void (*xhci_get_quirks_t)(struct device *, struct xhci_hcd *);
+ int xhci_handshake(struct xhci_hcd *xhci, void __iomem *ptr,
 -- 
 2.1.0.rc2.206.gedb03e5
 
