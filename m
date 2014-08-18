@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaHRJfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:35:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42959 "EHLO
+	id S1753851AbaHRJqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:46:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42986 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038AbaHRJfr (ORCPT
+	with ESMTP id S1753070AbaHRJfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:47 -0400
+	Mon, 18 Aug 2014 05:35:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 097/137] net: mvneta: add missing bit descriptions for interrupt masks and causes
-Date: Mon, 18 Aug 2014 10:32:38 +0100
-Message-Id: <1408354398-10226-98-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 102/137] Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
+Date: Mon, 18 Aug 2014 10:32:43 +0100
+Message-Id: <1408354398-10226-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,94 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: willy tarreau <w@1wt.eu>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 40ba35e74fa56866918d2f3bc0528b5b92725d5e upstream.
+commit 08b9939997df30e42a228e1ecb97f99e9c8ea84e upstream.
 
-Marvell has not published the chip's datasheet yet, so it's very hard
-to find the relevant bits to manipulate to change the IRQ behaviour.
-Fortunately, these bits are described in the proprietary LSP patch set
-which is publicly available here :
+This reverts commit 277d916fc2e959c3f106904116bb4f7b1148d47a as it was
+at least breaking iwlwifi by setting the IEEE80211_TX_CTL_NO_PS_BUFFER
+flag in all kinds of interface modes, not only for AP mode where it is
+appropriate.
 
-    http://www.plugcomputer.org/downloads/mirabox/
+To avoid reintroducing the original problem, explicitly check for probe
+request frames in the multicast buffering code.
 
-So let's put them back in the driver in order to reduce the burden of
-current and future maintenance.
-
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Tested-by: Arnaud Ebalard <arno@natisbad.org>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+Fixes: 277d916fc2e9 ("mac80211: move "bufferable MMPDU" check to fix AP mode scan")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ luis: backported to 3.11: based on Johannes' backport for 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/marvell/mvneta.c | 44 +++++++++++++++++++++++++++++++++--
- 1 file changed, 42 insertions(+), 2 deletions(-)
+ net/mac80211/tx.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index f72112294750..a10f156430ca 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -101,16 +101,56 @@
- #define      MVNETA_CPU_RXQ_ACCESS_ALL_MASK      0x000000ff
- #define      MVNETA_CPU_TXQ_ACCESS_ALL_MASK      0x0000ff00
- #define MVNETA_RXQ_TIME_COAL_REG(q)              (0x2580 + ((q) << 2))
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 5fd26c6bad2a..cc3be10bab23 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -398,6 +398,9 @@ ieee80211_tx_h_multicast_ps_buf(struct ieee80211_tx_data *tx)
+ 	if (ieee80211_has_order(hdr->frame_control))
+ 		return TX_CONTINUE;
+ 
++	if (ieee80211_is_probe_req(hdr->frame_control))
++		return TX_CONTINUE;
 +
-+/* Exception Interrupt Port/Queue Cause register */
+ 	if (tx->local->hw.flags & IEEE80211_HW_QUEUE_CONTROL)
+ 		info->hw_queue = tx->sdata->vif.cab_queue;
+ 
+@@ -448,6 +451,7 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ {
+ 	struct sta_info *sta = tx->sta;
+ 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
++	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+ 	struct ieee80211_local *local = tx->local;
+ 
+ 	if (unlikely(!sta))
+@@ -458,6 +462,15 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
+ 		int ac = skb_get_queue_mapping(tx->skb);
+ 
++		/* only deauth, disassoc and action are bufferable MMPDUs */
++		if (ieee80211_is_mgmt(hdr->frame_control) &&
++		    !ieee80211_is_deauth(hdr->frame_control) &&
++		    !ieee80211_is_disassoc(hdr->frame_control) &&
++		    !ieee80211_is_action(hdr->frame_control)) {
++			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
++			return TX_CONTINUE;
++		}
 +
- #define MVNETA_INTR_NEW_CAUSE                    0x25a0
--#define      MVNETA_RX_INTR_MASK(nr_rxqs)        (((1 << nr_rxqs) - 1) << 8)
- #define MVNETA_INTR_NEW_MASK                     0x25a4
-+
-+/* bits  0..7  = TXQ SENT, one bit per queue.
-+ * bits  8..15 = RXQ OCCUP, one bit per queue.
-+ * bits 16..23 = RXQ FREE, one bit per queue.
-+ * bit  29 = OLD_REG_SUM, see old reg ?
-+ * bit  30 = TX_ERR_SUM, one bit for 4 ports
-+ * bit  31 = MISC_SUM,   one bit for 4 ports
-+ */
-+#define      MVNETA_TX_INTR_MASK(nr_txqs)        (((1 << nr_txqs) - 1) << 0)
-+#define      MVNETA_TX_INTR_MASK_ALL             (0xff << 0)
-+#define      MVNETA_RX_INTR_MASK(nr_rxqs)        (((1 << nr_rxqs) - 1) << 8)
-+#define      MVNETA_RX_INTR_MASK_ALL             (0xff << 8)
-+
- #define MVNETA_INTR_OLD_CAUSE                    0x25a8
- #define MVNETA_INTR_OLD_MASK                     0x25ac
-+
-+/* Data Path Port/Queue Cause Register */
- #define MVNETA_INTR_MISC_CAUSE                   0x25b0
- #define MVNETA_INTR_MISC_MASK                    0x25b4
-+
-+#define      MVNETA_CAUSE_PHY_STATUS_CHANGE      BIT(0)
-+#define      MVNETA_CAUSE_LINK_CHANGE            BIT(1)
-+#define      MVNETA_CAUSE_PTP                    BIT(4)
-+
-+#define      MVNETA_CAUSE_INTERNAL_ADDR_ERR      BIT(7)
-+#define      MVNETA_CAUSE_RX_OVERRUN             BIT(8)
-+#define      MVNETA_CAUSE_RX_CRC_ERROR           BIT(9)
-+#define      MVNETA_CAUSE_RX_LARGE_PKT           BIT(10)
-+#define      MVNETA_CAUSE_TX_UNDERUN             BIT(11)
-+#define      MVNETA_CAUSE_PRBS_ERR               BIT(12)
-+#define      MVNETA_CAUSE_PSC_SYNC_CHANGE        BIT(13)
-+#define      MVNETA_CAUSE_SERDES_SYNC_ERR        BIT(14)
-+
-+#define      MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT    16
-+#define      MVNETA_CAUSE_BMU_ALLOC_ERR_ALL_MASK   (0xF << MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT)
-+#define      MVNETA_CAUSE_BMU_ALLOC_ERR_MASK(pool) (1 << (MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT + (pool)))
-+
-+#define      MVNETA_CAUSE_TXQ_ERROR_SHIFT        24
-+#define      MVNETA_CAUSE_TXQ_ERROR_ALL_MASK     (0xFF << MVNETA_CAUSE_TXQ_ERROR_SHIFT)
-+#define      MVNETA_CAUSE_TXQ_ERROR_MASK(q)      (1 << (MVNETA_CAUSE_TXQ_ERROR_SHIFT + (q)))
-+
- #define MVNETA_INTR_ENABLE                       0x25b8
- #define      MVNETA_TXQ_INTR_ENABLE_ALL_MASK     0x0000ff00
--#define      MVNETA_RXQ_INTR_ENABLE_ALL_MASK     0xff000000
-+#define      MVNETA_RXQ_INTR_ENABLE_ALL_MASK     0xff000000  // note: neta says it's 0x000000FF
-+
- #define MVNETA_RXQ_CMD                           0x2680
- #define      MVNETA_RXQ_DISABLE_SHIFT            8
- #define      MVNETA_RXQ_ENABLE_MASK              0x000000ff
+ 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
+ 		       sta->sta.addr, sta->sta.aid, ac);
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+@@ -515,22 +528,9 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ static ieee80211_tx_result debug_noinline
+ ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
+ {
+-	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
+-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
+-
+ 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
+ 		return TX_CONTINUE;
+ 
+-	/* only deauth, disassoc and action are bufferable MMPDUs */
+-	if (ieee80211_is_mgmt(hdr->frame_control) &&
+-	    !ieee80211_is_deauth(hdr->frame_control) &&
+-	    !ieee80211_is_disassoc(hdr->frame_control) &&
+-	    !ieee80211_is_action(hdr->frame_control)) {
+-		if (tx->flags & IEEE80211_TX_UNICAST)
+-			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
+-		return TX_CONTINUE;
+-	}
+-
+ 	if (tx->flags & IEEE80211_TX_UNICAST)
+ 		return ieee80211_tx_h_unicast_ps_buf(tx);
+ 	else
 -- 
 1.9.1
 
