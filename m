@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751120AbaHRJea (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42624 "EHLO
+	id S1754407AbaHRJ7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:59:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42656 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407AbaHRJeZ (ORCPT
+	with ESMTP id S1752407AbaHRJec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:25 -0400
+	Mon, 18 Aug 2014 05:34:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 041/137] net: fix sparse warning in sk_dst_set()
-Date: Mon, 18 Aug 2014 10:31:42 +0100
-Message-Id: <1408354398-10226-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 046/137] net: qmi_wwan: add two Sierra Wireless/Netgear devices
+Date: Mon, 18 Aug 2014 10:31:47 +0100
+Message-Id: <1408354398-10226-47-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
 
-commit 5925a0555bdaf0b396a84318cbc21ba085f6c0d3 upstream.
+commit 5343330010a892b76a97fd93ad3c455a4a32a7fb upstream.
 
-sk_dst_cache has __rcu annotation, so we need a cast to avoid
-following sparse error :
+Add two device IDs found in an out-of-tree driver downloadable
+from Netgear.
 
-include/net/sock.h:1774:19: warning: incorrect type in initializer (different address spaces)
-include/net/sock.h:1774:19:    expected struct dst_entry [noderef] <asn:4>*__ret
-include/net/sock.h:1774:19:    got struct dst_entry *dst
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Fixes: 7f502361531e ("ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix")
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/net/sock.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/usb/qmi_wwan.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 447205545c1c..f4478d696112 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1776,7 +1776,7 @@ sk_dst_set(struct sock *sk, struct dst_entry *dst)
- 	struct dst_entry *old_dst;
- 
- 	sk_tx_queue_clear(sk);
--	old_dst = xchg(&sk->sk_dst_cache, dst);
-+	old_dst = xchg((__force struct dst_entry **)&sk->sk_dst_cache, dst);
- 	dst_release(old_dst);
- }
- 
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index bf2e5c19b9be..6c584f8a2268 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -647,6 +647,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x05c6, 0x9084, 4)},
+ 	{QMI_FIXED_INTF(0x05c6, 0x920d, 0)},
+ 	{QMI_FIXED_INTF(0x05c6, 0x920d, 5)},
++	{QMI_FIXED_INTF(0x0846, 0x68a2, 8)},
+ 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ 	{QMI_FIXED_INTF(0x12d1, 0x14ac, 1)},	/* Huawei E1820 */
+ 	{QMI_FIXED_INTF(0x16d8, 0x6003, 0)},	/* CMOTech 6003 */
+@@ -734,6 +735,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x1199, 0x901f, 8)},    /* Sierra Wireless EM7355 */
+ 	{QMI_FIXED_INTF(0x1199, 0x9041, 8)},	/* Sierra Wireless MC7305/MC7355 */
+ 	{QMI_FIXED_INTF(0x1199, 0x9051, 8)},	/* Netgear AirCard 340U */
++	{QMI_FIXED_INTF(0x1199, 0x9057, 8)},
+ 	{QMI_FIXED_INTF(0x1bbb, 0x011e, 4)},	/* Telekom Speedstick LTE II (Alcatel One Touch L100V LTE) */
+ 	{QMI_FIXED_INTF(0x1bbb, 0x0203, 2)},	/* Alcatel L800MA */
+ 	{QMI_FIXED_INTF(0x2357, 0x0201, 4)},	/* TP-LINK HSUPA Modem MA180 */
 -- 
 1.9.1
 
