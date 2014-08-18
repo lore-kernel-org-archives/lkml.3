@@ -1,201 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaHRRpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:45:51 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:35768 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648AbaHRRpu (ORCPT
+	id S1751895AbaHRRxj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:53:39 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:41592 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751703AbaHRRxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 13:45:50 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dt: sunxi: Remove i2c controller clock-frequency that matches default
-Date: Tue, 19 Aug 2014 01:45:45 +0800
-Message-Id: <1408383945-27940-1-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.1.0
+	Mon, 18 Aug 2014 13:53:37 -0400
+Date: Mon, 18 Aug 2014 13:53:33 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+cc: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
+        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
+        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
+        arjan@linux.intel.com, mingo@kernel.org, len.brown@intel.com,
+        yuyang.du@intel.com, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, corbet@lwn.net, catalin.marinas@arm.com,
+        markgross@thegnar.org, sundar.iyer@intel.com,
+        linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com,
+        Lorenzo.Pieralisi@arm.com, mike.turquette@linaro.org,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de
+Subject: Re: [RFC PATCH V2 01/19] sched/power: Remove cpu idle state selection
+ and cpu frequency tuning
+In-Reply-To: <53F23761.6000904@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.11.1408181331400.29347@knanqh.ubzr>
+References: <20140811113000.31956.52857.stgit@preeti.in.ibm.com> <20140811113145.31956.32224.stgit@preeti.in.ibm.com> <alpine.LFD.2.11.1408181125100.29347@knanqh.ubzr> <53F23761.6000904@linux.vnet.ibm.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The clock-frequency values of the i2c controller nodes match the
-defaults of the driver. Remove the properties to use the defaults,
-and be consistent with sun8i.
+On Mon, 18 Aug 2014, Preeti U Murthy wrote:
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- arch/arm/boot/dts/sun4i-a10.dtsi  | 3 ---
- arch/arm/boot/dts/sun5i-a10s.dtsi | 3 ---
- arch/arm/boot/dts/sun5i-a13.dtsi  | 3 ---
- arch/arm/boot/dts/sun6i-a31.dtsi  | 4 ----
- arch/arm/boot/dts/sun7i-a20.dtsi  | 5 -----
- 5 files changed, 18 deletions(-)
+> On 08/18/2014 09:09 PM, Nicolas Pitre wrote:
+> > On Mon, 11 Aug 2014, Preeti U Murthy wrote:
+> > 
+> >> As a first step towards improving the power awareness of the scheduler,
+> >> this patch enables a "dumb" state where all power management is turned off.
+> >> Whatever additionally we put into the kernel for cpu power management must
+> >> do better than this in terms of performance as well as powersavings.
+> >> This will enable us to benchmark and optimize the power aware scheduler
+> >> from scratch.If we are to benchmark it against the performance of the
+> >> existing design, we will get sufficiently distracted by the performance
+> >> numbers and get steered away from a sane design.
+> > 
+> > I understand your goal here, but people *will* compare performance 
+> > between the old and the new design anyway.  So I think it would be a 
+> > better approach to simply let the existing code be and create a new 
+> > scheduler-based governor that can be swapped with the existing ones at 
+> > run time.  Eventually we'll want average users to test and compare this, 
+> > and asking them to recompile a second kernel and reboot between them 
+> > might get unwieldy to many people.
+> > 
+> > And by allowing both to coexist at run time, we're making sure both the 
+> > old and the new code are built helping not breaking the old code.  And 
+> > that will also cut down on the number of #ifdefs in many places.
+> > 
+> > In other words, CONFIG_SCHED_POWER is needed to select the scheduler 
+> > based governor but it shouldn't force the existing code disabled.
+> 
+> I don't think I understand you here. So are you proposing a runtime
+> switch like a sysfs interface instead of a config switch?
 
-diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-index 14cf436..380f914 100644
---- a/arch/arm/boot/dts/sun4i-a10.dtsi
-+++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -765,7 +765,6 @@
- 			reg = <0x01c2ac00 0x400>;
- 			interrupts = <7>;
- 			clocks = <&apb1_gates 0>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -776,7 +775,6 @@
- 			reg = <0x01c2b000 0x400>;
- 			interrupts = <8>;
- 			clocks = <&apb1_gates 1>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -787,7 +785,6 @@
- 			reg = <0x01c2b400 0x400>;
- 			interrupts = <9>;
- 			clocks = <&apb1_gates 2>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-diff --git a/arch/arm/boot/dts/sun5i-a10s.dtsi b/arch/arm/boot/dts/sun5i-a10s.dtsi
-index 02aa41f..d73a228 100644
---- a/arch/arm/boot/dts/sun5i-a10s.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a10s.dtsi
-@@ -578,7 +578,6 @@
- 			reg = <0x01c2ac00 0x400>;
- 			interrupts = <7>;
- 			clocks = <&apb1_gates 0>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 		};
- 
-@@ -589,7 +588,6 @@
- 			reg = <0x01c2b000 0x400>;
- 			interrupts = <8>;
- 			clocks = <&apb1_gates 1>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 		};
- 
-@@ -600,7 +598,6 @@
- 			reg = <0x01c2b400 0x400>;
- 			interrupts = <9>;
- 			clocks = <&apb1_gates 2>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 		};
- 
-diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
-index d8f02ee..c4b5d78 100644
---- a/arch/arm/boot/dts/sun5i-a13.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-@@ -504,7 +504,6 @@
- 			reg = <0x01c2ac00 0x400>;
- 			interrupts = <7>;
- 			clocks = <&apb1_gates 0>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -515,7 +514,6 @@
- 			reg = <0x01c2b000 0x400>;
- 			interrupts = <8>;
- 			clocks = <&apb1_gates 1>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -526,7 +524,6 @@
- 			reg = <0x01c2b400 0x400>;
- 			interrupts = <9>;
- 			clocks = <&apb1_gates 2>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index 8fdf90d..1c2ec91 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -657,7 +657,6 @@
- 			reg = <0x01c2ac00 0x400>;
- 			interrupts = <0 6 4>;
- 			clocks = <&apb2_gates 0>;
--			clock-frequency = <100000>;
- 			resets = <&apb2_rst 0>;
- 			status = "disabled";
- 		};
-@@ -667,7 +666,6 @@
- 			reg = <0x01c2b000 0x400>;
- 			interrupts = <0 7 4>;
- 			clocks = <&apb2_gates 1>;
--			clock-frequency = <100000>;
- 			resets = <&apb2_rst 1>;
- 			status = "disabled";
- 		};
-@@ -677,7 +675,6 @@
- 			reg = <0x01c2b400 0x400>;
- 			interrupts = <0 8 4>;
- 			clocks = <&apb2_gates 2>;
--			clock-frequency = <100000>;
- 			resets = <&apb2_rst 2>;
- 			status = "disabled";
- 		};
-@@ -687,7 +684,6 @@
- 			reg = <0x01c2b800 0x400>;
- 			interrupts = <0 9 4>;
- 			clocks = <&apb2_gates 3>;
--			clock-frequency = <100000>;
- 			resets = <&apb2_rst 3>;
- 			status = "disabled";
- 		};
-diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
-index db22ef9..c658e34 100644
---- a/arch/arm/boot/dts/sun7i-a20.dtsi
-+++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-@@ -915,7 +915,6 @@
- 			reg = <0x01c2ac00 0x400>;
- 			interrupts = <0 7 4>;
- 			clocks = <&apb1_gates 0>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -926,7 +925,6 @@
- 			reg = <0x01c2b000 0x400>;
- 			interrupts = <0 8 4>;
- 			clocks = <&apb1_gates 1>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -937,7 +935,6 @@
- 			reg = <0x01c2b400 0x400>;
- 			interrupts = <0 9 4>;
- 			clocks = <&apb1_gates 2>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -948,7 +945,6 @@
- 			reg = <0x01c2b800 0x400>;
- 			interrupts = <0 88 4>;
- 			clocks = <&apb1_gates 3>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
-@@ -959,7 +955,6 @@
- 			reg = <0x01c2c000 0x400>;
- 			interrupts = <0 89 4>;
- 			clocks = <&apb1_gates 15>;
--			clock-frequency = <100000>;
- 			status = "disabled";
- 			#address-cells = <1>;
- 			#size-cells = <0>;
--- 
-2.1.0
+Absolutely. 
 
+And looking at drivers/cpuidle/sysfs.c:store_current_governor() it seems 
+that the facility is there already.
+
+> Wouldn't that be unwise given that its a complete turnaround of the 
+> behavior kernel after the switch?
+
+Oh sure.  This is like changing cpufreq governors at run time.  But 
+people should know what they're playing with and that system behavior 
+changes are expected.
+
+> I agree that the first patch is a dummy patch, its
+> meant to ensure that we have *atleast* the power efficiency that this
+> patch brings in. Of course after that point this patch is a no-op. In
+> fact the subsequent patches will mitigate the effect of this.
+
+Still, allowing runtime switches between  the legacy governors and 
+the in-scheduler governor will greatly facilitate benchmarking.
+
+And since our goal is to surpass the legacy governors then we should set 
+it as our reference mark from the start.
+
+
+Nicolas
