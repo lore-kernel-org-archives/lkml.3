@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbaHRXNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 19:13:42 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:33604 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaHRXNk (ORCPT
+	id S1752374AbaHRXUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 19:20:33 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:55200 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752153AbaHRXUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 19:13:40 -0400
-X-IronPort-AV: E=Sophos;i="5.01,889,1400050800"; 
-   d="scan'208";a="42697588"
-Subject: Re: [PATCH v2] cnic: Replace rcu_dereference() with
- rcu_access_pointer()
-From: Michael Chan <mchan@broadcom.com>
-To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-CC: <davem@davemloft.net>, <eddie.wai@broadcom.com>, <joe@perches.com>,
-        <mingo@kernel.org>, <peterz@infradead.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20140817101149.GA3692@ada>
-References: <20140817101149.GA3692@ada>
-Content-Type: text/plain; charset="cp1252"
-Date: Mon, 18 Aug 2014 16:13:39 -0700
-Message-ID: <1408403619.7460.1.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	Mon, 18 Aug 2014 19:20:32 -0400
+From: Con Kolivas <kernel@kolivas.org>
+To: Sam Asadi <asadi.samuel@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Andreas Mohr <andi@lisas.de>
+Subject: i8k: Don't revert affinity in i8k_smm
+Date: Tue, 19 Aug 2014 09:19:55 +1000
+Message-ID: <1454445.ErZ3u1p0yH@hex>
+User-Agent: KMail/4.13.3 (Linux/3.16.0-ck1; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1405443709-15288-58-git-send-email-asadi.samuel@gmail.com>
+References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com> <1405443709-15288-58-git-send-email-asadi.samuel@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-08-17 at 13:12 +0300, Andreea-Cristina Bernat wrote: 
-> The "rcu_dereference()" calls are used directly in conditions.
-> Since their return values are never dereferenced it is recommended to use
-> "rcu_access_pointer()" instead of "rcu_dereference()".
-> Therefore, this patch makes the replacements.
-> 
-> The following Coccinelle semantic patch was used:
-> @@
-> @@
-> 
-> (
->  if(
->  (<+...
-> - rcu_dereference
-> + rcu_access_pointer
->   (...)
->   ...+>)) {...}
-> |
->  while(
->  (<+...
-> - rcu_dereference
-> + rcu_access_pointer
->   (...)
->   ...+>)) {...}
-> )
-> 
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+As a followup to this discussion:
 
-Acked-by: Michael Chan <mchan@broadcom.com>
-
-> ---
-> v2: Modified subject line from
->  "rcu: Replace rcu_dereference() with rcu_access_pointer()"
->  to
->  "cnic: Replace rcu_dereference() with rcu_access_pointer()",
->  noted by David Miller <davem@davemloft.net>
+On Tue, 15 Jul 2014 08:01:13 PM Sam Asadi wrote:
+> Commit f36fdb9f0266 (i8k: Force SMM to run on CPU 0) adds support
+> for multi-core CPUs to the driver. Unfortunately, that causes it
+> to fail loading if compiled without SMP support, at least on
+> 32 bit kernels. Kernel log shows "i8k: unable to get SMM Dell
+> signature", and function i8k_smm is found to return -EINVAL.
 > 
->  drivers/net/ethernet/broadcom/cnic.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/broadcom/cnic.c b/drivers/net/ethernet/broadcom/cnic.c
-> index 8244e2b..dad9cb7 100644
-> --- a/drivers/net/ethernet/broadcom/cnic.c
-> +++ b/drivers/net/ethernet/broadcom/cnic.c
-> @@ -381,7 +381,7 @@ static int cnic_iscsi_nl_msg_recv(struct cnic_dev *dev, u32 msg_type,
->  			break;
->  
->  		rcu_read_lock();
-> -		if (!rcu_dereference(cp->ulp_ops[CNIC_ULP_L4])) {
-> +		if (!rcu_access_pointer(cp->ulp_ops[CNIC_ULP_L4])) {
->  			rc = -ENODEV;
->  			rcu_read_unlock();
->  			break;
-> @@ -525,7 +525,7 @@ int cnic_unregister_driver(int ulp_type)
->  	list_for_each_entry(dev, &cnic_dev_list, list) {
->  		struct cnic_local *cp = dev->cnic_priv;
->  
-> -		if (rcu_dereference(cp->ulp_ops[ulp_type])) {
-> +		if (rcu_access_pointer(cp->ulp_ops[ulp_type])) {
->  			pr_err("%s: Type %d still has devices registered\n",
->  			       __func__, ulp_type);
->  			read_unlock(&cnic_dev_lock);
-> @@ -573,7 +573,7 @@ static int cnic_register_device(struct cnic_dev *dev, int ulp_type,
->  		mutex_unlock(&cnic_lock);
->  		return -EAGAIN;
->  	}
-> -	if (rcu_dereference(cp->ulp_ops[ulp_type])) {
-> +	if (rcu_access_pointer(cp->ulp_ops[ulp_type])) {
->  		pr_err("%s: Type %d has already been registered to this device\n",
->  		       __func__, ulp_type);
->  		mutex_unlock(&cnic_lock);
+> Testing revealed that the culprit is the missing return value check
+> of set_cpus_allowed_ptr.
 
+It appears that the original commit f36fdb9f0266 changes the affinity for the 
+duration of i8k_smm function and then unconditionally reverts the affinity to 
+the old cpu mask regardless of whether the function succeeds or fails. As this 
+must run on CPU 0 at all times it does not make sense to revert the affinity at 
+the end of the function. Proposed patch attached.
 
+Signed-off-by: Con Kolivas <kernel@kolivas.org>
+
+---
+ drivers/char/i8k.c |    6 ------
+ 1 file changed, 6 deletions(-)
+
+Index: linux-3.16-ck1/drivers/char/i8k.c
+===================================================================
+--- linux-3.16-ck1.orig/drivers/char/i8k.c	2014-08-12 14:07:49.000000000 +1000
++++ linux-3.16-ck1/drivers/char/i8k.c	2014-08-19 09:09:57.939056696 +1000
+@@ -132,12 +132,8 @@ static int i8k_smm(struct smm_regs *regs
+ {
+ 	int rc;
+ 	int eax = regs->eax;
+-	cpumask_var_t old_mask;
+ 
+ 	/* SMM requires CPU 0 */
+-	if (!alloc_cpumask_var(&old_mask, GFP_KERNEL))
+-		return -ENOMEM;
+-	cpumask_copy(old_mask, &current->cpus_allowed);
+ 	rc = set_cpus_allowed_ptr(current, cpumask_of(0));
+ 	if (rc)
+ 		goto out;
+@@ -203,8 +199,6 @@ static int i8k_smm(struct smm_regs *regs
+ 		rc = -EINVAL;
+ 
+ out:
+-	set_cpus_allowed_ptr(current, old_mask);
+-	free_cpumask_var(old_mask);
+ 	return rc;
+ }
+ 
+
+-- 
+-ck
