@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaHRScp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 14:32:45 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58418 "EHLO
+	id S1752267AbaHRSdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 14:33:19 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:59045 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096AbaHRScn convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751705AbaHRSdQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 14:32:43 -0400
-Message-ID: <53F2472F.5060400@arm.com>
-Date: Mon, 18 Aug 2014 19:34:23 +0100
+	Mon, 18 Aug 2014 14:33:16 -0400
+Message-ID: <53F2474F.70601@arm.com>
+Date: Mon, 18 Aug 2014 19:34:55 +0100
 From: Sudeep Holla <sudeep.holla@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
@@ -36,12 +36,12 @@ CC: Sudeep Holla <sudeep.holla@arm.com>,
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v2 09/18] ACPI / processor: Make it possible to get CPU
- hardware ID via GICC
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-10-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1407166105-17675-10-git-send-email-hanjun.guo@linaro.org>
-X-OriginalArrivalTime: 18 Aug 2014 18:32:39.0925 (UTC) FILETIME=[CA8FA250:01CFBB12]
-X-MC-Unique: 114081819324100501
+Subject: Re: [PATCH v2 10/18] ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and
+ register device's gsi
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-11-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1407166105-17675-11-git-send-email-hanjun.guo@linaro.org>
+X-OriginalArrivalTime: 18 Aug 2014 18:33:11.0862 (UTC) FILETIME=[DD98D560:01CFBB12]
+X-MC-Unique: 114081819331402501
 Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
@@ -51,159 +51,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 On 04/08/14 16:28, Hanjun Guo wrote:
-> Introduce a new function map_gicc_mpidr() to allow MPIDRs to be obtained
-> from the GICC Structure introduced by ACPI 5.1.
+> Introduce ACPI_IRQ_MODEL_GIC which is needed for ARM64 as GIC is
+> used, and then register device's gsi with the core IRQ subsystem.
 >
-> MPIDR is the CPU hardware ID as local APIC ID on x86 platform, so we use
-> MPIDR not the GIC CPU interface ID to identify CPUs.
+> acpi_register_gsi() is similar to DT based irq_of_parse_and_map(),
+> since gsi is unique in the system, so use hwirq number directly
+> for the mapping.
 >
+> Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 > ---
->   arch/arm64/include/asm/acpi.h |   14 ++++++++++++++
->   arch/arm64/kernel/acpi.c      |   21 ++++++++++++++++++++-
->   drivers/acpi/processor_core.c |   37 +++++++++++++++++++++++++++++++++++++
->   3 files changed, 71 insertions(+), 1 deletion(-)
+>   arch/arm64/kernel/acpi.c |   73 ++++++++++++++++++++++++++++++++++++++++++++++
+>   drivers/acpi/bus.c       |    3 ++
+>   include/linux/acpi.h     |    1 +
+>   3 files changed, 77 insertions(+)
 >
-> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-> index 022f4ad..a81898d 100644
-> --- a/arch/arm64/include/asm/acpi.h
-> +++ b/arch/arm64/include/asm/acpi.h
-> @@ -12,6 +12,8 @@
->   #ifndef _ASM_ACPI_H
->   #define _ASM_ACPI_H
->
-> +#include <asm/smp_plat.h>
-> +
->   /* Basic configuration for ACPI */
->   #ifdef	CONFIG_ACPI
->   /*
-> @@ -59,6 +61,18 @@ static inline void disable_acpi(void)
->   	acpi_noirq = 1;
->   }
->
-> +u32 pack_mpidr_into_32_bits(u64 mpidr);
-> +
-> +/*
-> + * The ACPI processor driver for ACPI core code needs this macro
-> + * to find out this cpu was already mapped (mapping from CPU hardware
-> + * ID to CPU logical ID) or not.
-> + *
-> + * cpu_logical_map(cpu) is the mapping of MPIDR and the logical cpu,
-> + * and MPIDR is the cpu hardware ID we needed.
-
-You need to specify this is packed version of cpu_logical_map or
-better is to move pack_mpidr_into_32_bits here along with the
-description you have so that it's easy to understand.
-
-> + */
-> +#define cpu_physical_id(cpu) pack_mpidr_into_32_bits(cpu_logical_map(cpu))
-> +
->   /*
->    * Checking for the posibility that the CPU can be initialized from the MADT.
->    * It's used from ACPI core in crash kernel case where boot CPU is not
 > diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> index 8a54b4e..ac7ab34 100644
+> index ac7ab34..621ced8 100644
 > --- a/arch/arm64/kernel/acpi.c
 > +++ b/arch/arm64/kernel/acpi.c
-> @@ -22,7 +22,6 @@
->   #include <linux/bootmem.h>
->   #include <linux/smp.h>
+> @@ -34,6 +34,12 @@ EXPORT_SYMBOL(acpi_pci_disabled);
+>   static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
 >
-> -#include <asm/smp_plat.h>
->   #include <asm/cputype.h>
->
->   int acpi_noirq;			/* skip ACPI IRQ initialization */
-> @@ -239,6 +238,26 @@ int __init acpi_boot_init(void)
->   	return err;
->   }
->
-> +/* MPIDR value provided in GICC structure is 64 bits, but
-> + * the acpi processor driver use the 32 bits cpu hardware
-> + * ID (apic_id on intel platform) everywhere, it is pretty
-> + * hard to modify the acpi processor driver to accept the
-> + * 64 bits MPIDR value, at the same time, only 32 bits of
-> + * the MPIDR is used in the 64 bits MPIDR, just pack the
-> + * Affx fields into a single 32 bit identifier to accommodate
-> + * the acpi processor drivers.
-> + */
-> +u32 pack_mpidr_into_32_bits(u64 mpidr)
-> +{
-> +	/*
-> +	 * Bits [0:7] Aff0;
-> +	 * Bits [8:15] Aff1;
-> +	 * Bits [16:23] Aff2;
-> +	 * Bits [32:39] Aff3;
-> +	 */
-> +	return (u32) ((mpidr & 0xff00000000) >> 8) | mpidr;
-> +}
-> +
 >   /*
->    * acpi_suspend_lowlevel() - save kernel state and suspend.
->    *
-> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-> index e32321c..4007313 100644
-> --- a/drivers/acpi/processor_core.c
-> +++ b/drivers/acpi/processor_core.c
-> @@ -64,6 +64,38 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
+> + * Since we're on ARM, the default interrupt routing model
+> + * clearly has to be GIC.
+> + */
+> +enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_GIC;
+> +
+> +/*
+>    * __acpi_map_table() will be called before page_init(), so early_ioremap()
+>    * or early_memremap() should be called here to for ACPI table mapping.
+>    */
+> @@ -169,6 +175,73 @@ static int __init acpi_parse_madt_gic_cpu_interface_entries(void)
 >   	return 0;
 >   }
 >
-> +/*
-> + * On ARM platform, MPIDR value is the hardware ID as apic ID
-> + * on Intel platforms
-> + */
-> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
-> +		int device_declaration, u32 acpi_id, int *mpidr)
+> +int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
 > +{
-> +	struct acpi_madt_generic_interrupt *gicc =
-> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
+> +	*irq = irq_find_mapping(NULL, gsi);
 > +
-> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
-> +		return -ENODEV;
-> +
-> +	/* In the GIC interrupt model, logical processors are
-> +	 * required to have a Processor Device object in the DSDT,
-> +	 * so we should check device_declaration here
-> +	 */
-> +	if (device_declaration && (gicc->uid == acpi_id)) {
-> +		/*
-> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
-> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
-> +		 * fields into a single 32 bit identifier to accommodate the
-> +		 * acpi processor drivers.
-> +		 */
-> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
-> +			 | gicc->arm_mpidr;
-
-Reuse pack_mpidr_into_32_bits
-
-> +		return 0;
-> +	}
-> +
-> +	return -EINVAL;
+> +	return 0;
 > +}
+> +EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
 > +
->   static int map_madt_entry(int type, u32 acpi_id)
->   {
->   	unsigned long madt_end, entry;
-> @@ -99,6 +131,9 @@ static int map_madt_entry(int type, u32 acpi_id)
->   		} else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC) {
->   			if (!map_lsapic_id(header, type, acpi_id, &apic_id))
->   				break;
-> +		} else if (header->type == ACPI_MADT_TYPE_GENERIC_INTERRUPT) {
-> +			if (!map_gicc_mpidr(header, type, acpi_id, &apic_id))
-> +				break;
->   		}
->   		entry += header->length;
->   	}
-> @@ -131,6 +166,8 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
->   		map_lsapic_id(header, type, acpi_id, &apic_id);
->   	} else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC) {
->   		map_x2apic_id(header, type, acpi_id, &apic_id);
-> +	} else if (header->type == ACPI_MADT_TYPE_GENERIC_INTERRUPT) {
-> +		map_gicc_mpidr(header, type, acpi_id, &apic_id);
->   	}
->
->   exit:
->
+> +/*
+> + * success: return IRQ number (>0)
+> + * failure: return =< 0
+> + */
+> +int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+> +{
+> +	unsigned int irq;
+> +	unsigned int irq_type;
+> +
+> +	/*
+> +	 * ACPI have no bindings to indicate SPI or PPI, so we
+> +	 * use different mappings from DT in ACPI.
+> +	 *
+> +	 * For FDT
+> +	 * PPI interrupt: in the range [0, 15];
+> +	 * SPI interrupt: in the range [0, 987];
+> +	 *
+> +	 * For ACPI, GSI should be unique so using
+> +	 * the hwirq directly for the mapping:
+> +	 * PPI interrupt: in the range [16, 31];
+> +	 * SPI interrupt: in the range [32, 1019];
+> +	 */
+> +
+> +	if (trigger == ACPI_EDGE_SENSITIVE &&
+> +				polarity == ACPI_ACTIVE_LOW)
+> +		irq_type = IRQ_TYPE_EDGE_FALLING;
+> +	else if (trigger == ACPI_EDGE_SENSITIVE &&
+> +				polarity == ACPI_ACTIVE_HIGH)
+> +		irq_type = IRQ_TYPE_EDGE_RISING;
+> +	else if (trigger == ACPI_LEVEL_SENSITIVE &&
+> +				polarity == ACPI_ACTIVE_LOW)
+> +		irq_type = IRQ_TYPE_LEVEL_LOW;
+> +	else if (trigger == ACPI_LEVEL_SENSITIVE &&
+> +				polarity == ACPI_ACTIVE_HIGH)
+> +		irq_type = IRQ_TYPE_LEVEL_HIGH;
+> +	else
+> +		irq_type = IRQ_TYPE_NONE;
+> +
+> +	/*
+> +	 * Since only one GIC is supported in ACPI 5.0, we can
+> +	 * create mapping refer to the default domain
+> +	 */
+> +	irq = irq_create_mapping(NULL, gsi);
+> +	if (!irq)
+> +		return irq;
+> +
+> +	/* Set irq type if specified and different than the current one */
+> +	if (irq_type != IRQ_TYPE_NONE &&
+> +		irq_type != irq_get_trigger_type(irq))
+> +		irq_set_irq_type(irq, irq_type);
+> +	return irq;
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_register_gsi);
+> +
+
+Not sure if acpi_gsi_to_irq and acpi_{,un}register_gsi belong here.
+These are GIC specific and should belong to GIC driver IMO.
+
+Regards,
+Sudeep
 
