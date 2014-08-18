@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaHRKZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:25:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750807AbaHRKZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 06:25:09 -0400
-Message-ID: <53F1D476.1030801@redhat.com>
-Date: Mon, 18 Aug 2014 12:24:54 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1751782AbaHRK0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:26:48 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:39848 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaHRK0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 06:26:46 -0400
+Message-ID: <53F1D4E1.7@gmail.com>
+Date: Mon, 18 Aug 2014 13:26:41 +0300
+From: Avi Kivity <avi.kivity@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
 CC: Gleb Natapov <gleb@kernel.org>, hpa@zytor.com, x86@kernel.org,
         kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] KVM: vmx: don't vmx_segment_cache_clear twice in
- enter_pmode
-References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com> <1408355431-115633-3-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1408355431-115633-3-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
+Subject: Re: [PATCH 2/5] KVM: x86: drop fpu_activate hook
+References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com> <1408355431-115633-2-git-send-email-wanpeng.li@linux.intel.com> <53F1D36C.8070606@redhat.com>
+In-Reply-To: <53F1D36C.8070606@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/08/2014 11:50, Wanpeng Li ha scritto:
-> vmx_segment_cache_clear() will be called by vmx_set_segment() 
-> which lead to vmx_segment_cache_clear() is called twice in 
-> enter_pmode(). This patch remove the duplicate call site. 
-> 
-> Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->  arch/x86/kvm/vmx.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 2963303..c97c44c 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -3183,8 +3183,6 @@ static void enter_pmode(struct kvm_vcpu *vcpu)
->  
->  	vmx->rmode.vm86_active = 0;
->  
-> -	vmx_segment_cache_clear(vmx);
-> -
->  	vmx_set_segment(vcpu, &vmx->rmode.segs[VCPU_SREG_TR], VCPU_SREG_TR);
->  
->  	flags = vmcs_readl(GUEST_RFLAGS);
-> 
 
-I think this is not useful and obscures the code a bit.
+On 08/18/2014 01:20 PM, Paolo Bonzini wrote:
+> Il 18/08/2014 11:50, Wanpeng Li ha scritto:
+>> fpu_activate hook is introduced by commit 6b52d186 (KVM: Activate fpu on
+>> clts), however, there is no user currently, this patch drop it.
+>>
+>> Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
+>> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+>> ---
+>>   arch/x86/include/asm/kvm_host.h | 1 -
+>>   arch/x86/kvm/svm.c              | 1 -
+>>   arch/x86/kvm/vmx.c              | 1 -
+>>   3 files changed, 3 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+>> index 5724601..b68f3e5 100644
+>> --- a/arch/x86/include/asm/kvm_host.h
+>> +++ b/arch/x86/include/asm/kvm_host.h
+>> @@ -710,7 +710,6 @@ struct kvm_x86_ops {
+>>   	void (*cache_reg)(struct kvm_vcpu *vcpu, enum kvm_reg reg);
+>>   	unsigned long (*get_rflags)(struct kvm_vcpu *vcpu);
+>>   	void (*set_rflags)(struct kvm_vcpu *vcpu, unsigned long rflags);
+>> -	void (*fpu_activate)(struct kvm_vcpu *vcpu);
+>>   	void (*fpu_deactivate)(struct kvm_vcpu *vcpu);
+>>   
+>>   	void (*tlb_flush)(struct kvm_vcpu *vcpu);
+>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>> index ddf7427..1f49c86 100644
+>> --- a/arch/x86/kvm/svm.c
+>> +++ b/arch/x86/kvm/svm.c
+>> @@ -4349,7 +4349,6 @@ static struct kvm_x86_ops svm_x86_ops = {
+>>   	.cache_reg = svm_cache_reg,
+>>   	.get_rflags = svm_get_rflags,
+>>   	.set_rflags = svm_set_rflags,
+>> -	.fpu_activate = svm_fpu_activate,
+>>   	.fpu_deactivate = svm_fpu_deactivate,
+>>   
+>>   	.tlb_flush = svm_flush_tlb,
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index 71cbee5..2963303 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -8896,7 +8896,6 @@ static struct kvm_x86_ops vmx_x86_ops = {
+>>   	.cache_reg = vmx_cache_reg,
+>>   	.get_rflags = vmx_get_rflags,
+>>   	.set_rflags = vmx_set_rflags,
+>> -	.fpu_activate = vmx_fpu_activate,
+>>   	.fpu_deactivate = vmx_fpu_deactivate,
+>>   
+>>   	.tlb_flush = vmx_flush_tlb,
+>>
+> Avi/Gleb, do you remember any particular reason for this?
+>
 
-It would be a bigger improvement to see when fix_pmode_seg really needs
-to call vmx_set_segment, and avoid the call.  Are you seeing enter_pmode
-high in any profiles?
+IIRC (vaguely) if we expect the fpu to be used in the near future, we 
+activate it eagerly so that we don't fault when it is used.
 
-Paolo
+Prevents the sequence:
+
+guest user: use fpu
+#NM
+host: reflect #NM to guest
+guest kernel: CLTS
+guest kernel: switch fpu state
+#NM
+host: switch fpu
+guest kernel: switch fpu state (restarted)
+guest user: use fpu (restarted)
+
+Why was the user removed? Full-time eager fpu?
