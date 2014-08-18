@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201AbaHRJxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:53:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42819 "EHLO
+	id S1754162AbaHRJv6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:51:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42871 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbaHRJfQ (ORCPT
+	with ESMTP id S1752890AbaHRJfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:16 -0400
+	Mon, 18 Aug 2014 05:35:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Silesh C V <svellattu@mvista.com>, Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 076/137] coredump: fix the setting of PF_DUMPCORE
-Date: Mon, 18 Aug 2014 10:32:17 +0100
-Message-Id: <1408354398-10226-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 085/137] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+Date: Mon, 18 Aug 2014 10:32:26 +0100
+Message-Id: <1408354398-10226-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,40 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Silesh C V <svellattu@mvista.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit aed8adb7688d5744cb484226820163af31d2499a upstream.
+commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
 
-Commit 079148b919d0 ("coredump: factor out the setting of PF_DUMPCORE")
-cleaned up the setting of PF_DUMPCORE by removing it from all the
-linux_binfmt->core_dump() and moving it to zap_threads().But this ended
-up clearing all the previously set flags.  This causes issues during
-core generation when tsk->flags is checked again (eg.  for PF_USED_MATH
-to dump floating point registers).  Fix this.
+WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
+irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
 
-Signed-off-by: Silesh C V <svellattu@mvista.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Using spin_lock_irqsave appears to fix this.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/coredump.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/vt6655/device_main.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/coredump.c b/fs/coredump.c
-index 729a2ededcb9..b2fa3937a7eb 100644
---- a/fs/coredump.c
-+++ b/fs/coredump.c
-@@ -302,7 +302,7 @@ static int zap_threads(struct task_struct *tsk, struct mm_struct *mm,
- 	if (unlikely(nr < 0))
- 		return nr;
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index 08b250f01dae..d170b6f9db7c 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -2434,6 +2434,7 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
+ 	int             handled = 0;
+ 	unsigned char byData = 0;
+ 	int             ii = 0;
++	unsigned long flags;
+ //    unsigned char byRSSI;
  
--	tsk->flags = PF_DUMPCORE;
-+	tsk->flags |= PF_DUMPCORE;
- 	if (atomic_read(&mm->mm_users) == nr + 1)
- 		goto done;
- 	/*
+ 	MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
+@@ -2459,7 +2460,8 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
+ 
+ 	handled = 1;
+ 	MACvIntDisable(pDevice->PortOffset);
+-	spin_lock_irq(&pDevice->lock);
++
++	spin_lock_irqsave(&pDevice->lock, flags);
+ 
+ 	//Make sure current page is 0
+ 	VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
+@@ -2700,7 +2702,8 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
+ 		MACvSelectPage1(pDevice->PortOffset);
+ 	}
+ 
+-	spin_unlock_irq(&pDevice->lock);
++	spin_unlock_irqrestore(&pDevice->lock, flags);
++
+ 	MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
+ 
+ 	return IRQ_RETVAL(handled);
 -- 
 1.9.1
 
