@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaHRIZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:25:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51649 "EHLO
+	id S1752315AbaHRIZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:25:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51671 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256AbaHRIZF (ORCPT
+	with ESMTP id S1751824AbaHRIZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:25:05 -0400
-Date: Mon, 18 Aug 2014 01:24:47 -0700
+	Mon, 18 Aug 2014 04:25:37 -0400
+Date: Mon, 18 Aug 2014 01:25:01 -0700
 From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-fb74fbda42dc5bcbd9bae5d75bfb6755948db21d@git.kernel.org>
+Message-ID: <tip-340481ada1af9322d99e9c1ba874391f53ff4fce@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
         a.p.zijlstra@chello.nl, naota@elisp.net, namhyung@kernel.org,
@@ -18,11 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         naota@elisp.net, namhyung@kernel.org, masami.hiramatsu.pt@hitachi.com,
         tglx@linutronix.de
-In-Reply-To: <20140814022247.3545.4564.stgit@kbuild-fedora.novalocal>
-References: <20140814022247.3545.4564.stgit@kbuild-fedora.novalocal>
+In-Reply-To: <20140814022249.3545.53211.stgit@kbuild-fedora.novalocal>
+References: <20140814022249.3545.53211.stgit@kbuild-fedora.novalocal>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf sched: Use strerror_r instead of strerror
-Git-Commit-ID: fb74fbda42dc5bcbd9bae5d75bfb6755948db21d
+Subject: [tip:perf/core] perf buildid-cache:
+  Use strerror_r instead of strerror
+Git-Commit-ID: 340481ada1af9322d99e9c1ba874391f53ff4fce
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,16 +36,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb74fbda42dc5bcbd9bae5d75bfb6755948db21d
-Gitweb:     http://git.kernel.org/tip/fb74fbda42dc5bcbd9bae5d75bfb6755948db21d
+Commit-ID:  340481ada1af9322d99e9c1ba874391f53ff4fce
+Gitweb:     http://git.kernel.org/tip/340481ada1af9322d99e9c1ba874391f53ff4fce
 Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 14 Aug 2014 02:22:47 +0000
+AuthorDate: Thu, 14 Aug 2014 02:22:49 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Aug 2014 13:07:47 -0300
+CommitDate: Fri, 15 Aug 2014 13:07:59 -0300
 
-perf sched: Use strerror_r instead of strerror
+perf buildid-cache: Use strerror_r instead of strerror
 
-Use strerror_r instead of strerror in error message for thread-safety.
+Use strerror_r instead of strerror in error messages for thread-safety.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Ingo Molnar <mingo@redhat.com>
@@ -52,31 +53,48 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Naohiro Aota <naota@elisp.net>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140814022247.3545.4564.stgit@kbuild-fedora.novalocal
+Link: http://lkml.kernel.org/r/20140814022249.3545.53211.stgit@kbuild-fedora.novalocal
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-sched.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ tools/perf/builtin-buildid-cache.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index f5874a2..9c9287f 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -428,6 +428,7 @@ static u64 get_cpu_usage_nsec_parent(void)
- static int self_open_counters(void)
- {
- 	struct perf_event_attr attr;
+diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
+index ac5838e..7038575 100644
+--- a/tools/perf/builtin-buildid-cache.c
++++ b/tools/perf/builtin-buildid-cache.c
+@@ -291,6 +291,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 		   *missing_filename = NULL,
+ 		   *update_name_list_str = NULL,
+ 		   *kcore_filename;
 +	char sbuf[STRERR_BUFSIZE];
- 	int fd;
  
- 	memset(&attr, 0, sizeof(attr));
-@@ -440,7 +441,8 @@ static int self_open_counters(void)
+ 	struct perf_data_file file = {
+ 		.mode  = PERF_DATA_MODE_READ,
+@@ -347,7 +348,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 						continue;
+ 					}
+ 					pr_warning("Couldn't add %s: %s\n",
+-						   pos->s, strerror(errno));
++						   pos->s, strerror_r(errno, sbuf, sizeof(sbuf)));
+ 				}
  
- 	if (fd < 0)
- 		pr_err("Error: sys_perf_event_open() syscall returned "
--		       "with %d (%s)\n", fd, strerror(errno));
-+		       "with %d (%s)\n", fd,
-+		       strerror_r(errno, sbuf, sizeof(sbuf)));
- 	return fd;
- }
+ 			strlist__delete(list);
+@@ -365,7 +366,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 						continue;
+ 					}
+ 					pr_warning("Couldn't remove %s: %s\n",
+-						   pos->s, strerror(errno));
++						   pos->s, strerror_r(errno, sbuf, sizeof(sbuf)));
+ 				}
  
+ 			strlist__delete(list);
+@@ -386,7 +387,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 						continue;
+ 					}
+ 					pr_warning("Couldn't update %s: %s\n",
+-						   pos->s, strerror(errno));
++						   pos->s, strerror_r(errno, sbuf, sizeof(sbuf)));
+ 				}
+ 
+ 			strlist__delete(list);
