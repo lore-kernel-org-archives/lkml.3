@@ -1,192 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaHRRdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:33:12 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41507 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767AbaHRRdI (ORCPT
+	id S1752056AbaHRRfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:35:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54492 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751807AbaHRRfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 13:33:08 -0400
-Message-ID: <53F238CB.3080007@gmail.com>
-Date: Mon, 18 Aug 2014 19:32:59 +0200
-From: Dirk Behme <dirk.behme@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 18 Aug 2014 13:35:04 -0400
+Date: Mon, 18 Aug 2014 19:33:49 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-sunxi@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] ARM: sun8i: Enable pinctrl, i2c and mmc
+Message-ID: <20140818173349.GD15297@lukather>
+References: <1408380711-26308-1-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-To: Daniel Thompson <daniel.thompson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH v9 16/16] serial: imx: Add support for KGDB's FIQ/NMI
- mode
-References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org> <1408372091-12689-17-git-send-email-daniel.thompson@linaro.org>
-In-Reply-To: <1408372091-12689-17-git-send-email-daniel.thompson@linaro.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PUgybOivvlPvn0/l"
+Content-Disposition: inline
+In-Reply-To: <1408380711-26308-1-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.08.2014 16:28, Daniel Thompson wrote:
-> This patch makes it possible to use the imx uart with KGDB's FIQ/NMI
-> mode.
->
-> Main changes are:
->
-> .poll_init() will, if KGDB+FIQ are enabled, perform deeper hardware
-> initialization to ensure the serial port is always active (required
-> otherwise FIQ is not triggered by UART activity). This has an impact on
-> power usage so it is conservatively enabled.
->
-> imx_put_poll_char() has been simplified to remove the code to disable
-> interrupts. The present code can corrupt register state when re-entered
-> from FIQ handler.
->
-> Both imx_put_poll_char() and imx_get_poll_char() adopt _relaxed()
-> MMIO functions (which are safe for polled I/O and needed to avoid taking
-> spin locks).
->
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: linux-serial@vger.kernel.org
 
-Acked-by: Dirk Behme <dirk.behme@de.bosch.com>
+--PUgybOivvlPvn0/l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks
+On Tue, Aug 19, 2014 at 12:51:49AM +0800, Chen-Yu Tsai wrote:
+> Hi Maxime,
+>=20
+> This is v2 of the remaining sun8i series. I've dropped the patches you
+> merged. The remaining patches have been rebased onto sunxi-next.
+>=20
+> This series enables all the controllers on sun8i that we already have
+> drivers for, excluding SPI as the tablet I have does not use it and
+> I cannot test it. If there's a way to test it without external connections
+> or devices please let me know.
+>=20
+> The commit logs pretty much explain themselves. Note that PLL6 is not
+> implemented yet. I've some patches for the clocks that I will send later.
 
-Dirk
+Merged, thanks!
 
+Maxime
 
-> ---
->   drivers/tty/serial/imx.c | 71 +++++++++++++++++++++++++++++++++++-------------
->   1 file changed, 52 insertions(+), 19 deletions(-)
->
-> diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-> index 983668a..a201c61 100644
-> --- a/drivers/tty/serial/imx.c
-> +++ b/drivers/tty/serial/imx.c
-> @@ -49,6 +49,7 @@
->   #include <linux/of_device.h>
->   #include <linux/io.h>
->   #include <linux/dma-mapping.h>
-> +#include <linux/kgdb.h>
->
->   #include <asm/irq.h>
->   #include <linux/platform_data/serial-imx.h>
-> @@ -1505,44 +1506,73 @@ imx_verify_port(struct uart_port *port, struct serial_struct *ser)
->   }
->
->   #if defined(CONFIG_CONSOLE_POLL)
-> +
-> +#if defined(CONFIG_KGDB_FIQ)
-> +/*
-> + * Prepare the UART to be used from kgdb's NMI support.
-> + */
-> +static int imx_poll_init(struct uart_port *port)
-> +{
-> +	struct imx_port *sport = (struct imx_port *)port;
-> +	unsigned long flags;
-> +	unsigned long temp;
-> +	int retval;
-> +
-> +	retval = clk_prepare_enable(sport->clk_ipg);
-> +	if (retval)
-> +		return retval;
-> +	retval = clk_prepare_enable(sport->clk_per);
-> +	if (retval)
-> +		clk_disable_unprepare(sport->clk_ipg);
-> +
-> +	imx_setup_ufcr(sport, 0);
-> +
-> +	spin_lock_irqsave(&sport->port.lock, flags);
-> +
-> +	temp = readl(sport->port.membase + UCR1);
-> +	if (is_imx1_uart(sport))
-> +		temp |= IMX1_UCR1_UARTCLKEN;
-> +	temp |= UCR1_UARTEN | UCR1_RRDYEN;
-> +	temp &= ~(UCR1_TXMPTYEN | UCR1_RTSDEN);
-> +	writel(temp, sport->port.membase + UCR1);
-> +
-> +	temp = readl(sport->port.membase + UCR2);
-> +	temp |= UCR2_RXEN;
-> +	writel(temp, sport->port.membase + UCR2);
-> +
-> +	spin_unlock_irqrestore(&sport->port.lock, flags);
-> +
-> +	/* register the FIQ with kgdb */
-> +	kgdb_register_fiq(sport->port.irq);
-> +
-> +	return 0;
-> +}
-> +#endif /* CONFIG_KGDB_FIQ */
-> +
->   static int imx_poll_get_char(struct uart_port *port)
->   {
-> -	if (!(readl(port->membase + USR2) & USR2_RDR))
-> +	if (!(readl_relaxed(port->membase + USR2) & USR2_RDR))
->   		return NO_POLL_CHAR;
->
-> -	return readl(port->membase + URXD0) & URXD_RX_DATA;
-> +	return readl_relaxed(port->membase + URXD0) & URXD_RX_DATA;
->   }
->
->   static void imx_poll_put_char(struct uart_port *port, unsigned char c)
->   {
-> -	struct imx_port_ucrs old_ucr;
->   	unsigned int status;
->
-> -	/* save control registers */
-> -	imx_port_ucrs_save(port, &old_ucr);
-> -
-> -	/* disable interrupts */
-> -	writel(UCR1_UARTEN, port->membase + UCR1);
-> -	writel(old_ucr.ucr2 & ~(UCR2_ATEN | UCR2_RTSEN | UCR2_ESCI),
-> -	       port->membase + UCR2);
-> -	writel(old_ucr.ucr3 & ~(UCR3_DCD | UCR3_RI | UCR3_DTREN),
-> -	       port->membase + UCR3);
-> -
->   	/* drain */
->   	do {
-> -		status = readl(port->membase + USR1);
-> +		status = readl_relaxed(port->membase + USR1);
->   	} while (~status & USR1_TRDY);
->
->   	/* write */
-> -	writel(c, port->membase + URTX0);
-> +	writel_relaxed(c, port->membase + URTX0);
->
->   	/* flush */
->   	do {
-> -		status = readl(port->membase + USR2);
-> +		status = readl_relaxed(port->membase + USR2);
->   	} while (~status & USR2_TXDC);
-> -
-> -	/* restore control registers */
-> -	imx_port_ucrs_restore(port, &old_ucr);
->   }
->   #endif
->
-> @@ -1563,6 +1593,9 @@ static struct uart_ops imx_pops = {
->   	.config_port	= imx_config_port,
->   	.verify_port	= imx_verify_port,
->   #if defined(CONFIG_CONSOLE_POLL)
-> +#if defined(CONFIG_KGDB_FIQ)
-> +	.poll_init      = imx_poll_init,
-> +#endif
->   	.poll_get_char  = imx_poll_get_char,
->   	.poll_put_char  = imx_poll_put_char,
->   #endif
->
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
+--PUgybOivvlPvn0/l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT8jj9AAoJEBx+YmzsjxAgy00P/je60R60oH4/cMXCGyZWmcYa
+Vo3rnXoQ3psxCcX7FmkMI8P9ICldc2pNcG4jVotdRZUiBtmIyQTb9jUir95RsRy+
+pmCXJyiansKacktzw6mtsK3fGuQduYGLZH4826MGHnQyvF0cKG8mMeDYVWKMjV7d
+qLVBRy2A3ziM85K+NoDKthm9OQMNal/yRlhOU16st+lBmcvLWlk0akFf8JAGH7GE
+avSsuHXTxjWwjfwzWKUA41g1Wh5FnSTiJ0zhIPlERlFjd8uWYOhUoLNETm34aMwi
+tt83Wv4nBaaqNqueTaghm/W/+TU/WUPPmOzpwiMKkvRTuF6CvUvdrTwyuRgSmNq2
+T3tdra16dUyHbzMn6U/oTQM5GiTIB0LBymcxy1uPIOKAOMRIRmRQabjQoBs0HSM+
+SMr9u/yyZfol4q6cm4uOtdv78bVgnXjSaThFC4z7rr82G0Ittd1p6LSgUyClQA7v
+mxTzcI+IH7e5rBBHG6b8DMWIBCH71+3qRWUAHbAQ9XpAe5ngUXyXVGwLypTdYUYa
+vFK2EqCby6WB1jsi226PP1yA4hGg2/2iCdHH6WugP47DBpN2gWFavwrwBYOyf+ma
+DFhh2nox1dknmgWB5aIMZUEGsXIkOJoQ+o8wNSIVv3OYe7d+UoSnUWmzSSqKojvt
+CD+pDN8OZbCiqQFbjptx
+=3juc
+-----END PGP SIGNATURE-----
+
+--PUgybOivvlPvn0/l--
