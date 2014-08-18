@@ -1,217 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaHRIPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:15:05 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:61325 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaHRIPD (ORCPT
+	id S1751993AbaHRISy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:18:54 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:60067 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258AbaHRISx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:15:03 -0400
-Message-ID: <53F1B5A9.8060307@linaro.org>
-Date: Mon, 18 Aug 2014 16:13:29 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 18 Aug 2014 04:18:53 -0400
+Date: Mon, 18 Aug 2014 10:18:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Alex Converse <aconverse@google.com>, Andi Kleen <ak@linux.intel.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        Arun Sharma <asharma@fb.com>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Elliott Hughes <enh@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Haren Myneni <hbabu@us.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        linuxppc-dev@lists.ozlabs.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Naohiro Aota <naota@elisp.net>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodrigo Campos <rodrigo@sdfg.com.ar>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/18] perf/core improvements and fixes
+Message-ID: <20140818081846.GA13319@gmail.com>
+References: <1408121403-11919-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>
-CC: Aaron Lu <aaron.lu@intel.com>, Max Eliaser <max.eliaser@intel.com>,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/9] ACPI: Add support for device specific properties
-References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com> <1408255459-17625-2-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1408255459-17625-2-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408121403-11919-1-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Some minor comments below.
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-On 2014-8-17 14:04, Mika Westerberg wrote:
-> Device Tree is used in many embedded systems to describe the system
-> configuration to the OS. It supports attaching properties or name-value
-> pairs to the devices it describe. With these properties one can pass
-> additional information to the drivers that would not be available
-> otherwise.
+> Hi Ingo,
 > 
-> ACPI is another configuration mechanism (among other things) typically
-> seen, but not limited to, x86 machines. ACPI allows passing arbitrary
-> data from methods but there has not been mechanism equivalent to Device
-> Tree until the introduction of _DSD in the recent publication of the
-> ACPI 5.1 specification.
+> 	Please consider pulling,
 > 
-> In order to facilitate ACPI usage in systems where Device Tree is
-> typically used, it would be beneficial to standardize a way to retrieve
-> Device Tree style properties from ACPI devices, which is what we do in
-> this patch.
+> - Arnaldo
 > 
-> If a given device described in ACPI namespace wants to export properties it
-> must implement _DSD method (Device Specific Data, introduced with ACPI 5.1)
-> that returns the properties in a package of packages. For example:
+> The following changes since commit f373da34282560c60f0c197690eecb1b2dc49fc0:
 > 
-> 	Name (_DSD, Package () {
-> 		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-> 		Package () {
-> 			Package () {"name1", <VALUE1>},
-> 			Package () {"name2", <VALUE2>},
-> 			...
-> 		}
-> 	})
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-08-14 10:38:40 +0200)
 > 
-> The UUID reserved for properties is daffd814-6eba-4d8c-8a91-bc9bbf4aa301
-> and is documented in the ACPI 5.1 companion document called "_DSD
-> Implementation Guide" [1], [2].
+> are available in the git repository at:
 > 
-> We add several helper functions that can be used to extract these
-> properties and convert them to different Linux data types.
 > 
-> The ultimate goal is that we only have one device property API that
-> retrieves the requested properties from Device Tree or from ACPI
-> transparent to the caller.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
 > 
-> [1] http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-> [2] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
+> for you to fetch changes up to 759e612bf96627b64fcafe4174b3f6f2dedf2c0d:
 > 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/acpi/Makefile   |   1 +
->  drivers/acpi/internal.h |   6 +
->  drivers/acpi/property.c | 365 ++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/scan.c     |   2 +
->  include/acpi/acpi_bus.h |   7 +
->  include/linux/acpi.h    |  40 ++++++
->  6 files changed, 421 insertions(+)
->  create mode 100644 drivers/acpi/property.c
+>   perf stat: Use strerror_r instead of strerror (2014-08-15 13:08:40 -0300)
 > 
-> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index ea55e0179f81..6e8269a111db 100644
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -45,6 +45,7 @@ acpi-y				+= acpi_pnp.o
->  acpi-y				+= power.o
->  acpi-y				+= event.o
->  acpi-y				+= sysfs.o
-> +acpi-y				+= property.o
->  acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
->  acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
->  acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
-> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-> index 7de5b603f272..35001e2a8769 100644
-> --- a/drivers/acpi/internal.h
-> +++ b/drivers/acpi/internal.h
-> @@ -178,4 +178,10 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev);
->  bool acpi_osi_is_win8(void);
->  #endif
->  
-> +/*--------------------------------------------------------------------------
-> +				Device properties
-> +  -------------------------------------------------------------------------- */
-> +void acpi_init_properties(struct acpi_device *adev);
-> +void acpi_free_properties(struct acpi_device *adev);
-> +
->  #endif /* _ACPI_INTERNAL_H_ */
-> diff --git a/drivers/acpi/property.c b/drivers/acpi/property.c
-> new file mode 100644
-> index 000000000000..093e834c35db
-> --- /dev/null
-> +++ b/drivers/acpi/property.c
-> @@ -0,0 +1,365 @@
-> +/*
-> + * ACPI device specific properties support.
-> + *
-> + * Copyright (C) 2014, Intel Corporation
-> + * All rights reserved.
-> + *
-> + * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
-> + *          Darren Hart <dvhart@linux.intel.com>
-> + *          Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/acpi.h>
-> +#include <linux/device.h>
-> +#include <linux/export.h>
-> +
-> +#include "internal.h"
-> +
-> +/* ACPI _DSD device properties UUID: daffd814-6eba-4d8c-8a91-bc9bbf4aa301 */
-> +static const u8 prp_uuid[16] = {
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> User visible:
+> 
+> . Warn user to rebuild target with debuginfo in 'perf probe' (Masami Hiramatsu)
+> 
+> . Don't truncate Intel style addresses in 'annotate'. (Alex Converse)
+> 
+> Developer stuff:
+> 
+> . Annotate PMU related list_head members with type info. (Cody P Schafer)
+> 
+> . Add the triplet used for arm64 by Android (Elliott Hughes)
+> 
+> . Replace thread unsafe strerror() with strerror_r() accross the
+>   whole tools/perf/ tree (Masami Hiramatsu)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Alex Converse (1):
+>       perf annotate: Don't truncate Intel style addresses
+> 
+> Cody P Schafer (1):
+>       perf tools: Annotate PMU related list_head members with type info
+> 
+> Elliott Hughes (1):
+>       perf tools: Add arm64 triplets
+> 
+> Masami Hiramatsu (14):
+>       perf probe: Warn user to rebuild target with debuginfo
+>       perf probe: Don't use strerror if strlist__add failed
+>       perf: Use strerror_r instead of strerror
+>       perf probe: Make error messages thread-safe
+>       perf util: Replace strerror with strerror_r for thread-safety
+>       perf top: Use strerror_r instead of strerror
+>       perf trace: Use strerror_r instead of strerror
+>       perf record: Use strerror_r instead of strerror
+>       perf test: Use strerror_r instead of strerror
+>       perf sched: Use strerror_r instead of strerror
+>       perf buildid-cache: Use strerror_r instead of strerror
+>       perf kvm: Use strerror_r instead of strerror
+>       perf help: Use strerror_r instead of strerror
+>       perf stat: Use strerror_r instead of strerror
+> 
+> Namhyung Kim (1):
+>       perf report: Relax -g option parsing not to limit the option order
+> 
+>  tools/perf/arch/common.c                  |  9 +++
+>  tools/perf/builtin-buildid-cache.c        |  7 ++-
+>  tools/perf/builtin-help.c                 | 20 +++++--
+>  tools/perf/builtin-kvm.c                  |  7 ++-
+>  tools/perf/builtin-probe.c                |  5 +-
+>  tools/perf/builtin-record.c               |  7 ++-
+>  tools/perf/builtin-sched.c                |  4 +-
+>  tools/perf/builtin-stat.c                 |  2 +-
+>  tools/perf/builtin-top.c                  |  2 +-
+>  tools/perf/builtin-trace.c                |  6 +-
+>  tools/perf/perf.c                         | 10 +++-
+>  tools/perf/tests/builtin-test.c           |  4 +-
+>  tools/perf/tests/mmap-basic.c             |  7 ++-
+>  tools/perf/tests/open-syscall-all-cpus.c  |  5 +-
+>  tools/perf/tests/open-syscall-tp-fields.c |  7 ++-
+>  tools/perf/tests/open-syscall.c           |  3 +-
+>  tools/perf/tests/perf-record.c            | 13 +++--
+>  tools/perf/tests/rdpmc.c                  |  6 +-
+>  tools/perf/tests/sw-clock.c               |  6 +-
+>  tools/perf/tests/task-exit.c              |  6 +-
+>  tools/perf/util/annotate.c                | 12 +++-
+>  tools/perf/util/callchain.c               | 95 +++++++++++++------------------
+>  tools/perf/util/cloexec.c                 |  6 +-
+>  tools/perf/util/data.c                    |  8 ++-
+>  tools/perf/util/debug.h                   |  3 +
+>  tools/perf/util/dso.c                     |  8 ++-
+>  tools/perf/util/evlist.c                  |  2 +-
+>  tools/perf/util/evsel.c                   |  7 ++-
+>  tools/perf/util/parse-events.c            |  5 +-
+>  tools/perf/util/pmu.c                     |  4 +-
+>  tools/perf/util/pmu.h                     |  6 +-
+>  tools/perf/util/probe-event.c             | 75 +++++++++++++-----------
+>  tools/perf/util/probe-finder.c            |  7 ++-
+>  tools/perf/util/run-command.c             |  9 ++-
+>  tools/perf/util/util.c                    |  5 +-
+>  35 files changed, 234 insertions(+), 154 deletions(-)
 
-s/prp_uuid/dsd_uuid ?
+Pulled, thanks a lot Arnaldo!
 
-> +	0x14, 0xd8, 0xff, 0xda, 0xba, 0x6e, 0x8c, 0x4d,
-> +	0x8a, 0x91, 0xbc, 0x9b, 0xbf, 0x4a, 0xa3, 0x01
-> +};
-> +
-> +static bool acpi_property_value_ok(const union acpi_object *value)
-> +{
-> +	int j;
-> +
-> +	/*
-> +	 * The value must be an integer, a string, a reference, or a package
-> +	 * whose every element must be an integer, a string, or a reference.
-> +	 */
-> +	switch (value->type) {
-> +	case ACPI_TYPE_INTEGER:
-> +	case ACPI_TYPE_STRING:
-> +	case ACPI_TYPE_LOCAL_REFERENCE:
-> +		return true;
-> +
-> +	case ACPI_TYPE_PACKAGE:
-> +		for (j = 0; j < value->package.count; j++)
-> +			switch (value->package.elements[j].type) {
-> +			case ACPI_TYPE_INTEGER:
-> +			case ACPI_TYPE_STRING:
-> +			case ACPI_TYPE_LOCAL_REFERENCE:
-> +				continue;
-> +
-> +			default:
-> +				return false;
-> +			}
-> +
-> +		return true;
-> +	}
-> +	return false;
-> +}
-> +
-> +static bool acpi_properties_format_valid(const union acpi_object *properties)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < properties->package.count; i++) {
-> +		const union acpi_object *property;
-> +
-> +		property = &properties->package.elements[i];
-> +		/*
-> +		 * Only two elements allowed, the first one must be a string and
-> +		 * the second one has to satisfy certain conditions.
-> +		 */
-> +		if (property->package.count != 2
-> +		    || property->package.elements[0].type != ACPI_TYPE_STRING
-> +		    || !acpi_property_value_ok(&property->package.elements[1]))
-> +			return false;
-> +	}
-> +	return true;
-> +}
-> +
-> +void acpi_init_properties(struct acpi_device *adev)
-> +{
-> +
-
-I think the above line is not needed.
-
-With that fixed,
-
-Reviewed-by: Hanjun Guo <hanjun.guo@linaro.org>
-
-Thanks
-Hanjun
+	Ingo
