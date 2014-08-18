@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaHRBgN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 21:36:13 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:17901 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaHRBgL (ORCPT
+	id S1751910AbaHRBhB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 21:37:01 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:29840 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751AbaHRBg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 21:36:11 -0400
-X-AuditID: cbfee690-b7f526d000003627-2f-53f1588992ce
+	Sun, 17 Aug 2014 21:36:59 -0400
+X-AuditID: cbfee68e-b7fab6d000004d4a-6a-53f158b87109
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Vivek Gautam'" <gautam.vivek@samsung.com>
 Cc: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org,
@@ -16,45 +16,45 @@ Cc: linux-usb@vger.kernel.org, balbi@ti.com, linux-kernel@vger.kernel.org,
         s.nawrocki@samsung.com, k.debski@samsung.com,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <1408026240-28365-1-git-send-email-gautam.vivek@samsung.com>
- <1408026240-28365-7-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1408026240-28365-7-git-send-email-gautam.vivek@samsung.com>
-Subject: Re: [PATCH RFC 6/7] usb: host: ehci-exynos: Remove unnecessary usb-phy
+ <1408026240-28365-8-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1408026240-28365-8-git-send-email-gautam.vivek@samsung.com>
+Subject: Re: [PATCH RFC 7/7] usb: host: ohci-exynos: Remove unnecessary usb-phy
  support
-Date: Mon, 18 Aug 2014 10:36:08 +0900
-Message-id: <009f01cfba84$c8ebf4f0$5ac3ded0$%han@samsung.com>
+Date: Mon, 18 Aug 2014 10:36:56 +0900
+Message-id: <00a001cfba84$e57cbb40$b07631c0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+3y37D2Xo/nRV0TcCnGn5ixyfM/ACuRyVg
+Thread-index: Ac+3y4Elg+gbQy2jRu+e9jr/BEZC7wCuUnDw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t8zY93OiI/BBqeeMVscvF9vMf/IOVaL
-	tisH2S0O/NnBaNG8eD2bxeWFl1gtfry+AGTtmsNmsWhZK7PF4TftrBYTfl9gc+D2uHNtD5vH
-	/rlr2D1m3/3B6NG3ZRWjx/Eb25k8Pm+SC2CL4rJJSc3JLEst0rdL4Mr4caeLpWCvesW6OTfZ
-	GhhfyXcxcnJICJhIvGi8zQJhi0lcuLeeDcQWEljGKLHysjdMzfUl/9i7GLmA4osYJRa0LGCE
-	cH4zSmw9cJgVpIpNQE3iy5fD7CC2iICuRM/Ej2BTmQV6mSSuTtWBaGhnlGjaNBVsBaeAp8Ss
-	Y6sYQWxhgUiJY3sugDWzCKhKnH99Cmwor4CtxLQnB9kgbEGJH5PvQQ3Vkli/8zgThC0vsXnN
-	W+YuRg6gU9UlHv3VhbjBSOLTt1lQJSIS+168AztaQqCTQ+LV4vtMELsEJL5NPsQC0SsrsekA
-	M8THkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCelF5noFSfmFpfmpesl5+du
-	YoTE+4QdjPcOWB9iTAZaP5FZSjQ5H5gu8kriDY3NjCxMTUyNjcwtzUgTVhLnVXuUFCQkkJ5Y
-	kpqdmlqQWhRfVJqTWnyIkYmDU6qBsaRU91yhyuzuUvV1v0p5vQryNXWbJTlu261OCo3Xl+aq
-	quTQ57hafMhO5/Q2w/tmW3i/8Bh66ds9uRtccyL9qkRP3fcF0bla4hezT2YacV75+PWxqYWs
-	sIHnz5+fP/xb9Lr8opf82utaN95Nsbqz4jjrG9VpxVePezzu1sqcnXBk4pbPflIXlViKMxIN
-	tZiLihMBqVoCNw0DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAd2OiI/BBlPPW1scvF9vMf/IOVaL
-	tisH2S0O/NnBaNG8eD2bxeWFl1gtfry+AGTtmsNmsWhZK7PF4TftrBYTfl9gc+D2uHNtD5vH
-	/rlr2D1m3/3B6NG3ZRWjx/Eb25k8Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1
-	MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6T0mhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQ
-	XI+RARpIWMeY8eNOF0vBXvWKdXNusjUwvpLvYuTkkBAwkbi+5B87hC0mceHeerYuRi4OIYFF
-	jBILWhYwQji/GSW2HjjMClLFJqAm8eXLYbAOEQFdiZ6JH1lAbGaBXiaJq1N1IBraGSWaNk1l
-	A0lwCnhKzDq2ihHEFhaIlDi25wJYM4uAqsT516fAhvIK2EpMe3KQDcIWlPgx+R7UUC2J9TuP
-	M0HY8hKb17xl7mLkADpVXeLRX12IG4wkPn2bBVUiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnA
-	yLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzidPJPawbiyweIQowAHoxIPr8frD8FCrIll
-	xZW5hxglOJiVRHgvBQCFeFMSK6tSi/Lji0pzUosPMZoCPTqRWUo0OR+Y6vJK4g2NTcyMLI3M
-	LIxMzM2VxHkPtFoHCgmkJ5akZqemFqQWwfQxcXBKNTAeWvDkxoyNlsnvD7/ZNO3PrIr5BwSn
-	Hes7NC1DYhHXMcng7Q36HE+/7VeaFPp6nv0fTsVXR8/vsg59GvL+6Oa33pKibfYGL+5mxTW1
-	i27R3FPfLVd6n7fY96fAnL0PN83d3H8nMCjHq+170/l508Qd77+fzRmo6TiVTaI7dsOM3Kra
-	C39v9TBdVGIpzkg01GIuKk4EANQ7kXc9AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t8zA92dER+DDe5uYLQ4eL/eYv6Rc6wW
+	bVcOslsc+LOD0aJ58Xo2i8sLL7Fa/Hh9AcjaNYfNYtGyVmaLw2/aWS0m/L7A5sDtcefaHjaP
+	/XPXsHvMvvuD0aNvyypGj+M3tjN5fN4kF8AWxWWTkpqTWZZapG+XwJXxa1YjS8FzrYonradY
+	GxjnK3UxcnBICJhI9Cz06WLkBDLFJC7cW88GYgsJLGOUmLy/BiJuIjHx7WamLkYuoPh0Rokj
+	fUuZIZzfjBLLt5xiAqliE1CT+PLlMDuILSKgK9Ez8SMLiM0s0MskcXWqDkRDO6PEj1NPwFZw
+	CnhK/O+ZCtYgLBAp0btgFSuIzSKgKtG3Yx0TyHW8ArYSU7fJgoR5BQQlfky+BzVTS2L9zuNM
+	ELa8xOY1b5khnlGXePRXF+IEI4m2P7dYIUpEJPa9eMcIcoKEQC+HRPPFZywQqwQkvk0+xALR
+	Kyux6QAzxMOSEgdX3GCZwCgxC8nmWUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXGekVJ+YWl+al
+	6yXn525ihMR63w7GmwesDzEmA62fyCwlmpwPTBV5JfGGxmZGFqYmpsZG5pZmpAkrifMuepgU
+	JCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGx2YJrZu/O+yf/TNfSOlRQ/jD6vbfowmkHzf/z
+	RKg23i1cKb/nnUjBxIv2Mo2zph9QWldd+NdB9OnBT+r53jydPD5XH61YuE+jyeyGTYDbfn2B
+	j7dWTZu+pOaWwLP+1Ofse65lP9f68vZz64d9XjFqsxx7H86cvDH1gcKJ4NTkSf7PJnVyHkvZ
+	osRSnJFoqMVcVJwIAADEdiQLAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQd0dER+DDQ4dsrQ4eL/eYv6Rc6wW
+	bVcOslsc+LOD0aJ58Xo2i8sLL7Fa/Hh9AcjaNYfNYtGyVmaLw2/aWS0m/L7A5sDtcefaHjaP
+	/XPXsHvMvvuD0aNvyypGj+M3tjN5fN4kF8AW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9q
+	ZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0n5JCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35Ag
+	uB4jAzSQsI4x49esRpaC51oVT1pPsTYwzlfqYuTkkBAwkZj4djMThC0mceHeerYuRi4OIYHp
+	jBJH+pYyQzi/GSWWbzkFVsUmoCbx5cthdhBbREBXomfiRxYQm1mgl0ni6lQdiIZ2Rokfp56w
+	gSQ4BTwl/vdMBWsQFoiU6F2wihXEZhFQlejbsQ5oKAcHr4CtxNRtsiBhXgFBiR+T70HN1JJY
+	v/M4E4QtL7F5zVtmkHIJAXWJR391IU4wkmj7c4sVokREYt+Ld4wTGIVmIZk0C8mkWUgmzULS
+	soCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcDJ5JrWDcWWDxSFGAQ5GJR5ej9cfgoVY
+	E8uKK3MPMUpwMCuJ8F4KAArxpiRWVqUW5ccXleakFh9iNAX6cyKzlGhyPjDR5ZXEGxqbmBlZ
+	GplZGJmYmyuJ8x5otQ4UEkhPLEnNTk0tSC2C6WPi4JRqYNxdPpGxYe6WYLEbm8SNPrX02iUI
+	iOm9edf469QxPTfxmwunSb+Yf1Caca6LVcez+8X2j7RaX76TXjcx4sC5/QXHi9cab72oeD5P
+	oofF7J3PrRzJarvZEn/7L3O9vP/ti+3kzr17XW1Mlnn2Hkx6U/XH1YKF0Yvl8PzJ6htdar8s
+	635zWP7AzVglluKMREMt5qLiRABQOlVwPAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -68,7 +68,7 @@ On Thursday, August 14, 2014 11:24 PM, Vivek Gautam wrote:
 > to newer GENERIC-PHY drivers for PHYs available with USB controllers
 > on Exynos series of SoCs, we can remove the support for the same
 > in our host drivers too.
-> This should fix the issue on ehci-exynos, wherein in the absence of
+> This should fix the issue on ohci-exynos, wherein in the absence of
 > SAMSUNG_USB2PHY config symbol, we ended up getting the NOP_USB_XCEIV phy
 > when the same is enabled. And thus the PHYs are not configured properly.
 > 
@@ -81,28 +81,28 @@ Best regards,
 Jingoo Han
 
 > ---
->  drivers/usb/host/ehci-exynos.c |   53 ++++++----------------------------------
->  1 file changed, 8 insertions(+), 45 deletions(-)
+>  drivers/usb/host/ohci-exynos.c |   64 ++++++----------------------------------
+>  1 file changed, 9 insertions(+), 55 deletions(-)
 > 
-> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
-> index cda0a2f..54944cc 100644
-> --- a/drivers/usb/host/ehci-exynos.c
-> +++ b/drivers/usb/host/ehci-exynos.c
-> @@ -21,11 +21,8 @@
->  #include <linux/of_gpio.h>
->  #include <linux/phy/phy.h>
+> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+> index a72ab8f..0199a8b 100644
+> --- a/drivers/usb/host/ohci-exynos.c
+> +++ b/drivers/usb/host/ohci-exynos.c
+> @@ -19,11 +19,8 @@
+>  #include <linux/of.h>
 >  #include <linux/platform_device.h>
+>  #include <linux/phy/phy.h>
 > -#include <linux/usb/phy.h>
 > -#include <linux/usb/samsung_usb_phy.h>
 >  #include <linux/usb.h>
 >  #include <linux/usb/hcd.h>
 > -#include <linux/usb/otg.h>
 > 
->  #include "ehci.h"
+>  #include "ohci.h"
 > 
-> @@ -47,9 +44,7 @@ static struct hc_driver __read_mostly exynos_ehci_hc_driver;
+> @@ -38,9 +35,7 @@ static struct hc_driver __read_mostly exynos_ohci_hc_driver;
 > 
->  struct exynos_ehci_hcd {
+>  struct exynos_ohci_hcd {
 >  	struct clk *clk;
 > -	struct usb_phy *phy;
 > -	struct usb_otg *otg;
@@ -110,111 +110,122 @@ Jingoo Han
 > +	struct phy *phy[PHY_NUMBER];
 >  };
 > 
->  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
-> @@ -62,18 +57,6 @@ static int exynos_ehci_get_phy(struct device *dev,
+>  static int exynos_ohci_get_phy(struct device *dev,
+> @@ -51,28 +46,7 @@ static int exynos_ohci_get_phy(struct device *dev,
 >  	int phy_number;
 >  	int ret = 0;
 > 
-> -	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> -	if (IS_ERR(exynos_ehci->phy)) {
-> -		ret = PTR_ERR(exynos_ehci->phy);
+> -	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> -	if (IS_ERR(exynos_ohci->phy)) {
+> -		ret = PTR_ERR(exynos_ohci->phy);
 > -		if (ret != -ENXIO && ret != -ENODEV) {
 > -			dev_err(dev, "no usb2 phy configured\n");
 > -			return ret;
 > -		}
 > -		dev_dbg(dev, "Failed to get usb2 phy\n");
 > -	} else {
-> -		exynos_ehci->otg = exynos_ehci->phy->otg;
+> -		exynos_ohci->otg = exynos_ohci->phy->otg;
 > -	}
 > -
+> -	/*
+> -	 * Getting generic phy:
+> -	 * We are keeping both types of phys as a part of transiting OHCI
+> -	 * to generic phy framework, so as to maintain backward compatibilty
+> -	 * with old DTB.
+> -	 * If there are existing devices using DTB files built from them,
+> -	 * to remove the support for old bindings in this driver,
+> -	 * we need to make sure that such devices have their DTBs
+> -	 * updated to ones built from new DTS.
+> -	 */
+> +	/* Get the generic phys */
 >  	for_each_available_child_of_node(dev->of_node, child) {
 >  		ret = of_property_read_u32(child, "reg", &phy_number);
 >  		if (ret) {
-> @@ -98,7 +81,7 @@ static int exynos_ehci_get_phy(struct device *dev,
+> @@ -97,7 +71,7 @@ static int exynos_ohci_get_phy(struct device *dev,
 >  			}
 >  			dev_dbg(dev, "Failed to get usb2 phy\n");
 >  		}
-> -		exynos_ehci->phy_g[phy_number] = phy;
-> +		exynos_ehci->phy[phy_number] = phy;
+> -		exynos_ohci->phy_g[phy_number] = phy;
+> +		exynos_ohci->phy[phy_number] = phy;
 >  	}
 > 
 >  	return ret;
-> @@ -111,16 +94,13 @@ static int exynos_ehci_phy_enable(struct device *dev)
+> @@ -110,16 +84,13 @@ static int exynos_ohci_phy_enable(struct device *dev)
 >  	int i;
 >  	int ret = 0;
 > 
-> -	if (!IS_ERR(exynos_ehci->phy))
-> -		return usb_phy_init(exynos_ehci->phy);
+> -	if (!IS_ERR(exynos_ohci->phy))
+> -		return usb_phy_init(exynos_ohci->phy);
 > -
 >  	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
-> -		if (!IS_ERR(exynos_ehci->phy_g[i]))
-> -			ret = phy_power_on(exynos_ehci->phy_g[i]);
-> +		if (!IS_ERR(exynos_ehci->phy[i]))
-> +			ret = phy_power_on(exynos_ehci->phy[i]);
+> -		if (!IS_ERR(exynos_ohci->phy_g[i]))
+> -			ret = phy_power_on(exynos_ohci->phy_g[i]);
+> +		if (!IS_ERR(exynos_ohci->phy[i]))
+> +			ret = phy_power_on(exynos_ohci->phy[i]);
 >  	if (ret)
 >  		for (i--; i >= 0; i--)
-> -			if (!IS_ERR(exynos_ehci->phy_g[i]))
-> -				phy_power_off(exynos_ehci->phy_g[i]);
-> +			if (!IS_ERR(exynos_ehci->phy[i]))
-> +				phy_power_off(exynos_ehci->phy[i]);
+> -			if (!IS_ERR(exynos_ohci->phy_g[i]))
+> -				phy_power_off(exynos_ohci->phy_g[i]);
+> +			if (!IS_ERR(exynos_ohci->phy[i]))
+> +				phy_power_off(exynos_ohci->phy[i]);
 > 
 >  	return ret;
 >  }
-> @@ -131,14 +111,9 @@ static void exynos_ehci_phy_disable(struct device *dev)
->  	struct exynos_ehci_hcd *exynos_ehci = to_exynos_ehci(hcd);
+> @@ -130,14 +101,9 @@ static void exynos_ohci_phy_disable(struct device *dev)
+>  	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
 >  	int i;
 > 
-> -	if (!IS_ERR(exynos_ehci->phy)) {
-> -		usb_phy_shutdown(exynos_ehci->phy);
+> -	if (!IS_ERR(exynos_ohci->phy)) {
+> -		usb_phy_shutdown(exynos_ohci->phy);
 > -		return;
 > -	}
 > -
 >  	for (i = 0; i < PHY_NUMBER; i++)
-> -		if (!IS_ERR(exynos_ehci->phy_g[i]))
-> -			phy_power_off(exynos_ehci->phy_g[i]);
-> +		if (!IS_ERR(exynos_ehci->phy[i]))
-> +			phy_power_off(exynos_ehci->phy[i]);
+> -		if (!IS_ERR(exynos_ohci->phy_g[i]))
+> -			phy_power_off(exynos_ohci->phy_g[i]);
+> +		if (!IS_ERR(exynos_ohci->phy[i]))
+> +			phy_power_off(exynos_ohci->phy[i]);
 >  }
 > 
->  static void exynos_setup_vbus_gpio(struct device *dev)
-> @@ -231,9 +206,6 @@ skip_phy:
+>  static int exynos_ohci_probe(struct platform_device *pdev)
+> @@ -209,9 +175,6 @@ skip_phy:
 >  		goto fail_io;
 >  	}
 > 
-> -	if (exynos_ehci->otg)
-> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -	if (exynos_ohci->otg)
+> -		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
 > -
->  	err = exynos_ehci_phy_enable(&pdev->dev);
->  	if (err) {
->  		dev_err(&pdev->dev, "Failed to enable USB phy\n");
-> @@ -273,9 +245,6 @@ static int exynos_ehci_remove(struct platform_device *pdev)
+>  	platform_set_drvdata(pdev, hcd);
+> 
+>  	err = exynos_ohci_phy_enable(&pdev->dev);
+> @@ -244,9 +207,6 @@ static int exynos_ohci_remove(struct platform_device *pdev)
 > 
 >  	usb_remove_hcd(hcd);
 > 
-> -	if (exynos_ehci->otg)
-> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -	if (exynos_ohci->otg)
+> -		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
 > -
->  	exynos_ehci_phy_disable(&pdev->dev);
+>  	exynos_ohci_phy_disable(&pdev->dev);
 > 
->  	clk_disable_unprepare(exynos_ehci->clk);
-> @@ -298,9 +267,6 @@ static int exynos_ehci_suspend(struct device *dev)
+>  	clk_disable_unprepare(exynos_ohci->clk);
+> @@ -275,9 +235,6 @@ static int exynos_ohci_suspend(struct device *dev)
 >  	if (rc)
 >  		return rc;
 > 
-> -	if (exynos_ehci->otg)
-> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -	if (exynos_ohci->otg)
+> -		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
 > -
->  	exynos_ehci_phy_disable(dev);
+>  	exynos_ohci_phy_disable(dev);
 > 
->  	clk_disable_unprepare(exynos_ehci->clk);
-> @@ -316,9 +282,6 @@ static int exynos_ehci_resume(struct device *dev)
+>  	clk_disable_unprepare(exynos_ohci->clk);
+> @@ -293,9 +250,6 @@ static int exynos_ohci_resume(struct device *dev)
 > 
->  	clk_prepare_enable(exynos_ehci->clk);
+>  	clk_prepare_enable(exynos_ohci->clk);
 > 
-> -	if (exynos_ehci->otg)
-> -		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> -	if (exynos_ohci->otg)
+> -		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
 > -
->  	ret = exynos_ehci_phy_enable(dev);
+>  	ret = exynos_ohci_phy_enable(dev);
 >  	if (ret) {
 >  		dev_err(dev, "Failed to enable USB phy\n");
 > --
