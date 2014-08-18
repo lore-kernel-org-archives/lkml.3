@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbaHRPLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:11:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11324 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091AbaHRPLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:11:50 -0400
-Date: Mon, 18 Aug 2014 17:09:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Frank Mayhar <fmayhar@google.com>,
-        Frederic Weisbecker <fweisbec@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sanjay Rao <srao@redhat.com>, Larry Woodman <lwoodman@redhat.com>,
+	id S1751679AbaHRPOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:14:17 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:58220 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaHRPOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:14:15 -0400
+Date: Mon, 18 Aug 2014 18:14:04 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] sched: tasklist_lock cleanups (Was: don't use
-	while_each_thread())
-Message-ID: <20140818150916.GA19364@redhat.com>
-References: <20140813191938.GA19301@redhat.com> <20140817152549.GA17984@redhat.com> <53F11B45.8070105@yandex.ru>
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] vmx: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+Message-ID: <20140818151404.GA25046@ada>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53F11B45.8070105@yandex.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18, Kirill Tkhai wrote:
->
-> On 17.08.2014 19:25, Oleg Nesterov wrote:
-> >
-> > And I can't understand tg_has_rt_tasks(). Don't we need something
-> > like the patch below? If not, please do not ask me why I think so,
-> > I don't understand this black magic ;) But the usage of the global
-> > "runqueues" array looks suspicious.
->
-> This function searches RT task which is related to this tg. It's
-> opaquely because it looks that there is an error.
->
-> task_rq(p)->rt.tg is a task group of a top rt_rq, while the task may
-> be queued on a child rt_rq instead of this. So, your patch is a BUGFIX,
-> not a cleanup.
+The use of "rcu_assign_pointer()" is NULLing out the pointer.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Yes, thanks, this was my (vague) understanding. But since I don't know
-even the terminology I wasn't able to explain my concerns.
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-OK, I am going to shamelessly steal your words and turn them into the
-changelog.
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
 
-Thanks.
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ arch/x86/kvm/vmx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Oleg.
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 801332e..12b840c 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -9029,7 +9029,7 @@ static void __exit vmx_exit(void)
+ 	free_page((unsigned long)vmx_vmread_bitmap);
+ 
+ #ifdef CONFIG_KEXEC
+-	rcu_assign_pointer(crash_vmclear_loaded_vmcss, NULL);
++	RCU_INIT_POINTER(crash_vmclear_loaded_vmcss, NULL);
+ 	synchronize_rcu();
+ #endif
+ 
+-- 
+1.9.1
 
