@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703AbaHRASF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 20:18:05 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:60606 "EHLO
+	id S1751988AbaHRASz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 20:18:55 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60556 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaHRARf (ORCPT
+	with ESMTP id S1751685AbaHRARe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 20:17:35 -0400
+	Sun, 17 Aug 2014 20:17:34 -0400
 X-Original-SENDERIP: 10.177.222.156
 X-Original-MAILFROM: minchan@kernel.org
 From: Minchan Kim <minchan@kernel.org>
@@ -19,12 +19,11 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
         zhangyanfei@cn.fujitsu.com,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH v15 7/7] mm: Don't split THP page when syscall is called
-Date: Mon, 18 Aug 2014 09:17:56 +0900
-Message-Id: <1408321076-2231-8-git-send-email-minchan@kernel.org>
+        Minchan Kim <minchan@kernel.org>, sparclinux@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH v15 3/7] sparc: add pmd_[dirty|mkclean] for THP
+Date: Mon, 18 Aug 2014 09:17:52 +0900
+Message-Id: <1408321076-2231-4-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1408321076-2231-1-git-send-email-minchan@kernel.org>
 References: <1408321076-2231-1-git-send-email-minchan@kernel.org>
@@ -32,196 +31,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to split THP page when MADV_FREE syscall is
-called. It could be done when VM decide really frees it so
-we could avoid unnecessary THP split.
+MADV_FREE needs pmd_dirty and pmd_mkclean for detecting recent
+overwrite of the contents since MADV_FREE syscall is called for
+THP page.
 
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+This patch adds pmd_dirty and pmd_mkclean for THP page MADV_FREE
+support.
+
+Acked-by: David S. Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- include/linux/huge_mm.h |  4 ++++
- mm/huge_memory.c        | 35 +++++++++++++++++++++++++++++++++++
- mm/madvise.c            | 21 ++++++++++++++++++++-
- mm/rmap.c               |  8 ++++++--
- mm/vmscan.c             | 28 ++++++++++++++++++----------
- 5 files changed, 83 insertions(+), 13 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 63579cb8d3dc..25a961256d9f 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -19,6 +19,9 @@ extern struct page *follow_trans_huge_pmd(struct vm_area_struct *vma,
- 					  unsigned long addr,
- 					  pmd_t *pmd,
- 					  unsigned int flags);
-+extern int madvise_free_huge_pmd(struct mmu_gather *tlb,
-+			struct vm_area_struct *vma,
-+			pmd_t *pmd, unsigned long addr);
- extern int zap_huge_pmd(struct mmu_gather *tlb,
- 			struct vm_area_struct *vma,
- 			pmd_t *pmd, unsigned long addr);
-@@ -56,6 +59,7 @@ extern pmd_t *page_check_address_pmd(struct page *page,
- 				     unsigned long address,
- 				     enum page_check_address_pmd_flag flag,
- 				     spinlock_t **ptl);
-+extern int pmd_freeable(pmd_t pmd);
- 
- #define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
- #define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index d9a21d06b862..6d9faa652f54 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1384,6 +1384,36 @@ out:
- 	return 0;
+diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
+index 3770bf5c6e1b..b80a309d7e00 100644
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -666,6 +666,13 @@ static inline unsigned long pmd_young(pmd_t pmd)
+ 	return pte_young(pte);
  }
  
-+int madvise_free_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
-+		 pmd_t *pmd, unsigned long addr)
-+
++static inline int pmd_dirty(pmd_t pmd)
 +{
-+	spinlock_t *ptl;
-+	struct mm_struct *mm = tlb->mm;
-+	int ret = 1;
++	pte_t pte = __pte(pmd_val(pmd));
 +
-+	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
-+		struct page *page;
-+		pmd_t orig_pmd;
-+
-+		orig_pmd = pmdp_get_and_clear(mm, addr, pmd);
-+
-+		/* No hugepage in swapcache */
-+		page = pmd_page(orig_pmd);
-+		VM_BUG_ON_PAGE(PageSwapCache(page), page);
-+
-+		orig_pmd = pmd_mkold(orig_pmd);
-+		orig_pmd = pmd_mkclean(orig_pmd);
-+
-+		set_pmd_at(mm, addr, pmd, orig_pmd);
-+		tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
-+		spin_unlock(ptl);
-+		ret = 0;
-+	}
-+
-+	return ret;
++	return pte_dirty(pte);
 +}
 +
- int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 		 pmd_t *pmd, unsigned long addr)
+ static inline unsigned long pmd_write(pmd_t pmd)
  {
-@@ -1620,6 +1650,11 @@ unlock:
- 	return NULL;
+ 	pte_t pte = __pte(pmd_val(pmd));
+@@ -723,6 +730,15 @@ static inline pmd_t pmd_mkdirty(pmd_t pmd)
+ 	return __pmd(pte_val(pte));
  }
  
-+int pmd_freeable(pmd_t pmd)
++static inline pmd_t pmd_mkclean(pmd_t pmd)
 +{
-+	return !pmd_dirty(pmd);
++	pte_t pte = __pte(pmd_val(pmd));
++
++	pte = pte_mkclean(pte);
++
++	return __pmd(pte_val(pte));
 +}
 +
- static int __split_huge_page_splitting(struct page *page,
- 				       struct vm_area_struct *vma,
- 				       unsigned long address)
-diff --git a/mm/madvise.c b/mm/madvise.c
-index a21584235bb6..84badee5f46d 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -271,8 +271,26 @@ static int madvise_free_pte_range(pmd_t *pmd, unsigned long addr,
- 	spinlock_t *ptl;
- 	pte_t *pte, ptent;
- 	struct page *page;
-+	unsigned long next;
-+
-+	next = pmd_addr_end(addr, end);
-+	if (pmd_trans_huge(*pmd)) {
-+		if (next - addr != HPAGE_PMD_SIZE) {
-+#ifdef CONFIG_DEBUG_VM
-+			if (!rwsem_is_locked(&mm->mmap_sem)) {
-+				pr_err("%s: mmap_sem is unlocked! addr=0x%lx end=0x%lx vma->vm_start=0x%lx vma->vm_end=0x%lx\n",
-+					__func__, addr, end,
-+					vma->vm_start,
-+					vma->vm_end);
-+				BUG();
-+			}
-+#endif
-+			split_huge_page_pmd(vma, addr, pmd);
-+		} else if (!madvise_free_huge_pmd(tlb, vma, pmd, addr))
-+			goto next;
-+		/* fall through */
-+	}
- 
--	split_huge_page_pmd(vma, addr, pmd);
- 	if (pmd_trans_unstable(pmd))
- 		return 0;
- 
-@@ -316,6 +334,7 @@ static int madvise_free_pte_range(pmd_t *pmd, unsigned long addr,
- 	}
- 	arch_leave_lazy_mmu_mode();
- 	pte_unmap_unlock(pte - 1, ptl);
-+next:
- 	cond_resched();
- 	return 0;
- }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 04c181133890..9c407576ff8e 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -704,9 +704,13 @@ static int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 			referenced++;
- 
- 		/*
--		 * In this implmentation, MADV_FREE doesn't support THP free
-+		 * Use pmd_freeable instead of raw pmd_dirty because in some
-+		 * of architecture, pmd_dirty is not defined unless
-+		 * CONFIG_TRANSPARNTE_HUGE is enabled
- 		 */
--		dirty++;
-+		if (!pmd_freeable(*pmd))
-+			dirty++;
-+
- 		spin_unlock(ptl);
- 	} else {
- 		pte_t *pte;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 76c2cc858323..d404da3ad1a5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -976,17 +976,25 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		 * Anonymous process memory has backing store?
- 		 * Try to allocate it some swap space here.
- 		 */
--		if (PageAnon(page) && !PageSwapCache(page) && !freeable) {
--			if (!(sc->gfp_mask & __GFP_IO))
--				goto keep_locked;
--			if (!add_to_swap(page, page_list))
--				goto activate_locked;
--			may_enter_fs = 1;
--
--			/* Adding to swap updated mapping */
--			mapping = page_mapping(page);
-+		if (PageAnon(page) && !PageSwapCache(page)) {
-+			if (!freeable) {
-+				if (!(sc->gfp_mask & __GFP_IO))
-+					goto keep_locked;
-+				if (!add_to_swap(page, page_list))
-+					goto activate_locked;
-+				may_enter_fs = 1;
-+				/* Adding to swap updated mapping */
-+				mapping = page_mapping(page);
-+			} else {
-+				if (likely(!PageTransHuge(page)))
-+					goto unmap;
-+				/* try_to_unmap isn't aware of THP page */
-+				if (unlikely(split_huge_page_to_list(page,
-+								page_list)))
-+					goto keep_locked;
-+			}
- 		}
--
-+unmap:
- 		/*
- 		 * The page is mapped into the page tables of one or more
- 		 * processes. Try to unmap it here.
+ static inline pmd_t pmd_mkyoung(pmd_t pmd)
+ {
+ 	pte_t pte = __pte(pmd_val(pmd));
 -- 
 2.0.0
 
