@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703AbaHRKGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:06:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42475 "EHLO
+	id S1752034AbaHRJdv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:33:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42468 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaHRJdu (ORCPT
+	with ESMTP id S1751937AbaHRJdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:50 -0400
+	Mon, 18 Aug 2014 05:33:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Takashi Iwai <tiwai@suse.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 018/137] tracing: Fix graph tracer with stack tracer on other archs
-Date: Mon, 18 Aug 2014 10:31:19 +0100
-Message-Id: <1408354398-10226-19-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 016/137] PM / sleep: Fix request_firmware() error at resume
+Date: Mon, 18 Aug 2014 10:31:17 +0100
+Message-Id: <1408354398-10226-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5f8bf2d263a20b986225ae1ed7d6759dc4b93af9 upstream.
+commit 4320f6b1d9db4ca912c5eb6ecb328b2e090e1586 upstream.
 
-Running my ftrace tests on PowerPC, it failed the test that checks
-if function_graph tracer is affected by the stack tracer. It was.
-Looking into this, I found that the update_function_graph_func()
-must be called even if the trampoline function is not changed.
-This is because archs like PowerPC do not support ftrace_ops being
-passed by assembly and instead uses a helper function (what the
-trampoline function points to). Since this function is not changed
-even when multiple ftrace_ops are added to the code, the test that
-falls out before calling update_function_graph_func() will miss that
-the update must still be done.
+The commit [247bc037: PM / Sleep: Mitigate race between the freezer
+and request_firmware()] introduced the finer state control, but it
+also leads to a new bug; for example, a bug report regarding the
+firmware loading of intel BT device at suspend/resume:
+  https://bugzilla.novell.com/show_bug.cgi?id=873790
 
-Call update_function_graph_function() for all calls to
-update_ftrace_function()
+The root cause seems to be a small window between the process resume
+and the clear of usermodehelper lock.  The request_firmware() function
+checks the UMH lock and gives up when it's in UMH_DISABLE state.  This
+is for avoiding the invalid  f/w loading during suspend/resume phase.
+The problem is, however, that usermodehelper_enable() is called at the
+end of thaw_processes().  Thus, a thawed process in between can kick
+off the f/w loader code path (in this case, via btusb_setup_intel())
+even before the call of usermodehelper_enable().  Then
+usermodehelper_read_trylock() returns an error and request_firmware()
+spews WARN_ON() in the end.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This oneliner patch fixes the issue just by setting to UMH_FREEZING
+state again before restarting tasks, so that the call of
+request_firmware() will be blocked until the end of this function
+instead of returning an error.
+
+Fixes: 247bc0374254 (PM / Sleep: Mitigate race between the freezer and request_firmware())
+Link: https://bugzilla.novell.com/show_bug.cgi?id=873790
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/power/process.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index df6bbd3d73ad..3aaae0661b21 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -331,12 +331,12 @@ static void update_ftrace_function(void)
- 		func = ftrace_ops_list_func;
- 	}
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index 06ec8869dbf1..14f9a8d4725d 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -184,6 +184,7 @@ void thaw_processes(void)
  
-+	update_function_graph_func();
-+
- 	/* If there's no change, then do nothing more here */
- 	if (ftrace_trace_function == func)
- 		return;
+ 	printk("Restarting tasks ... ");
  
--	update_function_graph_func();
--
- 	/*
- 	 * If we are using the list function, it doesn't care
- 	 * about the function_trace_ops.
++	__usermodehelper_set_disable_depth(UMH_FREEZING);
+ 	thaw_workqueues();
+ 
+ 	read_lock(&tasklist_lock);
 -- 
 1.9.1
 
