@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169AbaHRKLP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:11:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42391 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaHRJd1 (ORCPT
+	id S1754802AbaHRKKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:10:22 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11421 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaHRKKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:27 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Loic Poulain <loic.poulain@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 001/137] Bluetooth: Ignore H5 non-link packets in non-active state
-Date: Mon, 18 Aug 2014 10:31:02 +0100
-Message-Id: <1408354398-10226-2-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 18 Aug 2014 06:10:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 18 Aug 2014 03:00:46 -0700
+Message-ID: <53F1D105.1070107@nvidia.com>
+Date: Mon, 18 Aug 2014 13:10:13 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, <linux-pm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH 1/3] of: Add of_match_machine helper
+References: <1407452515-2390-1-git-send-email-ttynkkynen@nvidia.com>	<1407452515-2390-2-git-send-email-ttynkkynen@nvidia.com> <20140817152854.5406BC40ADD@trevor.secretlab.ca>
+In-Reply-To: <20140817152854.5406BC40ADD@trevor.secretlab.ca>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
+On 17/08/14 18:28, Grant Likely wrote:
+> On Fri, 8 Aug 2014 02:01:53 +0300, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
+[...]
+>> +EXPORT_SYMBOL(of_match_machine);
+> 
+> Too wordy...
+> 
+> 	return of_match_node(matches, of_allnodes);
+> 
+> :-)
+> 
+> It could be a static inline, but I don't think it's even worth having a
+> helper. The callers could just open code the above.
+> 
 
-------------------
+Do you mean all the drivers should be referring to of_allnodes directly?
+I see that it's indeed exported, but to me that sounds like relying too
+much on an implementation detail. In fact, Documentation/devicetree/todo.txt
+even seems to have a TODO entry for its removal ("Remove of_allnodes list
+and iterate using list of child nodes alone").
 
-From: Loic Poulain <loic.poulain@intel.com>
-
-commit 48439d501e3d9e8634bdc0c418e066870039599d upstream.
-
-When detecting a non-link packet, h5_reset_rx() frees the Rx skb.
-Not returning after that will cause the upcoming h5_rx_payload()
-call to dereference a now NULL Rx skb and trigger a kernel oops.
-
-Signed-off-by: Loic Poulain <loic.poulain@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/bluetooth/hci_h5.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/bluetooth/hci_h5.c b/drivers/bluetooth/hci_h5.c
-index b6154d5a07a5..db0be2fb05fe 100644
---- a/drivers/bluetooth/hci_h5.c
-+++ b/drivers/bluetooth/hci_h5.c
-@@ -406,6 +406,7 @@ static int h5_rx_3wire_hdr(struct hci_uart *hu, unsigned char c)
- 	    H5_HDR_PKT_TYPE(hdr) != HCI_3WIRE_LINK_PKT) {
- 		BT_ERR("Non-link packet received in non-active state");
- 		h5_reset_rx(h5);
-+		return 0;
- 	}
- 
- 	h5->rx_func = h5_rx_payload;
 -- 
-1.9.1
-
+nvpublic
