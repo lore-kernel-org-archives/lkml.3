@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978AbaHRLAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 07:00:12 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:29913 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaHRLAE (ORCPT
+	id S1752056AbaHRLAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 07:00:19 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:45707 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784AbaHRLAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 07:00:04 -0400
-X-AuditID: cbfee68f-b7fa26d0000039a0-59-53f1dcb154c4
-Date: Mon, 18 Aug 2014 20:00:00 +0900
+	Mon, 18 Aug 2014 07:00:15 -0400
+X-AuditID: cbfee690-b7f526d000003627-7b-53f1dcb9c080
+Date: Mon, 18 Aug 2014 20:00:09 +0900
 From: Inha Song <ideal.song@samsung.com>
 To: broonie@kernel.org
 Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
@@ -18,40 +18,40 @@ Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
         galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
         mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
         cw00.choi@samsung.com
-Subject: [alsa-devel] [PATCH v3 0/2] mfd: arizona: add support for INn_MODE
- register control using platform data
-Message-id: <20140818200000.60302a15@songinha-Samsung-DeskTop-System>
+Subject: [alsa-devel] [PATCH v3 2/2] mfd: arizona: Update DT binding to support
+ INn_MODE init_data
+Message-id: <20140818200009.12a52dfa@songinha-Samsung-DeskTop-System>
 X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsWyRsSkWHfjnY/BBjNe81pcuXiIyWLqwyds
-	Fv+m3GC3uP7lOavF/CPnWC363yxktTj3aiWjxf2vRxktvl3pYLK4vGsOm8XS6xeZLJa//c9m
-	MWH6WhaL1r1H2C1Od7M68Hts+NzE5rFm3hpGj8t9vUweO2fdZfdYufwLm8emVZ1sHneu7WHz
-	mHcy0OPlxN9sHn1bVjF6fN4kF8AdxWWTkpqTWZZapG+XwJWx7dxlpoLPrBV3+zYzNzBeYuli
-	5OSQEDCROH72MzOELSZx4d56ti5GLg4hgaWMEtOvTYEruv6rjREiMZ1RYvLKLWAdQgL9TBJb
-	rxiB2CwCqhJPlyxlBbHZBDQkvn/eDFYjAjT19pxOZpBmZoGfTBLNK56AJYQFiiT2XLvADmLz
-	CrhKzP4whwlim43E6p3rmCHighI/Jt8Du4JZQEti87YmVghbXmLzmrdgQyUEZnJIrPn1jwXi
-	CgGJb5MPAdkcQAlZiU0HoF6TlDi44gbLBEaRWUjGzkIydhaSsQsYmVcxiqYWJBcUJ6UXGesV
-	J+YWl+al6yXn525iBEb06X/P+ncw3j1gfYgxGWjlRGYp0eR8YELIK4k3NDYzsjA1MTU2Mrc0
-	I01YSZz3/sOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M+/oOzXa2Siud8tnbq9dIa+pH
-	j42cKt8fSwSd9i7d/PCjXf/MWXM25ZV2+e+Tn/DeTlzk9PvjGpnGS3jurr/KsXLCgkhhFRVV
-	41Qt0Ucak/7Nq1ooy9DBdvGpcTO3DuuhV21XS1Uz1Useeee/lv65nH3Fq/b8T5IcC/gtZnR8
-	Kr2xV0h6jlGfEktxRqKhFnNRcSIAzMLP9P4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jQd2Ndz4GG/zazmpx5eIhJoupD5+w
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsWyRsSkRHfnnY/BBif6zS2uXDzEZDH14RM2
+	i39TbrBbXP/ynNVi/pFzrBb9bxayWpx7tZLR4v7Xo4wW3650MFlc3jWHzWLp9YtMFsvf/mez
+	mDB9LYtF694j7Banu1kd+D02fG5i81gzbw2jx+W+XiaPnbPusnusXP6FzWPTqk42jzvX9rB5
+	zDsZ6PFy4m82j74tqxg9Pm+SC+CO4rJJSc3JLEst0rdL4Mq4MJG/YBF3xYVJLewNjLM4uxg5
+	OSQETCR2H5jODGGLSVy4t56ti5GLQ0hgKaPE9AevmWGKdrw7yASRWMQoMevSA0YIp59J4tjZ
+	HUAtHBwsAqoSRy+agTSwCWhIfP+8GaxZBGjq7TmdzCD1zAI/mSSaVzwBSwgLpEg0rHjHBGLz
+	CrhK3OxZzwixzUZi9c51zBBxQYkfk++xgNjMAloSm7c1sULY8hKb17yFum4mh8T7uYUgNouA
+	gMS3yYdYQO6REJCV2HQAqkRS4uCKGywTGEVmIZk6C8nUWUimLmBkXsUomlqQXFCclF5kolec
+	mFtcmpeul5yfu4kRGM2n/z2bsIPx3gHrQ4zJQCsnMkuJJucDk0FeSbyhsZmRhamJqbGRuaUZ
+	acJK4rxqj5KChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDO5X9mLufNau7rnvB3CsMZjmtv
+	0+fNcOOW9RKQYkhy4dwzP11LxOXaTCeJeXzP7pVMecXyMSX1aeac+n1R58MyK54uS+wtthTd
+	8/rVY6cVSbvCnOWuOfRKftW/sVbJe2dB0h4F9xWRj1kV5kQZ7S2oWz/90vn62y7xx3kjjjtN
+	cz2zl+lvjKwSS3FGoqEWc1FxIgCcRMiy/AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAd2ddz4GGzw9r2dx5eIhJoupD5+w
 	WfybcoPd4vqX56wW84+cY7Xof7OQ1eLcq5WMFve/HmW0+Halg8ni8q45bBZLr19kslj+9j+b
 	xYTpa1ksWvceYbc43c3qwO+x4XMTm8eaeWsYPS739TJ57Jx1l91j5fIvbB6bVnWyedy5tofN
 	Y97JQI+XE3+zefRtWcXo8XmTXAB3VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGl
 	hbmSQl5ibqqtkotPgK5bZg7QL0oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBA
-	whrGjG3nLjMVfGatuNu3mbmB8RJLFyMnh4SAicT1X22MELaYxIV769m6GLk4hASmM0pMXrmF
-	GSQhJNDPJLH1ihGIzSKgKvF0yVJWEJtNQEPi++fNYDUiQM2353QygzQzC/xkkmhe8QQsISxQ
-	JLHn2gV2EJtXwFVi9oc5TBDbbCRW71zHDBEXlPgx+R7YRcwCWhKbtzWxQtjyEpvXvGWewMg3
-	C0nZLCRls5CULWBkXsUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnC6eSe1gXNlgcYhRgINR
-	iYfX4/WHYCHWxLLiytxDjBIczEoivNnnPwYL8aYkVlalFuXHF5XmpBYfYjQFensis5Rocj4w
-	leWVxBsam5gZWRqZG1oYGZsrifMeaLUOFBJITyxJzU5NLUgtgulj4uCUamCUV21V98v7z3un
-	QuXB06f16zn6p5rvPaWfUOB5aL7Pk4zYR0GXlyavnjPD6FFl1LGEVvVu6YM+Yhfqj4sWbwot
-	9s9fsu2ozXXX6AtRC2Y6Pr5Roh32aLOo1+a5S1fcPn8n7ZtT5dvXS+zusCzOmcyT9ub12le9
-	gi/SnMpmbblZ0cfY23N+yZsvSizFGYmGWsxFxYkAAnk3Py0DAAA=
+	whrGjAsT+QsWcVdcmNTC3sA4i7OLkZNDQsBEYse7g0wQtpjEhXvr2boYuTiEBBYxSsy69IAR
+	wulnkjh2dgdQhoODRUBV4uhFM5AGNgENie+fNzOD2CJAzbfndDKD1DML/GSSaF7xBCwhLJAi
+	0bDiHdgGXgFXiZs96xkhttlIrN65jhkiLijxY/I9FhCbWUBLYvO2JlYIW15i85q3zBMY+WYh
+	KZuFpGwWkrIFjMyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYKTxTPpHYyrGiwOMQpwMCrx
+	8Hq8/hAsxJpYVlyZe4hRgoNZSYQ3+/zHYCHelMTKqtSi/Pii0pzU4kOMpkBfT2SWEk3OByay
+	vJJ4Q2MTMyNLI3NDCyNjcyVx3oOt1oFCAumJJanZqakFqUUwfUwcnFINjNZbTbnlJv1+J8sd
+	uMqu4vaNY9/Z+o6kf3Vs/NUt8zNUV5hfcsuRwL/6sRKf14W7rpl1z6beZE+FgEvecbWCBOav
+	/pc85gZufdqib34p8+W6zRV7J6qfePnXYJGz/PK8mDudMc9SNnFXfdIXYF9wtnfP3BvNFzff
+	6nBeNHG+8MrU31t9097uzFViKc5INNRiLipOBAC83xbrLAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,27 +59,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series add support for INn_MODE register control using platform data.
-Each input signal path can be configurated either as a Analogue or Digital using
-the INn_MODE registers.
+This patch update DT binding to support INn_MODE init_data. Each
+input signal path can be configurated either as a Analogue or
+Digital using the INn_MODE registers.
 
-Changes for v3
-- Change to use of_property_read_u32_array
-- Fix a few typos
-- Update commit message
-
-Changes for v2
-- Change to support
-- Update commit message
-- Update document content for more clarity
-
-Inha Song (2):
-  mfd: arizona: Add support for INn_Mode register control
-  mfd: arizona: Update DT binding to support INn_MODE init_data
-
+Signed-off-by: Inha Song <ideal.song@samsung.com>
+---
  Documentation/devicetree/bindings/mfd/arizona.txt | 8 ++++++++
- drivers/mfd/arizona-core.c                        | 8 +++++++-
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ 1 file changed, 8 insertions(+)
 
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 5c7e723..0064b21 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -42,6 +42,14 @@ Optional properties:
+     the chip default will be used.  If present exactly five values must
+     be specified.
+ 
++  - wlf,inmode : A list of INn_MODE register values, where n is the number
++    of input signals. Each input signal path can be configurated either as a
++    Analogue or Digital using the INn_MODE registers. If absent, INn_MODE
++    registers set to 0 by default. If present, values must be specified less
++    than or equal to the number of input singals. If values less than the
++    number of input signals, elements that has not been specifed are set to 0
++    by default.
++
+   - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
+     they are being externally supplied. As covered in
+     Documentation/devicetree/bindings/regulator/regulator.txt
 -- 
 2.0.0.390.gcb682f8
+
