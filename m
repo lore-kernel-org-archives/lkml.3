@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaHRJdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:33:39 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:35993 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaHRJdh (ORCPT
+	id S1753293AbaHRJgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:36:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43082 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105AbaHRJgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408082761-15333-3-git-send-email-rogerable@realtek.com>
-References: <1408082761-15333-1-git-send-email-rogerable@realtek.com>
-	<1408082761-15333-3-git-send-email-rogerable@realtek.com>
-Date: Mon, 18 Aug 2014 11:33:36 +0200
-Message-ID: <CAPDyKFpwu_Zas+oBRnrsTzYoNYzn1mrWyBJ_LepgP+US-55h5Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mmc: rtsx_usb_sdmmc: fix incorrect last byte in R2 response
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Roger <rogerable@realtek.com>
-Cc: Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        Wei WANG <wei_wang@realsil.com.cn>, micky <micky_ching@realsil.com.cn>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Aug 2014 05:36:17 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Minfei Huang <huangminfei@ucloud.cn>, Joern Engel <joern@logfs.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 114/137] lib/btree.c: fix leak of whole btree nodes
+Date: Mon, 18 Aug 2014 10:32:55 +0100
+Message-Id: <1408354398-10226-115-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 August 2014 08:06,  <rogerable@realtek.com> wrote:
-> From: Roger Tseng <rogerable@realtek.com>
->
-> Current code erroneously fill the last byte of R2 response with an undefined
-> value. In addition, the controller actually 'offloads' the last byte
-> (CRC7, end bit) while receiving R2 response and thus it's impossible to get the
-> actual value. This could cause mmc stack to obtain inconsistent CID from the
-> same card after resume and misidentify it as a different card.
->
-> Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
->
-> Cc: <stable@vger.kernel.org> # v3.16+
-> Fixes: c7f6558d84af ("mmc: Add realtek USB sdmmc host driver")
-> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks! Applied for next.
+------------------
 
-Kind regards
-Uffe
+From: Minfei Huang <huangminfei@ucloud.cn>
 
+commit c75b53af2f0043aff500af0a6f878497bef41bca upstream.
 
-> ---
->  drivers/mmc/host/rtsx_usb_sdmmc.c |    7 +++++++
->  1 file changed, 7 insertions(+)
->
-> diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c b/drivers/mmc/host/rtsx_usb_sdmmc.c
-> index 5d3766e792f0..d9153a7d160d 100644
-> --- a/drivers/mmc/host/rtsx_usb_sdmmc.c
-> +++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
-> @@ -435,6 +435,13 @@ static void sd_send_cmd_get_rsp(struct rtsx_usb_sdmmc *host,
->         }
->
->         if (rsp_type == SD_RSP_TYPE_R2) {
-> +               /*
-> +                * The controller offloads the last byte {CRC-7, end bit 1'b1}
-> +                * of response type R2. Assign dummy CRC, 0, and end bit to the
-> +                * byte(ptr[16], goes into the LSB of resp[3] later).
-> +                */
-> +               ptr[16] = 1;
-> +
->                 for (i = 0; i < 4; i++) {
->                         cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
->                         dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
-> --
-> 1.7.10.4
->
+I use btree from 3.14-rc2 in my own module.  When the btree module is
+removed, a warning arises:
+
+ kmem_cache_destroy btree_node: Slab cache still has objects
+ CPU: 13 PID: 9150 Comm: rmmod Tainted: GF          O 3.14.0-rc2 #1
+ Hardware name: Inspur NF5270M3/NF5270M3, BIOS CHEETAH_2.1.3 09/10/2013
+ Call Trace:
+   dump_stack+0x49/0x5d
+   kmem_cache_destroy+0xcf/0xe0
+   btree_module_exit+0x10/0x12 [btree]
+   SyS_delete_module+0x198/0x1f0
+   system_call_fastpath+0x16/0x1b
+
+The cause is that it doesn't release the last btree node, when height = 1
+and fill = 1.
+
+[akpm@linux-foundation.org: remove unneeded test of NULL]
+Signed-off-by: Minfei Huang <huangminfei@ucloud.cn>
+Cc: Joern Engel <joern@logfs.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ lib/btree.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/btree.c b/lib/btree.c
+index f9a484676cb6..4264871ea1a0 100644
+--- a/lib/btree.c
++++ b/lib/btree.c
+@@ -198,6 +198,7 @@ EXPORT_SYMBOL_GPL(btree_init);
+ 
+ void btree_destroy(struct btree_head *head)
+ {
++	mempool_free(head->node, head->mempool);
+ 	mempool_destroy(head->mempool);
+ 	head->mempool = NULL;
+ }
+-- 
+1.9.1
+
