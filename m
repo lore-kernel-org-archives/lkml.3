@@ -1,74 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaHRKIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:08:51 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:35867 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912AbaHRKIs (ORCPT
+	id S1752352AbaHRJeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42593 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297AbaHRJeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 06:08:48 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Mon, 18 Aug 2014 12:07:20 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Wang YanQing <udknight@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        gregkh@linuxfoundation.org, jhovold@gmail.com, andi@lisas.de,
-        dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140818100720.GF31755@localhost>
-References: <20140809052828.GA28307@udknight>
- <20140812144625.GB9799@localhost>
- <20140817020536.GA2509@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140817020536.GA2509@localhost.localdomain>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 18 Aug 2014 05:34:17 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hugh Dickins <hughd@google.com>, Vlastimil Babka <vbabka@suse.cz>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 033/137] shmem: fix faulting into a hole, not taking i_mutex
+Date: Mon, 18 Aug 2014 10:31:34 +0100
+Message-Id: <1408354398-10226-34-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 10:05:36AM +0800, Wang YanQing wrote:
-> Hi Johan Hovold.
-> 
-> Another two questions.
-> 	
-> On Tue, Aug 12, 2014 at 04:46:25PM +0200, Johan Hovold wrote:
-> > 
-> > > +	int (*gpio_startup)(struct usb_serial *serial);
-> > > +	void (*gpio_release)(struct usb_serial *serial);
-> > 
-> > This isn't the right place for this abstraction. Most of the setup code
-> > would be common for any device type with GPIOs.
-> 
-> I assume you mean any pl2303 variant, not any device type, because
-> no device in drivers/gpio has common setup code except many of them
-> use struct gpio_chip.
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Yes, pl2303 type/variant. Specifically, much of the setup code will be
-identical even if say the number of gpio differ (2 or 4) depending on
-type.
+------------------
 
-> > Just keep the generic gpio_startup and release from v6, and verify that
-> > ngpio > 0. Any further abstraction should only be added once we know how
-> > the other types handles GPIOs.
-> 
-> Instead of assume code works for all situation firstly,  test and write
-> code for only one type device, and make code become generic when we find
-> it works for others' type.
-> 
-> I don't known which way is better.
+From: Hugh Dickins <hughd@google.com>
 
-Add support for your device type (HXA). We should verify that it also
-works for the non-end-of-life HXD, or we might need to find a way to
-detect those two different types of HX and limit it to HXA for now.
+commit 8e205f779d1443a94b5ae81aa359cb535dd3021e upstream.
 
-If and when someone reverse-engineers a device type with a different
-protocol for dealing with GPIOs, that's when you add further abstraction.
+Commit f00cdc6df7d7 ("shmem: fix faulting into a hole while it's
+punched") was buggy: Sasha sent a lockdep report to remind us that
+grabbing i_mutex in the fault path is a no-no (write syscall may already
+hold i_mutex while faulting user buffer).
 
-> Thanks very much for your patient review !!
+We tried a completely different approach (see following patch) but that
+proved inadequate: good enough for a rational workload, but not good
+enough against trinity - which forks off so many mappings of the object
+that contention on i_mmap_mutex while hole-puncher holds i_mutex builds
+into serious starvation when concurrent faults force the puncher to fall
+back to single-page unmap_mapping_range() searches of the i_mmap tree.
 
-You're welcome.
+So return to the original umbrella approach, but keep away from i_mutex
+this time.  We really don't want to bloat every shmem inode with a new
+mutex or completion, just to protect this unlikely case from trinity.
+So extend the original with wait_queue_head on stack at the hole-punch
+end, and wait_queue item on the stack at the fault end.
 
-Johan
+This involves further use of i_lock to guard against the races: lockdep
+has been happy so far, and I see fs/inode.c:unlock_new_inode() holds
+i_lock around wake_up_bit(), which is comparable to what we do here.
+i_lock is more convenient, but we could switch to shmem's info->lock.
+
+This issue has been tagged with CVE-2014-4171, which will require commit
+f00cdc6df7d7 and this and the following patch to be backported: we
+suggest to 3.1+, though in fact the trinity forkbomb effect might go
+back as far as 2.6.16, when madvise(,,MADV_REMOVE) came in - or might
+not, since much has changed, with i_mmap_mutex a spinlock before 3.0.
+Anyone running trinity on 3.0 and earlier? I don't think we need care.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ mm/shmem.c | 78 +++++++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 52 insertions(+), 26 deletions(-)
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index d530cde82494..569542dd802d 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -85,7 +85,7 @@ static struct vfsmount *shm_mnt;
+  * a time): we would prefer not to enlarge the shmem inode just for that.
+  */
+ struct shmem_falloc {
+-	int	mode;		/* FALLOC_FL mode currently operating */
++	wait_queue_head_t *waitq; /* faults into hole wait for punch to end */
+ 	pgoff_t start;		/* start of range currently being fallocated */
+ 	pgoff_t next;		/* the next page offset to be fallocated */
+ 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
+@@ -827,7 +827,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
+ 			spin_lock(&inode->i_lock);
+ 			shmem_falloc = inode->i_private;
+ 			if (shmem_falloc &&
+-			    !shmem_falloc->mode &&
++			    !shmem_falloc->waitq &&
+ 			    index >= shmem_falloc->start &&
+ 			    index < shmem_falloc->next)
+ 				shmem_falloc->nr_unswapped++;
+@@ -1306,38 +1306,58 @@ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	 * Trinity finds that probing a hole which tmpfs is punching can
+ 	 * prevent the hole-punch from ever completing: which in turn
+ 	 * locks writers out with its hold on i_mutex.  So refrain from
+-	 * faulting pages into the hole while it's being punched, and
+-	 * wait on i_mutex to be released if vmf->flags permits.
++	 * faulting pages into the hole while it's being punched.  Although
++	 * shmem_undo_range() does remove the additions, it may be unable to
++	 * keep up, as each new page needs its own unmap_mapping_range() call,
++	 * and the i_mmap tree grows ever slower to scan if new vmas are added.
++	 *
++	 * It does not matter if we sometimes reach this check just before the
++	 * hole-punch begins, so that one fault then races with the punch:
++	 * we just need to make racing faults a rare case.
++	 *
++	 * The implementation below would be much simpler if we just used a
++	 * standard mutex or completion: but we cannot take i_mutex in fault,
++	 * and bloating every shmem inode for this unlikely case would be sad.
+ 	 */
+ 	if (unlikely(inode->i_private)) {
+ 		struct shmem_falloc *shmem_falloc;
+ 
+ 		spin_lock(&inode->i_lock);
+ 		shmem_falloc = inode->i_private;
+-		if (!shmem_falloc ||
+-		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
+-		    vmf->pgoff < shmem_falloc->start ||
+-		    vmf->pgoff >= shmem_falloc->next)
+-			shmem_falloc = NULL;
+-		spin_unlock(&inode->i_lock);
+-		/*
+-		 * i_lock has protected us from taking shmem_falloc seriously
+-		 * once return from shmem_fallocate() went back up that stack.
+-		 * i_lock does not serialize with i_mutex at all, but it does
+-		 * not matter if sometimes we wait unnecessarily, or sometimes
+-		 * miss out on waiting: we just need to make those cases rare.
+-		 */
+-		if (shmem_falloc) {
++		if (shmem_falloc &&
++		    shmem_falloc->waitq &&
++		    vmf->pgoff >= shmem_falloc->start &&
++		    vmf->pgoff < shmem_falloc->next) {
++			wait_queue_head_t *shmem_falloc_waitq;
++			DEFINE_WAIT(shmem_fault_wait);
++
++			ret = VM_FAULT_NOPAGE;
+ 			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
+ 			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
++				/* It's polite to up mmap_sem if we can */
+ 				up_read(&vma->vm_mm->mmap_sem);
+-				mutex_lock(&inode->i_mutex);
+-				mutex_unlock(&inode->i_mutex);
+-				return VM_FAULT_RETRY;
++				ret = VM_FAULT_RETRY;
+ 			}
+-			/* cond_resched? Leave that to GUP or return to user */
+-			return VM_FAULT_NOPAGE;
++
++			shmem_falloc_waitq = shmem_falloc->waitq;
++			prepare_to_wait(shmem_falloc_waitq, &shmem_fault_wait,
++					TASK_UNINTERRUPTIBLE);
++			spin_unlock(&inode->i_lock);
++			schedule();
++
++			/*
++			 * shmem_falloc_waitq points into the shmem_fallocate()
++			 * stack of the hole-punching task: shmem_falloc_waitq
++			 * is usually invalid by the time we reach here, but
++			 * finish_wait() does not dereference it in that case;
++			 * though i_lock needed lest racing with wake_up_all().
++			 */
++			spin_lock(&inode->i_lock);
++			finish_wait(shmem_falloc_waitq, &shmem_fault_wait);
++			spin_unlock(&inode->i_lock);
++			return ret;
+ 		}
++		spin_unlock(&inode->i_lock);
+ 	}
+ 
+ 	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
+@@ -1855,13 +1875,13 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 
+-	shmem_falloc.mode = mode & ~FALLOC_FL_KEEP_SIZE;
+-
+ 	if (mode & FALLOC_FL_PUNCH_HOLE) {
+ 		struct address_space *mapping = file->f_mapping;
+ 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
+ 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
++		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(shmem_falloc_waitq);
+ 
++		shmem_falloc.waitq = &shmem_falloc_waitq;
+ 		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
+ 		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
+ 		spin_lock(&inode->i_lock);
+@@ -1873,8 +1893,13 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
+ 					    1 + unmap_end - unmap_start, 0);
+ 		shmem_truncate_range(inode, offset, offset + len - 1);
+ 		/* No need to unmap again: hole-punching leaves COWed pages */
++
++		spin_lock(&inode->i_lock);
++		inode->i_private = NULL;
++		wake_up_all(&shmem_falloc_waitq);
++		spin_unlock(&inode->i_lock);
+ 		error = 0;
+-		goto undone;
++		goto out;
+ 	}
+ 
+ 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
+@@ -1890,6 +1915,7 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
+ 		goto out;
+ 	}
+ 
++	shmem_falloc.waitq = NULL;
+ 	shmem_falloc.start = start;
+ 	shmem_falloc.next  = start;
+ 	shmem_falloc.nr_falloced = 0;
+-- 
+1.9.1
+
