@@ -1,154 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaHRQvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:51:10 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:6188 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604AbaHRQvH (ORCPT
+	id S1751937AbaHRQv6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:51:58 -0400
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:35658 "EHLO
+	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbaHRQvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:51:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 18 Aug 2014 09:41:34 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 2/2] gpio: change gpiochip_request_own_desc() prototype
-Date: Mon, 18 Aug 2014 09:50:57 -0700
-Message-ID: <1408380657-6718-3-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1408380657-6718-1-git-send-email-acourbot@nvidia.com>
-References: <1408380657-6718-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 18 Aug 2014 12:51:55 -0400
+From: Chen-Yu Tsai <wens@csie.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
+        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] ARM: dts: sun8i: Add i2c controller nodes
+Date: Tue, 19 Aug 2014 00:51:50 +0800
+Message-Id: <1408380711-26308-2-git-send-email-wens@csie.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1408380711-26308-1-git-send-email-wens@csie.org>
+References: <1408380711-26308-1-git-send-email-wens@csie.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current prototype of gpiochip_request_own_desc() requires to obtain
-a pointer to a descriptor. This is in contradiction to all other GPIO
-request schemes, and imposes an extra step of obtaining a descriptor to
-drivers. Most drivers actually cannot even perform that step since the
-function that does it (gpichip_get_desc()) is gpiolib-private.
+Add nodes for the 3 i2c controllers found on A23 SoCs to the sun8i DTSI.
 
-Change gpiochip_request_own_desc() to return a descriptor from a
-(chip, hwnum) tuple and update users of this function (currently
-gpiolib-acpi only).
-
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- Documentation/gpio/driver.txt |  3 ++-
- drivers/gpio/gpiolib-acpi.c   | 20 +++-----------------
- drivers/gpio/gpiolib.c        | 18 ++++++++++++++----
- include/linux/gpio/driver.h   |  3 ++-
- 4 files changed, 21 insertions(+), 23 deletions(-)
+ arch/arm/boot/dts/sun8i-a23.dtsi | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-diff --git a/Documentation/gpio/driver.txt b/Documentation/gpio/driver.txt
-index 18790c237977..23b751a10d7b 100644
---- a/Documentation/gpio/driver.txt
-+++ b/Documentation/gpio/driver.txt
-@@ -178,7 +178,8 @@ does not help since it pins the module to the kernel forever (it calls
- try_module_get()). A GPIO driver can use the following functions instead
- to request and free descriptors without being pinned to the kernel forever.
+diff --git a/arch/arm/boot/dts/sun8i-a23.dtsi b/arch/arm/boot/dts/sun8i-a23.dtsi
+index 9386d1f..2ec86d36 100644
+--- a/arch/arm/boot/dts/sun8i-a23.dtsi
++++ b/arch/arm/boot/dts/sun8i-a23.dtsi
+@@ -387,6 +387,39 @@
+ 			status = "disabled";
+ 		};
  
--	int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
-+	struct gpio_desc *gpiochip_request_own_desc(struct gpio_desc *desc,
-+						    const char *label)
- 
- 	void gpiochip_free_own_desc(struct gpio_desc *desc)
- 
-diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
-index 9596a1023579..4edfb7a00e0a 100644
---- a/drivers/gpio/gpiolib-acpi.c
-+++ b/drivers/gpio/gpiolib-acpi.c
-@@ -145,14 +145,8 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
- 	if (!handler)
- 		return AE_BAD_PARAMETER;
- 
--	desc = gpiochip_get_desc(chip, pin);
-+	desc = gpiochip_request_own_desc(chip, pin, "ACPI:Event");
- 	if (IS_ERR(desc)) {
--		dev_err(chip->dev, "Failed to get GPIO descriptor\n");
--		return AE_ERROR;
--	}
--
--	ret = gpiochip_request_own_desc(desc, "ACPI:Event");
--	if (ret) {
- 		dev_err(chip->dev, "Failed to request GPIO\n");
- 		return AE_ERROR;
- 	}
-@@ -420,22 +414,14 @@ acpi_gpio_adr_space_handler(u32 function, acpi_physical_address address,
- 			}
- 		}
- 		if (!found) {
--			int ret;
--
--			desc = gpiochip_get_desc(chip, pin);
-+			desc = gpiochip_request_own_desc(chip, pin,
-+							 "ACPI:OpRegion");
- 			if (IS_ERR(desc)) {
- 				status = AE_ERROR;
- 				mutex_unlock(&achip->conn_lock);
- 				goto out;
- 			}
- 
--			ret = gpiochip_request_own_desc(desc, "ACPI:OpRegion");
--			if (ret) {
--				status = AE_ERROR;
--				mutex_unlock(&achip->conn_lock);
--				goto out;
--			}
--
- 			switch (agpio->io_restriction) {
- 			case ACPI_IO_RESTRICT_INPUT:
- 				gpiod_direction_input(desc);
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 15cc0bb65dda..a5831d6a9b91 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -895,12 +895,22 @@ EXPORT_SYMBOL_GPL(gpiochip_is_requested);
-  * allows the GPIO chip module to be unloaded as needed (we assume that the
-  * GPIO chip driver handles freeing the GPIOs it has requested).
-  */
--int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label)
-+struct gpio_desc *gpiochip_request_own_desc(struct gpio_chip *chip, u16 hwnum,
-+					    const char *label)
- {
--	if (!desc || !desc->chip)
--		return -EINVAL;
-+	struct gpio_desc *desc = gpiochip_get_desc(chip, hwnum);
-+	int err;
++		i2c0: i2c@01c2ac00 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2ac00 0x400>;
++			interrupts = <0 6 4>;
++			clocks = <&apb2_gates 0>;
++			resets = <&apb2_rst 0>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
 +
-+	if (IS_ERR(desc)) {
-+		chip_err(chip, "failed to get GPIO descriptor\n");
-+		return desc;
-+	}
++		i2c1: i2c@01c2b000 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b000 0x400>;
++			interrupts = <0 7 4>;
++			clocks = <&apb2_gates 1>;
++			resets = <&apb2_rst 1>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
 +
-+	err = __gpiod_request(desc, label);
-+	if (err < 0)
-+		return ERR_PTR(err);
- 
--	return __gpiod_request(desc, label);
-+	return desc;
- }
- EXPORT_SYMBOL_GPL(gpiochip_request_own_desc);
- 
-diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
-index e78a2373e374..a2de58fffd19 100644
---- a/include/linux/gpio/driver.h
-+++ b/include/linux/gpio/driver.h
-@@ -166,7 +166,8 @@ int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
- 
- #endif /* CONFIG_GPIO_IRQCHIP */
- 
--int gpiochip_request_own_desc(struct gpio_desc *desc, const char *label);
-+struct gpio_desc *gpiochip_request_own_desc(struct gpio_chip *chip, u16 hwnum,
-+					    const char *label);
- void gpiochip_free_own_desc(struct gpio_desc *desc);
- 
- #else /* CONFIG_GPIOLIB */
++		i2c2: i2c@01c2b400 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b400 0x400>;
++			interrupts = <0 8 4>;
++			clocks = <&apb2_gates 2>;
++			resets = <&apb2_rst 2>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
+ 		gic: interrupt-controller@01c81000 {
+ 			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
+ 			reg = <0x01c81000 0x1000>,
 -- 
-2.0.4
+2.1.0
 
