@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaHRJ1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:27:06 -0400
-Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:25142
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750710AbaHRJ1F (ORCPT <rfc822;Linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:27:05 -0400
-Date: Mon, 18 Aug 2014 17:26:37 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Peter Chen <peter.chen@freescale.com>
-CC: Philippe Reynes <tremyfr@gmail.com>, <Linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <gwenhael.goavec-merou@trabucayre.com>
-Subject: Re: [RFC] usb issue on imx27: 3 clocks are needed
-Message-ID: <20140818092635.GI2114@dragon>
-References: <53EF7AF6.2000405@gmail.com> <20140818090056.GA29393@peterchendt>
+	id S1751546AbaHRJ2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:28:14 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45324 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaHRJ2M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 05:28:12 -0400
+Message-ID: <53F1C729.7090304@linaro.org>
+Date: Mon, 18 Aug 2014 11:28:09 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140818090056.GA29393@peterchendt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019005)(6009001)(24454002)(51704005)(53754006)(189002)(45984002)(199003)(79102001)(92726001)(92566001)(50986999)(77982001)(76176999)(83506001)(104016003)(31966008)(110136001)(87936001)(33716001)(68736004)(21056001)(33656002)(107046002)(54356999)(80022001)(47776003)(4396001)(76482001)(99396002)(6806004)(83072002)(85306004)(44976005)(64706001)(83322001)(20776003)(46406003)(23726002)(81342001)(26826002)(102836001)(50466002)(105606002)(86362001)(106466001)(97756001)(81542001)(95666004)(97736001)(46102001)(85852003)(84676001)(57986006)(74502001)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0784;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 03077579FF
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [RFC] ACPI: Add GPIO-signaled event simulator.
+References: <1406217076-17150-1-git-send-email-tomasz.nowicki@linaro.org> <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com> <20140812100111.GV1657@lahna.fi.intel.com>
+In-Reply-To: <20140812100111.GV1657@lahna.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 05:00:59PM +0800, Peter Chen wrote:
-> On Sat, Aug 16, 2014 at 05:38:30PM +0200, Philippe Reynes wrote:
-> > Hi all,
-> > 
-> > i.MX27's usb needs three clocks (usb_ipg_gate, usb_ahb_gate and usb_div)
-> > but the current chipidea driver implementation, and devicetree, provides
-> > only ipg and ahb. Consequently, if the bootloader don't enable the last
-> > one, the kernel will crash.
-> > 
-> > Our approach/idea is to add a second, optionnal, clock in ci_hdrc_imx.c
-> > with 'per' name in devicetree  and to add  clock name 'main_clk' for mandatory clock.
-> > This approach it correct? Or an other approach seems better?
-> > Thank you very much for your point of view.
-> > 
-> 
-> It is ok for me to have ipg, ahb and per clocks at driver, but how can you maintain
-> DT consistent?
+On 12.08.2014 12:01, Mika Westerberg wrote:
+> On Fri, Aug 08, 2014 at 02:36:02PM +0200, Linus Walleij wrote:
+>> On Thu, Jul 24, 2014 at 5:51 PM, Tomasz Nowicki
+>> <tomasz.nowicki@linaro.org> wrote:
+>>
+>>> GPIO signaled events is quite new thing in Linux kernel.
+>>> AFAIK, there are not many board which can take advantage of it.
+>>> However, GPIO events are very useful feature during work on ACPI
+>>> subsystems.
+>>
+>> Overall this seems like a pretty nice debug feature.
+>>
+>>> This commit emulates GPIO h/w behaviour and consists on read/write
+>>> operation to debugfs file. GPIO device instance is still required in DSDT
+>>> table along with _AEI resources and event methods.
+>>>
+>>> Reading from file provides pin to GPIO device map e.g. :
+>>> $ cat /sys/kernel/debug/acpi/gpio_event
+>>> GPIO device name: /__SB.GPI0
+>>> Available GPIO pin map:
+>>> /__SB.GPI0 <-> pin 0x100
+>>>
+>>> Based on that, user can trigger method corresponding to device pin number:
+>>> $ echo "/__SB.GPI0 0x100" > /sys/kernel/debug/acpi/gpio_event
+>>
+>> I need input from Rafael and Mika as to whether this is a
+>> good interface.
+>
+> Maybe it would make sense to move this into drivers/gpio/gpiolib-acpi.c
+> and hide it behind some Kconfig entry?
+>
+> Since you already need to have DSDT/SSDT table for this to provide the
+> GPIO device, _AEI and the event methods, I would rather make it so that
+> acpi_gpiochip_request_interrupt() will add debugfs entry for each GPIO
+> it finds in _AEI, like:
+>
+> /sys/kernel/debug/acpi/events/<GPIO DEVICE>/n
+>
+> And you could trigger it by writing '1' or something like that to that
+> file.
+>
 
-Adding new clock as optional one will just maintain the DT
-compatibility.
+Thanks for comments. The idea of available gpio events list under 
+/sys/kernel/debug/acpi/events/<GPIO DEVICE>/n is worth adding.
 
-> Can you accept open ipg and per always on at clock.c?
+However, acpi_gpiochip_request_interrupt() would be called if we would 
+have real GPIO H/W and related driver. Initial idea of this patch was to 
+avoid that restriction. So there are two cases:
+1. If we have GPIO chip, it is already described in DSDT/SSDT and using 
+this patch, user could trigger events by software too.
+2. None of GPIO chip, so we need to add GPIO/_AEI etc. descrition to 
+DSDT/SSDT and pretend we have GPIO chip on board.
 
-No, usb driver should manage its clocks.
+Regards,
+Tomasz Nowicki
 
-Shawn
