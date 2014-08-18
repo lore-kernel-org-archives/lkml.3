@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019AbaHRQxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:53:12 -0400
-Received: from mailsec104.isp.belgacom.be ([195.238.20.100]:37240 "EHLO
-	mailsec104.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751968AbaHRQxK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:53:10 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=jFipP9QHR754xD1LIv7lmZBwFoxBoXARoNQ4pF+CvUk= c=1 sm=2
- a=nKpn-3tZ-F4A:10 a=b6I-f53ZPUcA:10 a=IkcTkHD0fZMA:10 a=Yvs7EeInAAAA:8
- a=bj6NYayyWSFgEoVOSm4A:9 a=QEXdDO2ut3YA:10 a=myC0mAPUGvMA:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvwtAAMv8lPD7hTT/2dsb2JhbABZgw2BKoJ8rFkBAQEBAQEGpHcBgSAWdwQzAoNKAQEEASMEUgULBQYOCgICGA4CAlcGExGIKQysDoZ/jhwXgSyEUIhlODMHgnmBUwWxRYNfOy+CTwEBAQ
-Date: Mon, 18 Aug 2014 18:53:08 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Zach Brown <zab@zabbo.net>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Message-ID: <749953430.240415.1408380788296.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <20140805213214.GH18659@lenny.home.zabbo.net>
-References: <1405451837-8235-1-git-send-email-fabf@skynet.be> <20140716172021.GA10833@lenny.home.zabbo.net> <1762701571.679094.1405622254558.open-xchange@webmail.nmp.skynet.be> <20140717190152.GB24196@lenny.home.zabbo.net> <20140802142449.15f4cfc2c2821e90e04e175e@skynet.be> <20140804183158.GA18659@lenny.home.zabbo.net> <2069847253.202465.1407230425329.open-xchange@webmail.nmp.skynet.be> <20140805213214.GH18659@lenny.home.zabbo.net>
-Subject: Re: [PATCH 1/1] Btrfs: fix sparse warning
+	id S1751994AbaHRQxJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:53:09 -0400
+Received: from 8bytes.org ([81.169.241.247]:38759 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751968AbaHRQxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 12:53:07 -0400
+Date: Mon, 18 Aug 2014 18:53:05 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] iommu/msm: Switch to using managed resources
+Message-ID: <20140818165305.GD9809@8bytes.org>
+References: <1407154057-25440-1-git-send-email-pramod.gurav@smartplayin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407154057-25440-1-git-send-email-pramod.gurav@smartplayin.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 04, 2014 at 05:37:37PM +0530, Pramod Gurav wrote:
+> This switches the driver to using managed resources to simplify error
+> handling and to do away with remove function.
+> 
+> CC: Stepan Moskovchenko <stepanm@codeaurora.org>
+> CC: Joerg Roedel <joro@8bytes.org>
+> CC: Stephen Boyd <sboyd@codeaurora.org>
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/iommu/msm_iommu_dev.c |   76 +++++++++++------------------------------
+>  1 file changed, 19 insertions(+), 57 deletions(-)
+
+How have you tested this?
 
 
-> On 05 August 2014 at 23:32 Zach Brown <zab@zabbo.net> wrote:
->
->
-> > > > Hello Zach,
-> > > >
-> > > >     Here's an untested patch which
-> > >
-> > > Try testing it.  It's easy with virtualization and xfstests.
-> > >
-> > > You'll find that sending to a file fails because each individual file
-> > > write call that makes up a send starts at offset 0 -- at the start of
-> > > the file.
-> > >
-> > > Getting this right means getting the semantics around updating the send
-> > > descriptors f_pos right.  It requires having a bit of a think about send
-> > > semantics and f_pos update locking.
-> >
-> > Thanks for those informations Zach,
-> >
-> > I've tried btrfs test scripts related to ioctl in xfstests (tests/btrfs/025,
-> > 035, 052, 055)
-> > but was not able to trigger that problem. Do I have to create another
-> > script,
-> > use some generic one
-> > or maybe use big test/scratch devices ?
->
-> No idea, sorry.  Maybe your patch is fine and I'm a dummy.  Maybe you
-> didn't test the kernel you thought you were testing.  Maybe the test
-> doesn't test what you changed.  You'll have to do some investigating to
-> find out.
+	Joerg
 
-After checking both kernel and btrfs-progs, it seems file offset is only being
-passed through TLV(see send.c/ send_write/
-TLV_PUT_U64(BTRFS_SEND_A_FILE_OFFSET). Tell me if I'm wrong but when we do
-'btrfs send backup  | btrfs receive backupvolume',
-btrfs-progs calls btrfs_ioctl_send emitting several BTRFS_SEND_C_WRITE with
-relevant BTRFS_SEND_A_FILE_OFFSET (growing by 48kb). At the other side of | ,
-'btrfs receive' executes read_and_process_cmd which does TLV_GET before
-s->ops->write. All btrfs interactions being done with | maybe we could simply
-replace vfs_write stuff as you suggested and remove sctx->send_off ?
-
-Regards,
-Fabian 
-
->
-> - z
