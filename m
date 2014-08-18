@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaHRBMo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 21:12:44 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:62786 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751372AbaHRBMm (ORCPT
+	id S1751802AbaHRBPo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 21:15:44 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:35330 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569AbaHRBPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 21:12:42 -0400
-X-IronPort-AV: E=Sophos;i="5.04,345,1406563200"; 
-   d="scan'208";a="34714805"
-Message-ID: <53F15330.5070606@cn.fujitsu.com>
-Date: Mon, 18 Aug 2014 09:13:20 +0800
-From: tangchen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Sun, 17 Aug 2014 21:15:42 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53F153B4.1060309@lge.com>
+Date: Mon, 18 Aug 2014 10:15:32 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@zytor.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH] mem-hotplug: let memblock skip the hotpluggable memory
- regions in __next_mem_range()
-References: <53E8C5AA.5040506@huawei.com> <20140816130456.GH9305@htj.dyndns.org> <53EF6C79.3000603@huawei.com> <20140817110821.GM9305@htj.dyndns.org>
-In-Reply-To: <20140817110821.GM9305@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+Subject: Re: [PATCH 0/2] new APIs to allocate buffer-cache for superblock
+ in non-movable area
+References: <53EC4531.1000904@lge.com> <20140814142610.6f0d4194c373fef188870772@linux-foundation.org> <20140816185208.GA1589@quack.suse.cz>
+In-Reply-To: <20140816185208.GA1589@quack.suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi tj,
 
-On 08/17/2014 07:08 PM, Tejun Heo wrote:
-> Hello,
->
-> On Sat, Aug 16, 2014 at 10:36:41PM +0800, Xishi Qiu wrote:
->> numa_clear_node_hotplug()? There is only numa_clear_kernel_node_hotplug().
-> Yeah, that one.
->
->> If we don't clear hotpluggable flag in free_low_memory_core_early(), the
->> memory which marked hotpluggable flag will not free to buddy allocator.
->> Because __next_mem_range() will skip them.
+
+2014-08-17 오전 3:52, Jan Kara 쓴 글:
+> On Thu 14-08-14 14:26:10, Andrew Morton wrote:
+>> On Thu, 14 Aug 2014 14:12:17 +0900 Gioh Kim <gioh.kim@lge.com> wrote:
 >>
->> free_low_memory_core_early
->> 	for_each_free_mem_range
->> 		for_each_mem_range
->> 			__next_mem_range		
-> Ah, okay, so the patch fixes __next_mem_range() and thus makes
-> free_low_memory_core_early() to skip hotpluggable regions unlike
-> before.  Please explain things like that in the changelog.  Also,
-> what's its relationship with numa_clear_kernel_node_hotplug()?  Do we
-> still need them?  If so, what are the different roles that these two
-> separate places serve?
+>>> This patch try to solve problem that a long-lasting page caches of
+>>> ext4 superblock and journaling of superblock disturb page migration.
+>>>
+>>> I've been testing CMA feature on my ARM-based platform
+>>> and found that two page caches cannot be migrated.
+>>> They are page caches of superblock of ext4 filesystem and its journaling data.
+>>>
+>>> Current ext4 reads superblock with sb_bread() that allocates page
+>>> from movable area. But the problem is that ext4 hold the page until
+>>> it is unmounted. If root filesystem is ext4 the page cannot be migrated forever.
+>>> And also the journaling data for the superblock cannot be migreated.
+>>>
+>>> I introduce a new API for allocating page cache from non-movable area.
+>>> It is useful for ext4/ext3 and others that want to hold page cache for a long time.
+>>
+>> All seems reasonable to me.  The additional overhead in buffer.c from
+>> additional function arguments is regrettable but I don't see a
+>> non-hacky alternative.
+>>
+>> One vital question which the changelog doesn't really address (it
+>> should): how important is this patch?  Is your test system presently
+>> "completely dead in the water utterly unusable" or "occasionally not
+>> quite as good as it could be".  Somewhere in between?
+>    I would be also interested in how much these patches make things better.
+> Because I would expect all metadata that is currently journalled to be
+> unmovable as well.
+>
+> 								Honza
+>
 
-numa_clear_kernel_node_hotplug() only clears hotplug flags for the nodes
-the kernel resides in, not for hotpluggable nodes. The reason why we did
-this is to enable the kernel to allocate memory in case all the nodes are
-hotpluggable.
+I'm so sorry for lacking of detail.
 
-And we clear hotplug flags for all the nodes in free_low_memory_core_early()
-is because if we do not, all hotpluggable memory won't be able to be freed
-to buddy after Qiu's patch.
+My test platform has totally 1GB memory, 256MB for CMA and 768MB for normal.
+I applied Joonsoo's patch: https://lkml.org/lkml/2014/5/28/64, so that
+3/4 of allocation take place in normal area and 1/4 allocation take place in CMA area.
 
-Thanks.
+And my platform has 4 ext4 partitions. Each ext4 partition has 2 page caches for superblock that
+are what this patch tries to move to out of CMA area.
+Therefore there are 8 page caches (8 pages size) that can prevent page migration.
 
+My test scenario is trying to allocate all CMA area: repeating 16MB allocation until all CMA area are allocated.
+In the most cases 2 pages are allocated from CMA area and one allocation among 16 tries to allocation failed.
+It is rare case that every allocation successes.
+
+Applying this patch no page cache is allocation from CMA area and every allocation successes.
+
+Please inform me if you need any information.
