@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828AbaHRDVb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 23:21:31 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:58821 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaHRDV3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 23:21:29 -0400
-Message-ID: <53F17068.5000005@huawei.com>
-Date: Mon, 18 Aug 2014 11:18:00 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1751933AbaHRDYh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 23:24:37 -0400
+Received: from imap.thunk.org ([74.207.234.97]:36240 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751824AbaHRDYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 23:24:34 -0400
+Date: Sun, 17 Aug 2014 23:24:22 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+Subject: Re: [PATCH 0/2] new APIs to allocate buffer-cache for superblock in
+ non-movable area
+Message-ID: <20140818032422.GD23084@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Gioh Kim <gioh.kim@lge.com>, Jan Kara <jack@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+	Joonsoo Kim <js1304@gmail.com>,
+	=?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+References: <53EC4531.1000904@lge.com>
+ <20140814142610.6f0d4194c373fef188870772@linux-foundation.org>
+ <20140816185208.GA1589@quack.suse.cz>
+ <53F153B4.1060309@lge.com>
 MIME-Version: 1.0
-To: tangchen <tangchen@cn.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mem-hotplug: let memblock skip the hotpluggable memory
- regions in __next_mem_range()
-References: <53E8C5AA.5040506@huawei.com> <20140816130456.GH9305@htj.dyndns.org> <53EF6C79.3000603@huawei.com> <20140817110821.GM9305@htj.dyndns.org> <53F15330.5070606@cn.fujitsu.com>
-In-Reply-To: <53F15330.5070606@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.53F170E8.00DD,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: d09b3ad69fc51ce95d8baab4901da055
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F153B4.1060309@lge.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/18 9:13, tangchen wrote:
-
-> Hi tj,
+On Mon, Aug 18, 2014 at 10:15:32AM +0900, Gioh Kim wrote:
 > 
-> On 08/17/2014 07:08 PM, Tejun Heo wrote:
->> Hello,
->>
->> On Sat, Aug 16, 2014 at 10:36:41PM +0800, Xishi Qiu wrote:
->>> numa_clear_node_hotplug()? There is only numa_clear_kernel_node_hotplug().
->> Yeah, that one.
->>
->>> If we don't clear hotpluggable flag in free_low_memory_core_early(), the
->>> memory which marked hotpluggable flag will not free to buddy allocator.
->>> Because __next_mem_range() will skip them.
->>>
->>> free_low_memory_core_early
->>>     for_each_free_mem_range
->>>         for_each_mem_range
->>>             __next_mem_range       
->> Ah, okay, so the patch fixes __next_mem_range() and thus makes
->> free_low_memory_core_early() to skip hotpluggable regions unlike
->> before.  Please explain things like that in the changelog.  Also,
->> what's its relationship with numa_clear_kernel_node_hotplug()?  Do we
->> still need them?  If so, what are the different roles that these two
->> separate places serve?
+> My test platform has totally 1GB memory, 256MB for CMA and 768MB for normal.
+> I applied Joonsoo's patch: https://lkml.org/lkml/2014/5/28/64, so that
+> 3/4 of allocation take place in normal area and 1/4 allocation take place in CMA area.
 > 
-> numa_clear_kernel_node_hotplug() only clears hotplug flags for the nodes
-> the kernel resides in, not for hotpluggable nodes. The reason why we did
-> this is to enable the kernel to allocate memory in case all the nodes are
-> hotpluggable.
-> 
+> And my platform has 4 ext4 partitions. Each ext4 partition has 2 page caches for superblock that
+> are what this patch tries to move to out of CMA area.
+> Therefore there are 8 page caches (8 pages size) that can prevent page migration.
 
-Hi TangChen,
+Yes, but are you actually *using* the ext4 partitions for anything?
+If this is a realistic real world use case, file systems are used to
+store, well, files, and that means there will be inodes and dentry
+cache entries that will also be allocated.  Does your test scenario
+reflect real world usage?
 
-I find a problem in numa_init() (arch/x86/mm/numa.c)
-numa_init()
-	...
-	ret = init_func();  // this will mark hotpluggable flag from SRAT
-	...
-	memblock_set_bottom_up(false);
-	...
-	ret = numa_register_memblks(&numa_meminfo);  // this will alloc node data(pglist_data) 
-	...
-	numa_clear_kernel_node_hotplug();  // in case all the nodes are hotpluggable
-	...
+Cheers,
 
-If all the nodes are marked hotpluggable flag, alloc node data will fail.
-Because __next_mem_range_rev() will skip the hotpluggable memory regions.
-numa_register_memblks()
-	setup_node_data()
-		memblock_find_in_range_node()
-			__memblock_find_range_top_down()
-				for_each_mem_range_rev()
-					__next_mem_range_rev()
-
-What do you think?
-How about move numa_clear_kernel_node_hotplug() into numa_register_memblks(),
-like this:
-
-numa_register_memblks()
-
-...
-                memblock_set_node(mb->start, mb->end - mb->start,
-                                  &memblock.reserved, mb->nid);
-        }
-
-+        numa_clear_kernel_node_hotplug();
-
-        /*
-         * If sections array is gonna be used for pfn -> nid mapping, check
-...
-
-Thanks,
-Xishi Qiu
-
-> And we clear hotplug flags for all the nodes in free_low_memory_core_early()
-> is because if we do not, all hotpluggable memory won't be able to be freed
-> to buddy after Qiu's patch.
-> 
-> Thanks.
-> 
-> 
-> .
-> 
-
-
-
+						- Ted
