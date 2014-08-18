@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbaHREiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 00:38:50 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54279 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750762AbaHREit (ORCPT
+	id S1751349AbaHREon (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 00:44:43 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:57894 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaHREom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 00:38:49 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Darren Hart <dvhart@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>, Aaron Lu <aaron.lu@intel.com>,
-        Max Eliaser <max.eliaser@intel.com>, linux-acpi@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 6/9] gpiolib: add API to get gpio desc and flags
-Date: Mon, 18 Aug 2014 06:57:41 +0200
-Message-ID: <1927766.GeLld99ozq@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <D016516D.A1AFA%dvhart@linux.intel.com>
-References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com> <20140817130004.4B9FDC4137F@trevor.secretlab.ca> <D016516D.A1AFA%dvhart@linux.intel.com>
+	Mon, 18 Aug 2014 00:44:42 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53F184B6.5080503@lge.com>
+Date: Mon, 18 Aug 2014 13:44:38 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+Subject: Re: [PATCH 0/2] new APIs to allocate buffer-cache for superblock
+ in non-movable area
+References: <53EC4531.1000904@lge.com> <20140814142610.6f0d4194c373fef188870772@linux-foundation.org> <20140816185208.GA1589@quack.suse.cz> <53F153B4.1060309@lge.com> <20140818032422.GD23084@thunk.org>
+In-Reply-To: <20140818032422.GD23084@thunk.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, August 17, 2014 12:43:38 PM Darren Hart wrote:
-> On 8/17/14, 6:00, "Grant Likely" <grant.likely@secretlab.ca> wrote:
-> 
-> >>
-> >>+	/* Using device tree? */
-> >>+	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-> >>+		desc = of_find_gpio(dev, NULL, idx, flags);
-> >
-> >of_find_gpio() doesn't exist.
-> 
-> Hrm... As of 3.16.0 (e64df3ebe8262c8203d1fe4f541e0241c3112c01)
-> 
-> $ git blame -L1455,1456 drivers/gpio/gpiolib.c
-> bae48da2 (Alexandre Courbot 2013-10-17 10:21:38 -0700 1455) static struct
-> gpio_desc *of_find_gpio(struct device *dev, const char *con_id,
-> 
-> Have we removed this in -next or something? (on the plane, will verify
-> upon landing)
 
-In 3.17-rc1:
 
-rafael@vostro:~/src/linux-pm> grep -r of_find_gpio *
-drivers/gpio/gpiolib.c:static struct gpio_desc *of_find_gpio(struct device *dev, const char *con_id,
-drivers/gpio/gpiolib.c:         desc = of_find_gpio(dev, con_id, idx, &lookupflags);
+2014-08-18 오후 12:24, Theodore Ts'o 쓴 글:
+> On Mon, Aug 18, 2014 at 10:15:32AM +0900, Gioh Kim wrote:
+>>
+>> My test platform has totally 1GB memory, 256MB for CMA and 768MB for normal.
+>> I applied Joonsoo's patch: https://lkml.org/lkml/2014/5/28/64, so that
+>> 3/4 of allocation take place in normal area and 1/4 allocation take place in CMA area.
+>>
+>> And my platform has 4 ext4 partitions. Each ext4 partition has 2 page caches for superblock that
+>> are what this patch tries to move to out of CMA area.
+>> Therefore there are 8 page caches (8 pages size) that can prevent page migration.
+>
+> Yes, but are you actually *using* the ext4 partitions for anything?
+> If this is a realistic real world use case, file systems are used to
+> store, well, files, and that means there will be inodes and dentry
+> cache entries that will also be allocated.  Does your test scenario
+> reflect real world usage?
 
-Rafael
+Yes. I'm working for LG Electronics.
+My test platform is currently selling item in the market.
+And also I test my patch when my platform is working as if real user uses it.
 
+I think the page caches of the inodes and dentry are held for short time.
+I can see pairs of get_bh and put_bh in inodes/dentry handling.
+
+I think inodes is allocated by kmem_cache_alloc in ext4_alloc_inode().
+It is non-movable area allocation.
+
+
+>
+> Cheers,
+>
+> 						- Ted
+>
