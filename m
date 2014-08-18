@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaHRR0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:26:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54378 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751793AbaHRR0e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 13:26:34 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, "Dmitriy B." <rzk333@gmail.com>,
-        Yassin Jaffer <yassinjaffer@gmail.com>, Jonas Meyer <quitte@gmail.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 2/2] mtd: nand: add sunxi NFC dt bindings doc
-Date: Mon, 18 Aug 2014 19:26:28 +0200
-Message-Id: <1408382788-32153-3-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408382788-32153-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1408382788-32153-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1751988AbaHRR1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:27:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33763 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751597AbaHRR1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 13:27:19 -0400
+Message-ID: <53F23761.6000904@linux.vnet.ibm.com>
+Date: Mon, 18 Aug 2014 22:56:57 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: alex.shi@intel.com, vincent.guittot@linaro.org, peterz@infradead.org,
+        pjt@google.com, efault@gmx.de, rjw@rjwysocki.net,
+        morten.rasmussen@arm.com, svaidy@linux.vnet.ibm.com,
+        arjan@linux.intel.com, mingo@kernel.org, len.brown@intel.com,
+        yuyang.du@intel.com, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, corbet@lwn.net, catalin.marinas@arm.com,
+        markgross@thegnar.org, sundar.iyer@intel.com,
+        linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com,
+        Lorenzo.Pieralisi@arm.com, mike.turquette@linaro.org,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de
+Subject: Re: [RFC PATCH V2 01/19] sched/power: Remove cpu idle state selection
+ and cpu frequency tuning
+References: <20140811113000.31956.52857.stgit@preeti.in.ibm.com> <20140811113145.31956.32224.stgit@preeti.in.ibm.com> <alpine.LFD.2.11.1408181125100.29347@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1408181125100.29347@knanqh.ubzr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081817-0320-0000-0000-000000413C0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the sunxi NAND Flash Controller dt bindings documentation.
+On 08/18/2014 09:09 PM, Nicolas Pitre wrote:
+> On Mon, 11 Aug 2014, Preeti U Murthy wrote:
+> 
+>> As a first step towards improving the power awareness of the scheduler,
+>> this patch enables a "dumb" state where all power management is turned off.
+>> Whatever additionally we put into the kernel for cpu power management must
+>> do better than this in terms of performance as well as powersavings.
+>> This will enable us to benchmark and optimize the power aware scheduler
+>> from scratch.If we are to benchmark it against the performance of the
+>> existing design, we will get sufficiently distracted by the performance
+>> numbers and get steered away from a sane design.
+> 
+> I understand your goal here, but people *will* compare performance 
+> between the old and the new design anyway.  So I think it would be a 
+> better approach to simply let the existing code be and create a new 
+> scheduler-based governor that can be swapped with the existing ones at 
+> run time.  Eventually we'll want average users to test and compare this, 
+> and asking them to recompile a second kernel and reboot between them 
+> might get unwieldy to many people.
+> 
+> And by allowing both to coexist at run time, we're making sure both the 
+> old and the new code are built helping not breaking the old code.  And 
+> that will also cut down on the number of #ifdefs in many places.
+> 
+> In other words, CONFIG_SCHED_POWER is needed to select the scheduler 
+> based governor but it shouldn't force the existing code disabled.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/mtd/sunxi-nand.txt         | 45 ++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+I don't think I understand you here. So are you proposing a runtime
+switch like a sysfs interface instead of a config switch? Wouldn't that
+be unwise given that its a complete turnaround of the behavior kernel
+after the switch? I agree that the first patch is a dummy patch, its
+meant to ensure that we have *atleast* the power efficiency that this
+patch brings in. Of course after that point this patch is a no-op. In
+fact the subsequent patches will mitigate the effect of this.
 
-diff --git a/Documentation/devicetree/bindings/mtd/sunxi-nand.txt b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
-new file mode 100644
-index 0000000..798c691
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
-@@ -0,0 +1,45 @@
-+Allwinner NAND Flash Controller (NFC)
-+
-+Required properties:
-+- compatible : "allwinner,sun4i-nand".
-+- reg : shall contain registers location and length for data and reg.
-+- interrupts : shall define the nand controller interrupt.
-+- #address-cells: shall be set to 1. Encode the nand CS.
-+- #size-cells : shall be set to 0.
-+- clocks : shall reference nand controller clocks.
-+- clock-names : nand controller internal clock names. Shall contain :
-+    * "ahb_clk" : AHB gating clock
-+    * "sclk" : nand controller clock
-+
-+Optional children nodes:
-+Children nodes represent the available nand chips.
-+
-+Optional properties:
-+- allwinner,rb : shall contain the native Ready/Busy ids.
-+ or
-+- rb-gpios : shall contain the gpios used as R/B pins.
-+- nand-ecc-mode : one of the supported ECC modes ("hw", "hw_syndrome", "soft",
-+  "soft_bch" or "none")
-+
-+see Documentation/devicetree/mtd/nand.txt for generic bindings.
-+
-+
-+Examples:
-+nfc: nand@01c03000 {
-+	compatible = "allwinner,sun4i-nand";
-+	reg = <0x01c03000 0x1000>;
-+	interrupts = <0 37 1>;
-+	clocks = <&ahb_gates 13>, <&nand_clk>;
-+	clock-names = "ahb_clk", "sclk";
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&nand_pins_a &nand_cs0_pins_a &nand_rb0_pins_a>;
-+	status = "okay";
-+
-+	nand@0 {
-+		reg = <0>;
-+		allwinner,rb = <0>;
-+		nand-ecc-mode = "soft_bch";
-+	};
-+};
--- 
-1.9.1
+Regards
+Preeti U Murthy
+> 
+> 
+>> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
