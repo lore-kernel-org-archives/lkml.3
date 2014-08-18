@@ -1,119 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383AbaHRWqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 18:46:43 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:42617 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbaHRWql (ORCPT
+	id S1752471AbaHRWrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 18:47:03 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:45186 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390AbaHRWqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 18:46:41 -0400
+	Mon, 18 Aug 2014 18:46:44 -0400
 From: David Matlack <dmatlack@google.com>
 To: pbonzini@redhat.com
 Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         avi.kivity@gmail.com, mtosatti@redhat.com,
         David Matlack <dmatlack@google.com>, stable@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] kvm: fix potentially corrupt mmio cache
-Date: Mon, 18 Aug 2014 15:46:06 -0700
-Message-Id: <1408401967-27211-1-git-send-email-dmatlack@google.com>
+Subject: [PATCH 2/2] kvm: x86: fix stale mmio cache bug
+Date: Mon, 18 Aug 2014 15:46:07 -0700
+Message-Id: <1408401967-27211-2-git-send-email-dmatlack@google.com>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1408401967-27211-1-git-send-email-dmatlack@google.com>
+References: <1408401967-27211-1-git-send-email-dmatlack@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vcpu exits and memslot mutations can run concurrently as long as the
-vcpu does not aquire the slots mutex. Thus it is theoretically possible
-for memslots to change underneath a vcpu that is handling an exit.
+The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
+up to userspace:
 
-If we increment the memslot generation number again after
-synchronize_srcu_expedited(), vcpus can safely cache memslot generation
-without maintaining a single rcu_dereference through an entire vm exit.
-And much of the x86/kvm code does not maintain a single rcu_dereference
-of the current memslots during each exit.
+(1) Guest accesses gpa X without a memory slot. The gfn is cached in
+struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
+the SPTE write-execute-noread so that future accesses cause
+EPT_MISCONFIGs.
 
-We can prevent the following case:
+(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
+covering the page just accessed.
 
-   vcpu (CPU 0)                             | thread (CPU 1)
---------------------------------------------+--------------------------
-1  vm exit                                  |
-2  decide to cache something based on       |
-     old memslots                           |
-3                                           | change memslots
-4                                           | increment generation
-5  tag cache with new memslot generation    |
-...                                         |
-   <action based on cache occurs even       |
-    though the caching decision was based   |
-    on the old memslots>                    |
-...                                         |
-   <action *continues* to occur until next  |
-    memslot generation change, which may    |
-    be never>                               |
+(3) Guest attempts to read or write to gpa X again. On Intel, this
+generates an EPT_MISCONFIG. The memory slot generation number that
+was incremented in (2) would normally take care of this but we fast
+path mmio faults through quickly_check_mmio_pf(), which only checks
+the per-vcpu mmio cache. Since we hit the cache, KVM passes a
+KVM_EXIT_MMIO up to userspace.
 
-By incrementing the generation again after synchronizing kvm->srcu
-readers, we guarantee the generation cached in (5) will very soon
-become invalid.
+This patch fixes the issue by using the memslot generation number
+to validate the mmio cache.
+
+[ xiaoguangrong: adjust the code to make it simpler for stable-tree fix. ]
 
 Cc: stable@vger.kernel.org
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Signed-off-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- virt/kvm/kvm_main.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/kvm_host.h |  1 +
+ arch/x86/kvm/mmu.c              |  4 ++--
+ arch/x86/kvm/mmu.h              |  2 ++
+ arch/x86/kvm/x86.h              | 21 ++++++++++++++++-----
+ 4 files changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 4b6c01b..86d3697 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -95,8 +95,6 @@ static int hardware_enable_all(void);
- static void hardware_disable_all(void);
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 49205d0..f518d14 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -479,6 +479,7 @@ struct kvm_vcpu_arch {
+ 	u64 mmio_gva;
+ 	unsigned access;
+ 	gfn_t mmio_gfn;
++	unsigned int mmio_gen;
  
- static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
--static void update_memslots(struct kvm_memslots *slots,
--			    struct kvm_memory_slot *new, u64 last_generation);
+ 	struct kvm_pmu pmu;
  
- static void kvm_release_pfn_dirty(pfn_t pfn);
- static void mark_page_dirty_in_slot(struct kvm *kvm,
-@@ -685,8 +683,7 @@ static void sort_memslots(struct kvm_memslots *slots)
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 9314678..e00fbfe 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -234,7 +234,7 @@ static unsigned int get_mmio_spte_generation(u64 spte)
+ 	return gen;
  }
  
- static void update_memslots(struct kvm_memslots *slots,
--			    struct kvm_memory_slot *new,
--			    u64 last_generation)
-+			    struct kvm_memory_slot *new)
+-static unsigned int kvm_current_mmio_generation(struct kvm *kvm)
++unsigned int kvm_current_mmio_generation(struct kvm *kvm)
  {
- 	if (new) {
- 		int id = new->id;
-@@ -697,8 +694,6 @@ static void update_memslots(struct kvm_memslots *slots,
- 		if (new->npages != npages)
- 			sort_memslots(slots);
- 	}
--
--	slots->generation = last_generation + 1;
+ 	/*
+ 	 * Init kvm generation close to MMIO_MAX_GEN to easily test the
+@@ -3163,7 +3163,7 @@ static void mmu_sync_roots(struct kvm_vcpu *vcpu)
+ 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 		return;
+ 
+-	vcpu_clear_mmio_info(vcpu, ~0ul);
++	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
+ 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
+ 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
+ 		hpa_t root = vcpu->arch.mmu.root_hpa;
+diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+index b982112..e2d902a 100644
+--- a/arch/x86/kvm/mmu.h
++++ b/arch/x86/kvm/mmu.h
+@@ -76,6 +76,8 @@ enum {
+ };
+ 
+ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct);
++unsigned int kvm_current_mmio_generation(struct kvm *kvm);
++
+ void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context);
+ void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, struct kvm_mmu *context,
+ 		bool execonly);
+diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+index 8c97bac..ae7006d 100644
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/kvm_host.h>
+ #include "kvm_cache_regs.h"
++#include "mmu.h"
+ 
+ static inline void kvm_clear_exception_queue(struct kvm_vcpu *vcpu)
+ {
+@@ -78,15 +79,23 @@ static inline void vcpu_cache_mmio_info(struct kvm_vcpu *vcpu,
+ 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
+ 	vcpu->arch.access = access;
+ 	vcpu->arch.mmio_gfn = gfn;
++	vcpu->arch.mmio_gen = kvm_current_mmio_generation(vcpu->kvm);
++}
++
++static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
++{
++	return vcpu->arch.mmio_gen == kvm_current_mmio_generation(vcpu->kvm);
  }
  
- static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
-@@ -720,10 +715,19 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
+ /*
+- * Clear the mmio cache info for the given gva,
+- * specially, if gva is ~0ul, we clear all mmio cache info.
++ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
++ * clear all mmio cache info.
+  */
++#define MMIO_GVA_ANY (~(gva_t)0)
++
+ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
  {
- 	struct kvm_memslots *old_memslots = kvm->memslots;
+-	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
++	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
+ 		return;
  
--	update_memslots(slots, new, kvm->memslots->generation);
-+	slots->generation = old_memslots->generation + 1;
-+
-+	update_memslots(slots, new);
- 	rcu_assign_pointer(kvm->memslots, slots);
- 	synchronize_srcu_expedited(&kvm->srcu);
+ 	vcpu->arch.mmio_gva = 0;
+@@ -94,7 +103,8 @@ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
  
-+	/*
-+	 * Increment the new memslot generation a second time. This prevents
-+	 * vm exits that race with memslot updates from caching a memslot
-+	 * generation that will (potentially) be valid forever.
-+	 */
-+	slots->generation++;
-+
- 	kvm_arch_memslots_updated(kvm);
+ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
+ {
+-	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
++	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
+ 		return true;
  
- 	return old_memslots;
+ 	return false;
+@@ -102,7 +112,8 @@ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
+ 
+ static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
+ {
+-	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
++	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
+ 		return true;
+ 
+ 	return false;
 -- 
 2.1.0.rc2.206.gedb03e5
 
