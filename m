@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaHRFGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 01:06:39 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:39655 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaHRFGi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 01:06:38 -0400
-X-AuditID: 85900ec0-d3b2cb9000001514-aa-53f189dbf354
-Message-ID: <53F189DA.1040802@hitachi.com>
-Date: Mon, 18 Aug 2014 14:06:34 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1751300AbaHRFcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 01:32:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51632 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750825AbaHRFcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 01:32:05 -0400
+Message-ID: <53F18FCE.7060005@suse.com>
+Date: Mon, 18 Aug 2014 07:31:58 +0200
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: emilne@redhat.com
-Cc: Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: Re: [RFC PATCH 04/10] scsi/constants: Cleanup printk message
- in scsi_dump_sense_buffer()
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>  <20140808115014.6768.44632.stgit@yuno-kbuild.novalocal> <1408115326.1223.147.camel@localhost.localdomain>
-In-Reply-To: <1408115326.1223.147.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ben Widawsky <benjamin.widawsky@intel.com>
+Subject: Re: [Intel-gfx] Usage of _PAGE_PCD et al in i915 driver
+References: <53E4B338.3040904@suse.com> <CAKMK7uEqfLudZbj1ArKJVXET69d+g+SA3=GtXQ0zXi+FeudAag@mail.gmail.com> <20140813080705.31a0901a@jbarnes-desktop> <53EC331F.3000508@suse.com> <20140815102157.GR4193@intel.com>
+In-Reply-To: <20140815102157.GR4193@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/08/16 0:08), Ewan Milne wrote:
-> On Fri, 2014-08-08 at 11:50 +0000, Yoshihiro YUNOMAE wrote:
->> Unrecognized sense data should be output after linebuf is filled because
->> "[%s] Unrecognized sense data (in hex): %s" message is output many times in
->> loop.
+On 08/15/2014 12:21 PM, Ville Syrjälä wrote:
+> On Thu, Aug 14, 2014 at 05:55:11AM +0200, Juergen Gross wrote:
+>> On 08/13/2014 05:07 PM, Jesse Barnes wrote:
+>>> On Fri, 8 Aug 2014 15:14:15 +0200
+>>> Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>>>
+>>>> Adding relevant mailing lists.
+>>>>
+>>>> On Fri, Aug 8, 2014 at 1:23 PM, Juergen Gross <jgross@suse.com> wrote:
+>>>>> I'm just about to create a patch for full PAT support in the Linux
+>>>>> kernel, including Xen. For this purpose I introduce a translation
+>>>>> between cache modes and pte bits.
+>>>>>
+>>>>> Scanning the kernel sources for usage of the cache mode bits in the
+>>>>> pte I discovered  drivers/gpu/drm/i915/i915_gem_gtt.h is using
+>>>>> _PAGE_PCD, _PAGE_PWT and _PAGE_PAT. I think those defines are used
+>>>>> to create ptes not for usage by the main processor, but for the
+>>>>> graphics processor. Is this true? In this case I'd suggest to define
+>>>>> i915-specific macros instead of using the x86 ones.
+>>>>
+>>>> Yeah, those are gpu specific PAT tables, but the hw engineers
+>>>> specifically designed this to match, and we've tried to follow the cpu
+>>>> side to match it. Especially in the future that will be somewhat
+>>>> important, since we want to fully share the entire address space
+>>>> between cpu and gpu on the next platform. Jesse is working on that.
+>>>
+>>> Right, we have an x86 compatible MMU in the GPU itself, so re-using the
+>>> defines makes sense.  I suppose with your work you'll move them and
+>>> make them a bit more opaque?  If so, we'll still want a way to get at
+>>> them directly, or access your mapping functions for generating PTE bits
+>>> for the GPU MMU.
 >>
->> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
->> Cc: Hannes Reinecke <hare@suse.de>
->> Cc: Doug Gilbert <dgilbert@interlog.com>
->> Cc: Martin K. Petersen <martin.petersen@oracle.com>
->> Cc: Christoph Hellwig <hch@lst.de>
->> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
->> Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
->> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> ---
->>   drivers/scsi/constants.c |   13 +++++--------
->>   1 file changed, 5 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/scsi/constants.c b/drivers/scsi/constants.c
->> index 5956d4d..6fad6b4 100644
->> --- a/drivers/scsi/constants.c
->> +++ b/drivers/scsi/constants.c
->> @@ -1385,16 +1385,13 @@ EXPORT_SYMBOL(scsi_print_sense_hdr);
->>
->>   static void
->>   scsi_dump_sense_buffer(struct scsi_device *sdev, const char *prefix,
->> -		       const unsigned char *sense_buffer, int sense_len,
->> -		       struct scsi_sense_hdr *sshdr)
->> +		       const unsigned char *sense_buffer, int sense_len)
->>   {
->>   	char linebuf[128];
->>   	int i, linelen, remaining;
->>
->>   	if (sense_len < 32)
->>   		sense_len = 32;
->> -	sdev_printk(KERN_INFO, sdev,
->> -		    "[%s] Unrecognized sense data (in hex):", prefix);
->>
->>   	remaining = sense_len;
->>   	for (i = 0; i < sense_len; i += 16) {
->> @@ -1403,9 +1400,10 @@ scsi_dump_sense_buffer(struct scsi_device *sdev, const char *prefix,
->>
->>   		hex_dump_to_buffer(sense_buffer + i, linelen, 16, 1,
->>   				   linebuf, sizeof(linebuf), false);
->> -		sdev_printk(KERN_INFO, sdev, "[%s] Sense: %s\n",
->> -			    prefix, linebuf);
->>   	}
->> +	sdev_printk(KERN_INFO, sdev,
->> +		    "[%s] Unrecognized sense data (in hex): %s",
->> +		    prefix, linebuf);
->>   }
+>> Using the mapping functions I'm introducing should work, if the MMU has
+>> an x86 compatible MSR_IA32_CR_PAT which is configured the same way as
+>> on the x86 processor (be aware that Xen is using another MSR_IA32_CR_PAT
+>> setting as the Linux kernel).
 >
-> See my earlier comment regarding PATCH 03/10.
+> We have a PAT that is structured the same way as the x86 PAT. But the
+> contents of the PAT entries are obviously specific to the GPU so it's
+> not identical. But the pcd/pwt/pat bits index the PAT in exactly the
+> same way as on x86.
 >
-> This doesn't look right -- In Hannes' tree what the code is doing is
-> printing out a separate line for each 16 bytes of the sense data.
-> Your change will cause only the last (partial?) 16 bytes to be printed.
-
-That's true. We should not apply this as well.
-
-> The removal of the unused sshdr argument is fine, though.
-
-Thanks!
-
-Yoshihiro YUNOMAE
-
-> -Ewan
->
->>
->>   static void
->> @@ -1467,8 +1465,7 @@ void __scsi_print_sense(struct scsi_device *sdev, const char *name,
->>
->>   	if (!scsi_normalize_sense(sense_buffer, sense_len, &sshdr)) {
->>   		/* this may be SCSI-1 sense data */
->> -		scsi_dump_sense_buffer(sdev, name, sense_buffer,
->> -				       sense_len, &sshdr);
->> +		scsi_dump_sense_buffer(sdev, name, sense_buffer, sense_len);
->>   		return;
->>   	}
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+> See bdw_setup_private_ppat() and chv_setup_private_ppat() for how we
+> set up the PAT.
 >
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+So you are using the PAT bit in the ptes, but the semantic for the GPU
+will be different as for the x86 processor, because the GPU PAT is set
+up differently from the x86 one.
+
+In case you are sharing ptes between GPU and x86 processor in future,
+this might lead to problems when the x86 processor will use ptes with
+the PAT bit set.
 
 
+Juergen
