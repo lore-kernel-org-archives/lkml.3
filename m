@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaHRJgw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:36:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43192 "EHLO
+	id S1753251AbaHRJgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:36:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43075 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465AbaHRJgs (ORCPT
+	with ESMTP id S1753202AbaHRJgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:48 -0400
+	Mon, 18 Aug 2014 05:36:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Vasily Averin <vvs@openvz.org>, Christoph Hellwig <hch@lst.de>,
+        Neil Brown <neilb@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 137/137] sctp: fix possible seqlock seadlock in sctp_packet_transmit()
-Date: Mon, 18 Aug 2014 10:33:18 +0100
-Message-Id: <1408354398-10226-138-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 115/137] fs: umount on symlink leaks mnt count
+Date: Mon, 18 Aug 2014 10:32:56 +0100
+Message-Id: <1408354398-10226-116-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,74 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Vasily Averin <vvs@parallels.com>
 
-commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 upstream.
+commit 295dc39d941dc2ae53d5c170365af4c9d5c16212 upstream.
 
-Dave reported following splat, caused by improper use of
-IP_INC_STATS_BH() in process context.
+Currently umount on symlink blocks following umount:
 
-BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
-caller is __this_cpu_preempt_check+0x13/0x20
-CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
- ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
- 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
- ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
-Call Trace:
- [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
- [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
- [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
- [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
- [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
- [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
- [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
- [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
- [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
- [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
- [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
- [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
- [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
- [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
- [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
- [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
- [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
- [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
- [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
- [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
- [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
- [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
- [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
- [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
+/vz is separate mount
 
-This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
-seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
-deadlock in ip6_finish_output2")
+drwxr-xr-x.  2 root root       4096 Jul 19 01:14 testdir
+lrwxrwxrwx.  1 root root         11 Jul 19 01:16 testlink -> /vz/testdir
+umount: /vz/testlink: not mounted (expected)
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+umount: /vz: device is busy. (unexpected)
+
+In this case mountpoint_last() gets an extra refcount on path->mnt
+
+Signed-off-by: Vasily Averin <vvs@openvz.org>
+Acked-by: Ian Kent <raven@themaw.net>
+Acked-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Cc: Neil Brown <neilb@suse.de>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/output.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/namei.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index 013a07d9c454..543fd836f439 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -612,7 +612,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
- 
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
+diff --git a/fs/namei.c b/fs/namei.c
+index a10bd2f8b66b..2d36c4651627 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2260,10 +2260,11 @@ error_check:
+ 			dput(dentry);
+ 		} else {
+ 			path->dentry = dentry;
+-			path->mnt = mntget(nd->path.mnt);
++			path->mnt = nd->path.mnt;
+ 			if (should_follow_link(dentry->d_inode,
+ 						nd->flags & LOOKUP_FOLLOW))
+ 				return 1;
++			mntget(path->mnt);
+ 			follow_mount(path);
+ 		}
+ 	}
 -- 
 1.9.1
 
