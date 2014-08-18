@@ -1,122 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaHRO2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:28:36 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:34566 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086AbaHRO2d (ORCPT
+	id S1752180AbaHRO2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:28:53 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44057 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751788AbaHRO2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:28:33 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Dirk Behme <dirk.behme@de.bosch.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Subject: [PATCH v9 15/16] serial: imx: clean up imx_poll_get_char()
-Date: Mon, 18 Aug 2014 15:28:10 +0100
-Message-Id: <1408372091-12689-16-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
-References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
+	Mon, 18 Aug 2014 10:28:51 -0400
+Date: Mon, 18 Aug 2014 15:26:48 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9] arm64: Add architectural support for PCIe
+Message-ID: <20140818142648.GQ20043@localhost>
+References: <1407860760-25252-1-git-send-email-Liviu.Dudau@arm.com>
+ <1407860760-25252-2-git-send-email-Liviu.Dudau@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407860760-25252-2-git-send-email-Liviu.Dudau@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Behme <dirk.behme@de.bosch.com>
+On Tue, Aug 12, 2014 at 05:26:00PM +0100, Liviu Dudau wrote:
+> diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+> index e0ecdcf..dc34039 100644
+> --- a/arch/arm64/include/asm/io.h
+> +++ b/arch/arm64/include/asm/io.h
+> @@ -121,7 +121,8 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+>  /*
+>   *  I/O port access primitives.
+>   */
+> -#define IO_SPACE_LIMIT		0xffff
+> +#define arch_has_dev_port()	(1)
+> +#define IO_SPACE_LIMIT		0x1ffffff
 
-Looking at the get_poll_char() function of the 8250.c serial driver,
-we learn:
+Minor thing, (SZ_32M - 1) may be easier in case we ever change this.
 
-* poll_get_char() doesn't have to save/disable/restore the interrupt
-  registers. No interrupt handling is needed in this function at all.
-  Remove it.
+>  #define PCI_IOBASE		((void __iomem *)(MODULES_VADDR - SZ_32M))
 
-* Don't block in case there is no data available. So instead blocking
-  in the do {} while loop, just return with NO_POLL_CHAR, immediately .
-
-Additionally, while the i.MX6 register URXD[7-0] contain the RX_DATA,
-the upper bits of this register (URXD[15-10]) might contain some
-control flags. To ensure that these are not returned with the data
-read, just mask out URXD[7-0].
-
-These changes fix the 'hang' working with kdb:
-
-$ echo ttymxc3 > /sys/module/kgdboc/parameters/kgdboc
-$ echo g >/proc/sysrq-trigger
-[0]kdb> help
-...
-<hang>
-
-Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
----
- drivers/tty/serial/imx.c | 29 ++++-------------------------
- 1 file changed, 4 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index 044e86d..983668a 100644
---- a/drivers/tty/serial/imx.c
-+++ b/drivers/tty/serial/imx.c
-@@ -80,6 +80,7 @@
- #define URXD_FRMERR	(1<<12)
- #define URXD_BRK	(1<<11)
- #define URXD_PRERR	(1<<10)
-+#define URXD_RX_DATA	(0xFF<<0)
- #define UCR1_ADEN	(1<<15) /* Auto detect interrupt */
- #define UCR1_ADBR	(1<<14) /* Auto detect baud rate */
- #define UCR1_TRDYEN	(1<<13) /* Transmitter ready interrupt enable */
-@@ -1506,32 +1507,10 @@ imx_verify_port(struct uart_port *port, struct serial_struct *ser)
- #if defined(CONFIG_CONSOLE_POLL)
- static int imx_poll_get_char(struct uart_port *port)
- {
--	struct imx_port_ucrs old_ucr;
--	unsigned int status;
--	unsigned char c;
--
--	/* save control registers */
--	imx_port_ucrs_save(port, &old_ucr);
--
--	/* disable interrupts */
--	writel(UCR1_UARTEN, port->membase + UCR1);
--	writel(old_ucr.ucr2 & ~(UCR2_ATEN | UCR2_RTSEN | UCR2_ESCI),
--	       port->membase + UCR2);
--	writel(old_ucr.ucr3 & ~(UCR3_DCD | UCR3_RI | UCR3_DTREN),
--	       port->membase + UCR3);
--
--	/* poll */
--	do {
--		status = readl(port->membase + USR2);
--	} while (~status & USR2_RDR);
--
--	/* read */
--	c = readl(port->membase + URXD0);
--
--	/* restore control registers */
--	imx_port_ucrs_restore(port, &old_ucr);
-+	if (!(readl(port->membase + USR2) & USR2_RDR))
-+		return NO_POLL_CHAR;
- 
--	return c;
-+	return readl(port->membase + URXD0) & URXD_RX_DATA;
- }
- 
- static void imx_poll_put_char(struct uart_port *port, unsigned char c)
 -- 
-1.9.3
-
+Catalin
