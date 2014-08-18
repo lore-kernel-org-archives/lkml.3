@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804AbaHRJfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:35:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42780 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753AbaHRJfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:04 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 069/137] s390/ptrace: fix PSW mask check
-Date: Mon, 18 Aug 2014 10:32:10 +0100
-Message-Id: <1408354398-10226-70-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1752685AbaHRJtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:49:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35940 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752266AbaHRJtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 05:49:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,885,1400050800"; 
+   d="scan'208";a="559946339"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>, hpa@zytor.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH 4/5] KVM: x86: fix check legal type of Variable Range MTRRs  
+Date: Mon, 18 Aug 2014 17:50:30 +0800
+Message-Id: <1408355431-115633-4-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com>
+References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
+The first entry in each pair(IA32_MTRR_PHYSBASEn) defines the base 
+address and memory type for the range; the second entry(IA32_MTRR_PHYSMASKn)
+contains a mask used to determine the address range. The legal values 
+for the type field of IA32_MTRR_PHYSBASEn are 0,1,4,5, and 6. However,
+IA32_MTRR_PHYSMASKn don't have type field. This patch avoid check if 
+the type field is legal for IA32_MTRR_PHYSMASKn.
 
-------------------
-
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-
-commit dab6cf55f81a6e16b8147aed9a843e1691dcd318 upstream.
-
-The PSW mask check of the PTRACE_POKEUSR_AREA command is incorrect.
-For the default user_mode=home address space layout the psw_user_bits
-variable has the home space address-space-control bits set. But the
-PSW_MASK_USER contains PSW_MASK_ASC, the ptrace validity check for the
-PSW mask will therefore always fail.
-
-Fixes CVE-2014-3534
-
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-[ luis: backported to 3.11: used Martin's backport to 3.2 ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 ---
- arch/s390/kernel/ptrace.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/s390/kernel/ptrace.c b/arch/s390/kernel/ptrace.c
-index e9fadb04e3c6..319da563e6cf 100644
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -322,7 +322,9 @@ static int __poke_user(struct task_struct *child, addr_t addr, addr_t data)
- 		 * psw and gprs are stored on the stack
- 		 */
- 		if (addr == (addr_t) &dummy->regs.psw.mask &&
--		    ((data & ~PSW_MASK_USER) != psw_user_bits ||
-+		    (((data^psw_user_bits) & ~PSW_MASK_USER) ||
-+		     (((data^psw_user_bits) & PSW_MASK_ASC) &&
-+		      ((data|psw_user_bits) & PSW_MASK_ASC) == PSW_MASK_ASC) ||
- 		     ((data & PSW_MASK_EA) && !(data & PSW_MASK_BA))))
- 			/* Invalid psw mask. */
- 			return -EINVAL;
-@@ -655,7 +657,10 @@ static int __poke_user_compat(struct task_struct *child,
- 		 */
- 		if (addr == (addr_t) &dummy32->regs.psw.mask) {
- 			/* Build a 64 bit psw mask from 31 bit mask. */
--			if ((tmp & ~PSW32_MASK_USER) != psw32_user_bits)
-+			if (((tmp^psw32_user_bits) & ~PSW32_MASK_USER) ||
-+			    (((tmp^psw32_user_bits) & PSW32_MASK_ASC) &&
-+			     ((tmp|psw32_user_bits) & PSW32_MASK_ASC)
-+			     == PSW32_MASK_ASC))
- 				/* Invalid psw mask. */
- 				return -EINVAL;
- 			regs->psw.mask = (regs->psw.mask & ~PSW_MASK_USER) |
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 204422d..30f55cc 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1767,7 +1767,15 @@ static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 	}
+ 
+ 	/* variable MTRRs */
+-	return valid_mtrr_type(data & 0xff);
++	if (msr >= 0x200 && msr < 0x200 + 2 * KVM_NR_VAR_MTRR) {
++		int idx, is_mtrr_mask;
++
++		idx = (msr - 0x200) / 2;
++		is_mtrr_mask = msr - 0x200 - 2 * idx;
++		if (!is_mtrr_mask)
++			return valid_mtrr_type(data & 0xff);
++	}
++	return true;
+ }
+ 
+ static int set_msr_mtrr(struct kvm_vcpu *vcpu, u32 msr, u64 data)
 -- 
 1.9.1
 
