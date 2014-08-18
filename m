@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaHRO21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:28:27 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37513 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaHRO2Z (ORCPT
+	id S1752142AbaHRO2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:28:36 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:34566 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaHRO2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:28:25 -0400
+	Mon, 18 Aug 2014 10:28:33 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+Cc: Dirk Behme <dirk.behme@de.bosch.com>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
@@ -22,11 +22,12 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Nicolas Pitre <nico@linaro.org>,
+        Daniel Thompson <daniel.thompson@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Subject: [PATCH v9 12/16] serial: amba-pl011: Pass FIQ information to KGDB.
-Date: Mon, 18 Aug 2014 15:28:07 +0100
-Message-Id: <1408372091-12689-13-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v9 15/16] serial: imx: clean up imx_poll_get_char()
+Date: Mon, 18 Aug 2014 15:28:10 +0100
+Message-Id: <1408372091-12689-16-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
 References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
@@ -34,154 +35,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Speculatively register a FIQ resource with KGDB. KGDB will only
-accept it if the kgdb/fiq feature is enabled (both with compile time and
-runtime switches) and the interrupt controller supports FIQ.
+From: Dirk Behme <dirk.behme@de.bosch.com>
 
-By providing this information to KGDB the serial driver offers
-"permission" for KGDB to route the UART interrupt signal from the
-drivers own handler to KGDBs FIQ handler (which will eventually use the
-UART's polled I/O callbacks to interact with the user). This permission
-also implies the amba-pl011 driver has already unmasked RX interrupts
-(otherwise the FIQ handler will never trigger).
+Looking at the get_poll_char() function of the 8250.c serial driver,
+we learn:
 
+* poll_get_char() doesn't have to save/disable/restore the interrupt
+  registers. No interrupt handling is needed in this function at all.
+  Remove it.
+
+* Don't block in case there is no data available. So instead blocking
+  in the do {} while loop, just return with NO_POLL_CHAR, immediately .
+
+Additionally, while the i.MX6 register URXD[7-0] contain the RX_DATA,
+the upper bits of this register (URXD[15-10]) might contain some
+control flags. To ensure that these are not returned with the data
+read, just mask out URXD[7-0].
+
+These changes fix the 'hang' working with kdb:
+
+$ echo ttymxc3 > /sys/module/kgdboc/parameters/kgdboc
+$ echo g >/proc/sysrq-trigger
+[0]kdb> help
+...
+<hang>
+
+Signed-off-by: Dirk Behme <dirk.behme@de.bosch.com>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>
 Cc: linux-serial@vger.kernel.org
 ---
- drivers/tty/serial/amba-pl011.c | 94 ++++++++++++++++++++++++-----------------
- 1 file changed, 55 insertions(+), 39 deletions(-)
+ drivers/tty/serial/imx.c | 29 ++++-------------------------
+ 1 file changed, 4 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index 8572f2a..ec8ddc7 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -58,6 +58,7 @@
- #include <linux/pinctrl/consumer.h>
- #include <linux/sizes.h>
- #include <linux/io.h>
-+#include <linux/kgdb.h>
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 044e86d..983668a 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -80,6 +80,7 @@
+ #define URXD_FRMERR	(1<<12)
+ #define URXD_BRK	(1<<11)
+ #define URXD_PRERR	(1<<10)
++#define URXD_RX_DATA	(0xFF<<0)
+ #define UCR1_ADEN	(1<<15) /* Auto detect interrupt */
+ #define UCR1_ADBR	(1<<14) /* Auto detect baud rate */
+ #define UCR1_TRDYEN	(1<<13) /* Transmitter ready interrupt enable */
+@@ -1506,32 +1507,10 @@ imx_verify_port(struct uart_port *port, struct serial_struct *ser)
+ #if defined(CONFIG_CONSOLE_POLL)
+ static int imx_poll_get_char(struct uart_port *port)
+ {
+-	struct imx_port_ucrs old_ucr;
+-	unsigned int status;
+-	unsigned char c;
+-
+-	/* save control registers */
+-	imx_port_ucrs_save(port, &old_ucr);
+-
+-	/* disable interrupts */
+-	writel(UCR1_UARTEN, port->membase + UCR1);
+-	writel(old_ucr.ucr2 & ~(UCR2_ATEN | UCR2_RTSEN | UCR2_ESCI),
+-	       port->membase + UCR2);
+-	writel(old_ucr.ucr3 & ~(UCR3_DCD | UCR3_RI | UCR3_DTREN),
+-	       port->membase + UCR3);
+-
+-	/* poll */
+-	do {
+-		status = readl(port->membase + USR2);
+-	} while (~status & USR2_RDR);
+-
+-	/* read */
+-	c = readl(port->membase + URXD0);
+-
+-	/* restore control registers */
+-	imx_port_ucrs_restore(port, &old_ucr);
++	if (!(readl(port->membase + USR2) & USR2_RDR))
++		return NO_POLL_CHAR;
  
- #define UART_NR			14
- 
-@@ -1416,8 +1417,61 @@ static void pl011_break_ctl(struct uart_port *port, int break_state)
- 	spin_unlock_irqrestore(&uap->port.lock, flags);
+-	return c;
++	return readl(port->membase + URXD0) & URXD_RX_DATA;
  }
  
-+static int pl011_hwinit(struct uart_port *port)
-+{
-+	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	int retval;
-+
-+	/* Optionaly enable pins to be muxed in and configured */
-+	pinctrl_pm_select_default_state(port->dev);
-+
-+	/*
-+	 * Try to enable the clock producer.
-+	 */
-+	retval = clk_prepare_enable(uap->clk);
-+	if (retval)
-+		return retval;
-+
-+	uap->port.uartclk = clk_get_rate(uap->clk);
-+
-+	/* Clear pending error and receive interrupts */
-+	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
-+	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
-+
-+	/*
-+	 * Save interrupts enable mask, and enable RX interrupts in case if
-+	 * the interrupt is used for NMI entry.
-+	 */
-+	uap->im = readw(uap->port.membase + UART011_IMSC);
-+	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
-+
-+	if (dev_get_platdata(uap->port.dev)) {
-+		struct amba_pl011_data *plat;
-+
-+		plat = dev_get_platdata(uap->port.dev);
-+		if (plat->init)
-+			plat->init();
-+	}
-+	return 0;
-+}
-+
- #ifdef CONFIG_CONSOLE_POLL
- 
-+static int pl011_poll_init(struct uart_port *port)
-+{
-+	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	int retval;
-+
-+	retval = pl011_hwinit(port);
-+
-+#ifdef CONFIG_KGDB_FIQ
-+	if (retval == 0)
-+		kgdb_register_fiq(uap->port.irq);
-+#endif
-+
-+	return retval;
-+}
-+
- static void pl011_quiesce_irqs(struct uart_port *port)
- {
- 	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-@@ -1471,44 +1525,6 @@ static void pl011_put_poll_char(struct uart_port *port,
- 
- #endif /* CONFIG_CONSOLE_POLL */
- 
--static int pl011_hwinit(struct uart_port *port)
--{
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
--	int retval;
--
--	/* Optionaly enable pins to be muxed in and configured */
--	pinctrl_pm_select_default_state(port->dev);
--
--	/*
--	 * Try to enable the clock producer.
--	 */
--	retval = clk_prepare_enable(uap->clk);
--	if (retval)
--		return retval;
--
--	uap->port.uartclk = clk_get_rate(uap->clk);
--
--	/* Clear pending error and receive interrupts */
--	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
--	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
--
--	/*
--	 * Save interrupts enable mask, and enable RX interrupts in case if
--	 * the interrupt is used for NMI entry.
--	 */
--	uap->im = readw(uap->port.membase + UART011_IMSC);
--	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
--
--	if (dev_get_platdata(uap->port.dev)) {
--		struct amba_pl011_data *plat;
--
--		plat = dev_get_platdata(uap->port.dev);
--		if (plat->init)
--			plat->init();
--	}
--	return 0;
--}
--
- static void pl011_write_lcr_h(struct uart_amba_port *uap, unsigned int lcr_h)
- {
- 	writew(lcr_h, uap->port.membase + uap->lcrh_rx);
-@@ -1888,7 +1904,7 @@ static struct uart_ops amba_pl011_pops = {
- 	.config_port	= pl011_config_port,
- 	.verify_port	= pl011_verify_port,
- #ifdef CONFIG_CONSOLE_POLL
--	.poll_init     = pl011_hwinit,
-+	.poll_init     = pl011_poll_init,
- 	.poll_get_char = pl011_get_poll_char,
- 	.poll_put_char = pl011_put_poll_char,
- #endif
+ static void imx_poll_put_char(struct uart_port *port, unsigned char c)
 -- 
 1.9.3
 
