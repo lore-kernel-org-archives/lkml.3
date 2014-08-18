@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaHRPRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:17:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63679 "EHLO mx1.redhat.com"
+	id S1751762AbaHRPXE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:23:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10742 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496AbaHRPRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:17:42 -0400
-Date: Mon, 18 Aug 2014 11:17:37 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
-        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Ulrich Obergfell <uobergfe@redhat.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH 4/5] watchdog: control hard lockup detection default
-Message-ID: <20140818151737.GT49576@redhat.com>
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
- <1407768567-171794-5-git-send-email-dzickus@redhat.com>
- <20140818091644.GE25495@gmail.com>
+	id S1751563AbaHRPXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:23:01 -0400
+Date: Mon, 18 Aug 2014 17:19:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init()
+	and module_long_probe_exit()
+Message-ID: <20140818151954.GA20284@redhat.com>
+References: <20140816025007.GB3347@wotan.suse.de> <s5h1tsfwqi2.wl-tiwai@suse.de> <20140817122527.GA30546@redhat.com> <20140817124803.GA31996@redhat.com> <20140817125505.GA32429@redhat.com> <20140817174624.GE3347@wotan.suse.de> <20140817182138.GA4411@redhat.com> <s5hfvguw570.wl-tiwai@suse.de> <20140818122217.GA12707@redhat.com> <s5ha97253yo.wl-tiwai@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140818091644.GE25495@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5ha97253yo.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 11:16:44AM +0200, Ingo Molnar wrote:
-> 
-> * Don Zickus <dzickus@redhat.com> wrote:
-> 
-> > The running kernel still has the ability to enable/disable at any
-> > time with /proc/sys/kernel/nmi_watchdog us usual. However even
-> > when the default has been overridden /proc/sys/kernel/nmi_watchdog
-> > will initially show '1'. To truly turn it on one must disable/enable
-> > it, i.e.
-> >   echo 0 > /proc/sys/kernel/nmi_watchdog
-> >   echo 1 > /proc/sys/kernel/nmi_watchdog
-> 
-> This looks like a bug, why is this so?
+On 08/18, Takashi Iwai wrote:
+>
+> At Mon, 18 Aug 2014 14:22:17 +0200,
+> Oleg Nesterov wrote:
+> >
+> > On 08/18, Takashi Iwai wrote:
+> > >
+> > > #define module_long_probe_init(initfn)				\
+> > > 	static int _long_probe_##initfn(void *arg)		\
+> > > 	{							\
+> > > 		module_put_and_exit(initfn());			\
+> > > 		return 0;					\
+> > > 	}							\
+> > > 	static int __init __long_probe_##initfn(void)		\
+> > > 	{							\
+> > > 		struct task_struct *__init_thread =		\
+> > > 			kthread_create(_long_probe_##initfn,	\
+> > > 				       NULL, #initfn);		\
+> > > 		if (IS_ERR(__init_thread))			\
+> > > 			return PTR_ERR(__init_thread);		\
+> > > 		__module_get(THIS_MODULE);			\
+> > > 		wake_up_process(__init_thread);			\
+> > > 		return 0;					\
+> > > 	}							\
+> > > 	module_init(__long_probe_##initfn)
+> > >
+> > > ... and module_exit() remains identical as the normal version.
+> >
+> > Aaaah. This is not true, module_exit() should not call exitfn() if initfn()
+> > fails... So _long_probe_##initfn() needs to save the error code which should
+> > be checked by module_exit().
+>
+> Oh, right.  So we need a reference in the module exit path in anyway,
 
-It is, but it always has been there in the case of the PMU not being able
-to provide a resource for the hardlockup.  This change just exposes it
-more.
+We only need to save the error code,
 
-Originally I wrote the code to keep the softlockup and hardlockup in sync.
-Now this patch attempts to split it up because the guest PMU is still
-flushing out bugs.
+	static int _long_probe_retval;
 
-The above scenario only really applies to developers.  Their guest boots
-up with the hardlockup disabled.  If they want to enable it to debug or
-develop, they have to go with the above steps.  The idea is once the KVM
-PMU is stable enough, the default switches to hardlockup enabled by
-default and this problem kinda goes back to one it is today.
+	static int _long_probe_##initfn(void *arg)
+	{
+		_long_probe_retval = initfn();
+		module_put_and_exit(0); /* noreturn */
+	}
 
-I guess I was feeling lazy about modifying a bunch of code to separate the
-hard and soft lockup for a temporarily broken feature.  :-/
+	static void __long_probe_##exitfn(void)
+	{
+		if (!_long_probe_retval)
+			exitfn();
+	}
 
-I thought it would just be easier to put this code in to quickly stabilize
-their PMU and switch the default later.
+> and Luis' version might be shorter in the end.
 
-Thoughts?  I think Uli laid out a more detailed example in his email.
+I dont't think that "shorter" does matter in this case. The real difference
+is sys_delete_module() behaviour if it is called before initfn() completes.
 
-Cheers,
-Don
+And, again, I do not really know which version is better.
+
+Oleg.
 
