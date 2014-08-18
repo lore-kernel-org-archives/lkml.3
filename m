@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756AbaHRJmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:42:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43095 "EHLO
+	id S1753367AbaHRJge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:36:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43134 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224AbaHRJgT (ORCPT
+	with ESMTP id S1751604AbaHRJgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:19 -0400
+	Mon, 18 Aug 2014 05:36:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 119/137] sparc64: Fix top-level fault handling bugs.
-Date: Mon, 18 Aug 2014 10:33:00 +0100
-Message-Id: <1408354398-10226-120-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 127/137] sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
+Date: Mon, 18 Aug 2014 10:33:08 +0100
+Message-Id: <1408354398-10226-128-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,155 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-commit 70ffc6ebaead783ac8dafb1e87df0039bb043596 upstream.
+commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 upstream.
 
-Make get_user_insn() able to cope with huge PMDs.
+The LDC handshake could have been asynchronously triggered
+after ldc_bind() enables the ldc_rx() receive interrupt-handler
+(and thus intercepts incoming control packets)
+and before vio_port_up() calls ldc_connect(). If that is the case,
+ldc_connect() should return 0 and let the state-machine
+progress.
 
-Next, make do_fault_siginfo() more robust when get_user_insn() can't
-actually fetch the instruction.  In particular, use the MMU announced
-fault address when that happens, instead of calling
-compute_effective_address() and computing garbage.
-
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Karl Volz <karl.volz@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/mm/fault_64.c | 86 ++++++++++++++++++++++++++++++------------------
- 1 file changed, 54 insertions(+), 32 deletions(-)
+ arch/sparc/kernel/ldc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
-index 5062ff389e83..1992fa04095f 100644
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -95,38 +95,51 @@ static unsigned int get_user_insn(unsigned long tpc)
- 	pte_t *ptep, pte;
- 	unsigned long pa;
- 	u32 insn = 0;
--	unsigned long pstate;
+diff --git a/arch/sparc/kernel/ldc.c b/arch/sparc/kernel/ldc.c
+index 54df554b82d9..fa4c900a0d1f 100644
+--- a/arch/sparc/kernel/ldc.c
++++ b/arch/sparc/kernel/ldc.c
+@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
+ 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
+ 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
+ 	    lp->hs_state != LDC_HS_OPEN)
+-		err = -EINVAL;
++		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
+ 	else
+ 		err = start_handshake(lp);
  
--	if (pgd_none(*pgdp))
--		goto outret;
-+	if (pgd_none(*pgdp) || unlikely(pgd_bad(*pgdp)))
-+		goto out;
- 	pudp = pud_offset(pgdp, tpc);
--	if (pud_none(*pudp))
--		goto outret;
--	pmdp = pmd_offset(pudp, tpc);
--	if (pmd_none(*pmdp))
--		goto outret;
--
--	/* This disables preemption for us as well. */
--	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
--	__asm__ __volatile__("wrpr %0, %1, %%pstate"
--				: : "r" (pstate), "i" (PSTATE_IE));
--	ptep = pte_offset_map(pmdp, tpc);
--	pte = *ptep;
--	if (!pte_present(pte))
-+	if (pud_none(*pudp) || unlikely(pud_bad(*pudp)))
- 		goto out;
- 
--	pa  = (pte_pfn(pte) << PAGE_SHIFT);
--	pa += (tpc & ~PAGE_MASK);
--
--	/* Use phys bypass so we don't pollute dtlb/dcache. */
--	__asm__ __volatile__("lduwa [%1] %2, %0"
--			     : "=r" (insn)
--			     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+	/* This disables preemption for us as well. */
-+	local_irq_disable();
- 
-+	pmdp = pmd_offset(pudp, tpc);
-+	if (pmd_none(*pmdp) || unlikely(pmd_bad(*pmdp)))
-+		goto out_irq_enable;
-+
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	if (pmd_trans_huge(*pmdp)) {
-+		if (pmd_trans_splitting(*pmdp))
-+			goto out_irq_enable;
-+
-+		pa  = pmd_pfn(*pmdp) << PAGE_SHIFT;
-+		pa += tpc & ~HPAGE_MASK;
-+
-+		/* Use phys bypass so we don't pollute dtlb/dcache. */
-+		__asm__ __volatile__("lduwa [%1] %2, %0"
-+				     : "=r" (insn)
-+				     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+	} else
-+#endif
-+	{
-+		ptep = pte_offset_map(pmdp, tpc);
-+		pte = *ptep;
-+		if (pte_present(pte)) {
-+			pa  = (pte_pfn(pte) << PAGE_SHIFT);
-+			pa += (tpc & ~PAGE_MASK);
-+
-+			/* Use phys bypass so we don't pollute dtlb/dcache. */
-+			__asm__ __volatile__("lduwa [%1] %2, %0"
-+					     : "=r" (insn)
-+					     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+		}
-+		pte_unmap(ptep);
-+	}
-+out_irq_enable:
-+	local_irq_enable();
- out:
--	pte_unmap(ptep);
--	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
--outret:
- 	return insn;
- }
- 
-@@ -152,7 +165,8 @@ show_signal_msg(struct pt_regs *regs, int sig, int code,
- }
- 
- static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
--			     unsigned int insn, int fault_code)
-+			     unsigned long fault_addr, unsigned int insn,
-+			     int fault_code)
- {
- 	unsigned long addr;
- 	siginfo_t info;
-@@ -160,10 +174,18 @@ static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
- 	info.si_code = code;
- 	info.si_signo = sig;
- 	info.si_errno = 0;
--	if (fault_code & FAULT_CODE_ITLB)
-+	if (fault_code & FAULT_CODE_ITLB) {
- 		addr = regs->tpc;
--	else
--		addr = compute_effective_address(regs, insn, 0);
-+	} else {
-+		/* If we were able to probe the faulting instruction, use it
-+		 * to compute a precise fault address.  Otherwise use the fault
-+		 * time provided address which may only have page granularity.
-+		 */
-+		if (insn)
-+			addr = compute_effective_address(regs, insn, 0);
-+		else
-+			addr = fault_addr;
-+	}
- 	info.si_addr = (void __user *) addr;
- 	info.si_trapno = 0;
- 
-@@ -238,7 +260,7 @@ static void __kprobes do_kernel_fault(struct pt_regs *regs, int si_code,
- 		/* The si_code was set to make clear whether
- 		 * this was a SEGV_MAPERR or SEGV_ACCERR fault.
- 		 */
--		do_fault_siginfo(si_code, SIGSEGV, regs, insn, fault_code);
-+		do_fault_siginfo(si_code, SIGSEGV, regs, address, insn, fault_code);
- 		return;
- 	}
- 
-@@ -519,7 +541,7 @@ do_sigbus:
- 	 * Send a sigbus, regardless of whether we were in kernel
- 	 * or user mode.
- 	 */
--	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, insn, fault_code);
-+	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, address, insn, fault_code);
- 
- 	/* Kernel mode? Handle exceptions or die */
- 	if (regs->tstate & TSTATE_PRIV)
 -- 
 1.9.1
 
