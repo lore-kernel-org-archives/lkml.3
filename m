@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaHRJkf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:40:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43124 "EHLO
+	id S1752948AbaHRJk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:40:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43116 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211AbaHRJg3 (ORCPT
+	with ESMTP id S1753308AbaHRJg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:29 -0400
+	Mon, 18 Aug 2014 05:36:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 125/137] bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
-Date: Mon, 18 Aug 2014 10:33:06 +0100
-Message-Id: <1408354398-10226-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 124/137] sparc64: Guard against flushing openfirmware mappings.
+Date: Mon, 18 Aug 2014 10:33:05 +0100
+Message-Id: <1408354398-10226-125-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,74 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 5cdceab3d5e02eb69ea0f5d8fa9181800baf6f77 upstream.
+commit 4ca9a23765da3260058db3431faf5b4efd8cf926 upstream.
 
-Fix regression in bbc i2c temperature and fan control on some Sun systems
-that causes the driver to refuse to load due to the bbc_i2c_bussel resource not
-being present on the (second) i2c bus where the temperature sensors and fan
-control are located. (The check for the number of resources was removed when
-the driver was ported to a pure OF driver in mid 2008.)
+Based almost entirely upon a patch by Christopher Alexander Tobias
+Schulze.
 
-Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
+layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
+causes problems on sparc64.
+
+Sparc64 has two VMAP mapped regions and they are not contiguous with
+eachother.  First we have the malloc mapping area, then another
+unrelated region, then the vmalloc region.
+
+This "another unrelated region" is where the firmware is mapped.
+
+If the lazy TLB flushing logic in the vmalloc code triggers after
+we've had both a module unload and a vfree or similar, it will pass an
+address range that goes from somewhere inside the malloc region to
+somewhere inside the vmalloc region, and thus covering the
+openfirmware area entirely.
+
+The sparc64 kernel learns about openfirmware's dynamic mappings in
+this region early in the boot, and then services TLB misses in this
+area.  But openfirmware has some locked TLB entries which are not
+mentioned in those dynamic mappings and we should thus not disturb
+them.
+
+These huge lazy TLB flush ranges causes those openfirmware locked TLB
+entries to be removed, resulting in all kinds of problems including
+hard hangs and crashes during reboot/reset.
+
+Besides causing problems like this, such huge TLB flush ranges are
+also incredibly inefficient.  A plea has been made with the author of
+the VMAP lazy TLB flushing code, but for now we'll put a safety guard
+into our flush_tlb_kernel_range() implementation.
+
+Since the implementation has become non-trivial, stop defining it as a
+macro and instead make it a function in a C source file.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/sbus/char/bbc_envctrl.c |  6 ++++++
- drivers/sbus/char/bbc_i2c.c     | 11 ++++++++---
- 2 files changed, 14 insertions(+), 3 deletions(-)
+ arch/sparc/include/asm/tlbflush_64.h | 12 ++----------
+ arch/sparc/mm/init_64.c              | 23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/sbus/char/bbc_envctrl.c b/drivers/sbus/char/bbc_envctrl.c
-index 160e7510aca6..0787b9756165 100644
---- a/drivers/sbus/char/bbc_envctrl.c
-+++ b/drivers/sbus/char/bbc_envctrl.c
-@@ -452,6 +452,9 @@ static void attach_one_temp(struct bbc_i2c_bus *bp, struct platform_device *op,
- 	if (!tp)
- 		return;
+diff --git a/arch/sparc/include/asm/tlbflush_64.h b/arch/sparc/include/asm/tlbflush_64.h
+index f0d6a9700f4c..1a4bb971e06d 100644
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -35,6 +35,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
+ {
+ }
  
-+	INIT_LIST_HEAD(&tp->bp_list);
-+	INIT_LIST_HEAD(&tp->glob_list);
++void flush_tlb_kernel_range(unsigned long start, unsigned long end);
 +
- 	tp->client = bbc_i2c_attach(bp, op);
- 	if (!tp->client) {
- 		kfree(tp);
-@@ -497,6 +500,9 @@ static void attach_one_fan(struct bbc_i2c_bus *bp, struct platform_device *op,
- 	if (!fp)
- 		return;
+ #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
  
-+	INIT_LIST_HEAD(&fp->bp_list);
-+	INIT_LIST_HEAD(&fp->glob_list);
+ extern void flush_tlb_pending(void);
+@@ -49,11 +51,6 @@ extern void __flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ 
+ #ifndef CONFIG_SMP
+ 
+-#define flush_tlb_kernel_range(start,end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	__flush_tlb_kernel_range(start,end); \
+-} while (0)
+-
+ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
+@@ -64,11 +61,6 @@ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vad
+ extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
+ 
+-#define flush_tlb_kernel_range(start, end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	smp_flush_tlb_kernel_range(start, end); \
+-} while (0)
+-
+ #define global_flush_tlb_page(mm, vaddr) \
+ 	smp_flush_tlb_page(mm, vaddr)
+ 
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 774ba41dba4d..b26015f49c0d 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2750,3 +2750,26 @@ void hugetlb_setup(struct pt_regs *regs)
+ 	}
+ }
+ #endif
 +
- 	fp->client = bbc_i2c_attach(bp, op);
- 	if (!fp->client) {
- 		kfree(fp);
-diff --git a/drivers/sbus/char/bbc_i2c.c b/drivers/sbus/char/bbc_i2c.c
-index c1441ed282eb..e0e6cd605cca 100644
---- a/drivers/sbus/char/bbc_i2c.c
-+++ b/drivers/sbus/char/bbc_i2c.c
-@@ -301,13 +301,18 @@ static struct bbc_i2c_bus * attach_one_i2c(struct platform_device *op, int index
- 	if (!bp)
- 		return NULL;
- 
-+	INIT_LIST_HEAD(&bp->temps);
-+	INIT_LIST_HEAD(&bp->fans);
++#ifdef CONFIG_SMP
++#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
++#else
++#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
++#endif
 +
- 	bp->i2c_control_regs = of_ioremap(&op->resource[0], 0, 0x2, "bbc_i2c_regs");
- 	if (!bp->i2c_control_regs)
- 		goto fail;
- 
--	bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
--	if (!bp->i2c_bussel_reg)
--		goto fail;
-+	if (op->num_resources == 2) {
-+		bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
-+		if (!bp->i2c_bussel_reg)
-+			goto fail;
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
++		if (start < LOW_OBP_ADDRESS) {
++			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
++		}
++		if (end > HI_OBP_ADDRESS) {
++			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++		}
++	} else {
++		flush_tsb_kernel_range(start, end);
++		do_flush_tlb_kernel_range(start, end);
 +	}
- 
- 	bp->waiting = 0;
- 	init_waitqueue_head(&bp->wq);
++}
 -- 
 1.9.1
 
