@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaHRJ5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:57:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42699 "EHLO
+	id S1754278AbaHRJzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:55:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42754 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519AbaHRJen (ORCPT
+	with ESMTP id S1752716AbaHRJe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:43 -0400
+	Mon, 18 Aug 2014 05:34:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 054/137] net: sctp: fix information leaks in ulpevent layer
-Date: Mon, 18 Aug 2014 10:31:55 +0100
-Message-Id: <1408354398-10226-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 064/137] blkcg: don't call into policy draining if root_blkg is already gone
+Date: Mon, 18 Aug 2014 10:32:05 +0100
+Message-Id: <1408354398-10226-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,259 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 8f2e5ae40ec193bc0a0ed99e95315c3eebca84ea upstream.
+commit 0b462c89e31f7eb6789713437eb551833ee16ff3 upstream.
 
-While working on some other SCTP code, I noticed that some
-structures shared with user space are leaking uninitialized
-stack or heap buffer. In particular, struct sctp_sndrcvinfo
-has a 2 bytes hole between .sinfo_flags and .sinfo_ppid that
-remains unfilled by us in sctp_ulpevent_read_sndrcvinfo() when
-putting this into cmsg. But also struct sctp_remote_error
-contains a 2 bytes hole that we don't fill but place into a skb
-through skb_copy_expand() via sctp_ulpevent_make_remote_error().
+While a queue is being destroyed, all the blkgs are destroyed and its
+->root_blkg pointer is set to NULL.  If someone else starts to drain
+while the queue is in this state, the following oops happens.
 
-Both structures are defined by the IETF in RFC6458:
+  NULL pointer dereference at 0000000000000028
+  IP: [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  PGD e4a1067 PUD b773067 PMD 0
+  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in: cfq_iosched(-) [last unloaded: cfq_iosched]
+  CPU: 1 PID: 537 Comm: bash Not tainted 3.16.0-rc3-work+ #2
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  task: ffff88000e222250 ti: ffff88000efd4000 task.ti: ffff88000efd4000
+  RIP: 0010:[<ffffffff8144e944>]  [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  RSP: 0018:ffff88000efd7bf0  EFLAGS: 00010046
+  RAX: 0000000000000000 RBX: ffff880015091450 RCX: 0000000000000001
+  RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+  RBP: ffff88000efd7c10 R08: 0000000000000000 R09: 0000000000000001
+  R10: ffff88000e222250 R11: 0000000000000000 R12: ffff880015091450
+  R13: ffff880015092e00 R14: ffff880015091d70 R15: ffff88001508fc28
+  FS:  00007f1332650740(0000) GS:ffff88001fa80000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 0000000000000028 CR3: 0000000009446000 CR4: 00000000000006e0
+  Stack:
+   ffffffff8144e8f6 ffff880015091450 0000000000000000 ffff880015091d80
+   ffff88000efd7c28 ffffffff8144ae2f ffff880015091450 ffff88000efd7c58
+   ffffffff81427641 ffff880015091450 ffffffff82401f00 ffff880015091450
+  Call Trace:
+   [<ffffffff8144ae2f>] blkcg_drain_queue+0x1f/0x60
+   [<ffffffff81427641>] __blk_drain_queue+0x71/0x180
+   [<ffffffff81429b3e>] blk_queue_bypass_start+0x6e/0xb0
+   [<ffffffff814498b8>] blkcg_deactivate_policy+0x38/0x120
+   [<ffffffff8144ec44>] blk_throtl_exit+0x34/0x50
+   [<ffffffff8144aea5>] blkcg_exit_queue+0x35/0x40
+   [<ffffffff8142d476>] blk_release_queue+0x26/0xd0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff81427505>] blk_put_queue+0x15/0x20
+   [<ffffffff817d07bb>] scsi_device_dev_release_usercontext+0x16b/0x1c0
+   [<ffffffff810bc339>] execute_in_process_context+0x89/0xa0
+   [<ffffffff817d064c>] scsi_device_dev_release+0x1c/0x20
+   [<ffffffff817930e2>] device_release+0x32/0xa0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff817934d7>] put_device+0x17/0x20
+   [<ffffffff817d11b9>] __scsi_remove_device+0xa9/0xe0
+   [<ffffffff817d121b>] scsi_remove_device+0x2b/0x40
+   [<ffffffff817d1257>] sdev_store_delete+0x27/0x30
+   [<ffffffff81792ca8>] dev_attr_store+0x18/0x30
+   [<ffffffff8126f75e>] sysfs_kf_write+0x3e/0x50
+   [<ffffffff8126ea87>] kernfs_fop_write+0xe7/0x170
+   [<ffffffff811f5e9f>] vfs_write+0xaf/0x1d0
+   [<ffffffff811f69bd>] SyS_write+0x4d/0xc0
+   [<ffffffff81d24692>] system_call_fastpath+0x16/0x1b
 
-* Section 5.3.2. SCTP Header Information Structure:
+776687bce42b ("block, blk-mq: draining can't be skipped even if
+bypass_depth was non-zero") made it easier to trigger this bug by
+making blk_queue_bypass_start() drain even when it loses the first
+bypass test to blk_cleanup_queue(); however, the bug has always been
+there even before the commit as blk_queue_bypass_start() could race
+against queue destruction, win the initial bypass test but perform the
+actual draining after blk_cleanup_queue() already destroyed all blkgs.
 
-  The sctp_sndrcvinfo structure is defined below:
+Fix it by skippping calling into policy draining if all the blkgs are
+already gone.
 
-  struct sctp_sndrcvinfo {
-    uint16_t sinfo_stream;
-    uint16_t sinfo_ssn;
-    uint16_t sinfo_flags;
-    <-- 2 bytes hole  -->
-    uint32_t sinfo_ppid;
-    uint32_t sinfo_context;
-    uint32_t sinfo_timetolive;
-    uint32_t sinfo_tsn;
-    uint32_t sinfo_cumtsn;
-    sctp_assoc_t sinfo_assoc_id;
-  };
-
-* 6.1.3. SCTP_REMOTE_ERROR:
-
-  A remote peer may send an Operation Error message to its peer.
-  This message indicates a variety of error conditions on an
-  association. The entire ERROR chunk as it appears on the wire
-  is included in an SCTP_REMOTE_ERROR event. Please refer to the
-  SCTP specification [RFC4960] and any extensions for a list of
-  possible error formats. An SCTP error notification has the
-  following format:
-
-  struct sctp_remote_error {
-    uint16_t sre_type;
-    uint16_t sre_flags;
-    uint32_t sre_length;
-    uint16_t sre_error;
-    <-- 2 bytes hole  -->
-    sctp_assoc_t sre_assoc_id;
-    uint8_t  sre_data[];
-  };
-
-Fix this by setting both to 0 before filling them out. We also
-have other structures shared between user and kernel space in
-SCTP that contains holes (e.g. struct sctp_paddrthlds), but we
-copy that buffer over from user space first and thus don't need
-to care about it in that cases.
-
-While at it, we can also remove lengthy comments copied from
-the draft, instead, we update the comment with the correct RFC
-number where one can look it up.
-
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Jet Chen <jet.chen@intel.com>
+Tested-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/ulpevent.c | 122 +++++++---------------------------------------------
- 1 file changed, 15 insertions(+), 107 deletions(-)
+ block/blk-cgroup.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
-index 44a45dbee4df..273c3285d938 100644
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -373,9 +373,10 @@ fail:
-  * specification [SCTP] and any extensions for a list of possible
-  * error formats.
-  */
--struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
--	const struct sctp_association *asoc, struct sctp_chunk *chunk,
--	__u16 flags, gfp_t gfp)
-+struct sctp_ulpevent *
-+sctp_ulpevent_make_remote_error(const struct sctp_association *asoc,
-+				struct sctp_chunk *chunk, __u16 flags,
-+				gfp_t gfp)
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 354efcdad847..61f595f4525f 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -856,6 +856,13 @@ void blkcg_drain_queue(struct request_queue *q)
  {
- 	struct sctp_ulpevent *event;
- 	struct sctp_remote_error *sre;
-@@ -394,8 +395,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
- 	/* Copy the skb to a new skb with room for us to prepend
- 	 * notification with.
- 	 */
--	skb = skb_copy_expand(chunk->skb, sizeof(struct sctp_remote_error),
--			      0, gfp);
-+	skb = skb_copy_expand(chunk->skb, sizeof(*sre), 0, gfp);
+ 	lockdep_assert_held(q->queue_lock);
  
- 	/* Pull off the rest of the cause TLV from the chunk.  */
- 	skb_pull(chunk->skb, elen);
-@@ -406,62 +406,21 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
- 	event = sctp_skb2event(skb);
- 	sctp_ulpevent_init(event, MSG_NOTIFICATION, skb->truesize);
- 
--	sre = (struct sctp_remote_error *)
--		skb_push(skb, sizeof(struct sctp_remote_error));
-+	sre = (struct sctp_remote_error *) skb_push(skb, sizeof(*sre));
- 
- 	/* Trim the buffer to the right length.  */
--	skb_trim(skb, sizeof(struct sctp_remote_error) + elen);
-+	skb_trim(skb, sizeof(*sre) + elen);
- 
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_type:
--	 *   It should be SCTP_REMOTE_ERROR.
--	 */
-+	/* RFC6458, Section 6.1.3. SCTP_REMOTE_ERROR */
-+	memset(sre, 0, sizeof(*sre));
- 	sre->sre_type = SCTP_REMOTE_ERROR;
--
--	/*
--	 * Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_flags: 16 bits (unsigned integer)
--	 *   Currently unused.
--	 */
- 	sre->sre_flags = 0;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_length: sizeof (__u32)
--	 *
--	 * This field is the total length of the notification data,
--	 * including the notification header.
--	 */
- 	sre->sre_length = skb->len;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_error: 16 bits (unsigned integer)
--	 * This value represents one of the Operational Error causes defined in
--	 * the SCTP specification, in network byte order.
--	 */
- 	sre->sre_error = cause;
--
--	/* Socket Extensions for SCTP
--	 * 5.3.1.3 SCTP_REMOTE_ERROR
--	 *
--	 * sre_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association id field, holds the identifier for the association.
--	 * All notifications for a given association have the same association
--	 * identifier.  For TCP style socket, this field is ignored.
--	 */
- 	sctp_ulpevent_set_owner(event, asoc);
- 	sre->sre_assoc_id = sctp_assoc2id(asoc);
- 
- 	return event;
--
- fail:
- 	return NULL;
- }
-@@ -906,7 +865,9 @@ __u16 sctp_ulpevent_get_notification_type(const struct sctp_ulpevent *event)
- 	return notification->sn_header.sn_type;
++	/*
++	 * @q could be exiting and already have destroyed all blkgs as
++	 * indicated by NULL root_blkg.  If so, don't confuse policies.
++	 */
++	if (!q->root_blkg)
++		return;
++
+ 	blk_throtl_drain(q);
  }
  
--/* Copy out the sndrcvinfo into a msghdr.  */
-+/* RFC6458, Section 5.3.2. SCTP Header Information Structure
-+ * (SCTP_SNDRCV, DEPRECATED)
-+ */
- void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
- 				   struct msghdr *msghdr)
- {
-@@ -915,74 +876,21 @@ void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
- 	if (sctp_ulpevent_is_notification(event))
- 		return;
- 
--	/* Sockets API Extensions for SCTP
--	 * Section 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
--	 *
--	 * sinfo_stream: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() the SCTP stack places the message's stream number in
--	 * this value.
--	*/
-+	memset(&sinfo, 0, sizeof(sinfo));
- 	sinfo.sinfo_stream = event->stream;
--	/* sinfo_ssn: 16 bits (unsigned integer)
--	 *
--	 * For recvmsg() this value contains the stream sequence number that
--	 * the remote endpoint placed in the DATA chunk.  For fragmented
--	 * messages this is the same number for all deliveries of the message
--	 * (if more than one recvmsg() is needed to read the message).
--	 */
- 	sinfo.sinfo_ssn = event->ssn;
--	/* sinfo_ppid: 32 bits (unsigned integer)
--	 *
--	 * In recvmsg() this value is
--	 * the same information that was passed by the upper layer in the peer
--	 * application.  Please note that byte order issues are NOT accounted
--	 * for and this information is passed opaquely by the SCTP stack from
--	 * one end to the other.
--	 */
- 	sinfo.sinfo_ppid = event->ppid;
--	/* sinfo_flags: 16 bits (unsigned integer)
--	 *
--	 * This field may contain any of the following flags and is composed of
--	 * a bitwise OR of these values.
--	 *
--	 * recvmsg() flags:
--	 *
--	 * SCTP_UNORDERED - This flag is present when the message was sent
--	 *                 non-ordered.
--	 */
- 	sinfo.sinfo_flags = event->flags;
--	/* sinfo_tsn: 32 bit (unsigned integer)
--	 *
--	 * For the receiving side, this field holds a TSN that was
--	 * assigned to one of the SCTP Data Chunks.
--	 */
- 	sinfo.sinfo_tsn = event->tsn;
--	/* sinfo_cumtsn: 32 bit (unsigned integer)
--	 *
--	 * This field will hold the current cumulative TSN as
--	 * known by the underlying SCTP layer.  Note this field is
--	 * ignored when sending and only valid for a receive
--	 * operation when sinfo_flags are set to SCTP_UNORDERED.
--	 */
- 	sinfo.sinfo_cumtsn = event->cumtsn;
--	/* sinfo_assoc_id: sizeof (sctp_assoc_t)
--	 *
--	 * The association handle field, sinfo_assoc_id, holds the identifier
--	 * for the association announced in the COMMUNICATION_UP notification.
--	 * All notifications for a given association have the same identifier.
--	 * Ignored for one-to-one style sockets.
--	 */
- 	sinfo.sinfo_assoc_id = sctp_assoc2id(event->asoc);
--
--	/* context value that is set via SCTP_CONTEXT socket option. */
-+	/* Context value that is set via SCTP_CONTEXT socket option. */
- 	sinfo.sinfo_context = event->asoc->default_rcv_context;
--
- 	/* These fields are not used while receiving. */
- 	sinfo.sinfo_timetolive = 0;
- 
- 	put_cmsg(msghdr, IPPROTO_SCTP, SCTP_SNDRCV,
--		 sizeof(struct sctp_sndrcvinfo), (void *)&sinfo);
-+		 sizeof(sinfo), &sinfo);
- }
- 
- /* Do accounting for bytes received and hold a reference to the association
 -- 
 1.9.1
 
