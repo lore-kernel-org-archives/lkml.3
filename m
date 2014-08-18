@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaHRMh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:37:57 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:39378 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaHRMh4 (ORCPT
+	id S1751938AbaHRMiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:38:10 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:60632 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaHRMiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:37:56 -0400
+	Mon, 18 Aug 2014 08:38:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1408354400-1656-1-git-send-email-arjun024@gmail.com>
-References: <1408354400-1656-1-git-send-email-arjun024@gmail.com>
-Date: Mon, 18 Aug 2014 08:37:51 -0400
-Message-ID: <CAC-25o_-nFG8LJzxLwy1EmQvpG72T9_pj3vqygbam6u6pc3_3g@mail.gmail.com>
-Subject: Re: [PATCH] tools/thermal: fix calloc argument ordering
-From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: Arjun Sreedharan <arjun024@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1407860069-12706-1-git-send-email-peter.griffin@linaro.org>
+References: <1407860069-12706-1-git-send-email-peter.griffin@linaro.org>
+Date: Mon, 18 Aug 2014 14:38:06 +0200
+Message-ID: <CAPDyKFr5ESzjEd3DUO7aMKN9K_Ytuw8GY-fgEyCM4sCGJAX3NQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] MMC cleanup of dev_pm_ops and .owner
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Peter Griffin <peter.griffin@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        jarkko.lavinen@nokia.com, balajitk <balajitk@ti.com>,
+        Barry Song <baohua@kernel.org>, Viresh Kumar <viresh.linux@gmail.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, spear-devel@list.st.com,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Patch Tracking <patches@linaro.org>, Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 12 August 2014 18:14, Peter Griffin <peter.griffin@linaro.org> wrote:
+> This series cleans up a few platform drivers in how they are declaring there
+> dev_pm_ops structs, and gets rid of a few now redundant #else conditions.
+>
+> Also it removes the .owner field of drivers which use module_platform_driver
+> api to register themselves, as this field gets overwritten.
+>
+> Peter Griffin (5):
+>   mmc: remove .owner field for drivers using module_platform_driver
+>   mmc: dw_mmc-pci: Remove superflous #else condition on CONFIG_PM_SLEEP
+>   mmc: dw_mmc-pltfm: Remove superflous #else condition on
+>     CONFIG_PM_SLEEP
+>   mmc: sdhci-pci: Use SET_RUNTIME_PM_OPS macro to set runtime pm
+>     callbacks
+>   mmc: sdhci-acpi.c: Use SET_RUNTIME_PM_OPS macro to set runtime pm
+>     callbacks
 
-On Mon, Aug 18, 2014 at 5:33 AM, Arjun Sreedharan <arjun024@gmail.com> wrote:
-> @number first, @size second argument
->
-> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+Thanks! Applied for next!
 
-Acked-by: Eduardo Valentin <edubezval@gmail.com>
+Kind regards
+Uffe
 
-> ---
->  tools/thermal/tmon/sysfs.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
 >
-> diff --git a/tools/thermal/tmon/sysfs.c b/tools/thermal/tmon/sysfs.c
-> index dfe4548..1c12536 100644
-> --- a/tools/thermal/tmon/sysfs.c
-> +++ b/tools/thermal/tmon/sysfs.c
-> @@ -446,7 +446,7 @@ int probe_thermal_sysfs(void)
->                 return -1;
->         }
+>  drivers/mmc/host/dw_mmc-pci.c      |  3 ---
+>  drivers/mmc/host/dw_mmc-pltfm.c    |  3 ---
+>  drivers/mmc/host/jz4740_mmc.c      |  1 -
+>  drivers/mmc/host/moxart-mmc.c      |  1 -
+>  drivers/mmc/host/mxcmmc.c          |  1 -
+>  drivers/mmc/host/mxs-mmc.c         |  1 -
+>  drivers/mmc/host/omap.c            |  1 -
+>  drivers/mmc/host/omap_hsmmc.c      |  1 -
+>  drivers/mmc/host/pxamci.c          |  1 -
+>  drivers/mmc/host/rtsx_pci_sdmmc.c  |  1 -
+>  drivers/mmc/host/rtsx_usb_sdmmc.c  |  1 -
+>  drivers/mmc/host/s3cmci.c          |  1 -
+>  drivers/mmc/host/sdhci-acpi.c      | 11 ++---------
+>  drivers/mmc/host/sdhci-bcm-kona.c  |  1 -
+>  drivers/mmc/host/sdhci-bcm2835.c   |  1 -
+>  drivers/mmc/host/sdhci-cns3xxx.c   |  1 -
+>  drivers/mmc/host/sdhci-dove.c      |  1 -
+>  drivers/mmc/host/sdhci-esdhc-imx.c |  1 -
+>  drivers/mmc/host/sdhci-msm.c       |  1 -
+>  drivers/mmc/host/sdhci-of-arasan.c |  1 -
+>  drivers/mmc/host/sdhci-of-esdhc.c  |  1 -
+>  drivers/mmc/host/sdhci-of-hlwd.c   |  1 -
+>  drivers/mmc/host/sdhci-pci.c       | 11 ++---------
+>  drivers/mmc/host/sdhci-pxav2.c     |  1 -
+>  drivers/mmc/host/sdhci-pxav3.c     |  1 -
+>  drivers/mmc/host/sdhci-s3c.c       |  1 -
+>  drivers/mmc/host/sdhci-sirf.c      |  1 -
+>  drivers/mmc/host/sdhci-spear.c     |  1 -
+>  drivers/mmc/host/sdhci-tegra.c     |  1 -
+>  drivers/mmc/host/sh_mmcif.c        |  1 -
+>  drivers/mmc/host/sh_mobile_sdhi.c  |  1 -
+>  drivers/mmc/host/sunxi-mmc.c       |  1 -
+>  32 files changed, 4 insertions(+), 52 deletions(-)
 >
-> -       ptdata.tzi = calloc(sizeof(struct tz_info), ptdata.max_tz_instance+1);
-> +       ptdata.tzi = calloc(ptdata.max_tz_instance+1, sizeof(struct tz_info));
->         if (!ptdata.tzi) {
->                 fprintf(stderr, "Err: allocate tz_info\n");
->                 return -1;
-> @@ -454,8 +454,8 @@ int probe_thermal_sysfs(void)
->
->         /* we still show thermal zone information if there is no cdev */
->         if (ptdata.nr_cooling_dev) {
-> -               ptdata.cdi = calloc(sizeof(struct cdev_info),
-> -                               ptdata.max_cdev_instance + 1);
-> +               ptdata.cdi = calloc(ptdata.max_cdev_instance + 1,
-> +                               sizeof(struct cdev_info));
->                 if (!ptdata.cdi) {
->                         free(ptdata.tzi);
->                         fprintf(stderr, "Err: allocate cdev_info\n");
 > --
-> 1.8.1.msysgit.1
+> 1.9.1
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Eduardo Bezerra Valentin
