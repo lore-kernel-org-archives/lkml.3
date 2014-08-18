@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762AbaHRKI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:08:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42438 "EHLO
+	id S1754619AbaHRKCy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:02:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42584 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751933AbaHRJdl (ORCPT
+	with ESMTP id S1752280AbaHRJeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:41 -0400
+	Mon, 18 Aug 2014 05:34:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>,
+Cc: Dmitry Popov <ixaphire@qrator.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 010/137] irqchip: gic: Add support for cortex a7 compatible string
-Date: Mon, 18 Aug 2014 10:31:11 +0100
-Message-Id: <1408354398-10226-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 035/137] ip_tunnel: fix ip_tunnel_lookup
+Date: Mon, 18 Aug 2014 10:31:36 +0100
+Message-Id: <1408354398-10226-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,36 +28,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthias Brugger <matthias.bgg@gmail.com>
+From: Dmitry Popov <ixaphire@qrator.net>
 
-commit a97e8027b1d28eafe6bafe062556c1ec926a49c6 upstream.
+commit e0056593b61253f1a8a9941dacda22e73b963cdc upstream.
 
-Patch 0a68214b "ARM: DT: Add binding for GIC virtualization extentions (VGIC)" added
-the "arm,cortex-a7-gic" compatible string, but the corresponding IRQCHIP_DECLARE
-was never added to the gic driver.
+This patch fixes 3 similar bugs where incoming packets might be routed into
+wrong non-wildcard tunnels:
 
-To let real Cortex-A7 SoCs use it, add the necessary declaration to the device driver.
+1) Consider the following setup:
+    ip address add 1.1.1.1/24 dev eth0
+    ip address add 1.1.1.2/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-Link: https://lkml.kernel.org/r/1404388732-28890-1-git-send-email-matthias.bgg@gmail.com
-Fixes: 0a68214b76ca ("ARM: DT: Add binding for GIC virtualization extentions (VGIC)")
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
+1.1.1.2. Moreover even if there was wildcard tunnel like
+   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
+but it was created before explicit one (with local 1.1.1.1), incoming ipip
+packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
+
+Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
+
+2)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
+    ip link set ipip1 up
+
+Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
+src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
+issue, 2.2.146.85 is just an example, there are more than 4 million of them.
+And again, wildcard tunnel like
+   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+Gre & vti tunnels had the same issue.
+
+3)  ip address add 1.1.1.1/24 dev eth0
+    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
+    ip link set gre1 up
+
+Any incoming gre packet with key = 1 were routed into gre1, no matter what
+src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
+the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
+Wildcard tunnel like
+   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
+wouldn't be ever matched if it was created before explicit tunnel like above.
+
+All this stuff happened because while looking for a wildcard tunnel we didn't
+check that matched tunnel is a wildcard one. Fixed.
+
+Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/irqchip/irq-gic.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/ip_tunnel.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 0ebd24df0727..97fd4bf56f3e 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -858,6 +858,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
- }
- IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
-+IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
- IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
- IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
+diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
+index b6829f4d7caa..27cbe4a72c60 100644
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -166,6 +166,7 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (remote != t->parms.iph.daddr ||
++		    t->parms.iph.saddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+@@ -182,10 +183,11 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 	head = &itn->tunnels[hash];
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+-		if ((local != t->parms.iph.saddr &&
+-		     (local != t->parms.iph.daddr ||
+-		      !ipv4_is_multicast(local))) ||
+-		    !(t->dev->flags & IFF_UP))
++		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
++		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
++			continue;
++
++		if (!(t->dev->flags & IFF_UP))
+ 			continue;
+ 
+ 		if (!ip_tunnel_key_match(&t->parms, flags, key))
+@@ -202,6 +204,8 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 
+ 	hlist_for_each_entry_rcu(t, head, hash_node) {
+ 		if (t->parms.i_key != key ||
++		    t->parms.iph.saddr != 0 ||
++		    t->parms.iph.daddr != 0 ||
+ 		    !(t->dev->flags & IFF_UP))
+ 			continue;
  
 -- 
 1.9.1
