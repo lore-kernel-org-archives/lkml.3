@@ -1,109 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaHRPCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:02:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56156 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742AbaHRPCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:02:07 -0400
-Date: Mon, 18 Aug 2014 11:02:01 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Antw: Re: Some problems with HP DL380 G8 BIOS and SLES11 SP3
-Message-ID: <20140818150201.GO49576@redhat.com>
-References: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
- <20140814174658.GV49576@redhat.com>
- <53F1B57C020000A100016AD8@gwsmtp1.uni-regensburg.de>
- <20140818124404.GL49576@redhat.com>
- <53F22030020000A100016B05@gwsmtp1.uni-regensburg.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F22030020000A100016B05@gwsmtp1.uni-regensburg.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751809AbaHRPEG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:04:06 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:46133 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaHRPED (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:04:03 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Mike Travis <travis@sgi.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Dimitri Sivanich <sivanich@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@suse.de>, kgdb-bugreport@lists.sourceforge.net,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [RESEND PATCH v2 3.17rc1] kgdb: Timeout if secondary CPUs ignore the roundup
+Date: Mon, 18 Aug 2014 16:01:50 +0100
+Message-Id: <1408374110-19656-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404310379-30228-1-git-send-email-daniel.thompson@linaro.org>
+References: <1404310379-30228-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 03:48:00PM +0200, Ulrich Windl wrote:
-> >>> Don Zickus <dzickus@redhat.com> schrieb am 18.08.2014 um 14:44 in Nachricht
-> <20140818124404.GL49576@redhat.com>:
-> > On Mon, Aug 18, 2014 at 08:12:44AM +0200, Ulrich Windl wrote:
-> >> >>> Don Zickus <dzickus@redhat.com> schrieb am 14.08.2014 um 19:46 in Nachricht
-> >> <20140814174658.GV49576@redhat.com>:
-> >> > On Wed, Aug 13, 2014 at 05:22:17PM +0200, Ulrich Windl wrote:
-> >> >> Hello!
-> >> >> 
-> >> >> Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are 
-> >> > some kernel messages that indicate a bug either in the kernel or in the HP 
-> >> > BIOS. Maybe someone can explain, so I can try to get it fixed whatever 
-> > party 
-> >> > broke it...
-> >> >> 
-> >> >> Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 
-> >> > [gcc-4_3-branch revision 152973]" (latest).
-> >> >> HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
-> >> > 
-> >> > Yes, it is because you are letting the firmware dynamically control your
-> >> > cpu frequency.  In order to accomplish they need to use a perf counter or
-> >> > two, hence the conflict.  Set the firmware setting to OS control and the
-> >> > problem goes away.  Contact HP for those instructions, they are very aware
-> >> > of this problem and recommend OS control to all high end servers.
-> >> 
-> >> Hi!
-> >> 
-> >> Thanks for answering, but the BIOS has set power management to "OS control" 
-> > (see attachment). So I guess it must be something different.
-> > 
-> > Hmm, sounds like it.  Regardless, the error message indicates the counters
-> > are in use most likely by the BIOS.  So you can ask HP what is going on.
-> > 
-> > I assume this is a normal bootup and not a kdump crash kernel, correct?
-> 
-> Yes, it's a normal boot. I'm afraid the standard hardware support at HP does not care much about such issues (I remember those Xeon bugs that caused memory errors during longer idle phases (in the G7 server) that are fixed be recent microcode updates: HP changed memory modules, and they changed the board, but it took very long until they updated the BIOS).
-> 
-> Is there any more information I can provide to narrow down the problem?
+Currently if an active CPU fails to respond to a roundup request the
+CPU that requested the roundup will become stuck. This needlessly
+reduces the robustness of the debugger.
 
-Not really.. see below..
+This patch introduces a timeout allowing the system state to be examined
+even when the system contains unresponsive processors. It also modifies
+kdb's cpu command to make it censor attempts to switch to unresponsive
+processors and to report their state as (D)ead.
 
-<snip>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: Mike Travis <travis@sgi.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: kgdb-bugreport@lists.sourceforge.net
+Cc: Ingo Molnar <mingo@kernel.org>
+---
 
-> >> >> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-> >> >> CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
-> >> >> Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS 
-> >> > detec
-> >> >> ted, complain to your hardware vendor.
-> >> >> [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
+Notes:
+    Changes since v1:
+    - Set CATASTROPHIC if the system contains unresponsive processors
+      (Jason Wessel)
 
-what happens here is we walk the PMU to see if one of them is enabled.
-And sure enough the fixed counters (38d) have counter 1 and 2 enabled
-(330) before the kernel even touches them.
+ kernel/debug/debug_core.c       | 9 +++++++--
+ kernel/debug/kdb/kdb_debugger.c | 4 ++++
+ kernel/debug/kdb/kdb_main.c     | 4 +++-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-The assumption is if someone is using them, then anything the kernel does
-with them could be inaccurate.
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index 1adf62b..acd7497 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -471,6 +471,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs,
+ 	int cpu;
+ 	int trace_on = 0;
+ 	int online_cpus = num_online_cpus();
++	u64 time_left;
 
-My contacts with HP here tell me that if the power control is setting to
-OS, then the counters should be unused and not be set (and we have seen
-that here at Red Hat).
+ 	kgdb_info[ks->cpu].enter_kgdb++;
+ 	kgdb_info[ks->cpu].exception_state |= exception_state;
+@@ -595,9 +596,13 @@ return_normal:
+ 	/*
+ 	 * Wait for the other CPUs to be notified and be waiting for us:
+ 	 */
+-	while (kgdb_do_roundup && (atomic_read(&masters_in_kgdb) +
+-				atomic_read(&slaves_in_kgdb)) != online_cpus)
++	time_left = loops_per_jiffy * HZ;
++	while (kgdb_do_roundup && --time_left &&
++	       (atomic_read(&masters_in_kgdb) + atomic_read(&slaves_in_kgdb)) !=
++		   online_cpus)
+ 		cpu_relax();
++	if (!time_left)
++		pr_crit("KGDB: Timed out waiting for secondary CPUs.\n");
 
-There isn't much more I can say and I am not really motivated to walk
-through all your BIOS options to verify everything. :-)
+ 	/*
+ 	 * At this point the primary processor is completely
+diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+index 8859ca3..15e1a7a 100644
+--- a/kernel/debug/kdb/kdb_debugger.c
++++ b/kernel/debug/kdb/kdb_debugger.c
+@@ -129,6 +129,10 @@ int kdb_stub(struct kgdb_state *ks)
+ 		ks->pass_exception = 1;
+ 		KDB_FLAG_SET(CATASTROPHIC);
+ 	}
++	/* set CATASTROPHIC if the system contains unresponsive processors */
++	for_each_online_cpu(i)
++		if (!kgdb_info[i].enter_kgdb)
++			KDB_FLAG_SET(CATASTROPHIC);
+ 	if (KDB_STATE(SSBPT) && reason == KDB_REASON_SSTEP) {
+ 		KDB_STATE_CLEAR(SSBPT);
+ 		KDB_STATE_CLEAR(DOING_SS);
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 379650b..0633e78 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2157,6 +2157,8 @@ static void kdb_cpu_status(void)
+ 	for (start_cpu = -1, i = 0; i < NR_CPUS; i++) {
+ 		if (!cpu_online(i)) {
+ 			state = 'F';	/* cpu is offline */
++		} else if (!kgdb_info[i].enter_kgdb) {
++			state = 'D';	/* cpu is online but unresponsive */
+ 		} else {
+ 			state = ' ';	/* cpu is responding to kdb */
+ 			if (kdb_task_state_char(KDB_TSK(i)) == 'I')
+@@ -2210,7 +2212,7 @@ static int kdb_cpu(int argc, const char **argv)
+ 	/*
+ 	 * Validate cpunum
+ 	 */
+-	if ((cpunum > NR_CPUS) || !cpu_online(cpunum))
++	if ((cpunum > NR_CPUS) || !kgdb_info[cpunum].enter_kgdb)
+ 		return KDB_BADCPUNUM;
 
-At least with RHEL kernels, there is supposed to be published HP
-whitepapers detailing all this and what to do.
+ 	dbg_switch_cpu = cpunum;
+--
+1.9.3
 
-Cheers,
-Don
-
-> >> >> Intel PMU driver.
-> >> >> ... version:                3
-> >> >> ... bit width:              48
-> >> >> ... generic registers:      4
-> >> >> ... value mask:             0000ffffffffffff
-> >> >> ... max period:             000000007fffffff
-> >> >> ... fixed-purpose events:   3
-> >> >> ... event mask:             000000070000000f
-> >> >> NMI watchdog enabled, takes one hw-pmu counter.
-> >> >> Booting Node   0, Processors  #1
-> >> >> [...]
