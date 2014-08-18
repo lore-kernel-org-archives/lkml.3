@@ -1,233 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaHRNlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 09:41:21 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64596 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaHRNlS (ORCPT
+	id S1751995AbaHRNmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 09:42:25 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:10439 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaHRNmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 09:41:18 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v9 01/16] arm: fiq: Add callbacks to manage FIQ routings
-Date: Mon, 18 Aug 2014 14:40:49 +0100
-Message-Id: <1408369264-14242-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
-References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org>
- <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
+	Mon, 18 Aug 2014 09:42:22 -0400
+Message-ID: <53F202B2.50407@atmel.com>
+Date: Mon, 18 Aug 2014 15:42:10 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>
+CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, <arm@kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: move of AIC drivers for 3.17: fixes #1
+References: <1408031156-13573-1-git-send-email-nicolas.ferre@atmel.com> <20140815142225.GF5063@titan.lakedaemon.net> <20140815164150.5085b324@bbrezillon> <20140815150503.GG5063@titan.lakedaemon.net>
+In-Reply-To: <20140815150503.GG5063@titan.lakedaemon.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently enable_fiq/disable_fiq use a simple offset to convert an IRQ
-virq into a FIQ virq. This is too inflexible for multi-platform kernels
-and makes runtime error checking impossible.
+On 15/08/2014 17:05, Jason Cooper :
+> On Fri, Aug 15, 2014 at 04:41:50PM +0200, Boris BREZILLON wrote:
+>> On Fri, 15 Aug 2014 10:22:25 -0400 Jason Cooper <jason@lakedaemon.net> wrote:
+>>> On Thu, Aug 14, 2014 at 05:45:56PM +0200, Nicolas Ferre wrote:
+>>>> Arnd, Olof, Kevin,
+>>>>
+>>>> Boris moved both of our AIC drivers to their new home: the drivers/irqchip
+>>>> directory taking advantage of the genirc framework. For DT-enabled SoCs, we can
+>>>> use these drivers (aic and aic5) right now: Jason merged them and they are
+>>>> available in early 3.17 merge window.
+>>>> So, I build this pull-request for enabling the use of these drivers now as:
+>>>> - we are very early in 3.17 development
+>>>> - it allowed us to avoid having to depend on Jason's branch before the opening
+>>>>   of the merge window
+>>>
+>>> Then why did I create a topic branch for you to base on?
+>>>
+>>>   git://git.infradead.org/users/jcooper/linux.git irqchip/atmel-aic
+>>
+>> Don't blame Nicolas for this, he was in vacation when you created this
+>> branch (he came back this week), and I should have told you that he
+>> couldn't use it for this release cycle.
+> 
+> 'Blame' is too strong a word. :)  It was more of a friendly, "wtf?"  I
+> guess I could have worded it better...
+> 
+>>>> - it removes some code from the mach-at91 directory: including the whole
+>>>>   aic5 driver
+>>>> - we'd have quite a bit of time to solve issues if we found a bug
+>>>> - the code is basically moved so it should be error free.
+>>>
+>>> Well, this is certainly up to Arnd, Olof and Kevin, but it seems a bit
+>>> unusual.  You're basically asking to merge changes into the current window
+>>> that has had _no_ time in -next...  Sounds like a recipe for trouble to
+>>> me.
+>>>
+>>> In the future, please let me know if you're not going to need a topic
+>>> branch.
+>>
+>> This is all my fault, I'm the one who asked Nicolas to get these patches
+>> merged in 3.17, and, as I said, I should have told you that he was in
+>> vacation and thus could not use your topic branch for this release
+>> cycle.
+> 
+> Ah, no problem.  If there was nothing exciting going on in the SoC
+> directory, I probably could have kept the whole series together in one
+> branch with just an Ack.  But that's water under the bridge now.
+> 
+> We'll see what arm-soc says, but I suspect it's going to be wait for the
+> next window...
 
-We solve this by introducing a flexible mapping that allows interrupt
-controllers that support FIQ to register those mappings. This, in turn,
-makes it much possible for drivers in DT kernels to install FIQ handlers
-without knowing anything about the interrupt controller.
+Jason,
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Fabio Estevam <festevam@gmail.com>
----
- arch/arm/include/asm/fiq.h |   8 ++++
- arch/arm/kernel/fiq.c      | 103 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 109 insertions(+), 2 deletions(-)
+(back in the game, recovering an Internet access in Chicago)
 
-diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
-index d493d0b..ed44528 100644
---- a/arch/arm/include/asm/fiq.h
-+++ b/arch/arm/include/asm/fiq.h
-@@ -16,8 +16,14 @@
- #ifndef __ASM_FIQ_H
- #define __ASM_FIQ_H
- 
-+#include <linux/irq.h>
- #include <asm/ptrace.h>
- 
-+struct fiq_chip {
-+	void (*fiq_enable)(struct irq_data *data);
-+	void (*fiq_disable)(struct irq_data *data);
-+};
-+
- struct fiq_handler {
- 	struct fiq_handler *next;
- 	/* Name
-@@ -38,6 +44,8 @@ extern void release_fiq(struct fiq_handler *f);
- extern void set_fiq_handler(void *start, unsigned int length);
- extern void enable_fiq(int fiq);
- extern void disable_fiq(int fiq);
-+extern bool has_fiq(int fiq);
-+extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
- 
- /* helpers defined in fiqasm.S: */
- extern void __set_fiq_regs(unsigned long const *regs);
-diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
-index 918875d..5d831cf 100644
---- a/arch/arm/kernel/fiq.c
-+++ b/arch/arm/kernel/fiq.c
-@@ -40,6 +40,9 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/seq_file.h>
-+#include <linux/irq.h>
-+#include <linux/radix-tree.h>
-+#include <linux/slab.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
-@@ -52,7 +55,15 @@
- 		(unsigned)&vector_fiq_offset;		\
- 	})
- 
-+struct fiq_data {
-+	struct fiq_chip *fiq_chip;
-+	struct irq_data *irq_data;
-+};
-+
- static unsigned long no_fiq_insn;
-+static int fiq_start = -1;
-+static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
-+static DEFINE_MUTEX(fiq_data_mutex);
- 
- /* Default reacquire function
-  * - we always relinquish FIQ control
-@@ -127,18 +138,65 @@ void release_fiq(struct fiq_handler *f)
- 	while (current_fiq->fiq_op(current_fiq->dev_id, 0));
- }
- 
--static int fiq_start;
-+static struct fiq_data *lookup_fiq_data(int fiq)
-+{
-+	struct fiq_data *data;
-+
-+	rcu_read_lock();
-+	data = radix_tree_lookup(&fiq_data_tree, fiq);
-+	rcu_read_unlock();
-+
-+	return data;
-+}
- 
- void enable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_enable)
-+			data->fiq_chip->fiq_enable(data->irq_data);
-+		enable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	enable_irq(fiq + fiq_start);
- }
- 
- void disable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_disable)
-+			data->fiq_chip->fiq_disable(data->irq_data);
-+		disable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	disable_irq(fiq + fiq_start);
- }
- 
-+bool has_fiq(int fiq)
-+{
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data)
-+		return true;
-+
-+	if (fiq_start == -1)
-+		return false;
-+
-+	return fiq >= fiq_start;
-+}
-+EXPORT_SYMBOL(has_fiq);
-+
- EXPORT_SYMBOL(set_fiq_handler);
- EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
- EXPORT_SYMBOL(__get_fiq_regs);	/* defined in fiqasm.S */
-@@ -147,9 +205,50 @@ EXPORT_SYMBOL(release_fiq);
- EXPORT_SYMBOL(enable_fiq);
- EXPORT_SYMBOL(disable_fiq);
- 
-+/*
-+ * Add a mapping from a Linux irq to the fiq data.
-+ */
-+void fiq_register_mapping(int irq, struct fiq_chip *chip)
-+{
-+	struct fiq_data *fiq_data = NULL;
-+	int res;
-+
-+	/* fiq_register_mapping can't be mixed with init_FIQ */
-+	BUG_ON(fiq_start != -1);
-+
-+	fiq_data = kmalloc(sizeof(*fiq_data), GFP_KERNEL);
-+	if (!fiq_data)
-+		goto err;
-+
-+	fiq_data->fiq_chip = chip;
-+	fiq_data->irq_data = irq_get_irq_data(irq);
-+	BUG_ON(!fiq_data->irq_data);
-+
-+	mutex_lock(&fiq_data_mutex);
-+	res = radix_tree_insert(&fiq_data_tree, irq, fiq_data);
-+	mutex_unlock(&fiq_data_mutex);
-+	if (res)
-+		goto err;
-+
-+	return;
-+
-+err:
-+	kfree(fiq_data);
-+	pr_err("fiq: Cannot register mapping %d\n", irq);
-+}
-+
-+/*
-+ * Set the offset between normal IRQs and their FIQ shadows.
-+ */
- void __init init_FIQ(int start)
- {
-+	fiq_start = start;
-+}
-+
-+static int __init init_default_fiq_handler(void)
-+{
- 	unsigned offset = FIQ_OFFSET;
- 	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
--	fiq_start = start;
-+	return 0;
- }
-+pure_initcall(init_default_fiq_handler);
+Yes, bad timing for this material indeed but I tried to explain lengthy
+what to expect from these patches, what was the at91 irqchip drivers
+situation in 3.17 and, I believe, not pushing arm-soc guys at all.
+
+So, for sure I tried something a little bit weird I admit, and well, now
+I am happily to re-purpose this for 3.18. There is absolutely no problem
+to wait a little bit more on my side.
+
+Anyway, thanks for your help with the review and your topic branch.
+
+Bye,
 -- 
-1.9.3
-
+Nicolas Ferre
