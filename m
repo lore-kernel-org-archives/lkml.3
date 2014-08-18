@@ -1,23 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaHRJdg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:33:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42410 "EHLO
+	id S1751969AbaHRJdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:33:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42432 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbaHRJde (ORCPT
+	with ESMTP id S1751853AbaHRJdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:33:34 -0400
+	Mon, 18 Aug 2014 05:33:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miklos Szeredi <mszeredi@suse.cz>,
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 006/137] fuse: timeout comparison fix
-Date: Mon, 18 Aug 2014 10:31:07 +0100
-Message-Id: <1408354398-10226-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 003/137] perf/x86/intel: ignore CondChgd bit to avoid false NMI handling
+Date: Mon, 18 Aug 2014 10:31:04 +0100
+Message-Id: <1408354398-10226-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +34,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 
-commit 126b9d4365b110c157bc4cbc32540dfa66c9c85a upstream.
+commit b292d7a10487aee6e74b1c18b8d95b92f40d4a4f upstream.
 
-As suggested by checkpatch.pl, use time_before64() instead of direct
-comparison of jiffies64 values.
+Currently, any NMI is falsely handled by a NMI handler of NMI watchdog
+if CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR is set.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-[ luis: backported to 3.11: adjusted context ]
+For example, we use external NMI to make system panic to get crash
+dump, but in this case, the external NMI is falsely handled do to the
+issue.
+
+This commit deals with the issue simply by ignoring CondChgd bit.
+
+Here is explanation in detail.
+
+On x86 NMI watchdog uses performance monitoring feature to
+periodically signal NMI each time performance counter gets overflowed.
+
+intel_pmu_handle_irq() is called as a NMI_LOCAL handler from a NMI
+handler of NMI watchdog, perf_event_nmi_handler(). It identifies an
+owner of a given NMI by looking at overflow status bits in
+MSR_CORE_PERF_GLOBAL_STATUS MSR. If some of the bits are set, then it
+handles the given NMI as its own NMI.
+
+The problem is that the intel_pmu_handle_irq() doesn't distinguish
+CondChgd bit from other bits. Unlike the other status bits, CondChgd
+bit doesn't represent overflow status for performance counters. Thus,
+CondChgd bit cannot be thought of as a mark indicating a given NMI is
+NMI watchdog's.
+
+As a result, if CondChgd bit is set, any NMI is falsely handled by the
+NMI handler of NMI watchdog. Also, if type of the falsely handled NMI
+is either NMI_UNKNOWN, NMI_SERR or NMI_IO_CHECK, the corresponding
+action is never performed until CondChgd bit is cleared.
+
+I noticed this behavior on systems with Ivy Bridge processors: Intel
+Xeon CPU E5-2630 v2 and Intel Xeon CPU E7-8890 v2. On both systems,
+CondChgd bit in MSR_CORE_PERF_GLOBAL_STATUS MSR has already been set
+in the beginning at boot. Then the CondChgd bit is immediately cleared
+by next wrmsr to MSR_CORE_PERF_GLOBAL_CTRL MSR and appears to remain
+0.
+
+On the other hand, on older processors such as Nehalem, Xeon E7540,
+CondChgd bit is not set in the beginning at boot.
+
+I'm not sure about exact behavior of CondChgd bit, in particular when
+this bit is set. Although I read Intel System Programmer's Manual to
+figure out that, the descriptions I found are:
+
+  In 18.9.1:
+
+  "The MSR_PERF_GLOBAL_STATUS MSR also provides a ¡sticky bit¢ to
+   indicate changes to the state of performancmonitoring hardware"
+
+  In Table 35-2 IA-32 Architectural MSRs
+
+  63 CondChg: status bits of this register has changed.
+
+These are different from the bahviour I see on the actual system as I
+explained above.
+
+At least, I think ignoring CondChgd bit should be enough for NMI
+watchdog perspective.
+
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Link: http://lkml.kernel.org/r/20140625.103503.409316067.d.hatayama@jp.fujitsu.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/fuse/dir.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 8fec28ff4a0d..ac00468b93d5 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -186,7 +186,7 @@ static int fuse_dentry_revalidate(struct dentry *entry, unsigned int flags)
- 	inode = ACCESS_ONCE(entry->d_inode);
- 	if (inode && is_bad_inode(inode))
- 		return 0;
--	else if (fuse_dentry_time(entry) < get_jiffies_64()) {
-+	else if (time_before64(fuse_dentry_time(entry), get_jiffies_64())) {
- 		int err;
- 		struct fuse_entry_out outarg;
- 		struct fuse_req *req;
-@@ -937,7 +937,7 @@ int fuse_update_attributes(struct inode *inode, struct kstat *stat,
- 	int err;
- 	bool r;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index a45d8d4ace10..6eb3e3e7fc4c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1217,6 +1217,15 @@ again:
+ 	intel_pmu_lbr_read();
  
--	if (fi->i_time < get_jiffies_64()) {
-+	if (time_before64(fi->i_time, get_jiffies_64())) {
- 		r = true;
- 		err = fuse_do_getattr(inode, stat, file);
- 	} else {
-@@ -1121,7 +1121,7 @@ static int fuse_permission(struct inode *inode, int mask)
- 	    ((mask & MAY_EXEC) && S_ISREG(inode->i_mode))) {
- 		struct fuse_inode *fi = get_fuse_inode(inode);
- 
--		if (fi->i_time < get_jiffies_64()) {
-+		if (time_before64(fi->i_time, get_jiffies_64())) {
- 			refreshed = true;
- 
- 			err = fuse_perm_getattr(inode, mask);
+ 	/*
++	 * CondChgd bit 63 doesn't mean any overflow status. Ignore
++	 * and clear the bit.
++	 */
++	if (__test_and_clear_bit(63, (unsigned long *)&status)) {
++		if (!status)
++			goto done;
++	}
++
++	/*
+ 	 * PEBS overflow sets bit 62 in the global status register
+ 	 */
+ 	if (__test_and_clear_bit(62, (unsigned long *)&status)) {
 -- 
 1.9.1
 
