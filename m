@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaHRQdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:33:44 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:49979 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbaHRQdm (ORCPT
+	id S1751923AbaHRQgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:36:22 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:54252 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaHRQgU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:33:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140818161624.7176991f@notabene.brown>
-References: <20140818161624.7176991f@notabene.brown>
-Date: Mon, 18 Aug 2014 09:33:41 -0700
-Message-ID: <CAPcyv4jQ0F0F1+J+=+9DivM4X0pO+KH+mug6DvvQ3advt1m9yg@mail.gmail.com>
-Subject: Re: ALERT: md/raid6 data corruption risk.
-From: Dan Williams <dan.j.williams@intel.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Manibalan P <pmanibalan@amiindia.co.in>,
-        Yuri Tikhonov <yur@emcraft.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 18 Aug 2014 12:36:20 -0400
+From: Xiao Guangrong <xiaoguangrong.eric@gmail.com>
+X-Google-Original-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio generation number
+In-Reply-To: <53F20653.2030204@redhat.com>
+Date: Tue, 19 Aug 2014 00:35:42 +0800
+Cc: gleb@kernel.org, avi.kivity@gmail.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        stable@vger.kernel.org, David Matlack <dmatlack@google.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com>
+References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <53F20653.2030204@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 11:16 PM, NeilBrown <neilb@suse.de> wrote:
->
-> Hi all,
->  There is a risk of data loss with md/raid6 arrays running on Linux since
->  2.6.32.
->  If:
->    - the array is doubly degraded
->    - one or both failed devices are being recovered, and
->    - the array is written to
->
->  then it is possible for data on the array to be lost.  The patch below fixes
->  the problem.  If you apply the patch to an older kernel which has separate
->  handle_stripe5() and handle_stripe6() functions, be sure that patch changes
->  handle_stripe6().
->
->  There is no risk to an optimal array or a singly-degraded array.  There is
->  also no risk on a doubly-degraded array which is not recovering a device or
->  is not receiving write requests.
->
->  If you have data on a RAID6 array, please consider how to avoid corruption,
->  possibly by applying the patch, possibly by removing any hot spares so
->  recovery does not automatically start.
->
->  This patch will be sent upstream shortly and will subsequently appear in
->  future "-stable" kernels.
->
-> NeilBrown
->
-> From f94e37dce722ec7b6666fd04be357f422daa02b5 Mon Sep 17 00:00:00 2001
-> From: NeilBrown <neilb@suse.de>
-> Date: Wed, 13 Aug 2014 09:57:07 +1000
-> Subject: [PATCH] md/raid6: avoid data corruption during recovery of
->  double-degraded RAID6
->
-> During recovery of a double-degraded RAID6 it is possible for
-> some blocks not to be recovered properly, leading to corruption.
->
-> If a write happens to one block in a stripe that would be written to a
-> missing device, and at the same time that stripe is recovering data
-> to the other missing device, then that recovered data may not be written.
->
-> This patch skips, in the double-degraded case, an optimisation that is
-> only safe for single-degraded arrays.
->
-> Bug was introduced in 2.6.32 and fix is suitable for any kernel since
-> then.  In an older kernel with separate handle_stripe5() and
-> handle_stripe6() functions that patch must change handle_stripe6().
->
-> Cc: stable@vger.kernel.org (2.6.32+)
-> Fixes: 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
-> Cc: Yuri Tikhonov <yur@emcraft.com>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Reported-by: "Manibalan P" <pmanibalan@amiindia.co.in>
-> Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1090423
-> Signed-off-by: NeilBrown <neilb@suse.de>
->
 
-Acked-by: Dan Williams <dan.j.williams@intel.com>
+Hi Paolo,
 
-...with a capital "ACK"!.
+Thank you to review the patch!
+
+On Aug 18, 2014, at 9:57 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+
+> Il 14/08/2014 09:01, Xiao Guangrong ha scritto:
+>> -	update_memslots(slots, new, kvm->memslots->generation);
+>> +	/* ensure generation number is always increased. */
+>> +	slots->generation = old_memslots->generation;
+>> +	update_memslots(slots, new);
+>> 	rcu_assign_pointer(kvm->memslots, slots);
+>> 	synchronize_srcu_expedited(&kvm->srcu);
+>> +	slots->generation++;
+> 
+> I don't trust my brain enough to review this patch.
+
+Sorry to make you confused. I should expain it more clearly.
+
+What this patch tried to fix is:  kvm will generate wrong mmio-exit forever
+if no luck event cleans mmio spte. (eg. if no memory pressure or  no
+context-sync on that spte.)
+
+Note, it is hard to do precise sync between kvm_vm_ioctl_set_memory_region
+and mmio-exit - that means userspace is able to get mmio-exit even if
+kvm_vm_ioctl_set_memory_region have finished, for example, kvm identifies
+a mmio access before issuing the ioctl and injects mmio-exit to userspace after
+ioctl return. So checking if mmio-exit is a real mmio access in userspace is
+needed anyway.
+
+> kvm_current_mmio_generation seems like a very bad (race-prone) API.  One
+> patch I trust myself reviewing would change a bunch of functions in
+> kvm_main.c to take a memslots struct.  This would make it easy to
+> respect the hard and fast rule of not dereferencing the same pointer
+> twice.  But it would be a tedious change.
+
+kvm_set_memory_region is the only place updating memslot and
+kvm_current_mmio_generation accesses memslot by rcu-dereference,
+i do not know why other places need to take into account.
+
+I think this patch is auditable, page-fault is always called by holding
+srcu-lock so that a page fault can’t go across synchronize_srcu_expedited.
+Only these cases can happen:
+
+1)  page fault occurs before synchronize_srcu_expedited.
+    In this case, vcpu will generate mmio-exit for the memslot being registered
+    by the ioctl. That’s ok since the ioctl have not finished.
+
+2) page fault occurs after synchronize_srcu_expedited and during
+   increasing generation-number.
+   In this case, userspace may get wrong mmio-exit (that happen if handing
+   page-fault is slower that the ioctl), that’s ok too since userspace need do
+  the check anyway like i said above.
+
+3) page fault occurs after generation-number update
+   that’s definitely correct. :)
+
+> Another alternative could be to use the low bit to mark an in-progress
+> change, and skip the caching if the low bit is set.  Similar to a
+> seqcount (except if read_seqcount_retry fails, we just punt and not
+> retry anything), you could use it even though the memory barriers
+> provided by write_seqcount_begin/end are not too useful in this case.
+
+I do not know how the bit works, page fault will cache the memslot before
+the bit set and cache the generation-number after the bit set.
+
+Maybe i missed your idea, could you please detail it?
+
