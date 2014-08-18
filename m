@@ -1,134 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517AbaHRXbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 19:31:01 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:48653 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaHRXa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 19:30:59 -0400
-Date: Mon, 18 Aug 2014 16:30:41 -0700
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Tony Luck <tony.luck@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linux-hotplug@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
-Message-ID: <20140818233041.GA15310@linux.vnet.ibm.com>
-References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
- <20140721172331.GB4156@linux.vnet.ibm.com>
- <CA+8MBbK+ZdisT_yXh_jkWSd4hWEMisG614s4s0EyNV3j-7YOow@mail.gmail.com>
- <20140721175736.GG4156@linux.vnet.ibm.com>
- <53CF7048.20302@linux.intel.com>
- <20140724233230.GD24458@linux.vnet.ibm.com>
- <53D1B7C9.9040907@linux.intel.com>
+	id S1752531AbaHRXcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 19:32:06 -0400
+Received: from 8bytes.org ([81.169.241.247]:40916 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752214AbaHRXcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 19:32:03 -0400
+Date: Tue, 19 Aug 2014 01:32:01 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 00/29] Exynos SYSMMU (IOMMU) integration with DT and
+ DMA-mapping subsystem
+Message-ID: <20140818233201.GL9809@8bytes.org>
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53D1B7C9.9040907@linux.intel.com>
-X-Operating-System: Linux 3.13.0-32-generic (x86_64)
+In-Reply-To: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081823-0928-0000-0000-0000042A8D03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gerry,
+On Tue, Aug 05, 2014 at 12:47:28PM +0200, Marek Szyprowski wrote:
+>  .../devicetree/bindings/iommu/samsung,sysmmu.txt   |  93 ++-
+>  Documentation/power/notifiers.txt                  |  14 +
+>  arch/arm/boot/dts/exynos4.dtsi                     | 118 ++++
+>  arch/arm/boot/dts/exynos4210.dtsi                  |  23 +
+>  arch/arm/boot/dts/exynos4x12.dtsi                  |  82 +++
+>  arch/arm/include/asm/dma-iommu.h                   |  36 ++
+>  arch/arm/mach-exynos/pm_domains.c                  |  12 +-
+>  arch/arm/mach-integrator/impd1.c                   |   2 +-
+>  arch/arm/mm/dma-mapping.c                          |  47 ++
+>  drivers/base/bus.c                                 |   4 +-
+>  drivers/base/dd.c                                  |  10 +-
+>  drivers/base/platform.c                            |   2 +-
+>  drivers/base/power/domain.c                        |  70 ++-
+>  drivers/clk/samsung/clk-exynos4.c                  |   1 +
+>  drivers/gpu/drm/exynos/exynos_drm_fimc.c           |   1 +
+>  drivers/gpu/drm/exynos/exynos_drm_fimd.c           |  26 +-
+>  drivers/gpu/drm/exynos/exynos_drm_g2d.c            |   1 +
+>  drivers/gpu/drm/exynos/exynos_drm_gsc.c            |   1 +
+>  drivers/gpu/drm/exynos/exynos_drm_rotator.c        |   1 +
+>  drivers/gpu/drm/exynos/exynos_mixer.c              |   1 +
+>  drivers/iommu/exynos-iommu.c                       | 663 +++++++++++++--------
+>  drivers/iommu/iommu.c                              |   3 +
+>  drivers/media/platform/s5p-mfc/s5p_mfc.c           | 107 ++--
+>  drivers/pci/host/pci-mvebu.c                       |   2 +-
+>  drivers/pci/host/pci-rcar-gen2.c                   |   2 +-
+>  drivers/pci/host/pci-tegra.c                       |   2 +-
+>  drivers/pci/host/pcie-rcar.c                       |   2 +-
+>  drivers/soc/tegra/pmc.c                            |   2 +-
+>  include/dt-bindings/clock/exynos4.h                |  10 +-
+>  include/linux/device.h                             |  12 +-
+>  include/linux/iommu.h                              |   1 +
+>  include/linux/pm.h                                 |   2 +
+>  include/linux/pm_domain.h                          |  19 +
+>  33 files changed, 1016 insertions(+), 356 deletions(-)
 
-On 25.07.2014 [09:50:01 +0800], Jiang Liu wrote:
-> 
-> 
-> On 2014/7/25 7:32, Nishanth Aravamudan wrote:
-> > On 23.07.2014 [16:20:24 +0800], Jiang Liu wrote:
-> >>
-> >>
-> >> On 2014/7/22 1:57, Nishanth Aravamudan wrote:
-> >>> On 21.07.2014 [10:41:59 -0700], Tony Luck wrote:
-> >>>> On Mon, Jul 21, 2014 at 10:23 AM, Nishanth Aravamudan
-> >>>> <nacc@linux.vnet.ibm.com> wrote:
-> >>>>> It seems like the issue is the order of onlining of resources on a
-> >>>>> specific x86 platform?
-> >>>>
-> >>>> Yes. When we online a node the BIOS hits us with some ACPI hotplug events:
-> >>>>
-> >>>> First: Here are some new cpus
-> >>>
-> >>> Ok, so during this period, you might get some remote allocations. Do you
-> >>> know the topology of these CPUs? That is they belong to a
-> >>> (soon-to-exist) NUMA node? Can you online that currently offline NUMA
-> >>> node at this point (so that NODE_DATA()) resolves, etc.)?
-> >> Hi Nishanth,
-> >> 	We have method to get the NUMA information about the CPU, and
-> >> patch "[RFC Patch V1 30/30] x86, NUMA: Online node earlier when doing
-> >> CPU hot-addition" tries to solve this issue by onlining NUMA node
-> >> as early as possible. Actually we are trying to enable memoryless node
-> >> as you have suggested.
-> > 
-> > Ok, it seems like you have two sets of patches then? One is to fix the
-> > NUMA information timing (30/30 only). The rest of the patches are
-> > general discussions about where cpu_to_mem() might be used instead of
-> > cpu_to_node(). However, based upon Tejun's feedback, it seems like
-> > rather than force all callers to use cpu_to_mem(), we should be looking
-> > at the core VM to ensure fallback is occuring appropriately when
-> > memoryless nodes are present. 
-> > 
-> > Do you have a specific situation, once you've applied 30/30, where
-> > kmalloc_node() leads to an Oops?
-> Hi Nishanth,
-> 	After following the two threads related to support of memoryless
-> node and digging more code, I realized my first version path set is an
-> overkill. As Tejun has pointed out, we shouldn't expose the detail of
-> memoryless node to normal user, but there are still some special users
-> who need the detail. So I have tried to summarize it as:
-> 1) Arch code should online corresponding NUMA node before onlining any
->    CPU or memory, otherwise it may cause invalid memory access when
->    accessing NODE_DATA(nid).
+This touches a lot of non-iommu stuff. What is your strategy on getting
+this in, do you plan to get the non-iommu changes merged first or do you
+want to collect the respective Acks and merge this all through one tree?
 
-I think that's reasonable.
 
-A related caveat is that NUMA topology information should be stored as
-early as possible in boot for *all* CPUs [I think only cpu_to_* is used,
-at least for now], not just the boot CPU, etc. This is because (at least
-on my examination) pre-SMP initcalls are not prevented from using
-cpu_to_node, which will falsely return 0 for all CPUs until
-set_cpu_numa_node() is called.
-
-> 2) For normal memory allocations without __GFP_THISNODE setting in the
->    gfp_flags, we should prefer numa_node_id()/cpu_to_node() instead of
->    numa_mem_id()/cpu_to_mem() because the latter loses hardware topology
->    information as pointed out by Tejun:
->            A - B - X - C - D
->         Where X is the memless node.  numa_mem_id() on X would return
->         either B or C, right?  If B or C can't satisfy the allocation,
->         the allocator would fallback to A from B and D for C, both of
->         which aren't optimal. It should first fall back to C or B
->         respectively, which the allocator can't do anymoe because the
->         information is lost when the caller side performs numa_mem_id().
-
-Yes, this seems like a very good description of the reasoning.
-
-> 3) For memory allocation with __GFP_THISNODE setting in gfp_flags,
->    numa_node_id()/cpu_to_node() should be used if caller only wants to
->    allocate from local memory, otherwise numa_mem_id()/cpu_to_mem()
->    should be used if caller wants to allocate from the nearest node.
->
-> 4) numa_mem_id()/cpu_to_mem() should be used if caller wants to check
->    whether a page is allocated from the nearest node.
-
-I'm less clear on what you mean here, I'll look at your v2 patches. I
-mean, numa_node_id()/cpu_to_node() should be used to indicate node-local
-preference with appropriate failure handling. But I don't know why one
-would prefer to use numa_node_id() to numa_mem_id() in such a path? The
-only time they differ is if memoryless nodes are present, which is what
-your local memory allocation would ideally be for those nodes anyways?
-
-Thanks,
-Nish
+	Joerg
 
