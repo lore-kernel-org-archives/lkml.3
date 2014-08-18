@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637AbaHRJjn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:39:43 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:44055 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaHRJjl convert rfc822-to-8bit (ORCPT
+	id S1752819AbaHRJfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:35:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42775 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726AbaHRJfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:39:41 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH] KVM: x86: Increase the number of fixed MTRR regs to 10
-From: Nadav Amit <nadav.amit@gmail.com>
-In-Reply-To: <20140818081115.GA26307@kernel>
-Date: Mon, 18 Aug 2014 12:39:36 +0300
-Cc: Nadav Amit <namit@cs.technion.ac.il>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "gleb@kernel.org" <gleb@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A04378F6-A6B1-46B8-B306-A9A2115F54C7@gmail.com>
-References: <1403101279-23759-1-git-send-email-namit@cs.technion.ac.il> <20140818021715.GA7019@kernel> <BA71F1A6-1DF2-4683-9207-2305D1155239@gmail.com> <20140818081115.GA26307@kernel>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 18 Aug 2014 05:35:04 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 067/137] [media] tda10071: force modulation to QPSK on DVB-S
+Date: Mon, 18 Aug 2014 10:32:08 +0100
+Message-Id: <1408354398-10226-68-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I reproduced the blue-screen. Let me to to figure it out.
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-Nadav
+------------------
 
-On Aug 18, 2014, at 11:11 AM, Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
+From: Antti Palosaari <crope@iki.fi>
 
-> On Mon, Aug 18, 2014 at 09:39:39AM +0300, Nadav Amit wrote:
->> This should have been a benign patch. I'll try to get windows 7 installation disk and check ASAP.
->> 
-> 
-> In addition, it just can be reproduced on 32bit win7 w/ MP enabled, in
-> case UP can't be reproduced.
-> 
-> Regards,
-> Wanpeng Li 
-> 
->> Nadav
->> 
->>> On 18 Aug 2014, at 05:17, Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
->>> 
->>> Hi Nadav,
->>>> On Wed, Jun 18, 2014 at 05:21:19PM +0300, Nadav Amit wrote:
->>>> Recent Intel CPUs have 10 variable range MTRRs. Since operating systems
->>>> sometime make assumptions on CPUs while they ignore capability MSRs, it is
->>>> better for KVM to be consistent with recent CPUs. Reporting more MTRRs than
->>>> actually supported has no functional implications.
->>>> 
->>>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
->>>> ---
->>>> arch/x86/include/asm/kvm_host.h | 2 +-
->>>> 1 file changed, 1 insertion(+), 1 deletion(-)
->>>> 
->>>> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
->>>> index 4931415..0bab29d 100644
->>>> --- a/arch/x86/include/asm/kvm_host.h
->>>> +++ b/arch/x86/include/asm/kvm_host.h
->>>> @@ -95,7 +95,7 @@ static inline gfn_t gfn_to_index(gfn_t gfn, gfn_t base_gfn, int level)
->>>> #define KVM_REFILL_PAGES 25
->>>> #define KVM_MAX_CPUID_ENTRIES 80
->>>> #define KVM_NR_FIXED_MTRR_REGION 88
->>>> -#define KVM_NR_VAR_MTRR 8
->>>> +#define KVM_NR_VAR_MTRR 10
->>> 
->>> We observed that there is obvious regression caused by this commit, 32bit 
->>> win7 guest show blue screen during boot.
->>> 
->>> Regards,
->>> Wanpeng Li 
->>> 
->>>> #define ASYNC_PF_PER_VCPU 64
->>>> 
->>>> -- 
->>>> 1.9.1
->>>> 
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe kvm" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
+
+Only supported modulation for DVB-S is QPSK. Modulation parameter
+contains invalid value for DVB-S on some cases, which leads driver
+refusing tuning attempt. Due to that, hard code modulation to QPSK
+in case of DVB-S.
+
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/media/dvb-frontends/tda10071.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/dvb-frontends/tda10071.c b/drivers/media/dvb-frontends/tda10071.c
+index 36eb27d3fdf1..def7812d7b22 100644
+--- a/drivers/media/dvb-frontends/tda10071.c
++++ b/drivers/media/dvb-frontends/tda10071.c
+@@ -667,6 +667,7 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 	int ret, i;
+ 	u8 mode, rolloff, pilot, inversion, div;
++	fe_modulation_t modulation;
+ 
+ 	dev_dbg(&priv->i2c->dev, "%s: delivery_system=%d modulation=%d " \
+ 		"frequency=%d symbol_rate=%d inversion=%d pilot=%d " \
+@@ -701,10 +702,13 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+ 
+ 	switch (c->delivery_system) {
+ 	case SYS_DVBS:
++		modulation = QPSK;
+ 		rolloff = 0;
+ 		pilot = 2;
+ 		break;
+ 	case SYS_DVBS2:
++		modulation = c->modulation;
++
+ 		switch (c->rolloff) {
+ 		case ROLLOFF_20:
+ 			rolloff = 2;
+@@ -749,7 +753,7 @@ static int tda10071_set_frontend(struct dvb_frontend *fe)
+ 
+ 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
+ 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
+-			c->modulation == TDA10071_MODCOD[i].modulation &&
++			modulation == TDA10071_MODCOD[i].modulation &&
+ 			c->fec_inner == TDA10071_MODCOD[i].fec) {
+ 			mode = TDA10071_MODCOD[i].val;
+ 			dev_dbg(&priv->i2c->dev, "%s: mode found=%02x\n",
+-- 
+1.9.1
 
