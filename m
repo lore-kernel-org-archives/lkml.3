@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493AbaHRJpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:45:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43013 "EHLO
+	id S1753765AbaHRJne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:43:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43062 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaHRJf7 (ORCPT
+	with ESMTP id S1753149AbaHRJgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:59 -0400
+	Mon, 18 Aug 2014 05:36:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 106/137] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
-Date: Mon, 18 Aug 2014 10:32:47 +0100
-Message-Id: <1408354398-10226-107-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 113/137] x86/espfix/xen: Fix allocation of pages for paravirt page tables
+Date: Mon, 18 Aug 2014 10:32:54 +0100
+Message-Id: <1408354398-10226-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,67 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
+commit 8762e5092828c4dc0f49da5a47a644c670df77f3 upstream.
 
-This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
-preparation of merging in the proper fix (espfix64).
+init_espfix_ap() is currently off by one level when informing hypervisor
+that allocated pages will be used for ministacks' page tables.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+The most immediate effect of this on a PV guest is that if
+'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
+will refuse to use it for a page table (which it shouldn't be anyway). This will
+result in warnings by both Xen and Linux.
+
+More importantly, a subsequent write to that page (again, by a PV guest) is
+likely to result in fatal page fault.
+
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/ldt.c        | 4 +---
- arch/x86/vdso/vdso32-setup.c | 8 --------
- 2 files changed, 1 insertion(+), 11 deletions(-)
+ arch/x86/kernel/espfix_64.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index dcbbaa165bde..af1d14a9ebda 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,8 +20,6 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
- 
--int sysctl_ldt16 = 0;
--
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
-+	if (!ldt_info.seg_32bit) {
- 		error = -EINVAL;
- 		goto out_unlock;
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+index 6afbb16e9b79..94d857fb1033 100644
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -175,7 +175,7 @@ void init_espfix_ap(void)
+ 	if (!pud_present(pud)) {
+ 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
+ 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
+ 			set_pud(&pud_p[n], pud);
  	}
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index f1d633a43f8e..d6bfb876cfb0 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,7 +41,6 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
--extern int sysctl_ldt16;
- #endif
- 
- /*
-@@ -381,13 +380,6 @@ static struct ctl_table abi_table2[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
--	{
--		.procname	= "ldt16",
--		.data		= &sysctl_ldt16,
--		.maxlen		= sizeof(int),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec
--	},
- 	{}
- };
+@@ -185,7 +185,7 @@ void init_espfix_ap(void)
+ 	if (!pmd_present(pmd)) {
+ 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
+ 			set_pmd(&pmd_p[n], pmd);
+ 	}
+@@ -193,7 +193,6 @@ void init_espfix_ap(void)
+ 	pte_p = pte_offset_kernel(&pmd, addr);
+ 	stack_page = (void *)__get_free_page(GFP_KERNEL);
+ 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
+-	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
+ 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
+ 		set_pte(&pte_p[n*PTE_STRIDE], pte);
  
 -- 
 1.9.1
