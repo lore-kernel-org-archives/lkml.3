@@ -1,222 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaHRNry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 09:47:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:57972 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768AbaHRNrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 09:47:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,886,1400050800"; 
-   d="scan'208";a="560029289"
-Date: Mon, 18 Aug 2014 16:46:43 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 05/15] tty: serial: Add 8250-core based omap driver
-Message-ID: <20140818134643.GA32400@xps8300>
-References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
- <1408124563-31541-6-git-send-email-bigeasy@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751891AbaHRNsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 09:48:07 -0400
+Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:54037 "EHLO
+	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843AbaHRNsF convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
+	Mon, 18 Aug 2014 09:48:05 -0400
+Message-Id: <53F22030020000A100016B05@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Mon, 18 Aug 2014 15:48:00 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: "Don Zickus" <dzickus@redhat.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: Antw: Re: Some problems with HP DL380 G8 BIOS and SLES11
+ SP3
+References: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
+ <20140814174658.GV49576@redhat.com>
+ <53F1B57C020000A100016AD8@gwsmtp1.uni-regensburg.de>
+ <20140818124404.GL49576@redhat.com>
+In-Reply-To: <20140818124404.GL49576@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1408124563-31541-6-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>>> Don Zickus <dzickus@redhat.com> schrieb am 18.08.2014 um 14:44 in Nachricht
+<20140818124404.GL49576@redhat.com>:
+> On Mon, Aug 18, 2014 at 08:12:44AM +0200, Ulrich Windl wrote:
+>> >>> Don Zickus <dzickus@redhat.com> schrieb am 14.08.2014 um 19:46 in Nachricht
+>> <20140814174658.GV49576@redhat.com>:
+>> > On Wed, Aug 13, 2014 at 05:22:17PM +0200, Ulrich Windl wrote:
+>> >> Hello!
+>> >> 
+>> >> Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are 
+>> > some kernel messages that indicate a bug either in the kernel or in the HP 
+>> > BIOS. Maybe someone can explain, so I can try to get it fixed whatever 
+> party 
+>> > broke it...
+>> >> 
+>> >> Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 
+>> > [gcc-4_3-branch revision 152973]" (latest).
+>> >> HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
+>> > 
+>> > Yes, it is because you are letting the firmware dynamically control your
+>> > cpu frequency.  In order to accomplish they need to use a perf counter or
+>> > two, hence the conflict.  Set the firmware setting to OS control and the
+>> > problem goes away.  Contact HP for those instructions, they are very aware
+>> > of this problem and recommend OS control to all high end servers.
+>> 
+>> Hi!
+>> 
+>> Thanks for answering, but the BIOS has set power management to "OS control" 
+> (see attachment). So I guess it must be something different.
+> 
+> Hmm, sounds like it.  Regardless, the error message indicates the counters
+> are in use most likely by the BIOS.  So you can ask HP what is going on.
+> 
+> I assume this is a normal bootup and not a kdump crash kernel, correct?
 
-On Fri, Aug 15, 2014 at 07:42:33PM +0200, Sebastian Andrzej Siewior wrote:
-> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-> index cc90c19..ab003b6 100644
-> --- a/drivers/tty/serial/8250/8250_core.c
-> +++ b/drivers/tty/serial/8250/8250_core.c
-> @@ -264,6 +264,12 @@ static const struct serial8250_config uart_config[] = {
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
->  		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
->  	},
-> +	[PORT_OMAP_16750] = {
-> +		.name		= "OMAP",
-> +		.fifo_size	= 64,
-> +		.tx_loadsz	= 64,
-> +		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
-> +	},
+Yes, it's a normal boot. I'm afraid the standard hardware support at HP does not care much about such issues (I remember those Xeon bugs that caused memory errors during longer idle phases (in the G7 server) that are fixed be recent microcode updates: HP changed memory modules, and they changed the board, but it took very long until they updated the BIOS).
 
-I don't think you need this. Reasons below...
+Is there any more information I can provide to narrow down the problem?
 
->  	[PORT_TEGRA] = {
->  		.name		= "Tegra",
->  		.fifo_size	= 32,
-> @@ -1390,6 +1396,8 @@ static void serial8250_stop_rx(struct uart_port *port)
->  	serial8250_rpm_get(up);
->  
->  	up->ier &= ~UART_IER_RLSI;
-> +	if (port->type == PORT_OMAP_16750)
-> +		up->ier &= ~UART_IER_RDI;
+Regards,
+Ulrich
 
-I don't see any reason why this could not be always cleared regardless
-of the type:
+> 
+> Cheers,
+> Don
+> 
+>> 
+>> Regards,
+>> Ulrich
+>> 
+>> > 
+>> > Cheers,
+>> > Don
+>> > 
+>> >> 
+>> >> During ACPI init I see:
+>> >> [...]
+>> >> Reserving 128MB of memory at 752MB for crashkernel (System RAM: 132095MB)
+>> >> ACPI: RSDP 00000000000f4f00 00024 (v02 HP    )
+>> >> ACPI: XSDT 00000000bddaed00 000D4 (v01 HP     ProLiant 00000002   322? 
+>> > 0000162E)
+>> >> ACPI: FACP 00000000bddaee40 000F4 (v03 HP     ProLiant 00000002   322? 
+>> > 0000162E)
+>> >> ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 
+>> > (2011041
+>> >> 3/tbfadt-611)
+>> >> ACPI Warning: Invalid length for Pm2ControlBlock: 32, using default 8 
+>> > (20110413/
+>> >> tbfadt-611)
+>> >> ACPI: DSDT 00000000bddaef40 026DC (v01 HP         DSDT 00000001 INTL 
+>> > 20030228)
+>> >> ACPI: FACS 00000000bddac140 00040
+>> >> ACPI: SPCR 00000000bddac180 00050 (v01 HP     SPCRRBSU 00000001   322? 
+>> > 0000162E)
+>> >> ACPI: MCFG 00000000bddac200 0003C (v01 HP     ProLiant 00000001      
+>> > 00000000)
+>> >> [...]
+>> >> 
+>> >> HPET id 0 under DRHD base 0xf4ffe000
+>> >> BIOS requests to not use x2apic
+>> >> Use 'intremap=no_x2apic_optout' to override BIOS request
+>> >> Enabled IRQ remapping in xapic mode
+>> >> x2apic not enabled, IRQ remapping is in xapic mode
+>> >> Switched APIC routing to physical flat.
+>> >> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+>> >> CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
+>> >> Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS 
+>> > detec
+>> >> ted, complain to your hardware vendor.
+>> >> [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
+>> >> Intel PMU driver.
+>> >> ... version:                3
+>> >> ... bit width:              48
+>> >> ... generic registers:      4
+>> >> ... value mask:             0000ffffffffffff
+>> >> ... max period:             000000007fffffff
+>> >> ... fixed-purpose events:   3
+>> >> ... event mask:             000000070000000f
+>> >> NMI watchdog enabled, takes one hw-pmu counter.
+>> >> Booting Node   0, Processors  #1
+>> >> [...]
+>> >> 
+>> >>  pci0000:00: Requesting ACPI _OSC control (0x1d)
+>> >>  pci0000:00: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 
+>> > 0x00
+>> >> ACPI _OSC control for PCIe not granted, disabling ASPM
+>> >> [...]
+>> >> 
+>> >>  pci0000:20: Requesting ACPI _OSC control (0x1d)
+>> >>  pci0000:20: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 
+>> > 0x00
+>> >> ACPI _OSC control for PCIe not granted, disabling ASPM
+>> >> [...]
+>> >> 
+>> >> Regards,
+>> >> Ulrich
+>> >> P.S. Please CC: me, as I'm not on LKML...
+>> >> 
+>> >> 
+>> >> --
+>> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> >> the body of a message to majordomo@vger.kernel.org 
+>> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html 
+>> >> Please read the FAQ at  http://www.tux.org/lkml/ 
+>> 
+>> 
+>> 
 
-        up->ier &= ~(UART_IER_RLSI | UART_IRE_RDI);
 
->  	up->port.read_status_mask &= ~UART_LSR_DR;
->  	serial_port_out(port, UART_IER, up->ier);
->  
-> diff --git a/drivers/tty/serial/8250/8250_omap.c b/drivers/tty/serial/8250/8250_omap.c
-> new file mode 100644
-> index 0000000..368e9d8
-> --- /dev/null
-> +++ b/drivers/tty/serial/8250/8250_omap.c
-> @@ -0,0 +1,911 @@
-> +/*
-> + * 8250-core based driver for the OMAP internal UART
-> + *
-> + *  Copyright (C) 2014 Sebastian Andrzej Siewior
-> + *
-> + */
-
-[cut]
-
-> +static int omap8250_probe(struct platform_device *pdev)
-> +{
-> +	struct resource *regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	struct resource *irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> +	struct omap8250_priv *priv;
-> +	struct uart_8250_port up;
-> +	int ret;
-> +	void __iomem *membase;
-> +
-> +	if (!regs || !irq) {
-> +		dev_err(&pdev->dev, "missing registers or irq\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-> +	if (!priv) {
-> +		dev_err(&pdev->dev, "unable to allocate private data\n");
-> +		return -ENOMEM;
-> +	}
-> +	membase = devm_ioremap_nocache(&pdev->dev, regs->start,
-> +			resource_size(regs));
-> +	if (!membase)
-> +		return -ENODEV;
-> +
-> +	memset(&up, 0, sizeof(up));
-> +	up.port.dev = &pdev->dev;
-> +	up.port.mapbase = regs->start;
-> +	up.port.membase = membase;
-> +	up.port.irq = irq->start;
-> +	/*
-> +	 * It claims to be 16C750 compatible however it is a little different.
-> +	 * It has EFR and has no FCR7_64byte bit. The AFE which it claims to
-> +	 * have is enabled via EFR instead of MCR.
-> +	 */
-> +	up.port.type = PORT_OMAP_16750;
-
-Since you are not calling serial8250_do_set_termios, 8250_core.c newer
-overrides the FCR set in this driver. However, if the FCR is a
-problem, since Yoshihiro added the member for it to struct
-uart_8250_port (commit aef9a7bd9), just make it possible for the probe
-drivers to provide also it's value:
-
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -2829,7 +2829,9 @@ static void serial8250_config_port(struct uart_port *port, int flags)
-                port->handle_irq = exar_handle_irq;
- 
-        register_dev_spec_attr_grp(up);
--       up->fcr = uart_config[up->port.type].fcr;
-+
-+       if (!up->fcr)
-+               up->fcr = uart_config[up->port.type].fcr;
- }
- 
- static int
-
-So instead of using PORT_OMAP_16750:
-        up.port.type = PORT_16750;
-        up.capabilities = UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP;
-
-and the fcr if needed.
-        up.fcr = ...
-
-> +	up.port.iotype = UPIO_MEM32;
-> +	up.port.flags = UPF_BOOT_AUTOCONF | UPF_FIXED_PORT | UPF_FIXED_TYPE |
-> +		UPF_SOFT_FLOW | UPF_HARD_FLOW;
-> +	up.port.private_data = priv;
-> +
-> +	up.port.regshift = 2;
-> +	up.port.fifosize = 64;
-
-You don't need to set the fifosize unless you want to replace the
-value you get from uart_config array.
-
-> +	up.port.set_termios = omap_8250_set_termios;
-> +	up.port.pm = omap_8250_pm;
-> +	up.port.startup = omap_8250_startup;
-> +	up.port.shutdown = omap_8250_shutdown;
-> +	up.port.throttle = omap_8250_throttle;
-> +	up.port.unthrottle = omap_8250_unthrottle;
-> +
-> +	if (pdev->dev.of_node) {
-> +		up.port.line = of_alias_get_id(pdev->dev.of_node, "serial");
-> +		of_property_read_u32(pdev->dev.of_node, "clock-frequency",
-> +				&up.port.uartclk);
-> +		priv->wakeirq = irq_of_parse_and_map(pdev->dev.of_node, 1);
-> +	} else {
-> +		up.port.line = pdev->id;
-> +	}
-> +
-> +	if (up.port.line < 0) {
-> +		dev_err(&pdev->dev, "failed to get alias/pdev id, errno %d\n",
-> +				up.port.line);
-> +		return -ENODEV;
-> +	}
-> +	if (!up.port.uartclk) {
-> +		up.port.uartclk = DEFAULT_CLK_SPEED;
-> +		dev_warn(&pdev->dev,
-> +				"No clock speed specified: using default: %d\n",
-> +				DEFAULT_CLK_SPEED);
-> +	}
-> +
-> +#ifdef CONFIG_PM_RUNTIME
-> +	up.capabilities |= UART_CAP_RPM;
-> +#endif
-
-By setting this here, you will not get the capabilities from the
-uart_config[type].flags if runtime PM is enabled in any case, right?
-
-[cut]
-
-> diff --git a/drivers/tty/serial/8250/Makefile b/drivers/tty/serial/8250/Makefile
-> index 36d68d0..4bac392 100644
-> --- a/drivers/tty/serial/8250/Makefile
-> +++ b/drivers/tty/serial/8250/Makefile
-> @@ -20,3 +20,4 @@ obj-$(CONFIG_SERIAL_8250_HUB6)		+= 8250_hub6.o
->  obj-$(CONFIG_SERIAL_8250_FSL)		+= 8250_fsl.o
->  obj-$(CONFIG_SERIAL_8250_DW)		+= 8250_dw.o
->  obj-$(CONFIG_SERIAL_8250_EM)		+= 8250_em.o
-> +obj-$(CONFIG_SERIAL_8250_OMAP)		+= 8250_omap.o
-> diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
-> index 5820269..74f9b11 100644
-> --- a/include/uapi/linux/serial_core.h
-> +++ b/include/uapi/linux/serial_core.h
-> @@ -54,7 +54,8 @@
->  #define PORT_ALTR_16550_F32 26	/* Altera 16550 UART with 32 FIFOs */
->  #define PORT_ALTR_16550_F64 27	/* Altera 16550 UART with 64 FIFOs */
->  #define PORT_ALTR_16550_F128 28 /* Altera 16550 UART with 128 FIFOs */
-> -#define PORT_MAX_8250	28	/* max port ID */
-> +#define PORT_OMAP_16750	29	/* TI's OMAP internal 16C750 compatible UART */
-> +#define PORT_MAX_8250	29	/* max port ID */
-
-So in this case I see no reason for new type.
-
-Cheers,
-
--- 
-heikki
