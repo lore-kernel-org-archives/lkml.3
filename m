@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbaHRPBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:01:41 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:51590 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669AbaHRPBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:01:39 -0400
-Date: Mon, 18 Aug 2014 18:01:29 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: gleb@kernel.org, pbonzini@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] eventfd: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-Message-ID: <20140818150129.GA14447@ada>
+	id S1752118AbaHRPCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:02:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39770 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742AbaHRPCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 11:02:03 -0400
+Message-ID: <53F2154D.7050600@redhat.com>
+Date: Mon, 18 Aug 2014 17:01:33 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zhu Yanjun <zyjzyj2000@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, vyasevich@gmail.com,
+        tuexen@fh-muenster.de, khandelwal.deepak.1987@gmail.com,
+        Yue.Tao@windriver.com, alexandre.dietsch@windriver.com,
+        davem@davemloft.net, Zhu Yanjun <Yanjun.Zhu@windriver.com>
+Subject: Re: [PATCH 1/1] sctp: not send SCTP_PEER_ADDR_CHANGE notifications
+ with failed probe
+References: <1408094820-11725-1-git-send-email-Yanjun.Zhu@windriver.com> <1408094820-11725-2-git-send-email-Yanjun.Zhu@windriver.com>
+In-Reply-To: <1408094820-11725-2-git-send-email-Yanjun.Zhu@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The uses of "rcu_assign_pointer()" are NULLing out the pointers.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+On 08/15/2014 11:27 AM, Zhu Yanjun wrote:
+> When a failed probe comes along UNCONFIRMED path, it is not necessary
+> to send SCTP_PEER_ADDR_CHANGE notification.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+I do not find this in the RFC, but it seems reasonable - at least, I would
+have liked to see a more elaborate commit message from you explaining why
+it's okay to do; at least RFC6458 I read:
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+   SCTP_ADDR_UNREACHABLE:
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- virt/kvm/eventfd.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+     The address specified can no longer be reached. Any data sent
+     to this address is rerouted to an alternate until this address
+     becomes reachable. This notification is provided whenever an
+     address *becomes* unreachable.
 
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index 20c3af7..a49130f 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -278,7 +278,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
- 	struct kvm_kernel_irq_routing_entry *e;
- 
- 	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
--		rcu_assign_pointer(irqfd->irq_entry, NULL);
-+		RCU_INIT_POINTER(irqfd->irq_entry, NULL);
- 		return;
- 	}
- 
-@@ -287,7 +287,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
- 		if (e->type == KVM_IRQ_ROUTING_MSI)
- 			rcu_assign_pointer(irqfd->irq_entry, e);
- 		else
--			rcu_assign_pointer(irqfd->irq_entry, NULL);
-+			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
- 	}
- }
- 
-@@ -473,7 +473,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
- 			 * It is paired with synchronize_srcu done by caller
- 			 * of that function.
- 			 */
--			rcu_assign_pointer(irqfd->irq_entry, NULL);
-+			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
- 			irqfd_deactivate(irqfd);
- 		}
- 	}
--- 
-1.9.1
+Given that the transport has always been in state SCTP_UNCONFIRMED, it
+therefore wasn't active before and hasn't been used before, and one could
+argue that it doesn't "become" "unreachable" but always has been, so we
+wouldn't need to bug the user with a notification about it.
 
+> Reported-by: DEEPAK KHANDELWAL <khandelwal.deepak.1987@gmail.com>
+
+Nit: please write names normally: Deepak Khandelwal
+
+> Suggested-by: Vlad Yasevich <vyasevich@gmail.com>
+> Suggested-by: Michael Tuexen <tuexen@fh-muenster.de>
+> Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
+> ---
+>   net/sctp/associola.c | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+> index 9de23a2..2e23f6b 100644
+> --- a/net/sctp/associola.c
+> +++ b/net/sctp/associola.c
+> @@ -813,6 +813,7 @@ void sctp_assoc_control_transport(struct sctp_association *asoc,
+>   		else {
+>   			dst_release(transport->dst);
+>   			transport->dst = NULL;
+> +			ulp_notify = false;
+>   		}
+>
+>   		spc_state = SCTP_ADDR_UNREACHABLE;
+>
