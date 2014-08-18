@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaHRVcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 17:32:04 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:51296 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaHRVcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 17:32:00 -0400
-Date: Mon, 18 Aug 2014 22:30:54 +0100
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 02/12] PCI: OF: Parse and map the IRQ when adding the
- PCI device.
-Message-ID: <20140818213054.GB13147@bart.dudau.co.uk>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-3-git-send-email-Liviu.Dudau@arm.com>
- <20140814145804.GA5586@richard>
- <20140814154959.GG25761@e106497-lin.cambridge.arm.com>
- <20140815085632.GA4954@richard>
- <20140815103052.GD27553@e106497-lin.cambridge.arm.com>
- <20140818142550.GN20043@localhost>
+	id S1752374AbaHRVdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 17:33:35 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48413 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154AbaHRVdd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 17:33:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140818142550.GN20043@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Mon Aug 18 22:31:58 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 13,53f270ce3121258313743
+In-Reply-To: <53F26F0B.503@redhat.com>
+References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com>
+ <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com>
+ <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com> <53F26F0B.503@redhat.com>
+From: David Matlack <dmatlack@google.com>
+Date: Mon, 18 Aug 2014 14:33:12 -0700
+Message-ID: <CALzav=f22dDr2HgGeWZeVgBYXBX+mNBwQT0ZdiRfc7tNRTYCqg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
+ generation number
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong.eric@gmail.com>,
+        Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
+        mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 03:25:50PM +0100, Catalin Marinas wrote:
-> On Fri, Aug 15, 2014 at 11:30:52AM +0100, Liviu Dudau wrote:
-> > On Fri, Aug 15, 2014 at 09:56:32AM +0100, Wei Yang wrote:
-> > > On Thu, Aug 14, 2014 at 04:49:59PM +0100, Liviu Dudau wrote:
-> > > >On Thu, Aug 14, 2014 at 03:58:04PM +0100, Wei Yang wrote:
-> > > >> On Tue, Aug 12, 2014 at 05:25:15PM +0100, Liviu Dudau wrote:
-> > > >> > int __weak pcibios_add_device(struct pci_dev *dev)
-> > > >> > {
-> > > >> >+	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
-> > > >> >+
-> > > >> > 	return 0;
-> > > >> > }
-> > > >> 
-> > > >> For this, my suggestion is to add arch dependent function to setup the irq
-> > > >> line for pci devices. I can't find an obvious reason this won't work on other
-> > > >> archs, but maybe this will hurt some of them?
-> > > >
-> > > >I'm not sure I understand your point. Architectures that support OF will obviously
-> > > >benefit from this common approach, and for the other ones the function is empty
-> > > >so it will not change existing behaviour. If you are suggesting that I should
-> > > >create a new API that each architecture could go and implement for setting up the
-> > > >IRQ line then I would agree that it would be nice to have that, but the question
-> > > >is how many architectures are outside OF that need this?
-> > > 
-> > > My suggestion is to define the pcibios_add_device() for arm arch, like the one
-> > > in arch/powerpc/kernel/pci-common.c. If my understanding is correct, this
-> > > patch set address the pci bus setup mostly on arm arch.
-> > 
-> > And also arm64 at the least.
-> ...
-> > Well, it will become necessary as old code gets dismantled and converted towards
-> > this patchset. To give you an example that I'm familiar with, for arch/arm the
-> > host bridge drivers have moved into drivers/pci/host, but they still depend/use
-> > the bios32 infrastructure that takes care of setting up the irq. When they switch
-> > to my version they would have to go and debug the "irq not being assigned" issue
-> > and it is quite likely that some of the people doing the conversion will complain
-> > about my code rather than understanding the issue. What I'm trying to do is to
-> > make switching to my patchset as painless as possible, with a cleanup to remove
-> > redundant operations coming after the switchover.
-> 
-> While the goal is fine, until we see a common pattern for what needs to
-> go into pcibios_add_device() I think we should have an arm64-specific
-> implementation (and probably an arm32 specific one as well). I can see
-> powerpc uses it for setting the DMA ops. Would we have a similar need on
-> arm64 to choose between coherent and non-coherent dma_ops?
+On Mon, Aug 18, 2014 at 2:24 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 18/08/2014 23:15, David Matlack ha scritto:
+>> I just realized how simple Paolo's idea is. I think it can be a one line
+>> patch (without comments):
+>>
+>> [...]
+>>         update_memslots(slots, new, kvm->memslots->generation);
+>>         rcu_assign_pointer(kvm->memslots, slots);
+>>         synchronize_srcu_expedited(&kvm->srcu);
+>> +       slots->generation++;
+>>
+>>         kvm_arch_memslots_updated(kvm);
+>> [...]
+>
+> Yeah, you're right.  I think at this point it makes sense to put all
+> generation handling in install_new_memslots, but with proper comments
+> the above can do as well.
+>
+> Would you like to send it?  Patch 2 still applies on top.
 
-At this point I would like to hear more from people doing the conversion of
-the drivers. I cannot answer fully for all arm or arm64 drivers.
-
-> 
-> Also at some point we'll get ACPI support, so I'm not sure what we do
-> with assigning the dev->irq here but definitely of_* functions won't
-> work.
-
-Yes, maybe adding a check if the IRQ has not been assigned already?
-I have no idea what the order will be between ACPI ops and of_* ones.
-
-Best regards,
-Liviu
-
-> 
-> -- 
-> Catalin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
--- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
-
- One small step
-   for me ...
-
+Sure, I like doing everything in install_new_memslots() as well so I'll fix
+that.
