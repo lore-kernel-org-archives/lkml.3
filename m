@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaHRSEH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 14:04:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57506 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaHRSED (ORCPT
+	id S1752082AbaHRSHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 14:07:41 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:49856 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaHRSHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 14:04:03 -0400
-Date: Mon, 18 Aug 2014 11:03:52 -0700
-From: tip-bot for Ulrich Obergfell <tipbot@zytor.com>
-Message-ID: <tip-df577149594cefacd62740e86de080c6336d699e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        drjones@redhat.com, uobergfe@redhat.com, tglx@linutronix.de,
-        dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        drjones@redhat.com, tglx@linutronix.de, uobergfe@redhat.com,
-        dzickus@redhat.com
-In-Reply-To: <1407768567-171794-4-git-send-email-dzickus@redhat.com>
-References: <1407768567-171794-4-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/watchdog] watchdog: Fix print-once on enable
-Git-Commit-ID: df577149594cefacd62740e86de080c6336d699e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 18 Aug 2014 14:07:40 -0400
+Date: Mon, 18 Aug 2014 20:07:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Ulrich Obergfell <uobergfe@redhat.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH 4/5] watchdog: control hard lockup detection default
+Message-ID: <20140818180735.GB4540@gmail.com>
+References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+ <1407768567-171794-5-git-send-email-dzickus@redhat.com>
+ <20140818091644.GE25495@gmail.com>
+ <20140818151737.GT49576@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140818151737.GT49576@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  df577149594cefacd62740e86de080c6336d699e
-Gitweb:     http://git.kernel.org/tip/df577149594cefacd62740e86de080c6336d699e
-Author:     Ulrich Obergfell <uobergfe@redhat.com>
-AuthorDate: Mon, 11 Aug 2014 10:49:25 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 18 Aug 2014 11:17:46 +0200
 
-watchdog: Fix print-once on enable
+* Don Zickus <dzickus@redhat.com> wrote:
 
-This patch avoids printing the message 'enabled on all CPUs,
-...' multiple times. For example, the issue can occur in the
-following scenario:
+> On Mon, Aug 18, 2014 at 11:16:44AM +0200, Ingo Molnar wrote:
+> > 
+> > * Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > The running kernel still has the ability to enable/disable at any
+> > > time with /proc/sys/kernel/nmi_watchdog us usual. However even
+> > > when the default has been overridden /proc/sys/kernel/nmi_watchdog
+> > > will initially show '1'. To truly turn it on one must disable/enable
+> > > it, i.e.
+> > >   echo 0 > /proc/sys/kernel/nmi_watchdog
+> > >   echo 1 > /proc/sys/kernel/nmi_watchdog
+> > 
+> > This looks like a bug, why is this so?
+> 
+> It is, but it always has been there in the case of the PMU 
+> not being able to provide a resource for the hardlockup.  
+> This change just exposes it more.
 
-1) watchdog_nmi_enable() fails to enable PMU counters and sets
-   cpu0_err.
+There seems to be two issues:
 
-2) 'echo [0|1] > /proc/sys/kernel/nmi_watchdog' is executed to
-   disable and re-enable the watchdog mechanism 'on the fly'.
+1)
 
-3) If watchdog_nmi_enable() succeeds to enable PMU counters,
-   each CPU will print the message because step1 left behind a
-   non-zero cpu0_err.
+When it's impossible to enable the hardlockup detector, it 
+should default to -1 or so, and attempts to set it should 
+return a -EINVAL or so.
 
-   if (!IS_ERR(event)) {
-       if (cpu == 0 || cpu0_err)
-           pr_info("enabled on all CPUs, ...")
+Bootup messages should also indicate when it's not possible to 
+enable it but a user requests it.
 
-The patch avoids this by clearing cpu0_err in watchdog_nmi_disable().
+2)
 
-Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
-Signed-off-by: Andrew Jones <drjones@redhat.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: pbonzini@redhat.com
-Link: http://lkml.kernel.org/r/1407768567-171794-4-git-send-email-dzickus@redhat.com
-[ Applied small cleanups. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/watchdog.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+The softlockup and hardlockup detection control variables 
+should be in separate flags, inside and outside the kernel - 
+they (should) not relate to each other.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 4c2e11c..df5494e 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -506,7 +506,10 @@ static void watchdog_nmi_disable(unsigned int cpu)
- 		/* should be in cleanup, but blocks oprofile */
- 		perf_event_release_kernel(event);
- 	}
--	return;
-+	if (cpu == 0) {
-+		/* watchdog_nmi_enable() expects this to be zero initially. */
-+		cpu0_err = 0;
-+	}
- }
- #else
- static int watchdog_nmi_enable(unsigned int cpu) { return 0; }
+Thanks,
+
+	Ingo
