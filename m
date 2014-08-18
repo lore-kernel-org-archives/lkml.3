@@ -1,121 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaHRDLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 23:11:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60728 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613AbaHRDLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 23:11:24 -0400
-Message-ID: <53F16ED3.3070101@redhat.com>
-Date: Mon, 18 Aug 2014 11:11:15 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751925AbaHRDOU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 23:14:20 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:55510 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846AbaHRDOT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 23:14:19 -0400
+Message-ID: <53F16F62.2090902@windriver.com>
+Date: Mon, 18 Aug 2014 12:13:38 +0900
+From: Sahara <keun-o.park@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] vhost_net: stop rx net polling when possible
-References: <1408074008-4357-1-git-send-email-jasowang@redhat.com> <20140817102056.GB21622@redhat.com>
-In-Reply-To: <20140817102056.GB21622@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: Rusty Russell <rusty@rustcorp.com.au>, <kpark3469@gmail.com>,
+        <akpm@linux-foundation.org>
+CC: <hpa@zytor.com>, <rafael.j.wysocki@intel.com>, <peterz@infradead.org>,
+        <kirill.shutemov@linux.intel.com>, <oleg@redhat.com>,
+        <prarit@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] earlyprintk: re-enable earlyprintk calling early_param
+References: <1408011216-8621-1-git-send-email-kpark3469@gmail.com> <87lhqp8uvu.fsf@rustcorp.com.au>
+In-Reply-To: <87lhqp8uvu.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2014 06:20 PM, Michael S. Tsirkin wrote:
-> On Fri, Aug 15, 2014 at 11:40:08AM +0800, Jason Wang wrote:
->> After rx vq was enabled, we never stop polling its socket. This is sub optimal
->> when may lead unnecessary wake-ups after the rx net work has already been
->> queued. This could be optimized by stopping polling the rx net sock when
->> processing both rx and tx and restart it afterward. This could save unnecessary
->> wake-ups and even unnecessary spin locks acquiring with the help of commit
->> 9e641bdcfa4ef4d6e2fbaa59c1be0ad5d1551fd5 "net-tun: restructure tun_do_read for
->> better sleep/wakeup efficiency".
-> OK so the point is to avoid expensive wake_up_process calls?
-> It's a bit unfortunate that we are adding/removing things from wait
-> queue which certainly does take extra spin-locks.
 
-When nothing new were queued during vhost thread is running. This change
-may add two more spin-locks which may not but optimal. But if several
-packets were queued by tun during vhost thread is running, it may save
-lots of unnecessary wake ups. So the patch helps the performance in the
-heavy load case for sure. In light load case, it may hurt some
-throughput but cpu and thru/cpu is still saved.
+2014년 08월 16일 03:34, Rusty Russell 쓴 글:
+> kpark3469@gmail.com writes:
+>> From: Sahara <keun-o.park@windriver.com>
+>>
+>> Although there are many obs_kernel_param and its names are
+>> earlyprintk and also EARLY_PRINTK is also enabled, we could not
+>> see the early_printk output properly until now. This patch
+>> considers earlycon as well as earlyprintk.
+> Hmm, the initial "earlycon" hack slipped in when I wasn't looking.
+> I don't think we should extend it.
+>
+> Why not make the thing(s) you want early_param()s?
+>
+> Cheers,
+> Rusty.
+The earlycon and the earlyprintk are scattered and used in many 
+architectures.
+It looks earlycon just could be a subset of earlyprintk.
+The earlycon is for uart specific, while the earlyprintk is to support 
+vga, efi, xen, serial, and so on. Especially ARM uses earlyprintk in 
+many places. And, I am not sure if this is a good chance to replace all 
+the earlyprintk with the earlycon. As of now, it's fair for both 
+earlycon and earlyprintk.
+Or perhaps removing case#2, see in my previous email to Andrew Morton, 
+is better?, so users be forced to specify earlycon and earlyprintk in 
+cmdline if they want to see early_printk() output.
+
+Thanks.
+
+Best Regards,
+Sahara.
 
 >
->
->
->> Test shows significant CPU% savings during almost all the cases:
->>
->> Guest rx stream:
->> size(B)/sessions/throughput/cpu/normalized thru/
->> 64/1/+0.7773%   -8.6224%     +10.2866%
->> 64/2/+0.6335%   -13.9109%    +16.8946%
->> 64/4/-0.8182%   -14.8336%    +16.4565%
->> 64/8/+0.4830%   -13.7675%    +16.5256%
->> 256/1/-7.0963%  -12.6880%    +6.4043%
->> 256/2/-1.3982%  -11.5424%    +11.4678%
->> 256/4/-0.0350%  -11.8323%    +13.3806%
->> 256/8/-1.5830%  -12.7693%    +12.8238%
->> 1024/1/-7.4895% -19.1449%       +14.4152%
->> 1024/2/-7.4575% -19.4018%       +14.8195%
->> 1024/4/-0.3881% -9.1183%        +9.6061%
->> 1024/8/+0.4713% -11.0155%       +12.9087%
->> 4096/1/+0.8786%  -8.4050%        +10.1355%
->> 4096/2/+0.0098%  -15.3094%       +18.0885%
->> 4096/4/+0.0445%  -10.8247%       +12.1886%
->> 4096/8/-2.1317%  -12.5111%       +11.8637%
->> 16384/1/-0.0008% -6.1891%        +6.5966%
->> 16384/2/-0.0117% -16.2716%       +19.4198%
->> 16384/4/+0.0001% -5.9197%        +6.2923%
->> 16384/8/+0.0173% -7.6681%        +8.3236%
->> 65535/1/+0.0011% -10.3594%       +11.5578%
->> 65535/2/-0.4108%  -14.4304%       +16.3838%
->> 65535/4/+0.0011%  -10.3594%       +11.5578%
->> 65535/8/-0.4108%  -14.4304%       +16.3838%
->>
->> Guest tx stream:
->> size(B)/sessions/throughput/cpu/normalized thru/
->> 64/1/-0.6228%     -2.1936%     +1.6060%
->> 64/2/+0.8646%     -3.5063%     +4.5297%
->> 64/4/+0.8733%     -3.2495%     +4.2613%
->> 64/8/+1.4290%     -3.5593%     +5.1724%
->> 256/1/+7.2098%    -3.1122%     +10.6535%
->> 256/2/-10.1408%   -6.8230%     -3.5607%
->> 256/4/-11.3531%   -6.7085%     -4.9785%
->> 256/8/-10.2723%   -6.5628%     -3.9701%
->> 1024/1/-18.9329%  -13.6162%    -6.1547%
->> 1024/2/-0.3728%   -1.3181%     +0.9580%
->> 1024/4/+0.0125%   -3.6338%     +3.7838%
->> 1024/8/-0.0030%   -2.7282%     +2.8017%
->> 4096/1/+16.9367%  -1.9435%     +19.2543%
->> 4096/2/+0.0121%   -6.1682%     +6.5866%
->> 4096/4/+0.0019%   -3.8510%     +4.0072%
->> 4096/8/-0.0222%   -4.1368%     +4.2922%
->> 16384/1/-0.0026%  -8.6892%     +9.5132%
->> 16384/2/-0.0012%  -10.1676%    +11.3171%
->> 16384/4/+0.0196%  -1.2551%     +1.2908%
->> 16384/8/+0.1303%  -3.2634%     +3.5082%
->> 65535/1/+0.0019%  -3.4694%     +3.5961%
->> 65535/2/-0.0003%  -0.7635%     +0.7690%
->> 65535/4/-0.0219%  -2.7875%     +2.8448%
->> 65535/8/+0.1137%  -2.7922%     +2.9894%
->>
->> TCP_RR:
->> size(B)/sessions/throughput/cpu/normalized thru/
->> 256/1/+1.9004%    -4.7985%     +7.0366%
->> 256/25/-4.7366%   -11.0809%    +7.1349%
->> 256/50/+3.9808%   -5.2037%     +9.6887%
->> 4096/1/+2.1619%   -0.7303%     +2.9134%
->> 4096/25/-13.1836% -14.7298%    +1.8134%
->> 4096/50/-11.1990% -15.4763%    +5.0605%
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->
-> Could you split RX/TX parts out please, and benchmark separately?
->
-> They are really independent.
-
-Ok.
+>> --- a/init/main.c
+>> +++ b/init/main.c
+>> @@ -426,7 +426,8 @@ static int __init do_early_param(char *param, char *val, const char *unused)
+>>   	for (p = __setup_start; p < __setup_end; p++) {
+>>   		if ((p->early && parameq(param, p->str)) ||
+>>   		    (strcmp(param, "console") == 0 &&
+>> -		     strcmp(p->str, "earlycon") == 0)
+>> +		     ((strcmp(p->str, "earlycon") == 0) ||
+>> +		     (strcmp(p->str, "earlyprintk") == 0)))
+>>   		) {
+>>   			if (p->setup_func(val) != 0)
+>>   				pr_warn("Malformed early option '%s'\n", param);
+>> -- 
+>> 1.7.9.5
 
