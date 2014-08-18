@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604AbaHROyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:54:05 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:39206 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464AbaHROyD (ORCPT
+	id S1751702AbaHROzL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:55:11 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46955 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768AbaHROzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:54:03 -0400
+	Mon, 18 Aug 2014 10:55:09 -0400
+Date: Mon, 18 Aug 2014 09:53:25 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, nicoleotsuka@gmail.com,
+        Li.Xiubo@freescale.com, shc_work@mail.ru, fabio.estevam@freescale.com,
+        xobs@kosagi.com, arnd@arndb.de, sfr@canb.auug.org.au, timur@tabi.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Message-ID: <20140818145325.GC14537@sirena.org.uk>
+References: <cover.1408350626.git.shengjiu.wang@freescale.com>
+ <b1711ff2c73f3b6acd6af000bc8294d930bbf16b.1408350626.git.shengjiu.wang@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <20140815144124.GK19379@twins.programming.kicks-ass.net>
-References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
-	<20140814205143.GY6758@twins.programming.kicks-ass.net>
-	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
-	<20140815061917.GX19379@twins.programming.kicks-ass.net>
-	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
-	<20140815140741.GI19379@twins.programming.kicks-ass.net>
-	<CAJ5Y-eZhAX47v4SjsW4T6PUaiMqC9wHcMDS8p+sL4_cReZpbyw@mail.gmail.com>
-	<20140815144124.GK19379@twins.programming.kicks-ass.net>
-Date: Mon, 18 Aug 2014 10:54:01 -0400
-Message-ID: <CAJ5Y-eYS45mPZUsQvvacG3revVedaYHoo9YaFcM5fb4+QrH43A@mail.gmail.com>
-Subject: Re: [RFC 0/3] Experimental patchset for CPPC
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Arjan van de Ven <arjan@linux.intel.com>, mingo@kernel.org,
-        len.brown@intel.com, rjw@rjwysocki.net,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-acpi@vger.kernel.org,
-        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="j6zkAHxOZJkiczrA"
+Content-Disposition: inline
+In-Reply-To: <b1711ff2c73f3b6acd6af000bc8294d930bbf16b.1408350626.git.shengjiu.wang@freescale.com>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 216.80.64.155
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V1 2/3] ASoC: fsl-asoc-card: Fix build warning for
+ maybe-uninitialized
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 15 August 2014 10:41, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Aug 15, 2014 at 10:37:32AM -0400, Ashwin Chaugule wrote:
->> On 15 August 2014 10:07, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Fri, Aug 15, 2014 at 09:08:50AM -0400, Ashwin Chaugule wrote:
->> >> If the OS only looks at Highest, Lowest, Delivered registers and only
->> >> writes to Desired, then we're not really any different than how we do
->> >> things today in the CPUFreq layer.
->> >
->> > The thing is; we're already struggling to make 'sense' of x86 as it
->> > stands today. And it looks like this CPPC stuff makes the behaviour even
->> > less certain.
->>
->> I think its still better than the "p-state" thing we have going today,
->> where the algorithms are making their decisions based on the incorrect
->> assumption that the CPU got what it requested for. (among other things
->> listed earlier.) CPPC at least gives you a guarantee that the
->> delivered performance will be within a range you requested. It can
->> even force the platform to deliver a specific performance value if you
->> choose over a specific time window.
->
-> Maybe; the guarantee and interrupt on change might be useful indeed. But
-> which ever way we need aperf/mperf ratios somewhere.
+--j6zkAHxOZJkiczrA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Right. Regarding aperf/mperf; some ARMs will re-use existing
-performance counters, while others may have dedicated registers to
-count the equivalent. So I'm suggesting the use of the CPPC
-descriptors to unify the various implementations. In CPPC terms, aperf
-maps to the Delivered ctr and mperf maps to the Nominal ctr. Until we
-have rest of the plumbing in the scheduler to make use of the other
-CPPC specified regs, we can at least start off with having a common
-lower level driver as suggested in this patchset and reusing the PID
-controller as the "governor". Thats the only one that actually makes
-use of aperf/mperf today AFAIK. The driver can then be modified to
-include the Freq domain awareness as well, so that it works well on
-non-X86 platforms. Unless anyone strongly thinks that we should fix
-the shortcomings in the CPUfreq layer(broken pstate and freq domain
-assumptions) rather than enhancing PID? Thoughts?
+On Mon, Aug 18, 2014 at 04:38:39PM +0800, Shengjiu Wang wrote:
+> When build fsl-asoc-card as module, there is following error:
 
+Applied, thanks.
 
-Cheers,
-Ashwin
+--j6zkAHxOZJkiczrA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT8hNiAAoJELSic+t+oim9vtEP/066v1JvRkbibj+F5sRs0ldE
+p/hv3zajZVFM24ZRpA3ougXhZ+BC+L9a8X/dt0joWHuEwwEL187RxuHGdEDaUddC
+mMpu8SmfaIJ77GimPIKs0Xl2NQsMgm4ZblzN/jgNSTJt9Z1ZWy/b3YysujpDHPHR
+jgemxvDRwE55C5WkKLDgZMqjGWB24xgy5v8n4wOqK9eJ1uxjjEjBwMlun5I/5bqS
+RoM2XQXxY2N+SjAh83hVyd+EUg+T6TwvNAzKtp4YigRD0wgZmuuIyw8xN2cc7NDO
+/M2QIye95ewb2OaNrItkf8FCP+CNVbXLxoXeNBVuxSREmRt6SNPCWySBOm8cjwRZ
+1lpHYWUp3EnbA15xjRXBB4jVi7wzdrJO5WLzFa/s0INbUsKVeuF9slC5AjFG0rjs
+Kz+c2i0iPxxDWJ1Cc2mEfuFKsAY2R9RoQe/FRqkvZqvvWJ9vGh2wEE/fo78+pO+p
+lyK3T9DixQB1Tv2R8wYf74oF/sG/s1fcrbhaRFqap3UdMVLHtsyUeA/2mP6XgSYv
+dIgXpIRXBYfXZbkzHewhT8avRadehuZpDQxHoOE7GYI/LOCzORjNeLmw4DY/pHIR
+AQTfNxKbNAHq+kbe7HBs5KggpCIxtwneuD3ndIVEq4TxXwdUFktLG2ij/JFDGQ7b
+vU4LUyGW+7dpC8ZUTGmE
+=VtEb
+-----END PGP SIGNATURE-----
+
+--j6zkAHxOZJkiczrA--
