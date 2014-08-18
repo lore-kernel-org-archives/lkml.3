@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaHRJvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:51:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42876 "EHLO
+	id S1753991AbaHRJsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:48:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42906 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895AbaHRJfb (ORCPT
+	with ESMTP id S1752978AbaHRJfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:31 -0400
+	Mon, 18 Aug 2014 05:35:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Milan Broz <gmazyland@gmail.com>, Herbert Xu <herbert@gondor.apana.org.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 084/137] powerpc/perf: Fix MMCR2 handling for EBB
-Date: Mon, 18 Aug 2014 10:32:25 +0100
-Message-Id: <1408354398-10226-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 091/137] crypto: af_alg - properly label AF_ALG socket
+Date: Mon, 18 Aug 2014 10:32:32 +0100
+Message-Id: <1408354398-10226-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: Milan Broz <gmazyland@gmail.com>
 
-commit 8903461c9bc56fcb041fb92d054e2529951770b6 upstream.
+commit 4c63f83c2c2e16a13ce274ee678e28246bd33645 upstream.
 
-In the recent commit b50a6c584bb4 "Clear MMCR2 when enabling PMU", I
-screwed up the handling of MMCR2 for tasks using EBB.
+Th AF_ALG socket was missing a security label (e.g. SELinux)
+which means that socket was in "unlabeled" state.
 
-We must make sure we set MMCR2 *before* ebb_switch_in(), otherwise we
-overwrite the value of MMCR2 that userspace may have written. That
-potentially breaks a task that uses EBB and manually uses MMCR2 for
-event freezing.
+This was recently demonstrated in the cryptsetup package
+(cryptsetup v1.6.5 and later.)
+See https://bugzilla.redhat.com/show_bug.cgi?id=1115120
 
-Fixes: b50a6c584bb4 ("powerpc/perf: Clear MMCR2 when enabling PMU")
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ luis: backported to 3.11: adjusted context ]
+This patch clones the sock's label from the parent sock
+and resolves the issue (similar to AF_BLUETOOTH protocol family).
+
+Signed-off-by: Milan Broz <gmazyland@gmail.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/perf/core-book3s.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ crypto/af_alg.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-index c05f10e95a9e..d5d7adf6dc50 100644
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -1159,14 +1159,14 @@ static void power_pmu_enable(struct pmu *pmu)
- 	cpuhw->mmcr[0] |= MMCR0_PMXE | MMCR0_FCECE;
+diff --git a/crypto/af_alg.c b/crypto/af_alg.c
+index ac33d5f30778..bf948e134981 100644
+--- a/crypto/af_alg.c
++++ b/crypto/af_alg.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/net.h>
+ #include <linux/rwsem.h>
++#include <linux/security.h>
  
-  out_enable:
-+	if (ppmu->flags & PPMU_ARCH_207S)
-+		mtspr(SPRN_MMCR2, 0);
-+
- 	mmcr0 = ebb_switch_in(ebb, cpuhw->mmcr[0]);
+ struct alg_type_list {
+ 	const struct af_alg_type *type;
+@@ -243,6 +244,7 @@ int af_alg_accept(struct sock *sk, struct socket *newsock)
  
- 	mb();
- 	write_mmcr0(cpuhw, mmcr0);
+ 	sock_init_data(newsock, sk2);
+ 	sock_graft(sk2, newsock);
++	security_sk_clone(sk, sk2);
  
--	if (ppmu->flags & PPMU_ARCH_207S)
--		mtspr(SPRN_MMCR2, 0);
--
- 	/*
- 	 * Enable instruction sampling if necessary
- 	 */
+ 	err = type->accept(ask->private, sk2);
+ 	if (err) {
 -- 
 1.9.1
 
