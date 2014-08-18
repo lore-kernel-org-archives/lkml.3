@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaHRJgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:36:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43082 "EHLO
+	id S1753160AbaHRJgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:36:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43007 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105AbaHRJgR (ORCPT
+	with ESMTP id S1753105AbaHRJf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:17 -0400
+	Mon, 18 Aug 2014 05:35:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Minfei Huang <huangminfei@ucloud.cn>, Joern Engel <joern@logfs.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 114/137] lib/btree.c: fix leak of whole btree nodes
-Date: Mon, 18 Aug 2014 10:32:55 +0100
-Message-Id: <1408354398-10226-115-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 103/137] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
+Date: Mon, 18 Aug 2014 10:32:44 +0100
+Message-Id: <1408354398-10226-104-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -30,49 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Minfei Huang <huangminfei@ucloud.cn>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-commit c75b53af2f0043aff500af0a6f878497bef41bca upstream.
+commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
 
-I use btree from 3.14-rc2 in my own module.  When the btree module is
-removed, a warning arises:
+On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
+(pmd) entries map 2MiB.
 
- kmem_cache_destroy btree_node: Slab cache still has objects
- CPU: 13 PID: 9150 Comm: rmmod Tainted: GF          O 3.14.0-rc2 #1
- Hardware name: Inspur NF5270M3/NF5270M3, BIOS CHEETAH_2.1.3 09/10/2013
- Call Trace:
-   dump_stack+0x49/0x5d
-   kmem_cache_destroy+0xcf/0xe0
-   btree_module_exit+0x10/0x12 [btree]
-   SyS_delete_module+0x198/0x1f0
-   system_call_fastpath+0x16/0x1b
+When the identity mapping is created on LPAE, the pgd pointers are copied
+from the swapper_pg_dir.  If we find that we need to modify the contents
+of a pmd, we allocate a new empty pmd table and insert it into the
+appropriate 1GB slot, before then filling it with the identity mapping.
 
-The cause is that it doesn't release the last btree node, when height = 1
-and fill = 1.
+However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
+those mappings.
 
-[akpm@linux-foundation.org: remove unneeded test of NULL]
-Signed-off-by: Minfei Huang <huangminfei@ucloud.cn>
-Cc: Joern Engel <joern@logfs.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+When replacing a PMD, first copy the old PMD contents to the new PMD, so
+that we preserve the existing mappings, particularly the mappings of the
+kernel itself.
+
+[rewrote commit message and added code comment -- rmk]
+
+Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/btree.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mm/idmap.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/lib/btree.c b/lib/btree.c
-index f9a484676cb6..4264871ea1a0 100644
---- a/lib/btree.c
-+++ b/lib/btree.c
-@@ -198,6 +198,7 @@ EXPORT_SYMBOL_GPL(btree_init);
- 
- void btree_destroy(struct btree_head *head)
- {
-+	mempool_free(head->node, head->mempool);
- 	mempool_destroy(head->mempool);
- 	head->mempool = NULL;
- }
+diff --git a/arch/arm/mm/idmap.c b/arch/arm/mm/idmap.c
+index 83cb3ac27095..c61d2373408c 100644
+--- a/arch/arm/mm/idmap.c
++++ b/arch/arm/mm/idmap.c
+@@ -24,6 +24,13 @@ static void idmap_add_pmd(pud_t *pud, unsigned long addr, unsigned long end,
+ 			pr_warning("Failed to allocate identity pmd.\n");
+ 			return;
+ 		}
++		/*
++		 * Copy the original PMD to ensure that the PMD entries for
++		 * the kernel image are preserved.
++		 */
++		if (!pud_none(*pud))
++			memcpy(pmd, pmd_offset(pud, 0),
++			       PTRS_PER_PMD * sizeof(pmd_t));
+ 		pud_populate(&init_mm, pud, pmd);
+ 		pmd += pmd_index(addr);
+ 	} else
 -- 
 1.9.1
 
