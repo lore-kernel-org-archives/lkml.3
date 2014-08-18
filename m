@@ -1,52 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbaHRR3v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:29:51 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42119 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaHRR3r (ORCPT
+	id S1752077AbaHRR3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:29:50 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:48903 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810AbaHRR3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 13:29:47 -0400
-Message-ID: <53F2381B.8020801@wwwdotorg.org>
-Date: Mon, 18 Aug 2014 11:30:03 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Tegra xHCI support
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Aug 2014 13:29:45 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
+        Eddie Cai <eddie.cai@rock-chips.com>,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/4] ARM: dts: Add main PWM info to rk3288
+Date: Mon, 18 Aug 2014 10:29:41 -0700
+Message-Id: <1408382982-2077-4-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1408382982-2077-1-git-send-email-dianders@chromium.org>
+References: <1408382982-2077-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 11:08 AM, Andrew Bresticker wrote:
-> This series adds support for xHCI on NVIDIA Tegra SoCs.  This includes:
->   - adding a driver for the mailbox used to communicate with the xHCI
->     controller's firmware,
->   - extending the XUSB pad controller driver to support the USB PHY
->     types (UTMI, HSIC, and USB3), and
->   - adding a xHCI host-controller driver.
+This adds the PWM info (other than the VOP PWM) to the main rk3288
+dtsi file.
 
-Can you please remind us what dependencies exist between the patches? In 
-other words, is it possible to apply parts of the series to their usual 
-subsystem branches, or does the whole thing need to go into a single 
-topic branch in order to avoid compile-time problems, or run-time 
-problems in features unrelated to the new functionality? Thanks.
+Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v2: None
+
+ arch/arm/boot/dts/rk3288.dtsi | 68 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 36be7bb..9c9d9c5 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -261,6 +261,50 @@
+ 		status = "disabled";
+ 	};
+ 
++	pwm0: pwm@ff680000 {
++		compatible = "rockchip,rk3288-pwm";
++		reg = <0xff680000 0x10>;
++		#pwm-cells = <3>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pwm0_pin>;
++		clocks = <&cru PCLK_PWM>;
++		clock-names = "pwm";
++		status = "disabled";
++	};
++
++	pwm1: pwm@ff680010 {
++		compatible = "rockchip,rk3288-pwm";
++		reg = <0xff680010 0x10>;
++		#pwm-cells = <3>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pwm1_pin>;
++		clocks = <&cru PCLK_PWM>;
++		clock-names = "pwm";
++		status = "disabled";
++	};
++
++	pwm2: pwm@ff680020 {
++		compatible = "rockchip,rk3288-pwm";
++		reg = <0xff680020 0x10>;
++		#pwm-cells = <3>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pwm2_pin>;
++		clocks = <&cru PCLK_PWM>;
++		clock-names = "pwm";
++		status = "disabled";
++	};
++
++	pwm3: pwm@ff680030 {
++		compatible = "rockchip,rk3288-pwm";
++		reg = <0xff680030 0x10>;
++		#pwm-cells = <2>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pwm3_pin>;
++		clocks = <&cru PCLK_PWM>;
++		clock-names = "pwm";
++		status = "disabled";
++	};
++
+ 	pmu: power-management@ff730000 {
+ 		compatible = "rockchip,rk3288-pmu", "syscon";
+ 		reg = <0xff730000 0x100>;
+@@ -611,5 +655,29 @@
+ 				rockchip,pins = <5 15 3 &pcfg_pull_none>;
+ 			};
+ 		};
++
++		pwm0 {
++			pwm0_pin: pwm0-pin {
++				rockchip,pins = <7 0 RK_FUNC_1 &pcfg_pull_none>;
++			};
++		};
++
++		pwm1 {
++			pwm1_pin: pwm1-pin {
++				rockchip,pins = <7 1 RK_FUNC_1 &pcfg_pull_none>;
++			};
++		};
++
++		pwm2 {
++			pwm2_pin: pwm2-pin {
++				rockchip,pins = <7 22 RK_FUNC_3 &pcfg_pull_none>;
++			};
++		};
++
++		pwm3 {
++			pwm3_pin: pwm3-pin {
++				rockchip,pins = <7 23 RK_FUNC_3 &pcfg_pull_none>;
++			};
++		};
+ 	};
+ };
+-- 
+2.1.0.rc2.206.gedb03e5
+
