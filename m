@@ -1,69 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaHRQkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:40:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47249 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaHRQks (ORCPT
+	id S1751799AbaHRQvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:51:12 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:12377 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599AbaHRQvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:40:48 -0400
-Date: Mon, 18 Aug 2014 11:40:12 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140818164012.GI14537@sirena.org.uk>
-References: <1408367342-16413-1-git-send-email-javier.martinez@collabora.co.uk>
+	Mon, 18 Aug 2014 12:51:07 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 18 Aug 2014 09:41:34 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH 1/2] gpio: acpi: normalize use of gpiochip_get_desc()
+Date: Mon, 18 Aug 2014 09:50:56 -0700
+Message-ID: <1408380657-6718-2-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1408380657-6718-1-git-send-email-acourbot@nvidia.com>
+References: <1408380657-6718-1-git-send-email-acourbot@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Gs9iBZf6UKWgztis"
-Content-Disposition: inline
-In-Reply-To: <1408367342-16413-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Beware of Bigfoot!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 216.80.64.155
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/1] regmap: Fix DT endianess parsing logic
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+GPIO descriptors are changing from unique and permanent tokens to
+allocated resources. Therefore gpiochip_get_desc() cannot be used as a
+way to obtain a global GPIO descriptor anymore.
 
---Gs9iBZf6UKWgztis
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch updates the gpiolib ACPI support code to keep and use the
+descriptor returned by a centralized call to gpiochip_get_desc().
 
-On Mon, Aug 18, 2014 at 03:09:02PM +0200, Javier Martinez Canillas wrote:
-> Commit d647c199510c ("regmap: add DT endianness binding support.")
-> added support to parse the device endianness from the device tree
-> but unfortunately the added logic doesn't have the same semantics
-> than the old code. This leads to a NULL dereference pointer error
-> when these properties are not provided by the Device Tree:
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+ drivers/gpio/gpiolib-acpi.c | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-Applied, thanks.
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+index d62eaaa75397..9596a1023579 100644
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -25,10 +25,12 @@ struct acpi_gpio_event {
+ 	acpi_handle handle;
+ 	unsigned int pin;
+ 	unsigned int irq;
++	gpio_desc *desc;
+ };
+ 
+ struct acpi_gpio_connection {
+ 	struct list_head node;
++	unsigned int pin;
+ 	struct gpio_desc *desc;
+ };
+ 
+@@ -197,6 +199,7 @@ static acpi_status acpi_gpiochip_request_interrupt(struct acpi_resource *ares,
+ 	event->handle = evt_handle;
+ 	event->irq = irq;
+ 	event->pin = pin;
++	event->desc = desc;
+ 
+ 	ret = request_threaded_irq(event->irq, NULL, handler, irqflags,
+ 				   "ACPI:Event", event);
+@@ -280,7 +283,7 @@ void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+ 		struct gpio_desc *desc;
+ 
+ 		free_irq(event->irq, event);
+-		desc = gpiochip_get_desc(chip, event->pin);
++		desc = event->desc;
+ 		if (WARN_ON(IS_ERR(desc)))
+ 			continue;
+ 		gpio_unlock_as_irq(chip, event->pin);
+@@ -406,24 +409,26 @@ acpi_gpio_adr_space_handler(u32 function, acpi_physical_address address,
+ 		struct gpio_desc *desc;
+ 		bool found;
+ 
+-		desc = gpiochip_get_desc(chip, pin);
+-		if (IS_ERR(desc)) {
+-			status = AE_ERROR;
+-			goto out;
+-		}
+-
+ 		mutex_lock(&achip->conn_lock);
+ 
+ 		found = false;
+ 		list_for_each_entry(conn, &achip->conns, node) {
+-			if (conn->desc == desc) {
++			if (conn->pin == pin) {
+ 				found = true;
++				desc = conn->desc;
+ 				break;
+ 			}
+ 		}
+ 		if (!found) {
+ 			int ret;
+ 
++			desc = gpiochip_get_desc(chip, pin);
++			if (IS_ERR(desc)) {
++				status = AE_ERROR;
++				mutex_unlock(&achip->conn_lock);
++				goto out;
++			}
++
+ 			ret = gpiochip_request_own_desc(desc, "ACPI:OpRegion");
+ 			if (ret) {
+ 				status = AE_ERROR;
+@@ -462,6 +467,7 @@ acpi_gpio_adr_space_handler(u32 function, acpi_physical_address address,
+ 				goto out;
+ 			}
+ 
++			conn->pin = pin;
+ 			conn->desc = desc;
+ 			list_add_tail(&conn->node, &achip->conns);
+ 		}
+-- 
+2.0.4
 
---Gs9iBZf6UKWgztis
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT8ixdAAoJELSic+t+oim9i14P/1kJ0LMAVtaoq7G5OB/kA9CW
-IwGuScinFXuo1sX732lbwLxIh5rvPXoopgp6K8gGkguPcV+76A4rgJdL4QHMng2e
-ga5a+R8ETavxJehVtqY0Rl4DMOmTbRPW4kG/T71gtHlwUFJnRpGS+7VxBU3ePhQ7
-XG6DHGjLZxGV4huZXNaxyNvnTeR70YZ2/PjyA0QgEg0IrqMSIPX8CfhFlCCNDkt+
-6CiUZhdas7IsiBw0Jry5e39r9rz6wWmUovaAN38oUtViN2cKEPyAmpRlwZFj0EFK
-NAsr80W2BmNfXUukwgGQb74mn8rBU1vBE8o/eXNmRHaLbZHWlB5XP5hQeSuwvz8d
-UyPRDyPrIykeobafMAksgcTW+lZEkQpfm7v522zAfP2Aia9o/ke458Q1UFLjju7z
-hOwSNswXax07K+R96U0s4481y9Dk00f/yksjNyeD2b7iCdFeKfFvqsG3XY5MisFl
-4qi5MIQmeSSQxdDT1eRNeWBTcO9RVSHQw2vdHb8jXCFcEhV5acvcAt2h9avutHeE
-o14iTYo3Pq90+0/QGgm+XXjijcCli49mOd7Ts5fycT4yJpeyq9sUp/Ng/CfZ0Mlj
-oDt9VcbDGU138AEvh7Nh5weyZB5ZzzGF6DiW2M/pUm3J2SY586yImQvpduMgWKY2
-Rv2xuwWcRyWu8Obyqre5
-=JIyD
------END PGP SIGNATURE-----
-
---Gs9iBZf6UKWgztis--
