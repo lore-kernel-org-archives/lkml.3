@@ -1,142 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751AbaHRMoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:44:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46948 "EHLO mx1.redhat.com"
+	id S1751824AbaHRMo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:44:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47569 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977AbaHRMoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:44:11 -0400
-Date: Mon, 18 Aug 2014 08:44:06 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Antw: Re: Some problems with HP DL380 G8 BIOS and SLES11 SP3
-Message-ID: <20140818124404.GL49576@redhat.com>
-References: <53EB9EC9020000A100016A4D@gwsmtp1.uni-regensburg.de>
- <20140814174658.GV49576@redhat.com>
- <53F1B57C020000A100016AD8@gwsmtp1.uni-regensburg.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F1B57C020000A100016AD8@gwsmtp1.uni-regensburg.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750826AbaHRMo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 08:44:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,885,1400050800"; 
+   d="scan'208";a="589641404"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Mon, 18 Aug 2014 07:44:45 -0500
+Subject: Re: [RFC PATCH 4/9] of: Add property_ops callback for devices with
+ of_node
+From: Darren Hart <dvhart@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: "Rafael J. Wysocki" <rafael@kernel.org>, Aaron Lu <aaron.lu@intel.com>,
+        Max Eliaser <max.eliaser@intel.com>, <linux-acpi@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <D0175E0D.A1C9E%dvhart@linux.intel.com>
+Thread-Topic: [RFC PATCH 4/9] of: Add property_ops callback for devices with
+ of_node
+References: <1408255459-17625-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408255459-17625-5-git-send-email-mika.westerberg@linux.intel.com>
+ <20140817125416.348C0C41368@trevor.secretlab.ca>
+ <20140818092937.GT2462@lahna.fi.intel.com>
+In-Reply-To: <20140818092937.GT2462@lahna.fi.intel.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 08:12:44AM +0200, Ulrich Windl wrote:
-> >>> Don Zickus <dzickus@redhat.com> schrieb am 14.08.2014 um 19:46 in Nachricht
-> <20140814174658.GV49576@redhat.com>:
-> > On Wed, Aug 13, 2014 at 05:22:17PM +0200, Ulrich Windl wrote:
-> >> Hello!
-> >> 
-> >> Running the current SLES11 SP3 kernel on a HP DL380 G8 server, there are 
-> > some kernel messages that indicate a bug either in the kernel or in the HP 
-> > BIOS. Maybe someone can explain, so I can try to get it fixed whatever party 
-> > broke it...
-> >> 
-> >> Linux kernel is "3.0.101-0.35-default (geeko@buildhost) (gcc version 4.3.4 
-> > [gcc-4_3-branch revision 152973]" (latest).
-> >> HP server is "HP ProLiant DL380p Gen8, BIOS P70 02/10/2014" (latest)
-> > 
-> > Yes, it is because you are letting the firmware dynamically control your
-> > cpu frequency.  In order to accomplish they need to use a perf counter or
-> > two, hence the conflict.  Set the firmware setting to OS control and the
-> > problem goes away.  Contact HP for those instructions, they are very aware
-> > of this problem and recommend OS control to all high end servers.
-> 
-> Hi!
-> 
-> Thanks for answering, but the BIOS has set power management to "OS control" (see attachment). So I guess it must be something different.
+On 8/18/14, 4:29, "Mika Westerberg" <mika.westerberg@linux.intel.com>
+wrote:
 
-Hmm, sounds like it.  Regardless, the error message indicates the counters
-are in use most likely by the BIOS.  So you can ask HP what is going on.
+>On Sun, Aug 17, 2014 at 01:54:16PM +0100, Grant Likely wrote:
+>> On Sun, 17 Aug 2014 09:04:14 +0300, Mika Westerberg
+>><mika.westerberg@linux.intel.com> wrote:
+>> > From: Aaron Lu <aaron.lu@intel.com>
+>> > 
+>> > With the unified device properties interface in place, add device
+>>tree support.
+>> > By adding the dev_prop_ops for of_node devices, drivers can access
+>>properties
+>> > from ACPI or Device Tree in a generic way.
+>> > 
+>> > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+>> > Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+>> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> 
+>> Hi Mika,
+>> 
+>> As commented on patch 3, the new API currently throws away type
+>> information so the compiler won't warn on an error. That needs to be
+>> fixed and this patch reworked accordingly.
+>
+>The compiler should warn when we add static inline property accessor
+>functions for each type.
+>
+>> 
+>> g.
+>> 
+>> ---
+>> >  drivers/of/base.c        | 194
+>>++++++++++++++++++++++++++++++++++++++++++++++-
+>> >  drivers/of/platform.c    |   4 +-
+>> >  include/linux/property.h |   4 +
+>> >  3 files changed, 200 insertions(+), 2 deletions(-)
+>> > 
+>> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+>> > index b9864806e9b8..527004d01423 100644
+>> > --- a/drivers/of/base.c
+>> > +++ b/drivers/of/base.c
+>> > @@ -20,7 +20,7 @@
+>> >  #include <linux/ctype.h>
+>> >  #include <linux/cpu.h>
+>> >  #include <linux/module.h>
+>> > -#include <linux/of.h>
+>> > +#include <linux/property.h>
+>> >  #include <linux/of_graph.h>
+>> >  #include <linux/spinlock.h>
+>> >  #include <linux/slab.h>
+>> > @@ -1343,6 +1343,39 @@ int of_property_read_u64(const struct
+>>device_node *np, const char *propname,
+>> >  EXPORT_SYMBOL_GPL(of_property_read_u64);
+>> >  
+>> >  /**
+>> > + * of_property_read_u64_array - Find and read an array of 64 bit
+>>integers
+>> > + * from a property.
+>> > + *
+>> > + * @np:		device node from which the property value is to be read.
+>> > + * @propname:	name of the property to be searched.
+>> > + * @out_values:	pointer to return value, modified only if return
+>>value is 0.
+>> > + * @sz:		number of array elements to read
+>> > + *
+>> > + * Search for a property in a device node and read 64-bit value(s)
+>>from
+>> > + * it. Returns 0 on success, -EINVAL if the property does not exist,
+>> > + * -ENODATA if property does not have a value, and -EOVERFLOW if the
+>> > + * property data isn't large enough.
+>> > + *
+>> > + * The out_values is modified only if a valid u64 value can be
+>>decoded.
+>> > + */
+>> > +int of_property_read_u64_array(const struct device_node *np,
+>> > +			       const char *propname, u64 *out_values,
+>> > +			       size_t sz)
+>> > +{
+>> > +	const __be32 *val = of_find_property_value_of_size(np, propname,
+>> > +						(sz * sizeof(*out_values)));
+>> > +
+>> > +	if (IS_ERR(val))
+>> > +		return PTR_ERR(val);
+>> > +
+>> > +	while (sz--) {
+>> > +		*out_values++ = of_read_number(val, 2);
+>> > +		val += 2;
+>> > +	};
+>> > +	return 0;
+>> > +}
+>> 
+>> Considering we don't even have a user of u64 arrays in all of the DT
+>> drivers, do we even need this type hook in the generic API?
+>
+>Indeed, I think we can remove it for now.
+>
 
-I assume this is a normal bootup and not a kdump crash kernel, correct?
+Keep in mind that existing DT drivers are not the only user of this
+interface.
 
-Cheers,
-Don
+This series enables ACPI systems to make use of such drivers (or lays the
+groundwork, each driver does need an update to the new API), but there are
+also new drivers being developed today that are ACPI first. While the
+DT-space may not need this interface now, I don't see the value in
+preventing it from being used in the future by removing it from the
+generic interface.
 
-> 
-> Regards,
-> Ulrich
-> 
-> > 
-> > Cheers,
-> > Don
-> > 
-> >> 
-> >> During ACPI init I see:
-> >> [...]
-> >> Reserving 128MB of memory at 752MB for crashkernel (System RAM: 132095MB)
-> >> ACPI: RSDP 00000000000f4f00 00024 (v02 HP    )
-> >> ACPI: XSDT 00000000bddaed00 000D4 (v01 HP     ProLiant 00000002   322? 
-> > 0000162E)
-> >> ACPI: FACP 00000000bddaee40 000F4 (v03 HP     ProLiant 00000002   322? 
-> > 0000162E)
-> >> ACPI Warning: Invalid length for Pm1aControlBlock: 32, using default 16 
-> > (2011041
-> >> 3/tbfadt-611)
-> >> ACPI Warning: Invalid length for Pm2ControlBlock: 32, using default 8 
-> > (20110413/
-> >> tbfadt-611)
-> >> ACPI: DSDT 00000000bddaef40 026DC (v01 HP         DSDT 00000001 INTL 
-> > 20030228)
-> >> ACPI: FACS 00000000bddac140 00040
-> >> ACPI: SPCR 00000000bddac180 00050 (v01 HP     SPCRRBSU 00000001   322? 
-> > 0000162E)
-> >> ACPI: MCFG 00000000bddac200 0003C (v01 HP     ProLiant 00000001      
-> > 00000000)
-> >> [...]
-> >> 
-> >> HPET id 0 under DRHD base 0xf4ffe000
-> >> BIOS requests to not use x2apic
-> >> Use 'intremap=no_x2apic_optout' to override BIOS request
-> >> Enabled IRQ remapping in xapic mode
-> >> x2apic not enabled, IRQ remapping is in xapic mode
-> >> Switched APIC routing to physical flat.
-> >> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-> >> CPU0: Intel(R) Xeon(R) CPU E5-2630 v2 @ 2.60GHz stepping 04
-> >> Performance Events: PEBS fmt1+, 16-deep LBR, IvyBridge events, Broken BIOS 
-> > detec
-> >> ted, complain to your hardware vendor.
-> >> [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is 330)
-> >> Intel PMU driver.
-> >> ... version:                3
-> >> ... bit width:              48
-> >> ... generic registers:      4
-> >> ... value mask:             0000ffffffffffff
-> >> ... max period:             000000007fffffff
-> >> ... fixed-purpose events:   3
-> >> ... event mask:             000000070000000f
-> >> NMI watchdog enabled, takes one hw-pmu counter.
-> >> Booting Node   0, Processors  #1
-> >> [...]
-> >> 
-> >>  pci0000:00: Requesting ACPI _OSC control (0x1d)
-> >>  pci0000:00: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 
-> > 0x00
-> >> ACPI _OSC control for PCIe not granted, disabling ASPM
-> >> [...]
-> >> 
-> >>  pci0000:20: Requesting ACPI _OSC control (0x1d)
-> >>  pci0000:20: ACPI _OSC request failed (AE_SUPPORT), returned control mask: 
-> > 0x00
-> >> ACPI _OSC control for PCIe not granted, disabling ASPM
-> >> [...]
-> >> 
-> >> Regards,
-> >> Ulrich
-> >> P.S. Please CC: me, as I'm not on LKML...
-> >> 
-> >> 
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org 
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html 
-> >> Please read the FAQ at  http://www.tux.org/lkml/ 
-> 
-> 
-> 
+Adding it later, if needed, isn't as trivial as it sounds as we first have
+to put developers through the pain of finding the interface doesn't exist
+for a valid type, many of whom will decide to work around the limitation
+rather than take the discussion to the infamous LKML - resulting in
+suboptimal firmware descriptions.
+
+I'd much rather see us enable them to help themselves and then get out of
+their way by supporting all the valid types initially.
+
+-- 
+Darren Hart					Open Source Technology Center
+darren.hart@intel.com				            Intel Corporation
+
 
 
