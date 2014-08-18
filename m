@@ -1,331 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaHRSbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 14:31:14 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:57052 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaHRSbN convert rfc822-to-8bit (ORCPT
+	id S1752154AbaHRSbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 14:31:41 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37256 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751852AbaHRSbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 14:31:13 -0400
-Message-ID: <53F246D4.7040807@arm.com>
-Date: Mon, 18 Aug 2014 19:32:52 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 18 Aug 2014 14:31:39 -0400
+Message-ID: <53F24660.2030404@hurleysoftware.com>
+Date: Mon, 18 Aug 2014 14:30:56 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI flags
- for PSCI init
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org>
-X-OriginalArrivalTime: 18 Aug 2014 18:31:08.0847 (UTC) FILETIME=[94463BF0:01CFBB12]
-X-MC-Unique: 114081819311000201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH v9 12/16] serial: amba-pl011: Pass FIQ information to
+ KGDB.
+References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org> <1408372091-12689-13-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1408372091-12689-13-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Daniel,
 
-
-On 04/08/14 16:28, Hanjun Guo wrote:
-> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
-> the former signals to the OS that the hardware is PSCI compliant.
-> The latter selects the appropriate conduit for PSCI calls by
-> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
-> (SMC).
->
-> FADT table contains such information, parse FADT to get the flags
-> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
-> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
->
-> At the same time, only ACPI 5.1 or higher verison supports PSCI,
-> and FADT Major.Minor version was introduced in ACPI 5.1, so we
-> will check the version and only parse FADT table with version >= 5.1.
->
-> If firmware provides ACPI tables with ACPI version less than 5.1,
-> OS will be messed up with those information and have no way to
-> bring up secondery CPUs, so disable ACPI if we get an FADT table
-> with version less that 5.1.
->
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+On 08/18/2014 10:28 AM, Daniel Thompson wrote:
+> Speculatively register a FIQ resource with KGDB. KGDB will only
+> accept it if the kgdb/fiq feature is enabled (both with compile time and
+> runtime switches) and the interrupt controller supports FIQ.
+> 
+> By providing this information to KGDB the serial driver offers
+> "permission" for KGDB to route the UART interrupt signal from the
+> drivers own handler to KGDBs FIQ handler (which will eventually use the
+> UART's polled I/O callbacks to interact with the user). This permission
+> also implies the amba-pl011 driver has already unmasked RX interrupts
+> (otherwise the FIQ handler will never trigger).
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: linux-serial@vger.kernel.org
 > ---
->   arch/arm64/include/asm/acpi.h |   12 ++++++
->   arch/arm64/kernel/acpi.c      |   37 +++++++++++++++++
->   arch/arm64/kernel/psci.c      |   89 ++++++++++++++++++++++++++++++-----------
->   arch/arm64/kernel/setup.c     |    2 +
->   4 files changed, 117 insertions(+), 23 deletions(-)
->
-> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-> index 6400312..6e04868 100644
-> --- a/arch/arm64/include/asm/acpi.h
-> +++ b/arch/arm64/include/asm/acpi.h
-> @@ -19,6 +19,18 @@ extern int acpi_disabled;
->   extern int acpi_noirq;
->   extern int acpi_pci_disabled;
->
-> +/* 1 to indicate PSCI 0.2+ is implemented */
-> +static inline bool acpi_psci_present(void)
+>  drivers/tty/serial/amba-pl011.c | 94 ++++++++++++++++++++++++-----------------
+>  1 file changed, 55 insertions(+), 39 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+> index 8572f2a..ec8ddc7 100644
+> --- a/drivers/tty/serial/amba-pl011.c
+> +++ b/drivers/tty/serial/amba-pl011.c
+> @@ -58,6 +58,7 @@
+>  #include <linux/pinctrl/consumer.h>
+>  #include <linux/sizes.h>
+>  #include <linux/io.h>
+> +#include <linux/kgdb.h>
+>  
+>  #define UART_NR			14
+>  
+> @@ -1416,8 +1417,61 @@ static void pl011_break_ctl(struct uart_port *port, int break_state)
+>  	spin_unlock_irqrestore(&uap->port.lock, flags);
+>  }
+>  
+
+Is pl011_hwinit() just being relocated in source to avoid the forward
+declaration? If so, this is usually split into its own commit.
+
+> +static int pl011_hwinit(struct uart_port *port)
 > +{
-> +	return !!(acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT);
-> +}
+> +	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+> +	int retval;
 > +
-> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
-> +static inline bool acpi_psci_use_hvc(void)
-> +{
-> +	return !!(acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC);
-> +}
-> +
->   static inline void disable_acpi(void)
->   {
->   	acpi_disabled = 1;
-> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> index 9cf9127..69a315d 100644
-> --- a/arch/arm64/kernel/acpi.c
-> +++ b/arch/arm64/kernel/acpi.c
-> @@ -11,6 +11,8 @@
->    *  published by the Free Software Foundation.
->    */
->
-> +#define pr_fmt(fmt) "ACPI: " fmt
-> +
->   #include <linux/init.h>
->   #include <linux/acpi.h>
->   #include <linux/cpumask.h>
-> @@ -47,6 +49,26 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
->   	early_memunmap(map, size);
->   }
->
-> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
-> +{
-> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+> +	/* Optionaly enable pins to be muxed in and configured */
+> +	pinctrl_pm_select_default_state(port->dev);
 > +
 > +	/*
-> +	 * Revision in table header is the FADT Major version,
-> +	 * and there is a minor version of FADT which was introduced
-> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
-> +	 * to get arm boot flags, or we will disable ACPI.
+> +	 * Try to enable the clock producer.
 > +	 */
-> +	if (table->revision < 5 || fadt->minor_revision < 1) {
-
-				&&
-
-> +		pr_info("FADT version is %d.%d, no PSCI support, should be 5.1 or higher\n",
-> +			table->revision, fadt->minor_revision);
-> +		disable_acpi();
-
-Instead of disabling ACPI at multiple places in the boot sequence, can't
-it be done once if acpi_boot_init failed ?
-
-> +		return -EINVAL;
+> +	retval = clk_prepare_enable(uap->clk);
+> +	if (retval)
+> +		return retval;
+> +
+> +	uap->port.uartclk = clk_get_rate(uap->clk);
+> +
+> +	/* Clear pending error and receive interrupts */
+> +	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
+> +	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
+> +
+> +	/*
+> +	 * Save interrupts enable mask, and enable RX interrupts in case if
+> +	 * the interrupt is used for NMI entry.
+> +	 */
+> +	uap->im = readw(uap->port.membase + UART011_IMSC);
+> +	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
+> +
+> +	if (dev_get_platdata(uap->port.dev)) {
+> +		struct amba_pl011_data *plat;
+> +
+> +		plat = dev_get_platdata(uap->port.dev);
+> +		if (plat->init)
+> +			plat->init();
 > +	}
-> +
 > +	return 0;
 > +}
 > +
->   /*
->    * acpi_boot_table_init() called from setup_arch(), always.
->    *	1. find RSDP and get its address, and then find XSDT
-> @@ -68,6 +90,21 @@ void __init acpi_boot_table_init(void)
->   	}
->   }
->
-> +int __init acpi_boot_init(void)
+>  #ifdef CONFIG_CONSOLE_POLL
+>  
+> +static int pl011_poll_init(struct uart_port *port)
 > +{
-> +	int err = 0;
-> +
-> +	/* If acpi_disabled, bail out */
-> +	if (acpi_disabled)
-> +		return -ENODEV;
-> +
-> +	err = acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
-> +	if (err)
-> +		pr_err("Can't find FADT\n");
-> +
-> +	return err;
-> +}
-> +
->   /*
->    * acpi_suspend_lowlevel() - save kernel state and suspend.
->    *
-> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
-> index 9e9798f..2ad2084 100644
-> --- a/arch/arm64/kernel/psci.c
-> +++ b/arch/arm64/kernel/psci.c
-> @@ -15,6 +15,7 @@
->
->   #define pr_fmt(fmt) "psci: " fmt
->
-> +#include <linux/acpi.h>
->   #include <linux/init.h>
->   #include <linux/of.h>
->   #include <linux/smp.h>
-> @@ -231,6 +232,33 @@ static void psci_sys_poweroff(void)
->   	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
->   }
->
-> +static void psci_0_2_set_functions(void)
-> +{
-> +	pr_info("Using standard PSCI v0.2 function IDs\n");
-> +	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
-> +	psci_ops.cpu_suspend = psci_cpu_suspend;
-> +
-> +	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
-> +	psci_ops.cpu_off = psci_cpu_off;
-> +
-> +	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
-> +	psci_ops.cpu_on = psci_cpu_on;
-> +
-> +	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
-> +	psci_ops.migrate = psci_migrate;
-> +
-> +	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
-> +	psci_ops.affinity_info = psci_affinity_info;
-> +
-> +	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
-> +		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
-> +	psci_ops.migrate_info_type = psci_migrate_info_type;
-> +
-> +	arm_pm_restart = psci_sys_reset;
-> +
-> +	pm_power_off = psci_sys_poweroff;
-> +}
-> +
+> +	struct uart_amba_port *uap = (struct uart_amba_port *)port;
 
-Nit: IMO may be you can move these refactoring as separate patch before
-ACPI related changes ?
+Please use container_of() in new code.
 
->   /*
->    * PSCI Function IDs for v0.2+ are well defined so use
->    * standard values.
-> @@ -264,29 +292,7 @@ static int psci_0_2_init(struct device_node *np)
->   		}
->   	}
->
-> -	pr_info("Using standard PSCI v0.2 function IDs\n");
-> -	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
-> -	psci_ops.cpu_suspend = psci_cpu_suspend;
-> -
-> -	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
-> -	psci_ops.cpu_off = psci_cpu_off;
-> -
-> -	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
-> -	psci_ops.cpu_on = psci_cpu_on;
-> -
-> -	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
-> -	psci_ops.migrate = psci_migrate;
-> -
-> -	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
-> -	psci_ops.affinity_info = psci_affinity_info;
-> -
-> -	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
-> -		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
-> -	psci_ops.migrate_info_type = psci_migrate_info_type;
-> -
-> -	arm_pm_restart = psci_sys_reset;
-> -
-> -	pm_power_off = psci_sys_poweroff;
-> +	psci_0_2_set_functions();
->
->   out_put_node:
->   	of_node_put(np);
-> @@ -333,6 +339,40 @@ out_put_node:
->   	return err;
->   }
->
-> +#ifdef CONFIG_ACPI
-> +static int get_set_conduit_method_acpi(void)
-> +{
-> +	pr_info("probing for conduit method from ACPI.\n");
+> +	int retval;
 > +
-> +	if (acpi_psci_use_hvc())
-> +		invoke_psci_fn = __invoke_psci_fn_hvc;
-> +	else
-> +		invoke_psci_fn = __invoke_psci_fn_smc;
+> +	retval = pl011_hwinit(port);
 > +
-> +	return 0;
-> +}
-> +
-> +/* We use PSCI 0.2+ when ACPI is deployed */
-> +static int psci_0_2_init_acpi(void)
+> +#ifdef CONFIG_KGDB_FIQ
+> +	if (retval == 0)
+> +		kgdb_register_fiq(uap->port.irq);
 
-May be this can be renamed psci_acpi_init and called from setup directly
-instead of calling from DT function with acpi_disabled check.
+The uap->port dereference is unnecessary since the port parameter
+is the same thing.
 
-> +{
-> +	if (!acpi_psci_present()) {
-> +		pr_info("is not implemented in ACPI.\n");
-> +		return -EOPNOTSUPP;
-> +	}
-> +
-> +	get_set_conduit_method_acpi();
-> +
-> +	psci_0_2_set_functions();
-> +
-> +	return 0;
-> +}
-> +#else
-> +static inline int psci_0_2_init_acpi(void)
-> +{
-> +	return -ENODEV;
-> +}
+		kgdb_register_fiq(port->irq);
+
+Regards,
+Peter Hurley
+
 > +#endif
 > +
->   static const struct of_device_id psci_of_match[] __initconst = {
->   	{ .compatible = "arm,psci",	.data = psci_0_1_init},
->   	{ .compatible = "arm,psci-0.2",	.data = psci_0_2_init},
-> @@ -345,6 +385,9 @@ int __init psci_init(void)
->   	const struct of_device_id *matched_np;
->   	psci_initcall_t init_fn;
->
-> +	if (!acpi_disabled)
-> +		return psci_0_2_init_acpi();
+> +	return retval;
+> +}
 > +
-
-As mentioned above you need not modify this.
-
->   	np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
->
->   	if (!np)
-> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-> index 85c6326..dfc4e4f3 100644
-> --- a/arch/arm64/kernel/setup.c
-> +++ b/arch/arm64/kernel/setup.c
-> @@ -395,6 +395,8 @@ void __init setup_arch(char **cmdline_p)
->   	efi_idmap_init();
->
->   	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
-> +	acpi_boot_init();
-> +
-
-Check for the return error here and disable ACPI once rather than at
-multiple places all over.
-
->   	unflatten_device_tree();
->
->   	psci_init();
->
+>  static void pl011_quiesce_irqs(struct uart_port *port)
+>  {
+>  	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+> @@ -1471,44 +1525,6 @@ static void pl011_put_poll_char(struct uart_port *port,
+>  
+>  #endif /* CONFIG_CONSOLE_POLL */
+>  
+> -static int pl011_hwinit(struct uart_port *port)
+> -{
+> -	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+> -	int retval;
+> -
+> -	/* Optionaly enable pins to be muxed in and configured */
+> -	pinctrl_pm_select_default_state(port->dev);
+> -
+> -	/*
+> -	 * Try to enable the clock producer.
+> -	 */
+> -	retval = clk_prepare_enable(uap->clk);
+> -	if (retval)
+> -		return retval;
+> -
+> -	uap->port.uartclk = clk_get_rate(uap->clk);
+> -
+> -	/* Clear pending error and receive interrupts */
+> -	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
+> -	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
+> -
+> -	/*
+> -	 * Save interrupts enable mask, and enable RX interrupts in case if
+> -	 * the interrupt is used for NMI entry.
+> -	 */
+> -	uap->im = readw(uap->port.membase + UART011_IMSC);
+> -	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
+> -
+> -	if (dev_get_platdata(uap->port.dev)) {
+> -		struct amba_pl011_data *plat;
+> -
+> -		plat = dev_get_platdata(uap->port.dev);
+> -		if (plat->init)
+> -			plat->init();
+> -	}
+> -	return 0;
+> -}
+> -
+>  static void pl011_write_lcr_h(struct uart_amba_port *uap, unsigned int lcr_h)
+>  {
+>  	writew(lcr_h, uap->port.membase + uap->lcrh_rx);
+> @@ -1888,7 +1904,7 @@ static struct uart_ops amba_pl011_pops = {
+>  	.config_port	= pl011_config_port,
+>  	.verify_port	= pl011_verify_port,
+>  #ifdef CONFIG_CONSOLE_POLL
+> -	.poll_init     = pl011_hwinit,
+> +	.poll_init     = pl011_poll_init,
+>  	.poll_get_char = pl011_get_poll_char,
+>  	.poll_put_char = pl011_put_poll_char,
+>  #endif
+> 
 
