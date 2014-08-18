@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaHRJiJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:38:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43187 "EHLO
+	id S1753843AbaHRJpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:45:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43008 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444AbaHRJgp (ORCPT
+	with ESMTP id S1753108AbaHRJf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:45 -0400
+	Mon, 18 Aug 2014 05:35:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jan Kara <jack@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 135/137] net: Correctly set segment mac_len in skb_segment().
-Date: Mon, 18 Aug 2014 10:33:16 +0100
-Message-Id: <1408354398-10226-136-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 105/137] timer: Fix lock inversion between hrtimer_bases.lock and scheduler locks
+Date: Mon, 18 Aug 2014 10:32:46 +0100
+Message-Id: <1408354398-10226-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,67 +27,251 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 upstream.
+commit 504d58745c9ca28d33572e2d8a9990b43e06075d upstream.
 
-When performing segmentation, the mac_len value is copied right
-out of the original skb.  However, this value is not always set correctly
-(like when the packet is VLAN-tagged) and we'll end up copying a bad
-value.
+clockevents_increase_min_delta() calls printk() from under
+hrtimer_bases.lock. That causes lock inversion on scheduler locks because
+printk() can call into the scheduler. Lockdep puts it as:
 
-One way to demonstrate this is to configure a VM which tags
-packets internally and turn off VLAN acceleration on the forwarding
-bridge port.  The packets show up corrupt like this:
-16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
-(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
-        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
-        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
-        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
-        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
-        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        ...
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.15.0-rc8-06195-g939f04b #2 Not tainted
+-------------------------------------------------------
+trinity-main/74 is trying to acquire lock:
+ (&port_lock_key){-.....}, at: [<811c60be>] serial8250_console_write+0x8c/0x10c
 
-This also leads to awful throughput as GSO packets are dropped and
-cause retransmissions.
+but task is already holding lock:
+ (hrtimer_bases.lock){-.-...}, at: [<8103caeb>] hrtimer_try_to_cancel+0x13/0x66
 
-The solution is to set the mac_len using the values already available
-in then new skb.  We've already adjusted all of the header offset, so we
-might as well correctly figure out the mac_len using skb_reset_mac_len().
-After this change, packets are segmented correctly and performance
-is restored.
+which lock already depends on the new lock.
 
-CC: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: used davem's backport to 3.10 ]
+the existing dependency chain (in reverse order) is:
+
+-> #5 (hrtimer_bases.lock){-.-...}:
+       [<8104a942>] lock_acquire+0x92/0x101
+       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
+       [<8103c918>] __hrtimer_start_range_ns+0x1c/0x197
+       [<8107ec20>] perf_swevent_start_hrtimer.part.41+0x7a/0x85
+       [<81080792>] task_clock_event_start+0x3a/0x3f
+       [<810807a4>] task_clock_event_add+0xd/0x14
+       [<8108259a>] event_sched_in+0xb6/0x17a
+       [<810826a2>] group_sched_in+0x44/0x122
+       [<81082885>] ctx_sched_in.isra.67+0x105/0x11f
+       [<810828e6>] perf_event_sched_in.isra.70+0x47/0x4b
+       [<81082bf6>] __perf_install_in_context+0x8b/0xa3
+       [<8107eb8e>] remote_function+0x12/0x2a
+       [<8105f5af>] smp_call_function_single+0x2d/0x53
+       [<8107e17d>] task_function_call+0x30/0x36
+       [<8107fb82>] perf_install_in_context+0x87/0xbb
+       [<810852c9>] SYSC_perf_event_open+0x5c6/0x701
+       [<810856f9>] SyS_perf_event_open+0x17/0x19
+       [<8142f8ee>] syscall_call+0x7/0xb
+
+-> #4 (&ctx->lock){......}:
+       [<8104a942>] lock_acquire+0x92/0x101
+       [<8142f04c>] _raw_spin_lock+0x21/0x30
+       [<81081df3>] __perf_event_task_sched_out+0x1dc/0x34f
+       [<8142cacc>] __schedule+0x4c6/0x4cb
+       [<8142cae0>] schedule+0xf/0x11
+       [<8142f9a6>] work_resched+0x5/0x30
+
+-> #3 (&rq->lock){-.-.-.}:
+       [<8104a942>] lock_acquire+0x92/0x101
+       [<8142f04c>] _raw_spin_lock+0x21/0x30
+       [<81040873>] __task_rq_lock+0x33/0x3a
+       [<8104184c>] wake_up_new_task+0x25/0xc2
+       [<8102474b>] do_fork+0x15c/0x2a0
+       [<810248a9>] kernel_thread+0x1a/0x1f
+       [<814232a2>] rest_init+0x1a/0x10e
+       [<817af949>] start_kernel+0x303/0x308
+       [<817af2ab>] i386_start_kernel+0x79/0x7d
+
+-> #2 (&p->pi_lock){-.-...}:
+       [<8104a942>] lock_acquire+0x92/0x101
+       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
+       [<810413dd>] try_to_wake_up+0x1d/0xd6
+       [<810414cd>] default_wake_function+0xb/0xd
+       [<810461f3>] __wake_up_common+0x39/0x59
+       [<81046346>] __wake_up+0x29/0x3b
+       [<811b8733>] tty_wakeup+0x49/0x51
+       [<811c3568>] uart_write_wakeup+0x17/0x19
+       [<811c5dc1>] serial8250_tx_chars+0xbc/0xfb
+       [<811c5f28>] serial8250_handle_irq+0x54/0x6a
+       [<811c5f57>] serial8250_default_handle_irq+0x19/0x1c
+       [<811c56d8>] serial8250_interrupt+0x38/0x9e
+       [<810510e7>] handle_irq_event_percpu+0x5f/0x1e2
+       [<81051296>] handle_irq_event+0x2c/0x43
+       [<81052cee>] handle_level_irq+0x57/0x80
+       [<81002a72>] handle_irq+0x46/0x5c
+       [<810027df>] do_IRQ+0x32/0x89
+       [<8143036e>] common_interrupt+0x2e/0x33
+       [<8142f23c>] _raw_spin_unlock_irqrestore+0x3f/0x49
+       [<811c25a4>] uart_start+0x2d/0x32
+       [<811c2c04>] uart_write+0xc7/0xd6
+       [<811bc6f6>] n_tty_write+0xb8/0x35e
+       [<811b9beb>] tty_write+0x163/0x1e4
+       [<811b9cd9>] redirected_tty_write+0x6d/0x75
+       [<810b6ed6>] vfs_write+0x75/0xb0
+       [<810b7265>] SyS_write+0x44/0x77
+       [<8142f8ee>] syscall_call+0x7/0xb
+
+-> #1 (&tty->write_wait){-.....}:
+       [<8104a942>] lock_acquire+0x92/0x101
+       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
+       [<81046332>] __wake_up+0x15/0x3b
+       [<811b8733>] tty_wakeup+0x49/0x51
+       [<811c3568>] uart_write_wakeup+0x17/0x19
+       [<811c5dc1>] serial8250_tx_chars+0xbc/0xfb
+       [<811c5f28>] serial8250_handle_irq+0x54/0x6a
+       [<811c5f57>] serial8250_default_handle_irq+0x19/0x1c
+       [<811c56d8>] serial8250_interrupt+0x38/0x9e
+       [<810510e7>] handle_irq_event_percpu+0x5f/0x1e2
+       [<81051296>] handle_irq_event+0x2c/0x43
+       [<81052cee>] handle_level_irq+0x57/0x80
+       [<81002a72>] handle_irq+0x46/0x5c
+       [<810027df>] do_IRQ+0x32/0x89
+       [<8143036e>] common_interrupt+0x2e/0x33
+       [<8142f23c>] _raw_spin_unlock_irqrestore+0x3f/0x49
+       [<811c25a4>] uart_start+0x2d/0x32
+       [<811c2c04>] uart_write+0xc7/0xd6
+       [<811bc6f6>] n_tty_write+0xb8/0x35e
+       [<811b9beb>] tty_write+0x163/0x1e4
+       [<811b9cd9>] redirected_tty_write+0x6d/0x75
+       [<810b6ed6>] vfs_write+0x75/0xb0
+       [<810b7265>] SyS_write+0x44/0x77
+       [<8142f8ee>] syscall_call+0x7/0xb
+
+-> #0 (&port_lock_key){-.....}:
+       [<8104a62d>] __lock_acquire+0x9ea/0xc6d
+       [<8104a942>] lock_acquire+0x92/0x101
+       [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
+       [<811c60be>] serial8250_console_write+0x8c/0x10c
+       [<8104e402>] call_console_drivers.constprop.31+0x87/0x118
+       [<8104f5d5>] console_unlock+0x1d7/0x398
+       [<8104fb70>] vprintk_emit+0x3da/0x3e4
+       [<81425f76>] printk+0x17/0x19
+       [<8105bfa0>] clockevents_program_min_delta+0x104/0x116
+       [<8105c548>] clockevents_program_event+0xe7/0xf3
+       [<8105cc1c>] tick_program_event+0x1e/0x23
+       [<8103c43c>] hrtimer_force_reprogram+0x88/0x8f
+       [<8103c49e>] __remove_hrtimer+0x5b/0x79
+       [<8103cb21>] hrtimer_try_to_cancel+0x49/0x66
+       [<8103cb4b>] hrtimer_cancel+0xd/0x18
+       [<8107f102>] perf_swevent_cancel_hrtimer.part.60+0x2b/0x30
+       [<81080705>] task_clock_event_stop+0x20/0x64
+       [<81080756>] task_clock_event_del+0xd/0xf
+       [<81081350>] event_sched_out+0xab/0x11e
+       [<810813e0>] group_sched_out+0x1d/0x66
+       [<81081682>] ctx_sched_out+0xaf/0xbf
+       [<81081e04>] __perf_event_task_sched_out+0x1ed/0x34f
+       [<8142cacc>] __schedule+0x4c6/0x4cb
+       [<8142cae0>] schedule+0xf/0x11
+       [<8142f9a6>] work_resched+0x5/0x30
+
+other info that might help us debug this:
+
+Chain exists of:
+  &port_lock_key --> &ctx->lock --> hrtimer_bases.lock
+
+ Possible unsafe locking scenario:
+
+       CPU0                    CPU1
+       ----                    ----
+  lock(hrtimer_bases.lock);
+                               lock(&ctx->lock);
+                               lock(hrtimer_bases.lock);
+  lock(&port_lock_key);
+
+ *** DEADLOCK ***
+
+4 locks held by trinity-main/74:
+ #0:  (&rq->lock){-.-.-.}, at: [<8142c6f3>] __schedule+0xed/0x4cb
+ #1:  (&ctx->lock){......}, at: [<81081df3>] __perf_event_task_sched_out+0x1dc/0x34f
+ #2:  (hrtimer_bases.lock){-.-...}, at: [<8103caeb>] hrtimer_try_to_cancel+0x13/0x66
+ #3:  (console_lock){+.+...}, at: [<8104fb5d>] vprintk_emit+0x3c7/0x3e4
+
+stack backtrace:
+CPU: 0 PID: 74 Comm: trinity-main Not tainted 3.15.0-rc8-06195-g939f04b #2
+ 00000000 81c3a310 8b995c14 81426f69 8b995c44 81425a99 8161f671 8161f570
+ 8161f538 8161f559 8161f538 8b995c78 8b142bb0 00000004 8b142fdc 8b142bb0
+ 8b995ca8 8104a62d 8b142fac 000016f2 81c3a310 00000001 00000001 00000003
+Call Trace:
+ [<81426f69>] dump_stack+0x16/0x18
+ [<81425a99>] print_circular_bug+0x18f/0x19c
+ [<8104a62d>] __lock_acquire+0x9ea/0xc6d
+ [<8104a942>] lock_acquire+0x92/0x101
+ [<811c60be>] ? serial8250_console_write+0x8c/0x10c
+ [<811c6032>] ? wait_for_xmitr+0x76/0x76
+ [<8142f11d>] _raw_spin_lock_irqsave+0x2e/0x3e
+ [<811c60be>] ? serial8250_console_write+0x8c/0x10c
+ [<811c60be>] serial8250_console_write+0x8c/0x10c
+ [<8104af87>] ? lock_release+0x191/0x223
+ [<811c6032>] ? wait_for_xmitr+0x76/0x76
+ [<8104e402>] call_console_drivers.constprop.31+0x87/0x118
+ [<8104f5d5>] console_unlock+0x1d7/0x398
+ [<8104fb70>] vprintk_emit+0x3da/0x3e4
+ [<81425f76>] printk+0x17/0x19
+ [<8105bfa0>] clockevents_program_min_delta+0x104/0x116
+ [<8105cc1c>] tick_program_event+0x1e/0x23
+ [<8103c43c>] hrtimer_force_reprogram+0x88/0x8f
+ [<8103c49e>] __remove_hrtimer+0x5b/0x79
+ [<8103cb21>] hrtimer_try_to_cancel+0x49/0x66
+ [<8103cb4b>] hrtimer_cancel+0xd/0x18
+ [<8107f102>] perf_swevent_cancel_hrtimer.part.60+0x2b/0x30
+ [<81080705>] task_clock_event_stop+0x20/0x64
+ [<81080756>] task_clock_event_del+0xd/0xf
+ [<81081350>] event_sched_out+0xab/0x11e
+ [<810813e0>] group_sched_out+0x1d/0x66
+ [<81081682>] ctx_sched_out+0xaf/0xbf
+ [<81081e04>] __perf_event_task_sched_out+0x1ed/0x34f
+ [<8104416d>] ? __dequeue_entity+0x23/0x27
+ [<81044505>] ? pick_next_task_fair+0xb1/0x120
+ [<8142cacc>] __schedule+0x4c6/0x4cb
+ [<81047574>] ? trace_hardirqs_off_caller+0xd7/0x108
+ [<810475b0>] ? trace_hardirqs_off+0xb/0xd
+ [<81056346>] ? rcu_irq_exit+0x64/0x77
+
+Fix the problem by using printk_deferred() which does not call into the
+scheduler.
+
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/core/skbuff.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/time/clockevents.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 39766e4077d6..a8976de2e1a0 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2804,7 +2804,6 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 		tail = nskb;
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 662c5798a685..c2eb27b6017b 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -146,7 +146,8 @@ static int clockevents_increase_min_delta(struct clock_event_device *dev)
+ {
+ 	/* Nothing to do if we already reached the limit */
+ 	if (dev->min_delta_ns >= MIN_DELTA_LIMIT) {
+-		printk(KERN_WARNING "CE: Reprogramming failure. Giving up\n");
++		printk_deferred(KERN_WARNING
++				"CE: Reprogramming failure. Giving up\n");
+ 		dev->next_event.tv64 = KTIME_MAX;
+ 		return -ETIME;
+ 	}
+@@ -159,9 +160,10 @@ static int clockevents_increase_min_delta(struct clock_event_device *dev)
+ 	if (dev->min_delta_ns > MIN_DELTA_LIMIT)
+ 		dev->min_delta_ns = MIN_DELTA_LIMIT;
  
- 		__copy_skb_header(nskb, skb);
--		nskb->mac_len = skb->mac_len;
+-	printk(KERN_WARNING "CE: %s increased min_delta_ns to %llu nsec\n",
+-	       dev->name ? dev->name : "?",
+-	       (unsigned long long) dev->min_delta_ns);
++	printk_deferred(KERN_WARNING
++			"CE: %s increased min_delta_ns to %llu nsec\n",
++			dev->name ? dev->name : "?",
++			(unsigned long long) dev->min_delta_ns);
+ 	return 0;
+ }
  
- 		/* nskb and skb might have different headroom */
- 		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-@@ -2814,6 +2813,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
- 		skb_set_network_header(nskb, skb->mac_len);
- 		nskb->transport_header = (nskb->network_header +
- 					  skb_network_header_len(skb));
-+		skb_reset_mac_len(nskb);
- 
- 		skb_copy_from_linear_data_offset(skb, -tnl_hlen,
- 						 nskb->data - tnl_hlen,
 -- 
 1.9.1
 
