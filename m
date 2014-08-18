@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaHRQSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 12:18:14 -0400
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:43621 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353AbaHRQSN (ORCPT
+	id S1751767AbaHRQWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 12:22:06 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:65263 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaHRQWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 12:18:13 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH v2 2/4] xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
-Date: Mon, 18 Aug 2014 09:12:21 -0700
-Message-Id: <1408378343-9352-3-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408378343-9352-1-git-send-email-abrestic@chromium.org>
-References: <1408378343-9352-1-git-send-email-abrestic@chromium.org>
+	Mon, 18 Aug 2014 12:22:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408377559-30775-1-git-send-email-bobby.prani@gmail.com>
+References: <1408377559-30775-1-git-send-email-bobby.prani@gmail.com>
+Date: Mon, 18 Aug 2014 20:22:02 +0400
+Message-ID: <CAMo8BfKshP0KT=D8dWzDfbGSfEpd_SeQPRboGGN9b8B4btRBtQ@mail.gmail.com>
+Subject: Re: [PATCH v2] flush_icache_range: Export symbol to fix build errors
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Vineet Gupta <vgupta@synopsys.com>, Richard Kuo <rkuo@codeaurora.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Chris Zankel <chris@zankel.net>,
+        Noam Camus <noamc@ezchip.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tony Lu <zlu@tilera.com>, Kirill Tkhai <tkhai@yandex.ru>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:QUALCOMM HEXAGON..." <linux-hexagon@vger.kernel.org>,
+        "open list:SUPERH" <linux-sh@vger.kernel.org>,
+        "open list:TENSILICA XTENSA..." <linux-xtensa@linux-xtensa.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of calling xhci_compliance_mode_recovery_timer_quirk_check() again
-in the PCI suspend path, just check for XHCI_COMP_MODE_QUIRK which will
-have been set based on xhci_compliance_mode_recovery_timer_quirk_check()
-in xhci_init().
+On Mon, Aug 18, 2014 at 7:59 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
+> Fix building errors occuring due to a missing export of flush_icache_range() in
+>
+> kisskb.ellerman.id.au/kisskb/buildresult/11677809/
+>
+> ERROR: "flush_icache_range" [drivers/misc/lkdtm.ko] undefined!
+>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  arch/arc/mm/cache_arc700.c | 1 +
+>  arch/hexagon/mm/cache.c    | 1 +
+>  arch/sh/mm/cache.c         | 1 +
+>  arch/tile/kernel/smp.c     | 1 +
+>  arch/xtensa/kernel/smp.c   | 1 +
+>  5 files changed, 5 insertions(+)
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-No change from v1.
----
- drivers/usb/host/xhci-pci.c | 2 +-
- drivers/usb/host/xhci.c     | 2 +-
- drivers/usb/host/xhci.h     | 3 ---
- 3 files changed, 2 insertions(+), 5 deletions(-)
+For xtensa
+Acked-by: Max Filippov <jcmvbkbc@gmail.com>
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 88d4553..8093ad6 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -279,7 +279,7 @@ static int xhci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
- 	 * Systems with the TI redriver that loses port status change events
- 	 * need to have the registers polled during D3, so avoid D3cold.
- 	 */
--	if (xhci_compliance_mode_recovery_timer_quirk_check())
-+	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
- 		pdev->no_d3cold = true;
- 
- 	return xhci_suspend(xhci);
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index f94530a..a5cd831 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -491,7 +491,7 @@ static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
-  * Systems:
-  * Vendor: Hewlett-Packard -> System Models: Z420, Z620 and Z820
-  */
--bool xhci_compliance_mode_recovery_timer_quirk_check(void)
-+static bool xhci_compliance_mode_recovery_timer_quirk_check(void)
- {
- 	const char *dmi_product_name, *dmi_sys_vendor;
- 
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 194dbd3..71400b3 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1888,7 +1888,4 @@ struct xhci_input_control_ctx *xhci_get_input_control_ctx(struct xhci_hcd *xhci,
- struct xhci_slot_ctx *xhci_get_slot_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx);
- struct xhci_ep_ctx *xhci_get_ep_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx, unsigned int ep_index);
- 
--/* xHCI quirks */
--bool xhci_compliance_mode_recovery_timer_quirk_check(void);
--
- #endif /* __LINUX_XHCI_HCD_H */
 -- 
-2.1.0.rc2.206.gedb03e5
-
+Thanks.
+-- Max
