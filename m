@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526AbaHRKCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:02:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42601 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaHRJeT (ORCPT
+	id S1754776AbaHRKIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:08:41 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:41257 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaHRJdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:19 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 037/137] net: sctp: check proc_dointvec result in proc_sctp_do_auth
-Date: Mon, 18 Aug 2014 10:31:38 +0100
-Message-Id: <1408354398-10226-38-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 18 Aug 2014 05:33:39 -0400
+From: Arjun Sreedharan <arjun024@gmail.com>
+To: rui.zhang@intel.com
+Cc: jacob.jun.pan@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] tools/thermal: fix calloc argument ordering
+Date: Mon, 18 Aug 2014 15:03:20 +0530
+Message-Id: <1408354400-1656-1-git-send-email-arjun024@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
+@number first, @size second argument
 
-------------------
-
-From: Daniel Borkmann <dborkman@redhat.com>
-
-commit 24599e61b7552673dd85971cf5a35369cd8c119e upstream.
-
-When writing to the sysctl field net.sctp.auth_enable, it can well
-be that the user buffer we handed over to proc_dointvec() via
-proc_sctp_do_auth() handler contains something other than integers.
-
-In that case, we would set an uninitialized 4-byte value from the
-stack to net->sctp.auth_enable that can be leaked back when reading
-the sysctl variable, and it can unintentionally turn auth_enable
-on/off based on the stack content since auth_enable is interpreted
-as a boolean.
-
-Fix it up by making sure proc_dointvec() returned sucessfully.
-
-Fixes: b14878ccb7fa ("net: sctp: cache auth_enable per endpoint")
-Reported-by: Florian Westphal <fwestpha@redhat.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
 ---
- net/sctp/sysctl.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ tools/thermal/tmon/sysfs.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/sctp/sysctl.c b/net/sctp/sysctl.c
-index e41a43470b84..1fce794c9274 100644
---- a/net/sctp/sysctl.c
-+++ b/net/sctp/sysctl.c
-@@ -368,8 +368,7 @@ static int proc_sctp_do_auth(struct ctl_table *ctl, int write,
- 		tbl.data = &net->sctp.auth_enable;
+diff --git a/tools/thermal/tmon/sysfs.c b/tools/thermal/tmon/sysfs.c
+index dfe4548..1c12536 100644
+--- a/tools/thermal/tmon/sysfs.c
++++ b/tools/thermal/tmon/sysfs.c
+@@ -446,7 +446,7 @@ int probe_thermal_sysfs(void)
+ 		return -1;
+ 	}
  
- 	ret = proc_dointvec(&tbl, write, buffer, lenp, ppos);
--
--	if (write) {
-+	if (write && ret == 0) {
- 		struct sock *sk = net->sctp.ctl_sock;
+-	ptdata.tzi = calloc(sizeof(struct tz_info), ptdata.max_tz_instance+1);
++	ptdata.tzi = calloc(ptdata.max_tz_instance+1, sizeof(struct tz_info));
+ 	if (!ptdata.tzi) {
+ 		fprintf(stderr, "Err: allocate tz_info\n");
+ 		return -1;
+@@ -454,8 +454,8 @@ int probe_thermal_sysfs(void)
  
- 		net->sctp.auth_enable = new_value;
+ 	/* we still show thermal zone information if there is no cdev */
+ 	if (ptdata.nr_cooling_dev) {
+-		ptdata.cdi = calloc(sizeof(struct cdev_info),
+-				ptdata.max_cdev_instance + 1);
++		ptdata.cdi = calloc(ptdata.max_cdev_instance + 1,
++				sizeof(struct cdev_info));
+ 		if (!ptdata.cdi) {
+ 			free(ptdata.tzi);
+ 			fprintf(stderr, "Err: allocate cdev_info\n");
 -- 
-1.9.1
+1.8.1.msysgit.1
 
