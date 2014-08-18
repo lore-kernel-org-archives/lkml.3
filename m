@@ -1,123 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaHRGQj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 02:16:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51994 "EHLO mx2.suse.de"
+	id S1751802AbaHRGUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 02:20:20 -0400
+Received: from ozlabs.org ([103.22.144.67]:33936 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870AbaHRGQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 02:16:38 -0400
-Date: Mon, 18 Aug 2014 16:16:24 +1000
-From: NeilBrown <neilb@suse.de>
-To: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Cc: "Manibalan P" <pmanibalan@amiindia.co.in>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Yuri Tikhonov <yur@emcraft.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>, stable@vger.kernel.org
-Subject: ALERT: md/raid6 data corruption risk.
-Message-ID: <20140818161624.7176991f@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1750924AbaHRGUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 02:20:18 -0400
+Date: Mon, 18 Aug 2014 16:20:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: linux-next: stats (Re: Linux 3.17-rc1)
+Message-ID: <20140818162007.621d2ac1@canb.auug.org.au>
+In-Reply-To: <CA+55aFy4WSYZ_6p-+E7=XaYn9U0vwid6XAxw_uB21d=KrPW0mA@mail.gmail.com>
+References: <CA+55aFy4WSYZ_6p-+E7=XaYn9U0vwid6XAxw_uB21d=KrPW0mA@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/h+nr1f+vI=rg.cU8rGhF+bx"; protocol="application/pgp-signature"
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/JKhierlm3nWsVzOBig6xX6p"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/h+nr1f+vI=rg.cU8rGhF+bx
+--Sig_/JKhierlm3nWsVzOBig6xX6p
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-
 Hi all,
- There is a risk of data loss with md/raid6 arrays running on Linux since
- 2.6.32.
- If:
-   - the array is doubly degraded
-   - one or both failed devices are being recovered, and
-   - the array is written to
 
- then it is possible for data on the array to be lost.  The patch below fix=
-es
- the problem.  If you apply the patch to an older kernel which has separate
- handle_stripe5() and handle_stripe6() functions, be sure that patch changes
- handle_stripe6().
+As usual, the executive friendly graph is at
+http://neuling.org/linux-next-size.html :-)
 
- There is no risk to an optimal array or a singly-degraded array.  There is
- also no risk on a doubly-degraded array which is not recovering a device or
- is not receiving write requests.
+(No merge commits counted, next-20140804 was the first linux-next after
+the merge window opened.)
 
- If you have data on a RAID6 array, please consider how to avoid corruption,
- possibly by applying the patch, possibly by removing any hot spares so
- recovery does not automatically start.
+Commits in v3.17-rc1 (relative to v3.16): 10872		(v3.16-rc1:	11364)
+Commits in next-20140804:		  10268		(next-20140602:	10283)
+Commits with the same SHA1:		   9216		(		 9204)
+Commits with the same patch_id:		    590	(1)	(		  559)
+Commits with the same subject line:	     53	(1)	(		   60)
 
- This patch will be sent upstream shortly and will subsequently appear in
- future "-stable" kernels.
+(1) not counting those in the lines above.
 
-NeilBrown
+So commits in -rc1 that were in next-20140602:	 9859	90.7%	(9823	86.4%)
+That is higher than last but simillar to the merge windown before that.
+Last merge window was unusually low.
 
-=46rom f94e37dce722ec7b6666fd04be357f422daa02b5 Mon Sep 17 00:00:00 2001
-From: NeilBrown <neilb@suse.de>
-Date: Wed, 13 Aug 2014 09:57:07 +1000
-Subject: [PATCH] md/raid6: avoid data corruption during recovery of
- double-degraded RAID6
+Some breakdown of the list of extra commits (relative to next-20140804)
+in -rc1:
 
-During recovery of a double-degraded RAID6 it is possible for
-some blocks not to be recovered properly, leading to corruption.
+Top ten first word of commit summary:
 
-If a write happens to one block in a stripe that would be written to a
-missing device, and at the same time that stripe is recovering data
-to the other missing device, then that recovered data may not be written.
+    262 drm
+     62 powerpc
+     51 input
+     46 mips
+     41 net
+     28 hwmon
+     22 xfs
+     22 bcache
+     18 arm
+     18 alsa
 
-This patch skips, in the double-degraded case, an optimisation that is
-only safe for single-degraded arrays.
+Top eleven authors:
 
-Bug was introduced in 2.6.32 and fix is suitable for any kernel since
-then.  In an older kernel with separate handle_stripe5() and
-handle_stripe6() functions that patch must change handle_stripe6().
+     82 bskeggs@redhat.com
+     35 benjamin.tissoires@redhat.com
+     25 axel.lin@ingics.com
+     25 alexander.deucher@amd.com
+     23 himangi774@gmail.com
+     21 gwshan@linux.vnet.ibm.com
+     19 viro@zeniv.linux.org.uk
+     17 paul.burton@imgtec.com
+     15 minipli@googlemail.com
+     15 christian.koenig@amd.com
+     15 acourbot@nvidia.com
 
-Cc: stable@vger.kernel.org (2.6.32+)
-Fixes: 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
-Cc: Yuri Tikhonov <yur@emcraft.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Reported-by: "Manibalan P" <pmanibalan@amiindia.co.in>
-Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=3D1090423
-Signed-off-by: NeilBrown <neilb@suse.de>
+Top ten commiters:
 
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 6b2d615d1094..183588b11fc1 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3817,6 +3817,8 @@ static void handle_stripe(struct stripe_head *sh)
- 				set_bit(R5_Wantwrite, &dev->flags);
- 				if (prexor)
- 					continue;
-+				if (s.failed > 1)
-+					continue;
- 				if (!test_bit(R5_Insync, &dev->flags) ||
- 				    ((i =3D=3D sh->pd_idx || i =3D=3D sh->qd_idx)  &&
- 				     s.failed =3D=3D 0))
+    141 davem@davemloft.net
+     99 bskeggs@redhat.com
+     64 benh@kernel.crashing.org
+     57 alexander.deucher@amd.com
+     51 dmitry.torokhov@gmail.com
+     46 ralf@linux-mips.org
+     41 matthew.garrett@nebula.com
+     32 torvalds@linux-foundation.org
+     31 daeinki@gmail.com
+     28 linux@roeck-us.net
 
---Sig_/h+nr1f+vI=rg.cU8rGhF+bx
+There are also 410 commits in next-20140804 that didn't make it into
+v3.17-rc1.
+
+Top eight first word of commit summary:
+
+     66 arm
+     33 mm
+     30 drm
+     22 rcu
+     15 fs
+     11 ocfs2
+      9 mips
+      9 drivers
+
+Top eleven authors:
+
+     30 akpm@linux-foundation.org
+     23 olof@lixom.net
+     17 ville.syrjala@linux.intel.com
+     17 bobby.prani@gmail.com
+     15 fabf@skynet.be
+     13 laurent.pinchart+renesas@ideasonboard.com
+     12 hannes@cmpxchg.org
+     10 paulmck@linux.vnet.ibm.com
+     10 joe@perches.com
+     10 behanw@converseincode.com
+     10 arnd@arndb.de
+
+Some of Andrew's patches are fixes for other patches in his tree (and
+have been merged into those).
+
+Top ten commiters:
+
+    154 sfr@canb.auug.org.au
+     31 daniel.vetter@ffwll.ch
+     29 paulmck@linux.vnet.ibm.com
+     25 olof@lixom.net
+     14 horms+renesas@verge.net.au
+     14 eparis@redhat.com
+     13 shawn.guo@freescale.com
+     12 zohar@linux.vnet.ibm.com
+     10 jason.wessel@windriver.com
+     10 behanw@converseincode.com
+
+Those commits by me are from the quilt series (mainly Andrew's mmotm
+tree).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/JKhierlm3nWsVzOBig6xX6p
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v2
 
-iQIVAwUBU/GaODnsnt1WYoG5AQKcvRAAoEcdWHs2QIeatehf8GKko5UFelknfSyV
-mbMTcMLJ/9DAN0dafkzMerDNr+oRqSqamsCbt5MNe73Epp4pMBGp+t/zx0eraKfA
-qZv3LKYVT+NVfGJWfSNP5sBsduLKRSehoEHk/V1idneT1545LkUjdN24LbDA6Adu
-W5BzTt0UoQqx5HFwlfUQDnLG2MyNyyZPFRbfiviXAVZZ/L8xv67WDtc2uhPJDtnF
-dB4wE2qStOz+7fOxQuF1/bRC43wsVYqGkB3qXcowjqQYvxbd6ZpmPpylhuoktW8t
-LDaJ34UEotAXQf3OWcHQydmzrgSp/+krfie1EufZNo3zVYnZyDF4hOT9UiTIJ0qU
-BbBF8jRDKCWx3tylvYaPaOL4VDovnOtIzC8aYYyjTIw7i5WIaK9V00YHO6d8oLYx
-jCHgcw78o1ZeMv1bgUvvH006OrjfxAKbWAgRuGLgX71yj1BUncR7bqQ2NtcGNyL5
-Up8YryRHd7mwWMCrLMehQ/zAH6TEHpPO7FTOVA3zhwl4KS+jLr/TBAvdijIkTPAv
-PP8fVMXOlNNy7qTS71A5aDcV6j4U9/LE9kUZFrZYH8PIMnvpWHs+zt4cTaWRgBrq
-eN3McaehqI2w/i+7peJ9DNdXF6zP6yTZ9NshVo6TvMoXTo5xvkXteiaOm3fajSyS
-0IJVSUYQGXE=
-=udRr
+iQIcBAEBCAAGBQJT8ZseAAoJEMDTa8Ir7ZwV38oP/R0E0dueC4IW2ZxUZkhmDVRm
+VjzUOreY0ZY/G9KLLJJqm0db55hbfdL4NSmmdwrVkXFWUOfgYjwTSHIQ1T6R0S0L
+3QpGs9cXFr0WddRb6wYqCk0LLWYb0V1Tb/EIU0x/I0qUBH8T2kImg3zr5Pn8Z8X2
+6oL3+B3im7EwZSUZgsk/QsBLF0kG0MulNNPko/pER/WZub6jyOOekbOb1CU+x//d
+xwuoiIQ4JUAvyrnajCN+UO9Y4nH83XQaLjpwHCE1vm1vcXHP2Lca0wo9tp6Ru6uS
+V/X0oB+OrXGv/cU+40VJsakYLK3IF0Hg6YqVB2PEk/oG7l6/aFfs5gtoRyV11UI3
+hLE/wAddV+jhXxe/ehMutJcTPebnSdI9bDCeV0E2zgrafEl+1lP0CH+w0ykUM0xQ
+IgV963XJtkReby5uGHXy1pbtHgzACgPE+HCAbpgX9l+G+OFZ3p4twtnJEr8eXfp1
+h+zZjtgG9sIhYXN1fbtFjz/YHa9SE7Qf6uxzLZNc3SX1o3LQzOZ0+0wBIh3ZIojx
+acMFx427gpCuhWWVkwHHOSQJLyabfibuuPQb08fVJHf0X/gCoMFGhoVUglC9a/JX
+7clfGZSvfHbG/iOnHDa/6j7/C7EibvgwDQQgZ9bclj6NwwSN5w+T74SdzeyCMwIy
+XP4rbtEEGqJz2pyOKRe6
+=AO+3
 -----END PGP SIGNATURE-----
 
---Sig_/h+nr1f+vI=rg.cU8rGhF+bx--
+--Sig_/JKhierlm3nWsVzOBig6xX6p--
