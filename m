@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaHRNVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 09:21:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55340 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaHRNVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 09:21:08 -0400
-Message-ID: <1408368060.3398.1.camel@paszta.hi.pengutronix.de>
-Subject: Re: altera reset controller in 3.16: failed with error -22
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Pavel Machek <pavel@denx.de>
-Cc: kernel list <linux-kernel@vger.kernel.org>, s.trumtrar@pengutronix.de,
-        dinguyen@altera.com, Vince Bridgers <vbridgers2013@gmail.com>
-Date: Mon, 18 Aug 2014 15:21:00 +0200
-In-Reply-To: <20140818131623.GA21474@amd>
-References: <20140818131623.GA21474@amd>
+	id S1751652AbaHRNa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 09:30:27 -0400
+Received: from [195.154.187.82] ([195.154.187.82]:57620 "EHLO ou.quest-ce.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709AbaHRNaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 09:30:25 -0400
+Message-ID: <1408368608.3030.4.camel@localhost.localdomain>
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Steve Wise <swise@chelsio.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Yann Droneaud <ydroneaud@opteya.com>
+Date: Mon, 18 Aug 2014 15:30:08 +0200
+In-Reply-To: <1408315225-16807-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1408315225-16807-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Organization: OPTEYA
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 92.90.20.119
+X-SA-Exim-Mail-From: ydroneaud@opteya.com
+Subject: Re: [PATCH] infiniband: hw: cxgb3: cxio_hal.c:  Cleaning up missing
+ null-terminate after strncpy call
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on ou.quest-ce.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+Hi,
 
-Am Montag, den 18.08.2014, 15:16 +0200 schrieb Pavel Machek:
-> Hi!
+Le lundi 18 août 2014 à 00:40 +0200, Rickard Strandqvist a écrit :
+> Added a guaranteed null-terminate after call to strncpy.
 > 
-> I'm getting
-> 
-> socfpga-reset ffd05000.rstmgr: /soc/rstmgr@ffd05000 missing
-> #reset-cells property
-> socfpga-reset: probe of ffd05000.rstmgr failed with error -22
-> 
-> messages in 3.16... which is no wonder, since no socfpga-related dts
-> contains that property. Is there part of the patch that is missing
-> from 3.16?
 
-yes, that would be dc8fbed5d9cc169ce0d50e2003416a43dda45ba6
-"ARM: socfpga: Add missing #reset-cells to socfpga device tree"
+Good catch. Do you have an automated way to catch such mistake ?
 
-regards
-Philipp
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/infiniband/hw/cxgb3/cxio_hal.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/infiniband/hw/cxgb3/cxio_hal.c b/drivers/infiniband/hw/cxgb3/cxio_hal.c
+> index de1c61b4..5fc04e4 100644
+> --- a/drivers/infiniband/hw/cxgb3/cxio_hal.c
+> +++ b/drivers/infiniband/hw/cxgb3/cxio_hal.c
+> @@ -933,6 +933,7 @@ int cxio_rdev_open(struct cxio_rdev *rdev_p)
+>  		netdev_p = rdev_p->t3cdev_p->lldev;
+>  		strncpy(rdev_p->dev_name, rdev_p->t3cdev_p->name,
+>  			T3_MAX_DEV_NAME_LEN);
+> +		rdev_p->dev_name[T3_MAX_DEV_NAME_LEN - 1] = '\0';
+
+Why not replacing this by
+
+		strlcpy(rdev_p->dev_name, rdev_p->t3cdev_p->name,
+			T3_MAX_DEV_NAME_LEN);
+
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
+
 
