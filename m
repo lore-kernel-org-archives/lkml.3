@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbaHRJem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42677 "EHLO
+	id S1752736AbaHRJe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42749 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752519AbaHRJeh (ORCPT
+	with ESMTP id S1751091AbaHRJe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:37 -0400
+	Mon, 18 Aug 2014 05:34:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Fitzsimmons <fitzsim@fitzsim.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 050/137] net: mvneta: Fix big endian issue in mvneta_txq_desc_csum()
-Date: Mon, 18 Aug 2014 10:31:51 +0100
-Message-Id: <1408354398-10226-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 062/137] [media] hdpvr: fix two audio bugs
+Date: Mon, 18 Aug 2014 10:32:03 +0100
+Message-Id: <1408354398-10226-63-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Fitzsimmons <fitzsim@fitzsim.org>
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-commit 0a1985879437d14bda8c90d0dae3455c467d7642 upstream.
+commit 3445857b22eafb70a6ac258979e955b116bfd2c6 upstream.
 
-This commit fixes the command value generated for CSUM calculation
-when running in big endian mode.  The Ethernet protocol ID for IP was
-being unconditionally byte-swapped in the layer 3 protocol check (with
-swab16), which caused the mvneta driver to not function correctly in
-big endian mode.  This patch byte-swaps the ID conditionally with
-htons.
+When the audio encoding is changed the driver calls hdpvr_set_audio
+with the current opt->audio_input value. However, that should have
+been opt->audio_input + 1. So changing the audio encoding inadvertently
+changes the input as well. This bug has always been there.
 
-Signed-off-by: Thomas Fitzsimmons <fitzsim@fitzsim.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The second bug was introduced in kernel 3.10 and that broke the
+default_audio_input module option handling: the audio encoding was
+never switched to AC3 if default_audio_input was set to 2 (SPDIF input).
+
+In addition, since starting with 3.10 the audio encoding is always set
+at the start the first bug now always happens when the driver is loaded.
+In the past this bug would only surface if the user would change the
+audio encoding after the driver was loaded.
+
+Also fixes a small trivial typo (bufffer -> buffer).
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Reported-by: Scott Doty <scott@corp.sonic.net>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/marvell/mvneta.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/hdpvr/hdpvr-video.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index c762b805164c..1594c61d80de 100644
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -1149,7 +1149,7 @@ static u32 mvneta_txq_desc_csum(int l3_offs, int l3_proto,
- 	command =  l3_offs    << MVNETA_TX_L3_OFF_SHIFT;
- 	command |= ip_hdr_len << MVNETA_TX_IP_HLEN_SHIFT;
+diff --git a/drivers/media/usb/hdpvr/hdpvr-video.c b/drivers/media/usb/hdpvr/hdpvr-video.c
+index 4f8567aa99d8..068e9c5bfa7f 100644
+--- a/drivers/media/usb/hdpvr/hdpvr-video.c
++++ b/drivers/media/usb/hdpvr/hdpvr-video.c
+@@ -81,7 +81,7 @@ static void hdpvr_read_bulk_callback(struct urb *urb)
+ }
  
--	if (l3_proto == swab16(ETH_P_IP))
-+	if (l3_proto == htons(ETH_P_IP))
- 		command |= MVNETA_TXD_IP_CSUM;
- 	else
- 		command |= MVNETA_TX_L3_IP6;
+ /*=========================================================================*/
+-/* bufffer bits */
++/* buffer bits */
+ 
+ /* function expects dev->io_mutex to be hold by caller */
+ int hdpvr_cancel_queue(struct hdpvr_device *dev)
+@@ -927,7 +927,7 @@ static int hdpvr_s_ctrl(struct v4l2_ctrl *ctrl)
+ 	case V4L2_CID_MPEG_AUDIO_ENCODING:
+ 		if (dev->flags & HDPVR_FLAG_AC3_CAP) {
+ 			opt->audio_codec = ctrl->val;
+-			return hdpvr_set_audio(dev, opt->audio_input,
++			return hdpvr_set_audio(dev, opt->audio_input + 1,
+ 					      opt->audio_codec);
+ 		}
+ 		return 0;
+@@ -1199,7 +1199,7 @@ int hdpvr_register_videodev(struct hdpvr_device *dev, struct device *parent,
+ 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
+ 		V4L2_CID_MPEG_AUDIO_ENCODING,
+ 		ac3 ? V4L2_MPEG_AUDIO_ENCODING_AC3 : V4L2_MPEG_AUDIO_ENCODING_AAC,
+-		0x7, V4L2_MPEG_AUDIO_ENCODING_AAC);
++		0x7, ac3 ? dev->options.audio_codec : V4L2_MPEG_AUDIO_ENCODING_AAC);
+ 	v4l2_ctrl_new_std_menu(hdl, &hdpvr_ctrl_ops,
+ 		V4L2_CID_MPEG_VIDEO_ENCODING,
+ 		V4L2_MPEG_VIDEO_ENCODING_MPEG_4_AVC, 0x3,
 -- 
 1.9.1
 
