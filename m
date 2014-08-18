@@ -1,82 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaHRUNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 16:13:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39113 "EHLO mx2.suse.de"
+	id S1752304AbaHRUOh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 16:14:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36106 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423AbaHRUNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 16:13:45 -0400
-Message-ID: <53F25E72.4080205@suse.de>
-Date: Mon, 18 Aug 2014 22:13:38 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752187AbaHRUOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 16:14:34 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Dmitry Torokhov <dtor@mail.ru>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH 2/2] Input: misc: introduce palmas-pwrbutton
+Date: Mon, 18 Aug 2014 15:13:30 -0500
+Message-ID: <1408392810-16011-3-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408392810-16011-1-git-send-email-nm@ti.com>
+References: <1408392810-16011-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: Tomasz Figa <tomasz.figa@gmail.com>, Doug Anderson <dianders@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 01/10] ARM: dts: Fix MMC pinctrl for exynos5250-snow
-References: <1406868897-26874-1-git-send-email-afaerber@suse.de>	<1406868897-26874-2-git-send-email-afaerber@suse.de> <CAD=FV=VBa5rs_woj0mshFFbA69Nhyi3hXK_XX7-54T3vFyKYHA@mail.gmail.com> <53F247E2.2070007@samsung.com> <53F24A80.4000607@gmail.com> <53F25C25.4070602@samsung.com>
-In-Reply-To: <53F25C25.4070602@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Many palmas family of PMICs have support for interrupt based power
+button. This allows the device to notify the processor of external
+push button events over the shared palmas interrupt. However, this
+event is generated only during a "press" operation. Software is
+supposed to poll(sigh!) for detecting a release event.
 
-Am 18.08.2014 22:03, schrieb Kukjin Kim:
-> On 08/18/14 13:48, Tomasz Figa wrote:
->> On 18.08.2014 20:37, Kukjin Kim wrote:
->>> On 08/01/14 11:26, Doug Anderson wrote:
->>>> On Thu, Jul 31, 2014 at 9:54 PM, Andreas Färber<afaerber@suse.de>  
->>>> wrote:
->>>>> The pinctrl properties should be on the device directly and not on the
->>>>> slot sub-node.
->>>>>
->>>>> Reported-by: Doug Anderson<dianders@chromium.org>
->>>>> Cc: Jaehoon Chung<jh80.chung@samsung.com>
->>>>> Reviewed-by: Tomasz Figa<t.figa@samsung.com>
->>>>> Signed-off-by: Andreas Färber<afaerber@suse.de>
->>>>
->>>> Let's land this one before Jaehoon's, since it was a hidden
->>>> functionality change in his patch.  It will be an easy conflict to
->>>> resolve when his patch is applied.
->>>>
->>> Sounds good to me, I've applied this before Jaehoon's change.
->>>
->>>> Reviewed-by: Doug Anderson<dianders@chromium.org>
->>
->> Version 6 of this series has been already posted. However this
->> particular patch has not changed, so it's fine.
->>
-> Oh, got it. Hope this and 2nd should be same with version 6 ;)
+The PMIC also supports ability to power off independent of the
+software decisions when the button is pressed for a long duration if
+the PMIC is appropriately configured on the platform.
 
-It is documented as such. :) Others did have changes, of course.
+Even though the function is similar to twl4030_pwrbutton, it is
+substantially different in operation to belong to a new driver of it's
+own.
 
-I've started looking into rebasing myself: beware that the smdk5250
-cleanup has an additional conflict in the spi node (cs-gpios movement).
+Based on original work done by Girish S Ghongdemath <girishsg@ti.com>
 
-http://git.kernel.org/cgit/linux/kernel/git/kgene/linux-samsung.git/commit/arch/arm/boot/dts/exynos5250-smdk5250.dts?h=v3.18-next/dt-samsung&id=e138d4333aa02a3daa12c04192bc5c842bffee74
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/input/misc/Kconfig            |   10 ++
+ drivers/input/misc/Makefile           |    1 +
+ drivers/input/misc/palmas-pwrbutton.c |  314 +++++++++++++++++++++++++++++++++
+ 3 files changed, 325 insertions(+)
+ create mode 100644 drivers/input/misc/palmas-pwrbutton.c
 
-Thanks,
-Andreas
-
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 2ff4425..0224dcf 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -451,6 +451,16 @@ config HP_SDC_RTC
+ 	  Say Y here if you want to support the built-in real time clock
+ 	  of the HP SDC controller.
+ 
++config INPUT_PALMAS_PWRBUTTON
++	tristate "Palmas Power button Driver"
++	depends on MFD_PALMAS
++	help
++	  Say Y here if you want to enable power key reporting via the
++	  Palmas family of PMICs.
++
++	  To compile this driver as a module, choose M here. The module will
++	  be called palmas_pwrbutton.
++
+ config INPUT_PCF50633_PMU
+ 	tristate "PCF50633 PMU events"
+ 	depends on MFD_PCF50633
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 4955ad3..e3d5efb 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -40,6 +40,7 @@ obj-$(CONFIG_INPUT_MAX8997_HAPTIC)	+= max8997_haptic.o
+ obj-$(CONFIG_INPUT_MC13783_PWRBUTTON)	+= mc13783-pwrbutton.o
+ obj-$(CONFIG_INPUT_MMA8450)		+= mma8450.o
+ obj-$(CONFIG_INPUT_MPU3050)		+= mpu3050.o
++obj-$(CONFIG_INPUT_PALMAS_PWRBUTTON)	+= palmas-pwrbutton.o
+ obj-$(CONFIG_INPUT_PCAP)		+= pcap_keys.o
+ obj-$(CONFIG_INPUT_PCF50633_PMU)	+= pcf50633-input.o
+ obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
+diff --git a/drivers/input/misc/palmas-pwrbutton.c b/drivers/input/misc/palmas-pwrbutton.c
+new file mode 100644
+index 0000000..35f3d68
+--- /dev/null
++++ b/drivers/input/misc/palmas-pwrbutton.c
+@@ -0,0 +1,314 @@
++/*
++ * Texas Instruments' Palmas Power Button Input Driver
++ *
++ * Copyright (C) 2012-2014 Texas Instruments Incorporated - http://www.ti.com/
++ *	Girish S Ghongdemath
++ *	Nishanth Menon
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/init.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/mfd/palmas.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/reboot.h>
++#include <linux/slab.h>
++
++#define PALMAS_LPK_TIME_MASK		0x0c
++#define PALMAS_PWR_KEY_PRESS		0x01
++#define PALMAS_PWR_KEY_Q_TIME_MS	20
++
++/**
++ * struct palmas_pwron - Palmas power on data
++ * @palmas:		pointer to palmas device
++ * @input_dev:		pointer to input device
++ * @irq:		irq that we are hooked on to
++ * @input_work:		work for detecting release of key
++ * @current_state:	key current state
++ * @key_recheck_ms:	duration for recheck of key (in milli-seconds)
++ */
++struct palmas_pwron {
++	struct palmas *palmas;
++	struct input_dev *input_dev;
++	int irq;
++	struct delayed_work input_work;
++	int current_state;
++	u32 key_recheck_ms;
++};
++
++/**
++ * struct palmas_pwron_config - configuration of palmas power on
++ * @long_press_time_val:	value for long press h/w shutdown event
++ */
++struct palmas_pwron_config {
++	u8 long_press_time_val;
++};
++
++/**
++ * palmas_get_pwr_state() - read button state
++ * @pwron: pointer to pwron struct
++ */
++static int palmas_get_pwr_state(struct palmas_pwron *pwron)
++{
++	struct input_dev *input_dev = pwron->input_dev;
++	struct device *dev = input_dev->dev.parent;
++	unsigned int reg = 0;
++	int ret;
++
++	ret = palmas_read(pwron->palmas, PALMAS_INTERRUPT_BASE,
++			  PALMAS_INT1_LINE_STATE, &reg);
++	if (ret) {
++		dev_err(dev, "%s:Cannot read palmas PWRON status(%d)\n",
++			__func__, ret);
++		return ret;
++	}
++
++	/* PWRON line state is BIT(1) of the register */
++	return reg & BIT(1) ? 0 : PALMAS_PWR_KEY_PRESS;
++}
++
++/**
++ * palmas_power_button_work() - Detects the button release event
++ * @work:	work item to detect button release
++ */
++static void palmas_power_button_work(struct work_struct *work)
++{
++	struct palmas_pwron *pwron = container_of((struct delayed_work *)work,
++						  struct palmas_pwron,
++						  input_work);
++	struct input_dev *input_dev = pwron->input_dev;
++	int next_state;
++
++	next_state = palmas_get_pwr_state(pwron);
++	if (next_state < 0)
++		return;
++
++	/*
++	 * If the state did not change then schedule a work item to check the
++	 * status of the power button line
++	 */
++	if (next_state == pwron->current_state) {
++		schedule_delayed_work(&pwron->input_work,
++				      msecs_to_jiffies(pwron->key_recheck_ms));
++		return;
++	}
++
++	pwron->current_state = next_state;
++	input_report_key(input_dev, KEY_POWER, pwron->current_state);
++	input_sync(input_dev);
++}
++
++/**
++ * pwron_irq() - button press isr
++ * @irq:		irq
++ * @palmas_pwron:	pwron struct
++ */
++static irqreturn_t pwron_irq(int irq, void *palmas_pwron)
++{
++	struct palmas_pwron *pwron = palmas_pwron;
++	struct input_dev *input_dev = pwron->input_dev;
++
++	cancel_delayed_work_sync(&pwron->input_work);
++
++	pwron->current_state = PALMAS_PWR_KEY_PRESS;
++
++	input_report_key(input_dev, KEY_POWER, pwron->current_state);
++	pm_wakeup_event(input_dev->dev.parent, 0);
++	input_sync(input_dev);
++
++	schedule_delayed_work(&pwron->input_work, 0);
++
++	return IRQ_HANDLED;
++}
++
++/**
++ * palmas_pwron_params_ofinit() - device tree parameter parser
++ * @dev:	palmas button device
++ * @config:	configuration params that this fills up
++ */
++static int palmas_pwron_params_ofinit(struct device *dev,
++				      struct palmas_pwron_config *config)
++{
++	struct device_node *np;
++	u32 val;
++	int i;
++	u8 lpk_times[] = { 6, 8, 10, 12 };
++
++	/* Legacy boot? */
++	if (!of_have_populated_dt())
++		return 0;
++
++	np = of_node_get(dev->of_node);
++	/* Mixed boot? */
++	if (!np)
++		return 0;
++
++	val = 0;
++	of_property_read_u32(np, "ti,palmas-long-press-seconds", &val);
++	config->long_press_time_val = ARRAY_SIZE(lpk_times) - 1;
++	for (i = 0; i < ARRAY_SIZE(lpk_times); i++) {
++		if (val <= lpk_times[i]) {
++			config->long_press_time_val = i;
++			break;
++		}
++	}
++	dev_info(dev, "h/w controlled shutdown duration=%d seconds\n",
++		 lpk_times[config->long_press_time_val]);
++
++	of_node_put(np);
++
++	return 0;
++}
++
++/**
++ * palmas_pwron_probe() - probe
++ * @pdev:	platform device for the button
++ */
++static int palmas_pwron_probe(struct platform_device *pdev)
++{
++	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
++	struct device *dev = &pdev->dev;
++	struct input_dev *input_dev;
++	struct palmas_pwron *pwron;
++	int irq, ret;
++	struct palmas_pwron_config config = { 0 };
++
++	ret = palmas_pwron_params_ofinit(dev, &config);
++	if (ret)
++		return ret;
++
++	pwron = devm_kzalloc(dev, sizeof(*pwron), GFP_KERNEL);
++	if (!pwron)
++		return -ENOMEM;
++
++	input_dev = devm_input_allocate_device(dev);
++	if (!input_dev) {
++		dev_err(dev, "Can't allocate power button\n");
++		return -ENOMEM;
++	}
++
++	/* Setup default hardware shutdown option (long key press) */
++	ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
++				 PALMAS_LONG_PRESS_KEY,
++				 PALMAS_LPK_TIME_MASK,
++				 config.long_press_time_val);
++	if (ret < 0) {
++		dev_err(dev, "LONG_PRESS_KEY_UPDATE failed!\n");
++		return ret;
++	}
++
++	input_dev->evbit[0] = BIT_MASK(EV_KEY);
++	input_dev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
++	input_dev->name = "palmas_pwron";
++	input_dev->phys = "palmas_pwron/input0";
++	input_dev->dev.parent = dev;
++
++	pwron->palmas = palmas;
++	pwron->input_dev = input_dev;
++
++	INIT_DELAYED_WORK(&pwron->input_work, palmas_power_button_work);
++
++	irq = platform_get_irq(pdev, 0);
++
++	device_init_wakeup(dev, 1);
++
++	ret = devm_request_threaded_irq(dev, irq, NULL, pwron_irq,
++					IRQF_TRIGGER_HIGH |
++					IRQF_TRIGGER_LOW,
++					dev_name(dev),
++					pwron);
++	if (ret < 0) {
++		dev_err(dev, "Can't get IRQ for pwron: %d\n", ret);
++		return ret;
++	}
++
++	enable_irq_wake(irq);
++
++	ret = input_register_device(input_dev);
++	if (ret) {
++		dev_dbg(dev, "Can't register power button: %d\n", ret);
++		goto out_irq_wake;
++	}
++	pwron->irq = irq;
++
++	pwron->key_recheck_ms = PALMAS_PWR_KEY_Q_TIME_MS;
++
++	platform_set_drvdata(pdev, pwron);
++
++	return 0;
++
++out_irq_wake:
++	disable_irq_wake(irq);
++
++	return ret;
++}
++
++static int palmas_pwron_remove(struct platform_device *pdev)
++{
++	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
++
++	disable_irq_wake(pwron->irq);
++	input_unregister_device(pwron->input_dev);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++/**
++ * palmas_pwron_suspend() - suspend handler
++ * @dev:	power button device
++ *
++ * Cancel all pending work items for the power button
++ */
++static int palmas_pwron_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
++
++	cancel_delayed_work_sync(&pwron->input_work);
++
++	return 0;
++}
++
++static UNIVERSAL_DEV_PM_OPS(palmas_pwron_pm, palmas_pwron_suspend, NULL, NULL);
++
++#else
++static UNIVERSAL_DEV_PM_OPS(palmas_pwron_pm, NULL, NULL, NULL);
++#endif
++
++#ifdef CONFIG_OF
++static struct of_device_id of_palmas_pwr_match[] = {
++	{.compatible = "ti,palmas-pwrbutton"},
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, of_palmas_pwr_match);
++#endif
++
++static struct platform_driver palmas_pwron_driver = {
++	.probe = palmas_pwron_probe,
++	.remove = palmas_pwron_remove,
++	.driver = {
++		   .name = "palmas_pwrbutton",
++		   .owner = THIS_MODULE,
++		   .of_match_table = of_match_ptr(of_palmas_pwr_match),
++		   .pm = &palmas_pwron_pm,
++		   },
++};
++module_platform_driver(palmas_pwron_driver);
++
++MODULE_ALIAS("platform:palmas-pwrbutton");
++MODULE_DESCRIPTION("Palmas Power Button");
++MODULE_LICENSE("GPL V2");
++MODULE_AUTHOR("Texas Instruments Inc.");
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+1.7.9.5
+
