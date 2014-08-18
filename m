@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaHRJe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42744 "EHLO
+	id S1751120AbaHRJea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42624 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650AbaHRJez (ORCPT
+	with ESMTP id S1752407AbaHRJeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:55 -0400
+	Mon, 18 Aug 2014 05:34:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@fb.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 063/137] block: don't assume last put of shared tags is for the host
-Date: Mon, 18 Aug 2014 10:32:04 +0100
-Message-Id: <1408354398-10226-64-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 041/137] net: fix sparse warning in sk_dst_set()
+Date: Mon, 18 Aug 2014 10:31:42 +0100
+Message-Id: <1408354398-10226-42-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,92 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Eric Dumazet <edumazet@google.com>
 
-commit d45b3279a5a2252cafcd665bbf2db8c9b31ef783 upstream.
+commit 5925a0555bdaf0b396a84318cbc21ba085f6c0d3 upstream.
 
-There is no inherent reason why the last put of a tag structure must be
-the one for the Scsi_Host, as device model objects can be held for
-arbitrary periods.  Merge blk_free_tags and __blk_free_tags into a single
-funtion that just release a references and get rid of the BUG() when the
-host reference wasn't the last.
+sk_dst_cache has __rcu annotation, so we need a cast to avoid
+following sparse error :
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+include/net/sock.h:1774:19: warning: incorrect type in initializer (different address spaces)
+include/net/sock.h:1774:19:    expected struct dst_entry [noderef] <asn:4>*__ret
+include/net/sock.h:1774:19:    got struct dst_entry *dst
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Fixes: 7f502361531e ("ipv4: irq safe sk_dst_[re]set() and ipv4_sk_update_pmtu() fix")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/blk-tag.c | 33 +++++++--------------------------
- 1 file changed, 7 insertions(+), 26 deletions(-)
+ include/net/sock.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index 3f33d8672268..a185b86741e5 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -27,18 +27,15 @@ struct request *blk_queue_find_tag(struct request_queue *q, int tag)
- EXPORT_SYMBOL(blk_queue_find_tag);
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 447205545c1c..f4478d696112 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1776,7 +1776,7 @@ sk_dst_set(struct sock *sk, struct dst_entry *dst)
+ 	struct dst_entry *old_dst;
  
- /**
-- * __blk_free_tags - release a given set of tag maintenance info
-+ * blk_free_tags - release a given set of tag maintenance info
-  * @bqt:	the tag map to free
-  *
-- * Tries to free the specified @bqt.  Returns true if it was
-- * actually freed and false if there are still references using it
-+ * Drop the reference count on @bqt and frees it when the last reference
-+ * is dropped.
-  */
--static int __blk_free_tags(struct blk_queue_tag *bqt)
-+void blk_free_tags(struct blk_queue_tag *bqt)
- {
--	int retval;
--
--	retval = atomic_dec_and_test(&bqt->refcnt);
--	if (retval) {
-+	if (atomic_dec_and_test(&bqt->refcnt)) {
- 		BUG_ON(find_first_bit(bqt->tag_map, bqt->max_depth) <
- 							bqt->max_depth);
- 
-@@ -50,9 +47,8 @@ static int __blk_free_tags(struct blk_queue_tag *bqt)
- 
- 		kfree(bqt);
- 	}
--
--	return retval;
- }
-+EXPORT_SYMBOL(blk_free_tags);
- 
- /**
-  * __blk_queue_free_tags - release tag maintenance info
-@@ -69,28 +65,13 @@ void __blk_queue_free_tags(struct request_queue *q)
- 	if (!bqt)
- 		return;
- 
--	__blk_free_tags(bqt);
-+	blk_free_tags(bqt);
- 
- 	q->queue_tags = NULL;
- 	queue_flag_clear_unlocked(QUEUE_FLAG_QUEUED, q);
+ 	sk_tx_queue_clear(sk);
+-	old_dst = xchg(&sk->sk_dst_cache, dst);
++	old_dst = xchg((__force struct dst_entry **)&sk->sk_dst_cache, dst);
+ 	dst_release(old_dst);
  }
  
- /**
-- * blk_free_tags - release a given set of tag maintenance info
-- * @bqt:	the tag map to free
-- *
-- * For externally managed @bqt frees the map.  Callers of this
-- * function must guarantee to have released all the queues that
-- * might have been using this tag map.
-- */
--void blk_free_tags(struct blk_queue_tag *bqt)
--{
--	if (unlikely(!__blk_free_tags(bqt)))
--		BUG();
--}
--EXPORT_SYMBOL(blk_free_tags);
--
--/**
-  * blk_queue_free_tags - release tag maintenance info
-  * @q:  the request queue for the device
-  *
 -- 
 1.9.1
 
