@@ -1,78 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691AbaHRMLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:11:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58759 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709AbaHRMLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:11:54 -0400
-Date: Mon, 18 Aug 2014 14:11:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-Subject: Re: [PATCH 0/2] new APIs to allocate buffer-cache for superblock in
- non-movable area
-Message-ID: <20140818121146.GD9603@quack.suse.cz>
-References: <53EC4531.1000904@lge.com>
- <20140814142610.6f0d4194c373fef188870772@linux-foundation.org>
- <20140816185208.GA1589@quack.suse.cz>
- <53F153B4.1060309@lge.com>
- <20140818032422.GD23084@thunk.org>
- <53F184B6.5080503@lge.com>
+	id S1751610AbaHRMPS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:15:18 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:60211 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaHRMPP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 08:15:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F184B6.5080503@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53F1DA68.1040409@neotion.com>
+References: <53C7E45E.2060102@neotion.com>
+	<53F1DA68.1040409@neotion.com>
+Date: Mon, 18 Aug 2014 14:15:14 +0200
+Message-ID: <CAPDyKFoD6j37LQnvyTi2STrntKTohBq2tmOq9SOekP0YND5Xbg@mail.gmail.com>
+Subject: Re: [PATCH v2 0002/0002] mmc: check EXT_CSD_PARTITION_SETTING_COMPLETED
+ before creating partitions
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>
+Cc: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 18-08-14 13:44:38, Gioh Kim wrote:
-> 
-> 
-> 2014-08-18 오후 12:24, Theodore Ts'o 쓴 글:
-> >On Mon, Aug 18, 2014 at 10:15:32AM +0900, Gioh Kim wrote:
-> >>
-> >>My test platform has totally 1GB memory, 256MB for CMA and 768MB for normal.
-> >>I applied Joonsoo's patch: https://lkml.org/lkml/2014/5/28/64, so that
-> >>3/4 of allocation take place in normal area and 1/4 allocation take place in CMA area.
-> >>
-> >>And my platform has 4 ext4 partitions. Each ext4 partition has 2 page caches for superblock that
-> >>are what this patch tries to move to out of CMA area.
-> >>Therefore there are 8 page caches (8 pages size) that can prevent page migration.
-> >
-> >Yes, but are you actually *using* the ext4 partitions for anything?
-> >If this is a realistic real world use case, file systems are used to
-> >store, well, files, and that means there will be inodes and dentry
-> >cache entries that will also be allocated.  Does your test scenario
-> >reflect real world usage?
-> 
-> Yes. I'm working for LG Electronics.
-> My test platform is currently selling item in the market.
-> And also I test my patch when my platform is working as if real user uses it.
-  Great, this is exactly what I was looking for. So if it really makes
-your usecase work I don't have objections to your solution (after you
-change what Andrew suggested).
+On 18 August 2014 12:50, Grégory Soutadé <gsoutade@neotion.com> wrote:
+> Checks EXT_CSD_PARTITION_SETTING_COMPLETED bit before
+> computing enhanced user area and adding mmc partitions
+> (as described in JEDEC standard).
+>
+> Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
 
-> I think the page caches of the inodes and dentry are held for short time.
-> I can see pairs of get_bh and put_bh in inodes/dentry handling.
-> 
-> I think inodes is allocated by kmem_cache_alloc in ext4_alloc_inode().
-> It is non-movable area allocation.
-  I guess the hold time depends on what storage do you use in your product
-(flash?) and how loaded it is.
+Hi Grégory,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+First, could you rename patches so they actually describe what they
+actually do. Currently both of them have the same header.
+Second, I really appreciate if there could be some version history of
+the patches since it helps review process.
+
+Could you please resend them?
+
+Kind regards
+Uffe
+
+> ---
+>  drivers/mmc/core/mmc.c |  167 +++++++++++++++++++++++++++---------------------
+>  1 file changed, 95 insertions(+), 72 deletions(-)
+>
+> Changelog v2:
+>         Move code for user area and general purpose partitions
+>         into functions.
+>
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index ef25d91..3158470 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -298,6 +298,99 @@ static void mmc_select_card_type(struct mmc_card *card)
+>         card->mmc_avail_type = avail_type;
+>  }
+>
+> +static void mmc_manage_enhanced_area(struct mmc_card *card, u8 *ext_csd)
+> +{
+> +       u8 hc_erase_grp_sz, hc_wp_grp_sz;
+> +
+> +       /*
+> +        * Enhanced area feature support -- check whether the eMMC
+> +        * card has the Enhanced area enabled.  If so, export enhanced
+> +        * area offset and size to user by adding sysfs interface.
+> +        */
+> +       if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
+> +           (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
+> +               if (card->ext_csd.partition_setting_completed) {
+> +                       hc_erase_grp_sz =
+> +                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+> +                       hc_wp_grp_sz =
+> +                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+> +                       /*
+> +                        * calculate the enhanced data area offset, in bytes
+> +                        */
+> +                       card->ext_csd.enhanced_area_offset =
+> +                               (ext_csd[139] << 24) + (ext_csd[138] << 16) +
+> +                               (ext_csd[137] << 8) + ext_csd[136];
+> +                       if (mmc_card_blockaddr(card))
+> +                               card->ext_csd.enhanced_area_offset <<= 9;
+> +                       /*
+> +                        * calculate the enhanced data area size, in kilobytes
+> +                        */
+> +                       card->ext_csd.enhanced_area_size =
+> +                               (ext_csd[142] << 16) + (ext_csd[141] << 8) +
+> +                               ext_csd[140];
+> +                       card->ext_csd.enhanced_area_size *=
+> +                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+> +                       card->ext_csd.enhanced_area_size <<= 9;
+> +               } else {
+> +                       pr_warn("%s: defines enhanced area without partition setting complete\n",
+> +                               mmc_hostname(card->host));
+> +               }
+> +       } else {
+> +               /*
+> +                * If the enhanced area is not enabled, disable these
+> +                * device attributes.
+> +                */
+> +               card->ext_csd.enhanced_area_offset = -EINVAL;
+> +               card->ext_csd.enhanced_area_size = -EINVAL;
+> +       }
+> +}
+> +
+> +static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
+> +{
+> +       int idx;
+> +       u8 hc_erase_grp_sz, hc_wp_grp_sz;
+> +       unsigned int part_size;
+> +
+> +       /*
+> +        * General purpose partition feature support --
+> +        * If ext_csd has the size of general purpose partitions,
+> +        * set size, part_cfg, partition name in mmc_part.
+> +        */
+> +       if (ext_csd[EXT_CSD_PARTITION_SUPPORT] &
+> +           EXT_CSD_PART_SUPPORT_PART_EN) {
+> +               hc_erase_grp_sz =
+> +                       ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+> +               hc_wp_grp_sz =
+> +                       ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+> +
+> +               for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
+> +                       if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3] &&
+> +                           !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 1] &&
+> +                           !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2])
+> +                               continue;
+> +
+> +                       if (card->ext_csd.partition_setting_completed == 0) {
+> +                               pr_warn("%s: has partition size defined without partition complete\n",
+> +                                       mmc_hostname(card->host));
+> +                               break;
+> +                       }
+> +
+> +                       part_size =
+> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2]
+> +                               << 16) +
+> +                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 1]
+> +                               << 8) +
+> +                               ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
+> +                       part_size *= (size_t)(hc_erase_grp_sz *
+> +                               hc_wp_grp_sz);
+> +                       mmc_part_add(card, part_size << 19,
+> +                               EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
+> +                               "gp%d", idx, false,
+> +                               MMC_BLK_DATA_AREA_GP);
+> +               }
+> +       }
+> +}
+> +
+>  /*
+>   * Decode extended CSD.
+>   */
+> @@ -305,7 +398,6 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>  {
+>         int err = 0, idx;
+>         unsigned int part_size;
+> -       u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
+>
+>         BUG_ON(!card);
+>
+> @@ -409,80 +501,11 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>                 } else {
+>                         card->ext_csd.partition_setting_completed = 0;
+>                 }
+> -               /*
+> -                * Enhanced area feature support -- check whether the eMMC
+> -                * card has the Enhanced area enabled.  If so, export enhanced
+> -                * area offset and size to user by adding sysfs interface.
+> -                */
+> -               if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
+> -                   (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
+> -                       hc_erase_grp_sz =
+> -                               ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+> -                       hc_wp_grp_sz =
+> -                               ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+>
+> -                       card->ext_csd.enhanced_area_en = 1;
+> -                       /*
+> -                        * calculate the enhanced data area offset, in bytes
+> -                        */
+> -                       card->ext_csd.enhanced_area_offset =
+> -                               (ext_csd[139] << 24) + (ext_csd[138] << 16) +
+> -                               (ext_csd[137] << 8) + ext_csd[136];
+> -                       if (mmc_card_blockaddr(card))
+> -                               card->ext_csd.enhanced_area_offset <<= 9;
+> -                       /*
+> -                        * calculate the enhanced data area size, in kilobytes
+> -                        */
+> -                       card->ext_csd.enhanced_area_size =
+> -                               (ext_csd[142] << 16) + (ext_csd[141] << 8) +
+> -                               ext_csd[140];
+> -                       card->ext_csd.enhanced_area_size *=
+> -                               (size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+> -                       card->ext_csd.enhanced_area_size <<= 9;
+> -               } else {
+> -                       /*
+> -                        * If the enhanced area is not enabled, disable these
+> -                        * device attributes.
+> -                        */
+> -                       card->ext_csd.enhanced_area_offset = -EINVAL;
+> -                       card->ext_csd.enhanced_area_size = -EINVAL;
+> -               }
+> +               mmc_manage_enhanced_area(card, ext_csd);
+>
+> -               /*
+> -                * General purpose partition feature support --
+> -                * If ext_csd has the size of general purpose partitions,
+> -                * set size, part_cfg, partition name in mmc_part.
+> -                */
+> -               if (ext_csd[EXT_CSD_PARTITION_SUPPORT] &
+> -                       EXT_CSD_PART_SUPPORT_PART_EN) {
+> -                       if (card->ext_csd.enhanced_area_en != 1) {
+> -                               hc_erase_grp_sz =
+> -                                       ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+> -                               hc_wp_grp_sz =
+> -                                       ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+> -
+> -                               card->ext_csd.enhanced_area_en = 1;
+> -                       }
+> +               mmc_manage_gp_partitions(card, ext_csd);
+>
+> -                       for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
+> -                               if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3] &&
+> -                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 1] &&
+> -                               !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2])
+> -                                       continue;
+> -                               part_size =
+> -                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2]
+> -                                       << 16) +
+> -                               (ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 1]
+> -                                       << 8) +
+> -                               ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3];
+> -                               part_size *= (size_t)(hc_erase_grp_sz *
+> -                                       hc_wp_grp_sz);
+> -                               mmc_part_add(card, part_size << 19,
+> -                                       EXT_CSD_PART_CONFIG_ACC_GP0 + idx,
+> -                                       "gp%d", idx, false,
+> -                                       MMC_BLK_DATA_AREA_GP);
+> -                       }
+> -               }
+>                 card->ext_csd.sec_trim_mult =
+>                         ext_csd[EXT_CSD_SEC_TRIM_MULT];
+>                 card->ext_csd.sec_erase_mult =
+> --
+> 1.7.9.5
