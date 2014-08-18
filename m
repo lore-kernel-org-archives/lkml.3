@@ -1,192 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258AbaHRRMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:12:34 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:46715 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751806AbaHRRIb (ORCPT
+	id S1752233AbaHRRMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:12:12 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:42491 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942AbaHRRMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 13:08:31 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+	Mon, 18 Aug 2014 13:12:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408381749-14156-2-git-send-email-dianders@chromium.org>
+References: <1408381749-14156-1-git-send-email-dianders@chromium.org> <1408381749-14156-2-git-send-email-dianders@chromium.org>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Mon, 18 Aug 2014 10:11:46 -0700
+X-Google-Sender-Auth: HDz1Brmo0g6981WmVM4CLWDJbkk
+Message-ID: <CAPz6YkW5RVb=Uqgh1hVG5GEftQE9gFy-2EuOCemBVCn=95O4uQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ARM: rockchip: rk3288: Switch to use the proper PWM IP
+To: Doug Anderson <dianders@chromium.org>
+Cc: Heiko Stuebner <heiko@sntech.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Caesar Wang <caesar.wang@rock-chips.com>,
+        Olof Johansson <olof@lixom.net>, Eddie Cai <eddie.cai@rock-chips.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH v2 3/9] of: Update Tegra XUSB pad controller binding for USB
-Date: Mon, 18 Aug 2014 10:08:19 -0700
-Message-Id: <1408381705-3623-4-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new bindings used for USB support by the Tegra XUSB pad controller.
-This includes additional PHY types, USB-specific pinconfig properties, etc.
+On Mon, Aug 18, 2014 at 10:09 AM, Doug Anderson <dianders@chromium.org> wrote:
+> The rk3288 SoC has an option to switch all of the PWMs in the system
+> between the old IP block and the new IP block.  The new IP block is
+> working and tested and the suggested PWM to use, so setup the SoC to
+> use it and then we can pretend that the other IP block doesn't exist.
+>
+> This code could go lots of other places, but we've put it here.  Why?
+> - Pushing it to the bootloader just makes the code harder to update in
+>   the field.  If we later find a bug in the new IP block and want to
+>   change our mind about what to use we want it to be easy to update.
+> - Putting this code in the driver for IP block is a lot of extra work,
+>   device tree bindings, etc.  Now that the new IP block is validated
+>   it's likely no future SoCs will need this code.  Why pollute the PWM
+>   driver with this?  This is an rk3288 thing so it should be in rk3288
+>   code.
+> - There's a single bit that switches over PWMs, which makes it extra
+>   hard to put this under the PWM device tree nodes.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  arch/arm/mach-rockchip/rockchip.c | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
+>
+> diff --git a/arch/arm/mach-rockchip/rockchip.c b/arch/arm/mach-rockchip/rockchip.c
+> index 8ab9e0e..99133b9 100644
+> --- a/arch/arm/mach-rockchip/rockchip.c
+> +++ b/arch/arm/mach-rockchip/rockchip.c
+> @@ -24,6 +24,24 @@
+>  #include <asm/hardware/cache-l2x0.h>
+>  #include "core.h"
+>
+> +static void __init rk3288_init_machine(void)
+> +{
+> +       void *grf = ioremap(0xff770000, 0x10000);
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
-Changes from v1:
- - Updated to use common mailbox bindings.
- - Made USB3 port-to-lane mappins a top-level binding rather than a pinconfig
-   binding.
- - Add #defines for the padctl lanes.
----
- .../pinctrl/nvidia,tegra124-xusb-padctl.txt        | 52 ++++++++++++++++++++--
- include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   | 20 +++++++++
- 2 files changed, 68 insertions(+), 4 deletions(-)
+Is it worth checking for failure here?  Will the system boot without this?
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-index 2f9c0bd..606a5db 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-@@ -21,6 +21,16 @@ Required properties:
-   - padctl
- - #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
-   See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list of valid values.
-+- mboxes: Must contain an entry for the XUSB PHY mailbox channel.
-+  See ../mailbox/mailbox.txt for details.
-+
-+Optional properties:
-+-------------------
-+- vbus-otg-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
-+- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
-+- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the corresponding USB3
-+  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list
-+  of valid values.
- 
- Lane muxing:
- ------------
-@@ -50,6 +60,15 @@ Optional properties:
-   pin or group should be assigned to. Valid values for function names are
-   listed below.
- - nvidia,iddq: Enables IDDQ mode of the lane. (0: no, 1: yes)
-+- nvidia,usb2-port-num: USB2 port (0, 1, or 2) to which the lane is mapped.
-+- nvidia,hsic-strobe-trim: HSIC strobe trimmer value.
-+- nvidia,hsic-rx-strobe-trim: HSIC RX strobe trimmer value.
-+- nvidia,hsic-rx-data-trim: HSIC RX data trimmer value.
-+- nvidia,hsic-tx-rtune-n: HSIC TX RTUNEN value.
-+- nvidia,hsic-tx-rtune-p: HSIC TX RTUNEP value.
-+- nvidia,hsic-tx-slew-n: HSIC TX SLEWN value.
-+- nvidia,hsic-tx-slew-p: HSIC TX SLEWP value.
-+- nvidia,hsic-auto-term: Enables HSIC AUTO_TERM. (0: no, 1: yes)
- 
- Note that not all of these properties are valid for all lanes. Lanes can be
- divided into three groups:
-@@ -58,18 +77,22 @@ divided into three groups:
- 
-     Valid functions for this group are: "snps", "xusb", "uart", "rsvd".
- 
--    The nvidia,iddq property does not apply to this group.
-+    None of the other properties apply to this group.
- 
-   - ulpi-0, hsic-0, hsic-1:
- 
-     Valid functions for this group are: "snps", "xusb".
- 
--    The nvidia,iddq property does not apply to this group.
-+    The nvidia,hsic-* properties apply only to the pins hsic-{0,1} when
-+    the function is xusb.
- 
-   - pcie-0, pcie-1, pcie-2, pcie-3, pcie-4, sata-0:
- 
-     Valid functions for this group are: "pcie", "usb3", "sata", "rsvd".
- 
-+    The nvidia,usb2-port-num property only applies and is required when
-+    the function is usb3.
-+
- 
- Example:
- ========
-@@ -82,6 +105,7 @@ SoC file extract:
- 		reg = <0x0 0x7009f000 0x0 0x1000>;
- 		resets = <&tegra_car 142>;
- 		reset-names = "padctl";
-+		mboxes = <&mbox TEGRA_XUSB_MBOX_CHAN_PHY>;
- 
- 		#phy-cells = <1>;
- 	};
-@@ -100,15 +124,35 @@ Board file extract:
- 
- 	...
- 
-+	usb@0,70090000 {
-+		...
-+
-+		phys = <&padctl 5>, <&padctl 6>, <&padctl 7>;
-+		phy-names = "utmi-1", "utmi-2", "usb3-0";
-+
-+		...
-+	}
-+
-+	...
-+
- 	padctl: padctl@0,7009f000 {
- 		pinctrl-0 = <&padctl_default>;
- 		pinctrl-names = "default";
- 
-+		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
-+		vbus-otg-2-supply = <&vdd_usb3_vbus>;
-+
- 		padctl_default: pinmux {
--			usb3 {
--				nvidia,lanes = "pcie-0", "pcie-1";
-+			otg {
-+				nvidia,lanes = "otg-1", "otg-2";
-+				nvidia,function = "xusb";
-+			};
-+
-+			usb3p0 {
-+				nvidia,lanes = "pcie-0";
- 				nvidia,function = "usb3";
- 				nvidia,iddq = <0>;
-+				nvidia,usb2-port-num = <2>;
- 			};
- 
- 			pcie {
-diff --git a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-index 914d56d..17b1aab 100644
---- a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-+++ b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-@@ -3,5 +3,25 @@
- 
- #define TEGRA_XUSB_PADCTL_PCIE 0
- #define TEGRA_XUSB_PADCTL_SATA 1
-+#define TEGRA_XUSB_PADCTL_USB3_P0 2
-+#define TEGRA_XUSB_PADCTL_USB3_P1 3
-+#define TEGRA_XUSB_PADCTL_UTMI_P0 4
-+#define TEGRA_XUSB_PADCTL_UTMI_P1 5
-+#define TEGRA_XUSB_PADCTL_UTMI_P2 6
-+#define TEGRA_XUSB_PADCTL_HSIC_P0 7
-+#define TEGRA_XUSB_PADCTL_HSIC_P1 8
-+
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_0   0
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_1   1
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_2   2
-+#define TEGRA_XUSB_PADCTL_PIN_ULPI_0  3
-+#define TEGRA_XUSB_PADCTL_PIN_HSIC_0  4
-+#define TEGRA_XUSB_PADCTL_PIN_HSIC_1  5
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_0  6
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_1  7
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_2  8
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_3  9
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_4 10
-+#define TEGRA_XUSB_PADCTL_PIN_SATA_0 11
- 
- #endif /* _DT_BINDINGS_PINCTRL_TEGRA_XUSB_H */
--- 
-2.1.0.rc2.206.gedb03e5
-
+> +
+> +       /* Set pwm_sel to RK design PWM in GRF_SOC_CON2; affects all PWMs */
+> +       writel(0x00010001, grf + 0x24c);
+> +
+> +       iounmap(grf);
+> +}
+> +
+> +static void __init rockchip_init_machine(void)
+> +{
+> +       if (of_machine_is_compatible("rockchip,rk3288"))
+> +               rk3288_init_machine();
+> +
+> +       of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> +}
+> +
+>  static const char * const rockchip_board_dt_compat[] = {
+>         "rockchip,rk2928",
+>         "rockchip,rk3066a",
+> @@ -34,6 +52,7 @@ static const char * const rockchip_board_dt_compat[] = {
+>  };
+>
+>  DT_MACHINE_START(ROCKCHIP_DT, "Rockchip Cortex-A9 (Device Tree)")
+> +       .init_machine   = rockchip_init_machine,
+>         .l2c_aux_val    = 0,
+>         .l2c_aux_mask   = ~0,
+>         .dt_compat      = rockchip_board_dt_compat,
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
