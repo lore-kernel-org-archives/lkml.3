@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaHRJQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:16:45 -0400
-Received: from mail.aswsp.com ([193.34.35.150]:24457 "EHLO mail.aswsp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906AbaHRJQn convert rfc822-to-8bit (ORCPT
+	id S1751925AbaHRJQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:16:51 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:52909 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaHRJQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:16:43 -0400
-Date: Mon, 18 Aug 2014 11:16:56 +0200
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-To: David Ahern <dsahern@gmail.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: perf on biarch
-Message-ID: <20140818111656.40ff6ae7@parrot.com>
-In-Reply-To: <53E52A1C.8010504@gmail.com>
-References: <20140808184049.65e7d32b@parrot.com>
-	<53E52A1C.8010504@gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	Mon, 18 Aug 2014 05:16:49 -0400
+Date: Mon, 18 Aug 2014 11:16:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Ulrich Obergfell <uobergfe@redhat.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH 4/5] watchdog: control hard lockup detection default
+Message-ID: <20140818091644.GE25495@gmail.com>
+References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+ <1407768567-171794-5-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [46.218.109.88]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407768567-171794-5-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Fri, 8 Aug 2014 13:50:52 -0600,
-David Ahern <dsahern@gmail.com> a écrit :
 
-> On 8/8/14, 10:40 AM, Matthieu CASTET wrote:
-> > Hi,
-> >
-> > I have a 64 bits kernel running with 32 bits binaries.
-> > If I run 32 bits perf on this 64 bits kernel 3.14, I got weird result :
-> >
-> > - perf trace doesn't work [1]
-> 
-> I have patches that fix that:
->      git clone https://github.com/dsahern/linux.git
->      git checkout perf-full-monty
-> 
-> And if autodetection fails you can manually force it with -M x86.
-> 
-Thanks david. 
-It is better, but it seems there are problem with argument parsing.
+* Don Zickus <dzickus@redhat.com> wrote:
 
-For example for 
-"mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
-0) = 0xf77e2000"
-I got :
-- 2.847 ( 0.004 ms): mmap2(arg0: 0, arg1: 0, arg2: 4096, arg3: 0, arg4:
-3, arg5: 0         ) = -143273984
+> The running kernel still has the ability to enable/disable at any
+> time with /proc/sys/kernel/nmi_watchdog us usual. However even
+> when the default has been overridden /proc/sys/kernel/nmi_watchdog
+> will initially show '1'. To truly turn it on one must disable/enable
+> it, i.e.
+>   echo 0 > /proc/sys/kernel/nmi_watchdog
+>   echo 1 > /proc/sys/kernel/nmi_watchdog
 
+This looks like a bug, why is this so?
 
-Note the 4096 position. Running perf trace on a 32 bits kernel give
-4096 at arg1.
+Thanks,
 
-
-Matthieu
+	Ingo
