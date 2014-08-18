@@ -1,65 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaHRCwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 22:52:22 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:55119 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaHRCwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 22:52:21 -0400
-Message-ID: <53F16A32.50608@windriver.com>
-Date: Mon, 18 Aug 2014 11:51:30 +0900
-From: Sahara <keun-o.park@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751793AbaHRDEO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 23:04:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53432 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751613AbaHRDEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 23:04:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,883,1400050800"; 
+   d="scan'208,223";a="559829807"
+Message-ID: <53F16D28.5010500@linux.intel.com>
+Date: Mon, 18 Aug 2014 11:04:08 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, <kpark3469@gmail.com>
-CC: <hpa@zytor.com>, <rafael.j.wysocki@intel.com>, <peterz@infradead.org>,
-        <rusty@rustcorp.com.au>, <kirill.shutemov@linux.intel.com>,
-        <oleg@redhat.com>, <prarit@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] earlyprintk: re-enable earlyprintk calling early_param
-References: <1408011216-8621-1-git-send-email-kpark3469@gmail.com> <20140814133425.0677d072ff45bce8431baae1@linux-foundation.org>
-In-Reply-To: <20140814133425.0677d072ff45bce8431baae1@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Aaron Lu <aaron.lu@intel.com>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jackey Shen <jackey.shen@amd.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process()
+ on sdio thread
+References: <53E85967.5060503@linux.intel.com> <CAPDyKFqLE-09=3k_6stMXiY3+Ax3xoRBO3q__GHyqH4fd-XmsQ@mail.gmail.com>
+In-Reply-To: <CAPDyKFqLE-09=3k_6stMXiY3+Ax3xoRBO3q__GHyqH4fd-XmsQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 21266249bbbaf9407c1e88cd5950e06ac88aeebf Mon Sep 17 00:00:00 2001
+From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+Date: Mon, 18 Aug 2014 10:48:14 +0800
+Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
 
-2014년 08월 15일 05:34, Andrew Morton 쓴 글:
-> On Thu, 14 Aug 2014 19:13:36 +0900 kpark3469@gmail.com wrote:
->
->> From: Sahara <keun-o.park@windriver.com>
+781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+the use of our own custom threaded IRQ handler, but left in an
+unconditional wake_up_process() on that handler at resume-time.
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
+
+In addition, the check for MMC_CAP_SDIO_IRQ capability is added
+before enable sdio IRQ.
+
+Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+---
+ drivers/mmc/core/sdio.c     |   12 ++++++++++--
+ drivers/mmc/core/sdio_irq.c |    4 ++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index e636d9e..3fc40a7 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -992,8 +992,16 @@ static int mmc_sdio_resume(struct mmc_host *host)
+ 		}
+ 	}
+ 
+-	if (!err && host->sdio_irqs)
+-		wake_up_process(host->sdio_irq_thread);
++	if (!err && host->sdio_irqs) {
++		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
++			wake_up_process(host->sdio_irq_thread);
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
++			mmc_host_clk_hold(host);
++			host->ops->enable_sdio_irq(host, 1);
++			mmc_host_clk_release(host);
++		}
++	}
++
+ 	mmc_release_host(host);
+ 
+ 	host->pm_flags &= ~MMC_PM_KEEP_POWER;
+diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+index 5cc13c8..696eca4 100644
+--- a/drivers/mmc/core/sdio_irq.c
++++ b/drivers/mmc/core/sdio_irq.c
+@@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
+ 				host->sdio_irqs--;
+ 				return err;
+ 			}
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 1);
+ 			mmc_host_clk_release(host);
+@@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
+ 		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
+ 			atomic_set(&host->sdio_irq_thread_abort, 1);
+ 			kthread_stop(host->sdio_irq_thread);
+-		} else {
++		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
+ 			mmc_host_clk_hold(host);
+ 			host->ops->enable_sdio_irq(host, 0);
+ 			mmc_host_clk_release(host);
+-- 1.7.1
+
+On 2014/8/12 18:23, Ulf Hansson wrote:
+> On 11 August 2014 07:49, Fu, Zhonghui <zhonghui.fu@linux.intel.com> wrote:
+>> From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
+>> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+>> Date: Tue, 5 Aug 2014 12:44:38 +0800
+>> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
 >>
->> Although there are many obs_kernel_param and its names are
->> earlyprintk and also EARLY_PRINTK is also enabled, we could not
->> see the early_printk output properly until now. This patch
->> considers earlycon as well as earlyprintk.
-> Sorry, I just don't understand this description.
+>> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
+>> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
+>> the use of our own custom threaded IRQ handler, but left in an
+>> unconditional wake_up_process() on that handler at resume-time.
+>> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
+>>
+>> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
+>> before enable sdio IRQ.
+>>
+>> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+>> Signed-off-by: Chris Ball <chris@printf.net>
+>> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+>> ---
+>>  drivers/mmc/core/sdio.c     |   14 ++++++++++++--
+>>  drivers/mmc/core/sdio_irq.c |    4 ++--
+>>  2 files changed, 14 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+>> index e636d9e..e04a540 100644
+>> --- a/drivers/mmc/core/sdio.c
+>> +++ b/drivers/mmc/core/sdio.c
+>> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
+>>                 }
+>>         }
+>>
+>> -       if (!err && host->sdio_irqs)
+>> -               wake_up_process(host->sdio_irq_thread);
+>> +       if (!err && host->sdio_irqs) {
+>> +               if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
+>> +                       wake_up_process(host->sdio_irq_thread);
+>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
+>> +                       mmc_release_host(host);
+> Why mmc_release_host() and the corresponding mmc_claim_host() below?
+> Those shouldn't be needed I think.
+
+You are right. These two functions shouldn't be invoked here. I made a new patch as above.
+
+
+Thanks,
+Zhonghui
 >
-> What does the patch actually do?  What was the kernel behaviour without
-> the patch and what is the kernel behaviour with the patch?
 >
-Without this patch,
-- earlycon case -
-if early_param("earlycon", ...) is defined and
-case #1: if cmdline has "earlycon", then it satisfies the condition 
-"(p->early && parameq(param, p->str))". You can see early_printk().
-case #2: if cmdline has "console", then it satisfies the condition 
-"strcmp(param, "console") == 0 && strcmp(p->str, "earlycon") == 0". You 
-can see early_printk().
-
-- earlyprintk case -
-if early_param("earlyprintk", ...) is defined and
-case #1: if cmdline has "earlyprintk", then it satisfies the condition 
-"(p->early && parameq(param, p->str))". You can see early_printk().
-case #2: if cmdline has "console", it does not satisfies the condition, 
-because it only checks out "earlycon" only.
-
-This patch fixes the case #2 problem of earlyprintk.
-
-Thanks.
-
-Best Regards,
-Sahara.
+>> +                       mmc_host_clk_hold(host);
+>> +                       host->ops->enable_sdio_irq(host, 1);
+>> +                       mmc_host_clk_release(host);
+>> +                       mmc_claim_host(host);
+>> +               }
+>> +       }
+>> +
+>>         mmc_release_host(host);
+>>
+>>         host->pm_flags &= ~MMC_PM_KEEP_POWER;
+>> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+>> index 5cc13c8..696eca4 100644
+>> --- a/drivers/mmc/core/sdio_irq.c
+>> +++ b/drivers/mmc/core/sdio_irq.c
+>> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
+>>                                 host->sdio_irqs--;
+>>                                 return err;
+>>                         }
+>> -               } else {
+>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
+>>                         mmc_host_clk_hold(host);
+>>                         host->ops->enable_sdio_irq(host, 1);
+>>                         mmc_host_clk_release(host);
+>> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
+>>                 if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
+>>                         atomic_set(&host->sdio_irq_thread_abort, 1);
+>>                         kthread_stop(host->sdio_irq_thread);
+>> -               } else {
+>> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
+>>                         mmc_host_clk_hold(host);
+>>                         host->ops->enable_sdio_irq(host, 0);
+>>                         mmc_host_clk_release(host);
+>> -- 1.7.1
+>>
+> Thanks for working on this!
+>
+> Kind regards
+> Uffe
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
