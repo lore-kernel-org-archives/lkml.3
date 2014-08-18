@@ -1,51 +1,64 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaHKXUc (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Mon, 11 Aug 2014 19:20:32 -0400
-Received: from mailout.ofir.com ([193.138.124.31]:1093 "EHLO mailout.ofir.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444AbaHKXUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Aug 2014 19:20:31 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=192.168.193.2;
-X-Default-Received-SPF: pass (skip=loggedin (res=PASS)) x-ip-name=154.66.162.38;
-From: mrs.tanruby14@godmail.dk
-Subject: From Dr.Paul Sawadogo
-Date: Tue, 12 Aug 2014 01:14:50 +0200
-Message-ID: <53e94e6a.2300.ba8.44c6@godmail.dk>
+	id S1751608AbaHRQJ6 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 18 Aug 2014 12:09:58 -0400
+Received: from outrelay09.libero.it ([212.52.84.104]:45535 "EHLO
+	outrelay09.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaHRQJ4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 12:09:56 -0400
+X-libjamoibt: 1587
+Message-ID: <22842841.2945341408378144814.JavaMail.defaultUser@defaultHost>
+Date: Mon, 18 Aug 2014 18:09:04 +0200 (CEST)
+From: laura wintour <laurax725@live.com>
+Reply-To: laura wintour <laurax725@live.com>
+Subject: hello
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-X-X-Originating-IP: 154.66.162.38
-X-Mailer: SurgeWeb - Ajax Webmail Client
-X-To-Not-Matched: true
-X-X-Authenticated-User: mrs.tanruby14@godmail.dk 
-X-To-Not-Matched: true
-X-Originating-IP: 192.168.193.2
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-SenderIP: 37.130.224.21
+X-libjamv: ArUb8TkErfc=
+X-libjamsun: aSvbzt5b9ZbEeBo2rvKFwLu69o8LLwrB
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Má najdrahšie jeden,
+Teší ma Videl som vašu poštu dnes, keď som bol prezeranie a dostal záujem 
+dozvedieť sa viac by som naozaj rád, mať dobrý vzťah s vami, a mám zvláštny 
+dôvod, prečo som sa rozhodol Vás kontaktovať
 
- Greetings from my side and how are you doing? I hope you are doing 
-very good today.
+Rozhodol som sa napísať vám kvôli naliehavosti mojej situácii tu, Iam slečna 
+Laura, 25 rokov dievčatá z Pobrežia Slonoviny, jediná dcéra neskoré Wintour 
+Sirleaf, námestník ministra národnej bezpečnosti pod vedením prezidenta 
+Laurenta Gbagba , ktorý je v súčasnej dobe v exile po tom, čo bolo zabitých 
+mnoho nevinných duší, Môj otec bol zabitý Laurent Gbagbo vládu, obvinil ju z 
+môjho otca pokus o prevrat
 
-I am Dr Paul Sawadogo the chief Medical consultant at Suka Clinic 
-Ouagadougou and I have a Patient who hails from Singapore but 
-unfortunately is in coma right now due to complications from a Cancer 
-disease and she has the sum of $5.3 Million United States(Five Million 
-Three Hundred Thousand) Dollars she wants me to transfer to you
+Musím sa s vami spojiť, pretože týranie som dostal od môjho kroku matky, môj 
+krok matke, chce ich vziať všetky pokladne môjho zosnulého otca a majetok mi po 
+nečakanej smrti svojho milovaného otca
 
-Please, I will like you to contact me for further details as this is a 
-very sensitive issue that needs urgent attention from you and this is 
-of utmost secrecy as such you must keep it a top secret.reply me on 
-[mrs.tanruby30@gmail.com]
+Chcel by som utiecť z bočnej Afriku, ale schovať svoj ​​pas a ďalšie cenné 
+cestovné doklady našťastie nemala zistiť, kde som nechal obrázok môjho otca, 
+ktorý obsahuje dôležité dokumenty, tak som sa rozhodol bežať utečeneckého 
+tábora, kde som v súčasnej dobe hľadá azyl pod záštitou vysokého komisára OSN 
+pre utečencov tu v Lomé, Poľskej republiky, republiky Togo Chcem písať pre vás 
+osobne na dlhotrvajúce obchodné vzťahy a investície vo vašej krajine
 
-Your friend,
-Dr. Paul on behalf of
+Môj otec uložené výške US $ 6 500, 000,00 miliónov dolárov v banke s mojím 
+menom ako najbližší príbuzný. Avšak, chcem, aby si Stojan pre mňa ako správca, 
+a tiež mi pomohol previesť peniaze na svoj účet a tiež pomôže mi investovať 
+peniaze vo vašej krajine, ak súhlasíte, aby mi pomohol sa budem na vás tešiť 
+potrebné dokumenty a budem pokračovať v mojich štúdií, keď som prísť do vašej 
+krajiny, bol som vo svojom 1 rok na vysokej škole, keď začala kríza
 
-Mrs.Tan Ruby
-
-
-
-
-
-
+Je mojím zámerom, aby vám kompenzovať 20% z celkovej sumy peňazí za svoje 
+služby a zostatok bude môj investičný kapitál. To je dôvod, prečo som sa 
+rozhodol kontaktovať v očakávaní svojho neodkladnú a pozitívnym ohlasom. 
+Prosím, nechajte to len vaše vlastné, prosím, žiadam vás, aby ste ho 
+neposkytovať inej osobe, ako je odovzdanie uskutočnené Prosím, dajte moja 
+situácia dotýkať sa vášho srdca, aj prosím vás, aby ste prišli na moju záchranu 
+trpím tak moc sem , som nikdy nebol v takej situácii pred prosím, pomôžte mi
+Najlepšie reg
+Laura
