@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaHRJFf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:05:35 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:50193 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaHRJFe (ORCPT
+	id S1752018AbaHRJGv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:06:51 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:58623 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaHRJGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:05:34 -0400
-Date: Mon, 18 Aug 2014 11:05:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
-        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Ulrich Obergfell <uobergfe@redhat.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH 3/5] watchdog: fix print-once on enable
-Message-ID: <20140818090529.GB25495@gmail.com>
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
- <1407768567-171794-4-git-send-email-dzickus@redhat.com>
+	Mon, 18 Aug 2014 05:06:49 -0400
+Message-ID: <53F1C226.5090107@linaro.org>
+Date: Mon, 18 Aug 2014 11:06:46 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407768567-171794-4-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: Alexandre Courbot <gnurou@gmail.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [RFC] ACPI: Add GPIO-signaled event simulator.
+References: <1406217076-17150-1-git-send-email-tomasz.nowicki@linaro.org> <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com>
+In-Reply-To: <CACRpkdZmKJmaTRBpDrzd7+EhPuFeScr6jEHC8+0z6-4knjFqkA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08.08.2014 14:36, Linus Walleij wrote:
+> On Thu, Jul 24, 2014 at 5:51 PM, Tomasz Nowicki
+> <tomasz.nowicki@linaro.org> wrote:
+>
+>> GPIO signaled events is quite new thing in Linux kernel.
+>> AFAIK, there are not many board which can take advantage of it.
+>> However, GPIO events are very useful feature during work on ACPI
+>> subsystems.
+>
+> Overall this seems like a pretty nice debug feature.
+>
+>> This commit emulates GPIO h/w behaviour and consists on read/write
+>> operation to debugfs file. GPIO device instance is still required in DSDT
+>> table along with _AEI resources and event methods.
+>>
+>> Reading from file provides pin to GPIO device map e.g. :
+>> $ cat /sys/kernel/debug/acpi/gpio_event
+>> GPIO device name: /__SB.GPI0
+>> Available GPIO pin map:
+>> /__SB.GPI0 <-> pin 0x100
+>>
+>> Based on that, user can trigger method corresponding to device pin number:
+>> $ echo "/__SB.GPI0 0x100" > /sys/kernel/debug/acpi/gpio_event
+>
+> I need input from Rafael and Mika as to whether this is a
+> good interface.
+>
+> It seems a bit confusing for me: why do you have to extract
+> a number from one file and then insert the same magic number
+> somewhere else?
 
-* Don Zickus <dzickus@redhat.com> wrote:
+Good point! Available GPIO event pins should be listed as debugfs node, 
+then user would write e.g. 1 to one particular. Sounds simpler.
 
-> From: Ulrich Obergfell <uobergfe@redhat.com>
-> 
-> This patch avoids printing the message 'enabled on all CPUs, ...'
-> multiple times. For example, the issue can occur in the following
-> scenario:
-> 
-> 1) watchdog_nmi_enable() fails to enable PMU counters and sets
->    cpu0_err.
-> 
-> 2) 'echo [0|1] > /proc/sys/kernel/nmi_watchdog' is executed to
->    disable and re-enable the watchdog mechanism 'on the fly'.
-> 
-> 3) If watchdog_nmi_enable() succeeds to enable PMU counters, each
->    CPU will print the message because step1 left behind a non-zero
->    cpu0_err.
-> 
->    if (!IS_ERR(event)) {
->        if (cpu == 0 || cpu0_err)
->        pr_info("enabled on all CPUs, ...")
-> 
-> The patch avoids this by clearing cpu0_err in watchdog_nmi_disable().
-> 
-> Signed-off-by: Ulrich Obergfell <uobergfe@redhat.com>
-> Signed-off-by: Andrew Jones <drjones@redhat.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
->  kernel/watchdog.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 6d0a891..0838685 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -522,6 +522,9 @@ static void watchdog_nmi_disable(unsigned int cpu)
->  		/* should be in cleanup, but blocks oprofile */
->  		perf_event_release_kernel(event);
->  	}
-> +	if (cpu == 0)
-> +		/* watchdog_nmi_enable() expects this to be zero initially. */
-> +		cpu0_err = 0;
-
-Looks good except a small detail: two-line blocks need curly 
-braces too, even if it's just a single C statement. I've fixed 
-this up in the commit.
-
-thanks,
-
-	Ingo
-
+Regards,
+Tomasz Nowicki
