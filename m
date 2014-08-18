@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaHROlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:41:15 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:58606 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaHROlO (ORCPT
+	id S1751613AbaHROo7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:44:59 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:59539 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaHROo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:41:14 -0400
-Date: Mon, 18 Aug 2014 17:41:01 +0300
+	Mon, 18 Aug 2014 10:44:57 -0400
+Date: Mon, 18 Aug 2014 17:44:45 +0300
 From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: willy@linux.intel.com, linux-nvme@lists.infradead.org,
-        linux-kernel@vger.kernel.org
+To: dmitry.torokhov@gmail.com, rydberg@euromail.se,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] nvme: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-Message-ID: <20140818144101.GA13840@ada>
+Subject: [PATCH] evdev: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+Message-ID: <20140818144445.GA13933@ada>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -38,22 +38,22 @@ The following Coccinelle semantic patch was used:
 
 Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 ---
- drivers/block/nvme-core.c | 2 +-
+ drivers/input/evdev.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
-index 02351e2..cb25bdd 100644
---- a/drivers/block/nvme-core.c
-+++ b/drivers/block/nvme-core.c
-@@ -1209,7 +1209,7 @@ static void nvme_free_queues(struct nvme_dev *dev, int lowest)
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index fd325ec..33e53a7 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -291,7 +291,7 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
+ 	if (grab != client)
+ 		return  -EINVAL;
  
- 	for (i = dev->queue_count - 1; i >= lowest; i--) {
- 		struct nvme_queue *nvmeq = raw_nvmeq(dev, i);
--		rcu_assign_pointer(dev->queues[i], NULL);
-+		RCU_INIT_POINTER(dev->queues[i], NULL);
- 		call_rcu(&nvmeq->r_head, nvme_free_queue);
- 		dev->queue_count--;
- 	}
+-	rcu_assign_pointer(evdev->grab, NULL);
++	RCU_INIT_POINTER(evdev->grab, NULL);
+ 	synchronize_rcu();
+ 	input_release_device(&evdev->handle);
+ 
 -- 
 1.9.1
 
