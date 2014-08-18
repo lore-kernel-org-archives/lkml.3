@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaHRLSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 07:18:43 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:46983 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709AbaHRLSl (ORCPT
+	id S1751930AbaHRLVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 07:21:06 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:41659 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaHRLVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 07:18:41 -0400
-Message-ID: <53F1E10D.7060007@redhat.com>
-Date: Mon, 18 Aug 2014 13:18:37 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Gleb Natapov <gleb@kernel.org>, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] KVM: vmx: fix ept reserved bits for 1-GByte page
-References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com> <53F1DADA.1050603@linux.vnet.ibm.com>
-In-Reply-To: <53F1DADA.1050603@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Aug 2014 07:21:05 -0400
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: Alban Crequy <alban.crequy@collabora.co.uk>, Tejun Heo <tj@kernel.org>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH v2] cgroup: reject cgroup names with '\n'
+Date: Mon, 18 Aug 2014 12:20:20 +0100
+Message-Id: <1408360820-3390-1-git-send-email-alban.crequy@collabora.co.uk>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/08/2014 12:52, Xiao Guangrong ha scritto:
->> > EPT misconfig handler in kvm will check which reason lead to EPT 
->> > misconfiguration after vmexit. One of the reasons is that an EPT 
->> > paging-structure entry is configured with settings reserved for 
->> > future functionality. However, the handler can't identify if 
->> > paging-structure entry of reserved bits for 1-GByte page are 
->> > configured, since PDPTE which point to 1-GByte page will reserve 
->> > bits 29:12 instead of bits 7:3 which are reserved for PDPTE that 
->> > references an EPT Page Directory. This patch fix it by reserve 
->> > bits 29:12 for 1-GByte page. 
-> That mask is only set in the lowest pte for 4K page, i think it
-> is not a problem, no?
+/proc/<pid>/cgroup contains one cgroup path on each line. If cgroup names are
+allowed to contain "\n", applications cannot parse /proc/<pid>/cgroup safely.
 
-It will cause KVM to WARN.  The EPT memory type will also be ignored for
-gigabyte pages.
+Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+---
+v2: Fixed according to comments from Tejun Heo: only reject '\n'
 
-Paolo
+ kernel/cgroup.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 7dc8788..c3d1802 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4543,6 +4543,11 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 	struct cftype *base_files;
+ 	int ssid, ret;
+ 
++	/* Do not accept '\n' to prevent making /proc/<pid>/cgroup unparsable.
++	 */
++	if (strchr(name, '\n'))
++		return -EINVAL;
++
+ 	parent = cgroup_kn_lock_live(parent_kn);
+ 	if (!parent)
+ 		return -ENODEV;
+-- 
+1.8.5.3
+
