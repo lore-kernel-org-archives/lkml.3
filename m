@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaHRKBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:01:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42603 "EHLO
+	id S1754762AbaHRKI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:08:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42438 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334AbaHRJeT (ORCPT
+	with ESMTP id S1751933AbaHRJdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:19 -0400
+	Mon, 18 Aug 2014 05:33:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neal Cardwell <ncardwell@google.com>, Eric Dumazet <edumazet@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Ilpo Jarvinen <ilpo.jarvinen@helsinki.fi>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 036/137] tcp: fix tcp_match_skb_to_sack() for unaligned SACK at end of an skb
-Date: Mon, 18 Aug 2014 10:31:37 +0100
-Message-Id: <1408354398-10226-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 010/137] irqchip: gic: Add support for cortex a7 compatible string
+Date: Mon, 18 Aug 2014 10:31:11 +0100
+Message-Id: <1408354398-10226-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -30,68 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neal Cardwell <ncardwell@google.com>
+From: Matthias Brugger <matthias.bgg@gmail.com>
 
-commit 2cd0d743b05e87445c54ca124a9916f22f16742e upstream.
+commit a97e8027b1d28eafe6bafe062556c1ec926a49c6 upstream.
 
-If there is an MSS change (or misbehaving receiver) that causes a SACK
-to arrive that covers the end of an skb but is less than one MSS, then
-tcp_match_skb_to_sack() was rounding up pkt_len to the full length of
-the skb ("Round if necessary..."), then chopping all bytes off the skb
-and creating a zero-byte skb in the write queue.
+Patch 0a68214b "ARM: DT: Add binding for GIC virtualization extentions (VGIC)" added
+the "arm,cortex-a7-gic" compatible string, but the corresponding IRQCHIP_DECLARE
+was never added to the gic driver.
 
-This was visible now because the recently simplified TLP logic in
-bef1909ee3ed1c ("tcp: fixing TLP's FIN recovery") could find that 0-byte
-skb at the end of the write queue, and now that we do not check that
-skb's length we could send it as a TLP probe.
+To let real Cortex-A7 SoCs use it, add the necessary declaration to the device driver.
 
-Consider the following example scenario:
-
- mss: 1000
- skb: seq: 0 end_seq: 4000  len: 4000
- SACK: start_seq: 3999 end_seq: 4000
-
-The tcp_match_skb_to_sack() code will compute:
-
- in_sack = false
- pkt_len = start_seq - TCP_SKB_CB(skb)->seq = 3999 - 0 = 3999
- new_len = (pkt_len / mss) * mss = (3999/1000)*1000 = 3000
- new_len += mss = 4000
-
-Previously we would find the new_len > skb->len check failing, so we
-would fall through and set pkt_len = new_len = 4000 and chop off
-pkt_len of 4000 from the 4000-byte skb, leaving a 0-byte segment
-afterward in the write queue.
-
-With this new commit, we notice that the new new_len >= skb->len check
-succeeds, so that we return without trying to fragment.
-
-Fixes: adb92db857ee ("tcp: Make SACK code to split only at mss boundaries")
-Reported-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Ilpo Jarvinen <ilpo.jarvinen@helsinki.fi>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Link: https://lkml.kernel.org/r/1404388732-28890-1-git-send-email-matthias.bgg@gmail.com
+Fixes: 0a68214b76ca ("ARM: DT: Add binding for GIC virtualization extentions (VGIC)")
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_input.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/irqchip/irq-gic.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index d8e4c81bc114..ebafc8703c7a 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1119,7 +1119,7 @@ static int tcp_match_skb_to_sack(struct sock *sk, struct sk_buff *skb,
- 			unsigned int new_len = (pkt_len / mss) * mss;
- 			if (!in_sack && new_len < pkt_len) {
- 				new_len += mss;
--				if (new_len > skb->len)
-+				if (new_len >= skb->len)
- 					return 0;
- 			}
- 			pkt_len = new_len;
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 0ebd24df0727..97fd4bf56f3e 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -858,6 +858,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+ }
+ IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
+ IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
++IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+ IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
+ IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
+ 
 -- 
 1.9.1
 
