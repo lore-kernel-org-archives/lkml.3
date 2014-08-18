@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaHRJgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:36:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43193 "EHLO
+	id S1753386AbaHRJgg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:36:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43129 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468AbaHRJgs (ORCPT
+	with ESMTP id S1753339AbaHRJgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:48 -0400
+	Mon, 18 Aug 2014 05:36:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Hemminger <stephen@networkplumber.org>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Doug Leith <doug.leith@nuim.ie>,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
+Cc: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 133/137] tcp: Fix integer-overflow in TCP vegas
-Date: Mon, 18 Aug 2014 10:33:14 +0100
-Message-Id: <1408354398-10226-134-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 126/137] sunsab: Fix detection of BREAK on sunsab serial console
+Date: Mon, 18 Aug 2014 10:33:07 +0100
+Message-Id: <1408354398-10226-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -33,43 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
 
-commit 1f74e613ded11517db90b2bd57e9464d9e0fb161 upstream.
+commit fe418231b195c205701c0cc550a03f6c9758fd9e upstream.
 
-In vegas we do a multiplication of the cwnd and the rtt. This
-may overflow and thus their result is stored in a u64. However, we first
-need to cast the cwnd so that actually 64-bit arithmetic is done.
+Fix detection of BREAK on sunsab serial console: BREAK detection was only
+performed when there were also serial characters received simultaneously.
+To handle all BREAKs correctly, the check for BREAK and the corresponding
+call to uart_handle_break() must also be done if count == 0, therefore
+duplicate this code fragment and pull it out of the loop over the received
+characters.
 
-Then, we need to do do_div to allow this to be used on 32-bit arches.
+Patch applies to 3.16-rc6.
 
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Laight <David.Laight@ACULAB.COM>
-Cc: Doug Leith <doug.leith@nuim.ie>
-Fixes: 8d3a564da34e (tcp: tcp_vegas cong avoid fix)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_vegas.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/serial/sunsab.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/net/ipv4/tcp_vegas.c b/net/ipv4/tcp_vegas.c
-index 80fa2bfd7ede..c042e529a11e 100644
---- a/net/ipv4/tcp_vegas.c
-+++ b/net/ipv4/tcp_vegas.c
-@@ -218,7 +218,8 @@ static void tcp_vegas_cong_avoid(struct sock *sk, u32 ack, u32 in_flight)
- 			 * This is:
- 			 *     (actual rate in segments) * baseRTT
- 			 */
--			target_cwnd = tp->snd_cwnd * vegas->baseRTT / rtt;
-+			target_cwnd = (u64)tp->snd_cwnd * vegas->baseRTT;
-+			do_div(target_cwnd, rtt);
+diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
+index 5d6136b2a04a..edcb84980d60 100644
+--- a/drivers/tty/serial/sunsab.c
++++ b/drivers/tty/serial/sunsab.c
+@@ -157,6 +157,15 @@ receive_chars(struct uart_sunsab_port *up,
+ 	    (up->port.line == up->port.cons->index))
+ 		saw_console_brk = 1;
  
- 			/* Calculate the difference between the window we had,
- 			 * and the window we would like to have. This quantity
++	if (count == 0) {
++		if (unlikely(stat->sreg.isr1 & SAB82532_ISR1_BRK)) {
++			stat->sreg.isr0 &= ~(SAB82532_ISR0_PERR |
++					     SAB82532_ISR0_FERR);
++			up->port.icount.brk++;
++			uart_handle_break(&up->port);
++		}
++	}
++
+ 	for (i = 0; i < count; i++) {
+ 		unsigned char ch = buf[i], flag;
+ 
 -- 
 1.9.1
 
