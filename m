@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaHRJjH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:39:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43147 "EHLO
+	id S1753084AbaHRJfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:35:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42959 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380AbaHRJgg (ORCPT
+	with ESMTP id S1753038AbaHRJfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:36 -0400
+	Mon, 18 Aug 2014 05:35:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Schmidt <mschmidt@redhat.com>,
-        Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 129/137] bnx2x: fix crash during TSO tunneling
-Date: Mon, 18 Aug 2014 10:33:10 +0100
-Message-Id: <1408354398-10226-130-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 097/137] net: mvneta: add missing bit descriptions for interrupt masks and causes
+Date: Mon, 18 Aug 2014 10:32:38 +0100
+Message-Id: <1408354398-10226-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,90 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
+From: willy tarreau <w@1wt.eu>
 
-commit fe26566d8a05151ba1dce75081f6270f73ec4ae1 upstream.
+commit 40ba35e74fa56866918d2f3bc0528b5b92725d5e upstream.
 
-When TSO packet is transmitted additional BD w/o mapping is used
-to describe the packed. The BD needs special handling in tx
-completion.
+Marvell has not published the chip's datasheet yet, so it's very hard
+to find the relevant bits to manipulate to change the IRQ behaviour.
+Fortunately, these bits are described in the proprietary LSP patch set
+which is publicly available here :
 
-kernel: Call Trace:
-kernel: <IRQ>  [<ffffffff815e19ba>] dump_stack+0x19/0x1b
-kernel: [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
-kernel: [<ffffffff8105df5c>] warn_slowpath_fmt+0x5c/0x80
-kernel: [<ffffffff814a8c0d>] ? find_iova+0x4d/0x90
-kernel: [<ffffffff814ab0e2>] intel_unmap_page.part.36+0x142/0x160
-kernel: [<ffffffff814ad0e6>] intel_unmap_page+0x26/0x30
-kernel: [<ffffffffa01f55d7>] bnx2x_free_tx_pkt+0x157/0x2b0 [bnx2x]
-kernel: [<ffffffffa01f8dac>] bnx2x_tx_int+0xac/0x220 [bnx2x]
-kernel: [<ffffffff8101a0d9>] ? read_tsc+0x9/0x20
-kernel: [<ffffffffa01f8fdb>] bnx2x_poll+0xbb/0x3c0 [bnx2x]
-kernel: [<ffffffff814d041a>] net_rx_action+0x15a/0x250
-kernel: [<ffffffff81067047>] __do_softirq+0xf7/0x290
-kernel: [<ffffffff815f3a5c>] call_softirq+0x1c/0x30
-kernel: [<ffffffff81014d25>] do_softirq+0x55/0x90
-kernel: [<ffffffff810673e5>] irq_exit+0x115/0x120
-kernel: [<ffffffff815f4358>] do_IRQ+0x58/0xf0
-kernel: [<ffffffff815e94ad>] common_interrupt+0x6d/0x6d
-kernel: <EOI>  [<ffffffff810bbff7>] ? clockevents_notify+0x127/0x140
-kernel: [<ffffffff814834df>] ? cpuidle_enter_state+0x4f/0xc0
-kernel: [<ffffffff81483615>] cpuidle_idle_call+0xc5/0x200
-kernel: [<ffffffff8101bc7e>] arch_cpu_idle+0xe/0x30
-kernel: [<ffffffff810b4725>] cpu_startup_entry+0xf5/0x290
-kernel: [<ffffffff815cfee1>] start_secondary+0x265/0x27b
-kernel: ---[ end trace 11aa7726f18d7e80 ]---
+    http://www.plugcomputer.org/downloads/mirabox/
 
-Fixes: a848ade408b ("bnx2x: add CSUM and TSO support for encapsulation protocols")
-Reported-by: Yulong Pei <ypei@redhat.com>
-Cc: Michal Schmidt <mschmidt@redhat.com>
-Signed-off-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
+So let's put them back in the driver in order to reduce the burden of
+current and future maintenance.
+
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     | 1 +
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 9 +++++++++
- 2 files changed, 10 insertions(+)
+ drivers/net/ethernet/marvell/mvneta.c | 44 +++++++++++++++++++++++++++++++++--
+ 1 file changed, 42 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-index 00b88cbfde25..7ae7bdba4183 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-@@ -308,6 +308,7 @@ struct sw_tx_bd {
- 	u8		flags;
- /* Set on the first BD descriptor when there is a split BD */
- #define BNX2X_TSO_SPLIT_BD		(1<<0)
-+#define BNX2X_HAS_SECOND_PBD		(1<<1)
- };
- 
- struct sw_rx_page {
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 5fedcb6d7ec0..66b4e8be804b 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -186,6 +186,12 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	--nbd;
- 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
- 
-+	if (tx_buf->flags & BNX2X_HAS_SECOND_PBD) {
-+		/* Skip second parse bd... */
-+		--nbd;
-+		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
-+	}
+diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
+index f72112294750..a10f156430ca 100644
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -101,16 +101,56 @@
+ #define      MVNETA_CPU_RXQ_ACCESS_ALL_MASK      0x000000ff
+ #define      MVNETA_CPU_TXQ_ACCESS_ALL_MASK      0x0000ff00
+ #define MVNETA_RXQ_TIME_COAL_REG(q)              (0x2580 + ((q) << 2))
 +
- 	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
- 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
- 		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
-@@ -3812,6 +3818,9 @@ netdev_tx_t bnx2x_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 			/* set encapsulation flag in start BD */
- 			SET_FLAG(tx_start_bd->general_data,
- 				 ETH_TX_START_BD_TUNNEL_EXIST, 1);
++/* Exception Interrupt Port/Queue Cause register */
 +
-+			tx_buf->flags |= BNX2X_HAS_SECOND_PBD;
+ #define MVNETA_INTR_NEW_CAUSE                    0x25a0
+-#define      MVNETA_RX_INTR_MASK(nr_rxqs)        (((1 << nr_rxqs) - 1) << 8)
+ #define MVNETA_INTR_NEW_MASK                     0x25a4
 +
- 			nbd++;
- 		} else if (xmit_type & XMIT_CSUM) {
- 			/* Set PBD in checksum offload case w/o encapsulation */
++/* bits  0..7  = TXQ SENT, one bit per queue.
++ * bits  8..15 = RXQ OCCUP, one bit per queue.
++ * bits 16..23 = RXQ FREE, one bit per queue.
++ * bit  29 = OLD_REG_SUM, see old reg ?
++ * bit  30 = TX_ERR_SUM, one bit for 4 ports
++ * bit  31 = MISC_SUM,   one bit for 4 ports
++ */
++#define      MVNETA_TX_INTR_MASK(nr_txqs)        (((1 << nr_txqs) - 1) << 0)
++#define      MVNETA_TX_INTR_MASK_ALL             (0xff << 0)
++#define      MVNETA_RX_INTR_MASK(nr_rxqs)        (((1 << nr_rxqs) - 1) << 8)
++#define      MVNETA_RX_INTR_MASK_ALL             (0xff << 8)
++
+ #define MVNETA_INTR_OLD_CAUSE                    0x25a8
+ #define MVNETA_INTR_OLD_MASK                     0x25ac
++
++/* Data Path Port/Queue Cause Register */
+ #define MVNETA_INTR_MISC_CAUSE                   0x25b0
+ #define MVNETA_INTR_MISC_MASK                    0x25b4
++
++#define      MVNETA_CAUSE_PHY_STATUS_CHANGE      BIT(0)
++#define      MVNETA_CAUSE_LINK_CHANGE            BIT(1)
++#define      MVNETA_CAUSE_PTP                    BIT(4)
++
++#define      MVNETA_CAUSE_INTERNAL_ADDR_ERR      BIT(7)
++#define      MVNETA_CAUSE_RX_OVERRUN             BIT(8)
++#define      MVNETA_CAUSE_RX_CRC_ERROR           BIT(9)
++#define      MVNETA_CAUSE_RX_LARGE_PKT           BIT(10)
++#define      MVNETA_CAUSE_TX_UNDERUN             BIT(11)
++#define      MVNETA_CAUSE_PRBS_ERR               BIT(12)
++#define      MVNETA_CAUSE_PSC_SYNC_CHANGE        BIT(13)
++#define      MVNETA_CAUSE_SERDES_SYNC_ERR        BIT(14)
++
++#define      MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT    16
++#define      MVNETA_CAUSE_BMU_ALLOC_ERR_ALL_MASK   (0xF << MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT)
++#define      MVNETA_CAUSE_BMU_ALLOC_ERR_MASK(pool) (1 << (MVNETA_CAUSE_BMU_ALLOC_ERR_SHIFT + (pool)))
++
++#define      MVNETA_CAUSE_TXQ_ERROR_SHIFT        24
++#define      MVNETA_CAUSE_TXQ_ERROR_ALL_MASK     (0xFF << MVNETA_CAUSE_TXQ_ERROR_SHIFT)
++#define      MVNETA_CAUSE_TXQ_ERROR_MASK(q)      (1 << (MVNETA_CAUSE_TXQ_ERROR_SHIFT + (q)))
++
+ #define MVNETA_INTR_ENABLE                       0x25b8
+ #define      MVNETA_TXQ_INTR_ENABLE_ALL_MASK     0x0000ff00
+-#define      MVNETA_RXQ_INTR_ENABLE_ALL_MASK     0xff000000
++#define      MVNETA_RXQ_INTR_ENABLE_ALL_MASK     0xff000000  // note: neta says it's 0x000000FF
++
+ #define MVNETA_RXQ_CMD                           0x2680
+ #define      MVNETA_RXQ_DISABLE_SHIFT            8
+ #define      MVNETA_RXQ_ENABLE_MASK              0x000000ff
 -- 
 1.9.1
 
