@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaHRWxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 18:53:49 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:64911 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142AbaHRWxr (ORCPT
+	id S1752290AbaHRXC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 19:02:59 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:44799 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153AbaHRXC6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 18:53:47 -0400
-From: Arjun Sreedharan <arjun024@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: tomoki.sekiyama@gmail.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: misc: yurex: remove useless casting of private_data
-Date: Tue, 19 Aug 2014 04:23:34 +0530
-Message-Id: <1408402414-1600-1-git-send-email-arjun024@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	Mon, 18 Aug 2014 19:02:58 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>, David Woodhouse <dwmw2@infradead.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
+Thread-Topic: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
+Thread-Index: AQHPusLtJD7eZgXm8U+STnK1YS2mE5vW+l6g
+Date: Mon, 18 Aug 2014 23:01:56 +0000
+Message-ID: <1267BB84A242B24E81E0C0C8955CFFC061A4BA26@G9W0343.americas.hpqcorp.net>
+References: <1408352352-14449-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1408352352-14449-1-git-send-email-zhen-hual@hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.201.58.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
----
- drivers/usb/misc/yurex.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+There is a bug when Linux running on an HP large system: 
+	when kdump kernel runs, the hardware is still using the old 
+root entry. This causes error message when iommu not finished initialization.
 
-diff --git a/drivers/usb/misc/yurex.c b/drivers/usb/misc/yurex.c
-index 1472805..c3a45da 100644
---- a/drivers/usb/misc/yurex.c
-+++ b/drivers/usb/misc/yurex.c
-@@ -358,7 +358,7 @@ static int yurex_fasync(int fd, struct file *file, int on)
- {
- 	struct usb_yurex *dev;
+-----Original Message-----
+From: Li, Zhen-Hua 
+Sent: Monday, August 18, 2014 4:59 PM
+To: David Woodhouse; Joerg Roedel; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+Cc: Li, Zhen-Hua
+Subject: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
+
+If intel_iommu is enabled, when kdump kernel boots, the old root entry
+ should be cleared, otherwise it may cause DMAR error.
+
+To make it works for more enviroments, this patch does not use 
+is_kdump_kernel() to check it,  but reads the register to check whether 
+hardware is using old root entry.
+
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ drivers/iommu/dmar.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 60ab474..7b4fa90 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -66,6 +66,8 @@ static int dmar_dev_scope_status = 1;
+ static int alloc_iommu(struct dmar_drhd_unit *drhd);
+ static void free_iommu(struct intel_iommu *iommu);
  
--	dev = (struct usb_yurex *)file->private_data;
-+	dev = file->private_data;
- 	return fasync_helper(fd, file, on, &dev->async_queue);
++static int iommu_check_root_entry(struct intel_iommu *iommu);
++
+ static void __init dmar_register_drhd_unit(struct dmar_drhd_unit *drhd)
+ {
+ 	/*
+@@ -987,6 +989,8 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
+ 						       intel_iommu_groups,
+ 						       iommu->name);
+ 
++	iommu_check_root_entry(iommu);
++
+ 	return 0;
+ 
+  err_unmap:
+@@ -1666,5 +1670,32 @@ static int __init dmar_free_unused_resources(void)
+ 	return 0;
  }
  
-@@ -401,7 +401,7 @@ static int yurex_release(struct inode *inode, struct file *file)
- {
- 	struct usb_yurex *dev;
- 
--	dev = (struct usb_yurex *)file->private_data;
-+	dev = file->private_data;
- 	if (dev == NULL)
- 		return -ENODEV;
- 
-@@ -418,7 +418,7 @@ static ssize_t yurex_read(struct file *file, char *buffer, size_t count, loff_t
- 	char in_buffer[20];
- 	unsigned long flags;
- 
--	dev = (struct usb_yurex *)file->private_data;
-+	dev = file->private_data;
- 
- 	mutex_lock(&dev->io_mutex);
- 	if (!dev->interface) {		/* already disconnected */
-@@ -455,7 +455,7 @@ static ssize_t yurex_write(struct file *file, const char *user_buffer, size_t co
- 	DEFINE_WAIT(wait);
- 
- 	count = min(sizeof(buffer), count);
--	dev = (struct usb_yurex *)file->private_data;
-+	dev = file->private_data;
- 
- 	/* verify that we actually have some data to write */
- 	if (count == 0)
++static int iommu_check_root_entry(struct intel_iommu *iommu)
++{
++	u64 re_pa;
++
++	re_pa = dmar_readq(iommu->reg + DMAR_RTADDR_REG);
++
++	/* This only works for hardware error and kdump kernel */
++	if (unlikely(re_pa != 0)) {
++		u32 sts;
++		unsigned long flag;
++
++		raw_spin_lock_irqsave(&iommu->register_lock, flag);
++		dmar_writeq(iommu->reg + DMAR_RTADDR_REG, 0);
++
++		writel(iommu->gcmd | DMA_GCMD_SRTP, iommu->reg + DMAR_GCMD_REG);
++
++		/* Make sure hardware complete it */
++		IOMMU_WAIT_OP(iommu, DMAR_GSTS_REG,
++			      readl, (sts & DMA_GSTS_RTPS), sts);
++
++		raw_spin_unlock_irqrestore(&iommu->register_lock, flag);
++
++	}
++
++	return 0;
++}
++
+ late_initcall(dmar_free_unused_resources);
+ IOMMU_INIT_POST(detect_intel_iommu);
 -- 
-1.8.1.msysgit.1
+2.0.0-rc0
 
