@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175AbaHRJwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:52:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42836 "EHLO
+	id S1754145AbaHRJvi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:51:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42876 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaHRJfV (ORCPT
+	with ESMTP id S1752895AbaHRJfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:21 -0400
+	Mon, 18 Aug 2014 05:35:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jakub Jelinek <jakub@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 079/137] Fix gcc-4.9.0 miscompilation of load_balance()  in scheduler
-Date: Mon, 18 Aug 2014 10:32:20 +0100
-Message-Id: <1408354398-10226-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 084/137] powerpc/perf: Fix MMCR2 handling for EBB
+Date: Mon, 18 Aug 2014 10:32:25 +0100
+Message-Id: <1408354398-10226-85-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,69 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
-commit 2062afb4f804afef61cbe62a30cac9a46e58e067 upstream.
+commit 8903461c9bc56fcb041fb92d054e2529951770b6 upstream.
 
-Michel Dänzer and a couple of other people reported inexplicable random
-oopses in the scheduler, and the cause turns out to be gcc mis-compiling
-the load_balance() function when debugging is enabled.  The gcc bug
-apparently goes back to gcc-4.5, but slight optimization changes means
-that it now showed up as a problem in 4.9.0 and 4.9.1.
+In the recent commit b50a6c584bb4 "Clear MMCR2 when enabling PMU", I
+screwed up the handling of MMCR2 for tasks using EBB.
 
-The instruction scheduling problem causes gcc to schedule a spill
-operation to before the stack frame has been created, which in turn can
-corrupt the spilled value if an interrupt comes in.  There may be other
-effects of this bug too, but that's the code generation problem seen in
-Michel's case.
+We must make sure we set MMCR2 *before* ebb_switch_in(), otherwise we
+overwrite the value of MMCR2 that userspace may have written. That
+potentially breaks a task that uses EBB and manually uses MMCR2 for
+event freezing.
 
-This is fixed in current gcc HEAD, but the workaround as suggested by
-Markus Trippelsdorf is pretty simple: use -fno-var-tracking-assignments
-when compiling the kernel, which disables the gcc code that causes the
-problem.  This can result in slightly worse debug information for
-variable accesses, but that is infinitely preferable to actual code
-generation problems.
-
-Doing this unconditionally (not just for CONFIG_DEBUG_INFO) also allows
-non-debug builds to verify that the debug build would be identical: we
-can do
-
-    export GCC_COMPARE_DEBUG=1
-
-to make gcc internally verify that the result of the build is
-independent of the "-g" flag (it will make the compiler build everything
-twice, toggling the debug flag, and compare the results).
-
-Without the "-fno-var-tracking-assignments" option, the build would fail
-(even with 4.8.3 that didn't show the actual stack frame bug) with a gcc
-compare failure.
-
-See also gcc bugzilla:
-
-  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61801
-
-Reported-by: Michel Dänzer <michel@daenzer.net>
-Suggested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: b50a6c584bb4 ("powerpc/perf: Clear MMCR2 when enabling PMU")
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Makefile | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/perf/core-book3s.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 305f1d382b99..2f2d7f4dce1d 100644
---- a/Makefile
-+++ b/Makefile
-@@ -614,6 +614,8 @@ KBUILD_CFLAGS	+= -fomit-frame-pointer
- endif
- endif
+diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+index c05f10e95a9e..d5d7adf6dc50 100644
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -1159,14 +1159,14 @@ static void power_pmu_enable(struct pmu *pmu)
+ 	cpuhw->mmcr[0] |= MMCR0_PMXE | MMCR0_FCECE;
  
-+KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
+  out_enable:
++	if (ppmu->flags & PPMU_ARCH_207S)
++		mtspr(SPRN_MMCR2, 0);
 +
- ifdef CONFIG_DEBUG_INFO
- KBUILD_CFLAGS	+= -g
- KBUILD_AFLAGS	+= -gdwarf-2
+ 	mmcr0 = ebb_switch_in(ebb, cpuhw->mmcr[0]);
+ 
+ 	mb();
+ 	write_mmcr0(cpuhw, mmcr0);
+ 
+-	if (ppmu->flags & PPMU_ARCH_207S)
+-		mtspr(SPRN_MMCR2, 0);
+-
+ 	/*
+ 	 * Enable instruction sampling if necessary
+ 	 */
 -- 
 1.9.1
 
