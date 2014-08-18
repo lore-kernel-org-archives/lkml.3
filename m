@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaHRKCy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:02:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42584 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280AbaHRJeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752293AbaHRJeQ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 18 Aug 2014 05:34:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42554 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbaHRJeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 05:34:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Popov <ixaphire@qrator.net>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 035/137] ip_tunnel: fix ip_tunnel_lookup
-Date: Mon, 18 Aug 2014 10:31:36 +0100
-Message-Id: <1408354398-10226-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 031/137] Drivers: hv: util: Fix a bug in the KVP code
+Date: Mon, 18 Aug 2014 10:31:32 +0100
+Message-Id: <1408354398-10226-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,98 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Popov <ixaphire@qrator.net>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit e0056593b61253f1a8a9941dacda22e73b963cdc upstream.
+commit 9bd2d0dfe4714dd5d7c09a93a5c9ea9e14ceb3fc upstream.
 
-This patch fixes 3 similar bugs where incoming packets might be routed into
-wrong non-wildcard tunnels:
+Add code to poll the channel since we process only one message
+at a time and the host may not interrupt us. Also increase the
+receive buffer size since some KVP messages are close to 8K bytes in size.
 
-1) Consider the following setup:
-    ip address add 1.1.1.1/24 dev eth0
-    ip address add 1.1.1.2/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.2.2 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets from 2.2.2.2 were routed into ipip1 even if it has dst =
-1.1.1.2. Moreover even if there was wildcard tunnel like
-   ip tunnel add ipip0 remote 2.2.2.2 local any mode ipip dev eth0
-but it was created before explicit one (with local 1.1.1.1), incoming ipip
-packets with src = 2.2.2.2 and dst = 1.1.1.2 were still routed into ipip1.
-
-Same issue existed with all tunnels that use ip_tunnel_lookup (gre, vti)
-
-2)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add ipip1 remote 2.2.146.85 local 1.1.1.1 mode ipip dev eth0
-    ip link set ipip1 up
-
-Incoming ipip packets with dst = 1.1.1.1 were routed into ipip1, no matter what
-src address is. Any remote ip address which has ip_tunnel_hash = 0 raised this
-issue, 2.2.146.85 is just an example, there are more than 4 million of them.
-And again, wildcard tunnel like
-   ip tunnel add ipip0 remote any local 1.1.1.1 mode ipip dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-Gre & vti tunnels had the same issue.
-
-3)  ip address add 1.1.1.1/24 dev eth0
-    ip tunnel add gre1 remote 2.2.146.84 local 1.1.1.1 key 1 mode gre dev eth0
-    ip link set gre1 up
-
-Any incoming gre packet with key = 1 were routed into gre1, no matter what
-src/dst addresses are. Any remote ip address which has ip_tunnel_hash = 0 raised
-the issue, 2.2.146.84 is just an example, there are more than 4 million of them.
-Wildcard tunnel like
-   ip tunnel add gre2 remote any local any key 1 mode gre dev eth0
-wouldn't be ever matched if it was created before explicit tunnel like above.
-
-All this stuff happened because while looking for a wildcard tunnel we didn't
-check that matched tunnel is a wildcard one. Fixed.
-
-Signed-off-by: Dmitry Popov <ixaphire@qrator.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: used kys's backport for 3.15 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/ip_tunnel.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/hv/hv_kvp.c  | 16 +++++++++++++---
+ drivers/hv/hv_util.c |  2 +-
+ 2 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index b6829f4d7caa..27cbe4a72c60 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -166,6 +166,7 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+index ed50e9e83c61..cf2bd4aeb404 100644
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -111,6 +111,16 @@ kvp_work_func(struct work_struct *dummy)
+ 	kvp_respond_to_host(NULL, HV_E_FAIL);
+ }
  
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (remote != t->parms.iph.daddr ||
-+		    t->parms.iph.saddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
- 
-@@ -182,10 +183,11 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
- 	head = &itn->tunnels[hash];
- 
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
--		if ((local != t->parms.iph.saddr &&
--		     (local != t->parms.iph.daddr ||
--		      !ipv4_is_multicast(local))) ||
--		    !(t->dev->flags & IFF_UP))
-+		if ((local != t->parms.iph.saddr || t->parms.iph.daddr != 0) &&
-+		    (local != t->parms.iph.daddr || !ipv4_is_multicast(local)))
-+			continue;
++static void poll_channel(struct vmbus_channel *channel)
++{
++	unsigned long flags;
 +
-+		if (!(t->dev->flags & IFF_UP))
- 			continue;
++	spin_lock_irqsave(&channel->inbound_lock, flags);
++	hv_kvp_onchannelcallback(channel);
++	spin_unlock_irqrestore(&channel->inbound_lock, flags);
++}
++
++
+ static int kvp_handle_handshake(struct hv_kvp_msg *msg)
+ {
+ 	int ret = 1;
+@@ -139,7 +149,7 @@ static int kvp_handle_handshake(struct hv_kvp_msg *msg)
+ 		kvp_register(dm_reg_value);
+ 		kvp_transaction.active = false;
+ 		if (kvp_transaction.kvp_context)
+-			hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
++			poll_channel(kvp_transaction.kvp_context);
+ 	}
+ 	return ret;
+ }
+@@ -552,7 +562,7 @@ response_done:
  
- 		if (!ip_tunnel_key_match(&t->parms, flags, key))
-@@ -202,6 +204,8 @@ struct ip_tunnel *ip_tunnel_lookup(struct ip_tunnel_net *itn,
+ 	vmbus_sendpacket(channel, recv_buffer, buf_len, req_id,
+ 				VM_PKT_DATA_INBAND, 0);
+-
++	poll_channel(channel);
+ }
  
- 	hlist_for_each_entry_rcu(t, head, hash_node) {
- 		if (t->parms.i_key != key ||
-+		    t->parms.iph.saddr != 0 ||
-+		    t->parms.iph.daddr != 0 ||
- 		    !(t->dev->flags & IFF_UP))
- 			continue;
+ /*
+@@ -585,7 +595,7 @@ void hv_kvp_onchannelcallback(void *context)
+ 		return;
+ 	}
  
+-	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 2, &recvlen,
++	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE * 4, &recvlen,
+ 			 &requestid);
+ 
+ 	if (recvlen > 0) {
+diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+index 2f561c5dfe24..64c778f7756f 100644
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -279,7 +279,7 @@ static int util_probe(struct hv_device *dev,
+ 		(struct hv_util_service *)dev_id->driver_data;
+ 	int ret;
+ 
+-	srv->recv_buffer = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
++	srv->recv_buffer = kmalloc(PAGE_SIZE * 4, GFP_KERNEL);
+ 	if (!srv->recv_buffer)
+ 		return -ENOMEM;
+ 	if (srv->util_init) {
 -- 
 1.9.1
 
