@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaHRPAf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:00:35 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:45456 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918AbaHRO7C (ORCPT
+	id S1752096AbaHRPBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:01:41 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:51590 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaHRPBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:59:02 -0400
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux@arm.linux.org.uk, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, olof@lixom.net, arnd@arndb.de,
-        jason@lakedaemon.net, thomas.petazzoni@free-electrons.com,
-        swarren@nvidia.com, sebastian.hesselbarth@gmail.com, stefan@agner.ch,
-        maxime.ripard@free-electrons.com, matthias.bgg@gmail.com,
-        anders.berg@lsi.com, linus.walleij@linaro.org, lee.jones@linaro.org,
-        heiko@sntech.de, srv_yingjoe.chen@mediatek.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 5/9] arm: dts: mt6589-aquaris5: Add boot argument earlyprintk
-Date: Mon, 18 Aug 2014 16:58:33 +0200
-Message-Id: <1408373917-10002-6-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408373917-10002-1-git-send-email-matthias.bgg@gmail.com>
-References: <1408373917-10002-1-git-send-email-matthias.bgg@gmail.com>
+	Mon, 18 Aug 2014 11:01:39 -0400
+Date: Mon, 18 Aug 2014 18:01:29 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: gleb@kernel.org, pbonzini@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] eventfd: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+Message-ID: <20140818150129.GA14447@ada>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add boot argument for earlyprintk to the aquaris5 device tree file.
+The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+The following Coccinelle semantic patch was used:
+@@
+@@
+
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 ---
- arch/arm/boot/dts/mt6589-aquaris5.dts |    4 ++++
- 1 file changed, 4 insertions(+)
+ virt/kvm/eventfd.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/mt6589-aquaris5.dts b/arch/arm/boot/dts/mt6589-aquaris5.dts
-index 443b446..74cb1ba 100644
---- a/arch/arm/boot/dts/mt6589-aquaris5.dts
-+++ b/arch/arm/boot/dts/mt6589-aquaris5.dts
-@@ -19,6 +19,10 @@
- / {
- 	model = "bq Aquaris5";
+diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+index 20c3af7..a49130f 100644
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -278,7 +278,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
+ 	struct kvm_kernel_irq_routing_entry *e;
  
-+	chosen {
-+		bootargs = "earlyprintk";
-+	};
-+
- 	memory {
- 		reg = <0x80000000 0x40000000>;
- 	};
+ 	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
+-		rcu_assign_pointer(irqfd->irq_entry, NULL);
++		RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+ 		return;
+ 	}
+ 
+@@ -287,7 +287,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
+ 		if (e->type == KVM_IRQ_ROUTING_MSI)
+ 			rcu_assign_pointer(irqfd->irq_entry, e);
+ 		else
+-			rcu_assign_pointer(irqfd->irq_entry, NULL);
++			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+ 	}
+ }
+ 
+@@ -473,7 +473,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+ 			 * It is paired with synchronize_srcu done by caller
+ 			 * of that function.
+ 			 */
+-			rcu_assign_pointer(irqfd->irq_entry, NULL);
++			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+ 			irqfd_deactivate(irqfd);
+ 		}
+ 	}
 -- 
-1.7.9.5
+1.9.1
 
