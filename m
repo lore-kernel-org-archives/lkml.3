@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851AbaHRJqX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:46:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42986 "EHLO
+	id S1753814AbaHRJoB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:44:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070AbaHRJfy (ORCPT
+	with ESMTP id S1753162AbaHRJgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:54 -0400
+	Mon, 18 Aug 2014 05:36:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 102/137] Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
-Date: Mon, 18 Aug 2014 10:32:43 +0100
-Message-Id: <1408354398-10226-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 104/137] printk: rename printk_sched to printk_deferred
+Date: Mon, 18 Aug 2014 10:32:45 +0100
+Message-Id: <1408354398-10226-105-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -27,87 +31,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 08b9939997df30e42a228e1ecb97f99e9c8ea84e upstream.
+commit aac74dc495456412c4130a1167ce4beb6c1f0b38 upstream.
 
-This reverts commit 277d916fc2e959c3f106904116bb4f7b1148d47a as it was
-at least breaking iwlwifi by setting the IEEE80211_TX_CTL_NO_PS_BUFFER
-flag in all kinds of interface modes, not only for AP mode where it is
-appropriate.
+After learning we'll need some sort of deferred printk functionality in
+the timekeeping core, Peter suggested we rename the printk_sched function
+so it can be reused by needed subsystems.
 
-To avoid reintroducing the original problem, explicitly check for probe
-request frames in the multicast buffering code.
+This only changes the function name. No logic changes.
 
-Fixes: 277d916fc2e9 ("mac80211: move "bufferable MMPDU" check to fix AP mode scan")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ luis: backported to 3.11: based on Johannes' backport for 3.10 ]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Bohac <jbohac@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: prereq for 504d58745c9c ("timer: Fix lock inversion between
+  hrtimer_bases.lock and scheduler locks"); backported to 3.11:
+  - dropped changes to kernel/sched/deadline.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/tx.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ include/linux/printk.h | 6 +++---
+ kernel/printk/printk.c | 2 +-
+ kernel/sched/core.c    | 2 +-
+ kernel/sched/rt.c      | 2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 5fd26c6bad2a..cc3be10bab23 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -398,6 +398,9 @@ ieee80211_tx_h_multicast_ps_buf(struct ieee80211_tx_data *tx)
- 	if (ieee80211_has_order(hdr->frame_control))
- 		return TX_CONTINUE;
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 22c7052e9372..708b8a84f6c0 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -124,9 +124,9 @@ asmlinkage __printf(1, 2) __cold
+ int printk(const char *fmt, ...);
  
-+	if (ieee80211_is_probe_req(hdr->frame_control))
-+		return TX_CONTINUE;
-+
- 	if (tx->local->hw.flags & IEEE80211_HW_QUEUE_CONTROL)
- 		info->hw_queue = tx->sdata->vif.cab_queue;
+ /*
+- * Special printk facility for scheduler use only, _DO_NOT_USE_ !
++ * Special printk facility for scheduler/timekeeping use only, _DO_NOT_USE_ !
+  */
+-__printf(1, 2) __cold int printk_sched(const char *fmt, ...);
++__printf(1, 2) __cold int printk_deferred(const char *fmt, ...);
  
-@@ -448,6 +451,7 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+ /*
+  * Please don't use printk_ratelimit(), because it shares ratelimiting state
+@@ -161,7 +161,7 @@ int printk(const char *s, ...)
+ 	return 0;
+ }
+ static inline __printf(1, 2) __cold
+-int printk_sched(const char *s, ...)
++int printk_deferred(const char *s, ...)
  {
- 	struct sta_info *sta = tx->sta;
- 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
-+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
- 	struct ieee80211_local *local = tx->local;
+ 	return 0;
+ }
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 41832ed685a9..385d33583931 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2463,7 +2463,7 @@ void wake_up_klogd(void)
+ 	preempt_enable();
+ }
  
- 	if (unlikely(!sta))
-@@ -458,6 +462,15 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
- 		int ac = skb_get_queue_mapping(tx->skb);
- 
-+		/* only deauth, disassoc and action are bufferable MMPDUs */
-+		if (ieee80211_is_mgmt(hdr->frame_control) &&
-+		    !ieee80211_is_deauth(hdr->frame_control) &&
-+		    !ieee80211_is_disassoc(hdr->frame_control) &&
-+		    !ieee80211_is_action(hdr->frame_control)) {
-+			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
-+			return TX_CONTINUE;
-+		}
-+
- 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
- 		       sta->sta.addr, sta->sta.aid, ac);
- 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
-@@ -515,22 +528,9 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- static ieee80211_tx_result debug_noinline
- ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
+-int printk_sched(const char *fmt, ...)
++int printk_deferred(const char *fmt, ...)
  {
--	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
--	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
--
- 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
- 		return TX_CONTINUE;
+ 	unsigned long flags;
+ 	va_list args;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 68924be0e1e1..65f48e3b7100 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1239,7 +1239,7 @@ out:
+ 		 * leave kernel.
+ 		 */
+ 		if (p->mm && printk_ratelimit()) {
+-			printk_sched("process %d (%s) no longer affine to cpu%d\n",
++			printk_deferred("process %d (%s) no longer affine to cpu%d\n",
+ 					task_pid_nr(p), p->comm, cpu);
+ 		}
+ 	}
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 417b1b3fd7e9..8d5724775918 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -827,7 +827,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
  
--	/* only deauth, disassoc and action are bufferable MMPDUs */
--	if (ieee80211_is_mgmt(hdr->frame_control) &&
--	    !ieee80211_is_deauth(hdr->frame_control) &&
--	    !ieee80211_is_disassoc(hdr->frame_control) &&
--	    !ieee80211_is_action(hdr->frame_control)) {
--		if (tx->flags & IEEE80211_TX_UNICAST)
--			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
--		return TX_CONTINUE;
--	}
--
- 	if (tx->flags & IEEE80211_TX_UNICAST)
- 		return ieee80211_tx_h_unicast_ps_buf(tx);
- 	else
+ 			if (!once) {
+ 				once = true;
+-				printk_sched("sched: RT throttling activated\n");
++				printk_deferred("sched: RT throttling activated\n");
+ 			}
+ 		} else {
+ 			/*
 -- 
 1.9.1
 
