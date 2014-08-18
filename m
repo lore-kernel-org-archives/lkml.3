@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaHRTBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 15:01:10 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:45136 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaHRTBI (ORCPT
+	id S1752145AbaHRTCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 15:02:09 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:63590 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaHRTCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 15:01:08 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Gerhard Sittig <gsi@denx.de>, Rob Herring <robh@kernel.org>,
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] powerpc: Fix build failure for PPC_32
-Date: Mon, 18 Aug 2014 15:01:04 -0400
-Message-Id: <1408388465-26577-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 18 Aug 2014 15:02:06 -0400
+Date: Mon, 18 Aug 2014 21:02:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
+        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        chai wen <chaiw.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 2/5] softlockup: make detector be aware of task switch of
+ processes hogging cpu
+Message-ID: <20140818190200.GB5074@gmail.com>
+References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
+ <1407768567-171794-3-git-send-email-dzickus@redhat.com>
+ <20140818090319.GA25495@gmail.com>
+ <20140818150658.GQ49576@redhat.com>
+ <20140818180158.GA4540@gmail.com>
+ <20140818184339.GB49576@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818184339.GB49576@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix ppc 32 build failure as reported here:
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/11663513/
+* Don Zickus <dzickus@redhat.com> wrote:
 
-The error is that pci_32.o was not being built for PPC_32. Fix error by adding
-it in the Makefile. Tested using the ppc cross compiler.
+> > > > So I agree with the motivation of this improvement, but 
+> > > > is this implementation namespace-safe?
+> > > 
+> > > What namespace are you worried about colliding with?  I 
+> > > thought softlockup_ would provide the safety??  Maybe I 
+> > > am missing something obvious. :-(
+> > 
+> > I meant PID namespaces - a PID in itself isn't guaranteed 
+> > to be unique across the system.
+> 
+> Ah, I don't think we thought about that.  Is there a better 
+> way to do this?  Is there a domain id or something that can 
+> be OR'd with the pid?
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- arch/powerpc/kernel/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+What is always unique is the task pointer itself. We use pids 
+when we interface with user-space - but we don't really do that 
+here, right?
 
-diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
-index 670c312..3206ba1 100644
---- a/arch/powerpc/kernel/Makefile
-+++ b/arch/powerpc/kernel/Makefile
-@@ -89,7 +89,7 @@ extra-y				+= vmlinux.lds
- 
- obj-$(CONFIG_RELOCATABLE_PPC32)	+= reloc_32.o
- 
--obj-$(CONFIG_PPC32)		+= entry_32.o setup_32.o
-+obj-$(CONFIG_PPC32)		+= entry_32.o setup_32.o pci_32.o
- obj-$(CONFIG_PPC64)		+= dma-iommu.o iommu.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
- obj-$(CONFIG_MODULES)		+= ppc_ksyms.o
--- 
-1.9.1
+Thanks,
 
+	Ingo
