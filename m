@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaHRKww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:52:52 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:62913 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbaHRKwu (ORCPT
+	id S1751942AbaHRKwj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:52:39 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:14864 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751779AbaHRKwg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 06:52:50 -0400
-Message-ID: <53F1DAFD.5000903@redhat.com>
-Date: Mon, 18 Aug 2014 12:52:45 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Mon, 18 Aug 2014 06:52:36 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19Gxgcr7Q4raP2uUV8NImxvVQJWq/aH9u0=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 76D445C89D2
+Date: Mon, 18 Aug 2014 06:51:59 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Mark Brown <broonie@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>,
+        Geoff Levand <geoff@infradead.org>, linux-kernel@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] irq: gic-v3: Tag all low level accessors
+ __maybey_unused
+Message-ID: <20140818105159.GP12769@titan.lakedaemon.net>
+References: <1406748194-21094-1-git-send-email-broonie@kernel.org>
+ <20140818071104.GA2207@pengutronix.de>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Gleb Natapov <gleb@kernel.org>, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] KVM: x86: drop fpu_activate hook
-References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com> <1408355431-115633-2-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1408355431-115633-2-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20140818071104.GA2207@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/08/2014 11:50, Wanpeng Li ha scritto:
-> fpu_activate hook is introduced by commit 6b52d186 (KVM: Activate fpu on 
-> clts), however, there is no user currently, this patch drop it.
-> 
-> Reviewed-by: Yang Zhang <yang.z.zhang@intel.com>
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->  arch/x86/include/asm/kvm_host.h | 1 -
->  arch/x86/kvm/svm.c              | 1 -
->  arch/x86/kvm/vmx.c              | 1 -
->  3 files changed, 3 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 5724601..b68f3e5 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -710,7 +710,6 @@ struct kvm_x86_ops {
->  	void (*cache_reg)(struct kvm_vcpu *vcpu, enum kvm_reg reg);
->  	unsigned long (*get_rflags)(struct kvm_vcpu *vcpu);
->  	void (*set_rflags)(struct kvm_vcpu *vcpu, unsigned long rflags);
-> -	void (*fpu_activate)(struct kvm_vcpu *vcpu);
->  	void (*fpu_deactivate)(struct kvm_vcpu *vcpu);
->  
->  	void (*tlb_flush)(struct kvm_vcpu *vcpu);
-> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> index ddf7427..1f49c86 100644
-> --- a/arch/x86/kvm/svm.c
-> +++ b/arch/x86/kvm/svm.c
-> @@ -4349,7 +4349,6 @@ static struct kvm_x86_ops svm_x86_ops = {
->  	.cache_reg = svm_cache_reg,
->  	.get_rflags = svm_get_rflags,
->  	.set_rflags = svm_set_rflags,
-> -	.fpu_activate = svm_fpu_activate,
->  	.fpu_deactivate = svm_fpu_deactivate,
->  
->  	.tlb_flush = svm_flush_tlb,
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 71cbee5..2963303 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -8896,7 +8896,6 @@ static struct kvm_x86_ops vmx_x86_ops = {
->  	.cache_reg = vmx_cache_reg,
->  	.get_rflags = vmx_get_rflags,
->  	.set_rflags = vmx_set_rflags,
-> -	.fpu_activate = vmx_fpu_activate,
->  	.fpu_deactivate = vmx_fpu_deactivate,
->  
->  	.tlb_flush = vmx_flush_tlb,
-> 
+Uwe,
 
-Applying shortly to kvm/queue, thanks.
+On Mon, Aug 18, 2014 at 09:11:04AM +0200, Uwe Kleine-König wrote:
+> 
+> typo in the Subject line. s/maybey/maybe/
 
-Paolo
+Yep, I forgot to mention I fixed that when I applied it.
+
+thx,
+
+Jason.
