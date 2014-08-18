@@ -1,198 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691AbaHRBoQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 21:44:16 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:37634 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaHRBoN (ORCPT
+	id S1751671AbaHRByp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 21:54:45 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:26126 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaHRByn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 21:44:13 -0400
-Date: Mon, 18 Aug 2014 09:44:04 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v9 02/12] PCI: OF: Parse and map the IRQ when adding the
- PCI device.
-Message-ID: <20140818014404.GA11354@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-3-git-send-email-Liviu.Dudau@arm.com>
- <20140814145804.GA5586@richard>
- <20140814154959.GG25761@e106497-lin.cambridge.arm.com>
- <20140815085632.GA4954@richard>
- <20140815103052.GD27553@e106497-lin.cambridge.arm.com>
+	Sun, 17 Aug 2014 21:54:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+239uF0yDXSl+gQj6WrPTQT7Yu5vOezlg=
+X-DKIM: OpenDKIM Filter v2.0.1 titan CA8EC5C83C8
+Date: Sun, 17 Aug 2014 21:54:30 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
+ into scheduler
+Message-ID: <20140818015430.GN12769@titan.lakedaemon.net>
+References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
+ <20140817173236.GG12769@titan.lakedaemon.net>
+ <20140817185522.GX30401@n2100.arm.linux.org.uk>
+ <20140817190434.GJ12769@titan.lakedaemon.net>
+ <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
+ <20140818012512.GL12769@titan.lakedaemon.net>
+ <alpine.LFD.2.11.1408172131550.29347@knanqh.ubzr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140815103052.GD27553@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081801-8256-0000-0000-000000CD8907
+In-Reply-To: <alpine.LFD.2.11.1408172131550.29347@knanqh.ubzr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 11:30:52AM +0100, Liviu Dudau wrote:
->On Fri, Aug 15, 2014 at 09:56:32AM +0100, Wei Yang wrote:
->> On Thu, Aug 14, 2014 at 04:49:59PM +0100, Liviu Dudau wrote:
->> >On Thu, Aug 14, 2014 at 03:58:04PM +0100, Wei Yang wrote:
->> >> On Tue, Aug 12, 2014 at 05:25:15PM +0100, Liviu Dudau wrote:
->> >> >Enhance the default implementation of pcibios_add_device() to
->> >> >parse and map the IRQ of the device if a DT binding is available.
->> >> >
->> >> >Cc: Bjorn Helgaas <bhelgaas@google.com>
->> >> >Cc: Grant Likely <grant.likely@linaro.org>
->> >> >Cc: Rob Herring <robh+dt@kernel.org>
->> >> >Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
->> >> >---
->> >> > drivers/pci/pci.c | 3 +++
->> >> > 1 file changed, 3 insertions(+)
->> >> >
->> >> >diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->> >> >index 1c8592b..29d1775 100644
->> >> >--- a/drivers/pci/pci.c
->> >> >+++ b/drivers/pci/pci.c
->> >> >@@ -17,6 +17,7 @@
->> >> > #include <linux/spinlock.h>
->> >> > #include <linux/string.h>
->> >> > #include <linux/log2.h>
->> >> >+#include <linux/of_pci.h>
->> >> > #include <linux/pci-aspm.h>
->> >> > #include <linux/pm_wakeup.h>
->> >> > #include <linux/interrupt.h>
->> >> >@@ -1453,6 +1454,8 @@ EXPORT_SYMBOL(pcim_pin_device);
->> >> >  */
->> >> > int __weak pcibios_add_device(struct pci_dev *dev)
->> >> > {
->> >> >+	dev->irq = of_irq_parse_and_map_pci(dev, 0, 0);
->> >> >+
->> >> > 	return 0;
->> >> > }
->> >> 
->> >> Liviu,
->> >> 
->> >> For this, my suggestion is to add arch dependent function to setup the irq
->> >> line for pci devices. I can't find an obvious reason this won't work on other
->> >> archs, but maybe this will hurt some of them?
->> >
->> >Hi Wei,
->> >
->> >I'm not sure I understand your point. Architectures that support OF will obviously
->> >benefit from this common approach, and for the other ones the function is empty
->> >so it will not change existing behaviour. If you are suggesting that I should
->> >create a new API that each architecture could go and implement for setting up the
->> >IRQ line then I would agree that it would be nice to have that, but the question
->> >is how many architectures are outside OF that need this?
->> 
->> My suggestion is to define the pcibios_add_device() for arm arch, like the one
->> in arch/powerpc/kernel/pci-common.c. If my understanding is correct, this
->> patch set address the pci bus setup mostly on arm arch.
->
->And also arm64 at the least.
->
->> 
->> For those archs not support OF, this function is empty and has no effect. I
->> agree on this one.
->> 
->> For those archs rely on OF, we still have two cases:
->>     1. they would have implement this function like powerpc
->
->Actually, powerpc seems to be the only OF platform reimplementing this function.
->s390 and x86 are not OF platforms.
->
->>     2. have other way to fix it up,  otherwise how it works now?
->
->Don't forget that my patchset aims to replace existing house-made code with a more
->generic version. When architectures and platforms switch to my code they will have
->to add this back in their code if it's needed.
->
->> If my assumption is correct, this change will either have no effect, or fix up
->> the irq line the second time. Not harmful, but not necessary.
->
->Well, it will become necessary as old code gets dismantled and converted towards
->this patchset. To give you an example that I'm familiar with, for arch/arm the
->host bridge drivers have moved into drivers/pci/host, but they still depend/use
->the bios32 infrastructure that takes care of setting up the irq. When they switch
->to my version they would have to go and debug the "irq not being assigned" issue
->and it is quite likely that some of the people doing the conversion will complain
->about my code rather than understanding the issue. What I'm trying to do is to
->make switching to my patchset as painless as possible, with a cleanup to remove
->redundant operations coming after the switchover.
->
+On Sun, Aug 17, 2014 at 09:35:11PM -0400, Nicolas Pitre wrote:
+> On Sun, 17 Aug 2014, Jason Cooper wrote:
+> 
+> > On Sun, Aug 17, 2014 at 08:04:45PM -0400, Nicolas Pitre wrote:
+> > > On Sun, 17 Aug 2014, Jason Cooper wrote:
+> > > > On Sun, Aug 17, 2014 at 07:55:23PM +0100, Russell King - ARM Linux wrote:
+> > > > > On Sun, Aug 17, 2014 at 01:32:36PM -0400, Jason Cooper wrote:
+> > > > > > Applied to irqchip/urgent with Nico's Ack.
+> > > > > 
+> > > > > Interesting, so I'm discussing this patch, and it gets applied anyway...
+> > > > > yes, that's great.
+> > > > 
+> > > > Quoting Nico:
+> > > > 
+> > > > "Of course it would be good to clarify things wrt Russell's remark
+> > > > independently from this patch."
+> > > > 
+> > > > I took 'independently' to mean "This patch is ok, *and* we need to
+> > > > address Russell's concerns in a follow-up patch."
+> > > > 
+> > > > Nico's Reviewed-by with that comment was sent August 13th.  The most
+> > > > recent activity on this thread was also August 13th.  After four days, I
+> > > > reasoned there were no objections to his comment.
+> > > 
+> > > Well... I mentioned this patch is a nice cleanup independently of the 
+> > > reason why it was created in the first place.
+> > 
+> > Ah, fair enough.
+> > 
+> > > Maybe that shouldn't be sorted as "urgent" in that case, especially
+> > > when the code having problem with the current state of things is
+> > > living out of mainline.
+> > 
+> > hmmm, yes.  I've been grappling with the semantics of '/urgent' vice
+> > '/fixes'.  With mvebu, /fixes is the branch for all changes needing to go
+> > into the current -rcX cycle.  For irqchip, Thomas suggested /urgent for
+> > the equivalent branch.  To me, they serve the same purpose.
+> > Unfortunately, I occasionally hear "Well, it's not _urgent_ ...".  I
+> > suppose I'll put up with it for one more cycle and then change it to
+> > /fixes. :)
+> > 
+> > wrt this patch, I need to drop it anyway.  I was a bit rusty (it's been
+> > a few weeks) and forgot to add the Cc -stable and Fixes: tags.  I do
+> > agree, though, it's certainly not urgent.
+> 
+> Given the raised issue has to do with out-of-tree code, there is no need 
+> to CC stable in that case anyway.
 
-This means this is a temporary version for the switchover period and will be
-reverted after switchover?
+I could go either way here.  On the one hand, a fix is a fix is a fix.
+On the other, if it can't be triggered in mainline, we shouldn't accept
+it at all.
 
->Does that sound like a reasonable plan?
->
->Best regards,
->Liviu
->
->> 
->> I am not familiar with other arch, so the second case is my deduction. If this
->> is not correct, please let me know.
->> 
->> >
->> >If I understood you correctly, it is a nice idea but slightly outside the scope
->> >of my current patchset.
->> >
->> >Best regards,
->> >Liviu
->> >
->> >> 
->> >> >
->> >> >-- 
->> >> >2.0.4
->> >> >
->> >> >--
->> >> >To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> >> >the body of a message to majordomo@vger.kernel.org
->> >> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >> 
->> >> -- 
->> >> Richard Yang
->> >> Help you, Help me
->> >> 
->> >> --
->> >> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> >> the body of a message to majordomo@vger.kernel.org
->> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> >> 
->> >
->> 
->> -- 
->> Richard Yang
->> Help you, Help me
->> 
->> 
->
->-- 
->====================
->| I would like to |
->| fix the world,  |
->| but they're not |
->| giving me the   |
-> \ source code!  /
->  ---------------
->    ¯\_(ツ)_/¯
+Stephen, is the out of tree code that triggered this bound for mainline?
 
--- 
-Richard Yang
-Help you, Help me
+thx,
 
+Jason.
