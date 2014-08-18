@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaHRHZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 03:25:44 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:34300 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944AbaHRHZm (ORCPT
+	id S1751964AbaHRHac (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 03:30:32 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:55724 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751625AbaHRHaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 03:25:42 -0400
-Message-ID: <53F1AA76.2020306@infradead.org>
-Date: Mon, 18 Aug 2014 00:25:42 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 18 Aug 2014 03:30:30 -0400
 MIME-Version: 1.0
-To: Markus Osterhoff <mo@mo-online.org>
-CC: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [TYPO 4/9] [typo] COPYING: form feeds removed
-References: <20140817183033.GE4077@mo-online.de>
-In-Reply-To: <20140817183033.GE4077@mo-online.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1408180966-15493-1-git-send-email-moon.linux@yahoo.com>
+References: <1408180966-15493-1-git-send-email-moon.linux@yahoo.com>
+Date: Mon, 18 Aug 2014 13:00:30 +0530
+Message-ID: <CAKohpomeNmNA+7biiVqPWEx4UeiBj_GR2ccPVDpQADFzfs+XAw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq_opp: Fixed the order of argument for kcalloc.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Anand Moon <moon.linux@yahoo.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/14 11:30, Markus Osterhoff wrote:
-> some lines contain a single ^L (ASCII 0xc, 12, form feed),
-> which are unnecessary.
-> 
-> Signed-off-by: Markus Osterhoff <linux-kernel@k-raum.org>
+On 16 August 2014 14:52, Anand Moon <moon.linux@yahoo.com> wrote:
+> These changes fix the argument to the kcalloc
+>         @n: number of elements.
+>         @size: element size.
+>         @flags: the type of memory to allocate (see kmalloc).
+>
+>         void *kcalloc(size_t n, size_t size, gfp_t flags)
+>
+> Signed-off-by: Anand Moon <moon.linux@yahoo.com>
 > ---
->  COPYING | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+>  drivers/cpufreq/cpufreq_opp.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq_opp.c b/drivers/cpufreq/cpufreq_opp.c
+> index f7a32d2..773bcde 100644
+> --- a/drivers/cpufreq/cpufreq_opp.c
+> +++ b/drivers/cpufreq/cpufreq_opp.c
+> @@ -60,7 +60,7 @@ int dev_pm_opp_init_cpufreq_table(struct device *dev,
+>                 goto out;
+>         }
+>
+> -       freq_table = kcalloc(sizeof(*freq_table), (max_opps + 1), GFP_ATOMIC);
+> +       freq_table = kcalloc((max_opps + 1), sizeof(*freq_table), GFP_ATOMIC);
+>         if (!freq_table) {
+>                 ret = -ENOMEM;
+>                 goto out;
 
-The form feeds have been there forever AFAIK.  I expect that they were put there
-on purpose.  They are mostly a Don't Care One Way Or The Other IMO.
+Fixes: 3c5445c cpufreq: OPP: Avoid sleeping while atomic
 
-
--- 
-~Randy
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
