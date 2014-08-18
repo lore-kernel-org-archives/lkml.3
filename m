@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaHRIWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 04:22:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51496 "EHLO
+	id S1752087AbaHRIWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 04:22:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51509 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaHRIW1 (ORCPT
+	with ESMTP id S1751417AbaHRIWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 04:22:27 -0400
-Date: Mon, 18 Aug 2014 01:21:37 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-92561cb7883194714475c7a7775a11a9c40f75cb@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, acme@kernel.org, namhyung@gmail.com,
-        brendan.d.gregg@gmail.com, jolsa@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, acme@kernel.org, brendan.d.gregg@gmail.com,
-        namhyung@gmail.com, jolsa@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <20140815014432.29869.57941.stgit@kbuild-fedora.novalocal>
-References: <20140815014432.29869.57941.stgit@kbuild-fedora.novalocal>
+	Mon, 18 Aug 2014 04:22:40 -0400
+Date: Mon, 18 Aug 2014 01:22:05 -0700
+From: tip-bot for Elliott Hughes <tipbot@zytor.com>
+Message-ID: <tip-c4d2df495c5bf05661772abf9b88f2696fd810c4@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org, enh@google.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, enh@google.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de
+In-Reply-To: <20140814193920.A7D2D20572@enh.mtv.corp.google.com>
+References: <20140814193920.A7D2D20572@enh.mtv.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe:
-  Warn user to rebuild target with debuginfo
-Git-Commit-ID: 92561cb7883194714475c7a7775a11a9c40f75cb
+Subject: [tip:perf/core] perf tools: Add arm64 triplets
+Git-Commit-ID: c4d2df495c5bf05661772abf9b88f2696fd810c4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,150 +33,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  92561cb7883194714475c7a7775a11a9c40f75cb
-Gitweb:     http://git.kernel.org/tip/92561cb7883194714475c7a7775a11a9c40f75cb
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Fri, 15 Aug 2014 01:44:32 +0000
+Commit-ID:  c4d2df495c5bf05661772abf9b88f2696fd810c4
+Gitweb:     http://git.kernel.org/tip/c4d2df495c5bf05661772abf9b88f2696fd810c4
+Author:     Elliott Hughes <enh@google.com>
+AuthorDate: Thu, 14 Aug 2014 12:39:20 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 15 Aug 2014 10:32:43 -0300
+CommitDate: Fri, 15 Aug 2014 10:40:11 -0300
 
-perf probe: Warn user to rebuild target with debuginfo
+perf tools: Add arm64 triplets
 
-Warn user to rebuild target with debuginfo when the perf probe fails to
-find debug information in the target binary.
+Adds the triplet used for arm64 by Android. Others will want to add
+their own later.
 
-Without this, perf probe just reports the failure, but it's no hint for
-users. This gives more hint for users.
-
-Without this:
-
-  $ strip perf
-  $ ./perf probe -x perf -L argv_split
-  Failed to open debuginfo file.
-    Error: Failed to show lines.
-
-With this:
-
-  $ strip perf
-  $ ./perf probe -x perf -L argv_split
-  The /home/fedora/ksrc/linux-3/tools/perf/perf file has no debug information.
-  Rebuild with -g, or install an appropriate debuginfo package.
-    Error: Failed to show lines.
-
-The "rebuild with ..." part changes to "rebuild with CONFIG_DEBUG_INFO"
-if the target is the kernel or a kernel module.
-
-Suggested-by: Arnaldo Carvalho de Melo <acme@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Brendan Gregg <brendan.d.gregg@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20140815014432.29869.57941.stgit@kbuild-fedora.novalocal
+Signed-off-by: Elliott Hughes <enh@google.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20140814193920.A7D2D20572@enh.mtv.corp.google.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c | 41 +++++++++++++++++++++++------------------
- 1 file changed, 23 insertions(+), 18 deletions(-)
+ tools/perf/arch/common.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 784ea42..ac15ff7 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -258,21 +258,33 @@ static void clear_probe_trace_events(struct probe_trace_event *tevs, int ntevs)
- #ifdef HAVE_DWARF_SUPPORT
+diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
+index 42faf36..49776f1 100644
+--- a/tools/perf/arch/common.c
++++ b/tools/perf/arch/common.c
+@@ -12,6 +12,11 @@ const char *const arm_triplets[] = {
+ 	NULL
+ };
  
- /* Open new debuginfo of given module */
--static struct debuginfo *open_debuginfo(const char *module)
-+static struct debuginfo *open_debuginfo(const char *module, bool silent)
- {
- 	const char *path = module;
-+	struct debuginfo *ret;
- 
- 	if (!module || !strchr(module, '/')) {
- 		path = kernel_get_module_path(module);
- 		if (!path) {
--			pr_err("Failed to find path of %s module.\n",
--			       module ?: "kernel");
-+			if (!silent)
-+				pr_err("Failed to find path of %s module.\n",
-+				       module ?: "kernel");
- 			return NULL;
- 		}
- 	}
--	return debuginfo__new(path);
-+	ret = debuginfo__new(path);
-+	if (!ret && !silent) {
-+		pr_warning("The %s file has no debug information.\n", path);
-+		if (!module || !strtailcmp(path, ".ko"))
-+			pr_warning("Rebuild with CONFIG_DEBUG_INFO=y, ");
-+		else
-+			pr_warning("Rebuild with -g, ");
-+		pr_warning("or install an appropriate debuginfo package.\n");
-+	}
-+	return ret;
- }
- 
++const char *const arm64_triplets[] = {
++	"aarch64-linux-android-",
++	NULL
++};
 +
- static int get_text_start_address(const char *exec, unsigned long *address)
- {
- 	Elf *elf;
-@@ -333,15 +345,13 @@ static int find_perf_probe_point_from_dwarf(struct probe_trace_point *tp,
- 	pr_debug("try to find information at %" PRIx64 " in %s\n", addr,
- 		 tp->module ? : "kernel");
+ const char *const powerpc_triplets[] = {
+ 	"powerpc-unknown-linux-gnu-",
+ 	"powerpc64-unknown-linux-gnu-",
+@@ -105,6 +110,8 @@ static const char *normalize_arch(char *arch)
+ 		return "x86";
+ 	if (!strcmp(arch, "sun4u") || !strncmp(arch, "sparc", 5))
+ 		return "sparc";
++	if (!strcmp(arch, "aarch64") || !strcmp(arch, "arm64"))
++		return "arm64";
+ 	if (!strncmp(arch, "arm", 3) || !strcmp(arch, "sa110"))
+ 		return "arm";
+ 	if (!strncmp(arch, "s390", 4))
+@@ -159,6 +166,8 @@ static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
  
--	dinfo = open_debuginfo(tp->module);
-+	dinfo = open_debuginfo(tp->module, verbose == 0);
- 	if (dinfo) {
- 		ret = debuginfo__find_probe_point(dinfo,
- 						 (unsigned long)addr, pp);
- 		debuginfo__delete(dinfo);
--	} else {
--		pr_debug("Failed to open debuginfo at 0x%" PRIx64 "\n", addr);
-+	} else
- 		ret = -ENOENT;
--	}
- 
- 	if (ret > 0) {
- 		pp->retprobe = tp->retprobe;
-@@ -457,13 +467,11 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 	struct debuginfo *dinfo;
- 	int ntevs, ret = 0;
- 
--	dinfo = open_debuginfo(target);
-+	dinfo = open_debuginfo(target, !need_dwarf);
- 
- 	if (!dinfo) {
--		if (need_dwarf) {
--			pr_warning("Failed to open debuginfo file.\n");
-+		if (need_dwarf)
- 			return -ENOENT;
--		}
- 		pr_debug("Could not open debuginfo. Try to use symbols.\n");
- 		return 0;
- 	}
-@@ -620,11 +628,9 @@ static int __show_line_range(struct line_range *lr, const char *module)
- 	char *tmp;
- 
- 	/* Search a line range */
--	dinfo = open_debuginfo(module);
--	if (!dinfo) {
--		pr_warning("Failed to open debuginfo file.\n");
-+	dinfo = open_debuginfo(module, false);
-+	if (!dinfo)
- 		return -ENOENT;
--	}
- 
- 	ret = debuginfo__find_line_range(dinfo, lr);
- 	debuginfo__delete(dinfo);
-@@ -772,9 +778,8 @@ int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 	if (ret < 0)
- 		return ret;
- 
--	dinfo = open_debuginfo(module);
-+	dinfo = open_debuginfo(module, false);
- 	if (!dinfo) {
--		pr_warning("Failed to open debuginfo file.\n");
- 		ret = -ENOENT;
- 		goto out;
- 	}
+ 	if (!strcmp(arch, "arm"))
+ 		path_list = arm_triplets;
++	else if (!strcmp(arch, "arm64"))
++		path_list = arm64_triplets;
+ 	else if (!strcmp(arch, "powerpc"))
+ 		path_list = powerpc_triplets;
+ 	else if (!strcmp(arch, "sh"))
