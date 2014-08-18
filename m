@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaHRJgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:36:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43007 "EHLO
+	id S1752862AbaHRJfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:35:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42808 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105AbaHRJf6 (ORCPT
+	with ESMTP id S1752824AbaHRJfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:35:58 -0400
+	Mon, 18 Aug 2014 05:35:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Tejun Heo <tj@kernel.org>, Kevin Hao <haokexin@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 103/137] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
-Date: Mon, 18 Aug 2014 10:32:44 +0100
-Message-Id: <1408354398-10226-104-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 074/137] libata: introduce ata_host->n_tags to avoid oops on SAS controllers
+Date: Mon, 18 Aug 2014 10:32:15 +0100
+Message-Id: <1408354398-10226-75-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +28,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
+commit 1a112d10f03e83fb3a2fdc4c9165865dec8a3ca6 upstream.
 
-On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
-(pmd) entries map 2MiB.
+1871ee134b73 ("libata: support the ata host which implements a queue
+depth less than 32") directly used ata_port->scsi_host->can_queue from
+ata_qc_new() to determine the number of tags supported by the host;
+unfortunately, SAS controllers doing SATA don't initialize ->scsi_host
+leading to the following oops.
 
-When the identity mapping is created on LPAE, the pgd pointers are copied
-from the swapper_pg_dir.  If we find that we need to modify the contents
-of a pmd, we allocate a new empty pmd table and insert it into the
-appropriate 1GB slot, before then filling it with the identity mapping.
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+ IP: [<ffffffff814e0618>] ata_qc_new_init+0x188/0x1b0
+ PGD 0
+ Oops: 0002 [#1] SMP
+ Modules linked in: isci libsas scsi_transport_sas mgag200 drm_kms_helper ttm
+ CPU: 1 PID: 518 Comm: udevd Not tainted 3.16.0-rc6+ #62
+ Hardware name: Intel Corporation S2600CO/S2600CO, BIOS SE5C600.86B.02.02.0002.122320131210 12/23/2013
+ task: ffff880c1a00b280 ti: ffff88061a000000 task.ti: ffff88061a000000
+ RIP: 0010:[<ffffffff814e0618>]  [<ffffffff814e0618>] ata_qc_new_init+0x188/0x1b0
+ RSP: 0018:ffff88061a003ae8  EFLAGS: 00010012
+ RAX: 0000000000000001 RBX: ffff88000241ca80 RCX: 00000000000000fa
+ RDX: 0000000000000020 RSI: 0000000000000020 RDI: ffff8806194aa298
+ RBP: ffff88061a003ae8 R08: ffff8806194a8000 R09: 0000000000000000
+ R10: 0000000000000000 R11: ffff88000241ca80 R12: ffff88061ad58200
+ R13: ffff8806194aa298 R14: ffffffff814e67a0 R15: ffff8806194a8000
+ FS:  00007f3ad7fe3840(0000) GS:ffff880627620000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000000058 CR3: 000000061a118000 CR4: 00000000001407e0
+ Stack:
+  ffff88061a003b20 ffffffff814e96e1 ffff88000241ca80 ffff88061ad58200
+  ffff8800b6bf6000 ffff880c1c988000 ffff880619903850 ffff88061a003b68
+  ffffffffa0056ce1 ffff88061a003b48 0000000013d6e6f8 ffff88000241ca80
+ Call Trace:
+  [<ffffffff814e96e1>] ata_sas_queuecmd+0xa1/0x430
+  [<ffffffffa0056ce1>] sas_queuecommand+0x191/0x220 [libsas]
+  [<ffffffff8149afee>] scsi_dispatch_cmd+0x10e/0x300
+  [<ffffffff814a3bc5>] scsi_request_fn+0x2f5/0x550
+  [<ffffffff81317613>] __blk_run_queue+0x33/0x40
+  [<ffffffff8131781a>] queue_unplugged+0x2a/0x90
+  [<ffffffff8131ceb4>] blk_flush_plug_list+0x1b4/0x210
+  [<ffffffff8131d274>] blk_finish_plug+0x14/0x50
+  [<ffffffff8117eaa8>] __do_page_cache_readahead+0x198/0x1f0
+  [<ffffffff8117ee21>] force_page_cache_readahead+0x31/0x50
+  [<ffffffff8117ee7e>] page_cache_sync_readahead+0x3e/0x50
+  [<ffffffff81172ac6>] generic_file_read_iter+0x496/0x5a0
+  [<ffffffff81219897>] blkdev_read_iter+0x37/0x40
+  [<ffffffff811e307e>] new_sync_read+0x7e/0xb0
+  [<ffffffff811e3734>] vfs_read+0x94/0x170
+  [<ffffffff811e43c6>] SyS_read+0x46/0xb0
+  [<ffffffff811e33d1>] ? SyS_lseek+0x91/0xb0
+  [<ffffffff8171ee29>] system_call_fastpath+0x16/0x1b
+ Code: 00 00 00 88 50 29 83 7f 08 01 19 d2 83 e2 f0 83 ea 50 88 50 34 c6 81 1d 02 00 00 40 c6 81 17 02 00 00 00 5d c3 66 0f 1f 44 00 00 <89> 14 25 58 00 00 00
 
-However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
-those mappings.
+Fix it by introducing ata_host->n_tags which is initialized to
+ATA_MAX_QUEUE - 1 in ata_host_init() for SAS controllers and set to
+scsi_host_template->can_queue in ata_host_register() for !SAS ones.
+As SAS hosts are never registered, this will give them the same
+ATA_MAX_QUEUE - 1 as before.  Note that we can't use
+scsi_host->can_queue directly for SAS hosts anyway as they can go
+higher than the libata maximum.
 
-When replacing a PMD, first copy the old PMD contents to the new PMD, so
-that we preserve the existing mappings, particularly the mappings of the
-kernel itself.
-
-[rewrote commit message and added code comment -- rmk]
-
-Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+Reported-by: Jesse Brandeburg <jesse.brandeburg@gmail.com>
+Reported-by: Peter Hurley <peter@hurleysoftware.com>
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Tested-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Fixes: 1871ee134b73 ("libata: support the ata host which implements a queue depth less than 32")
+Cc: Kevin Hao <haokexin@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mm/idmap.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/ata/libata-core.c | 16 ++++------------
+ include/linux/libata.h    |  1 +
+ 2 files changed, 5 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/mm/idmap.c b/arch/arm/mm/idmap.c
-index 83cb3ac27095..c61d2373408c 100644
---- a/arch/arm/mm/idmap.c
-+++ b/arch/arm/mm/idmap.c
-@@ -24,6 +24,13 @@ static void idmap_add_pmd(pud_t *pud, unsigned long addr, unsigned long end,
- 			pr_warning("Failed to allocate identity pmd.\n");
- 			return;
- 		}
-+		/*
-+		 * Copy the original PMD to ensure that the PMD entries for
-+		 * the kernel image are preserved.
-+		 */
-+		if (!pud_none(*pud))
-+			memcpy(pmd, pmd_offset(pud, 0),
-+			       PTRS_PER_PMD * sizeof(pmd_t));
- 		pud_populate(&init_mm, pud, pmd);
- 		pmd += pmd_index(addr);
- 	} else
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index b53d81fc9dba..6a97fc151b8c 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4769,9 +4769,8 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
+ {
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i, tag, max_queue;
+-
+-	max_queue = ap->scsi_host->can_queue;
++	unsigned int max_queue = ap->host->n_tags;
++	unsigned int i, tag;
+ 
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+@@ -6080,6 +6079,7 @@ void ata_host_init(struct ata_host *host, struct device *dev,
+ {
+ 	spin_lock_init(&host->lock);
+ 	mutex_init(&host->eh_mutex);
++	host->n_tags = ATA_MAX_QUEUE - 1;
+ 	host->dev = dev;
+ 	host->ops = ops;
+ }
+@@ -6161,15 +6161,7 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
+ {
+ 	int i, rc;
+ 
+-	/*
+-	 * The max queue supported by hardware must not be greater than
+-	 * ATA_MAX_QUEUE.
+-	 */
+-	if (sht->can_queue > ATA_MAX_QUEUE) {
+-		dev_err(host->dev, "BUG: the hardware max queue is too large\n");
+-		WARN_ON(1);
+-		return -EINVAL;
+-	}
++	host->n_tags = clamp(sht->can_queue, 1, ATA_MAX_QUEUE - 1);
+ 
+ 	/* host must have been started */
+ 	if (!(host->flags & ATA_HOST_STARTED)) {
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index d0c64ab7375b..9740884fca1b 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -547,6 +547,7 @@ struct ata_host {
+ 	struct device 		*dev;
+ 	void __iomem * const	*iomap;
+ 	unsigned int		n_ports;
++	unsigned int		n_tags;			/* nr of NCQ tags */
+ 	void			*private_data;
+ 	struct ata_port_operations *ops;
+ 	unsigned long		flags;
 -- 
 1.9.1
 
