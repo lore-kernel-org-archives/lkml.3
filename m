@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaHRJk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:40:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43116 "EHLO
+	id S1753726AbaHRJmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:42:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43100 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308AbaHRJg0 (ORCPT
+	with ESMTP id S1753243AbaHRJgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:26 -0400
+	Mon, 18 Aug 2014 05:36:21 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 124/137] sparc64: Guard against flushing openfirmware mappings.
-Date: Mon, 18 Aug 2014 10:33:05 +0100
-Message-Id: <1408354398-10226-125-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 120/137] sparc64: Don't bark so loudly about 32-bit tasks generating 64-bit fault addresses.
+Date: Mon, 18 Aug 2014 10:33:01 +0100
+Message-Id: <1408354398-10226-121-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,120 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-commit 4ca9a23765da3260058db3431faf5b4efd8cf926 upstream.
+commit e5c460f46ae7ee94831cb55cb980f942aa9e5a85 upstream.
 
-Based almost entirely upon a patch by Christopher Alexander Tobias
-Schulze.
+This was found using Dave Jone's trinity tool.
 
-In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
-layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
-causes problems on sparc64.
+When a user process which is 32-bit performs a load or a store, the
+cpu chops off the top 32-bits of the effective address before
+translating it.
 
-Sparc64 has two VMAP mapped regions and they are not contiguous with
-eachother.  First we have the malloc mapping area, then another
-unrelated region, then the vmalloc region.
+This is because we run 32-bit tasks with the PSTATE_AM (address
+masking) bit set.
 
-This "another unrelated region" is where the firmware is mapped.
+We can't run the kernel with that bit set, so when the kernel accesses
+userspace no address masking occurs.
 
-If the lazy TLB flushing logic in the vmalloc code triggers after
-we've had both a module unload and a vfree or similar, it will pass an
-address range that goes from somewhere inside the malloc region to
-somewhere inside the vmalloc region, and thus covering the
-openfirmware area entirely.
+Since a 32-bit process will have no mappings in that region we will
+properly fault, so we don't try to handle this using access_ok(),
+which can safely just be a NOP on sparc64.
 
-The sparc64 kernel learns about openfirmware's dynamic mappings in
-this region early in the boot, and then services TLB misses in this
-area.  But openfirmware has some locked TLB entries which are not
-mentioned in those dynamic mappings and we should thus not disturb
-them.
+Real faults from 32-bit processes should never generate such addresses
+so a bug check was added long ago, and it barks in the logs if this
+happens.
 
-These huge lazy TLB flush ranges causes those openfirmware locked TLB
-entries to be removed, resulting in all kinds of problems including
-hard hangs and crashes during reboot/reset.
+But it also barks when a kernel user access causes this condition, and
+that _can_ happen.  For example, if a pointer passed into a system call
+is "0xfffffffc" and the kernel access 4 bytes offset from that pointer.
 
-Besides causing problems like this, such huge TLB flush ranges are
-also incredibly inefficient.  A plea has been made with the author of
-the VMAP lazy TLB flushing code, but for now we'll put a safety guard
-into our flush_tlb_kernel_range() implementation.
-
-Since the implementation has become non-trivial, stop defining it as a
-macro and instead make it a function in a C source file.
+Just handle such faults normally via the exception entries.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/include/asm/tlbflush_64.h | 12 ++----------
- arch/sparc/mm/init_64.c              | 23 +++++++++++++++++++++++
- 2 files changed, 25 insertions(+), 10 deletions(-)
+ arch/sparc/mm/fault_64.c | 16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
 
-diff --git a/arch/sparc/include/asm/tlbflush_64.h b/arch/sparc/include/asm/tlbflush_64.h
-index f0d6a9700f4c..1a4bb971e06d 100644
---- a/arch/sparc/include/asm/tlbflush_64.h
-+++ b/arch/sparc/include/asm/tlbflush_64.h
-@@ -35,6 +35,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
- {
+diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
+index 1992fa04095f..ea83f82464da 100644
+--- a/arch/sparc/mm/fault_64.c
++++ b/arch/sparc/mm/fault_64.c
+@@ -280,18 +280,6 @@ static void noinline __kprobes bogus_32bit_fault_tpc(struct pt_regs *regs)
+ 	show_regs(regs);
  }
  
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end);
-+
- #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
- 
- extern void flush_tlb_pending(void);
-@@ -49,11 +51,6 @@ extern void __flush_tlb_kernel_range(unsigned long start, unsigned long end);
- 
- #ifndef CONFIG_SMP
- 
--#define flush_tlb_kernel_range(start,end) \
--do {	flush_tsb_kernel_range(start,end); \
--	__flush_tlb_kernel_range(start,end); \
--} while (0)
+-static void noinline __kprobes bogus_32bit_fault_address(struct pt_regs *regs,
+-							 unsigned long addr)
+-{
+-	static int times;
 -
- static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
+-	if (times++ < 10)
+-		printk(KERN_ERR "FAULT[%s:%d]: 32-bit process "
+-		       "reports 64-bit fault address [%lx]\n",
+-		       current->comm, current->pid, addr);
+-	show_regs(regs);
+-}
+-
+ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
  {
- 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
-@@ -64,11 +61,6 @@ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vad
- extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
- extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
- 
--#define flush_tlb_kernel_range(start, end) \
--do {	flush_tsb_kernel_range(start,end); \
--	smp_flush_tlb_kernel_range(start, end); \
--} while (0)
--
- #define global_flush_tlb_page(mm, vaddr) \
- 	smp_flush_tlb_page(mm, vaddr)
- 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 774ba41dba4d..b26015f49c0d 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2750,3 +2750,26 @@ void hugetlb_setup(struct pt_regs *regs)
+ 	struct mm_struct *mm = current->mm;
+@@ -320,10 +308,8 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
+ 				goto intr_or_no_mm;
+ 			}
+ 		}
+-		if (unlikely((address >> 32) != 0)) {
+-			bogus_32bit_fault_address(regs, address);
++		if (unlikely((address >> 32) != 0))
+ 			goto intr_or_no_mm;
+-		}
  	}
- }
- #endif
-+
-+#ifdef CONFIG_SMP
-+#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
-+#else
-+#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
-+#endif
-+
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
-+		if (start < LOW_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
-+		}
-+		if (end > HI_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
-+		}
-+	} else {
-+		flush_tsb_kernel_range(start, end);
-+		do_flush_tlb_kernel_range(start, end);
-+	}
-+}
+ 
+ 	if (regs->tstate & TSTATE_PRIV) {
 -- 
 1.9.1
 
