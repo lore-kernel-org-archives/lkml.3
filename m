@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604AbaHRLu0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 07:50:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775AbaHRLuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 07:50:25 -0400
-Message-ID: <53F1E879.2050302@redhat.com>
-Date: Mon, 18 Aug 2014 12:50:17 +0100
-From: Steven Whitehouse <swhiteho@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751599AbaHRLxe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 07:53:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43840 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709AbaHRLxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 07:53:32 -0400
 MIME-Version: 1.0
-To: Rob Jones <rob.jones@codethink.co.uk>, linux-fsdevel@vger.kernel.org
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
-        ebiederm@xmission.com, ian.molton@codethink.co.uk
-Subject: Re: [PATCH V3] seq_file: Document seq_open_private(), seq_release_private()
-References: <1408362005-21504-1-git-send-email-rob.jones@codethink.co.uk>
-In-Reply-To: <1408362005-21504-1-git-send-email-rob.jones@codethink.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
+References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
+	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
+	<20140815163111.GA16652@infradead.org>
+	<53EE370D.1060106@kernel.dk>
+	<53EE3966.60609@kernel.dk>
+	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
+	<53F0EAEC.9040505@kernel.dk>
+	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
+Date: Mon, 18 Aug 2014 19:53:29 +0800
+Message-ID: <CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
+Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        "open list:AIO" <linux-aio@kvack.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 18/08/14 12:40, Rob Jones wrote:
-> Despite the fact that these functions have been around for years, they are
-> little used (only 15 uses in 13 files at the preseht time) even though
-> many other files use work-arounds to achieve the same result.
+On Mon, Aug 18, 2014 at 9:22 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Mon, Aug 18, 2014 at 1:48 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 2014-08-16 02:06, Ming Lei wrote:
+>>>
+>>> On 8/16/14, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>
+>>>> On 08/15/2014 10:36 AM, Jens Axboe wrote:
+>>>>>
+>>>>> On 08/15/2014 10:31 AM, Christoph Hellwig wrote:
+>>>>>>>
+>>>>>>> +static void loop_queue_work(struct work_struct *work)
+>>>>>>
+>>>>>>
+>>>>>> Offloading work straight to a workqueue dosn't make much sense
+>>>>>> in the blk-mq model as we'll usually be called from one.  If you
+>>>>>> need to avoid the cases where we are called directly a flag for
+>>>>>> the blk-mq code to always schedule a workqueue sounds like a much
+>>>>>> better plan.
+>>>>>
+>>>>>
+>>>>> That's a good point - would clean up this bit, and be pretty close to a
+>>>>> one-liner to support in blk-mq for the drivers that always need blocking
+>>>>> context.
+>>>>
+>>>>
+>>>> Something like this should do the trick - totally untested. But with
+>>>> that, loop would just need to add BLK_MQ_F_WQ_CONTEXT to it's tag set
+>>>> flags and it could always do the work inline from ->queue_rq().
+>>>
+>>>
+>>> I think it is a good idea.
+>>>
+>>> But for loop, there may be two problems:
+>>>
+>>> - default max_active for bound workqueue is 256, which means several slow
+>>> loop devices might slow down whole block system. With kernel AIO, it won't
+>>> be a big deal, but some block/fs may not support direct I/O and still
+>>> fallback to
+>>> workqueue
+>>>
+>>> - 6. Guidelines of Documentation/workqueue.txt
+>>> If there is dependency among multiple work items used during memory
+>>> reclaim, they should be queued to separate wq each with WQ_MEM_RECLAIM.
+>>
+>>
+>> Both are good points. But I think this mainly means that we should support
+>> this through a potentially per-dispatch queue workqueue, separate from
+>> kblockd. There's no reason blk-mq can't support this with a per-hctx
+>> workqueue, for drivers that need it.
 >
-> By documenting them, hopefully they will become more widely used.
->
-> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
-Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+> Good idea, and per-device workqueue should be enough if
+> BLK_MQ_F_WQ_CONTEXT flag is set.
 
-Steve.
+Maybe for most of cases per-device class(driver) workqueue should be
+enough since dependency between devices driven by same driver
+isn't common, for example, loop over loop is absolutely insane.
 
-> ---
->   Documentation/filesystems/seq_file.txt |   33 ++++++++++++++++++++++++++++++++
->   1 file changed, 33 insertions(+)
->
-> diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
-> index a1e2e0d..420fc0d 100644
-> --- a/Documentation/filesystems/seq_file.txt
-> +++ b/Documentation/filesystems/seq_file.txt
-> @@ -226,6 +226,39 @@ be used for more than one file, you can store an arbitrary pointer in the
->   private field of the seq_file structure; that value can then be retrieved
->   by the iterator functions.
->   
-> +There is also a wrapper function to seq_open() called seq_open_private(). It
-> +kmallocs a zero filled block of memory and stores a pointer to it in the
-> +private field of the seq_file structure, returning 0 on success. The
-> +block size is specified in a third parameter to the function, e.g.:
-> +
-> +	static int ct_open(struct inode *inode, struct file *file)
-> +	{
-> +		return seq_open_private(file, &ct_seq_ops,
-> +					sizeof(struct mystruct));
-> +	}
-> +
-> +There is also a variant function, __seq_open_private(), which is functionally
-> +identical except that, if successful, it returns the pointer to the allocated
-> +memory block, allowing further initialisation e.g.:
-> +
-> +	static int ct_open(struct inode *inode, struct file *file)
-> +	{
-> +		struct mystruct *p =
-> +			__seq_open_private(file, &ct_seq_ops, sizeof(*p));
-> +
-> +		if (!p)
-> +			return -ENOMEM;
-> +
-> +		p->foo = bar; /* initialize my stuff */
-> +			...
-> +		p->baz = true;
-> +
-> +		return 0;
-> +	}
-> +
-> +A corresponding close function, seq_release_private() is available which
-> +frees the memory allocated in the corresponding open.
-> +
->   The other operations of interest - read(), llseek(), and release() - are
->   all implemented by the seq_file code itself. So a virtual file's
->   file_operations structure will look like:
+I will keep the work queue in loop-mq V2, and it should be easy to switch
+to the mechanism once it is ready.
 
+Thanks,
