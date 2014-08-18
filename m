@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679AbaHRMkL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 08:40:11 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:52793 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaHRMkJ (ORCPT
+	id S1751613AbaHRMm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 08:42:59 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:43188 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaHRMm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 08:40:09 -0400
+	Mon, 18 Aug 2014 08:42:57 -0400
+Date: Mon, 18 Aug 2014 15:42:47 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: infinipath@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] qib_qp: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+Message-ID: <20140818124246.GA18423@ada>
 MIME-Version: 1.0
-In-Reply-To: <1408107735-20775-1-git-send-email-peter.griffin@linaro.org>
-References: <1408107735-20775-1-git-send-email-peter.griffin@linaro.org>
-Date: Mon, 18 Aug 2014 14:40:07 +0200
-Message-ID: <CAPDyKFrC-8UE5k3FG8SumB8yTg+G0hGY0dzEXuV0RfQKt=64qg@mail.gmail.com>
-Subject: Re: [PATCH v3] mmc: sdhci-pxav3: set_uhs_signaling is initialized
- twice differently
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
-        zhangfei.gao@marvell.com, Philip Rakity <prakity@marvell.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Patch Tracking <patches@linaro.org>, Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 August 2014 15:02, Peter Griffin <peter.griffin@linaro.org> wrote:
-> .set_uhs_signaling field is currently initialised twice once to the
-> arch specific callback pxav3_set_uhs_signaling, and also to the generic
-> sdhci_set_uhs_signaling callback.
->
-> This means that uhs is currently broken for this platform currently, as pxav3
-> has some special constriants which means it can't use the generic callback.
->
-> This happened in
-> commit 96d7b78cfc2f ("mmc: sdhci: convert sdhci_set_uhs_signaling() into a library function")
-> commit a702c8abb2a9 ("mmc: host: split up sdhci-pxa, create sdhci-pxav3.c")'
->
-> Fix this and hopefully prevent it happening in the future by ensuring named
-> initialisers always follow the declaration order in the structure definition.
->
-> Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Thanks! Applied for next and added a stable tag for v3.16+
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-Kind regards
-Uffe
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
 
-> ---
->  drivers/mmc/host/sdhci-pxav3.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-> index 6f842fb..3434c79 100644
-> --- a/drivers/mmc/host/sdhci-pxav3.c
-> +++ b/drivers/mmc/host/sdhci-pxav3.c
-> @@ -224,12 +224,11 @@ static void pxav3_set_uhs_signaling(struct sdhci_host *host, unsigned int uhs)
->
->  static const struct sdhci_ops pxav3_sdhci_ops = {
->         .set_clock = sdhci_set_clock,
-> -       .set_uhs_signaling = pxav3_set_uhs_signaling,
->         .platform_send_init_74_clocks = pxav3_gen_init_74_clocks,
->         .get_max_clock = sdhci_pltfm_clk_get_max_clock,
->         .set_bus_width = sdhci_set_bus_width,
->         .reset = pxav3_reset,
-> -       .set_uhs_signaling = sdhci_set_uhs_signaling,
-> +       .set_uhs_signaling = pxav3_set_uhs_signaling,
->  };
->
->  static struct sdhci_pltfm_data sdhci_pxav3_pdata = {
-> --
-> 1.9.1
->
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ drivers/infiniband/hw/qib/qib_qp.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/infiniband/hw/qib/qib_qp.c b/drivers/infiniband/hw/qib/qib_qp.c
+index 7fcc150..17daf42 100644
+--- a/drivers/infiniband/hw/qib/qib_qp.c
++++ b/drivers/infiniband/hw/qib/qib_qp.c
+@@ -255,10 +255,10 @@ static void remove_qp(struct qib_ibdev *dev, struct qib_qp *qp)
+ 
+ 	if (rcu_dereference_protected(ibp->qp0,
+ 			lockdep_is_held(&dev->qpt_lock)) == qp) {
+-		rcu_assign_pointer(ibp->qp0, NULL);
++		RCU_INIT_POINTER(ibp->qp0, NULL);
+ 	} else if (rcu_dereference_protected(ibp->qp1,
+ 			lockdep_is_held(&dev->qpt_lock)) == qp) {
+-		rcu_assign_pointer(ibp->qp1, NULL);
++		RCU_INIT_POINTER(ibp->qp1, NULL);
+ 	} else {
+ 		struct qib_qp *q;
+ 		struct qib_qp __rcu **qpp;
+@@ -315,7 +315,7 @@ unsigned qib_free_all_qps(struct qib_devdata *dd)
+ 	for (n = 0; n < dev->qp_table_size; n++) {
+ 		qp = rcu_dereference_protected(dev->qp_table[n],
+ 			lockdep_is_held(&dev->qpt_lock));
+-		rcu_assign_pointer(dev->qp_table[n], NULL);
++		RCU_INIT_POINTER(dev->qp_table[n], NULL);
+ 
+ 		for (; qp; qp = rcu_dereference_protected(qp->next,
+ 					lockdep_is_held(&dev->qpt_lock)))
+-- 
+1.9.1
+
