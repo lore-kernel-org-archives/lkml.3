@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaHRJeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42666 "EHLO
+	id S1753766AbaHRJ5f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:57:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42705 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452AbaHRJef (ORCPT
+	with ESMTP id S1752589AbaHRJep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:35 -0400
+	Mon, 18 Aug 2014 05:34:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yuchung Cheng <ycheng@google.com>, Neal Cardwell <ncardwell@google.com>,
+Cc: Christoph Schulz <develop@kristov.de>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 048/137] tcp: fix false undo corner cases
-Date: Mon, 18 Aug 2014 10:31:49 +0100
-Message-Id: <1408354398-10226-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 055/137] net: pppoe: use correct channel MTU when using Multilink PPP
+Date: Mon, 18 Aug 2014 10:31:56 +0100
+Message-Id: <1408354398-10226-56-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,102 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Christoph Schulz <develop@kristov.de>
 
-commit 6e08d5e3c8236e7484229e46fdf92006e1dd4c49 upstream.
+commit a8a3e41c67d24eb12f9ab9680cbb85e24fcd9711 upstream.
 
-The undo code assumes that, upon entering loss recovery, TCP
-1) always retransmit something
-2) the retransmission never fails locally (e.g., qdisc drop)
+The PPP channel MTU is used with Multilink PPP when ppp_mp_explode() (see
+ppp_generic module) tries to determine how big a fragment might be. According
+to RFC 1661, the MTU excludes the 2-byte PPP protocol field, see the
+corresponding comment and code in ppp_mp_explode():
 
-so undo_marker is set in tcp_enter_recovery() and undo_retrans is
-incremented only when tcp_retransmit_skb() is successful.
+		/*
+		 * hdrlen includes the 2-byte PPP protocol field, but the
+		 * MTU counts only the payload excluding the protocol field.
+		 * (RFC1661 Section 2)
+		 */
+		mtu = pch->chan->mtu - (hdrlen - 2);
 
-When the assumption is broken because TCP's cwnd is too small to
-retransmit or the retransmit fails locally. The next (DUP)ACK
-would incorrectly revert the cwnd and the congestion state in
-tcp_try_undo_dsack() or tcp_may_undo(). Subsequent (DUP)ACKs
-may enter the recovery state. The sender repeatedly enter and
-(incorrectly) exit recovery states if the retransmits continue to
-fail locally while receiving (DUP)ACKs.
+However, the pppoe module *does* include the PPP protocol field in the channel
+MTU, which is wrong as it causes the PPP payload to be 1-2 bytes too big under
+certain circumstances (one byte if PPP protocol compression is used, two
+otherwise), causing the generated Ethernet packets to be dropped. So the pppoe
+module has to subtract two bytes from the channel MTU. This error only
+manifests itself when using Multilink PPP, as otherwise the channel MTU is not
+used anywhere.
 
-The fix is to initialize undo_retrans to -1 and start counting on
-the first retransmission. Always increment undo_retrans even if the
-retransmissions fail locally because they couldn't cause DSACKs to
-undo the cwnd reduction.
+In the following, I will describe how to reproduce this bug. We configure two
+pppd instances for multilink PPP over two PPPoE links, say eth2 and eth3, with
+a MTU of 1492 bytes for each link and a MRRU of 2976 bytes. (This MRRU is
+computed by adding the two link MTUs and subtracting the MP header twice, which
+is 4 bytes long.) The necessary pppd statements on both sides are "multilink
+mtu 1492 mru 1492 mrru 2976". On the client side, we additionally need "plugin
+rp-pppoe.so eth2" and "plugin rp-pppoe.so eth3", respectively; on the server
+side, we additionally need to start two pppoe-server instances to be able to
+establish two PPPoE sessions, one over eth2 and one over eth3. We set the MTU
+of the PPP network interface to the MRRU (2976) on both sides of the connection
+in order to make use of the higher bandwidth. (If we didn't do that, IP
+fragmentation would kick in, which we want to avoid.)
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Now we send a ICMPv4 echo request with a payload of 2948 bytes from client to
+server over the PPP link. This results in the following network packet:
+
+   2948 (echo payload)
+ +    8 (ICMPv4 header)
+ +   20 (IPv4 header)
+---------------------
+   2976 (PPP payload)
+
+These 2976 bytes do not exceed the MTU of the PPP network interface, so the
+IP packet is not fragmented. Now the multilink PPP code in ppp_mp_explode()
+prepends one protocol byte (0x21 for IPv4), making the packet one byte bigger
+than the negotiated MRRU. So this packet would have to be divided in three
+fragments. But this does not happen as each link MTU is assumed to be two bytes
+larger. So this packet is diveded into two fragments only, one of size 1489 and
+one of size 1488. Now we have for that bigger fragment:
+
+   1489 (PPP payload)
+ +    4 (MP header)
+ +    2 (PPP protocol field for the MP payload (0x3d))
+ +    6 (PPPoE header)
+--------------------------
+   1501 (Ethernet payload)
+
+This packet exceeds the link MTU and is discarded.
+
+If one configures the link MTU on the client side to 1501, one can see the
+discarded Ethernet frames with tcpdump running on the client. A
+
+ping -s 2948 -c 1 192.168.15.254
+
+leads to the smaller fragment that is correctly received on the server side:
+
+(tcpdump -vvvne -i eth3 pppoes and ppp proto 0x3d)
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x3] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [end], length 1492
+
+and to the bigger fragment that is not received on the server side:
+
+(tcpdump -vvvne -i eth2 pppoes and ppp proto 0x3d)
+52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
+  length 1515: PPPoE  [ses 0x5] MLPPP (0x003d), length 1495: seq 0x000,
+  Flags [begin], length 1493
+
+With the patch below, we correctly obtain three fragments:
+
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [begin], length 1492
+52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
+  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
+  Flags [none], length 1492
+52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
+  length 27: PPPoE  [ses 0x1] MLPPP (0x003d), length 7: seq 0x000,
+  Flags [end], length 5
+
+And the ICMPv4 echo request is successfully received at the server side:
+
+IP (tos 0x0, ttl 64, id 21925, offset 0, flags [DF], proto ICMP (1),
+  length 2976)
+    192.168.222.2 > 192.168.15.254: ICMP echo request, id 30530, seq 0,
+      length 2956
+
+The bug was introduced in commit c9aa6895371b2a257401f59d3393c9f7ac5a8698
+("[PPPOE]: Advertise PPPoE MTU") from the very beginning. This patch applies
+to 3.10 upwards but the fix can be applied (with minor modifications) to
+kernels as old as 2.6.32.
+
+Signed-off-by: Christoph Schulz <develop@kristov.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_input.c  | 8 ++++----
- net/ipv4/tcp_output.c | 6 ++++--
- 2 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/net/ppp/pppoe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index ebafc8703c7a..7e150e67129e 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1064,7 +1064,7 @@ static bool tcp_check_dsack(struct sock *sk, const struct sk_buff *ack_skb,
- 	}
+diff --git a/drivers/net/ppp/pppoe.c b/drivers/net/ppp/pppoe.c
+index 82ee6ed954cb..addd23246eb6 100644
+--- a/drivers/net/ppp/pppoe.c
++++ b/drivers/net/ppp/pppoe.c
+@@ -675,7 +675,7 @@ static int pppoe_connect(struct socket *sock, struct sockaddr *uservaddr,
+ 		po->chan.hdrlen = (sizeof(struct pppoe_hdr) +
+ 				   dev->hard_header_len);
  
- 	/* D-SACK for already forgotten data... Do dumb counting. */
--	if (dup_sack && tp->undo_marker && tp->undo_retrans &&
-+	if (dup_sack && tp->undo_marker && tp->undo_retrans > 0 &&
- 	    !after(end_seq_0, prior_snd_una) &&
- 	    after(end_seq_0, tp->undo_marker))
- 		tp->undo_retrans--;
-@@ -1143,7 +1143,7 @@ static u8 tcp_sacktag_one(struct sock *sk,
- 
- 	/* Account D-SACK for retransmitted packet. */
- 	if (dup_sack && (sacked & TCPCB_RETRANS)) {
--		if (tp->undo_marker && tp->undo_retrans &&
-+		if (tp->undo_marker && tp->undo_retrans > 0 &&
- 		    after(end_seq, tp->undo_marker))
- 			tp->undo_retrans--;
- 		if (sacked & TCPCB_SACKED_ACKED)
-@@ -1837,7 +1837,7 @@ static void tcp_clear_retrans_partial(struct tcp_sock *tp)
- 	tp->lost_out = 0;
- 
- 	tp->undo_marker = 0;
--	tp->undo_retrans = 0;
-+	tp->undo_retrans = -1;
- }
- 
- void tcp_clear_retrans(struct tcp_sock *tp)
-@@ -2602,7 +2602,7 @@ static void tcp_enter_recovery(struct sock *sk, bool ece_ack)
- 
- 	tp->prior_ssthresh = 0;
- 	tp->undo_marker = tp->snd_una;
--	tp->undo_retrans = tp->retrans_out;
-+	tp->undo_retrans = tp->retrans_out ? : -1;
- 
- 	if (inet_csk(sk)->icsk_ca_state < TCP_CA_CWR) {
- 		if (!ece_ack)
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index acc001eb3a55..6703a74ed3a0 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2433,8 +2433,6 @@ int tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb)
- 		if (!tp->retrans_stamp)
- 			tp->retrans_stamp = TCP_SKB_CB(skb)->when;
- 
--		tp->undo_retrans += tcp_skb_pcount(skb);
--
- 		/* snd_nxt is stored to detect loss of retransmitted segment,
- 		 * see tcp_input.c tcp_sacktag_write_queue().
- 		 */
-@@ -2442,6 +2440,10 @@ int tcp_retransmit_skb(struct sock *sk, struct sk_buff *skb)
- 	} else {
- 		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPRETRANSFAIL);
- 	}
-+
-+	if (tp->undo_retrans < 0)
-+		tp->undo_retrans = 0;
-+	tp->undo_retrans += tcp_skb_pcount(skb);
- 	return err;
- }
+-		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr);
++		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
+ 		po->chan.private = sk;
+ 		po->chan.ops = &pppoe_chan_ops;
  
 -- 
 1.9.1
