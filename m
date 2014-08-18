@@ -1,89 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaHRARL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 20:17:11 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:34481 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaHRARI (ORCPT
+	id S1751824AbaHRARk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 20:17:40 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60515 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563AbaHRARe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 20:17:08 -0400
-Date: Sun, 17 Aug 2014 20:17:05 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Jason Cooper <jason@lakedaemon.net>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
- scheduler
-In-Reply-To: <20140817214123.GY30401@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.11.1408172005070.29347@knanqh.ubzr>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140817173236.GG12769@titan.lakedaemon.net> <20140817185522.GX30401@n2100.arm.linux.org.uk> <20140817190434.GJ12769@titan.lakedaemon.net> <20140817214123.GY30401@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 17 Aug 2014 20:17:34 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        zhangyanfei@cn.fujitsu.com,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v15 0/7] MADV_FREE support
+Date: Mon, 18 Aug 2014 09:17:49 +0900
+Message-Id: <1408321076-2231-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 17 Aug 2014, Russell King - ARM Linux wrote:
+This patch enable MADV_FREE hint for madvise syscall, which have
+been supported by other OSes. [PATCH 1] includes the details.
 
-> On Sun, Aug 17, 2014 at 03:04:34PM -0400, Jason Cooper wrote:
-> > Quoting Nico:
-> > 
-> > "Of course it would be good to clarify things wrt Russell's remark
-> > independently from this patch."
-> > 
-> > I took 'independently' to mean "This patch is ok, *and* we need to
-> > address Russell's concerns in a follow-up patch."
-> > 
-> > Nico's Reviewed-by with that comment was sent August 13th.  The most
-> > recent activity on this thread was also August 13th.  After four days, I
-> > reasoned there were no objections to his comment.
-> 
-> Right, during the merge window, and during merge windows, I tend to
-> ignore almost all email now because people don't stop developing, and
-> they don't take any notice where the mainline cycle is.  In fact, I go
-> off and do non-kernel work during a merge window and only briefly scan
-> for bug fixes.
-> 
-> However, I have other concerns with this patch, which I've yet to air.
-> For example, I don't like this crappy conditional locking that people
-> keep dreaming up - that kind of stuff makes the kernel much harder to
-> statically check that everything is correct.  It's an anti-lockdep
-> strategy.
-> 
-> Secondly, I don't like this:
-> 
-> +       raw_spin_lock(&gic_sgi_lock);
-> +       /*
-> +        * Ensure that the gic_cpu_map update above is seen in
-> +        * gic_raise_softirq() before we redirect any pending SGIs that
-> +        * may have been raised for the outgoing CPU (cur_cpu_id)
-> +        */
-> +       smp_mb__after_unlock_lock();
-> +       raw_spin_unlock(&gic_sgi_lock);
-> 
-> That goes against the principle of locking, that you lock the data,
-> not the code.
+[1] support MADVISE_FREE for !THP page so if VM encounter
+THP page in syscall context, it splits THP page.
+[2-6] is to preparing to call madvise syscall without THP plitting
+[7] enable THP page support for MADV_FREE.
 
-I admit I didn't understand the point of that construct on the first 
-read.  Maybe I wouldn't be the only one.  Using Stephen's initial 
-version for that hunk would be preferable as it is straight forward and 
-would mean locking the data instead.
+* from v14
+ * Add more Ackedy-by from arch people(sparc, arm64 and arm)
+ * Drop s390 since pmd_dirty/clean was merged
 
-> I have no problem with changing gic_raise_softirq() to use a different
-> lock, which gic_migrate_target(), and gic_set_affinity() can also use.
-> There's no need for horrid locking here, because the only thing we're
-> protecting is gic_map[] and the write to the register to trigger an
-> IPI - and nothing using gic_arch_extn has any business knowing about
-> SGIs.
-> 
-> No need for these crappy sgi_map_lock() macros and all the ifdeffery.
+* from v13
+ * Add more Ackedy-by from arch people(arm, arm64 and ppc)
+ * Rebased on mmotm 2014-08-13-14-29
 
-Those macros are there only to conditionalize the locking in 
-gic_raise_softirq() because no locking what so ever is needed there when 
-gic_migrate_target() is configured out.  I suggested the macros to cut 
-down on the #ifdefery in the code.
+* from v12
+ * Fix - skip to mark free pte on try_to_free_swap failed page - Kirill
+ * Add more Acked-by from arch maintainers and Kirill
 
+* From v11
+ * Fix arm build - Steve
+ * Separate patch for arm and arm64 - Steve
+ * Remove unnecessary check - Kirill
+ * Skip non-vm_normal page - Kirill
+ * Add Acked-by - Zhang
+ * Sparc64 build fix
+ * Pagetable walker THP handling fix
 
-Nicolas
+* From v10
+ * Add Acked-by from arch stuff(x86, s390)
+ * Pagewalker based pagetable working - Kirill
+ * Fix try_to_unmap_one broken with hwpoison - Kirill
+ * Use VM_BUG_ON_PAGE in madvise_free_pmd - Kirill
+ * Fix pgtable-3level.h for arm - Steve
+
+* From v9
+ * Add Acked-by - Rik
+ * Add THP page support - Kirill
+
+* From v8
+ * Rebased-on v3.16-rc2-mmotm-2014-06-25-16-44
+
+* From v7
+ * Rebased-on next-20140613
+
+* From v6
+ * Remove page from swapcache in syscal time
+ * Move utility functions from memory.c to madvise.c - Johannes
+ * Rename untilify functtions - Johannes
+ * Remove unnecessary checks from vmscan.c - Johannes
+ * Rebased-on v3.15-rc5-mmotm-2014-05-16-16-56
+ * Drop Reviewe-by because there was some changes since then.
+
+* From v5
+ * Fix PPC problem which don't flush TLB - Rik
+ * Remove unnecessary lazyfree_range stub function - Rik
+ * Rebased on v3.15-rc5
+
+* From v4
+ * Add Reviewed-by: Zhang Yanfei
+ * Rebase on v3.15-rc1-mmotm-2014-04-15-16-14
+
+* From v3
+ * Add "how to work part" in description - Zhang
+ * Add page_discardable utility function - Zhang
+ * Clean up
+
+* From v2
+ * Remove forceful dirty marking of swap-readed page - Johannes
+ * Remove deactivation logic of lazyfreed page
+ * Rebased on 3.14
+ * Remove RFC tag
+
+* From v1
+ * Use custom page table walker for madvise_free - Johannes
+ * Remove PG_lazypage flag - Johannes
+ * Do madvise_dontneed instead of madvise_freein swapless system
+
+Minchan Kim (7):
+  mm: support madvise(MADV_FREE)
+  x86: add pmd_[dirty|mkclean] for THP
+  sparc: add pmd_[dirty|mkclean] for THP
+  powerpc: add pmd_[dirty|mkclean] for THP
+  arm: add pmd_mkclean for THP
+  arm64: add pmd_[dirty|mkclean] for THP
+  mm: Don't split THP page when syscall is called
+
+ arch/arm/include/asm/pgtable-3level.h    |   1 +
+ arch/arm64/include/asm/pgtable.h         |   2 +
+ arch/powerpc/include/asm/pgtable-ppc64.h |   2 +
+ arch/sparc/include/asm/pgtable_64.h      |  16 ++++
+ arch/x86/include/asm/pgtable.h           |  10 ++
+ include/linux/huge_mm.h                  |   4 +
+ include/linux/rmap.h                     |   9 +-
+ include/linux/vm_event_item.h            |   1 +
+ include/uapi/asm-generic/mman-common.h   |   1 +
+ mm/huge_memory.c                         |  35 +++++++
+ mm/madvise.c                             | 159 +++++++++++++++++++++++++++++++
+ mm/rmap.c                                |  46 ++++++++-
+ mm/vmscan.c                              |  64 +++++++++----
+ mm/vmstat.c                              |   1 +
+ 14 files changed, 331 insertions(+), 20 deletions(-)
+
+-- 
+2.0.0
+
