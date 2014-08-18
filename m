@@ -1,32 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaHRFfh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 01:35:37 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:33674 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaHRFfg convert rfc822-to-8bit (ORCPT
+	id S1751750AbaHRFrw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 01:47:52 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49916 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762AbaHRFrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 01:35:36 -0400
-From: Marcel Holtmann <marcel@holtmann.org>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Subject: Issue with clone() and CLONE_NEWUSER as unprivileged user
-Message-Id: <606D4327-C729-49F7-9CFD-3D25D0A62A13@holtmann.org>
-Date: Mon, 18 Aug 2014 00:35:31 -0500
-To: LKML <linux-kernel@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-X-Mailer: Apple Mail (2.1878.6)
+	Mon, 18 Aug 2014 01:47:51 -0400
+From: Arjun Sreedharan <arjun024@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: phy: return -ENODEV on failure of try_module_get
+Date: Mon, 18 Aug 2014 11:17:33 +0530
+Message-Id: <1408340853-1674-1-git-send-email-arjun024@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <20140818015959.GC14301@kroah.com>
+References: <20140818015959.GC14301@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When __usb_find_phy_dev() does not return error and
+try_module_get() fails, return -ENODEV.
 
-I am trying to use clone() and CLONE_NEWUSER for creating a new user namespace as an unprivileged user. I always get an operation not permitted error. However when I used fork() + unshare() as unprivileged user, I can create the new user namespace just fine.
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+---
+ drivers/usb/phy/phy.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Is there something obvious that I am missing? My understand is that CLONE_NEWUSER should not require any special capabilities. I tried the sample code from the manpage and also from LWN.net, but both give me the same error.
-
-Regards
-
-Marcel
+diff --git a/drivers/usb/phy/phy.c b/drivers/usb/phy/phy.c
+index 36b6bce..fd0d7f1 100644
+--- a/drivers/usb/phy/phy.c
++++ b/drivers/usb/phy/phy.c
+@@ -232,6 +232,9 @@ struct usb_phy *usb_get_phy_dev(struct device *dev, u8 index)
+ 	phy = __usb_find_phy_dev(dev, &phy_bind_list, index);
+ 	if (IS_ERR(phy) || !try_module_get(phy->dev->driver->owner)) {
+ 		dev_dbg(dev, "unable to find transceiver\n");
++		if (!IS_ERR(phy))
++			phy = ERR_PTR(-ENODEV);
++
+ 		goto err0;
+ 	}
+ 
+-- 
+1.7.11.7
 
