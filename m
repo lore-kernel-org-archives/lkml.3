@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaHRJ5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:57:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42705 "EHLO
+	id S1754351AbaHRJ6H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:58:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42688 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589AbaHRJep (ORCPT
+	with ESMTP id S1752560AbaHRJek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:45 -0400
+	Mon, 18 Aug 2014 05:34:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Schulz <develop@kristov.de>,
+Cc: Suresh Reddy <Suresh.Reddy@emulex.com>,
+        Sathya Perla <sathya.perla@emulex.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 055/137] net: pppoe: use correct channel MTU when using Multilink PPP
-Date: Mon, 18 Aug 2014 10:31:56 +0100
-Message-Id: <1408354398-10226-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 052/137] be2net: set EQ DB clear-intr bit in be_open()
+Date: Mon, 18 Aug 2014 10:31:53 +0100
+Message-Id: <1408354398-10226-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,131 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Schulz <develop@kristov.de>
+From: Suresh Reddy <Suresh.Reddy@emulex.com>
 
-commit a8a3e41c67d24eb12f9ab9680cbb85e24fcd9711 upstream.
+commit 4cad9f3b61c7268fa89ab8096e23202300399b5d upstream.
 
-The PPP channel MTU is used with Multilink PPP when ppp_mp_explode() (see
-ppp_generic module) tries to determine how big a fragment might be. According
-to RFC 1661, the MTU excludes the 2-byte PPP protocol field, see the
-corresponding comment and code in ppp_mp_explode():
+On BE3, if the clear-interrupt bit of the EQ doorbell is not set the first
+time it is armed, ocassionally we have observed that the EQ doesn't raise
+anymore interrupts even if it is in armed state.
+This patch fixes this by setting the clear-interrupt bit when EQs are
+armed for the first time in be_open().
 
-		/*
-		 * hdrlen includes the 2-byte PPP protocol field, but the
-		 * MTU counts only the payload excluding the protocol field.
-		 * (RFC1661 Section 2)
-		 */
-		mtu = pch->chan->mtu - (hdrlen - 2);
-
-However, the pppoe module *does* include the PPP protocol field in the channel
-MTU, which is wrong as it causes the PPP payload to be 1-2 bytes too big under
-certain circumstances (one byte if PPP protocol compression is used, two
-otherwise), causing the generated Ethernet packets to be dropped. So the pppoe
-module has to subtract two bytes from the channel MTU. This error only
-manifests itself when using Multilink PPP, as otherwise the channel MTU is not
-used anywhere.
-
-In the following, I will describe how to reproduce this bug. We configure two
-pppd instances for multilink PPP over two PPPoE links, say eth2 and eth3, with
-a MTU of 1492 bytes for each link and a MRRU of 2976 bytes. (This MRRU is
-computed by adding the two link MTUs and subtracting the MP header twice, which
-is 4 bytes long.) The necessary pppd statements on both sides are "multilink
-mtu 1492 mru 1492 mrru 2976". On the client side, we additionally need "plugin
-rp-pppoe.so eth2" and "plugin rp-pppoe.so eth3", respectively; on the server
-side, we additionally need to start two pppoe-server instances to be able to
-establish two PPPoE sessions, one over eth2 and one over eth3. We set the MTU
-of the PPP network interface to the MRRU (2976) on both sides of the connection
-in order to make use of the higher bandwidth. (If we didn't do that, IP
-fragmentation would kick in, which we want to avoid.)
-
-Now we send a ICMPv4 echo request with a payload of 2948 bytes from client to
-server over the PPP link. This results in the following network packet:
-
-   2948 (echo payload)
- +    8 (ICMPv4 header)
- +   20 (IPv4 header)
----------------------
-   2976 (PPP payload)
-
-These 2976 bytes do not exceed the MTU of the PPP network interface, so the
-IP packet is not fragmented. Now the multilink PPP code in ppp_mp_explode()
-prepends one protocol byte (0x21 for IPv4), making the packet one byte bigger
-than the negotiated MRRU. So this packet would have to be divided in three
-fragments. But this does not happen as each link MTU is assumed to be two bytes
-larger. So this packet is diveded into two fragments only, one of size 1489 and
-one of size 1488. Now we have for that bigger fragment:
-
-   1489 (PPP payload)
- +    4 (MP header)
- +    2 (PPP protocol field for the MP payload (0x3d))
- +    6 (PPPoE header)
---------------------------
-   1501 (Ethernet payload)
-
-This packet exceeds the link MTU and is discarded.
-
-If one configures the link MTU on the client side to 1501, one can see the
-discarded Ethernet frames with tcpdump running on the client. A
-
-ping -s 2948 -c 1 192.168.15.254
-
-leads to the smaller fragment that is correctly received on the server side:
-
-(tcpdump -vvvne -i eth3 pppoes and ppp proto 0x3d)
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x3] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [end], length 1492
-
-and to the bigger fragment that is not received on the server side:
-
-(tcpdump -vvvne -i eth2 pppoes and ppp proto 0x3d)
-52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
-  length 1515: PPPoE  [ses 0x5] MLPPP (0x003d), length 1495: seq 0x000,
-  Flags [begin], length 1493
-
-With the patch below, we correctly obtain three fragments:
-
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [begin], length 1492
-52:54:00:70:9e:89 > 52:54:00:5d:6f:b0, ethertype PPPoE S (0x8864),
-  length 1514: PPPoE  [ses 0x1] MLPPP (0x003d), length 1494: seq 0x000,
-  Flags [none], length 1492
-52:54:00:ad:87:fd > 52:54:00:79:5c:d0, ethertype PPPoE S (0x8864),
-  length 27: PPPoE  [ses 0x1] MLPPP (0x003d), length 7: seq 0x000,
-  Flags [end], length 5
-
-And the ICMPv4 echo request is successfully received at the server side:
-
-IP (tos 0x0, ttl 64, id 21925, offset 0, flags [DF], proto ICMP (1),
-  length 2976)
-    192.168.222.2 > 192.168.15.254: ICMP echo request, id 30530, seq 0,
-      length 2956
-
-The bug was introduced in commit c9aa6895371b2a257401f59d3393c9f7ac5a8698
-("[PPPOE]: Advertise PPPoE MTU") from the very beginning. This patch applies
-to 3.10 upwards but the fix can be applied (with minor modifications) to
-kernels as old as 2.6.32.
-
-Signed-off-by: Christoph Schulz <develop@kristov.de>
+Signed-off-by: Suresh Reddy <Suresh.Reddy@emulex.com>
+Signed-off-by: Sathya Perla <sathya.perla@emulex.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ppp/pppoe.c | 2 +-
+ drivers/net/ethernet/emulex/benet/be_main.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ppp/pppoe.c b/drivers/net/ppp/pppoe.c
-index 82ee6ed954cb..addd23246eb6 100644
---- a/drivers/net/ppp/pppoe.c
-+++ b/drivers/net/ppp/pppoe.c
-@@ -675,7 +675,7 @@ static int pppoe_connect(struct socket *sock, struct sockaddr *uservaddr,
- 		po->chan.hdrlen = (sizeof(struct pppoe_hdr) +
- 				   dev->hard_header_len);
+diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
+index 3d91a5ec61a4..8dee3d9835dd 100644
+--- a/drivers/net/ethernet/emulex/benet/be_main.c
++++ b/drivers/net/ethernet/emulex/benet/be_main.c
+@@ -2665,7 +2665,7 @@ static int be_open(struct net_device *netdev)
  
--		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr);
-+		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
- 		po->chan.private = sk;
- 		po->chan.ops = &pppoe_chan_ops;
+ 	for_all_evt_queues(adapter, eqo, i) {
+ 		napi_enable(&eqo->napi);
+-		be_eq_notify(adapter, eqo->q.id, true, false, 0);
++		be_eq_notify(adapter, eqo->q.id, true, true, 0);
+ 	}
+ 	adapter->flags |= BE_FLAGS_NAPI_ENABLED;
  
 -- 
 1.9.1
