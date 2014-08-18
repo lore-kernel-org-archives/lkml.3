@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaHRO4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:56:34 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:37897 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762AbaHRO4c (ORCPT
+	id S1751819AbaHRO4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:56:46 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46970 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718AbaHRO4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:56:32 -0400
-Date: Mon, 18 Aug 2014 17:56:22 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: robert.w.love@intel.com, JBottomley@parallels.com,
-        fcoe-devel@open-fcoe.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] libfs: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-Message-ID: <20140818145622.GA14281@ada>
+	Mon, 18 Aug 2014 10:56:45 -0400
+Date: Mon, 18 Aug 2014 09:54:52 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, nicoleotsuka@gmail.com,
+        Li.Xiubo@freescale.com, shc_work@mail.ru, fabio.estevam@freescale.com,
+        xobs@kosagi.com, arnd@arndb.de, sfr@canb.auug.org.au, timur@tabi.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Message-ID: <20140818145452.GD14537@sirena.org.uk>
+References: <cover.1408350626.git.shengjiu.wang@freescale.com>
+ <ee71a6cacc1d0bc1459bf9c21efc755c16e955b1.1408350626.git.shengjiu.wang@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TMTfqzsZeEKgETVO"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <ee71a6cacc1d0bc1459bf9c21efc755c16e955b1.1408350626.git.shengjiu.wang@freescale.com>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 216.80.64.155
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V1 3/3] ASoC: fsl: fsl-asoc-card: Select
+ SND_SOC_IMX_AUDMUX
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The uses of "rcu_assign_pointer()" are NULLing out the pointers.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+--TMTfqzsZeEKgETVO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+On Mon, Aug 18, 2014 at 04:38:40PM +0800, Shengjiu Wang wrote:
+> Building kernel with SND_SOC_IMX_AUDMUX=n leads to the following error:
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- drivers/scsi/libfc/fc_libfc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/scsi/libfc/fc_libfc.c b/drivers/scsi/libfc/fc_libfc.c
-index 8d65a51a..c11a638 100644
---- a/drivers/scsi/libfc/fc_libfc.c
-+++ b/drivers/scsi/libfc/fc_libfc.c
-@@ -296,9 +296,9 @@ void fc_fc4_deregister_provider(enum fc_fh_type type, struct fc4_prov *prov)
- 	BUG_ON(type >= FC_FC4_PROV_SIZE);
- 	mutex_lock(&fc_prov_mutex);
- 	if (prov->recv)
--		rcu_assign_pointer(fc_passive_prov[type], NULL);
-+		RCU_INIT_POINTER(fc_passive_prov[type], NULL);
- 	else
--		rcu_assign_pointer(fc_active_prov[type], NULL);
-+		RCU_INIT_POINTER(fc_active_prov[type], NULL);
- 	mutex_unlock(&fc_prov_mutex);
- 	synchronize_rcu();
- }
--- 
-1.9.1
+--TMTfqzsZeEKgETVO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT8hO4AAoJELSic+t+oim9FdAP+gKsNJnyM2axEABYJ1G4HGnG
+dQ/Po4rAdZ/C9NVtTgZq66v/YyGetydNLU9mjYAFIzaxgI1Mp1ca+IfNobO+K46W
+9Mrx76t6Oc86hsRL4XQoMhCT5rQDHKYLz8aSaGCUm9ScQyyfTvNH7f3gjD6w/o5o
+YzPP3hdoZvhvHR6Tcu9RpG0XLc8iKmcEwBJgWY2yHrnRnrWw7SHdkUYNTt3xfvzG
+RiAUBpBcPOX9tKQCFiXAX54iNbBRQtq9cgLa9RSZll/Mjd2vMIJGNxGRqSyTYHVH
++LxpxMY422C3/mBh78RbTo+Zypu9teXdstF2YhEKCyZ5wsQeYIFJYhhqDxGWHhGo
+7QiiSAvJXP3icmHH2yri+fpsEhZ/tAFm6CEA4Uk/Rg4z2QFBtxs2XypH21fJS7FH
+ywddDt8K/fW5MfEa/X8IoHxhkAj0asq6kknFqJJ66F/wsc2xytWQHcRO8nlFQj2e
+gWGh2yDvy17IWTtBgbtOgl3Tes8iYz9s7P2eBTR8ttg7Pcydf+AdPCskYW5Py4US
+sgzl67Ak9UQvpJuF20TVl19g4Q2w5sD5wci6PDVm5JeCAYN4zcC7fmfG7wOLojbc
+sewHkUAIXrfYpaV3ZCARg9RX39UWKFGlLgewliY+cFEe0/f7n7iF8bT9lPi9Igt3
+ph+r3vtJi68HvW8cmTKP
+=tLCH
+-----END PGP SIGNATURE-----
+
+--TMTfqzsZeEKgETVO--
