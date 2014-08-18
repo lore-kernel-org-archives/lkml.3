@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaHRPE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 11:04:57 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62175 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751802AbaHRPEz (ORCPT
+	id S1751976AbaHRPG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 11:06:26 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64105 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaHRPGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 11:04:55 -0400
+	Mon, 18 Aug 2014 11:06:25 -0400
+Message-ID: <53F21668.5090500@redhat.com>
+Date: Mon, 18 Aug 2014 17:06:16 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <CAJvTdKn-NsubOqK9_BOvvmnF9C6cK5tUF22VbWXEaPyXzb0huQ@mail.gmail.com>
-References: <1408046230-16439-1-git-send-email-ashwin.chaugule@linaro.org>
-	<20140814205143.GY6758@twins.programming.kicks-ass.net>
-	<CAJ5Y-ebgJi8Ngxg1X+h7KMundGZPFhYC0hr0Sog6htj=czszgQ@mail.gmail.com>
-	<20140815061917.GX19379@twins.programming.kicks-ass.net>
-	<CAJ5Y-eaLxCG7dDao00pozXBL2dxPS7tf=xGfaz3O_xfRHtQZnA@mail.gmail.com>
-	<53EE0E5B.3050004@linux.intel.com>
-	<53EE10CB.7040001@linux.intel.com>
-	<CAJ5Y-eZiRyGroems7J2oH05ybbbivM-okm3gFz7Mkuu8ceeCDQ@mail.gmail.com>
-	<53EE2BAA.1020603@linux.intel.com>
-	<CAJ5Y-eZZz=SrkONt029eZ0AsEZ6xFhW4cmcaEVZ8=8Ls9r5+zA@mail.gmail.com>
-	<CAJvTdKn-NsubOqK9_BOvvmnF9C6cK5tUF22VbWXEaPyXzb0huQ@mail.gmail.com>
-Date: Mon, 18 Aug 2014 11:04:53 -0400
-Message-ID: <CAJ5Y-ebhE4-9WpB9Z+PO80qZJ2G4+UeK9Q3gk00XL=oO89esbA@mail.gmail.com>
-Subject: Re: [RFC 0/3] Experimental patchset for CPPC
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Mike Turquette <mike.turquette@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, "Brown, Len" <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux acpi <linux-acpi@vger.kernel.org>,
-        cpufreq@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andreea-Cristina Bernat <bernat.ada@gmail.com>, gleb@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: paulmck@linux.vnet.ibm.com, monamagarwal123@gmail.com
+Subject: Re: [PATCH] eventfd: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+References: <20140818150129.GA14447@ada>
+In-Reply-To: <20140818150129.GA14447@ada>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
+Il 18/08/2014 17:01, Andreea-Cristina Bernat ha scritto:
+> The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+> According to RCU_INIT_POINTER()'s block comment:
+> "1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+> it is better to use it instead of rcu_assign_pointer() because it has a
+> smaller overhead.
+> 
+> The following Coccinelle semantic patch was used:
+> @@
+> @@
+> 
+> - rcu_assign_pointer
+> + RCU_INIT_POINTER
+>   (..., NULL)
+> 
+> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> ---
+>  virt/kvm/eventfd.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index 20c3af7..a49130f 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -278,7 +278,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
+>  	struct kvm_kernel_irq_routing_entry *e;
+>  
+>  	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
+> -		rcu_assign_pointer(irqfd->irq_entry, NULL);
+> +		RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+>  		return;
+>  	}
+>  
+> @@ -287,7 +287,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
+>  		if (e->type == KVM_IRQ_ROUTING_MSI)
+>  			rcu_assign_pointer(irqfd->irq_entry, e);
+>  		else
+> -			rcu_assign_pointer(irqfd->irq_entry, NULL);
+> +			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+>  	}
+>  }
+>  
+> @@ -473,7 +473,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+>  			 * It is paired with synchronize_srcu done by caller
+>  			 * of that function.
+>  			 */
+> -			rcu_assign_pointer(irqfd->irq_entry, NULL);
+> +			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+>  			irqfd_deactivate(irqfd);
+>  		}
+>  	}
+> 
 
-On 15 August 2014 18:11, Len Brown <lenb@kernel.org> wrote:
-> The Linux team at Intel did not implement ACPI CPPC support
-> because we see no benefit to it over the native hardware interface on x86.
->
+Hi, this patch actually had been submitted already last March.  It
+slipped through the cracks.  I'm now applying both of Monam Agarwal's
+RCU_INIT_POINTER patches.  Sorry. :)
 
-Thanks for sharing Intels observations. I had looked at the SDM [1]
-and found all the CPPC MSRs. I suppose X86 will not use a majority of
-it.
+Thanks,
 
-Cheers,
-Ashwin
-
-[1] - HWP section 14.4
-http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-3b-part-2-manual.pdf
+Paolo
