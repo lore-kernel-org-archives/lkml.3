@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaHRJeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42567 "EHLO
+	id S1752700AbaHRJey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42733 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaHRJeN (ORCPT
+	with ESMTP id S1752650AbaHRJew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:13 -0400
+	Mon, 18 Aug 2014 05:34:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 032/137] shmem: fix faulting into a hole while it's punched
-Date: Mon, 18 Aug 2014 10:31:33 +0100
-Message-Id: <1408354398-10226-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 060/137] slab_common: Do not check for duplicate slab names
+Date: Mon, 18 Aug 2014 10:32:01 +0100
+Message-Id: <1408354398-10226-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -29,137 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Christoph Lameter <cl@linux.com>
 
-commit f00cdc6df7d7cfcabb5b740911e6788cb0802bdb upstream.
+commit 3e374919b314f20e2a04f641ebc1093d758f66a4 upstream.
 
-Trinity finds that mmap access to a hole while it's punched from shmem
-can prevent the madvise(MADV_REMOVE) or fallocate(FALLOC_FL_PUNCH_HOLE)
-from completing, until the reader chooses to stop; with the puncher's
-hold on i_mutex locking out all other writers until it can complete.
+SLUB can alias multiple slab kmem_create_requests to one slab cache to save
+memory and increase the cache hotness. As a result the name of the slab can be
+stale. Only check the name for duplicates if we are in debug mode where we do
+not merge multiple caches.
 
-It appears that the tmpfs fault path is too light in comparison with its
-hole-punching path, lacking an i_data_sem to obstruct it; but we don't
-want to slow down the common case.
+This fixes the following problem reported by Jonathan Brassow:
 
-Extend shmem_fallocate()'s existing range notification mechanism, so
-shmem_fault() can refrain from faulting pages into the hole while it's
-punched, waiting instead on i_mutex (when safe to sleep; or repeatedly
-faulting when not).
+  The problem with kmem_cache* is this:
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+  *) Assume CONFIG_SLUB is set
+  1) kmem_cache_create(name="foo-a")
+  - creates new kmem_cache structure
+  2) kmem_cache_create(name="foo-b")
+  - If identical cache characteristics, it will be merged with the previously
+    created cache associated with "foo-a".  The cache's refcount will be
+    incremented and an alias will be created via sysfs_slab_alias().
+  3) kmem_cache_destroy(<ptr>)
+  - Attempting to destroy cache associated with "foo-a", but instead the
+    refcount is simply decremented.  I don't even think the sysfs aliases are
+    ever removed...
+  4) kmem_cache_create(name="foo-a")
+  - This FAILS because kmem_cache_sanity_check colides with the existing
+    name ("foo-a") associated with the non-removed cache.
+
+  This is a problem for RAID (specifically dm-raid) because the name used
+  for the kmem_cache_create is ("raid%d-%p", level, mddev).  If the cache
+  persists for long enough, the memory address of an old mddev will be
+  reused for a new mddev - causing an identical formulation of the cache
+  name.  Even though kmem_cache_destory had long ago been used to delete
+  the old cache, the merging of caches has cause the name and cache of that
+  old instance to be preserved and causes a colision (and thus failure) in
+  kmem_cache_create().  I see this regularly in my testing.
+
+Reported-by: Jonathan Brassow <jbrassow@redhat.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/shmem.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 52 insertions(+), 4 deletions(-)
+ mm/slab_common.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index e43dc555069d..d530cde82494 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -80,11 +80,12 @@ static struct vfsmount *shm_mnt;
- #define SHORT_SYMLINK_LEN 128
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 538bade6df7d..d43477196b22 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -55,6 +55,7 @@ static int kmem_cache_sanity_check(struct mem_cgroup *memcg, const char *name,
+ 			continue;
+ 		}
  
- /*
-- * shmem_fallocate and shmem_writepage communicate via inode->i_private
-- * (with i_mutex making sure that it has only one user at a time):
-- * we would prefer not to enlarge the shmem inode just for that.
-+ * shmem_fallocate communicates with shmem_fault or shmem_writepage via
-+ * inode->i_private (with i_mutex making sure that it has only one user at
-+ * a time): we would prefer not to enlarge the shmem inode just for that.
-  */
- struct shmem_falloc {
-+	int	mode;		/* FALLOC_FL mode currently operating */
- 	pgoff_t start;		/* start of range currently being fallocated */
- 	pgoff_t next;		/* the next page offset to be fallocated */
- 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
-@@ -826,6 +827,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
- 			spin_lock(&inode->i_lock);
- 			shmem_falloc = inode->i_private;
- 			if (shmem_falloc &&
-+			    !shmem_falloc->mode &&
- 			    index >= shmem_falloc->start &&
- 			    index < shmem_falloc->next)
- 				shmem_falloc->nr_unswapped++;
-@@ -1300,6 +1302,44 @@ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	int error;
- 	int ret = VM_FAULT_LOCKED;
- 
-+	/*
-+	 * Trinity finds that probing a hole which tmpfs is punching can
-+	 * prevent the hole-punch from ever completing: which in turn
-+	 * locks writers out with its hold on i_mutex.  So refrain from
-+	 * faulting pages into the hole while it's being punched, and
-+	 * wait on i_mutex to be released if vmf->flags permits.
-+	 */
-+	if (unlikely(inode->i_private)) {
-+		struct shmem_falloc *shmem_falloc;
-+
-+		spin_lock(&inode->i_lock);
-+		shmem_falloc = inode->i_private;
-+		if (!shmem_falloc ||
-+		    shmem_falloc->mode != FALLOC_FL_PUNCH_HOLE ||
-+		    vmf->pgoff < shmem_falloc->start ||
-+		    vmf->pgoff >= shmem_falloc->next)
-+			shmem_falloc = NULL;
-+		spin_unlock(&inode->i_lock);
-+		/*
-+		 * i_lock has protected us from taking shmem_falloc seriously
-+		 * once return from shmem_fallocate() went back up that stack.
-+		 * i_lock does not serialize with i_mutex at all, but it does
-+		 * not matter if sometimes we wait unnecessarily, or sometimes
-+		 * miss out on waiting: we just need to make those cases rare.
-+		 */
-+		if (shmem_falloc) {
-+			if ((vmf->flags & FAULT_FLAG_ALLOW_RETRY) &&
-+			   !(vmf->flags & FAULT_FLAG_RETRY_NOWAIT)) {
-+				up_read(&vma->vm_mm->mmap_sem);
-+				mutex_lock(&inode->i_mutex);
-+				mutex_unlock(&inode->i_mutex);
-+				return VM_FAULT_RETRY;
-+			}
-+			/* cond_resched? Leave that to GUP or return to user */
-+			return VM_FAULT_NOPAGE;
-+		}
-+	}
-+
- 	error = shmem_getpage(inode, vmf->pgoff, &vmf->page, SGP_CACHE, &ret);
- 	if (error)
- 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
-@@ -1815,18 +1855,26 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 
- 	mutex_lock(&inode->i_mutex);
- 
-+	shmem_falloc.mode = mode & ~FALLOC_FL_KEEP_SIZE;
-+
- 	if (mode & FALLOC_FL_PUNCH_HOLE) {
- 		struct address_space *mapping = file->f_mapping;
- 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
- 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
- 
-+		shmem_falloc.start = unmap_start >> PAGE_SHIFT;
-+		shmem_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
-+		spin_lock(&inode->i_lock);
-+		inode->i_private = &shmem_falloc;
-+		spin_unlock(&inode->i_lock);
-+
- 		if ((u64)unmap_end > (u64)unmap_start)
- 			unmap_mapping_range(mapping, unmap_start,
- 					    1 + unmap_end - unmap_start, 0);
- 		shmem_truncate_range(inode, offset, offset + len - 1);
- 		/* No need to unmap again: hole-punching leaves COWed pages */
- 		error = 0;
--		goto out;
-+		goto undone;
++#if !defined(CONFIG_SLUB) || !defined(CONFIG_SLUB_DEBUG_ON)
+ 		/*
+ 		 * For simplicity, we won't check this in the list of memcg
+ 		 * caches. We have control over memcg naming, and if there
+@@ -68,6 +69,7 @@ static int kmem_cache_sanity_check(struct mem_cgroup *memcg, const char *name,
+ 			s = NULL;
+ 			return -EINVAL;
+ 		}
++#endif
  	}
  
- 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
+ 	WARN_ON(strchr(name, ' '));	/* It confuses parsers */
 -- 
 1.9.1
 
