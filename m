@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561AbaHRJ7a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:59:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42661 "EHLO
+	id S1753772AbaHRJ4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:56:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42738 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaHRJed (ORCPT
+	with ESMTP id S1752677AbaHRJey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:33 -0400
+	Mon, 18 Aug 2014 05:34:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Pekka Enberg <penberg@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 047/137] igmp: fix the problem when mc leave group
-Date: Mon, 18 Aug 2014 10:31:48 +0100
-Message-Id: <1408354398-10226-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 061/137] slab_common: fix the check for duplicate slab names
+Date: Mon, 18 Aug 2014 10:32:02 +0100
+Message-Id: <1408354398-10226-62-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,87 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: dingtianhong <dingtianhong@huawei.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 52ad353a5344f1f700c5b777175bdfa41d3cd65a upstream.
+commit 694617474e33b8603fc76e090ed7d09376514b1a upstream.
 
-The problem was triggered by these steps:
+The patch 3e374919b314f20e2a04f641ebc1093d758f66a4 is supposed to fix the
+problem where kmem_cache_create incorrectly reports duplicate cache name
+and fails. The problem is described in the header of that patch.
 
-1) create socket, bind and then setsockopt for add mc group.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("192.168.1.2");
-   setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+However, the patch doesn't really fix the problem because of these
+reasons:
 
-2) drop the mc group for this socket.
-   mreq.imr_multiaddr.s_addr = inet_addr("255.0.0.37");
-   mreq.imr_interface.s_addr = inet_addr("0.0.0.0");
-   setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
+* the logic to test for debugging is reversed. It was intended to perform
+  the check only if slub debugging is enabled (which implies that caches
+  with the same parameters are not merged). Therefore, there should be
+  #if !defined(CONFIG_SLUB) || defined(CONFIG_SLUB_DEBUG_ON)
+  The current code has the condition reversed and performs the test if
+  debugging is disabled.
 
-3) and then drop the socket, I found the mc group was still used by the dev:
+* slub debugging may be enabled or disabled based on kernel command line,
+  CONFIG_SLUB_DEBUG_ON is just the default settings. Therefore the test
+  based on definition of CONFIG_SLUB_DEBUG_ON is unreliable.
 
-   netstat -g
+This patch fixes the problem by removing the test
+"!defined(CONFIG_SLUB_DEBUG_ON)". Therefore, duplicate names are never
+checked if the SLUB allocator is used.
 
-   Interface       RefCnt Group
-   --------------- ------ ---------------------
-   eth2		   1	  255.0.0.37
+Note to stable kernel maintainers: when backporint this patch, please
+backport also the patch 3e374919b314f20e2a04f641ebc1093d758f66a4.
 
-Normally even though the IP_DROP_MEMBERSHIP return error, the mc group still need
-to be released for the netdev when drop the socket, but this process was broken when
-route default is NULL, the reason is that:
-
-The ip_mc_leave_group() will choose the in_dev by the imr_interface.s_addr, if input addr
-is NULL, the default route dev will be chosen, then the ifindex is got from the dev,
-then polling the inet->mc_list and return -ENODEV, but if the default route dev is NULL,
-the in_dev and ifIndex is both NULL, when polling the inet->mc_list, the mc group will be
-released from the mc_list, but the dev didn't dec the refcnt for this mc group, so
-when dropping the socket, the mc_list is NULL and the dev still keep this group.
-
-v1->v2: According Hideaki's suggestion, we should align with IPv6 (RFC3493) and BSDs,
-	so I add the checking for the in_dev before polling the mc_list, make sure when
-	we remove the mc group, dec the refcnt to the real dev which was using the mc address.
-	The problem would never happened again.
-
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/igmp.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ mm/slab_common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 62410fd4ef61..bad83d812afe 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -1924,6 +1924,10 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index d43477196b22..954382b3c188 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -55,7 +55,7 @@ static int kmem_cache_sanity_check(struct mem_cgroup *memcg, const char *name,
+ 			continue;
+ 		}
  
- 	rtnl_lock();
- 	in_dev = ip_mc_find_dev(net, imr);
-+	if (!in_dev) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
- 	ifindex = imr->imr_ifindex;
- 	for (imlp = &inet->mc_list;
- 	     (iml = rtnl_dereference(*imlp)) != NULL;
-@@ -1941,16 +1945,14 @@ int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
- 
- 		*imlp = iml->next_rcu;
- 
--		if (in_dev)
--			ip_mc_dec_group(in_dev, group);
-+		ip_mc_dec_group(in_dev, group);
- 		rtnl_unlock();
- 		/* decrease mem now to avoid the memleak warning */
- 		atomic_sub(sizeof(*iml), &sk->sk_omem_alloc);
- 		kfree_rcu(iml, rcu);
- 		return 0;
- 	}
--	if (!in_dev)
--		ret = -ENODEV;
-+out:
- 	rtnl_unlock();
- 	return ret;
- }
+-#if !defined(CONFIG_SLUB) || !defined(CONFIG_SLUB_DEBUG_ON)
++#if !defined(CONFIG_SLUB)
+ 		/*
+ 		 * For simplicity, we won't check this in the list of memcg
+ 		 * caches. We have control over memcg naming, and if there
 -- 
 1.9.1
 
