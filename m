@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaHRXaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 19:30:04 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:58594 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253AbaHRXaB (ORCPT
+	id S1752517AbaHRXbB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 19:31:01 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48653 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaHRXa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 19:30:01 -0400
-Date: Mon, 18 Aug 2014 16:29:56 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: jolsa@redhat.com, andi@firstfloor.org,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] powerpc/perf: Implement get_cpu_str()
-Message-ID: <20140818232956.GB6955@us.ibm.com>
-References: <20140806001754.GA28735@us.ibm.com>
- <20140807084436.GB29832@distanz.ch>
+	Mon, 18 Aug 2014 19:30:59 -0400
+Date: Mon, 18 Aug 2014 16:30:41 -0700
+From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Tony Luck <tony.luck@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-hotplug@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC Patch V1 00/30] Enable memoryless node on x86 platforms
+Message-ID: <20140818233041.GA15310@linux.vnet.ibm.com>
+References: <1405064267-11678-1-git-send-email-jiang.liu@linux.intel.com>
+ <20140721172331.GB4156@linux.vnet.ibm.com>
+ <CA+8MBbK+ZdisT_yXh_jkWSd4hWEMisG614s4s0EyNV3j-7YOow@mail.gmail.com>
+ <20140721175736.GG4156@linux.vnet.ibm.com>
+ <53CF7048.20302@linux.intel.com>
+ <20140724233230.GD24458@linux.vnet.ibm.com>
+ <53D1B7C9.9040907@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140807084436.GB29832@distanz.ch>
-X-Operating-System: Linux 2.0.32 on an i486
+In-Reply-To: <53D1B7C9.9040907@linux.intel.com>
+X-Operating-System: Linux 3.13.0-32-generic (x86_64)
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081823-9332-0000-0000-000001BA414C
+x-cbid: 14081823-0928-0000-0000-0000042A8D03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tobias Klauser [tklauser@distanz.ch] wrote:
-| > diff --git a/tools/perf/arch/powerpc/util/header.c b/tools/perf/arch/powerpc/util/header.c
-| > index 6c1b8a7..1bb400e8 100644
-| > --- a/tools/perf/arch/powerpc/util/header.c
-| > +++ b/tools/perf/arch/powerpc/util/header.c
-| > @@ -6,6 +6,7 @@
-| >  
-| >  #include "../../util/header.h"
-| >  #include "../../util/util.h"
-| > +#include "../../util/jevents.h"
-| >  
-| >  #define mfspr(rn)       ({unsigned long rval; \
-| >  			 asm volatile("mfspr %0," __stringify(rn) \
-| > @@ -32,3 +33,14 @@ get_cpuid(char *buffer, size_t sz)
-| >  	}
-| >  	return -1;
-| >  }
-| > +
-| > +char *
-| > +get_cpu_str(void)
-| > +{
-| > Changelog[v2]:
-| > 	[Michael Ellerman]: Use PVR instead of AUXV variables
-| 
-| This was probably not intended to be here and the patch does not apply
-| due to these lines.
+Hi Gerry,
 
-Sorry about that. Will resend.
+On 25.07.2014 [09:50:01 +0800], Jiang Liu wrote:
+> 
+> 
+> On 2014/7/25 7:32, Nishanth Aravamudan wrote:
+> > On 23.07.2014 [16:20:24 +0800], Jiang Liu wrote:
+> >>
+> >>
+> >> On 2014/7/22 1:57, Nishanth Aravamudan wrote:
+> >>> On 21.07.2014 [10:41:59 -0700], Tony Luck wrote:
+> >>>> On Mon, Jul 21, 2014 at 10:23 AM, Nishanth Aravamudan
+> >>>> <nacc@linux.vnet.ibm.com> wrote:
+> >>>>> It seems like the issue is the order of onlining of resources on a
+> >>>>> specific x86 platform?
+> >>>>
+> >>>> Yes. When we online a node the BIOS hits us with some ACPI hotplug events:
+> >>>>
+> >>>> First: Here are some new cpus
+> >>>
+> >>> Ok, so during this period, you might get some remote allocations. Do you
+> >>> know the topology of these CPUs? That is they belong to a
+> >>> (soon-to-exist) NUMA node? Can you online that currently offline NUMA
+> >>> node at this point (so that NODE_DATA()) resolves, etc.)?
+> >> Hi Nishanth,
+> >> 	We have method to get the NUMA information about the CPU, and
+> >> patch "[RFC Patch V1 30/30] x86, NUMA: Online node earlier when doing
+> >> CPU hot-addition" tries to solve this issue by onlining NUMA node
+> >> as early as possible. Actually we are trying to enable memoryless node
+> >> as you have suggested.
+> > 
+> > Ok, it seems like you have two sets of patches then? One is to fix the
+> > NUMA information timing (30/30 only). The rest of the patches are
+> > general discussions about where cpu_to_mem() might be used instead of
+> > cpu_to_node(). However, based upon Tejun's feedback, it seems like
+> > rather than force all callers to use cpu_to_mem(), we should be looking
+> > at the core VM to ensure fallback is occuring appropriately when
+> > memoryless nodes are present. 
+> > 
+> > Do you have a specific situation, once you've applied 30/30, where
+> > kmalloc_node() leads to an Oops?
+> Hi Nishanth,
+> 	After following the two threads related to support of memoryless
+> node and digging more code, I realized my first version path set is an
+> overkill. As Tejun has pointed out, we shouldn't expose the detail of
+> memoryless node to normal user, but there are still some special users
+> who need the detail. So I have tried to summarize it as:
+> 1) Arch code should online corresponding NUMA node before onlining any
+>    CPU or memory, otherwise it may cause invalid memory access when
+>    accessing NODE_DATA(nid).
 
-Sukadev
+I think that's reasonable.
+
+A related caveat is that NUMA topology information should be stored as
+early as possible in boot for *all* CPUs [I think only cpu_to_* is used,
+at least for now], not just the boot CPU, etc. This is because (at least
+on my examination) pre-SMP initcalls are not prevented from using
+cpu_to_node, which will falsely return 0 for all CPUs until
+set_cpu_numa_node() is called.
+
+> 2) For normal memory allocations without __GFP_THISNODE setting in the
+>    gfp_flags, we should prefer numa_node_id()/cpu_to_node() instead of
+>    numa_mem_id()/cpu_to_mem() because the latter loses hardware topology
+>    information as pointed out by Tejun:
+>            A - B - X - C - D
+>         Where X is the memless node.  numa_mem_id() on X would return
+>         either B or C, right?  If B or C can't satisfy the allocation,
+>         the allocator would fallback to A from B and D for C, both of
+>         which aren't optimal. It should first fall back to C or B
+>         respectively, which the allocator can't do anymoe because the
+>         information is lost when the caller side performs numa_mem_id().
+
+Yes, this seems like a very good description of the reasoning.
+
+> 3) For memory allocation with __GFP_THISNODE setting in gfp_flags,
+>    numa_node_id()/cpu_to_node() should be used if caller only wants to
+>    allocate from local memory, otherwise numa_mem_id()/cpu_to_mem()
+>    should be used if caller wants to allocate from the nearest node.
+>
+> 4) numa_mem_id()/cpu_to_mem() should be used if caller wants to check
+>    whether a page is allocated from the nearest node.
+
+I'm less clear on what you mean here, I'll look at your v2 patches. I
+mean, numa_node_id()/cpu_to_node() should be used to indicate node-local
+preference with appropriate failure handling. But I don't know why one
+would prefer to use numa_node_id() to numa_mem_id() in such a path? The
+only time they differ is if memoryless nodes are present, which is what
+your local memory allocation would ideally be for those nodes anyways?
+
+Thanks,
+Nish
 
