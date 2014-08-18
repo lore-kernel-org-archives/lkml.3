@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaHRJge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:36:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43134 "EHLO
+	id S1753780AbaHRJn5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:43:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43054 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604AbaHRJgc (ORCPT
+	with ESMTP id S1753165AbaHRJgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:32 -0400
+	Mon, 18 Aug 2014 05:36:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sowmini Varadhan <sowmini.varadhan@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Weinberger <richard@nod.at>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 127/137] sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
-Date: Mon, 18 Aug 2014 10:33:08 +0100
-Message-Id: <1408354398-10226-128-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 110/137] x86, espfix: Make espfix64 a Kconfig option, fix UML
+Date: Mon, 18 Aug 2014 10:32:51 +0100
+Message-Id: <1408354398-10226-111-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 upstream.
+commit 197725de65477bc8509b41388157c1a2283542bb upstream.
 
-The LDC handshake could have been asynchronously triggered
-after ldc_bind() enables the ldc_rx() receive interrupt-handler
-(and thus intercepts incoming control packets)
-and before vio_port_up() calls ldc_connect(). If that is the case,
-ldc_connect() should return 0 and let the state-machine
-progress.
+Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
+build which had broken due to the non-existence of init_espfix_bsp()
+in UML: since UML uses its own Kconfig, this option does not appear in
+the UML build.
 
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Acked-by: Karl Volz <karl.volz@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This also makes it possible to make support for 16-bit segments a
+configuration option, for the people who want to minimize the size of
+the kernel.
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Richard Weinberger <richard@nod.at>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/kernel/ldc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/Kconfig          | 4 ++++
+ arch/x86/kernel/Makefile  | 2 +-
+ arch/x86/kernel/smpboot.c | 2 +-
+ init/main.c               | 2 +-
+ 4 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/sparc/kernel/ldc.c b/arch/sparc/kernel/ldc.c
-index 54df554b82d9..fa4c900a0d1f 100644
---- a/arch/sparc/kernel/ldc.c
-+++ b/arch/sparc/kernel/ldc.c
-@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
- 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
- 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
- 	    lp->hs_state != LDC_HS_OPEN)
--		err = -EINVAL;
-+		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
- 	else
- 		err = start_handshake(lp);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf92b0ce..ba5fdd09c61e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -967,6 +967,10 @@ config VM86
+ 	  XFree86 to initialize some video cards via BIOS. Disabling this
+ 	  option saves about 6k.
  
++config X86_ESPFIX64
++	def_bool y
++	depends on X86_64
++
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+ 	depends on X86_32
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index b347fabda159..b714a3537683 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -29,7 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-y			+= syscall_$(BITS).o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+-obj-$(CONFIG_X86_64)	+= espfix_64.o
++obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a2475d0f3af0..af9296c6c9ed 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -267,7 +267,7 @@ static void notrace start_secondary(void *unused)
+ 	/*
+ 	 * Enable the espfix hack for this CPU
+ 	 */
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	init_espfix_ap();
+ #endif
+ 
+diff --git a/init/main.c b/init/main.c
+index 1f93d4080aa8..e4c1b0173c87 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -608,7 +608,7 @@ asmlinkage void __init start_kernel(void)
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	/* Should be run before the first non-init thread is created */
+ 	init_espfix_bsp();
+ #endif
 -- 
 1.9.1
 
