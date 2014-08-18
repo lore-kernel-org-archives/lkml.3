@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaHRKBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:01:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42615 "EHLO
+	id S1754319AbaHRJ5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:57:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42699 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaHRJeW (ORCPT
+	with ESMTP id S1752519AbaHRJen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:22 -0400
+	Mon, 18 Aug 2014 05:34:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 039/137] ipv4: fix dst race in sk_dst_get()
-Date: Mon, 18 Aug 2014 10:31:40 +0100
-Message-Id: <1408354398-10226-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 054/137] net: sctp: fix information leaks in ulpevent layer
+Date: Mon, 18 Aug 2014 10:31:55 +0100
+Message-Id: <1408354398-10226-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,85 +28,259 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit f88649721268999bdff09777847080a52004f691 upstream.
+commit 8f2e5ae40ec193bc0a0ed99e95315c3eebca84ea upstream.
 
-When IP route cache had been removed in linux-3.6, we broke assumption
-that dst entries were all freed after rcu grace period. DST_NOCACHE
-dst were supposed to be freed from dst_release(). But it appears
-we want to keep such dst around, either in UDP sockets or tunnels.
+While working on some other SCTP code, I noticed that some
+structures shared with user space are leaking uninitialized
+stack or heap buffer. In particular, struct sctp_sndrcvinfo
+has a 2 bytes hole between .sinfo_flags and .sinfo_ppid that
+remains unfilled by us in sctp_ulpevent_read_sndrcvinfo() when
+putting this into cmsg. But also struct sctp_remote_error
+contains a 2 bytes hole that we don't fill but place into a skb
+through skb_copy_expand() via sctp_ulpevent_make_remote_error().
 
-In sk_dst_get() we need to make sure dst refcount is not 0
-before incrementing it, or else we might end up freeing a dst
-twice.
+Both structures are defined by the IETF in RFC6458:
 
-DST_NOCACHE set on a dst does not mean this dst can not be attached
-to a socket or a tunnel.
+* Section 5.3.2. SCTP Header Information Structure:
 
-Then, before actual freeing, we need to observe a rcu grace period
-to make sure all other cpus can catch the fact the dst is no longer
-usable.
+  The sctp_sndrcvinfo structure is defined below:
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Dormando <dormando@rydia.net>
+  struct sctp_sndrcvinfo {
+    uint16_t sinfo_stream;
+    uint16_t sinfo_ssn;
+    uint16_t sinfo_flags;
+    <-- 2 bytes hole  -->
+    uint32_t sinfo_ppid;
+    uint32_t sinfo_context;
+    uint32_t sinfo_timetolive;
+    uint32_t sinfo_tsn;
+    uint32_t sinfo_cumtsn;
+    sctp_assoc_t sinfo_assoc_id;
+  };
+
+* 6.1.3. SCTP_REMOTE_ERROR:
+
+  A remote peer may send an Operation Error message to its peer.
+  This message indicates a variety of error conditions on an
+  association. The entire ERROR chunk as it appears on the wire
+  is included in an SCTP_REMOTE_ERROR event. Please refer to the
+  SCTP specification [RFC4960] and any extensions for a list of
+  possible error formats. An SCTP error notification has the
+  following format:
+
+  struct sctp_remote_error {
+    uint16_t sre_type;
+    uint16_t sre_flags;
+    uint32_t sre_length;
+    uint16_t sre_error;
+    <-- 2 bytes hole  -->
+    sctp_assoc_t sre_assoc_id;
+    uint8_t  sre_data[];
+  };
+
+Fix this by setting both to 0 before filling them out. We also
+have other structures shared between user and kernel space in
+SCTP that contains holes (e.g. struct sctp_paddrthlds), but we
+copy that buffer over from user space first and thus don't need
+to care about it in that cases.
+
+While at it, we can also remove lengthy comments copied from
+the draft, instead, we update the comment with the correct RFC
+number where one can look it up.
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: used davem's backport to 3.10 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/net/sock.h |  4 ++--
- net/core/dst.c     | 16 +++++++++++-----
- 2 files changed, 13 insertions(+), 7 deletions(-)
+ net/sctp/ulpevent.c | 122 +++++++---------------------------------------------
+ 1 file changed, 15 insertions(+), 107 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 0588d4f195e3..84e621daed8e 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1733,8 +1733,8 @@ sk_dst_get(struct sock *sk)
- 
- 	rcu_read_lock();
- 	dst = rcu_dereference(sk->sk_dst_cache);
--	if (dst)
--		dst_hold(dst);
-+	if (dst && !atomic_inc_not_zero(&dst->__refcnt))
-+		dst = NULL;
- 	rcu_read_unlock();
- 	return dst;
- }
-diff --git a/net/core/dst.c b/net/core/dst.c
-index ca4231ec7347..15b6792e6ebb 100644
---- a/net/core/dst.c
-+++ b/net/core/dst.c
-@@ -267,6 +267,15 @@ again:
- }
- EXPORT_SYMBOL(dst_destroy);
- 
-+static void dst_destroy_rcu(struct rcu_head *head)
-+{
-+	struct dst_entry *dst = container_of(head, struct dst_entry, rcu_head);
-+
-+	dst = dst_destroy(dst);
-+	if (dst)
-+		__dst_free(dst);
-+}
-+
- void dst_release(struct dst_entry *dst)
+diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
+index 44a45dbee4df..273c3285d938 100644
+--- a/net/sctp/ulpevent.c
++++ b/net/sctp/ulpevent.c
+@@ -373,9 +373,10 @@ fail:
+  * specification [SCTP] and any extensions for a list of possible
+  * error formats.
+  */
+-struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
+-	const struct sctp_association *asoc, struct sctp_chunk *chunk,
+-	__u16 flags, gfp_t gfp)
++struct sctp_ulpevent *
++sctp_ulpevent_make_remote_error(const struct sctp_association *asoc,
++				struct sctp_chunk *chunk, __u16 flags,
++				gfp_t gfp)
  {
- 	if (dst) {
-@@ -274,11 +283,8 @@ void dst_release(struct dst_entry *dst)
+ 	struct sctp_ulpevent *event;
+ 	struct sctp_remote_error *sre;
+@@ -394,8 +395,7 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
+ 	/* Copy the skb to a new skb with room for us to prepend
+ 	 * notification with.
+ 	 */
+-	skb = skb_copy_expand(chunk->skb, sizeof(struct sctp_remote_error),
+-			      0, gfp);
++	skb = skb_copy_expand(chunk->skb, sizeof(*sre), 0, gfp);
  
- 		newrefcnt = atomic_dec_return(&dst->__refcnt);
- 		WARN_ON(newrefcnt < 0);
--		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt) {
--			dst = dst_destroy(dst);
--			if (dst)
--				__dst_free(dst);
--		}
-+		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt)
-+			call_rcu(&dst->rcu_head, dst_destroy_rcu);
- 	}
+ 	/* Pull off the rest of the cause TLV from the chunk.  */
+ 	skb_pull(chunk->skb, elen);
+@@ -406,62 +406,21 @@ struct sctp_ulpevent *sctp_ulpevent_make_remote_error(
+ 	event = sctp_skb2event(skb);
+ 	sctp_ulpevent_init(event, MSG_NOTIFICATION, skb->truesize);
+ 
+-	sre = (struct sctp_remote_error *)
+-		skb_push(skb, sizeof(struct sctp_remote_error));
++	sre = (struct sctp_remote_error *) skb_push(skb, sizeof(*sre));
+ 
+ 	/* Trim the buffer to the right length.  */
+-	skb_trim(skb, sizeof(struct sctp_remote_error) + elen);
++	skb_trim(skb, sizeof(*sre) + elen);
+ 
+-	/* Socket Extensions for SCTP
+-	 * 5.3.1.3 SCTP_REMOTE_ERROR
+-	 *
+-	 * sre_type:
+-	 *   It should be SCTP_REMOTE_ERROR.
+-	 */
++	/* RFC6458, Section 6.1.3. SCTP_REMOTE_ERROR */
++	memset(sre, 0, sizeof(*sre));
+ 	sre->sre_type = SCTP_REMOTE_ERROR;
+-
+-	/*
+-	 * Socket Extensions for SCTP
+-	 * 5.3.1.3 SCTP_REMOTE_ERROR
+-	 *
+-	 * sre_flags: 16 bits (unsigned integer)
+-	 *   Currently unused.
+-	 */
+ 	sre->sre_flags = 0;
+-
+-	/* Socket Extensions for SCTP
+-	 * 5.3.1.3 SCTP_REMOTE_ERROR
+-	 *
+-	 * sre_length: sizeof (__u32)
+-	 *
+-	 * This field is the total length of the notification data,
+-	 * including the notification header.
+-	 */
+ 	sre->sre_length = skb->len;
+-
+-	/* Socket Extensions for SCTP
+-	 * 5.3.1.3 SCTP_REMOTE_ERROR
+-	 *
+-	 * sre_error: 16 bits (unsigned integer)
+-	 * This value represents one of the Operational Error causes defined in
+-	 * the SCTP specification, in network byte order.
+-	 */
+ 	sre->sre_error = cause;
+-
+-	/* Socket Extensions for SCTP
+-	 * 5.3.1.3 SCTP_REMOTE_ERROR
+-	 *
+-	 * sre_assoc_id: sizeof (sctp_assoc_t)
+-	 *
+-	 * The association id field, holds the identifier for the association.
+-	 * All notifications for a given association have the same association
+-	 * identifier.  For TCP style socket, this field is ignored.
+-	 */
+ 	sctp_ulpevent_set_owner(event, asoc);
+ 	sre->sre_assoc_id = sctp_assoc2id(asoc);
+ 
+ 	return event;
+-
+ fail:
+ 	return NULL;
  }
- EXPORT_SYMBOL(dst_release);
+@@ -906,7 +865,9 @@ __u16 sctp_ulpevent_get_notification_type(const struct sctp_ulpevent *event)
+ 	return notification->sn_header.sn_type;
+ }
+ 
+-/* Copy out the sndrcvinfo into a msghdr.  */
++/* RFC6458, Section 5.3.2. SCTP Header Information Structure
++ * (SCTP_SNDRCV, DEPRECATED)
++ */
+ void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
+ 				   struct msghdr *msghdr)
+ {
+@@ -915,74 +876,21 @@ void sctp_ulpevent_read_sndrcvinfo(const struct sctp_ulpevent *event,
+ 	if (sctp_ulpevent_is_notification(event))
+ 		return;
+ 
+-	/* Sockets API Extensions for SCTP
+-	 * Section 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
+-	 *
+-	 * sinfo_stream: 16 bits (unsigned integer)
+-	 *
+-	 * For recvmsg() the SCTP stack places the message's stream number in
+-	 * this value.
+-	*/
++	memset(&sinfo, 0, sizeof(sinfo));
+ 	sinfo.sinfo_stream = event->stream;
+-	/* sinfo_ssn: 16 bits (unsigned integer)
+-	 *
+-	 * For recvmsg() this value contains the stream sequence number that
+-	 * the remote endpoint placed in the DATA chunk.  For fragmented
+-	 * messages this is the same number for all deliveries of the message
+-	 * (if more than one recvmsg() is needed to read the message).
+-	 */
+ 	sinfo.sinfo_ssn = event->ssn;
+-	/* sinfo_ppid: 32 bits (unsigned integer)
+-	 *
+-	 * In recvmsg() this value is
+-	 * the same information that was passed by the upper layer in the peer
+-	 * application.  Please note that byte order issues are NOT accounted
+-	 * for and this information is passed opaquely by the SCTP stack from
+-	 * one end to the other.
+-	 */
+ 	sinfo.sinfo_ppid = event->ppid;
+-	/* sinfo_flags: 16 bits (unsigned integer)
+-	 *
+-	 * This field may contain any of the following flags and is composed of
+-	 * a bitwise OR of these values.
+-	 *
+-	 * recvmsg() flags:
+-	 *
+-	 * SCTP_UNORDERED - This flag is present when the message was sent
+-	 *                 non-ordered.
+-	 */
+ 	sinfo.sinfo_flags = event->flags;
+-	/* sinfo_tsn: 32 bit (unsigned integer)
+-	 *
+-	 * For the receiving side, this field holds a TSN that was
+-	 * assigned to one of the SCTP Data Chunks.
+-	 */
+ 	sinfo.sinfo_tsn = event->tsn;
+-	/* sinfo_cumtsn: 32 bit (unsigned integer)
+-	 *
+-	 * This field will hold the current cumulative TSN as
+-	 * known by the underlying SCTP layer.  Note this field is
+-	 * ignored when sending and only valid for a receive
+-	 * operation when sinfo_flags are set to SCTP_UNORDERED.
+-	 */
+ 	sinfo.sinfo_cumtsn = event->cumtsn;
+-	/* sinfo_assoc_id: sizeof (sctp_assoc_t)
+-	 *
+-	 * The association handle field, sinfo_assoc_id, holds the identifier
+-	 * for the association announced in the COMMUNICATION_UP notification.
+-	 * All notifications for a given association have the same identifier.
+-	 * Ignored for one-to-one style sockets.
+-	 */
+ 	sinfo.sinfo_assoc_id = sctp_assoc2id(event->asoc);
+-
+-	/* context value that is set via SCTP_CONTEXT socket option. */
++	/* Context value that is set via SCTP_CONTEXT socket option. */
+ 	sinfo.sinfo_context = event->asoc->default_rcv_context;
+-
+ 	/* These fields are not used while receiving. */
+ 	sinfo.sinfo_timetolive = 0;
+ 
+ 	put_cmsg(msghdr, IPPROTO_SCTP, SCTP_SNDRCV,
+-		 sizeof(struct sctp_sndrcvinfo), (void *)&sinfo);
++		 sizeof(sinfo), &sinfo);
+ }
+ 
+ /* Do accounting for bytes received and hold a reference to the association
 -- 
 1.9.1
 
