@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaHRRay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 13:30:54 -0400
-Received: from mail-pd0-f201.google.com ([209.85.192.201]:39677 "EHLO
+	id S1752108AbaHRRal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 13:30:41 -0400
+Received: from mail-pd0-f201.google.com ([209.85.192.201]:35957 "EHLO
 	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaHRR3r (ORCPT
+	with ESMTP id S1751773AbaHRR3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 18 Aug 2014 13:29:47 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -16,11 +16,11 @@ Cc: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
         Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
         pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/4] ARM: dts: Enable pwm backlight on rk3288-EVB
-Date: Mon, 18 Aug 2014 10:29:42 -0700
-Message-Id: <1408382982-2077-5-git-send-email-dianders@chromium.org>
+        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 2/4] pwm: rockchip: Allow polarity invert on rk3288
+Date: Mon, 18 Aug 2014 10:29:40 -0700
+Message-Id: <1408382982-2077-3-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1408382982-2077-1-git-send-email-dianders@chromium.org>
 References: <1408382982-2077-1-git-send-email-dianders@chromium.org>
@@ -28,100 +28,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pwm0 is the PWM associated with the LCD backlight.  Enable it.
+The rk3288 has the ability to invert the polarity of the PWM.  Let's
+enable that ability.
+
+To do this we increase the number of pwm_cells to 3 to allow using the
+PWM_POLARITY_INVERTED flag.  Since the PWM driver on rk3288 is very
+new, I thought this was OK.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
 Changes in v2: None
 
- arch/arm/boot/dts/rk3288-evb.dtsi | 53 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+ .../devicetree/bindings/pwm/pwm-rockchip.txt       |  4 +--
+ drivers/pwm/pwm-rockchip.c                         | 32 ++++++++++++++++++++--
+ 2 files changed, 32 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index 2964370..242e1a9 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -10,6 +10,7 @@
-  * GNU General Public License for more details.
-  */
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+index d47d15a..b8be3d0 100644
+--- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
++++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+@@ -7,8 +7,8 @@ Required properties:
+    "rockchip,vop-pwm": found integrated in VOP on RK3288 SoC
+  - reg: physical base address and length of the controller's registers
+  - clocks: phandle and clock specifier of the PWM reference clock
+- - #pwm-cells: should be 2. See pwm.txt in this directory for a
+-   description of the cell format.
++ - #pwm-cells: must be 2 (rk2928) or 3 (rk3288). See pwm.txt in this directory
++   for a description of the cell format.
  
-+#include <dt-bindings/pwm/pwm.h>
- #include "rk3288.dtsi"
+ Example:
  
- / {
-@@ -17,6 +18,48 @@
- 		reg = <0x0 0x80000000>;
- 	};
+diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
+index bdd8644..27f20d6 100644
+--- a/drivers/pwm/pwm-rockchip.c
++++ b/drivers/pwm/pwm-rockchip.c
+@@ -24,7 +24,9 @@
+ #define PWM_ENABLE		(1 << 0)
+ #define PWM_CONTINUOUS		(1 << 1)
+ #define PWM_DUTY_POSITIVE	(1 << 3)
++#define PWM_DUTY_NEGATIVE	(0 << 3)
+ #define PWM_INACTIVE_NEGATIVE	(0 << 4)
++#define PWM_INACTIVE_POSITIVE	(1 << 4)
+ #define PWM_OUTPUT_LEFT		(0 << 5)
+ #define PWM_LP_DISABLE		(0 << 8)
  
-+        backlight {
-+		compatible = "pwm-backlight";
-+		brightness-levels = <
-+			  0   1   2   3   4   5   6   7
-+			  8   9  10  11  12  13  14  15
-+			 16  17  18  19  20  21  22  23
-+			 24  25  26  27  28  29  30  31
-+			 32  33  34  35  36  37  38  39
-+			 40  41  42  43  44  45  46  47
-+			 48  49  50  51  52  53  54  55
-+			 56  57  58  59  60  61  62  63
-+			 64  65  66  67  68  69  70  71
-+			 72  73  74  75  76  77  78  79
-+			 80  81  82  83  84  85  86  87
-+			 88  89  90  91  92  93  94  95
-+			 96  97  98  99 100 101 102 103
-+			104 105 106 107 108 109 110 111
-+			112 113 114 115 116 117 118 119
-+			120 121 122 123 124 125 126 127
-+			128 129 130 131 132 133 134 135
-+			136 137 138 139 140 141 142 143
-+			144 145 146 147 148 149 150 151
-+			152 153 154 155 156 157 158 159
-+			160 161 162 163 164 165 166 167
-+			168 169 170 171 172 173 174 175
-+			176 177 178 179 180 181 182 183
-+			184 185 186 187 188 189 190 191
-+			192 193 194 195 196 197 198 199
-+			200 201 202 203 204 205 206 207
-+			208 209 210 211 212 213 214 215
-+			216 217 218 219 220 221 222 223
-+			224 225 226 227 228 229 230 231
-+			232 233 234 235 236 237 238 239
-+			240 241 242 243 244 245 246 247
-+			248 249 250 251 252 253 254 255>;
-+		default-brightness-level = <128>;
-+		enable-gpios = <&gpio7 2 GPIO_ACTIVE_HIGH>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bl_en>;
-+		pwms = <&pwm0 0 1000000 PWM_POLARITY_INVERTED>;
-+        };
-+
- 	gpio-keys {
- 		compatible = "gpio-keys";
- 		#address-cells = <1>;
-@@ -81,6 +124,10 @@
- 	status = "okay";
+@@ -32,6 +34,7 @@ struct rockchip_pwm_chip {
+ 	struct pwm_chip chip;
+ 	struct clk *clk;
+ 	const struct rockchip_pwm_data *data;
++	enum pwm_polarity polarity;
+ 	void __iomem *base;
  };
  
-+&pwm0 {
-+	status = "okay";
-+};
-+
- &uart0 {
- 	status = "okay";
+@@ -45,6 +48,7 @@ struct rockchip_pwm_regs {
+ struct rockchip_pwm_data {
+ 	struct rockchip_pwm_regs regs;
+ 	unsigned int prescaler;
++	bool has_invert;
+ 
+ 	void (*set_enable)(struct pwm_chip *chip, bool enable);
  };
-@@ -102,6 +149,12 @@
+@@ -74,10 +78,14 @@ static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
+ {
+ 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
+ 	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
+-			  PWM_CONTINUOUS | PWM_DUTY_POSITIVE |
+-			  PWM_INACTIVE_NEGATIVE;
++			  PWM_CONTINUOUS;
+ 	u32 val;
+ 
++	if (pc->polarity == PWM_POLARITY_INVERSED)
++		enable_conf |= PWM_DUTY_NEGATIVE | PWM_INACTIVE_POSITIVE;
++	else
++		enable_conf |= PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
++
+ 	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
+ 
+ 	if (enable)
+@@ -124,6 +132,19 @@ static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 	return 0;
+ }
+ 
++int rockchip_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
++			      enum pwm_polarity polarity)
++{
++	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
++
++	if (!pc->data->has_invert)
++		return -ENOSYS;
++
++	pc->polarity = polarity;
++
++	return 0;
++}
++
+ static int rockchip_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
+@@ -149,6 +170,7 @@ static void rockchip_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 
+ static const struct pwm_ops rockchip_pwm_ops = {
+ 	.config = rockchip_pwm_config,
++	.set_polarity = rockchip_pwm_set_polarity,
+ 	.enable = rockchip_pwm_enable,
+ 	.disable = rockchip_pwm_disable,
+ 	.owner = THIS_MODULE,
+@@ -173,6 +195,7 @@ static const struct rockchip_pwm_data pwm_data_v2 = {
+ 		.ctrl = 0x0c,
+ 	},
+ 	.prescaler = 1,
++	.has_invert = 1,
+ 	.set_enable = rockchip_pwm_set_enable_v2,
  };
  
- &pinctrl {
-+	backlight {
-+		bl_en: bl-en {
-+			rockchip,pins = <7 2 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+	};
-+
- 	buttons {
- 		pwrbtn: pwrbtn {
- 			rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
+@@ -184,6 +207,7 @@ static const struct rockchip_pwm_data pwm_data_vop = {
+ 		.ctrl = 0x00,
+ 	},
+ 	.prescaler = 1,
++	.has_invert = 1,
+ 	.set_enable = rockchip_pwm_set_enable_v2,
+ };
+ 
+@@ -228,6 +252,10 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
+ 	pc->data = id->data;
+ 	pc->chip.dev = &pdev->dev;
+ 	pc->chip.ops = &rockchip_pwm_ops;
++	if (pc->data->has_invert) {
++		pc->chip.of_xlate = of_pwm_xlate_with_flags;
++		pc->chip.of_pwm_n_cells = 3;
++	}
+ 	pc->chip.base = -1;
+ 	pc->chip.npwm = 1;
+ 
 -- 
 2.1.0.rc2.206.gedb03e5
 
