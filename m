@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185AbaHRJgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:36:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43035 "EHLO
+	id S1753798AbaHRJn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:43:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43049 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149AbaHRJgG (ORCPT
+	with ESMTP id S1753164AbaHRJgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:36:06 -0400
+	Mon, 18 Aug 2014 05:36:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Brown <neilb@suse.de>, Jeff Layton <jlayton@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Chris Dunlop <chris@onthe.net.au>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 101/137] vfs: allow umount to handle mountpoints without revalidating them
-Date: Mon, 18 Aug 2014 10:32:42 +0100
-Message-Id: <1408354398-10226-102-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 112/137] x86_64/entry/xen: Do not invoke espfix64 on Xen
+Date: Mon, 18 Aug 2014 10:32:53 +0100
+Message-Id: <1408354398-10226-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,259 +28,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 8033426e6bdb2690d302872ac1e1fadaec1a5581 upstream.
+commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
 
-Christopher reported a regression where he was unable to unmount a NFS
-filesystem where the root had gone stale. The problem is that
-d_revalidate handles the root of the filesystem differently from other
-dentries, but d_weak_revalidate does not. We could simply fix this by
-making d_weak_revalidate return success on IS_ROOT dentries, but there
-are cases where we do want to revalidate the root of the fs.
+This moves the espfix64 logic into native_iret.  To make this work,
+it gets rid of the native patch for INTERRUPT_RETURN:
+INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
 
-A umount is really a special case. We generally aren't interested in
-anything but the dentry and vfsmount that's attached at that point. If
-the inode turns out to be stale we just don't care since the intent is
-to stop using it anyway.
+This changes the 16-bit SS behavior on Xen from OOPSing to leaking
+some bits of the Xen hypervisor's RSP (I think).
 
-Try to handle this situation better by treating umount as a special
-case in the lookup code. Have it resolve the parent using normal
-means, and then do a lookup of the final dentry without revalidating
-it. In most cases, the final lookup will come out of the dcache, but
-the case where there's a trailing symlink or !LAST_NORM entry on the
-end complicates things a bit.
+[ hpa: this is a nonzero cost on native, but probably not enough to
+  measure. Xen needs to fix this in their own code, probably doing
+  something equivalent to espfix64. ]
 
-Cc: Neil Brown <neilb@suse.de>
-Reported-by: Christopher T Vogan <cvogan@us.ibm.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Chris Dunlop <chris@onthe.net.au>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/namei.c            | 182 ++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/namespace.c        |   2 +-
- include/linux/namei.h |   1 +
- 3 files changed, 184 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/irqflags.h     |  2 +-
+ arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
+ arch/x86/kernel/paravirt_patch_64.c |  2 --
+ 3 files changed, 11 insertions(+), 21 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 2a2d0236f82a..a10bd2f8b66b 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2185,6 +2185,188 @@ user_path_parent(int dfd, const char __user *path, struct nameidata *nd,
- 	return s;
- }
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index bba3cf88e624..0a8b519226b8 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -129,7 +129,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
  
-+/**
-+ * umount_lookup_last - look up last component for umount
-+ * @nd:   pathwalk nameidata - currently pointing at parent directory of "last"
-+ * @path: pointer to container for result
-+ *
-+ * This is a special lookup_last function just for umount. In this case, we
-+ * need to resolve the path without doing any revalidation.
-+ *
-+ * The nameidata should be the result of doing a LOOKUP_PARENT pathwalk. Since
-+ * mountpoints are always pinned in the dcache, their ancestors are too. Thus,
-+ * in almost all cases, this lookup will be served out of the dcache. The only
-+ * cases where it won't are if nd->last refers to a symlink or the path is
-+ * bogus and it doesn't exist.
-+ *
-+ * Returns:
-+ * -error: if there was an error during lookup. This includes -ENOENT if the
-+ *         lookup found a negative dentry. The nd->path reference will also be
-+ *         put in this case.
-+ *
-+ * 0:      if we successfully resolved nd->path and found it to not to be a
-+ *         symlink that needs to be followed. "path" will also be populated.
-+ *         The nd->path reference will also be put.
-+ *
-+ * 1:      if we successfully resolved nd->last and found it to be a symlink
-+ *         that needs to be followed. "path" will be populated with the path
-+ *         to the link, and nd->path will *not* be put.
-+ */
-+static int
-+umount_lookup_last(struct nameidata *nd, struct path *path)
-+{
-+	int error = 0;
-+	struct dentry *dentry;
-+	struct dentry *dir = nd->path.dentry;
-+
-+	if (unlikely(nd->flags & LOOKUP_RCU)) {
-+		WARN_ON_ONCE(1);
-+		error = -ECHILD;
-+		goto error_check;
-+	}
-+
-+	nd->flags &= ~LOOKUP_PARENT;
-+
-+	if (unlikely(nd->last_type != LAST_NORM)) {
-+		error = handle_dots(nd, nd->last_type);
-+		if (!error)
-+			dentry = dget(nd->path.dentry);
-+		goto error_check;
-+	}
-+
-+	mutex_lock(&dir->d_inode->i_mutex);
-+	dentry = d_lookup(dir, &nd->last);
-+	if (!dentry) {
-+		/*
-+		 * No cached dentry. Mounted dentries are pinned in the cache,
-+		 * so that means that this dentry is probably a symlink or the
-+		 * path doesn't actually point to a mounted dentry.
-+		 */
-+		dentry = d_alloc(dir, &nd->last);
-+		if (!dentry) {
-+			error = -ENOMEM;
-+		} else {
-+			dentry = lookup_real(dir->d_inode, dentry, nd->flags);
-+			if (IS_ERR(dentry))
-+				error = PTR_ERR(dentry);
-+		}
-+	}
-+	mutex_unlock(&dir->d_inode->i_mutex);
-+
-+error_check:
-+	if (!error) {
-+		if (!dentry->d_inode) {
-+			error = -ENOENT;
-+			dput(dentry);
-+		} else {
-+			path->dentry = dentry;
-+			path->mnt = mntget(nd->path.mnt);
-+			if (should_follow_link(dentry->d_inode,
-+						nd->flags & LOOKUP_FOLLOW))
-+				return 1;
-+			follow_mount(path);
-+		}
-+	}
-+	terminate_walk(nd);
-+	return error;
-+}
-+
-+/**
-+ * path_umountat - look up a path to be umounted
-+ * @dfd:	directory file descriptor to start walk from
-+ * @name:	full pathname to walk
-+ * @flags:	lookup flags
-+ * @nd:		pathwalk nameidata
-+ *
-+ * Look up the given name, but don't attempt to revalidate the last component.
-+ * Returns 0 and "path" will be valid on success; Retuns error otherwise.
-+ */
-+static int
-+path_umountat(int dfd, const char *name, struct path *path, unsigned int flags)
-+{
-+	struct file *base = NULL;
-+	struct nameidata nd;
-+	int err;
-+
-+	err = path_init(dfd, name, flags | LOOKUP_PARENT, &nd, &base);
-+	if (unlikely(err))
-+		return err;
-+
-+	current->total_link_count = 0;
-+	err = link_path_walk(name, &nd);
-+	if (err)
-+		goto out;
-+
-+	/* If we're in rcuwalk, drop out of it to handle last component */
-+	if (nd.flags & LOOKUP_RCU) {
-+		err = unlazy_walk(&nd, NULL);
-+		if (err) {
-+			terminate_walk(&nd);
-+			goto out;
-+		}
-+	}
-+
-+	err = umount_lookup_last(&nd, path);
-+	while (err > 0) {
-+		void *cookie;
-+		struct path link = *path;
-+		err = may_follow_link(&link, &nd);
-+		if (unlikely(err))
-+			break;
-+		nd.flags |= LOOKUP_PARENT;
-+		err = follow_link(&link, &nd, &cookie);
-+		if (err)
-+			break;
-+		err = umount_lookup_last(&nd, path);
-+		put_link(&nd, &link, cookie);
-+	}
-+out:
-+	if (base)
-+		fput(base);
-+
-+	if (nd.root.mnt && !(nd.flags & LOOKUP_ROOT))
-+		path_put(&nd.root);
-+
-+	return err;
-+}
-+
-+/**
-+ * user_path_umountat - lookup a path from userland in order to umount it
-+ * @dfd:	directory file descriptor
-+ * @name:	pathname from userland
-+ * @flags:	lookup flags
-+ * @path:	pointer to container to hold result
-+ *
-+ * A umount is a special case for path walking. We're not actually interested
-+ * in the inode in this situation, and ESTALE errors can be a problem. We
-+ * simply want track down the dentry and vfsmount attached at the mountpoint
-+ * and avoid revalidating the last component.
-+ *
-+ * Returns 0 and populates "path" on success.
-+ */
-+int
-+user_path_umountat(int dfd, const char __user *name, unsigned int flags,
-+			struct path *path)
-+{
-+	struct filename *s = getname(name);
-+	int error;
-+
-+	if (IS_ERR(s))
-+		return PTR_ERR(s);
-+
-+	error = path_umountat(dfd, s->name, path, flags | LOOKUP_RCU);
-+	if (unlikely(error == -ECHILD))
-+		error = path_umountat(dfd, s->name, path, flags);
-+	if (unlikely(error == -ESTALE))
-+		error = path_umountat(dfd, s->name, path, flags | LOOKUP_REVAL);
-+
-+	if (likely(!error))
-+		audit_inode(s, path->dentry, 0);
-+
-+	putname(s);
-+	return error;
-+}
-+
- /*
-  * It's inline, so penalty for filesystems that don't use sticky bit is
-  * minimal.
-diff --git a/fs/namespace.c b/fs/namespace.c
-index a45ba4f267fe..ad8ea9bc2518 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1318,7 +1318,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
- 	if (!(flags & UMOUNT_NOFOLLOW))
- 		lookup_flags |= LOOKUP_FOLLOW;
+ #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
  
--	retval = user_path_at(AT_FDCWD, name, lookup_flags, &path);
-+	retval = user_path_umountat(AT_FDCWD, name, lookup_flags, &path);
- 	if (retval)
- 		goto out;
- 	mnt = real_mount(path.mnt);
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 5a5ff57ceed4..cd09751c71a0 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -58,6 +58,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+-#define INTERRUPT_RETURN	iretq
++#define INTERRUPT_RETURN	jmp native_iret
+ #define USERGS_SYSRET64				\
+ 	swapgs;					\
+ 	sysretq;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 01cbb4eb9179..87986bea82b7 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1056,27 +1056,24 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
  
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
- extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
-+extern int user_path_umountat(int, const char __user *, unsigned int, struct path *);
+ irq_return:
++	INTERRUPT_RETURN
++
++ENTRY(native_iret)
+ 	/*
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
+ #ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+-	jnz irq_return_ldt
++	jnz native_irq_return_ldt
+ #endif
  
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
+-irq_return_iret:
+-	INTERRUPT_RETURN
+-	_ASM_EXTABLE(irq_return_iret, bad_iret)
+-
+-#ifdef CONFIG_PARAVIRT
+-ENTRY(native_iret)
++native_irq_return_iret:
+ 	iretq
+-	_ASM_EXTABLE(native_iret, bad_iret)
+-#endif
++	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_X86_ESPFIX64
+-irq_return_ldt:
++native_irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+ 	SWAPGS
+@@ -1098,7 +1095,7 @@ irq_return_ldt:
+ 	SWAPGS
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+-	jmp irq_return_iret
++	jmp native_irq_return_iret
+ #endif
+ 
+ 	.section .fixup,"ax"
+@@ -1184,13 +1181,8 @@ __do_double_fault:
+ 	cmpl $__KERNEL_CS,CS(%rdi)
+ 	jne do_double_fault
+ 	movq RIP(%rdi),%rax
+-	cmpq $irq_return_iret,%rax
+-#ifdef CONFIG_PARAVIRT
+-	je 1f
+-	cmpq $native_iret,%rax
+-#endif
++	cmpq $native_irq_return_iret,%rax
+ 	jne do_double_fault		/* This shouldn't happen... */
+-1:
+ 	movq PER_CPU_VAR(kernel_stack),%rax
+ 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+ 	movq %rax,RSP(%rdi)
+@@ -1680,7 +1672,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return_iret(%rip),%rcx
++	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
+index 3f08f34f93eb..a1da6737ba5b 100644
+--- a/arch/x86/kernel/paravirt_patch_64.c
++++ b/arch/x86/kernel/paravirt_patch_64.c
+@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
+ DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
+ DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
+ DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
+-DEF_NATIVE(pv_cpu_ops, iret, "iretq");
+ DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
+ DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
+ DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
+@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
+ 		PATCH_SITE(pv_irq_ops, save_fl);
+ 		PATCH_SITE(pv_irq_ops, irq_enable);
+ 		PATCH_SITE(pv_irq_ops, irq_disable);
+-		PATCH_SITE(pv_cpu_ops, iret);
+ 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
 -- 
 1.9.1
 
