@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaHRGEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 02:04:47 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:1569 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaHRGEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 02:04:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 17 Aug 2014 22:55:13 -0700
-Message-ID: <53F197C3.5010002@nvidia.com>
-Date: Mon, 18 Aug 2014 14:05:55 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751915AbaHRGGk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 02:06:40 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:57885
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751142AbaHRGGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 02:06:39 -0400
+Date: Mon, 18 Aug 2014 14:06:07 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 3/3] ARM: clk-imx6q: Add missing lvds and anaclk clock
+ to the clock tree
+Message-ID: <20140818060521.GA2114@dragon>
+References: <cover.1407481023.git.shengjiu.wang@freescale.com>
+ <9ecf6480464cffb3b4347ad3fd8ec5f07462a0fc.1407481023.git.shengjiu.wang@freescale.com>
+ <20140809135841.GB8849@dragon> <20140811030935.GB13158@audiosh1>
 MIME-Version: 1.0
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 04/16] clk: tegra: Add library for the DFLL clock source
- (open-loop mode)
-References: <1405957142-19416-1-git-send-email-ttynkkynen@nvidia.com> <1405957142-19416-5-git-send-email-ttynkkynen@nvidia.com>
-In-Reply-To: <1405957142-19416-5-git-send-email-ttynkkynen@nvidia.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140811030935.GB13158@audiosh1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019005)(6009001)(24454002)(199003)(51704005)(189002)(83322001)(57986006)(44976005)(83072002)(107046002)(104016003)(6806004)(105606002)(87936001)(76482001)(95666004)(106466001)(76176999)(92566001)(74662001)(97736001)(85852003)(97756001)(46102001)(86362001)(54356999)(50986999)(31966008)(74502001)(21056001)(85306004)(93886004)(84676001)(77982001)(92726001)(68736004)(99396002)(50466002)(83506001)(33716001)(81342001)(23726002)(102836001)(33656002)(26826002)(4396001)(46406003)(79102001)(80022001)(47776003)(64706001)(110136001)(20776003)(81542001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB321;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03077579FF
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 11, 2014 at 11:09:36AM +0800, Shengjiu Wang wrote:
+> On Sat, Aug 09, 2014 at 09:58:42PM +0800, Shawn Guo wrote:
+> > On Fri, Aug 08, 2014 at 03:02:49PM +0800, Shengjiu Wang wrote:
+> > > @@ -176,8 +182,12 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+> > >  	 * the "output_enable" bit as a gate, even though it's really just
+> > >  	 * enabling clock output.
+> > >  	 */
+> > > -	clk[IMX6QDL_CLK_LVDS1_GATE] = imx_clk_gate("lvds1_gate", "lvds1_sel", base + 0x160, 10);
+> > > -	clk[IMX6QDL_CLK_LVDS2_GATE] = imx_clk_gate("lvds2_gate", "lvds2_sel", base + 0x160, 11);
+> > > +	clk[IMX6QDL_CLK_LVDS1_GATE] = imx_clk_gate2("lvds1_gate", "lvds1_sel", base + 0x160, 10);
+> > > +	clk[IMX6QDL_CLK_LVDS2_GATE] = imx_clk_gate2("lvds2_gate", "lvds2_sel", base + 0x160, 11);
+> > 
+> > I do not think you can simply change to use imx_clk_gate2() here.  It's
+> > designed for those CCGR gate clocks, each of which is controlled by two
+> > bits.
+> > 
+> > Shawn
+> >
+> As Lucas Stach's suggestion, we need to do add some method for mutually exclusive clock, 
+> lvds1_gate with lvds1_in, lvds2_gate with lvds2_in. I add imx_clk_gate2_exclusive() function in clk-gate2.c.
+> So I change imx_clk_gate() to imx_clk_gate2() here.
+> As you said, this is not good solution.
 
-On 07/21/2014 11:38 PM, Tuomas Tynkkynen wrote:
-> Add shared code to support the Tegra DFLL clocksource in open-loop
-> mode. This root clocksource is present on the Tegra124 SoCs. The
-> DFLL is the intended primary clock source for the fast CPU cluster.
->
-> This code is very closely based on a patch by Paul Walmsley from
-> December (http://comments.gmane.org/gmane.linux.ports.tegra/15273),
-> which in turn comes from the internal driver by originally created
-> by Aleksandr Frid <afrid@nvidia.com>.
->
-> Subsequent patches will add support for closed loop mode and drivers
-> for the Tegra124 fast CPU cluster DFLL devices, which rely on this
-> code.
->
-> Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
-> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-> ---
-> v2 changes:
->      - minor, moved the devm_regulator_get here
->
->   drivers/clk/tegra/Makefile   |    1 +
->   drivers/clk/tegra/clk-dfll.c | 1085 ++++++++++++++++++++++++++++++++++++++++++
->   drivers/clk/tegra/clk-dfll.h |   55 +++
->   3 files changed, 1141 insertions(+)
->   create mode 100644 drivers/clk/tegra/clk-dfll.c
->   create mode 100644 drivers/clk/tegra/clk-dfll.h
-...
-> --- /dev/null
-> +++ b/drivers/clk/tegra/clk-dfll.c
-...
-> +
-> +/*
-> + * Output clock scaler helpers
-> + */
-> +
-> +/**
-> + * dfll_scale_dvco_rate - calculate scaled rate from the DVCO rate
-> + * @scale_bits: clock scaler value (bits in the DFLL_FREQ_REQ_SCALE field)
-> + * @dvco_rate: the DVCO rate
-> + *
-> + * Apply the same scaling formula that the DFLL hardware uses to scale
-> + * the DVCO rate.
-> + */
-> +static unsigned long dfll_scale_dvco_rate(int scale_bits,
-> +					  unsigned long dvco_rate)
-> +{
-> +	return (u64)dvco_rate * (scale_bits + 1) / DFLL_FREQ_REQ_SCALE_MAX;
-> +}
-...
-> +static u64 dfll_read_monitor_rate(struct tegra_dfll *td)
-> +{
-> +	u32 v, s;
-> +	u64 pre_scaler_rate, post_scaler_rate;
-> +
-> +	if (!dfll_is_running(td))
-> +		return 0;
-> +
-> +	v = dfll_readl(td, DFLL_MONITOR_DATA);
-> +	v = (v & DFLL_MONITOR_DATA_VAL_MASK) >> DFLL_MONITOR_DATA_VAL_SHIFT;
-> +	pre_scaler_rate = dfll_calc_monitored_rate(v, td->ref_rate);
-> +
-> +	s = dfll_readl(td, DFLL_FREQ_REQ);
-> +	s = (s & DFLL_FREQ_REQ_SCALE_MASK) >> DFLL_FREQ_REQ_SCALE_SHIFT;
-> +	post_scaler_rate = dfll_scale_dvco_rate(pre_scaler_rate, s);
-Should be dfll_scale_dvco_rate(s, pre_scaler_rate);
+It's not just a "not good" solution but wrong and broken one.  The net
+result of that is if you call clk_enable() on lvds1_gate, both bit 10
+and 11 will be set.
 
-Thanks,
-Vince
+> So I need your suggestion, how can I do?
 
+I guess we will need a new clock type to handle such mutually exclusive
+clocks, rather than patching clk-gate2.
 
+> First, is it allowable that to add imx_clk_gate2_exclusive() function, is there a more better way?
+
+Again, this is completely wrong.
+
+> second, or should I change the clk-gate.c to add exclusive control?
+
+If such mutually exclusive clocks are somehow common across different
+clock controllers, we can propose to change clk-gate.c for handling
+them.  But I'm not sure this is a common case.
+
+Shawn
