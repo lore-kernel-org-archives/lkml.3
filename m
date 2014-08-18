@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187AbaHRO3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:29:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40255 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751572AbaHRO3r (ORCPT
+	id S1752203AbaHROaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:30:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52917 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751572AbaHROaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:29:47 -0400
-Date: Mon, 18 Aug 2014 15:29:45 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Inha Song <ideal.song@samsung.com>
-Cc: broonie@kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        lee.jones@linaro.org, lgirdwood@gmail.com, sameo@linux.intel.com,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, cw00.choi@samsung.com
-Subject: Re: [alsa-devel] [PATCH v3 2/2] mfd: arizona: Update DT binding to
-	support INn_MODE init_data
-Message-ID: <20140818142945.GD7556@opensource.wolfsonmicro.com>
-References: <20140818200009.12a52dfa@songinha-Samsung-DeskTop-System>
+	Mon, 18 Aug 2014 10:30:04 -0400
+Date: Mon, 18 Aug 2014 16:27:37 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/12] ARM: dts: sun8i: Add i2c controller nodes
+Message-ID: <20140818142737.GC15297@lukather>
+References: <1408247538-16950-1-git-send-email-wens@csie.org>
+ <1408247538-16950-12-git-send-email-wens@csie.org>
+ <20140817080204.GY15297@lukather>
+ <CAGb2v67NwsJORoFrgEECDtexXGtF5qOx7NX1PVpZHkjVs-mG2A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uLm21ivgZj9Xvi41"
 Content-Disposition: inline
-In-Reply-To: <20140818200009.12a52dfa@songinha-Samsung-DeskTop-System>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <CAGb2v67NwsJORoFrgEECDtexXGtF5qOx7NX1PVpZHkjVs-mG2A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 08:00:09PM +0900, Inha Song wrote:
-> This patch update DT binding to support INn_MODE init_data. Each
-> input signal path can be configurated either as a Analogue or
-> Digital using the INn_MODE registers.
-> 
-> Signed-off-by: Inha Song <ideal.song@samsung.com>
-> ---
->  Documentation/devicetree/bindings/mfd/arizona.txt | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-> index 5c7e723..0064b21 100644
-> --- a/Documentation/devicetree/bindings/mfd/arizona.txt
-> +++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-> @@ -42,6 +42,14 @@ Optional properties:
->      the chip default will be used.  If present exactly five values must
->      be specified.
->  
-> +  - wlf,inmode : A list of INn_MODE register values, where n is the number
-> +    of input signals. Each input signal path can be configurated either as a
-> +    Analogue or Digital using the INn_MODE registers. If absent, INn_MODE
 
-I would replace the second sentence here with something like
-"Valid values are 0 (Differential), 1 (Single-ended) and 2 (Digital
-Microphone)."
+--uLm21ivgZj9Xvi41
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Charles
+On Sun, Aug 17, 2014 at 11:20:44PM +0800, Chen-Yu Tsai wrote:
+> Hi,
+>=20
+> On Sun, Aug 17, 2014 at 4:02 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > Hi,
+> >
+> > On Sun, Aug 17, 2014 at 11:52:17AM +0800, Chen-Yu Tsai wrote:
+> >> Add nodes for the 3 i2c controllers found on A23 SoCs to the sun8i DTS=
+I.
+> >>
+> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> >> ---
+> >>  arch/arm/boot/dts/sun8i-a23.dtsi | 36 +++++++++++++++++++++++++++++++=
++++++
+> >>  1 file changed, 36 insertions(+)
+> >>
+> >> diff --git a/arch/arm/boot/dts/sun8i-a23.dtsi b/arch/arm/boot/dts/sun8=
+i-a23.dtsi
+> >> index 4658998..53ef350 100644
+> >> --- a/arch/arm/boot/dts/sun8i-a23.dtsi
+> >> +++ b/arch/arm/boot/dts/sun8i-a23.dtsi
+> >> @@ -387,6 +387,42 @@
+> >>                       status =3D "disabled";
+> >>               };
+> >>
+> >> +             i2c0: i2c@01c2ac00 {
+> >> +                     compatible =3D "allwinner,sun6i-a31-i2c";
+> >> +                     reg =3D <0x01c2ac00 0x400>;
+> >> +                     interrupts =3D <0 6 4>;
+> >> +                     clocks =3D <&apb2_gates 0>;
+> >> +                     clock-frequency =3D <100000>;
+> >
+> > It's the default, you don't need to set it.
+>=20
+> Ah, just checked the driver, it is indeed the default.
+> All the other sunxi dtsi have it though. Do we want to be consistent?
 
-> +    registers set to 0 by default. If present, values must be specified less
-> +    than or equal to the number of input singals. If values less than the
-> +    number of input signals, elements that has not been specifed are set to 0
-> +    by default.
-> +
->    - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
->      they are being externally supplied. As covered in
->      Documentation/devicetree/bindings/regulator/regulator.txt
-> -- 
-> 2.0.0.390.gcb682f8
-> 
+Yep, it's usually a good thing :)
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--uLm21ivgZj9Xvi41
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT8g1ZAAoJEBx+YmzsjxAgyacP/3/ko9bcKsX5wzsmI3eSB+mD
+ZXDMvs7HU6LiZsM9F/bwGU7n1+XdAnu6zLPtYaPsfyqzQv4SL09WObo/CDvzdbYR
+QTmUsqW/f+l5dEa59XhpO7kRWzCwsRlhMy6yr7+w1dLUeSLplt82u7WsdaluINre
+ED5eGvHpwXNU/qPyA8nFBGEt30VsGHrww+sSxcg2GRNdME8gmnvmeSbbltx0Ji/u
+5aYR60ImJifDDF/In0ZA9k3Of7NFBtNbBRZ8wBIv0/hF/Q4xuaT6ZeED+/niHsuU
+7D5f7zaF6kYcx2yV2nmAC5YnRE/gtyFFE703j8g/nRGBieGd4AugWPDMoq0l2ZDv
+gX9vvF2exiWIxBEA+Xyl6J6j3m3Y2wyKZ/7/imiZ5bRkgq3todugKRue9h3gNmyf
+JVnYr2bCXFZ1gUuyEALz+3bSvL9T+5G6sTk3HKysVuxCfBAQRo7RZYzMrR2f37IK
+2i5UNBZXgh/tQ6RCZ9fBJUwNdHXK4VNpCeQ59gN/shL1bJK2U23QSXRQQxM1tf8b
+EPrC0fDYvKH0SOU3JT81G3TBhYjJaLKYoPYLSCaV0GeWSXYH4getHy9rw8S38t4T
+xEIbZ9PquZ8dI8FtvZtlAz4kY9bwH0QLNE4KNxivOrPaMLwHjqJjOPYUD3yNFT8Q
+Bnh65Ufi7IxTi3acBts6
+=JASe
+-----END PGP SIGNATURE-----
+
+--uLm21ivgZj9Xvi41--
