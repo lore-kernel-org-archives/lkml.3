@@ -1,189 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbaHRS5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 14:57:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37274 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaHRS5H (ORCPT
+	id S1752019AbaHRTAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 15:00:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54978 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751705AbaHRTAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 14:57:07 -0400
-Message-ID: <1408388212.22761.100.camel@smoke>
-Subject: Re: [PATCH v2 08/18] ARM64 / ACPI: Get the enable method for SMP
- initialization in ACPI way
-From: Geoff Levand <geoff@infradead.org>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, linaro-acpi@lists.linaro.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>, Charles.Garcia-Tobin@arm.com,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Date: Mon, 18 Aug 2014 11:56:52 -0700
-In-Reply-To: <1407166105-17675-9-git-send-email-hanjun.guo@linaro.org>
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
-	 <1407166105-17675-9-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 18 Aug 2014 15:00:05 -0400
+Date: Mon, 18 Aug 2014 20:58:10 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, "Dmitriy B." <rzk333@gmail.com>,
+        Yassin Jaffer <yassinjaffer@gmail.com>, Jonas Meyer <quitte@gmail.com>
+Subject: Re: [PATCH v4 2/2] mtd: nand: add sunxi NFC dt bindings doc
+Message-ID: <20140818185810.GG15297@lukather>
+References: <1408382788-32153-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1408382788-32153-3-git-send-email-boris.brezillon@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6S+CllbbV/7E5K18"
+Content-Disposition: inline
+In-Reply-To: <1408382788-32153-3-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hanjun,
 
-On Mon, 2014-08-04 at 23:28 +0800, Hanjun Guo wrote:
-> --- a/arch/arm64/include/asm/acpi.h
-> +++ b/arch/arm64/include/asm/acpi.h
-> @@ -14,6 +14,27 @@
->  
->  /* Basic configuration for ACPI */
->  #ifdef	CONFIG_ACPI
+--6S+CllbbV/7E5K18
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-By having this preprocessor conditional in the header leads
-to a proliferation of preprocessor conditionals since any
-code that includes this header will also need to have
-preprocessor conditionals.  Another down side of having
-this is that this code will not get a build test for
-builds with CONFIG_ACPI=n.
+Hi Boris,
 
-> +/*
-> + * ACPI 5.1 only has two explicit methods to
-> + * boot up SMP, PSCI and Parking protocol,
-> + * but the Parking protocol is only defined
-> + * for ARMv7 now, so make PSCI as the only
-> + * way for the SMP boot protocol before some
-> + * updates for the ACPI spec or the Parking
-> + * protocol spec.
-> + *
-> + * This enum is intend to make the boot method
-> + * scalable when above updates are happended,
-> + * which NOT means to support all of them.
-> + */
-> +enum acpi_smp_boot_protocol {
-> +	ACPI_SMP_BOOT_PSCI,
-> +	ACPI_SMP_BOOT_PARKING_PROTOCOL,
-> +	ACPI_SMP_BOOT_PROTOCOL_MAX
-> +};
+On Mon, Aug 18, 2014 at 07:26:28PM +0200, Boris BREZILLON wrote:
+> Add the sunxi NAND Flash Controller dt bindings documentation.
+>=20
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> ---
+>  .../devicetree/bindings/mtd/sunxi-nand.txt         | 45 ++++++++++++++++=
+++++++
+>  1 file changed, 45 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+>=20
+> diff --git a/Documentation/devicetree/bindings/mtd/sunxi-nand.txt b/Docum=
+entation/devicetree/bindings/mtd/sunxi-nand.txt
+> new file mode 100644
+> index 0000000..798c691
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mtd/sunxi-nand.txt
+> @@ -0,0 +1,45 @@
+> +Allwinner NAND Flash Controller (NFC)
 > +
-> +enum acpi_smp_boot_protocol smp_boot_protocol(void);
+> +Required properties:
+> +- compatible : "allwinner,sun4i-nand".
 
-The name smp_boot_protocol() seems like it would be a generic
-routine, but it is acpi specific.  Maybe:
+The pattern we usually have for the sunxi SoCs is
+allwinner,family-soc-*, which would be allwinner,sun4i-a10-nand in
+this case.
 
-enum acpi_boot_protocol_type {...};
+> +- reg : shall contain registers location and length for data and reg.
+> +- interrupts : shall define the nand controller interrupt.
+> +- #address-cells: shall be set to 1. Encode the nand CS.
+> +- #size-cells : shall be set to 0.
+> +- clocks : shall reference nand controller clocks.
+> +- clock-names : nand controller internal clock names. Shall contain :
+> +    * "ahb_clk" : AHB gating clock
+> +    * "sclk" : nand controller clock
 
-enum acpi_boot_protocol_type acpi_boot_protocol(void);
+And we're usually using "ahb" and "mod" in such a case.
 
-> --- a/arch/arm64/kernel/cpu_ops.c
-> +++ b/arch/arm64/kernel/cpu_ops.c
-> @@ -49,12 +51,44 @@ static const struct cpu_operations * __init cpu_get_ops(const char *name)
->  	return NULL;
->  }
->  
-> +#ifdef CONFIG_ACPI
-> +/*
-> + * Get a cpu's boot method in the ACPI way.
-> + */
-> +static char * __init acpi_get_cpu_boot_method(void)
-> +{
-> +	/*
-> +	 * For ACPI 5.1, only two kind of methods are provided,
-> +	 * Parking protocol and PSCI, but Parking protocol is
-> +	 * specified for ARMv7 only, so make PSCI as the only method
-> +	 * for SMP initialization before the ACPI spec or Parking
-> +	 * protocol spec is updated.
-> +	 */
-> +	switch (smp_boot_protocol()) {
-> +	case ACPI_SMP_BOOT_PSCI:
-> +		return "psci";
-> +	case ACPI_SMP_BOOT_PARKING_PROTOCOL:
-> +	default:
-> +		return NULL;
-> +	}
-> +}
-> +#else
-> +static inline char * __init acpi_get_cpu_boot_method(void) { return NULL; }
-> +#endif
+It looks fine otherwise.
 
-Since this is inside a C source file, the inline keyword
-isn't needed since the optimizer will inline regardless.
+Thanks!
+Maxime
 
-With that said, I think it would be cleaner to have this
-as:
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-static char * __init acpi_get_cpu_boot_method(void)
-{
-#ifdef CONFIG_ACPI
-	return NULL;
-#else
- ...
-#endif
-}
+--6S+CllbbV/7E5K18
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Or better to make smp_boot_protocol() callable regardless
-of CONFIG_ACPI and then no preprocessor conditionals at all
-would be needed.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> +
->  /*
-> - * Read a cpu's enable method from the device tree and record it in cpu_ops.
-> + * Read a cpu's enable method and record it in cpu_ops.
->   */
->  int __init cpu_read_ops(struct device_node *dn, int cpu)
->  {
-> -	const char *enable_method = of_get_property(dn, "enable-method", NULL);
-> +	const char *enable_method;
-> +
-> +	if (!acpi_disabled) {
-> +		enable_method = acpi_get_cpu_boot_method();
-> +		goto get_ops;
-> +	}
-> +
-> +	enable_method = of_get_property(dn, "enable-method", NULL);
->  	if (!enable_method) {
->  		/*
->  		 * The boot CPU may not have an enable method (e.g. when
-> @@ -66,10 +100,17 @@ int __init cpu_read_ops(struct device_node *dn, int cpu)
->  		return -ENOENT;
->  	}
->  
-> +get_ops:
->  	cpu_ops[cpu] = cpu_get_ops(enable_method);
->  	if (!cpu_ops[cpu]) {
-> -		pr_warn("%s: unsupported enable-method property: %s\n",
-> -			dn->full_name, enable_method);
-> +		if (acpi_disabled) {
-> +			pr_warn("%s: unsupported enable-method property: %s\n",
-> +				dn->full_name, enable_method);
-> +		} else {
-> +			pr_warn("CPU %d: boot protocol unsupported or unknown\n",
-> +				cpu);
-> +		}
-> +
+iQIcBAEBAgAGBQJT8kzCAAoJEBx+YmzsjxAgovsQAKVS7HRggRv6xTKlPP+3jzTx
+I3nWydlAfO9HJ5U9lxJ1CUZeuptXVq+rfqNmNqrMNyJzFYjrYAIqryaKeM4CP0b6
+WV6rTX2u6nBJ2mmRi4lx1WRnAaCBrqsl7QOMAyPhdAJQzd23vidvDLXKB1XnFLhQ
+jDFC5bO00XhCOoCrtVlVekWUu18s5aY28VjcaJP/xxok2aQsh/DVqoHPNrh8Fx4d
+kEcI8MscDOsbpSz5PugHo7B4vuKfJ7Rd86B76oYXqHi5FbInj1xwqVb69gGvO/AX
+qkizphhrmDJGvGHR7xTE3K6m1nx6eCLdfP2PQpPSwePRsZ4m0tO3NooNbgnhOdhN
+I8LVjZzgL0Kn9VP+JNVqDY15hEoFRrdjKYPTZh5/1TcEA0pwEOX6TydCVviAko5e
+G95+H6meVCKEPuxGP5zO0S5CL1Cv+kyfVXGm89CWp3Vp46uU9Xc+UW0aBh2BeVsB
+IHxfwKCg8S7ThVPOYtK/0x52XPW+psfFrnDieCFwfckOkAFiVu4LA5RNipWHn0ad
+w5lxIUutIwmNlcXw2PwwekTIL6h6P6mqPT9O+JyPlrxtdHvsOiFR0x09RiV7Rhv4
+O89ArjzKtT103BVMDc+EQeSbkg4Q3lGHSryL1mnomZDdzPZJNrwhrxS2m/0vxyv4
+HCFs0yjEqw26oNACMB6k
+=CIrS
+-----END PGP SIGNATURE-----
 
-Can't we have this more integrated, maybe something like this?
-
-	enable_method = acpi_disabled ? of_get_property(dn, "enable-method", NULL)
-		: acpi_get_cpu_boot_method();
-	message = acpi_disabled ? dn->full_name : "";
-
-	...
-	
-	pr_warn("CPU %d: %s unsupported enable-method property: %s\n",
-				cpu, message, enable_method)
-
--Geoff
-
+--6S+CllbbV/7E5K18--
