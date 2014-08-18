@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaHRTAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 15:00:49 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:45350 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaHRTAr (ORCPT
+	id S1752108AbaHRTBK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 15:01:10 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:45136 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaHRTBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 15:00:47 -0400
-Date: Mon, 18 Aug 2014 21:00:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: akpm@linux-foundation.org, kvm@vger.kernel.org, pbonzini@redhat.com,
-        mingo@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Ulrich Obergfell <uobergfe@redhat.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH 4/5] watchdog: control hard lockup detection default
-Message-ID: <20140818190042.GA5074@gmail.com>
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
- <1407768567-171794-5-git-send-email-dzickus@redhat.com>
- <20140818091644.GE25495@gmail.com>
- <20140818151737.GT49576@redhat.com>
- <20140818180735.GB4540@gmail.com>
- <20140818185332.GC49576@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140818185332.GC49576@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 18 Aug 2014 15:01:08 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
+        Gerhard Sittig <gsi@denx.de>, Rob Herring <robh@kernel.org>,
+        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] powerpc: Fix build failure for PPC_32
+Date: Mon, 18 Aug 2014 15:01:04 -0400
+Message-Id: <1408388465-26577-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Don Zickus <dzickus@redhat.com> wrote:
+Fix ppc 32 build failure as reported here:
 
-> > 2)
-> > 
-> > The softlockup and hardlockup detection control variables 
-> > should be in separate flags, inside and outside the kernel 
-> > - they (should) not relate to each other.
-> 
-> They did because years ago I thought we wanted to keep them 
-> as one entity instead of two.  I would have to re-work the 
-> code to do this (and add more knobs).
-> 
-> I presume you would want those changes done before taking 
-> this patchset?
+http://kisskb.ellerman.id.au/kisskb/buildresult/11663513/
 
-Yeah, fixing/cleaning up things would be nice before spreading 
-the pain via new features/control mechanisms.
+The error is that pci_32.o was not being built for PPC_32. Fix error by adding
+it in the Makefile. Tested using the ppc cross compiler.
 
-Thanks,
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ arch/powerpc/kernel/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	Ingo
+diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
+index 670c312..3206ba1 100644
+--- a/arch/powerpc/kernel/Makefile
++++ b/arch/powerpc/kernel/Makefile
+@@ -89,7 +89,7 @@ extra-y				+= vmlinux.lds
+ 
+ obj-$(CONFIG_RELOCATABLE_PPC32)	+= reloc_32.o
+ 
+-obj-$(CONFIG_PPC32)		+= entry_32.o setup_32.o
++obj-$(CONFIG_PPC32)		+= entry_32.o setup_32.o pci_32.o
+ obj-$(CONFIG_PPC64)		+= dma-iommu.o iommu.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
+ obj-$(CONFIG_MODULES)		+= ppc_ksyms.o
+-- 
+1.9.1
+
