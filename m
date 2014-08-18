@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681AbaHRKDp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 06:03:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42541 "EHLO
+	id S1752095AbaHRJdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:33:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42493 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182AbaHRJeG (ORCPT
+	with ESMTP id S1752063AbaHRJdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:06 -0400
+	Mon, 18 Aug 2014 05:33:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gavin Guo <gavin.guo@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 029/137] usb: Check if port status is equal to RxDetect
-Date: Mon, 18 Aug 2014 10:31:30 +0100
-Message-Id: <1408354398-10226-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 020/137] dm thin metadata: do not allow the data block size to change
+Date: Mon, 18 Aug 2014 10:31:21 +0100
+Message-Id: <1408354398-10226-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Guo <gavin.guo@canonical.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit bb86cf569bbd7ad4dce581a37c7fbd748057e9dc upstream.
+commit 9aec8629ec829fc9403788cd959e05dd87988bd1 upstream.
 
-When using USB 3.0 pen drive with the [AMD] FCH USB XHCI Controller
-[1022:7814], the second hotplugging will experience the USB 3.0 pen
-drive is recognized as high-speed device. After bisecting the kernel,
-I found the commit number 41e7e056cdc662f704fa9262e5c6e213b4ab45dd
-(USB: Allow USB 3.0 ports to be disabled.) causes the bug. After doing
-some experiments, the bug can be fixed by avoiding executing the function
-hub_usb3_port_disable(). Because the port status with [AMD] FCH USB
-XHCI Controlleris [1022:7814] is already in RxDetect
-(I tried printing out the port status before setting to Disabled state),
-it's reasonable to check the port status before really executing
-hub_usb3_port_disable().
+The block size for the thin-pool's data device must remained fixed for
+the life of the thin-pool.  Disallow any attempt to change the
+thin-pool's data block size.
 
-Fixes: 41e7e056cdc6 (USB: Allow USB 3.0 ports to be disabled.)
-Signed-off-by: Gavin Guo <gavin.guo@canonical.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+It should be noted that attempting to change the data block size via
+thin-pool table reload will be ignored as a side-effect of the thin-pool
+handover that the thin-pool target does during thin-pool table reload.
+
+Here is an example outcome of attempting to load a thin-pool table that
+reduced the thin-pool's data block size from 1024K to 512K.
+
+Before:
+kernel: device-mapper: thin: 253:4: growing the data device from 204800 to 409600 blocks
+
+After:
+kernel: device-mapper: thin metadata: changing the data block size (from 2048 to 1024) is not supported
+kernel: device-mapper: table: 253:4: thin-pool: Error creating metadata object
+kernel: device-mapper: ioctl: error adding target to table
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/core/hub.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ drivers/md/dm-thin-metadata.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 5e0925a01475..9361f2338be4 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -887,6 +887,25 @@ static int hub_usb3_port_disable(struct usb_hub *hub, int port1)
- 	if (!hub_is_superspeed(hub->hdev))
- 		return -EINVAL;
+diff --git a/drivers/md/dm-thin-metadata.c b/drivers/md/dm-thin-metadata.c
+index 07a6ea3a9820..b63095c73b5f 100644
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -613,6 +613,15 @@ static int __open_metadata(struct dm_pool_metadata *pmd)
  
-+	ret = hub_port_status(hub, port1, &portstatus, &portchange);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * USB controller Advanced Micro Devices, Inc. [AMD] FCH USB XHCI
-+	 * Controller [1022:7814] will have spurious result making the following
-+	 * usb 3.0 device hotplugging route to the 2.0 root hub and recognized
-+	 * as high-speed device if we set the usb 3.0 port link state to
-+	 * Disabled. Since it's already in USB_SS_PORT_LS_RX_DETECT state, we
-+	 * check the state here to avoid the bug.
-+	 */
-+	if ((portstatus & USB_PORT_STAT_LINK_STATE) ==
-+				USB_SS_PORT_LS_RX_DETECT) {
-+		dev_dbg(&hub->ports[port1 - 1]->dev,
-+			 "Not disabling port; link state is RxDetect\n");
-+		return ret;
+ 	disk_super = dm_block_data(sblock);
+ 
++	/* Verify the data block size hasn't changed */
++	if (le32_to_cpu(disk_super->data_block_size) != pmd->data_block_size) {
++		DMERR("changing the data block size (from %u to %llu) is not supported",
++		      le32_to_cpu(disk_super->data_block_size),
++		      (unsigned long long)pmd->data_block_size);
++		r = -EINVAL;
++		goto bad_unlock_sblock;
 +	}
 +
- 	ret = hub_set_port_link_state(hub, port1, USB_SS_PORT_LS_SS_DISABLED);
- 	if (ret)
- 		return ret;
+ 	r = __check_incompat_features(disk_super, pmd);
+ 	if (r < 0)
+ 		goto bad_unlock_sblock;
 -- 
 1.9.1
 
