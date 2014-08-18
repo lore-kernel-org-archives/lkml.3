@@ -1,113 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393AbaHRJ6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:58:50 -0400
-Received: from regular1.263xmail.com ([211.150.99.140]:55032 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754375AbaHRJ6r (ORCPT
+	id S1752391AbaHRJeX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 05:34:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42608 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346AbaHRJeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:58:47 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux@arm.linux.org.uk
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <ed124cd295a7ea8fa514a31ff4bcde66>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Kever Yang <kever.yang@rock-chips.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Mahesh Sivasubramanian <msivasub@codeaurora.org>,
-        Jonathan Austin <Jonathan.Austin@arm.com>, heiko@sntech.de,
-        addy.ke@rock-chips.com, xjq@rock-chips.com, cf@rock-chips.com,
-        hj@rock-chips.com, huangtao@rock-chips.com,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kever Yang <kever.yang@rock-chips.com>
-Subject: [PATCH] ARM: errata: Workaround for Cortex-A12 erratum 818325
-Date: Mon, 18 Aug 2014 17:58:09 +0800
-Message-Id: <1408355889-4176-1-git-send-email-kever.yang@rock-chips.com>
+	Mon, 18 Aug 2014 05:34:20 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Hugh Dickins <hughd@google.com>, Konstantin Khlebnikov <koct9i@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Lukas Czerner <lczerner@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 034/137] shmem: fix splicing from a hole while it's punched
+Date: Mon, 18 Aug 2014 10:31:35 +0100
+Message-Id: <1408354398-10226-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Tao <huangtao@rock-chips.com>
+3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
 
-On Cortex-A12 (r0p0..r0p1-00lac0-rc11), when a CPU executes a sequence of
-two conditional store instructions with opposite condition code and
-updating the same register, the system might enter a deadlock if the
-second conditional instruction is an UNPREDICTABLE STR or STM
-instruction. This workaround setting bit[12] of the Feature Register
-prevents the erratum. This bit disables an optimisation applied to a
-sequence of 2 instructions that use opposing condition codes.
+------------------
 
-Signed-off-by: Huang Tao <huangtao@rock-chips.com>
-Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+From: Hugh Dickins <hughd@google.com>
+
+commit b1a366500bd537b50c3aad26dc7df083ec03a448 upstream.
+
+shmem_fault() is the actual culprit in trinity's hole-punch starvation,
+and the most significant cause of such problems: since a page faulted is
+one that then appears page_mapped(), needing unmap_mapping_range() and
+i_mmap_mutex to be unmapped again.
+
+But it is not the only way in which a page can be brought into a hole in
+the radix_tree while that hole is being punched; and Vlastimil's testing
+implies that if enough other processors are busy filling in the hole,
+then shmem_undo_range() can be kept from completing indefinitely.
+
+shmem_file_splice_read() is the main other user of SGP_CACHE, which can
+instantiate shmem pagecache pages in the read-only case (without holding
+i_mutex, so perhaps concurrently with a hole-punch).  Probably it's
+silly not to use SGP_READ already (using the ZERO_PAGE for holes): which
+ought to be safe, but might bring surprises - not a change to be rushed.
+
+shmem_read_mapping_page_gfp() is an internal interface used by
+drivers/gpu/drm GEM (and next by uprobes): it should be okay.  And
+shmem_file_read_iter() uses the SGP_DIRTY variant of SGP_CACHE, when
+called internally by the kernel (perhaps for a stacking filesystem,
+which might rely on holes to be reserved): it's unclear whether it could
+be provoked to keep hole-punch busy or not.
+
+We could apply the same umbrella as now used in shmem_fault() to
+shmem_file_splice_read() and the others; but it looks ugly, and use over
+a range raises questions - should it actually be per page? can these get
+starved themselves?
+
+The origin of this part of the problem is my v3.1 commit d0823576bf4b
+("mm: pincer in truncate_inode_pages_range"), once it was duplicated
+into shmem.c.  It seemed like a nice idea at the time, to ensure
+(barring RCU lookup fuzziness) that there's an instant when the entire
+hole is empty; but the indefinitely repeated scans to ensure that make
+it vulnerable.
+
+Revert that "enhancement" to hole-punch from shmem_undo_range(), but
+retain the unproblematic rescanning when it's truncating; add a couple
+of comments there.
+
+Remove the "indices[0] >= end" test: that is now handled satisfactorily
+by the inner loop, and mem_cgroup_uncharge_start()/end() are too light
+to be worth avoiding here.
+
+But if we do not always loop indefinitely, we do need to handle the case
+of swap swizzled back to page before shmem_free_swap() gets it: add a
+retry for that case, as suggested by Konstantin Khlebnikov; and for the
+case of page swizzled back to swap, as suggested by Johannes Weiner.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Suggested-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.11: used hughd's backport to 3.10.50 ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
+ mm/shmem.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
 
- arch/arm/Kconfig      | 13 +++++++++++++
- arch/arm/mm/proc-v7.S | 15 ++++++++++++++-
- 2 files changed, 27 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 32cbbd5..4545835 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1245,6 +1245,19 @@ config ARM_ERRATA_773022
- 	  loop buffer may deliver incorrect instructions. This
- 	  workaround disables the loop buffer to avoid the erratum.
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 569542dd802d..caf8415c6015 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -534,22 +534,19 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 		return;
  
-+config ARM_ERRATA_818325
-+	bool "ARM errata: Execution of an UNPREDICTABLE STR or STM instruction might deadlock"
-+	depends on CPU_V7
-+	help
-+	  This option enables the workaround for the 818325 Cortex-A12
-+	  (r0p0..r0p1-00lac0-rc11) erratum. When a CPU executes a sequence of
-+	  two conditional store instructions with opposite condition code and
-+	  updating the same register, the system might enter a deadlock if the
-+	  second conditional instruction is an UNPREDICTABLE STR or STM
-+	  instruction. This workaround setting bit[12] of the Feature Register
-+	  prevents the erratum. This bit disables an optimisation applied to a
-+	  sequence of 2 instructions that use opposing condition codes.
-+
- endmenu
+ 	index = start;
+-	for ( ; ; ) {
++	while (index < end) {
+ 		cond_resched();
+ 		pvec.nr = shmem_find_get_pages_and_swap(mapping, index,
+ 				min(end - index, (pgoff_t)PAGEVEC_SIZE),
+ 							pvec.pages, indices);
+ 		if (!pvec.nr) {
+-			if (index == start || unfalloc)
++			/* If all gone or hole-punch or unfalloc, we're done */
++			if (index == start || end != -1)
+ 				break;
++			/* But if truncating, restart to make sure all gone */
+ 			index = start;
+ 			continue;
+ 		}
+-		if ((index == start || unfalloc) && indices[0] >= end) {
+-			shmem_deswap_pagevec(&pvec);
+-			pagevec_release(&pvec);
+-			break;
+-		}
+ 		mem_cgroup_uncharge_start();
+ 		for (i = 0; i < pagevec_count(&pvec); i++) {
+ 			struct page *page = pvec.pages[i];
+@@ -561,8 +558,12 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 			if (radix_tree_exceptional_entry(page)) {
+ 				if (unfalloc)
+ 					continue;
+-				nr_swaps_freed += !shmem_free_swap(mapping,
+-								index, page);
++				if (shmem_free_swap(mapping, index, page)) {
++					/* Swap was replaced by page: retry */
++					index--;
++					break;
++				}
++				nr_swaps_freed++;
+ 				continue;
+ 			}
  
- source "arch/arm/common/Kconfig"
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index b5d67db..5ffdf97 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -408,7 +408,20 @@ __v7_setup:
- 	mcrle	p15, 0, r10, c1, c0, 1		@ write aux control register
- #endif
- 
--4:	mov	r10, #0
-+	/* Cortex-A12 Errata */
-+4:	ldr	r10, =0x00000c0d		@ Cortex-A12 primary part number
-+	teq	r0, r10
-+	bne	5f
-+#ifdef CONFIG_ARM_ERRATA_818325
-+	teq	r6, #0x00			@ present in r0p0
-+	teqne	r6, #0x01			@ present in r0p1-00lac0-rc11
-+	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
-+	orreq	r10, r10, #1 << 12		@ set bit #12
-+	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
-+	isb
-+#endif
-+
-+5:	mov	r10, #0
- 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
+@@ -571,6 +572,11 @@ static void shmem_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
+ 				if (page->mapping == mapping) {
+ 					VM_BUG_ON(PageWriteback(page));
+ 					truncate_inode_page(mapping, page);
++				} else {
++					/* Page was replaced by swap: retry */
++					unlock_page(page);
++					index--;
++					break;
+ 				}
+ 			}
+ 			unlock_page(page);
 -- 
-1.8.3.2
-
+1.9.1
 
