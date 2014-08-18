@@ -1,196 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaHRDEO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 23:04:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53432 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613AbaHRDEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 23:04:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,883,1400050800"; 
-   d="scan'208,223";a="559829807"
-Message-ID: <53F16D28.5010500@linux.intel.com>
-Date: Mon, 18 Aug 2014 11:04:08 +0800
-From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751896AbaHRDH3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 23:07:29 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:35401 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613AbaHRDH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 17 Aug 2014 23:07:28 -0400
+Date: Sun, 17 Aug 2014 20:07:17 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: atull <atull@opensource.altera.com>, Jean Delvare <jdelvare@suse.de>,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: power supply gating with ltc2978
+Message-ID: <20140818030717.GA5131@roeck-us.net>
+References: <alpine.DEB.2.02.1408151623140.21645@atx-linux-37>
+ <20140816132050.GH28623@sirena.org.uk>
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
-        Aaron Lu <aaron.lu@intel.com>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jackey Shen <jackey.shen@amd.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process()
- on sdio thread
-References: <53E85967.5060503@linux.intel.com> <CAPDyKFqLE-09=3k_6stMXiY3+Ax3xoRBO3q__GHyqH4fd-XmsQ@mail.gmail.com>
-In-Reply-To: <CAPDyKFqLE-09=3k_6stMXiY3+Ax3xoRBO3q__GHyqH4fd-XmsQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140816132050.GH28623@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 21266249bbbaf9407c1e88cd5950e06ac88aeebf Mon Sep 17 00:00:00 2001
-From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
-Date: Mon, 18 Aug 2014 10:48:14 +0800
-Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
+On Sat, Aug 16, 2014 at 02:20:50PM +0100, Mark Brown wrote:
+> On Fri, Aug 15, 2014 at 04:34:49PM -0500, atull wrote:
+> 
+> > I am interested in adding functionality to be able to gate power supplies 
+> > going through a ltc2978.  I see that there is a hwmon driver already 
+> > existing (hwmon/pmbus/ltc2978.c).  I see some of the other hwmon drivers 
+> > have MFD's.  It looks like this ltc driver would need a MFD and a 
+> > regulator driver added.  However I don't see other pmbus hwmon drivers
+> > using MFD.
+> 
+> > So I am asking for recommendations and reservations on how to proceed here 
+> > before I get too far with this.
+> 
+> Without knowing anything at all about pmbus or this particular hardware
+> it's hard to comment but what you're saying here sounds sensible (though
+> I do see that apparently splitting the drivers may not actually be
+> sensible from Guenter's followup).
 
-781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
-bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
-the use of our own custom threaded IRQ handler, but left in an
-unconditional wake_up_process() on that handler at resume-time.
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
+I had originally thought about converting the pmbus drivers to mfd with client
+drivers, but I concluded that it would add a lot of complexity with little gain.
+It makes sense to separate a driver into mfd and a number of client drivers
+if a device has clear functional blocks for the different devices it supports.
+With PMBus, this is not the case. Separating a PMBus driver would be a purely
+artificial costruct, and there would be overlapping functionality. Separating
+just a single driver out of the group of PMBus drivers, as seems to be suggested
+above, makes even less sense as one simply can not separate the core PMBus
+driver code from its front-end drivers.
 
-In addition, the check for MMC_CAP_SDIO_IRQ capability is added
-before enable sdio IRQ.
+On the other side, adding regulator support into the PMBus driver code would
+make a lot of sense. It should also be quite straightforward.
 
-Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-Signed-off-by: Chris Ball <chris@printf.net>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
----
- drivers/mmc/core/sdio.c     |   12 ++++++++++--
- drivers/mmc/core/sdio_irq.c |    4 ++--
- 2 files changed, 12 insertions(+), 4 deletions(-)
+Or anyway that is my opinion. If someone wants to spend the time and separate
+the PMBus drivers into an MfD part and hwmon and regulator client drivers, I'll
+be happy to look at the resulting patch set.
 
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index e636d9e..3fc40a7 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -992,8 +992,16 @@ static int mmc_sdio_resume(struct mmc_host *host)
- 		}
- 	}
- 
--	if (!err && host->sdio_irqs)
--		wake_up_process(host->sdio_irq_thread);
-+	if (!err && host->sdio_irqs) {
-+		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
-+			wake_up_process(host->sdio_irq_thread);
-+		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
-+			mmc_host_clk_hold(host);
-+			host->ops->enable_sdio_irq(host, 1);
-+			mmc_host_clk_release(host);
-+		}
-+	}
-+
- 	mmc_release_host(host);
- 
- 	host->pm_flags &= ~MMC_PM_KEEP_POWER;
-diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
-index 5cc13c8..696eca4 100644
---- a/drivers/mmc/core/sdio_irq.c
-+++ b/drivers/mmc/core/sdio_irq.c
-@@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
- 				host->sdio_irqs--;
- 				return err;
- 			}
--		} else {
-+		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
- 			mmc_host_clk_hold(host);
- 			host->ops->enable_sdio_irq(host, 1);
- 			mmc_host_clk_release(host);
-@@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
- 		if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
- 			atomic_set(&host->sdio_irq_thread_abort, 1);
- 			kthread_stop(host->sdio_irq_thread);
--		} else {
-+		} else if (host->caps & MMC_CAP_SDIO_IRQ) {
- 			mmc_host_clk_hold(host);
- 			host->ops->enable_sdio_irq(host, 0);
- 			mmc_host_clk_release(host);
--- 1.7.1
-
-On 2014/8/12 18:23, Ulf Hansson wrote:
-> On 11 August 2014 07:49, Fu, Zhonghui <zhonghui.fu@linux.intel.com> wrote:
->> From 6cee984e1d76ba0a3320430f8cf4318ab65fcf06 Mon Sep 17 00:00:00 2001
->> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->> Date: Tue, 5 Aug 2014 12:44:38 +0800
->> Subject: [PATCH] mmc: core: sdio: Fix unconditional wake_up_process() on sdio thread
->>
->> 781e989cf59 ("mmc: sdhci: convert to new SDIO IRQ handling") and
->> bf3b5ec66bd ("mmc: sdio_irq: rework sdio irq handling") disabled
->> the use of our own custom threaded IRQ handler, but left in an
->> unconditional wake_up_process() on that handler at resume-time.
->> Link: https://bugzilla.kernel.org/show_bug.cgi?id=80151
->>
->> In addition, the check for MMC_CAP_SDIO_IRQ capability is added
->> before enable sdio IRQ.
->>
->> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
->> Signed-off-by: Chris Ball <chris@printf.net>
->> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
->> ---
->>  drivers/mmc/core/sdio.c     |   14 ++++++++++++--
->>  drivers/mmc/core/sdio_irq.c |    4 ++--
->>  2 files changed, 14 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
->> index e636d9e..e04a540 100644
->> --- a/drivers/mmc/core/sdio.c
->> +++ b/drivers/mmc/core/sdio.c
->> @@ -992,8 +992,18 @@ static int mmc_sdio_resume(struct mmc_host *host)
->>                 }
->>         }
->>
->> -       if (!err && host->sdio_irqs)
->> -               wake_up_process(host->sdio_irq_thread);
->> +       if (!err && host->sdio_irqs) {
->> +               if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->> +                       wake_up_process(host->sdio_irq_thread);
->> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->> +                       mmc_release_host(host);
-> Why mmc_release_host() and the corresponding mmc_claim_host() below?
-> Those shouldn't be needed I think.
-
-You are right. These two functions shouldn't be invoked here. I made a new patch as above.
-
-
-Thanks,
-Zhonghui
->
->
->> +                       mmc_host_clk_hold(host);
->> +                       host->ops->enable_sdio_irq(host, 1);
->> +                       mmc_host_clk_release(host);
->> +                       mmc_claim_host(host);
->> +               }
->> +       }
->> +
->>         mmc_release_host(host);
->>
->>         host->pm_flags &= ~MMC_PM_KEEP_POWER;
->> diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
->> index 5cc13c8..696eca4 100644
->> --- a/drivers/mmc/core/sdio_irq.c
->> +++ b/drivers/mmc/core/sdio_irq.c
->> @@ -208,7 +208,7 @@ static int sdio_card_irq_get(struct mmc_card *card)
->>                                 host->sdio_irqs--;
->>                                 return err;
->>                         }
->> -               } else {
->> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>                         mmc_host_clk_hold(host);
->>                         host->ops->enable_sdio_irq(host, 1);
->>                         mmc_host_clk_release(host);
->> @@ -229,7 +229,7 @@ static int sdio_card_irq_put(struct mmc_card *card)
->>                 if (!(host->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD)) {
->>                         atomic_set(&host->sdio_irq_thread_abort, 1);
->>                         kthread_stop(host->sdio_irq_thread);
->> -               } else {
->> +               } else if (host->caps & MMC_CAP_SDIO_IRQ) {
->>                         mmc_host_clk_hold(host);
->>                         host->ops->enable_sdio_irq(host, 0);
->>                         mmc_host_clk_release(host);
->> -- 1.7.1
->>
-> Thanks for working on this!
->
-> Kind regards
-> Uffe
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+Guenter
