@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaHROjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 10:39:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906AbaHROjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 10:39:49 -0400
-Message-ID: <53F2101C.4090707@redhat.com>
-Date: Mon, 18 Aug 2014 16:39:24 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751853AbaHROlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 10:41:15 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:58606 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaHROlO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 10:41:14 -0400
+Date: Mon, 18 Aug 2014 17:41:01 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: willy@linux.intel.com, linux-nvme@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] nvme: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+Message-ID: <20140818144101.GA13840@ada>
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>, Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Nadav Amit <namit@cs.technion.ac.il>, "gleb@kernel.org" <gleb@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: Increase the number of fixed MTRR regs to 10
-References: <1403101279-23759-1-git-send-email-namit@cs.technion.ac.il> <20140818021715.GA7019@kernel> <BA71F1A6-1DF2-4683-9207-2305D1155239@gmail.com> <20140818081115.GA26307@kernel> <A04378F6-A6B1-46B8-B306-A9A2115F54C7@gmail.com> <D020ADA9-A9D5-4F29-911A-4742E64E4DEC@gmail.com>
-In-Reply-To: <D020ADA9-A9D5-4F29-911A-4742E64E4DEC@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 18/08/2014 16:31, Nadav Amit ha scritto:
-> The cause for the blue-screen appears to be seabios, which leaves only 0x20 slots for “smp_mtrr”s.
-> Apparently, the increase in the variable range MTRR count caused it to exhaust the available slots.
-> As a result, some MSRs are not initialised by the BIOS (specifically, 3.5-4GB are not marked as UC), and cause Windows to panic.
-> 
-> Once we increase the size of the array smp_mtrr in seabios, Windows boots.
-> 
-> Paolo, you may wish to revert the patch. Please note that it was applied to some stable branches.
+The use of "rcu_assign_pointer()" is NULLing out the pointer.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Thanks.  I'll post a patch to SeaBIOS too, since this should happen on
-bare metal too.
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-Paolo
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ drivers/block/nvme-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/block/nvme-core.c b/drivers/block/nvme-core.c
+index 02351e2..cb25bdd 100644
+--- a/drivers/block/nvme-core.c
++++ b/drivers/block/nvme-core.c
+@@ -1209,7 +1209,7 @@ static void nvme_free_queues(struct nvme_dev *dev, int lowest)
+ 
+ 	for (i = dev->queue_count - 1; i >= lowest; i--) {
+ 		struct nvme_queue *nvmeq = raw_nvmeq(dev, i);
+-		rcu_assign_pointer(dev->queues[i], NULL);
++		RCU_INIT_POINTER(dev->queues[i], NULL);
+ 		call_rcu(&nvmeq->r_head, nvme_free_queue);
+ 		dev->queue_count--;
+ 	}
+-- 
+1.9.1
+
