@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaHRJeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 05:34:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42520 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048AbaHRJeA (ORCPT
+	id S1754792AbaHRKIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 06:08:51 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:35867 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaHRKIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 05:34:00 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 025/137] hwmon: (adt7470) Fix writes to temperature limit registers
-Date: Mon, 18 Aug 2014 10:31:26 +0100
-Message-Id: <1408354398-10226-26-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Mon, 18 Aug 2014 06:08:48 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Mon, 18 Aug 2014 12:07:20 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Wang YanQing <udknight@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        gregkh@linuxfoundation.org, jhovold@gmail.com, andi@lisas.de,
+        dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7] usb:serial:pl2303: add GPIOs interface on PL2303
+Message-ID: <20140818100720.GF31755@localhost>
+References: <20140809052828.GA28307@udknight>
+ <20140812144625.GB9799@localhost>
+ <20140817020536.GA2509@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140817020536.GA2509@localhost.localdomain>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.15 -stable review patch.  If anyone has any objections, please let me know.
+On Sun, Aug 17, 2014 at 10:05:36AM +0800, Wang YanQing wrote:
+> Hi Johan Hovold.
+> 
+> Another two questions.
+> 	
+> On Tue, Aug 12, 2014 at 04:46:25PM +0200, Johan Hovold wrote:
+> > 
+> > > +	int (*gpio_startup)(struct usb_serial *serial);
+> > > +	void (*gpio_release)(struct usb_serial *serial);
+> > 
+> > This isn't the right place for this abstraction. Most of the setup code
+> > would be common for any device type with GPIOs.
+> 
+> I assume you mean any pl2303 variant, not any device type, because
+> no device in drivers/gpio has common setup code except many of them
+> use struct gpio_chip.
 
-------------------
+Yes, pl2303 type/variant. Specifically, much of the setup code will be
+identical even if say the number of gpio differ (2 or 4) depending on
+type.
 
-From: Guenter Roeck <linux@roeck-us.net>
+> > Just keep the generic gpio_startup and release from v6, and verify that
+> > ngpio > 0. Any further abstraction should only be added once we know how
+> > the other types handles GPIOs.
+> 
+> Instead of assume code works for all situation firstly,  test and write
+> code for only one type device, and make code become generic when we find
+> it works for others' type.
+> 
+> I don't known which way is better.
 
-commit de12d6f4b10b21854441f5242dcb29ea96181e58 upstream.
+Add support for your device type (HXA). We should verify that it also
+works for the non-end-of-life HXD, or we might need to find a way to
+detect those two different types of HX and limit it to HXA for now.
 
-Temperature limit registers are signed. Limits therefore need
-to be clamped to (-128, 127) degrees C and not to (0, 255)
-degrees C.
+If and when someone reverse-engineers a device type with a different
+protocol for dealing with GPIOs, that's when you add further abstraction.
 
-Without this fix, writing a limit of 128 degrees C sets the
-actual limit to -128 degrees C.
+> Thanks very much for your patient review !!
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/hwmon/adt7470.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+You're welcome.
 
-diff --git a/drivers/hwmon/adt7470.c b/drivers/hwmon/adt7470.c
-index 6099f50b28aa..8013bb311486 100644
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -515,7 +515,7 @@ static ssize_t set_temp_min(struct device *dev,
- 		return -EINVAL;
- 
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->temp_min[attr->index] = temp;
-@@ -549,7 +549,7 @@ static ssize_t set_temp_max(struct device *dev,
- 		return -EINVAL;
- 
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->temp_max[attr->index] = temp;
-@@ -826,7 +826,7 @@ static ssize_t set_pwm_tmin(struct device *dev,
- 		return -EINVAL;
- 
- 	temp = DIV_ROUND_CLOSEST(temp, 1000);
--	temp = clamp_val(temp, 0, 255);
-+	temp = clamp_val(temp, -128, 127);
- 
- 	mutex_lock(&data->lock);
- 	data->pwm_tmin[attr->index] = temp;
--- 
-1.9.1
-
+Johan
