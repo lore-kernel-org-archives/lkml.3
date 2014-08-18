@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaHRLDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 07:03:00 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:30438 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaHRLC6 (ORCPT
+	id S1751910AbaHRLGQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 07:06:16 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:56507 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaHRLGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 07:02:58 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-6a-53f1dd60b2c6
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kamil Debski <k.debski@samsung.com>, Mark Brown <broonie@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] usb: phy: samsung: remove old USB 2.0 PHY driver
-Date: Mon, 18 Aug 2014 13:02:49 +0200
-Message-id: <3463371.y41zGdSnsX@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <34FCC3B2EE8F481198CEF3037F168FB3@sisodomain.com>
-References: <1408026327-31437-1-git-send-email-b.zolnierkie@samsung.com>
- <1408026327-31437-4-git-send-email-b.zolnierkie@samsung.com>
- <34FCC3B2EE8F481198CEF3037F168FB3@sisodomain.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=iso-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQd2Eux+DDSa1K1kcvF9vsen6dVaL
-	tisH2S1+vL7AZtG74CqbxYWnPWwWZ5vesFtc3jWHzWLG+X1MFouWtTI7cHncubaHzaNvyypG
-	j+M3tjN5fN4kF8ASxWWTkpqTWZZapG+XwJVxqvk2a0EHf8WCH0fZGhiX8nQxcnJICJhIXLw6
-	gxXCFpO4cG89G4gtJDCdUWL62mIIu4VJ4uAEPRCbTcBKYmL7KkYQW0RAW2L73ElAvVwczAIH
-	mCS6pi5iAkkIC3hKbF90F8xmEVCVmLzqItgCXgFNiYbmd2DNokA1O7avBFvGKWAn8XXDWkaQ
-	QUICuxkljnStZIZoEJT4MfkeC4jNLCAvsW//VFYIW0ei9/s35gmMArOQlM1CUjYLSdkCRuZV
-	jKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGB/0xqB+PKBotDjAIcjEo8vB6vPwQLsSaWFVfm
-	HmKU4GBWEuHNPv8xWIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgs
-	EwenVANjy1LLW9O4iprnOOs7eIVMtAs5GCf/UDDj45xH8oI3V937HlCk+H4ZwxPJ9a8cX3zR
-	ne5y4sX3hzcbPnDfPqLn6q2p+2SFgtzUr9XX1zpHPPy7ki/Gl+GlYuk7D9cbYg7/GiYvN+Be
-	e6SMRfXhL/YLWuW3Hqvqy+SGGv2PnpiuVLPrSOSkLVlnlFiKMxINtZiLihMBckrkU3gCAAA=
+	Mon, 18 Aug 2014 07:06:14 -0400
+Message-ID: <53F1DE1F.8050004@codethink.co.uk>
+Date: Mon, 18 Aug 2014 12:06:07 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: linux-fsdevel@vger.kernel.org
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-kernel@lists.codethink.co.uk, viro@ZenIV.linux.org.uk,
+        ebiederm@xmission.com, swhiteho@redhat.com, ian.molton@codethink.co.uk
+Subject: Re: [PATCH v2] seq_file: Document seq_open_private(), seq_release_private()
+References: <1408111802-19281-1-git-send-email-rob.jones@codethink.co.uk>
+In-Reply-To: <1408111802-19281-1-git-send-email-rob.jones@codethink.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Aargh! Scratch this patch. I got carried away with the error checking in
+the examples. The "if (IS_ERR(p))" check is redundant. I'll remove it
+and resubmit.
 
-Hi,
+On 15/08/14 15:10, Rob Jones wrote:
+> Despite the fact that these functions have been around for years, they are
+> little used (only 15 uses in 13 files at the preseht time) even though
+> many other files use work-arounds to achieve the same result.
+>
+> By documenting them, hopefully they will become more widely used.
+>
+> Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
+>
+> ---
+>   Documentation/filesystems/seq_file.txt |   36 ++++++++++++++++++++++++++++++++
+>   1 file changed, 36 insertions(+)
+>
+> diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
+> index a1e2e0d..c68308d8 100644
+> --- a/Documentation/filesystems/seq_file.txt
+> +++ b/Documentation/filesystems/seq_file.txt
+> @@ -226,6 +226,42 @@ be used for more than one file, you can store an arbitrary pointer in the
+>   private field of the seq_file structure; that value can then be retrieved
+>   by the iterator functions.
+>
+> +There is also a wrapper function to seq_open() called seq_open_private(). It
+> +kmallocs a zero filled block of memory and stores a pointer to it in the
+> +private field of the seq_file structure, returning 0 on success. The
+> +block size is specified in a third parameter to the function, e.g.:
+> +
+> +	static int ct_open(struct inode *inode, struct file *file)
+> +	{
+> +		return seq_open_private(file, &ct_seq_ops,
+> +					sizeof(struct mystruct));
+> +	}
+> +
+> +There is also a variant function, __seq_open_private(), which is functionally
+> +identical except that, if successful, it returns the pointer to the allocated
+> +memory block, allowing further initialisation e.g.:
+> +
+> +	static int ct_open(struct inode *inode, struct file *file)
+> +	{
+> +		struct mystruct *p =
+> +			__seq_open_private(file, &ct_seq_ops, sizeof(*p));
+> +
+> +		if (!p)
+> +			return -ENOMEM;
+> +
+> +		if (IS_ERR(p))
+> +			return p;
+> +
+> +		p->foo = bar; /* initialize my stuff */
+> +			...
+> +		p->baz = true;
+> +
+> +		return 0;
+> +	}
+> +
+> +A corresponding close function, seq_release_private() is available which
+> +frees the memory allocated in the corresponding open.
+> +
+>   The other operations of interest - read(), llseek(), and release() - are
+>   all implemented by the seq_file code itself. So a virtual file's
+>   file_operations structure will look like:
+>
 
-On Thursday, August 14, 2014 08:07:40 PM Vivek Gautam wrote:
-> Hi Bartlomiej Zolnierkiewicz,
-> 
-> 
-> On Thursday, August 14, 2014 7:55 PM, Bartlomiej Zolnierkiewicz 
-> <b.zolnierkie@samsung.com> wrote
-> 
-> Subject: [PATCH 3/5] usb: phy: samsung: remove old USB 2.0 PHY driver
-> 
-> I would say it co-incidence that both of us sent the patch-series for 
-> similar cleanup at the same time. ;)
-
-:)
-
-> There's one thing that I would want to comment here, since we don't have any 
-> new usb-phy driver for S3C64XX,
-> so we can't simply remove this entire driver.
-> I have posted my patch-series [1], which does cleanup while keeping the 
-> support for S3C64XX.
-
-AFAIK S3C64XX code from drivers/usb/phy/phy-samsung-usb2.c has
-never been used as this platform still uses its own code from
-arch/arm/mach-s3c64xx/setup-usb-phy.c (there are no users in
-the kernel tree of either s3c64xx-usb2phy platform device or
-"samsung,s3c64xx-usb2phy" DT compatible) .  Therefore I think
-that the entire drivers/usb/phy/phy-samsung-usb2.c driver
-should be removed (somebody with the hardware can as well add
-S3C64XX support to the new drivers/phy/phy-samsung-usb2.c
-driver and port the platform to use it).
-
-> Please let me know what you think of that series.
-> 
-> [1] [PATCH 0/7] usb-phy: samsung: Cleanup the unused drivers
->       https://lkml.org/lkml/2014/8/14/235
-
-Looks fine to me except the above mentioned issue with S3C64XX
-platform support.
-
-> > drivers/usb/phy/phy-samsung-usb2 driver got replaced by
-> > drivers/phy/phy-samsung-usb2 one and is no longer used.
-> >
-> > Cc: Kamil Debski <k.debski@samsung.com>
-> > Cc: Vivek Gautam <gautam.vivek@samsung.com>
-> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
+-- 
+Rob Jones
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
