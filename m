@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671AbaHRByp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 17 Aug 2014 21:54:45 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:26126 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaHRByn (ORCPT
+	id S1751797AbaHRB5V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 17 Aug 2014 21:57:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59544 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaHRB5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 17 Aug 2014 21:54:43 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+239uF0yDXSl+gQj6WrPTQT7Yu5vOezlg=
-X-DKIM: OpenDKIM Filter v2.0.1 titan CA8EC5C83C8
-Date: Sun, 17 Aug 2014 21:54:30 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call
- into scheduler
-Message-ID: <20140818015430.GN12769@titan.lakedaemon.net>
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org>
- <20140817173236.GG12769@titan.lakedaemon.net>
- <20140817185522.GX30401@n2100.arm.linux.org.uk>
- <20140817190434.GJ12769@titan.lakedaemon.net>
- <alpine.LFD.2.11.1408172000460.29347@knanqh.ubzr>
- <20140818012512.GL12769@titan.lakedaemon.net>
- <alpine.LFD.2.11.1408172131550.29347@knanqh.ubzr>
+	Sun, 17 Aug 2014 21:57:19 -0400
+Date: Sun, 17 Aug 2014 18:56:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Philippe Reynes <tremyfr@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        andrzej.p@samsung.com
+Subject: Re: [PATCH] usb: gadget: remove $(PWD) in ccflags-y
+Message-ID: <20140818015643.GA14301@kroah.com>
+References: <1408313287-4999-1-git-send-email-tremyfr@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1408172131550.29347@knanqh.ubzr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1408313287-4999-1-git-send-email-tremyfr@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 17, 2014 at 09:35:11PM -0400, Nicolas Pitre wrote:
-> On Sun, 17 Aug 2014, Jason Cooper wrote:
+On Mon, Aug 18, 2014 at 12:08:07AM +0200, Philippe Reynes wrote:
+> The variable $(PWD) is useless, and it may break the compilation.
+> For example, it breaks the kernel compilation when it's done with
+> buildroot :
 > 
-> > On Sun, Aug 17, 2014 at 08:04:45PM -0400, Nicolas Pitre wrote:
-> > > On Sun, 17 Aug 2014, Jason Cooper wrote:
-> > > > On Sun, Aug 17, 2014 at 07:55:23PM +0100, Russell King - ARM Linux wrote:
-> > > > > On Sun, Aug 17, 2014 at 01:32:36PM -0400, Jason Cooper wrote:
-> > > > > > Applied to irqchip/urgent with Nico's Ack.
-> > > > > 
-> > > > > Interesting, so I'm discussing this patch, and it gets applied anyway...
-> > > > > yes, that's great.
-> > > > 
-> > > > Quoting Nico:
-> > > > 
-> > > > "Of course it would be good to clarify things wrt Russell's remark
-> > > > independently from this patch."
-> > > > 
-> > > > I took 'independently' to mean "This patch is ok, *and* we need to
-> > > > address Russell's concerns in a follow-up patch."
-> > > > 
-> > > > Nico's Reviewed-by with that comment was sent August 13th.  The most
-> > > > recent activity on this thread was also August 13th.  After four days, I
-> > > > reasoned there were no objections to his comment.
-> > > 
-> > > Well... I mentioned this patch is a nice cleanup independently of the 
-> > > reason why it was created in the first place.
-> > 
-> > Ah, fair enough.
-> > 
-> > > Maybe that shouldn't be sorted as "urgent" in that case, especially
-> > > when the code having problem with the current state of things is
-> > > living out of mainline.
-> > 
-> > hmmm, yes.  I've been grappling with the semantics of '/urgent' vice
-> > '/fixes'.  With mvebu, /fixes is the branch for all changes needing to go
-> > into the current -rcX cycle.  For irqchip, Thomas suggested /urgent for
-> > the equivalent branch.  To me, they serve the same purpose.
-> > Unfortunately, I occasionally hear "Well, it's not _urgent_ ...".  I
-> > suppose I'll put up with it for one more cycle and then change it to
-> > /fixes. :)
-> > 
-> > wrt this patch, I need to drop it anyway.  I was a bit rusty (it's been
-> > a few weeks) and forgot to add the Cc -stable and Fixes: tags.  I do
-> > agree, though, it's certainly not urgent.
+>   /home/trem/Codes/armadeus/armadeus/buildroot/output/host/usr/bin/ccache
+> /home/trem/Codes/armadeus/armadeus/buildroot/output/host/usr/bin/arm-buildroot-linux-uclibcgnueabi-gcc
+> -Wp,-MD,drivers/usb/gadget/legacy/.hid.o.d  -nostdinc -isystem
+> /home/trem/Codes/armadeus/armadeus/buildroot/output/host/usr/lib/gcc/arm-buildroot-linux-uclibcgnueabi/4.7.3/include
+> -I./arch/arm/include -Iarch/arm/include/generated  -Iinclude
+> -I./arch/arm/include/uapi -Iarch/arm/include/generated/uapi
+> -I./include/uapi -Iinclude/generated/uapi -include
+> ./include/linux/kconfig.h -D__KERNEL__ -mlittle-endian -Wall -Wundef
+> -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common
+> -Werror-implicit-function-declaration -Wno-format-security
+> -fno-dwarf2-cfi-asm -mabi=aapcs-linux -mno-thumb-interwork -mfpu=vfp
+> -funwind-tables -marm -D__LINUX_ARM_ARCH__=5 -march=armv5te
+> -mtune=arm9tdmi -msoft-float -Uarm -fno-delete-null-pointer-checks -O2
+> --param=allow-store-data-races=0 -Wframe-larger-than=1024
+> -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer
+> -fno-var-tracking-assignments -g -Wdeclaration-after-statement
+> -Wno-pointer-sign -fno-strict-overflow -fconserve-stack
+> -Werror=implicit-int -Werror=strict-prototypes -DCC_HAVE_ASM_GOTO
+> -I/home/trem/Codes/armadeus/armadeus/buildroot/drivers/usb/gadget/
+> -I/home/trem/Codes/armadeus/armadeus/buildroot/drivers/usb/gadget/udc/
+> -I/home/trem/Codes/armadeus/armadeus/buildroot/drivers/usb/gadget/function/
+> -DMODULE  -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(hid)"
+> -D"KBUILD_MODNAME=KBUILD_STR(g_hid)" -c -o
+> drivers/usb/gadget/legacy/hid.o drivers/usb/gadget/legacy/hid.c
+> drivers/usb/gadget/epautoconf.c:23:26: erreur fatale: gadget_chips.h :
+> Aucun fichier ou dossier de ce type
 > 
-> Given the raised issue has to do with out-of-tree code, there is no need 
-> to CC stable in that case anyway.
+> This compilation line include :
+> ..../buildroot/driver/usb/gadget
+> but the real path is :
+> ..../buildroot/output/build/linux-3.17-rc1/driver/usb/gadget
+> 
+> Signed-off-by: Philippe Reynes <tremyfr@gmail.com>
+> ---
+>  drivers/usb/gadget/Makefile          |    2 +-
+>  drivers/usb/gadget/function/Makefile |    4 ++--
+>  drivers/usb/gadget/legacy/Makefile   |    6 +++---
+>  3 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/Makefile b/drivers/usb/gadget/Makefile
+> index a186afe..9add915 100644
+> --- a/drivers/usb/gadget/Makefile
+> +++ b/drivers/usb/gadget/Makefile
+> @@ -3,7 +3,7 @@
+>  #
+>  subdir-ccflags-$(CONFIG_USB_GADGET_DEBUG)	:= -DDEBUG
+>  subdir-ccflags-$(CONFIG_USB_GADGET_VERBOSE)	+= -DVERBOSE_DEBUG
+> -ccflags-y				+= -I$(PWD)/drivers/usb/gadget/udc
+> +ccflags-y				+= -Idrivers/usb/gadget/udc
 
-I could go either way here.  On the one hand, a fix is a fix is a fix.
-On the other, if it can't be triggered in mainline, we shouldn't accept
-it at all.
+Ick, why are these here at all, shouldn't you just use the proper
+relative paths in the .c files for the include files?  That way just
+building a .o file individually will work properly, otherwise, it will
+not.
 
-Stephen, is the out of tree code that triggered this bound for mainline?
+And getting rid of those other ccflags would be good to do as well, no
+need for them to be in a Makefile.
 
-thx,
+thanks,
 
-Jason.
+greg k-h
