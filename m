@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaHSOVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:21:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28680 "EHLO mga11.intel.com"
+	id S1753103AbaHSOXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:23:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53475 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752158AbaHSOVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:21:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
-   d="scan'208";a="578773117"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] pwm: lpss: Add ACPI and PCI IDs for Intel Braswell
-Date: Tue, 19 Aug 2014 17:18:29 +0300
-Message-Id: <1408457909-29611-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1750789AbaHSOXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:23:51 -0400
+Date: Tue, 19 Aug 2014 16:23:48 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Chris Mason <clm@fb.com>, Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        Abhay Sachan <lkp.abhay@gmail.com>
+Subject: Re: [btrfs] 8d875f95: xfstests.generic.226.fail
+Message-ID: <20140819142348.GU1553@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Fengguang Wu <fengguang.wu@intel.com>,
+	Chris Mason <clm@fb.com>, Dave Hansen <dave.hansen@intel.com>,
+	LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+	Abhay Sachan <lkp.abhay@gmail.com>
+References: <20140816075233.GA26842@localhost>
+ <20140819115820.GA21418@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140819115820.GA21418@localhost>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, Aug 19, 2014 at 07:58:20PM +0800, Fengguang Wu wrote:
+> We noticed an xfstests failure on commit
+> 
+> 8d875f95da43c6a8f18f77869f2ef26e9594fecc ("btrfs: disable strict file flushes for renames and truncates")
+> 
+> It's 100% reproducible in the 5 test runs.
 
-This is pretty much the same as Baytrail PWM. Only difference is that the
-input clock runs on different frequency.
+Same here, different mkfs configurations.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/pwm/pwm-lpss.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+generic/226 28s ...    [16:11:52] [16:12:55] - output mismatch (see /root/xfstests/results//generic/226.out.bad)
+    --- tests/generic/226.out   2013-05-29 17:16:03.000000000 +0200
+    +++ /root/xfstests/results//generic/226.out.bad     2014-08-19 16:12:55.000000000 +0200
+    @@ -1,6 +1,8 @@
+     QA output created by 226
+     --> mkfs 256m filesystem
+     --> 16 buffered 64m writes in a loop
+    -1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+    +1 2 3 4 pwrite64: No space left on device
+    +5 6 7 8 9 10 11 12 pwrite64: No space left on device
+    +13 14 15 16
 
-diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
-index 4df994f72d96..d04eee7aa967 100644
---- a/drivers/pwm/pwm-lpss.c
-+++ b/drivers/pwm/pwm-lpss.c
-@@ -48,6 +48,11 @@ static const struct pwm_lpss_boardinfo byt_info = {
- 	25000000
- };
- 
-+/* Braswell */
-+static const struct pwm_lpss_boardinfo bsw_info = {
-+	19200000
-+};
-+
- static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
- {
- 	return container_of(chip, struct pwm_lpss_chip, chip);
-@@ -189,6 +194,8 @@ static void pwm_lpss_remove_pci(struct pci_dev *pdev)
- static struct pci_device_id pwm_lpss_pci_ids[] = {
- 	{ PCI_VDEVICE(INTEL, 0x0f08), (unsigned long)&byt_info},
- 	{ PCI_VDEVICE(INTEL, 0x0f09), (unsigned long)&byt_info},
-+	{ PCI_VDEVICE(INTEL, 0x2288), (unsigned long)&bsw_info},
-+	{ PCI_VDEVICE(INTEL, 0x2289), (unsigned long)&bsw_info},
- 	{ },
- };
- MODULE_DEVICE_TABLE(pci, pwm_lpss_pci_ids);
-@@ -231,6 +238,7 @@ static int pwm_lpss_remove_platform(struct platform_device *pdev)
- 
- static const struct acpi_device_id pwm_lpss_acpi_match[] = {
- 	{ "80860F09", (unsigned long)&byt_info },
-+	{ "80862288", (unsigned long)&bsw_info },
- 	{ },
- };
- MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
--- 
-2.1.0
+enospc on a small filesystem (256M)
 
+# btrfs fi df /mnt/a2
+System, single: total=4.00MiB, used=4.00KiB
+Data+Metadata, single: total=252.00MiB, used=31.09MiB
+GlobalReserve, single: total=4.00MiB, used=0.00B
+
+$ df -h /mnt/a2
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/sda9             256M   16M  241M   6% /mnt/a2
