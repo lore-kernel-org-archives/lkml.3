@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaHSPru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:47:50 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:33310 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808AbaHSPrt (ORCPT
+	id S1753216AbaHSPsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:48:22 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:56040 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaHSPsU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:47:49 -0400
-Message-ID: <53F371A0.8060700@gmail.com>
-Date: Tue, 19 Aug 2014 23:47:44 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 19 Aug 2014 11:48:20 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Robert Baldyga <r.baldyga@samsung.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
+Subject: RE: [PATCH RESEND v3 00/12] usb: dwc2/gadget: fix series
+Thread-Topic: [PATCH RESEND v3 00/12] usb: dwc2/gadget: fix series
+Thread-Index: AQHPu4tEm7Xp0r8L0ECcLL9ohLDz0JvYEGYQ
+Date: Tue, 19 Aug 2014 15:46:58 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C8CA5@US01WEMBX2.internal.synopsys.com>
+References: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+In-Reply-To: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Michal Simek <monstr@monstr.eu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/microblaze/include/asm/entry.h: Include "linux/linkage.h"
- to avoid compiling issue
-References: <53E22E85.9010205@gmail.com>
-In-Reply-To: <53E22E85.9010205@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello maintainers:
+> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
+> Sent: Tuesday, August 19, 2014 1:54 AM
+> 
+> Hi Paul,
+> 
+> I'm resending this patchset rebased on linux-next. Now it should apply.
+> 
+> Thanks,
+> Robert Baldyga
+> 
+> Changelog:
+> v3: https://lkml.org/lkml/2014/8/4/617
+> - use endpoint index instead of FIFO index for EPFIFO
+> - extend patch description
+> 
+> v2: https://lkml.org/lkml/2014/7/16/199
+> - add patch usb: dwc2/gadget: avoid disabling ep0
+> - fix FIFO flushing when it's assigned to endpoint dynamically
+> - write to proper FIFO in s3c_hsotg_write_fifo() function
+> - use real FIFO size in kill_all_requests
+> - fix comment in s3c_hsotg_init_fifo() function
+> 
+> v1: https://lkml.org/lkml/2014/6/23/67
+> 
+> Andrzej Pietrasiewicz (1):
+>   usb: dwc2/gadget: Fix comment text
+> 
+> Kamil Debski (3):
+>   usb: dwc2/gadget: fix phy disable sequence
+>   usb: dwc2/gadget: fix phy initialization sequence
+>   usb: dwc2/gadget: move phy bus legth initialization
+> 
+> Marek Szyprowski (5):
+>   usb: dwc2/gadget: hide some not really needed debug messages
+>   usb: dwc2/gadget: ensure that all fifos have correct memory buffers
+>   usb: dwc2/gadget: break infinite loop in endpoint disable code
+>   usb: dwc2/gadget: do not call disconnect method in pullup
+>   usb: dwc2/gadget: delay enabling irq once hardware is configured
+>     properly
+> 
+> Robert Baldyga (3):
+>   usb: dwc2/gadget: assign TX FIFO dynamically
+>   usb: dwc2/gadget: disable clock when it's not needed
+>   usb: dwc2/gadget: avoid disabling ep0
+> 
+>  drivers/usb/dwc2/core.h   |   3 +
+>  drivers/usb/dwc2/gadget.c | 184 +++++++++++++++++++++++++++-------------------
+>  2 files changed, 111 insertions(+), 76 deletions(-)
 
-Please help check the related 2 patches when you have time.
+Thanks Robert.
 
-Thanks.
+For the entire series,
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-On 08/06/2014 09:32 PM, Chen Gang wrote:
-> "entry.h" needs 'asmlinkage', and "asm/linkage.h" does not provide it.
-> So need include "linux/linkage.h" to use generic one instead of.
-> 
-> The related error (with allmodconfig under microblaze):
-> 
->     CC [M]  drivers/net/ethernet/emulex/benet/be_main.o
->   In file included from ./arch/microblaze/include/asm/processor.h:17:0,
->                    from include/linux/prefetch.h:14,
->                    from drivers/net/ethernet/emulex/benet/be_main.c:18:
->   ./arch/microblaze/include/asm/entry.h:33:19: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'void'
->    extern asmlinkage void do_notify_resume(struct pt_regs *regs, int in_syscall);
->                      ^
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  arch/microblaze/include/asm/entry.h | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/microblaze/include/asm/entry.h b/arch/microblaze/include/asm/entry.h
-> index b4a4cb1..596e485 100644
-> --- a/arch/microblaze/include/asm/entry.h
-> +++ b/arch/microblaze/include/asm/entry.h
-> @@ -15,6 +15,7 @@
->  
->  #include <asm/percpu.h>
->  #include <asm/ptrace.h>
-> +#include <linux/linkage.h>
->  
->  /*
->   * These are per-cpu variables required in entry.S, among other
-> 
-
+Greg, can you please apply this to your usb-next tree? Thanks.
 
 -- 
-Chen Gang
+Paul
 
-Open share and attitude like air water and life which God blessed
