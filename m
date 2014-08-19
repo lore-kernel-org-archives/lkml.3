@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189AbaHSNDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:03:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51125 "EHLO
+	id S1753363AbaHSNFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:05:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51131 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894AbaHSNC5 (ORCPT
+	with ESMTP id S1752948AbaHSNC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:02:57 -0400
+	Tue, 19 Aug 2014 09:02:58 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
@@ -17,10 +17,12 @@ Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 0/5] Add of-graph helpers to loop over endpoints and find ports by id
-Date: Tue, 19 Aug 2014 15:02:38 +0200
-Message-Id: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH 7/8] imx-drm: use for_each_endpoint_of_node macro in imx_drm_encoder_get_mux_id
+Date: Tue, 19 Aug 2014 15:02:45 +0200
+Message-Id: <1408453366-1366-8-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.1.0.rc1
+In-Reply-To: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
+References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
 X-SA-Exim-Connect-IP: 10.1.0.7
 X-SA-Exim-Mail-From: p.zabel@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -29,43 +31,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Using the for_each_... macro should make the code bit shorter and
+easier to read. This patch also properly decrements the endpoint node
+reference count before returning out of the loop.
 
-this series converts all existing users of of_graph_get_next_endpoint that pass
-a non-NULL prev argument to the function and decrement its refcount themselves
-to stop doing that. The of_node_put is moved into of_graph_get_next_endpoint
-instead.
-This allows to add a for_each_endpoint_of_node helper macro to loop over all
-endpoints in a device tree node.
-The third of patch adds a of_graph_get_port_by_id function to retrieve a port
-by its known port id from the device tree.
-Finally, the last three patches convert functions in drm_of.c and imx-drm-core.c
-to use the for_each_endpoint_of_node macro instead of of_graph_get_next_endpoint.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/staging/imx-drm/imx-drm-core.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-regards
-Philipp
-
-Philipp Zabel (8):
-  [media] soc_camera: Do not decrement endpoint node refcount in the
-    loop
-  imx-drm: Do not decrement endpoint node refcount in the loop
-  of: Decrement refcount of previous endpoint in
-    of_graph_get_next_endpoint
-  of: Add for_each_endpoint_of_node helper macro
-  of: Add of_graph_get_port_by_id function
-  drm: use for_each_endpoint_of_node macro in drm_of_find_possible_crtcs
-  imx-drm: use for_each_endpoint_of_node macro in
-    imx_drm_encoder_get_mux_id
-  imx-drm: use for_each_endpoint_of_node macro in
-    imx_drm_encoder_parse_of
-
- drivers/gpu/drm/drm_of.c                       |  8 ++----
- drivers/media/platform/soc_camera/soc_camera.c |  2 +-
- drivers/of/base.c                              | 39 ++++++++++++++++++++------
- drivers/staging/imx-drm/imx-drm-core.c         | 34 +++++++---------------
- include/linux/of_graph.h                       | 11 ++++++++
- 5 files changed, 55 insertions(+), 39 deletions(-)
-
+diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+index 12303b3..9b5222c 100644
+--- a/drivers/staging/imx-drm/imx-drm-core.c
++++ b/drivers/staging/imx-drm/imx-drm-core.c
+@@ -493,18 +493,15 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
+ 	if (!node || !imx_crtc)
+ 		return -EINVAL;
+ 
+-	do {
+-		ep = of_graph_get_next_endpoint(node, ep);
+-		if (!ep)
+-			break;
+-
++	for_each_endpoint_of_node(node, ep) {
+ 		port = of_graph_get_remote_port(ep);
+ 		of_node_put(port);
+ 		if (port == imx_crtc->port) {
+ 			ret = of_graph_parse_endpoint(ep, &endpoint);
++			of_node_put(ep);
+ 			return ret ? ret : endpoint.port;
+ 		}
+-	} while (ep);
++	}
+ 
+ 	return -EINVAL;
+ }
 -- 
 2.1.0.rc1
 
