@@ -1,199 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaHSJAQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:00:16 -0400
-Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:46874
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752293AbaHSJAK convert rfc822-to-8bit (ORCPT
+	id S1751653AbaHSJAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:00:37 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15790 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaHSJAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:00:10 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "shengjiu.wang@freescale.com" <shengjiu.wang@freescale.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "nicoleotsuka@gmail.com" <nicoleotsuka@gmail.com>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "xobs@kosagi.com" <xobs@kosagi.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "timur@tabi.org" <timur@tabi.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
- of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-Thread-Topic: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove
- dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-Thread-Index: AQHPur/l6X7Prx80DU+vzEIed2D12pvWlCwAgAD4M4CAAAeFgIAAA6uAgAAFjmA=
-Date: Tue, 19 Aug 2014 09:00:06 +0000
-Message-ID: <3a0c98ca698e4d38b3e92f339049b883@BN1PR0301MB0609.namprd03.prod.outlook.com>
-References: <cover.1408350626.git.shengjiu.wang@freescale.com>
- <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
- <53F22F5E.2090601@metafoo.de> <20140819074103.GA5806@audiosh1>
- <d7b06608abcc4f098789f63cb9f36eef@BN1PR0301MB0609.namprd03.prod.outlook.com>
- <20140819082108.GB5806@audiosh1>
-In-Reply-To: <20140819082108.GB5806@audiosh1>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0308EE423E
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019006)(6009001)(377454003)(51704005)(24454002)(13464003)(189002)(199003)(479174003)(164054003)(83322001)(46102001)(15975445006)(19580395003)(93886004)(20776003)(77096002)(81542001)(79102001)(2656002)(87936001)(74316001)(66066001)(31966008)(80022001)(85306004)(21056001)(85852003)(83072002)(92566001)(64706001)(74502001)(76176999)(86362001)(81342001)(76482001)(99396002)(15202345003)(76576001)(77982001)(107046002)(33646002)(106356001)(110136001)(105586002)(101416001)(19580405001)(74662001)(50986999)(54356999)(99286002)(4396001)(106116001)(108616004)(95666004)(241875001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB251;H:BN1PR0301MB0609.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Tue, 19 Aug 2014 05:00:32 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-ad-53f3122e6ca0
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: Paul.Zimmerman@synopsys.com
+Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH RESEND v3 10/12] usb: dwc2/gadget: assign TX FIFO dynamically
+Date: Tue, 19 Aug 2014 10:54:16 +0200
+Message-id: <1408438458-3317-11-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+References: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jQV19oc/BBvuuMVnMetnOYnHwfr1F
+	8+L1bBaXd81hs1i0rJXZYu2Ru+wWjx5uZbV4cHgnuwOHx/65a9g9+rasYvTYsv8zo8fxG9uZ
+	PD5vkgtgjeKySUnNySxLLdK3S+DKuPVyC1vBeeOKf4f+MDYwnlfvYuTkkBAwkdjQ1MIGYYtJ
+	XLi3Hsjm4hASmM4o8XnPGWYIp51J4tnPK2BVbAI6Elu+T2AEsUUE5CWub7zJAlLELHCIUeLV
+	nWNMIAlhAV+JZ4fXgDWwCKhKHP79ByzOK+Aq8XHHFGaIdXISJ49NZgWxOYHib/fNYgexhQRc
+	JDa3nmGbwMi7gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwgD2T2sG4ssHiEKMAB6MS
+	D6/Cl4/BQqyJZcWVuUDXcDArifA6vvgULMSbklhZlVqUH19UmpNafIhRmoNFSZz3QKt1oJBA
+	emJJanZqakFqEUyWiYNTqoFRs1D18xUbradvo5w8LLd4nmu+O0Xt0oNimxNv+xPZGC/cTAjq
+	3Pj0Sc4DPpnOmxfnLPgvunX5siTpBac/lm4Ly/y+XlB0isPaZzqz9fm13ul579Bfs6t2f/Cb
+	/Srtz8VPbLv59N4TWfMl3HHPp5n/+60cePropfe9fqyPnZ05bm1wtQzwXSEuocRSnJFoqMVc
+	VJwIABKSA3MsAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How about the following :
+Because we have not enough memory to have each TX FIFO of size at least
+3072 bytes (the maximum single packet size with 3 transactions per
+microframe), we create four FIFOs of lenght 1024, and four of length
+3072 bytes, and assing them to endpoints dynamically according to
+maxpacket size value of given endpoint.
 
+Up to now there were initialized 16 TX FIFOs, but we use only 8 IN
+endpoints, so we can split available memory for 8 FIFOs to have more
+memory for each one.
 
-diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
-index 5ae777a..d42f18c 100644
---- a/sound/soc/fsl/Kconfig
-+++ b/sound/soc/fsl/Kconfig
-@@ -15,7 +15,7 @@ config SND_SOC_FSL_ASRC
- config SND_SOC_FSL_SAI
-        tristate "Synchronous Audio Interface (SAI) module support"
-        select REGMAP_MMIO
--       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
-+       select SND_SOC_IMX_PCM_DMA
-        select SND_SOC_GENERIC_DMAENGINE_PCM
-        help
-          Say Y if you want to add Synchronous Audio Interface (SAI)
-@@ -25,7 +25,7 @@ config SND_SOC_FSL_SAI
+It needed to do some small modifications in few places in code, because
+there was assumption that TX FIFO numbers assigned to endpoints are the
+same as the endpoint numbers, which is not true since we have dynamic
+FIFO assigning.
 
- config SND_SOC_FSL_SSI
-        tristate "Synchronous Serial Interface module support"
--       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
-+       select SND_SOC_IMX_PCM_DMA
-        select SND_SOC_IMX_PCM_FIQ if SND_IMX_SOC != n && (MXC_TZIC || MXC_AVIC)
-        select REGMAP_MMIO
-        help
-@@ -37,7 +37,7 @@ config SND_SOC_FSL_SSI
- config SND_SOC_FSL_SPDIF
-        tristate "Sony/Philips Digital Interface module support"
-        select REGMAP_MMIO
--       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
-+       select SND_SOC_IMX_PCM_DMA
-        select SND_SOC_IMX_PCM_FIQ if SND_IMX_SOC != n && (MXC_TZIC || MXC_AVIC)
-        help
-          Say Y if you want to add Sony/Philips Digital Interface (SPDIF)
-@@ -48,7 +48,7 @@ config SND_SOC_FSL_SPDIF
- config SND_SOC_FSL_ESAI
-        tristate "Enhanced Serial Audio Interface (ESAI) module support"
-        select REGMAP_MMIO
--       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
-+       select SND_SOC_IMX_PCM_DMA
-        help
-          Say Y if you want to add Enhanced Synchronous Audio Interface
-          (ESAI) support for the Freescale CPUs.
-@@ -76,6 +76,7 @@ config SND_SOC_FSL_ASOC_CARD
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/usb/dwc2/core.h   |  2 ++
+ drivers/usb/dwc2/gadget.c | 80 +++++++++++++++++++++++++++++------------------
+ 2 files changed, 52 insertions(+), 30 deletions(-)
 
- config SND_SOC_IMX_PCM_DMA
-        tristate
-+       depends on SND_IMX_SOC
-        select SND_SOC_GENERIC_DMAENGINE_PCM
+diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
+index 067390e..3b4bd4c 100644
+--- a/drivers/usb/dwc2/core.h
++++ b/drivers/usb/dwc2/core.h
+@@ -139,6 +139,7 @@ struct s3c_hsotg_ep {
+ 	unsigned int            last_load;
+ 	unsigned int            fifo_load;
+ 	unsigned short          fifo_size;
++	unsigned short		fifo_index;
+ 
+ 	unsigned char           dir_in;
+ 	unsigned char           index;
+@@ -197,6 +198,7 @@ struct s3c_hsotg {
+ 	int			fifo_mem;
+ 	unsigned int            dedicated_fifos:1;
+ 	unsigned char           num_of_eps;
++	u32			fifo_map;
+ 
+ 	struct dentry           *debug_root;
+ 	struct dentry           *debug_file;
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 619fbff..b914365 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -182,14 +182,29 @@ static void s3c_hsotg_init_fifo(struct s3c_hsotg *hsotg)
+ 
+ 	/* start at the end of the GNPTXFSIZ, rounded up */
+ 	addr = 2048 + 1024;
+-	size = 768;
+ 
+ 	/*
+-	 * currently we allocate TX FIFOs for all possible endpoints,
+-	 * and assume that they are all the same size.
++	 * Because we have not enough memory to have each TX FIFO of size at
++	 * least 3072 bytes (the maximum single packet size), we create four
++	 * FIFOs of lenght 1024, and four of length 3072 bytes, and assing
++	 * them to endpoints dynamically according to maxpacket size value of
++	 * given endpoint.
+ 	 */
+ 
+-	for (ep = 1; ep <= 15; ep++) {
++	/* 256*4=1024 bytes FIFO length */
++	size = 256;
++	for (ep = 1; ep <= 4; ep++) {
++		val = addr;
++		val |= size << FIFOSIZE_DEPTH_SHIFT;
++		WARN_ONCE(addr + size > hsotg->fifo_mem,
++			  "insufficient fifo memory");
++		addr += size;
++
++		writel(val, hsotg->regs + DPTXFSIZN(ep));
++	}
++	/* 768*4=3072 bytes FIFO length */
++	size = 768;
++	for (ep = 5; ep <= 8; ep++) {
+ 		val = addr;
+ 		val |= size << FIFOSIZE_DEPTH_SHIFT;
+ 		WARN_ONCE(addr + size > hsotg->fifo_mem,
+@@ -1834,7 +1849,7 @@ static void s3c_hsotg_epint(struct s3c_hsotg *hsotg, unsigned int idx,
+ 		if (dir_in) {
+ 			int epctl = readl(hsotg->regs + epctl_reg);
+ 
+-			s3c_hsotg_txfifo_flush(hsotg, idx);
++			s3c_hsotg_txfifo_flush(hsotg, hs_ep->fifo_index);
+ 
+ 			if ((epctl & DXEPCTL_STALL) &&
+ 				(epctl & DXEPCTL_EPTYPE_BULK)) {
+@@ -1983,6 +1998,7 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
+ 			      int result, bool force)
+ {
+ 	struct s3c_hsotg_req *req, *treq;
++	unsigned size;
+ 
+ 	list_for_each_entry_safe(req, treq, &ep->queue, queue) {
+ 		/*
+@@ -1996,9 +2012,11 @@ static void kill_all_requests(struct s3c_hsotg *hsotg,
+ 		s3c_hsotg_complete_request(hsotg, ep, req,
+ 					   result);
+ 	}
+-	if (hsotg->dedicated_fifos)
+-		if ((readl(hsotg->regs + DTXFSTS(ep->index)) & 0xffff) * 4 < 3072)
+-			s3c_hsotg_txfifo_flush(hsotg, ep->index);
++	if (!hsotg->dedicated_fifos)
++		return;
++	size = (readl(hsotg->regs + DTXFSTS(ep->index)) & 0xffff) * 4;
++	if (size < ep->fifo_size)
++		s3c_hsotg_txfifo_flush(hsotg, ep->fifo_index);
+ }
+ 
+ /**
+@@ -2439,6 +2457,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 	u32 epctrl;
+ 	u32 mps;
+ 	int dir_in;
++	int i, val, size;
+ 	int ret = 0;
+ 
+ 	dev_dbg(hsotg->dev,
+@@ -2511,17 +2530,8 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 		break;
+ 
+ 	case USB_ENDPOINT_XFER_INT:
+-		if (dir_in) {
+-			/*
+-			 * Allocate our TxFNum by simply using the index
+-			 * of the endpoint for the moment. We could do
+-			 * something better if the host indicates how
+-			 * many FIFOs we are expecting to use.
+-			 */
+-
++		if (dir_in)
+ 			hs_ep->periodic = 1;
+-			epctrl |= DXEPCTL_TXFNUM(index);
+-		}
+ 
+ 		epctrl |= DXEPCTL_EPTYPE_INTERRUPT;
+ 		break;
+@@ -2535,8 +2545,25 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 	 * if the hardware has dedicated fifos, we must give each IN EP
+ 	 * a unique tx-fifo even if it is non-periodic.
+ 	 */
+-	if (dir_in && hsotg->dedicated_fifos)
+-		epctrl |= DXEPCTL_TXFNUM(index);
++	if (dir_in && hsotg->dedicated_fifos) {
++		size = hs_ep->ep.maxpacket*hs_ep->mc;
++		for (i = 1; i <= 8; ++i) {
++			if (hsotg->fifo_map & (1<<i))
++				continue;
++			val = readl(hsotg->regs + DPTXFSIZN(i));
++			val = (val >> FIFOSIZE_DEPTH_SHIFT)*4;
++			if (val < size)
++				continue;
++			hsotg->fifo_map |= 1<<i;
++
++			epctrl |= DXEPCTL_TXFNUM(i);
++			hs_ep->fifo_index = i;
++			hs_ep->fifo_size = val;
++			break;
++		}
++		if (i == 8)
++			return -ENOMEM;
++	}
+ 
+ 	/* for non control endpoints, set PID to D0 */
+ 	if (index)
+@@ -2583,6 +2610,9 @@ static int s3c_hsotg_ep_disable(struct usb_ep *ep)
+ 	/* terminate all requests with shutdown */
+ 	kill_all_requests(hsotg, hs_ep, -ESHUTDOWN, false);
+ 
++	hsotg->fifo_map &= ~(1<<hs_ep->fifo_index);
++	hs_ep->fifo_index = 0;
++	hs_ep->fifo_size = 0;
+ 
+ 	ctrl = readl(hsotg->regs + epctrl_reg);
+ 	ctrl &= ~DXEPCTL_EPENA;
+@@ -2974,7 +3004,6 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsotg,
+ 				       struct s3c_hsotg_ep *hs_ep,
+ 				       int epnum)
+ {
+-	u32 ptxfifo;
+ 	char *dir;
+ 
+ 	if (epnum == 0)
+@@ -3003,15 +3032,6 @@ static void s3c_hsotg_initep(struct s3c_hsotg *hsotg,
+ 	hs_ep->ep.ops = &s3c_hsotg_ep_ops;
+ 
+ 	/*
+-	 * Read the FIFO size for the Periodic TX FIFO, even if we're
+-	 * an OUT endpoint, we may as well do this if in future the
+-	 * code is changed to make each endpoint's direction changeable.
+-	 */
+-
+-	ptxfifo = readl(hsotg->regs + DPTXFSIZN(epnum));
+-	hs_ep->fifo_size = FIFOSIZE_DEPTH_GET(ptxfifo) * 4;
+-
+-	/*
+ 	 * if we're using dma, we need to set the next-endpoint pointer
+ 	 * to be something valid.
+ 	 */
+-- 
+1.9.1
 
- config SND_SOC_IMX_AUDMUX
-
-Thanks,
-
-
-BRs
-Xiubo
-
-
-
-> -----Original Message-----
-> From: Shengjiu Wang [mailto:shengjiu.wang@freescale.com]
-> Sent: Tuesday, August 19, 2014 4:21 PM
-> To: Xiubo Li-B47053
-> Cc: Lars-Peter Clausen; lgirdwood@gmail.com; broonie@kernel.org;
-> perex@perex.cz; tiwai@suse.de; nicoleotsuka@gmail.com; shc_work@mail.ru;
-> Estevam Fabio-R49496; xobs@kosagi.com; arnd@arndb.de; sfr@canb.auug.org.au;
-> timur@tabi.org; alsa-devel@alsa-project.org; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
-> of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-> 
-> On Tue, Aug 19, 2014 at 04:13:15PM +0800, Xiubo Li-B47053 wrote:
-> > > Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove
-> dependence
-> > > of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-> > >
-> > > On Mon, Aug 18, 2014 at 06:52:46PM +0200, Lars-Peter Clausen wrote:
-> > > > On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
-> > > > >Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the
-> > > following
-> > > > >error:
-> > > > >
-> > > > >    sound/built-in.o: In function `fsl_sai_probe':
-> > > > >>>fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
-> > > > >    sound/built-in.o: In function `fsl_esai_probe':
-> > > > >>>fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
-> > > > >
-> > > > >Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init'
-> which is
-> > > > >defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it
-> > > depends
-> > > > >on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
-> > > > >selected.
-> > > > >So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
-> > > > >
-> > > > >Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> > > > >Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
-> > > >
-> > > > Those if conditions where just added[1] by Arnd to avoid other build
-> > > > failures. So just removing them again makes little sense.
-> > > >
-> > > > As far as I can see imx_pcm_dma_init() should be stubbed out when
-> > > > SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
-> > > >
-> > > > [1]
-> > >
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40
-> > > 260f79dc0436604452bccd449bffd25ebafb
-> > > >
-> > > Lars-Peter Clausen & Arnd
-> > >
-> > > The purpose of Arnd's patch is same with me, which is to resolve the build
-> > > error when SND_SOC_IMX_PCM_DMA=m & SND_SOC_FSL_SSI/SAI/ESAI/SPDIF=y, the
-> > > error is "undefined reference to `imx_pcm_dma_init'".
-> > > But Arnd's patch didn't involve this situation that SND_IMX_SOC=n &
-> > > SND_SOC_IMX_PCM_DMA=m.
-> > >
-> > > Currently I think out a solution for this issue is to change
-> > >
-> > > select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
-> > >
-> > > to
-> > >
-> > > depends on SND_SOC_IMX_PCM_DMA != m
-> > >
-> > > How do you think about this?
-> > >
-> >
-> > What will happen if to build both SAI/ESAI and IMX_PCM_DMA as modules at the
-> same
-> > time ?
-> >
-> > Thanks,
-> >
-> > BRs
-> > Xiubo
-> 
-> I didn't find error/warning when SAI/ESAI and IMX_PCM_DMA are as modules. The
-> build is successful.
-> 
-> >
-> >
-> > > best regards
-> > > Wang shengjiu
