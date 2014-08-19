@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaHSLOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:14:06 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:24706 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbaHSLOB (ORCPT
+	id S1752741AbaHSLOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:14:14 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:41820 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598AbaHSLOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:14:01 -0400
-X-AuditID: cbfee691-b7f306d000003d81-8c-53f331789526
-Date: Tue, 19 Aug 2014 20:14:00 +0900
+	Tue, 19 Aug 2014 07:14:09 -0400
+X-AuditID: cbfee691-b7f306d000003d81-d4-53f3317f7f3a
+Date: Tue, 19 Aug 2014 20:14:07 +0900
 From: Inha Song <ideal.song@samsung.com>
 To: broonie@kernel.org
 Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
@@ -18,40 +18,40 @@ Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
         galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
         mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
         cw00.choi@samsung.com
-Subject: [alsa-devel] [PATCH v4 1/2] mfd: arizona: Add support for INn_Mode
- register control
-Message-id: <20140819201400.4adecd96@songinha-Samsung-DeskTop-System>
+Subject: [alsa-devel] [PATCH v4 2/2] mfd: arizona: Update DT binding to support
+ INn_MODE init_data
+Message-id: <20140819201407.3447715e@songinha-Samsung-DeskTop-System>
 X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsWyRsSkQLfC8HOwwfxPnBZXLh5ispj68Amb
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsWyRsSkRLfe8HOwwcMpchZXLh5ispj68Amb
 	xb8pN9gtrn95zmox/8g5Vov+NwtZLc69Wslocf/rUUaLb1c6mCwu75rDZrH0+kUmi+Vv/7NZ
 	TJi+lsWide8RdovT3awO/B4bPjexeayZt4bR43JfL5PHzll32T1WLv/C5rFpVSebx51re9g8
-	5p0M9Hg58TebR9+WVYwenzfJBXBHcdmkpOZklqUW6dslcGV8PHKRseA+d8Ws93PYGxhvcnYx
-	cnJICJhIPP9ynBXCFpO4cG89WxcjF4eQwFJGiavfT7PCFO2av44JIrGIUeLNyWfMEE4/k8SP
-	h+eYQapYBFQlLj88BWazCWhIfP+8GcwWARp7e04nWAOzwE8mieYVT8ASwgJxEltenGYEsXkF
-	XCX+vJzEBLHORmL1znXMEHFBiR+T77GA2MwCWhKbtzWxQtjyEpvXvAUbKiEwlUOivfshK8QV
-	AhLfJh8CauAASshKbDrADDFTUuLgihssExhFZiEZOwvJ2FlIxi5gZF7FKJpakFxQnJReZKpX
-	nJhbXJqXrpecn7uJERjTp/89m7iD8f4B60OMyUArJzJLiSbnA1NCXkm8obGZkYWpiamxkbml
-	GWnCSuK86Y+SgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwGn3dbrq8tufyBPcbzAsqeX2z
-	wibFVavPmjfLb6k367/cFUvf6TM2m65ZzvqtNOMdZz+TlIR57K/Hfaw8DCmeh3jXNQfsWPog
-	MG1zlpmP2tdPkYKBxhfzI9aob1UyyD761b3x6Zb7DxJ9lmtYOClPvhvoE5WRfXn7qXmPjZKd
-	Ba5sDeYpjgpTYinOSDTUYi4qTgQAJYlJGf8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd0Kw8/BBp0rGC2uXDzEZDH14RM2
-	i39TbrBbXP/ynNVi/pFzrBb9bxayWpx7tZLR4v7Xo4wW3650MFlc3jWHzWLp9YtMFsvf/mez
-	mDB9LYtF694j7Banu1kd+D02fG5i81gzbw2jx+W+XiaPnbPusnusXP6FzWPTqk42jzvX9rB5
-	zDsZ6PFy4m82j74tqxg9Pm+SC+COamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0
-	MFdSyEvMTbVVcvEJ0HXLzAH6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpI
-	WMOY8fHIRcaC+9wVs97PYW9gvMnZxcjJISFgIrFr/jomCFtM4sK99WxdjFwcQgKLGCXenHzG
-	DOH0M0n8eHiOGaSKRUBV4vLDU2A2m4CGxPfPm8FsEaDu23M6wRqYBX4ySTSveAKWEBaIk9jy
-	4jQjiM0r4Crx5+UkqHU2Eqt3rmOGiAtK/Jh8jwXEZhbQkti8rYkVwpaX2LzmLfMERr5ZSMpm
-	ISmbhaRsASPzKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzghPFMagfjygaLQ4wCHIxKPLwK
-	Xz4GC7EmlhVX5h5ilOBgVhLh7ZD+HCzEm5JYWZValB9fVJqTWnyI0RTo7YnMUqLJ+cBkllcS
-	b2hsYmZkaWRuaGFkbK4kznug1TpQSCA9sSQ1OzW1ILUIpo+Jg1OqgbGKYcaqXpUbl0Qk5807
-	03X3T2yjn9X7xslvK6yv7j7NmCM1STydfell/hD38tU8yv7RMm4R32Y+vfnsc93S1Ws/3i3Z
-	7u7Ia9vr9Pf8v9/8ue1KwactP7StS5M2uCX65/6V+Y5Vu/kYUpe9/FFyYsXL5cdDn9zqva6V
-	edClXuB369tJ2TnXc5uVWIozEg21mIuKEwHmk75rLgMAAA==
+	5p0M9Hg58TebR9+WVYwenzfJBXBHcdmkpOZklqUW6dslcGUsPHiAuaCBu+LhxVksDYytnF2M
+	nBwSAiYSs+YuZYKwxSQu3FvP1sXIxSEksJRRonXyV1aYojUvGlggEtMZJS5vf8sI4fQzSfw8
+	t4YFpIpFQFWiaVIfI4jNJqAh8f3zZmYQWwRo7O05ncwgDcwCP5kkmlc8AUsIC6RIdM18C9bA
+	K+Aq8aZ/FyPEOhuJ1TvXMUPEBSV+TL4HtoBZQEti87YmVghbXmLzmrdgQyUEpnJI7D7QCXWF
+	gMS3yYeAbA6ghKzEpgPMEDMlJQ6uuMEygVFkFpKxs5CMnYVk7AJG5lWMoqkFyQXFSelFpnrF
+	ibnFpXnpesn5uZsYgTF9+t+ziTsY7x+wPsSYDLRyIrOUaHI+MCXklcQbGpsZWZiamBobmVua
+	kSasJM6b/igpSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAPjkUP+PybvMQl2O89gncr/dt6f
+	pcpKKso17RHa/n7fcote/3njIxxcn/+YY9tFCcmEc984zD49/L/s7TvRsp+7N3Qcfv2E8xh3
+	RMQ0c5ffGzunTl/e1fl1+cO++lxWkXrns9O/2N8WmD/n6iaJ1rq1s1+ZaZ/Jv/ht8ekZsqGX
+	djJ3Gldf1fs3V4mlOCPRUIu5qDgRAPz5eSX/AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd16w8/BBvPWi1lcuXiIyWLqwyds
+	Fv+m3GC3uP7lOavF/CPnWC363yxktTj3aiWjxf2vRxktvl3pYLK4vGsOm8XS6xeZLJa//c9m
+	MWH6WhaL1r1H2C1Od7M68Hts+NzE5rFm3hpGj8t9vUweO2fdZfdYufwLm8emVZ1sHneu7WHz
+	mHcy0OPlxN9sHn1bVjF6fN4kF8Ad1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hp
+	Ya6kkJeYm2qr5OIToOuWmQP0i5JCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQ
+	sIYxY+HBA8wFDdwVDy/OYmlgbOXsYuTkkBAwkVjzooEFwhaTuHBvPVsXIxeHkMB0RonL298y
+	Qjj9TBI/z60Bq2IRUJVomtTHCGKzCWhIfP+8mRnEFgHqvj2nkxmkgVngJ5NE84onYAlhgRSJ
+	rplvwRp4BVwl3vTvYoRYZyOxeuc6Zoi4oMSPyffAFjALaEls3tbECmHLS2xe85Z5AiPfLCRl
+	s5CUzUJStoCReRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcMJ4JrWDcWWDxSFGAQ5GJR5e
+	hS8fg4VYE8uKK3MPMUpwMCuJ8HZIfw4W4k1JrKxKLcqPLyrNSS0+xGgK9PZEZinR5HxgMssr
+	iTc0NjEzsjQyN7QwMjZXEuc90GodKCSQnliSmp2aWpBaBNPHxMEp1cC4763jpdOCKQv8J36S
+	/9B/w/yks9KNM7n1q9JYFrR3RO59qud6/2qONC/PlVlRhz98iDRUF02u7F+auzUqheXnldZ+
+	9+8sRl2bWNikg7983Ti5veD9V4GwI688t9ler6tbuPeVZQTjo2/Jj3hdwyRX6j2dzG/TcjJi
+	kdy5TZqZmUFnbe+KSu9SYinOSDTUYi4qTgQAEI8dyi4DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,47 +59,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some boards need to set the INn_MODE[1:0] register to change
-the input signal patch. This wlf,inmode property is optional.
-If present, values must be specified less than or equal to
-the number of input singals. If values less than the number
-of input signals, elements that has not been specifed are set
-to 0 by default.
-
-Example:
-   - wlf,inmode = <2 0 2>;	/* IN1, IN3 use DMIC */
+This patch update DT binding to support INn_MODE init_data. Each
+input signal path can be configurated either as a Analogue or
+Digital using the INn_MODE registers.
 
 Signed-off-by: Inha Song <ideal.song@samsung.com>
-Reviewed-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-core.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/mfd/arizona.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 10a0cb9..81e6db8 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -534,7 +534,7 @@ EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
- static int arizona_of_get_core_pdata(struct arizona *arizona)
- {
- 	struct arizona_pdata *pdata = &arizona->pdata;
--	int ret, i;
-+	int ret, i, proplen;
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 5c7e723..7bd1273 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -42,6 +42,13 @@ Optional properties:
+     the chip default will be used.  If present exactly five values must
+     be specified.
  
- 	pdata->reset = arizona_of_get_named_gpio(arizona, "wlf,reset", true);
- 
-@@ -560,6 +560,12 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
- 			ret);
- 	}
- 
-+	proplen = of_property_count_u32_elems(arizona->dev->of_node,
-+					      "wlf,inmode");
-+	if (proplen > 0 && proplen <= ARRAY_SIZE(arizona->pdata.inmode))
-+		of_property_read_u32_array(arizona->dev->of_node, "wlf,inmode",
-+					   arizona->pdata.inmode, proplen);
++  - wlf,inmode : A list of INn_MODE register values, where n is the number
++    of input signals. Valid values are 0 (Differential), 1 (Single-ended) and
++    2 (Digital Microphone). If absent, INn_MODE registers set to 0 by default.
++    If present, values must be specified less than or equal to the number of
++    input singals. If values less than the number of input signals, elements
++    that has not been specifed are set to 0 by default.
 +
- 	return 0;
- }
- 
+   - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
+     they are being externally supplied. As covered in
+     Documentation/devicetree/bindings/regulator/regulator.txt
 -- 
 2.0.0.390.gcb682f8
