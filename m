@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaHSQ5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:57:46 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:60894 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701AbaHSQ5m (ORCPT
+	id S1753669AbaHSQ5j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:57:39 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:57136 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753544AbaHSQ5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:57:42 -0400
+	Tue, 19 Aug 2014 12:57:36 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
@@ -22,15 +22,11 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Nicolas Pitre <nico@linaro.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, kernel@stlinux.com,
-        linux-serial@vger.kernel.org
-Subject: [PATCH v10 16/19] serial: asc: Add support for KGDB's FIQ/NMI mode
-Date: Tue, 19 Aug 2014 17:46:06 +0100
-Message-Id: <1408466769-20004-17-git-send-email-daniel.thompson@linaro.org>
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: [PATCH v10 14/19] serial: amba-pl011: Move pl011_hwinit()
+Date: Tue, 19 Aug 2014 17:46:04 +0100
+Message-Id: <1408466769-20004-15-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
 References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
@@ -39,76 +35,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a .poll_init() function that enables UART RX and registers the
-UART's irq with KGDB. By providing this information to KGDB the serial
-driver offers "permission" for KGDB to route the UART interrupt signal
-from the drivers own handler to KGDBs FIQ handler (which will eventually
-use the UART's polled I/O callbacks to interact with the user).
-
-Note that the RX is not only enabled but also unmasked. This is required
-because otherwise the FIQ handler could never trigger. This unmask is
-copied from similar code in amba-pl011.c .
+This patch hoists pl011_hwinit() further up within the driver. This
+permits a later patch to introduce an extended .poll_init callback
+that does more than pure hardware initialization.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>
-Cc: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: Patrice Chotard <patrice.chotard@st.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: kernel@stlinux.com
 Cc: linux-serial@vger.kernel.org
 ---
- drivers/tty/serial/st-asc.c | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/tty/serial/amba-pl011.c | 78 ++++++++++++++++++++---------------------
+ 1 file changed, 39 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/tty/serial/st-asc.c b/drivers/tty/serial/st-asc.c
-index 8b2d735..2b5eb6e 100644
---- a/drivers/tty/serial/st-asc.c
-+++ b/drivers/tty/serial/st-asc.c
-@@ -30,6 +30,7 @@
- #include <linux/of_platform.h>
- #include <linux/serial_core.h>
- #include <linux/clk.h>
-+#include <linux/kgdb.h>
- 
- #define DRIVER_NAME "st-asc"
- #define ASC_SERIAL_NAME "ttyAS"
-@@ -607,6 +608,25 @@ asc_verify_port(struct uart_port *port, struct serial_struct *ser)
+diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
+index 02016fc..0b06dcf 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -1425,6 +1425,45 @@ static void pl011_break_ctl(struct uart_port *port, int break_state)
+ 	spin_unlock_irqrestore(&uap->port.lock, flags);
  }
  
- #ifdef CONFIG_CONSOLE_POLL
-+
-+#ifdef CONFIG_KGDB_FIQ
-+/*
-+ * Prepare the UART to be used from kgdb's NMI support.
-+ */
-+static int asc_poll_init(struct uart_port *port)
++static int pl011_hwinit(struct uart_port *port)
 +{
-+	struct asc_port *ascport = container_of(port, struct asc_port, port);
++	struct uart_amba_port *uap =
++	    container_of(port, struct uart_amba_port, port);
++	int retval;
 +
-+	/* register the FIQ with kgdb */
-+	kgdb_register_fiq(ascport->port.irq);
++	/* Optionaly enable pins to be muxed in and configured */
++	pinctrl_pm_select_default_state(port->dev);
 +
-+	/* enable RX interrupts in case the interrupt is used for NMI entry. */
-+	asc_enable_rx_interrupts(port);
++	/*
++	 * Try to enable the clock producer.
++	 */
++	retval = clk_prepare_enable(uap->clk);
++	if (retval)
++		return retval;
 +
++	uap->port.uartclk = clk_get_rate(uap->clk);
++
++	/* Clear pending error and receive interrupts */
++	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
++	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
++
++	/*
++	 * Save interrupts enable mask, and enable RX interrupts in case if
++	 * the interrupt is used for NMI entry.
++	 */
++	uap->im = readw(uap->port.membase + UART011_IMSC);
++	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
++
++	if (dev_get_platdata(uap->port.dev)) {
++		struct amba_pl011_data *plat;
++
++		plat = dev_get_platdata(uap->port.dev);
++		if (plat->init)
++			plat->init();
++	}
 +	return 0;
 +}
-+#endif /* CONFIG_KGDB_FIQ */
 +
- /*
-  * Console polling routines for writing and reading from the uart while
-  * in an interrupt or debug context (i.e. kgdb).
-@@ -649,6 +669,9 @@ static struct uart_ops asc_uart_ops = {
- 	.verify_port	= asc_verify_port,
- 	.pm		= asc_pm,
  #ifdef CONFIG_CONSOLE_POLL
-+#ifdef CONFIG_KGDB_FIQ
-+	.poll_init     = asc_poll_init,
-+#endif /* CONFIG_KGDB_FIQ */
- 	.poll_get_char = asc_get_poll_char,
- 	.poll_put_char = asc_put_poll_char,
+ 
+ static void pl011_quiesce_irqs(struct uart_port *port)
+@@ -1483,45 +1522,6 @@ static void pl011_put_poll_char(struct uart_port *port,
+ 
  #endif /* CONFIG_CONSOLE_POLL */
+ 
+-static int pl011_hwinit(struct uart_port *port)
+-{
+-	struct uart_amba_port *uap =
+-	    container_of(port, struct uart_amba_port, port);
+-	int retval;
+-
+-	/* Optionaly enable pins to be muxed in and configured */
+-	pinctrl_pm_select_default_state(port->dev);
+-
+-	/*
+-	 * Try to enable the clock producer.
+-	 */
+-	retval = clk_prepare_enable(uap->clk);
+-	if (retval)
+-		return retval;
+-
+-	uap->port.uartclk = clk_get_rate(uap->clk);
+-
+-	/* Clear pending error and receive interrupts */
+-	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
+-	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
+-
+-	/*
+-	 * Save interrupts enable mask, and enable RX interrupts in case if
+-	 * the interrupt is used for NMI entry.
+-	 */
+-	uap->im = readw(uap->port.membase + UART011_IMSC);
+-	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
+-
+-	if (dev_get_platdata(uap->port.dev)) {
+-		struct amba_pl011_data *plat;
+-
+-		plat = dev_get_platdata(uap->port.dev);
+-		if (plat->init)
+-			plat->init();
+-	}
+-	return 0;
+-}
+-
+ static void pl011_write_lcr_h(struct uart_amba_port *uap, unsigned int lcr_h)
+ {
+ 	writew(lcr_h, uap->port.membase + uap->lcrh_rx);
 -- 
 1.9.3
 
