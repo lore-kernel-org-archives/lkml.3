@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaHSPnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:43:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35455 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462AbaHSPno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:43:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,895,1400050800"; 
-   d="scan'208";a="578816591"
-Date: Tue, 19 Aug 2014 23:43:51 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [mm] f7b5d647946: -3.0% dbench.throughput-MB/sec
-Message-ID: <20140819154351.GA2697@localhost>
-References: <20140819044134.GB8798@localhost>
- <20140819143428.GC10146@suse.de>
+	id S1753314AbaHSPoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:44:16 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:53565 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737AbaHSPoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:44:14 -0400
+Message-ID: <53F370CD.80201@gmail.com>
+Date: Tue, 19 Aug 2014 23:44:13 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140819143428.GC10146@suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: gleb@kernel.org, pbonzini@redhat.com
+CC: kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] virt/kvm/assigned-dev.c: Set 'dev->irq_source_id' to
+ '-1' after free it
+References: <53E4EED7.6050302@gmail.com>
+In-Reply-To: <53E4EED7.6050302@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 03:34:28PM +0100, Mel Gorman wrote:
-> On Tue, Aug 19, 2014 at 12:41:34PM +0800, Fengguang Wu wrote:
-> > Hi Mel,
-> > 
-> > We noticed a minor dbench throughput regression on commit
-> > f7b5d647946aae1647bf5cd26c16b3a793c1ac49 ("mm: page_alloc: abort fair
-> > zone allocation policy when remotes nodes are encountered").
-> > 
-> > testcase: ivb44/dbench/100%
-> > 
-> > bb0b6dffa2ccfbd  f7b5d647946aae1647bf5cd26
-> > ---------------  -------------------------
-> >      25692 ± 0%      -3.0%      24913 ± 0%  dbench.throughput-MB/sec
-> >    6974259 ± 6%     -12.1%    6127616 ± 0%  meminfo.DirectMap2M
-> >      18.43 ± 0%      -4.6%      17.59 ± 0%  turbostat.RAM_W
-> >       9302 ± 0%      -3.6%       8965 ± 1%  time.user_time
-> >    1425791 ± 1%      -2.0%    1396598 ± 0%  time.involuntary_context_switches
-> > 
-> > Disclaimer:
-> > Results have been estimated based on internal Intel analysis and are provided
-> > for informational purposes only. Any difference in system hardware or software
-> > design or configuration may affect actual performance.
-> > 
+Hello maintainers:
+
+Please help check this patch, when you have time.
+
+Thanks.
+
+On 08/08/2014 11:37 PM, Chen Gang wrote:
+> As a generic function, deassign_guest_irq() assumes it can be called
+> even if assign_guest_irq() is not be called successfully (which can be
+> triggered by ioctl from user mode, indirectly).
 > 
-> DirectMap2M changing is a major surprise and doesn't make sense for this
-> machine.
+> So for assign_guest_irq() failure process, need set 'dev->irq_source_id'
+> to -1 after free 'dev->irq_source_id', or deassign_guest_irq() may free
+> it again.
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  virt/kvm/assigned-dev.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+> index bf06577..5819a27 100644
+> --- a/virt/kvm/assigned-dev.c
+> +++ b/virt/kvm/assigned-dev.c
+> @@ -526,8 +526,10 @@ static int assign_guest_irq(struct kvm *kvm,
+>  		dev->irq_requested_type |= guest_irq_type;
+>  		if (dev->ack_notifier.gsi != -1)
+>  			kvm_register_irq_ack_notifier(kvm, &dev->ack_notifier);
+> -	} else
+> +	} else {
+>  		kvm_free_irq_source_id(kvm, dev->irq_source_id);
+> +		dev->irq_source_id = -1;
+> +	}
+>  
+>  	return r;
+>  }
+> 
 
-The ivb44's hardware configuration is
 
-        model: Ivytown Ivy Bridge-EP
-        nr_cpu: 48
-        memory: 64G
+-- 
+Chen Gang
 
-And note that this is an in-memory dbench run, which is why
-dbench.throughput-MB/sec is so high.
-
-> Did the amount of memory in the machine change between two tests?
-
-Nope. They are back-to-back test runs, so the environment pretty much
-remains the same.
-
-Thanks,
-Fengguang
+Open share and attitude like air water and life which God blessed
