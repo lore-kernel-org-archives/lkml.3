@@ -1,97 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaHSAAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 20:00:18 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:51730 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaHSAAQ convert rfc822-to-8bit (ORCPT
+	id S1752522AbaHSACn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 20:02:43 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:45701 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422AbaHSACl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 20:00:16 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>, Joerg Roedel <joro@8bytes.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
-Thread-Topic: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
-Thread-Index: AQHPusLtJD7eZgXm8U+STnK1YS2mE5vW+l6ggAAG8ACAAADm4IAAA9cQgAADDRA=
-Date: Mon, 18 Aug 2014 23:59:08 +0000
-Message-ID: <1267BB84A242B24E81E0C0C8955CFFC061A4DACB@G9W0343.americas.hpqcorp.net>
-References: <1408352352-14449-1-git-send-email-zhen-hual@hp.com>
- <1267BB84A242B24E81E0C0C8955CFFC061A4BA26@G9W0343.americas.hpqcorp.net>
- <20140818232328.GK9809@8bytes.org>
-  <1267BB84A242B24E81E0C0C8955CFFC061A4CA86@G9W0343.americas.hpqcorp.net>
-In-Reply-To: <1267BB84A242B24E81E0C0C8955CFFC061A4CA86@G9W0343.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.201.58.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 18 Aug 2014 20:02:41 -0400
+Date: Mon, 18 Aug 2014 17:02:34 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
+        Gregory Fong <gregory.0xf0@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 01/11] ARM: brcmstb: add infrastructure for ARM-based
+ Broadcom STB SoCs
+Message-ID: <20140819000234.GM18411@ld-irv-0074>
+References: <1405976886-27807-1-git-send-email-computersforpeace@gmail.com>
+ <1405976886-27807-2-git-send-email-computersforpeace@gmail.com>
+ <CAL_Jsq+Nbk7m9KXhG+Chdpvurp75RrvhFR2oE_LGxV444GSe9Q@mail.gmail.com>
+ <20140731022320.GM3711@ld-irv-0074>
+ <20140731084315.GJ30282@n2100.arm.linux.org.uk>
+ <20140731220642.GQ3711@ld-irv-0074>
+ <20140802092756.GZ30282@n2100.arm.linux.org.uk>
+ <20140813234706.GC18411@ld-irv-0074>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140813234706.GC18411@ld-irv-0074>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My debugging result is this: 
+Hi Russell,
 
-1. Clear the old root entry table, dump kernel will choose another
- memory region for root entry.
-2. Do NOT clear the old root entry, when dump kernel initializing 
-the iommu data structure, it  will allocate memory for root entry, 
-this is different from the old address. 
+On Wed, Aug 13, 2014 at 04:47:06PM -0700, Brian Norris wrote:
+> Picking up this thread again, as things are now set for dropping this
+> patch and resubmitting SMP support for 3.18.
 
-If not clear old entry , the error message appears before dump kernel
-finishes the iommu init works, and also appears in other places(before 
-device inits). 
+Any further comment on this? I'd like to submit v10 of this patch soon.
+As of now, my patch will still look essentially the same (with only
+minor changes for some of the review comments), since I'm convinced
+neither that my current per-cpu flag-based solution is unsound nor that
+a delayed work queue can solve all of the same problems.
 
-If I clear the old root entry, the error message disappears before iommu
-init work finish, but still appears in other places. 
+> On Sat, Aug 02, 2014 at 10:27:56AM +0100, Russell King wrote:
+> > On Thu, Jul 31, 2014 at 03:06:42PM -0700, Brian Norris wrote:
+> > > Yes, I noticed this. What I meant is that smp_ops.cpu_die() and
+> > > smp_ops.cpu_kill() are not synchronized.
+> > ...
+> > > We're not relying on the L1 cache, though. Don't sync_cache_{r,w}()
+> > > ensure all reads/writes reach at least the L2?
+> > 
+> > What exactly are you trying to achieve here?
+> 
+> Synchronization between v7_exit_coherency_flush() (on the dying CPU) and
+> yanking the power (brcmstb_cpu_kill(), on the murderous CPU). The core
+> completion-based synchronization is not sufficient, since it allows
+> brcmstb_smp_ops.smp_kill and brcmstb_smp_ops.smp_die to race.
+> 
+> Am I somehow not achieving what I intend here?
+> 
+> > > How does that ensure that the CPU is down by the time the work is
+> > > scheduled? It seems like this would just defer the work long enough that
+> > > it *most likely* has quiesced, but I don't see how this gives us a
+> > > better guarantee. Or maybe I'm missing something. (If so, please do
+> > > enlighten!)
+> > 
+> > Note that I said a delayed work queue.  The dying CPU runs a predictable
+> > sequence once cpu_die() has been entered - interrupts at the GIC have
+> > been programmed to be routed to other CPUs, interrupts at the CPU are
+> > masked, so the CPU isn't going to be doing anything else except executing
+> > that code path.  So, it's going to be a predictable number of CPU cycles.
+> > 
+> > That allows you to arrange a delayed workqueue (or a timer) to fire
+> > after a period of time that you can guarantee that the dying CPU has
+> > reached that wfi().
+> 
+> OK, that sounds workable for the active hotplug case.
+> 
+> But what about for the suspend case? CPUs are hot-unplugged during
+> disable_nonboot_cpus(), and I don't see that this would guarantee the
+> workqueue will complete before we enter suspend.
+> 
+> > Another point which raises itself in your patch is this:
+> > 
+> > +       /* Settle-time from Broadcom-internal DVT reference code */
+> > +       udelay(7);
+> > 
+[...]
+> I'm looking into this specific delay. [...]
 
------Original Message-----
-From: Li, Zhen-Hua 
-Sent: Tuesday, August 19, 2014 7:48 AM
-To: Li, Zhen-Hua; Joerg Roedel
-Cc: David Woodhouse; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
+BTW, I think this delay can be dropped. It was retained from an early
+non-production release of this CPU.
 
-When the dump kernel boots, it will initialize iommu again, and the root entry will be allocted 
-in another memory region.
-
-That means, no matter kernel clears the old root entry table or not,  the dump kernel will use 
-another memory region when iommu initializing.
-
------Original Message-----
-From: Li, Zhen-Hua 
-Sent: Tuesday, August 19, 2014 7:27 AM
-To: 'Joerg Roedel'
-Cc: David Woodhouse; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
-
-: [fault reason 01] Present bit in root entry is clear
-It appears when iommu initializing in the kdump kernel.
-
------Original Message-----
-From: Joerg Roedel [mailto:joro@8bytes.org] 
-Sent: Tuesday, August 19, 2014 7:23 AM
-To: Li, Zhen-Hua
-Cc: David Woodhouse; iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
-
-On Mon, Aug 18, 2014 at 11:01:56PM +0000, Li, Zhen-Hua wrote:
-> There is a bug when Linux running on an HP large system: 
-> 	when kdump kernel runs, the hardware is still using the old 
-> root entry. This causes error message when iommu not finished initialization.
-
-What error message are you seeing? When the kdump kernel boots the iommu
-should be still enabled from the old kernel with the old root-entry. So
-any in-flight DMA initiated from the old kernel can still pass and there
-should be no error messages.
-
-When you clear the root-entry that in-flight DMA might go to another
-random location in system memory or just fail, no?
-
-
-	Joerg
-
+Brian
