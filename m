@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaHSN21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:28:27 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:55128 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaHSN20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:28:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408438302-24123-1-git-send-email-dmonakhov@openvz.org>
-References: <1408438302-24123-1-git-send-email-dmonakhov@openvz.org>
-Date: Tue, 19 Aug 2014 22:28:24 +0900
-Message-ID: <CAC5umyg3MRWDupW=aeOsWZq00x30oK_S6wHwjw5zkjw46YFWUA@mail.gmail.com>
-Subject: Re: [PATCH] fault-inject: Improve debug flexibility
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752509AbaHSNfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:35:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64634 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806AbaHSNfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 09:35:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="560559044"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: 8250_dw: Add ACPI ID for Intel Braswell
+Date: Tue, 19 Aug 2014 16:34:49 +0300
+Message-Id: <1408455289-4398-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+From: Alan Cox <alan@linux.intel.com>
 
-2014-08-19 17:51 GMT+09:00 Dmitry Monakhov <dmonakhov@openvz.org>:
-> Current debug levels are not optimal. Especially if one want to
-> provoke big numbers of faults(broken device simulator) then any verbose
-> level will produce giant numbers of identical logging messages. For that
-> reason it is reasonable to have DUMP_ONCE flag, which will be cleared
-> after first failure. Also the only way to understand which fail_attr
-> was triggered is by means of investigating stack trace, which is also
-> sub-optimal. Let's just dump name of this fail_attr.
+Another new ACPI identifier for the 8250 dw bindings to cover newer Intel
+SoCs such as Braswell.
 
-Something like this feature looks very useful.  But instead of giving a
-magic flag (1024) to existing 'verbose' parameter, I think creating new
-parameter like 'verbose_ratelimit' is more useful.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/tty/serial/8250/8250_dw.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-        # dump only once in five seconds
-        echo 5 > /sys/kernel/debug/fail_make_request/verbose_ratelimit
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index 4db7987ec225..57d9df84ce5d 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -540,6 +540,7 @@ static const struct acpi_device_id dw8250_acpi_match[] = {
+ 	{ "INT3434", 0 },
+ 	{ "INT3435", 0 },
+ 	{ "80860F0A", 0 },
++	{ "8086228A", 0 },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(acpi, dw8250_acpi_match);
+-- 
+2.1.0
 
-        # dump only once in a day
-        echo $((24 * 60 * 60)) > \
-                /sys/kernel/debug/fail_make_request/verbose_ratelimit
