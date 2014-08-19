@@ -1,108 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaHSSyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:54:36 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53475 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753804AbaHSSyf (ORCPT
+	id S1753544AbaHSS4l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:56:41 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:51677 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851AbaHSS4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:54:35 -0400
-Message-ID: <1408474472.14668.6.camel@jarvis>
-Subject: [GIT PULL] SCSI fixes for 3.17-rc1
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 19 Aug 2014 13:54:32 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Aug 2014 14:56:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407286910-30906-3-git-send-email-kever.yang@rock-chips.com>
+References: <1407286910-30906-1-git-send-email-kever.yang@rock-chips.com>
+	<1407286910-30906-3-git-send-email-kever.yang@rock-chips.com>
+Date: Tue, 19 Aug 2014 11:56:37 -0700
+X-Google-Sender-Auth: 2QjWZc50Nzvl3Gm3zUx4j2sEq2o
+Message-ID: <CAD=FV=UNeuGfSCS4zbWb6Pjt+n5-aDz7yrt8E2bCR8eFoYVcCg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] usb: dwc2: add 'mode' which based on Kconfig
+ select or dts setting
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Paul Zimmerman <paulz@synopsys.com>, Heiko Stuebner <heiko@sntech.de>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, wulf <wulf@rock-chips.com>,
+        lyz <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the two bug fixes I mentioned in the final merge window pull.
-One is a reversed logic check in the device busy tests which can cause a
-nasty hang and another crash seen in the new SCSI pool support if the
-use count ever goes to zero.
+Kever,
 
-The patch is available here:
+On Tue, Aug 5, 2014 at 6:01 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> According to the "dr_mode", the otg controller can work as
+> device role and host role. Some boards always want to use host mode
+> and some other boards want to use gadget mode. We use the dts setting
+> to set dwc2's mode, rather than fixing it to whatever hardware says.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> Acked-by: Paul Zimmerman <paulz@synopsys.com>
+> ---
+>
+> Changes in v4:
+> - From Doug's suggestion:
+>  -- remove dr_mode init from Kconfig code
+>  -- change the commit meesage
+>
+> Changes in v3:
+> - fix the odd spacing in dwc2_hsotg struct
+> - From Jingoo's suggestion:
+>     change the commit message
+> - add dr_mode init from Kconfig
+>
+> Changes in v2:
+> - put spaces around '+' operator
+> - expand the comment for dr_mode
+> - handle dr_mode is USB_DR_MODE_OTG
+>
+>  drivers/usb/dwc2/core.c     | 18 ++++++++++++++++++
+>  drivers/usb/dwc2/core.h     |  5 +++++
+>  drivers/usb/dwc2/platform.c |  4 ++++
+>  3 files changed, 27 insertions(+)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+In case it's useful, I've actually tested myself that this is
+necessary and sufficient to get the OTG port to behave properly as a
+host port on an rk3288 board.
 
-The short changelog is:
-
-Guenter Roeck (1):
-      fix qemu boot hang problem
-
-Juergen Gross (1):
-      save command pool address of Scsi_Host
-
-And the diffstat:
-
- drivers/scsi/scsi.c     | 12 ++++++++++--
- drivers/scsi/scsi_lib.c |  2 +-
- 2 files changed, 11 insertions(+), 3 deletions(-)
-
-With full diff below.
-
-James
-
----
-
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index df33060..d81f3cc 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -377,6 +377,10 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
- 		pool->slab_flags |= SLAB_CACHE_DMA;
- 		pool->gfp_mask = __GFP_DMA;
- 	}
-+
-+	if (hostt->cmd_size)
-+		hostt->cmd_pool = pool;
-+
- 	return pool;
- }
- 
-@@ -421,8 +425,10 @@ out:
- out_free_slab:
- 	kmem_cache_destroy(pool->cmd_slab);
- out_free_pool:
--	if (hostt->cmd_size)
-+	if (hostt->cmd_size) {
- 		scsi_free_host_cmd_pool(pool);
-+		hostt->cmd_pool = NULL;
-+	}
- 	goto out;
- }
- 
-@@ -444,8 +450,10 @@ static void scsi_put_host_cmd_pool(struct Scsi_Host *shost)
- 	if (!--pool->users) {
- 		kmem_cache_destroy(pool->cmd_slab);
- 		kmem_cache_destroy(pool->sense_slab);
--		if (hostt->cmd_size)
-+		if (hostt->cmd_size) {
- 			scsi_free_host_cmd_pool(pool);
-+			hostt->cmd_pool = NULL;
-+		}
- 	}
- 	mutex_unlock(&host_cmd_pool_mutex);
- }
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index 9c44392..ce62e87 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct request_queue *q)
- 	blk_requeue_request(q, req);
- 	atomic_dec(&sdev->device_busy);
- out_delay:
--	if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
-+	if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
- 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
- }
- 
+Tested-by: Doug Anderson <dianders@chromium.org>
 
 
+Greg: now that the merge window has closed, are you interested in
+landing Kever's changes (with Paul's Ack).  There's this series and
+another adding rk3288 support.  If you'd like Kever to repost with
+Acks or want pointers to patches, please yell!  ;)
+
+-Doug
