@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaHSTHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 15:07:00 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:50856 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614AbaHSTG5 (ORCPT
+	id S1753816AbaHSTHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 15:07:20 -0400
+Received: from fr1.as29.net ([62.210.131.231]:39625 "EHLO
+	toothrot.meleeweb.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764AbaHSTHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 15:06:57 -0400
-Date: Tue, 19 Aug 2014 12:06:53 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 0/8] mtd: nand: Support for new DT NAND driver
-Message-ID: <20140819190653.GV18411@ld-irv-0074>
-References: <1407921127-8590-1-git-send-email-lee.jones@linaro.org>
- <20140814224013.GE18411@ld-irv-0074>
- <20140818083953.GA4266@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140818083953.GA4266@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Aug 2014 15:07:18 -0400
+From: Bertrand Jacquin <beber@meleeweb.net>
+To: Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org
+Cc: Bertrand Jacquin <beber@meleeweb.net>, linux-kernel@vger.kernel.org,
+        Willy Tarreau <w@1wt.eu>
+Subject: [PATCH 3/3] modsign: lookup lines ending in .ko in .mod files
+Date: Tue, 19 Aug 2014 20:57:40 +0200
+Message-Id: <1408474660-24999-4-git-send-email-beber@meleeweb.net>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1408474660-24999-1-git-send-email-beber@meleeweb.net>
+References: <1408474660-24999-1-git-send-email-beber@meleeweb.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 09:39:53AM +0100, Lee Jones wrote:
-> On Thu, 14 Aug 2014, Brian Norris wrote:
-> > drivers/mtd/nand/stm_nand_bch.c: In function 'bch_calc_timing_registers':
-> > drivers/mtd/nand/stm_nand_bch.c:1022:6: warning: variable 'ren_half_off' set but not used [-Wunused-but-set-variable]
-> > drivers/mtd/nand/stm_nand_bch.c:1021:6: warning: variable 'ren_half_on' set but not used [-Wunused-but-set-variable]
-> 
-> This I have never seen.  I guess -Wunused-but-set-variable is normally
-> off.  This issue has been present since the beginning of this endeavour
-> and exists in the original (internal) code.
+This does the same as commit ef591a5 (scripts/Makefile.modpost: error
+in finding modules from .mod files), but for scripts/Makefile.modsign
 
-BTW, you can get extra warnings by building with the W=[123] option to
-the Makefile (e.g., 'make W=1').
+Maybe we should also apply to Makefile.modsign and Makefile.modinst
+the change applied to Makefile.modpost by commit ea4054a (modpost:
+handle huge numbers of modules) ?
 
-$ make help
-[...]
-  make W=n   [targets] Enable extra gcc checks, n=1,2,3 where
-		1: warnings which may be relevant and do not occur too often
-		2: warnings which occur quite often but may still be relevant
-		3: more obscure warnings, can most likely be ignored
-		Multiple levels can be combined with W=12 or W=123
+Reviewed-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Bertrand Jacquin <beber@meleeweb.net>
+---
+ scripts/Makefile.modsign | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Brian
+diff --git a/scripts/Makefile.modsign b/scripts/Makefile.modsign
+index abfda62..b6ac708 100644
+--- a/scripts/Makefile.modsign
++++ b/scripts/Makefile.modsign
+@@ -7,7 +7,7 @@ __modsign:
+ 
+ include scripts/Kbuild.include
+ 
+-__modules := $(sort $(shell grep -h '\.ko' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
++__modules := $(sort $(shell grep -h '\.ko$$' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
+ modules := $(patsubst %.o,%.ko,$(wildcard $(__modules:.ko=.o)))
+ 
+ PHONY += $(modules)
+-- 
+2.0.4
+
