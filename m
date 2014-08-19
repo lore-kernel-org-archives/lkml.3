@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaHSHyi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:54:38 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58439 "EHLO
+	id S1752903AbaHSHyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 03:54:35 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:58440 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbaHSHyb (ORCPT
+	with ESMTP id S1751556AbaHSHyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Aug 2014 03:54:31 -0400
 X-Original-SENDERIP: 10.177.222.156
@@ -19,60 +19,119 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Seth Jennings <sjennings@variantweb.net>,
         Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 0/4] zram memory control enhance
-Date: Tue, 19 Aug 2014 16:54:43 +0900
-Message-Id: <1408434887-16387-1-git-send-email-minchan@kernel.org>
+Subject: [PATCH v2 1/4] zsmalloc: move pages_allocated to zs_pool
+Date: Tue, 19 Aug 2014 16:54:44 +0900
+Message-Id: <1408434887-16387-2-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1408434887-16387-1-git-send-email-minchan@kernel.org>
+References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, zram has no feature to limit memory usage even though so that
-theoretically zram can deplete system memory.
-In addition, it makes hard to control memory usage of the platform
-so zram users have asked it several times.
-This patchset adds the feature.
+Pages_allocated has counted in size_class structure and when user
+want to see total_size_bytes, it gathers all of value from each
+size_class to report the sum.
 
-Patch 1 makes zs_get_total_size_bytes faster because it would be
-used frequently in later patches for the new feature.
+It's not bad if user don't see the value often but if user start
+to see the value frequently, it would be not a good deal for
+performance POV.
 
-Patch 2 changes zs_get_total_size_bytes's return unit from bytes
-to page so that zsmalloc doesn't need unnecessary operation(ie,
-<< PAGE_SHIFT).
+This patch moves the variable from size_class to zs_pool so it would
+reduce memory footprint (from [255 * 8byte] to [sizeof(atomic_t)])
+but it adds new locking overhead but it wouldn't be severe because
+it's not a hot path in zs_malloc(ie, it is called only when new
+zspage is created, not a object).
 
-Patch 3 adds new feature. I added the feature into zram layer,
-not zsmalloc because limiation is zram's requirement, not zsmalloc
-so any other user using zsmalloc(ie, zpool) shouldn't affected
-by unnecessary branch of zsmalloc. In future, if every users
-of zsmalloc want the feature, then, we could move the feature
-from client side to zsmalloc easily but vice versa would be
-painful.
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/zsmalloc.c | 30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
 
-Patch 4 adds news facility to report maximum memory usage of zram
-so that user can get how many of peak memory zram used easily
-without extremely short inverval polling via
-/sys/block/zram0/mem_used_total.
-
-* From v1
- * rebased on next-20140815
- * fix up race problem - David, Dan
- * reset mem_used_max as current total_bytes, rather than 0 - David
- * resetting works with only "0" write for extensiblilty - David
-
-Minchan Kim (4):
-  [1] zsmalloc: move pages_allocated to zs_pool
-  [2] zsmalloc: change return value unit of zs_get_total_size_bytes
-  [3] zram: zram memory size limitation
-  [4] zram: report maximum used memory
-
- Documentation/ABI/testing/sysfs-block-zram |  19 ++++++
- Documentation/blockdev/zram.txt            |  21 ++++--
- drivers/block/zram/zram_drv.c              | 101 ++++++++++++++++++++++++++++-
- drivers/block/zram/zram_drv.h              |   6 ++
- include/linux/zsmalloc.h                   |   2 +-
- mm/zsmalloc.c                              |  38 ++++++-----
- 6 files changed, 162 insertions(+), 25 deletions(-)
-
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index 94f38fac5e81..a65924255763 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -199,9 +199,6 @@ struct size_class {
+ 
+ 	spinlock_t lock;
+ 
+-	/* stats */
+-	u64 pages_allocated;
+-
+ 	struct page *fullness_list[_ZS_NR_FULLNESS_GROUPS];
+ };
+ 
+@@ -217,9 +214,12 @@ struct link_free {
+ };
+ 
+ struct zs_pool {
++	spinlock_t stat_lock;
++
+ 	struct size_class size_class[ZS_SIZE_CLASSES];
+ 
+ 	gfp_t flags;	/* allocation flags used when growing pool */
++	unsigned long pages_allocated;
+ };
+ 
+ /*
+@@ -967,6 +967,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+ 
+ 	}
+ 
++	spin_lock_init(&pool->stat_lock);
+ 	pool->flags = flags;
+ 
+ 	return pool;
+@@ -1028,8 +1029,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ 			return 0;
+ 
+ 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
++		spin_lock(&pool->stat_lock);
++		pool->pages_allocated += class->pages_per_zspage;
++		spin_unlock(&pool->stat_lock);
+ 		spin_lock(&class->lock);
+-		class->pages_allocated += class->pages_per_zspage;
+ 	}
+ 
+ 	obj = (unsigned long)first_page->freelist;
+@@ -1082,14 +1085,14 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+ 
+ 	first_page->inuse--;
+ 	fullness = fix_fullness_group(pool, first_page);
+-
+-	if (fullness == ZS_EMPTY)
+-		class->pages_allocated -= class->pages_per_zspage;
+-
+ 	spin_unlock(&class->lock);
+ 
+-	if (fullness == ZS_EMPTY)
++	if (fullness == ZS_EMPTY) {
++		spin_lock(&pool->stat_lock);
++		pool->pages_allocated -= class->pages_per_zspage;
++		spin_unlock(&pool->stat_lock);
+ 		free_zspage(first_page);
++	}
+ }
+ EXPORT_SYMBOL_GPL(zs_free);
+ 
+@@ -1185,12 +1188,11 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
+ 
+ u64 zs_get_total_size_bytes(struct zs_pool *pool)
+ {
+-	int i;
+-	u64 npages = 0;
+-
+-	for (i = 0; i < ZS_SIZE_CLASSES; i++)
+-		npages += pool->size_class[i].pages_allocated;
++	u64 npages;
+ 
++	spin_lock(&pool->stat_lock);
++	npages = pool->pages_allocated;
++	spin_unlock(&pool->stat_lock);
+ 	return npages << PAGE_SHIFT;
+ }
+ EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
 -- 
 2.0.0
 
