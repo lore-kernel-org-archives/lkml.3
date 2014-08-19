@@ -1,154 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaHSDuz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 23:50:55 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:57701 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaHSDuw (ORCPT
+	id S1752642AbaHSDwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 23:52:05 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:44503 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380AbaHSDwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 23:50:52 -0400
-Message-ID: <53F2C997.6070605@linux.vnet.ibm.com>
-Date: Tue, 19 Aug 2014 11:50:47 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 18 Aug 2014 23:52:03 -0400
+Message-ID: <53F2C983.8000800@linaro.org>
+Date: Tue, 19 Aug 2014 11:50:27 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: David Matlack <dmatlack@google.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Avi Kivity <avi.kivity@gmail.com>, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
- generation number
-References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com> <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com> <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com>
-In-Reply-To: <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI flags
+ for PSCI init
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org> <20140818142721.GR20043@localhost>
+In-Reply-To: <20140818142721.GR20043@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081903-4790-0000-0000-000003521FCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 05:15 AM, David Matlack wrote:
-> On Mon, Aug 18, 2014 at 12:56 PM, Xiao Guangrong
-> <xiaoguangrong.eric@gmail.com> wrote:
->> @@ -287,9 +293,15 @@ static bool set_mmio_spte(struct kvm *kvm, u64 *sptep, gfn_t gfn,
->>
->>  static bool check_mmio_spte(struct kvm *kvm, u64 spte)
->>  {
->> +       struct kvm_memslots *slots = kvm_memslots(kvm);
->>         unsigned int kvm_gen, spte_gen;
->>
->> -       kvm_gen = kvm_current_mmio_generation(kvm);
->> +       if (slots->updated)
->> +               return false;
->> +
->> +       smp_rmb();
->> +
->> +       kvm_gen = __kvm_current_mmio_generation(slots);
->>         spte_gen = get_mmio_spte_generation(spte);
->>
+On 2014-8-18 22:27, Catalin Marinas wrote:
+> On Mon, Aug 04, 2014 at 04:28:12PM +0100, Hanjun Guo wrote:
+>> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
+>> the former signals to the OS that the hardware is PSCI compliant.
 > 
-> What does this fix? Case 2 can still happen. (Case 2 is unavoidable unless we
-> block during memslot updates, which I don't think we should :).
+> Actually it signals that the firmware is PSCI compliant. The hardware
+> doesn't care much.
 
-This exactly fixes case 2, slots->updated just acts as the "low bit"
-but avoid generation number wrap-around and trick handling of the number.
-More details please see below.
+Right, I will update it.
 
 > 
->>         trace_check_mmio_spte(spte, kvm_gen, spte_gen);
->> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
->> index 4b6c01b..1d4e78f 100644
->> --- a/virt/kvm/kvm_main.c
->> +++ b/virt/kvm/kvm_main.c
->> @@ -96,7 +96,7 @@ static void hardware_disable_all(void);
->>
->>  static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
->>  static void update_memslots(struct kvm_memslots *slots,
->> -                           struct kvm_memory_slot *new, u64 last_generation);
->> +                           struct kvm_memory_slot *new);
->>
->>  static void kvm_release_pfn_dirty(pfn_t pfn);
->>  static void mark_page_dirty_in_slot(struct kvm *kvm,
->> @@ -685,8 +685,7 @@ static void sort_memslots(struct kvm_memslots *slots)
+>> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+>> index 6400312..6e04868 100644
+>> --- a/arch/arm64/include/asm/acpi.h
+>> +++ b/arch/arm64/include/asm/acpi.h
+>> @@ -19,6 +19,18 @@ extern int acpi_disabled;
+>>  extern int acpi_noirq;
+>>  extern int acpi_pci_disabled;
+>>  
+>> +/* 1 to indicate PSCI 0.2+ is implemented */
+>> +static inline bool acpi_psci_present(void)
+>> +{
+>> +	return !!(acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT);
+>> +}
+>> +
+>> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
+>> +static inline bool acpi_psci_use_hvc(void)
+>> +{
+>> +	return !!(acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC);
+>> +}
+> 
+> Do we actually need !! here? Shouldn't the compiler figure out
+> conversion to bool automatically?
+
+I thought !! will explicitly show that it's a bool value and
+improve the readability of the code, but I'm ok to remove !!
+here.
+
+> 
+>> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+>> index 9cf9127..69a315d 100644
+>> --- a/arch/arm64/kernel/acpi.c
+>> +++ b/arch/arm64/kernel/acpi.c
+>> @@ -11,6 +11,8 @@
+>>   *  published by the Free Software Foundation.
+>>   */
+>>  
+>> +#define pr_fmt(fmt) "ACPI: " fmt
+>> +
+>>  #include <linux/init.h>
+>>  #include <linux/acpi.h>
+>>  #include <linux/cpumask.h>
+>> @@ -47,6 +49,26 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>>  	early_memunmap(map, size);
 >>  }
->>
->>  static void update_memslots(struct kvm_memslots *slots,
->> -                           struct kvm_memory_slot *new,
->> -                           u64 last_generation)
->> +                           struct kvm_memory_slot *new)
->>  {
->>         if (new) {
->>                 int id = new->id;
->> @@ -697,8 +696,6 @@ static void update_memslots(struct kvm_memslots *slots,
->>                 if (new->npages != npages)
->>                         sort_memslots(slots);
->>         }
->> -
->> -       slots->generation = last_generation + 1;
->>  }
->>
->>  static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
->> @@ -720,10 +717,17 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
->>  {
->>         struct kvm_memslots *old_memslots = kvm->memslots;
->>
->> -       update_memslots(slots, new, kvm->memslots->generation);
->> +       /* ensure generation number is always increased. */
->> +       slots->updated = true;
->> +       slots->generation = old_memslots->generation;
->> +       update_memslots(slots, new);
->>         rcu_assign_pointer(kvm->memslots, slots);
->>         synchronize_srcu_expedited(&kvm->srcu);
->>
->> +       slots->generation++;
->> +       smp_wmb();
->> +       slots->updated = false;
+>>  
+>> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
+>> +{
+>> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
 >> +
->>         kvm_arch_memslots_updated(kvm);
->>
->>         return old_memslots;
->>
+>> +	/*
+>> +	 * Revision in table header is the FADT Major version,
+>> +	 * and there is a minor version of FADT which was introduced
+>> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
+>> +	 * to get arm boot flags, or we will disable ACPI.
+>> +	 */
+>> +	if (table->revision < 5 || fadt->minor_revision < 1) {
 > 
-> This is effectively the same as the first approach.
+> If we ever get revision 6.0, this would trigger.
+
+Yes, good catch, actually I already fixed that in my local git repo,
+
++       if (table->revision > 5 ||
++           (table->revision == 5 && fadt->minor_revision >= 1)) {
++               return 0;
++       } else {
++               pr_info("FADT revision is %d.%d, no PSCI support, should be 5.1
+or higher\n",
++                       table->revision, fadt->minor_revision);
++               disable_acpi();
++               return -EINVAL;
++       }
+
 > 
-> I just realized how simple Paolo's idea is. I think it can be a one line
-> patch (without comments):
+>> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+>> index 85c6326..dfc4e4f3 100644
+>> --- a/arch/arm64/kernel/setup.c
+>> +++ b/arch/arm64/kernel/setup.c
+>> @@ -395,6 +395,8 @@ void __init setup_arch(char **cmdline_p)
+>>  	efi_idmap_init();
+>>  
+>>  	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+>> +	acpi_boot_init();
+>> +
+>>  	unflatten_device_tree();
 > 
-> [...]
->         update_memslots(slots, new, kvm->memslots->generation);
->         rcu_assign_pointer(kvm->memslots, slots);
->         synchronize_srcu_expedited(&kvm->srcu);
-> +       slots->generation++;
+> Unless that's changed in a subsequent patch, do we still need to call
+> unflatten_device_tree() if ACPI was successful?
+
+No, we don't. in [PATCH v2 16/18], we will not call unflatten_device_tree()
+if ACPI is successful. Since the CONFIG_ACPI is not enabled for ARM64 (will
+enable it in the last patch), so acpi_boot_init() is a stub empty function
+here.
+
 > 
->         kvm_arch_memslots_updated(kvm);
-> [...]
+>>  	psci_init();
+> 
+> I would also rename this to something like psci_dt_init() and move the
+> acpi_disabled check here rather than in the callee.
 
-Really? Unfortunately no. :)
+thanks for the suggestion, I will update my patch :)
 
-See this scenario:
+Thanks
+Hanjun
 
-CPU 0                                  CPU 1
-ioctl registering a new memslot which
-contains GPA:
-                           page-fault handler:
-                             see it'a mmio access on GPA;
-
- assign the new memslots with generation number increased
-                             cache the generation-number into spte;
-                             fix the access and comeback to guest;
-SRCU-sync
-                             page-fault again and check the spte is a valid mmio-spte(*)
-generation-number++;
-return to userspace;
-                             do mmio-emulation and inject mmio-exit;
-
-!!! userspace receives a unexpected mmio-exit, that is case 2 i exactly
-said in the last mail.
-
-
-Note in the step *, my approach detects the invalid generation-number which
-will invalidate the mmio spte properly .
 
