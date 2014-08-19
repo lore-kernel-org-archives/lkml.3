@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654AbaHSL6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:58:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64552 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570AbaHSL6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:58:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,893,1400050800"; 
-   d="scan'208";a="578703058"
-Date: Tue, 19 Aug 2014 19:58:20 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Chris Mason <clm@fb.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        Abhay Sachan <lkp.abhay@gmail.com>
-Subject: [btrfs] 8d875f95: xfstests.generic.226.fail
-Message-ID: <20140819115820.GA21418@localhost>
-References: <20140816075233.GA26842@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140816075233.GA26842@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752708AbaHSL6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:58:20 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39325 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaHSL6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 07:58:17 -0400
+From: Yannis Damigos <giannis.damigos@gmail.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        devel@driverdev.osuosl.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Yannis Damigos <giannis.damigos@gmail.com>
+Subject: [PATCH 1/1] Fix some code style issues
+Date: Tue, 19 Aug 2014 14:57:11 +0300
+Message-Id: <1408449431-28224-1-git-send-email-giannis.damigos@gmail.com>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Signed-off-by: Yannis Damigos <giannis.damigos@gmail.com>
+---
+ drivers/staging/imx-drm/ipuv3-crtc.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-We noticed an xfstests failure on commit
+diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
+index 720868b..c4c6455 100644
+--- a/drivers/staging/imx-drm/ipuv3-crtc.c
++++ b/drivers/staging/imx-drm/ipuv3-crtc.c
+@@ -201,9 +201,9 @@ static int ipu_crtc_mode_set(struct drm_crtc *crtc,
+ 		return ret;
+ 	}
+ 
+-	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode, crtc->primary->fb,
+-				  0, 0, mode->hdisplay, mode->vdisplay,
+-				  x, y, mode->hdisplay, mode->vdisplay);
++	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode,
++			crtc->primary->fb, 0, 0, mode->hdisplay, mode->vdisplay,
++			x, y, mode->hdisplay, mode->vdisplay);
+ }
+ 
+ static void ipu_crtc_handle_pageflip(struct ipu_crtc *ipu_crtc)
+@@ -227,7 +227,8 @@ static irqreturn_t ipu_irq_handler(int irq, void *dev_id)
+ 
+ 	if (ipu_crtc->newfb) {
+ 		ipu_crtc->newfb = NULL;
+-		ipu_plane_set_base(ipu_crtc->plane[0], ipu_crtc->base.primary->fb,
++		ipu_plane_set_base(ipu_crtc->plane[0],
++				ipu_crtc->base.primary->fb,
+ 				ipu_crtc->plane[0]->x, ipu_crtc->plane[0]->y);
+ 		ipu_crtc_handle_pageflip(ipu_crtc);
+ 	}
+-- 
+2.0.4
 
-8d875f95da43c6a8f18f77869f2ef26e9594fecc ("btrfs: disable strict file flushes for renames and truncates")
-
-It's 100% reproducible in the 5 test runs.
-
-test case: snb-drag/xfstests/4HDD-btrfs-generic-mid
-
-27b9a8122ff71a8  8d875f95da43c6a8f18f77869
----------------  -------------------------
-                    %change               %stddev
-                       |                 /
-         0           +Inf%          1 ± 0%  TOTAL xfstests.generic.226.fail
-
-Thanks,
-Fengguang
