@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaHSMQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:16:51 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:51116 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509AbaHSMO7 (ORCPT
+	id S1752509AbaHSM0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:26:45 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62795 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750997AbaHSM0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:14:59 -0400
-X-ASG-Debug-ID: 1408450496-0759e7416b47640e0002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Frans Klaver <frans.klaver@xsens.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexey Pelykh <alexey.pelykh@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Frans Klaver <fransklaver@gmail.com>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4] tty: omap-serial: prevent division by zero
-Date: Tue, 19 Aug 2014 14:14:46 +0200
-X-ASG-Orig-Subj: [PATCH 2/4] tty: omap-serial: prevent division by zero
-Message-ID: <1408450488-4083-3-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408450488-4083-1-git-send-email-frans.klaver@xsens.com>
-References: <1406645577-18620-1-git-send-email-frans.klaver@xsens.com>
- <1408450488-4083-1-git-send-email-frans.klaver@xsens.com>
+	Tue, 19 Aug 2014 08:26:44 -0400
+Date: Tue, 19 Aug 2014 13:26:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 2/8] ARM: expand fixmap region to 3MB
+Message-ID: <20140819122653.GH23128@arm.com>
+References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+ <1407949593-16121-3-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.49]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1408450496
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.8612
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407949593-16121-3-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
-calculated n values in calculate_baud_abs_diff may become 0. This causes
-a division by zero when calculating the difference between calculated
-and desired baud rates. To prevent this, cap n on 1.
+Hi Kees, Rob,
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/tty/serial/omap-serial.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+On Wed, Aug 13, 2014 at 06:06:27PM +0100, Kees Cook wrote:
+> From: Rob Herring <robh@kernel.org>
+> 
+> With commit a05e54c103b0 ("ARM: 8031/2: change fixmap mapping region to
+> support 32 CPUs"), the fixmap region was expanded to 2MB, but it
+> precluded any other uses of the fixmap region. In order to support other
+> uses the fixmap region needs to be expanded beyond 2MB. Fortunately, the
+> adjacent 1MB range 0xffe00000-0xfff00000 is availabe.
+> 
+> Remove fixmap_page_table ptr and lookup the page table via the virtual
+> address so that the fixmap region can span more that one pmd. The 2nd
+> pmd is already created since it is shared with the vector page.
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index ae935ce..14a0167 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -246,8 +246,12 @@ static inline int calculate_baud_abs_diff(struct uart_port *port,
- 				unsigned int baud, unsigned int mode)
- {
- 	unsigned int n = port->uartclk / (mode * baud);
--	int abs_diff = baud - (port->uartclk / (mode * n));
-+	int abs_diff;
- 
-+	if (n == 0)
-+		n = 1;
-+
-+	abs_diff = baud - (uartclk / (mode * n));
- 	if (abs_diff < 0)
- 		abs_diff = -abs_diff;
- 
--- 
-1.9.3
+[...]
 
+> diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+> index 45aeaaca9052..81061987ac45 100644
+> --- a/arch/arm/mm/highmem.c
+> +++ b/arch/arm/mm/highmem.c
+> @@ -18,19 +18,20 @@
+>  #include <asm/tlbflush.h>
+>  #include "mm.h"
+>  
+> -pte_t *fixmap_page_table;
+> -
+>  static inline void set_fixmap_pte(int idx, pte_t pte)
+>  {
+>  	unsigned long vaddr = __fix_to_virt(idx);
+> -	set_pte_ext(fixmap_page_table + idx, pte, 0);
+> +	pte_t *ptep = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
+> +
+> +	set_pte_ext(ptep, pte, 0);
+>  	local_flush_tlb_kernel_page(vaddr);
+>  }
+
+Minor comment, but we can drop the ifx parameter here now, right? It looks a
+bit weird having a setter/getter pair of functions where the type signatures
+aren't the inverse.
+
+Will
