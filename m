@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaHSUhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:37:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23086 "EHLO mx1.redhat.com"
+	id S1751979AbaHSUhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:37:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4080 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733AbaHSUhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:37:34 -0400
+	id S1751824AbaHSUhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 16:37:43 -0400
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Gleb Natapov <gleb@kernel.org>,
         Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
         Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
-Subject: [PATCH 3/9] KVM: VMX: make PLE window per-vcpu
-Date: Tue, 19 Aug 2014 22:35:30 +0200
-Message-Id: <1408480536-8240-4-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH 5/9] KVM: VMX: clamp PLE window
+Date: Tue, 19 Aug 2014 22:35:32 +0200
+Message-Id: <1408480536-8240-6-git-send-email-rkrcmar@redhat.com>
 In-Reply-To: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
@@ -24,51 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change PLE window into per-vcpu variable, seeded from module parameter,
-to allow greater flexibility.
+Modifications could get unwanted values of PLE window. (low or negative)
+Use ple_window and the maximal value that cannot overflow as bounds.
 
-Brings in a small overhead on every vmentry.
+ple_window_max defaults to a very high value, but it would make sense to
+set it to some fraction of the scheduler tick.
 
 Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
- I've been thinking about a general hierarchical per-vcpu variable model,
- but it's hard to have current performance and sane code.
-
- arch/x86/kvm/vmx.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/kvm/vmx.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 2b306f9..eaa5574 100644
+index 66259fd..e1192fb 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -484,6 +484,9 @@ struct vcpu_vmx {
+@@ -144,6 +144,10 @@ module_param(ple_window_grow, int, S_IRUGO);
+ static int ple_window_shrink = KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK;
+ module_param(ple_window_shrink, int, S_IRUGO);
  
- 	/* Support for a guest hypervisor (nested VMX) */
- 	struct nested_vmx nested;
++/* Default is to compute the maximum so we can never overflow. */
++static int ple_window_max = INT_MAX / KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
++module_param(ple_window_max, int, S_IRUGO);
 +
-+	/* Dynamic PLE window. */
-+	int ple_window;
- };
+ extern const ulong vmx_return;
  
- enum segment_cache_field {
-@@ -4403,6 +4406,7 @@ static int vmx_vcpu_setup(struct vcpu_vmx *vmx)
- 	if (ple_gap) {
- 		vmcs_write32(PLE_GAP, ple_gap);
- 		vmcs_write32(PLE_WINDOW, ple_window);
-+		vmx->ple_window = ple_window;
- 	}
+ #define NR_AUTOLOAD_MSRS 8
+@@ -5704,7 +5708,7 @@ static void grow_ple_window(struct kvm_vcpu *vcpu)
+ 	else
+ 		new = old + ple_window_grow;
  
- 	vmcs_write32(PAGE_FAULT_ERROR_CODE_MASK, 0);
-@@ -7387,6 +7391,9 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- 	if (vmx->emulation_required)
- 		return;
+-	vmx->ple_window = new;
++	vmx->ple_window = min(new, ple_window_max);
+ }
  
-+	if (ple_gap)
-+		vmcs_write32(PLE_WINDOW, vmx->ple_window);
-+
- 	if (vmx->nested.sync_shadow_vmcs) {
- 		copy_vmcs12_to_shadow(vmx);
- 		vmx->nested.sync_shadow_vmcs = false;
+ static void shrink_ple_window(struct kvm_vcpu *vcpu)
+@@ -5720,7 +5724,7 @@ static void shrink_ple_window(struct kvm_vcpu *vcpu)
+ 	else
+ 		new = old - ple_window_shrink;
+ 
+-	vmx->ple_window = new;
++	vmx->ple_window = max(new, ple_window);
+ }
+ 
+ /*
 -- 
 2.0.4
 
