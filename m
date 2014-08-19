@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582AbaHSQqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:46:50 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:56128 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753388AbaHSQqr (ORCPT
+	id S1753471AbaHSQqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:46:33 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57840 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaHSQqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:46:47 -0400
+	Tue, 19 Aug 2014 12:46:30 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
@@ -21,268 +21,137 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Catalin Marinas <catalin.marinas@arm.com>,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>, Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH v10 05/19] arm: KGDB/KDB FIQ support
-Date: Tue, 19 Aug 2014 17:45:55 +0100
-Message-Id: <1408466769-20004-6-git-send-email-daniel.thompson@linaro.org>
+        Nicolas Pitre <nico@linaro.org>
+Subject: [PATCH v10 00/19] arm: KGDB NMI/FIQ support
+Date: Tue, 19 Aug 2014 17:45:50 +0100
+Message-Id: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
 References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
- <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FIQ debugger may be used to debug situations when the kernel stuck
-in uninterruptable sections, e.g. the kernel infinitely loops or
-deadlocked in an interrupt or with interrupts disabled.
+This patchset makes it possible to use kgdb's NMI infrastructure on ARM
+platforms.
 
-Credit:
+The patches are seperated into three distinct groups:
 
-    This patch is a near complete re-write of a patch originally
-    provided by Anton Vorontsov. Today only a couple of comments and
-    other small fragments still survive, however without Anton's work
-    to build from this patch would not exist.
+1. arm specific changes; these provide multi-platform support for FIQ
+   (including raising an IPI using FIQ to ensure effective SMP support)
+   and extend ARM KGDB support to use the features provided.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Omar Sandoval <osandov@osandov.com>
----
- arch/arm/Kconfig            |   2 +
- arch/arm/Kconfig.debug      |  19 +++++++
- arch/arm/include/asm/kgdb.h |   4 ++
- arch/arm/kernel/kgdb.c      | 117 +++++++++++++++++++++++++++++++++++++++++---
- 4 files changed, 136 insertions(+), 6 deletions(-)
+2. irqchip changes; updates to the gic and vic drivers to provide
+   support for routing certain interrupt sources to FIQ.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index c49a775..e6380b3 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -305,6 +305,7 @@ choice
- config ARCH_MULTIPLATFORM
- 	bool "Allow multiple platforms to be selected"
- 	depends on MMU
-+	select ARCH_MIGHT_HAVE_KGDB_FIQ
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARM_HAS_SG_CHAIN
- 	select ARM_PATCH_PHYS_VIRT
-@@ -352,6 +353,7 @@ config ARCH_REALVIEW
- 
- config ARCH_VERSATILE
- 	bool "ARM Ltd. Versatile family"
-+	select ARCH_MIGHT_HAVE_KGDB_FIQ
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARM_AMBA
- 	select ARM_TIMER_SP804
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b11ad54..df3f0bf 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -2,6 +2,25 @@ menu "Kernel hacking"
- 
- source "lib/Kconfig.debug"
- 
-+config ARCH_MIGHT_HAVE_KGDB_FIQ
-+	bool
-+
-+config KGDB_FIQ
-+	bool "KGDB FIQ support"
-+	depends on KGDB_KDB && ARCH_MIGHT_HAVE_KGDB_FIQ && !THUMB2_KERNEL
-+	select FIQ
-+	help
-+	  The FIQ debugger may be used to debug situations when the
-+	  kernel stuck in uninterruptable sections, e.g. the kernel
-+	  infinitely loops or deadlocked in an interrupt or with
-+	  interrupts disabled.
-+
-+	  By default KGDB FIQ is disabled at runtime, but can be enabled
-+	  by setting the console to ttyNMI0 (and choosing the underlying
-+	  serial port using kgdboc)
-+
-+	  If unsure, say N.
-+
- config ARM_PTDUMP
- 	bool "Export kernel pagetable layout to userspace via debugfs"
- 	depends on DEBUG_KERNEL
-diff --git a/arch/arm/include/asm/kgdb.h b/arch/arm/include/asm/kgdb.h
-index 0a9d5dd..6563da0 100644
---- a/arch/arm/include/asm/kgdb.h
-+++ b/arch/arm/include/asm/kgdb.h
-@@ -11,7 +11,9 @@
- #define __ARM_KGDB_H__
- 
- #include <linux/ptrace.h>
-+#include <linux/linkage.h>
- #include <asm/opcodes.h>
-+#include <asm/exception.h>
- 
- /*
-  * GDB assumes that we're a user process being debugged, so
-@@ -48,6 +50,8 @@ static inline void arch_kgdb_breakpoint(void)
- extern void kgdb_handle_bus_error(void);
- extern int kgdb_fault_expected;
- 
-+extern int kgdb_register_fiq(unsigned int fiq);
-+
- #endif /* !__ASSEMBLY__ */
- 
- /*
-diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
-index a74b53c..b77b885 100644
---- a/arch/arm/kernel/kgdb.c
-+++ b/arch/arm/kernel/kgdb.c
-@@ -12,8 +12,11 @@
- #include <linux/irq.h>
- #include <linux/kdebug.h>
- #include <linux/kgdb.h>
-+#include <asm/fiq.h>
- #include <asm/traps.h>
- 
-+static unsigned int kgdb_fiq;
-+
- struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] =
- {
- 	{ "r0", 4, offsetof(struct pt_regs, ARM_r0)},
-@@ -175,14 +178,26 @@ static struct undef_hook kgdb_compiled_brkpt_hook = {
- 
- static void kgdb_call_nmi_hook(void *ignored)
- {
--       kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
-+	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
- }
- 
- void kgdb_roundup_cpus(unsigned long flags)
- {
--       local_irq_enable();
--       smp_call_function(kgdb_call_nmi_hook, NULL, 0);
--       local_irq_disable();
-+#if defined CONFIG_KGDB_FIQ && defined CONFIG_SMP
-+	struct cpumask mask;
-+
-+	if (in_nmi()) {
-+		cpumask_copy(&mask, cpu_online_mask);
-+		cpumask_clear_cpu(raw_smp_processor_id(), &mask);
-+		if (!cpumask_empty(&mask))
-+			send_fiq_ipi_mask(&mask);
-+		return;
-+	}
-+#endif
-+
-+	local_irq_enable();
-+	smp_call_function(kgdb_call_nmi_hook, NULL, 0);
-+	local_irq_disable();
- }
- 
- static int __kgdb_notify(struct die_args *args, unsigned long cmd)
-@@ -244,6 +259,43 @@ void kgdb_arch_exit(void)
- 	unregister_die_notifier(&kgdb_notifier);
- }
- 
-+/**
-+ * kgdb_fiq_enable_nmi - Manage NMI-triggered entry to KGDB
-+ * @on: Flag to either enable or disable an NMI
-+ *
-+ * The call counts disable requests, and thus allows to nest disables. But
-+ * trying to enable already enabled NMI is an error.
-+ */
-+static void kgdb_fiq_enable_nmi(bool on)
-+{
-+	if (!kgdb_fiq)
-+		return;
-+
-+#ifdef CONFIG_KGDB_FIQ
-+	static atomic_t cnt;
-+	int ret;
-+
-+	if (on) {
-+		ret = atomic_add_return(1, &cnt);
-+		if (ret == 1)
-+			enable_fiq(kgdb_fiq);
-+
-+		/*
-+		 * There should be only one instance that calls this function
-+		 * in "enable, disable" order. All other users must call
-+		 * disable first, then enable. If not, something is wrong.
-+		 */
-+		if (WARN_ON(ret > 1))
-+			return;
-+	} else {
-+		ret = atomic_add_return(-1, &cnt);
-+		if (ret == 0)
-+			disable_fiq(kgdb_fiq);
-+	}
-+#endif
-+}
-+
-+
- /*
-  * Register our undef instruction hooks with ARM undef core.
-  * We regsiter a hook specifically looking for the KGB break inst
-@@ -252,8 +304,61 @@ void kgdb_arch_exit(void)
-  */
- struct kgdb_arch arch_kgdb_ops = {
- #ifndef __ARMEB__
--	.gdb_bpt_instr		= {0xfe, 0xde, 0xff, 0xe7}
-+	.gdb_bpt_instr		= {0xfe, 0xde, 0xff, 0xe7},
- #else /* ! __ARMEB__ */
--	.gdb_bpt_instr		= {0xe7, 0xff, 0xde, 0xfe}
-+	.gdb_bpt_instr		= {0xe7, 0xff, 0xde, 0xfe},
- #endif
-+	.enable_nmi		= kgdb_fiq_enable_nmi
- };
-+
-+#ifdef CONFIG_KGDB_FIQ
-+static int kgdb_handle_fiq(struct notifier_block *nb, unsigned long arg,
-+			   void *data)
-+{
-+	struct pt_regs *regs = (void *) arg;
-+	int actual;
-+
-+	if (!kgdb_nmicallback(raw_smp_processor_id(), regs))
-+		return NOTIFY_OK;
-+
-+	actual = ack_fiq(kgdb_fiq);
-+	WARN_ON(actual != kgdb_fiq);
-+
-+	/* there's no harm in doing this regardless of the above WARN_ON() */
-+	if (kgdb_nmi_poll_knock())
-+		kgdb_handle_exception(1, 0, 0, regs);
-+
-+	eoi_fiq(actual);
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block kgdb_fiq_notifier = {
-+	.notifier_call = kgdb_handle_fiq,
-+	.priority = 100,
-+};
-+
-+int kgdb_register_fiq(unsigned int fiq)
-+{
-+	static struct fiq_handler kgdb_fiq_desc = { .name = "kgdb", };
-+	int err;
-+
-+	if (!has_fiq(fiq)) {
-+		pr_warn(
-+		    "%s: Cannot register %u (no FIQ with this number)\n",
-+		    __func__, fiq);
-+		return -ENODEV;
-+	}
-+
-+	err = claim_fiq(&kgdb_fiq_desc);
-+	if (err) {
-+		pr_warn("%s: unable to claim fiq", __func__);
-+		return err;
-+	}
-+
-+	kgdb_fiq = fiq;
-+	register_fiq_nmi_notifier(&kgdb_fiq_notifier);
-+
-+	return 0;
-+}
-+#endif
--- 
+3. serial changes; driver support to allow the UART interrupt to be
+   routed to FIQ. The already mainlined kgdb NMI infrastructure (mostly
+   found in drivers/tty/serial/kgdb_nmi.c) will re-route the kgdb
+   console UART's interrupt signal from IRQ to FIQ. Naturally the UART
+   will no longer function normally and will instead be managed by kgdb
+   using the polled I/O functions. Any character delivered to the UART
+   causes the kgdb handler function to be called.
+
+Tested on qemu (versatile), STiH416 (B2020 board) and Freescale i.MX6
+quad (wandboard).
+
+Changes since v9:
+
+- Split PL011 code movement into a seperate patch (Peter Hurley)
+- Use container_of() to convert pointers to uart_amba_port (Peter
+  Hurley)
+- Clean up redundant code from pl011_poll_init (Peter Hurley)
+- Call do_unexp_fiq() if we receive a FIQ and CONFIG_FIQ is not set.
+- Ensure irq-gic.c does not call FIQ functions unless CONFIG_FIQ is set.
+- Introduced patch to avoid ttyNMI0 being enabled by default
+  (replaces architecture dependant enable/disable logic).
+- Fixed bug in kgdb_fiq_enable_nmi() that causes SysRq-g (non-NMI
+  debugging) to wedge the debugger.
+
+Changes since v8:
+
+- Significant rework to separate the FIQ exception handler from kgdb.
+  This allows other features typically implemented using NMI on x86
+  to reuse the same exception handling code (Russell King)
+- Reunited arch/arm and driver code into a single patch series again.
+- Added support for raising IPIs using FIQ (makes kgdb quiesce must
+  more robust).
+- Introduced a workaround for GICv1 devices to avoid FIQs being
+  spuriously handled as IRQs.
+
+Changes since v7:
+
+- Introduced ack_fiq() to complement eoi_fiq(). Without this it is
+  not possible to meet the GIC specification (previous versions worked
+  when tested but are unpredictable according to the specification).
+  ack_fiq() also makes is possible for drivers for devices with multiple
+  interrupt lines to discover the interrupt source correctly.
+
+Changes since v6:
+
+- Corrected off-by-one comparison in has_fiq() (Nicolas Pitre)
+- Rewrote the FIQ stack initialization (Nicolas Pitre). This fixes a
+  serious data corruption bug due to bad stack mismanagement.
+- Introduced __fiq_abt to ensure lr_abt and spsr_abt are saved and
+  restored if we fast-interrupt an abort (Russell King).
+- Significantly improved the commenting of the exception handlers.
+- Added a call to trace_hardirqs_on() if we clear the I bit as we
+  exit the exception handler.
+
+Changes since v5:
+
+- Separated anything not strictly impacting arch/arm.
+- Fixed a spurious add/remove of code within the series (there was
+  broken code in intermediate patches)
+
+For previous changes see:
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/333901
+
+Daniel Thompson (18):
+  arm: fiq: Add callbacks to manage FIQ routings
+  arm: fiq: Allow ACK and EOI to be passed to the intc
+  arm: fiq: Replace default FIQ handler
+  arm: smp: Introduce a special IPI signalled using FIQ
+  arm: KGDB/KDB FIQ support
+  irqchip: gic: Provide support for interrupt grouping
+  irqchip: gic: Add support for FIQ management
+  irqchip: gic: Remove spin locks from eoi_irq
+  irqchip: gic: Add support for IPI FIQ
+  irqchip: gic: Group 0 workaround.
+  irqchip: vic: Add support for FIQ management
+  serial: kgdb_nmi: No CON_ENABLED by default
+  serial: amba-pl011: Use container_of() to get uart_amba_port
+  serial: amba-pl011: Move pl011_hwinit()
+  serial: amba-pl011: Pass FIQ information to KGDB.
+  serial: asc: Add support for KGDB's FIQ/NMI mode
+  serial: asc: Adopt readl_/writel_relaxed()
+  serial: imx: Add support for KGDB's FIQ/NMI mode
+
+Dirk Behme (1):
+  serial: imx: clean up imx_poll_get_char()
+
+ arch/arm/Kconfig                |   2 +
+ arch/arm/Kconfig.debug          |  19 +++
+ arch/arm/include/asm/fiq.h      |  18 +++
+ arch/arm/include/asm/hardirq.h  |   2 +-
+ arch/arm/include/asm/kgdb.h     |   4 +
+ arch/arm/include/asm/smp.h      |   7 +
+ arch/arm/kernel/entry-armv.S    | 129 +++++++++++++++--
+ arch/arm/kernel/fiq.c           | 139 +++++++++++++++++-
+ arch/arm/kernel/kgdb.c          | 117 ++++++++++++++-
+ arch/arm/kernel/setup.c         |   8 +-
+ arch/arm/kernel/smp.c           |  15 ++
+ arch/arm/mach-versatile/core.c  |   2 +-
+ drivers/irqchip/irq-gic.c       | 309 +++++++++++++++++++++++++++++++++++++---
+ drivers/irqchip/irq-vic.c       |  92 +++++++++---
+ drivers/tty/serial/Kconfig      |   2 +-
+ drivers/tty/serial/amba-pl011.c | 143 +++++++++++--------
+ drivers/tty/serial/imx.c        |  88 +++++++-----
+ drivers/tty/serial/kgdb_nmi.c   |   5 +-
+ drivers/tty/serial/st-asc.c     |  27 +++-
+ include/linux/irqchip/arm-vic.h |   6 +-
+ 20 files changed, 977 insertions(+), 157 deletions(-)
+
+--
 1.9.3
 
