@@ -1,230 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183AbaHSOTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:19:53 -0400
-Received: from gw01.mail.saunalahti.fi ([195.197.172.115]:50778 "EHLO
-	gw01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094AbaHSOTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:19:51 -0400
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Aug 2014 10:19:49 EDT
-Date: Tue, 19 Aug 2014 17:09:55 +0300
-From: Juha-Matti Tilli <juha-matti.tilli@iki.fi>
-To: Mikko Perttunen <mperttunen@nvidia.com>
-Cc: edubezval@gmail.com, rui.zhang@intel.com, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, linux-pm@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Juha-Matti Tilli <jtilli@nvidia.com>
-Subject: Re: [PATCH v4 4/4] thermal: Add Tegra SOCTHERM thermal management
- driver
-Message-ID: <20140819140955.GA50475@sandfort.unics.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408100430-29461-1-git-send-email-mperttunen@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753076AbaHSOVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:21:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28680 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752158AbaHSOVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:21:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="578773117"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pwm: lpss: Add ACPI and PCI IDs for Intel Braswell
+Date: Tue, 19 Aug 2014 17:18:29 +0300
+Message-Id: <1408457909-29611-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This adds support for the Tegra SOCTHERM thermal sensing and management
-> system found in the Tegra124 system-on-chip. This initial driver supports
-> temperature polling for four thermal zones.
+From: Alan Cox <alan@linux.intel.com>
 
-I have several comments about this patch. Overall, the code looks clean,
-way cleaner than NVIDIA's internal soc_therm driver. I adopted your code
-to run on the internal firmware of a Tegra124 SoC. Additionally, I
-tested the code as-is on a Jetson TK1.
+This is pretty much the same as Baytrail PWM. Only difference is that the
+input clock runs on different frequency.
 
-My test shows that the temperature readings look sane and do vary with
-load, so the code seems to work. However, I have some concerns about the
-calibration values calculated by this code and the error handling of the
-code.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/pwm/pwm-lpss.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Originally, I thought the fuse offsets were incorrect but as it turns
-out, the official Linux kernel starts counting the fuses at a different
-location than NVIDIA's internal kernel.
+diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
+index 4df994f72d96..d04eee7aa967 100644
+--- a/drivers/pwm/pwm-lpss.c
++++ b/drivers/pwm/pwm-lpss.c
+@@ -48,6 +48,11 @@ static const struct pwm_lpss_boardinfo byt_info = {
+ 	25000000
+ };
+ 
++/* Braswell */
++static const struct pwm_lpss_boardinfo bsw_info = {
++	19200000
++};
++
+ static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
+ {
+ 	return container_of(chip, struct pwm_lpss_chip, chip);
+@@ -189,6 +194,8 @@ static void pwm_lpss_remove_pci(struct pci_dev *pdev)
+ static struct pci_device_id pwm_lpss_pci_ids[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x0f08), (unsigned long)&byt_info},
+ 	{ PCI_VDEVICE(INTEL, 0x0f09), (unsigned long)&byt_info},
++	{ PCI_VDEVICE(INTEL, 0x2288), (unsigned long)&bsw_info},
++	{ PCI_VDEVICE(INTEL, 0x2289), (unsigned long)&bsw_info},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(pci, pwm_lpss_pci_ids);
+@@ -231,6 +238,7 @@ static int pwm_lpss_remove_platform(struct platform_device *pdev)
+ 
+ static const struct acpi_device_id pwm_lpss_acpi_match[] = {
+ 	{ "80860F09", (unsigned long)&byt_info },
++	{ "80862288", (unsigned long)&bsw_info },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
+-- 
+2.1.0
 
-[snip]
-> +static int calculate_shared_calibration(struct tsensor_shared_calibration *r)
-> +{
-> +	u32 val;
-> +	u32 shifted_cp, shifted_ft;
-> +	int err;
-> +
-> +	err = tegra_fuse_readl(FUSE_TSENSOR8_CALIB, &val);
-> +	if (err)
-> +		return err;
-> +	r->base_cp = val & FUSE_TSENSOR8_CALIB_CP_TS_BASE_MASK;
-> +	r->base_ft = (val & FUSE_TSENSOR8_CALIB_FT_TS_BASE_MASK)
-> +		>> FUSE_TSENSOR8_CALIB_FT_TS_BASE_SHIFT;
-> +
-> +	err = tegra_fuse_readl(FUSE_SPARE_REALIGNMENT_REG_0, &val);
-> +	if (err)
-> +		return err;
-> +	shifted_cp = sign_extend32(val, 5);
-> +	val = ((val & FUSE_SPARE_REALIGNMENT_REG_SHIFT_FT_MASK)
-> +		>> FUSE_SPARE_REALIGNMENT_REG_SHIFT_FT_SHIFT);
-> +	shifted_ft = sign_extend32(val, 4);
-> +
-> +	r->actual_temp_cp = 2 * NOMINAL_CALIB_CP_T124 + shifted_cp;
-> +	r->actual_temp_ft = 2 * NOMINAL_CALIB_FT_T124 + shifted_ft;
-> +
-> +	return 0;
-> +}
-> +
-> +static int calculate_tsensor_calibration(
-> +	struct tegra_tsensor *sensor,
-> +	struct tsensor_shared_calibration shared,
-> +	u32 *calib
-> +)
-> +{
-> +	u32 val;
-> +	s32 actual_tsensor_ft, actual_tsensor_cp;
-> +	s32 delta_sens, delta_temp;
-> +	s32 mult, div;
-> +	s16 therma, thermb;
-> +	int err;
-> +
-> +	err = tegra_fuse_readl(sensor->calib_fuse_offset, &val);
-> +	if (err)
-> +		return err;
-> +
-> +	actual_tsensor_cp = (shared.base_cp * 64) + sign_extend32(val, 12);
-> +	val = (val & FUSE_TSENSOR_CALIB_FT_TS_BASE_MASK)
-> +		>> FUSE_TSENSOR_CALIB_FT_TS_BASE_SHIFT;
-> +	actual_tsensor_ft = (shared.base_ft * 32) + sign_extend32(val, 12);
-> +
-> +	delta_sens = actual_tsensor_ft - actual_tsensor_cp;
-> +	delta_temp = shared.actual_temp_ft - shared.actual_temp_cp;
-> +
-> +	mult = t124_tsensor_config.pdiv * t124_tsensor_config.tsample_ate;
-> +	div = t124_tsensor_config.tsample * t124_tsensor_config.pdiv_ate;
-> +
-> +	therma = div_s64((s64) delta_temp * (1LL << 13) * mult,
-> +		(s64) delta_sens * div);
-> +	thermb = div_s64(((s64) actual_tsensor_ft * shared.actual_temp_cp) -
-> +		((s64) actual_tsensor_cp * shared.actual_temp_ft),
-> +		(s64) delta_sens);
-> +
-> +	therma = div_s64((s64) therma * sensor->fuse_corr_alpha,
-> +		(s64) 1000000LL);
-> +	thermb = div_s64((s64) thermb * sensor->fuse_corr_alpha +
-> +		sensor->fuse_corr_beta,
-> +		(s64) 1000000LL);
-> +
-> +	*calib = ((u16)(therma) << SENSOR_CONFIG2_THERMA_SHIFT) |
-> +		((u16)thermb << SENSOR_CONFIG2_THERMB_SHIFT);
-> +
-> +	return 0;
-> +}
-> +
-> +static int enable_tsensor(struct tegra_soctherm *tegra,
-> +			  struct tegra_tsensor *sensor,
-> +			  struct tsensor_shared_calibration shared)
-> +{
-> +	void * __iomem base = tegra->regs + sensor->base;
-> +	unsigned int val;
-> +	u32 calib;
-> +	int err;
-> +
-> +	err = calculate_tsensor_calibration(sensor, shared, &calib);
-> +	if (err)
-> +		return err;
-> +
-> +	val = 0;
-> +	val |= t124_tsensor_config.tall << SENSOR_CONFIG0_TALL_SHIFT;
-> +	writel(val, base + SENSOR_CONFIG0);
-> +
-> +	val = 0;
-> +	val |= (t124_tsensor_config.tsample - 1) <<
-> +		SENSOR_CONFIG1_TSAMPLE_SHIFT;
-> +	val |= t124_tsensor_config.tiddq_en << SENSOR_CONFIG1_TIDDQ_EN_SHIFT;
-> +	val |= t124_tsensor_config.ten_count << SENSOR_CONFIG1_TEN_COUNT_SHIFT;
-> +	val |= SENSOR_CONFIG1_TEMP_ENABLE;
-> +	writel(val, base + SENSOR_CONFIG1);
-> +
-> +	writel(calib, base + SENSOR_CONFIG2);
-> +
-> +	return 0;
-> +}
-
-This code writes different values to SENSOR_CONFIG2 registers than what
-the NVIDIA's internal soc_therm driver does. Because the calibration
-value calculation should be based on the same fuses that NVIDIA's
-internal driver reads, I believe the value calculated and eventually
-written to SENSOR_CONFIG2 should be identical with NVIDIA's internal
-driver. That is not the case now.
-
-I first loaded the NVIDIA's internal soc_therm driver and then loaded
-code adopted from your driver running on Tegra's firmware. Here's a log
-of how the CONFIG2 values are changed by this code to different values
-than NVIDIA's internal soc_therm driver originally sets them to:
-
-CONFIG2: 5b0f813 -> 5c6f7fb
-CONFIG2: 5e8f7cd -> 5fff7b4
-CONFIG2: 5bdf7ce -> 5d3f7b5
-CONFIG2: 596f831 -> 5aaf81a
-CONFIG2: 675f6b5 -> 68cf698
-CONFIG2: 6d6f641 -> 6eff623
-CONFIG2: 641f72b -> 659f710
-CONFIG2: 590f861 -> 5a5f84a
-
-On the left, there's the value set by NVIDIA's internal soc_therm driver
-and on the right, there's the value set by code adopted from your
-driver. My modifications to the code are minor, and I don't think they
-could explain why the CONFIG2 values set are different.
-
-If you want them, I can supply you the values of the fuses on my
-development board.
-
-The temperature readings look sane and do vary with load, but I think
-they're a bit different than what NVIDIA's internal soc_therm driver
-gives. I'm not entirely sure if the calibration values set by your
-driver or the calibration values set by NVIDIA's internal soc_therm
-driver are correct, but it seems to me that only one of these drivers
-can be correct.
-
-The values written to CONFIG1 and CONFIG0 do seem sane.
-
-Since there are divisions being done, some sort of explicit protection
-from divisions by zero should perhaps be considered, although this can
-happen only if the fuses for some reason read all zeroes. I'm not sure
-if that's possible with real hardware.
-
-Where does this code come from? It does not definitely come from
-NVIDIA's internal soc_therm driver, as it looks entirely different. And
-it calculates different calibration values. If you wrote the code, you
-should consider commenting it since there are a lot of complex
-calculations going on that are not obvious to the reader. For example,
-what do "cp" and "ft" mean? Are they acronyms? If so, they should be
-explained.
-
-[snip]
-> +	for (i = 0; i < ARRAY_SIZE(tegra->thermctl_tzs); ++i) {
-> +		struct tegra_thermctl_zone *zone =
-> +			devm_kzalloc(&pdev->dev, sizeof(*zone), GFP_KERNEL);
-> +		if (!zone) {
-> +			err = -ENOMEM;
-
-Shouldn't this one have a --i line like the next IS_ERR block?
-
-> +			goto unregister_tzs;
-> +		}
-> +
-> +		zone->temp_reg = tegra->regs + thermctl_temp_offsets[i];
-> +		zone->temp_shift = thermctl_temp_shifts[i];
-> +
-> +		tz = thermal_zone_of_sensor_register(
-> +			&pdev->dev, i, zone, tegra_thermctl_get_temp, NULL);
-> +		if (IS_ERR(tz)) {
-> +			err = PTR_ERR(tz);
-> +			dev_err(&pdev->dev, "failed to register sensor: %d\n",
-> +				err);
-> +			--i;
-> +			goto unregister_tzs;
-> +		}
-> +
-> +		tegra->thermctl_tzs[i] = tz;
-> +	}
