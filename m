@@ -1,119 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575AbaHSBqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 21:46:15 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:64211 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397AbaHSBqN (ORCPT
+	id S1752553AbaHSBwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 21:52:44 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:38859 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbaHSBwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 21:46:13 -0400
-X-AuditID: cbfee68d-b7f2f6d0000062f0-b1-53f2ac632d2e
-Date: Tue, 19 Aug 2014 10:46:11 +0900
-From: Inha Song <ideal.song@samsung.com>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: broonie@kernel.org, alsa-devel@alsa-project.org,
-        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        lee.jones@linaro.org, lgirdwood@gmail.com, sameo@linux.intel.com,
-        devicetree@vger.kernel.org, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, cw00.choi@samsung.com
-Subject: Re: [alsa-devel] [PATCH v3 2/2] mfd: arizona: Update DT binding to
- support INn_MODE init_data
-Message-id: <20140819104611.121c283b@songinha-Samsung-DeskTop-System>
-In-reply-to: <20140818142945.GD7556@opensource.wolfsonmicro.com>
-References: <20140818200009.12a52dfa@songinha-Samsung-DeskTop-System>
- <20140818142945.GD7556@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42JZI2JSopu85lOwwbEnkhZXLh5ispj68Amb
-	xb8pN9gtrn95zmox/8g5Vov+NwtZLc69Wslocf/rUUaLb1c6mCwu75rDZrH0+kUmi+Vv/7NZ
-	TJi+lsWide8RdovT3awO/B4bPjexeayZt4bR43JfL5PHzll32T1WLv/C5rFpVSebx51re9g8
-	5p0M9Hg58TebR9+WVYwenzfJBXBHcdmkpOZklqUW6dslcGWsW/iWtWCPYMWqb/3MDYwvebsY
-	OTkkBEwkdjTMYoawxSQu3FvPBmILCSxllNi8rximZtPtg0A1XEDxRYwS856/ZoRw+pkk7jQ1
-	g3WwCKhKtDz/zwJiswloSHz/vBlsqoiAhcSUJbfAbGaBF0wSa25pgdjCAhkSE+42s4PYvAKu
-	Eid3HmUCsTkFHCRu/H7KDnFFtcTOFTcZIa6wkVi9cx0zRL2gxI/J91ggZmpJbN7WxAphy0ts
-	XvMW7FIJgS0cEj/O32WEOE5A4tvkQ0ANHEAJWYlNB6A+lpQ4uOIGywRGsVlIxs5CMnYWkrEL
-	GJlXMYqmFiQXFCelFxnqFSfmFpfmpesl5+duYgTG/+l/z3p3MN4+YH2IMRlo5URmKdHkfGD6
-	yCuJNzQ2M7IwNTE1NjK3NCNNWEmcN+lhUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRvPV
-	3C7TGc7e2eD5aMeG+Y1CWZHXmGX3GW++l3c27hVz5/uOjMD6pVejbfYleTrO3uRe1CzfnTb7
-	1HrTkl19dws+6UiXq7xY/eUAI8erusnTzmur11hz999+OZfrhXDldfO5oVJ7pqcquRg7FtZw
-	HNt16kypxbaX86deDLYosHe7L/rx6VLPCCWW4oxEQy3mouJEAMms5zIVAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jAd3kNZ+CDb6eE7S4cvEQk8XUh0/Y
-	LP5NucFucf3Lc1aL+UfOsVr0v1nIanHu1UpGi/tfjzJafLvSwWRxedccNoul1y8yWSx/+5/N
-	YsL0tSwWrXuPsFuc7mZ14PfY8LmJzWPNvDWMHpf7epk8ds66y+6xcvkXNo9NqzrZPO5c28Pm
-	Me9koMfLib/ZPPq2rGL0+LxJLoA7qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DS
-	wlxJIS8xN9VWycUnQNctMwfoFyWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmgg
-	YQ1jxrqFb1kL9ghWrPrWz9zA+JK3i5GTQ0LARGLT7YPMELaYxIV769m6GLk4hAQWMUrMe/6a
-	EcLpZ5K409TMBlLFIqAq0fL8PwuIzSagIfH982awbhEBC4kpS26B2cwCL5gk1tzSArGFBTIk
-	JtxtZgexeQVcJU7uPMoEYnMKOEjc+P0ULC4kUC2xc8VNRogrbCRW71zHDFEvKPFj8j0WiJla
-	Epu3NbFC2PISm9e8ZZ7AKDALSdksJGWzkJQtYGRexSiaWpBcUJyUnmukV5yYW1yal66XnJ+7
-	iRGcXp5J72Bc1WBxiFGAg1GJh1fhy8dgIdbEsuLK3EOMEhzMSiK8rZM/BQvxpiRWVqUW5ccX
-	leakFh9iNAWGxkRmKdHkfGDqyyuJNzQ2MTOyNDI3tDAyNlcS5z3Yah0oJJCeWJKanZpakFoE
-	08fEwSnVwDh73Z6i9kX756pG/Pwc7ZzwRPJvcLVwb4jNMx3R56H7G52fnfVJFp0698SufaFt
-	RpYnus94L5w17Q537mo27r3r2BfdrrB7nrj1R4Ljoo92wgyrj200e5qqZlrIupxB+VivEEO1
-	Ynu2WYLjqVkehx9LSxWrJzwOD7bdLnBjr9+dWUo/YvOfX1RiKc5INNRiLipOBABzE8dzRQMA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 18 Aug 2014 21:52:43 -0400
+Date: Mon, 18 Aug 2014 18:52:37 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 7/8] mtd: nand: stm_nand_bch: add support for ST's BCH
+ NAND controller
+Message-ID: <20140819015237.GQ18411@ld-irv-0074>
+References: <1408357919-19793-1-git-send-email-lee.jones@linaro.org>
+ <1408357919-19793-8-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408357919-19793-8-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Charles.
-Thanks for your review.
+On Mon, Aug 18, 2014 at 11:31:58AM +0100, Lee Jones wrote:
+...
+> +/* Derive Hamming-FLEX timing register values from 'nand_sdr_timings' data */
+> +static void flex_calc_timing_registers(const struct nand_sdr_timings *spec,
+> +				       int tCLK, int relax,
+> +				       uint32_t *ctl_timing,
+> +				       uint32_t *wen_timing,
+> +				       uint32_t *ren_timing)
+> +{
+> +	int tMAX_HOLD;
+> +	int n_ctl_setup;
+> +	int n_ctl_hold;
+> +	int n_ctl_wb;
+> +
+> +	int tMAX_WEN_OFF;
+> +	int n_wen_on;
+> +	int n_wen_off;
+> +
+> +	int tMAX_REN_OFF;
+> +	int n_ren_on;
+> +	int n_ren_off;
+> +
+> +	/*
+> +	 * CTL_TIMING
+> +	 */
+> +
+> +	/*	- SETUP */
+> +	n_ctl_setup = (PICO_TO_MILI(spec->tCLS_min - spec->tWP_min)
+> +		       + tCLK - 1)/tCLK;
 
-On Mon, 18 Aug 2014 15:29:45 +0100
-Charles Keepax <ckeepax@opensource.wolfsonmicro.com> wrote:
+Can you add spaces around the '/'? It helps readability. (This is
+repeated throughout.)
 
-> On Mon, Aug 18, 2014 at 08:00:09PM +0900, Inha Song wrote:
-> > This patch update DT binding to support INn_MODE init_data. Each
-> > input signal path can be configurated either as a Analogue or
-> > Digital using the INn_MODE registers.
-> > 
-> > Signed-off-by: Inha Song <ideal.song@samsung.com>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/arizona.txt | 8 ++++++++
-> >  1 file changed, 8 insertions(+)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-> > index 5c7e723..0064b21 100644
-> > --- a/Documentation/devicetree/bindings/mfd/arizona.txt
-> > +++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-> > @@ -42,6 +42,14 @@ Optional properties:
-> >      the chip default will be used.  If present exactly five values must
-> >      be specified.
-> >  
-> > +  - wlf,inmode : A list of INn_MODE register values, where n is the number
-> > +    of input signals. Each input signal path can be configurated either as a
-> > +    Analogue or Digital using the INn_MODE registers. If absent, INn_MODE
-> 
-> I would replace the second sentence here with something like
-> "Valid values are 0 (Differential), 1 (Single-ended) and 2 (Digital
-> Microphone)."
-> 
+> +	if (n_ctl_setup < 1)
+> +		n_ctl_setup = 1;
+> +	n_ctl_setup += relax;
 
-OK, I will fix it like this:
+It's been discussed that many drivers probably want a simplified version
+of struct nand_sdr_timings where some of these computations are done
+already. As we haven't developed such a simplification yet, I'm fine
+taking your computations as-is. If nothing else, they serve as a
+reference for a later simplification. (Just FYI.)
 
-- wlf,inmode : A list of INn_MODE register values, where n is the number
-  of input signals. Valid values are 0 (Differential), 1 (Single-ended) and
-  2 (Digital Microphone). If absent, INn_MODE registers.........
+> +
+> +	/*	- HOLD */
+> +	tMAX_HOLD = spec->tCLH_min;
+> +	if (spec->tCH_min > tMAX_HOLD)
+> +		tMAX_HOLD = spec->tCH_min;
+> +	if (spec->tALH_min > tMAX_HOLD)
+> +		tMAX_HOLD = spec->tALH_min;
+> +	if (spec->tDH_min > tMAX_HOLD)
+> +		tMAX_HOLD = spec->tDH_min;
+> +	n_ctl_hold = (PICO_TO_MILI(tMAX_HOLD) + tCLK - 1)/tCLK + relax;
+> +
+> +	/*	- CE_deassert_hold = 0 */
+> +
+> +	/*	- WE_high_to_RBn_low */
+> +	n_ctl_wb = (PICO_TO_MILI(spec->tWB_max) + tCLK - 1)/tCLK;
+> +
+> +	*ctl_timing = ((n_ctl_setup & 0xff) |
+> +		       (n_ctl_hold & 0xff) << 8 |
+> +		       (n_ctl_wb & 0xff) << 24);
+> +
+> +	/*
+> +	 * WEN_TIMING
+> +	 */
+> +
+> +	/*	- ON */
+> +	n_wen_on = (PICO_TO_MILI(spec->tWH_min) + tCLK - 1)/tCLK + relax;
+> +
+> +	/*	- OFF */
+> +	tMAX_WEN_OFF = spec->tWC_min - spec->tWH_min;
+> +	if (spec->tWP_min > tMAX_WEN_OFF)
+> +		tMAX_WEN_OFF = spec->tWP_min;
+> +	n_wen_off = (PICO_TO_MILI(tMAX_WEN_OFF) + tCLK - 1)/tCLK + relax;
+> +
+> +	*wen_timing = ((n_wen_on & 0xff) |
+> +		       (n_wen_off & 0xff) << 8);
+> +
+> +	/*
+> +	 * REN_TIMING
+> +	 */
+> +
+> +	/*	- ON */
+> +	n_ren_on = (PICO_TO_MILI(spec->tREH_min) + tCLK - 1)/tCLK + relax;
+> +
+> +	/*	- OFF */
+> +	tMAX_REN_OFF = spec->tRC_min - spec->tREH_min;
+> +	if (spec->tRP_min > tMAX_REN_OFF)
+> +		tMAX_REN_OFF = spec->tRP_min;
+> +	if (spec->tREA_max > tMAX_REN_OFF)
+> +		tMAX_REN_OFF = spec->tREA_max;
+> +	n_ren_off = (PICO_TO_MILI(tMAX_REN_OFF) + tCLK - 1)/tCLK + 1 + relax;
+> +
+> +	*ren_timing = ((n_ren_on & 0xff) |
+> +		       (n_ren_off & 0xff) << 8);
+> +}
+> +
+> +/* Derive BCH timing register values from 'nand_sdr_timings' data */
+> +static void bch_calc_timing_registers(const struct nand_sdr_timings *spec,
+> +				      int tCLK, int relax,
+> +				      uint32_t *ctl_timing,
+> +				      uint32_t *wen_timing,
+> +				      uint32_t *ren_timing)
+> +{
+> +	int tMAX_HOLD;
+> +	int n_ctl_setup;
+> +	int n_ctl_hold;
+> +	int n_ctl_wb;
+> +
+> +	int n_wen_on;
+> +	int n_wen_off;
+> +	int wen_half_on;
+> +	int wen_half_off;
+> +
+> +	int tMAX_REN_ON;
+> +	int tMAX_CS_DEASSERT;
+> +	int n_d_latch;
+> +	int n_telqv;
+> +	int n_ren_on;
+> +	int n_ren_off;
+> +
+> +	/*
+> +	 * CTL_TIMING
+> +	 */
+> +
+> +	/*	- SETUP */
+> +	if (spec->tCLS_min > spec->tWP_min)
+> +		n_ctl_setup = (PICO_TO_MILI(spec->tCLS_min - spec->tWP_min)
+> +			       + tCLK - 1)/tCLK;
+> +	else
+> +		n_ctl_setup = 0;
+> +	n_ctl_setup += relax;
+> +
+> +	/*	- HOLD */
+> +	tMAX_HOLD = spec->tCLH_min;
+> +	if (spec->tCH_min > tMAX_HOLD)
+> +		tMAX_HOLD = spec->tCH_min;
+> +	if (spec->tALH_min > tMAX_HOLD)
+> +		tMAX_HOLD = spec->tALH_min;
+> +	if (spec->tDH_min > tMAX_HOLD)
+> +		tMAX_HOLD = spec->tDH_min;
+> +	n_ctl_hold = (PICO_TO_MILI(tMAX_HOLD) + tCLK - 1)/tCLK + relax;
+> +	/*	- CE_deassert_hold = 0 */
+> +
+> +	/*	- WE_high_to_RBn_low */
+> +	n_ctl_wb = (PICO_TO_MILI(spec->tWB_max) + tCLK - 1)/tCLK;
+> +
+> +	*ctl_timing = ((n_ctl_setup & 0xff) |
+> +		       (n_ctl_hold & 0xff) << 8 |
+> +		       (n_ctl_wb & 0xff) << 24);
+> +
+> +	/*
+> +	 * WEN_TIMING
+> +	 */
+> +
+> +	/*	- ON */
+> +	n_wen_on = (2 * PICO_TO_MILI(spec->tWH_min) + tCLK - 1)/tCLK;
+> +	wen_half_on = n_wen_on % 2;
+> +	n_wen_on /= 2;
+> +	n_wen_on += relax;
+> +
+> +	/*	- OFF */
+> +	n_wen_off = (2 * PICO_TO_MILI(spec->tWP_min) + tCLK - 1)/tCLK;
+> +	wen_half_off = n_wen_off % 2;
+> +	n_wen_off /= 2;
+> +	n_wen_off += relax;
+> +
+> +	*wen_timing = ((n_wen_on & 0xff) |
+> +		       (n_wen_off & 0xff) << 8 |
+> +		       (wen_half_on << 16) |
+> +		       (wen_half_off << 17));
+> +
+> +	/*
+> +	 * REN_TIMING
+> +	 */
+> +
+> +	/*	- ON */
+> +	tMAX_REN_ON = spec->tRC_min - spec->tRP_min;
+> +	if (spec->tREH_min > tMAX_REN_ON)
+> +		tMAX_REN_ON = spec->tREH_min;
+> +
+> +	n_ren_on = (2 * PICO_TO_MILI(tMAX_REN_ON) + tCLK - 1)/tCLK;
+> +	n_ren_on /= 2;
+> +	n_ren_on += relax;
+> +
+> +	/*	- OFF */
+> +	n_ren_off = (2 * PICO_TO_MILI(spec->tREA_max) + tCLK - 1)/tCLK;
+> +	n_ren_off /= 2;
+> +	n_ren_off += relax;
+> +
+> +	/*	- DATA_LATCH */
+> +	if (PICO_TO_MILI(spec->tREA_max) <=
+> +	    (PICO_TO_MILI(spec->tRP_min) - (2 * tCLK)))
+> +		n_d_latch = 0;
+> +	else if (PICO_TO_MILI(spec->tREA_max) <=
+> +		 (PICO_TO_MILI(spec->tRP_min) - tCLK))
+> +		n_d_latch = 1;
+> +	else if ((spec->tREA_max <= spec->tRP_min) &&
+> +		 (PICO_TO_MILI(spec->tRHOH_min) >= 2 * tCLK))
+> +		n_d_latch = 2;
+> +	else
+> +		n_d_latch = 3;
+> +
+> +	/*	- TELQV */
+> +	tMAX_CS_DEASSERT = spec->tCOH_min;
+> +	if (spec->tCHZ_max > tMAX_CS_DEASSERT)
+> +		tMAX_CS_DEASSERT = spec->tCHZ_max;
+> +
+> +	n_telqv = (PICO_TO_MILI(tMAX_CS_DEASSERT) + tCLK - 1)/tCLK;
+> +
+> +	*ren_timing = ((n_ren_on & 0xff) |
+> +		       (n_ren_off & 0xff) << 8 |
+> +		       (n_d_latch & 0x3) << 16 |
+> +		       (wen_half_on << 18) |
+> +		       (wen_half_off << 19) |
+> +		       (n_telqv & 0xff) << 24);
+> +}
+> +
+[...]
+> +static void *stm_bch_dt_get_ddata(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct stm_nand_bch_ddata *ddata;
+> +	int ecc_strength;
+> +	int ret;
+> +
+> +	ddata = devm_kzalloc(&pdev->dev, sizeof(*ddata), GFP_KERNEL);
+> +	if (!ddata)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	of_property_read_u32(np, "nand-ecc-strength", &ecc_strength);
 
-Best regards,
-Inha Song.
+of_get_nand_ecc_strength()
 
-> Thanks,
-> Charles
-> 
-> > +    registers set to 0 by default. If present, values must be specified less
-> > +    than or equal to the number of input singals. If values less than the
-> > +    number of input signals, elements that has not been specifed are set to 0
-> > +    by default.
-> > +
-> >    - DCVDD-supply, MICVDD-supply : Power supplies, only need to be specified if
-> >      they are being externally supplied. As covered in
-> >      Documentation/devicetree/bindings/regulator/regulator.txt
-> > -- 
-> > 2.0.0.390.gcb682f8
-> > 
+> +	if (ecc_strength == 0)
+> +		ddata->bch_ecc_cfg = BCH_NO_ECC;
+> +	else if (ecc_strength == 18)
+> +		ddata->bch_ecc_cfg = BCH_18BIT_ECC;
+> +	else if (ecc_strength == 30)
+> +		ddata->bch_ecc_cfg = BCH_30BIT_ECC;
+> +	else
+> +		ddata->bch_ecc_cfg = BCH_ECC_AUTO;
+> +
+> +	ret = stm_of_get_nand_banks(&pdev->dev, np, &ddata->bank);
+> +	if (ret < 0)
+> +		return ERR_PTR(ret);
+> +
+> +	return ddata;
+> +}
+> +
+[...]
+
+That's all for now. Maybe I'll take a fresh look at this later.
+
+Brian
