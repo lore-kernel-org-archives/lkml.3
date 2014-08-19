@@ -1,198 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbaHSD6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 23:58:35 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43251 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaHSD6e (ORCPT
+	id S1751460AbaHSEB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 00:01:59 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:36637 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaHSEB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 23:58:34 -0400
-Date: Mon, 18 Aug 2014 20:58:28 -0700
+	Tue, 19 Aug 2014 00:01:57 -0400
+Date: Mon, 18 Aug 2014 21:01:49 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: slub/debugobjects: lockup when freeing memory
-Message-ID: <20140819035828.GI4752@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140819040149.GJ4752@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <53A2F406.4010109@oracle.com>
- <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
- <20140619165247.GA4904@linux.vnet.ibm.com>
- <alpine.DEB.2.10.1406192127100.5170@nanos>
- <alpine.DEB.2.11.1406191519090.4002@gentwo.org>
- <20140818163757.GA30742@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1408182147400.28727@gentwo.org>
+References: <20140812034531.GA13801@linux.vnet.ibm.com>
+ <20140812053321.GK4184@grmbl.mre>
+ <20140812160621.GC4752@linux.vnet.ibm.com>
+ <20140812213936.GA3106@linux.vnet.ibm.com>
+ <20140812214151.GB3106@linux.vnet.ibm.com>
+ <20140813054439.GA29913@grmbl.mre>
+ <20140813130049.GS4752@linux.vnet.ibm.com>
+ <20140815052411.GF1934@grmbl.mre>
+ <20140815150402.GD4752@linux.vnet.ibm.com>
+ <20140818175345.GD31856@grmbl.mre>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1408182147400.28727@gentwo.org>
+In-Reply-To: <20140818175345.GD31856@grmbl.mre>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081903-1542-0000-0000-0000041CF189
+x-cbid: 14081904-3532-0000-0000-000003F2B7DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 10:44:34PM -0500, Christoph Lameter wrote:
-> On Mon, 18 Aug 2014, Paul E. McKenney wrote:
+On Mon, Aug 18, 2014 at 11:23:45PM +0530, Amit Shah wrote:
+> On (Fri) 15 Aug 2014 [08:04:05], Paul E. McKenney wrote:
+> > On Fri, Aug 15, 2014 at 10:54:11AM +0530, Amit Shah wrote:
+> > > On (Wed) 13 Aug 2014 [06:00:49], Paul E. McKenney wrote:
+> > > > On Wed, Aug 13, 2014 at 11:14:39AM +0530, Amit Shah wrote:
+> > > > > On (Tue) 12 Aug 2014 [14:41:51], Paul E. McKenney wrote:
+> > > > > > On Tue, Aug 12, 2014 at 02:39:36PM -0700, Paul E. McKenney wrote:
+> > > > > > > On Tue, Aug 12, 2014 at 09:06:21AM -0700, Paul E. McKenney wrote:
+> > > > > > > > On Tue, Aug 12, 2014 at 11:03:21AM +0530, Amit Shah wrote:
+> > > > > > > 
+> > > > > > > [ . . . ]
+> > > > > > > 
+> > > > > > > > > I know of only virtio-console doing this (via userspace only,
+> > > > > > > > > though).
+> > > > > > > > 
+> > > > > > > > As in userspace within the guest?  That would not work.  The userspace
+> > > > > > > > that the qemu is running in might.  There is a way to extract ftrace info
+> > > > > > > > from crash dumps, so one approach would be "sendkey alt-sysrq-c", then
+> > > > > > > > pull the buffer from the resulting dump.  For all I know, there might also
+> > > > > > > > be some script that uses the qemu "x" command to get at the ftrace buffer.
+> > > > > > > > 
+> > > > > > > > Again, I cannot reproduce this, and I have been through the code several
+> > > > > > > > times over the past few days, and am not seeing it.  I could start
+> > > > > > > > sending you random diagnostic patches, but it would be much better if
+> > > > > > > > we could get the trace data from the failure.
+> > > > > 
+> > > > > I think the only recourse I now have is to dump the guest state from
+> > > > > qemu, and attempt to find the ftrace buffers by poking pages and
+> > > > > finding some ftrace-like struct... and then dumping the buffers.
+> > > > 
+> > > > The data exists in the qemu guest state, so it would be good to have
+> > > > it one way or another.  My current (perhaps self-serving) guess is that
+> > > > you have come up with a way to trick qemu into dropping IPIs.
+> > > 
+> > > I didn't get around to doing this yet; will get to it next week.
+> > > 
+> > > In the meantime, I tried this on RHEL6 (with RHEL6 qemu and gcc and
+> > > seabios), and that exhibits the problem similarly with my .config.
+> > 
+> > And I am running my tests successfully on an x86_64 system running
+> > Ubuntu 12.04.  Some testing on 14.04 seems to require booting with
+> > acpi=off, leading to my perhaps self-serving guess above.
 > 
-> > > > So call rcu activates the object, but the object has no reference in
-> > > > the debug objects code so the fixup code is called which inits the
-> > > > object and allocates a reference ....
-> > >
-> > > So we need to init the object in the page struct before the __call_rcu?
-> >
-> > And the needed APIs are now in mainline:
-> >
-> > 	void init_rcu_head(struct rcu_head *head);
-> > 	void destroy_rcu_head(struct rcu_head *head);
-> >
-> > Over to you, Christoph!  ;-)
-> 
-> The field we are using for the rcu head serves other purposes before
-> the free action. We cannot init the field at slab creation as we
-> thought since it is used for the queueing of slabs on the partial, free
-> and full lists. The kmem_cache information is not available when doing
-> the freeing so we must force the allocation of reserve fields and the
-> use of the reserved areas for rcu on all kmem_caches.
+> It looks like Ubuntu 12.04 has a choice of multiple kernels.  Which
+> one are you running?
 
-Yow!  I am glad I didn't try doing this myself!
+3.2.0-67-generic-pae and 3.13.0-30-generic for the host.
 
-> I made this conditional on CONFIG_RCU_XYZ. This needs to be the actual
-> Debug options that will require allocations when initializing rcu heads.
-> 
-> Also note that the allocations in the rcu head initialization must be
-> restricted to non RCU slabs otherwise the recursion may not terminate.
-> 
-> 
-> Subject RFC: Allow allocations on initializing rcu fields in slub.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/mm/slub.c
-> ===================================================================
-> --- linux.orig/mm/slub.c
-> +++ linux/mm/slub.c
-> @@ -1308,6 +1308,41 @@ static inline struct page *alloc_slab_pa
->  	return page;
->  }
-> 
-> +#ifdef CONFIG_RCU_DEBUG_XYZ
+> Also, is there a chance you could try this on a RHEL6 box?
 
-If you make CONFIG_RCU_DEBUG_XYZ instead be CONFIG_DEBUG_OBJECTS_RCU_HEAD,
-then it will automatically show up when it needs to.
-
-The rest looks plausible, for whatever that is worth.
+The odds are low over the next few days.  I am adding nastier rcutorture
+testing, however.  It would still be very good to get debug information
+from your setup.  One approach would be to convert the trace function
+calls into printk(), if that would help.
 
 							Thanx, Paul
-
-> +/*
-> + * We may have to do alloations during the initialization of the
-> + * debug portion of the rcu structure for a slab. It must therefore
-> + * be separately allocated and initized on allocation.
-> + * We cannot overload the lru field in the page struct at all.
-> + */
-> +#define need_reserve_slab_rcu 1
-> +#else
-> +/*
-> + * Overload the lru field in struct page if it fits.
-> + * Should struct rcu_head grow due to debugging fields etc then
-> + * additional space will be allocated from the end of the slab to
-> + * store the rcu_head.
-> + */
-> +#define need_reserve_slab_rcu						\
-> +	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
-> +#endif
-> +
-> +static struct rcu_head *get_rcu_head(struct kmem_cache *s, struct page *page)
-> +{
-> +	if (need_reserve_slab_rcu) {
-> +		int order = compound_order(page);
-> +		int offset = (PAGE_SIZE << order) - s->reserved;
-> +
-> +		VM_BUG_ON(s->reserved != sizeof(struct rcu_head));
-> +		return page_address(page) + offset;
-> +	} else {
-> +		/*
-> +		 * RCU free overloads the RCU head over the LRU
-> +		 */
-> +		return (void *)&page->lru;
-> +	}
-> +}
-> +
->  static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  {
->  	struct page *page;
-> @@ -1357,6 +1392,21 @@ static struct page *allocate_slab(struct
->  			kmemcheck_mark_unallocated_pages(page, pages);
->  	}
-> 
-> +#ifdef CONFIG_RCU_DEBUG_XYZ
-> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU) && page)
-> +		/*
-> +		 * Initialize rcu_head and potentially do other
-> +		 * allocations. Note that this is still a recursive
-> +		 * call into the allocator which may recurse endlessly
-> +		 * if the same kmem_cache is used for allocation here.
-> +		 *
-> +		 * So in order to be safe the slab caches used
-> +		 * in init_rcu_head must be restricted to be of the
-> +		 * non rcu kind only.
-> +		 */
-> +		init_rcu_head(get_rcu_head(s, page));
-> +#endif
-> +
->  	if (flags & __GFP_WAIT)
->  		local_irq_disable();
->  	if (!page)
-> @@ -1452,13 +1502,13 @@ static void __free_slab(struct kmem_cach
->  	memcg_uncharge_slab(s, order);
->  }
-> 
-> -#define need_reserve_slab_rcu						\
-> -	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
-> -
->  static void rcu_free_slab(struct rcu_head *h)
->  {
->  	struct page *page;
-> 
-> +#ifdef CONFIG_RCU_DEBUG_XYZ
-> +	destroy_rcu_head(h);
-> +#endif
->  	if (need_reserve_slab_rcu)
->  		page = virt_to_head_page(h);
->  	else
-> @@ -1469,24 +1519,9 @@ static void rcu_free_slab(struct rcu_hea
-> 
->  static void free_slab(struct kmem_cache *s, struct page *page)
->  {
-> -	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
-> -		struct rcu_head *head;
-> -
-> -		if (need_reserve_slab_rcu) {
-> -			int order = compound_order(page);
-> -			int offset = (PAGE_SIZE << order) - s->reserved;
-> -
-> -			VM_BUG_ON(s->reserved != sizeof(*head));
-> -			head = page_address(page) + offset;
-> -		} else {
-> -			/*
-> -			 * RCU free overloads the RCU head over the LRU
-> -			 */
-> -			head = (void *)&page->lru;
-> -		}
-> -
-> -		call_rcu(head, rcu_free_slab);
-> -	} else
-> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU))
-> +		call_rcu(get_rcu_head(s, page), rcu_free_slab);
-> +	else
->  		__free_slab(s, page);
->  }
-> 
 
