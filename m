@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaHSQ7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:59:19 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:46049 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaHSQ7Q (ORCPT
+	id S1753681AbaHSRAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:00:12 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:45135 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbaHSRAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:59:16 -0400
+	Tue, 19 Aug 2014 13:00:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <53F2EA5C.1020403@renesas.com>
-References: <1408378343-9352-1-git-send-email-abrestic@chromium.org>
-	<1408378343-9352-2-git-send-email-abrestic@chromium.org>
-	<53F2EA5C.1020403@renesas.com>
-Date: Tue, 19 Aug 2014 09:59:15 -0700
-X-Google-Sender-Auth: xM1vuKLqUTskHHerbycxdMSLFuQ
-Message-ID: <CAL1qeaEkqSHnia=Pc1LMapuwuNhWyU9k-6fb3OhV9y=mUPEAag@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] xhci: Introduce xhci_init_driver()
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+In-Reply-To: <20140819093244.GJ1660@lahna.fi.intel.com>
+References: <1408380657-6718-1-git-send-email-acourbot@nvidia.com>
+ <1408380657-6718-2-git-send-email-acourbot@nvidia.com> <20140819093244.GJ1660@lahna.fi.intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 19 Aug 2014 09:59:49 -0700
+Message-ID: <CAAVeFuJ55jikMaNYNqTUVJ==9u+mQr0OtC89PZajCDVLF7TUug@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: acpi: normalize use of gpiochip_get_desc()
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 11:10 PM, Yoshihiro Shimoda
-<yoshihiro.shimoda.uh@renesas.com> wrote:
-> Hi,
->
-> (2014/08/19 1:12), Andrew Bresticker wrote:
->> Since the struct hc_driver is mostly the same across the xhci-pci,
->> xhci-plat, and the upcoming xhci-tegra driver, introduce the function
->> xhci_init_driver() which will populate the hc_driver with the default
->> xHCI operations.  The caller must supply a setup function which will
->> be used as the hc_driver's reset callback.
+On Tue, Aug 19, 2014 at 2:32 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Mon, Aug 18, 2014 at 09:50:56AM -0700, Alexandre Courbot wrote:
+>> GPIO descriptors are changing from unique and permanent tokens to
+>> allocated resources. Therefore gpiochip_get_desc() cannot be used as a
+>> way to obtain a global GPIO descriptor anymore.
 >>
->> Note that xhci-plat also overrides the default ->start() callback so
->> that it can do rcar-specific initialization.
+>> This patch updates the gpiolib ACPI support code to keep and use the
+>> descriptor returned by a centralized call to gpiochip_get_desc().
 >>
->> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 >> ---
->> Changes from v1:
->>  - rebased on changes introduced by xhci-rcar driver
-> < snip >
->> @@ -300,6 +249,8 @@ MODULE_ALIAS("platform:xhci-hcd");
+>>  drivers/gpio/gpiolib-acpi.c | 22 ++++++++++++++--------
+>>  1 file changed, 14 insertions(+), 8 deletions(-)
 >>
->>  int xhci_register_plat(void)
->>  {
->> +     xhci_init_driver(&xhci_plat_hc_driver, xhci_plat_setup);
->> +     xhci_plat_hc_drver.start = xhci_plat_start;
+>> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+>> index d62eaaa75397..9596a1023579 100644
+>> --- a/drivers/gpio/gpiolib-acpi.c
+>> +++ b/drivers/gpio/gpiolib-acpi.c
+>> @@ -25,10 +25,12 @@ struct acpi_gpio_event {
+>>       acpi_handle handle;
+>>       unsigned int pin;
+>>       unsigned int irq;
+>> +     gpio_desc *desc;
 >
-> Thank you for the care of xhci-rcar driver.
-> However, this "xhci_plat_hc_drver" should be "xhci_plat_hc_driver".
+> This needs to be
+>         struct gpio_desc *desc;
+>
+>>  };
 
-D'oh!  Thanks for catching this... had it fixed in my tree but forgot
-to update the patches.  v3 incoming.
+Oops apologies for this, I should have least have compiled a tree with
+this patch on... >_<;
+
+>
+> Tested on Asus T100TA and nothing seems to break, so:
+>
+> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+Thanks! Will send a v2 for Linus to merge, if he agrees with these two patches.
+Alex.
