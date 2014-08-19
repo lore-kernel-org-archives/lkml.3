@@ -1,233 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624AbaHSQrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:47:35 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49867 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401AbaHSQqd (ORCPT
+	id S1753657AbaHSQrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:47:41 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:35425 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401AbaHSQrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:46:33 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v10 01/19] arm: fiq: Add callbacks to manage FIQ routings
-Date: Tue, 19 Aug 2014 17:45:51 +0100
-Message-Id: <1408466769-20004-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
- <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
+	Tue, 19 Aug 2014 12:47:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408415512-17275-1-git-send-email-addy.ke@rock-chips.com>
+References: <1407995360-26009-1-git-send-email-addy.ke@rock-chips.com>
+	<1408415512-17275-1-git-send-email-addy.ke@rock-chips.com>
+Date: Tue, 19 Aug 2014 09:47:35 -0700
+X-Google-Sender-Auth: 5j2y9q61lch_8PTpze8sjlZVc8o
+Message-ID: <CAD=FV=V_LMm_xKhanwqQLK5nV3WvyvpdOdBN-z5b9jGd2=TgGw@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: dts: Add sdio0 and sdio1 to the rk3288
+From: Doug Anderson <dianders@chromium.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, han jiang <hj@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently enable_fiq/disable_fiq use a simple offset to convert an IRQ
-virq into a FIQ virq. This is too inflexible for multi-platform kernels
-and makes runtime error checking impossible.
+Addy,
 
-We solve this by introducing a flexible mapping that allows interrupt
-controllers that support FIQ to register those mappings. This, in turn,
-makes it much possible for drivers in DT kernels to install FIQ handlers
-without knowing anything about the interrupt controller.
+On Mon, Aug 18, 2014 at 7:31 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
+> This patch requires that <https://patchwork.kernel.org/patch/4701721/>
+> land in order to compile.
+>
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> ---
+> Changes in v2:
+> - repost patch to match what's in Heiko's "wip/v3.18-next/dts" tree
+>   for the other dwmmc controllers
+> - add "cd" and "int" line, suggested by Doug Anderson
+> - fix up sdio1 configuration error
+>
+>  arch/arm/boot/dts/rk3288.dtsi | 86 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 86 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 36be7bb..91576ae 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -88,6 +88,26 @@
+>                 status = "disabled";
+>         };
+>
+> +       sdio0: dwmmc@ff0d0000 {
+> +               compatible = "rockchip,rk3288-dw-mshc";
+> +               clocks = <&cru HCLK_SDIO0>, <&cru SCLK_SDIO0>;
+> +               clock-names = "biu", "ciu";
+> +               fifo-depth = <0x100>;
+> +               interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+> +               reg = <0xff0d0000 0x4000>;
+> +               status = "disabled";
+> +       };
+> +
+> +       sdio1: dwmmc@ff0e0000 {
+> +               compatible = "rockchip,rk3288-dw-mshc";
+> +               clocks = <&cru HCLK_SDIO1>, <&cru SCLK_SDIO1>;
+> +               clock-names = "biu", "ciu";
+> +               fifo-depth = <0x100>;
+> +               interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+> +               reg = <0xff0e0000 0x4000>;
+> +               status = "disabled";
+> +       };
+> +
+>         emmc: dwmmc@ff0f0000 {
+>                 compatible = "rockchip,rk3288-dw-mshc";
+>                 clocks = <&cru HCLK_EMMC>, <&cru SCLK_EMMC>;
+> @@ -508,6 +528,72 @@
+>                         };
+>                 };
+>
+> +               sdio0 {
+> +                       sdio0_clk: sdio0-clk {
+> +                               rockchip,pins = <4 25 RK_FUNC_1 &pcfg_pull_none>;
+> +                       };
+> +
+> +                       sdio0_cmd: sdio0-cmd {
+> +                               rockchip,pins = <4 24 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_cd: sdio0-cd {
+> +                               rockchip,pins = <4 26 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_pwr: sdio0-pwr {
+> +                               rockchip,pins = <4 28 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_int: sdio0-int {
+> +                               rockchip,pins = <4 30 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_bus1: sdio0-bus1 {
+> +                               rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio0_bus4: sdio0-bus4 {
+> +                               rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>,
+> +                                               <4 21 RK_FUNC_1 &pcfg_pull_up>,
+> +                                               <4 22 RK_FUNC_1 &pcfg_pull_up>,
+> +                                               <4 23 RK_FUNC_1 &pcfg_pull_up>;
+> +                       };
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Fabio Estevam <festevam@gmail.com>
----
- arch/arm/include/asm/fiq.h |   8 ++++
- arch/arm/kernel/fiq.c      | 103 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 109 insertions(+), 2 deletions(-)
+Can you make sure to include all of the sdio0 pins?  I think you're
+still missing gpio4d3 (write protect).  You're also missing gpio4d5
+(bkpwr), not that I know what that actually is.
 
-diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
-index d493d0b..ed44528 100644
---- a/arch/arm/include/asm/fiq.h
-+++ b/arch/arm/include/asm/fiq.h
-@@ -16,8 +16,14 @@
- #ifndef __ASM_FIQ_H
- #define __ASM_FIQ_H
- 
-+#include <linux/irq.h>
- #include <asm/ptrace.h>
- 
-+struct fiq_chip {
-+	void (*fiq_enable)(struct irq_data *data);
-+	void (*fiq_disable)(struct irq_data *data);
-+};
-+
- struct fiq_handler {
- 	struct fiq_handler *next;
- 	/* Name
-@@ -38,6 +44,8 @@ extern void release_fiq(struct fiq_handler *f);
- extern void set_fiq_handler(void *start, unsigned int length);
- extern void enable_fiq(int fiq);
- extern void disable_fiq(int fiq);
-+extern bool has_fiq(int fiq);
-+extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
- 
- /* helpers defined in fiqasm.S: */
- extern void __set_fiq_regs(unsigned long const *regs);
-diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
-index 918875d..5d831cf 100644
---- a/arch/arm/kernel/fiq.c
-+++ b/arch/arm/kernel/fiq.c
-@@ -40,6 +40,9 @@
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/seq_file.h>
-+#include <linux/irq.h>
-+#include <linux/radix-tree.h>
-+#include <linux/slab.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/cp15.h>
-@@ -52,7 +55,15 @@
- 		(unsigned)&vector_fiq_offset;		\
- 	})
- 
-+struct fiq_data {
-+	struct fiq_chip *fiq_chip;
-+	struct irq_data *irq_data;
-+};
-+
- static unsigned long no_fiq_insn;
-+static int fiq_start = -1;
-+static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
-+static DEFINE_MUTEX(fiq_data_mutex);
- 
- /* Default reacquire function
-  * - we always relinquish FIQ control
-@@ -127,18 +138,65 @@ void release_fiq(struct fiq_handler *f)
- 	while (current_fiq->fiq_op(current_fiq->dev_id, 0));
- }
- 
--static int fiq_start;
-+static struct fiq_data *lookup_fiq_data(int fiq)
-+{
-+	struct fiq_data *data;
-+
-+	rcu_read_lock();
-+	data = radix_tree_lookup(&fiq_data_tree, fiq);
-+	rcu_read_unlock();
-+
-+	return data;
-+}
- 
- void enable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_enable)
-+			data->fiq_chip->fiq_enable(data->irq_data);
-+		enable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	enable_irq(fiq + fiq_start);
- }
- 
- void disable_fiq(int fiq)
- {
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data) {
-+		if (data->fiq_chip->fiq_disable)
-+			data->fiq_chip->fiq_disable(data->irq_data);
-+		disable_irq(fiq);
-+		return;
-+	}
-+
-+	if (WARN_ON(fiq_start == -1))
-+		return;
-+
- 	disable_irq(fiq + fiq_start);
- }
- 
-+bool has_fiq(int fiq)
-+{
-+	struct fiq_data *data = lookup_fiq_data(fiq);
-+
-+	if (data)
-+		return true;
-+
-+	if (fiq_start == -1)
-+		return false;
-+
-+	return fiq >= fiq_start;
-+}
-+EXPORT_SYMBOL(has_fiq);
-+
- EXPORT_SYMBOL(set_fiq_handler);
- EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
- EXPORT_SYMBOL(__get_fiq_regs);	/* defined in fiqasm.S */
-@@ -147,9 +205,50 @@ EXPORT_SYMBOL(release_fiq);
- EXPORT_SYMBOL(enable_fiq);
- EXPORT_SYMBOL(disable_fiq);
- 
-+/*
-+ * Add a mapping from a Linux irq to the fiq data.
-+ */
-+void fiq_register_mapping(int irq, struct fiq_chip *chip)
-+{
-+	struct fiq_data *fiq_data = NULL;
-+	int res;
-+
-+	/* fiq_register_mapping can't be mixed with init_FIQ */
-+	BUG_ON(fiq_start != -1);
-+
-+	fiq_data = kmalloc(sizeof(*fiq_data), GFP_KERNEL);
-+	if (!fiq_data)
-+		goto err;
-+
-+	fiq_data->fiq_chip = chip;
-+	fiq_data->irq_data = irq_get_irq_data(irq);
-+	BUG_ON(!fiq_data->irq_data);
-+
-+	mutex_lock(&fiq_data_mutex);
-+	res = radix_tree_insert(&fiq_data_tree, irq, fiq_data);
-+	mutex_unlock(&fiq_data_mutex);
-+	if (res)
-+		goto err;
-+
-+	return;
-+
-+err:
-+	kfree(fiq_data);
-+	pr_err("fiq: Cannot register mapping %d\n", irq);
-+}
-+
-+/*
-+ * Set the offset between normal IRQs and their FIQ shadows.
-+ */
- void __init init_FIQ(int start)
- {
-+	fiq_start = start;
-+}
-+
-+static int __init init_default_fiq_handler(void)
-+{
- 	unsigned offset = FIQ_OFFSET;
- 	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
--	fiq_start = start;
-+	return 0;
- }
-+pure_initcall(init_default_fiq_handler);
--- 
-1.9.3
+Also: I know that sdmmc isn't sorted properly (should probably fix
+that), but can you sort sdio0 and sdio1 by pin number?  So list data
+lines first, then cmd, then clock, then detect, then write protect,
+...
 
+
+Same comments apply to sdio1.
+
+> +               };
+> +
+> +               sdio1 {
+> +                       sdio1_clk: sdio1-clk {
+> +                               rockchip,pins = <4 7 RK_FUNC_4 &pcfg_pull_none>;
+> +                       };
+> +
+> +                       sdio1_cmd: sdio1-cmd {
+> +                               rockchip,pins = <4 6 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio1_cd: sdio1-cd {
+> +                               rockchip,pins = <3 28 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio1_pwr: sdio1-pwr {
+> +                               rockchip,pins = <4 9 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio1_int: sdio1-int {
+> +                               rockchip,pins = <3 31 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio1_bus1: sdio1-bus1 {
+> +                               rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +
+> +                       sdio1_bus4: sdio1-bus4 {
+> +                               rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>,
+> +                                               <3 25 RK_FUNC_4 &pcfg_pull_up>,
+> +                                               <3 26 RK_FUNC_4 &pcfg_pull_up>,
+> +                                               <3 27 RK_FUNC_4 &pcfg_pull_up>;
+> +                       };
+> +               };
+> +
+>                 emmc {
+>                         emmc_clk: emmc-clk {
+>                                 rockchip,pins = <3 18 RK_FUNC_2 &pcfg_pull_none>;
+> --
+> 1.8.3.2
+>
+>
