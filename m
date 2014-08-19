@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaHSNu2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:50:28 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:40201 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaHSNu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:50:26 -0400
+	id S1752798AbaHSNy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:54:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51043 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202AbaHSNy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 09:54:27 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony <tony@atomide.com>
+CC: <nm@ti.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: dts: DRA7: Add PMU nodes
+Date: Tue, 19 Aug 2014 08:54:00 -0500
+Message-ID: <1408456440-30171-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20140819070143.GB12859@ulmo>
-References: <20140818153327.GA12278@ulmo> <1408416234-7923-1-git-send-email-mopsfelder@gmail.com>
- <20140819070143.GB12859@ulmo>
-From: =?ISO-8859-1?Q?Murilo_Opsfelder_Ara=FAjo?= <mopsfelder@gmail.com>
-Date: Tue, 19 Aug 2014 10:49:46 -0300
-Message-ID: <CA+LKeY6ZRU3qNza8udpufaEKcrAT-LKmLzcytS=Q=XB=f3Up+Q@mail.gmail.com>
-Subject: Re: [PATCH] fs: Initialize mountpoint list head in new_mountpoint()
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 4:01 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Mon, Aug 18, 2014 at 11:43:54PM -0300, Murilo Opsfelder Araujo wrote:
->> The commit 89f7ca1af15bdfe7a6aed343032a84af2a69f736 makes next-20140818
->> to panic because mountpoint list head was not initialized.  Initializing
->> it with NULL fixes the problem.
->>
->> commit 89f7ca1af15bdfe7a6aed343032a84af2a69f736
->> Author: Eric W. Biederman <ebiederman@twitter.com>
->> Date:   Sun Sep 22 19:37:01 2013 -0700
->>
->>     vfs: Keep a list of mounts on a mount point
->>
->>     To spot any possible problems call BUG if a mountpoint
->>         is put when it's list of mounts is not empty.
->>
->>     AV: use hlist instead of list_head
->>
->> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
->> ---
->>  fs/namespace.c | 1 +
->>  1 file changed, 1 insertion(+)
->
-> It's considered good etiquette and polite to credit the original author
-> of a patch. This should be:
->
-> Originally-by: Thierry Reding <treding@nvidia.com>
+From: Lucas Weaver <l-weaver@ti.com>
 
-(resending to the lists)
+DRA74x and DRA72x family of processors vary slightly in the number
+of CPUs. So, add different instances of PMU for each of these processor
+groups. Further, since the interrupts bypass crossbar and are directly
+connected to GIC, mark the dts nodes with relevant information.
 
-Hello, Thierry.
+Tested with perf utility.
 
-I didn't know about it and you deserve all the credits, for sure.
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Lucas Weaver <l-weaver@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/boot/dts/dra72x.dtsi |    5 +++++
+ arch/arm/boot/dts/dra74x.dtsi |    6 ++++++
+ 2 files changed, 11 insertions(+)
 
-I'm away from computer today. I'll send a v2 tomorrow night.
-
+diff --git a/arch/arm/boot/dts/dra72x.dtsi b/arch/arm/boot/dts/dra72x.dtsi
+index f1ec22f..e5a3d23 100644
+--- a/arch/arm/boot/dts/dra72x.dtsi
++++ b/arch/arm/boot/dts/dra72x.dtsi
+@@ -22,4 +22,9 @@
+ 			reg = <0>;
+ 		};
+ 	};
++
++	pmu {
++		compatible = "arm,cortex-a15-pmu";
++		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>;
++	};
+ };
+diff --git a/arch/arm/boot/dts/dra74x.dtsi b/arch/arm/boot/dts/dra74x.dtsi
+index a4e8bb9..3be544c 100644
+--- a/arch/arm/boot/dts/dra74x.dtsi
++++ b/arch/arm/boot/dts/dra74x.dtsi
+@@ -38,4 +38,10 @@
+ 			reg = <1>;
+ 		};
+ 	};
++
++	pmu {
++		compatible = "arm,cortex-a15-pmu";
++		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>,
++			     <GIC_SPI DIRECT_IRQ(132) IRQ_TYPE_LEVEL_HIGH>;
++	};
+ };
 -- 
-Murilo
+1.7.9.5
+
