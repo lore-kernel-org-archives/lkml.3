@@ -1,36 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaHSJcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:32:11 -0400
-Received: from [182.73.220.218] ([182.73.220.218]:48254 "EHLO hplindia.local"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751887AbaHSJcJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:32:09 -0400
-X-Greylist: delayed 114525 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Aug 2014 05:32:08 EDT
-Message-Id: <201408180102.s7I11Fgv026136@hplindia.local>
-Content-Type: text/plain; charset=US-ASCII
+	id S1752063AbaHSJcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:32:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35589 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768AbaHSJcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 05:32:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,893,1400050800"; 
+   d="scan'208";a="470233173"
+Date: Tue, 19 Aug 2014 12:32:44 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [PATCH 1/2] gpio: acpi: normalize use of gpiochip_get_desc()
+Message-ID: <20140819093244.GJ1660@lahna.fi.intel.com>
+References: <1408380657-6718-1-git-send-email-acourbot@nvidia.com>
+ <1408380657-6718-2-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re..
-To: Recipients <timothybriggs@rbs.co.uk>
-From: "Timothy N Briggs" <timothybriggs@rbs.co.uk>
-Date: Sun, 17 Aug 2014 19:41:29 -0600
-Reply-To: timothy.briggs@aol.co.uk
-X-yoursite-MailScanner-Information: Please contact the ISP for more information
-X-yoursite-MailScanner-ID: s7I11Fgv026136
-X-yoursite-MailScanner: Found to be clean
-X-yoursite-MailScanner-SpamScore: ssss
-X-yoursite-MailScanner-From: timothybriggs@rbs.co.uk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408380657-6718-2-git-send-email-acourbot@nvidia.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a business proposal to share with you if interested, please get back to me as soon as possible for more info. Thank you.
+On Mon, Aug 18, 2014 at 09:50:56AM -0700, Alexandre Courbot wrote:
+> GPIO descriptors are changing from unique and permanent tokens to
+> allocated resources. Therefore gpiochip_get_desc() cannot be used as a
+> way to obtain a global GPIO descriptor anymore.
+> 
+> This patch updates the gpiolib ACPI support code to keep and use the
+> descriptor returned by a centralized call to gpiochip_get_desc().
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpio/gpiolib-acpi.c | 22 ++++++++++++++--------
+>  1 file changed, 14 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+> index d62eaaa75397..9596a1023579 100644
+> --- a/drivers/gpio/gpiolib-acpi.c
+> +++ b/drivers/gpio/gpiolib-acpi.c
+> @@ -25,10 +25,12 @@ struct acpi_gpio_event {
+>  	acpi_handle handle;
+>  	unsigned int pin;
+>  	unsigned int irq;
+> +	gpio_desc *desc;
 
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
+This needs to be 
+	struct gpio_desc *desc;
 
+>  };
+
+Tested on Asus T100TA and nothing seems to break, so:
+
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
