@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaHSSl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:41:56 -0400
-Received: from [213.186.176.85] ([213.186.176.85]:29386 "EHLO mail.inu.edu.jo"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256AbaHSSlz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:41:55 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1753784AbaHSSm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:42:56 -0400
+Received: from ozlabs.org ([103.22.144.67]:58264 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753355AbaHSSmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 14:42:55 -0400
+Date: Wed, 20 Aug 2014 04:42:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 18
+Message-ID: <20140820044244.7e58b9f3@canb.auug.org.au>
+In-Reply-To: <20140819152426.GA19665@roeck-us.net>
+References: <20140818133259.3d1182fd@canb.auug.org.au>
+	<20140819152426.GA19665@roeck-us.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: 9/11/13/24/43 a
-To: Recipients <El@vger.kernel.org>
-From: El@vger.kernel.org, Gordo@vger.kernel.org
-Date: Wed, 20 Aug 2014 08:37:13 -0700
-Reply-To: infostalon@aol.com
-Message-ID: <MAILX5KST7y6HYxNKZv000015ad@mail.inu.edu.jo>
-X-OriginalArrivalTime: 19 Aug 2014 18:39:55.0328 (UTC) FILETIME=[F87E9C00:01CFBBDC]
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/G5rjfs3RlvrBIW00zLx65/m"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/G5rjfs3RlvrBIW00zLx65/m
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-POSLEDNÁ OZNÁMENIE
-VÁŠ EMAIL ID získal (450,000.00 EUR) v španielskom "El Gordo"
-International E-mail lotérie ocenenie sa štastné císla 9/11/13/24/43 a
-Ref: ES/9420X2/68.
-Pre objasnenie a riadenie Kontakt:
-STALLION MEGA NÁROK AGENCY
-Pán, Juan Carlos
+Hi Guenter,
 
-E-mail, infostalon@aol.com
-Tel :0034-632 662 036 (hovorí anglicky a španielsky)
-S vašou plné názvy, adresa, vek, povolanie, Telefónne císla,
-Poslat odpoved na tento e-mail: infostalon@aol.com
-Gratulujeme.
-S pozdravom,
+On Tue, 19 Aug 2014 08:24:26 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
+>
+> Something in this tree appears to be completely broken. All my qemu tests
+> fail with it. It _seems_ that the problem is related to either mount rela=
+ted
+> or to locking related code. Someone might want to have a look. Given that
+> all of my runtime tests crash, it is probably easy to reproduce by just
+> trying to load an image on an x86 system.
+
+Hopefully you are seeing what will be fixed by Hugh Dickins' patch in
+today's linux-next.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/G5rjfs3RlvrBIW00zLx65/m
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT85qpAAoJEMDTa8Ir7ZwVkuYP/iBg+eZtXzqibU5eJ2WNwEQ0
+ztAkG3kqm20zvnx7/TaMN86pYzht5lvlo+MIC+zRqX2PkD251QUvPieiMQ8vqQWk
+oD5ezgfnkBrQghbKRL3wYLOhka5xtZcARJPwSoyHoHVn/owuMYsR5Qv2Cg9PkDce
+zpHa9gwbgvmsMLmo4vf9RD9c8eVtJ5loinjT1dIZxyUs/dswSanjJsLirsA+Z+a7
+I9xWcPG39w2Mtjp8VOlQTjsyYZAc2FmE50r8ght/DvEeheaIOFIkSNIFE2QIMDEG
+fOo/1MlX3giRdUdfoc/ZZ7/+XzBRW8MzKuZ47fzekUvmkT8Vsce8Ez25R/K/AKIl
+5E85kRX5JM+9JBEO+Qcyo1dIFraquYr/U4TUx62L88xkF9QzDyuhSKZYAVQaylH2
+RQPB4/I9JX3JWFXzYbX3mR799rtkGlBICW0qKJPSijr2Y6f9Vsbcx8JF6kZVH8yA
+GENSrMf2fAcDjGNzMSLfMD9r+lkyQwWdGLZho00erXJDux/sJvsXQgsISw1NvWV9
+6LdZwY5YIwrxTigMAJyRqBxKACKBmZlFlexH/29wJD9xAzZZSyLqr7z45hcIL4Uv
+bakAW4zBm/ushbwOhbOz1EPsLD2hGZQTHGHk1rR7jSTXvgWxRWrCmllLjnsqUO1S
+At6yu/+f9E2lxAuYPPDT
+=myqo
+-----END PGP SIGNATURE-----
+
+--Sig_/G5rjfs3RlvrBIW00zLx65/m--
