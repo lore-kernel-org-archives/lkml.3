@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaHSHWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:22:55 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:55925 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693AbaHSHWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 03:22:54 -0400
-Subject: [PATCH v3 15/17] arcmsr: modify some character string
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Aug 2014 15:22:45 +0800
-Message-ID: <1408432965.4748.70.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1752945AbaHSHZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 03:25:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44200 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752680AbaHSHZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 03:25:29 -0400
+Date: Tue, 19 Aug 2014 17:25:18 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        mdraid.pkoch@dfgh.net (Peter Koch),
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [GIT PULL REQUEST] bugfixes for md.
+Message-ID: <20140819172518.63aaeea2@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/oq_OViAl6=Tn8/_r9Y4lK0q"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
-
-Revise comment and some character strings.
-
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
-
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:41:02.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:41:12.000000000 +0800
-@@ -2,11 +2,10 @@
- *******************************************************************************
- **        O.S   : Linux
- **   FILE NAME  : arcmsr_hba.c
--**        BY    : Nick Cheng
--**   Description: SCSI RAID Device Driver for
--**                ARECA RAID Host adapter
-+**        BY    : Nick Cheng, C.L. Huang
-+**   Description: SCSI RAID Device Driver for Areca RAID Controller
- *******************************************************************************
--** Copyright (C) 2002 - 2005, Areca Technology Corporation All rights reserved
-+** Copyright (C) 2002 - 2014, Areca Technology Corporation All rights reserved
- **
- **     Web site: www.areca.com.tw
- **       E-mail: support@areca.com.tw
-@@ -70,8 +69,8 @@
- #include <scsi/scsi_transport.h>
- #include <scsi/scsicam.h>
- #include "arcmsr.h"
--MODULE_AUTHOR("Nick Cheng <support@areca.com.tw>");
--MODULE_DESCRIPTION("ARECA (ARC11xx/12xx/16xx/1880) SATA/SAS RAID Host Bus Adapter");
-+MODULE_AUTHOR("Nick Cheng, C.L. Huang <support@areca.com.tw>");
-+MODULE_DESCRIPTION("Areca ARC11xx/12xx/16xx/188x SAS/SATA RAID Controller Driver");
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_VERSION(ARCMSR_DRIVER_VERSION);
- 
-@@ -126,8 +125,7 @@ static int arcmsr_adjust_disk_queue_dept
- 
- static struct scsi_host_template arcmsr_scsi_host_template = {
- 	.module			= THIS_MODULE,
--	.name			= "ARCMSR ARECA SATA/SAS RAID Controller"
--				ARCMSR_DRIVER_VERSION,
-+	.name			= "Areca SAS/SATA RAID driver",
- 	.info			= arcmsr_info,
- 	.queuecommand		= arcmsr_queue_command,
- 	.eh_abort_handler		= arcmsr_abort,
-@@ -3355,14 +3353,14 @@ static const char *arcmsr_info(struct Sc
- 	case PCI_DEVICE_ID_ARECA_1680:
- 	case PCI_DEVICE_ID_ARECA_1681:
- 	case PCI_DEVICE_ID_ARECA_1880:
--		type = "SAS";
-+		type = "SAS/SATA";
- 		break;
- 	default:
--		type = "X-TYPE";
-+		type = "unknown";
-+		raid6 =	0;
- 		break;
- 	}
--	sprintf(buf, "Areca %s Host Adapter RAID Controller%s\n %s",
--			type, raid6 ? "( RAID6 capable)" : "",
--			ARCMSR_DRIVER_VERSION);
-+	sprintf(buf, "Areca %s RAID Controller %s\narcmsr version %s\n",
-+		type, raid6 ? "(RAID6 capable)" : "", ARCMSR_DRIVER_VERSION);
- 	return buf;
- }
+--Sig_/oq_OViAl6=Tn8/_r9Y4lK0q
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
 
+Here are the bug-fixes I promised :-)
+Funny how you start looking for one and other start appearing.
+
+Thanks,
+NeilBrown
+
+
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+
+are available in the git repository at:
+
+  git://neil.brown.name/md/ tags/md/3.17-fixes
+
+for you to fetch changes up to cb8b12b5d81cf8522076f99a90bc3b795825c3b3:
+
+  md/raid10: always initialise ->state on newly allocated r10_bio (2014-08-=
+19 17:20:27 +1000)
+
+----------------------------------------------------------------
+md bugfixes for 3.17
+
+ - raid6 data corruption during recovery
+ - raid6 livelock
+ - raid10 memory leaks.
+
+----------------------------------------------------------------
+NeilBrown (6):
+      md/raid5: avoid livelock caused by non-aligned writes.
+      md/raid6: avoid data corruption during recovery of double-degraded RA=
+ID6
+      md/raid10: fix memory leak when reshaping a RAID10.
+      md/raid10: Fix memory leak when raid10 reshape completes.
+      md/raid10: avoid memory leak on error path during reshape.
+      md/raid10: always initialise ->state on newly allocated r10_bio
+
+ drivers/md/raid10.c | 7 ++++++-
+ drivers/md/raid5.c  | 4 +++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+--Sig_/oq_OViAl6=Tn8/_r9Y4lK0q
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU/L73jnsnt1WYoG5AQJ+8Q/9GpdaFcujvSluo4j4pBpKDE48Wc+w4Vn/
+n+TWzT1+3U8oqXUzBMYcQoMaN+o4JdxjPyoEQfGSadPtOsN7vfk3EeMWr2UJuB35
+jT3B4+Rzn2cVYaklO5YR7gKCvA+9y8l6Bu968+o8qdfUviMbD4F7JsVE3D6mX0S2
+UxCBCLSjSKBQLAk8IGZfWI7DmEzlEokDkX1B1TcjUoW9ITGKt4koae+q6DNE7va6
+7fkPnbAAkVCEK6YixqRiBraDkyTo+eDGEoqHDZ976LJxEoctm2wUpVRnTs5QTFTX
+qleEaZ5yFY/EfKfLJuiEiP3pfOl6pxB0C3yVxfSQz7o3fmNN5u78u7K2rsjR+0mo
+HGHKZI+6IDPTCrm1qu2TtBw+kn5cdqdIyNALpGoY59uL6LvfQ3wv88VUGYgjehBu
+tcu1kwP3jhgnZMo5c4tSpYYhjeFIDaYJifszbkavBr7fsz6z/+/BLzt2Oc+jWHt/
+Mw+ZH5R05AEPMIJtS7QxLV2ZRlfvhnBUbVW422oZXrBdCh+OuAzuH9ejF5ViBtSi
+rUUcQMvPRuuUHS3dpfElsmwBqSQC5I0hJ7dLe7RZ8v69Vzb0YyR8iZycQPLzDoPV
+3fzy/lgjVmIJvdGa0Z6xk8Qr7+/34/RXYPif4S9GPzbmt7UOLl6AyIdCHgYBs/oi
+RRYjA3Nha54=
+=HXbp
+-----END PGP SIGNATURE-----
+
+--Sig_/oq_OViAl6=Tn8/_r9Y4lK0q--
