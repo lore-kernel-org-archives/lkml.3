@@ -1,119 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbaHSO0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:26:47 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:46026 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961AbaHSO0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:26:45 -0400
-Message-ID: <1408458401.18505.31.camel@marge.simpson.net>
-Subject: Re: [PATCH v2 2/3] time,signal: protect resource use statistics
- with seqlock
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, fweisbec@gmail.com, akpm@linux-foundation.org,
-        srao@redhat.com, lwoodman@redhat.com, atheurer@redhat.com
-Date: Tue, 19 Aug 2014 16:26:41 +0200
-In-Reply-To: <53F207B4.6070908@redhat.com>
-References: <1408133138-22048-1-git-send-email-riel@redhat.com>
-	 <1408133138-22048-3-git-send-email-riel@redhat.com>
-	 <20140816141159.GA8709@redhat.com>
-	 <20140816134010.26a9b572@annuminas.surriel.com>
-	 <20140816175002.GA24994@redhat.com>
-	 <1408337089.5570.16.camel@marge.simpson.net> <53F207B4.6070908@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753150AbaHSO04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:26:56 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:47849
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753161AbaHSO0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:26:54 -0400
+Date: Tue, 19 Aug 2014 09:21:36 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Mark Brown <broonie@kernel.org>, Jean Delvare <jdelvare@suse.de>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: power supply gating with ltc2978
+In-Reply-To: <20140818030717.GA5131@roeck-us.net>
+Message-ID: <alpine.DEB.2.02.1408190914310.22837@atx-linux-37>
+References: <alpine.DEB.2.02.1408151623140.21645@atx-linux-37> <20140816132050.GH28623@sirena.org.uk> <20140818030717.GA5131@roeck-us.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: DM2PR04CA034.namprd04.prod.outlook.com (10.141.154.152) To
+ BY2PR03MB313.namprd03.prod.outlook.com (10.141.139.13)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0308EE423E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009006)(6009001)(24454002)(51704005)(189002)(199003)(77096002)(50986999)(4396001)(102836001)(74502001)(81156004)(85306004)(46406003)(79102001)(110136001)(77982001)(99396002)(42186005)(83506001)(76176999)(53416004)(101416001)(106356001)(83322001)(54356999)(23726002)(86152002)(86362001)(83072002)(74662001)(95666004)(81342001)(81542001)(87976001)(76482001)(85852003)(80022001)(50466002)(33716001)(66066001)(46102001)(105586002)(47776003)(20776003)(92726001)(107046002)(69596002)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB313;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-18 at 10:03 -0400, Rik van Riel wrote: 
-> On 08/18/2014 12:44 AM, Mike Galbraith wrote:
-> > On Sat, 2014-08-16 at 19:50 +0200, Oleg Nesterov wrote:
-> >> On 08/16, Rik van Riel wrote:
-> >>>
-> >>> +	do {
-> >>> +		seq = nextseq;
-> >>> +		read_seqbegin_or_lock(&sig->stats_lock, &seq);
-> >>> +		times->utime = sig->utime;
-> >>> +		times->stime = sig->stime;
-> >>> +		times->sum_exec_runtime = sig->sum_sched_runtime;
-> >>> +
-> >>> +		for_each_thread(tsk, t) {
-> >>> +			task_cputime(t, &utime, &stime);
-> >>> +			times->utime += utime;
-> >>> +			times->stime += stime;
-> >>> +			times->sum_exec_runtime += task_sched_runtime(t);
-> >>> +		}
-> >>> +		/* If lockless access failed, take the lock. */
-> >>> +		nextseq = 1;
-> >>
-> >> Yes, thanks, this answers my concerns.
-> >>
-> >> Cough... can't resist, and I still think that we should take rcu_read_lock()
-> >> only around for_each_thread() and the patch expands the critical section for
-> >> no reason. But this is minor, I won't insist.
-> >
-> > Hm.  Should traversal not also disable preemption to preserve the error
-> > bound Peter mentioned?
+On Mon, 18 Aug 2014, Guenter Roeck wrote:
+
+> On Sat, Aug 16, 2014 at 02:20:50PM +0100, Mark Brown wrote:
+> > On Fri, Aug 15, 2014 at 04:34:49PM -0500, atull wrote:
+> > 
+> > > I am interested in adding functionality to be able to gate power supplies 
+> > > going through a ltc2978.  I see that there is a hwmon driver already 
+> > > existing (hwmon/pmbus/ltc2978.c).  I see some of the other hwmon drivers 
+> > > have MFD's.  It looks like this ltc driver would need a MFD and a 
+> > > regulator driver added.  However I don't see other pmbus hwmon drivers
+> > > using MFD.
+> > 
+> > > So I am asking for recommendations and reservations on how to proceed here 
+> > > before I get too far with this.
+> > 
+> > Without knowing anything at all about pmbus or this particular hardware
+> > it's hard to comment but what you're saying here sounds sensible (though
+> > I do see that apparently splitting the drivers may not actually be
+> > sensible from Guenter's followup).
 > 
-> The second traversal takes the spinlock, which automatically
-> disables preemption.
+> I had originally thought about converting the pmbus drivers to mfd with client
+> drivers, but I concluded that it would add a lot of complexity with little gain.
+> It makes sense to separate a driver into mfd and a number of client drivers
+> if a device has clear functional blocks for the different devices it supports.
+> With PMBus, this is not the case. Separating a PMBus driver would be a purely
+> artificial costruct, and there would be overlapping functionality. Separating
+> just a single driver out of the group of PMBus drivers, as seems to be suggested
+> above, makes even less sense as one simply can not separate the core PMBus
+> driver code from its front-end drivers.
+> 
+> On the other side, adding regulator support into the PMBus driver code would
+> make a lot of sense. It should also be quite straightforward.
+> 
+> Or anyway that is my opinion. If someone wants to spend the time and separate
+> the PMBus drivers into an MfD part and hwmon and regulator client drivers, I'll
+> be happy to look at the resulting patch set.
+> 
+> Guenter
+> 
 
-According to my testing, a PREEMPT kernel can get all the way through
-thread_group_cputime() lockless, preemption can/does happen during
-traversal, the call can and does then take more than ticks * CPUs (can
-take LOTS more if you get silly), so Peter's bound appears to be toast
-for PREEMPT.
+Hi Guenter,
 
-Not that I really care mind you, just seemed the folks who don't do
-zillion threads, would never feel the pain you're alleviating, now get
-some accuracy loss if running PREEMPT.
+I'd really rather just add regulator support to the PMBus driver code and 
+avoid all the mess of creating a MFD.  It seems more straigtforward. I'll 
+let you know when I have something working to look at.
 
-BTW, something else that doesn't matter one bit but I was curious about,
-as noted, clock_gettime() used to use the tasklist_lock, which is loads
-better than siglock, at least on a modest box.  On a 64 core box with
-200 threads, crusty old 3.0 kernel is faster than patched up master, and
-configs are both NOPREEMPT tune-for-maximum-bloat.
-
-('course what zillion cores + zillion threads does with tasklist_lock
-ain't _at all_ pretty, but it doesn't demolish modest boxen)
-
-patched master 
-vogelweide:/abuild/mike/:[0]# time ./pound_clock_gettime
-
-real    0m2.953s
-user    0m0.036s
-sys     3m2.588s
-vogelweide:/abuild/mike/:[0]# time ./pound_clock_gettime
-
-real    0m2.930s
-user    0m0.076s
-sys     3m1.800s
-vogelweide:/abuild/mike/:[0]# time ./pound_clock_gettime
-
-real    0m2.988s
-user    0m0.052s
-sys     3m5.208s
-
-sle11-sp3 (3.0.101)
-vogelweide:/abuild/mike/:[0]# time ./pound_clock_gettime
-
-real    0m1.521s
-user    0m0.072s
-sys     0m8.397s
-vogelweide:/abuild/mike/:[0]# time ./pound_clock_gettime
-
-real    0m1.260s
-user    0m0.032s
-sys     0m6.244s
-vogelweide:/abuild/mike/:[0]# time ./pound_clock_gettime
-
-real    0m1.391s
-user    0m0.020s
-sys     0m7.016s
-
+Alan
