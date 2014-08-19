@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaHSPRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:17:10 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:56393 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925AbaHSPRH (ORCPT
+	id S1753575AbaHSPRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:17:19 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:58122 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396AbaHSPRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:17:07 -0400
+	Tue, 19 Aug 2014 11:17:16 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -14,9 +14,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
         Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH v9 3/9] arm: Remove DEBUG_LL_UART_NONE
-Date: Tue, 19 Aug 2014 16:16:41 +0100
-Message-Id: <1408461407-10429-4-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v9 9/9] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+Date: Tue, 19 Aug 2014 16:16:47 +0100
+Message-Id: <1408461407-10429-10-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408461407-10429-1-git-send-email-daniel.thompson@linaro.org>
 References: <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>
@@ -25,40 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only a very small handful of platforms support DEBUG_LL_UART_NONE but it
-lurks in the menus of every single platform config ready to break the
-build. This is an especial problem for defconfig/oldconfig since it is
-often selected by default.
+When building a multi_v7_defconfig kernel it is not possible to configure
+DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
+accurately and worse, it is possible to configure a different serial
+device but KConfig does not honour this request. In fact this also
+overrides the user selection for some of the single platform kernels, for
+example I don't think DEBUG_LL can be targetted at ICE or semihosted
+supervisor for ARCH_VERSATILE.
 
-This patch solves the problem by removing this option. Any platforms
-still depending upon this option must be migrated.
+This happens because DEBUG_UART_PL01X is automatically enabled by
+some architectures and this means user decisions made regarding
+the DEBUG_LL backend will be overriden. Problem is fixed by removing the
+automatic enabling of this option.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/Kconfig.debug | 9 ---------
- 1 file changed, 9 deletions(-)
+ arch/arm/Kconfig.debug | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b11ad54..9c46729 100644
+index f92b98f..537dd04 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -877,15 +877,6 @@ choice
- 		  This option selects UART0 on VIA/Wondermedia System-on-a-chip
- 		  devices, including VT8500, WM8505, WM8650 and WM8850.
+@@ -1127,12 +1127,7 @@ config DEBUG_LL_INCLUDE
  
--	config DEBUG_LL_UART_NONE
--		bool "No low-level debugging UART"
--		depends on !ARCH_MULTIPLATFORM
--		help
--		  Say Y here if your platform doesn't provide a UART option
--		  above. This relies on your platform choosing the right UART
--		  definition internally in order for low-level debugging to
--		  work.
--
- 	config DEBUG_ICEDCC
- 		bool "Kernel low-level debugging via EmbeddedICE DCC channel"
- 		help
+ # Compatibility options for PL01x
+ config DEBUG_UART_PL01X
+-	def_bool ARCH_EP93XX || \
+-		ARCH_INTEGRATOR || \
+-		ARCH_SPEAR3XX || \
+-		ARCH_SPEAR6XX || \
+-		ARCH_SPEAR13XX || \
+-		ARCH_VERSATILE
++	bool
+ 
+ #Compatibility options for 8250
+ config DEBUG_UART_8250
 -- 
 1.9.3
 
