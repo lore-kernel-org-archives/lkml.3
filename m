@@ -1,172 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743AbaHSM2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:28:45 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:33364 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569AbaHSM2m (ORCPT
+	id S1752846AbaHSM3X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:29:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62859 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751976AbaHSM3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:28:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408450078-6296-1-git-send-email-cw00.choi@samsung.com>
-References: <1408449463-3987-1-git-send-email-cw00.choi@samsung.com>
-	<1408450078-6296-1-git-send-email-cw00.choi@samsung.com>
-Date: Tue, 19 Aug 2014 08:28:40 -0400
-Message-ID: <CAC-25o9ExZVTczq3ttkc5XX9ozXUCby2m7hAkUe=LAQakjzVWA@mail.gmail.com>
-Subject: Re: [PATCHv2] thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
-From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Amit Kachhap <amit.daniel@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, l.majewski@samsung.com,
-        naveen krishna <ch.naveen@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Tue, 19 Aug 2014 08:29:21 -0400
+Date: Tue, 19 Aug 2014 13:29:33 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Rob Herring <robh@kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 4/8] arm: use fixmap for text patching when text is RO
+Message-ID: <20140819122933.GI23128@arm.com>
+References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+ <1407949593-16121-5-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407949593-16121-5-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit,
+Hello,
 
-On Tue, Aug 19, 2014 at 8:07 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch add support for TRIM_RELOAD feature at Exynos3250. The TMU of
-> Exynos3250 has two TRIMINFO_CON register.
->
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Eduardo Valentin <edubezval@gmail.com>
+On Wed, Aug 13, 2014 at 06:06:29PM +0100, Kees Cook wrote:
+> From: Rabin Vincent <rabin@rab.in>
+> 
+> Use fixmaps for text patching when the kernel text is read-only,
+> inspired by x86.  This makes jump labels and kprobes work with the
+> currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
+> CONFIG_DEBUG_RODATA options.
+> 
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> [kees: fixed up for merge with "arm: use generic fixmap.h"]
+> [kees: added parse acquire/release annotations to pass C=1 builds]
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-What do you think about this patch?
+[...]
 
-> ---
-> Changes from v1:
-> - Add missing 'TMU_SUPPORT_TRIM_RELOAD' features
->
->  drivers/thermal/samsung/exynos_tmu.c      |  7 +++++--
->  drivers/thermal/samsung/exynos_tmu.h      |  5 +++--
->  drivers/thermal/samsung/exynos_tmu_data.c | 11 +++++++++--
->  drivers/thermal/samsung/exynos_tmu_data.h |  7 +++++--
->  4 files changed, 22 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index acbff14..ed01606 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -164,8 +164,11 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->                 }
->         }
->
-> -       if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
-> -               __raw_writel(1, data->base + reg->triminfo_ctrl);
-> +       if (TMU_SUPPORTS(pdata, TRIM_RELOAD)) {
-> +               for (i = 0; i < pdata->triminfo_reload_count; i++)
-> +                       __raw_writel(pdata->triminfo_reload[i],
-> +                                       data->base + reg->triminfo_ctrl[i]);
-> +       }
->
->         if (pdata->cal_mode == HW_MODE)
->                 goto skip_calib_data;
-> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index 1b4a644..72cb54e 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.h
-> +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -151,8 +151,7 @@ struct exynos_tmu_registers {
->         u32     triminfo_25_shift;
->         u32     triminfo_85_shift;
->
-> -       u32     triminfo_ctrl;
-> -       u32     triminfo_ctrl1;
-> +       u32     triminfo_ctrl[2];
->         u32     triminfo_reload_shift;
->
->         u32     tmu_ctrl;
-> @@ -295,6 +294,8 @@ struct exynos_tmu_platform_data {
->         u8 second_point_trim;
->         u8 default_temp_offset;
->         u8 test_mux;
-> +       u8 triminfo_reload[2];
-> +       u8 triminfo_reload_count;
->
->         enum calibration_type cal_type;
->         enum calibration_mode cal_mode;
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index aa8e0de..b45aa90 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -95,6 +95,8 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
->         .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
->         .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
->         .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-> +       .triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON1,
-> +       .triminfo_ctrl[1] = EXYNOS_TMU_TRIMINFO_CON2,
->         .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->         .test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
->         .buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
-> @@ -160,8 +162,11 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
->                 .temp_level = 95, \
->         }, \
->         .freq_tab_count = 2, \
-> +       .triminfo_reload[0] = 0x1, \
-> +       .triminfo_reload[1] = 0x11, \
-> +       .triminfo_reload_count = 2, \
->         .registers = &exynos3250_tmu_registers, \
-> -       .features = (TMU_SUPPORT_EMULATION | \
-> +       .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD\
->                         TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
->                         TMU_SUPPORT_EMUL_TIME)
->  #endif
-> @@ -184,7 +189,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->         .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
->         .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
->         .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-> -       .triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
-> +       .triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON2,
->         .triminfo_reload_shift = EXYNOS_TRIMINFO_RELOAD_SHIFT,
->         .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->         .test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
-> @@ -252,6 +257,8 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->                 .temp_level = 95, \
->         }, \
->         .freq_tab_count = 2, \
-> +       .triminfo_reload[0] = 0x1, \
-> +       .triminfo_reload_count = 1, \
->         .registers = &exynos4412_tmu_registers, \
->         .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
->                         TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-> index f0979e5..e0536c3 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.h
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-> @@ -57,8 +57,11 @@
->  #define EXYNOS4210_TMU_TRIG_LEVEL_MASK 0x1111
->  #define EXYNOS4210_TMU_INTCLEAR_VAL    0x1111
->
-> -/* Exynos5250 and Exynos4412 specific registers */
-> -#define EXYNOS_TMU_TRIMINFO_CON        0x14
-> +/* Exynos3250 specific registers */
-> +#define EXYNOS_TMU_TRIMINFO_CON1       0x10
+> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+> index 07314af47733..a1dce690446a 100644
+> --- a/arch/arm/kernel/patch.c
+> +++ b/arch/arm/kernel/patch.c
+> @@ -1,8 +1,11 @@
+>  #include <linux/kernel.h>
+> +#include <linux/spinlock.h>
+>  #include <linux/kprobes.h>
+> +#include <linux/mm.h>
+>  #include <linux/stop_machine.h>
+>  
+>  #include <asm/cacheflush.h>
+> +#include <asm/fixmap.h>
+>  #include <asm/smp_plat.h>
+>  #include <asm/opcodes.h>
+>  
+> @@ -13,21 +16,77 @@ struct patch {
+>  	unsigned int insn;
+>  };
+>  
+> -void __kprobes __patch_text(void *addr, unsigned int insn)
+> +static DEFINE_SPINLOCK(patch_lock);
 > +
-> +/* Exynos5250, Exynos4412 and Exynos3250 specific registers */
-> +#define EXYNOS_TMU_TRIMINFO_CON2       0x14
->  #define EXYNOS_THD_TEMP_RISE           0x50
->  #define EXYNOS_THD_TEMP_FALL           0x54
->  #define EXYNOS_EMUL_CON                0x80
-> --
-> 1.8.0
->
+> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
+> +	__acquires(&patch_lock)
+> +{
+> +	unsigned int uintaddr = (uintptr_t) addr;
+> +	bool module = !core_kernel_text(uintaddr);
+> +	struct page *page;
+> +
+> +	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
+> +		page = vmalloc_to_page(addr);
+> +	else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
+> +		page = virt_to_page(addr);
+> +	else
+> +		return addr;
+> +
+> +	if (flags)
+> +		spin_lock_irqsave(&patch_lock, *flags);
+> +	else
+> +		__acquire(&patch_lock);
 
+I don't understand the locking here. Why is it conditional, why do we need
+to disable interrupts, and are you just racing against yourself?
 
+> +	set_fixmap(fixmap, page_to_phys(page));
 
--- 
-Eduardo Bezerra Valentin
+set_fixmap does TLB invalidation, right? I think that means it can block on
+11MPCore and A15 w/ the TLBI erratum, so it's not safe to call this with
+interrupts disabled anyway.
+
+Will
