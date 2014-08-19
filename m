@@ -1,190 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaHSGSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 02:18:23 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:5376 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752589AbaHSGSW (ORCPT
+	id S1752772AbaHSGSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 02:18:40 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:36720 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635AbaHSGSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 02:18:22 -0400
-Message-ID: <53F2EBCC.9020200@huawei.com>
-Date: Tue, 19 Aug 2014 14:16:44 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: <davej@redhat.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        <guz.fnst@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Zhang Yanfei" <zhangyanfei@cn.fujitsu.com>
-CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mem-hotplug: fix boot failed in case all the nodes are hotpluggable
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 19 Aug 2014 02:18:36 -0400
+Subject: [PATCH v3 1/17] arcmsr: Revised interrupt service routine relate
+ function to fix bug
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Aug 2014 14:18:24 +0800
+Message-ID: <1408429104.4748.3.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.53F2EBDC.0117,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: b96c4e9cb1d25c9726dcb460ff40aa79
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If all the nodes are marked hotpluggable flag, alloc node data will fail.
-Because __next_mem_range_rev() will skip the hotpluggable memory regions.
-numa_clear_kernel_node_hotplug() is called after alloc node data.
+From: Ching Huang <ching2048@areca.com.tw>
 
-numa_init()
-	...
-	ret = init_func();  // this will mark hotpluggable flag from SRAT
-	...
-	memblock_set_bottom_up(false);
-	...
-	ret = numa_register_memblks(&numa_meminfo);  // this will alloc node data(pglist_data) 
-	...
-	numa_clear_kernel_node_hotplug();  // in case all the nodes are hotpluggable
-	...
+This patch rewrite the interrupt service routine relate function to fix command timeout when controller has very heavy loading.
 
-numa_register_memblks()
-	setup_node_data()
-		memblock_find_in_range_node()
-			__memblock_find_range_top_down()
-				for_each_mem_range_rev()
-					__next_mem_range_rev()
-
-This patch moves numa_clear_kernel_node_hotplug() into numa_register_memblks(),
-clear kernel node hotpluggable flag before alloc node data, then alloc node data
-won't fail even all the nodes are hotpluggable.
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
 ---
- arch/x86/mm/numa.c |   88 ++++++++++++++++++++++++++--------------------------
- 1 files changed, 44 insertions(+), 44 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index a32b706..f7ebd97 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -478,6 +478,41 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- 	return true;
- }
- 
-+static void __init numa_clear_kernel_node_hotplug(void)
-+{
-+	int i, nid;
-+	nodemask_t numa_kernel_nodes = NODE_MASK_NONE;
-+	unsigned long start, end;
-+	struct memblock_region *r;
-+
-+	/*
-+	 * At this time, all memory regions reserved by memblock are
-+	 * used by the kernel. Set the nid in memblock.reserved will
-+	 * mark out all the nodes the kernel resides in.
-+	 */
-+	for (i = 0; i < numa_meminfo.nr_blks; i++) {
-+		struct numa_memblk *mb = &numa_meminfo.blk[i];
-+		memblock_set_node(mb->start, mb->end - mb->start,
-+				  &memblock.reserved, mb->nid);
-+	}
-+
-+	/* Mark all kernel nodes. */
-+	for_each_memblock(reserved, r)
-+		node_set(r->nid, numa_kernel_nodes);
-+
-+	/* Clear MEMBLOCK_HOTPLUG flag for memory in kernel nodes. */
-+	for (i = 0; i < numa_meminfo.nr_blks; i++) {
-+		nid = numa_meminfo.blk[i].nid;
-+		if (!node_isset(nid, numa_kernel_nodes))
-+			continue;
-+
-+		start = numa_meminfo.blk[i].start;
-+		end = numa_meminfo.blk[i].end;
-+
-+		memblock_clear_hotplug(start, end - start);
-+	}
-+}
-+
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
- 	unsigned long uninitialized_var(pfn_align);
-@@ -496,6 +531,15 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	}
- 
- 	/*
-+	 * At very early time, the kernel have to use some memory such as
-+	 * loading the kernel image. We cannot prevent this anyway. So any
-+	 * node the kernel resides in should be un-hotpluggable.
-+	 *
-+	 * And when we come here, alloc node data won't fail.
-+	 */
-+	numa_clear_kernel_node_hotplug();
-+
-+	/*
- 	 * If sections array is gonna be used for pfn -> nid mapping, check
- 	 * whether its granularity is fine enough.
- 	 */
-@@ -554,41 +598,6 @@ static void __init numa_init_array(void)
- 	}
- }
- 
--static void __init numa_clear_kernel_node_hotplug(void)
--{
--	int i, nid;
--	nodemask_t numa_kernel_nodes = NODE_MASK_NONE;
--	unsigned long start, end;
--	struct memblock_region *r;
--
--	/*
--	 * At this time, all memory regions reserved by memblock are
--	 * used by the kernel. Set the nid in memblock.reserved will
--	 * mark out all the nodes the kernel resides in.
--	 */
--	for (i = 0; i < numa_meminfo.nr_blks; i++) {
--		struct numa_memblk *mb = &numa_meminfo.blk[i];
--		memblock_set_node(mb->start, mb->end - mb->start,
--				  &memblock.reserved, mb->nid);
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-07-30 10:33:02.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:02:46.000000000 +0800
+@@ -51,7 +51,7 @@ struct device_attribute;
+ #else
+ 	#define ARCMSR_MAX_FREECCB_NUM	320
+ #endif
+-#define ARCMSR_DRIVER_VERSION		     "Driver Version 1.20.00.15 2010/08/05"
++#define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
+ #define ARCMSR_SCSI_INITIATOR_ID						255
+ #define ARCMSR_MAX_XFER_SECTORS							512
+ #define ARCMSR_MAX_XFER_SECTORS_B						4096
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-07-30 10:32:28.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-01 11:02:44.000000000 +0800
+@@ -1441,14 +1441,15 @@ static void arcmsr_hba_doorbell_isr(stru
+ 	uint32_t outbound_doorbell;
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+ 	outbound_doorbell = readl(&reg->outbound_doorbell);
+-	writel(outbound_doorbell, &reg->outbound_doorbell);
+-	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(acb);
 -	}
 -
--	/* Mark all kernel nodes. */
--	for_each_memblock(reserved, r)
--		node_set(r->nid, numa_kernel_nodes);
--
--	/* Clear MEMBLOCK_HOTPLUG flag for memory in kernel nodes. */
--	for (i = 0; i < numa_meminfo.nr_blks; i++) {
--		nid = numa_meminfo.blk[i].nid;
--		if (!node_isset(nid, numa_kernel_nodes))
--			continue;
--
--		start = numa_meminfo.blk[i].start;
--		end = numa_meminfo.blk[i].end;
--
--		memblock_clear_hotplug(start, end - start);
+-	if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(acb);
 -	}
--}
--
- static int __init numa_init(int (*init_func)(void))
++	do {
++		writel(outbound_doorbell, &reg->outbound_doorbell);
++		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(acb);
++		if (outbound_doorbell & ARCMSR_OUTBOUND_IOP331_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(acb);
++		outbound_doorbell = readl(&reg->outbound_doorbell);
++	} while (outbound_doorbell & (ARCMSR_OUTBOUND_IOP331_DATA_WRITE_OK
++		| ARCMSR_OUTBOUND_IOP331_DATA_READ_OK));
+ }
+ static void arcmsr_hbc_doorbell_isr(struct AdapterControlBlock *pACB)
  {
- 	int i;
-@@ -643,15 +652,6 @@ static int __init numa_init(int (*init_func)(void))
- 	}
- 	numa_init_array();
+@@ -1462,17 +1463,19 @@ static void arcmsr_hbc_doorbell_isr(stru
+ 	*******************************************************************
+ 	*/
+ 	outbound_doorbell = readl(&reg->outbound_doorbell);
+-	writel(outbound_doorbell, &reg->outbound_doorbell_clear);/*clear interrupt*/
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(pACB);
+-	}
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(pACB);
+-	}
+-	if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE) {
+-		arcmsr_hbc_message_isr(pACB);    /* messenger of "driver to iop commands" */
+-	}
+-	return;
++	do {
++		writel(outbound_doorbell, &reg->outbound_doorbell_clear);
++		readl(&reg->outbound_doorbell_clear);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(pACB);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(pACB);
++		if (outbound_doorbell & ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE)
++			arcmsr_hbc_message_isr(pACB);
++		outbound_doorbell = readl(&reg->outbound_doorbell);
++	} while (outbound_doorbell & (ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK
++		| ARCMSR_HBCMU_IOP2DRV_DATA_READ_OK
++		| ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE));
+ }
+ static void arcmsr_hba_postqueue_isr(struct AdapterControlBlock *acb)
+ {
+@@ -1521,21 +1524,22 @@ static void arcmsr_hbc_postqueue_isr(str
+ 	/* areca cdb command done */
+ 	/* Use correct offset and size for syncing */
  
--	/*
--	 * At very early time, the kernel have to use some memory such as
--	 * loading the kernel image. We cannot prevent this anyway. So any
--	 * node the kernel resides in should be un-hotpluggable.
--	 *
--	 * And when we come here, numa_init() won't fail.
--	 */
--	numa_clear_kernel_node_hotplug();
--
- 	return 0;
+-	while (readl(&phbcmu->host_int_status) &
+-	ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR){
+-	/* check if command done with no error*/
+-	flag_ccb = readl(&phbcmu->outbound_queueport_low);
+-	ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);/*frame must be 32 bytes aligned*/
+-	arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset + ccb_cdb_phy);
+-	ccb = container_of(arcmsr_cdb, struct CommandControlBlock, arcmsr_cdb);
+-	error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1) ? true : false;
+-	/* check if command done with no error */
+-	arcmsr_drain_donequeue(acb, ccb, error);
+-	if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
+-		writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING, &phbcmu->inbound_doorbell);
+-		break;
+-	}
+-	throttling++;
++	while ((flag_ccb = readl(&phbcmu->outbound_queueport_low)) != 0xFFFFFFFF) {
++		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
++		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset
++			+ ccb_cdb_phy);
++		ccb = container_of(arcmsr_cdb, struct CommandControlBlock,
++			arcmsr_cdb);
++		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
++			? true : false;
++		/* check if command done with no error */
++		arcmsr_drain_donequeue(acb, ccb, error);
++		throttling++;
++		if (throttling == ARCMSR_HBC_ISR_THROTTLING_LEVEL) {
++			writel(ARCMSR_HBCMU_DRV2IOP_POSTQUEUE_THROTTLING,
++				&phbcmu->inbound_doorbell);
++			throttling = 0;
++		}
+ 	}
+ }
+ /*
+@@ -1584,21 +1588,22 @@ static int arcmsr_handle_hba_isr(struct 
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+ 	outbound_intstatus = readl(&reg->outbound_intstatus) &
+ 		acb->outbound_int_enable;
+-	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))	{
+-		return 1;
+-	}
+-	writel(outbound_intstatus, &reg->outbound_intstatus);
+-	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)	{
+-		arcmsr_hba_doorbell_isr(acb);
+-	}
+-	if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT) {
+-		arcmsr_hba_postqueue_isr(acb);
+-	}
+-	if(outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT) 	{
+-		/* messenger of "driver to iop commands" */
+-		arcmsr_hba_message_isr(acb);
+-	}
+-	return 0;
++	if (!(outbound_intstatus & ARCMSR_MU_OUTBOUND_HANDLE_INT))
++		return IRQ_NONE;
++	do {
++		writel(outbound_intstatus, &reg->outbound_intstatus);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_DOORBELL_INT)
++			arcmsr_hba_doorbell_isr(acb);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_POSTQUEUE_INT)
++			arcmsr_hba_postqueue_isr(acb);
++		if (outbound_intstatus & ARCMSR_MU_OUTBOUND_MESSAGE0_INT)
++			arcmsr_hba_message_isr(acb);
++		outbound_intstatus = readl(&reg->outbound_intstatus) &
++			acb->outbound_int_enable;
++	} while (outbound_intstatus & (ARCMSR_MU_OUTBOUND_DOORBELL_INT
++		| ARCMSR_MU_OUTBOUND_POSTQUEUE_INT
++		| ARCMSR_MU_OUTBOUND_MESSAGE0_INT));
++	return IRQ_HANDLED;
  }
  
--- 
-1.7.1
+ static int arcmsr_handle_hbb_isr(struct AdapterControlBlock *acb)
+@@ -1608,27 +1613,25 @@ static int arcmsr_handle_hbb_isr(struct 
+ 	outbound_doorbell = readl(reg->iop2drv_doorbell) &
+ 				acb->outbound_int_enable;
+ 	if (!outbound_doorbell)
+-		return 1;
+-
+-	writel(~outbound_doorbell, reg->iop2drv_doorbell);
+-	/*in case the last action of doorbell interrupt clearance is cached,
+-	this action can push HW to write down the clear bit*/
+-	readl(reg->iop2drv_doorbell);
+-	writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK) {
+-		arcmsr_iop2drv_data_wrote_handle(acb);
+-	}
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK) {
+-		arcmsr_iop2drv_data_read_handle(acb);
+-	}
+-	if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE) {
+-		arcmsr_hbb_postqueue_isr(acb);
+-	}
+-	if(outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE) {
+-		/* messenger of "driver to iop commands" */
+-		arcmsr_hbb_message_isr(acb);
+-	}
+-	return 0;
++		return IRQ_NONE;
++	do {
++		writel(~outbound_doorbell, reg->iop2drv_doorbell);
++		writel(ARCMSR_DRV2IOP_END_OF_INTERRUPT, reg->drv2iop_doorbell);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_WRITE_OK)
++			arcmsr_iop2drv_data_wrote_handle(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_DATA_READ_OK)
++			arcmsr_iop2drv_data_read_handle(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_CDB_DONE)
++			arcmsr_hbb_postqueue_isr(acb);
++		if (outbound_doorbell & ARCMSR_IOP2DRV_MESSAGE_CMD_DONE)
++			arcmsr_hbb_message_isr(acb);
++		outbound_doorbell = readl(reg->iop2drv_doorbell) &
++			acb->outbound_int_enable;
++	} while (outbound_doorbell & (ARCMSR_IOP2DRV_DATA_WRITE_OK
++		| ARCMSR_IOP2DRV_DATA_READ_OK
++		| ARCMSR_IOP2DRV_CDB_DONE
++		| ARCMSR_IOP2DRV_MESSAGE_CMD_DONE));
++	return IRQ_HANDLED;
+ }
+ 
+ static int arcmsr_handle_hbc_isr(struct AdapterControlBlock *pACB)
+@@ -1640,44 +1643,37 @@ static int arcmsr_handle_hbc_isr(struct 
+ 	**   check outbound intstatus
+ 	*********************************************
+ 	*/
+-	host_interrupt_status = readl(&phbcmu->host_int_status);
+-	if (!host_interrupt_status) {
+-		/*it must be share irq*/
+-		return 1;
+-	}
+-	/* MU ioctl transfer doorbell interrupts*/
+-	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR) {
+-		arcmsr_hbc_doorbell_isr(pACB);   /* messenger of "ioctl message read write" */
+-	}
+-	/* MU post queue interrupts*/
+-	if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR) {
+-		arcmsr_hbc_postqueue_isr(pACB);  /* messenger of "scsi commands" */
+-	}
+-	return 0;
++	host_interrupt_status = readl(&phbcmu->host_int_status) &
++		(ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
++		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR);
++	if (!host_interrupt_status)
++		return IRQ_NONE;
++	do {
++		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR)
++			arcmsr_hbc_doorbell_isr(pACB);
++		/* MU post queue interrupts*/
++		if (host_interrupt_status & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR)
++			arcmsr_hbc_postqueue_isr(pACB);
++		host_interrupt_status = readl(&phbcmu->host_int_status);
++	} while (host_interrupt_status & (ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR |
++		ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR));
++	return IRQ_HANDLED;
+ }
+ static irqreturn_t arcmsr_interrupt(struct AdapterControlBlock *acb)
+ {
+ 	switch (acb->adapter_type) {
+-	case ACB_ADAPTER_TYPE_A: {
+-		if (arcmsr_handle_hba_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_A:
++		return arcmsr_handle_hba_isr(acb);
+ 		break;
+-
+-	case ACB_ADAPTER_TYPE_B: {
+-		if (arcmsr_handle_hbb_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_B:
++		return arcmsr_handle_hbb_isr(acb);
+ 		break;
+-	 case ACB_ADAPTER_TYPE_C: {
+-		if (arcmsr_handle_hbc_isr(acb)) {
+-			return IRQ_NONE;
+-		}
+-		}
++	case ACB_ADAPTER_TYPE_C:
++		return arcmsr_handle_hbc_isr(acb);
++		break;
++	default:
++		return IRQ_NONE;
+ 	}
+-	return IRQ_HANDLED;
+ }
+ 
+ static void arcmsr_iop_parking(struct AdapterControlBlock *acb)
 
 
