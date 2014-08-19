@@ -1,138 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaHSOqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:46:37 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53462 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752988AbaHSOqe (ORCPT
+	id S1753185AbaHSOsw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:48:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48769 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610AbaHSOsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:46:34 -0400
-Date: Tue, 19 Aug 2014 09:46:28 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
-        ds2horner@gmail.com
-Subject: Re: [PATCH v2 2/4] zsmalloc: change return value unit of
- zs_get_total_size_bytes
-Message-ID: <20140819144628.GA26403@cerebellum.variantweb.net>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
- <1408434887-16387-3-git-send-email-minchan@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408434887-16387-3-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 19 Aug 2014 10:48:50 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH v8 0/9] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+Date: Tue, 19 Aug 2014 15:48:26 +0100
+Message-Id: <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>
+References: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 04:54:45PM +0900, Minchan Kim wrote:
-> zs_get_total_size_bytes returns a amount of memory zsmalloc
-> consumed with *byte unit* but zsmalloc operates *page unit*
-> rather than byte unit so let's change the API so benefit
-> we could get is that reduce unnecessary overhead
-> (ie, change page unit with byte unit) in zsmalloc.
-> 
-> Now, zswap can rollback to zswap_pool_pages.
-> Over to zswap guys ;-)
+This patchset removes some single-platform compatibility tricks related
+to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
+to enable DEBUG_LL. Currently the user selected kbuild setting is
+ignored and the PL01X's DEBUG_LL stub is silently selected instead. This
+is a pain if your hardware doesn't have this cell, not least because it
+takes a little time to figure out that kbuild built the wrong code.
 
-I don't think that's how is it done :-/  Changing the API for a
-component that has two users, changing one, then saying "hope you guys
-change your newly broken stuff".
+Warning:
 
-I know you would rather not move zram to the zpool API but doing so
-would avoid situations like this.
+    silentoldconfig on PL011 single platforms will result in DEBUG_LL
+    being directed at ICEDCC rather than PL011. This should only
+    affect silentoldconfig since oldconfig prompts and the defconfigs have
+    been updated to avoid this problem.
 
-Anyway, this does break the zpool API and by extension zswap, and that
-needs to be addressed in this patch or we create a point in the commit
-history where it is broken.
+Changes since v7:
+- Killed DEBUG_LL_UART_NONE completely and migrated over the four remaining
+  platforms that relied on this (Arnd Bergmann, Russell King). This
+  fixes some problems with oldconfig builds.
+- Rebased on latest mainline (v3.17rc1).
 
-Quick glance:
-- zpool_get_total_size() return type is u64 but this patch changes to
-unsigned long.  Now mismatches between zbud and zsmalloc.
-- zbud_zpool_total_size needs to return pages, not bytes
-- as you noted s/pool_total_size/pool_pages/g in zswap.c plus
-  modification to zswap_is_full()
+Changes since v6:
+- Removed a patch to limit DEBUG_LL_UART_NONE to platforms that support
+  it because it almost time to drop DEBUG_LL_UART_NONE anyway (only
+  four platforms still use it).
+- Rebased on latest mainline (v3.16rc3).
 
-Thanks,
-Seth
+Changes since v5:
 
-> 
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/block/zram/zram_drv.c |  4 ++--
->  include/linux/zsmalloc.h      |  2 +-
->  mm/zsmalloc.c                 | 10 +++++-----
->  3 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index d00831c3d731..302dd37bcea3 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
->  
->  	down_read(&zram->init_lock);
->  	if (init_done(zram))
-> -		val = zs_get_total_size_bytes(meta->mem_pool);
-> +		val = zs_get_total_size(meta->mem_pool);
->  	up_read(&zram->init_lock);
->  
-> -	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
->  }
->  
->  static ssize_t max_comp_streams_show(struct device *dev,
-> diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-> index e44d634e7fb7..105b56e45d23 100644
-> --- a/include/linux/zsmalloc.h
-> +++ b/include/linux/zsmalloc.h
-> @@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
->  			enum zs_mapmode mm);
->  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
->  
-> -u64 zs_get_total_size_bytes(struct zs_pool *pool);
-> +unsigned long zs_get_total_size(struct zs_pool *pool);
->  
->  #endif
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index a65924255763..80408a1da03a 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
->  
->  static u64 zs_zpool_total_size(void *pool)
->  {
-> -	return zs_get_total_size_bytes(pool);
-> +	return zs_get_total_size(pool) << PAGE_SHIFT;
->  }
->  
->  static struct zpool_driver zs_zpool_driver = {
-> @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
->  }
->  EXPORT_SYMBOL_GPL(zs_unmap_object);
->  
-> -u64 zs_get_total_size_bytes(struct zs_pool *pool)
-> +unsigned long zs_get_total_size(struct zs_pool *pool)
->  {
-> -	u64 npages;
-> +	unsigned long npages;
->  
->  	spin_lock(&pool->stat_lock);
->  	npages = pool->pages_allocated;
->  	spin_unlock(&pool->stat_lock);
-> -	return npages << PAGE_SHIFT;
-> +	return npages;
->  }
-> -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> +EXPORT_SYMBOL_GPL(zs_get_total_size);
->  
->  module_init(zs_init);
->  module_exit(zs_exit);
-> -- 
-> 2.0.0
-> 
+- Shortened the list of platforms that can select DEBUG_LL_UART_NONE
+  (changes Arnd Bergmann)
+- Rebased on latest mainline (v3.15rc7).
+
+Changes since v4:
+
+- Rebased to latest mainline (and tested again). No functional changes.
+
+Changes since v3:
+
+- Converted from a single patch to a series.
+- Tested defconfig builds of all impacted platforms.
+
+Changes since v2:
+
+- Switch from def_bool to bool (thanks Russell King)
+
+Changes since v1:
+
+- Remove pointless single platform support (thanks Arnd Bergmann)
+
+Daniel Thompson (9):
+  arm: versatile: Enable DEBUG_LL_UART_PL01X
+  arm: ep93xx: Enable DEBUG_LL_UART_PL01X
+  arm: Remove DEBUG_LL_UART_NONE
+  arm: ks8695: Migrate debug_ll macros to shared directory
+  arm: omap1: Migrate debug_ll macros to use 8250.S
+  arm: netx: Migrate DEBUG_LL macros to shared directory
+  arm: sa1100: Migrate DEBUG_LL macros to shared directory
+  arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+  arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+
+ arch/arm/Kconfig.debug                          | 138 ++++++++++++++++++++----
+ arch/arm/configs/ep93xx_defconfig               |   1 +
+ arch/arm/configs/versatile_defconfig            |   1 +
+ arch/arm/include/debug/ks8695.S                 |  40 +++++++
+ arch/arm/include/debug/netx.S                   |  36 +++++++
+ arch/arm/include/debug/sa1100.S                 |  37 +++++++
+ arch/arm/mach-ks8695/include/mach/debug-macro.S |  36 -------
+ arch/arm/mach-netx/include/mach/debug-macro.S   |  36 -------
+ arch/arm/mach-omap1/include/mach/debug-macro.S  | 101 -----------------
+ arch/arm/mach-sa1100/include/mach/debug-macro.S |  62 -----------
+ 10 files changed, 233 insertions(+), 255 deletions(-)
+ create mode 100644 arch/arm/include/debug/ks8695.S
+ create mode 100644 arch/arm/include/debug/netx.S
+ create mode 100644 arch/arm/include/debug/sa1100.S
+ delete mode 100644 arch/arm/mach-ks8695/include/mach/debug-macro.S
+ delete mode 100644 arch/arm/mach-netx/include/mach/debug-macro.S
+ delete mode 100644 arch/arm/mach-omap1/include/mach/debug-macro.S
+ delete mode 100644 arch/arm/mach-sa1100/include/mach/debug-macro.S
+
+--
+1.9.3
+
