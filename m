@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaHSR3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:29:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28258 "EHLO mga11.intel.com"
+	id S1753858AbaHSR3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:29:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36311 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753736AbaHSR3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:29:36 -0400
+	id S1753358AbaHSR3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:29:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,896,1400050800"; 
-   d="scan'208";a="587012990"
+   d="scan'208";a="470420408"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
         Haavard Skinnemoen <hskinnemoen@gmail.com>,
@@ -22,9 +22,9 @@ To: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
         Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 04/12] dmaengine: dw: apply both HS interfaces and remove slave_id usage
-Date: Tue, 19 Aug 2014 20:29:15 +0300
-Message-Id: <1408469363-15901-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1 08/12] spi/pxa2xx: Don't use slave_id of dma_slave_config
+Date: Tue, 19 Aug 2014 20:29:19 +0300
+Message-Id: <1408469363-15901-9-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -32,149 +32,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of one request line member let's use both source and destination ones.
-Usually we have no such hardware except Atmel MMC controller found on AVR32
-platform (see arch/avr32/mach-at32ap/at32ap700x.c and
-drivers/mmc/host/atmel-mci.c).
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-This patch removes slave_id usage since it'll be removed from the generic
-structure in later. This breaks the non-ACPI / non-DT cases for the users of
-the driver, i.e. SPI and HSUART. However, these cases mean only PCI enumerated
-devices for now, which is anyway broken (considering more than one DMA
-controller in the system) and this patch series is intended to fix that
-eventually.
+That field has been deprecated in favour of getting the necessary
+information from ACPI/DT.
 
-The ACPI and DT cases shall be aware of the channel direction when setting
-request lines, but this is a minor problem that would be addressed in future.
+However, we still need to deal systems that are PCI only (no ACPI to back
+up). In order to support such systems, we allow the DMA filter function and
+its corresponding parameter via pxa2xx_spi_master platform data. Then when
+the pxa2xx_spi_dma_setup() doesn't find the channel via ACPI, it falls back
+to use the given filter function.
 
 Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/dma/dw/core.c     | 32 ++------------------------------
- drivers/dma/dw/platform.c |  6 ++++--
- drivers/dma/dw/regs.h     |  7 ++++---
- 3 files changed, 10 insertions(+), 35 deletions(-)
+ drivers/spi/spi-pxa2xx-dma.c   | 15 ++--------
+ drivers/spi/spi-pxa2xx-pci.c   | 64 +++++++++++++++++++++++++++++++-----------
+ drivers/spi/spi-pxa2xx.c       |  2 --
+ include/linux/spi/pxa2xx_spi.h |  9 +++---
+ 4 files changed, 54 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
-index 0a9c052..1c45212 100644
---- a/drivers/dma/dw/core.c
-+++ b/drivers/dma/dw/core.c
-@@ -37,24 +37,6 @@
-  * support descriptor writeback.
-  */
+diff --git a/drivers/spi/spi-pxa2xx-dma.c b/drivers/spi/spi-pxa2xx-dma.c
+index c41ff14..62a9297 100644
+--- a/drivers/spi/spi-pxa2xx-dma.c
++++ b/drivers/spi/spi-pxa2xx-dma.c
+@@ -157,7 +157,6 @@ static struct dma_async_tx_descriptor *
+ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
+ 			   enum dma_transfer_direction dir)
+ {
+-	struct pxa2xx_spi_master *pdata = drv_data->master_info;
+ 	struct chip_data *chip = drv_data->cur_chip;
+ 	enum dma_slave_buswidth width;
+ 	struct dma_slave_config cfg;
+@@ -184,7 +183,6 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
+ 		cfg.dst_addr = drv_data->ssdr_physical;
+ 		cfg.dst_addr_width = width;
+ 		cfg.dst_maxburst = chip->dma_burst_size;
+-		cfg.slave_id = pdata->tx_slave_id;
  
--static inline bool is_request_line_unset(struct dw_dma_chan *dwc)
+ 		sgt = &drv_data->tx_sgt;
+ 		nents = drv_data->tx_nents;
+@@ -193,7 +191,6 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
+ 		cfg.src_addr = drv_data->ssdr_physical;
+ 		cfg.src_addr_width = width;
+ 		cfg.src_maxburst = chip->dma_burst_size;
+-		cfg.slave_id = pdata->rx_slave_id;
+ 
+ 		sgt = &drv_data->rx_sgt;
+ 		nents = drv_data->rx_nents;
+@@ -210,14 +207,6 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
+ 				       DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ }
+ 
+-static bool pxa2xx_spi_dma_filter(struct dma_chan *chan, void *param)
 -{
--	return dwc->request_line == (typeof(dwc->request_line))~0;
+-	const struct pxa2xx_spi_master *pdata = param;
+-
+-	return chan->chan_id == pdata->tx_chan_id ||
+-	       chan->chan_id == pdata->rx_chan_id;
 -}
 -
--static inline void dwc_set_masters(struct dw_dma_chan *dwc)
--{
--	struct dw_dma *dw = to_dw_dma(dwc->chan.device);
--	struct dw_dma_slave *dws = dwc->chan.private;
--	unsigned char mmax = dw->nr_masters - 1;
--
--	if (!is_request_line_unset(dwc))
--		return;
--
--	dwc->src_master = min_t(unsigned char, mmax, dwc_get_sms(dws));
--	dwc->dst_master = min_t(unsigned char, mmax, dwc_get_dms(dws));
--}
--
- #define DWC_DEFAULT_CTLLO(_chan) ({				\
- 		struct dw_dma_chan *_dwc = to_dw_dma_chan(_chan);	\
- 		struct dma_slave_config	*_sconfig = &_dwc->dma_sconfig;	\
-@@ -158,10 +140,8 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
- 		cfghi |= DWC_CFGH_DST_PER(dws->dst_id);
- 		cfghi |= DWC_CFGH_SRC_PER(dws->src_id);
- 	} else {
--		if (dwc->direction == DMA_MEM_TO_DEV)
--			cfghi = DWC_CFGH_DST_PER(dwc->request_line);
--		else if (dwc->direction == DMA_DEV_TO_MEM)
--			cfghi = DWC_CFGH_SRC_PER(dwc->request_line);
-+		cfghi |= DWC_CFGH_DST_PER(dwc->dst_id);
-+		cfghi |= DWC_CFGH_SRC_PER(dwc->src_id);
- 	}
+ bool pxa2xx_spi_dma_is_possible(size_t len)
+ {
+ 	return len <= MAX_DMA_LEN;
+@@ -321,12 +310,12 @@ int pxa2xx_spi_dma_setup(struct driver_data *drv_data)
+ 		return -ENOMEM;
  
- 	channel_writel(dwc, CFG_LO, cfglo);
-@@ -967,10 +947,6 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
- 	memcpy(&dwc->dma_sconfig, sconfig, sizeof(*sconfig));
- 	dwc->direction = sconfig->direction;
+ 	drv_data->tx_chan = dma_request_slave_channel_compat(mask,
+-				pxa2xx_spi_dma_filter, pdata, dev, "tx");
++				pdata->dma_filter, pdata->tx_param, dev, "tx");
+ 	if (!drv_data->tx_chan)
+ 		return -ENODEV;
  
--	/* Take the request line from slave_id member */
--	if (is_request_line_unset(dwc))
--		dwc->request_line = sconfig->slave_id;
--
- 	convert_burst(&dwc->dma_sconfig.src_maxburst);
- 	convert_burst(&dwc->dma_sconfig.dst_maxburst);
+ 	drv_data->rx_chan = dma_request_slave_channel_compat(mask,
+-				pxa2xx_spi_dma_filter, pdata, dev, "rx");
++				pdata->dma_filter, pdata->rx_param, dev, "rx");
+ 	if (!drv_data->rx_chan) {
+ 		dma_release_channel(drv_data->tx_chan);
+ 		drv_data->tx_chan = NULL;
+diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
+index 20ebbc7..0424b67 100644
+--- a/drivers/spi/spi-pxa2xx-pci.c
++++ b/drivers/spi/spi-pxa2xx-pci.c
+@@ -10,6 +10,9 @@
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
  
-@@ -1123,8 +1099,6 @@ static int dwc_alloc_chan_resources(struct dma_chan *chan)
- 	 * doesn't mean what you think it means), and status writeback.
- 	 */
++#include <linux/dmaengine.h>
++#include <linux/platform_data/dma-dw.h>
++
+ enum {
+ 	PORT_CE4100,
+ 	PORT_BYT,
+@@ -19,33 +22,41 @@ struct pxa_spi_info {
+ 	enum pxa_ssp_type type;
+ 	int port_id;
+ 	int num_chipselect;
+-	int tx_slave_id;
+-	int tx_chan_id;
+-	int rx_slave_id;
+-	int rx_chan_id;
+ 	unsigned long max_clk_rate;
++
++	/* DMA channel request parameters */
++	void *tx_param;
++	void *rx_param;
+ };
  
--	dwc_set_masters(dwc);
--
- 	spin_lock_irqsave(&dwc->lock, flags);
- 	i = dwc->descs_allocated;
- 	while (dwc->descs_allocated < NR_DESCS_PER_CHANNEL) {
-@@ -1182,7 +1156,6 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
- 	list_splice_init(&dwc->free_list, &list);
- 	dwc->descs_allocated = 0;
- 	dwc->initialized = false;
--	dwc->request_line = ~0;
++static struct dw_dma_slave byt_tx_param = { .dst_id = 0 };
++static struct dw_dma_slave byt_rx_param = { .src_id = 1 };
++
++static bool lpss_dma_filter(struct dma_chan *chan, void *param)
++{
++	struct dw_dma_slave *dws = param;
++
++	if (dws->dma_dev != chan->device->dev)
++		return false;
++
++	chan->private = dws;
++	return true;
++}
++
+ static struct pxa_spi_info spi_info_configs[] = {
+ 	[PORT_CE4100] = {
+ 		.type = PXA25x_SSP,
+ 		.port_id =  -1,
+ 		.num_chipselect = -1,
+-		.tx_slave_id = -1,
+-		.tx_chan_id = -1,
+-		.rx_slave_id = -1,
+-		.rx_chan_id = -1,
+ 		.max_clk_rate = 3686400,
+ 	},
+ 	[PORT_BYT] = {
+ 		.type = LPSS_SSP,
+ 		.port_id = 0,
+ 		.num_chipselect = 1,
+-		.tx_slave_id = 0,
+-		.tx_chan_id = 0,
+-		.rx_slave_id = 1,
+-		.rx_chan_id = 1,
+ 		.max_clk_rate = 50000000,
++		.tx_param = &byt_tx_param,
++		.rx_param = &byt_rx_param,
+ 	},
+ };
  
- 	/* Disable interrupts */
- 	channel_clear_bit(dw, MASK.XFER, dwc->mask);
-@@ -1604,7 +1577,6 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
- 		channel_clear_bit(dw, CH_EN, dwc->mask);
+@@ -59,6 +70,7 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
+ 	struct ssp_device *ssp;
+ 	struct pxa_spi_info *c;
+ 	char buf[40];
++	struct pci_dev *dma_dev;
  
- 		dwc->direction = DMA_TRANS_NONE;
--		dwc->request_line = ~0;
+ 	ret = pcim_enable_device(dev);
+ 	if (ret)
+@@ -73,11 +85,29 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
+ 	memset(&spi_pdata, 0, sizeof(spi_pdata));
+ 	spi_pdata.num_chipselect = (c->num_chipselect > 0) ?
+ 					c->num_chipselect : dev->devfn;
+-	spi_pdata.tx_slave_id = c->tx_slave_id;
+-	spi_pdata.tx_chan_id = c->tx_chan_id;
+-	spi_pdata.rx_slave_id = c->rx_slave_id;
+-	spi_pdata.rx_chan_id = c->rx_chan_id;
+-	spi_pdata.enable_dma = c->rx_slave_id >= 0 && c->tx_slave_id >= 0;
++
++	dma_dev = pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
++
++	if (c->tx_param) {
++		struct dw_dma_slave *slave = c->tx_param;
++
++		slave->dma_dev = &dma_dev->dev;
++		slave->src_master = 1;
++		slave->dst_master = 0;
++	}
++
++	if (c->rx_param) {
++		struct dw_dma_slave *slave = c->rx_param;
++
++		slave->dma_dev = &dma_dev->dev;
++		slave->src_master = 1;
++		slave->dst_master = 0;
++	}
++
++	spi_pdata.dma_filter = lpss_dma_filter;
++	spi_pdata.tx_param = c->tx_param;
++	spi_pdata.rx_param = c->rx_param;
++	spi_pdata.enable_dma = c->rx_param && c->tx_param;
  
- 		/* Hardware configuration */
- 		if (autocfg) {
-diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
-index c5b339a..7aa3cd3 100644
---- a/drivers/dma/dw/platform.c
-+++ b/drivers/dma/dw/platform.c
-@@ -41,7 +41,8 @@ static bool dw_dma_of_filter(struct dma_chan *chan, void *param)
- 	if (chan->device != &fargs->dw->dma)
- 		return false;
+ 	ssp = &spi_pdata.ssp;
+ 	ssp->phys_base = pci_resource_start(dev, 0);
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index fe79210..256c0ab 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1062,8 +1062,6 @@ pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
  
--	dwc->request_line = fargs->req;
-+	dwc->src_id = fargs->req;
-+	dwc->dst_id = fargs->req;
- 	dwc->src_master	= fargs->src;
- 	dwc->dst_master	= fargs->dst;
+ 	pdata->num_chipselect = 1;
+ 	pdata->enable_dma = true;
+-	pdata->tx_chan_id = -1;
+-	pdata->rx_chan_id = -1;
  
-@@ -86,7 +87,8 @@ static bool dw_dma_acpi_filter(struct dma_chan *chan, void *param)
- 	    chan->chan_id != dma_spec->chan_id)
- 		return false;
+ 	return pdata;
+ }
+diff --git a/include/linux/spi/pxa2xx_spi.h b/include/linux/spi/pxa2xx_spi.h
+index 82d5111..d5a3165 100644
+--- a/include/linux/spi/pxa2xx_spi.h
++++ b/include/linux/spi/pxa2xx_spi.h
+@@ -23,6 +23,8 @@
+ #define PXA2XX_CS_ASSERT (0x01)
+ #define PXA2XX_CS_DEASSERT (0x02)
  
--	dwc->request_line = dma_spec->slave_id;
-+	dwc->src_id = dma_spec->slave_id;
-+	dwc->dst_id = dma_spec->slave_id;
- 	dwc->src_master = dwc_get_sms(NULL);
- 	dwc->dst_master = dwc_get_dms(NULL);
++struct dma_chan;
++
+ /* device.platform_data for SSP controller devices */
+ struct pxa2xx_spi_master {
+ 	u32 clock_enable;
+@@ -30,10 +32,9 @@ struct pxa2xx_spi_master {
+ 	u8 enable_dma;
  
-diff --git a/drivers/dma/dw/regs.h b/drivers/dma/dw/regs.h
-index af02439..0e82d99 100644
---- a/drivers/dma/dw/regs.h
-+++ b/drivers/dma/dw/regs.h
-@@ -221,9 +221,10 @@ struct dw_dma_chan {
- 	bool			nollp;
+ 	/* DMA engine specific config */
+-	int rx_chan_id;
+-	int tx_chan_id;
+-	int rx_slave_id;
+-	int tx_slave_id;
++	bool (*dma_filter)(struct dma_chan *chan, void *param);
++	void *tx_param;
++	void *rx_param;
  
- 	/* custom slave configuration */
--	unsigned int		request_line;
--	unsigned char		src_master;
--	unsigned char		dst_master;
-+	u8			src_id;
-+	u8			dst_id;
-+	u8			src_master;
-+	u8			dst_master;
- 
- 	/* configuration passed via DMA_SLAVE_CONFIG */
- 	struct dma_slave_config dma_sconfig;
+ 	/* For non-PXA arches */
+ 	struct ssp_device ssp;
 -- 
 2.1.0
 
