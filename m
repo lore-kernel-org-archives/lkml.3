@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaHSELf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 00:11:35 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:52400 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750724AbaHSELd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 00:11:33 -0400
+	id S1751723AbaHSE37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 00:29:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42264 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774AbaHSE36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 00:29:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,891,1400050800"; 
+   d="scan'208";a="578545736"
+Date: Tue, 19 Aug 2014 12:30:06 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: lkp@01.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [writeback] 952648324b9: xfstests.xfs.026.fail
+Message-ID: <20140819043006.GA11419@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20140818151954.GA20284@redhat.com>
-References: <20140816025007.GB3347@wotan.suse.de> <s5h1tsfwqi2.wl-tiwai@suse.de>
- <20140817122527.GA30546@redhat.com> <20140817124803.GA31996@redhat.com>
- <20140817125505.GA32429@redhat.com> <20140817174624.GE3347@wotan.suse.de>
- <20140817182138.GA4411@redhat.com> <s5hfvguw570.wl-tiwai@suse.de>
- <20140818122217.GA12707@redhat.com> <s5ha97253yo.wl-tiwai@suse.de> <20140818151954.GA20284@redhat.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 18 Aug 2014 23:11:10 -0500
-X-Google-Sender-Auth: yMbGvHacSyeObIpvEeyv1JbvF1c
-Message-ID: <CAB=NE6VADPpBDDrbb1jsNEr=QEbRUMOxo=bBa9S+4W0ybDQz3w@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] init / kthread: add module_long_probe_init() and module_long_probe_exit()
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 10:19 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> And, again, I do not really know which version is better.
+Hi Jan,
 
-In Chicago right now -- feedback was it seems the that generally
-splitting up probe from init might be good in the end, if we do this
-we won't need a work around for drivers that wait until our
-grandmothers die on probe, but we certainly will then be penalizing
-drivers who's init does take over 30 seconds. I'm waiting to see an
-alternative version of the solution provided as an example on the
-other thread, maybe it will fix my keyboard issue :)
+We find more xfstests changes on "writeback: Per-sb dirty tracking".
 
- Luis
+008 seems improved, the others are regressions.
+063 failure is not 100% reproducible.
+
+df3be46bdbab23e  952648324b969f3fc22d3a2a7  
+---------------  -------------------------  
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.026.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.027.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.061.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.281.fail
+         0           +Inf%          0 ±200%  TOTAL xfstests.xfs.063.fail
+         0 ±489%    -100.0%          0 ± 0%  TOTAL xfstests.xfs.008.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.056.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.059.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.060.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.266.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.282.fail
+         0           +Inf%          1 ± 0%  TOTAL xfstests.xfs.283.fail
+
+Thanks,
+Fengguang
