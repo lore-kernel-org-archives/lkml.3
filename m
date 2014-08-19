@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244AbaHSOAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:00:15 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:53474 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaHSOAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:00:12 -0400
-From: Yannis Damigos <giannis.damigos@gmail.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Yannis Damigos <giannis.damigos@gmail.com>
-Subject: [PATCH 1/1] staging: imx-drm: Lines over 80 characters fixed.
-Date: Tue, 19 Aug 2014 16:59:57 +0300
-Message-Id: <1408456797-19437-1-git-send-email-giannis.damigos@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <20140819124112.GB7791@kroah.com>
-References: <20140819124112.GB7791@kroah.com>
+	id S1752765AbaHSOBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:01:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60178 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752509AbaHSOBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:01:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="590210275"
+Date: Tue, 19 Aug 2014 19:15:07 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        laurent.pinchart@ideasonboard.com,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
+ dma controller API
+Message-ID: <20140819134507.GJ13288@intel.com>
+References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140814085301.GJ2452@ldesroches-Latitude-E6320>
+ <20140814085753.GS30401@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140814085753.GS30401@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ipuv3-crtc.c file that fixes up two "lines
-over 80 characters" warnings found by the checkpatch.pl tool.
+On Thu, Aug 14, 2014 at 09:57:53AM +0100, Russell King - ARM Linux wrote:
+> On Thu, Aug 14, 2014 at 10:53:01AM +0200, Ludovic Desroches wrote:
+> > On Wed, Jul 30, 2014 at 06:03:13PM +0200, Maxime Ripard wrote:
+> > > The dmaengine is neither trivial nor properly documented at the moment, which
+> > > means a lot of trial and error development, which is not that good for such a
+> > > central piece of the system.
+> > > 
+> > > Attempt at making such a documentation.
+> > 
+> > Good idea, many questions are asked when writing a new dmaengine driver.
+> > 
+> > For instance I didn't find how to use the DMA_CTRL_ACK flags.
+> > 
+> > - How this flag has to be managed? For instance, async_tx_ack is used in
+> > dmaengine driver but also in some devices.
+> > - Is it mandatory to deal with this flag? It seems some dmaengine
+> > drivers don't care about it.
+> This is one part of the DMA engine API that even I don't understand.
+> 
+> It's got something to do with the async engine API, and seems to be
+> something to do with whether a descriptor can have other transactions
+> added to it, and whether a descriptor can be re-used (async-tx engines
+> typically allocate a fixed set of descriptors and recycle them.)
+Yes this is my understanding too. Async API IIUC can reuse descriptors and
+if engine doesnt support this is a way to tell them please do use that.
 
-Signed-off-by: Yannis Damigos <giannis.damigos@gmail.com>
----
- drivers/staging/imx-drm/ipuv3-crtc.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+For slave dmanegine API we need to ignore it.
+> 
+> I was never able to get to the bottom of what that flag meant or how
+> it should be used with the DMA slave API (and I suspect everyone else
+> just gave up trying to understand it as well.)
 
-diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
-index 720868b..c4c6455 100644
---- a/drivers/staging/imx-drm/ipuv3-crtc.c
-+++ b/drivers/staging/imx-drm/ipuv3-crtc.c
-@@ -201,9 +201,9 @@ static int ipu_crtc_mode_set(struct drm_crtc *crtc,
- 		return ret;
- 	}
- 
--	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode, crtc->primary->fb,
--				  0, 0, mode->hdisplay, mode->vdisplay,
--				  x, y, mode->hdisplay, mode->vdisplay);
-+	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode,
-+			crtc->primary->fb, 0, 0, mode->hdisplay, mode->vdisplay,
-+			x, y, mode->hdisplay, mode->vdisplay);
- }
- 
- static void ipu_crtc_handle_pageflip(struct ipu_crtc *ipu_crtc)
-@@ -227,7 +227,8 @@ static irqreturn_t ipu_irq_handler(int irq, void *dev_id)
- 
- 	if (ipu_crtc->newfb) {
- 		ipu_crtc->newfb = NULL;
--		ipu_plane_set_base(ipu_crtc->plane[0], ipu_crtc->base.primary->fb,
-+		ipu_plane_set_base(ipu_crtc->plane[0],
-+				ipu_crtc->base.primary->fb,
- 				ipu_crtc->plane[0]->x, ipu_crtc->plane[0]->y);
- 		ipu_crtc_handle_pageflip(ipu_crtc);
- 	}
 -- 
-2.0.4
-
+~Vinod
