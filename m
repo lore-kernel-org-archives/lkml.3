@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbaHSRbG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:31:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10172 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753066AbaHSR3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:29:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,896,1400050800"; 
-   d="scan'208";a="590323022"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
-        Hein Tibosch <hein_tibosch@yahoo.es>,
-        Russell King <linux@arm.linux.org.uk>,
+	id S1754018AbaHSRba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:31:30 -0400
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:54591 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997AbaHSRb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:31:27 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 02/12] avr32: at32ap700x: don't rely on default DMA masters
-Date: Tue, 19 Aug 2014 20:29:13 +0300
-Message-Id: <1408469363-15901-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+        linux-usb@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Julius Werner <jwerner@chromium.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH v3 3/4] xhci: Export symbols used by host-controller drivers
+Date: Tue, 19 Aug 2014 10:01:51 -0700
+Message-Id: <1408467712-27497-4-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1408467712-27497-1-git-send-email-abrestic@chromium.org>
+References: <1408467712-27497-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In future we are going to remove the defaults of AHB masters from dw_dmac
-driver. It means each user have to supply proper source and destination masters
-by itself explicitly.
+In preparation for allowing the xHCI host controller drivers to be built
+as separate modules, export symbols from the xHCI core that may be used
+by the host controller drivers.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
- arch/avr32/mach-at32ap/at32ap700x.c | 2 ++
- 1 file changed, 2 insertions(+)
+Changes from v2:
+ - exported xhci_dbg_quirks tracepoint
+Changes from v1:
+ - exported xhci_run()
+---
+ drivers/usb/host/xhci-dbg.c   | 1 +
+ drivers/usb/host/xhci-trace.c | 2 ++
+ drivers/usb/host/xhci.c       | 4 ++++
+ 3 files changed, 7 insertions(+)
 
-diff --git a/arch/avr32/mach-at32ap/at32ap700x.c b/arch/avr32/mach-at32ap/at32ap700x.c
-index 2a1aa71..ec7be28 100644
---- a/arch/avr32/mach-at32ap/at32ap700x.c
-+++ b/arch/avr32/mach-at32ap/at32ap700x.c
-@@ -1360,6 +1360,8 @@ at32_add_device_mci(unsigned int id, struct mci_platform_data *data)
- 				| DWC_CFGH_DST_PER(1));
- 	slave->sdata.cfg_lo &= ~(DWC_CFGL_HS_DST_POL
- 				| DWC_CFGL_HS_SRC_POL);
-+	slave->sdata.src_master = 1;
-+	slave->sdata.dst_master = 0;
+diff --git a/drivers/usb/host/xhci-dbg.c b/drivers/usb/host/xhci-dbg.c
+index eb009a4..bb89175 100644
+--- a/drivers/usb/host/xhci-dbg.c
++++ b/drivers/usb/host/xhci-dbg.c
+@@ -594,3 +594,4 @@ void xhci_dbg_trace(struct xhci_hcd *xhci, void (*trace)(struct va_format *),
+ 	trace(&vaf);
+ 	va_end(args);
+ }
++EXPORT_SYMBOL_GPL(xhci_dbg_trace);
+diff --git a/drivers/usb/host/xhci-trace.c b/drivers/usb/host/xhci-trace.c
+index 7cf30c8..367b630 100644
+--- a/drivers/usb/host/xhci-trace.c
++++ b/drivers/usb/host/xhci-trace.c
+@@ -13,3 +13,5 @@
  
- 	data->dma_slave = slave;
+ #define CREATE_TRACE_POINTS
+ #include "xhci-trace.h"
++
++EXPORT_TRACEPOINT_SYMBOL_GPL(xhci_dbg_quirks);
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index a5cd831..edfc96f 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -653,6 +653,7 @@ int xhci_run(struct usb_hcd *hcd)
+ 			"Finished xhci_run for USB2 roothub");
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(xhci_run);
  
+ static void xhci_only_stop_hcd(struct usb_hcd *hcd)
+ {
+@@ -927,6 +928,7 @@ int xhci_suspend(struct xhci_hcd *xhci)
+ 
+ 	return rc;
+ }
++EXPORT_SYMBOL_GPL(xhci_suspend);
+ 
+ /*
+  * start xHC (not bus-specific)
+@@ -1078,6 +1080,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 
+ 	return retval;
+ }
++EXPORT_SYMBOL_GPL(xhci_resume);
+ #endif	/* CONFIG_PM */
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -4892,6 +4895,7 @@ error:
+ 	kfree(xhci);
+ 	return retval;
+ }
++EXPORT_SYMBOL_GPL(xhci_gen_setup);
+ 
+ static const struct hc_driver xhci_hc_driver = {
+ 	.description =		"xhci-hcd",
 -- 
-2.1.0
+2.1.0.rc2.206.gedb03e5
 
