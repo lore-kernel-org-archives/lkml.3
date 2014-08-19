@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119AbaHSQUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:20:01 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48993 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244AbaHSQT7 (ORCPT
+	id S1753298AbaHSQUZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:20:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52481 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180AbaHSQUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:19:59 -0400
-Date: Tue, 19 Aug 2014 11:12:17 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, nicoleotsuka@gmail.com,
-        Li.Xiubo@freescale.com, shc_work@mail.ru, fabio.estevam@freescale.com,
-        xobs@kosagi.com, arnd@arndb.de, sfr@canb.auug.org.au, timur@tabi.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Message-ID: <20140819161217.GK24407@sirena.org.uk>
-References: <bfed4dfd3cf1ef134dac1f114f3d2b8cedf55c68.1408440952.git.shengjiu.wang@freescale.com>
+	Tue, 19 Aug 2014 12:20:22 -0400
+Date: Tue, 19 Aug 2014 11:15:46 -0500
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Robert Baldyga <r.baldyga@samsung.com>, "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
+Subject: Re: [PATCH RESEND v3 00/12] usb: dwc2/gadget: fix series
+Message-ID: <20140819161546.GA32151@kroah.com>
+References: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+ <A2CA0424C0A6F04399FB9E1CD98E0304844C8CA5@US01WEMBX2.internal.synopsys.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zPXeIxDajdrcF2en"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <bfed4dfd3cf1ef134dac1f114f3d2b8cedf55c68.1408440952.git.shengjiu.wang@freescale.com>
-X-Cookie: If you can read this, you're too close.
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844C8CA5@US01WEMBX2.internal.synopsys.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 216.80.65.10
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2] ASoC: fsl-asoc-card: move 'config
- SND_SOC_FSL_ASOC_CARD' to 'if SND_IMX_SOC'
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 19, 2014 at 03:46:58PM +0000, Paul Zimmerman wrote:
+> > From: Robert Baldyga [mailto:r.baldyga@samsung.com]
+> > Sent: Tuesday, August 19, 2014 1:54 AM
+> > 
+> > Hi Paul,
+> > 
+> > I'm resending this patchset rebased on linux-next. Now it should apply.
+> > 
+> > Thanks,
+> > Robert Baldyga
+> > 
+> > Changelog:
+> > v3: https://lkml.org/lkml/2014/8/4/617
+> > - use endpoint index instead of FIFO index for EPFIFO
+> > - extend patch description
+> > 
+> > v2: https://lkml.org/lkml/2014/7/16/199
+> > - add patch usb: dwc2/gadget: avoid disabling ep0
+> > - fix FIFO flushing when it's assigned to endpoint dynamically
+> > - write to proper FIFO in s3c_hsotg_write_fifo() function
+> > - use real FIFO size in kill_all_requests
+> > - fix comment in s3c_hsotg_init_fifo() function
+> > 
+> > v1: https://lkml.org/lkml/2014/6/23/67
+> > 
+> > Andrzej Pietrasiewicz (1):
+> >   usb: dwc2/gadget: Fix comment text
+> > 
+> > Kamil Debski (3):
+> >   usb: dwc2/gadget: fix phy disable sequence
+> >   usb: dwc2/gadget: fix phy initialization sequence
+> >   usb: dwc2/gadget: move phy bus legth initialization
+> > 
+> > Marek Szyprowski (5):
+> >   usb: dwc2/gadget: hide some not really needed debug messages
+> >   usb: dwc2/gadget: ensure that all fifos have correct memory buffers
+> >   usb: dwc2/gadget: break infinite loop in endpoint disable code
+> >   usb: dwc2/gadget: do not call disconnect method in pullup
+> >   usb: dwc2/gadget: delay enabling irq once hardware is configured
+> >     properly
+> > 
+> > Robert Baldyga (3):
+> >   usb: dwc2/gadget: assign TX FIFO dynamically
+> >   usb: dwc2/gadget: disable clock when it's not needed
+> >   usb: dwc2/gadget: avoid disabling ep0
+> > 
+> >  drivers/usb/dwc2/core.h   |   3 +
+> >  drivers/usb/dwc2/gadget.c | 184 +++++++++++++++++++++++++++-------------------
+> >  2 files changed, 111 insertions(+), 76 deletions(-)
+> 
+> Thanks Robert.
+> 
+> For the entire series,
+> Acked-by: Paul Zimmerman <paulz@synopsys.com>
+> 
+> Greg, can you please apply this to your usb-next tree? Thanks.
 
---zPXeIxDajdrcF2en
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+For 3.17-final, or 3.18-rc1?
 
-On Tue, Aug 19, 2014 at 05:36:41PM +0800, Shengjiu Wang wrote:
-> Build kernel with SND_SOC_FSL_ASOC_CARD=m && SND_SOC_FSL_{SSI,SAI,ESAI}=y
-> leads the following error:
+thanks,
 
-Applied, thanks.
-
---zPXeIxDajdrcF2en
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT83deAAoJELSic+t+oim9uToP/i3y1fRfHj1rQn0Iv+LEJd91
-MjSO6dPrx5Bvb7AOzfSNTYpu2i3vnHiDfb/tu9/316WllJFZPf96rECTqJJAYnT0
-63BM1UfkYtSR3nXB1EEa9vpKc2GJbEZthz3ONRiB8UGVmH0RHNhql6ErGig09TgZ
-v6EylmP6t18LhL9rFzzZK0CpjaLAKADk59rTCqIYU+tyh3YEtQwAnqBOzsVtCfwU
-SemBNPD3SkOoq8zoi1Pc9Ohc2pOgws2BSMOZDURZiU2vqNASJUIrb3Tgq7yiFqFA
-Pf6xVBBZ0b3wS4I8FcWzyOnSs8PWGPTHQfUbeCqDmD1IBH6BYpTnzwS114PXZaNk
-aThJnaYVEzhR5LZGCbfpfNMeDyKEXCOk99R7H7UCowBEAWBdzziZ6vz00sDLrACR
-Z8pe4s0EqklPtYYBNqMu/OMR5Q5R5wJIGIrr0LiEZFs4O7vZ0rfDaqOw5N+f7VQ4
-16vL4aTPIR3g2F4ehzUFldgL/Q5LdQlaTO9cGJ+x4B1Suim72Wboe0OywIeUlJXy
-Sq7c+MHPHiEw/PnXrnhHvjjBV+vFx8UfR0wLyVge9QILofkccz4SiEzu9CClNDBN
-O6TbXLcMnB3OsakT+qHe16dk5PuMKfIC+XUgA9DrXlKLgHt8yc+eJUQLJcMBGrmO
-ZtHiCPbS2Qz3htw0LZrY
-=V7E/
------END PGP SIGNATURE-----
-
---zPXeIxDajdrcF2en--
+greg k-h
