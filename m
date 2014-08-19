@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246AbaHSPPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:15:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60037 "EHLO mga09.intel.com"
+	id S1753331AbaHSPQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:16:35 -0400
+Received: from sauhun.de ([89.238.76.85]:38411 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751260AbaHSPPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:15:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
-   d="scan'208";a="590249426"
-Date: Tue, 19 Aug 2014 18:14:28 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: ts72xx_wdt: Kill superfluous variable in remove
-Message-ID: <20140819151428.GT1660@lahna.fi.intel.com>
-References: <1408449432-25274-1-git-send-email-mika.westerberg@linux.intel.com>
- <20140819145916.GC18536@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140819145916.GC18536@roeck-us.net>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752760AbaHSPQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:16:33 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH] MAINTAINERS: add maintainer for ACPI parts of I2C
+Date: Tue, 19 Aug 2014 10:16:21 -0500
+Message-Id: <1408461381-18463-1-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 07:59:16AM -0700, Guenter Roeck wrote:
-> On Tue, Aug 19, 2014 at 02:57:12PM +0300, Mika Westerberg wrote:
-> > There is no need to store the return value of misc_deregister() in a
-> > variable. Instead we can just return the value directly.
-> > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/watchdog/ts72xx_wdt.c | 6 +-----
-> >  1 file changed, 1 insertion(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/watchdog/ts72xx_wdt.c b/drivers/watchdog/ts72xx_wdt.c
-> > index afa9d6ef353a..dee9c6cbe6df 100644
-> > --- a/drivers/watchdog/ts72xx_wdt.c
-> > +++ b/drivers/watchdog/ts72xx_wdt.c
-> > @@ -428,11 +428,7 @@ static int ts72xx_wdt_probe(struct platform_device *pdev)
-> >  
-> >  static int ts72xx_wdt_remove(struct platform_device *pdev)
-> >  {
-> > -	int error;
-> > -
-> > -	error = misc_deregister(&ts72xx_wdt_miscdev);
-> > -
-> > -	return error;
-> > +	return misc_deregister(&ts72xx_wdt_miscdev);
-> 
-> Is that worth it, and does it even reduce code size ?
+Mika has done great work in that field, so let people know.
 
-Well, it makes that particular function look better.
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
 
-> Converting the driver to use the watchdog infrastructure would make much more sense
-> (if someone can test the result).
+Mika: What do you think? Your help is very valuable and I'd like to make that
+official :)
 
-I agree that converting makes sense, but that is subject of a separate patch.
+ MAINTAINERS | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index aefa94841ff3..edba18ce39bb 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4446,6 +4446,13 @@ F:	include/linux/i2c-*.h
+ F:	include/uapi/linux/i2c.h
+ F:	include/uapi/linux/i2c-*.h
+ 
++I2C ACPI SUPPORT
++M:	Mika Westerberg <mika.westerberg@linux.intel.com>
++L:	linux-i2c@vger.kernel.org
++L:	linux-acpi@vger.kernel.org
++S:	Maintained
++F:	drivers/i2c/i2c-acpi.c
++
+ I2C-TAOS-EVM DRIVER
+ M:	Jean Delvare <jdelvare@suse.de>
+ L:	linux-i2c@vger.kernel.org
+-- 
+2.0.0
+
