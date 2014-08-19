@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaHSGKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 02:10:51 -0400
-Received: from relmlor3.renesas.com ([210.160.252.173]:19578 "EHLO
-	relmlie2.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752589AbaHSGKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 02:10:49 -0400
-X-IronPort-AV: E=Sophos;i="5.01,892,1399993200"; 
-   d="scan'208";a="167009587"
-Message-ID: <53F2EA5C.1020403@renesas.com>
-Date: Tue, 19 Aug 2014 15:10:36 +0900
-From: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752851AbaHSGLv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 02:11:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752589AbaHSGLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 02:11:49 -0400
+Message-ID: <53F2EA9B.5010208@redhat.com>
+Date: Tue, 19 Aug 2014 08:11:39 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@chromium.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Julius Werner <jwerner@chromium.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] xhci: Introduce xhci_init_driver()
-References: <1408378343-9352-1-git-send-email-abrestic@chromium.org> <1408378343-9352-2-git-send-email-abrestic@chromium.org>
-In-Reply-To: <1408378343-9352-2-git-send-email-abrestic@chromium.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>, hpa@zytor.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] KVM: vmx: fix ept reserved bits for 1-GByte page
+References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com> <53F1D313.5010108@redhat.com> <20140819021741.GA2003@kernel>
+In-Reply-To: <20140819021741.GA2003@kernel>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [211.11.155.147]
-X-ClientProxiedBy: HKNPR03CA011.apcprd03.prod.outlook.com (10.141.16.21) To
- HKNPR06MB324.apcprd06.prod.outlook.com (10.141.38.18)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0308EE423E
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019006)(6049001)(6009001)(189002)(51704005)(199003)(24454002)(479174003)(74662001)(92726001)(85306004)(99396002)(76482001)(31966008)(42186005)(87266999)(102836001)(77982001)(101416001)(33656002)(36756003)(92566001)(87976001)(65816999)(46102001)(50986999)(4396001)(74502001)(54356999)(79102001)(66066001)(80316001)(19580395003)(19580405001)(83072002)(47776003)(20776003)(76176999)(83506001)(50466002)(86362001)(23756003)(21056001)(107046002)(64706001)(81342001)(85852003)(77096002)(83322001)(95666004)(106356001)(59896002)(65806001)(64126003)(105586002)(80022001)(81542001);DIR:OUT;SFP:1102;SCL:1;SRVR:HKNPR06MB324;H:[10.161.20.147];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: renesas.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Il 19/08/2014 04:17, Wanpeng Li ha scritto:
+>>> >> -		if (level == 1 || (level == 2 && (spte & (1ULL << 7)))) {
+>>> >> +		if (level == 1 || ((level == 3 || level == 2)
+>>> >> +				&& (spte & (1ULL << 7)))) {
+>> >
+>> >This condition can be simplified by checking the return value of ept_rsvd_mask.
+>> >If it includes 0x38, this is a large page.
 
-(2014/08/19 1:12), Andrew Bresticker wrote:
-> Since the struct hc_driver is mostly the same across the xhci-pci,
-> xhci-plat, and the upcoming xhci-tegra driver, introduce the function
-> xhci_init_driver() which will populate the hc_driver with the default
-> xHCI operations.  The caller must supply a setup function which will
-> be used as the hc_driver's reset callback.
-> 
-> Note that xhci-plat also overrides the default ->start() callback so
-> that it can do rcar-specific initialization.
-> 
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> ---
-> Changes from v1:
->  - rebased on changes introduced by xhci-rcar driver
-< snip >
-> @@ -300,6 +249,8 @@ MODULE_ALIAS("platform:xhci-hcd");
->  
->  int xhci_register_plat(void)
->  {
-> +	xhci_init_driver(&xhci_plat_hc_driver, xhci_plat_setup);
-> +	xhci_plat_hc_drver.start = xhci_plat_start;
+Oops, a "not" was missing. If it includes 0x38, this is _not_ a large
+page (it is a page directory / page directory pointer / PML4).
 
-Thank you for the care of xhci-rcar driver.
-However, this "xhci_plat_hc_drver" should be "xhci_plat_hc_driver".
+>> Otherwise it is a leaf page and
+>> you can go down the "if".
+> As you know, 5:3 bits which used for EPT MT are not reserved bits, so 
+> I fail to understand why check the return value of ept_rsvd_mask and 
+> it's a large page if includes 0x38. Could you eplain in more details? ;-)
 
-After I modified it by myself, I could build the xhci-plat-hcd.ko in my environment.
+A non-leaf page will always have 0x38 in the ept_rsvd_mask.  A leaf page
+will never have 0x38 in the ept_rsvd_mask.
 
-Best regards,
-Yoshihiro Shimoda
+Paolo
