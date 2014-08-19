@@ -1,99 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaHSIzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:55:49 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:57765
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1752545AbaHSI4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:56:13 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:11183
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752252AbaHSIzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:55:43 -0400
-Date: Tue, 19 Aug 2014 16:55:34 +0800
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: <fabio.estevam@freescale.com>, <sfr@canb.auug.org.au>,
-        <alsa-devel@alsa-project.org>, <timur@tabi.org>, <arnd@arndb.de>,
-        <shc_work@mail.ru>, <tiwai@suse.de>, <Li.Xiubo@freescale.com>,
-        <lgirdwood@gmail.com>, <nicoleotsuka@gmail.com>, <broonie@kernel.org>,
-        <xobs@kosagi.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove
- dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-Message-ID: <20140819085533.GC5806@audiosh1>
-References: <cover.1408350626.git.shengjiu.wang@freescale.com>
- <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
- <53F22F5E.2090601@metafoo.de> <20140819074103.GA5806@audiosh1>
- <53F30C91.7080700@metafoo.de> <53F30E90.8080902@metafoo.de>
-MIME-Version: 1.0
+	id S1752474AbaHSI4I convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 04:56:08 -0400
+From: Dexuan Cui <decui@microsoft.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        KY Srinivasan <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH] Input: hyperv-keyboard - implement Type Clipboard Text
+Thread-Topic: [PATCH] Input: hyperv-keyboard - implement Type Clipboard Text
+Thread-Index: AQHPuKofLzaqUkka1EmYO6oSNGBw9pvVuwLggAD+nACAAHbpAA==
+Date: Tue, 19 Aug 2014 08:55:39 +0000
+Message-ID: <EE124450C0AAF944A40DD71E61F878C9936FC3@SINEX14MBXC417.southpacific.corp.microsoft.com>
+References: <1408095719-19117-1-git-send-email-decui@microsoft.com>
+ <20140815165733.GB25225@core.coreip.homeip.net>
+ <EE124450C0AAF944A40DD71E61F878C9933040@SINEX14MBXC417.southpacific.corp.microsoft.com>
+ <20140818185151.GB31121@core.coreip.homeip.net>
+In-Reply-To: <20140818185151.GB31121@core.coreip.homeip.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.3.94]
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <53F30E90.8080902@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019006)(6009001)(24454002)(189002)(199003)(377454003)(479174003)(51704005)(76482001)(15975445006)(79102001)(74502001)(15202345003)(85306004)(106466001)(93886004)(46102001)(105606002)(86362001)(95666004)(104016003)(33716001)(77982001)(107046002)(97736001)(97756001)(110136001)(84676001)(54356999)(31966008)(46406003)(74662001)(83322001)(85852003)(87936001)(26826002)(50986999)(20776003)(47776003)(19580395003)(80022001)(64706001)(33656002)(92726001)(92566001)(6806004)(19580405001)(81542001)(83506001)(102836001)(99396002)(44976005)(76176999)(68736004)(83072002)(81342001)(4396001)(50466002)(23726002)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB245;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019006)(6009001)(438002)(52604005)(51704005)(199003)(13464003)(24454002)(164054003)(377454003)(189002)(16796002)(74662001)(74502001)(86362001)(85306004)(81542001)(93886004)(50466002)(23726002)(31966008)(81342001)(50986999)(84676001)(85806002)(76176999)(99396002)(54356999)(97736001)(83072002)(21056001)(92726001)(92566001)(87936001)(97756001)(2656002)(110136001)(85852003)(77096002)(26826002)(33656002)(64706001)(47776003)(83322001)(4396001)(19580395003)(69596002)(20776003)(44976005)(6806004)(86612001)(79102001)(68736004)(95666004)(77982001)(107046002)(80022001)(106116001)(81156004)(106466001)(46102001)(55846006)(76482001)(46406003)(21314002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB248;H:mail.microsoft.com;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-O365ENT-EOP-Header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
 X-Forefront-PRVS: 0308EE423E
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+Authentication-Results: spf=pass (sender IP is 131.107.125.37)
+ smtp.mailfrom=decui@microsoft.com; 
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 10:45:04AM +0200, Lars-Peter Clausen wrote:
-> On 08/19/2014 10:36 AM, Lars-Peter Clausen wrote:
-> >On 08/19/2014 09:41 AM, Shengjiu Wang wrote:
-> >>On Mon, Aug 18, 2014 at 06:52:46PM +0200, Lars-Peter Clausen wrote:
-> >>>On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
-> >>>>Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the
-> >>>>following
-> >>>>error:
-> >>>>
-> >>>>    sound/built-in.o: In function `fsl_sai_probe':
-> >>>>>>fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
-> >>>>    sound/built-in.o: In function `fsl_esai_probe':
-> >>>>>>fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
-> >>>>
-> >>>>Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init' which is
-> >>>>defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it
-> >>>>depends
-> >>>>on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
-> >>>>selected.
-> >>>>So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
-> >>>>
-> >>>>Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> >>>>Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
-> >>>
-> >>>Those if conditions where just added[1] by Arnd to avoid other build
-> >>>failures. So just removing them again makes little sense.
-> >>>
-> >>>As far as I can see imx_pcm_dma_init() should be stubbed out when
-> >>>SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
-> >>>
-> >>>[1]
-> >>>http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40260f79dc0436604452bccd449bffd25ebafb
-> >>>
-> >>>
-> >>Lars-Peter Clausen & Arnd
-> >>
-> >>The purpose of Arnd's patch is same with me, which is to resolve the build
-> >>error when SND_SOC_IMX_PCM_DMA=m & SND_SOC_FSL_SSI/SAI/ESAI/SPDIF=y, the
-> >>error is "undefined reference to `imx_pcm_dma_init'".
-> >>But Arnd's patch didn't involve this situation that SND_IMX_SOC=n &
-> >>SND_SOC_IMX_PCM_DMA=m.
-> >
-> >Having SND_SOC_IMX_PCM_DMA selected if SND_IMX_SOC is not selected makes no
-> >sense. I think the proper fix is to find out why it is selected and make
-> >sure that it is not selected when SND_IMX_SOC is not selected.
-> 
-> 
-> I guess the issue happens if SND_SOC_FSL_ASOC_CARD=m and
-> SND_SOC_FSL_{ESAI,SAI,SSI}=y. In this case the fix is simply to drop
-> the select SND_SOC_IMX_PCM_DMA from SND_SOC_FSL_ASOC_CARD.
-> 
-> - Lars
+> -----Original Message-----
+> From: Dmitry Torokhov
+> Sent: Tuesday, August 19, 2014 2:52 AM
+> To: Dexuan Cui
+> On Mon, Aug 18, 2014 at 03:54:51AM +0000, Dexuan Cui wrote:
+> > > -----Original Message-----
+> > > From: Dmitry Torokhov
+> > > Sent: Saturday, August 16, 2014 0:58 AM
+> > > To: Dexuan Cui
+> > > > For each char in the string, the host sends 2 events (key down/up with
+> the
+> > > > char's UNICODE value) to the guest.
+> > > > The patch finds each char's scan codes of key down/up, and injects the
+> > > > scan codes to the serio keyboard module.
+> > > >
+> > > No way. If you want to do this this way, do it in hypervisor code and keep
+> > > feeding AT scan codes to hyperv-keyboard, although I am pretty sure
+> users
+> > Hi Dmitry,
+> > Yeah, I had the same wish, but later I found this seems unlikely because
+> IMO
+> > the feature was firstly invented for Windows VM + generic UNICODE chars,
+> > and we know there is no "scan code" for generic UNICODE chars... :-(
 >
+> Do you know what guest is running? You could potentially gate on that.
+I'm not sure if the host knows this or not.
+But even if the host knows this, IMO it seems bad for the host to discriminate
+between Windows guest and Linux guest. And generally there is no scan code
+for UNICODE chars.
 
-Yes, you are right. Thanks. I will send another patch.
+And, here the patch tries to use a light-weight and straightforward method
+to achieve the basic functionality of "Type (host) clipboard text (to guest)" --
+the patch doesn't use the guest's X11 clipboard and it works for both text
+mode tty and X11 window's input (for English keyboard layout. Please see my
+below reply).
 
-best regards
-wang shengjiu 
+I studied open-vm-tools.sourceforge.net and
+github.com/vmware/open-vm-tools.
+My impression is: it's a pretty big collection of utilities/daemons and its code
+seems bound to vmware-specific  features, maybe that's why it's called
+"open-vm-tools" rather than "generic-vm-tools" :-)
+1)  2517/2528 of the commits of the git repo are from vmware;
+2) In Ubuntu 14.04, the utilities of open-vm-tools are just named as
+vmware-XXX (I checked this by "dpkg-query -L open-vm-tools");
+3) about the text copy&paste functionality between host/guest in either
+direction, the implementation of open-vm-tools uses host/guest X11
+clipboards and hence doesn't work in real text mode tty terminal, and,
+vmware-specific implementation of backdoor() is extensively used -- I
+don't think there is such an equivalent in other hypervisors'
+environment, AFAIK.
+
+So IMHO it's impractical for me to re-use open-vm-tools here?
+
+> > > of
+> > > French, Czech and other keyboard layouts with numbers in upper register
+> > > and
+> > > symbols in lower will have a few choice words for you.
+> > Sorry, I can't understand what these are.
+> > Can you please give more details or a link to further info?
+>
+> On French and many other European layouts to produce a number one
+> needs to use
+> Shift key, instead of simply using lower register, as on US or UK layouts. I.e.
+> if you send scancode for KEY_3 through your proposed implementation it will
+> produce '#' and KEY_SHIFT + KEY_3 will result in '3'.
+>
+> There are also issues with QWERTY/AZERTY and other layouts...
+> Dmitry
+
+Hi Dmitry,
+Thanks for pointing this out!
+This is a real issue -- my patch only works for English layout. :-(
+
+I wrongly assumed  there is a 1:1 mapping between an ASCII char and a
+scan code -- this is not true considering different keyboard layouts(keymaps).
+
+So looks it's impossible for me to implement the functionality through the
+path of the keyboard input subsystem... :-(
+A feasible method would be: I can write a lightweight userland daemon,
+just like open-vm-tools, which receives the string from the host and passes it
+to the X11 windowing system directly using X11 APIs(this doesn't work in text
+mode however).
+
+Looking forward to your comment.
+
+Thanks,
+-- Dexuan
+
