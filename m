@@ -1,173 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaHSLj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:39:58 -0400
-Received: from mga14.intel.com ([192.55.52.115]:38195 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492AbaHSLj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:39:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,893,1400050800"; 
-   d="scan'208";a="578697016"
-Date: Tue, 19 Aug 2014 19:40:03 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Eric W. Biederman" <ebiederman@twitter.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, LKP <lkp@01.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [vfs mnt_set_mountpoint] BUG: unable to handle kernel paging request
- at 5a5a5a5e
-Message-ID: <20140819114003.GA18960@localhost>
+	id S1752675AbaHSLlG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:41:06 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:53538 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaHSLlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 07:41:03 -0400
+Date: Tue, 19 Aug 2014 12:40:53 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, David Miller <davem@davemloft.net>,
+        Haiyang Zhang <haiyangz@microsoft.com>, devel@linuxdriverproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Subject: Re: BUG: unable to handle kernel paging request at ffff8801f3febe63
+ (netvsc_select_queue)
+Message-ID: <20140819114053.GA12160@sucs.org>
+References: <20140819081517.GA22083@sucs.org>
+ <53F3117A.4040304@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Heirloom mailx 12.5 6/20/10
+In-Reply-To: <53F3117A.4040304@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On Tue, Aug 19, 2014 at 10:57:30AM +0200, Daniel Borkmann wrote:
+> On 08/19/2014 10:15 AM, Sitsofe Wheeler wrote:
+> >After a variety of issues on Hyper-V (host is running Windows 2012 R2) I
+> >updated to the latest kernel (3.17-rc1
+> >7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9), turned on a bunch of kernel
+> >validation options and booted which has resulted in a BUG being
+> >triggered (IP claims to be at netvsc_select_queue), at least one of the
+> >network cards not working and a bunch of oopses.
+> >
+> >Guest is a customised Fedora 20 cloud image. Partial dmesg output is
+> >below:
+> >
+> >[   16.064298] input: TPPS/2 IBM TrackPoint as /devices/platform/i8042/serio1/input/input4
+> >[   19.292370] BUG: unable to handle kernel paging request at ffff8801f3febe63
+> >[   19.293258] IP: [<ffffffff814e69ad>] netvsc_select_queue+0x3d/0x150
+> >[   19.293258] PGD 2db1067 PUD 207dc0067 PMD 207c20067 PTE 80000001f3feb060
+> >[   19.293258] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+> >[   19.293258] CPU: 8 PID: 568 Comm: arping Not tainted 3.17.0-rc1.x86_64 #121
+> >[   19.293258] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+> >[   19.293258] task: ffff8800f29326a0 ti: ffff8801f940c000 task.ti: ffff8801f940c000
+> >[   19.293258] RIP: 0010:[<ffffffff814e69ad>]  [<ffffffff814e69ad>] netvsc_select_queue+0x3d/0x150
+> >[   19.293258] RSP: 0018:ffff8801f940fc60  EFLAGS: 00010206
+> >[   19.293258] RAX: 0000000000000000 RBX: ffff8800f13e5680 RCX: 000000000000ffff
+> >[   19.293258] RDX: ffff8801f3fdbe58 RSI: ffff8801f39b8d80 RDI: ffff8800f13e5680
+> >[   19.293258] RBP: ffff8801f940fc88 R08: 000000000000002a R09: 0000000000000000
+> >[   19.293258] R10: ffff8800f13e4520 R11: 000000000000000a R12: ffff8801f39b8d80
+> >[   19.293258] R13: 0000000000000000 R14: ffff8801f9bf1290 R15: ffff8801f39b8d80
+> >[   19.293258] FS:  00007f777b980740(0000) GS:ffff880206d00000(0000) knlGS:0000000000000000
+> >[   19.293258] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> >[   19.293258] CR2: ffff8801f3febe63 CR3: 00000001f3aed000 CR4: 00000000000406e0
+ 
+> Hmm, I am not really familiar with hyper-v, but it seems 5b54dac856cb ("hyperv:
+> Add support for virtual Receive Side Scaling (vRSS)") has been introduced after
+> 0fd5d57ba345 ("packet: check for ndo_select_queue during queue selection").
+> 
+> arping seems to send a raw packet (AF_PACKET) via normal packet_sendmsg() out
+> and when doing the queue selection in packet_pick_tx_queue(), we discover that
+> the device has ndo_select_queue implemented, so we respect that and call into
+> it. In netvsc_select_queue(), the fallback of __packet_pick_tx_queue() is not
+> being invoked here.
+> 
+> Given that the next log message is "hv_netvsc vmbus_0_15: net device safe to
+> remove" ... could it be that your back pointer to the device context (the actual
+> struct hv_device) is already invalid when you try to get hv_get_drvdata(hdev)
+> as it's sort of decoupled from netdev_priv(ndev) ? (Just a wild guess ...)
 
-0day kernel testing robot got the below dmesg and the first bad commit is
+Thanks for investigating! After setting DEBUG_PAGEALLOC=n I'm now
+getting a GPF with an IP of rndis_filter_open:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-commit 89f7ca1af15bdfe7a6aed343032a84af2a69f736
-Author:     Eric W. Biederman <ebiederman@twitter.com>
-AuthorDate: Sun Sep 22 19:37:01 2013 -0700
-Commit:     Al Viro <viro@zeniv.linux.org.uk>
-CommitDate: Sun Aug 17 07:02:00 2014 -0400
+[   28.255083] EXT4-fs (sdb1): mounted filesystem with ordered data mode. Opts: (null)
+[   28.531276] systemd-journald[366]: Received request to flush runtime journal from PID 1
+[   29.401494] hv_utils: KVP: user-mode registering done.
+[   34.628072] hv_netvsc vmbus_0_15: net device safe to remove
+[   34.676573] hv_netvsc: hv_netvsc channel opened successfully
+[   34.860292] hv_netvsc vmbus_0_15 eth1: unable to establish send buffer's gpadl
+[   34.948983] hv_netvsc vmbus_0_15 eth1: unable to connect to NetVSP - 4
+[   35.073575] general protection fault: 0000 [#1] SMP 
+[   35.097981] CPU: 8 PID: 678 Comm: ip Not tainted 3.17.0-rc1.x86_64 #124
+[   35.097981] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[   35.097981] task: ffff8801f49f1350 ti: ffff8801f8f10000 task.ti: ffff8801f8f10000
+[   35.263681] RIP: 0010:[<ffffffff814e9fef>]  [<ffffffff814e9fef>] rndis_filter_open+0x1f/0x60
+[   35.263681] RSP: 0018:ffff8801f8f13780  EFLAGS: 00010246
+[   35.263681] RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000006
+[   35.263681] RDX: 0000000000000006 RSI: ffff8801f49f1a90 RDI: ffff8801fbb8d480
+[   35.263681] RBP: ffff8801f8f13788 R08: 0000000000000000 R09: 0000000000000000
+[   35.263681] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8801fbb8d480
+[   35.263681] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000001
+[   35.263681] FS:  00007ff9ce3aa740(0000) GS:ffff880207d00000(0000) knlGS:0000000000000000
+[   35.263681] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   35.263681] CR2: 00007fff85779b10 CR3: 00000001f4244000 CR4: 00000000000406e0
+[   35.263681] Stack:
+[   35.263681]  ffff8800f17d8000 ffff8801f8f137b0 ffffffff814e6505 ffff8800f17d8000
+[   35.263681]  ffffffff8188f980 0000000000000000 ffff8801f8f137d8 ffffffff815d0978
+[   35.263681]  ffff8800f17d8000 ffff8800f17d8000 0000000000001003 ffff8801f8f13810
+[   35.263681] Call Trace:
+[   35.263681]  [<ffffffff814e6505>] netvsc_open+0x25/0xb0
+[   35.263681]  [<ffffffff815d0978>] __dev_open+0x98/0x110
+[   35.263681]  [<ffffffff815d0c79>] __dev_change_flags+0xb9/0x160
+[   35.263681]  [<ffffffff815d0d49>] dev_change_flags+0x29/0x60
+[   35.263681]  [<ffffffff815e1415>] do_setlink+0x2d5/0xa60
+[   35.263681]  [<ffffffff811a4ac1>] ? deactivate_slab+0x1c1/0x500
+[   35.263681]  [<ffffffff815e23ad>] rtnl_newlink+0x49d/0x760
+[   35.263681]  [<ffffffff815e202f>] ? rtnl_newlink+0x11f/0x760
+[   35.263681]  [<ffffffff815bc800>] ? __alloc_skb+0x70/0x240
+[   35.263681]  [<ffffffff81010a0b>] ? save_stack_trace+0x2b/0x50
+[   35.263681]  [<ffffffff815de8c1>] rtnetlink_rcv_msg+0x221/0x260
+[   35.263681]  [<ffffffff810b980d>] ? trace_hardirqs_on+0xd/0x10
+[   35.263681]  [<ffffffff815de67b>] ? rtnetlink_rcv+0x1b/0x40
+[   35.263681]  [<ffffffff815de6a0>] ? rtnetlink_rcv+0x40/0x40
+[   35.263681]  [<ffffffff815fc4b5>] netlink_rcv_skb+0x65/0xb0
+[   35.263681]  [<ffffffff815de68a>] rtnetlink_rcv+0x2a/0x40
+[   35.263681]  [<ffffffff815fa5ec>] netlink_unicast+0xcc/0x1a0
+[   35.263681]  [<ffffffff815fb3ee>] netlink_sendmsg+0x6de/0x750
+[   35.263681]  [<ffffffff815b3dd8>] sock_sendmsg+0x88/0xb0
+[   35.263681]  [<ffffffff81184e9a>] ? might_fault+0x5a/0xb0
+[   35.263681]  [<ffffffff81184ee3>] ? might_fault+0xa3/0xb0
+[   35.263681]  [<ffffffff81184e9a>] ? might_fault+0x5a/0xb0
+[   35.263681]  [<ffffffff815c26cd>] ? verify_iovec+0x7d/0xf0
+[   35.263681]  [<ffffffff815b41e6>] ___sys_sendmsg+0x296/0x2b0
+[   35.263681]  [<ffffffff8118356d>] ? handle_mm_fault+0x69d/0x12a0
+[   35.263681]  [<ffffffff810403e3>] ? __do_page_fault+0x1c3/0x4f0
+[   35.263681]  [<ffffffff810b6a5f>] ? up_read+0x1f/0x40
+[   35.263681]  [<ffffffff8104064c>] ? __do_page_fault+0x42c/0x4f0
+[   35.263681]  [<ffffffff811e1f15>] ? mntput_no_expire+0x65/0x170
+[   35.263681]  [<ffffffff811e1eb5>] ? mntput_no_expire+0x5/0x170
+[   35.263681]  [<ffffffff811e27c5>] ? mntput+0x35/0x40
+[   35.263681]  [<ffffffff811c3022>] ? __fput+0x1b2/0x1d0
+[   35.263681]  [<ffffffff815b5172>] __sys_sendmsg+0x42/0x70
+[   35.263681]  [<ffffffff815b51ae>] SyS_sendmsg+0xe/0x10
+[   35.263681]  [<ffffffff816a2d29>] system_call_fastpath+0x16/0x1b
+[   35.263681] Code: 41 5e 41 5f 5d c3 66 0f 1f 44 00 00 66 66 66 66 90 48 8b 87 20 01 00 00 48 85 c0 74 2f 55 48 89 e5 53 48 8b 98 40 02 00 00 31 c0 <83> 7b 08 02 75 2b be 0d 00 00 00 48 89 df e8 9e f9 ff ff 85 c0 
+[   35.263681] RIP  [<ffffffff814e9fef>] rndis_filter_open+0x1f/0x60
+[   35.263681]  RSP <ffff8801f8f13780>
+[   35.264682] ---[ end trace 91f7878e7e46f8d5 ]---
 
-    vfs: Keep a list of mounts on a mount point
-    
-    To spot any possible problems call BUG if a mountpoint
-    is put when it's list of mounts is not empty.
-    
-    AV: use hlist instead of list_head
-    
-    Reviewed-by: Miklos Szeredi <miklos@szeredi.hu>
-    Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-+-----------------------------------------------------------------------------+------------+------------+---------------+
-|                                                                             | de0ed92a2f | 89f7ca1af1 | next-20140818 |
-+-----------------------------------------------------------------------------+------------+------------+---------------+
-| boot_successes                                                              | 40         | 0          | 0             |
-| boot_failures                                                               | 40         | 20         | 11            |
-| BUG:kernel_boot_hang                                                        | 39         |            |               |
-| BUG:kernel_boot_crashed                                                     | 1          |            |               |
-| BUG:unable_to_handle_kernel_paging_request                                  | 0          | 20         | 11            |
-| Oops                                                                        | 0          | 20         | 11            |
-| EIP_is_at_mnt_set_mountpoint                                                | 0          | 20         | 11            |
-| BUG:sleeping_function_called_from_invalid_context_at_kernel/locking/rwsem.c | 0          | 20         | 11            |
-| INFO:lockdep_is_turned_off                                                  | 0          | 20         | 11            |
-| Kernel_panic-not_syncing:Attempted_to_kill_init_exitcode=                   | 0          | 14         | 10            |
-| backtrace:do_mount                                                          | 0          | 20         | 11            |
-| backtrace:SyS_mount                                                         | 0          | 20         | 11            |
-+-----------------------------------------------------------------------------+------------+------------+---------------+
-
-[   12.976559] Key type encrypted registered
-[   12.979538] rtc_cmos 00:00: setting system clock to 2014-08-19 16:00:57 UTC (1408464057)
-[   12.981664] debug: unmapping init [mem 0x7aff4000-0x7b220fff]
-[   12.986791] BUG: unable to handle kernel paging request at 5a5a5a5e
-[   12.987028] IP: [<7922d346>] mnt_set_mountpoint+0x76/0x90
-[   12.987028] *pde = 00000000 
-[   12.987028] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-[   12.987028] CPU: 0 PID: 1 Comm: init Not tainted 3.16.0-10739-g89f7ca1 #1
-[   12.987028] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   12.987028] task: 87cc1320 ti: 87cc4000 task.ti: 87cc4000
-[   12.987028] EIP: 0060:[<7922d346>] EFLAGS: 00010202 CPU: 0
-[   12.987028] EIP is at mnt_set_mountpoint+0x76/0x90
-[   12.987028] EAX: 00000001 EBX: 5a5a5a5a ECX: 87c93700 EDX: 7cc308a0
-[   12.987028] ESI: 87c93778 EDI: 00000001 EBP: 87cc5ebc ESP: 87cc5ea8
-[   12.987028]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-[   12.987028] CR0: 80050033 CR2: 5a5a5a5e CR3: 04c51000 CR4: 00040690
-[   12.987028] Stack:
-[   12.987028]  87c93700 7cc308a0 87c93700 87c93b80 00000001 87cc5eec 7922eb3c 00000000
-[   12.987028]  00000001 00000000 7922eca4 00000001 7cc308a0 00000000 00004000 00000000
-[   12.987028]  00000001 87cc5f08 7922eca4 00000000 87c93b80 00000000 7cc308a0 87c93700
-[   12.987028] Call Trace:
-[   12.987028]  [<7922eb3c>] attach_recursive_mnt+0x1cc/0x2b0
-[   12.987028]  [<7922eca4>] ? graft_tree+0x84/0xa0
-[   12.987028]  [<7922eca4>] graft_tree+0x84/0xa0
-[   12.987028]  [<7922ede3>] do_add_mount+0x123/0x190
-[   12.987028]  [<79230b64>] do_mount+0xfb4/0x12f0
-[   12.987028]  [<7922fb84>] ? copy_mount_string+0x54/0x80
-[   12.987028]  [<79231301>] SyS_mount+0xf1/0x120
-[   12.987028]  [<7a2b26f7>] syscall_call+0x7/0x7
-[   12.987028] Code: 31 c0 89 59 08 8d 71 78 89 51 74 8b 5a 0c 85 db 0f 95 c0 8b 3c 85 ac 38 c8 7a 89 59 78 83 c7 01 85 c0 89 3c 85 ac 38 c8 7a 74 03 <89> 73 04 89 72 0c 83 c2 0c 89 51 7c 83 c4 08 5b 5e 5f 5d c3 8d
-[   12.987028] EIP: [<7922d346>] mnt_set_mountpoint+0x76/0x90 SS:ESP 0068:87cc5ea8
-[   12.987028] CR2: 000000005a5a5a5e
-[   12.987028] ---[ end trace ee8b0a2eb2e91b64 ]---
-[   12.987028] BUG: sleeping function called from invalid context at kernel/locking/rwsem.c:41
-
-git bisect start f68f82364938548b58b51d4b926642b0a3cf4c27 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9 --
-git bisect  bad 473f9639819684765e78d298f192b8030fe1290c  # 15:02      0-      9  Merge remote-tracking branch 'block/for-next'
-git bisect good 9a9d24bbcb7185700286b300e1db132a481d0e1f  # 15:07     20+      1  Merge remote-tracking branch 'tile/master'
-git bisect  bad c0698b7d9847e0cbc46881368ec9c72474968ad8  # 15:10      0-     20  Merge remote-tracking branch 'hid/for-next'
-git bisect good f55058463a57a59e8b5a59f8b4ae1875c7a91a44  # 15:14     20+      9  Merge remote-tracking branch 'fscache/fscache'
-git bisect good 76bb1241bec5f597b025b997d6ae7e193dab8289  # 15:26     20+      6  Merge remote-tracking branch 'logfs/master'
-git bisect  bad 9016ceb4b3699bc95ffaeed371e5fd0745bab224  # 15:48      0-     20  Merge remote-tracking branch 'vfs/for-next'
-git bisect  bad 76a8a45241be2aff38944e74811e23d1024a71fa  # 15:59      0-      1  vfs: Make d_invalidate return void
-git bisect  bad 89f7ca1af15bdfe7a6aed343032a84af2a69f736  # 16:03      0-     18  vfs: Keep a list of mounts on a mount point
-git bisect good 7fed866b5ce6f45fb0c226c6ff897d7af3a1176a  # 16:11     20+      4  vfs: Document the effect of d_revalidate on d_find_alias
-git bisect good de0ed92a2fbb9eb93a97da7612363c8c3130ec20  # 16:26     20+     13  vfs: Don't allow overwriting mounts in the current mount namespace
-# first bad commit: [89f7ca1af15bdfe7a6aed343032a84af2a69f736] vfs: Keep a list of mounts on a mount point
-git bisect good de0ed92a2fbb9eb93a97da7612363c8c3130ec20  # 16:39     60+     40  vfs: Don't allow overwriting mounts in the current mount namespace
-git bisect  bad f68f82364938548b58b51d4b926642b0a3cf4c27  # 16:39      0-     11  Add linux-next specific files for 20140818
-git bisect good 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9  # 16:44     60+     16  Linux 3.17-rc1
-git bisect  bad f68f82364938548b58b51d4b926642b0a3cf4c27  # 16:44      0-     11  Add linux-next specific files for 20140818
-
-
-This script may reproduce the error.
-
-----------------------------------------------------------------------------
-#!/bin/bash
-
-kernel=$1
-initrd=quantal-core-i386.cgz
-
-wget --no-clobber https://github.com/fengguang/reproduce-kernel-bug/raw/master/initrd/$initrd
-
-kvm=(
-	qemu-system-x86_64
-	-enable-kvm
-	-cpu Haswell,+smep,+smap
-	-kernel $kernel
-	-initrd $initrd
-	-m 320
-	-smp 2
-	-net nic,vlan=1,model=e1000
-	-net user,vlan=1
-	-boot order=nc
-	-no-reboot
-	-watchdog i6300esb
-	-rtc base=localtime
-	-serial stdio
-	-display none
-	-monitor null 
-)
-
-append=(
-	hung_task_panic=1
-	earlyprintk=ttyS0,115200
-	debug
-	apic=debug
-	sysrq_always_enabled
-	rcupdate.rcu_cpu_stall_timeout=100
-	panic=10
-	softlockup_panic=1
-	nmi_watchdog=panic
-	load_ramdisk=2
-	prompt_ramdisk=0
-	console=ttyS0,115200
-	console=tty0
-	vga=normal
-	root=/dev/ram0
-	rw
-	drbd.minor_count=8
-)
-
-"${kvm[@]}" --append "${append[*]}"
-----------------------------------------------------------------------------
-
-Thanks,
-Fengguang
+-- 
+Sitsofe | http://sucs.org/~sits/
