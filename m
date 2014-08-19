@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaHSIkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:40:11 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:60083 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474AbaHSIkF (ORCPT
+	id S1751694AbaHSIqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:46:17 -0400
+Received: from smtp-out-134.synserver.de ([212.40.185.134]:1153 "EHLO
+	smtp-out-134.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaHSIqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:40:05 -0400
-Message-ID: <53F30D02.1040306@linaro.org>
-Date: Tue, 19 Aug 2014 16:38:26 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 19 Aug 2014 04:46:15 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 31564
+Message-ID: <53F30E90.8080902@metafoo.de>
+Date: Tue, 19 Aug 2014 10:45:04 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v2 17/18] ARM64 / ACPI: Enable ARM64 in Kconfig
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-18-git-send-email-hanjun.guo@linaro.org> <20140818142745.GV20043@localhost>
-In-Reply-To: <20140818142745.GV20043@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+CC: fabio.estevam@freescale.com, sfr@canb.auug.org.au,
+        alsa-devel@alsa-project.org, timur@tabi.org, arnd@arndb.de,
+        shc_work@mail.ru, tiwai@suse.de, Li.Xiubo@freescale.com,
+        lgirdwood@gmail.com, nicoleotsuka@gmail.com, broonie@kernel.org,
+        xobs@kosagi.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
+ of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
+References: <cover.1408350626.git.shengjiu.wang@freescale.com> <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com> <53F22F5E.2090601@metafoo.de> <20140819074103.GA5806@audiosh1> <53F30C91.7080700@metafoo.de>
+In-Reply-To: <53F30C91.7080700@metafoo.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-8-18 22:27, Catalin Marinas wrote:
-> On Mon, Aug 04, 2014 at 04:28:24PM +0100, Hanjun Guo wrote:
->> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
->> index 3f5f745..f6b6791 100644
->> --- a/drivers/acpi/Kconfig
->> +++ b/drivers/acpi/Kconfig
->> @@ -5,8 +5,7 @@
->>  menuconfig ACPI
->>  	bool "ACPI (Advanced Configuration and Power Interface) Support"
->>  	depends on !IA64_HP_SIM
->> -	depends on IA64 || X86
->> -	depends on PCI
->> +	depends on ((IA64 || X86) && PCI) || ARM64
-> 
-> depends on (ARM64 && EXPERT)? (together with default on if CONFIG_ACPI
-> is enabled).
+On 08/19/2014 10:36 AM, Lars-Peter Clausen wrote:
+> On 08/19/2014 09:41 AM, Shengjiu Wang wrote:
+>> On Mon, Aug 18, 2014 at 06:52:46PM +0200, Lars-Peter Clausen wrote:
+>>> On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
+>>>> Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the
+>>>> following
+>>>> error:
+>>>>
+>>>>     sound/built-in.o: In function `fsl_sai_probe':
+>>>>>> fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
+>>>>     sound/built-in.o: In function `fsl_esai_probe':
+>>>>>> fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
+>>>>
+>>>> Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init' which is
+>>>> defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it
+>>>> depends
+>>>> on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
+>>>> selected.
+>>>> So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
+>>>>
+>>>> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+>>>> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+>>>
+>>> Those if conditions where just added[1] by Arnd to avoid other build
+>>> failures. So just removing them again makes little sense.
+>>>
+>>> As far as I can see imx_pcm_dma_init() should be stubbed out when
+>>> SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
+>>>
+>>> [1]
+>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40260f79dc0436604452bccd449bffd25ebafb
+>>>
+>>>
+>> Lars-Peter Clausen & Arnd
+>>
+>> The purpose of Arnd's patch is same with me, which is to resolve the build
+>> error when SND_SOC_IMX_PCM_DMA=m & SND_SOC_FSL_SSI/SAI/ESAI/SPDIF=y, the
+>> error is "undefined reference to `imx_pcm_dma_init'".
+>> But Arnd's patch didn't involve this situation that SND_IMX_SOC=n &
+>> SND_SOC_IMX_PCM_DMA=m.
+>
+> Having SND_SOC_IMX_PCM_DMA selected if SND_IMX_SOC is not selected makes no
+> sense. I think the proper fix is to find out why it is selected and make
+> sure that it is not selected when SND_IMX_SOC is not selected.
 
-I will update that in next version.
 
-Thanks for all your comments!
+I guess the issue happens if SND_SOC_FSL_ASOC_CARD=m and 
+SND_SOC_FSL_{ESAI,SAI,SSI}=y. In this case the fix is simply to drop the 
+select SND_SOC_IMX_PCM_DMA from SND_SOC_FSL_ASOC_CARD.
 
-Hanjun
+- Lars
 
