@@ -1,112 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaHSQ0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:26:30 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:38750 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbaHSQ01 (ORCPT
+	id S1753308AbaHSQgo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:36:44 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43746 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941AbaHSQgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:26:27 -0400
+	Tue, 19 Aug 2014 12:36:42 -0400
+Date: Tue, 19 Aug 2014 09:34:49 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Thierry Reding <thierry.reding@gmail.com>,
+        Jonas Jensen <jonas.jensen@gmail.com>,
+        Ming Lei <tom.leiming@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: Lock Directory failure
+In-Reply-To: <20140820012345.7c358fd7@canb.auug.org.au>
+Message-ID: <alpine.LSU.2.11.1408190926090.1991@eggly.anvils>
+References: <20140818163209.GJ9662@saruman.home> <alpine.LSU.2.11.1408181350260.1127@eggly.anvils> <20140820012345.7c358fd7@canb.auug.org.au>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1408460913-13863-6-git-send-email-javier.martinez@collabora.co.uk>
-References: <1408460913-13863-1-git-send-email-javier.martinez@collabora.co.uk>
-	<1408460913-13863-6-git-send-email-javier.martinez@collabora.co.uk>
-Date: Tue, 19 Aug 2014 09:26:26 -0700
-X-Google-Sender-Auth: -ORwiZc_qD8OmohCpI_-M38CusM
-Message-ID: <CAD=FV=V9oct-iJ==1SLdxusq68AY3utMQF+MbX0Uf+2dC0mwww@mail.gmail.com>
-Subject: Re: [PATCH 5/6] ARM: dts: Add vmmc and vqmmc supplies for Peach Pit
- and Pi boards
-From: Doug Anderson <dianders@chromium.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Mark Brown <broonie@kernel.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javier,
+On Wed, 20 Aug 2014, Stephen Rothwell wrote:
+> On Mon, 18 Aug 2014 13:58:26 -0700 (PDT) Hugh Dickins <hughd@google.com> wrote:
+> >
+> > [PATCH next] vfs: initialize m_list to fix crash in mnt_set_mountpoint
+> > 
+> > Fix mnt_set_mountpoint() crash: new_mountpoint() must initialize m_list.
+> > 
+> > Reported-by: Felipe Balbi <balbi@ti.com>
+> > Signed-off-by: Hugh Dickins <hughd@google.com>
+> 
+> I assume that this is a fix for commit 89f7ca1af15b ("vfs: Keep a list
+> of mounts on a mount point") that is currently i the vfs tree.  I will
+> apply this patch as a fix up for the vfs tree in linux-next today.
 
-On Tue, Aug 19, 2014 at 8:08 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> The VCC/VDD and VCCQ/VDD_IO power supplies for the MMC are
-> provided by the tps65090 fet4 and max77802 ldo4 regulators
-> respectively. Add the phandle to the regulators tree nodes
-> for the the dw_mmc device device.
->
-> These DTS snippets were taken from the downstream ChromeOS
-> 3.8 kernel Device Tree for Peach Pit and Pi boards.
->
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  arch/arm/boot/dts/exynos5420-peach-pit.dts | 2 ++
->  arch/arm/boot/dts/exynos5800-peach-pi.dts  | 2 ++
->  2 files changed, 4 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> index 8e50042..5b9dbb9 100644
-> --- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> +++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> @@ -547,6 +547,8 @@
->  };
->
->  &mmc_2 {
-> +       vmmc-supply = <&tps65090_fet4>;
-> +       vqmmc-supply = <&vqmmc_sdcard>;
->         status = "okay";
->         num-slots = <1>;
->         supports-highspeed;
-> diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-> index 939f91c..dcac443 100644
-> --- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
-> +++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-> @@ -545,6 +545,8 @@
->  };
->
->  &mmc_2 {
-> +       vmmc-supply = <&tps65090_fet4>;
-> +       vqmmc-supply = <&vqmmc_sdcard>;
->         status = "okay";
->         num-slots = <1>;
->         supports-highspeed;
+Yes, that's it: thanks a lot, Stephen, that will help everybody.
 
-While your change is correct, I have a worry that it will break things
-if it's merged before some patches that Yuvaraj is working on.
+I should acknowledge that Thierry Reding posted the same fix (a few
+lines away) before mine, but I only came across his later in the day.
 
-Specifically the problem on pit and pi (and any exynos5250 / 5420 /
-5800 / ... boards using the built-in "card detect") is that the card
-detect line is on the same power rail as "vqmmc".  That means you
-can't turn off vqmmc if you still need to be able to detect card
-insertions.
-
-...but you can't turn off vmmc without turning off vqmmc, otherwise
-current will leak through the IO lines into the card, which is bad.
-
-
-Right now the SDMMC core will try to turn off power to the card at two times:
-1. when the card is ejected
-2. when it's trying to reset the card
-
-
-Obviously the first problem is a huge problem on exynos because it
-means that we won't be able to detect card insertions.  ...but we
-still want to turn the power off from #2.  To really fix the problem I
-think the core needs to be extended to treat the above as two separate
-cases.
-
-
-Your patch might work at the moment because I think dw_mmc doesn't
-actually try to turn off these rails with the main SDMMC core asks it
-to.  ...but I still worry about merging them before Yuvaraj's changes
-are ready.
-
-
--Doug
+Hugh
