@@ -1,153 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842AbaHSRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:23:27 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:32919 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753736AbaHSRW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:22:58 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: linus.walleij@linaro.org, galak@codeaurora.org,
-        bjorn.andersson@sonymobile.com
-Cc: robh+dt@kernel.org, mark.rutland@arm.com, grant.likely@linaro.org,
-        sboyd@codeaurora.org, agross@codeaurora.org, iivanov@mm-sol.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Georgi Djakov <gdjakov@mm-sol.com>
-Subject: [PATCH v1 2/3] dt: Document Qualcomm APQ8084 pinctrl binding
-Date: Tue, 19 Aug 2014 20:22:15 +0300
-Message-Id: <1408468936-12252-3-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408468936-12252-1-git-send-email-gdjakov@mm-sol.com>
-References: <1408468936-12252-1-git-send-email-gdjakov@mm-sol.com>
+	id S1753882AbaHSRYo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:24:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41409 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128AbaHSRYm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:24:42 -0400
+Date: Tue, 19 Aug 2014 12:26:58 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Hans Wennborg <hans@hanshq.net>
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/15] scsi: fix decimal printf format specifiers
+ prefixed with 0x
+Message-ID: <20140819172658.GA15268@infradead.org>
+References: <1407300209-32745-1-git-send-email-hans@hanshq.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407300209-32745-1-git-send-email-hans@hanshq.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a new binding for the Qualcomm TLMM (Top-Level Mode Mux) based pin
-controller inside the APQ8084.
+Thanks,
 
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
----
- .../bindings/pinctrl/qcom,apq8084-pinctrl.txt      |  109 ++++++++++++++++++++
- 1 file changed, 109 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
-
-diff --git a/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
-new file mode 100644
-index 0000000..fa3ee54
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
-@@ -0,0 +1,109 @@
-+Qualcomm APQ8084 TLMM block
-+
-+Required properties:
-+- compatible: "qcom,apq8084-pinctrl"
-+- reg: Should be the base address and length of the TLMM block.
-+- interrupts: Should be the parent IRQ of the TLMM block.
-+- interrupt-controller: Marks the device node as an interrupt controller.
-+- #interrupt-cells: Should be two.
-+- gpio-controller: Marks the device node as a GPIO controller.
-+- #gpio-cells : Should be two.
-+                The first cell is the gpio pin number and the
-+                second cell is used for optional parameters.
-+
-+Please refer to ../gpio/gpio.txt and ../interrupt-controller/interrupts.txt for
-+a general description of GPIO and interrupt bindings.
-+
-+Please refer to pinctrl-bindings.txt in this directory for details of the
-+common pinctrl bindings used by client devices, including the meaning of the
-+phrase "pin configuration node".
-+
-+Qualcomm's pin configuration nodes act as a container for an abitrary number of
-+subnodes. Each of these subnodes represents some desired configuration for a
-+pin, a group, or a list of pins or groups. This configuration can include the
-+mux function to select on those pin(s)/group(s), and various pin configuration
-+parameters, such as pull-up, drive strength, etc.
-+
-+The name of each subnode is not important; all subnodes should be enumerated
-+and processed purely based on their content.
-+
-+Each subnode only affects those parameters that are explicitly listed. In
-+other words, a subnode that lists a mux function but no pin configuration
-+parameters implies no information about any pin configuration parameters.
-+Similarly, a pin subnode that describes a pullup parameter implies no
-+information about e.g. the mux function.
-+
-+
-+The following generic properties as defined in pinctrl-bindings.txt are valid
-+to specify in a pin configuration subnode:
-+
-+ pins, function, bias-disable, bias-pull-down, bias-pull-up, drive-strength,
-+ output-low, output-high.
-+
-+Non-empty subnodes must specify the 'pins' property.
-+Note that not all properties are valid for all pins.
-+
-+Valid values for pins are:
-+  gpio0-gpio142
-+    Supports mux, bias and drive-strength
-+
-+  sdc1_clk, sdc1_cmd, sdc1_data, sdc2_clk, sdc2_cmd, sdc2_data
-+    Supports bias and drive-strength
-+
-+Valid values for function are:
-+adsp_ext, audio_ref, blsp_i2c1, blsp_i2c2, blsp_i2c3, blsp_i2c4, blsp_i2c5,
-+blsp_i2c6, blsp_i2c7, blsp_i2c8, blsp_i2c9, blsp_i2c10, blsp_i2c11, blsp_i2c12,
-+blsp_spi1, blsp_spi2, blsp_spi3, blsp_spi4, blsp_spi5, blsp_spi6, blsp_spi7,
-+blsp_spi8, blsp_spi9, blsp_spi10, blsp_spi11, blsp_spi12, blsp_uart1,
-+blsp_uart2, blsp_uart3, blsp_uart3_rx, blsp_uart3_cts_n, blsp_uart4, blsp_uart5,
-+blsp_uart6, blsp_uart7, blsp_uart8, blsp_uart9, blsp_uart10, blsp_uart11,
-+blsp_uart12, blsp_uim1, blsp_uim2, blsp_uim3, blsp_uim4, blsp_uim5, blsp_uim6,
-+blsp_uim7, blsp_uim8, blsp_uim9, blsp_uim10, blsp_uim11, blsp_uim12, blsp1_spi,
-+blsp3_spi, blsp10_spi, blsp11_i2c, blsp11_uart, cam_mclk0, cam_mclk1, cam_mclk2,
-+cam_mclk3, cci_async, cci_async_in0, cci_i2c, cci_timer0, cci_timer1,
-+cci_timer2, cci_timer3, cci_timer4, dll_sdc10, dll_sdc11, dll_sdc20, dll_sdc21,
-+edp_hot, edp_tpa, gcc_gp1, gcc_gp1_clk_b, gcc_gp2, gcc_gp2_clk_b, gcc_gp3,
-+gcc_gp3_clk_b, gcc_obt, gcc_vtt, gp_mn, gp_pdm, gp_pdm_0a, gp_pdm_2a, gp_pdm_1b,
-+gp_pdm_2b, gp0_clk, gp1_clk, gpio, hdmi_cec, hdmi_ddc, hdmi_dtest, hdmi_hot,
-+hdmi_rcv, hsic, ldo_en, ldo_update, mdp_vsync, pci_e0, pci_e0_rst, pci_e1,
-+pci_e1_rst, pci_e1_rst_n, pci_e1_clkreq_n, pri_mi2s, qdss_cti,
-+qdss_cti_trig_out_a, qdss_cti_trig_in_a, qdss_cti_trig_in_b, qdss_cti_trig_in_c,
-+qdss_cti_trig_out_c, qua_mi2s, sata_act, sata_devsleep, sata_devsleep_n,
-+sd_write, sdc3, sdc4, sec_mi2s, slimbus, spdif_tx, spkr_i2s, spkr_i2s_ws,
-+spss_geni, ter_mi2s, tsif1, tsif2, uim_batt, uim_clk, uim_data, uim_present,
-+uim_reset, gpio
-+
-+Example:
-+
-+	tlmm: pinctrl@fd510000 {
-+		compatible = "qcom,apq8084-pinctrl";
-+		reg = <0xfd510000 0x4000>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+		interrupts = <0 208 0>;
-+
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&uart2_default>;
-+
-+		uart2_default: uart2_default {
-+			mux {
-+				pins = "gpio4", "gpio5";
-+				function = "blsp_uart2";
-+			};
-+
-+			tx {
-+				pins = "gpio4";
-+				drive-strength = <4>;
-+				bias-disable;
-+			};
-+
-+
-+			rx {
-+				pins = "gpio5";
-+				drive-strength = <2>;
-+				bias-pull-up;
-+			};
-+		};
-+	};
--- 
-1.7.9.5
+applied to the drivers-for-3.18 tree.
 
