@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681AbaHSRAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:00:12 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:45135 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250AbaHSRAK (ORCPT
+	id S1753964AbaHSRAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:00:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52829 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbaHSRAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:00:10 -0400
+	Tue, 19 Aug 2014 13:00:50 -0400
+Date: Tue, 19 Aug 2014 10:00:47 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
+        James Smart <james.smart@emulex.com>,
+        Naresh Kumar Inna <naresh@chelsio.com>,
+        Arvind Bhushan <arvindb@chelsio.com>,
+        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>, Tomas Henzl <thenzl@redhat.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        Kashyap Desai <Kashyap.desai@avagotech.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        iss_storagedev@hp.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
+        qla2xxx-upstream@qlogic.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 00/13] scsi: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140819170047.GA7237@infradead.org>
+References: <cover.1408335523.git.agordeev@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140819093244.GJ1660@lahna.fi.intel.com>
-References: <1408380657-6718-1-git-send-email-acourbot@nvidia.com>
- <1408380657-6718-2-git-send-email-acourbot@nvidia.com> <20140819093244.GJ1660@lahna.fi.intel.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 19 Aug 2014 09:59:49 -0700
-Message-ID: <CAAVeFuJ55jikMaNYNqTUVJ==9u+mQr0OtC89PZajCDVLF7TUug@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: acpi: normalize use of gpiochip_get_desc()
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1408335523.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 2:32 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Mon, Aug 18, 2014 at 09:50:56AM -0700, Alexandre Courbot wrote:
->> GPIO descriptors are changing from unique and permanent tokens to
->> allocated resources. Therefore gpiochip_get_desc() cannot be used as a
->> way to obtain a global GPIO descriptor anymore.
->>
->> This patch updates the gpiolib ACPI support code to keep and use the
->> descriptor returned by a centralized call to gpiochip_get_desc().
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>  drivers/gpio/gpiolib-acpi.c | 22 ++++++++++++++--------
->>  1 file changed, 14 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
->> index d62eaaa75397..9596a1023579 100644
->> --- a/drivers/gpio/gpiolib-acpi.c
->> +++ b/drivers/gpio/gpiolib-acpi.c
->> @@ -25,10 +25,12 @@ struct acpi_gpio_event {
->>       acpi_handle handle;
->>       unsigned int pin;
->>       unsigned int irq;
->> +     gpio_desc *desc;
->
-> This needs to be
->         struct gpio_desc *desc;
->
->>  };
+Thanks,
 
-Oops apologies for this, I should have least have compiled a tree with
-this patch on... >_<;
+I've applied patches 1 to 7 to the drivers-for-3.18 branch.
 
->
-> Tested on Asus T100TA and nothing seems to break, so:
->
-> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-
-Thanks! Will send a v2 for Linus to merge, if he agrees with these two patches.
-Alex.
