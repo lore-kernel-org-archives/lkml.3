@@ -1,81 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaHSJLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:11:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16752 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764AbaHSJLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:11:12 -0400
-Message-ID: <53F314A4.6040008@redhat.com>
-Date: Tue, 19 Aug 2014 11:11:00 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751696AbaHSJSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:18:42 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:57152 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaHSJSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 05:18:39 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] KVM: x86: #GP when attempts to write reserved
- bits of Variable Range MTRRs
-References: <1408439080-57721-1-git-send-email-wanpeng.li@linux.intel.com> <1408439080-57721-3-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1408439080-57721-3-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPDyKFpyZM8thDhtcw4PUhGPezdag=6Fv_J9nejvenPNdTu-aA@mail.gmail.com>
+References: <1408029833-6970-1-git-send-email-geert+renesas@glider.be>
+	<20140815134917.da77205b68f18341140c6593@codethink.co.uk>
+	<CAMuHMdXrWgW2iMDd7GA+QC-vcAsp+vH9fidkdnBj-f9F878yAw@mail.gmail.com>
+	<CAPDyKFpyZM8thDhtcw4PUhGPezdag=6Fv_J9nejvenPNdTu-aA@mail.gmail.com>
+Date: Tue, 19 Aug 2014 11:18:33 +0200
+X-Google-Sender-Auth: yAAs9BBILAXaApD5EKFuY3l2zFc
+Message-ID: <CAMuHMdUVwY_Y_jK6+EMbBDvF3OF0Aqio2zpw=dXcV9sLj4CHSg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: tmio: Fix hang during suspend
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Ian Molton <ian.molton@codethink.co.uk>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Chris Ball <chris@printf.net>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/08/2014 11:04, Wanpeng Li ha scritto:
-> Section 11.11.2.3 of the SDM mentions "All other bits in the IA32_MTRR_PHYSBASEn 
-> and IA32_MTRR_PHYSMASKn registers are reserved; the processor generates a 
-> general-protection exception(#GP) if software attempts to write to them". This 
-> patch do it in kvm.
-> 
-> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-> ---
->  arch/x86/kvm/x86.c | 18 +++++++++++++++---
->  1 file changed, 15 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index fb3ea7a..b85da5f 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1726,6 +1726,7 @@ static bool valid_mtrr_type(unsigned t)
->  static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  {
->  	int i;
-> +	u64 mask = 0;
->  
->  	if (!msr_mtrr_valid(msr))
->  		return false;
-> @@ -1749,10 +1750,21 @@ static bool mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  	/* variable MTRRs */
->  	WARN_ON(!(msr >= 0x200 && msr < 0x200 + 2 * KVM_NR_VAR_MTRR));
->  
-> -	if ((msr & 1) == 0)
-> +	for (i = 63; i > boot_cpu_data.x86_phys_bits; i--)
-> +		mask |= (1ULL << i);
-> +	if ((msr & 1) == 0) {
->  		/* MTRR base */
-> -		return valid_mtrr_type(data & 0xff);
-> -	/* MTRR mask */
-> +		if (!valid_mtrr_type(data & 0xff))
-> +			return false;
-> +		 mask |= 0xf00;
-> +	} else
-> +		/* MTRR mask */
-> +		mask |= 0x7ff;
-> +	if (data & mask) {
-> +		kvm_inject_gp(vcpu, 0);
-> +		return false;
-> +	}
-> +
->  	return true;
->  }
->  
-> 
+Hi Ulf,
 
-Thanks, these two patches look good.  Please write a testcase for
-kvm-unit-tests (x86/msr.c), too.
+On Mon, Aug 18, 2014 at 3:10 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 18 August 2014 14:36, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Fri, Aug 15, 2014 at 2:49 PM, Ian Molton <ian.molton@codethink.co.uk> wrote:
+>>> On Thu, 14 Aug 2014 17:23:53 +0200
+>>> Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+>>>> On R-Car Gen 2, the SDHI registers cannot be accessed while the SDHI
+>>>> module clock is disabled. Doing so will cause a lock-up.
+>>>>
+>>>> When suspending, enable the module clock before disabling the SDHI
+>>>> interrupts, and disable the clock again afterwards.
+>>>
+>>> This feels wrong. Why can't interrupts be disabled prior to turning the clock off?
+>>
+>> The clock is handled by runtime PM. So if SDHI becomes idle, the clock
+>> is turned off.
+>> However, the card insertion interrupt is still enabled.
+>> If all interrupts would be disabled when the clock is turned off, I believe card
+>> insertion can no longer be detected.
+>>
+>> BTW, I'm still wondering why tmio_mmc_host_resume() works without
+>> enabling the clock, as it calls tmio_mmc_enable_dma(), which also writes to
+>> an SDHI register (CTL_DMA_ENABLE).
+>
+> A while ago, I tried to rework the runtime PM handling of tmio.
+>
+> http://www.spinics.net/lists/linux-mmc/msg23177.html
+>
+> The hole set never got merged, due to that we couldn't get them tested
+> on hardware and there were a lack in review.
+>
+> We might want to pick them up to see if those may solve our problem. :-)
 
-Paolo
+Thanks, I applied patches 4-8 (1-3 did get merged), and tried them on
+SDHI1 of r8a7791/koelsch. It still seems to work as before.
+
+However, I still need my patch to fix suspend.
+Your "[PATCH 8/8] mmc: tmio: Handle clock gating from runtime PM functions"
+manages the SDHI interface clock, while my patch manages the platform-specific
+SDHI module clock.
+
+>>>> This fixes suspend and resume on r8a7791/koelsch.
+>>>>
+>>>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>>>> ---
+>>>>  drivers/mmc/host/tmio_mmc_pio.c | 10 ++++++++++
+>>>>  1 file changed, 10 insertions(+)
+>>>>
+>>>> diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
+>>>> index faf0924e71cb..83192420a7e3 100644
+>>>> --- a/drivers/mmc/host/tmio_mmc_pio.c
+>>>> +++ b/drivers/mmc/host/tmio_mmc_pio.c
+>>>> @@ -1147,8 +1147,18 @@ int tmio_mmc_host_suspend(struct device *dev)
+>>>>  {
+>>>>       struct mmc_host *mmc = dev_get_drvdata(dev);
+>>>>       struct tmio_mmc_host *host = mmc_priv(mmc);
+>>>> +     struct tmio_mmc_data *pdata = host->pdata;
+>>>> +
+>>>> +     if (pdata->clk_enable) {
+>>>> +             unsigned int f;
+>>>> +             pdata->clk_enable(host->pdev, &f);
+>>>> +     }
+>>>>
+>>>>       tmio_mmc_disable_mmc_irqs(host, TMIO_MASK_ALL);
+>>>> +
+>>>> +     if (pdata->clk_disable)
+>>>> +             pdata->clk_disable(host->pdev);
+>>>> +
+>>>>       return 0;
+>>>>  }
+>>>>  EXPORT_SYMBOL(tmio_mmc_host_suspend);
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
