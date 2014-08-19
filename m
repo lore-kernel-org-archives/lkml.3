@@ -1,93 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344AbaHSPpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:45:16 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:34274 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaHSPpN (ORCPT
+	id S1753372AbaHSPqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:46:19 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51108 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229AbaHSPqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:45:13 -0400
-Message-ID: <53F37105.1000200@suse.cz>
-Date: Tue, 19 Aug 2014 17:45:09 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>, Kamal Mostafa <kamal@canonical.com>
-CC: Luis Henriques <luis.henriques@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3.8 107/116] hugetlb: fix copy_hugetlb_page_range() to
- handle migration/hwpoisoned entry
-References: <1406067727-19683-1-git-send-email-kamal@canonical.com> <1406067727-19683-108-git-send-email-kamal@canonical.com> <alpine.LSU.2.11.1407221608040.3128@eggly.anvils> <1406149325.3612.33.camel@fourier> <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1407231659330.2093@eggly.anvils>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Aug 2014 11:46:18 -0400
+From: Phong Tran <tranmanphong@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: bergwolf@gmail.com, amir.shehata@intel.com, green@linuxhacker.ru,
+        massa.nomura@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Phong Tran <tranmanphong@gmail.com>
+Subject: [PATCH] staging: lustre: lnet: socklnd_cb.c Fix sparse non-static symbol warning
+Date: Tue, 19 Aug 2014 22:45:50 +0700
+Message-Id: <1408463150-5494-1-git-send-email-tranmanphong@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This patch fixes some non static function declarations that
+cause sparse warning. Tested by compilation.
 
-On 07/24/2014, 02:07 AM, Hugh Dickins wrote:
-> On Wed, 23 Jul 2014, Kamal Mostafa wrote:
->> On Tue, 2014-07-22 at 16:08 -0700, Hugh Dickins wrote:
->>> On Tue, 22 Jul 2014, Kamal Mostafa wrote:
->>> 
->>>> 3.8.13.27 -stable review patch.  If anyone has any
->>>> objections, please let me know.
->>>> 
->>>> ------------------
->>>> 
->>>> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->>>> 
->>>> commit 4a705fef986231a3e7a6b1a6d3c37025f021f49f upstream.
->>>> 
->>>> There's a race between fork() and hugepage migration, as a
->>>> result we try [...]
->>> 
->>> Please drop this one for now: other -stables have carried it,
->>> but it was found last week to contain a bug of its own,
->>> arguably worse than what it's fixing.  Naoya-san has done the
->>> fix for that, it's in mmotm and should make its way to Linus
->>> probably this week: so please hold this back until that can
->>> join it - thanks.
->>> 
->>> Hugh
->> 
->> OK, I've dropped it from the 3.8-stable queue, and will watch for
->> the fix to land.  Thanks very much, Hugh!
-> 
-> commit 0253d634e0803a8376a0d88efee0bf523d8673f9 Author: Naoya
-> Horiguchi <n-horiguchi@ah.jp.nec.com> Date:   Wed Jul 23 14:00:19
-> 2014 -0700 mm: hugetlb: fix copy_hugetlb_page_range()
-> 
-> is now in Linus's tree: so the original patch is good to go into 
-> your -stables, so long as you add 0253d634e080 on top.
+Signed-off-by: Phong Tran <tranmanphong@gmail.com>
+---
+ .../staging/lustre/lnet/klnds/socklnd/socklnd_cb.c | 30 +++++++++++-----------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-So I have queued both to 3.12 now. Thanks.
+diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+index 5214399..c49b01e 100644
+--- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
++++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+@@ -107,7 +107,7 @@ ksocknal_free_tx (ksock_tx_t *tx)
+ 	}
+ }
+ 
+-int
++static int
+ ksocknal_send_iov (ksock_conn_t *conn, ksock_tx_t *tx)
+ {
+ 	struct iovec  *iov = tx->tx_iov;
+@@ -144,7 +144,7 @@ ksocknal_send_iov (ksock_conn_t *conn, ksock_tx_t *tx)
+ 	return rc;
+ }
+ 
+-int
++static int
+ ksocknal_send_kiov (ksock_conn_t *conn, ksock_tx_t *tx)
+ {
+ 	lnet_kiov_t    *kiov = tx->tx_kiov;
+@@ -182,7 +182,7 @@ ksocknal_send_kiov (ksock_conn_t *conn, ksock_tx_t *tx)
+ 	return rc;
+ }
+ 
+-int
++static int
+ ksocknal_transmit (ksock_conn_t *conn, ksock_tx_t *tx)
+ {
+ 	int      rc;
+@@ -248,7 +248,7 @@ ksocknal_transmit (ksock_conn_t *conn, ksock_tx_t *tx)
+ 	return rc;
+ }
+ 
+-int
++static int
+ ksocknal_recv_iov (ksock_conn_t *conn)
+ {
+ 	struct iovec *iov = conn->ksnc_rx_iov;
+@@ -293,7 +293,7 @@ ksocknal_recv_iov (ksock_conn_t *conn)
+ 	return rc;
+ }
+ 
+-int
++static int
+ ksocknal_recv_kiov (ksock_conn_t *conn)
+ {
+ 	lnet_kiov_t   *kiov = conn->ksnc_rx_kiov;
+@@ -337,7 +337,7 @@ ksocknal_recv_kiov (ksock_conn_t *conn)
+ 	return 1;
+ }
+ 
+-int
++static int
+ ksocknal_receive (ksock_conn_t *conn)
+ {
+ 	/* Return 1 on success, 0 on EOF, < 0 on error.
+@@ -499,7 +499,7 @@ ksocknal_uncheck_zc_req(ksock_tx_t *tx)
+ 	ksocknal_tx_decref(tx);
+ }
+ 
+-int
++static int
+ ksocknal_process_transmit (ksock_conn_t *conn, ksock_tx_t *tx)
+ {
+ 	int	    rc;
+@@ -579,7 +579,7 @@ ksocknal_process_transmit (ksock_conn_t *conn, ksock_tx_t *tx)
+ 	return rc;
+ }
+ 
+-void
++static void
+ ksocknal_launch_connection_locked (ksock_route_t *route)
+ {
+ 
+@@ -1109,7 +1109,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
+ 	return 0;
+ }
+ 
+-int
++static int
+ ksocknal_process_receive (ksock_conn_t *conn)
+ {
+ 	lnet_hdr_t	*lhdr;
+@@ -1608,7 +1608,7 @@ void ksocknal_write_callback (ksock_conn_t *conn)
+ 	spin_unlock_bh(&sched->kss_lock);
+ }
+ 
+-ksock_proto_t *
++static ksock_proto_t *
+ ksocknal_parse_proto_version (ksock_hello_msg_t *hello)
+ {
+ 	__u32   version = 0;
+@@ -1672,7 +1672,7 @@ ksocknal_send_hello (lnet_ni_t *ni, ksock_conn_t *conn,
+ 	return conn->ksnc_proto->pro_send_hello(conn, hello);
+ }
+ 
+-int
++static int
+ ksocknal_invert_type(int type)
+ {
+ 	switch (type)
+@@ -1837,7 +1837,7 @@ ksocknal_recv_hello (lnet_ni_t *ni, ksock_conn_t *conn,
+ 	return 0;
+ }
+ 
+-int
++static int
+ ksocknal_connect (ksock_route_t *route)
+ {
+ 	LIST_HEAD    (zombies);
+@@ -2244,7 +2244,7 @@ ksocknal_connd (void *arg)
+ 	return 0;
+ }
+ 
+-ksock_conn_t *
++static ksock_conn_t *
+ ksocknal_find_timed_out_conn (ksock_peer_t *peer)
+ {
+ 	/* We're called with a shared lock on ksnd_global_lock */
+@@ -2354,7 +2354,7 @@ ksocknal_flush_stale_txs(ksock_peer_t *peer)
+ 	ksocknal_txlist_done(peer->ksnp_ni, &stale_txs, 1);
+ }
+ 
+-int
++static int
+ ksocknal_send_keepalive_locked(ksock_peer_t *peer)
+ {
+ 	ksock_sched_t  *sched;
+@@ -2415,7 +2415,7 @@ ksocknal_send_keepalive_locked(ksock_peer_t *peer)
+ }
+ 
+ 
+-void
++static void
+ ksocknal_check_peer_timeouts (int idx)
+ {
+ 	struct list_head       *peers = &ksocknal_data.ksnd_peers[idx];
+-- 
+1.9.3
 
-- -- 
-js
-suse labs
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT83EFAAoJEL0lsQQGtHBJMfAP/jkMSZK9NI6ApH7RB+YREGgI
-l3+0qdjYsknE/RlC7exmSh3WY+EfMc4iPcBomiQ3n26FTCEYo00xeqjSXLXcdVIK
-AtUawzDRuQvKHBDFZvqgtBVpHRT89WkqoMSchzBDeFx3M6XvLWW2waUoI0aPu4s+
-PYc2cqlgz2lAP9u8Ic1qNu3vznbWt+p96/H9b4wb3/UE9IxU1PCfkvq66ep9w2cv
-0vq6VqszQwCQsP0Jb75b2EV+1woqCvlz6pOcf3qZlpkzLwcZ3UQHDha0USwMAHMa
-L354ZxdKbyqZJrYwH6PDWWIEkMQ5mULHoesHjZg7oVIAsE3kJsqAghf6o+tK9Li7
-RqXy2SxhV2/08AAk8QzAuJGKZp4rtZFc0O5eB6V9JWag2+5xLV5EmSWstkQAbGNc
-IkVmGZuZWsiaIDj/eTOD4+p7iU51nj4GPxKEe/S51B7iFAjwenczIaSDFqDcLxU7
-HiSDGxRMb16TQtBgX9v+sZDDlhf/y4gG9dUYNgAhteQklriXfaF6fiH5MhsCUmNW
-tOIiyQV6NQ2XXCzZvGvGVBHutxKNQhQQtiiTMamp5U1sLcg9iAjyFemRK49W+Q3q
-5gumMp+1ObY0XgqjRA6b7zVYYqIMtrLVTlWvTVB+UsQ9cS8stYfC0EYgSD/thvZ6
-k3x6oxbVkZMrZDJCHWMP
-=72iL
------END PGP SIGNATURE-----
