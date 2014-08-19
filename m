@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaHSTXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 15:23:51 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51761 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912AbaHSTXu (ORCPT
+	id S1753859AbaHSTYO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 15:24:14 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:40575 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652AbaHSTYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 15:23:50 -0400
-Message-ID: <53F3A441.1040103@kernel.org>
-Date: Tue, 19 Aug 2014 20:23:45 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 19 Aug 2014 15:24:12 -0400
+Date: Tue, 19 Aug 2014 12:24:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dan Murphy <dmurphy@ti.com>
+Cc: mark.rutland@arm.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v6] input: drv260x: Add TI drv260x haptics driver
+Message-ID: <20140819192401.GA32080@core.coreip.homeip.net>
+References: <1408117670-19750-1-git-send-email-dmurphy@ti.com>
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu
-CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
-        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] iio: adc: xilinx: Remove .owner field for driver
-References: <32522124850adfda5c6cb8a7759d0e3a63893c1e.1407931250.git.michal.simek@xilinx.com>
-In-Reply-To: <32522124850adfda5c6cb8a7759d0e3a63893c1e.1407931250.git.michal.simek@xilinx.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408117670-19750-1-git-send-email-dmurphy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/08/14 13:00, Michal Simek wrote:
-> There is no need to init .owner field.
-> 
-> Based on the patch from Peter Griffin <peter.griffin@linaro.org>
-> "mmc: remove .owner field for drivers using module_platform_driver"
-> 
-> This patch removes the superflous .owner field for drivers which
-> use the module_platform_driver API, as this is overriden in
-> platform_driver_register anyway."
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-Applied to the togreg branch of iio.git
+Hi Dan,
 
-Thanks,
+On Fri, Aug 15, 2014 at 10:47:50AM -0500, Dan Murphy wrote:
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index 2ff4425..99f6762 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -676,4 +676,13 @@ config INPUT_SOC_BUTTON_ARRAY
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called soc_button_array.
+>  
+> +config INPUT_DRV260X_HAPTICS
+> +	tristate "TI DRV260X haptics support"
+> +	depends on INPUT && I2C
 
-Jonathan
-> ---
-> 
->  drivers/iio/adc/xilinx-xadc-core.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
-> index fd2745c62943..92541a80b041 100644
-> --- a/drivers/iio/adc/xilinx-xadc-core.c
-> +++ b/drivers/iio/adc/xilinx-xadc-core.c
-> @@ -1322,7 +1322,6 @@ static struct platform_driver xadc_driver = {
->  	.remove = xadc_remove,
->  	.driver = {
->  		.name = "xadc",
-> -		.owner = THIS_MODULE,
->  		.of_match_table = xadc_of_match_table,
->  	},
->  };
-> --
-> 1.8.2.3
-> 
+This also needs "select REGMAP_I2C"
+
+> +	help
+> +	  Say Y to enable support for the TI DRV260X haptics driver.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called drv260x-haptics.
+> +
+
+[...]
+
+> +#ifndef _LINUX_DRV260X_PDATA_H
+> +#define _LINUX_DRV260X_PDATA_H
+> +
+> +struct drv260x_platform_data {
+> +	int enable_gpio;
+
+I do not see this used anywhere.
+
+> +	u32 library_selection;
+> +	u32 mode;
+> +	u32 vib_rated_voltage;
+> +	u32 vib_overdrive_voltage;
+> +};
+> +
+> +#endif
+
+I fixed up the above issues and did a few more formatting changes and applied
+to my 'next' branch. Please take a peek and holler if you see something wrong.
+
+Thanks.
+
+-- 
+Dmitry
