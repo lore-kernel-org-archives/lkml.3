@@ -1,130 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749AbaHSGAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 02:00:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7254 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601AbaHSGAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 02:00:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,892,1400050800"; 
-   d="scan'208";a="560388270"
-From: xiaoming wang <xiaoming.wang@intel.com>
-To: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz,
-        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: xiaoming wang <xiaoming.wang@intel.com>,
-        Chuansheng Liu <chuansheng.liu@intel.com>
-Subject: [PATCH 2/2] PM / sleep: Asynchronous threads for dpm_complete
-Date: Tue, 19 Aug 2014 16:29:29 -0400
-Message-Id: <1408480169-18090-2-git-send-email-xiaoming.wang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1408480169-18090-1-git-send-email-xiaoming.wang@intel.com>
-References: <1408480169-18090-1-git-send-email-xiaoming.wang@intel.com>
+	id S1752760AbaHSGDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 02:03:12 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:48446 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589AbaHSGDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 02:03:11 -0400
+Message-ID: <53F2E89B.80009@gmail.com>
+Date: Tue, 19 Aug 2014 07:03:07 +0100
+From: Iain Paton <ipaton0@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Fabio Estevam <festevam@gmail.com>
+CC: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
+        Fredrik Noring <fredrik.noring@autoliv.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
+References: <20140626151424.GT32514@n2100.arm.linux.org.uk> <20140627163108.GP32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int> <20140806095012.GN30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int> <20140806125550.GO30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int> <20140807121248.GY30282@n2100.arm.linux.org.uk> <20140808180900.GG30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int> <CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com> <C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int> <CAOMZO5B7FgzB7ThVyV2Vk7wTwYgjRWjEnkkAN5uwwKMaBKq1yg@mail.gmail.com> <C4A61A5CA4AD2246942F4BA6F20ACB8043577770@ALVA-EXMB04.alv.autoliv.int> <53F11FF6.8030303@gmail.com> <CAOMZO5CDvQDD7gVLFStwv4MPrUyqZE3sEDZwb0gukkXujYG-6Q@mail.gmail.com>
+In-Reply-To: <CAOMZO5CDvQDD7gVLFStwv4MPrUyqZE3sEDZwb0gukkXujYG-6Q@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In analogy with commits 5af84b82701a and 97df8c12995,
-using asynchronous threads can improve the overall
-resume time significantly.
+On 17/08/14 22:46, Fabio Estevam wrote:
+> Iain,
+> 
+> On Sun, Aug 17, 2014 at 6:34 PM, Iain Paton <ipaton0@gmail.com> wrote:
+>> On 15/08/14 06:42, Mattis Lorentzon wrote:
+>>
+>>> We mostly run SSH with benchmarks using NFS, it can probably be
+>>> triggered by using only SSH with the following loop:
+>>>
+>>> # while : ; do ssh arm-card date; done
+>>
+>> Mattis,
+>>
+>> What sort of time does it take for you to see a problem?
+>>
+>> I've been running the above for nearly two days on 3.16.0 on a board
+>> with fec interrupts routed through gpio_6 and haven't seen a hint of
+>> a problem.
+> 
+> Thanks for testing.
+> 
+> Which mx6 board have you used on this test?
 
-This patch is for dpm_complete phase.
+It's currently pointed at a RIoTboard (atheros phy) but I'm happy to 
+try it against both a Sabre-Lite and a Wandboard B1, all running the 
+same kernel binary, as well. 
 
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
----
- drivers/base/power/main.c |   38 ++++++++++++++++++++++++++++++++++----
- 1 files changed, 34 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-index f9fe1b3..00c4bf1 100644
---- a/drivers/base/power/main.c
-+++ b/drivers/base/power/main.c
-@@ -889,14 +889,15 @@ void dpm_resume(pm_message_t state)
-  * @dev: Device to handle.
-  * @state: PM transition of the system being carried out.
-  */
--static void device_complete(struct device *dev, pm_message_t state)
-+static void device_complete(struct device *dev, pm_message_t state, bool async)
- {
- 	void (*callback)(struct device *) = NULL;
- 	char *info = NULL;
- 
- 	if (dev->power.syscore)
--		return;
-+		goto Complete;
- 
-+	dpm_wait(dev->parent, async);
- 	device_lock(dev);
- 
- 	if (dev->pm_domain) {
-@@ -928,6 +929,17 @@ static void device_complete(struct device *dev, pm_message_t state)
- 	device_unlock(dev);
- 
- 	pm_runtime_put(dev);
-+
-+Complete:
-+	complete_all(&dev->power.completion);
-+}
-+
-+static void async_complete(void *data, async_cookie_t cookie)
-+{
-+	struct device *dev = (struct device *)data;
-+
-+	device_complete(dev, pm_transition, true);
-+	put_device(dev);
- }
- 
- /**
-@@ -940,27 +952,45 @@ static void device_complete(struct device *dev, pm_message_t state)
- void dpm_complete(pm_message_t state)
- {
- 	struct list_head list;
-+	struct device *dev;
- 
- 	trace_suspend_resume(TPS("dpm_complete"), state.event, true);
- 	might_sleep();
- 
- 	INIT_LIST_HEAD(&list);
- 	mutex_lock(&dpm_list_mtx);
-+	pm_transition = state;
-+
-+	/*
-+	  * Advanced the async threads upfront,
-+	  * in case the starting of async threads is
-+	  * delayed by non-async resuming devices.
-+	  */
-+	list_for_each_entry(dev, &dpm_prepared_list, power.entry) {
-+		reinit_completion(dev->power.completion);
-+		if (is_async(dev)) {
-+			get_device(dev);
-+			async_schedule(async_complete, dev);
-+		}
-+	}
-+
- 	while (!list_empty(&dpm_prepared_list)) {
--		struct device *dev = to_device(dpm_prepared_list.prev);
-+		dev = to_device(dpm_prepared_list.prev);
- 
- 		get_device(dev);
- 		dev->power.is_prepared = false;
- 		list_move(&dev->power.entry, &list);
- 		mutex_unlock(&dpm_list_mtx);
- 
--		device_complete(dev, state);
-+		if (!is_async(dev))
-+			device_complete(dev, state);
- 
- 		mutex_lock(&dpm_list_mtx);
- 		put_device(dev);
- 	}
- 	list_splice(&list, &dpm_list);
- 	mutex_unlock(&dpm_list_mtx);
-+	async_synchronize_full();
- 	trace_suspend_resume(TPS("dpm_complete"), state.event, false);
- }
- 
--- 
-1.7.1
+I'm interested enough in why different people get different results 
+with this that I'll put some time towards testing to try to help 
+narrow down the cause.
 
