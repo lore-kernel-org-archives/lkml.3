@@ -1,184 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaHSS1e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:27:34 -0400
-Received: from regular1.263xmail.com ([211.150.99.138]:56596 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626AbaHSS1c (ORCPT
+	id S1753443AbaHSScG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:32:06 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:39742 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaHSScF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:27:32 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <1ec6c0757f8747870d575ef23b1b3bb1>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+	Tue, 19 Aug 2014 14:32:05 -0400
+Message-ID: <1408473119.5604.4.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH v4 2/2] net: moxa: replace build_skb() with
+ netdev_alloc_skb_ip_align() / memcpy()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: netdev@vger.kernel.org, davem@davemloft.net,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH v3] ARM: dts: Add sdio0 and sdio1 to the rk3288
-Date: Tue, 19 Aug 2014 16:15:26 +0800
-Message-Id: <1408436126-23390-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408415512-17275-1-git-send-email-addy.ke@rock-chips.com>
-References: <1408415512-17275-1-git-send-email-addy.ke@rock-chips.com>
+        f.fainelli@gmail.com, bhutchings@solarflare.com
+Date: Tue, 19 Aug 2014 11:31:59 -0700
+In-Reply-To: <1408459784-9385-2-git-send-email-jonas.jensen@gmail.com>
+References: <1408459784-9385-1-git-send-email-jonas.jensen@gmail.com>
+	 <1408459784-9385-2-git-send-email-jonas.jensen@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch requires that <https://patchwork.kernel.org/patch/4701721/>
-land in order to compile.
+On Tue, 2014-08-19 at 16:49 +0200, Jonas Jensen wrote:
+> build_skb() is used to make skbs out of existing RX ring memory
+> which is bad because the RX ring is allocated only once, on probe.
+> Memory corruption occur because said memory is reclaimed, i.e.
+> __kfree_skb() (and eventually put_page()).
+> 
+> Replace build_skb() with netdev_alloc_skb_ip_align() and use memcpy().
+> Also, synchronize DMA memory before passing skb to napi_gro_receive().
+> 
+> Addresses https://bugzilla.kernel.org/show_bug.cgi?id=69041
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
-Changes in v2:
-- repost patch to match what's in Heiko's "wip/v3.18-next/dts" tree
-  for the other dwmmc controllers
-- add "cd" and "int" line, suggested by Doug Anderson
-- fix up sdio1 configuration error
+Wow, this driver was really buggy.
 
-Changes in v3:
-- sort sdio0 and sdio1 by pin number, suggested by Doug Anderson
-- add "ro" and "bkpwr" line, suggested by Doug Anderson
+Patch is not complete.
 
- arch/arm/boot/dts/rk3288.dtsi | 102 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 102 insertions(+)
+Instead of :
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 36be7bb..12c0297 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -88,6 +88,26 @@
- 		status = "disabled";
- 	};
- 
-+	sdio0: dwmmc@ff0d0000 {
-+		compatible = "rockchip,rk3288-dw-mshc";
-+		clocks = <&cru HCLK_SDIO0>, <&cru SCLK_SDIO0>;
-+		clock-names = "biu", "ciu";
-+		fifo-depth = <0x100>;
-+		interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
-+		reg = <0xff0d0000 0x4000>;
-+		status = "disabled";
-+	};
-+
-+	sdio1: dwmmc@ff0e0000 {
-+		compatible = "rockchip,rk3288-dw-mshc";
-+		clocks = <&cru HCLK_SDIO1>, <&cru SCLK_SDIO1>;
-+		clock-names = "biu", "ciu";
-+		fifo-depth = <0x100>;
-+		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
-+		reg = <0xff0e0000 0x4000>;
-+		status = "disabled";
-+	};
-+
- 	emmc: dwmmc@ff0f0000 {
- 		compatible = "rockchip,rk3288-dw-mshc";
- 		clocks = <&cru HCLK_EMMC>, <&cru SCLK_EMMC>;
-@@ -508,6 +528,88 @@
- 			};
- 		};
- 
-+		sdio0 {
-+			sdio0_bus1: sdio0-bus1 {
-+				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_bus4: sdio0-bus4 {
-+				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 21 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 22 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 23 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_cmd: sdio0-cmd {
-+				rockchip,pins = <4 24 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_clk: sdio0-clk {
-+				rockchip,pins = <4 25 RK_FUNC_1 &pcfg_pull_none>;
-+			};
-+
-+			sdio0_cd: sdio0-cd {
-+				rockchip,pins = <4 26 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_ro: sdio0-ro {
-+				rockchip,pins = <4 27 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_pwr: sdio0-pwr {
-+				rockchip,pins = <4 28 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_bkpwr: sdio0-bkpwr {
-+				rockchip,pins = <4 29 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_int: sdio0-int {
-+				rockchip,pins = <4 30 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+		};
-+
-+		sdio1 {
-+			sdio1_bus1: sdio1-bus1 {
-+				rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_bus4: sdio1-bus4 {
-+				rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 25 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 26 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 27 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_cd: sdio1-cd {
-+				rockchip,pins = <3 28 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_ro: sdio1-ro {
-+				rockchip,pins = <3 29 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_bkpwr: sdio1-bkpwr {
-+				rockchip,pins = <3 30 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_int: sdio1-int {
-+				rockchip,pins = <3 31 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_cmd: sdio1-cmd {
-+				rockchip,pins = <4 6 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_clk: sdio1-clk {
-+				rockchip,pins = <4 7 RK_FUNC_4 &pcfg_pull_none>;
-+			};
-+
-+			sdio1_pwr: sdio1-pwr {
-+				rockchip,pins = <4 9 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+		};
-+
- 		emmc {
- 			emmc_clk: emmc-clk {
- 				rockchip,pins = <3 18 RK_FUNC_2 &pcfg_pull_none>;
--- 
-1.8.3.2
+priv->rx_buf_size = RX_BUF_SIZE + 
+		SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+
+I think rx_buf_size can now be RX_BUF_SIZE
+
+Another point is that priv->stats seems not needed, as ndev->stats could
+be used instead (and remove moxart_mac_get_stats())
+
 
 
