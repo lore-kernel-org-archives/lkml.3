@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaHSMv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:51:56 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:40485 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810AbaHSMvy (ORCPT
+	id S1752887AbaHSMwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:52:04 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:54879 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760AbaHSMwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:51:54 -0400
+	Tue, 19 Aug 2014 08:52:01 -0400
+Message-ID: <53F34869.7050901@linaro.org>
+Date: Tue, 19 Aug 2014 13:51:53 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>
-Date: Tue, 19 Aug 2014 14:51:53 +0200
-Message-ID: <CAPDyKFr6MOkO56vjsMhne4vYVJbNXVLM-tMkbYnO4_XsjBTOSw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask is empty.
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Haijun Zhang <Haijun.Zhang@freescale.com>,
-        Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH v9 12/16] serial: amba-pl011: Pass FIQ information to
+ KGDB.
+References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org> <1408372091-12689-13-git-send-email-daniel.thompson@linaro.org> <53F24660.2030404@hurleysoftware.com> <53F313F2.6090103@linaro.org> <53F33BDD.8050705@hurleysoftware.com>
+In-Reply-To: <53F33BDD.8050705@hurleysoftware.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 August 2014 14:39, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> The operation conditions register (OCR) stores the voltage
-> profile of the card, however the list of possible voltages
-> is restricted by the voltage range supported by the supply
-> used as VCC/VDD. So in mmc_vddrange_to_ocrmask() a OCR mask
-> is obtained to filter the not supported voltages, from the
-> value read in the host controller OCR register.
->
-> For fixed regulators, regulator_list_voltage() returns the
-> fixed output for the first selector but this doesn't happen
-> for switch (FET) regulators that obtain their voltage from
-> their parent supply. A call to regulator_get_voltage() is
-> needed in this case so the regulator core can return the
-> FET's parent supply voltage output.
->
-> This change is consistent with the fact that for other
-> fixed regulators (that are not FETs) the OCR mask is
-> returned even when mmc_regulator_set_ocr() checks if the
-> regulator is fixed before calling regulator_set_voltage().
->
-> Without this patch, the following warning is reported when
-> a FET is used as a vmmc-supply:
->
-> dwmmc_exynos 12220000.mmc: Failed getting OCR mask: -22
->
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+On 19/08/14 12:58, Peter Hurley wrote:
+> On 08/19/2014 05:08 AM, Daniel Thompson wrote:
+>> On 18/08/14 19:30, Peter Hurley wrote:
+> 
+> [cut]
+>   
+>>>> +static int pl011_poll_init(struct uart_port *port)
+>>>> +{
+>>>> +	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+>>>
+>>> Please use container_of() in new code.
+>>
+>> Ok.
+>>
+>> Personally I dislike a file that mixes casts and conatiner_of but I
+>> guess I can make both of us happy by switching the whole driver to
+>> container_of. Separate patch again?
+> 
+> The change below makes the uap local unnecessary, so you can skip the
+> container_of() change, if you'd prefer.
 
-Thanks! Applied for next.
+I realized that myself although not until after I'd replaced all the
+casts with container_of()...
 
-Kind regards
-Uffe
+So I'll keep the patch for now but can drop it if anyone takes against it.
 
-> ---
->
->  drivers/mmc/core/core.c | 14 +++++++++++---
->  1 file changed, 11 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index 7dc0c85..8abae04 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1221,15 +1221,14 @@ int mmc_regulator_get_ocrmask(struct regulator *supply)
->         int                     result = 0;
->         int                     count;
->         int                     i;
-> +       int                     vdd_uV;
-> +       int                     vdd_mV;
->
->         count = regulator_count_voltages(supply);
->         if (count < 0)
->                 return count;
->
->         for (i = 0; i < count; i++) {
-> -               int             vdd_uV;
-> -               int             vdd_mV;
-> -
->                 vdd_uV = regulator_list_voltage(supply, i);
->                 if (vdd_uV <= 0)
->                         continue;
-> @@ -1238,6 +1237,15 @@ int mmc_regulator_get_ocrmask(struct regulator *supply)
->                 result |= mmc_vddrange_to_ocrmask(vdd_mV, vdd_mV);
->         }
->
-> +       if (!result) {
-> +               vdd_uV = regulator_get_voltage(supply);
-> +               if (vdd_uV <= 0)
-> +                       return vdd_uV;
-> +
-> +               vdd_mV = vdd_uV / 1000;
-> +               result = mmc_vddrange_to_ocrmask(vdd_mV, vdd_mV);
-> +       }
-> +
->         return result;
->  }
->  EXPORT_SYMBOL_GPL(mmc_regulator_get_ocrmask);
-> --
-> 2.0.0.rc2
->
+
+
+Thanks
+
+Daniel.
+
+
+
+
+> 
+>>>> +	int retval;
+>>>> +
+>>>> +	retval = pl011_hwinit(port);
+>>>> +
+>>>> +#ifdef CONFIG_KGDB_FIQ
+>>>> +	if (retval == 0)
+>>>> +		kgdb_register_fiq(uap->port.irq);
+>>>
+>>> The uap->port dereference is unnecessary since the port parameter
+>>> is the same thing.
+>>>
+>>> 		kgdb_register_fiq(port->irq);
+>>
+>> Ok.
+> 
+> Thanks,
+> Peter Hurley
+> 
+
