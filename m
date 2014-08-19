@@ -1,100 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaHSKCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 06:02:50 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45752 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750789AbaHSKCs (ORCPT
+	id S1752083AbaHSKC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 06:02:58 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:34308 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaHSKC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 06:02:48 -0400
-X-Sasl-enc: wOPEFlqJ8MKzotCfNrdBWCTlul2bfjv8+aThZRxlFvs5 1408442566
-Message-ID: <1408442547.11314.9.camel@perseus.themaw.net>
-Subject: Re: [PATCH 0/5] RCU-walk support for autofs
-From: Ian Kent <raven@themaw.net>
-To: NeilBrown <neilb@suse.de>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Aug 2014 18:02:27 +0800
-In-Reply-To: <1408350340.2533.3.camel@perseus.fritz.box>
-References: <20140818062844.9860.43007.stgit@notabene.brown>
-	 <1408350340.2533.3.camel@perseus.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+	Tue, 19 Aug 2014 06:02:57 -0400
+Message-ID: <53F320B7.30002@huawei.com>
+Date: Tue, 19 Aug 2014 18:02:31 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mem-hotplug: introduce movablenodes boot option for memory
+ hotplug debugging
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-08-18 at 16:25 +0800, Ian Kent wrote:
-> On Mon, 2014-08-18 at 16:33 +1000, NeilBrown wrote:
-> > Hi Ian,
-> >  Have you had a chance to run your tests in these patches yet?
-> >  I've done what testing I can think of and cannot fault them.
-> 
-> I haven't, I've been plagued with illness so I'm not getting nearly
-> enough done. I'll try to put a kernel together and run the test in the
-> next week or so.
+This patch introduces a new boot option "movablenodes". This parameter
+depends on movable_node, it is used for debugging memory hotplug.
+Instead SRAT specifies which memory is hotpluggable.
 
-Just to let you know that I managed to spend some time on this. I built
-a kernel (3.17.0-rc1) with the series and ran a couple of tests.
+e.g. movable_node movablenodes=1,2,4
 
-I'm not certain that the patches I used are identical to your posting, I
-saw one difference, after the fact, that shouldn't matter, I'll have to
-check that.
+It means nodes 1,2,4 will be set to movable nodes, the other nodes are
+unmovable nodes. Usually movable nodes are parsed from SRAT table which
+offered by BIOS.
 
-It isn't possible to test expire to mount races because the mounts in
-the tree never expire.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ Documentation/kernel-parameters.txt |    5 ++++
+ arch/x86/mm/srat.c                  |   36 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
 
-At first I thought it was because so many processes were accessing the
-tree all the time but manually constructing the maps and mounting the
-mounts shows that nothing ever expires, at least for this tree.
-
-However, issuing a shut down does expire all the mounts and shuts down
-autofs cleanly.
-
-So there is something not quite right with the expire check or my
-patches have mistakes.
-
-> 
-> > 
-> >  This set is against 3.17-rc1 and make use of the new -EISDIR handling
-> >  for d_manage() and assumes the other patches which already went in
-> >  through Andrew Morton.
-> > 
-> >  I've added a section to autofs4.txt about mount namespaces, but it is
-> >  otherwise unchanged.
-> > 
-> >  If I could get an {Acked,Reviewed,Tested}-By in the next few weeks so
-> >  I can send them on to Andrew I would really appreciate it.
-> > 
-> > Thanks,
-> > NeilBrown
-> > 
-> > 
-> > 
-> > ---
-> > 
-> > NeilBrown (5):
-> >       autofs4: allow RCU-walk to walk through autofs4.
-> >       autofs4: factor should_expire() out of autofs4_expire_indirect.
-> >       autofs4: avoid taking fs_lock during rcu-walk
-> >       autofs4: d_manage() should return -EISDIR when appropriate in rcu-walk mode.
-> >       autofs: the documentation I wanted to read
-> > 
-> > 
-> >  Documentation/filesystems/autofs4.txt |  520 +++++++++++++++++++++++++++++++++
-> >  fs/autofs4/autofs_i.h                 |    6 
-> >  fs/autofs4/dev-ioctl.c                |    2 
-> >  fs/autofs4/expire.c                   |  200 ++++++++-----
-> >  fs/autofs4/root.c                     |   62 +++-
-> >  5 files changed, 694 insertions(+), 96 deletions(-)
-> >  create mode 100644 Documentation/filesystems/autofs4.txt
-> > 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe autofs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 5ae8608..e072ccf 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1949,6 +1949,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	movable_node	[KNL,X86] Boot-time switch to enable the effects
+ 			of CONFIG_MOVABLE_NODE=y. See mm/Kconfig for details.
+ 
++	movablenodes=	[KNL,X86] This parameter depends on movable_node, it
++			is used for debugging memory hotplug. Instead SRAT
++			specifies which memory is hotpluggable.
++			e.g. movablenodes=1,2,4
++
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
+ 
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 66338a6..523e58b 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -157,6 +157,37 @@ static inline int save_add_info(void) {return 1;}
+ static inline int save_add_info(void) {return 0;}
+ #endif
+ 
++static nodemask_t movablenodes_mask;
++
++static void __init parse_movablenodes_one(char *p)
++{
++	int node;
++
++	get_option(&p, &node);
++	node_set(node, movablenodes_mask);
++}
++
++static int __init parse_movablenodes_opt(char *str)
++{
++	nodes_clear(movablenodes_mask);
++
++#ifdef CONFIG_MOVABLE_NODE
++	while (str) {
++		char *k = strchr(str, ',');
++
++		if (k)
++			*k++ = 0;
++		parse_movablenodes_one(str);
++		str = k;
++	}
++#else
++	pr_warn("movable_node option not supported\n");
++#endif
++
++	return 0;
++}
++early_param("movablenodes", parse_movablenodes_opt);
++
+ /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+@@ -202,6 +233,11 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		pr_warn("SRAT: Failed to mark hotplug range [mem %#010Lx-%#010Lx] in memblock\n",
+ 			(unsigned long long)start, (unsigned long long)end - 1);
+ 
++	if (node_isset(node, movablenodes_mask) &&
++		memblock_mark_hotplug(start, ma->length))
++		pr_warn("SRAT debug: Failed to mark hotplug range [mem %#010Lx-%#010Lx] in memblock\n",
++			(unsigned long long)start, (unsigned long long)end - 1);
++
+ 	return 0;
+ out_err_bad_srat:
+ 	bad_srat();
+-- 
+1.7.1
 
 
