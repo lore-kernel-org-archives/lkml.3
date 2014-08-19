@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaHSUh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:37:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9347 "EHLO mx1.redhat.com"
+	id S1751819AbaHSUha (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:37:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618AbaHSUhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:37:24 -0400
+	id S1751729AbaHSUh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 16:37:27 -0400
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Gleb Natapov <gleb@kernel.org>,
         Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
         Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
-Subject: [PATCH 0/9] Dynamic Pause Loop Exiting window.
-Date: Tue, 19 Aug 2014 22:35:27 +0200
-Message-Id: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH 1/9] KVM: add kvm_arch_sched_in
+Date: Tue, 19 Aug 2014 22:35:28 +0200
+Message-Id: <1408480536-8240-2-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
+References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,65 +24,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PLE does not scale in its current form.  When increasing VCPU count
-above 150, one can hit soft lockups because of runqueue lock contention.
-(Which says a lot about performance.)
+Introduce preempt notifiers for architecture specific code.
+Advantage over creating a new notifier in every arch is slightly simpler
+code and guaranteed call order with respect to kvm_sched_in.
 
-The main reason is that kvm_ple_loop cycles through all VCPUs.
-Replacing it with a scalable solution would be ideal, but it has already
-been well optimized for various workloads, so this series tries to
-alleviate one different major problem while minimizing a chance of
-regressions: we have too many useless PLE exits.
-
-Just increasing PLE window would help some cases, but it still spirals
-out of control.  By increasing the window after every PLE exit, we can
-limit the amount of useless ones, so we don't reach the state where CPUs
-spend 99% of the time waiting for a lock.
-
-HP confirmed that this series avoids soft lockups and TSC sync errors on
-large guests.
-
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
-Design notes and questions:
+ arch/arm/kvm/arm.c         | 4 ++++
+ arch/mips/kvm/mips.c       | 4 ++++
+ arch/powerpc/kvm/powerpc.c | 4 ++++
+ arch/s390/kvm/kvm-s390.c   | 4 ++++
+ arch/x86/kvm/x86.c         | 4 ++++
+ include/linux/kvm_host.h   | 2 ++
+ virt/kvm/kvm_main.c        | 2 ++
+ 7 files changed, 24 insertions(+)
 
-Alternative to first two patches could be a new notifier.
-
-All values are made changeable because defaults weren't selected after
-weeks of benchmarking -- we can get improved performance by hardcoding
-if someone is willing to do it.
-(Or by presuming that noone is ever going to.)
-
-Then, we can quite safely drop overflow checks: they are impossible to
-hit with small increases and I don't think that anyone wants large ones.
-
-Also, I'd argue against the last patch: it should be done in userspace,
-but I'm not sure about Linux's policy.
-
-
-Radim Krčmář (9):
-  KVM: add kvm_arch_sched_in
-  KVM: x86: introduce sched_in to kvm_x86_ops
-  KVM: VMX: make PLE window per-vcpu
-  KVM: VMX: dynamise PLE window
-  KVM: VMX: clamp PLE window
-  KVM: trace kvm_ple_window grow/shrink
-  KVM: VMX: abstract ple_window modifiers
-  KVM: VMX: runtime knobs for dynamic PLE window
-  KVM: VMX: automatic PLE window maximum
-
- arch/arm/kvm/arm.c              |  4 ++
- arch/mips/kvm/mips.c            |  4 ++
- arch/powerpc/kvm/powerpc.c      |  4 ++
- arch/s390/kvm/kvm-s390.c        |  4 ++
- arch/x86/include/asm/kvm_host.h |  2 +
- arch/x86/kvm/svm.c              |  6 +++
- arch/x86/kvm/trace.h            | 29 +++++++++++++
- arch/x86/kvm/vmx.c              | 93 +++++++++++++++++++++++++++++++++++++++--
- arch/x86/kvm/x86.c              |  6 +++
- include/linux/kvm_host.h        |  2 +
- virt/kvm/kvm_main.c             |  2 +
- 11 files changed, 153 insertions(+), 3 deletions(-)
-
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index a99e0cd..9f788eb 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -288,6 +288,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ {
+ }
+ 
++void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ {
+ 	vcpu->cpu = cpu;
+diff --git a/arch/mips/kvm/mips.c b/arch/mips/kvm/mips.c
+index cd71141..2362df2 100644
+--- a/arch/mips/kvm/mips.c
++++ b/arch/mips/kvm/mips.c
+@@ -1002,6 +1002,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ {
+ }
+ 
++void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ int kvm_arch_vcpu_ioctl_translate(struct kvm_vcpu *vcpu,
+ 				  struct kvm_translation *tr)
+ {
+diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
+index 4c79284..cbc432f 100644
+--- a/arch/powerpc/kvm/powerpc.c
++++ b/arch/powerpc/kvm/powerpc.c
+@@ -720,6 +720,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ 	kvmppc_subarch_vcpu_uninit(vcpu);
+ }
+ 
++void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ {
+ #ifdef CONFIG_BOOKE
+diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+index ce81eb2..a3c324e 100644
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -555,6 +555,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ 	/* Nothing todo */
+ }
+ 
++void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ {
+ 	save_fp_ctl(&vcpu->arch.host_fpregs.fpc);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8f1e22d..d7c214f 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7146,6 +7146,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ 		static_key_slow_dec(&kvm_no_apic_vcpu);
+ }
+ 
++void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
+ {
+ 	if (type)
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index a4c33b3..ebd7236 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -624,6 +624,8 @@ void kvm_arch_exit(void);
+ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu);
+ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu);
+ 
++void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu);
++
+ void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu);
+ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu);
+ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 33712fb..d3c3ed0 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -3123,6 +3123,8 @@ static void kvm_sched_in(struct preempt_notifier *pn, int cpu)
+ 	if (vcpu->preempted)
+ 		vcpu->preempted = false;
+ 
++	kvm_arch_sched_in(vcpu, cpu);
++
+ 	kvm_arch_vcpu_load(vcpu, cpu);
+ }
+ 
 -- 
 2.0.4
 
