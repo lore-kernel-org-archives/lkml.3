@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaHSL3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:29:40 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42298 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960AbaHSL3i (ORCPT
+	id S1752708AbaHSLaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:30:05 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53254 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaHSLaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:29:38 -0400
-Message-ID: <53F3351C.1020500@collabora.co.uk>
-Date: Tue, 19 Aug 2014 13:29:32 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 19 Aug 2014 07:30:01 -0400
+From: Honggang Li <enjoymindful@gmail.com>
+To: benjamin.romer@unisys.com, david.kershner@unisys.com,
+        gregkh@linuxfoundation.org, erik.arfvidson@unisys.com,
+        sparmaintainer@unisys.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Honggang Li <enjoymindful@gmail.com>
+Subject: [linux-next PATCH] print u64 with %llu
+Date: Tue, 19 Aug 2014 19:29:41 +0800
+Message-Id: <1408447783-22287-1-git-send-email-enjoymindful@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>, Mark Brown <broonie@kernel.org>,
-        Tim Kryger <tim.kryger@gmail.com>
-CC: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Haijun Zhang <Haijun.Zhang@freescale.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Yuvaraj Kumar C D <yuvaraj.cd@gmail.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] mmc: core: Use regulator_get_voltage() if OCR mask
- is empty.
-References: <1408019940-11153-1-git-send-email-javier.martinez@collabora.co.uk>	<CAD7vxxKvzxvmzgx=S5ZZn54ts99ca2TqBYFvY1SXZQZDkhjq3w@mail.gmail.com>	<20140814151958.GY17528@sirena.org.uk>	<CAD7vxxLHtk2ywHGoBtDp6x3-5BtDdaFnCdc_pfgMwq63Cg8Qow@mail.gmail.com>	<53EDBB5B.4000209@collabora.co.uk>	<20140815095528.GH17528@sirena.org.uk> <CAPDyKFpm5nzXp5p0qxDof2NcOML911eYkjPNMsn9a2ttdnW7gQ@mail.gmail.com>
-In-Reply-To: <CAPDyKFpm5nzXp5p0qxDof2NcOML911eYkjPNMsn9a2ttdnW7gQ@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ulf,
+There are printk format issue and coding style issue for the lines
+changed by this patch. This patch only fix the format issue. Please
+take those coding style errors as false positives for this patch.
 
-On 08/15/2014 04:51 PM, Ulf Hansson wrote:
-> 
-> Just wanted to add some input regarding the errors in the mmc case.
-> These are of high importance. In principle if you get, "Failed getting
-> OCR mask: -22", likely you will be using a wrong OCR mask while
-> negotiating the voltage level with the card.
-> 
-> So, somehow we need to address this issue.
->
+[real@name linux-next]$ scripts/checkpatch.pl outgoing2/0001-staging-unisys-virthba-virthba.c-print-u64-with-llu.patch 
+WARNING: line over 80 characters
+#45: FILE: drivers/staging/unisys/virthba/virthba.c:520:
++    LOGINF("scsihost->max_channel=%u, max_id=%u, max_lun=%llu, cmd_per_lun=%u, max_sectors=%hu, sg_tablesize=%hu\n",
 
-And do you think that $subject is the right approach to solve this issue?
-If not please let me know so I can address that.
+WARNING: line over 80 characters
+#63: FILE: drivers/staging/unisys/virthba/virthba.c:1142:
++		LOGERR("SCSICMD ****FAILED scsicmd:0x%p op:0x%x <%d:%d:%d:%llu> 0x%x-0x%x-0x%x-0x%x-0x%x.\n",
 
-> Kind regards
-> Uffe
-> 
+WARNING: line over 80 characters
+#72: FILE: drivers/staging/unisys/virthba/virthba.c:1151:
++			LOGERR("Throtling SCSICMD errors disk <%d:%d:%d:%llu>\n",
 
-Best regards,
-Javier
+total: 0 errors, 3 warnings, 32 lines checked
+
+outgoing2/0001-staging-unisys-virthba-virthba.c-print-u64-with-llu.patch has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+[real@name linux-next]$ 
+
+Honggang Li (1):
+  staging: unisys/virthba/virthba.c print u64 with %llu
+
+ drivers/staging/unisys/virthba/virthba.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+-- 
+1.8.3.1
+
