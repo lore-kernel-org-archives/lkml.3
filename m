@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933AbaHSN0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:26:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52345 "EHLO mx2.suse.de"
+	id S1753075AbaHSN0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:26:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52339 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750870AbaHSN0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:26:00 -0400
+	id S1752128AbaHSNZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 09:25:59 -0400
 From: jgross@suse.com
 To: stefan.bader@canonical.com, toshi.kani@hp.com,
         linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
         konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
         x86@kernel.org
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH RFC 3/3] Support Xen pv-domains using PAT
-Date: Tue, 19 Aug 2014 15:25:45 +0200
-Message-Id: <1408454745-32358-4-git-send-email-jgross@suse.com>
+Subject: [PATCH RFC 2/3] x86: Enable PAT to use cache mode translation tables
+Date: Tue, 19 Aug 2014 15:25:44 +0200
+Message-Id: <1408454745-32358-3-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1408454745-32358-1-git-send-email-jgross@suse.com>
 References: <1408454745-32358-1-git-send-email-jgross@suse.com>
@@ -24,144 +24,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Juergen Gross <jgross@suse.com>
 
-With the dynamical mapping between cache modes and pgprot values it is now
-possible to use all cache modes via the Xen hypervisor PAT settings in a
-pv domain.
+Update the translation tables from cache mode to pgprot values according to
+the PAT settings. This enables changing the cache attributes of a PAT index in
+just one place without having to change at the users side.
 
-All to be done is to read the PAT configuration MSR and set up the translation
-tables accordingly.
+With this change it is possible to use the same kernel with different PAT
+configurations, e.g. supporting Xen.
 
 Signed-off-by: Juergen Gross <jgross@suse.com>
 ---
- arch/x86/xen/enlighten.c | 12 ++++++----
- arch/x86/xen/mmu.c       | 60 +++++++++++++++++-------------------------------
- arch/x86/xen/xen-ops.h   |  1 +
- 3 files changed, 30 insertions(+), 43 deletions(-)
+ arch/x86/include/asm/pat.h           |  1 +
+ arch/x86/include/asm/pgtable_types.h |  4 +++
+ arch/x86/mm/init.c                   |  8 +++++
+ arch/x86/mm/pat.c                    | 57 +++++++++++++++++++++++++++++++++++-
+ include/linux/mm.h                   |  1 +
+ 5 files changed, 70 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c0cb11f..ef705a3 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1552,12 +1552,16 @@ asmlinkage __visible void __init xen_start_kernel(void)
+diff --git a/arch/x86/include/asm/pat.h b/arch/x86/include/asm/pat.h
+index 65b497b..a7816e1 100644
+--- a/arch/x86/include/asm/pat.h
++++ b/arch/x86/include/asm/pat.h
+@@ -11,6 +11,7 @@ static const int pat_enabled;
+ #endif
  
- 	xen_init_mmu_ops();
+ extern void pat_init(void);
++void pat_init_cache_modes(u64 pat);
  
-+	/*
-+	 * Modify the cache mode translation tables to match Xen's PAT
-+	 * configuration.
-+	 */
-+
-+	if (xen_init_cache_types())
-+		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
-+
- 	/* Prevent unwanted bits from being set in PTEs. */
- 	__supported_pte_mask &= ~_PAGE_GLOBAL;
--#if 0
--	if (!xen_initial_domain())
--#endif
--		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
+ extern int reserve_memtype(u64 start, u64 end,
+ 		enum page_cache_mode req_pct, enum page_cache_mode *ret_pct);
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 7685b34..45c720e 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -338,6 +338,10 @@ extern uint8_t __pte2cachemode_tbl[8];
+ 	((((cb) >> (_PAGE_BIT_PAT - 2)) & 4) |		\
+ 	 (((cb) >> (_PAGE_BIT_PCD - 1)) & 2) |		\
+ 	 (((cb) >> _PAGE_BIT_PWT) & 1))
++#define __cm_idx2pte(i)					\
++	((((i) & 4) << (_PAGE_BIT_PAT - 2)) |		\
++	 (((i) & 2) << (_PAGE_BIT_PCD - 1)) |		\
++	 (((i) & 1) << _PAGE_BIT_PWT))
  
- 	__supported_pte_mask |= _PAGE_IOMAP;
- 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index e8a1201..49830c0 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -434,13 +434,7 @@ static pteval_t iomap_pte(pteval_t val)
- __visible pteval_t xen_pte_val(pte_t pte)
+ static inline unsigned long protval_cachemode(enum page_cache_mode pct)
  {
- 	pteval_t pteval = pte.pte;
--#if 0
--	/* If this is a WC pte, convert back from Xen WC to Linux WC */
--	if ((pteval & (_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)) == _PAGE_PAT) {
--		WARN_ON(!pat_enabled);
--		pteval = (pteval & ~_PAGE_PAT) | _PAGE_PWT;
--	}
--#endif
-+
- 	if (xen_initial_domain() && (pteval & _PAGE_IOMAP))
- 		return pteval;
- 
-@@ -455,47 +449,35 @@ __visible pgdval_t xen_pgd_val(pgd_t pgd)
- PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
- 
- /*
-- * Xen's PAT setup is part of its ABI, though I assume entries 6 & 7
-- * are reserved for now, to correspond to the Intel-reserved PAT
-- * types.
-- *
-- * We expect Linux's PAT set as follows:
-- *
-- * Idx  PTE flags        Linux    Xen    Default
-- * 0                     WB       WB     WB
-- * 1            PWT      WC       WT     WT
-- * 2        PCD          UC-      UC-    UC-
-- * 3        PCD PWT      UC       UC     UC
-- * 4    PAT              WB       WC     WB
-- * 5    PAT     PWT      WC       WP     WT
-- * 6    PAT PCD          UC-      rsv    UC-
-- * 7    PAT PCD PWT      UC       rsv    UC
-+ * Xen's PAT setup is part of its ABI.
-+ * We don't care what Linux wants to use, just fall back to the Xen PAT
-+ * configuration. All we have to do in case of a Linux's PAT configuration
-+ * is to overwrite the cache mode translation tables with the correct
-+ * values for the Xen configuration.
-  */
- 
-+int xen_init_cache_types(void)
-+{
-+	u64 pat;
-+	int err;
-+
-+	err = rdmsrl_safe(MSR_IA32_CR_PAT, &pat);
-+	if (!err)
-+		pat_init_cache_modes(pat);
-+	return err;
-+}
-+
- void xen_set_pat(u64 pat)
- {
--	/* We expect Linux to use a PAT setting of
--	 * UC UC- WC WB (ignoring the PAT flag) */
--	WARN_ON(pat != 0x0007010600070106ull);
-+	if (xen_init_cache_types())
-+		/* Domain configured PAT, but we can't adapt to the changes */
-+		BUG();
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 0500124..d2ebe70 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -716,3 +716,11 @@ void __init zone_sizes_init(void)
+ 	free_area_init_nodes(max_zone_pfns);
  }
  
- __visible pte_t xen_make_pte(pteval_t pte)
- {
- 	phys_addr_t addr = (pte & PTE_PFN_MASK);
--#if 0
--	/* If Linux is trying to set a WC pte, then map to the Xen WC.
--	 * If _PAGE_PAT is set, then it probably means it is really
--	 * _PAGE_PSE, so avoid fiddling with the PAT mapping and hope
--	 * things work out OK...
--	 *
--	 * (We should never see kernel mappings with _PAGE_PSE set,
--	 * but we could see hugetlbfs mappings, I think.).
--	 */
--	if (pat_enabled && !WARN_ON(pte & _PAGE_PAT)) {
--		if ((pte & (_PAGE_PCD | _PAGE_PWT)) == _PAGE_PWT)
--			pte = (pte & ~(_PAGE_PCD | _PAGE_PWT)) | _PAGE_PAT;
--	}
--#endif
++void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache)
++{
++	/* entry 0 MUST be WB (hardwired to speed up translations) */
++	BUG_ON(!entry && cache != _PAGE_CACHE_MODE_WB);
 +
- 	/*
- 	 * Unprivileged domains are allowed to do IOMAPpings for
- 	 * PCI passthrough, but not map ISA space.  The ISA
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index 28c7e0b..da7e666 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -34,6 +34,7 @@ extern unsigned long xen_max_p2m_pfn;
- void xen_mm_pin_all(void);
- void xen_mm_unpin_all(void);
- void xen_set_pat(u64);
-+int xen_init_cache_types(void);
++	__cachemode2pte_tbl[cache] = __cm_idx2pte(entry);
++	__pte2cachemode_tbl[entry] = cache;
++}
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index 0ba0d79..ac8a5d4 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -75,6 +75,55 @@ enum {
+ 	PAT_UC_MINUS = 7,	/* UC, but can be overriden by MTRR */
+ };
  
- char * __init xen_memory_setup(void);
- char * xen_auto_xlated_memory_setup(void);
++/*
++ * Update the cache mode to pgprot translation tables according to PAT
++ * configuration.
++ * Using lower indices is preferred, so we start with highest index.
++ */
++void pat_init_cache_modes(u64 pat)
++{
++	int i;
++	enum page_cache_mode cache;
++	char pat_msg[33];
++	char *cache_mode;
++
++	pat_msg[32] = 0;
++	for (i = 7; i >= 0; i--) {
++		switch ((pat >> (i * 8)) & 7) {
++		case PAT_UC:
++			cache = _PAGE_CACHE_MODE_UC;
++			cache_mode = "UC  ";
++			break;
++		case PAT_WC:
++			cache = _PAGE_CACHE_MODE_WC;
++			cache_mode = "WC  ";
++			break;
++		case PAT_WT:
++			cache = _PAGE_CACHE_MODE_WT;
++			cache_mode = "WT  ";
++			break;
++		case PAT_WP:
++			cache = _PAGE_CACHE_MODE_WP;
++			cache_mode = "WP  ";
++			break;
++		case PAT_WB:
++			cache = _PAGE_CACHE_MODE_WB;
++			cache_mode = "WB  ";
++			break;
++		case PAT_UC_MINUS:
++			cache = _PAGE_CACHE_MODE_UC_MINUS;
++			cache_mode = "UC- ";
++			break;
++		default:
++			cache = _PAGE_CACHE_MODE_WB;
++			cache_mode = "WB  ";
++		}
++		update_cache_mode_entry(i, cache);
++		memcpy(pat_msg + 4 * i, cache_mode, 4);
++	}
++	pr_info("PAT configuration [0-7]: %s\n", pat_msg);
++}
++
+ #define PAT(x, y)	((u64)PAT_ ## y << ((x)*8))
+ 
+ void pat_init(void)
+@@ -118,8 +167,14 @@ void pat_init(void)
+ 	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+ 
+ 	/* Boot CPU check */
+-	if (!boot_pat_state)
++	if (!boot_pat_state) {
+ 		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
++		/*
++		 * Init cache mode tables before writing MSR to give Xen a
++		 * chance to correct the changes when doing the write.
++		 */
++		pat_init_cache_modes(pat);
++	}
+ 
+ 	wrmsrl(MSR_IA32_CR_PAT, pat);
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 8981cc8..d7bf551 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1574,6 +1574,7 @@ extern void free_area_init(unsigned long * zones_size);
+ extern void free_area_init_node(int nid, unsigned long * zones_size,
+ 		unsigned long zone_start_pfn, unsigned long *zholes_size);
+ extern void free_initmem(void);
++extern void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache);
+ 
+ /*
+  * Free reserved pages within range [PAGE_ALIGN(start), end & PAGE_MASK)
 -- 
 1.8.4.5
 
