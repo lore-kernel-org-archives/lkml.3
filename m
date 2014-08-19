@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaHSTfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 15:35:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37059 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878AbaHSTfM convert rfc822-to-8bit (ORCPT
+	id S1753774AbaHSTgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 15:36:47 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:37975 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918AbaHSTgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 15:35:12 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6] input: drv260x: Add TI drv260x haptics driver
-Thread-Topic: [PATCH v6] input: drv260x: Add TI drv260x haptics driver
-Thread-Index: AQHPuKBG/Qme4vynlkWiIpuXx8CBGw==
-Date: Tue, 19 Aug 2014 19:35:06 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DEC1EF@DFLE09.ent.ti.com>
-References: <1408117670-19750-1-git-send-email-dmurphy@ti.com>
- <20140819192401.GA32080@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Aug 2014 15:36:45 -0400
+Message-ID: <53F3A739.4070203@ahsoftware.de>
+Date: Tue, 19 Aug 2014 21:36:25 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christian Grothoff <grothoff@in.tum.de>
+CC: Jacob Appelbaum <jacob@appelbaum.net>, Andi Kleen <andi@firstfloor.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, knock@gnunet.org
+Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity
+ protection
+References: <52A75EF8.3010308@in.tum.de>	 <20131211.150137.368953964178408437.davem@davemloft.net>	 <52A8C8B4.4060109@in.tum.de>	 <20131211122637.75b09074@nehalam.linuxnetplumber.net>	 <87bo0nulkt.fsf@tassilo.jf.intel.com> <52A8ECF5.3070604@in.tum.de>	 <20131212012317.GL21717@two.firstfloor.org>	 <52A98DBF.4090702@appelbaum.net> <52A9A17F.6050505@in.tum.de> <1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry
+Am 12.12.2013 15:34, schrieb Eric Dumazet:
 
-On 08/19/2014 02:24 PM, Dmitry Torokhov wrote:
-> Hi Dan,
-> 
-> On Fri, Aug 15, 2014 at 10:47:50AM -0500, Dan Murphy wrote:
->> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
->> index 2ff4425..99f6762 100644
->> --- a/drivers/input/misc/Kconfig
->> +++ b/drivers/input/misc/Kconfig
->> @@ -676,4 +676,13 @@ config INPUT_SOC_BUTTON_ARRAY
->>  	  To compile this driver as a module, choose M here: the
->>  	  module will be called soc_button_array.
->>  
->> +config INPUT_DRV260X_HAPTICS
->> +	tristate "TI DRV260X haptics support"
->> +	depends on INPUT && I2C
-> 
-> This also needs "select REGMAP_I2C"
-> 
+A bit late, but I've just stumbled over that feature which I do like a lot.
 
-This one is OK
+> Very soon you'll need to support different secrets. You do not want all
+> clients share a common secret, do you ? How can a server change its
+> secret without disrupting clients ?
 
->> +	help
->> +	  Say Y to enable support for the TI DRV260X haptics driver.
->> +
->> +	  To compile this driver as a module, choose M here: the
->> +	  module will be called drv260x-haptics.
->> +
-> 
-> [...]
-> 
->> +#ifndef _LINUX_DRV260X_PDATA_H
->> +#define _LINUX_DRV260X_PDATA_H
->> +
->> +struct drv260x_platform_data {
->> +	int enable_gpio;
-> 
-> I do not see this used anywhere.
+Impossible because you already need a channel if you want to identify 
+the client. But that isn't the intention of the patch. You still have 
+the usual authentication stuff in the service you want to hide. It's 
+about hiding (from someone outside a closed group) the possibility to 
+authenticate.
 
-But this is actually used here
+> How having a constant initial sequence number can even be valid ?
+> What about TCP timestamps being not available at all ?
+> How typical servers can be behind a load balancer ?
+> Or am I missing something ?
 
-haptics->enable_gpio = devm_gpiod_get(&client->dev, "enable");
+It doesn't have to work in every environment and it doesn't have to 
+solve all existing problems in the world. ;)
 
-for the non-dt case
+But it enables people to protect a bit more against malicious people or 
+governments.
 
-> 
->> +	u32 library_selection;
->> +	u32 mode;
->> +	u32 vib_rated_voltage;
->> +	u32 vib_overdrive_voltage;
->> +};
->> +
->> +#endif
-> 
-> I fixed up the above issues and did a few more formatting changes and applied
-> to my 'next' branch. Please take a peek and holler if you see something wrong.
-> 
-> Thanks.
-> 
+And it is really very easy to use. It took me around half an hour to 
+find the places in openvpn and openssh where I had to add the 
+setsockopt() call and it can be used even easier with preloading 
+libknockify.so.
 
+There can be found much more useless options in the kernel. At least I 
+like it and it fits my needs too.
 
--- 
-------------------
-Dan Murphy
+Regards,
+
+Alexander Holler
