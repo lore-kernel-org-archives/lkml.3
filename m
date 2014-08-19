@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaHSOpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:45:07 -0400
-Received: from sauhun.de ([89.238.76.85]:38196 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737AbaHSOpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:45:05 -0400
-Date: Tue, 19 Aug 2014 09:44:51 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: mika.westerberg@linux.intel.com, torvalds@linux-foundation.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] I2C: Rework kernel config I2C_ACPI
-Message-ID: <20140819144450.GA15371@katana>
-References: <20140814093743.GB2824@katana>
- <1408081139-6292-1-git-send-email-tianyu.lan@intel.com>
+	id S1753297AbaHSOqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:46:37 -0400
+Received: from relay.variantweb.net ([104.131.199.242]:53462 "EHLO
+	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752988AbaHSOqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:46:34 -0400
+Date: Tue, 19 Aug 2014 09:46:28 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
+        ds2horner@gmail.com
+Subject: Re: [PATCH v2 2/4] zsmalloc: change return value unit of
+ zs_get_total_size_bytes
+Message-ID: <20140819144628.GA26403@cerebellum.variantweb.net>
+References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
+ <1408434887-16387-3-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408081139-6292-1-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <1408434887-16387-3-git-send-email-minchan@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 19, 2014 at 04:54:45PM +0900, Minchan Kim wrote:
+> zs_get_total_size_bytes returns a amount of memory zsmalloc
+> consumed with *byte unit* but zsmalloc operates *page unit*
+> rather than byte unit so let's change the API so benefit
+> we could get is that reduce unnecessary overhead
+> (ie, change page unit with byte unit) in zsmalloc.
+> 
+> Now, zswap can rollback to zswap_pool_pages.
+> Over to zswap guys ;-)
 
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't think that's how is it done :-/  Changing the API for a
+component that has two users, changing one, then saying "hope you guys
+change your newly broken stuff".
 
-On Fri, Aug 15, 2014 at 01:38:59PM +0800, Lan Tianyu wrote:
-> Commit da3c6647(I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI
-> config) adds a new kernel config I2C_ACPI and make I2C core built in
-> when the config is selected. This is wrong because distributions
-> etc generally compile I2C as a module and the commit broken that.
-> This patch is to rename I2C_ACPI to ACPI_I2C_OPREGION. New config
-> only controls ACPI I2C operation region code and depends on I2C=3Dy.
->=20
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+I know you would rather not move zram to the zpool API but doing so
+would avoid situations like this.
 
-Removed the unrelated "menuconfig" change and applied to for-current,
-thanks! Please don't send V2 patches as "in-reply-to" V1. This gets
-confusing, especially when a series approaches V10.
+Anyway, this does break the zpool API and by extension zswap, and that
+needs to be addressed in this patch or we create a point in the commit
+history where it is broken.
 
+Quick glance:
+- zpool_get_total_size() return type is u64 but this patch changes to
+unsigned long.  Now mismatches between zbud and zsmalloc.
+- zbud_zpool_total_size needs to return pages, not bytes
+- as you noted s/pool_total_size/pool_pages/g in zswap.c plus
+  modification to zswap_is_full()
 
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
+Seth
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT82LiAAoJEBQN5MwUoCm2jQEP/0t559EzXDLobua3YLKgiPi8
-KNv+E3DPYYiXx3TZ4jv0tSfx6UuhI6TUTmzVZ/Inv9wcO0lQiDBIuI0AUhdidI1s
-Ljjzm8wiryr0r6R9CNTzRqUvw6rnrFaEieKQR5doVA/GdjiQaFlXBXOSbOZ8loR+
-RkQtwYO7mN8W9WHLGpTMf3mOWRcuPIKkd9POQsT5Ax1PyBQlg0yKSzoGNleEnr0J
-bHK+IwQxVx57AU3uGDe//Y13x+czavhNhEXqc2y76Do8zx2A/qzIeWxlwTdsnxpN
-skYqrcyZC6DNevMJmIJyb2VaQNiPod+/VHOirdmrdOFJCEwdD1h/JGWNbzOJis1O
-3i2czT2APSDLu2yj/3mS38F7+wZXe4JjDxo3VEwFIu0W0HAh3PbxOXJUoO3TlLYq
-6TT7bYaRe2EJipUcGhMYzbgFM+5d2Dz7yfpLbi1MCKEI3wTL4u/JAQUsn9tA1Y5z
-0pis9z5Z3V+L/LqRS3OnNPEst/E8i7xI+dcE5Dwn5C0rGWh1Ltp7/igsWk1zRPov
-3muixEp0/pZFQsA84V4HLefU+JXA1OF1E+ZjoJWs/PrZz7pL0F4b7Klq69SJMiio
-ZRuNMvfqy4MPTFUCPsttL6LycVOIfuQ4sgghWurHfZ8R5Z84n2DJZdcYYoKg6Hxo
-iCGREOyL8HrkphV6LBal
-=iDqB
------END PGP SIGNATURE-----
-
---bp/iNruPH9dso1Pn--
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/block/zram/zram_drv.c |  4 ++--
+>  include/linux/zsmalloc.h      |  2 +-
+>  mm/zsmalloc.c                 | 10 +++++-----
+>  3 files changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index d00831c3d731..302dd37bcea3 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
+>  
+>  	down_read(&zram->init_lock);
+>  	if (init_done(zram))
+> -		val = zs_get_total_size_bytes(meta->mem_pool);
+> +		val = zs_get_total_size(meta->mem_pool);
+>  	up_read(&zram->init_lock);
+>  
+> -	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+> +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
+>  }
+>  
+>  static ssize_t max_comp_streams_show(struct device *dev,
+> diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+> index e44d634e7fb7..105b56e45d23 100644
+> --- a/include/linux/zsmalloc.h
+> +++ b/include/linux/zsmalloc.h
+> @@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+>  			enum zs_mapmode mm);
+>  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+>  
+> -u64 zs_get_total_size_bytes(struct zs_pool *pool);
+> +unsigned long zs_get_total_size(struct zs_pool *pool);
+>  
+>  #endif
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index a65924255763..80408a1da03a 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
+>  
+>  static u64 zs_zpool_total_size(void *pool)
+>  {
+> -	return zs_get_total_size_bytes(pool);
+> +	return zs_get_total_size(pool) << PAGE_SHIFT;
+>  }
+>  
+>  static struct zpool_driver zs_zpool_driver = {
+> @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>  }
+>  EXPORT_SYMBOL_GPL(zs_unmap_object);
+>  
+> -u64 zs_get_total_size_bytes(struct zs_pool *pool)
+> +unsigned long zs_get_total_size(struct zs_pool *pool)
+>  {
+> -	u64 npages;
+> +	unsigned long npages;
+>  
+>  	spin_lock(&pool->stat_lock);
+>  	npages = pool->pages_allocated;
+>  	spin_unlock(&pool->stat_lock);
+> -	return npages << PAGE_SHIFT;
+> +	return npages;
+>  }
+> -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+> +EXPORT_SYMBOL_GPL(zs_get_total_size);
+>  
+>  module_init(zs_init);
+>  module_exit(zs_exit);
+> -- 
+> 2.0.0
+> 
