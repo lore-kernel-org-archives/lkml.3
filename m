@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaHSM3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:29:23 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62859 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751976AbaHSM3V (ORCPT
+	id S1752908AbaHSMay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:30:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60129 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751837AbaHSMaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:29:21 -0400
-Date: Tue, 19 Aug 2014 13:29:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Rob Herring <robh@kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v4 4/8] arm: use fixmap for text patching when text is RO
-Message-ID: <20140819122933.GI23128@arm.com>
-References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
- <1407949593-16121-5-git-send-email-keescook@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407949593-16121-5-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 19 Aug 2014 08:30:52 -0400
+X-Sasl-enc: fGDenvw9NV4OsM9eqWxcqvaNlXewvaVwFSFlUdczNlmJ 1408451450
+Message-ID: <1408451448.11314.11.camel@perseus.themaw.net>
+Subject: Re: [PATCH 0/5] RCU-walk support for autofs
+From: Ian Kent <raven@themaw.net>
+To: NeilBrown <neilb@suse.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Aug 2014 20:30:48 +0800
+In-Reply-To: <20140819211654.5ec3853a@notabene.brown>
+References: <20140818062844.9860.43007.stgit@notabene.brown>
+	 <1408350340.2533.3.camel@perseus.fritz.box>
+	 <1408442547.11314.9.camel@perseus.themaw.net>
+	 <20140819211654.5ec3853a@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Aug 13, 2014 at 06:06:29PM +0100, Kees Cook wrote:
-> From: Rabin Vincent <rabin@rab.in>
+On Tue, 2014-08-19 at 21:16 +1000, NeilBrown wrote:
+> On Tue, 19 Aug 2014 18:02:27 +0800 Ian Kent <raven@themaw.net> wrote:
 > 
-> Use fixmaps for text patching when the kernel text is read-only,
-> inspired by x86.  This makes jump labels and kprobes work with the
-> currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
-> CONFIG_DEBUG_RODATA options.
+> > On Mon, 2014-08-18 at 16:25 +0800, Ian Kent wrote:
+> > > On Mon, 2014-08-18 at 16:33 +1000, NeilBrown wrote:
+> > > > Hi Ian,
+> > > >  Have you had a chance to run your tests in these patches yet?
+> > > >  I've done what testing I can think of and cannot fault them.
+> > > 
+> > > I haven't, I've been plagued with illness so I'm not getting nearly
+> > > enough done. I'll try to put a kernel together and run the test in the
+> > > next week or so.
+> > 
+> > Just to let you know that I managed to spend some time on this. I built
+> > a kernel (3.17.0-rc1) with the series and ran a couple of tests.
+> > 
+> > I'm not certain that the patches I used are identical to your posting, I
+> > saw one difference, after the fact, that shouldn't matter, I'll have to
+> > check that.
+> > 
+> > It isn't possible to test expire to mount races because the mounts in
+> > the tree never expire.
+> > 
+> > At first I thought it was because so many processes were accessing the
+> > tree all the time but manually constructing the maps and mounting the
+> > mounts shows that nothing ever expires, at least for this tree.
+> > 
+> > However, issuing a shut down does expire all the mounts and shuts down
+> > autofs cleanly.
+> > 
+> > So there is something not quite right with the expire check or my
+> > patches have mistakes.
 > 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> [kees: fixed up for merge with "arm: use generic fixmap.h"]
-> [kees: added parse acquire/release annotations to pass C=1 builds]
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Ahh.. I bet I know what it is.
+> autofs4_can_expire() isn't idempotent.
+> Because we call should_expire twice, autofs4_can_expire() is called twice and
+> the second time it failed because  the first time it resets ->last_used.
 
-[...]
+LOL, indeed that looks like it.
+I'll carefully check the patches anyway, rebuild and re-test.
 
-> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-> index 07314af47733..a1dce690446a 100644
-> --- a/arch/arm/kernel/patch.c
-> +++ b/arch/arm/kernel/patch.c
-> @@ -1,8 +1,11 @@
->  #include <linux/kernel.h>
-> +#include <linux/spinlock.h>
->  #include <linux/kprobes.h>
-> +#include <linux/mm.h>
->  #include <linux/stop_machine.h>
+> 
+> diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+> index eb4b770a4bf6..80133a9d9427 100644
+> --- a/fs/autofs4/expire.c
+> +++ b/fs/autofs4/expire.c
+> @@ -26,6 +26,9 @@ static inline int autofs4_can_expire(struct dentry *dentry,
+>  	if (ino == NULL)
+>  		return 0;
 >  
->  #include <asm/cacheflush.h>
-> +#include <asm/fixmap.h>
->  #include <asm/smp_plat.h>
->  #include <asm/opcodes.h>
->  
-> @@ -13,21 +16,77 @@ struct patch {
->  	unsigned int insn;
->  };
->  
-> -void __kprobes __patch_text(void *addr, unsigned int insn)
-> +static DEFINE_SPINLOCK(patch_lock);
-> +
-> +static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
-> +	__acquires(&patch_lock)
-> +{
-> +	unsigned int uintaddr = (uintptr_t) addr;
-> +	bool module = !core_kernel_text(uintaddr);
-> +	struct page *page;
-> +
-> +	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX))
-> +		page = vmalloc_to_page(addr);
-> +	else if (!module && IS_ENABLED(CONFIG_DEBUG_RODATA))
-> +		page = virt_to_page(addr);
-> +	else
-> +		return addr;
-> +
-> +	if (flags)
-> +		spin_lock_irqsave(&patch_lock, *flags);
-> +	else
-> +		__acquire(&patch_lock);
+> +	if (ino->flags & AUTOFS_INF_NO_RCU)
+> +		/* Already performed this test */
+> +		return 1;
+>  	if (!do_now) {
+>  		/* Too young to die */
+>  		if (!timeout || time_after(ino->last_used + timeout, now))
+> 
+> 
+> 
+> might fix it, but might be a hack.
+> (tests.... yep, that seems to fix it).
+> 
+> I'll think some more tomorrow.
+> 
+> Thanks,
+> NeilBrown
 
-I don't understand the locking here. Why is it conditional, why do we need
-to disable interrupts, and are you just racing against yourself?
 
-> +	set_fixmap(fixmap, page_to_phys(page));
-
-set_fixmap does TLB invalidation, right? I think that means it can block on
-11MPCore and A15 w/ the TLBI erratum, so it's not safe to call this with
-interrupts disabled anyway.
-
-Will
