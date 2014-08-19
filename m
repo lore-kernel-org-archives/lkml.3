@@ -1,104 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031AbaHSMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:32:26 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47786 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752618AbaHSMcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:32:24 -0400
-From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-To: <computersforpeace@gmail.com>, <dwmw2@infradead.org>
-CC: <santosh.shilimkar@ti.com>, <grygorii.strashko@ti.com>,
-        <m-karicheri2@ti.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <ivan.khoronzhuk@ti.com>
-Subject: [Patch v2] nand: davinci: add support for 4K page size nand devices
-Date: Tue, 19 Aug 2014 15:31:54 +0300
-Message-ID: <1408451514-4204-1-git-send-email-ivan.khoronzhuk@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753140AbaHSMdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:33:33 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62983 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751827AbaHSMdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 08:33:31 -0400
+Date: Tue, 19 Aug 2014 13:33:42 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4 7/8] ARM: mm: allow non-text sections to be
+ non-executable
+Message-ID: <20140819123342.GJ23128@arm.com>
+References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+ <1407949593-16121-8-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407949593-16121-8-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sandeep Paulraj <s-paulraj@ti.com>
+On Wed, Aug 13, 2014 at 06:06:32PM +0100, Kees Cook wrote:
+> Adds CONFIG_ARM_KERNMEM_PERMS to separate the kernel memory regions
+> into section-sized areas that can have different permisions. Performs
+> the NX permission changes during free_initmem, so that init memory can be
+> reclaimed.
+> 
+> This uses section size instead of PMD size to reduce memory lost to
+> padding on non-LPAE systems.
+> 
+> Based on work by Brad Spengler, Larry Bassel, and Laura Abbott.
 
-It is needed for k2l keystone2 EVM which uses NAND flash with 4K page
-size, hence add support for 4K page size nand devices.
+[...]
 
-Signed-off-by: Sandeep Paulraj <s-paulraj@ti.com>
-Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
----
+> diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+> index 6f57cb94367f..a3d07ca2bbb4 100644
+> --- a/arch/arm/kernel/vmlinux.lds.S
+> +++ b/arch/arm/kernel/vmlinux.lds.S
+> @@ -8,6 +8,9 @@
+>  #include <asm/thread_info.h>
+>  #include <asm/memory.h>
+>  #include <asm/page.h>
+> +#ifdef CONFIG_ARM_KERNMEM_PERMS
+> +#include <asm/pgtable.h>
+> +#endif
+>  	
+>  #define PROC_INFO							\
+>  	. = ALIGN(4);							\
+> @@ -90,6 +93,11 @@ SECTIONS
+>  		_text = .;
+>  		HEAD_TEXT
+>  	}
+> +
+> +#ifdef CONFIG_ARM_KERNMEM_PERMS
+> +	. = ALIGN(1<<SECTION_SHIFT);
+> +#endif
+> +
+>  	.text : {			/* Real text segment		*/
+>  		_stext = .;		/* Text and read-only data	*/
+>  			__exception_text_start = .;
+> @@ -145,7 +153,11 @@ SECTIONS
+>  	_etext = .;			/* End of text and rodata section */
+>  
+>  #ifndef CONFIG_XIP_KERNEL
+> +# ifdef CONFIG_ARM_KERNMEM_PERMS
+> +	. = ALIGN(1<<SECTION_SHIFT);
+> +# else
+>  	. = ALIGN(PAGE_SIZE);
+> +# endif
 
-Based on l2-mtd/master
+This might be cleaner if we had a single macro (ALIGN_MIN?) that expanded to
+ALIGN(1 << SECTION_SHIFT) #ifdef  CONFIG_ARM_KERNMEM_PERMS.
 
-v1..v2:
-- fixed comment style, no functional changes
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index ad82c05bfc3a..ccf392ef40d4 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -32,6 +32,11 @@
+>  #include <asm/tlb.h>
+>  #include <asm/fixmap.h>
+>  
+> +#ifdef CONFIG_ARM_KERNMEM_PERMS
+> +#include <asm/system_info.h>
+> +#include <asm/cp15.h>
+> +#endif
 
- drivers/mtd/nand/davinci_nand.c | 42 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 31 insertions(+), 11 deletions(-)
+We already #include cp15.h in this file. If you need system_info.h, I don't
+think you should bother making the include conditional.
 
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index b922c8e..d7df32c 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -520,6 +520,32 @@ static struct nand_ecclayout hwecc4_2048 = {
- 	},
- };
- 
-+/*
-+ * An ECC layout for using 4-bit ECC with large-page (4096bytes) flash,
-+ * storing ten ECC bytes plus the manufacturer's bad block marker byte,
-+ * and not overlapping the default BBT markers.
-+ */
-+static struct nand_ecclayout hwecc4_4096 = {
-+	.eccbytes = 80,
-+	.eccpos = {
-+		/* at the end of spare sector */
-+		48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
-+		58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
-+		68, 69, 70, 71, 72, 73, 74, 75, 76, 77,
-+		78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
-+		88, 89, 90, 91, 92, 93, 94, 95, 96, 97,
-+		98, 99, 100, 101, 102, 103, 104, 105, 106, 107,
-+		108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
-+		118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
-+	},
-+	.oobfree = {
-+		/* 2 bytes at offset 0 hold manufacturer badblock markers */
-+		{.offset = 2, .length = 46, },
-+		/* 5 bytes at offset 8 hold BBT markers */
-+		/* 8 bytes at offset 16 hold JFFS2 clean markers */
-+	},
-+};
-+
- #if defined(CONFIG_OF)
- static const struct of_device_id davinci_nand_of_match[] = {
- 	{.compatible = "ti,davinci-nand", },
-@@ -796,18 +822,12 @@ static int nand_davinci_probe(struct platform_device *pdev)
- 			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
- 			goto syndrome_done;
- 		}
-+		if (chunks == 8) {
-+			info->ecclayout = hwecc4_4096;
-+			info->chip.ecc.mode = NAND_ECC_HW_OOB_FIRST;
-+			goto syndrome_done;
-+		}
- 
--		/* 4KiB page chips are not yet supported. The eccpos from
--		 * nand_ecclayout cannot hold 80 bytes and change to eccpos[]
--		 * breaks userspace ioctl interface with mtd-utils. Once we
--		 * resolve this issue, NAND_ECC_HW_OOB_FIRST mode can be used
--		 * for the 4KiB page chips.
--		 *
--		 * TODO: Note that nand_ecclayout has now been expanded and can
--		 *  hold plenty of OOB entries.
--		 */
--		dev_warn(&pdev->dev, "no 4-bit ECC support yet "
--				"for 4KiB-page NAND\n");
- 		ret = -EIO;
- 		goto err;
- 
--- 
-1.8.3.2
+> +/*
+> + * Updates section permissions only for the current mm (sections are
+> + * copied into each mm). During startup, this is the init_mm.
+> + */
+> +static inline void section_update(unsigned long addr, pmdval_t mask,
+> +				  pmdval_t prot)
+> +{
+> +	struct mm_struct *mm;
+> +	pmd_t *pmd;
+> +
+> +	mm = current->active_mm;
+> +	pmd = pmd_offset(pud_offset(pgd_offset(mm, addr), addr), addr);
+> +
+> +#ifdef CONFIG_ARM_LPAE
+> +	pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
+> +#else
+> +	if (addr & SECTION_SIZE)
+> +		pmd[1] = __pmd((pmd_val(pmd[1]) & mask) | prot);
+> +	else
+> +		pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
+> +#endif
+> +	flush_pmd_entry(pmd);
+> +	local_flush_tlb_kernel_range(addr, addr + SECTION_SIZE);
 
+Why only a local flush? You're changing global mappings here, right?
+
+> +}
+> +
+> +/* Make sure extended page tables are in use. */
+> +static inline bool arch_has_strict_perms(void)
+> +{
+> +	unsigned int cr;
+> +
+> +	if (cpu_architecture() < CPU_ARCH_ARMv6)
+> +		return false;
+> +
+> +	cr = get_cr();
+> +	if (!(cr & CR_XP))
+> +		return false;
+> +
+> +	return true;
+
+return !!(get_cr() & CR_XP)?
+
+> +}
+> +
+> +#define set_section_perms(perms, field)	{				\
+> +	size_t i;							\
+> +	unsigned long addr;						\
+> +									\
+> +	if (!arch_has_strict_perms())					\
+> +		return;							\
+> +									\
+> +	for (i = 0; i < ARRAY_SIZE(perms); i++) {			\
+> +		if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||	\
+> +		    !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {		\
+> +			pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
+> +				perms[i].start, perms[i].end,		\
+> +				SECTION_SIZE);				\
+> +			continue;					\
+> +		}							\
+> +									\
+> +		for (addr = perms[i].start;				\
+> +		     addr < perms[i].end;				\
+> +		     addr += SECTION_SIZE)				\
+> +			section_update(addr, perms[i].mask,		\
+> +				       perms[i].field);			\
+> +	}								\
+> +}
+> +
+> +static inline void fix_kernmem_perms(void)
+> +{
+> +	set_section_perms(nx_perms, prot);
+> +}
+> +#else
+> +static inline void fix_kernmem_perms(void) { }
+> +#endif /* CONFIG_ARM_KERNMEM_PERMS */
+> +
+>  void free_initmem(void)
+>  {
+>  #ifdef CONFIG_HAVE_TCM
+>  	extern char __tcm_start, __tcm_end;
+> +#endif
+> +
+> +	fix_kernmem_perms();
+>  
+> +#ifdef CONFIG_HAVE_TCM
+
+You could avoid the double #ifdef by moving the tcm stuff into another
+function (free_tcmmem?)
+
+Will
