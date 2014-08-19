@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaHSBjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 21:39:24 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:46167 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752455AbaHSBjW (ORCPT
+	id S1752488AbaHSBoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 21:44:12 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:18392 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752336AbaHSBoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 21:39:22 -0400
-X-IronPort-AV: E=Sophos;i="5.04,354,1406563200"; 
-   d="scan'208";a="34765404"
-Message-ID: <53F2AA05.1020509@cn.fujitsu.com>
-Date: Tue, 19 Aug 2014 09:36:05 +0800
-From: Chai Wen <chaiw.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Mon, 18 Aug 2014 21:44:10 -0400
+Message-ID: <53F2ABD0.1010706@huawei.com>
+Date: Tue, 19 Aug 2014 09:43:44 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@kernel.org>, <akpm@linux-foundation.org>,
-        <kvm@vger.kernel.org>, <pbonzini@redhat.com>, <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] softlockup: make detector be aware of task switch
- of processes hogging cpu
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com> <1407768567-171794-3-git-send-email-dzickus@redhat.com> <20140818090319.GA25495@gmail.com> <20140818150658.GQ49576@redhat.com> <20140818180158.GA4540@gmail.com> <20140818184339.GB49576@redhat.com> <20140818190200.GB5074@gmail.com> <20140818203801.GE49576@redhat.com>
-In-Reply-To: <20140818203801.GE49576@redhat.com>
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, <toshi.kani@hp.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <n-horiguchi@ah.jp.nec.com>,
+        <wangnan0@huawei.com>, <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
+References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com> <53EAE534.8030303@huawei.com> <alpine.DEB.2.02.1408181447260.4796@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1408181447260.4796@chino.kir.corp.google.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.161]
+X-Originating-IP: [10.111.69.77]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 04:38 AM, Don Zickus wrote:
-
-> On Mon, Aug 18, 2014 at 09:02:00PM +0200, Ingo Molnar wrote:
->>
->> * Don Zickus <dzickus@redhat.com> wrote:
->>
->>>>>> So I agree with the motivation of this improvement, but 
->>>>>> is this implementation namespace-safe?
->>>>>
->>>>> What namespace are you worried about colliding with?  I 
->>>>> thought softlockup_ would provide the safety??  Maybe I 
->>>>> am missing something obvious. :-(
->>>>
->>>> I meant PID namespaces - a PID in itself isn't guaranteed 
->>>> to be unique across the system.
->>>
->>> Ah, I don't think we thought about that.  Is there a better 
->>> way to do this?  Is there a domain id or something that can 
->>> be OR'd with the pid?
->>
->> What is always unique is the task pointer itself. We use pids 
->> when we interface with user-space - but we don't really do that 
->> here, right?
+On 2014/8/19 5:48, David Rientjes wrote:
+> On Wed, 13 Aug 2014, Zhang Zhen wrote:
 > 
-> No, I don't believe so.  Ok, so saving 'current' and comparing that should
-> be enough, correct?
+>> Currently memory-hotplug has two limits:
+>> 1. If the memory block is in ZONE_NORMAL, you can change it to
+>> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+>> 2. If the memory block is in ZONE_MOVABLE, you can change it to
+>> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
+>>
+>> With this patch, we can easy to know a memory block can be onlined to
+>> which zone, and don't need to know the above two limits.
+>>
+>> Updated the related Documentation.
+>>
+>> Change v1 -> v2:
+>> - optimize the implementation following Dave Hansen's suggestion
+>>
+>> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
 > 
+> linux-next build failure:
+> 
+> drivers/built-in.o: In function `show_zones_online_to':
+> memory.c:(.text+0x13ee09): undefined reference to `test_pages_in_a_zone'
+> 
+The function implementation in mm/memory_hotplug.c is only built if
+CONFIG_MEMORY_HOTREMOVE is enabled.
 
+A fix has been proposed.
+http://ozlabs.org/~akpm/mmots/broken-out/memory-hotplug-add-sysfs-zones_online_to-attribute-fix-2.patch
 
-I am not sure of the safety about using pid here with namespace.
-But as to the pointer of process, is there a chance that we got a 'historical'
-address saved in the 'softlockup_warn_pid(or address)_saved' and the current
-hogging process happened to get the same task pointer address?
-If it never happens, I think the comparing of address is ok.
-
-thanks
-chai wen
-
-> Cheers,
-> Don
-> .
+Thanks!
 > 
 
 
-
--- 
-Regards
-
-Chai Wen
