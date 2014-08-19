@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244AbaHSIzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:55:41 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:54733 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaHSIzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:55:39 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-1f-53f31109e2eb
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: Paul.Zimmerman@synopsys.com
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Kamil Debski <k.debski@samsung.com>,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH RESEND v3 01/12] usb: dwc2/gadget: fix phy disable sequence
-Date: Tue, 19 Aug 2014 10:54:07 +0200
-Message-id: <1408438458-3317-2-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
-References: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jQV1Owc/BBhM3K1nMetnOYnHwfr1F
-	8+L1bBY/Xl9gs7i8aw6bxaJlrcwWa4/cZbd49HArq8WDwzvZHTg99s9dw+7Rt2UVo8eW/Z8Z
-	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGp74nzAXvuStWzJzM2sDYzNXFyMEhIWAicW5b
-	bhcjJ5ApJnHh3nq2LkYuDiGB6YwSXe9+QzntTBInz7UxgVSxCehIbPk+gRHEFhGQl7i+8SYL
-	SBGzwHNGiTPrJ7KCTBUW8Jb42JQOUsMioCrxr+crC4jNK+AiMevzHTaIbXISJ49NZgWxOQVc
-	Jd7um8UOYgsB1WxuPcM2gZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgMHsmtYNx
-	ZYPFIUYBDkYlHl6FLx+DhVgTy4orcw8xSnAwK4nwOr74FCzEm5JYWZValB9fVJqTWnyIUZqD
-	RUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBcQdrcp7KXL7gNP5zzl3SFrMUMiZuuxne5zBz
-	zjRhibd+j03WcTratO70CJ/9+yy3dkYDc90dycyNMsJqrK96Qu68/2ZzI8TnzSpnuXrN7vpp
-	wef/9r5RYlh3+4tzkJmTR+U868rVHOcLjpdcqdodP6NQav1MLt5lgnc9DrlMmHAh7+L3X75f
-	lViKMxINtZiLihMB0ymS3S8CAAA=
+	id S1752348AbaHSIzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:55:49 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:57765
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752252AbaHSIzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 04:55:43 -0400
+Date: Tue, 19 Aug 2014 16:55:34 +0800
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: <fabio.estevam@freescale.com>, <sfr@canb.auug.org.au>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>, <arnd@arndb.de>,
+        <shc_work@mail.ru>, <tiwai@suse.de>, <Li.Xiubo@freescale.com>,
+        <lgirdwood@gmail.com>, <nicoleotsuka@gmail.com>, <broonie@kernel.org>,
+        <xobs@kosagi.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove
+ dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
+Message-ID: <20140819085533.GC5806@audiosh1>
+References: <cover.1408350626.git.shengjiu.wang@freescale.com>
+ <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
+ <53F22F5E.2090601@metafoo.de> <20140819074103.GA5806@audiosh1>
+ <53F30C91.7080700@metafoo.de> <53F30E90.8080902@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <53F30E90.8080902@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019006)(6009001)(24454002)(189002)(199003)(377454003)(479174003)(51704005)(76482001)(15975445006)(79102001)(74502001)(15202345003)(85306004)(106466001)(93886004)(46102001)(105606002)(86362001)(95666004)(104016003)(33716001)(77982001)(107046002)(97736001)(97756001)(110136001)(84676001)(54356999)(31966008)(46406003)(74662001)(83322001)(85852003)(87936001)(26826002)(50986999)(20776003)(47776003)(19580395003)(80022001)(64706001)(33656002)(92726001)(92566001)(6806004)(19580405001)(81542001)(83506001)(102836001)(99396002)(44976005)(76176999)(68736004)(83072002)(81342001)(4396001)(50466002)(23726002)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB245;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0308EE423E
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kamil Debski <k.debski@samsung.com>
+On Tue, Aug 19, 2014 at 10:45:04AM +0200, Lars-Peter Clausen wrote:
+> On 08/19/2014 10:36 AM, Lars-Peter Clausen wrote:
+> >On 08/19/2014 09:41 AM, Shengjiu Wang wrote:
+> >>On Mon, Aug 18, 2014 at 06:52:46PM +0200, Lars-Peter Clausen wrote:
+> >>>On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
+> >>>>Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the
+> >>>>following
+> >>>>error:
+> >>>>
+> >>>>    sound/built-in.o: In function `fsl_sai_probe':
+> >>>>>>fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
+> >>>>    sound/built-in.o: In function `fsl_esai_probe':
+> >>>>>>fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
+> >>>>
+> >>>>Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init' which is
+> >>>>defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it
+> >>>>depends
+> >>>>on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
+> >>>>selected.
+> >>>>So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
+> >>>>
+> >>>>Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> >>>>Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+> >>>
+> >>>Those if conditions where just added[1] by Arnd to avoid other build
+> >>>failures. So just removing them again makes little sense.
+> >>>
+> >>>As far as I can see imx_pcm_dma_init() should be stubbed out when
+> >>>SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
+> >>>
+> >>>[1]
+> >>>http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40260f79dc0436604452bccd449bffd25ebafb
+> >>>
+> >>>
+> >>Lars-Peter Clausen & Arnd
+> >>
+> >>The purpose of Arnd's patch is same with me, which is to resolve the build
+> >>error when SND_SOC_IMX_PCM_DMA=m & SND_SOC_FSL_SSI/SAI/ESAI/SPDIF=y, the
+> >>error is "undefined reference to `imx_pcm_dma_init'".
+> >>But Arnd's patch didn't involve this situation that SND_IMX_SOC=n &
+> >>SND_SOC_IMX_PCM_DMA=m.
+> >
+> >Having SND_SOC_IMX_PCM_DMA selected if SND_IMX_SOC is not selected makes no
+> >sense. I think the proper fix is to find out why it is selected and make
+> >sure that it is not selected when SND_IMX_SOC is not selected.
+> 
+> 
+> I guess the issue happens if SND_SOC_FSL_ASOC_CARD=m and
+> SND_SOC_FSL_{ESAI,SAI,SSI}=y. In this case the fix is simply to drop
+> the select SND_SOC_IMX_PCM_DMA from SND_SOC_FSL_ASOC_CARD.
+> 
+> - Lars
+>
 
-When the driver is removed s3c_hsotg_phy_disable is called three times
-instead of once. This results in decreasing of the phy reference counter
-below zero and thus consecutive inserts of the module fails.
+Yes, you are right. Thanks. I will send another patch.
 
-This patch removes calls to s3c_hsotg_phy_disable from s3c_hsotg_remove
-and s3c_hsotg_udc_stop.
-
-s3c_hsotg_udc_stop is called from udc-core.c only after
-usb_gadget_disconnect, which in turn calls s3c_hsotg_pullup, which
-already calls s3c_hsotg_phy_disable.
-
-s3c_hsotg_remove must be called only after udc_stop, so there is no
-point in disabling phy once again there.
-
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/dwc2/gadget.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 0ba9c33..d27417e 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -2897,8 +2897,6 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
- 
- 	spin_lock_irqsave(&hsotg->lock, flags);
- 
--	s3c_hsotg_phy_disable(hsotg);
--
- 	if (!driver)
- 		hsotg->driver = NULL;
- 
-@@ -3582,7 +3580,6 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
- 		usb_gadget_unregister_driver(hsotg->driver);
- 	}
- 
--	s3c_hsotg_phy_disable(hsotg);
- 	if (hsotg->phy)
- 		phy_exit(hsotg->phy);
- 	clk_disable_unprepare(hsotg->clk);
--- 
-1.9.1
-
+best regards
+wang shengjiu 
