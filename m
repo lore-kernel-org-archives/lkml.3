@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaHSIja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:39:30 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:51131 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaHSIj0 (ORCPT
+	id S1752412AbaHSIji (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:39:38 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:36203 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081AbaHSIj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:39:26 -0400
+	Tue, 19 Aug 2014 04:39:29 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-pm@vger.kernel.org
 Cc: Thierry Reding <thierry.reding@gmail.com>,
@@ -18,9 +18,9 @@ Cc: Thierry Reding <thierry.reding@gmail.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Mikko Perttunen <mperttunen@nvidia.com>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v3 1/3] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-Date: Tue, 19 Aug 2014 10:38:41 +0200
-Message-Id: <1408437523-8542-2-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v3 2/3] drm/tegra: Request memory bandwidth for the display controller
+Date: Tue, 19 Aug 2014 10:38:42 +0200
+Message-Id: <1408437523-8542-3-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408437523-8542-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1408437523-8542-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -28,131 +28,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
-
-It can be used by memory controllers to calculate the optimum clock frequency
-based on the bandwidth needs of the different memory clients.
+For now the amount requested is based solely on the current mode's refresh
+rate.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Acked-by: Pavel Machek <pavel@ucw.cz>
 
 ---
 
-v3: * Changed units to be megabits per second
+v3: * Fixed the bandwidth calculation, and have the units be mbps
 ---
- Documentation/power/pm_qos_interface.txt |  4 +++-
- include/linux/pm_qos.h                   |  5 ++++-
- kernel/power/qos.c                       | 27 ++++++++++++++++++++++++++-
- 3 files changed, 33 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/tegra/dc.c  | 13 +++++++++++++
+ drivers/gpu/drm/tegra/drm.h |  3 +++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/Documentation/power/pm_qos_interface.txt b/Documentation/power/pm_qos_interface.txt
-index a5da5c7..129f7c0 100644
---- a/Documentation/power/pm_qos_interface.txt
-+++ b/Documentation/power/pm_qos_interface.txt
-@@ -5,7 +5,8 @@ performance expectations by drivers, subsystems and user space applications on
- one of the parameters.
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 6553fd2..83a6d4b 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -9,6 +9,7 @@
  
- Two different PM QoS frameworks are available:
--1. PM QoS classes for cpu_dma_latency, network_latency, network_throughput.
-+1. PM QoS classes for cpu_dma_latency, network_latency, network_throughput,
-+memory_bandwidth.
- 2. the per-device PM QoS framework provides the API to manage the per-device latency
- constraints and PM QoS flags.
+ #include <linux/clk.h>
+ #include <linux/debugfs.h>
++#include <linux/pm_qos.h>
+ #include <linux/reset.h>
  
-@@ -13,6 +14,7 @@ Each parameters have defined units:
-  * latency: usec
-  * timeout: usec
-  * throughput: kbs (kilo bit / sec)
-+ * memory bandwidth: mbs (mega bit / sec)
+ #include "dc.h"
+@@ -753,6 +754,8 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
+ 	}
  
+ 	drm_vblank_off(drm, dc->pipe);
++
++	pm_qos_update_request(&dc->qos_request, PM_QOS_DEFAULT_VALUE);
+ }
  
- 1. PM QoS framework
-diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-index 9ab4bf7..636e828 100644
---- a/include/linux/pm_qos.h
-+++ b/include/linux/pm_qos.h
-@@ -15,6 +15,7 @@ enum {
- 	PM_QOS_CPU_DMA_LATENCY,
- 	PM_QOS_NETWORK_LATENCY,
- 	PM_QOS_NETWORK_THROUGHPUT,
-+	PM_QOS_MEMORY_BANDWIDTH,
+ static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
+@@ -839,6 +842,7 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
+ 	struct tegra_dc *dc = to_tegra_dc(crtc);
+ 	struct tegra_dc_window window;
+ 	u32 value;
++	unsigned long bandwidth;
+ 	int err;
  
- 	/* insert new class ID */
- 	PM_QOS_NUM_CLASSES,
-@@ -32,6 +33,7 @@ enum pm_qos_flags_status {
- #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
- #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-+#define PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE	0
- #define PM_QOS_RESUME_LATENCY_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_DEFAULT_VALUE	0
- #define PM_QOS_LATENCY_TOLERANCE_NO_CONSTRAINT	(-1)
-@@ -69,7 +71,8 @@ struct dev_pm_qos_request {
- enum pm_qos_type {
- 	PM_QOS_UNITIALIZED,
- 	PM_QOS_MAX,		/* return the largest value */
--	PM_QOS_MIN		/* return the smallest value */
-+	PM_QOS_MIN,		/* return the smallest value */
-+	PM_QOS_SUM		/* return the sum */
+ 	drm_vblank_pre_modeset(crtc->dev, dc->pipe);
+@@ -879,6 +883,10 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
+ 	if (err < 0)
+ 		dev_err(dc->dev, "failed to enable root plane\n");
+ 
++	bandwidth = window.stride[0] * window.dst.h * 8;
++	bandwidth *= mode->clock * 1000 / 1024 / 1024;
++	pm_qos_update_request(&dc->qos_request, bandwidth);
++
+ 	return 0;
+ }
+ 
+@@ -1499,6 +1507,9 @@ static int tegra_dc_probe(struct platform_device *pdev)
+ 		return err;
+ 	}
+ 
++	pm_qos_add_request(&dc->qos_request, PM_QOS_MEMORY_BANDWIDTH,
++			   PM_QOS_DEFAULT_VALUE);
++
+ 	platform_set_drvdata(pdev, dc);
+ 
+ 	return 0;
+@@ -1509,6 +1520,8 @@ static int tegra_dc_remove(struct platform_device *pdev)
+ 	struct tegra_dc *dc = platform_get_drvdata(pdev);
+ 	int err;
+ 
++	pm_qos_remove_request(&dc->qos_request);
++
+ 	err = host1x_client_unregister(&dc->client);
+ 	if (err < 0) {
+ 		dev_err(&pdev->dev, "failed to unregister host1x client: %d\n",
+diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
+index e89c70f..a99e533d 100644
+--- a/drivers/gpu/drm/tegra/drm.h
++++ b/drivers/gpu/drm/tegra/drm.h
+@@ -12,6 +12,7 @@
+ 
+ #include <uapi/drm/tegra_drm.h>
+ #include <linux/host1x.h>
++#include <linux/pm_qos.h>
+ 
+ #include <drm/drmP.h>
+ #include <drm/drm_crtc_helper.h>
+@@ -120,6 +121,8 @@ struct tegra_dc {
+ 	struct drm_pending_vblank_event *event;
+ 
+ 	const struct tegra_dc_soc_info *soc;
++
++	struct pm_qos_request qos_request;
  };
  
- /*
-diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-index 884b770..5f4c006 100644
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -105,11 +105,27 @@ static struct pm_qos_object network_throughput_pm_qos = {
- };
- 
- 
-+static BLOCKING_NOTIFIER_HEAD(memory_bandwidth_notifier);
-+static struct pm_qos_constraints memory_bw_constraints = {
-+	.list = PLIST_HEAD_INIT(memory_bw_constraints.list),
-+	.target_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.default_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.no_constraint_value = PM_QOS_MEMORY_BANDWIDTH_DEFAULT_VALUE,
-+	.type = PM_QOS_SUM,
-+	.notifiers = &memory_bandwidth_notifier,
-+};
-+static struct pm_qos_object memory_bandwidth_pm_qos = {
-+	.constraints = &memory_bw_constraints,
-+	.name = "memory_bandwidth",
-+};
-+
-+
- static struct pm_qos_object *pm_qos_array[] = {
- 	&null_pm_qos,
- 	&cpu_dma_pm_qos,
- 	&network_lat_pm_qos,
--	&network_throughput_pm_qos
-+	&network_throughput_pm_qos,
-+	&memory_bandwidth_pm_qos,
- };
- 
- static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-@@ -130,6 +146,9 @@ static const struct file_operations pm_qos_power_fops = {
- /* unlocked internal variant */
- static inline int pm_qos_get_value(struct pm_qos_constraints *c)
- {
-+	struct plist_node *node;
-+	int total_value = 0;
-+
- 	if (plist_head_empty(&c->list))
- 		return c->no_constraint_value;
- 
-@@ -140,6 +159,12 @@ static inline int pm_qos_get_value(struct pm_qos_constraints *c)
- 	case PM_QOS_MAX:
- 		return plist_last(&c->list)->prio;
- 
-+	case PM_QOS_SUM:
-+		plist_for_each(node, &c->list)
-+			total_value += node->prio;
-+
-+		return total_value;
-+
- 	default:
- 		/* runtime check for not using enum */
- 		BUG();
+ static inline struct tegra_dc *
 -- 
 1.9.3
 
