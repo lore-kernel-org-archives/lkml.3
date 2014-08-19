@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaHSMh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:37:29 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:40487 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161AbaHSMhY (ORCPT
+	id S1752635AbaHSMk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:40:58 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:64342 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaHSMk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:37:24 -0400
+	Tue, 19 Aug 2014 08:40:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v9 02/12] PCI: OF: Parse and map the IRQ when adding the PCI device.
+Date: Tue, 19 Aug 2014 14:39:56 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Liviu Dudau <liviu@dudau.co.uk>, Liviu Dudau <Liviu.Dudau@arm.com>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        "linux-pci" <linux-pci@vger.kernel.org>,
+        "linux-arch" <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com> <20140818213054.GB13147@bart.dudau.co.uk> <20140818220906.GJ24600@localhost>
+In-Reply-To: <20140818220906.GJ24600@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1408446847-1604-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1408446785-1399-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1408446847-1604-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Tue, 19 Aug 2014 14:37:23 +0200
-Message-ID: <CAPDyKFongXKhdM+2jVgzyaxjcsryCXOAztH727um5DCObrj-xw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] mmc: mmci: Support any block sizes for ux500v2 and
- qcom variant
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Chris Ball <chris@printf.net>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408191439.56493.arnd@arndb.de>
+X-Provags-ID: V02:K0:xWv9Z0ZQ4gQec/rLBh8FKbTuWzd4fyEZ1bRF7RhyBhI
+ sEvnWhe9zYvdBkRVbFe3Ea8hx31wU2z6X8mAoR9MWtCUgZuPMD
+ UAGgKslq7Zc21auoLy3FINL8S+7Izoj70My798yyAHA5J4jx7P
+ p4uF2ysxOCSNYqqeqNq94VBvTGXq9rxr3rIuK0Dm3vus1ZP8Sh
+ nyLfpF02SOw9Rd+VtzUgmrlNmQVXN2VtAcNoQ3vtajPpXm7+lZ
+ ltDxDU2Uz6+CHWkQaNTrlY/51eevE1pcRptnM1+CPcaF0br9oO
+ dWqB4Xu9s5WsSQuVVRPb55yMDKlAxm9m3sJFjd2SKF1hbHmWny
+ DyKp7YdXNvS1gURbaQvDzbNWMpHr8sNtFHj0C6foB
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 August 2014 13:14, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> From: Ulf Hansson <ulf.hansson@linaro.org>
->
-> For the ux500v2 variant of the PL18x block, any block sizes are
-> supported. This will make it possible to decrease data overhead
-> for SDIO transfers.
->
-> This patch is based on Ulf Hansson patch
-> http://www.spinics.net/lists/linux-mmc/msg12160.html
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->         enabled this support on qcom variant.
->
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/mmc/host/mmci.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index c11cb05..3089fba 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -77,6 +77,7 @@ static unsigned int fmax = 515633;
->   * @qcom_fifo: enables qcom specific fifo pio read logic.
->   * @reversed_irq_handling: handle data irq before cmd irq.
->   * @qcom_dml: enables qcom specific dma glue for dma transfers.
-> + * @any_blksize: true if block any sizes are supported
->   */
->  struct variant_data {
->         unsigned int            clkreg;
-> @@ -102,6 +103,7 @@ struct variant_data {
->         bool                    qcom_fifo;
->         bool                    reversed_irq_handling;
->         bool                    qcom_dml;
-> +       bool                    any_blksize;
->  };
->
->  static struct variant_data variant_arm = {
-> @@ -194,6 +196,7 @@ static struct variant_data variant_ux500v2 = {
->         .pwrreg_clkgate         = true,
->         .busy_detect            = true,
->         .pwrreg_nopower         = true,
-> +       .any_blksize            = true,
->  };
+On Tuesday 19 August 2014, Catalin Marinas wrote:
+> On Mon, Aug 18, 2014 at 10:30:54PM +0100, Liviu Dudau wrote:
+> > At this point I would like to hear more from people doing the conversion of
+> > the drivers. I cannot answer fully for all arm or arm64 drivers.
+> 
+> As I read the description of pcibios_add_device(), it is meant as an
+> architecture hook. While it's nice to generalise this, I'm not sure we
+> we can find a common denominator. For example, we may want to call
+> set_dma_ops() as powerpc does but the ops would be arm64 specific (so
+> even the __weak implementation may not be used by any architecture).
 
-There are some prerequisites of the data buffers to supports any block
-size, at least for ux500.
-Try read up on this discussion:
-http://marc.info/?t=135005062400002&r=2&w=2
+Right. I'm a strong advocate of the idea of having no architecture specific
+parts in the PCI support, but I can see the set_dma_ops() call as a
+good reason to make an exception here.
 
-The conclusion from the above is that we need to adopt
-mmci_pio_write() to handle corner cases.
+We could add another layer of indirection for the purpose of API purity
+here, to call an architecture specific DMA setup function, but it doesn't
+really add that much benefits, in particular when the DMA setup is currently
+in flux as well.
 
-Now, I suppose, unless someone objects, we could go ahead and merge
-this patch. Then you will have to fixup mmci_pio_write() later on.
-
-Kind regards
-Uffe
+	Arnd
