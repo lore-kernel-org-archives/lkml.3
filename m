@@ -1,51 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaHSLCm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:02:42 -0400
-Received: from 8bytes.org ([81.169.241.247]:43805 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721AbaHSLCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:02:41 -0400
-Date: Tue, 19 Aug 2014 13:02:39 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] iommu/vt-d : clear old root entry for dump kernel
-Message-ID: <20140819110239.GA16329@8bytes.org>
-References: <1408352352-14449-1-git-send-email-zhen-hual@hp.com>
- <1267BB84A242B24E81E0C0C8955CFFC061A4BA26@G9W0343.americas.hpqcorp.net>
- <20140818232328.GK9809@8bytes.org>
- <1267BB84A242B24E81E0C0C8955CFFC061A4CA69@G9W0343.americas.hpqcorp.net>
+	id S1752553AbaHSLEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:04:33 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:30845 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752161AbaHSLEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 07:04:32 -0400
+X-IronPort-AV: E=Sophos;i="5.04,357,1406563200"; 
+   d="scan'208";a="34788875"
+Message-ID: <53F32F6E.6050008@cn.fujitsu.com>
+Date: Tue, 19 Aug 2014 19:05:18 +0800
+From: tangchen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1267BB84A242B24E81E0C0C8955CFFC061A4CA69@G9W0343.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Xishi Qiu <qiuxishi@huawei.com>, Toshi Kani <toshi.kani@hp.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH] mem-hotplug: introduce movablenodes boot option for memory
+ hotplug debugging
+References: <53F320B7.30002@huawei.com>
+In-Reply-To: <53F320B7.30002@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 11:27:01PM +0000, Li, Zhen-Hua wrote:
-> : [fault reason 01] Present bit in root entry is clear
-> It appears when iommu initializing in the kdump kernel.
 
-Hmm, do you have an explanation how this can happen? From how I read the
-code, the kdump kernel disables translation on the IOMMU, then sets a
-new root entry, and then re-enabled translation. To me it looks like
-there is no point in time where translation is enabled and the
-root-entry is clear (present-bit==0).
+On 08/19/2014 06:02 PM, Xishi Qiu wrote:
+> This patch introduces a new boot option "movablenodes". This parameter
+> depends on movable_node, it is used for debugging memory hotplug.
+> Instead SRAT specifies which memory is hotpluggable.
+>
+> e.g. movable_node movablenodes=1,2,4
+>
+> It means nodes 1,2,4 will be set to movable nodes, the other nodes are
+> unmovable nodes. Usually movable nodes are parsed from SRAT table which
+> offered by BIOS.
 
-But obviously I am missing something if you see the message above.
+This may not work on some machines. So far as I know, there are machines
+that after a reboot, node id will change. So node 1,2,4 may be not the same
+nodes as before in the next boot.
 
-Btw, have you looked into this patch-set posted earlier this year:
+Thanks.
 
-	https://lkml.org/lkml/2014/4/24/836
-
-It approaches the same problem-space, but also cares about in-flight
-DMA.
-
-
-	Joerg
+>
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ---
+>   Documentation/kernel-parameters.txt |    5 ++++
+>   arch/x86/mm/srat.c                  |   36 +++++++++++++++++++++++++++++++++++
+>   2 files changed, 41 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 5ae8608..e072ccf 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1949,6 +1949,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>   	movable_node	[KNL,X86] Boot-time switch to enable the effects
+>   			of CONFIG_MOVABLE_NODE=y. See mm/Kconfig for details.
+>   
+> +	movablenodes=	[KNL,X86] This parameter depends on movable_node, it
+> +			is used for debugging memory hotplug. Instead SRAT
+> +			specifies which memory is hotpluggable.
+> +			e.g. movablenodes=1,2,4
+> +
+>   	MTD_Partition=	[MTD]
+>   			Format: <name>,<region-number>,<size>,<offset>
+>   
+> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+> index 66338a6..523e58b 100644
+> --- a/arch/x86/mm/srat.c
+> +++ b/arch/x86/mm/srat.c
+> @@ -157,6 +157,37 @@ static inline int save_add_info(void) {return 1;}
+>   static inline int save_add_info(void) {return 0;}
+>   #endif
+>   
+> +static nodemask_t movablenodes_mask;
+> +
+> +static void __init parse_movablenodes_one(char *p)
+> +{
+> +	int node;
+> +
+> +	get_option(&p, &node);
+> +	node_set(node, movablenodes_mask);
+> +}
+> +
+> +static int __init parse_movablenodes_opt(char *str)
+> +{
+> +	nodes_clear(movablenodes_mask);
+> +
+> +#ifdef CONFIG_MOVABLE_NODE
+> +	while (str) {
+> +		char *k = strchr(str, ',');
+> +
+> +		if (k)
+> +			*k++ = 0;
+> +		parse_movablenodes_one(str);
+> +		str = k;
+> +	}
+> +#else
+> +	pr_warn("movable_node option not supported\n");
+> +#endif
+> +
+> +	return 0;
+> +}
+> +early_param("movablenodes", parse_movablenodes_opt);
+> +
+>   /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
+>   int __init
+>   acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+> @@ -202,6 +233,11 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+>   		pr_warn("SRAT: Failed to mark hotplug range [mem %#010Lx-%#010Lx] in memblock\n",
+>   			(unsigned long long)start, (unsigned long long)end - 1);
+>   
+> +	if (node_isset(node, movablenodes_mask) &&
+> +		memblock_mark_hotplug(start, ma->length))
+> +		pr_warn("SRAT debug: Failed to mark hotplug range [mem %#010Lx-%#010Lx] in memblock\n",
+> +			(unsigned long long)start, (unsigned long long)end - 1);
+> +
+>   	return 0;
+>   out_err_bad_srat:
+>   	bad_srat();
 
