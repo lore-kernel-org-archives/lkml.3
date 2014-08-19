@@ -1,94 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaHSRQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:16:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57302 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148AbaHSRQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:16:00 -0400
-Date: Tue, 19 Aug 2014 18:13:58 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [mm] 3484b2de949: -56.2% vm-scalability.throughput, +9.3%
- turbostat.Pkg_W
-Message-ID: <20140819171358.GE10146@suse.de>
-References: <20140819043252.GA8798@localhost>
- <20140819142925.GB10146@suse.de>
- <20140819155125.GB2697@localhost>
+	id S1753523AbaHSRQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:16:50 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:61635 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148AbaHSRQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:16:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140819155125.GB2697@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140819085631.GG1660@lahna.fi.intel.com>
+References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408172039-32513-7-git-send-email-mika.westerberg@linux.intel.com>
+ <CAAVeFu+LRxcJkPRpQMYhyz-TTY1HB7qCEv44a8vTU=g1iKCsfA@mail.gmail.com> <20140819085631.GG1660@lahna.fi.intel.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 19 Aug 2014 10:16:27 -0700
+Message-ID: <CAAVeFuLMpq+-5Zt6rmy3QhQg7zSgESKLVj6zFyfpr_FiC5ZFvA@mail.gmail.com>
+Subject: Re: [RFC PATCH 6/9] gpiolib: add API to get gpio desc and flags
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
+        Max Eliaser <max.eliaser@intel.com>,
+        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 11:51:25PM +0800, Fengguang Wu wrote:
-> On Tue, Aug 19, 2014 at 03:29:25PM +0100, Mel Gorman wrote:
-> > On Tue, Aug 19, 2014 at 12:32:52PM +0800, Fengguang Wu wrote:
-> > > Hi Mel,
-> > > 
-> > > We noticed the below vm-scalability performance/power regressions on
-> > > commit 3484b2de9499df23c4604a513b36f96326ae81ad ("mm: rearrange zone
-> > > fields into read-only, page alloc, statistics and page reclaim lines").
-> > > 
-> > > 24b7e5819ad5cbe  3484b2de9499df23c4604a513  testbox/testcase/testparams
-> > > ---------------  -------------------------  ---------------------------
-> > >      %stddev        %change               %stddev
-> > >             \          |                 /
-> > >       9.95 ± 2%     +69.1%      16.83 ± 5%  brickland3/vm-scalability/300s-lru-file-mmap-read
-> > >       2.32 ± 6%    +229.4%       7.63 ± 5%  brickland3/vm-scalability/300s-lru-file-readonce
-> > >      12.27 ± 3%     +99.4%      24.46 ± 5%  TOTAL vm-scalability.stddev
-> > > 
-> > > 24b7e5819ad5cbe  3484b2de9499df23c4604a513  
-> > > ---------------  -------------------------  
-> > >   13882598 ± 0%     -35.8%    8915310 ± 1%  brickland3/vm-scalability/300s-lru-file-mmap-read
-> > >   36379953 ± 1%     -64.0%   13093373 ± 0%  brickland3/vm-scalability/300s-lru-file-readonce
-> > >   50262551 ± 0%     -56.2%   22008683 ± 0%  TOTAL vm-scalability.throughput
-> > > 
-> > 
-> > 
-> > What units are these? It's completely unclear what is good and bad from the
-> > figures. 300s-lru-file-mmap-read appears multiple times in this report,
-> > each with different numbers beside them but little clue as to what they
-> > mean or what I'm meant to be looking for :(
-> 
-> Sorry the output format is a bit obscure: the stats names are after
-> the "TOTAL" word, such as TOTAL vm-scalability.stddev, TOTAL
-> vm-scalability.throughput, ...
-> 
-> > This is the same patch that was reported as having a performance gain in
-> > another set of tests from lkp so am a little confused.
-> 
-> That can happen some times -- we've seen some commits to benefit some
-> workloads while hurting some others. I'm now running more complete
-> test set for the commit, hopefully can get some results tomorrow.
-> 
-> > More importantly, as this patch is primary abougt cache misses it should
-> > be very unlikely that it makes a noticable difference to IO as the
-> > relative cost of a cache miss is so low. Similarly any difference it
-> > makes to reclaim activity is likely to be a coincidence or due to test
-> > variance.
-> 
-> The test case creates tmpfs files and read them fast to exercise the LRU.
-> So it's VM test and do not involve disk IO.
-> 
+On Tue, Aug 19, 2014 at 1:56 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Mon, Aug 18, 2014 at 09:24:48AM -0700, Alexandre Courbot wrote:
+>> On Fri, Aug 15, 2014 at 11:53 PM, Mika Westerberg
+>> <mika.westerberg@linux.intel.com> wrote:
+>> > diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+>> > index 2ebc9071e354..e6c2413a6fbf 100644
+>> > --- a/drivers/gpio/gpiolib.c
+>> > +++ b/drivers/gpio/gpiolib.c
+>> > @@ -2644,6 +2644,24 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
+>> >         return desc;
+>> >  }
+>> >
+>> > +struct gpio_desc *dev_get_gpiod_flags(struct device *dev, unsigned int idx,
+>> > +                                     enum gpio_lookup_flags *flags)
+>> > +{
+>> > +       struct gpio_desc *desc = ERR_PTR(-ENOENT);
+>> > +
+>> > +       if (!dev || !flags)
+>> > +               return ERR_PTR(-EINVAL);
+>> > +
+>> > +       /* Using device tree? */
+>> > +       if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+>> > +               desc = of_find_gpio(dev, NULL, idx, flags);
+>> > +       else if (IS_ENABLED(CONFIG_ACPI) && ACPI_COMPANION(dev))
+>> > +               desc = acpi_get_gpiod_flags(dev, idx, flags);
+>> > +
+>> > +       return desc;
+>> > +}
+>> > +EXPORT_SYMBOL(dev_get_gpiod_flags);
+>>
+>> Putting aside the fact that this function is clearly ACPI-centric (no
+>> con_id parameter and no handling of the platform interface), I have
+>> two big problems with it and it ending up in the consumer interface:
+>>
+>> 1) The returned descriptor is not requested by gpiolib, which means no
+>> check is made about whether the GPIO has already been requested by
+>> someone else, and another driver can very well request the same GPIO
+>> later and obtain it. Any descriptor returned by a function in
+>> consumer.h *must* be properly requested. Furthermore the 1:1 mapping
+>> between GPIO descriptors and GPIO numbers is not something we can take
+>> for granted (since it will likely change soon), so this practice is
+>> definitely to ban.
+>
+> My bad, somehow I missed the part that it never requested the GPIO.
+> Thanks for pointing it out.
+>
+>> 2) It exposes the GPIO flags, while they are supposed to be opaque to consumers.
+>
+> And this, of course we should be using gpiod_is_active_low() and similar
+> functions that work with descriptors.
 
-Ok. How reliable is this? I was reading down through some of the figures and
-some of them are extremely different in areas that this patch should have
-no impact on -- it's just rearranging a struct after all. I note for example
-that automatic NUMA balancing was enabled and there was activity from it so
-pages are getting migrated.  There is a large amount of reclaim activity on
-different nodes so where the test case gets scheduled and how nodes it runs
-on during the test matters. What I'm wondering is if the performance of the
-test tends to vary quite a lot naturally. Can you check if the performance
-is consistently lower after this patch or if it tends to vary please?
+Yes, although if you convert the driver to use descriptors you should
+not even have to worry about active_low status.
 
-Thanks
+For drivers that still need to handle GPIO numbers for compatibility
+reasons, it might be nice if gpiolib provided a gpio_to_desc() variant
+that accepts an ACTIVE_LOW flag, so you don't have to worry about the
+active low status once you have converted your GPIO number to a
+descriptor. Actually for these cases we may be better with a function
+that does what gpio_to_desc() does, but also requests the GPIO and
+allows some flags to be specified so the integer-handling part of
+drivers can be completely dropped afterwards. That's another problem
+though. :)
 
--- 
-Mel Gorman
-SUSE Labs
+>
+>> These two points would somehow be acceptable if this function was
+>> gpiolib-private, but here it is clearly not the case and this allows
+>> pretty nasty thing to happen. Basically you are using it to take
+>> advantage of the gpiod lookup mechanism and then quickly fall back to
+>> the legacy integer interface. That's really not something to encourage
+>> - these drivers should be converted to use gpiod internally (while
+>> preserving integer-based lookup for compatiblity, if needed).
+>>
+>> In patch 8 you say:
+>>
+>> "this can be solved by adding a new field of type
+>> struct gpio_desc but then there is another problem: the devm_gpiod_get
+>> needs to operate on the button device instead of its parent device that
+>> has the driver binded, so when the driver is unloaded, the resources for
+>> the gpio will not get freed automatically."
+>>
+>> I'd very much prefer that you use the non-devm variant of gpiod_get()
+>> and free the resources manually when the driver is unloaded than this
+>> workaround that introduces an loophole in the gpiod consumer lookup
+>> functions.
+>
+> I agree and we are going to rework this and the consumer patches to do
+> exactly what you say.
+
+Great, thanks to you and Aaron for your understanding!
+
+Alex.
