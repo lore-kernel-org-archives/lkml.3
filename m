@@ -1,164 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537AbaHSCcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 22:32:12 -0400
-Received: from regular1.263xmail.com ([211.150.99.140]:38194 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaHSCcL (ORCPT
+	id S1752583AbaHSCcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 22:32:22 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:60068 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbaHSCcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 22:32:11 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <1b2666bacb839ed505aaeca76ee1eac9>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: heiko@sntech.de, dianders@chromium.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
-        zhangqing@rock-chips.com, hl@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH v2] ARM: dts: Add sdio0 and sdio1 to the rk3288
-Date: Tue, 19 Aug 2014 10:31:52 +0800
-Message-Id: <1408415512-17275-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1407995360-26009-1-git-send-email-addy.ke@rock-chips.com>
-References: <1407995360-26009-1-git-send-email-addy.ke@rock-chips.com>
+	Mon, 18 Aug 2014 22:32:20 -0400
+Date: Mon, 18 Aug 2014 19:32:15 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Con Kolivas <kernel@kolivas.org>
+Cc: Sam Asadi <asadi.samuel@gmail.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Andreas Mohr <andi@lisas.de>
+Subject: Re: i8k: Don't revert affinity in i8k_smm
+Message-ID: <20140819023215.GA32051@roeck-us.net>
+References: <1405443709-15288-1-git-send-email-asadi.samuel@gmail.com>
+ <1405443709-15288-58-git-send-email-asadi.samuel@gmail.com>
+ <1454445.ErZ3u1p0yH@hex>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1454445.ErZ3u1p0yH@hex>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch requires that <https://patchwork.kernel.org/patch/4701721/>
-land in order to compile.
+On Tue, Aug 19, 2014 at 09:19:55AM +1000, Con Kolivas wrote:
+> As a followup to this discussion:
+> 
+> On Tue, 15 Jul 2014 08:01:13 PM Sam Asadi wrote:
+> > Commit f36fdb9f0266 (i8k: Force SMM to run on CPU 0) adds support
+> > for multi-core CPUs to the driver. Unfortunately, that causes it
+> > to fail loading if compiled without SMP support, at least on
+> > 32 bit kernels. Kernel log shows "i8k: unable to get SMM Dell
+> > signature", and function i8k_smm is found to return -EINVAL.
+> > 
+> > Testing revealed that the culprit is the missing return value check
+> > of set_cpus_allowed_ptr.
+> 
+> It appears that the original commit f36fdb9f0266 changes the affinity for the 
+> duration of i8k_smm function and then unconditionally reverts the affinity to 
+> the old cpu mask regardless of whether the function succeeds or fails. As this 
+> must run on CPU 0 at all times it does not make sense to revert the affinity at 
+> the end of the function. Proposed patch attached.
+> 
+Sorry, I must have missed the rest of the discussion. What problem is this patch
+supposed to fix ? Or, in other words, is there a problem with the current code ?
+I also don't really understand the argument above. Why does it not make sense to
+revert to the original affinity ? After all, only the SMM call must run on CPU
+0. Why does it not make sense to let the rest of the code run on another CPU ?
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
-Changes in v2:
-- repost patch to match what's in Heiko's "wip/v3.18-next/dts" tree
-  for the other dwmmc controllers
-- add "cd" and "int" line, suggested by Doug Anderson
-- fix up sdio1 configuration error 
+Thanks,
+Guenter
 
- arch/arm/boot/dts/rk3288.dtsi | 86 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 86 insertions(+)
-
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 36be7bb..91576ae 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -88,6 +88,26 @@
- 		status = "disabled";
- 	};
- 
-+	sdio0: dwmmc@ff0d0000 {
-+		compatible = "rockchip,rk3288-dw-mshc";
-+		clocks = <&cru HCLK_SDIO0>, <&cru SCLK_SDIO0>;
-+		clock-names = "biu", "ciu";
-+		fifo-depth = <0x100>;
-+		interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
-+		reg = <0xff0d0000 0x4000>;
-+		status = "disabled";
-+	};
-+
-+	sdio1: dwmmc@ff0e0000 {
-+		compatible = "rockchip,rk3288-dw-mshc";
-+		clocks = <&cru HCLK_SDIO1>, <&cru SCLK_SDIO1>;
-+		clock-names = "biu", "ciu";
-+		fifo-depth = <0x100>;
-+		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
-+		reg = <0xff0e0000 0x4000>;
-+		status = "disabled";
-+	};
-+
- 	emmc: dwmmc@ff0f0000 {
- 		compatible = "rockchip,rk3288-dw-mshc";
- 		clocks = <&cru HCLK_EMMC>, <&cru SCLK_EMMC>;
-@@ -508,6 +528,72 @@
- 			};
- 		};
- 
-+		sdio0 {
-+			sdio0_clk: sdio0-clk {
-+				rockchip,pins = <4 25 RK_FUNC_1 &pcfg_pull_none>;
-+			};
-+
-+			sdio0_cmd: sdio0-cmd {
-+				rockchip,pins = <4 24 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_cd: sdio0-cd {
-+				rockchip,pins = <4 26 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_pwr: sdio0-pwr {
-+				rockchip,pins = <4 28 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_int: sdio0-int {
-+				rockchip,pins = <4 30 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_bus1: sdio0-bus1 {
-+				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+
-+			sdio0_bus4: sdio0-bus4 {
-+				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 21 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 22 RK_FUNC_1 &pcfg_pull_up>,
-+						<4 23 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+		};
-+
-+		sdio1 {
-+			sdio1_clk: sdio1-clk {
-+				rockchip,pins = <4 7 RK_FUNC_4 &pcfg_pull_none>;
-+			};
-+
-+			sdio1_cmd: sdio1-cmd {
-+				rockchip,pins = <4 6 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_cd: sdio1-cd {
-+				rockchip,pins = <3 28 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_pwr: sdio1-pwr {
-+				rockchip,pins = <4 9 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_int: sdio1-int {
-+				rockchip,pins = <3 31 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_bus1: sdio1-bus1 {
-+				rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+
-+			sdio1_bus4: sdio1-bus4 {
-+				rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 25 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 26 RK_FUNC_4 &pcfg_pull_up>,
-+						<3 27 RK_FUNC_4 &pcfg_pull_up>;
-+			};
-+		};
-+
- 		emmc {
- 			emmc_clk: emmc-clk {
- 				rockchip,pins = <3 18 RK_FUNC_2 &pcfg_pull_none>;
--- 
-1.8.3.2
-
-
+> Signed-off-by: Con Kolivas <kernel@kolivas.org>
+> 
+> ---
+>  drivers/char/i8k.c |    6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> Index: linux-3.16-ck1/drivers/char/i8k.c
+> ===================================================================
+> --- linux-3.16-ck1.orig/drivers/char/i8k.c	2014-08-12 14:07:49.000000000 +1000
+> +++ linux-3.16-ck1/drivers/char/i8k.c	2014-08-19 09:09:57.939056696 +1000
+> @@ -132,12 +132,8 @@ static int i8k_smm(struct smm_regs *regs
+>  {
+>  	int rc;
+>  	int eax = regs->eax;
+> -	cpumask_var_t old_mask;
+>  
+>  	/* SMM requires CPU 0 */
+> -	if (!alloc_cpumask_var(&old_mask, GFP_KERNEL))
+> -		return -ENOMEM;
+> -	cpumask_copy(old_mask, &current->cpus_allowed);
+>  	rc = set_cpus_allowed_ptr(current, cpumask_of(0));
+>  	if (rc)
+>  		goto out;
+> @@ -203,8 +199,6 @@ static int i8k_smm(struct smm_regs *regs
+>  		rc = -EINVAL;
+>  
+>  out:
+> -	set_cpus_allowed_ptr(current, old_mask);
+> -	free_cpumask_var(old_mask);
+>  	return rc;
+>  }
+>  
+> 
+> -- 
+> -ck
+> 
