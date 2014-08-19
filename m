@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699AbaHSVgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 17:36:09 -0400
-Received: from mail-yh0-f48.google.com ([209.85.213.48]:64192 "EHLO
-	mail-yh0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaHSVgH (ORCPT
+	id S1751885AbaHSVhu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 17:37:50 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49037 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186AbaHSVht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 17:36:07 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] powerpc: Make 256k pages depend on PPC32=n
-Date: Tue, 19 Aug 2014 17:36:06 -0400
-Message-Id: <1408484166-20711-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 19 Aug 2014 17:37:49 -0400
+X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Aug 2014 17:37:49 EDT
+Date: Wed, 20 Aug 2014 00:29:21 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Julian Calaby <julian.calaby@gmail.com>
+Cc: Meelis Roos <mroos@linux.ee>, David Miller <davem@davemloft.net>,
+        sparclinux <sparclinux@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>, hughd@google.com,
+        cat.schulze@alice-dsl.net
+Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
+Message-ID: <20140819212921.GE4885@drone.musicnaut.iki.fi>
+References: <alpine.SOC.1.00.1407310101550.2065@math.ut.ee>
+ <20140730.150722.861254999466992321.davem@davemloft.net>
+ <alpine.SOC.1.00.1408131327250.18696@math.ut.ee>
+ <20140813.124611.767426770013677.davem@davemloft.net>
+ <alpine.SOC.1.00.1408151534480.27263@math.ut.ee>
+ <alpine.SOC.1.00.1408181528270.2922@math.ut.ee>
+ <20140818173552.GA2126@drone.musicnaut.iki.fi>
+ <CAGRGNgUq0-1rDtRJfFQ1ARvPXk6aT+f99-EGCN1vBpd35q2qyg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGRGNgUq0-1rDtRJfFQ1ARvPXk6aT+f99-EGCN1vBpd35q2qyg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-256k pages are not tested on PPC32. On a randconfig I got the following error:
+Hi,
 
-arch/powerpc/kernel/misc_32.S:1171: Error: operand out of range (0x0000000000010000 is not between 0xffffffffffff8000 and 0x0000000000007fff)
+On Tue, Aug 19, 2014 at 09:45:03AM +1000, Julian Calaby wrote:
+> Stupid question: aren't the Ultra 5 and Ultra 10 essentially
+> the same hardware?
 
-Disable 256K pages if PPC32=y
+Basically yes, but often configurations are different (CPU speed,
+memory capacity, peripherals, PROM versions).
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- arch/powerpc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index da16ffe..6cc518f 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -556,7 +556,7 @@ config PPC_64K_PAGES
- 
- config PPC_256K_PAGES
- 	bool "256k page size" if 44x
--	depends on !STDBINUTILS
-+	depends on !PPC32 && !STDBINUTILS
- 	help
- 	  Make the page size 256k.
- 
--- 
-1.9.1
-
+A.
