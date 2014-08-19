@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831AbaHSXE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 19:04:26 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:53231 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaHSXEZ (ORCPT
+	id S1751743AbaHSXKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 19:10:54 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:16116 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331AbaHSXKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 19:04:25 -0400
-Message-ID: <53F3D7F3.3080900@gmail.com>
-Date: Wed, 20 Aug 2014 09:04:19 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 19 Aug 2014 19:10:53 -0400
+X-IronPort-AV: E=Sophos;i="5.01,898,1400050800"; 
+   d="scan'208";a="43024310"
+Subject: Re: [PATCH 2/3] tg3: Fix tx_pending checks for tg3_tso_bug
+From: Michael Chan <mchan@broadcom.com>
+To: Benjamin Poirier <bpoirier@suse.de>
+CC: Prashant Sreedharan <prashant@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <1408474371-19509-2-git-send-email-bpoirier@suse.de>
+References: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
+	 <1408474371-19509-2-git-send-email-bpoirier@suse.de>
+Content-Type: text/plain; charset="cp1252"
+Date: Tue, 19 Aug 2014 16:10:52 -0700
+Message-ID: <1408489852.7404.60.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-To: Sanjeev Sharma <sanjeev_sharma@mentor.com>, cpw@sgi.com,
-        robinmholt@gmail.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sgi-xp: Do not use BUG_ON(!spin_is_locked())
-References: <1407828913-7461-1-git-send-email-sanjeev_sharma@mentor.com>
-In-Reply-To: <1407828913-7461-1-git-send-email-sanjeev_sharma@mentor.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/14 17:35, Sanjeev Sharma wrote:
-> on some architecture spin_is_locked() always return false in
-> uniprocessor configuration and can therefore not be used
-> with BUG_ON.it would be advise to replace with
-> lockdep_assert_held().
-> 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
->  drivers/misc/sgi-xp/xpc_channel.c | 6 +++---
->  drivers/misc/sgi-xp/xpc_sn2.c     | 2 +-
->  drivers/misc/sgi-xp/xpc_uv.c      | 2 +-
->  3 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/misc/sgi-xp/xpc_channel.c b/drivers/misc/sgi-xp/xpc_channel.c
-> index 128d561..240fe5a 100644
-> --- a/drivers/misc/sgi-xp/xpc_channel.c
-> +++ b/drivers/misc/sgi-xp/xpc_channel.c
-> @@ -28,7 +28,7 @@ xpc_process_connect(struct xpc_channel *ch, unsigned long *irq_flags)
+On Tue, 2014-08-19 at 11:52 -0700, Benjamin Poirier wrote: 
+> @@ -7838,11 +7838,14 @@ static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
+>                        struct netdev_queue *txq, struct sk_buff *skb)
 >  {
->  	enum xp_retval ret;
+>         struct sk_buff *segs, *nskb;
+> -       u32 frag_cnt_est = skb_shinfo(skb)->gso_segs * 3;
 >  
-> -	DBUG_ON(!spin_is_locked(&ch->lock));
-> +	lockdep_assert_held(!spin_is_locked(&ch->lock));
+> -       /* Estimate the number of fragments in the worst case */
+> -       if (unlikely(tg3_tx_avail(tnapi) <= frag_cnt_est)) {
+> +       if (unlikely(tg3_tx_avail(tnapi) <= skb_shinfo(skb)->gso_segs)) {
+> +               trace_printk("stopping queue, %d <= %d\n",
+> +                            tg3_tx_avail(tnapi), skb_shinfo(skb)->gso_segs);
+>                 netif_tx_stop_queue(txq);
+> +               trace_printk("stopped queue\n");
+> +               tnapi->wakeup_thresh = skb_shinfo(skb)->gso_segs;
+> +               BUG_ON(tnapi->wakeup_thresh >= tnapi->tx_pending);
+>  
+>                 /* netif_tx_stop_queue() must be done before checking
+>                  * checking tx index in tg3_tx_avail() below, because in 
 
-This is incorrect, and will break the build with CONFIG_LOCKDEP enabled.
-You actually want:
+I don't quite understand this logic and I must be missing something.
+gso_segs is the number of TCP segments the large packet will be broken
+up into.  If it exceeds dev->gso_max_segs, it means it exceeds
+hardware's capabilty and it will do GSO instead of TSO.  But in this
+case in tg3_tso_bug(), we are doing GSO and we may not have enough DMA
+descriptors to do GSO.  Each gso_seg typically requires 2 DMA
+descriptors.
 
-	lockdep_assert_held(&ch->lock);
-
-Same for the other instances.
-
-~Ryan
