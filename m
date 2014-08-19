@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaHSRU4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:20:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35048 "EHLO mga03.intel.com"
+	id S1753680AbaHSRWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:22:46 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:32884 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596AbaHSRUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:20:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,896,1400050800"; 
-   d="scan'208";a="470417553"
-Date: Tue, 19 Aug 2014 22:35:34 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: dan.j.williams@intel.com, michal.simek@xilinx.com, grant.likely@linaro.org,
-        robh+dt@kernel.org, levex@linux.com, jassisinghbrar@gmail.com,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        anirudh@xilinx.com, svemula@xilinx.com
-Subject: Re: [PATCH v3 1/2] dma: Add Xilinx AXI DMA DT Binding Documentation
-Message-ID: <20140819170534.GT13288@intel.com>
-References: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751151AbaHSRWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:22:44 -0400
+From: Georgi Djakov <gdjakov@mm-sol.com>
+To: linus.walleij@linaro.org, galak@codeaurora.org,
+        bjorn.andersson@sonymobile.com
+Cc: robh+dt@kernel.org, mark.rutland@arm.com, grant.likely@linaro.org,
+        sboyd@codeaurora.org, agross@codeaurora.org, iivanov@mm-sol.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [PATCH v1 0/3] pinctrl: qcom: Add APQ8084 pinctrl support
+Date: Tue, 19 Aug 2014 20:22:13 +0300
+Message-Id: <1408468936-12252-1-git-send-email-gdjakov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 28, 2014 at 05:47:48PM +0530, Srikanth Thokala wrote:
-> Device-tree binding documentation of Xilinx DMA Engine
+This set of patches adds pinctrl support for the Qualcomm APQ8084 platform.
+The first patch adds the pin definitions. The second patch contains the
+devicetree documentation. The last patch adds the DT node.
 
-Applied, thanks
+Georgi Djakov (3):
+  pinctrl: qcom: Add APQ8084 pinctrl support
+  dt: Document Qualcomm APQ8084 pinctrl binding
+  ARM: dts: Add TLMM DT node for apq8084
+
+ .../bindings/pinctrl/qcom,apq8084-pinctrl.txt      |  109 ++
+ arch/arm/boot/dts/qcom-apq8084.dtsi                |   10 +
+ drivers/pinctrl/qcom/Kconfig                       |    8 +
+ drivers/pinctrl/qcom/Makefile                      |    1 +
+ drivers/pinctrl/qcom/pinctrl-apq8084.c             | 1302 ++++++++++++++++++++
+ 5 files changed, 1430 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
+ create mode 100644 drivers/pinctrl/qcom/pinctrl-apq8084.c
 
 -- 
-~Vinod
+1.7.9.5
 
