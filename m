@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaHSHLI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:11:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752686AbaHSHLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 03:11:05 -0400
-Date: Tue, 19 Aug 2014 09:10:24 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: Re: [PATCH 3/3] perf callchain: Prune misleading callchains for self
- entries
-Message-ID: <20140819071024.GB1123@krava.brq.redhat.com>
-References: <1407996100-6359-1-git-send-email-namhyung@kernel.org>
- <1407996100-6359-4-git-send-email-namhyung@kernel.org>
- <20140814141056.GA7630@krava.brq.redhat.com>
- <1408067834.1679.15.camel@leonhard>
- <20140815195139.GA13425@krava.brq.redhat.com>
- <1408155991.1672.4.camel@leonhard>
- <20140818113147.GA5117@krava.redhat.com>
- <87lhqlc9i4.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lhqlc9i4.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752909AbaHSHOW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 03:14:22 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51774 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665AbaHSHOV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 03:14:21 -0400
+Subject: [PATCH v3 12/17] arcmsr: revise allocation of second
+ dma_coherent_handle for type B
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Aug 2014 15:14:14 +0800
+Message-ID: <1408432454.4748.61.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 02:51:31PM +0900, Namhyung Kim wrote:
-SNIP
+From: Ching Huang <ching2048@areca.com.tw>
 
-> IMHO, it's harder to find out the right info.  Even if we might add
-> self/children tag to the callchains, I still think it'd be better just
-> to trim down irrelavant info from the output.
-> 
-> After applying this patch, it'll only show the callees of the symbol and
-> I think this is what most users expect to see:
-> 
->   +   99.98%     0.00%  abc2     libc-2.17.so       [.] __libc_start_main
->   -   79.75%    11.29%  abc2     abc2               [.] main
->      - main
->         + 38.01% a
->         + 35.75% c
->         + 26.22% b
->   -   53.07%    52.99%  abc2     abc2               [.] c
->      - c
->         + 100.00% apic_timer_interrupt
->   -   34.12%    28.75%  abc2     abc2               [.] b
->      - b
->           98.85% c
->         + 1.15% apic_timer_interrupt
->   -   30.56%     6.78%  abc2     abc2               [.] a
->      - a
->         + 69.15% c
->         + 30.80% b
->   +    0.17%     0.01%  abc2     [kernel.kallsyms]  [k] apic_timer_interrupt
->   +    0.15%     0.00%  abc2     [kernel.kallsyms]  [k] smp_apic_timer_interrupt
->   +    0.11%     0.00%  abc2     [kernel.kallsyms]  [k] hrtimer_interrupt
-> 
-> 
-> If you want to see the callers of 'c', you may go to above entries (main
-> and __libc_start_main in this case) and then follow the callchains.  If
-> it's not enough, you can re-run perf report with -g callee option.
+This modification is for consistency with upcoming adapter type D.
+Both adapter type B and D have similar H/W and S/W structure.
 
-but only if you know who called them, like in this simple example
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+---
 
-IMHO this part of callchain is not confusing enough to be cut,
-for me it's usefull info for which I'd need to make more steps
-to get it
+diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+--- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:27:38.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:38.000000000 +0800
+@@ -507,6 +507,7 @@ struct AdapterControlBlock
+ 	#define ACB_ADAPTER_TYPE_B            0x00000002	/* hbb M IOP */
+ 	#define ACB_ADAPTER_TYPE_C            0x00000004	/* hbc P IOP */
+ 	#define ACB_ADAPTER_TYPE_D            0x00000008	/* hbd A IOP */
++	u32				roundup_ccbsize;
+ 	struct pci_dev *		pdev;
+ 	struct Scsi_Host *		host;
+ 	unsigned long			vir2phy_offset;
+@@ -563,6 +564,7 @@ struct AdapterControlBlock
+ 	dma_addr_t			dma_coherent_handle;
+ 	/* dma_coherent_handle used for memory free */
+ 	dma_addr_t				dma_coherent_handle2;
++	void				*dma_coherent2;
+ 	unsigned int				uncache_size;
+ 	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
+ 	/* data collection buffer for read from 80331 */
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:26.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:38.000000000 +0800
+@@ -183,13 +183,10 @@ static struct pci_driver arcmsr_pci_driv
+ static void arcmsr_free_mu(struct AdapterControlBlock *acb)
+ {
+ 	switch (acb->adapter_type) {
+-	case ACB_ADAPTER_TYPE_A:
+-	case ACB_ADAPTER_TYPE_C:
+-		break;
+ 	case ACB_ADAPTER_TYPE_B:{
+-		dma_free_coherent(&acb->pdev->dev,
+-			sizeof(struct MessageUnit_B),
+-			acb->pmuB, acb->dma_coherent_handle2);
++		dma_free_coherent(&acb->pdev->dev, acb->roundup_ccbsize,
++			acb->dma_coherent2, acb->dma_coherent_handle2);
++		break;
+ 	}
+ 	}
+ }
+@@ -2210,12 +2207,15 @@ static bool arcmsr_hbaB_get_config(struc
+ 	char __iomem *iop_device_map;
+ 	/*firm_version,21,84-99*/
+ 	int count;
+-	dma_coherent = dma_alloc_coherent(&pdev->dev, sizeof(struct MessageUnit_B), &dma_coherent_handle, GFP_KERNEL);
++
++	acb->roundup_ccbsize = roundup(sizeof(struct MessageUnit_B), 32);
++	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->roundup_ccbsize, &dma_coherent_handle, GFP_KERNEL);
+ 	if (!dma_coherent){
+ 		printk(KERN_NOTICE "arcmsr%d: dma_alloc_coherent got error for hbb mu\n", acb->host->host_no);
+ 		return false;
+ 	}
+ 	acb->dma_coherent_handle2 = dma_coherent_handle;
++	acb->dma_coherent2 = dma_coherent;
+ 	reg = (struct MessageUnit_B *)dma_coherent;
+ 	acb->pmuB = reg;
+ 	reg->drv2iop_doorbell= (uint32_t __iomem *)((unsigned long)acb->mem_base0 + ARCMSR_DRV2IOP_DOORBELL);
+@@ -2562,6 +2562,7 @@ static int arcmsr_polling_ccbdone(struct
+ static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
+ {
+ 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
++	dma_addr_t dma_coherent_handle;
+ 
+ 	/*
+ 	********************************************************************
+@@ -2569,8 +2570,16 @@ static int arcmsr_iop_confirm(struct Ada
+ 	** if freeccb.HighPart is not zero
+ 	********************************************************************
+ 	*/
+-	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
+-	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
++	switch (acb->adapter_type) {
++		case ACB_ADAPTER_TYPE_B:
++			dma_coherent_handle = acb->dma_coherent_handle2;
++			break;
++		default:
++			dma_coherent_handle = acb->dma_coherent_handle;
++			break;
++	}
++	cdb_phyaddr = lower_32_bits(dma_coherent_handle);
++	cdb_phyaddr_hi32 = upper_32_bits(dma_coherent_handle);
+ 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
+ 	/*
+ 	***********************************************************************
+@@ -2598,7 +2607,6 @@ static int arcmsr_iop_confirm(struct Ada
+ 		break;
+ 
+ 	case ACB_ADAPTER_TYPE_B: {
+-		unsigned long post_queue_phyaddr;
+ 		uint32_t __iomem *rwbuffer;
+ 
+ 		struct MessageUnit_B *reg = acb->pmuB;
+@@ -2610,16 +2618,15 @@ static int arcmsr_iop_confirm(struct Ada
+ 				acb->host->host_no);
+ 			return 1;
+ 		}
+-		post_queue_phyaddr = acb->dma_coherent_handle2;
+ 		rwbuffer = reg->message_rwbuffer;
+ 		/* driver "set config" signature */
+ 		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
+ 		/* normal should be zero */
+ 		writel(cdb_phyaddr_hi32, rwbuffer++);
+ 		/* postQ size (256 + 8)*4	 */
+-		writel(post_queue_phyaddr, rwbuffer++);
++		writel(cdb_phyaddr, rwbuffer++);
+ 		/* doneQ size (256 + 8)*4	 */
+-		writel(post_queue_phyaddr + 1056, rwbuffer++);
++		writel(cdb_phyaddr + 1056, rwbuffer++);
+ 		/* ccb maxQ size must be --> [(256 + 8)*4]*/
+ 		writel(1056, rwbuffer);
+ 
 
-anyway, this is from review point of view.. as a user I dont use
-'-g caller' often enough to actually care ;-)
 
-thanks,
-jirka
