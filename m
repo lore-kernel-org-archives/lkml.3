@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaHSGyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 02:54:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33783 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaHSGyU (ORCPT
+	id S1752846AbaHSG4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 02:56:10 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:37524 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745AbaHSG4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 02:54:20 -0400
-X-Original-SENDERIP: 10.178.33.69
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <53F2F491.50208@lge.com>
-Date: Tue, 19 Aug 2014 15:54:09 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-CC: Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?EUC-KR?B?wMywx8ij?= <gunho.lee@lge.com>
-Subject: [PATCHv2 3/3] jbd/jbd2: allocate buffer-cache for superblock inode
- in non-movable area
-References: <53F2F3E6.1030901@lge.com>
-In-Reply-To: <53F2F3E6.1030901@lge.com>
-Content-Type: text/plain; charset=EUC-KR
+	Tue, 19 Aug 2014 02:56:08 -0400
+Subject: [PATCH v3 6/17] arcmsr: precise checking adapter ID
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Aug 2014 14:55:57 +0800
+Message-ID: <1408431357.4748.41.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ching Huang <ching2048@areca.com.tw>
 
-A long-lasting buffer-cache can distrub page migration so that
-it must be allocated from non-movable area.
+change since v2:
+1. This patch pre-define the adapter->type in private data of struct pci_device_id.
+2. Remove arcmsr_define_adapter_type function.
 
-The journal_init_inode is creating a buffer-cache for superblock journaling.
-The superblock exists until system shutdown so that the buffer-cache
-for the superblock would also exist for a long time
-and it can distrub page migration.
-
-This patch make the buffer-cache be allocated from non-movable area
-not to distrub page migration.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
 ---
- fs/jbd/journal.c  |    2 +-
- fs/jbd2/journal.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 06fe11e..a9f8aaf 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -886,7 +886,7 @@ journal_t * journal_init_inode (struct inode *inode)
-                goto out_err;
-        }
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:36:00.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:36:38.000000000 +0800
+@@ -144,25 +144,25 @@ static struct scsi_host_template arcmsr_
+ 	.no_write_same		= 1,
+ };
+ static struct pci_device_id arcmsr_device_id_table[] = {
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1110)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1120)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1130)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1160)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1170)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1200)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1201)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1202)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1210)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1220)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1230)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1260)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1270)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1280)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1380)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1381)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1680)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1681)},
+-	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1880)},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1110), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1120), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1130), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1160), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1170), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1200), .driver_data = ACB_ADAPTER_TYPE_B,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1201), .driver_data = ACB_ADAPTER_TYPE_B,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1202), .driver_data = ACB_ADAPTER_TYPE_B,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1210), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1220), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1230), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1260), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1270), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1280), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1380), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1381), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1680), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1681), .driver_data = ACB_ADAPTER_TYPE_A,},
++	{PCI_DEVICE(PCI_VENDOR_ID_ARECA, PCI_DEVICE_ID_ARECA_1880), .driver_data = ACB_ADAPTER_TYPE_C,},
+ 	{0, 0}, /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(pci, arcmsr_device_id_table);
+@@ -295,26 +295,6 @@ static int arcmsr_bios_param(struct scsi
+ 	return 0;
+ }
+ 
+-static void arcmsr_define_adapter_type(struct AdapterControlBlock *acb)
+-{
+-	struct pci_dev *pdev = acb->pdev;
+-	u16 dev_id;
+-	pci_read_config_word(pdev, PCI_DEVICE_ID, &dev_id);
+-	acb->dev_id = dev_id;
+-	switch (dev_id) {
+-	case 0x1880: {
+-		acb->adapter_type = ACB_ADAPTER_TYPE_C;
+-		}
+-		break;
+-	case 0x1201: {
+-		acb->adapter_type = ACB_ADAPTER_TYPE_B;
+-		}
+-		break;
+-
+-	default: acb->adapter_type = ACB_ADAPTER_TYPE_A;
+-	}
+-}
+-
+ static uint8_t arcmsr_hba_wait_msgint_ready(struct AdapterControlBlock *acb)
+ {
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+@@ -710,7 +690,7 @@ static int arcmsr_probe(struct pci_dev *
+ 			ACB_F_MESSAGE_WQBUFFER_READED);
+ 	acb->acb_flags &= ~ACB_F_SCSISTOPADAPTER;
+ 	INIT_LIST_HEAD(&acb->ccb_free_list);
+-	arcmsr_define_adapter_type(acb);
++	acb->adapter_type = id->driver_data;
+ 	error = arcmsr_remap_pciregion(acb);
+ 	if(!error){
+ 		goto pci_release_regs;
 
--       bh = __getblk(journal->j_dev, blocknr, journal->j_blocksize);
-+       bh = __getblk_gfp(journal->j_dev, blocknr, journal->j_blocksize, 0);
-        if (!bh) {
-                printk(KERN_ERR
-                       "%s: Cannot get buffer for journal superblock\n",
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 67b8e30..0461998 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1237,7 +1237,7 @@ journal_t * jbd2_journal_init_inode (struct inode *inode)
-                goto out_err;
-        }
-
--       bh = __getblk(journal->j_dev, blocknr, journal->j_blocksize);
-+       bh = __getblk_gfp(journal->j_dev, blocknr, journal->j_blocksize, 0);
-        if (!bh) {
-                printk(KERN_ERR
-                       "%s: Cannot get buffer for journal superblock\n",
---
-1.7.9.5
 
