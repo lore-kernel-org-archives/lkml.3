@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaHSPW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:22:57 -0400
-Received: from fr1.as29.net ([62.210.131.231]:18357 "EHLO
-	toothrot.meleeweb.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976AbaHSPWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:22:55 -0400
-Date: Tue, 19 Aug 2014 17:22:38 +0200
-From: Bertrand Jacquin <beber@meleeweb.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>
-Subject: Re: [PATCH 2/3] kbuild: handle module compression while running
- 'make modules_install'.
-Message-ID: <20140819152238.GB2164@lady-voodoo.exosec.local>
-References: <1408215016-1848-1-git-send-email-beber@meleeweb.net>
- <1408215016-1848-3-git-send-email-beber@meleeweb.net>
- <87lhqkmxdl.fsf@tassilo.jf.intel.com>
+	id S1753489AbaHSPYD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:24:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752367AbaHSPYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:24:00 -0400
+Date: Tue, 19 Aug 2014 17:22:52 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [RFC 0/5] perf tools: Add perf data CTF conversion
+Message-ID: <20140819152252.GA12806@krava.brq.redhat.com>
+References: <1407327239-3493-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87lhqkmxdl.fsf@tassilo.jf.intel.com>
-Jabber-ID: beber@meleeweb.net
-X-GPG-Key: 0x39BB8CF4
-X-GPG-DirectLink: http://pgp.mit.edu:11371/pks/lookup?op=get&search=0x39BB8CF4
-X-GPG-Fingerprint: 2CBD 6A23 D980 3E32 66D1  573D 89B8 C953 39BB 8CF4
-X-Pants: On
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1407327239-3493-1-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-D'ar meurzh 19 a viz Eost 2014 e 15 eur 17, « Andi Kleen » he deus skrivet :
-> Bertrand Jacquin <beber@meleeweb.net> writes:
-> >  
-> > +# CONFIG_MODULE_COMPRESS, if defined, will cause module to be compressed
-> > +# after they are installed in agreement with CONFIG_MODULE_COMPRESS_GZIP
-> > +# or CONFIG_MODULE_COMPRESS_XZ.
-> > +
-> > +mod_compress_cmd = true
-> > +ifdef CONFIG_MODULE_COMPRESS
-> > +  ifdef CONFIG_MODULE_COMPRESS_GZIP
-> > +    mod_compress_cmd = gzip -n -9
+On Wed, Aug 06, 2014 at 02:13:54PM +0200, Jiri Olsa wrote:
+> hi,
+> this is initial post of the CTF converter for perf.
+> Basically adding 'perf data convert' command to allow
+> conversion of perf data file into CTF [1] data.
 > 
-> Please don't use gzip -9. The gain is very small, but it can make
-> the time to compress much longer. Just use plain gzip.
+> To convert perf data file run:
+>   $ perf data convert --to-ctf=./ctf-data/
+>   [ perf data convert: Converted 'perf.data' into CTF data './ctf-data/' ]
+>   [ perf data convert: Converted and wrote 11.268 MB (100230 samples) ]
 > 
-> I suspect it doesn't make sense either for xz.
+> To display converted CTF data run [2]:
+>   $ babeltrace ./ctf-data/
+>   [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+>   [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+>   [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
+>   [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
+>   [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
+>   [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
+>   [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
+>   [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
+>   [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
+> 
+> It has still some limitations (noted in patches), but it has
+> reached the point of the useful perf feature. More features
+> and supports are about to come and it'll be better to continue
+> publicly.
+> 
+> Also reachable in here:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>   perf/core_ctf_convert
 
-I understand your concern about this, but does is make sense to not use
--9 when then following files use gzip or other compression tools with -9 :
+so I've put perf converted CTF stream into the eclipse CTF trace viewer
+and got it displayed with the 'Generic CTF trace' type
 
-  arch/blackfin/Makefile:14:GZFLAGS          := -9
+The other type 'LTTng kernel trace' seems to set some rules for
+the CTF fields/format the trace has to obey. Is this described
+somewhere?
 
-  arch/powerpc/boot/wrapper:297:        gzip -n -f -9 "$vmz.$$"
-  arch/powerpc/boot/wrapper:422:    gzip -n -f -9 "$ofile"
-  arch/powerpc/boot/wrapper:469:    gzip -n --force -9 --stdout "$ofile.bin" > "$odir/otheros.bld"
-
-  arch/arm/Makefile:23:GZFLAGS            :=-9
-  arch/arm64/Makefile:16:GZFLAGS          :=-9
-
-  arch/m68k/Makefile:138: gzip -9c vmlinux.tmp >vmlinux.gz
-  arch/m68k/Makefile:141: gzip -9c vmlinux >vmlinux.gz
-
-  arch/mips/lasat/image/Makefile:46:      gzip -cf -9 $< > $@
-
-  arch/parisc/Makefile:121:       @gzip -cf -9 $< > $@
-
-  scripts/package/mkspec:115:echo 'bzip2 -9 vmlinux'
-  scripts/package/builddeb:20:    gzip -9 "$pdir/usr/share/doc/$pname/changelog.Debian"
-  scripts/package/Makefile:127:   -f -9 $(perf-tar).tar)
-
-  scripts/gen_initramfs_list.sh:229:compr="gzip -n -9 -f"
-  scripts/gen_initramfs_list.sh:245:                && compr="gzip -n -9 -f"
-  scripts/gen_initramfs_list.sh:248:                && compr="bzip2 -9 -f"
-  scripts/gen_initramfs_list.sh:251:                && compr="lzma -9 -f"
-  scripts/gen_initramfs_list.sh:257:                && compr="lzop -9 -f"
-  scripts/gen_initramfs_list.sh:260:                && compr="lz4 -l -9 -f"
-
-  scripts/Makefile.lib:241:cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
-  scripts/Makefile.lib:311:       bzip2 -9 && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
-  scripts/Makefile.lib:319:       lzma -9 && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
-  scripts/Makefile.lib:324:       lzop -9 && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
-
--- 
-Beber
+thanks,
+jirka
