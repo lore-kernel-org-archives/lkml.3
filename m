@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607AbaHSCQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 22:16:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62926 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752545AbaHSCQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 22:16:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="374048643"
-Date: Tue, 19 Aug 2014 10:17:41 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] KVM: vmx: fix ept reserved bits for 1-GByte page
-Message-ID: <20140819021741.GA2003@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1408355431-115633-1-git-send-email-wanpeng.li@linux.intel.com>
- <53F1D313.5010108@redhat.com>
+	id S1752541AbaHSCUG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 22:20:06 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:35688 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420AbaHSCUE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 22:20:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F1D313.5010108@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1406910649-4028-2-git-send-email-amit.pundir@linaro.org>
+References: <1406910649-4028-1-git-send-email-amit.pundir@linaro.org>
+	<1406910649-4028-2-git-send-email-amit.pundir@linaro.org>
+Date: Mon, 18 Aug 2014 19:19:58 -0700
+Message-ID: <CAAW3YpbpA_x4tgSFXtsjHJE1JUvFS3wywk-8XZHRkLdOM0Nrjw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 1/2] PM: Print pending wakeup IRQ preventing suspend
+ to dmesg
+From: Todd Poynor <toddpoynor@google.com>
+To: Amit Pundir <amit.pundir@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Ruchi Kandoi <kandoiruchi@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paolo,
-On Mon, Aug 18, 2014 at 12:18:59PM +0200, Paolo Bonzini wrote:
->Il 18/08/2014 11:50, Wanpeng Li ha scritto:
->> EPT misconfig handler in kvm will check which reason lead to EPT 
->> misconfiguration after vmexit. One of the reasons is that an EPT 
->> paging-structure entry is configured with settings reserved for 
->> future functionality. However, the handler can't identify if 
->> paging-structure entry of reserved bits for 1-GByte page are 
->> configured, since PDPTE which point to 1-GByte page will reserve 
->> bits 29:12 instead of bits 7:3 which are reserved for PDPTE that 
->> references an EPT Page Directory. This patch fix it by reserve 
->> bits 29:12 for 1-GByte page. 
->> 
->> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
->> ---
->>  arch/x86/kvm/vmx.c | 14 ++++++++++----
->>  1 file changed, 10 insertions(+), 4 deletions(-)
->> 
->> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->> index bfe11cf..71cbee5 100644
->> --- a/arch/x86/kvm/vmx.c
->> +++ b/arch/x86/kvm/vmx.c
->> @@ -5521,9 +5521,14 @@ static u64 ept_rsvd_mask(u64 spte, int level)
->>  	for (i = 51; i > boot_cpu_data.x86_phys_bits; i--)
->>  		mask |= (1ULL << i);
->>  
->> -	if (level > 2)
->> -		/* bits 7:3 reserved */
->> -		mask |= 0xf8;
->> +	if (level > 2) {
+On Fri, Aug 1, 2014 at 9:30 AM, Amit Pundir <amit.pundir@linaro.org> wrote:
+> From: Todd Poynor <toddpoynor@google.com>
 >
->level can be 4 here.  You have to return 0xf8 for level == 4.
+> Currently when a pending wakeup irq stops suspend, it can be difficult
+> to determine why suspend was prevented and which IRQ was actually
+> responsible.
 >
->The same "if" statement then can cover both 2MB and 1GB pages, like
->
->                if (spte & (1ULL << 7))
->                        /* 1GB/2MB page, bits 29:12 or 20:12 reserved respectively */
->                        mask |= (PAGE_SIZE << ((level - 1) * 9)) - PAGE_SIZE;
->                else
->                        /* bits 6:3 reserved */
->                        mask |= 0x78;
->
->> -		if (level == 1 || (level == 2 && (spte & (1ULL << 7)))) {
->> +		if (level == 1 || ((level == 3 || level == 2)
->> +				&& (spte & (1ULL << 7)))) {
->
->This condition can be simplified by checking the return value of ept_rsvd_mask.
->If it includes 0x38, this is a large page.  Otherwise it is a leaf page and
->you can go down the "if".
+> In order to help debug these situations, this patch prints the IRQ
+> number and action name of that pending wakeup irq which prevents suspend.
+> This patch comes from the Android patch set, where its been used to debug
+> suspend problems.
 
-As you know, 5:3 bits which used for EPT MT are not reserved bits, so 
-I fail to understand why check the return value of ept_rsvd_mask and 
-it's a large page if includes 0x38. Could you eplain in more details? ;-)
+This info is sometimes useful to debugging Android suspend / battery
+life problems, such as to detect a driver that is failing to service
+or clear a wakeup interrupt condition.
 
-Regards,
-Wanpeng Li 
+In general, we intend to fold reporting of suspend abort reasons
+(wakeup IRQ pending, wakelock grabbed, task refusing to freeze...)
+into the wakeup reason reporting API to userspace previously discussed
+on the linux-pm list (and also revive discussion of how to rework that
+for mainline acceptance soon).
 
->
->Paolo
->
->>  			u64 ept_mem_type = (spte & 0x38) >> 3;
->>  
->>  			if (ept_mem_type == 2 || ept_mem_type == 3 ||
->> 
+Thanks,
+
+
+Todd
