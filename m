@@ -1,204 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaHSQI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:08:59 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:35726 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143AbaHSQIF (ORCPT
+	id S1753238AbaHSQLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:11:05 -0400
+Received: from exprod7og112.obsmtp.com ([64.18.2.177]:34086 "EHLO
+	exprod7og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaHSQLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:08:05 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
-        Eddie Cai <eddie.cai@rock-chips.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 2/4] pwm: rockchip: Allow polarity invert on rk3288
-Date: Tue, 19 Aug 2014 09:07:54 -0700
-Message-Id: <1408464476-28316-3-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408464476-28316-1-git-send-email-dianders@chromium.org>
-References: <1408464476-28316-1-git-send-email-dianders@chromium.org>
+	Tue, 19 Aug 2014 12:11:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140819160625.GA29770@lst.de>
+References: <1405678393-11497-1-git-send-email-hch@lst.de>
+	<1405678393-11497-14-git-send-email-hch@lst.de>
+	<885d029677826efe0cfe3803411cbdba@mail.gmail.com>
+	<20140819160625.GA29770@lst.de>
+Date: Tue, 19 Aug 2014 21:41:01 +0530
+Message-ID: <CAHsXFKGS-=m0SByVXxdEeK+Mnnf93tPf+x+5Y-rTuR2auQXf+w@mail.gmail.com>
+Subject: Re: [PATCH 13/14] scsi: add support for a blk-mq based I/O path.
+From: Kashyap Desai <kashyap.desai@avagotech.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        Bart Van Assche <bvanassche@fusionio.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Robert Elliott <Elliott@hp.com>, Webb Scales <webbnh@hp.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rk3288 has the ability to invert the polarity of the PWM.  Let's
-enable that ability.
+On Tue, Aug 19, 2014 at 9:36 PM, Christoph Hellwig <hch@lst.de> wrote:
+> On Tue, Aug 19, 2014 at 03:51:42AM +0530, Kashyap Desai wrote:
+>> I read  this comment and find that very few drivers are using this
+>> cmd_list.  I think if we remove this cmd_list, performance will scale as I
+>> am seeing major contention in this lock.
+>> Just thought to ping you to see if this is known limitation for now or any
+>> plan to change this lock in near future ?
+>
+> Removing the lock entirely and pushing the list into the two drivers
+> using it is on my TODO list.  Bart actually suggested keeping the code in the
+> SCSI core and having a flag to enabled.  Given that I'm too busy to get my full
+> version done in time, it might be a good idea if someone picks up Barts
+> idea.  Can you send me a patch to add a enable_cmd_list flag to the host
+> template and only enable it for aacraid and dpt_i2o?
+>
 
-To do this we increase the number of pwm_cells to 3 to allow using the
-PWM_POLARITY_INVERTED flag.  Since the PWM driver on rk3288 is very
-new, I thought this was OK.
+Sure. I will work on relevant code change and will post patch for review.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v3:
-- Don't store a private copy of polarity.
-- Use true instead of 1.
-- Cleanup init order with "has_invert".
-
-Changes in v2: None
-
- .../devicetree/bindings/pwm/pwm-rockchip.txt       |  4 +-
- drivers/pwm/pwm-rockchip.c                         | 48 ++++++++++++++++++----
- 2 files changed, 43 insertions(+), 9 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-index d47d15a..b8be3d0 100644
---- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-+++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-@@ -7,8 +7,8 @@ Required properties:
-    "rockchip,vop-pwm": found integrated in VOP on RK3288 SoC
-  - reg: physical base address and length of the controller's registers
-  - clocks: phandle and clock specifier of the PWM reference clock
-- - #pwm-cells: should be 2. See pwm.txt in this directory for a
--   description of the cell format.
-+ - #pwm-cells: must be 2 (rk2928) or 3 (rk3288). See pwm.txt in this directory
-+   for a description of the cell format.
- 
- Example:
- 
-diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
-index bdd8644..646aed2 100644
---- a/drivers/pwm/pwm-rockchip.c
-+++ b/drivers/pwm/pwm-rockchip.c
-@@ -24,7 +24,9 @@
- #define PWM_ENABLE		(1 << 0)
- #define PWM_CONTINUOUS		(1 << 1)
- #define PWM_DUTY_POSITIVE	(1 << 3)
-+#define PWM_DUTY_NEGATIVE	(0 << 3)
- #define PWM_INACTIVE_NEGATIVE	(0 << 4)
-+#define PWM_INACTIVE_POSITIVE	(1 << 4)
- #define PWM_OUTPUT_LEFT		(0 << 5)
- #define PWM_LP_DISABLE		(0 << 8)
- 
-@@ -45,8 +47,10 @@ struct rockchip_pwm_regs {
- struct rockchip_pwm_data {
- 	struct rockchip_pwm_regs regs;
- 	unsigned int prescaler;
-+	bool has_invert;
- 
--	void (*set_enable)(struct pwm_chip *chip, bool enable);
-+	void (*set_enable)(struct pwm_chip *chip,
-+			   struct pwm_device *pwm, bool enable);
- };
- 
- static inline struct rockchip_pwm_chip *to_rockchip_pwm_chip(struct pwm_chip *c)
-@@ -54,7 +58,8 @@ static inline struct rockchip_pwm_chip *to_rockchip_pwm_chip(struct pwm_chip *c)
- 	return container_of(c, struct rockchip_pwm_chip, chip);
- }
- 
--static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
-+static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip,
-+				       struct pwm_device *pwm, bool enable)
- {
- 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
- 	u32 enable_conf = PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN;
-@@ -70,14 +75,19 @@ static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
- 	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
- }
- 
--static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
-+static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip,
-+				       struct pwm_device *pwm, bool enable)
- {
- 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
- 	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
--			  PWM_CONTINUOUS | PWM_DUTY_POSITIVE |
--			  PWM_INACTIVE_NEGATIVE;
-+			  PWM_CONTINUOUS;
- 	u32 val;
- 
-+	if (pwm->polarity == PWM_POLARITY_INVERSED)
-+		enable_conf |= PWM_DUTY_NEGATIVE | PWM_INACTIVE_POSITIVE;
-+	else
-+		enable_conf |= PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
-+
- 	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
- 
- 	if (enable)
-@@ -124,6 +134,23 @@ static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	return 0;
- }
- 
-+int rockchip_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+			      enum pwm_polarity polarity)
-+{
-+	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-+
-+	if (!pc->data->has_invert)
-+		return -ENOSYS;
-+
-+	/*
-+	 * No action needed here because pwm->polarity will be set by the core
-+	 * and the core will only change polarity when the PWM is not enabled.
-+	 * We'll handle things in set_enable().
-+	 */
-+
-+	return 0;
-+}
-+
- static int rockchip_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-@@ -133,7 +160,7 @@ static int rockchip_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- 	if (ret)
- 		return ret;
- 
--	pc->data->set_enable(chip, true);
-+	pc->data->set_enable(chip, pwm, true);
- 
- 	return 0;
- }
-@@ -142,13 +169,14 @@ static void rockchip_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
- 
--	pc->data->set_enable(chip, false);
-+	pc->data->set_enable(chip, pwm, false);
- 
- 	clk_disable(pc->clk);
- }
- 
- static const struct pwm_ops rockchip_pwm_ops = {
- 	.config = rockchip_pwm_config,
-+	.set_polarity = rockchip_pwm_set_polarity,
- 	.enable = rockchip_pwm_enable,
- 	.disable = rockchip_pwm_disable,
- 	.owner = THIS_MODULE,
-@@ -173,6 +201,7 @@ static const struct rockchip_pwm_data pwm_data_v2 = {
- 		.ctrl = 0x0c,
- 	},
- 	.prescaler = 1,
-+	.has_invert = true,
- 	.set_enable = rockchip_pwm_set_enable_v2,
- };
- 
-@@ -184,6 +213,7 @@ static const struct rockchip_pwm_data pwm_data_vop = {
- 		.ctrl = 0x00,
- 	},
- 	.prescaler = 1,
-+	.has_invert = true,
- 	.set_enable = rockchip_pwm_set_enable_v2,
- };
- 
-@@ -230,6 +260,10 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
- 	pc->chip.ops = &rockchip_pwm_ops;
- 	pc->chip.base = -1;
- 	pc->chip.npwm = 1;
-+	if (pc->data->has_invert) {
-+		pc->chip.of_xlate = of_pwm_xlate_with_flags;
-+		pc->chip.of_pwm_n_cells = 3;
-+	}
- 
- 	ret = pwmchip_add(&pc->chip);
- 	if (ret < 0) {
 -- 
-2.1.0.rc2.206.gedb03e5
-
+Device Driver Developer @ Avagotech
+Kashyap D. Desai
+Note - my new email address
+kashyap.desai@avagotech.com
