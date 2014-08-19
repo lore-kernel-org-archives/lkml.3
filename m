@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaHSNy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:54:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51043 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752202AbaHSNy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:54:27 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony <tony@atomide.com>
-CC: <nm@ti.com>, <balbi@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: dts: DRA7: Add PMU nodes
-Date: Tue, 19 Aug 2014 08:54:00 -0500
-Message-ID: <1408456440-30171-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752244AbaHSOAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:00:15 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:53474 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaHSOAM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:00:12 -0400
+From: Yannis Damigos <giannis.damigos@gmail.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Yannis Damigos <giannis.damigos@gmail.com>
+Subject: [PATCH 1/1] staging: imx-drm: Lines over 80 characters fixed.
+Date: Tue, 19 Aug 2014 16:59:57 +0300
+Message-Id: <1408456797-19437-1-git-send-email-giannis.damigos@gmail.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <20140819124112.GB7791@kroah.com>
+References: <20140819124112.GB7791@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lucas Weaver <l-weaver@ti.com>
+This is a patch to the ipuv3-crtc.c file that fixes up two "lines
+over 80 characters" warnings found by the checkpatch.pl tool.
 
-DRA74x and DRA72x family of processors vary slightly in the number
-of CPUs. So, add different instances of PMU for each of these processor
-groups. Further, since the interrupts bypass crossbar and are directly
-connected to GIC, mark the dts nodes with relevant information.
-
-Tested with perf utility.
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Lucas Weaver <l-weaver@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Yannis Damigos <giannis.damigos@gmail.com>
 ---
- arch/arm/boot/dts/dra72x.dtsi |    5 +++++
- arch/arm/boot/dts/dra74x.dtsi |    6 ++++++
- 2 files changed, 11 insertions(+)
+ drivers/staging/imx-drm/ipuv3-crtc.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/dra72x.dtsi b/arch/arm/boot/dts/dra72x.dtsi
-index f1ec22f..e5a3d23 100644
---- a/arch/arm/boot/dts/dra72x.dtsi
-+++ b/arch/arm/boot/dts/dra72x.dtsi
-@@ -22,4 +22,9 @@
- 			reg = <0>;
- 		};
- 	};
-+
-+	pmu {
-+		compatible = "arm,cortex-a15-pmu";
-+		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>;
-+	};
- };
-diff --git a/arch/arm/boot/dts/dra74x.dtsi b/arch/arm/boot/dts/dra74x.dtsi
-index a4e8bb9..3be544c 100644
---- a/arch/arm/boot/dts/dra74x.dtsi
-+++ b/arch/arm/boot/dts/dra74x.dtsi
-@@ -38,4 +38,10 @@
- 			reg = <1>;
- 		};
- 	};
-+
-+	pmu {
-+		compatible = "arm,cortex-a15-pmu";
-+		interrupts = <GIC_SPI DIRECT_IRQ(131) IRQ_TYPE_LEVEL_HIGH>,
-+			     <GIC_SPI DIRECT_IRQ(132) IRQ_TYPE_LEVEL_HIGH>;
-+	};
- };
+diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
+index 720868b..c4c6455 100644
+--- a/drivers/staging/imx-drm/ipuv3-crtc.c
++++ b/drivers/staging/imx-drm/ipuv3-crtc.c
+@@ -201,9 +201,9 @@ static int ipu_crtc_mode_set(struct drm_crtc *crtc,
+ 		return ret;
+ 	}
+ 
+-	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode, crtc->primary->fb,
+-				  0, 0, mode->hdisplay, mode->vdisplay,
+-				  x, y, mode->hdisplay, mode->vdisplay);
++	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode,
++			crtc->primary->fb, 0, 0, mode->hdisplay, mode->vdisplay,
++			x, y, mode->hdisplay, mode->vdisplay);
+ }
+ 
+ static void ipu_crtc_handle_pageflip(struct ipu_crtc *ipu_crtc)
+@@ -227,7 +227,8 @@ static irqreturn_t ipu_irq_handler(int irq, void *dev_id)
+ 
+ 	if (ipu_crtc->newfb) {
+ 		ipu_crtc->newfb = NULL;
+-		ipu_plane_set_base(ipu_crtc->plane[0], ipu_crtc->base.primary->fb,
++		ipu_plane_set_base(ipu_crtc->plane[0],
++				ipu_crtc->base.primary->fb,
+ 				ipu_crtc->plane[0]->x, ipu_crtc->plane[0]->y);
+ 		ipu_crtc_handle_pageflip(ipu_crtc);
+ 	}
 -- 
-1.7.9.5
+2.0.4
 
