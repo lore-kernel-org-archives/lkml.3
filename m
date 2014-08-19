@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaHSQqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:46:23 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:50902 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaHSQqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:46:22 -0400
+	id S1753387AbaHSQq1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:46:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952AbaHSQqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 12:46:25 -0400
+Date: Tue, 19 Aug 2014 12:46:17 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, ebiederm@xmission.com, serge@hallyn.com,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH V3 0/6] namespaces: log namespaces per task
+Message-ID: <20140819164617.GE9003@madcap2.tricolour.ca>
+References: <cover.1400271129.git.rgb@redhat.com>
+ <1400593754.15733.4.camel@flatline.rdu.redhat.com>
+ <20140520140146.GA8079@madcap2.tricolour.ca>
 MIME-Version: 1.0
-In-Reply-To: <53F32E3C.1070102@linaro.org>
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
-	<1407166105-17675-7-git-send-email-hanjun.guo@linaro.org>
-	<53F24705.7080809@arm.com>
-	<53F32E3C.1070102@linaro.org>
-Date: Tue, 19 Aug 2014 11:46:21 -0500
-X-Google-Sender-Auth: TBMyE6KTfxd5jUIY4YebV9nB89Q
-Message-ID: <CAMDttNf5d6XZ66mbiZivLmZQvcFv1mN1KKkN6TUQe_Z5VCu-1g@mail.gmail.com>
-Subject: Re: [Linaro-acpi] [PATCH v2 06/18] ARM64 / ACPI: Parse MADT to map
- logical cpu to MPIDR and get cpu_possible/present_map
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140520140146.GA8079@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hanjun,
+On 14/05/20, Richard Guy Briggs wrote:
+> On 14/05/20, Eric Paris wrote:
+> > On Tue, 2014-05-20 at 09:12 -0400, Richard Guy Briggs wrote:
+> > > The purpose is to track namespaces in use by logged processes from the
+> > > perspective of init_*_ns.
 
-On Tue, Aug 19, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> Will INTERRUPT_CONTROLLER confuse people? There is only one GIC redistributor
-> (some people regard it as interrupt controller) in ARM system, if we use
-> INTERRUPT_CONTROLLER people will regard it as multi-redistributors in the
-> system, I think GIC_CPU_INTERFACE would be better, what do you think?
+(Including the Linux API list due to the additions to /proc/<pid>/ns/.
+Please see http://www.kernelhub.org/?p=2&msg=477668 and in particular
+http://www.kernelhub.org/?msg=477678&p=2 )
 
-I think you meant to say "one GIC _distributor_" (GICD) instead of
-redistributor (GICR).
-ACPI5.1 only describes one GICD per system, but we can most certainly
-describe multiple GICRs.
-For multi-cpu systems, you'll definitely see multiple GIC redistributors.
+<snip>
+
+> > > 5/6 provides an example of usage for audit_log_task_info() which is used by
+> > > syscall audits, among others.  audit_log_task() and audit_common_recv_message()
+> > > would be other potential use cases.
+> > > 
+> > > Proposed output format:
+> > > This differs slightly from Aristeu's patch because of the label conflict with
+> > > "pid=" due to including it in existing records rather than it being a seperate
+> > > record.  The serial numbers are printed in hex.
+> > > 	type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
+> > 
+> > I'm undecided if I'd rather see this as a separate NS_INFO record type.
+> > It would mean we could filter them out of the logs...
+> 
+> I don't have a strong opinion either way.  Steve G.'s opinion would be
+> helpful here.
+
+Breaking this out into a seperate record type would mean calling
+audit_log_namespace_info() from the callers of audit_log_task_info()
+(presently audit_log_link_denied(), ima_audit_measurement(),
+audit_log_exit() ), but would make it easier to emit with other record
+types.
+
+> > Do we print out lots of pidns=0 for tasks not in a newly created NS?  Do
+> > we want to?
+> 
+> There is no "pidns=0", but I understand your point.  This would come
+> back to Steve G.'s point about disappearing fields, and the value of
+> having it as a seperate record that could be filtered.
+> 
+> > > 6/6 tracks the creation and deletion of of namespaces, listing the type of
+> > > namespace instance, related namespace id if there is one and the newly minted
+> > > serial number.
+> > > 
+> > > Proposed output format:
+> > > 	type=NS_INIT msg=audit(1400217435.706:94): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 old_snum=0 snum=a1 res=1
+> > 
+> > I'd love to be able to grep for netns=20 and find both the NS_INIT and
+> > the SYSCALL/NS_INFO records, instead of having them named different
+> > things.  So basically I think you want to translate the type= into a
+> > string for the old_X= and X=...
+> 
+> That actually makes a bit more sense, and we could do away with the
+> "type=" field since the "Xns=" fields are self-describing.
+
+Steve, how do you feel about this since the NS_INIT/NS_DEL record type
+would have changing fields amongst the 6 namespace types.  Only one of
+the 6 would be present in each message.  I suppose we could have an
+NS_INIT_XXX/NS_DEL_XXX for each namespace type.
+
+> - RGB
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
