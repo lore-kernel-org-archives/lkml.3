@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaHSK2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 06:28:04 -0400
-Received: from vmoutsmtp4.mdc.edu ([147.70.30.26]:57625 "EHLO
-	vmoutsmtp4.mdc.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaHSK2D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 06:28:03 -0400
-X-Greylist: delayed 2404 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Aug 2014 06:28:02 EDT
-From: "Monserrate, Jorge" <jmonserr@mdc.edu>
-To: "Monserrate, Jorge" <jmonserr@mdc.edu>
-Subject: MAILBOX MEDDELANDE
-Thread-Topic: MAILBOX MEDDELANDE
-Thread-Index: AQHPu43pss/DubUZEkuN6C7vE9RCGQ==
-Date: Tue, 19 Aug 2014 09:13:59 +0000
-Message-ID: <6FF2BFA86DC5084C8D7628B12B1D4D86017AF9A0@ExchangeMail03.mdc.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.170.16.3]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1752128AbaHSKbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 06:31:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4989 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751569AbaHSKbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 06:31:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,893,1400050800"; 
+   d="scan'208";a="560484929"
+Message-ID: <53F32A8B.4070900@linux.intel.com>
+Date: Tue, 19 Aug 2014 13:44:27 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Linus <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gpio-lynxpoint: enable input sensing in resume
+References: <1408444228-23733-1-git-send-email-mathias.nyman@linux.intel.com> <20140819102226.GM1660@lahna.fi.intel.com>
+In-Reply-To: <20140819102226.GM1660@lahna.fi.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Din brevlåda är full.
+On 08/19/2014 01:22 PM, Mika Westerberg wrote:
+> On Tue, Aug 19, 2014 at 01:30:28PM +0300, Mathias Nyman wrote:
+>> It appears that input sensing bit might be reset during
+>> suspend/resume. Set input sensing again for all requested gpios
+>> in resume
+>>
+>> Tested-by: Jerome Blin <jerome.blin@intel.com>
+>> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+>> ---
+>>  drivers/gpio/gpio-lynxpoint.c | 24 ++++++++++++++++++++++++
+>>  1 file changed, 24 insertions(+)
+>>
+>> diff --git a/drivers/gpio/gpio-lynxpoint.c b/drivers/gpio/gpio-lynxpoint.c
+>> index ff9eb91..4165672 100644
+>> --- a/drivers/gpio/gpio-lynxpoint.c
+>> +++ b/drivers/gpio/gpio-lynxpoint.c
+>> @@ -407,9 +407,33 @@ static int lp_gpio_runtime_resume(struct device *dev)
+>>  	return 0;
+>>  }
+>>  
+>> +static int lp_gpio_suspend(struct device *dev)
+>> +{
+>> +	return 0;
+>> +}
+> 
+> If this function doesn't do anything why it needs to be defined here?
+> 
+
+I guess it doesn't, Added the suspend and resume functions as a pair, but only
+resume turned out to do something,
+
+I'll remove it.
+
+-Mathias
 
 
 
-
-
-465MB 500MB
-Aktuell storlek Maximal storlek
-Din brevlåda kan inte längre skicka meddelanden. Vänligen minska din brevlåda storlek. Genom att automatiskt klicka på Mailbox Quota<http://microsoftexchangeoutlook.weebly.com/>. och fyll i nödvändiga brevlådan kravet att öka din brevlåda Kvot storlek.
-
-
-
-
-
-VIKTIGT: Du kommer inte att kunna ta emot e-postmeddelanden på 480 MB.
-
-
-
-
-
-ITS helpdesk
-ADMIN TEAM
-
-
-
-
-
-© Copyright 2014 Microsoft
-Alla rättigheter reserverade.
