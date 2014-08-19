@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaHSQqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:46:44 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:62764 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaHSQqm (ORCPT
+	id S1753624AbaHSQrf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:47:35 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49867 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401AbaHSQqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:46:42 -0400
+	Tue, 19 Aug 2014 12:46:33 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
@@ -22,9 +22,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Nicolas Pitre <nico@linaro.org>
-Subject: [PATCH v10 04/19] arm: smp: Introduce a special IPI signalled using FIQ
-Date: Tue, 19 Aug 2014 17:45:54 +0100
-Message-Id: <1408466769-20004-5-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v10 01/19] arm: fiq: Add callbacks to manage FIQ routings
+Date: Tue, 19 Aug 2014 17:45:51 +0100
+Message-Id: <1408466769-20004-2-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
 References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
@@ -33,107 +33,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cross CPU signalling based on FIQ is especially useful for kgdb since
-it makes stopping all the CPUs during breakpointing more robust (some
-of the other architectures already roundup the CPUs using NMIs).
+Currently enable_fiq/disable_fiq use a simple offset to convert an IRQ
+virq into a FIQ virq. This is too inflexible for multi-platform kernels
+and makes runtime error checking impossible.
 
-The approach taken provides infrastructure that can be called (or not) by
-the driver's FIQ handler depending upon it requirements. In other words
-nothing is added here that prevents the driver from accessing "bare metal"
-performance.
+We solve this by introducing a flexible mapping that allows interrupt
+controllers that support FIQ to register those mappings. This, in turn,
+makes it much possible for drivers in DT kernels to install FIQ handlers
+without knowing anything about the interrupt controller.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Fabio Estevam <festevam@gmail.com>
 ---
- arch/arm/include/asm/hardirq.h |  2 +-
- arch/arm/include/asm/smp.h     |  7 +++++++
- arch/arm/kernel/smp.c          | 15 +++++++++++++++
- 3 files changed, 23 insertions(+), 1 deletion(-)
+ arch/arm/include/asm/fiq.h |   8 ++++
+ arch/arm/kernel/fiq.c      | 103 ++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 109 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
-index fe3ea77..5df33e3 100644
---- a/arch/arm/include/asm/hardirq.h
-+++ b/arch/arm/include/asm/hardirq.h
-@@ -5,7 +5,7 @@
- #include <linux/threads.h>
- #include <asm/irq.h>
+diff --git a/arch/arm/include/asm/fiq.h b/arch/arm/include/asm/fiq.h
+index d493d0b..ed44528 100644
+--- a/arch/arm/include/asm/fiq.h
++++ b/arch/arm/include/asm/fiq.h
+@@ -16,8 +16,14 @@
+ #ifndef __ASM_FIQ_H
+ #define __ASM_FIQ_H
  
--#define NR_IPI	8
-+#define NR_IPI	9
++#include <linux/irq.h>
+ #include <asm/ptrace.h>
  
- typedef struct {
- 	unsigned int __softirq_pending;
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index 2ec765c..215c927 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -20,6 +20,9 @@
- 
- #define raw_smp_processor_id() (current_thread_info()->cpu)
- 
-+/* bitmap of IPIs that must be signalled using FIQ */
-+#define SMP_IPI_FIQ_MASK 0x0100
++struct fiq_chip {
++	void (*fiq_enable)(struct irq_data *data);
++	void (*fiq_disable)(struct irq_data *data);
++};
 +
- struct seq_file;
+ struct fiq_handler {
+ 	struct fiq_handler *next;
+ 	/* Name
+@@ -38,6 +44,8 @@ extern void release_fiq(struct fiq_handler *f);
+ extern void set_fiq_handler(void *start, unsigned int length);
+ extern void enable_fiq(int fiq);
+ extern void disable_fiq(int fiq);
++extern bool has_fiq(int fiq);
++extern void fiq_register_mapping(int irq, struct fiq_chip *chip);
  
- /*
-@@ -87,6 +90,10 @@ extern void arch_send_wakeup_ipi_mask(const struct cpumask *mask);
+ /* helpers defined in fiqasm.S: */
+ extern void __set_fiq_regs(unsigned long const *regs);
+diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+index 918875d..5d831cf 100644
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -40,6 +40,9 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/seq_file.h>
++#include <linux/irq.h>
++#include <linux/radix-tree.h>
++#include <linux/slab.h>
  
- extern int register_ipi_completion(struct completion *completion, int cpu);
+ #include <asm/cacheflush.h>
+ #include <asm/cp15.h>
+@@ -52,7 +55,15 @@
+ 		(unsigned)&vector_fiq_offset;		\
+ 	})
  
-+#ifdef CONFIG_FIQ
-+extern void send_fiq_ipi_mask(const struct cpumask *);
-+#endif
++struct fiq_data {
++	struct fiq_chip *fiq_chip;
++	struct irq_data *irq_data;
++};
 +
- struct smp_operations {
- #ifdef CONFIG_SMP
- 	/*
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 9388a3d..d386c32 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -72,6 +72,7 @@ enum ipi_msg_type {
- 	IPI_CPU_STOP,
- 	IPI_IRQ_WORK,
- 	IPI_COMPLETION,
-+	IPI_FIQ,
- };
+ static unsigned long no_fiq_insn;
++static int fiq_start = -1;
++static RADIX_TREE(fiq_data_tree, GFP_KERNEL);
++static DEFINE_MUTEX(fiq_data_mutex);
  
- static DECLARE_COMPLETION(cpu_running);
-@@ -451,6 +452,7 @@ static const char *ipi_types[NR_IPI] __tracepoint_string = {
- 	S(IPI_CPU_STOP, "CPU stop interrupts"),
- 	S(IPI_IRQ_WORK, "IRQ work interrupts"),
- 	S(IPI_COMPLETION, "completion interrupts"),
-+	S(IPI_FIQ, "FIQ interrupts"),
- };
- 
- static void smp_cross_call(const struct cpumask *target, unsigned int ipinr)
-@@ -552,6 +554,13 @@ static void ipi_complete(unsigned int cpu)
- 	complete(per_cpu(cpu_completion, cpu));
+ /* Default reacquire function
+  * - we always relinquish FIQ control
+@@ -127,18 +138,65 @@ void release_fiq(struct fiq_handler *f)
+ 	while (current_fiq->fiq_op(current_fiq->dev_id, 0));
  }
  
-+#ifdef CONFIG_FIQ
-+void send_fiq_ipi_mask(const struct cpumask *mask)
+-static int fiq_start;
++static struct fiq_data *lookup_fiq_data(int fiq)
 +{
-+	smp_cross_call(mask, IPI_FIQ);
++	struct fiq_data *data;
++
++	rcu_read_lock();
++	data = radix_tree_lookup(&fiq_data_tree, fiq);
++	rcu_read_unlock();
++
++	return data;
 +}
-+#endif
-+
- /*
-  * Main handler for inter-processor interrupts
-  */
-@@ -618,6 +627,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		irq_exit();
- 		break;
  
-+#ifdef CONFIG_FIQ
-+	case IPI_FIQ:
-+		pr_crit("CPU%u: IPI FIQ delivered via IRQ vector\n", cpu);
-+		break;
-+#endif
+ void enable_fiq(int fiq)
+ {
++	struct fiq_data *data = lookup_fiq_data(fiq);
 +
- 	default:
- 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
- 		       cpu, ipinr);
++	if (data) {
++		if (data->fiq_chip->fiq_enable)
++			data->fiq_chip->fiq_enable(data->irq_data);
++		enable_irq(fiq);
++		return;
++	}
++
++	if (WARN_ON(fiq_start == -1))
++		return;
++
+ 	enable_irq(fiq + fiq_start);
+ }
+ 
+ void disable_fiq(int fiq)
+ {
++	struct fiq_data *data = lookup_fiq_data(fiq);
++
++	if (data) {
++		if (data->fiq_chip->fiq_disable)
++			data->fiq_chip->fiq_disable(data->irq_data);
++		disable_irq(fiq);
++		return;
++	}
++
++	if (WARN_ON(fiq_start == -1))
++		return;
++
+ 	disable_irq(fiq + fiq_start);
+ }
+ 
++bool has_fiq(int fiq)
++{
++	struct fiq_data *data = lookup_fiq_data(fiq);
++
++	if (data)
++		return true;
++
++	if (fiq_start == -1)
++		return false;
++
++	return fiq >= fiq_start;
++}
++EXPORT_SYMBOL(has_fiq);
++
+ EXPORT_SYMBOL(set_fiq_handler);
+ EXPORT_SYMBOL(__set_fiq_regs);	/* defined in fiqasm.S */
+ EXPORT_SYMBOL(__get_fiq_regs);	/* defined in fiqasm.S */
+@@ -147,9 +205,50 @@ EXPORT_SYMBOL(release_fiq);
+ EXPORT_SYMBOL(enable_fiq);
+ EXPORT_SYMBOL(disable_fiq);
+ 
++/*
++ * Add a mapping from a Linux irq to the fiq data.
++ */
++void fiq_register_mapping(int irq, struct fiq_chip *chip)
++{
++	struct fiq_data *fiq_data = NULL;
++	int res;
++
++	/* fiq_register_mapping can't be mixed with init_FIQ */
++	BUG_ON(fiq_start != -1);
++
++	fiq_data = kmalloc(sizeof(*fiq_data), GFP_KERNEL);
++	if (!fiq_data)
++		goto err;
++
++	fiq_data->fiq_chip = chip;
++	fiq_data->irq_data = irq_get_irq_data(irq);
++	BUG_ON(!fiq_data->irq_data);
++
++	mutex_lock(&fiq_data_mutex);
++	res = radix_tree_insert(&fiq_data_tree, irq, fiq_data);
++	mutex_unlock(&fiq_data_mutex);
++	if (res)
++		goto err;
++
++	return;
++
++err:
++	kfree(fiq_data);
++	pr_err("fiq: Cannot register mapping %d\n", irq);
++}
++
++/*
++ * Set the offset between normal IRQs and their FIQ shadows.
++ */
+ void __init init_FIQ(int start)
+ {
++	fiq_start = start;
++}
++
++static int __init init_default_fiq_handler(void)
++{
+ 	unsigned offset = FIQ_OFFSET;
+ 	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
+-	fiq_start = start;
++	return 0;
+ }
++pure_initcall(init_default_fiq_handler);
 -- 
 1.9.3
 
