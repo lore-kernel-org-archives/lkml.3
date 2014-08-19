@@ -1,129 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaHSHTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:19:05 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:61024 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747AbaHSHTD (ORCPT
+	id S1752940AbaHSHUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 03:20:40 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:52308 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbaHSHUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 03:19:03 -0400
-Date: Tue, 19 Aug 2014 09:18:58 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, Caesar Wang <caesar.wang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
-        Eddie Cai <eddie.cai@rock-chips.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/4] pwm: rockchip: Allow polarity invert on rk3288
-Message-ID: <20140819071857.GD12859@ulmo>
-References: <1408381749-14156-1-git-send-email-dianders@chromium.org>
- <1408381749-14156-3-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1sNVjLsmu1MXqwQ/"
-Content-Disposition: inline
-In-Reply-To: <1408381749-14156-3-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 19 Aug 2014 03:20:39 -0400
+Subject: [PATCH v3 14/17] arcmsr: fix sparse warning and error
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Aug 2014 15:20:31 +0800
+Message-ID: <1408432831.4748.68.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ching Huang <ching2048@areca.com.tw>
 
---1sNVjLsmu1MXqwQ/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fix sparse utility checking error and warning.
 
-On Mon, Aug 18, 2014 at 10:09:07AM -0700, Doug Anderson wrote:
-[...]
-> diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
->  #define PWM_LP_DISABLE		(0 << 8)
-> =20
-> @@ -32,6 +34,7 @@ struct rockchip_pwm_chip {
->  	struct pwm_chip chip;
->  	struct clk *clk;
->  	const struct rockchip_pwm_data *data;
-> +	enum pwm_polarity polarity;
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+---
 
-Why do you need this field? struct pwm_device already has a copy of it.
-
-> @@ -74,10 +78,14 @@ static void rockchip_pwm_set_enable_v2(struct pwm_chi=
-p *chip, bool enable)
->  {
->  	struct rockchip_pwm_chip *pc =3D to_rockchip_pwm_chip(chip);
->  	u32 enable_conf =3D PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
-> -			  PWM_CONTINUOUS | PWM_DUTY_POSITIVE |
-> -			  PWM_INACTIVE_NEGATIVE;
-> +			  PWM_CONTINUOUS;
->  	u32 val;
-> =20
-> +	if (pc->polarity =3D=3D PWM_POLARITY_INVERSED)
-> +		enable_conf |=3D PWM_DUTY_NEGATIVE | PWM_INACTIVE_POSITIVE;
-> +	else
-> +		enable_conf |=3D PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
-
-I have a feeling you're going to answer the above question with: "Because
-it's needed here". If so, my reply would be: "Then this function should
-take a struct pwm_device instead of struct pwm_chip."
-
-> @@ -173,6 +195,7 @@ static const struct rockchip_pwm_data pwm_data_v2 =3D=
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:48.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:41:02.000000000 +0800
+@@ -78,7 +78,7 @@ MODULE_VERSION(ARCMSR_DRIVER_VERSION);
+ #define	ARCMSR_SLEEPTIME	10
+ #define	ARCMSR_RETRYCOUNT	12
+ 
+-wait_queue_head_t wait_q;
++static wait_queue_head_t wait_q;
+ static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb,
+ 					struct scsi_cmnd *cmd);
+ static int arcmsr_iop_confirm(struct AdapterControlBlock *acb);
+@@ -332,7 +332,7 @@ static uint8_t arcmsr_hbaB_wait_msgint_r
+ 
+ static uint8_t arcmsr_hbaC_wait_msgint_ready(struct AdapterControlBlock *pACB)
  {
->  		.ctrl =3D 0x0c,
->  	},
->  	.prescaler =3D 1,
-> +	.has_invert =3D 1,
+-	struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)pACB->pmuC;
++	struct MessageUnit_C __iomem *phbcmu = pACB->pmuC;
+ 	int i;
+ 
+ 	for (i = 0; i < 2000; i++) {
+@@ -382,7 +382,7 @@ static void arcmsr_hbaB_flush_cache(stru
+ 
+ static void arcmsr_hbaC_flush_cache(struct AdapterControlBlock *pACB)
+ {
+-	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
++	struct MessageUnit_C __iomem *reg = pACB->pmuC;
+ 	int retry_count = 30;/* enlarge wait flush adapter cache time: 10 minute */
+ 	writel(ARCMSR_INBOUND_MESG0_FLUSH_CACHE, &reg->inbound_msgaddr0);
+ 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &reg->inbound_doorbell);
+@@ -800,7 +800,7 @@ static uint8_t arcmsr_hbaB_abort_allcmd(
+ }
+ static uint8_t arcmsr_hbaC_abort_allcmd(struct AdapterControlBlock *pACB)
+ {
+-	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
++	struct MessageUnit_C __iomem *reg = pACB->pmuC;
+ 	writel(ARCMSR_INBOUND_MESG0_ABORT_CMD, &reg->inbound_msgaddr0);
+ 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &reg->inbound_doorbell);
+ 	if (!arcmsr_hbaC_wait_msgint_ready(pACB)) {
+@@ -888,7 +888,7 @@ static u32 arcmsr_disable_outbound_ints(
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C:{
+-		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
++		struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 		/* disable all outbound interrupt */
+ 		orig_mask = readl(&reg->host_int_mask); /* disable outbound message0 int */
+ 		writel(orig_mask|ARCMSR_HBCMU_ALL_INTMASKENABLE, &reg->host_int_mask);
+@@ -1012,8 +1012,9 @@ static void arcmsr_done4abort_postqueue(
+ 		/*clear all outbound posted Q*/
+ 		writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell); /* clear doorbell interrupt */
+ 		for (i = 0; i < ARCMSR_MAX_HBB_POSTQUEUE; i++) {
+-			if ((flag_ccb = readl(&reg->done_qbuffer[i])) != 0) {
+-				writel(0, &reg->done_qbuffer[i]);
++			flag_ccb = reg->done_qbuffer[i];
++			if (flag_ccb != 0) {
++				reg->done_qbuffer[i] = 0;
+ 				pARCMSR_CDB = (struct ARCMSR_CDB *)(acb->vir2phy_offset+(flag_ccb << 5));/*frame must be 32 bytes aligned*/
+ 				pCCB = container_of(pARCMSR_CDB, struct CommandControlBlock, arcmsr_cdb);
+ 				error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE0) ? true : false;
+@@ -1026,7 +1027,7 @@ static void arcmsr_done4abort_postqueue(
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+-		struct MessageUnit_C *reg = acb->pmuC;
++		struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 		struct  ARCMSR_CDB *pARCMSR_CDB;
+ 		uint32_t flag_ccb, ccb_cdb_phy;
+ 		bool error;
+@@ -1144,7 +1145,7 @@ static void arcmsr_enable_outbound_ints(
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+-		struct MessageUnit_C *reg = acb->pmuC;
++		struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 		mask = ~(ARCMSR_HBCMU_UTILITY_A_ISR_MASK | ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR_MASK|ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR_MASK);
+ 		writel(intmask_org & mask, &reg->host_int_mask);
+ 		acb->outbound_int_enable = ~(intmask_org & mask) & 0x0000000f;
+@@ -1231,12 +1232,12 @@ static void arcmsr_post_ccb(struct Adapt
+ 		uint32_t ending_index, index = reg->postq_index;
+ 
+ 		ending_index = ((index + 1) % ARCMSR_MAX_HBB_POSTQUEUE);
+-		writel(0, &reg->post_qbuffer[ending_index]);
++		reg->post_qbuffer[ending_index] = 0;
+ 		if (arcmsr_cdb->Flags & ARCMSR_CDB_FLAG_SGL_BSIZE) {
+-			writel(cdb_phyaddr | ARCMSR_CCBPOST_FLAG_SGL_BSIZE,\
+-						 &reg->post_qbuffer[index]);
++			reg->post_qbuffer[index] =
++				cdb_phyaddr | ARCMSR_CCBPOST_FLAG_SGL_BSIZE;
+ 		} else {
+-			writel(cdb_phyaddr, &reg->post_qbuffer[index]);
++			reg->post_qbuffer[index] = cdb_phyaddr;
+ 		}
+ 		index++;
+ 		index %= ARCMSR_MAX_HBB_POSTQUEUE;/*if last index number set it to 0 */
+@@ -1245,7 +1246,7 @@ static void arcmsr_post_ccb(struct Adapt
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+-		struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)acb->pmuC;
++		struct MessageUnit_C __iomem *phbcmu = acb->pmuC;
+ 		uint32_t ccb_post_stamp, arc_cdb_size;
+ 
+ 		arc_cdb_size = (ccb->arc_cdb_size > 0x300) ? 0x300 : ccb->arc_cdb_size;
+@@ -1287,7 +1288,7 @@ static void arcmsr_hbaB_stop_bgrb(struct
+ 
+ static void arcmsr_hbaC_stop_bgrb(struct AdapterControlBlock *pACB)
+ {
+-	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
++	struct MessageUnit_C __iomem *reg = pACB->pmuC;
+ 	pACB->acb_flags &= ~ACB_F_MSG_START_BGRB;
+ 	writel(ARCMSR_INBOUND_MESG0_STOP_BGRB, &reg->inbound_msgaddr0);
+ 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &reg->inbound_doorbell);
+@@ -1321,7 +1322,7 @@ static void arcmsr_free_ccb_pool(struct 
+ 	dma_free_coherent(&acb->pdev->dev, acb->uncache_size, acb->dma_coherent, acb->dma_coherent_handle);
+ }
+ 
+-void arcmsr_iop_message_read(struct AdapterControlBlock *acb)
++static void arcmsr_iop_message_read(struct AdapterControlBlock *acb)
+ {
+ 	switch (acb->adapter_type) {
+ 	case ACB_ADAPTER_TYPE_A: {
+@@ -1393,7 +1394,7 @@ struct QBUFFER __iomem *arcmsr_get_iop_r
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+-		struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)acb->pmuC;
++		struct MessageUnit_C __iomem *phbcmu = acb->pmuC;
+ 		qbuffer = (struct QBUFFER __iomem *)&phbcmu->message_rbuffer;
+ 		}
+ 	}
+@@ -1417,7 +1418,7 @@ static struct QBUFFER __iomem *arcmsr_ge
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+-		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
++		struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 		pqbuffer = (struct QBUFFER __iomem *)&reg->message_wbuffer;
+ 	}
+ 
+@@ -1613,7 +1614,7 @@ static void arcmsr_hbaA_doorbell_isr(str
+ static void arcmsr_hbaC_doorbell_isr(struct AdapterControlBlock *pACB)
+ {
+ 	uint32_t outbound_doorbell;
+-	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
++	struct MessageUnit_C __iomem *reg = pACB->pmuC;
+ 	/*
+ 	*******************************************************************
+ 	**  Maybe here we need to check wrqbuffer_lock is lock or not
+@@ -1659,8 +1660,8 @@ static void arcmsr_hbaB_postqueue_isr(st
+ 	struct CommandControlBlock *pCCB;
+ 	bool error;
+ 	index = reg->doneq_index;
+-	while ((flag_ccb = readl(&reg->done_qbuffer[index])) != 0) {
+-		writel(0, &reg->done_qbuffer[index]);
++	while ((flag_ccb = reg->done_qbuffer[index]) != 0) {
++		reg->done_qbuffer[index] = 0;
+ 		pARCMSR_CDB = (struct ARCMSR_CDB *)(acb->vir2phy_offset+(flag_ccb << 5));/*frame must be 32 bytes aligned*/
+ 		pCCB = container_of(pARCMSR_CDB, struct CommandControlBlock, arcmsr_cdb);
+ 		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE0) ? true : false;
+@@ -1673,13 +1674,13 @@ static void arcmsr_hbaB_postqueue_isr(st
+ 
+ static void arcmsr_hbaC_postqueue_isr(struct AdapterControlBlock *acb)
+ {
+-	struct MessageUnit_C *phbcmu;
++	struct MessageUnit_C __iomem *phbcmu;
+ 	struct ARCMSR_CDB *arcmsr_cdb;
+ 	struct CommandControlBlock *ccb;
+ 	uint32_t flag_ccb, ccb_cdb_phy, throttling = 0;
+ 	int error;
+ 
+-	phbcmu = (struct MessageUnit_C *)acb->pmuC;
++	phbcmu = acb->pmuC;
+ 	/* areca cdb command done */
+ 	/* Use correct offset and size for syncing */
+ 
+@@ -1711,7 +1712,7 @@ static void arcmsr_hbaC_postqueue_isr(st
+ */
+ static void arcmsr_hbaA_message_isr(struct AdapterControlBlock *acb)
+ {
+-	struct MessageUnit_A *reg  = acb->pmuA;
++	struct MessageUnit_A __iomem *reg  = acb->pmuA;
+ 	/*clear interrupt and message state*/
+ 	writel(ARCMSR_MU_OUTBOUND_MESSAGE0_INT, &reg->outbound_intstatus);
+ 	schedule_work(&acb->arcmsr_do_message_isr_bh);
+@@ -1735,7 +1736,7 @@ static void arcmsr_hbaB_message_isr(stru
+ */
+ static void arcmsr_hbaC_message_isr(struct AdapterControlBlock *acb)
+ {
+-	struct MessageUnit_C *reg  = acb->pmuC;
++	struct MessageUnit_C __iomem *reg  = acb->pmuC;
+ 	/*clear interrupt and message state*/
+ 	writel(ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE_DOORBELL_CLEAR, &reg->outbound_doorbell_clear);
+ 	schedule_work(&acb->arcmsr_do_message_isr_bh);
+@@ -1796,7 +1797,7 @@ static int arcmsr_hbaB_handle_isr(struct
+ static int arcmsr_hbaC_handle_isr(struct AdapterControlBlock *pACB)
+ {
+ 	uint32_t host_interrupt_status;
+-	struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)pACB->pmuC;
++	struct MessageUnit_C __iomem *phbcmu = pACB->pmuC;
+ 	/*
+ 	*********************************************
+ 	**   check outbound intstatus
+@@ -2202,7 +2203,7 @@ static struct CommandControlBlock *arcms
+ 		list_del_init(&ccb->list);
+ 	}else{
+ 		spin_unlock_irqrestore(&acb->ccblist_lock, flags);
+-		return 0;
++		return NULL;
+ 	}
+ 	spin_unlock_irqrestore(&acb->ccblist_lock, flags);
+ 	return ccb;
+@@ -2437,11 +2438,11 @@ static bool arcmsr_hbaB_get_config(struc
+ static bool arcmsr_hbaC_get_config(struct AdapterControlBlock *pACB)
+ {
+ 	uint32_t intmask_org, Index, firmware_state = 0;
+-	struct MessageUnit_C *reg = pACB->pmuC;
++	struct MessageUnit_C __iomem *reg = pACB->pmuC;
+ 	char *acb_firm_model = pACB->firm_model;
+ 	char *acb_firm_version = pACB->firm_version;
+-	char *iop_firm_model = (char *)(&reg->msgcode_rwbuffer[15]);    /*firm_model,15,60-67*/
+-	char *iop_firm_version = (char *)(&reg->msgcode_rwbuffer[17]);  /*firm_version,17,68-83*/
++	char __iomem *iop_firm_model = (char __iomem *)(&reg->msgcode_rwbuffer[15]);    /*firm_model,15,60-67*/
++	char __iomem *iop_firm_version = (char __iomem *)(&reg->msgcode_rwbuffer[17]);  /*firm_version,17,68-83*/
+ 	int count;
+ 	/* disable all outbound interrupt */
+ 	intmask_org = readl(&reg->host_int_mask); /* disable outbound message0 int */
+@@ -2589,7 +2590,8 @@ static int arcmsr_hbaB_polling_ccbdone(s
+ 	writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell);
+ 	while(1){
+ 		index = reg->doneq_index;
+-		if ((flag_ccb = readl(&reg->done_qbuffer[index])) == 0) {
++		flag_ccb = reg->done_qbuffer[index];
++		if (flag_ccb == 0) {
+ 			if (poll_ccb_done){
+ 				rtn = SUCCESS;
+ 				break;
+@@ -2602,7 +2604,7 @@ static int arcmsr_hbaB_polling_ccbdone(s
+ 				goto polling_hbb_ccb_retry;
+ 			}
+ 		}
+-		writel(0, &reg->done_qbuffer[index]);
++		reg->done_qbuffer[index] = 0;
+ 		index++;
+ 		/*if last index number set it to 0 */
+ 		index %= ARCMSR_MAX_HBB_POSTQUEUE;
+@@ -2639,7 +2641,7 @@ static int arcmsr_hbaB_polling_ccbdone(s
+ 
+ static int arcmsr_hbaC_polling_ccbdone(struct AdapterControlBlock *acb, struct CommandControlBlock *poll_ccb)
+ {
+-	struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
++	struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 	uint32_t flag_ccb, ccb_cdb_phy;
+ 	struct ARCMSR_CDB *arcmsr_cdb;
+ 	bool error;
+@@ -2802,7 +2804,7 @@ static int arcmsr_iop_confirm(struct Ada
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+ 		if (cdb_phyaddr_hi32 != 0) {
+-			struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
++			struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 
+ 			printk(KERN_NOTICE "arcmsr%d: cdb_phyaddr_hi32=0x%x\n",
+ 					acb->adapter_index, cdb_phyaddr_hi32);
+@@ -2843,7 +2845,7 @@ static void arcmsr_wait_firmware_ready(s
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+-		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
++		struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 		do {
+ 			firmware_state = readl(&reg->outbound_msgaddr1);
+ 		} while ((firmware_state & ARCMSR_HBCMU_MESSAGE_FIRMWARE_OK) == 0);
+@@ -2875,7 +2877,7 @@ static void arcmsr_hbaA_request_device_m
+ 
+ static void arcmsr_hbaB_request_device_map(struct AdapterControlBlock *acb)
+ {
+-	struct MessageUnit_B __iomem *reg = acb->pmuB;
++	struct MessageUnit_B *reg = acb->pmuB;
+ 	if (unlikely(atomic_read(&acb->rq_map_token) == 0) || ((acb->acb_flags & ACB_F_BUS_RESET) != 0 ) || ((acb->acb_flags & ACB_F_ABORT) != 0 )){
+ 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));
+ 		return;
+@@ -2960,7 +2962,7 @@ static void arcmsr_hbaB_start_bgrb(struc
+ 
+ static void arcmsr_hbaC_start_bgrb(struct AdapterControlBlock *pACB)
+ {
+-	struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)pACB->pmuC;
++	struct MessageUnit_C __iomem *phbcmu = pACB->pmuC;
+ 	pACB->acb_flags |= ACB_F_MSG_START_BGRB;
+ 	writel(ARCMSR_INBOUND_MESG0_START_BGRB, &phbcmu->inbound_msgaddr0);
+ 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &phbcmu->inbound_doorbell);
+@@ -3007,7 +3009,7 @@ static void arcmsr_clear_doorbell_queue_
+ 		}
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+-		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
++		struct MessageUnit_C __iomem *reg = acb->pmuC;
+ 		uint32_t outbound_doorbell, i;
+ 		/* empty doorbell Qbuffer if door bell ringed */
+ 		outbound_doorbell = readl(&reg->outbound_doorbell);
 
-Since has_invert is a boolean, the proper value here would be "true".
 
-> @@ -228,6 +252,10 @@ static int rockchip_pwm_probe(struct platform_device=
- *pdev)
->  	pc->data =3D id->data;
->  	pc->chip.dev =3D &pdev->dev;
->  	pc->chip.ops =3D &rockchip_pwm_ops;
-> +	if (pc->data->has_invert) {
-> +		pc->chip.of_xlate =3D of_pwm_xlate_with_flags;
-> +		pc->chip.of_pwm_n_cells =3D 3;
-> +	}
->  	pc->chip.base =3D -1;
->  	pc->chip.npwm =3D 1;
-
-I suggest to rewrite the above as follows for readability:
-
- 	pc->data =3D id->data;
- 	pc->chip.dev =3D &pdev->dev;
- 	pc->chip.ops =3D &rockchip_pwm_ops;
- 	pc->chip.base =3D -1;
- 	pc->chip.npwm =3D 1;
-+
-+	if (pc->data->has_invert) {
-+		pc->chip.of_xlate =3D of_pwm_xlate_with_flags;
-+		pc->chip.of_pwm_n_cells =3D 3;
-+	}
-
-Thierry
-
---1sNVjLsmu1MXqwQ/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT8vphAAoJEN0jrNd/PrOhNqAQAKjhdIO0mRKBlcuqjV+55gGa
-ZjSeGG/zLHhxCjn9OP9HEqEnPqT8q46beRO7LfpewQLqX7avnirGHHcx4bTV7Myf
-RyvPqtwEIwz7Z4/NCrbqI/EDTDnyue+wEzkIdsvOa4YRjqWHSA5rI1BLjo2lFYAo
-l1ism4Bl3XDnr1PhTWsZztOkivCTUkMkGuLaLoDEIzDD7Dw5ul+U4mQP7POACFfm
-NObvxsFn3yUFexeAIB1pib7hWL2NI8oOPUfnBiLg1hdRR9vVFeDbqQoM5yGBpKJU
-yGipps4fyxsoqpfTsD9k4WNwcfY+34jF6vTfUSHkUv2qSOBp7viWWcXLUKsK7Izx
-VWz6G3cWrpPK9gQO/w1awRVVEhbIb1CsK889YIl9Ak9WQFSvYSxYsqtSLQAJloEW
-j+zxg8Gzsrib2nfqzUsrqjRYqoY1oS89u4/xOYqNvECkEeMCDQhLvGl+R1XdCoYK
-p3aXb16F+GdZpmmlrwP0CJNUr4wRKWqnMjqDjC0b7VbqHdlSWDpH5Xu0OPNv8XSB
-HYiDMx94tTc2KWNLIQbEqnM1Txjj+EPnJbiBuwVDiHO/f2yvqyVZNB5RNbUaEUN9
-ATpZg3jE0j2B9iUmkGew95S8DQmT8lTpd+6J+JgkPpijjKTwfGMMHNxMJvdTq0Zx
-sgyZA5HIusA8oEMXFQ4L
-=FxyI
------END PGP SIGNATURE-----
-
---1sNVjLsmu1MXqwQ/--
