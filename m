@@ -1,158 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaHSJIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:08:15 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:50195 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069AbaHSJIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:08:11 -0400
-Message-ID: <53F313F2.6090103@linaro.org>
-Date: Tue, 19 Aug 2014 10:08:02 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
+	id S1752691AbaHSJJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:09:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009AbaHSJJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 05:09:57 -0400
+Message-ID: <53F3145D.4080103@redhat.com>
+Date: Tue, 19 Aug 2014 11:09:49 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH v9 12/16] serial: amba-pl011: Pass FIQ information to
- KGDB.
-References: <1404979427-12943-1-git-send-email-daniel.thompson@linaro.org> <1408372091-12689-13-git-send-email-daniel.thompson@linaro.org> <53F24660.2030404@hurleysoftware.com>
-In-Reply-To: <53F24660.2030404@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] KVM: vmx: fix ept reserved bits for 1-GByte page
+References: <1408439080-57721-1-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1408439080-57721-1-git-send-email-wanpeng.li@linux.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/08/14 19:30, Peter Hurley wrote:
-> Hi Daniel,
+Il 19/08/2014 11:04, Wanpeng Li ha scritto:
+> EPT misconfig handler in kvm will check which reason lead to EPT 
+> misconfiguration after vmexit. One of the reasons is that an EPT 
+> paging-structure entry is configured with settings reserved for 
+> future functionality. However, the handler can't identify if 
+> paging-structure entry of reserved bits for 1-GByte page are 
+> configured, since PDPTE which point to 1-GByte page will reserve 
+> bits 29:12 instead of bits 7:3 which are reserved for PDPTE that 
+> references an EPT Page Directory. This patch fix it by reserve 
+> bits 29:12 for 1-GByte page. 
 > 
-> On 08/18/2014 10:28 AM, Daniel Thompson wrote:
->> Speculatively register a FIQ resource with KGDB. KGDB will only
->> accept it if the kgdb/fiq feature is enabled (both with compile time and
->> runtime switches) and the interrupt controller supports FIQ.
->>
->> By providing this information to KGDB the serial driver offers
->> "permission" for KGDB to route the UART interrupt signal from the
->> drivers own handler to KGDBs FIQ handler (which will eventually use the
->> UART's polled I/O callbacks to interact with the user). This permission
->> also implies the amba-pl011 driver has already unmasked RX interrupts
->> (otherwise the FIQ handler will never trigger).
->>
->> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Jiri Slaby <jslaby@suse.cz>
->> Cc: linux-serial@vger.kernel.org
->> ---
->>  drivers/tty/serial/amba-pl011.c | 94 ++++++++++++++++++++++++-----------------
->>  1 file changed, 55 insertions(+), 39 deletions(-)#
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+> ---
+> v1 -> v2:
+>  * same "if" statement cover both 2MB and 1GB pages
+>  * return 0xf8 for level == 4
 
-Thanks for the review.
+I think you dropped this check by mistake.
 
-
->> diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
->> index 8572f2a..ec8ddc7 100644
->> --- a/drivers/tty/serial/amba-pl011.c
->> +++ b/drivers/tty/serial/amba-pl011.c
->> @@ -58,6 +58,7 @@
->>  #include <linux/pinctrl/consumer.h>
->>  #include <linux/sizes.h>
->>  #include <linux/io.h>
->> +#include <linux/kgdb.h>
->>  
->>  #define UART_NR			14
->>  
->> @@ -1416,8 +1417,61 @@ static void pl011_break_ctl(struct uart_port *port, int break_state)
->>  	spin_unlock_irqrestore(&uap->port.lock, flags);
->>  }
->>  
+>  * get the level by checking the return value of ept_rsvd_mask 
 > 
-> Is pl011_hwinit() just being relocated in source to avoid the forward
-> declaration? If so, this is usually split into its own commit.
-
-Ok. I'll do this.
-
-
->> +static int pl011_hwinit(struct uart_port *port)
->> +{
->> +	struct uart_amba_port *uap = (struct uart_amba_port *)port;
->> +	int retval;
->> +
->> +	/* Optionaly enable pins to be muxed in and configured */
->> +	pinctrl_pm_select_default_state(port->dev);
->> +
->> +	/*
->> +	 * Try to enable the clock producer.
->> +	 */
->> +	retval = clk_prepare_enable(uap->clk);
->> +	if (retval)
->> +		return retval;
->> +
->> +	uap->port.uartclk = clk_get_rate(uap->clk);
->> +
->> +	/* Clear pending error and receive interrupts */
->> +	writew(UART011_OEIS | UART011_BEIS | UART011_PEIS | UART011_FEIS |
->> +	       UART011_RTIS | UART011_RXIS, uap->port.membase + UART011_ICR);
->> +
->> +	/*
->> +	 * Save interrupts enable mask, and enable RX interrupts in case if
->> +	 * the interrupt is used for NMI entry.
->> +	 */
->> +	uap->im = readw(uap->port.membase + UART011_IMSC);
->> +	writew(UART011_RTIM | UART011_RXIM, uap->port.membase + UART011_IMSC);
->> +
->> +	if (dev_get_platdata(uap->port.dev)) {
->> +		struct amba_pl011_data *plat;
->> +
->> +		plat = dev_get_platdata(uap->port.dev);
->> +		if (plat->init)
->> +			plat->init();
->> +	}
->> +	return 0;
->> +}
->> +
->>  #ifdef CONFIG_CONSOLE_POLL
->>  
->> +static int pl011_poll_init(struct uart_port *port)
->> +{
->> +	struct uart_amba_port *uap = (struct uart_amba_port *)port;
+>  arch/x86/kvm/vmx.c | 19 +++++++------------
+>  1 file changed, 7 insertions(+), 12 deletions(-)
 > 
-> Please use container_of() in new code.
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index cad37d5..2763f37 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -5521,17 +5521,12 @@ static u64 ept_rsvd_mask(u64 spte, int level)
+>  	for (i = 51; i > boot_cpu_data.x86_phys_bits; i--)
+>  		mask |= (1ULL << i);
+>  
+> -	if (level > 2)
+> -		/* bits 7:3 reserved */
+> -		mask |= 0xf8;
+> -	else if (level == 2) {
+> -		if (spte & (1ULL << 7))
+> -			/* 2MB ref, bits 20:12 reserved */
+> -			mask |= 0x1ff000;
+> -		else
+> -			/* bits 6:3 reserved */
+> -			mask |= 0x78;
+> -	}
+> +	if (spte & (1ULL << 7))
 
-Ok.
+You need to go this way if level == 1 too.  Otherwise, you would report
+bits 6:3 reserved if the hypervisor is using the ignored bit 7 (Table
+28-6, Format of an EPT Page-Table Entry).
 
-Personally I dislike a file that mixes casts and conatiner_of but I
-guess I can make both of us happy by switching the whole driver to
-container_of. Separate patch again?
+> +		/* 1GB/2MB page, bits 29:12 or 20:12 reserved respectively */
+> +		mask |= (PAGE_SIZE << ((level - 1) * 9)) - PAGE_SIZE;
+> +	else
+> +		/* bits 6:3 reserved */
+> +		mask |= 0x78;
+>  
+>  	return mask;
+>  }
+> @@ -5561,7 +5556,7 @@ static void ept_misconfig_inspect_spte(struct kvm_vcpu *vcpu, u64 spte,
+>  			WARN_ON(1);
+>  		}
+>  
+> -		if (level == 1 || (level == 2 && (spte & (1ULL << 7)))) {
+> +		if (level == 1 || (rsvd_bits & 0x38)) {
 
+- rsvd_bits will always be zero here.  You need to check the return
+value of ept_rsvd_mask().  Let's call it rsvd_mask in the rest of this
+email.
 
->> +	int retval;
->> +
->> +	retval = pl011_hwinit(port);
->> +
->> +#ifdef CONFIG_KGDB_FIQ
->> +	if (retval == 0)
->> +		kgdb_register_fiq(uap->port.irq);
-> 
-> The uap->port dereference is unnecessary since the port parameter
-> is the same thing.
-> 
-> 		kgdb_register_fiq(port->irq);
+- the test is inverted, you need to check that bits 5:3 are _not_
+reserved, hence (rsvd_mask & 0x38) == 0.
 
-Ok.
+- once you do this, the test also covers level 1.
 
+I suggest that you write a testcase for kvm-unit-tests.
+
+Paolo
