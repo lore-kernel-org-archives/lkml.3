@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859AbaHSTYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 15:24:14 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:40575 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652AbaHSTYM (ORCPT
+	id S1753771AbaHSTZk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 15:25:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41796 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaHSTZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 15:24:12 -0400
-Date: Tue, 19 Aug 2014 12:24:01 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dan Murphy <dmurphy@ti.com>
-Cc: mark.rutland@arm.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v6] input: drv260x: Add TI drv260x haptics driver
-Message-ID: <20140819192401.GA32080@core.coreip.homeip.net>
-References: <1408117670-19750-1-git-send-email-dmurphy@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408117670-19750-1-git-send-email-dmurphy@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Aug 2014 15:25:38 -0400
+Message-ID: <1408476326.22761.134.camel@smoke>
+Subject: Re: [PATCH v2 08/18] ARM64 / ACPI: Get the enable method for SMP
+ initialization in ACPI way
+From: Geoff Levand <geoff@infradead.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>, Charles.Garcia-Tobin@arm.com,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Date: Tue, 19 Aug 2014 12:25:26 -0700
+In-Reply-To: <53F33EDC.3090203@linaro.org>
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
+		 <1407166105-17675-9-git-send-email-hanjun.guo@linaro.org>
+	 <1408388212.22761.100.camel@smoke> <53F33EDC.3090203@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Hi Hanjun,
 
-On Fri, Aug 15, 2014 at 10:47:50AM -0500, Dan Murphy wrote:
-> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> index 2ff4425..99f6762 100644
-> --- a/drivers/input/misc/Kconfig
-> +++ b/drivers/input/misc/Kconfig
-> @@ -676,4 +676,13 @@ config INPUT_SOC_BUTTON_ARRAY
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called soc_button_array.
->  
-> +config INPUT_DRV260X_HAPTICS
-> +	tristate "TI DRV260X haptics support"
-> +	depends on INPUT && I2C
+On Tue, 2014-08-19 at 20:11 +0800, Hanjun Guo wrote:
+> On 2014-8-19 2:56, Geoff Levand wrote:
 
-This also needs "select REGMAP_I2C"
+> > 	message = acpi_disabled ? dn->full_name : "";
+> > 
+> > 	...
+> > 	
+> > 	pr_warn("CPU %d: %s unsupported enable-method property: %s\n",
+> > 				cpu, message, enable_method)
+> 
+> In ACPI, there is no enable-method property, it is a term from, so I think the
+> message printed can be separated.
 
-> +	help
-> +	  Say Y to enable support for the TI DRV260X haptics driver.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called drv260x-haptics.
-> +
+I think it better to have a single message that can cover all
+than to have separate messages.  Wouldn't the enable method be
+"acpi-parking" or "acpi-psci"?  Then something like this would
+work:
 
-[...]
+	pr_warn("CPU %d: %s Unsupported enable method: %s\n", cpu, message, enable_method);
 
-> +#ifndef _LINUX_DRV260X_PDATA_H
-> +#define _LINUX_DRV260X_PDATA_H
-> +
-> +struct drv260x_platform_data {
-> +	int enable_gpio;
+-Geoff
 
-I do not see this used anywhere.
 
-> +	u32 library_selection;
-> +	u32 mode;
-> +	u32 vib_rated_voltage;
-> +	u32 vib_overdrive_voltage;
-> +};
-> +
-> +#endif
-
-I fixed up the above issues and did a few more formatting changes and applied
-to my 'next' branch. Please take a peek and holler if you see something wrong.
-
-Thanks.
-
--- 
-Dmitry
