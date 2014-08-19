@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbaHSSMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:12:18 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33475 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499AbaHSSMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:12:15 -0400
-Message-ID: <53F39377.1070308@linaro.org>
-Date: Tue, 19 Aug 2014 19:12:07 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753340AbaHSSXo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:23:44 -0400
+Received: from mail.eperm.de ([89.247.134.16]:58719 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753054AbaHSSXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 14:23:43 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: Kernel crypto API: cryptoperf performance measurement
+Date: Tue, 19 Aug 2014 20:23:37 +0200
+Message-ID: <1477690.toHy6ei3xC@myon.chronox.de>
+User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <53F2FA10.2000300@iki.fi>
+References: <56334718.JSiBY74glM@myon.chronox.de> <53F2FA10.2000300@iki.fi>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v10 03/19] arm: fiq: Replace default FIQ handler
-References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org> <1408466769-20004-4-git-send-email-daniel.thompson@linaro.org> <20140819173742.GG30401@n2100.arm.linux.org.uk>
-In-Reply-To: <20140819173742.GG30401@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/08/14 18:37, Russell King - ARM Linux wrote:
-> On Tue, Aug 19, 2014 at 05:45:53PM +0100, Daniel Thompson wrote:
->> +int register_fiq_nmi_notifier(struct notifier_block *nb)
->> +{
->> +	return atomic_notifier_chain_register(&fiq_nmi_chain, nb);
->> +}
->> +
->> +asmlinkage void __exception_irq_entry fiq_nmi_handler(struct pt_regs *regs)
->> +{
->> +	struct pt_regs *old_regs = set_irq_regs(regs);
->> +
->> +	nmi_enter();
->> +	atomic_notifier_call_chain(&fiq_nmi_chain, (unsigned long)regs, NULL);
->> +	nmi_exit();
->> +	set_irq_regs(old_regs);
->> +}
+Am Dienstag, 19. August 2014, 10:17:36 schrieb Jussi Kivilinna:
+
+Hi Jussi,
+
+> Hello,
 > 
-> Really not happy with this.  What happens if a FIQ occurs while we're
-> inside register_fiq_nmi_notifier() - more specifically inside
-> atomic_notifier_chain_register() ?
-
-Should depend on which side of the rcu update we're on.
-
-
-> This is how easy it is to end up with a deadlock-able situation with
-> FIQs, and it is why I said:
+> On 2014-08-17 18:55, Stephan Mueller wrote:
+> > Hi,
+> > 
+> > during playing around with the kernel crypto API, I implemented a
+> > performance measurement tool kit for the various kernel crypto API cipher
+> > types. The cryptoperf tool kit is provided in [1].
+> > 
+> > Comments are welcome.
 > 
-> | > 2. Have default trap handler call an RCU notifier chain to allow it to
-> | >    hook up with "normal" code without any hard coding (kgdb, IPI
-> | >    handling, etc)
-> | 
-> | Maybe... that sounds like it opens up FIQ for general purpose use which
-> | is something I want to avoid - I've little motivation to ensure that
-> | everyone plays by the rules.  Given the choice, I'd rather maintain our
-> | present stance that using FIQs is hard and requires a lot of thought.
+> Your results are quite slow compared to, for example "cryptsetup
+> benchmark", which uses kernel crypto from userspace.
 > 
-> You've just proven my point.
+> With Intel i5-2450M (turbo enabled), I get:
 > 
-> So, what I want is to make FIQs hard to use.  No notifier chain at all
-> please, people can't be trusted to know all the details (even if they
-> do know the details, it's just been proven that it's incredibly difficult
-> to do it right.)
+> #  Algorithm | Key |  Encryption |  Decryption
+>      aes-cbc   128b   524,0 MiB/s  11909,1 MiB/s
+>  serpent-cbc   128b    60,9 MiB/s   219,4 MiB/s
+>  twofish-cbc   128b   143,4 MiB/s   240,3 MiB/s
+>      aes-cbc   256b   330,4 MiB/s  1242,8 MiB/s
+>  serpent-cbc   256b    66,1 MiB/s   220,3 MiB/s
+>  twofish-cbc   256b   143,5 MiB/s   221,8 MiB/s
+>      aes-xts   256b  1268,7 MiB/s  4193,0 MiB/s
+>  serpent-xts   256b   234,8 MiB/s   224,6 MiB/s
+>  twofish-xts   256b   253,5 MiB/s   254,7 MiB/s
+>      aes-xts   512b  2535,0 MiB/s  2945,0 MiB/s
+>  serpent-xts   512b   274,2 MiB/s   242,3 MiB/s
+>  twofish-xts   512b   250,0 MiB/s   245,8 MiB/s
 
-For what its worth the reason I stuck to the notifier idea was that
-there has to be some dynamic registration; the gic is registering
-something to clear IPIs. Once I had dynamic registration notifiers felt
-most elegant.
+One to four GB per second for XTS? 12 GB per second for AES CBC? Somehow that 
+does not sound right.
+> 
+> > In general, the results are as expected, i.e. the assembler
+> > implementations
+> > are faster than the pure C implementations. However, there are curious
+> > results which probably should be checked by the maintainers of the
+> > respective ciphers (hoping that my tool works correctly ;-) ):
+> > 
+> > ablkcipher
+> > ----------
+> > 
+> > - cryptd is slower by factor 10 across the board
+> > 
+> > blkcipher
+> > ---------
+> > 
+> > - Blowfish x86_64 assembler together with the generic C block chaining
+> > modes is significantly slower than Blowfish implemented in generic C
+> > 
+> > - Blowfish x86_64 assembler in ECB is significantly slower than generic C
+> > Blowfish ECB
+> > 
+> > - Serpent assembler implementations are not significantly faster than
+> > generic C implementations
+> > 
+> > - AES-NI ECB, LRW, CTR is significantly slower than AES i586 assembler.
+> > 
+> > - AES-NI ECB, LRW, CTR is not significantly faster than AES generic C
+> 
+> Quite many assembly implementations get speed up from processing
+> parallel block cipher blocks, which modes of operation that (CTR, XTS,
+> LWR, CBC(dec)). For small buffer sizes, these implementations will use
+> the non-parallel implementation of cipher.
 
-However, the dynamic registration requirement is in fact very basic
-since and can be registered by function pointer since only irqchip
-instance is responsible for IPIs. It might even be possible to hardcode
-direct calls into the gic driver and have the gic driver maintain a flag.
-
-
-> What I instead want to see is that users get added to the above code
-> fragment with #ifdef's around the calls - that way ensuring that people
-> have to modify this file, and therefore /should/ be copying me with
-> their patches.  That means less chance for someone to sneak a change
-> in by merely calling some register function without first having to
-> copy this mailing list.
-
-I can do this.
-
-Note that I'm about to go and live in a field for a week so there will
-be a bit of a delay since the field interferes substantially with
-hacking time.
-
+Thanks for the pointer, I will rerun my tests with multiple of the block size 
+(e.g. 1024 blocks).
+-- 
+Ciao
+Stephan
