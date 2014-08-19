@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaHSNSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:18:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14302 "EHLO mga11.intel.com"
+	id S1752668AbaHSNZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:25:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52323 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527AbaHSNSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:18:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="374245051"
-From: Andi Kleen <andi@firstfloor.org>
-To: Bertrand Jacquin <beber@meleeweb.net>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>
-Subject: Re: [PATCH 2/3] kbuild: handle module compression while running 'make modules_install'.
-References: <1408215016-1848-1-git-send-email-beber@meleeweb.net>
-	<1408215016-1848-3-git-send-email-beber@meleeweb.net>
-Date: Tue, 19 Aug 2014 06:17:58 -0700
-In-Reply-To: <1408215016-1848-3-git-send-email-beber@meleeweb.net> (Bertrand
-	Jacquin's message of "Sat, 16 Aug 2014 20:50:15 +0200")
-Message-ID: <87lhqkmxdl.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1750870AbaHSNZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 09:25:58 -0400
+From: jgross@suse.com
+To: stefan.bader@canonical.com, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
+        x86@kernel.org
+Subject: [PATCH RFC 0/3] x86: Full support of PAT
+Date: Tue, 19 Aug 2014 15:25:42 +0200
+Message-Id: <1408454745-32358-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bertrand Jacquin <beber@meleeweb.net> writes:
->  
-> +# CONFIG_MODULE_COMPRESS, if defined, will cause module to be compressed
-> +# after they are installed in agreement with CONFIG_MODULE_COMPRESS_GZIP
-> +# or CONFIG_MODULE_COMPRESS_XZ.
-> +
-> +mod_compress_cmd = true
-> +ifdef CONFIG_MODULE_COMPRESS
-> +  ifdef CONFIG_MODULE_COMPRESS_GZIP
-> +    mod_compress_cmd = gzip -n -9
+The x86 architecture offers via the PAT (Page Attribute Table) a way to
+specify different caching modes in page table entries. The PAT MSR contains
+8 entries each specifying one of 6 possible cache modes. A pte references one
+of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
 
-Please don't use gzip -9. The gain is very small, but it can make
-the time to compress much longer. Just use plain gzip.
+The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+top 4 entries in the PAT MSR are the same as the 4 lower entries.
 
-I suspect it doesn't make sense either for xz.
+This results in the kernel not supporting e.g. write-through mode. Especially
+this cache mode would speed up drivers of video cards which now have to use
+uncached accesses.
 
--Andi
+OTOH some old processors (Pentium) don't support PAT and the Xen hypervisor
+has been using a different PAT MSR configuration for some time now and can't
+change that as this setting is part of the ABI.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+This patch set abstracts the cache mode from the pte and introduces tables to
+translate between cache mode and pte bits (the default cache mode "write back"
+is hard-wired to PAT entry 0). The tables are statically initialized with
+values being compatible to old processors and current usage. As soon as the
+PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
+changed accordingly. Requests of mappings with special cache modes are always
+possible now, in case they are not supported there will be a fallback to a
+compatible but slower mode.
+
+[PATCH RFC 1/3] x86: Make page cache mode a real type
+[PATCH RFC 2/3] x86: Enable PAT to use cache mode translation tables
+[PATCH RFC 3/3] Support Xen pv-domains using PAT
