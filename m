@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaHSNDE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:03:04 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51130 "EHLO
+	id S1753273AbaHSNDH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:03:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51200 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbaHSNC6 (ORCPT
+	with ESMTP id S1752922AbaHSNDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:02:58 -0400
+	Tue, 19 Aug 2014 09:03:05 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 5/8] of: Add of_graph_get_port_by_id function
-Date: Tue, 19 Aug 2014 15:02:43 +0200
-Message-Id: <1408453366-1366-6-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH 1/8] [media] soc_camera: Do not decrement endpoint node refcount in the loop
+Date: Tue, 19 Aug 2014 15:02:39 +0200
+Message-Id: <1408453366-1366-2-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.1.0.rc1
 In-Reply-To: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
 References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
@@ -31,81 +31,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a function to get a port device tree node by port id,
-or reg property value.
+In preparation for a following patch, stop decrementing the endpoint node
+refcount in the loop. This temporarily leaks a reference to the endpoint node,
+which will be fixed by having of_graph_get_next_endpoint decrement the refcount
+of its prev argument instead.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- drivers/of/base.c        | 30 ++++++++++++++++++++++++++++++
- include/linux/of_graph.h |  7 +++++++
- 2 files changed, 37 insertions(+)
+ drivers/media/platform/soc_camera/soc_camera.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index a49b5628..6044c15 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -2053,6 +2053,36 @@ int of_graph_parse_endpoint(const struct device_node *node,
- EXPORT_SYMBOL(of_graph_parse_endpoint);
+diff --git a/drivers/media/platform/soc_camera/soc_camera.c b/drivers/media/platform/soc_camera/soc_camera.c
+index f4308fe..f752489 100644
+--- a/drivers/media/platform/soc_camera/soc_camera.c
++++ b/drivers/media/platform/soc_camera/soc_camera.c
+@@ -1696,11 +1696,11 @@ static void scan_of_host(struct soc_camera_host *ici)
+ 		if (!i)
+ 			soc_of_bind(ici, epn, ren->parent);
  
- /**
-+ * of_graph_get_port_by_id() - get the port matching a given id
-+ * @parent: pointer to the parent device node
-+ * @id: id of the port
-+ *
-+ * Return: A 'port' node pointer with refcount incremented.The caller
-+ * has to use of_node_put() on it when done.
-+ */
-+struct device_node *of_graph_get_port_by_id(struct device_node *node, int id)
-+{
-+	struct device_node *port = NULL;
-+	int port_id;
-+
-+	while (true) {
-+		port = of_get_next_child(node, port);
-+		if (!port)
-+			return NULL;
-+		if (of_node_cmp(port->name, "port") != 0)
-+			continue;
-+		if (of_property_read_u32(port, "reg", &port_id)) {
-+			if (!id)
-+				return port;
-+		} else {
-+			if (id == port_id)
-+				return port;
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(of_graph_get_port_by_id);
-+
-+/**
-  * of_graph_get_next_endpoint() - get next endpoint node
-  * @parent: pointer to the parent device node
-  * @prev: previous endpoint node, or NULL to get first
-diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-index 2890a4c..24ceb4b 100644
---- a/include/linux/of_graph.h
-+++ b/include/linux/of_graph.h
-@@ -33,6 +33,7 @@ struct of_endpoint {
- #ifdef CONFIG_OF
- int of_graph_parse_endpoint(const struct device_node *node,
- 				struct of_endpoint *endpoint);
-+struct device_node *of_graph_get_port_by_id(struct device_node *node, int id);
- struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 					struct device_node *previous);
- struct device_node *of_graph_get_remote_port_parent(
-@@ -46,6 +47,12 @@ static inline int of_graph_parse_endpoint(const struct device_node *node,
- 	return -ENOSYS;
- }
+-		of_node_put(epn);
+ 		of_node_put(ren);
  
-+static inline struct device_node *of_graph_get_port_by_id(
-+					struct device_node *node, int id)
-+{
-+	return NULL;
-+}
-+
- static inline struct device_node *of_graph_get_next_endpoint(
- 					const struct device_node *parent,
- 					struct device_node *previous)
+ 		if (i) {
+ 			dev_err(dev, "multiple subdevices aren't supported yet!\n");
++			of_node_put(epn);
+ 			break;
+ 		}
+ 	}
 -- 
 2.1.0.rc1
 
