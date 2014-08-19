@@ -1,139 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaHSPMC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:12:02 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53475 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752860AbaHSPMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:12:00 -0400
-Date: Tue, 19 Aug 2014 10:11:57 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
-        ds2horner@gmail.com
-Subject: Re: [PATCH v2 2/4] zsmalloc: change return value unit of
- zs_get_total_size_bytes
-Message-ID: <20140819151157.GB26403@cerebellum.variantweb.net>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
- <1408434887-16387-3-git-send-email-minchan@kernel.org>
- <20140819144628.GA26403@cerebellum.variantweb.net>
+	id S1753173AbaHSPN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:13:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59696 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837AbaHSPNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:13:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="560604498"
+Date: Tue, 19 Aug 2014 20:27:34 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        laurent.pinchart@ideasonboard.com,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
+ dma controller API
+Message-ID: <20140819145734.GN13288@intel.com>
+References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140814085301.GJ2452@ldesroches-Latitude-E6320>
+ <20140814085753.GS30401@n2100.arm.linux.org.uk>
+ <20140819134507.GJ13288@intel.com>
+ <20140819144423.GE30401@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140819144628.GA26403@cerebellum.variantweb.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140819144423.GE30401@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 09:46:28AM -0500, Seth Jennings wrote:
-> On Tue, Aug 19, 2014 at 04:54:45PM +0900, Minchan Kim wrote:
-> > zs_get_total_size_bytes returns a amount of memory zsmalloc
-> > consumed with *byte unit* but zsmalloc operates *page unit*
-> > rather than byte unit so let's change the API so benefit
-> > we could get is that reduce unnecessary overhead
-> > (ie, change page unit with byte unit) in zsmalloc.
+On Tue, Aug 19, 2014 at 03:44:23PM +0100, Russell King - ARM Linux wrote:
+> On Tue, Aug 19, 2014 at 07:15:07PM +0530, Vinod Koul wrote:
+> > On Thu, Aug 14, 2014 at 09:57:53AM +0100, Russell King - ARM Linux wrote:
+> > > It's got something to do with the async engine API, and seems to be
+> > > something to do with whether a descriptor can have other transactions
+> > > added to it, and whether a descriptor can be re-used (async-tx engines
+> > > typically allocate a fixed set of descriptors and recycle them.)
+> > Yes this is my understanding too. Async API IIUC can reuse descriptors and
+> > if engine doesnt support this is a way to tell them please do use that.
 > > 
-> > Now, zswap can rollback to zswap_pool_pages.
-> > Over to zswap guys ;-)
+> > For slave dmanegine API we need to ignore it.
 > 
-> I don't think that's how is it done :-/  Changing the API for a
-> component that has two users, changing one, then saying "hope you guys
-> change your newly broken stuff".
+> We shouldn't ignore it - ignoring it makes it harder to implement a DMA
+> engine driver which supports both the slave and async APIs, because
+> we then need to know the reason for the channel being requested.
+Do you have such usage coming up near future :)
+> 
+> Ignoring it until it can be understood and documented is an approach I
+> would agree with though.
+Certainly, I am asking Dan to add more clarity on these bits to help
+improve.
 
-However, I'll bite on this one :)  Just squash this in so that
-zpool/zswap aren't broken at any point.
-
-Dan, care to make sure I didn't miss something?
-
-Thanks,
-Seth
-
-diff --git a/mm/zbud.c b/mm/zbud.c
-index a05790b..27a3701 100644
---- a/mm/zbud.c
-+++ b/mm/zbud.c
-@@ -179,7 +179,7 @@ static void zbud_zpool_unmap(void *pool, unsigned long handle)
- 
- static u64 zbud_zpool_total_size(void *pool)
- {
--	return zbud_get_pool_size(pool) * PAGE_SIZE;
-+	return zbud_get_pool_size(pool);
- }
- 
- static struct zpool_driver zbud_zpool_driver = {
-diff --git a/mm/zpool.c b/mm/zpool.c
-index e40612a..d126ebc 100644
---- a/mm/zpool.c
-+++ b/mm/zpool.c
-@@ -336,9 +336,9 @@ void zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
-  * zpool_get_total_size() - The total size of the pool
-  * @pool	The zpool to check
-  *
-- * This returns the total size in bytes of the pool.
-+ * This returns the total size in pages of the pool.
-  *
-- * Returns: Total size of the zpool in bytes.
-+ * Returns: Total size of the zpool in pages.
-  */
- u64 zpool_get_total_size(struct zpool *zpool)
- {
-diff --git a/mm/zswap.c b/mm/zswap.c
-index ea064c1..124f750 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -45,8 +45,8 @@
- /*********************************
- * statistics
- **********************************/
--/* Total bytes used by the compressed storage */
--static u64 zswap_pool_total_size;
-+/* Total pages used by the compressed storage */
-+static u64 zswap_pool_pages;
- /* The number of compressed pages currently stored in zswap */
- static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
- 
-@@ -297,7 +297,7 @@ static void zswap_free_entry(struct zswap_entry *entry)
- 	zpool_free(zswap_pool, entry->handle);
- 	zswap_entry_cache_free(entry);
- 	atomic_dec(&zswap_stored_pages);
--	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
-+	zswap_pool_pages = zpool_get_total_size(zswap_pool);
- }
- 
- /* caller must hold the tree lock */
-@@ -414,7 +414,7 @@ cleanup:
- static bool zswap_is_full(void)
- {
- 	return totalram_pages * zswap_max_pool_percent / 100 <
--		DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
-+		zswap_pool_pages;
- }
- 
- /*********************************
-@@ -721,7 +721,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 
- 	/* update stats */
- 	atomic_inc(&zswap_stored_pages);
--	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
-+	zswap_pool_pages = zpool_get_total_size(zswap_pool);
- 
- 	return 0;
- 
-@@ -874,8 +874,8 @@ static int __init zswap_debugfs_init(void)
- 			zswap_debugfs_root, &zswap_written_back_pages);
- 	debugfs_create_u64("duplicate_entry", S_IRUGO,
- 			zswap_debugfs_root, &zswap_duplicate_entry);
--	debugfs_create_u64("pool_total_size", S_IRUGO,
--			zswap_debugfs_root, &zswap_pool_total_size);
-+	debugfs_create_u64("pool_pages", S_IRUGO,
-+			zswap_debugfs_root, &zswap_pool_pages);
- 	debugfs_create_atomic_t("stored_pages", S_IRUGO,
- 			zswap_debugfs_root, &zswap_stored_pages);
- 
+-- 
+~Vinod
