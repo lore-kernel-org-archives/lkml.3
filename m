@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaHSBoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 21:44:12 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:18392 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbaHSBoK (ORCPT
+	id S1752557AbaHSBoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 21:44:16 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42698 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523AbaHSBoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 21:44:10 -0400
-Message-ID: <53F2ABD0.1010706@huawei.com>
-Date: Tue, 19 Aug 2014 09:43:44 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Mon, 18 Aug 2014 21:44:13 -0400
+Date: Tue, 19 Aug 2014 09:44:01 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v9 02/12] PCI: OF: Parse and map the IRQ when adding the
+ PCI device.
+Message-ID: <20140819014401.GB9558@richard>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
+ <1407860725-25202-3-git-send-email-Liviu.Dudau@arm.com>
+ <20140814145804.GA5586@richard>
+ <20140814154959.GG25761@e106497-lin.cambridge.arm.com>
+ <20140815085632.GA4954@richard>
+ <20140815103052.GD27553@e106497-lin.cambridge.arm.com>
+ <20140818142550.GN20043@localhost>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, <toshi.kani@hp.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <n-horiguchi@ah.jp.nec.com>,
-        <wangnan0@huawei.com>, <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
-References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com> <53EAE534.8030303@huawei.com> <alpine.DEB.2.02.1408181447260.4796@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1408181447260.4796@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818142550.GN20043@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081901-0005-0000-0000-00000095809B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/19 5:48, David Rientjes wrote:
-> On Wed, 13 Aug 2014, Zhang Zhen wrote:
-> 
->> Currently memory-hotplug has two limits:
->> 1. If the memory block is in ZONE_NORMAL, you can change it to
->> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
->> 2. If the memory block is in ZONE_MOVABLE, you can change it to
->> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
->>
->> With this patch, we can easy to know a memory block can be onlined to
->> which zone, and don't need to know the above two limits.
->>
->> Updated the related Documentation.
->>
->> Change v1 -> v2:
->> - optimize the implementation following Dave Hansen's suggestion
->>
->> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
-> 
-> linux-next build failure:
-> 
-> drivers/built-in.o: In function `show_zones_online_to':
-> memory.c:(.text+0x13ee09): undefined reference to `test_pages_in_a_zone'
-> 
-The function implementation in mm/memory_hotplug.c is only built if
-CONFIG_MEMORY_HOTREMOVE is enabled.
+On Mon, Aug 18, 2014 at 03:25:50PM +0100, Catalin Marinas wrote:
+>...
+>> Well, it will become necessary as old code gets dismantled and converted towards
+>> this patchset. To give you an example that I'm familiar with, for arch/arm the
+>> host bridge drivers have moved into drivers/pci/host, but they still depend/use
+>> the bios32 infrastructure that takes care of setting up the irq. When they switch
+>> to my version they would have to go and debug the "irq not being assigned" issue
+>> and it is quite likely that some of the people doing the conversion will complain
+>> about my code rather than understanding the issue. What I'm trying to do is to
+>> make switching to my patchset as painless as possible, with a cleanup to remove
+>> redundant operations coming after the switchover.
+>
+>While the goal is fine, until we see a common pattern for what needs to
+>go into pcibios_add_device() I think we should have an arm64-specific
+>implementation (and probably an arm32 specific one as well). I can see
+>powerpc uses it for setting the DMA ops. Would we have a similar need on
+>arm64 to choose between coherent and non-coherent dma_ops?
 
-A fix has been proposed.
-http://ozlabs.org/~akpm/mmots/broken-out/memory-hotplug-add-sysfs-zones_online_to-attribute-fix-2.patch
+Liviu,
 
-Thanks!
-> 
+I have the same feeling with Catalin. An arm64-specific implementation of
+pcibios_add_device() would be better.
 
+No more other concerns from my side.
+
+>
+>Also at some point we'll get ACPI support, so I'm not sure what we do
+>with assigning the dev->irq here but definitely of_* functions won't
+>work.
+>
+>-- 
+>Catalin
+
+-- 
+Richard Yang
+Help you, Help me
 
