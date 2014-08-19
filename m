@@ -1,212 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaHSW3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 18:29:12 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:57667 "EHLO gloria.sntech.de"
+	id S1751822AbaHSW3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 18:29:24 -0400
+Received: from mta-out1.inet.fi ([62.71.2.194]:34763 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939AbaHSW3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 18:29:10 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Chris Zhong <zyw@rock-chips.com>, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, sameo@linux.intel.com, lee.jones@linaro.org,
-        lgirdwood@gmail.com, broonie@kernel.org, a.zummo@towertech.it,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, olof@lixom.net,
-        sonnyrao@chromium.org, dtor@chromium.org, kever.yang@rock-chips.com,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 4/4] RTC: rk808: add RTC driver for RK808 PMIC RTC
-Date: Wed, 20 Aug 2014 00:28:42 +0200
-Message-ID: <1517709.ClbTUIzhrF@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <53F2431F.3090802@collabora.co.uk>
-References: <1408240979-29555-1-git-send-email-zyw@rock-chips.com> <53F2431F.3090802@collabora.co.uk>
+	id S1751717AbaHSW3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 18:29:23 -0400
+Date: Wed, 20 Aug 2014 01:26:21 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
+        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
+        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
+        penberg@kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] [RFC] TAINT_PERFORMANCE
+Message-ID: <20140819222621.GA32690@node.dhcp.inet.fi>
+References: <20140819212604.6C94DF09@viggo.jf.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140819212604.6C94DF09@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javier,
-
-Am Montag, 18. August 2014, 20:17:03 schrieb Javier Martinez Canillas:
-> adding Mike Turquette to cc since this is also a clock driver.
+On Tue, Aug 19, 2014 at 02:26:04PM -0700, Dave Hansen wrote:
 > 
-> Hello Chris,
+> From: Dave Hansen <dave.hansen@linux.intel.com>
 > 
-> Overall it looks good to me, I've just a comment about the driver structure.
-> On 08/17/2014 04:02 AM, Chris Zhong wrote:
-> > RK808 PMIC is a MFD with RTC as one of the device. Adding RTC driver
-> > for supporting RTC device present inside RK808 PMIC.
-> > 
-> > Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> > ---
-> > 
-> >  drivers/rtc/Kconfig     |   11 +
-> >  drivers/rtc/Makefile    |    1 +
-> >  drivers/rtc/rtc-rk808.c |  564
-> >  +++++++++++++++++++++++++++++++++++++++++++++++ 3 files changed, 576
-> >  insertions(+)
-> >  create mode 100644 drivers/rtc/rtc-rk808.c
-> > 
-> > diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> > index a168e96..48f61b2 100644
-> > --- a/drivers/rtc/Kconfig
-> > +++ b/drivers/rtc/Kconfig
-> > @@ -288,6 +288,17 @@ config RTC_DRV_MAX77686
-> > 
-> >  	  This driver can also be built as a module. If so, the module
-> >  	  will be called rtc-max77686.
-> > 
-> > +config RTC_DRV_RK808
-> > +	tristate "Rockchip RK808 RTC"
-> > +	depends on MFD_RK808
-> > +	help
-> > +	  If you say yes here you will get support for the
-> > +	  RTC of Rk808 PMIC.
-> > +
-> > +	  This driver can also be built as a module. If so, the module
-> > +	  will be called rtc-rk808.
-> > +
-> > +
-> > 
-> >  config RTC_DRV_RS5C372
-> >  
-> >  	tristate "Ricoh R2025S/D, RS5C372A/B, RV5C386, RV5C387A"
-> >  	help
-> > 
-> > diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> > index 56f061c..91fe4647 100644
-> > --- a/drivers/rtc/Makefile
-> > +++ b/drivers/rtc/Makefile
-> > @@ -109,6 +109,7 @@ obj-$(CONFIG_RTC_DRV_PUV3)	+= rtc-puv3.o
-> > 
-> >  obj-$(CONFIG_RTC_DRV_PXA)	+= rtc-pxa.o
-> >  obj-$(CONFIG_RTC_DRV_R9701)	+= rtc-r9701.o
-> >  obj-$(CONFIG_RTC_DRV_RC5T583)	+= rtc-rc5t583.o
-> > 
-> > +obj-$(CONFIG_RTC_DRV_RK808)	+= rtc-rk808.o
-> > 
-> >  obj-$(CONFIG_RTC_DRV_RP5C01)	+= rtc-rp5c01.o
-> >  obj-$(CONFIG_RTC_DRV_RS5C313)	+= rtc-rs5c313.o
-> >  obj-$(CONFIG_RTC_DRV_RS5C348)	+= rtc-rs5c348.o
-> > 
-> > diff --git a/drivers/rtc/rtc-rk808.c b/drivers/rtc/rtc-rk808.c
-> > new file mode 100644
-> > index 0000000..0abb919
-> > --- /dev/null
-> > +++ b/drivers/rtc/rtc-rk808.c
-> > @@ -0,0 +1,564 @@
-> > +/*
-> > + * RTC driver for Rockchip RK808
-> > + *
-> > + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> > + *
-> > + * Author: Chris Zhong <zyw@rock-chips.com>
-> > + * Author: Zhang Qing <zhangqing@rock-chips.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > it
-> > + * under the terms and conditions of the GNU General Public License,
-> > + * version 2, as published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope it will be useful, but WITHOUT
-> > + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> > + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-> > for + * more details.
-> > + *
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/time.h>
-> > +#include <linux/rtc.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/bcd.h>
-> > +#include <linux/interrupt.h>
-> > +#include <linux/ioctl.h>
-> > +#include <linux/completion.h>
-> > +#include <linux/mfd/rk808.h>
-> > +#include <linux/delay.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/miscdevice.h>
-> > +#include <linux/i2c.h>
-> > +#include <linux/irqdomain.h>
-> > +#include <linux/clk-provider.h>
-> > +
-> > +/* RTC_CTRL_REG bitfields */
-> > +#define BIT_RTC_CTRL_REG_STOP_RTC_M		0x01
-> > +#define BIT_RTC_CTRL_REG_ROUND_30S_M		0x02
-> > +#define BIT_RTC_CTRL_REG_AUTO_COMP_M		0x04
-> > +#define BIT_RTC_CTRL_REG_MODE_12_24_M		0x08
-> > +#define BIT_RTC_CTRL_REG_TEST_MODE_M		0x10
-> > +#define BIT_RTC_CTRL_REG_SET_32_COUNTER_M	0x20
-> > +#define BIT_RTC_CTRL_REG_GET_TIME_M		0x40
-> > +#define BIT_RTC_CTRL_REG_RTC_V_OPT_M		0x80
-> > +
-> > +/* RTC_STATUS_REG bitfields */
-> > +#define BIT_RTC_STATUS_REG_RUN_M		0x02
-> > +#define BIT_RTC_STATUS_REG_1S_EVENT_M		0x04
-> > +#define BIT_RTC_STATUS_REG_1M_EVENT_M		0x08
-> > +#define BIT_RTC_STATUS_REG_1H_EVENT_M		0x10
-> > +#define BIT_RTC_STATUS_REG_1D_EVENT_M		0x20
-> > +#define BIT_RTC_STATUS_REG_ALARM_M		0x40
-> > +#define BIT_RTC_STATUS_REG_POWER_UP_M		0x80
-> > +
-> > +/* RTC_INTERRUPTS_REG bitfields */
-> > +#define BIT_RTC_INTERRUPTS_REG_EVERY_M		0x03
-> > +#define BIT_RTC_INTERRUPTS_REG_IT_TIMER_M	0x04
-> > +#define BIT_RTC_INTERRUPTS_REG_IT_ALARM_M	0x08
-> > +
-> > +/* DEVCTRL bitfields */
-> > +#define BIT_RTC_PWDN				0x40
-> > +
-> > +/* REG_SECONDS_REG through REG_YEARS_REG is how many registers? */
-> > +#define ALL_TIME_REGS				7
-> > +#define ALL_ALM_REGS				6
-> > +
-> > +#define RTC_SET_TIME_RETRIES	5
-> > +#define RTC_GET_TIME_RETRIES	5
-> > +
-> > +struct rk808_rtc {
-> > +	struct rk808 *rk808;
-> > +	struct rtc_device *rtc;
-> > +	unsigned int alarm_enabled:1;
-> > +#ifdef CONFIG_COMMON_CLK
-> > +	struct clk_onecell_data clk_data;
-> > +	struct clk_hw		clkout1_hw;
-> > +	struct clk_hw		clkout2_hw;
-> > +#endif
+> I have more than once myself been the victim of an accidentally-
+> enabled kernel config option being mistaken for a true
+> performance problem.
 > 
-> As I mentioned on a previous review I really think these clocks should be
-> managed on a separate clock driver. It's not uncommon for PMIC chips to
-> have a bunch of regulators, a RTC and some clock ouputs and usually each
-> of these components have their own driver.
+> I'm sure I've also taken profiles or performance measurements
+> and assumed they were real-world when really I was measuing the
+> performance with an option that nobody turns on in production.
 > 
-> You are already adding a mult-function device driver for this PMIC so is
-> just a matter of adding another mfd cell for the clock driver.
+> A warning like this late in boot will help remind folks when
+> these kinds of things are enabled.
 > 
-> I know that drivers/rtc/rtc-hym8563.c does the same thing and manage both
-> a RTC and a clock output but in this case it appears that chip is a plain
-> RTC chip with a clock. So I guess in that case it was not worth the
-> complexity of adding three drivers (mfd, rtc and clock) for just a simple
-> RTC? Arguably even that chip should be seen as a multi-function device
-> though but I'll let Mike to judge that. What I really think is that there
-> is a reason why we have both drivers/rtc and drivers/clk so we should try
-> to keep the needed support in the right place to avoid adding unnecessary
-> cross subsystem maintenance burden.
+> As for the patch...
+> 
+> I originally wanted this for CONFIG_DEBUG_VM, but I think it also
+> applies to things like lockdep and slab debugging.  See the patch
+> for the list of offending config options.  I'm open to adding
+> more, but this seemed like a good list to start.
+> 
+> This could be done with Kconfig and an #ifdef to save us 8 bytes
+> of text and the entry in the late_initcall() section.  Doing it
+> this way lets us keep the list of these things in one spot, and
+> also gives us a convenient way to dump out the name of the
+> offending option.
+> 
+> The dump_stack() is really just to be loud.
+> 
+> For anybody that *really* cares, I put the whole thing under
+> #ifdef CONFIG_DEBUG_KERNEL.
+> 
+> The messages look like this:
+> 
+> [    2.534574] CONFIG_LOCKDEP enabled
+> [    2.536392] Do not use this kernel for performance measurement.
+> [    2.547189] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-10473-gc8d6637-dirty #800
+> [    2.558075] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+> [    2.564483]  0000000080000000 ffff88009c70be78 ffffffff817ce318 0000000000000000
+> [    2.582505]  ffffffff81dca5b6 ffff88009c70be88 ffffffff81dca5e2 ffff88009c70bef8
+> [    2.588589]  ffffffff81000377 0000000000000000 0007000700000142 ffffffff81b78968
+> [    2.592638] Call Trace:
+> [    2.593762]  [<ffffffff817ce318>] dump_stack+0x4e/0x68
+> [    2.597742]  [<ffffffff81dca5b6>] ? oops_setup+0x2e/0x2e
+> [    2.601247]  [<ffffffff81dca5e2>] performance_taint+0x2c/0x3c
+> [    2.603498]  [<ffffffff81000377>] do_one_initcall+0xe7/0x290
+> [    2.606556]  [<ffffffff81db3215>] kernel_init_freeable+0x106/0x19a
+> [    2.609718]  [<ffffffff81db29e8>] ? do_early_param+0x86/0x86
+> [    2.613772]  [<ffffffff817bcfc0>] ? rest_init+0x150/0x150
+> [    2.617333]  [<ffffffff817bcfce>] kernel_init+0xe/0xf0
+> [    2.620840]  [<ffffffff817dbc7c>] ret_from_fork+0x7c/0xb0
+> [    2.624718]  [<ffffffff817bcfc0>] ? rest_init+0x150/0x150
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: ak@linux.intel.com
+> Cc: tim.c.chen@linux.intel.com
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-mm@kvack.org
+> ---
+> 
+>  b/include/linux/kernel.h |    1 +
+>  b/kernel/panic.c         |   40 ++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 41 insertions(+)
+> 
+> diff -puN include/linux/kernel.h~taint-performance include/linux/kernel.h
+> --- a/include/linux/kernel.h~taint-performance	2014-08-19 11:38:07.424005355 -0700
+> +++ b/include/linux/kernel.h	2014-08-19 11:38:20.960615904 -0700
+> @@ -471,6 +471,7 @@ extern enum system_states {
+>  #define TAINT_OOT_MODULE		12
+>  #define TAINT_UNSIGNED_MODULE		13
+>  #define TAINT_SOFTLOCKUP		14
+> +#define TAINT_PERFORMANCE		15
+>  
+>  extern const char hex_asc[];
+>  #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+> diff -puN kernel/panic.c~taint-performance kernel/panic.c
+> --- a/kernel/panic.c~taint-performance	2014-08-19 11:38:28.928975233 -0700
+> +++ b/kernel/panic.c	2014-08-19 14:14:23.444983711 -0700
+> @@ -225,6 +225,7 @@ static const struct tnt tnts[] = {
+>  	{ TAINT_OOT_MODULE,		'O', ' ' },
+>  	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+>  	{ TAINT_SOFTLOCKUP,		'L', ' ' },
+> +	{ TAINT_PERFORMANCE,		'Q', ' ' },
+>  };
+>  
+>  /**
+> @@ -501,3 +502,42 @@ static int __init oops_setup(char *s)
+>  	return 0;
+>  }
+>  early_param("oops", oops_setup);
+> +
+> +#ifdef CONFIG_DEBUG_KERNEL
+> +#define TAINT_PERF_IF(x) do {						\
+> +		if (IS_ENABLED(CONFIG_##x)) {				\
+> +			do_taint = 1;					\
+> +			pr_warn("CONFIG_%s enabled\n",	__stringify(x));\
+> +		}							\
+> +	} while (0)
+> +
+> +static int __init performance_taint(void)
+> +{
+> +	int do_taint = 0;
+> +
+> +	/*
+> +	 * This should list any kernel options that can substantially
+> +	 * affect performance.  This is intended to give a big, fat
+> +	 * warning during bootup so that folks have a fighting chance
+> +	 * of noticing these things.
+> +	 */
+> +	TAINT_PERF_IF(LOCKDEP);
+> +	TAINT_PERF_IF(LOCK_STAT);
+> +	TAINT_PERF_IF(DEBUG_VM);
+> +	TAINT_PERF_IF(DEBUG_VM_VMACACHE);
+> +	TAINT_PERF_IF(DEBUG_VM_RB);
+> +	TAINT_PERF_IF(DEBUG_SLAB);
+> +	TAINT_PERF_IF(DEBUG_OBJECTS_FREE);
+> +	TAINT_PERF_IF(DEBUG_KMEMLEAK);
+> +	TAINT_PERF_IF(SCHEDSTATS);
 
-Mike said in the past, that he doesn't require everything that provides a 
-clock to be sitting in drivers/clk. This (and the minimal size of the clkout 
-of hy8563) let me to decide to put the clkout into the rtc.
+Is SCHEDSTATS really harmful? It's enabled in some distro kernels.
+At least in Arch:
 
-For the rk808, I guess it should either be a separate mfd-cell or part of the 
-core mfd driver - but not the rtc cell.
+https://projects.archlinux.org/svntogit/packages.git/tree/trunk/config.x86_64?h=packages/linux
 
-
-Heiko
-
+-- 
+ Kirill A. Shutemov
