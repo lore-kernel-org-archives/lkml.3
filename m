@@ -1,97 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaHSIbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:31:55 -0400
-Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:7196
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750721AbaHSIbv convert rfc822-to-8bit (ORCPT
+	id S1751928AbaHSIeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:34:08 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52081 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaHSIeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:31:51 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "shengjiu.wang@freescale.com" <shengjiu.wang@freescale.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
-        "nicoleotsuka@gmail.com" <nicoleotsuka@gmail.com>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "xobs@kosagi.com" <xobs@kosagi.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "timur@tabi.org" <timur@tabi.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
- of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-Thread-Topic: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove
- dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-Thread-Index: AQHPur/l6X7Prx80DU+vzEIed2D12pvWlCwAgAD4M4CAAAeFgIAAA6uAgAAAW8A=
-Date: Tue, 19 Aug 2014 08:31:47 +0000
-Message-ID: <fb8086a68ed74e0794d34f66c2396b30@BN1PR0301MB0609.namprd03.prod.outlook.com>
-References: <cover.1408350626.git.shengjiu.wang@freescale.com>
- <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>
- <53F22F5E.2090601@metafoo.de> <20140819074103.GA5806@audiosh1>
- <d7b06608abcc4f098789f63cb9f36eef@BN1PR0301MB0609.namprd03.prod.outlook.com>
- <20140819082108.GB5806@audiosh1>
-In-Reply-To: <20140819082108.GB5806@audiosh1>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 0308EE423E
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019006)(6009001)(51704005)(189002)(199003)(164054003)(46102001)(76482001)(33646002)(81342001)(21056001)(107046002)(31966008)(74316001)(80022001)(76576001)(66066001)(85852003)(83072002)(87936001)(110136001)(74662001)(86362001)(20776003)(54356999)(85306004)(108616004)(95666004)(93886004)(79102001)(77982001)(106116001)(4396001)(77096002)(99286002)(50986999)(2656002)(99396002)(83322001)(92566001)(81542001)(64706001)(74502001)(106356001)(76176999)(101416001)(105586002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB332;H:BN1PR0301MB0609.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Aug 2014 04:34:03 -0400
+Message-ID: <53F30B99.4000704@linaro.org>
+Date: Tue, 19 Aug 2014 16:32:25 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v2 08/18] ARM64 / ACPI: Get the enable method for SMP
+ initialization in ACPI way
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-9-git-send-email-hanjun.guo@linaro.org> <20140818142733.GT20043@localhost>
+In-Reply-To: <20140818142733.GT20043@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Lars-Peter Clausen & Arnd
-> > >
-> > > The purpose of Arnd's patch is same with me, which is to resolve the build
-> > > error when SND_SOC_IMX_PCM_DMA=m & SND_SOC_FSL_SSI/SAI/ESAI/SPDIF=y, the
-> > > error is "undefined reference to `imx_pcm_dma_init'".
-> > > But Arnd's patch didn't involve this situation that SND_IMX_SOC=n &
-> > > SND_SOC_IMX_PCM_DMA=m.
-> > >
-> > > Currently I think out a solution for this issue is to change
-> > >
-> > > select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
-> > >
-> > > to
-> > >
-> > > depends on SND_SOC_IMX_PCM_DMA != m
-> > >
-> > > How do you think about this?
-> > >
-> >
-> > What will happen if to build both SAI/ESAI and IMX_PCM_DMA as modules at the
-> same
-> > time ?
-> >
-> > Thanks,
-> >
-> > BRs
-> > Xiubo
+On 2014-8-18 22:27, Catalin Marinas wrote:
+> On Mon, Aug 04, 2014 at 04:28:15PM +0100, Hanjun Guo wrote:
+>> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+>> index e877967..022f4ad 100644
+>> --- a/arch/arm64/include/asm/acpi.h
+>> +++ b/arch/arm64/include/asm/acpi.h
+>> @@ -14,6 +14,27 @@
+>>  
+>>  /* Basic configuration for ACPI */
+>>  #ifdef	CONFIG_ACPI
+>> +/*
+>> + * ACPI 5.1 only has two explicit methods to
+>> + * boot up SMP, PSCI and Parking protocol,
+>> + * but the Parking protocol is only defined
+>> + * for ARMv7 now, so make PSCI as the only
+>> + * way for the SMP boot protocol before some
+>> + * updates for the ACPI spec or the Parking
+>> + * protocol spec.
+>> + *
+>> + * This enum is intend to make the boot method
+>> + * scalable when above updates are happended,
+>> + * which NOT means to support all of them.
+>> + */
+>> +enum acpi_smp_boot_protocol {
+>> +	ACPI_SMP_BOOT_PSCI,
+>> +	ACPI_SMP_BOOT_PARKING_PROTOCOL,
+>> +	ACPI_SMP_BOOT_PROTOCOL_MAX
+>> +};
+>> +
+>> +enum acpi_smp_boot_protocol smp_boot_protocol(void);
 > 
-> I didn't find error/warning when SAI/ESAI and IMX_PCM_DMA are as modules. The
-> build is successful.
+> Since this is not a static function and ACPI-specific, could you prefix
+> it with something like acpi (or arm64_acpi_ unless it gets too long)?
 > 
+>> diff --git a/arch/arm64/kernel/cpu_ops.c b/arch/arm64/kernel/cpu_ops.c
+>> index d62d12f..05bc314 100644
+>> --- a/arch/arm64/kernel/cpu_ops.c
+>> +++ b/arch/arm64/kernel/cpu_ops.c
+>> @@ -16,11 +16,13 @@
+>>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>>   */
+>>  
+>> -#include <asm/cpu_ops.h>
+>> -#include <asm/smp_plat.h>
+>>  #include <linux/errno.h>
+>>  #include <linux/of.h>
+>>  #include <linux/string.h>
+>> +#include <linux/acpi.h>
+>> +
+>> +#include <asm/cpu_ops.h>
+>> +#include <asm/smp_plat.h>
+>>  
+>>  extern const struct cpu_operations smp_spin_table_ops;
+>>  extern const struct cpu_operations cpu_psci_ops;
+>> @@ -49,12 +51,44 @@ static const struct cpu_operations * __init cpu_get_ops(const char *name)
+>>  	return NULL;
+>>  }
+>>  
+>> +#ifdef CONFIG_ACPI
+>> +/*
+>> + * Get a cpu's boot method in the ACPI way.
+>> + */
+>> +static char * __init acpi_get_cpu_boot_method(void)
+>> +{
+>> +	/*
+>> +	 * For ACPI 5.1, only two kind of methods are provided,
+>> +	 * Parking protocol and PSCI, but Parking protocol is
+>> +	 * specified for ARMv7 only, so make PSCI as the only method
+>> +	 * for SMP initialization before the ACPI spec or Parking
+>> +	 * protocol spec is updated.
+>> +	 */
+>> +	switch (smp_boot_protocol()) {
+>> +	case ACPI_SMP_BOOT_PSCI:
+>> +		return "psci";
+>> +	case ACPI_SMP_BOOT_PARKING_PROTOCOL:
+>> +	default:
+>> +		return NULL;
+>> +	}
+>> +}
+> 
+> Actually, do we even need to define smp_boot_protocol()? Is it used
+> anywhere else apart from this patch (I still haven't gone through all
+> patches)?
 
-Yes, but if IMX_PCM_DMA == m, the SAI/ESAI will be invisible in menuconfig....
-Does it matter here ?
+It is just used in this patch. I think we can make the ACPI boot protocol
+scalable in this way, if we support another boot protocol in ACPI in the
+future, we can easily update the function to support it, does it make sense?
 
-BRs
-Xiubo
+> 
+>> +#else
+>> +static inline char * __init acpi_get_cpu_boot_method(void) { return NULL; }
+>> +#endif
+>> +
+>>  /*
+>> - * Read a cpu's enable method from the device tree and record it in cpu_ops.
+>> + * Read a cpu's enable method and record it in cpu_ops.
+>>   */
+>>  int __init cpu_read_ops(struct device_node *dn, int cpu)
+>>  {
+>> -	const char *enable_method = of_get_property(dn, "enable-method", NULL);
+>> +	const char *enable_method;
+>> +
+>> +	if (!acpi_disabled) {
+>> +		enable_method = acpi_get_cpu_boot_method();
+>> +		goto get_ops;
+> 
+> Are we always guaranteed an enable_method here? You should have an
+> if/else of ACPI vs DT and keep the if (!enable_method) check for both
+> cases.
 
+ok, I will fix it.
 
-> >
-> >
-> > > best regards
-> > > Wang shengjiu
+Thanks
+Hanjun
+
