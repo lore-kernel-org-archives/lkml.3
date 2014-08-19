@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741AbaHSIgl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:36:41 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:44798 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaHSIgi (ORCPT
+	id S1752094AbaHSIhI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:37:08 -0400
+Received: from smtp-out-134.synserver.de ([212.40.185.134]:1036 "EHLO
+	smtp-out-134.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaHSIgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:36:38 -0400
-In-Reply-To: <20140817125809.GA22213@redhat.com>
-References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com> <20140810194559.GA4344@redhat.com> <20140811.124621.576073630604147753.davem@davemloft.net> <20140812091850.GD6440@redhat.com> <OF93E480CE.EFA0854D-ONC2257D32.003BE092-C2257D32.003C1F49@il.ibm.com> <20140813121550.GA21026@redhat.com> <OFFB3DD9F0.3A92A6A0-ONC2257D37.0043D722-C2257D37.004522A0@il.ibm.com> <20140817125809.GA22213@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: abel.gordon@gmail.com, Alex Glikson <GLIKSON@il.ibm.com>,
-        David Miller <davem@davemloft.net>,
-        Eran Raichstein <ERANRA@il.ibm.com>, Joel Nider <JOELN@il.ibm.com>,
-        kvm@vger.kernel.org, kvm-owner@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
+	Tue, 19 Aug 2014 04:36:40 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 23934
+Message-ID: <53F30C91.7080700@metafoo.de>
+Date: Tue, 19 Aug 2014 10:36:33 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-Subject: Re: [PATCH] vhost: Add polling mode
-X-KeepSent: B79DEF3C:1ADC0F14-C2257D39:002F0F0A;
- type=4; name=$KeepSent
-X-Mailer: IBM Notes Release 9.0.1SHF211 December 19, 2013
-From: Razya Ladelsky <RAZYA@il.ibm.com>
-Message-ID: <OFB79DEF3C.1ADC0F14-ONC2257D39.002F0F0A-C2257D39.002F3CBC@il.ibm.com>
-Date: Tue, 19 Aug 2014 11:36:31 +0300
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5IF1HF3|November 07, 2013) at
- 19/08/2014 11:36:31,
-	Serialize complete at 19/08/2014 11:36:31
-Content-Type: text/plain; charset="US-ASCII"
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081908-0542-0000-0000-00000056D856
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+CC: lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        nicoleotsuka@gmail.com, Li.Xiubo@freescale.com, shc_work@mail.ru,
+        fabio.estevam@freescale.com, xobs@kosagi.com, arnd@arndb.de,
+        sfr@canb.auug.org.au, timur@tabi.org, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
+ of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
+References: <cover.1408350626.git.shengjiu.wang@freescale.com> <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com> <53F22F5E.2090601@metafoo.de> <20140819074103.GA5806@audiosh1>
+In-Reply-To: <20140819074103.GA5806@audiosh1>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That was just one example. There many other possibilities.  Either
-> actually make the systems load all host CPUs equally, or divide
-> throughput by host CPU.
-> 
+On 08/19/2014 09:41 AM, Shengjiu Wang wrote:
+> On Mon, Aug 18, 2014 at 06:52:46PM +0200, Lars-Peter Clausen wrote:
+>> On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
+>>> Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the following
+>>> error:
+>>>
+>>>     sound/built-in.o: In function `fsl_sai_probe':
+>>>>> fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
+>>>     sound/built-in.o: In function `fsl_esai_probe':
+>>>>> fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
+>>>
+>>> Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init' which is
+>>> defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it depends
+>>> on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
+>>> selected.
+>>> So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
+>>>
+>>> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+>>> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+>>
+>> Those if conditions where just added[1] by Arnd to avoid other build
+>> failures. So just removing them again makes little sense.
+>>
+>> As far as I can see imx_pcm_dma_init() should be stubbed out when
+>> SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
+>>
+>> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40260f79dc0436604452bccd449bffd25ebafb
+>>
+> Lars-Peter Clausen & Arnd
+>
+> The purpose of Arnd's patch is same with me, which is to resolve the build
+> error when SND_SOC_IMX_PCM_DMA=m & SND_SOC_FSL_SSI/SAI/ESAI/SPDIF=y, the
+> error is "undefined reference to `imx_pcm_dma_init'".
+> But Arnd's patch didn't involve this situation that SND_IMX_SOC=n &
+> SND_SOC_IMX_PCM_DMA=m.
 
-The polling patch adds this capability to vhost, reducing costly exit 
-overhead when the vm is loaded.
+Having SND_SOC_IMX_PCM_DMA selected if SND_IMX_SOC is not selected makes no 
+sense. I think the proper fix is to find out why it is selected and make 
+sure that it is not selected when SND_IMX_SOC is not selected.
 
-In order to load the vm I ran netperf  with msg size of 256:
+>
+> Currently I think out a solution for this issue is to change
+>
+> select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
+>
+> to
+>
+> depends on SND_SOC_IMX_PCM_DMA != m
+>
+> How do you think about this?
 
-Without polling:  2480 Mbits/sec,  utilization: vm - 100%   vhost - 64% 
-With Polling: 4160 Mbits/sec,  utilization: vm - 100%   vhost - 100% 
-
-Therefore, throughput/cpu without polling is 15.1, and 20.8 with polling.
-
-My intention was to load vhost as close as possible to 100% utilization 
-without polling, in order to compare it to the polling utilization case 
-(where vhost is always 100%). 
-The best use case, of course, would be when the shared vhost thread work 
-(TBD) is integrated and then vhost will actually be using its polling 
-cycles to handle requests of multiple devices (even from multiple vms).
-
-Thanks,
-Razya
-
+No, that has the dependencies in reverse.
 
