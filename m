@@ -1,143 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaHSIwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:52:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:23686 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783AbaHSIv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:51:58 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: akinobu.mita@gmail.com, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH] fault-inject: Improve debug flexibility
-Date: Tue, 19 Aug 2014 12:51:42 +0400
-Message-Id: <1408438302-24123-1-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1752087AbaHSIxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:53:21 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:63758 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbaHSIxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 04:53:17 -0400
+Message-ID: <53F3106E.1050304@linaro.org>
+Date: Tue, 19 Aug 2014 10:53:02 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, patches@linaro.org,
+        will.deacon@arm.com, a.motakis@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, paulus@samba.org
+Subject: Re: [RFC PATCH] ARM: KVM: add irqfd support
+References: <1407154102-26459-1-git-send-email-eric.auger@linaro.org> <20140813145523.GR10550@cbox>
+In-Reply-To: <20140813145523.GR10550@cbox>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current debug levels are not optimal. Especially if one want to
-provoke big numbers of faults(broken device simulator) then any verbose
-level will produce giant numbers of identical logging messages. For that
-reason it is reasonable to have DUMP_ONCE flag, which will be cleared
-after first failure. Also the only way to understand which fail_attr
-was triggered is by means of investigating stack trace, which is also
-sub-optimal. Let's just dump name of this fail_attr.
+On 08/13/2014 04:55 PM, Christoffer Dall wrote:
+> On Mon, Aug 04, 2014 at 02:08:22PM +0200, Eric Auger wrote:
+>> This patch enables irqfd on ARM.
+>>
+>> irqfd framework enables to inject a virtual IRQ into a guest upon an
+>> eventfd trigger. User-side uses KVM_IRQFD VM ioctl to provide KVM with
+>> a kvm_irqfd struct that associates a VM, an eventfd, an IRQ number
+>> (aka. the gsi). When an actor signals the eventfd (typically a VFIO
+>> platform driver), the kvm irqfd subsystem injects the provided virtual
+>> IRQ into the guest.
+>>
+>> The gsi must correspond to a shared peripheral interrupt (SPI), ie the
+>> GIC interrupt ID is gsi+32.
+> 
+> Why can't we support PPIs?
+Hi Christoffer,
 
+Well, in case we want to support PPI at irqfd level, we would need to
+change the semantic of the GSI value and use the same as KVM_IRQ_LINE,
+to specify the target vcpu. This is obviously feasible but this also
+induces changes in currently generic user parts, vfio, vhost. is PPI
+injection though irqfd a valid use case?
+> 
+>>
+>> CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQFD are turned on.
+> 
+> This patch enables CONFIG_....
+> 
+OK
+>>
+>> No IRQ routing table is used thanks to Paul Mackerras' patch serie:
+>> "IRQFD without IRQ routing, enabled for XICS"
+>> (https://www.mail-archive.com/kvm@vger.kernel.org/msg104478.html)
+>>
+>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+>>
+>> ---
+>>
+>> This patch would deprecate the previous patch featuring GSI routing
+>> (https://patches.linaro.org/32261/)
+>>
+>> irqchip.c and irq_comm.c are not used at all.
+>>
+>> This RFC applies on top of Christoffer Dall's serie
+>> arm/arm64: KVM: Various VGIC cleanups and improvements
+>> https://lists.cs.columbia.edu/pipermail/kvmarm/2014-June/009979.html
+>>
+>> All pieces can be found on git://git.linaro.org/people/eric.auger/linux.git
+>> branch irqfd_integ_v4
+>>
+>> This work was tested with Calxeda Midway xgmac main interrupt with
+>> qemu-system-arm and QEMU VFIO platform device.
+>> ---
+>>  Documentation/virtual/kvm/api.txt |  5 +++-
+>>  arch/arm/include/uapi/asm/kvm.h   |  3 +++
+>>  arch/arm/kvm/Kconfig              |  3 ++-
+>>  arch/arm/kvm/Makefile             |  2 +-
+>>  arch/arm/kvm/irq.h                | 25 ++++++++++++++++++
+>>  virt/kvm/arm/vgic.c               | 54 ++++++++++++++++++++++++++++++++++++---
+>>  6 files changed, 85 insertions(+), 7 deletions(-)
+>>  create mode 100644 arch/arm/kvm/irq.h
+>>
+>> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
+>> index 0fe3649..04310d9 100644
+>> --- a/Documentation/virtual/kvm/api.txt
+>> +++ b/Documentation/virtual/kvm/api.txt
+>> @@ -2132,7 +2132,7 @@ into the hash PTE second double word).
+>>  4.75 KVM_IRQFD
+>>  
+>>  Capability: KVM_CAP_IRQFD
+>> -Architectures: x86 s390
+>> +Architectures: x86 s390 arm
+>>  Type: vm ioctl
+>>  Parameters: struct kvm_irqfd (in)
+>>  Returns: 0 on success, -1 on error
+>> @@ -2158,6 +2158,9 @@ Note that closing the resamplefd is not sufficient to disable the
+>>  irqfd.  The KVM_IRQFD_FLAG_RESAMPLE is only necessary on assignment
+>>  and need not be specified with KVM_IRQFD_FLAG_DEASSIGN.
+>>  
+>> +On ARM/arm64 the injected must be a shared peripheral interrupt (SPI).
+>> +This means the programmed GIC interrupt ID is gsi+32.
+>> +
+>>  4.76 KVM_PPC_ALLOCATE_HTAB
+>>  
+>>  Capability: KVM_CAP_PPC_ALLOC_HTAB
+>> diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
+>> index e6ebdd3..3034c66 100644
+>> --- a/arch/arm/include/uapi/asm/kvm.h
+>> +++ b/arch/arm/include/uapi/asm/kvm.h
+>> @@ -194,6 +194,9 @@ struct kvm_arch_memory_slot {
+>>  /* Highest supported SPI, from VGIC_NR_IRQS */
+>>  #define KVM_ARM_IRQ_GIC_MAX		127
+>>  
+>> +/* One single KVM irqchip, ie. the VGIC */
+>> +#define KVM_NR_IRQCHIPS          1
+>> +
+>>  /* PSCI interface */
+>>  #define KVM_PSCI_FN_BASE		0x95c1ba5e
+>>  #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
+>> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
+>> index 4be5bb1..7800261 100644
+>> --- a/arch/arm/kvm/Kconfig
+>> +++ b/arch/arm/kvm/Kconfig
+>> @@ -24,6 +24,7 @@ config KVM
+>>  	select KVM_MMIO
+>>  	select KVM_ARM_HOST
+>>  	depends on ARM_VIRT_EXT && ARM_LPAE && !CPU_BIG_ENDIAN
+>> +	select HAVE_KVM_EVENTFD
+>>  	---help---
+>>  	  Support hosting virtualized guest machines. You will also
+>>  	  need to select one or more of the processor modules below.
+>> @@ -55,7 +56,7 @@ config KVM_ARM_MAX_VCPUS
+>>  config KVM_ARM_VGIC
+>>  	bool "KVM support for Virtual GIC"
+>>  	depends on KVM_ARM_HOST && OF
+>> -	select HAVE_KVM_IRQCHIP
+>> +	select HAVE_KVM_IRQFD
+>>  	default y
+>>  	---help---
+>>  	  Adds support for a hardware assisted, in-kernel GIC emulation.
+>> diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
+>> index 789bca9..2fa2f82 100644
+>> --- a/arch/arm/kvm/Makefile
+>> +++ b/arch/arm/kvm/Makefile
+>> @@ -15,7 +15,7 @@ AFLAGS_init.o := -Wa,-march=armv7-a$(plus_virt)
+>>  AFLAGS_interrupts.o := -Wa,-march=armv7-a$(plus_virt)
+>>  
+>>  KVM := ../../../virt/kvm
+>> -kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
+>> +kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
+>>  
+>>  obj-y += kvm-arm.o init.o interrupts.o
+>>  obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
+>> diff --git a/arch/arm/kvm/irq.h b/arch/arm/kvm/irq.h
+>> new file mode 100644
+>> index 0000000..1275d91
+>> --- /dev/null
+>> +++ b/arch/arm/kvm/irq.h
+>> @@ -0,0 +1,25 @@
+>> +/*
+>> + * Copyright (C) 2014 Linaro Ltd.
+>> + * Authors: Eric Auger <eric.auger@linaro.org>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License, version 2, as
+>> + * published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + */
+>> +
+>> +#ifndef __IRQ_H
+>> +#define __IRQ_H
+>> +
+>> +#include <linux/kvm_host.h>
+>> +/*
+>> + * Placeholder for irqchip and irq/msi routing declarations
+>> + * included in irqchip.c
+>> + */
+> 
+>> +
+>> +#endif
+> 
+> why is this needed?
 
-Change-log:
-- Dump fault_attr configuration on minimal verbose level.
-- Add name to fault_attr
-- Add DUMP_ONE flag(1024)
-
-EXAMPLE:
-    echo "Start: forced USB unplug simulator"
-    mount $SCRATCH_BDEV $SCRATCH_MNT
-    cp -r $FROM $SCRATCH_BDEV &
-    echo 100 > /sys/kernel/fail_make_request/probability
-    echo 9999999 > /sys/kernel/fail_make_request/times
-    echo 1024 >  /sys/kernel/debug/fail_make_request/verbose
-    echo "Force SCRATCH_DEV device failure"
-    echo 1 > /sys/block/$SCRATCH_BDEV/make-it-fail
-    umount $SCRATCH_MNT
-    echo "Makes device operational again"
-    echo 0 > /sys/kernel/fail_make_request/probability
-    echo 0 > /sys/kernel/fail_make_request/times
-    fsck -f $SCRATCH_BDEV
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- include/linux/fault-inject.h |    7 +++++--
- lib/fault-inject.c           |   28 +++++++++++++++++++++++-----
- 2 files changed, 28 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/fault-inject.h b/include/linux/fault-inject.h
-index c6f996f..af03c8c 100644
---- a/include/linux/fault-inject.h
-+++ b/include/linux/fault-inject.h
-@@ -16,7 +16,7 @@ struct fault_attr {
- 	unsigned long interval;
- 	atomic_t times;
- 	atomic_t space;
--	unsigned long verbose;
-+	atomic_t verbose;
- 	u32 task_filter;
- 	unsigned long stacktrace_depth;
- 	unsigned long require_start;
-@@ -25,14 +25,17 @@ struct fault_attr {
- 	unsigned long reject_end;
- 
- 	unsigned long count;
-+	struct dentry *debugfs_dir;
- };
- 
-+#define FAULT_ATTR_VERBOSE_ONCE 1024
- #define FAULT_ATTR_INITIALIZER {				\
- 		.interval = 1,					\
- 		.times = ATOMIC_INIT(1),			\
- 		.require_end = ULONG_MAX,			\
- 		.stacktrace_depth = 32,				\
--		.verbose = 2,					\
-+		.verbose = ATOMIC_INIT(2),			\
-+		.debugfs_dir = NULL,				\
- 	}
- 
- #define DECLARE_FAULT_ATTR(name) struct fault_attr name = FAULT_ATTR_INITIALIZER
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index d7d501e..e4d82e7 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
-@@ -40,10 +40,28 @@ EXPORT_SYMBOL_GPL(setup_fault_attr);
- 
- static void fail_dump(struct fault_attr *attr)
- {
--	if (attr->verbose > 0)
--		printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure\n");
--	if (attr->verbose > 1)
-+	if (atomic_read(&attr->verbose) > 0) {
-+		if (attr->debugfs_dir)
-+			printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure."
-+			       "name %pd, interval %lu, probability %lu, "
-+			       "space %d, times %d\n", attr->debugfs_dir,
-+			       attr->probability, attr->interval,
-+			       atomic_read(&attr->space),
-+			       atomic_read(&attr->times));
-+		else
-+			printk(KERN_NOTICE "FAULT_INJECTION: forcing a "
-+			       "failure, interval %lu, probability %lu, "
-+			       "space %d, times %d\n", attr->probability,
-+			       attr->interval, atomic_read(&attr->space),
-+			       atomic_read(&attr->times));
-+
-+	}
-+	if (atomic_read(&attr->verbose) > 1) {
- 		dump_stack();
-+		if (atomic_read(&attr->verbose) & FAULT_ATTR_VERBOSE_ONCE)
-+			atomic_clear_mask(FAULT_ATTR_VERBOSE_ONCE,
-+					  &attr->verbose);
-+	}
- }
- 
- #define atomic_dec_not_zero(v)		atomic_add_unless((v), -1, 0)
-@@ -200,7 +218,7 @@ struct dentry *fault_create_debugfs_attr(const char *name,
- 		goto fail;
- 	if (!debugfs_create_atomic_t("space", mode, dir, &attr->space))
- 		goto fail;
--	if (!debugfs_create_ul("verbose", mode, dir, &attr->verbose))
-+	if (!debugfs_create_atomic_t("verbose", mode, dir, &attr->verbose))
- 		goto fail;
- 	if (!debugfs_create_bool("task-filter", mode, dir, &attr->task_filter))
- 		goto fail;
-@@ -221,7 +239,7 @@ struct dentry *fault_create_debugfs_attr(const char *name,
- 		goto fail;
- 
- #endif /* CONFIG_FAULT_INJECTION_STACKTRACE_FILTER */
--
-+	attr->debugfs_dir = dir;
- 	return dir;
- fail:
- 	debugfs_remove_recursive(dir);
--- 
-1.7.1
+irq.h still is included in eventfd.c. However I have the feeling that
+after Paul's modifications, this is not needed anymore. Deserves more
+checks however.
+> 
+>> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+>> index 123030b..907e735 100644
+>> --- a/virt/kvm/arm/vgic.c
+>> +++ b/virt/kvm/arm/vgic.c
+>> @@ -1259,7 +1259,10 @@ epilog:
+>>  static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+>>  {
+>>  	struct vgic_cpu *vgic_cpu = &vcpu->arch.vgic_cpu;
+>> +	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+>>  	bool level_pending = false;
+>> +	struct kvm *kvm = vcpu->kvm;
+>> +	int is_assigned_irq;
+>>  
+>>  	kvm_debug("MISR = %08x\n", vgic_cpu->vgic_misr);
+>>  
+>> @@ -1273,6 +1276,7 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+>>  		for_each_set_bit(lr, (unsigned long *)vgic_cpu->vgic_eisr,
+>>  				 vgic_cpu->nr_lr) {
+>>  			irq = vgic_cpu->vgic_lr[lr] & GICH_LR_VIRTUALID;
+>> +			spin_lock(&dist->lock);
+>>  			BUG_ON(vgic_irq_is_edge(vcpu, irq));
+>>  
+>>  			vgic_irq_clear_queued(vcpu, irq);
+>> @@ -1285,6 +1289,17 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+>>  			 * interrupt.
+>>  			 */
+>>  			vgic_dist_irq_clear_soft_pend(vcpu, irq);
+>> +			spin_unlock(&dist->lock);
+>> +
+>> +			is_assigned_irq = kvm_irq_has_notifier(kvm, 0,
+>> +						irq - VGIC_NR_PRIVATE_IRQS);
+>> +
+>> +			if (is_assigned_irq) {
+>> +				kvm_debug("EOI irqchip routed vIRQ %d\n", irq);
+>> +				kvm_notify_acked_irq(kvm, 0,
+>> +					irq - VGIC_NR_PRIVATE_IRQS);
+>> +			}
+>> +			spin_lock(&dist->lock);
+>>  
+>>  			/* Any additional pending interrupt? */
+>>  			if (vgic_dist_irq_get_level(vcpu, irq)) {
+>> @@ -1305,6 +1320,7 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
+>>  			 */
+> 
+> I think you can move the spin_unlock() up here since you're only mucking
+> with the private vgic_cpu state (that only this vcpu thread can muck
+> with) in the following two lines.  Right
+correct.
+> 
+>>  			set_bit(lr, (unsigned long *)vgic_cpu->vgic_elrsr);
+>>  			vgic_cpu->vgic_lr[lr] &= ~GICH_LR_ACTIVE_BIT;
+>> +			spin_unlock(&dist->lock);
+> 
+> 
+>>  		}
+>>  	}
+>>  
+>> @@ -1344,8 +1360,10 @@ static void __kvm_vgic_sync_hwstate(struct kvm_vcpu *vcpu)
+>>  	/* Check if we still have something up our sleeve... */
+>>  	pending = find_first_zero_bit((unsigned long *)vgic_cpu->vgic_elrsr,
+>>  				      vgic_cpu->nr_lr);
+>> +	spin_lock(&dist->lock);
+>>  	if (level_pending || pending < vgic_cpu->nr_lr)
+>>  		set_bit(vcpu->vcpu_id, &dist->irq_pending_on_cpu);
+>> +	spin_unlock(&dist->lock);
+> 
+> We only ever modify this on the dist with atomic bitops, so I actually
+> don't think we need to grab the distributor lock here.  Marc?
+Waiting for Marc's feedback.
+> 
+>>  }
+>>  
+>>  void kvm_vgic_flush_hwstate(struct kvm_vcpu *vcpu)
+>> @@ -1362,14 +1380,10 @@ void kvm_vgic_flush_hwstate(struct kvm_vcpu *vcpu)
+>>  
+>>  void kvm_vgic_sync_hwstate(struct kvm_vcpu *vcpu)
+>>  {
+>> -	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+>> -
+>>  	if (!irqchip_in_kernel(vcpu->kvm))
+>>  		return;
+>>  
+>> -	spin_lock(&dist->lock);
+>>  	__kvm_vgic_sync_hwstate(vcpu);
+>> -	spin_unlock(&dist->lock);
+>>  }
+>>  
+>>  int kvm_vgic_vcpu_pending_irq(struct kvm_vcpu *vcpu)
+>> @@ -2146,3 +2160,35 @@ struct kvm_device_ops kvm_arm_vgic_v2_ops = {
+>>  	.get_attr = vgic_get_attr,
+>>  	.has_attr = vgic_has_attr,
+>>  };
+>> +
+>> +int kvm_irq_map_gsi(struct kvm *kvm,
+>> +		    struct kvm_kernel_irq_routing_entry *entries, int gsi)
+>> +{
+>> +	return gsi;
+>> +}
+>> +
+>> +int kvm_irq_map_chip_pin(struct kvm *kvm, unsigned irqchip, unsigned pin)
+>> +{
+>> +	return pin;
+>> +}
+>> +
+>> +int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level,
+>> +		bool line_status)
+>> +{
+>> +	int r = -EINVAL;
+>> +	unsigned int spi = irq + VGIC_NR_PRIVATE_IRQS;
+>> +
+>> +	if (spi > KVM_ARM_IRQ_GIC_MAX)
+>> +		return r;
+>> +
+>> +	kvm_debug("Inject irqchip routed vIRQ %d\n", irq);
+>> +	r = kvm_vgic_inject_irq(kvm, 0, spi, level);
+>> +	return r;
+>> +}
+>> +
+>> +/* MSI not implemented yet */
+> 
+> yet?  What is an MSI on ARM?
+Well some MSI support comes with GICv2m and GICv3. My current
+understanding is it makes sense to inject an MSI from an irqfd trigger.
+Don't you share this understanding?
+> 
+>> +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
+>> +		struct kvm *kvm, int irq_source_id, int level, bool line_status)
+>> +{
+>> +	return 0;
+>> +}
+>> -- 
+>> 1.9.1
+>>
+> 
+> Thanks,
+> -Christoffer
+> 
 
