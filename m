@@ -1,65 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaHSPL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:11:29 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:41466 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751867AbaHSPL2 (ORCPT
+	id S1753374AbaHSPMC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:12:02 -0400
+Received: from relay.variantweb.net ([104.131.199.242]:53475 "EHLO
+	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752860AbaHSPMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:11:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/jpyZkgsXAcHiAk2Is0mBgq52LL7AlOQE=
-X-DKIM: OpenDKIM Filter v2.0.1 titan EED7D5C9B66
-Date: Tue, 19 Aug 2014 11:11:22 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Feng Kan <fkan@apm.com>
-Cc: tglx@linutronix.de, marc.zyngier@arm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 RESEND 0/2] irqchip: gic: Add support for GIC v2
- bypass disable
-Message-ID: <20140819151122.GT12769@titan.lakedaemon.net>
-References: <1406757419-18729-1-git-send-email-fkan@apm.com>
+	Tue, 19 Aug 2014 11:12:00 -0400
+Date: Tue, 19 Aug 2014 10:11:57 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
+        ds2horner@gmail.com
+Subject: Re: [PATCH v2 2/4] zsmalloc: change return value unit of
+ zs_get_total_size_bytes
+Message-ID: <20140819151157.GB26403@cerebellum.variantweb.net>
+References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
+ <1408434887-16387-3-git-send-email-minchan@kernel.org>
+ <20140819144628.GA26403@cerebellum.variantweb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1406757419-18729-1-git-send-email-fkan@apm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140819144628.GA26403@cerebellum.variantweb.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Feng,
+On Tue, Aug 19, 2014 at 09:46:28AM -0500, Seth Jennings wrote:
+> On Tue, Aug 19, 2014 at 04:54:45PM +0900, Minchan Kim wrote:
+> > zs_get_total_size_bytes returns a amount of memory zsmalloc
+> > consumed with *byte unit* but zsmalloc operates *page unit*
+> > rather than byte unit so let's change the API so benefit
+> > we could get is that reduce unnecessary overhead
+> > (ie, change page unit with byte unit) in zsmalloc.
+> > 
+> > Now, zswap can rollback to zswap_pool_pages.
+> > Over to zswap guys ;-)
+> 
+> I don't think that's how is it done :-/  Changing the API for a
+> component that has two users, changing one, then saying "hope you guys
+> change your newly broken stuff".
 
-On Wed, Jul 30, 2014 at 02:56:57PM -0700, Feng Kan wrote:
-> This patch series cleans up hex number in the gic driver and then adds
-> the code to preserve GIC v2 bypass disable bits in the GIC driver.
-> 
-> V4 Change: rebase off latest irq tree, merge after gic v3 changes.
-> 
-> V3 Change: remove incorrect Signoff by 
-> 
-> V2 Change:
-> 	seem my send email was not working correctly, resending this with
->         rebase pull.
-> 	- had to pull HaoJian's change out of arm-gic.h to keep consistency.
-> 	- replace GIC defines as noted by Marc
-> 	- remove GIC_CPU_DISABLE since it no longer used.
-> 	- fix gic_cpu_if_down as noted by Marc
-> 
-> 
-> Feng Kan (2):
->   irqchip: gic: replace hex numbers with defines.
->   irqchip: gic: preserve gic V2 bypass bits in cpu ctrl register
-> 
->  drivers/irqchip/irq-gic-common.c | 15 +++++++------
->  drivers/irqchip/irq-gic.c        | 46 ++++++++++++++++++++++++++++------------
->  include/linux/irqchip/arm-gic.h  | 16 ++++++++++++++
->  3 files changed, 58 insertions(+), 19 deletions(-)
+However, I'll bite on this one :)  Just squash this in so that
+zpool/zswap aren't broken at any point.
 
-I've tentatively applied this to irqchip/gic and will merge it into
-irqchip/core within the next week or so.
+Dan, care to make sure I didn't miss something?
 
-thx,
+Thanks,
+Seth
 
-Jason.
+diff --git a/mm/zbud.c b/mm/zbud.c
+index a05790b..27a3701 100644
+--- a/mm/zbud.c
++++ b/mm/zbud.c
+@@ -179,7 +179,7 @@ static void zbud_zpool_unmap(void *pool, unsigned long handle)
+ 
+ static u64 zbud_zpool_total_size(void *pool)
+ {
+-	return zbud_get_pool_size(pool) * PAGE_SIZE;
++	return zbud_get_pool_size(pool);
+ }
+ 
+ static struct zpool_driver zbud_zpool_driver = {
+diff --git a/mm/zpool.c b/mm/zpool.c
+index e40612a..d126ebc 100644
+--- a/mm/zpool.c
++++ b/mm/zpool.c
+@@ -336,9 +336,9 @@ void zpool_unmap_handle(struct zpool *zpool, unsigned long handle)
+  * zpool_get_total_size() - The total size of the pool
+  * @pool	The zpool to check
+  *
+- * This returns the total size in bytes of the pool.
++ * This returns the total size in pages of the pool.
+  *
+- * Returns: Total size of the zpool in bytes.
++ * Returns: Total size of the zpool in pages.
+  */
+ u64 zpool_get_total_size(struct zpool *zpool)
+ {
+diff --git a/mm/zswap.c b/mm/zswap.c
+index ea064c1..124f750 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -45,8 +45,8 @@
+ /*********************************
+ * statistics
+ **********************************/
+-/* Total bytes used by the compressed storage */
+-static u64 zswap_pool_total_size;
++/* Total pages used by the compressed storage */
++static u64 zswap_pool_pages;
+ /* The number of compressed pages currently stored in zswap */
+ static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+ 
+@@ -297,7 +297,7 @@ static void zswap_free_entry(struct zswap_entry *entry)
+ 	zpool_free(zswap_pool, entry->handle);
+ 	zswap_entry_cache_free(entry);
+ 	atomic_dec(&zswap_stored_pages);
+-	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
++	zswap_pool_pages = zpool_get_total_size(zswap_pool);
+ }
+ 
+ /* caller must hold the tree lock */
+@@ -414,7 +414,7 @@ cleanup:
+ static bool zswap_is_full(void)
+ {
+ 	return totalram_pages * zswap_max_pool_percent / 100 <
+-		DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
++		zswap_pool_pages;
+ }
+ 
+ /*********************************
+@@ -721,7 +721,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 
+ 	/* update stats */
+ 	atomic_inc(&zswap_stored_pages);
+-	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
++	zswap_pool_pages = zpool_get_total_size(zswap_pool);
+ 
+ 	return 0;
+ 
+@@ -874,8 +874,8 @@ static int __init zswap_debugfs_init(void)
+ 			zswap_debugfs_root, &zswap_written_back_pages);
+ 	debugfs_create_u64("duplicate_entry", S_IRUGO,
+ 			zswap_debugfs_root, &zswap_duplicate_entry);
+-	debugfs_create_u64("pool_total_size", S_IRUGO,
+-			zswap_debugfs_root, &zswap_pool_total_size);
++	debugfs_create_u64("pool_pages", S_IRUGO,
++			zswap_debugfs_root, &zswap_pool_pages);
+ 	debugfs_create_atomic_t("stored_pages", S_IRUGO,
+ 			zswap_debugfs_root, &zswap_stored_pages);
+ 
