@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaHSUha (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:37:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25177 "EHLO mx1.redhat.com"
+	id S1751938AbaHSUhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:37:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62345 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729AbaHSUh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:37:27 -0400
+	id S1751824AbaHSUhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 16:37:40 -0400
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Gleb Natapov <gleb@kernel.org>,
         Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
         Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
-Subject: [PATCH 1/9] KVM: add kvm_arch_sched_in
-Date: Tue, 19 Aug 2014 22:35:28 +0200
-Message-Id: <1408480536-8240-2-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH 4/9] KVM: VMX: dynamise PLE window
+Date: Tue, 19 Aug 2014 22:35:31 +0200
+Message-Id: <1408480536-8240-5-git-send-email-rkrcmar@redhat.com>
 In-Reply-To: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
@@ -24,122 +24,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce preempt notifiers for architecture specific code.
-Advantage over creating a new notifier in every arch is slightly simpler
-code and guaranteed call order with respect to kvm_sched_in.
+Window is increased on every PLE exit and decreased on every sched_in.
+The idea is that we don't want to PLE exit if there is no preemption
+going on.
+
+We do this with sched_in() because it does not hold rq lock.
+
+There are two new kernel parameters for changing the window:
+ ple_window_grow and ple_window_shrink
+ple_window_grow affects the window on PLE exit and ple_window_shrink
+does it on sched_in;  depending on their value, the window is modifier
+like this: (ple_window is kvm_intel's global)
+
+  ple_window_shrink/ |
+  ple_window_grow    | PLE exit           | sched_in
+  -------------------+--------------------+---------------------
+  < 1                |  = ple_window      |  = ple_window
+  < ple_window       | *= ple_window_grow | /= ple_window_shrink
+  otherwise          | += ple_window_grow | -= ple_window_shrink
 
 Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
- arch/arm/kvm/arm.c         | 4 ++++
- arch/mips/kvm/mips.c       | 4 ++++
- arch/powerpc/kvm/powerpc.c | 4 ++++
- arch/s390/kvm/kvm-s390.c   | 4 ++++
- arch/x86/kvm/x86.c         | 4 ++++
- include/linux/kvm_host.h   | 2 ++
- virt/kvm/kvm_main.c        | 2 ++
- 7 files changed, 24 insertions(+)
+ arch/x86/kvm/vmx.c | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 50 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
-index a99e0cd..9f788eb 100644
---- a/arch/arm/kvm/arm.c
-+++ b/arch/arm/kvm/arm.c
-@@ -288,6 +288,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
- {
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index eaa5574..66259fd 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -125,14 +125,25 @@ module_param(nested, bool, S_IRUGO);
+  * Time is measured based on a counter that runs at the same rate as the TSC,
+  * refer SDM volume 3b section 21.6.13 & 22.1.3.
+  */
+-#define KVM_VMX_DEFAULT_PLE_GAP    128
+-#define KVM_VMX_DEFAULT_PLE_WINDOW 4096
++#define KVM_VMX_DEFAULT_PLE_GAP           128
++#define KVM_VMX_DEFAULT_PLE_WINDOW        4096
++#define KVM_VMX_DEFAULT_PLE_WINDOW_GROW   2
++#define KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK 0
++
+ static int ple_gap = KVM_VMX_DEFAULT_PLE_GAP;
+ module_param(ple_gap, int, S_IRUGO);
+ 
+ static int ple_window = KVM_VMX_DEFAULT_PLE_WINDOW;
+ module_param(ple_window, int, S_IRUGO);
+ 
++/* Default doubles per-vcpu window every exit. */
++static int ple_window_grow = KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
++module_param(ple_window_grow, int, S_IRUGO);
++
++/* Default resets per-vcpu window every exit to ple_window. */
++static int ple_window_shrink = KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK;
++module_param(ple_window_shrink, int, S_IRUGO);
++
+ extern const ulong vmx_return;
+ 
+ #define NR_AUTOLOAD_MSRS 8
+@@ -5680,12 +5691,47 @@ out:
+ 	return ret;
  }
  
-+void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
++static void grow_ple_window(struct kvm_vcpu *vcpu)
 +{
++	struct vcpu_vmx *vmx = to_vmx(vcpu);
++	int old = vmx->ple_window;
++	int new;
++
++	if (ple_window_grow < 1)
++		new = ple_window;
++	else if (ple_window_grow < ple_window)
++		new = old * ple_window_grow;
++	else
++		new = old + ple_window_grow;
++
++	vmx->ple_window = new;
 +}
 +
- void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- {
- 	vcpu->cpu = cpu;
-diff --git a/arch/mips/kvm/mips.c b/arch/mips/kvm/mips.c
-index cd71141..2362df2 100644
---- a/arch/mips/kvm/mips.c
-+++ b/arch/mips/kvm/mips.c
-@@ -1002,6 +1002,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
- {
- }
- 
-+void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
++static void shrink_ple_window(struct kvm_vcpu *vcpu)
 +{
++	struct vcpu_vmx *vmx = to_vmx(vcpu);
++	int old = vmx->ple_window;
++	int new;
++
++	if (ple_window_shrink < 1)
++		new = ple_window;
++	else if (ple_window_shrink < ple_window)
++		new = old / ple_window_shrink;
++	else
++		new = old - ple_window_shrink;
++
++	vmx->ple_window = new;
 +}
 +
- int kvm_arch_vcpu_ioctl_translate(struct kvm_vcpu *vcpu,
- 				  struct kvm_translation *tr)
+ /*
+  * Indicate a busy-waiting vcpu in spinlock. We do not enable the PAUSE
+  * exiting, so only get here on cpu with PAUSE-Loop-Exiting.
+  */
+ static int handle_pause(struct kvm_vcpu *vcpu)
  {
-diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
-index 4c79284..cbc432f 100644
---- a/arch/powerpc/kvm/powerpc.c
-+++ b/arch/powerpc/kvm/powerpc.c
-@@ -720,6 +720,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
- 	kvmppc_subarch_vcpu_uninit(vcpu);
++	if (ple_gap)
++		grow_ple_window(vcpu);
++
+ 	skip_emulated_instruction(vcpu);
+ 	kvm_vcpu_on_spin(vcpu);
+ 
+@@ -8855,6 +8901,8 @@ static int vmx_check_intercept(struct kvm_vcpu *vcpu,
+ 
+ void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
+ {
++	if (ple_gap)
++		shrink_ple_window(vcpu);
  }
  
-+void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
-+{
-+}
-+
- void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- {
- #ifdef CONFIG_BOOKE
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index ce81eb2..a3c324e 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -555,6 +555,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
- 	/* Nothing todo */
- }
- 
-+void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
-+{
-+}
-+
- void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- {
- 	save_fp_ctl(&vcpu->arch.host_fpregs.fpc);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8f1e22d..d7c214f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7146,6 +7146,10 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
- 		static_key_slow_dec(&kvm_no_apic_vcpu);
- }
- 
-+void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
-+{
-+}
-+
- int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
- {
- 	if (type)
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a4c33b3..ebd7236 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -624,6 +624,8 @@ void kvm_arch_exit(void);
- int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu);
- void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu);
- 
-+void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu);
-+
- void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu);
- void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu);
- void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu);
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 33712fb..d3c3ed0 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -3123,6 +3123,8 @@ static void kvm_sched_in(struct preempt_notifier *pn, int cpu)
- 	if (vcpu->preempted)
- 		vcpu->preempted = false;
- 
-+	kvm_arch_sched_in(vcpu, cpu);
-+
- 	kvm_arch_vcpu_load(vcpu, cpu);
- }
- 
+ static struct kvm_x86_ops vmx_x86_ops = {
 -- 
 2.0.4
 
