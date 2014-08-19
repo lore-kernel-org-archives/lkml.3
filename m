@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaHSNFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:05:47 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51131 "EHLO
+	id S1753211AbaHSNDB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:03:01 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51127 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948AbaHSNC6 (ORCPT
+	with ESMTP id S1752715AbaHSNC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:02:58 -0400
+	Tue, 19 Aug 2014 09:02:57 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 7/8] imx-drm: use for_each_endpoint_of_node macro in imx_drm_encoder_get_mux_id
-Date: Tue, 19 Aug 2014 15:02:45 +0200
-Message-Id: <1408453366-1366-8-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH 3/8] of: Decrement refcount of previous endpoint in of_graph_get_next_endpoint
+Date: Tue, 19 Aug 2014 15:02:41 +0200
+Message-Id: <1408453366-1366-4-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.1.0.rc1
 In-Reply-To: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
 References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
@@ -31,41 +31,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the for_each_... macro should make the code bit shorter and
-easier to read. This patch also properly decrements the endpoint node
-reference count before returning out of the loop.
+Decrementing the reference count of the previous endpoint node allows to
+use the of_graph_get_next_endpoint function in a for_each_... style macro.
+Prior to this patch, all current users of this function that actually pass
+a non-NULL prev parameter should be changed to not decrement the passed
+prev argument's refcount themselves.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- drivers/staging/imx-drm/imx-drm-core.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/of/base.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 12303b3..9b5222c 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -493,18 +493,15 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
- 	if (!node || !imx_crtc)
- 		return -EINVAL;
- 
--	do {
--		ep = of_graph_get_next_endpoint(node, ep);
--		if (!ep)
--			break;
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index d8574ad..a49b5628 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -2058,8 +2058,7 @@ EXPORT_SYMBOL(of_graph_parse_endpoint);
+  * @prev: previous endpoint node, or NULL to get first
+  *
+  * Return: An 'endpoint' node pointer with refcount incremented. Refcount
+- * of the passed @prev node is not decremented, the caller have to use
+- * of_node_put() on it when done.
++ * of the passed @prev node is decremented.
+  */
+ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ 					struct device_node *prev)
+@@ -2095,12 +2094,6 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
+ 		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
+ 			      __func__, prev->full_name))
+ 			return NULL;
 -
-+	for_each_endpoint_of_node(node, ep) {
- 		port = of_graph_get_remote_port(ep);
- 		of_node_put(port);
- 		if (port == imx_crtc->port) {
- 			ret = of_graph_parse_endpoint(ep, &endpoint);
-+			of_node_put(ep);
- 			return ret ? ret : endpoint.port;
- 		}
--	} while (ep);
-+	}
+-		/*
+-		 * Avoid dropping prev node refcount to 0 when getting the next
+-		 * child below.
+-		 */
+-		of_node_get(prev);
+ 	}
  
- 	return -EINVAL;
- }
+ 	while (1) {
 -- 
 2.1.0.rc1
 
