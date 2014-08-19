@@ -1,81 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaHSO04 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:26:56 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:47849
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753161AbaHSO0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:26:54 -0400
-Date: Tue, 19 Aug 2014 09:21:36 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Mark Brown <broonie@kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: power supply gating with ltc2978
-In-Reply-To: <20140818030717.GA5131@roeck-us.net>
-Message-ID: <alpine.DEB.2.02.1408190914310.22837@atx-linux-37>
-References: <alpine.DEB.2.02.1408151623140.21645@atx-linux-37> <20140816132050.GH28623@sirena.org.uk> <20140818030717.GA5131@roeck-us.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752846AbaHSOa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:30:56 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:56910 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaHSOaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:30:55 -0400
+Message-ID: <53F35F94.1010101@gmail.com>
+Date: Tue, 19 Aug 2014 16:30:44 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: DM2PR04CA034.namprd04.prod.outlook.com (10.141.154.152) To
- BY2PR03MB313.namprd03.prod.outlook.com (10.141.139.13)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0308EE423E
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009006)(6009001)(24454002)(51704005)(189002)(199003)(77096002)(50986999)(4396001)(102836001)(74502001)(81156004)(85306004)(46406003)(79102001)(110136001)(77982001)(99396002)(42186005)(83506001)(76176999)(53416004)(101416001)(106356001)(83322001)(54356999)(23726002)(86152002)(86362001)(83072002)(74662001)(95666004)(81342001)(81542001)(87976001)(76482001)(85852003)(80022001)(50466002)(33716001)(66066001)(46102001)(105586002)(47776003)(20776003)(92726001)(107046002)(69596002)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB313;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        t.figa@samsung.com, vikas.sajjan@samsung.com, joshi@samsung.com,
+        naushad@samsung.com, thomas.ab@samsung.com, chow.kim@samsung.com
+Subject: Re: [PATCH v7 3/4] ARM: EXYNOS: Add platform driver support for Exynos
+ PMU
+References: <1404878455-31518-1-git-send-email-pankaj.dubey@samsung.com> <53D238E1.3030901@gmail.com> <002601cfaa11$93de5060$bb9af120$@samsung.com> <2491338.uD82s4TcKJ@amdc1032>
+In-Reply-To: <2491338.uD82s4TcKJ@amdc1032>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Aug 2014, Guenter Roeck wrote:
+Hi Bart,
 
-> On Sat, Aug 16, 2014 at 02:20:50PM +0100, Mark Brown wrote:
-> > On Fri, Aug 15, 2014 at 04:34:49PM -0500, atull wrote:
-> > 
-> > > I am interested in adding functionality to be able to gate power supplies 
-> > > going through a ltc2978.  I see that there is a hwmon driver already 
-> > > existing (hwmon/pmbus/ltc2978.c).  I see some of the other hwmon drivers 
-> > > have MFD's.  It looks like this ltc driver would need a MFD and a 
-> > > regulator driver added.  However I don't see other pmbus hwmon drivers
-> > > using MFD.
-> > 
-> > > So I am asking for recommendations and reservations on how to proceed here 
-> > > before I get too far with this.
-> > 
-> > Without knowing anything at all about pmbus or this particular hardware
-> > it's hard to comment but what you're saying here sounds sensible (though
-> > I do see that apparently splitting the drivers may not actually be
-> > sensible from Guenter's followup).
+On 18.08.2014 19:42, Bartlomiej Zolnierkiewicz wrote:
 > 
-> I had originally thought about converting the pmbus drivers to mfd with client
-> drivers, but I concluded that it would add a lot of complexity with little gain.
-> It makes sense to separate a driver into mfd and a number of client drivers
-> if a device has clear functional blocks for the different devices it supports.
-> With PMBus, this is not the case. Separating a PMBus driver would be a purely
-> artificial costruct, and there would be overlapping functionality. Separating
-> just a single driver out of the group of PMBus drivers, as seems to be suggested
-> above, makes even less sense as one simply can not separate the core PMBus
-> driver code from its front-end drivers.
+> Hi,
 > 
-> On the other side, adding regulator support into the PMBus driver code would
-> make a lot of sense. It should also be quite straightforward.
+> On Monday, July 28, 2014 08:40:52 AM Pankaj Dubey wrote:
+>> Hi Tomasz,
+>>
+>> On Friday, July 25, 2014 Tomasz Figa wrote:
+>>
+>>> To: Pankaj Dubey; 'Kukjin Kim'; linux-arm-kernel@lists.infradead.org;
+>> linux-
+>>> samsung-soc@vger.kernel.org; linux-kernel@vger.kernel.org
+>>> Cc: linux@arm.linux.org.uk; t.figa@samsung.com; vikas.sajjan@samsung.com;
+>>> joshi@samsung.com; naushad@samsung.com; thomas.ab@samsung.com;
+>>> chow.kim@samsung.com
+>>> Subject: Re: [PATCH v7 3/4] ARM: EXYNOS: Add platform driver support for
+>>> Exynos PMU
+>>>
+>>> Hi Pankaj, Kukjin,
+>>>
+>>> On 25.07.2014 07:32, Pankaj Dubey wrote:
+>>>> Hi Kukjin,
+>>>>
+>>>> On Friday, July 25, 2014 Kukjin Kim wrote:
+>>>
+>>> [snip]
+>>>
+>>>>>>
+>>>>> Looks good to me, will apply this and 4/4.
+>>>>>
+>>>>
+>>>> We need to hold these two patches until dependent patch [1] from
+>>>> Tomasz Figa gets merged.
+>>>>
+>>>> [1]: mfd: syscon: Decouple syscon interface from syscon devices
+>>>>       https://lkml.org/lkml/2014/6/24/188
+>>>
+>>> That RFC patch had few comments from Arnd needed to be addressed, so it
+>> needs a
+>>> new revision.
+>>>
+>>> Pankaj, If I remember correctly, we had talked about this and the
+>> conclusion was that
+>>> you would take care of addressing the comments and sending new version of
+>> the
+>>> patch. Any update on this or have I missed something?
+>>>
+>>
+>> Well, I don't think we concluded as such anything.
+>> Since this patch needs to get in so that Exynos PMU and PM related changes
+>> can go in,
+>> I discussed with you saying that I am not able to understand about Arnd's
+>> comments and
+>> if possible and time permits I will look into it. Meanwhile I got busy with
+>> some other
+>> official work, so could not get time to look into it.
 > 
-> Or anyway that is my opinion. If someone wants to spend the time and separate
-> the PMBus drivers into an MfD part and hwmon and regulator client drivers, I'll
-> be happy to look at the resulting patch set.
+> Tomasz/Pankaj, could we please get some agreement on what needs to be
+> done and who should do the pending work?
 > 
-> Guenter
-> 
+> syscon patch is blocking PMU cleanup patches which in turn are blocking
+> PMU support additions for new SoCs (Exynos5420/5800 and Exynos3250 PMU
+> patches).
 
-Hi Guenter,
+Leaving alone the matter who is going to take care of it for now, the
+remaining work to do is to further decouple syscon from struct device,
+which means providing of_ API to register a syscon provider on a device
+tree node even before driver model is available yet.
 
-I'd really rather just add regulator support to the PMBus driver code and 
-avoid all the mess of creating a MFD.  It seems more straigtforward. I'll 
-let you know when I have something working to look at.
+I believe it should be quite straightforward on top of my RFC and should
+require only saving syscon's of_node directly in syscon struct, adding
+appropriate API and extending the look-up loops to handle cases when
+syscon's dev is NULL.
 
-Alan
+Best regards,
+Tomasz
