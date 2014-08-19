@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaHSU0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:26:15 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:52664 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaHSU0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:26:13 -0400
+	id S1751137AbaHSU3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:29:30 -0400
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:10220
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750822AbaHSU31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 16:29:27 -0400
+Date: Tue, 19 Aug 2014 15:24:09 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <baruch@tkos.co.il>, <mika.westerberg@linux.intel.com>,
+        <grant.likely@linaro.org>, <robh+dt@kernel.org>, <skuribay@pobox.com>,
+        <Romain.Baeriswyl@abilis.com>, <rafael.j.wysocki@intel.com>,
+        <alan@linux.intel.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH 1/2] i2c: designware: device tree bindings for i2c speed
+ mode
+In-Reply-To: <20140819191521.GA7306@katana>
+Message-ID: <alpine.DEB.2.02.1408191519190.22837@atx-linux-37>
+References: <1408473276-10847-1-git-send-email-atull@opensource.altera.com> <20140819191521.GA7306@katana>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <E1XJpsx-0001oD-AE@www17.your-server.de>
-References: <E1XJpsx-0001oD-AE@www17.your-server.de>
-Date: Tue, 19 Aug 2014 22:26:12 +0200
-Message-ID: <CAFLxGvyr-ham--zwR32JnXTy+gd9oe6pksSWBpHm-aiS80Tp0A@mail.gmail.com>
-Subject: Re: [UML] 3.16 build without optimization fails
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux@thorsten-knabe.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: DM2PR04CA026.namprd04.prod.outlook.com (10.141.154.144) To
+ DM2PR03MB319.namprd03.prod.outlook.com (10.141.54.18)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0308EE423E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009006)(6009001)(24454002)(189002)(199003)(51704005)(101416001)(50986999)(106356001)(105586002)(74662001)(50466002)(77096002)(86362001)(53416004)(81156004)(81542001)(85306004)(81342001)(110136001)(107046002)(33716001)(20776003)(80022001)(31966008)(66066001)(47776003)(64706001)(74502001)(95666004)(102836001)(76176999)(54356999)(21056001)(79102001)(83506001)(69596002)(87976001)(19580395003)(19580405001)(46406003)(83322001)(4396001)(83072002)(85852003)(23726002)(92726001)(77982001)(42186005)(92566001)(99396002)(86152002)(46102001)(76482001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB319;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 10:19 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
-> Hi.
->
-> Thanks for your answer.
->
-> There goes my plan to better understand an UML kernel lock up by using a debugger... Everything gets optimised out with -O2 :-(
-
-Is it the filesystem/block lockup you saw some time ago?
-Maybe Thorsten can give more details.
-He sent me an patch off list a few days ago.
-
-> Can you give an example function that relies on this GCC feature?
->
-> With kind regards
-> Thomas
->
-> Am 19.08.2014 22:06 schrieb Valdis.Kletnieks@vt.edu:
->>
->> On Tue, 19 Aug 2014 21:12:10 +0200, Thomas Meyer said:
->> > > Hi,
->> > >
->> > > the build with -O0 fails with:
->>
->> > > bug or feature?
->> > >
->> > > any ideas?
->>
->> Feature.  The kernel is *known* to not build with -O0, because that
->> disables *all* function inlining, and there's several functions that *have*
->> to be inlined in order to function properly (most notably, anything
->> that uses the gcc __builtin_return_address in a function that is expected
->> to be inlined).
 
 
+On Tue, 19 Aug 2014, Wolfram Sang wrote:
 
--- 
-Thanks,
-//richard
+> On Tue, Aug 19, 2014 at 01:34:35PM -0500, atull@opensource.altera.com wrote:
+> > From: Alan Tull <atull@opensource.altera.com>
+> > 
+> > Add "speed-mode" Device Tree property to select between
+> > standard and fast i2c mode.  Previously, driver was hardwired
+> > as fast mode.  Default to fast mode if property is not
+> > present.
+> 
+> NACK. This should be deduced from the clock-frequency setting...
+
+I just sent out a new patch that looks at the clock-frequency setting.
+
+Alan
+
