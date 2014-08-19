@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908AbaHSMay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:30:54 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60129 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751837AbaHSMaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:30:52 -0400
-X-Sasl-enc: fGDenvw9NV4OsM9eqWxcqvaNlXewvaVwFSFlUdczNlmJ 1408451450
-Message-ID: <1408451448.11314.11.camel@perseus.themaw.net>
-Subject: Re: [PATCH 0/5] RCU-walk support for autofs
-From: Ian Kent <raven@themaw.net>
-To: NeilBrown <neilb@suse.de>
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 19 Aug 2014 20:30:48 +0800
-In-Reply-To: <20140819211654.5ec3853a@notabene.brown>
-References: <20140818062844.9860.43007.stgit@notabene.brown>
-	 <1408350340.2533.3.camel@perseus.fritz.box>
-	 <1408442547.11314.9.camel@perseus.themaw.net>
-	 <20140819211654.5ec3853a@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752982AbaHSMbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:31:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50063 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492AbaHSMbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 08:31:06 -0400
+Message-ID: <53F34383.30100@suse.de>
+Date: Tue, 19 Aug 2014 14:30:59 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Inki Dae <inki.dae@samsung.com>
+CC: Joerg Roedel <joro@8bytes.org>, iommu@lists.linux-foundation.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ajay Kumar <ajaykumar.rs@samsung.com>
+Subject: Re: [PATCH 00/29] Exynos SYSMMU (IOMMU) integration with DT and DMA-mapping
+ subsystem
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com> <20140818233201.GL9809@8bytes.org> <53F2E9AD.9030308@samsung.com> <53F3375E.6030402@suse.de> <53F33C9C.1080601@samsung.com>
+In-Reply-To: <53F33C9C.1080601@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-19 at 21:16 +1000, NeilBrown wrote:
-> On Tue, 19 Aug 2014 18:02:27 +0800 Ian Kent <raven@themaw.net> wrote:
-> 
-> > On Mon, 2014-08-18 at 16:25 +0800, Ian Kent wrote:
-> > > On Mon, 2014-08-18 at 16:33 +1000, NeilBrown wrote:
-> > > > Hi Ian,
-> > > >  Have you had a chance to run your tests in these patches yet?
-> > > >  I've done what testing I can think of and cannot fault them.
-> > > 
-> > > I haven't, I've been plagued with illness so I'm not getting nearly
-> > > enough done. I'll try to put a kernel together and run the test in the
-> > > next week or so.
-> > 
-> > Just to let you know that I managed to spend some time on this. I built
-> > a kernel (3.17.0-rc1) with the series and ran a couple of tests.
-> > 
-> > I'm not certain that the patches I used are identical to your posting, I
-> > saw one difference, after the fact, that shouldn't matter, I'll have to
-> > check that.
-> > 
-> > It isn't possible to test expire to mount races because the mounts in
-> > the tree never expire.
-> > 
-> > At first I thought it was because so many processes were accessing the
-> > tree all the time but manually constructing the maps and mounting the
-> > mounts shows that nothing ever expires, at least for this tree.
-> > 
-> > However, issuing a shut down does expire all the mounts and shuts down
-> > autofs cleanly.
-> > 
-> > So there is something not quite right with the expire check or my
-> > patches have mistakes.
-> 
-> Ahh.. I bet I know what it is.
-> autofs4_can_expire() isn't idempotent.
-> Because we call should_expire twice, autofs4_can_expire() is called twice and
-> the second time it failed because  the first time it resets ->last_used.
+Hi,
 
-LOL, indeed that looks like it.
-I'll carefully check the patches anyway, rebuild and re-test.
+Am 19.08.2014 14:01, schrieb Marek Szyprowski:
+> On 2014-08-19 13:39, Andreas Färber wrote:
+>> I'm working on 5250 based Spring Chromebook and noticed that v3.17-rc1
+>> got some more iommu support. With the new CONFIG_DRM_EXYNOS_IOMMU=y my
+>> machine stops booting. So I'm wondering, is any of this a fix for 3.17,
+>> or is all of this "unrelated" -next material?
+> 
+> This is probably a side effect of patch
+> 3170447c1f264d51b8d1f3898bf2588588a64fdc
+> ("iommu/exynos: Select ARM_DMA_USE_IOMMU"). It added selection of
+> ARM_DMA_USE_IOMMU
+> symbol, on which IOMMU support in Exynos DRM subsystem depends. However
+> selecting
+> this symbol is all that this patch does, without providing any code code
+> which
+> implements real support for ARM DMA IOMMU integration, which is needed
+> by Exynos
+> DRM driver. Please disable CONFIG_DRM_EXYNOS_IOMMU in kernel .config and
+> your
+> system should be bootable again.
 
-> 
-> diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-> index eb4b770a4bf6..80133a9d9427 100644
-> --- a/fs/autofs4/expire.c
-> +++ b/fs/autofs4/expire.c
-> @@ -26,6 +26,9 @@ static inline int autofs4_can_expire(struct dentry *dentry,
->  	if (ino == NULL)
->  		return 0;
->  
-> +	if (ino->flags & AUTOFS_INF_NO_RCU)
-> +		/* Already performed this test */
-> +		return 1;
->  	if (!do_now) {
->  		/* Too young to die */
->  		if (!timeout || time_after(ino->last_used + timeout, now))
-> 
-> 
-> 
-> might fix it, but might be a hack.
-> (tests.... yep, that seems to fix it).
-> 
-> I'll think some more tomorrow.
-> 
-> Thanks,
-> NeilBrown
+Yes, that's what my report implied. :)
 
+I'm bringing this up for -rc2 though: It sounds as if that option should
+remain unavailable until the required code is in? Thanks.
 
+>> Also, are you or someone
+>> working on the respective DT changes for Exynos5?
+> 
+> I can prepare DT changes for Exynos5 as well, but first I wanted to
+> clarify if
+> everyone involved in generic IOMMU bindings and Exynos IOMMU driver
+> agrees on my
+> proposal.
+
+Sure. I'm updating my old spring-bridge.v6 branch [1] to 3.17-rc1 [2],
+which involves three drm bridge patches rebased onto the new drm panel
+prepare/unprepare infrastructure plus two LVDS DT patches in addition to
+the IOMMU patches. That old branch included DT changes for 5250 in "ARM:
+dts: add System MMU nodes of Exynos SoCs", but that'll probably need
+updating for the new bindings.
+
+Regards,
+Andreas
+
+[1] https://github.com/afaerber/linux/commits/spring-bridge.v6
+[2] https://github.com/afaerber/linux/commits/spring-next
+
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
