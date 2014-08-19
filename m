@@ -1,119 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083AbaHSKC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 06:02:58 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:34308 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaHSKC5 (ORCPT
+	id S1752202AbaHSKEt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 06:04:49 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:44083 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaHSKEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 06:02:57 -0400
-Message-ID: <53F320B7.30002@huawei.com>
-Date: Tue, 19 Aug 2014 18:02:31 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 19 Aug 2014 06:04:47 -0400
+Date: Tue, 19 Aug 2014 12:04:58 +0200
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, patches@linaro.org,
+        will.deacon@arm.com, a.motakis@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, paulus@samba.org
+Subject: Re: [RFC PATCH] ARM: KVM: add irqfd support
+Message-ID: <20140819100458.GA31086@cbox>
+References: <1407154102-26459-1-git-send-email-eric.auger@linaro.org>
+ <20140813145523.GR10550@cbox>
+ <53F3107C.6060404@linaro.org>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>, Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>, Tang Chen <tangchen@cn.fujitsu.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mem-hotplug: introduce movablenodes boot option for memory
- hotplug debugging
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.179]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F3107C.6060404@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new boot option "movablenodes". This parameter
-depends on movable_node, it is used for debugging memory hotplug.
-Instead SRAT specifies which memory is hotpluggable.
+On Tue, Aug 19, 2014 at 10:53:16AM +0200, Eric Auger wrote:
+> On 08/13/2014 04:55 PM, Christoffer Dall wrote:
+> > On Mon, Aug 04, 2014 at 02:08:22PM +0200, Eric Auger wrote:
+> >> This patch enables irqfd on ARM.
+> >>
+> >> irqfd framework enables to inject a virtual IRQ into a guest upon an
+> >> eventfd trigger. User-side uses KVM_IRQFD VM ioctl to provide KVM with
+> >> a kvm_irqfd struct that associates a VM, an eventfd, an IRQ number
+> >> (aka. the gsi). When an actor signals the eventfd (typically a VFIO
+> >> platform driver), the kvm irqfd subsystem injects the provided virtual
+> >> IRQ into the guest.
+> >>
+> >> The gsi must correspond to a shared peripheral interrupt (SPI), ie the
+> >> GIC interrupt ID is gsi+32.
+> > 
+> > Why can't we support PPIs?
+> Hi Christoffer,
+> 
+> Well, in case we want to support PPI at irqfd level, we would need to
+> change the semantic of the GSI value and use the same as KVM_IRQ_LINE,
+> to specify the target vcpu. This is obviously feasible but this also
+> induces changes in currently generic user parts, vfio, vhost. is PPI
+> injection though irqfd a valid use case?
 
-e.g. movable_node movablenodes=1,2,4
+I don't see why you wouldn't want to be able to support PPIs as
+passthrough interrupts to a guest?
 
-It means nodes 1,2,4 will be set to movable nodes, the other nodes are
-unmovable nodes. Usually movable nodes are parsed from SRAT table which
-offered by BIOS.
+[...]
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
----
- Documentation/kernel-parameters.txt |    5 ++++
- arch/x86/mm/srat.c                  |   36 +++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+), 0 deletions(-)
+> >> +
+> >> +/* MSI not implemented yet */
+> > 
+> > yet?  What is an MSI on ARM?
+> Well some MSI support comes with GICv2m and GICv3. My current
+> understanding is it makes sense to inject an MSI from an irqfd trigger.
+> Don't you share this understanding?
+> 
+Doh, I read GSI and wrote MSI, of course, complete brain meltdown on my
+side.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5ae8608..e072ccf 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1949,6 +1949,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	movable_node	[KNL,X86] Boot-time switch to enable the effects
- 			of CONFIG_MOVABLE_NODE=y. See mm/Kconfig for details.
- 
-+	movablenodes=	[KNL,X86] This parameter depends on movable_node, it
-+			is used for debugging memory hotplug. Instead SRAT
-+			specifies which memory is hotpluggable.
-+			e.g. movablenodes=1,2,4
-+
- 	MTD_Partition=	[MTD]
- 			Format: <name>,<region-number>,<size>,<offset>
- 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index 66338a6..523e58b 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -157,6 +157,37 @@ static inline int save_add_info(void) {return 1;}
- static inline int save_add_info(void) {return 0;}
- #endif
- 
-+static nodemask_t movablenodes_mask;
-+
-+static void __init parse_movablenodes_one(char *p)
-+{
-+	int node;
-+
-+	get_option(&p, &node);
-+	node_set(node, movablenodes_mask);
-+}
-+
-+static int __init parse_movablenodes_opt(char *str)
-+{
-+	nodes_clear(movablenodes_mask);
-+
-+#ifdef CONFIG_MOVABLE_NODE
-+	while (str) {
-+		char *k = strchr(str, ',');
-+
-+		if (k)
-+			*k++ = 0;
-+		parse_movablenodes_one(str);
-+		str = k;
-+	}
-+#else
-+	pr_warn("movable_node option not supported\n");
-+#endif
-+
-+	return 0;
-+}
-+early_param("movablenodes", parse_movablenodes_opt);
-+
- /* Callback for parsing of the Proximity Domain <-> Memory Area mappings */
- int __init
- acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
-@@ -202,6 +233,11 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		pr_warn("SRAT: Failed to mark hotplug range [mem %#010Lx-%#010Lx] in memblock\n",
- 			(unsigned long long)start, (unsigned long long)end - 1);
- 
-+	if (node_isset(node, movablenodes_mask) &&
-+		memblock_mark_hotplug(start, ma->length))
-+		pr_warn("SRAT debug: Failed to mark hotplug range [mem %#010Lx-%#010Lx] in memblock\n",
-+			(unsigned long long)start, (unsigned long long)end - 1);
-+
- 	return 0;
- out_err_bad_srat:
- 	bad_srat();
--- 
-1.7.1
-
-
+-Christoffer
