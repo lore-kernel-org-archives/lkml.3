@@ -1,123 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaHSW4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 18:56:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8523 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751186AbaHSW4T convert rfc822-to-8bit (ORCPT
+	id S1751685AbaHSXBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 19:01:36 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:34048 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751186AbaHSXBe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 18:56:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,898,1400050800"; 
-   d="scan'208";a="587163716"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>, Mark Rutland <mark.rutland@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+	Tue, 19 Aug 2014 19:01:34 -0400
+Date: Wed, 20 Aug 2014 01:01:30 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: =?UTF-8?B?R2HDq2w=?= PORTAY <gael.portay@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, "Zheng, Lv" <lv.zheng@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: RE: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI
- flags for PSCI init
-Thread-Topic: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI
- flags for PSCI init
-Thread-Index: AQHPuvJ85wUXF3W88k+aAuTIfqBk2ZvXwOCAgAB6zwCAABHRAIAAPajQ
-Date: Tue, 19 Aug 2014 22:55:59 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E37D1E7D1B@ORSMSX112.amr.corp.intel.com>
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
- <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org>
- <20140818142721.GR20043@localhost> <53F2C983.8000800@linaro.org>
- <20140819111000.GG3302@leverpostej> <53F33F7A.7030307@linaro.org>
-In-Reply-To: <53F33F7A.7030307@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Nicolas FERRE <nicolas.ferre@atmel.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH 3/3] ARM: at91/tclib: mask interruptions at shutdown and
+ probe
+Message-ID: <20140820010130.10974326@bbrezillon>
+In-Reply-To: <776D4128-09AC-418C-A710-28A2522D1D63@jcrosoft.com>
+References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
+	<1408486072-19268-4-git-send-email-gael.portay@gmail.com>
+	<776D4128-09AC-418C-A710-28A2522D1D63@jcrosoft.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I should warn you that FADT version numbers are notoriously unreliable; In fact, in ACPICA we were eventually forced to abandon them entirely. We use the actual size of the FADT instead.
+Hi Jean-Christophe,
 
-Bob
+On Wed, 20 Aug 2014 06:11:17 +0800
+Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
 
-
-
-> -----Original Message-----
-> From: Hanjun Guo [mailto:hanjun.guo@linaro.org]
-> Sent: Tuesday, August 19, 2014 5:14 AM
-> To: Mark Rutland
-> Cc: Catalin Marinas; Rafael J. Wysocki; graeme.gregory@linaro.org; Arnd
-> Bergmann; Olof Johansson; grant.likely@linaro.org; Sudeep Holla; Will
-> Deacon; Jason Cooper; Marc Zyngier; Bjorn Helgaas; Daniel Lezcano; Mark
-> Brown; Rob Herring; Robert Richter; Zheng, Lv; Moore, Robert; Lorenzo
-> Pieralisi; Liviu Dudau; Randy Dunlap; Charles Garcia-Tobin; linux-
-> acpi@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; linaro-acpi@lists.linaro.org
-> Subject: Re: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI
-> flags for PSCI init
+> Hi,
 > 
-> On 2014-8-19 19:10, Mark Rutland wrote:
-> >>>> @@ -47,6 +49,26 @@ void __init __acpi_unmap_table(char *map, unsigned
-> long size)
-> >>>>  	early_memunmap(map, size);
-> >>>>  }
-> >>>>
-> >>>> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
-> >>>> +{
-> >>>> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt
-> *)table;
-> >>>> +
-> >>>> +	/*
-> >>>> +	 * Revision in table header is the FADT Major version,
-> >>>> +	 * and there is a minor version of FADT which was introduced
-> >>>> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
-> >>>> +	 * to get arm boot flags, or we will disable ACPI.
-> >>>> +	 */
-> >>>> +	if (table->revision < 5 || fadt->minor_revision < 1) {
-> >>>
-> >>> If we ever get revision 6.0, this would trigger.
-> >>
-> >> Yes, good catch, actually I already fixed that in my local git repo,
-> >>
-> >> +       if (table->revision > 5 ||
-> >> +           (table->revision == 5 && fadt->minor_revision >= 1)) {
-> >> +               return 0;
-> >> +       } else {
-> >> +               pr_info("FADT revision is %d.%d, no PSCI support,
-> >> + should be 5.1
-> >> or higher\n",
-> >> +                       table->revision, fadt->minor_revision);
-> >> +               disable_acpi();
-> >> +               return -EINVAL;
-> >> +       }
-> >
-> > Given you return in the first path, you don't need the remaining code
-> > to live in an else block.
+> 	This is a bit weird as the clock of the TC should be off and the irq free
 > 
-> Agreed, I will update it, and move disable_acpi() outside this function
-> and keep it in one place as Sudeep suggested.
-> 
-> Thanks
-> Hanjun
+> 	so this should never happened we need to investigate more why this append
 
+I may have found the source of this bug.
+
+As Gael stated, when you're kexec-ing a new kernel your previous kernel
+could be using the tbc_clksrc driver (and especially the clkevent
+device). Thus the kernel might have planned a timer event and then been
+asked to shutdown the machine (requested by the kexec code).
+In this case the AIC interrupt connected to the TC Block is disabled
+but not the interrupts within the TCB IP (IDR registers), possibly
+leaving a pending interrupt before booting the new kernel.
+
+When the tcb_clksrc driver is loaded by the new kernel it enables the
+interrupt line by calling setup_irq [1] while the clockevent device is
+not registered yet [2]. Thus the event_handler is still NULL when the
+AIC line connected to the TCB is unmasked. Remember that an interrupt
+is still pending on this HW block, which will lead to an immediate call
+to the ch2_irq handler, which tries to call the event_handler, which in
+turns is NULL because clkevent device registration has not taken place
+at this moment => Kernel panic.
+ITOH, we can't register the clkevent device before the irq handler is
+set up, because we should be ready to handle clkevent request at the
+time clockevents_config_and_register is called.
+
+This leaves two solution:
+ 1) disable the TCB irqs (using TCB IDR registers) before calling
+ setup_irq in the tcb_clksrc driver
+ 2) disable the TCB irqs at the tclib level (as proposed by Gael)
+
+I prefer solution #2 because it fixes the bug for all TCB users (not
+just the tcb_clksrc driver).
+
+Best Regards,
+
+Boris
+
+[1]http://lxr.free-electrons.com/source/drivers/clocksource/tcb_clksrc.c#L207
+[2]http://lxr.free-electrons.com/source/drivers/clocksource/tcb_clksrc.c#L211
+
+> 
+> Best Regards,
+> J.
+> On Aug 20, 2014, at 6:07 AM, Gaël PORTAY <gael.portay@gmail.com> wrote:
+> 
+> > 
+> > Shutdown properly the timer counter block by masking interruptions. Otherwise,
+> > a segmentation may happen when kexec-ing a new kernel (see backtrace below).
+> > An interruption may happen before the handler is set, leading to a kernel
+> > segmentation fault.
+> > 
+> > Furthermore, we make sure the interruptions are masked when the driver is
+> > initialized. This will prevent freshly kexec-ed kernel from crashing when
+> > launched from a kernel which does not properly mask interruptions at shutdown.
+> > 
+> > The backtrace below happened after kexec-ing a new kernel, from a kernel
+> > that did not shut down properly leaving interruptions unmasked.
+> > 
+> > Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> > pgd = c0004000
+> > [00000000] *pgd=00000000
+> > Internal error: Oops: 80000005 [#1] ARM
+> > Modules linked in:
+> > CPU: 0 PID: 1 Comm: swapper Not tainted 3.16.0+ #144
+> > task: c1828aa0 ti: c182a000 task.ti: c182a000
+> > PC is at 0x0
+> > LR is at ch2_irq+0x28/0x30
+> > pc : [<00000000>]    lr : [<c01db904>]    psr: 000000d3
+> > sp : c182bd38  ip : c182bd48  fp : c182bd44
+> > r10: c0373390  r9 : c1825b00  r8 : 60000053
+> > r7 : 00000000  r6 : 00000000  r5 : 00000013  r4 : c036e800
+> > r3 : 00000000  r2 : 00002004  r1 : c036e760  r0 : c036e760
+> > Flags: nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+> > Control: 0005317f  Table: 20004000  DAC: 00000017
+> > Process swapper (pid: 1, stack limit = 0xc182a1c0)
+> > Stack: (0xc182bd38 to 0xc182c000)
+> > bd20:                                                       c182bd7c c182bd48
+> > bd40: c0045430 c01db8ec 00000000 c18c6f40 c182bd74 c1825b00 c035cec4 00000000
+> > bd60: c182be2c 60000053 c1825b34 00000000 c182bd94 c182bd80 c0045570 c0045408
+> > bd80: 00000000 c1825b00 c182bdac c182bd98 c0047f34 c0045550 00000013 c036619c
+> > bda0: c182bdc4 c182bdb0 c0044da4 c0047e98 0000007f 00000013 c182bde4 c182bdc8
+> > bdc0: c0009e34 c0044d8c fefff000 c0046728 60000053 ffffffff c182bdf4 c182bde8
+> > bde0: c00086a8 c0009ddc c182be74 c182bdf8 c000cb80 c0008674 00000000 00000013
+> > be00: 00000000 00014200 c1825b00 c036e800 00000013 c035ed98 60000053 c1825b34
+> > be20: 00000000 c182be74 c182be20 c182be40 c0047994 c0046728 60000053 ffffffff
+> > be40: 00000013 c036e800 c182be64 c1825b00 00000013 c036e800 c035ed98 c03874bc
+> > be60: 00000004 c036e700 c182be94 c182be78 c004689c c0046398 c036e760 c18c6080
+> > be80: 00000000 c035ed10 c182bedc c182be98 c0348b08 c004684c 0000000c c034dac8
+> > bea0: 004c4b3f c028c338 c036e760 00000013 c014ecc8 c18e67e0 c035b9c0 c0348884
+> > bec0: c035b9c0 c182a020 00000000 00000000 c182bf54 c182bee0 c00089fc c0348894
+> > bee0: c00da51c c1ffcc78 c182bf0c c182bef8 c002d100 c002d09c c1ffcc78 00000000
+> > bf00: c182bf54 c182bf10 c002d308 c0336570 c182bf3c c0334e44 00000003 00000003
+> > bf20: 00000030 c0334b44 c0044d74 00000003 00000003 c034dac8 c0350a94 c0373440
+> > bf40: c0373440 00000030 c182bf94 c182bf58 c0336d24 c000890c 00000003 00000003
+> > bf60: c0336560 c182bf64 c182bf64 6e616e0d 00000000 c0272fc8 00000000 00000000
+> > bf80: 00000000 00000000 c182bfac c182bf98 c0272fd8 c0336bd8 c182a000 00000000
+> > bfa0: 00000000 c182bfb0 c00095d0 c0272fd8 00000000 00000000 00000000 00000000
+> > bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 374d27cd 33cc33e4
+> > Backtrace:
+> > [<c01db8dc>] (ch2_irq) from [<c0045430>] (handle_irq_event_percpu+0x38/0x148)
+> > [<c00453f8>] (handle_irq_event_percpu) from [<c0045570>] (handle_irq_event+0x30/0x40)
+> > r10:00000000 r9:c1825b34 r8:60000053 r7:c182be2c r6:00000000 r5:c035cec4
+> > r4:c1825b00
+> > [<c0045540>] (handle_irq_event) from [<c0047f34>] (handle_fasteoi_irq+0xac/0x11c)
+> > r4:c1825b00 r3:00000000
+> > [<c0047e88>] (handle_fasteoi_irq) from [<c0044da4>] (generic_handle_irq+0x28/0x38)
+> > r5:c036619c r4:00000013
+> > [<c0044d7c>] (generic_handle_irq) from [<c0009e34>] (handle_IRQ+0x68/0x88)
+> > r4:00000013 r3:0000007f
+> > [<c0009dcc>] (handle_IRQ) from [<c00086a8>] (at91_aic_handle_irq+0x44/0x4c)
+> > r6:ffffffff r5:60000053 r4:c0046728 r3:fefff000
+> > [<c0008664>] (at91_aic_handle_irq) from [<c000cb80>] (__irq_svc+0x40/0x4c)
+> > Exception stack(0xc182bdf8 to 0xc182be40)
+> > bde0:                                                       00000000 00000013
+> > be00: 00000000 00014200 c1825b00 c036e800 00000013 c035ed98 60000053 c1825b34
+> > be20: 00000000 c182be74 c182be20 c182be40 c0047994 c0046728 60000053 ffffffff
+> > [<c0046388>] (__setup_irq) from [<c004689c>] (setup_irq+0x60/0x8c)
+> > r10:c036e700 r9:00000004 r8:c03874bc r7:c035ed98 r6:c036e800 r5:00000013
+> > r4:c1825b00
+> > [<c004683c>] (setup_irq) from [<c0348b08>] (tcb_clksrc_init+0x284/0x31c)
+> > r6:c035ed10 r5:00000000 r4:c18c6080 r3:c036e760
+> > [<c0348884>] (tcb_clksrc_init) from [<c00089fc>] (do_one_initcall+0x100/0x1b4)
+> > r10:00000000 r9:00000000 r8:c182a020 r7:c035b9c0 r6:c0348884 r5:c035b9c0
+> > r4:c18e67e0
+> > [<c00088fc>] (do_one_initcall) from [<c0336d24>] (kernel_init_freeable+0x15c/0x224)
+> > r9:00000030 r8:c0373440 r7:c0373440 r6:c0350a94 r5:c034dac8 r4:00000003
+> > [<c0336bc8>] (kernel_init_freeable) from [<c0272fd8>] (kernel_init+0x10/0xec)
+> > r9:00000000 r8:00000000 r7:00000000 r6:00000000 r5:c0272fc8 r4:00000000
+> > [<c0272fc8>] (kernel_init) from [<c00095d0>] (ret_from_fork+0x14/0x24)
+> > r4:00000000 r3:c182a000
+> > Code: bad PC value
+> > ---[ end trace 5b30f0017e282e47 ]---
+> > Kernel panic - not syncing: Fatal exception in interrupt
+> > 
+> > Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
+> > ---
+> > drivers/misc/atmel_tclib.c | 16 ++++++++++++++++
+> > 1 file changed, 16 insertions(+)
+> > 
+> > diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
+> > index d505d1e..a680151 100644
+> > --- a/drivers/misc/atmel_tclib.c
+> > +++ b/drivers/misc/atmel_tclib.c
+> > @@ -109,6 +109,7 @@ static int __init tc_probe(struct platform_device *pdev)
+> > 	struct clk	*clk;
+> > 	int		irq;
+> > 	struct resource	*r;
+> > +	unsigned int	i;
+> > 
+> > 	irq = platform_get_irq(pdev, 0);
+> > 	if (irq < 0)
+> > @@ -157,18 +158,33 @@ static int __init tc_probe(struct platform_device *pdev)
+> > 	if (tc->irq[2] < 0)
+> > 		tc->irq[2] = irq;
+> > 
+> > +	for (i = 0; i < 3; i++)
+> > +		__raw_writel(0xff, tc->regs + ATMEL_TC_REG(i, IDR));
+> > +
+> > 	spin_lock(&tc_list_lock);
+> > 	list_add_tail(&tc->node, &tc_list);
+> > 	spin_unlock(&tc_list_lock);
+> > 
+> > +	platform_set_drvdata(pdev, tc);
+> > +
+> > 	return 0;
+> > }
+> > 
+> > +static void tc_shutdown (struct platform_device *pdev)
+> > +{
+> > +	int i;
+> > +	struct atmel_tc *tc = platform_get_drvdata(pdev);
+> > +
+> > +	for (i = 0; i < 3; i++)
+> > +		__raw_writel(0xff, tc->regs + ATMEL_TC_REG(i, IDR));
+> > +}
+> > +
+> > static struct platform_driver tc_driver = {
+> > 	.driver = {
+> > 		.name	= "atmel_tcb",
+> > 		.of_match_table	= of_match_ptr(atmel_tcb_dt_ids),
+> > 	},
+> > +	.shutdown = tc_shutdown,
+> > };
+> > 
+> > static int __init tc_init(void)
+> > -- 
+> > 1.9.3
+> > 
+> 
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
