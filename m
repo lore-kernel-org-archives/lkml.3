@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaHSIzH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:55:07 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:38609 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaHSIzD (ORCPT
+	id S1752244AbaHSIzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:55:41 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:54733 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795AbaHSIzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:55:03 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-81-53f310e44db2
+	Tue, 19 Aug 2014 04:55:39 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-1f-53f31109e2eb
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: Paul.Zimmerman@synopsys.com
 Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH RESEND v3 00/12] usb: dwc2/gadget: fix series
-Date: Tue, 19 Aug 2014 10:54:06 +0200
-Message-id: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+        andrzej.p@samsung.com, Kamil Debski <k.debski@samsung.com>,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH RESEND v3 01/12] usb: dwc2/gadget: fix phy disable sequence
+Date: Tue, 19 Aug 2014 10:54:07 +0200
+Message-id: <1408438458-3317-2-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e+xoO4Tgc/BBj33zS1mvWxnsTh4v96i
-	efF6NovLu+awWSxa1spssfbIXXaLRw+3slo8OLyT3YHDY//cNewefVtWMXps2f+Z0eP4je1M
-	Hp83yQWwRnHZpKTmZJalFunbJXBltB/dy16wkKfiy+9OxgbGv5xdjJwcEgImEpe+z2KEsMUk
-	Ltxbz9bFyMUhJDCdUaL310d2CKedSWLdhcNgVWwCOhJbvk8As0UE5CWub7zJAlLELHCIUeLV
-	nWNMXYwcHMICthK/X6aB1LAIqEr8n76IDcTmFXCR2HtwGTvENjmJk8cms05g5F7AyLCKUTS1
-	ILmgOCk911CvODG3uDQvXS85P3cTIzhcnkntYFzZYHGIUYCDUYmHV+HLx2Ah1sSy4spcoKUc
-	zEoivI4vPgUL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRq
-	YLzguUPzmkidROncdaqi5Z8UKoNvnvy8JcnQpJnZw+XRle15Daw8EqaaURofbxUf4z8elm+w
-	Pvyl/vHqz8EHdxZEzs68//LPrsVBjx69r5CUnJf7Q+VpaaDHxoWOK6ys1l4VCJl3f3ai9gV/
-	dw6R5d8Y91vtW59pNetUqKMXx0tPvTz+1gytOUosxRmJhlrMRcWJADTyhEgTAgAA
+In-reply-to: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+References: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jQV1Owc/BBhM3K1nMetnOYnHwfr1F
+	8+L1bBY/Xl9gs7i8aw6bxaJlrcwWa4/cZbd49HArq8WDwzvZHTg99s9dw+7Rt2UVo8eW/Z8Z
+	PY7f2M7k8XmTXABrFJdNSmpOZllqkb5dAlfGp74nzAXvuStWzJzM2sDYzNXFyMEhIWAicW5b
+	bhcjJ5ApJnHh3nq2LkYuDiGB6YwSXe9+QzntTBInz7UxgVSxCehIbPk+gRHEFhGQl7i+8SYL
+	SBGzwHNGiTPrJ7KCTBUW8Jb42JQOUsMioCrxr+crC4jNK+AiMevzHTaIbXISJ49NZgWxOQVc
+	Jd7um8UOYgsB1WxuPcM2gZF3ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgMHsmtYNx
+	ZYPFIUYBDkYlHl6FLx+DhVgTy4orcw8xSnAwK4nwOr74FCzEm5JYWZValB9fVJqTWnyIUZqD
+	RUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBcQdrcp7KXL7gNP5zzl3SFrMUMiZuuxne5zBz
+	zjRhibd+j03WcTratO70CJ/9+yy3dkYDc90dycyNMsJqrK96Qu68/2ZzI8TnzSpnuXrN7vpp
+	wef/9r5RYlh3+4tzkJmTR+U868rVHOcLjpdcqdodP6NQav1MLt5lgnc9DrlMmHAh7+L3X75f
+	lViKMxINtZiLihMB0ymS3S8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+From: Kamil Debski <k.debski@samsung.com>
 
-I'm resending this patchset rebased on linux-next. Now it should apply.
+When the driver is removed s3c_hsotg_phy_disable is called three times
+instead of once. This results in decreasing of the phy reference counter
+below zero and thus consecutive inserts of the module fails.
 
-Thanks,
-Robert Baldyga
+This patch removes calls to s3c_hsotg_phy_disable from s3c_hsotg_remove
+and s3c_hsotg_udc_stop.
 
-Changelog:
-v3: https://lkml.org/lkml/2014/8/4/617
-- use endpoint index instead of FIFO index for EPFIFO
-- extend patch description
+s3c_hsotg_udc_stop is called from udc-core.c only after
+usb_gadget_disconnect, which in turn calls s3c_hsotg_pullup, which
+already calls s3c_hsotg_phy_disable.
 
-v2: https://lkml.org/lkml/2014/7/16/199
-- add patch usb: dwc2/gadget: avoid disabling ep0
-- fix FIFO flushing when it's assigned to endpoint dynamically
-- write to proper FIFO in s3c_hsotg_write_fifo() function
-- use real FIFO size in kill_all_requests
-- fix comment in s3c_hsotg_init_fifo() function
+s3c_hsotg_remove must be called only after udc_stop, so there is no
+point in disabling phy once again there.
 
-v1: https://lkml.org/lkml/2014/6/23/67
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/usb/dwc2/gadget.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-Andrzej Pietrasiewicz (1):
-  usb: dwc2/gadget: Fix comment text
-
-Kamil Debski (3):
-  usb: dwc2/gadget: fix phy disable sequence
-  usb: dwc2/gadget: fix phy initialization sequence
-  usb: dwc2/gadget: move phy bus legth initialization
-
-Marek Szyprowski (5):
-  usb: dwc2/gadget: hide some not really needed debug messages
-  usb: dwc2/gadget: ensure that all fifos have correct memory buffers
-  usb: dwc2/gadget: break infinite loop in endpoint disable code
-  usb: dwc2/gadget: do not call disconnect method in pullup
-  usb: dwc2/gadget: delay enabling irq once hardware is configured
-    properly
-
-Robert Baldyga (3):
-  usb: dwc2/gadget: assign TX FIFO dynamically
-  usb: dwc2/gadget: disable clock when it's not needed
-  usb: dwc2/gadget: avoid disabling ep0
-
- drivers/usb/dwc2/core.h   |   3 +
- drivers/usb/dwc2/gadget.c | 184 +++++++++++++++++++++++++++-------------------
- 2 files changed, 111 insertions(+), 76 deletions(-)
-
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 0ba9c33..d27417e 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -2897,8 +2897,6 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
+ 
+ 	spin_lock_irqsave(&hsotg->lock, flags);
+ 
+-	s3c_hsotg_phy_disable(hsotg);
+-
+ 	if (!driver)
+ 		hsotg->driver = NULL;
+ 
+@@ -3582,7 +3580,6 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
+ 		usb_gadget_unregister_driver(hsotg->driver);
+ 	}
+ 
+-	s3c_hsotg_phy_disable(hsotg);
+ 	if (hsotg->phy)
+ 		phy_exit(hsotg->phy);
+ 	clk_disable_unprepare(hsotg->clk);
 -- 
 1.9.1
 
