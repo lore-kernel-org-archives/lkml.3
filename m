@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225AbaHSJir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:38:47 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:48415 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779AbaHSJip convert rfc822-to-8bit (ORCPT
+	id S1751810AbaHSJpW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:45:22 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:38866 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaHSJpU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:38:45 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "kraxel@redhat.com" <kraxel@redhat.com>,
-        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: RE: [PATCH v3] uas: replace WARN_ON_ONCE() with
- lockdep_assert_held()
-Thread-Topic: [PATCH v3] uas: replace WARN_ON_ONCE() with
- lockdep_assert_held()
-Thread-Index: AQHPtfZ/zzZmyRFO50yw6W1X3K4CA5vMcJ8AgAATFQCACv8JQIAAIRWAgAASrnA=
-Date: Tue, 19 Aug 2014 09:38:41 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF2FE70@EU-MBX-02.mgc.mentorg.com>
-References: <yes>
- <1407825621-23322-1-git-send-email-sanjeev_sharma@mentor.com>
- <53E9B418.3050303@redhat.com>
- <FDC088D3B5555644AE135ED28A7ABDE94DF2FDA2@EU-MBX-02.mgc.mentorg.com>
- <20140819093047.GA991@kroah.com>
-In-Reply-To: <20140819093047.GA991@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 19 Aug 2014 05:45:20 -0400
+Message-ID: <53F31D14.70006@arm.com>
+Date: Tue, 19 Aug 2014 10:47:00 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 19 Aug 2014 09:38:43.0594 (UTC) FILETIME=[5DD536A0:01CFBB91]
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v2 02/18] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-3-git-send-email-hanjun.guo@linaro.org> <53F24632.7030903@arm.com> <53F31A6D.5090104@linaro.org>
+In-Reply-To: <53F31A6D.5090104@linaro.org>
+X-OriginalArrivalTime: 19 Aug 2014 09:45:15.0094 (UTC) FILETIME=[472F5F60:01CFBB92]
+X-MC-Unique: 114081910451616901
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for letting me know.
 
-Sanjeev Sharma
 
------Original Message-----
-From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org] 
-Sent: Tuesday, August 19, 2014 3:01 PM
-To: Sharma, Sanjeev
-Cc: kraxel@redhat.com; mdharm-usb@one-eyed-alien.net; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org; Hans de Goede
-Subject: Re: [PATCH v3] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
+On 19/08/14 10:35, Hanjun Guo wrote:
+> On 2014-8-19 2:30, Sudeep Holla wrote:
+>> On 04/08/14 16:28, Hanjun Guo wrote:
+>>> From: Al Stone <al.stone@linaro.org>
+>>>
+>>> As we want to get ACPI tables to parse and then use the information
+>>> for system initialization, we should get the RSDP (Root System
+>>> Description Pointer) first, it then locates Extended Root Description
+>>> Table (XSDT) which contains all the 64-bit physical address that
+>>> pointer to other boot-time tables.
+>>>
+>>> Introduce acpi.c and its related head file in this patch to provide
+>>> fundamental needs of extern variables and functions for ACPI core,
+>>> and then get boot-time tables as needed.
+>>>     - asm/cpu.h need for ACPI core and will be updated in the future to
+>>>       add definitions for arch_(un)register_cpu which are required for
+>>>       ACPI based physical CPU hotplug;
+>>
 
-On Tue, Aug 19, 2014 at 06:33:04AM +0000, Sharma, Sanjeev wrote:
-> Hi Greg,
-> 
-> Any feedback on this patch ?
+[...]
 
-The merge window ended 2 days ago, _and_ I'm at the kernel summit this week, _and_ my queue is currently sitting at:
-	$ mdfrm -c ~/mail/todo/
-	1317 messages in /home/gregkh/mail/todo/
+>>> +/*
+>>> + * acpi_boot_table_init() called from setup_arch(), always.
+>>> + *    1. find RSDP and get its address, and then find XSDT
+>>> + *    2. extract all tables and checksums them all
+>>> + *
+>>> + * We can parse ACPI boot-time tables such as FADT, MADT after
+>>> + * this function is called.
+>>> + */
+>>> +void __init acpi_boot_table_init(void)
+>>> +{
+>>> +    /* If acpi_disabled, bail out */
+>>> +    if (acpi_disabled)
+>>> +        return;
+>>> +
+>>> +    /* Initialize the ACPI boot-time table parser. */
+>>> +    if (acpi_table_init()) {
+>>
+>> Can't we call acpi_table_init directly in setup ?
+>> IIUC x86 has acpi_boot_table_init as it parses Boot Flags
+>> table(ACPI_SIG_BOOT)
+>
+> Yes, we can. But I think it not a big deal to dot that, if that
+> makes the code more readable, I will update it.
+>
 
-So please be patient.  I'll get to it in a few weeks.
+I agree, but I actually wanted to check if we ever have to use/parse
+Simple Boot Flag Table on ARM64 which is reserved but not part of ACPI
+spec. I assume x86 use either for Legacy reason or firmware expects it.
 
-greg k-h
+Regards,
+Sudeep
+
