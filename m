@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaHSMPD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:15:03 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:51057 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083AbaHSMO6 (ORCPT
+	id S1752870AbaHSMPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:15:24 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:52444 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaHSMPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:14:58 -0400
-X-ASG-Debug-ID: 1408450495-0759e7416b4764040002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Frans Klaver <frans.klaver@xsens.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexey Pelykh <alexey.pelykh@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Frans Klaver <fransklaver@gmail.com>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] tty: omap-serial: pull out calculation from baud_is_mode16
-Date: Tue, 19 Aug 2014 14:14:45 +0200
-X-ASG-Orig-Subj: [PATCH 1/4] tty: omap-serial: pull out calculation from baud_is_mode16
-Message-ID: <1408450488-4083-2-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408450488-4083-1-git-send-email-frans.klaver@xsens.com>
-References: <1406645577-18620-1-git-send-email-frans.klaver@xsens.com>
- <1408450488-4083-1-git-send-email-frans.klaver@xsens.com>
+	Tue, 19 Aug 2014 08:15:21 -0400
+Message-ID: <53F33F7A.7030307@linaro.org>
+Date: Tue, 19 Aug 2014 20:13:46 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.16.11.49]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1408450495
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.8612
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI flags
+ for PSCI init
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org> <20140818142721.GR20043@localhost> <53F2C983.8000800@linaro.org> <20140819111000.GG3302@leverpostej>
+In-Reply-To: <20140819111000.GG3302@leverpostej>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To determine the correct divisor, we need to know the difference between
-the desired baud rate and the actual baud rate. The calculation for this
-difference is implemented twice within omap_serial_baud_is_mode16().
-Pull out the calculation for easier maintenance.
+On 2014-8-19 19:10, Mark Rutland wrote:
+>>>> @@ -47,6 +49,26 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>>>>  	early_memunmap(map, size);
+>>>>  }
+>>>>  
+>>>> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
+>>>> +{
+>>>> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+>>>> +
+>>>> +	/*
+>>>> +	 * Revision in table header is the FADT Major version,
+>>>> +	 * and there is a minor version of FADT which was introduced
+>>>> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
+>>>> +	 * to get arm boot flags, or we will disable ACPI.
+>>>> +	 */
+>>>> +	if (table->revision < 5 || fadt->minor_revision < 1) {
+>>>
+>>> If we ever get revision 6.0, this would trigger.
+>>
+>> Yes, good catch, actually I already fixed that in my local git repo,
+>>
+>> +       if (table->revision > 5 ||
+>> +           (table->revision == 5 && fadt->minor_revision >= 1)) {
+>> +               return 0;
+>> +       } else {
+>> +               pr_info("FADT revision is %d.%d, no PSCI support, should be 5.1
+>> or higher\n",
+>> +                       table->revision, fadt->minor_revision);
+>> +               disable_acpi();
+>> +               return -EINVAL;
+>> +       }
+> 
+> Given you return in the first path, you don't need the remaining code to
+> live in an else block.
 
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- drivers/tty/serial/omap-serial.c | 26 ++++++++++++++++++--------
- 1 file changed, 18 insertions(+), 8 deletions(-)
+Agreed, I will update it, and move disable_acpi() outside this function and keep
+it in one place as Sudeep suggested.
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index d017cec..ae935ce 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -239,6 +239,22 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- }
- 
- /*
-+ * Calculate the absolute difference between the desired and actual baud
-+ * rate for the given mode.
-+ */
-+static inline int calculate_baud_abs_diff(struct uart_port *port,
-+				unsigned int baud, unsigned int mode)
-+{
-+	unsigned int n = port->uartclk / (mode * baud);
-+	int abs_diff = baud - (port->uartclk / (mode * n));
-+
-+	if (abs_diff < 0)
-+		abs_diff = -abs_diff;
-+
-+	return abs_diff;
-+}
-+
-+/*
-  * serial_omap_baud_is_mode16 - check if baud rate is MODE16X
-  * @port: uart port info
-  * @baud: baudrate for which mode needs to be determined
-@@ -252,14 +268,8 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- static bool
- serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
- {
--	unsigned int n13 = port->uartclk / (13 * baud);
--	unsigned int n16 = port->uartclk / (16 * baud);
--	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
--	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
--	if (baudAbsDiff13 < 0)
--		baudAbsDiff13 = -baudAbsDiff13;
--	if (baudAbsDiff16 < 0)
--		baudAbsDiff16 = -baudAbsDiff16;
-+	int baudAbsDiff13 = calculate_baud_abs_diff(port, baud, 13);
-+	int baudAbsDiff16 = calculate_baud_abs_diff(port, baud, 16);
- 
- 	return (baudAbsDiff13 >= baudAbsDiff16);
- }
--- 
-1.9.3
+Thanks
+Hanjun
 
