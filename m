@@ -1,145 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909AbaHSHOW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:14:22 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51774 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbaHSHOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 03:14:21 -0400
-Subject: [PATCH v3 12/17] arcmsr: revise allocation of second
- dma_coherent_handle for type B
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Aug 2014 15:14:14 +0800
-Message-ID: <1408432454.4748.61.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+	id S1752737AbaHSHRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 03:17:50 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:39351 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752570AbaHSHRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 03:17:48 -0400
+Message-ID: <53F2FA10.2000300@iki.fi>
+Date: Tue, 19 Aug 2014 10:17:36 +0300
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Stephan Mueller <smueller@chronox.de>, linux-crypto@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: Kernel crypto API: cryptoperf performance measurement
+References: <56334718.JSiBY74glM@myon.chronox.de>
+In-Reply-To: <56334718.JSiBY74glM@myon.chronox.de>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 193.67.103.254
+X-SA-Exim-Mail-From: jussi.kivilinna@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
+Hello,
 
-This modification is for consistency with upcoming adapter type D.
-Both adapter type B and D have similar H/W and S/W structure.
+On 2014-08-17 18:55, Stephan Mueller wrote:
+> Hi,
+> 
+> during playing around with the kernel crypto API, I implemented a performance 
+> measurement tool kit for the various kernel crypto API cipher types. The 
+> cryptoperf tool kit is provided in [1].
+> 
+> Comments are welcome.
 
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
+Your results are quite slow compared to, for example "cryptsetup
+benchmark", which uses kernel crypto from userspace.
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:27:38.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:38.000000000 +0800
-@@ -507,6 +507,7 @@ struct AdapterControlBlock
- 	#define ACB_ADAPTER_TYPE_B            0x00000002	/* hbb M IOP */
- 	#define ACB_ADAPTER_TYPE_C            0x00000004	/* hbc P IOP */
- 	#define ACB_ADAPTER_TYPE_D            0x00000008	/* hbd A IOP */
-+	u32				roundup_ccbsize;
- 	struct pci_dev *		pdev;
- 	struct Scsi_Host *		host;
- 	unsigned long			vir2phy_offset;
-@@ -563,6 +564,7 @@ struct AdapterControlBlock
- 	dma_addr_t			dma_coherent_handle;
- 	/* dma_coherent_handle used for memory free */
- 	dma_addr_t				dma_coherent_handle2;
-+	void				*dma_coherent2;
- 	unsigned int				uncache_size;
- 	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
- 	/* data collection buffer for read from 80331 */
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:26.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:38.000000000 +0800
-@@ -183,13 +183,10 @@ static struct pci_driver arcmsr_pci_driv
- static void arcmsr_free_mu(struct AdapterControlBlock *acb)
- {
- 	switch (acb->adapter_type) {
--	case ACB_ADAPTER_TYPE_A:
--	case ACB_ADAPTER_TYPE_C:
--		break;
- 	case ACB_ADAPTER_TYPE_B:{
--		dma_free_coherent(&acb->pdev->dev,
--			sizeof(struct MessageUnit_B),
--			acb->pmuB, acb->dma_coherent_handle2);
-+		dma_free_coherent(&acb->pdev->dev, acb->roundup_ccbsize,
-+			acb->dma_coherent2, acb->dma_coherent_handle2);
-+		break;
- 	}
- 	}
- }
-@@ -2210,12 +2207,15 @@ static bool arcmsr_hbaB_get_config(struc
- 	char __iomem *iop_device_map;
- 	/*firm_version,21,84-99*/
- 	int count;
--	dma_coherent = dma_alloc_coherent(&pdev->dev, sizeof(struct MessageUnit_B), &dma_coherent_handle, GFP_KERNEL);
-+
-+	acb->roundup_ccbsize = roundup(sizeof(struct MessageUnit_B), 32);
-+	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->roundup_ccbsize, &dma_coherent_handle, GFP_KERNEL);
- 	if (!dma_coherent){
- 		printk(KERN_NOTICE "arcmsr%d: dma_alloc_coherent got error for hbb mu\n", acb->host->host_no);
- 		return false;
- 	}
- 	acb->dma_coherent_handle2 = dma_coherent_handle;
-+	acb->dma_coherent2 = dma_coherent;
- 	reg = (struct MessageUnit_B *)dma_coherent;
- 	acb->pmuB = reg;
- 	reg->drv2iop_doorbell= (uint32_t __iomem *)((unsigned long)acb->mem_base0 + ARCMSR_DRV2IOP_DOORBELL);
-@@ -2562,6 +2562,7 @@ static int arcmsr_polling_ccbdone(struct
- static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
- {
- 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
-+	dma_addr_t dma_coherent_handle;
- 
- 	/*
- 	********************************************************************
-@@ -2569,8 +2570,16 @@ static int arcmsr_iop_confirm(struct Ada
- 	** if freeccb.HighPart is not zero
- 	********************************************************************
- 	*/
--	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
--	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
-+	switch (acb->adapter_type) {
-+		case ACB_ADAPTER_TYPE_B:
-+			dma_coherent_handle = acb->dma_coherent_handle2;
-+			break;
-+		default:
-+			dma_coherent_handle = acb->dma_coherent_handle;
-+			break;
-+	}
-+	cdb_phyaddr = lower_32_bits(dma_coherent_handle);
-+	cdb_phyaddr_hi32 = upper_32_bits(dma_coherent_handle);
- 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
- 	/*
- 	***********************************************************************
-@@ -2598,7 +2607,6 @@ static int arcmsr_iop_confirm(struct Ada
- 		break;
- 
- 	case ACB_ADAPTER_TYPE_B: {
--		unsigned long post_queue_phyaddr;
- 		uint32_t __iomem *rwbuffer;
- 
- 		struct MessageUnit_B *reg = acb->pmuB;
-@@ -2610,16 +2618,15 @@ static int arcmsr_iop_confirm(struct Ada
- 				acb->host->host_no);
- 			return 1;
- 		}
--		post_queue_phyaddr = acb->dma_coherent_handle2;
- 		rwbuffer = reg->message_rwbuffer;
- 		/* driver "set config" signature */
- 		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
- 		/* normal should be zero */
- 		writel(cdb_phyaddr_hi32, rwbuffer++);
- 		/* postQ size (256 + 8)*4	 */
--		writel(post_queue_phyaddr, rwbuffer++);
-+		writel(cdb_phyaddr, rwbuffer++);
- 		/* doneQ size (256 + 8)*4	 */
--		writel(post_queue_phyaddr + 1056, rwbuffer++);
-+		writel(cdb_phyaddr + 1056, rwbuffer++);
- 		/* ccb maxQ size must be --> [(256 + 8)*4]*/
- 		writel(1056, rwbuffer);
- 
+With Intel i5-2450M (turbo enabled), I get:
 
+#  Algorithm | Key |  Encryption |  Decryption
+     aes-cbc   128b   524,0 MiB/s  11909,1 MiB/s
+ serpent-cbc   128b    60,9 MiB/s   219,4 MiB/s
+ twofish-cbc   128b   143,4 MiB/s   240,3 MiB/s
+     aes-cbc   256b   330,4 MiB/s  1242,8 MiB/s
+ serpent-cbc   256b    66,1 MiB/s   220,3 MiB/s
+ twofish-cbc   256b   143,5 MiB/s   221,8 MiB/s
+     aes-xts   256b  1268,7 MiB/s  4193,0 MiB/s
+ serpent-xts   256b   234,8 MiB/s   224,6 MiB/s
+ twofish-xts   256b   253,5 MiB/s   254,7 MiB/s
+     aes-xts   512b  2535,0 MiB/s  2945,0 MiB/s
+ serpent-xts   512b   274,2 MiB/s   242,3 MiB/s
+ twofish-xts   512b   250,0 MiB/s   245,8 MiB/s
 
+> 
+> In general, the results are as expected, i.e. the assembler implementations 
+> are faster than the pure C implementations. However, there are curious results 
+> which probably should be checked by the maintainers of the respective ciphers 
+> (hoping that my tool works correctly ;-) ):
+> 
+> ablkcipher
+> ----------
+> 
+> - cryptd is slower by factor 10 across the board
+> 
+> blkcipher
+> ---------
+> 
+> - Blowfish x86_64 assembler together with the generic C block chaining modes 
+> is significantly slower than Blowfish implemented in generic C
+> 
+> - Blowfish x86_64 assembler in ECB is significantly slower than generic C 
+> Blowfish ECB
+> 
+> - Serpent assembler implementations are not significantly faster than generic 
+> C implementations
+> 
+> - AES-NI ECB, LRW, CTR is significantly slower than AES i586 assembler.
+> 
+> - AES-NI ECB, LRW, CTR is not significantly faster than AES generic C
+> 
+
+Quite many assembly implementations get speed up from processing
+parallel block cipher blocks, which modes of operation that (CTR, XTS,
+LWR, CBC(dec)). For small buffer sizes, these implementations will use
+the non-parallel implementation of cipher.
+
+-Jussi
+
+> rng
+> ---
+> 
+> - The ANSI X9.31 RNG seems to work massively faster than the underlying AES 
+> cipher (by about a factor of 5). I am unsure about the cause of this.
+> 
+> 
+> Caveat
+> ------
+> 
+> Please note that there is one small error which I am unsure how to fix it as 
+> documented in the TODO file.
+> 
+> [1] http://www.chronox.de/cryptoperf.html
+> 
