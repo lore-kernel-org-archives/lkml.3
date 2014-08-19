@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233AbaHSOhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:37:20 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:52736 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648AbaHSOhS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:37:18 -0400
-From: Yannis Damigos <giannis.damigos@gmail.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Yannis Damigos <giannis.damigos@gmail.com>
-Subject: [PATCH 1/1] staging: imx-drm: Lines over 80 characters fixed.
-Date: Tue, 19 Aug 2014 17:36:10 +0300
-Message-Id: <1408458970-27097-2-git-send-email-giannis.damigos@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1408458970-27097-1-git-send-email-giannis.damigos@gmail.com>
-References: <1408457139.2899.11.camel@paszta.hi.pengutronix.de>
- <1408458970-27097-1-git-send-email-giannis.damigos@gmail.com>
+	id S1753253AbaHSOiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:38:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42076 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752737AbaHSOiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:38:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="560585028"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Jean Delvare <jdelvare@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c: i801: Add PCI ID for Intel Braswell
+Date: Tue, 19 Aug 2014 17:37:28 +0300
+Message-Id: <1408459048-7470-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the ipuv3-crtc.c file that fixes up two "lines
-over 80 characters" warnings found by the checkpatch.pl tool,
-keeping the alignment of the x/y/width/height parameters for
-readability.
+From: Alan Cox <alan@linux.intel.com>
 
-Signed-off-by: Yannis Damigos <giannis.damigos@gmail.com>
+The SMBus host controller is the same as used in Baytrail so add the new
+PCI ID to the driver's list of supported IDs.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/staging/imx-drm/ipuv3-crtc.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/i2c/busses/i2c-i801.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
-index 720868b..d6657a0 100644
---- a/drivers/staging/imx-drm/ipuv3-crtc.c
-+++ b/drivers/staging/imx-drm/ipuv3-crtc.c
-@@ -201,9 +201,10 @@ static int ipu_crtc_mode_set(struct drm_crtc *crtc,
- 		return ret;
- 	}
+diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
+index 2994690b26e9..10467a327749 100644
+--- a/drivers/i2c/busses/i2c-i801.c
++++ b/drivers/i2c/busses/i2c-i801.c
+@@ -164,6 +164,7 @@
  
--	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode, crtc->primary->fb,
--				  0, 0, mode->hdisplay, mode->vdisplay,
--				  x, y, mode->hdisplay, mode->vdisplay);
-+	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode,
-+			crtc->primary->fb,
-+			0, 0, mode->hdisplay, mode->vdisplay,
-+			x, y, mode->hdisplay, mode->vdisplay);
- }
+ /* Older devices have their ID defined in <linux/pci_ids.h> */
+ #define PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS		0x0f12
++#define PCI_DEVICE_ID_INTEL_BRASWELL_SMBUS		0x2292
+ #define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS		0x1c22
+ #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS		0x1d22
+ /* Patsburg also has three 'Integrated Device Function' SMBus controllers */
+@@ -828,6 +829,7 @@ static const struct pci_device_id i801_ids[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BRASWELL_SMBUS) },
+ 	{ 0, }
+ };
  
- static void ipu_crtc_handle_pageflip(struct ipu_crtc *ipu_crtc)
-@@ -227,7 +228,8 @@ static irqreturn_t ipu_irq_handler(int irq, void *dev_id)
- 
- 	if (ipu_crtc->newfb) {
- 		ipu_crtc->newfb = NULL;
--		ipu_plane_set_base(ipu_crtc->plane[0], ipu_crtc->base.primary->fb,
-+		ipu_plane_set_base(ipu_crtc->plane[0],
-+				ipu_crtc->base.primary->fb,
- 				ipu_crtc->plane[0]->x, ipu_crtc->plane[0]->y);
- 		ipu_crtc_handle_pageflip(ipu_crtc);
- 	}
 -- 
-2.0.4
+2.1.0
 
