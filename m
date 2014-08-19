@@ -1,67 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaHSF4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 01:56:00 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:37514 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbaHSFz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 01:55:57 -0400
-Message-ID: <53F2E6E6.8030709@linux.vnet.ibm.com>
-Date: Tue, 19 Aug 2014 13:55:50 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: David Matlack <dmatlack@google.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Avi Kivity <avi.kivity@gmail.com>, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
- generation number
-References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com> <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com> <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com> <53F2C997.6070605@linux.vnet.ibm.com> <CALzav=fceJouxxJW-m0h2OtqjeNJWfDMFpiJw5zTndbybRACpg@mail.gmail.com> <53F2D567.70700@linux.vnet.ibm.com> <CALzav=eXu8VmPpqSYikY5y5QqivJ_FD0N2bGTUPnAesJ2PvW1w@mail.gmail.com> <53F2DE4B.4060708@linux.vnet.ibm.com> <CALzav=dkps18861qOoESeQG3mKgmFW3zJO6B8H1Jtar1PCGdNA@mail.gmail.com>
-In-Reply-To: <CALzav=dkps18861qOoESeQG3mKgmFW3zJO6B8H1Jtar1PCGdNA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14081905-2674-0000-0000-00000174067B
+	id S1752706AbaHSGAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 02:00:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16851 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601AbaHSGAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 02:00:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,892,1400050800"; 
+   d="scan'208";a="560388210"
+From: xiaoming wang <xiaoming.wang@intel.com>
+To: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz,
+        gregkh@linuxfoundation.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: xiaoming wang <xiaoming.wang@intel.com>,
+        Chuansheng Liu <chuansheng.liu@intel.com>
+Subject: [PATCH 1/2] PM / sleep: Asynchronous threads for dpm_prepare
+Date: Tue, 19 Aug 2014 16:29:28 -0400
+Message-Id: <1408480169-18090-1-git-send-email-xiaoming.wang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 01:40 PM, David Matlack wrote:
-> On Mon, Aug 18, 2014 at 10:19 PM, Xiao Guangrong
-> <xiaoguangrong@linux.vnet.ibm.com> wrote:
->> On 08/19/2014 01:00 PM, David Matlack wrote:
->>> On Mon, Aug 18, 2014 at 9:41 PM, Xiao Guangrong
->>> <xiaoguangrong@linux.vnet.ibm.com> wrote:
->>>> On 08/19/2014 12:31 PM, David Matlack wrote:
->>>>> The single line patch I suggested was only intended to fix the "forever
->>>>> incorrectly exit mmio".
->>>>
->>>> My patch also fixes this case and that does not doubly increase the
->>>> number. I think this is the better one.
->>>
->>> I prefer doubly increasing the generation for this reason: the updated boolean
->>> requires extra code on the "client-side" to check if there's an update in
->>> progress. And that makes it easy to get wrong. In fact, your patch
->>> forgot to check the updated bit in mark_mmio_spte(). Doubly increasing the
->>> generation requires no "client-side" code to work.
->>
->> No, the updated patch is used to fix case 2 which i draw the scenario in
->> the last mail. I mean the original patch in this patchset which just
->> increase the number after srcu-sync.
->>
->> Then could you tell me that your approach can do but my original patch can not?
-> 
-> It avoids publishing new memslots with an old generation number attached to
-> them (even if it only lasts for a short period of time). 
+In analogy with commits 5af84b82701a and 97df8c12995,
+using asynchronous threads can improve the overall
+suspend time significantly.
 
-I can not see the problem if that happen, could you please draw the scenario?
+This patch is for dpm_prepare phase.
 
-> Do you have a reason
-> why you don't want to doubly increase the generation?
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ drivers/base/power/main.c |   57 +++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 52 insertions(+), 5 deletions(-)
 
-That more easily causes the number wrap-around.
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index b67d9ae..f9fe1b3 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -1531,15 +1531,24 @@ int dpm_suspend(pm_message_t state)
+  * Execute the ->prepare() callback(s) for given device.  No new children of the
+  * device may be registered after this function has returned.
+  */
+-static int device_prepare(struct device *dev, pm_message_t state)
++static int __device_prepare(struct device *dev, pm_message_t state, bool async)
+ {
+ 	int (*callback)(struct device *) = NULL;
+ 	char *info = NULL;
+ 	int ret = 0;
+ 
++	if (async_error)
++		goto Complete;
++
++	if (pm_wakeup_pending()) {
++		async_error = -EBUSY;
++		goto Complete;
++	}
++
+ 	if (dev->power.syscore)
+-		return 0;
++		goto Complete;
+ 
++	dpm_wait_for_children(dev, async);
+ 	/*
+ 	 * If a device's parent goes into runtime suspend at the wrong time,
+ 	 * it won't be possible to resume the device.  To prevent this we
+@@ -1582,7 +1591,7 @@ static int device_prepare(struct device *dev, pm_message_t state)
+ 	if (ret < 0) {
+ 		suspend_report_result(callback, ret);
+ 		pm_runtime_put(dev);
+-		return ret;
++		goto Complete;
+ 	}
+ 	/*
+ 	 * A positive return value from ->prepare() means "this device appears
+@@ -1594,9 +1603,40 @@ static int device_prepare(struct device *dev, pm_message_t state)
+ 	spin_lock_irq(&dev->power.lock);
+ 	dev->power.direct_complete = ret > 0 && state.event == PM_EVENT_SUSPEND;
+ 	spin_unlock_irq(&dev->power.lock);
+-	return 0;
++
++Complete:
++	complete_all(&dev->power.completion);
++	if (ret)
++		async_error = ret;
++
++	return ret;
++}
++
++static void async_prepare(void *data, async_cookie_t cookie)
++{
++	struct device *dev = (struct device *)data;
++	int error;
++
++	error = __device_prepare(dev, pm_transition, true);
++	if (error) {
++		dpm_save_failed_dev(dev_name(dev));
++		pm_dev_err(dev, pm_transition, " async", error);
++	}
++	put_device(dev);
++}
++
++static int device_prepare(struct device *dev)
++{
++	reinit_completion(dev->power.completion);
++	if (pm_async_enabled && dev->power.async_suspend) {
++		get_device(dev);
++		async_schedule(async_prepare, dev);
++		return 0;
++	}
++	return __device_prepare(dev, pm_transition, false);
+ }
+ 
++
+ /**
+  * dpm_prepare - Prepare all non-sysdev devices for a system PM transition.
+  * @state: PM transition of the system being carried out.
+@@ -1611,13 +1651,15 @@ int dpm_prepare(pm_message_t state)
+ 	might_sleep();
+ 
+ 	mutex_lock(&dpm_list_mtx);
++	pm_transition = state;
++	async_error = 0;
+ 	while (!list_empty(&dpm_list)) {
+ 		struct device *dev = to_device(dpm_list.next);
+ 
+ 		get_device(dev);
+ 		mutex_unlock(&dpm_list_mtx);
+ 
+-		error = device_prepare(dev, state);
++		error = device_prepare(dev);
+ 
+ 		mutex_lock(&dpm_list_mtx);
+ 		if (error) {
+@@ -1636,8 +1678,13 @@ int dpm_prepare(pm_message_t state)
+ 		if (!list_empty(&dev->power.entry))
+ 			list_move_tail(&dev->power.entry, &dpm_prepared_list);
+ 		put_device(dev);
++		if (async_error)
++			break;
+ 	}
+ 	mutex_unlock(&dpm_list_mtx);
++	async_synchronize_full();
++	if (!error)
++		error = async_error;
+ 	trace_suspend_resume(TPS("dpm_prepare"), state.event, false);
+ 	return error;
+ }
+-- 
+1.7.1
 
