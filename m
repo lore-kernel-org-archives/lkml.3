@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaHSNC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:02:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51126 "EHLO
+	id S1753355AbaHSNF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:05:26 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51133 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019AbaHSNC5 (ORCPT
+	with ESMTP id S1753080AbaHSNC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:02:57 -0400
+	Tue, 19 Aug 2014 09:02:58 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 2/8] imx-drm: Do not decrement endpoint node refcount in the loop
-Date: Tue, 19 Aug 2014 15:02:40 +0200
-Message-Id: <1408453366-1366-3-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH 8/8] imx-drm: use for_each_endpoint_of_node macro in imx_drm_encoder_parse_of
+Date: Tue, 19 Aug 2014 15:02:46 +0200
+Message-Id: <1408453366-1366-9-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.1.0.rc1
 In-Reply-To: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
 References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
@@ -31,52 +31,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for the following patch, stop decrementing the endpoint node
-refcount in the loop. This temporarily leaks a reference to the endpoint node,
-which will be fixed by having of_graph_get_next_endpoint decrement the refcount
-of its prev argument instead.
+Using the for_each_... macro should make the code bit shorter and
+easier to read.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- drivers/staging/imx-drm/imx-drm-core.c | 12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ drivers/staging/imx-drm/imx-drm-core.c | 17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 6b22106..12303b3 100644
+index 9b5222c..460d785 100644
 --- a/drivers/staging/imx-drm/imx-drm-core.c
 +++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -434,14 +434,6 @@ static uint32_t imx_drm_find_crtc_mask(struct imx_drm_device *imxdrm,
- 	return 0;
- }
- 
--static struct device_node *imx_drm_of_get_next_endpoint(
--		const struct device_node *parent, struct device_node *prev)
--{
--	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
--	of_node_put(prev);
--	return node;
--}
--
- int imx_drm_encoder_parse_of(struct drm_device *drm,
+@@ -438,17 +438,13 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
  	struct drm_encoder *encoder, struct device_node *np)
  {
-@@ -453,7 +445,7 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
- 	for (i = 0; ; i++) {
+ 	struct imx_drm_device *imxdrm = drm->dev_private;
+-	struct device_node *ep = NULL;
++	struct device_node *ep;
+ 	uint32_t crtc_mask = 0;
+-	int i;
++	int i = 0;
+ 
+-	for (i = 0; ; i++) {
++	for_each_endpoint_of_node(np, ep) {
  		u32 mask;
  
--		ep = imx_drm_of_get_next_endpoint(np, ep);
-+		ep = of_graph_get_next_endpoint(np, ep);
- 		if (!ep)
- 			break;
+-		ep = of_graph_get_next_endpoint(np, ep);
+-		if (!ep)
+-			break;
+-
+ 		mask = imx_drm_find_crtc_mask(imxdrm, ep);
  
-@@ -502,7 +494,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
- 		return -EINVAL;
+ 		/*
+@@ -457,14 +453,15 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
+ 		 * not been registered yet.  Defer probing, and hope that
+ 		 * the required CRTC is added later.
+ 		 */
+-		if (mask == 0)
++		if (mask == 0) {
++			of_node_put(ep);
+ 			return -EPROBE_DEFER;
++		}
  
- 	do {
--		ep = imx_drm_of_get_next_endpoint(node, ep);
-+		ep = of_graph_get_next_endpoint(node, ep);
- 		if (!ep)
- 			break;
+ 		crtc_mask |= mask;
++		i++;
+ 	}
+ 
+-	if (ep)
+-		of_node_put(ep);
+ 	if (i == 0)
+ 		return -ENOENT;
  
 -- 
 2.1.0.rc1
