@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087AbaHSIxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:53:21 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:63758 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaHSIxR (ORCPT
+	id S1752166AbaHSIxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:53:34 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:49842 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaHSIxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:53:17 -0400
-Message-ID: <53F3106E.1050304@linaro.org>
-Date: Tue, 19 Aug 2014 10:53:02 +0200
+	Tue, 19 Aug 2014 04:53:31 -0400
+Message-ID: <53F3107C.6060404@linaro.org>
+Date: Tue, 19 Aug 2014 10:53:16 +0200
 From: Eric Auger <eric.auger@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -323,6 +323,12 @@ Waiting for Marc's feedback.
 Well some MSI support comes with GICv2m and GICv3. My current
 understanding is it makes sense to inject an MSI from an irqfd trigger.
 Don't you share this understanding?
+
+Thanks
+
+Best Regards
+
+Eric
 > 
 >> +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
 >> +		struct kvm *kvm, int irq_source_id, int level, bool line_status)
