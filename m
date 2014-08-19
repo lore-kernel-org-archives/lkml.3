@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaHSSm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:42:56 -0400
-Received: from ozlabs.org ([103.22.144.67]:58264 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753355AbaHSSmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:42:55 -0400
-Date: Wed, 20 Aug 2014 04:42:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 18
-Message-ID: <20140820044244.7e58b9f3@canb.auug.org.au>
-In-Reply-To: <20140819152426.GA19665@roeck-us.net>
-References: <20140818133259.3d1182fd@canb.auug.org.au>
-	<20140819152426.GA19665@roeck-us.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1753850AbaHSSnR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:43:17 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:63782 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaHSSnO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 14:43:14 -0400
+Date: Tue, 19 Aug 2014 11:43:03 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: Overriding -Werror
+Message-ID: <20140819184303.GT18411@ld-irv-0074>
+References: <20140814222119.GD18411@ld-irv-0074>
+ <87ppfwmxic.fsf@tassilo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/G5rjfs3RlvrBIW00zLx65/m"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ppfwmxic.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/G5rjfs3RlvrBIW00zLx65/m
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 19, 2014 at 06:15:07AM -0700, Andi Kleen wrote:
+> Brian Norris <computersforpeace@gmail.com> writes:
+> >
+> > 4. better ideas?
+> 
+> Just send patches to remove -Werror in all architectures
+> as a tree sweep (and anywhere else where someone misguided add it)
 
-Hi Guenter,
+I cited at least one example in which this was attempted but rejected.
+(Or at least, it was semi-deliberately stalled.)
 
-On Tue, 19 Aug 2014 08:24:26 -0700 Guenter Roeck <linux@roeck-us.net> wrote:
->
-> Something in this tree appears to be completely broken. All my qemu tests
-> fail with it. It _seems_ that the problem is related to either mount rela=
-ted
-> or to locking related code. Someone might want to have a look. Given that
-> all of my runtime tests crash, it is probably easy to reproduce by just
-> trying to load an image on an x86 system.
+> Having -Werror anywhere in a shipping release is just plainly a bug,
+> as it makes it often impossible to build on newer gcc versions.
 
-Hopefully you are seeing what will be fixed by Hugh Dickins' patch in
-today's linux-next.
+I also feel it is misguided, for other reasons. But there are at least a
+few who seem to disagree. They seem to feel it is important/necessary
+for enforcing good practices during development. I'm not sure how to
+bridge the disagreement, other than to provide workarounds for disabling
+-Werror.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I could try sending -Werror removal patches, but I'm not confident that
+will go over well.
 
---Sig_/G5rjfs3RlvrBIW00zLx65/m
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT85qpAAoJEMDTa8Ir7ZwVkuYP/iBg+eZtXzqibU5eJ2WNwEQ0
-ztAkG3kqm20zvnx7/TaMN86pYzht5lvlo+MIC+zRqX2PkD251QUvPieiMQ8vqQWk
-oD5ezgfnkBrQghbKRL3wYLOhka5xtZcARJPwSoyHoHVn/owuMYsR5Qv2Cg9PkDce
-zpHa9gwbgvmsMLmo4vf9RD9c8eVtJ5loinjT1dIZxyUs/dswSanjJsLirsA+Z+a7
-I9xWcPG39w2Mtjp8VOlQTjsyYZAc2FmE50r8ght/DvEeheaIOFIkSNIFE2QIMDEG
-fOo/1MlX3giRdUdfoc/ZZ7/+XzBRW8MzKuZ47fzekUvmkT8Vsce8Ez25R/K/AKIl
-5E85kRX5JM+9JBEO+Qcyo1dIFraquYr/U4TUx62L88xkF9QzDyuhSKZYAVQaylH2
-RQPB4/I9JX3JWFXzYbX3mR799rtkGlBICW0qKJPSijr2Y6f9Vsbcx8JF6kZVH8yA
-GENSrMf2fAcDjGNzMSLfMD9r+lkyQwWdGLZho00erXJDux/sJvsXQgsISw1NvWV9
-6LdZwY5YIwrxTigMAJyRqBxKACKBmZlFlexH/29wJD9xAzZZSyLqr7z45hcIL4Uv
-bakAW4zBm/ushbwOhbOz1EPsLD2hGZQTHGHk1rR7jSTXvgWxRWrCmllLjnsqUO1S
-At6yu/+f9E2lxAuYPPDT
-=myqo
------END PGP SIGNATURE-----
-
---Sig_/G5rjfs3RlvrBIW00zLx65/m--
+Brian
