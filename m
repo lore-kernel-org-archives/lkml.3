@@ -1,36 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaHSPja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:39:30 -0400
-Received: from mga14.intel.com ([192.55.52.115]:63901 "EHLO mga14.intel.com"
+	id S1753183AbaHSPji (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:39:38 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49868 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436AbaHSPj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:39:28 -0400
+	id S1753055AbaHSPjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:39:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,895,1400050800"; 
-   d="scan'208";a="578814689"
-Date: Tue, 19 Aug 2014 20:52:25 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Vignesh Raman <Vignesh_Raman@mentor.com>
-Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiada_Wang@mentor.com
-Subject: Re: [PATCH v2 0/2] dma: imx-sdma: Modify SDMA's remove operation
-Message-ID: <20140819152225.GP13288@intel.com>
-References: <1407244182-27302-1-git-send-email-Vignesh_Raman@mentor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407244182-27302-1-git-send-email-Vignesh_Raman@mentor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="470372214"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Tyser <ptyser@xes-inc.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] mfd: lpc_ich: Add PCI ID for Intel Braswell
+Date: Tue, 19 Aug 2014 18:39:03 +0300
+Message-Id: <1408462743-9462-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 05, 2014 at 06:39:40PM +0530, Vignesh Raman wrote:
-> This is a patch set which contains two patches which modify's sdma_remove 
-> operation and add tasklet_kill in sdma_remove function.
-Applied, thanks
+From: Alan Cox <alan@linux.intel.com>
 
+This is the same as used in Baytrail so add the new PCI ID to the driver's
+list of supported IDs.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/mfd/lpc_ich.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+index 7d8482ff5868..597f5f495d49 100644
+--- a/drivers/mfd/lpc_ich.c
++++ b/drivers/mfd/lpc_ich.c
+@@ -216,6 +216,7 @@ enum lpc_chipsets {
+ 	LPC_BAYTRAIL,   /* Bay Trail SoC */
+ 	LPC_COLETO,	/* Coleto Creek */
+ 	LPC_WPT_LP,	/* Wildcat Point-LP */
++	LPC_BRASWELL,	/* Braswell SoC */
+ };
+ 
+ static struct lpc_ich_info lpc_chipset_info[] = {
+@@ -519,6 +520,10 @@ static struct lpc_ich_info lpc_chipset_info[] = {
+ 		.name = "Wildcat Point_LP",
+ 		.iTCO_version = 2,
+ 	},
++	[LPC_BRASWELL] = {
++		.name = "Braswell SoC",
++		.iTCO_version = 3,
++	},
+ };
+ 
+ /*
+@@ -745,6 +750,7 @@ static const struct pci_device_id lpc_ich_ids[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x9cc6), LPC_WPT_LP},
+ 	{ PCI_VDEVICE(INTEL, 0x9cc7), LPC_WPT_LP},
+ 	{ PCI_VDEVICE(INTEL, 0x9cc9), LPC_WPT_LP},
++	{ PCI_VDEVICE(INTEL, 0x229C), LPC_BRASWELL},
+ 	{ 0, },			/* End of list */
+ };
+ MODULE_DEVICE_TABLE(pci, lpc_ich_ids);
 -- 
-~Vinod
+2.1.0
 
