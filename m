@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaHSPIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:08:45 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42424 "EHLO
+	id S1753503AbaHSPIy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:08:54 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42450 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401AbaHSPIn (ORCPT
+	with ESMTP id S1753435AbaHSPIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:08:43 -0400
+	Tue, 19 Aug 2014 11:08:51 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
@@ -16,44 +16,125 @@ Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
         linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 0/6] Add max77802 support for Peach boards
-Date: Tue, 19 Aug 2014 17:08:27 +0200
-Message-Id: <1408460913-13863-1-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH 4/6] ARM: dts: Add thermistor dts fragment used by exynos based Peach boards
+Date: Tue, 19 Aug 2014 17:08:31 +0200
+Message-Id: <1408460913-13863-5-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1408460913-13863-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1408460913-13863-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 
-Mark Brown has already queued for 3.18 the max77802 PMIC regulators
-driver so now we can add support for these in the Peach Pit and Pi
-DTS and also merge all the posted patches that depend on this. I've
-picked all the patches I found and rebased them to be sure that they
-apply cleanly on top of linux-next. Also I've taken some DT snippets
-from the downstream Chrome OS 3.8 kernel DTS for devices that use
-one of the regulators of these regulators has their input supply.
+This patch creates a thermistor fragment carrying the NTC Thermistor
+nodes as children of the IIO based ADC.
 
-The series is composed of the following patches:
+This fragment is included in exynos5420-peach-pit.dts and
+exynos5800-peach-pi.dts.
 
-Javier Martinez Canillas (3):
-  ARM: dts: Add Peach Pit and Pi dts entry for max77802 PMIC
-  ARM: dts: Add vmmc and vqmmc supplies for Peach Pit and Pi boards
-  ARM: dts: Add Peach Pit and Pi dts entry for ISL29018 sensor
-
-Naveen Krishna Chatradhi (1):
-  ARM: dts: Add thermistor dts fragment used by exynos based Peach
-    boards
-
-Rahul Sharma (2):
-  ARM: dts: add hdmi regulators for exynos5800 based peach-pi board
-  ARM: dts: add hdmi regulators for exynos5420 based peach-pit board
-
- arch/arm/boot/dts/cros-adc-thermistors.dtsi |  44 ++++
- arch/arm/boot/dts/exynos5420-peach-pit.dts  | 390 ++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts   | 390 ++++++++++++++++++++++++++++
- 3 files changed, 824 insertions(+)
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+ arch/arm/boot/dts/cros-adc-thermistors.dtsi | 44 +++++++++++++++++++++++++++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts  |  6 ++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts   |  6 ++++
+ 3 files changed, 56 insertions(+)
  create mode 100644 arch/arm/boot/dts/cros-adc-thermistors.dtsi
 
-Best regards,
-Javier
+diff --git a/arch/arm/boot/dts/cros-adc-thermistors.dtsi b/arch/arm/boot/dts/cros-adc-thermistors.dtsi
+new file mode 100644
+index 0000000..acd4fe1
+--- /dev/null
++++ b/arch/arm/boot/dts/cros-adc-thermistors.dtsi
+@@ -0,0 +1,44 @@
++/*
++ * Thermistor dts fragment for devices that use Thermistors as
++ * children of the IIO based ADC.
++ *
++ * Currently, used by Exynos5420 based Peach PIT and
++ * Exynos5800 based Peach PI.
++ *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++*/
++
++&adc {
++	ncp15wb473@3 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 3>;
++	};
++	ncp15wb473@4 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 4>;
++	};
++	ncp15wb473@5 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 5>;
++	};
++	ncp15wb473@6 {
++		compatible = "murata,ncp15wb473";
++		pullup-uv = <1800000>;
++		pullup-ohm = <47000>;
++		pulldown-ohm = <0>;
++		io-channels = <&adc 6>;
++	};
++};
+diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+index 9cf53b1..8e50042 100644
+--- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
++++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+@@ -102,6 +102,11 @@
+ 	};
+ };
+ 
++&adc {
++	status = "okay";
++	vdd-supply = <&ldo9_reg>;
++};
++
+ &dp {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+@@ -821,3 +826,4 @@
+ };
+ 
+ #include "cros-ec-keyboard.dtsi"
++#include "cros-adc-thermistors.dtsi"
+diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+index e613827..939f91c 100644
+--- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
++++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
+@@ -100,6 +100,11 @@
+ 	};
+ };
+ 
++&adc {
++	status = "okay";
++	vdd-supply = <&ldo9_reg>;
++};
++
+ &dp {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+@@ -819,3 +824,4 @@
+ };
+ 
+ #include "cros-ec-keyboard.dtsi"
++#include "cros-adc-thermistors.dtsi"
+-- 
+2.0.1
+
