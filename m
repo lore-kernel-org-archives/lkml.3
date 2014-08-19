@@ -1,31 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaHSOgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:36:22 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:65295 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaHSOgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:36:21 -0400
-From: Yannis Damigos <giannis.damigos@gmail.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: 
-Date: Tue, 19 Aug 2014 17:36:09 +0300
-Message-Id: <1408458970-27097-1-git-send-email-giannis.damigos@gmail.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1408457139.2899.11.camel@paszta.hi.pengutronix.de>
-References: <1408457139.2899.11.camel@paszta.hi.pengutronix.de>
+	id S1753194AbaHSOgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:36:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53716 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753074AbaHSOgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:36:42 -0400
+Date: Tue, 19 Aug 2014 15:34:28 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [mm] f7b5d647946: -3.0% dbench.throughput-MB/sec
+Message-ID: <20140819143428.GC10146@suse.de>
+References: <20140819044134.GB8798@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140819044134.GB8798@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I updated the patch to keep the alignment of the
-x/y/width/height parameters for readability.
+On Tue, Aug 19, 2014 at 12:41:34PM +0800, Fengguang Wu wrote:
+> Hi Mel,
+> 
+> We noticed a minor dbench throughput regression on commit
+> f7b5d647946aae1647bf5cd26c16b3a793c1ac49 ("mm: page_alloc: abort fair
+> zone allocation policy when remotes nodes are encountered").
+> 
+> testcase: ivb44/dbench/100%
+> 
+> bb0b6dffa2ccfbd  f7b5d647946aae1647bf5cd26
+> ---------------  -------------------------
+>      25692 ± 0%      -3.0%      24913 ± 0%  dbench.throughput-MB/sec
+>    6974259 ± 6%     -12.1%    6127616 ± 0%  meminfo.DirectMap2M
+>      18.43 ± 0%      -4.6%      17.59 ± 0%  turbostat.RAM_W
+>       9302 ± 0%      -3.6%       8965 ± 1%  time.user_time
+>    1425791 ± 1%      -2.0%    1396598 ± 0%  time.involuntary_context_switches
+> 
+> Disclaimer:
+> Results have been estimated based on internal Intel analysis and are provided
+> for informational purposes only. Any difference in system hardware or software
+> design or configuration may affect actual performance.
+> 
 
-regards,
-Yannis
+DirectMap2M changing is a major surprise and doesn't make sense for this
+machine. Did the amount of memory in the machine change between two
+tests?
+
+-- 
+Mel Gorman
+SUSE Labs
