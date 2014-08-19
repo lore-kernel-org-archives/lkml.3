@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaHSSnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:43:17 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:63782 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753796AbaHSSnO (ORCPT
+	id S1753826AbaHSSnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:43:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54821 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318AbaHSSnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:43:14 -0400
-Date: Tue, 19 Aug 2014 11:43:03 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: Re: Overriding -Werror
-Message-ID: <20140819184303.GT18411@ld-irv-0074>
-References: <20140814222119.GD18411@ld-irv-0074>
- <87ppfwmxic.fsf@tassilo.jf.intel.com>
+	Tue, 19 Aug 2014 14:43:13 -0400
+Date: Tue, 19 Aug 2014 13:38:25 -0500
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Valentina Manea <valentina.manea.m@gmail.com>
+Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
+        hdegoede@redhat.com, f.manzan@gmail.com, kurt@garloff.de,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        firefly@lists.rosedu.org, andy.grover@gmail.com, max@vozeler.com
+Subject: Re: [PATCH 2/3] usbip: move usbip kernel code out of staging
+Message-ID: <20140819183825.GA2477@kroah.com>
+References: <1407388229-31807-1-git-send-email-valentina.manea.m@gmail.com>
+ <1407388229-31807-4-git-send-email-valentina.manea.m@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ppfwmxic.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407388229-31807-4-git-send-email-valentina.manea.m@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 06:15:07AM -0700, Andi Kleen wrote:
-> Brian Norris <computersforpeace@gmail.com> writes:
-> >
-> > 4. better ideas?
+On Thu, Aug 07, 2014 at 08:10:28AM +0300, Valentina Manea wrote:
+> At this point, USB/IP kernel code is fully functional
+> and can be moved out of staging.
 > 
-> Just send patches to remove -Werror in all architectures
-> as a tree sweep (and anywhere else where someone misguided add it)
+> Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
 
-I cited at least one example in which this was attempted but rejected.
-(Or at least, it was semi-deliberately stalled.)
+This patch moves the code, but now it's "gone" from the build system as
+it is not hooked up and can not be built at all.
 
-> Having -Werror anywhere in a shipping release is just plainly a bug,
-> as it makes it often impossible to build on newer gcc versions.
+So while I really wanted to apply this series right now, I can't, as
+this is a regression (working driver -> no driver).
 
-I also feel it is misguided, for other reasons. But there are at least a
-few who seem to disagree. They seem to feel it is important/necessary
-for enforcing good practices during development. I'm not sure how to
-bridge the disagreement, other than to provide workarounds for disabling
--Werror.
+Can you redo this series and actually add the driver to the build, as
+well as adding a MAINTAINERS entry so that I can apply it all?  I'd like
+to get this into 3.17-rc2 if possible, before things start to change
+again.
 
-I could try sending -Werror removal patches, but I'm not confident that
-will go over well.
+thanks,
 
-Brian
+greg k-h
