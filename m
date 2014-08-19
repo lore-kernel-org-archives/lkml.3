@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaHSPEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:04:15 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55001 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752094AbaHSPEO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:04:14 -0400
-Date: Tue, 19 Aug 2014 16:03:59 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Yannis Damigos <giannis.damigos@gmail.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] staging: imx-drm: Lines over 80 characters fixed.
-Message-ID: <20140819150359.GF30401@n2100.arm.linux.org.uk>
-References: <1408457139.2899.11.camel@paszta.hi.pengutronix.de> <1408458970-27097-1-git-send-email-giannis.damigos@gmail.com> <1408458970-27097-2-git-send-email-giannis.damigos@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408458970-27097-2-git-send-email-giannis.damigos@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753240AbaHSPEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:04:23 -0400
+Received: from mga14.intel.com ([192.55.52.115]:37083 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751260AbaHSPEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:04:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="578794101"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        mingo@kernel.org, peterz@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Add PERF_PID
+Date: Tue, 19 Aug 2014 08:04:03 -0700
+Message-Id: <1408460643-27283-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 05:36:10PM +0300, Yannis Damigos wrote:
-> diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
-> index 720868b..d6657a0 100644
-> --- a/drivers/staging/imx-drm/ipuv3-crtc.c
-> +++ b/drivers/staging/imx-drm/ipuv3-crtc.c
-> @@ -201,9 +201,10 @@ static int ipu_crtc_mode_set(struct drm_crtc *crtc,
->  		return ret;
->  	}
->  
-> -	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode, crtc->primary->fb,
-> -				  0, 0, mode->hdisplay, mode->vdisplay,
-> -				  x, y, mode->hdisplay, mode->vdisplay);
-> +	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode,
-> +			crtc->primary->fb,
-> +			0, 0, mode->hdisplay, mode->vdisplay,
-> +			x, y, mode->hdisplay, mode->vdisplay);
+From: Andi Kleen <ak@linux.intel.com>
 
-Why change the indentation like this?  There is a wisdom which suggests
-that it's better to align the arguments with the function call's first
-argument, unless there is a strong reason not to.  In this case, I can't
-see a strong reason to change the indentation to some different style
-here.
+It's currently difficult to filter out perf itself using a filter.
+This can give cascading effects during IO tracing when the IO
+perf does itself causes more trace output.
 
->  }
->  
->  static void ipu_crtc_handle_pageflip(struct ipu_crtc *ipu_crtc)
-> @@ -227,7 +228,8 @@ static irqreturn_t ipu_irq_handler(int irq, void *dev_id)
->  
->  	if (ipu_crtc->newfb) {
->  		ipu_crtc->newfb = NULL;
-> -		ipu_plane_set_base(ipu_crtc->plane[0], ipu_crtc->base.primary->fb,
-> +		ipu_plane_set_base(ipu_crtc->plane[0],
-> +				ipu_crtc->base.primary->fb,
->  				ipu_crtc->plane[0]->x, ipu_crtc->plane[0]->y);
+The best way to filter is to use the pid. But it's difficult to get the pid
+of perf without using hacks.
 
-What may make better sense here is:
-		struct ipu_plane *plane = ipu_crtc->plane[0];
+Add a PERF_PID meta variable to the perf filter that contains the current pid.
 
-		ipu_crtc->newfb = NULL;
-		ipu_plane_set_base(plane, ipu_crtc->base.primary->fb,
-				   plane->x, plane->y);
+With this patch the following works
 
-which to me looks loads nicer.
+% perf record -e syscalls:sys_enter_write -a --filter 'common_pid != PERF_PID' ...
 
+This won't work for more complex perf pipe lines with multiple processes,
+but at least solves the problem nicely for a single perf.
+
+v2: Remove debug code. Don't use zero padding (Namhyung)
+v3: Correct patch.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-record.txt | 2 +-
+ tools/perf/util/parse-events.c           | 8 ++++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index d460049..b6c5e51 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -41,7 +41,7 @@ OPTIONS
+           'mem:0x1000:rw'.
+ 
+ --filter=<filter>::
+-        Event filter.
++        Event filter. PERF_PID represents the perf pid.
+ 
+ -a::
+ --all-cpus::
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 1e15df1..def8651 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -967,6 +967,7 @@ int parse_filter(const struct option *opt, const char *str,
+ {
+ 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+ 	struct perf_evsel *last = NULL;
++	char *pid;
+ 
+ 	if (evlist->nr_entries > 0)
+ 		last = perf_evlist__last(evlist);
+@@ -983,6 +984,13 @@ int parse_filter(const struct option *opt, const char *str,
+ 		return -1;
+ 	}
+ 
++	/* Assume a pid has not more than 8 characters */
++	pid = strstr(last->filter, "PERF_PID");
++	if (pid) {
++		char buf[9];
++		snprintf(buf, 9, "%8d", getpid());
++		memcpy(pid, buf, 8);
++	}
+ 	return 0;
+ }
+ 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.3
+
