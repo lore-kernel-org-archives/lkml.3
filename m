@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaHSFzu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 01:55:50 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:65304 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829AbaHSFzs (ORCPT
+	id S1752759AbaHSF4A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 01:56:00 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:37514 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665AbaHSFz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 01:55:48 -0400
+	Tue, 19 Aug 2014 01:55:57 -0400
+Message-ID: <53F2E6E6.8030709@linux.vnet.ibm.com>
+Date: Tue, 19 Aug 2014 13:55:50 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1408419205-10048-14-git-send-email-tuomas.tynkkynen@iki.fi>
-References: <1408419205-10048-1-git-send-email-tuomas.tynkkynen@iki.fi>
-	<1408419205-10048-14-git-send-email-tuomas.tynkkynen@iki.fi>
-Date: Tue, 19 Aug 2014 11:25:47 +0530
-Message-ID: <CAKohpokQOALPH13Ykz4nTBOby8J1X6_F30LNKz=gsC4wN3=3vg@mail.gmail.com>
-Subject: Re: [PATCH v3 13/15] cpufreq: Add cpufreq driver for Tegra124
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Paul Walmsley <pwalmsley@nvidia.com>, Vince Hsu <vinceh@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: David Matlack <dmatlack@google.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Avi Kivity <avi.kivity@gmail.com>, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
+ generation number
+References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com> <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com> <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com> <53F2C997.6070605@linux.vnet.ibm.com> <CALzav=fceJouxxJW-m0h2OtqjeNJWfDMFpiJw5zTndbybRACpg@mail.gmail.com> <53F2D567.70700@linux.vnet.ibm.com> <CALzav=eXu8VmPpqSYikY5y5QqivJ_FD0N2bGTUPnAesJ2PvW1w@mail.gmail.com> <53F2DE4B.4060708@linux.vnet.ibm.com> <CALzav=dkps18861qOoESeQG3mKgmFW3zJO6B8H1Jtar1PCGdNA@mail.gmail.com>
+In-Reply-To: <CALzav=dkps18861qOoESeQG3mKgmFW3zJO6B8H1Jtar1PCGdNA@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14081905-2674-0000-0000-00000174067B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 August 2014 09:03, Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi> wrote:
-> From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
->
-> Add a new cpufreq driver for Tegra124. Instead of using the PLLX as
-> the CPU clocksource, switch immediately to the DFLL. It allows the use
-> of higher clock rates, and will automatically scale the CPU voltage as
-> well. Besides the CPU clocksource switch, we let the cpufreq-cpu0 driver
-> for all the cpufreq operations.
->
-> This driver also relies on the DFLL driver to fill the OPP table for the
-> CPU0 device, so that the cpufreq-cpu0 driver knows what frequencies to
-> use.
->
-> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-> ---
-> v3:
->  - separate Kconfig entry
+On 08/19/2014 01:40 PM, David Matlack wrote:
+> On Mon, Aug 18, 2014 at 10:19 PM, Xiao Guangrong
+> <xiaoguangrong@linux.vnet.ibm.com> wrote:
+>> On 08/19/2014 01:00 PM, David Matlack wrote:
+>>> On Mon, Aug 18, 2014 at 9:41 PM, Xiao Guangrong
+>>> <xiaoguangrong@linux.vnet.ibm.com> wrote:
+>>>> On 08/19/2014 12:31 PM, David Matlack wrote:
+>>>>> The single line patch I suggested was only intended to fix the "forever
+>>>>> incorrectly exit mmio".
+>>>>
+>>>> My patch also fixes this case and that does not doubly increase the
+>>>> number. I think this is the better one.
+>>>
+>>> I prefer doubly increasing the generation for this reason: the updated boolean
+>>> requires extra code on the "client-side" to check if there's an update in
+>>> progress. And that makes it easy to get wrong. In fact, your patch
+>>> forgot to check the updated bit in mark_mmio_spte(). Doubly increasing the
+>>> generation requires no "client-side" code to work.
+>>
+>> No, the updated patch is used to fix case 2 which i draw the scenario in
+>> the last mail. I mean the original patch in this patchset which just
+>> increase the number after srcu-sync.
+>>
+>> Then could you tell me that your approach can do but my original patch can not?
+> 
+> It avoids publishing new memslots with an old generation number attached to
+> them (even if it only lasts for a short period of time). 
 
-Gud..
+I can not see the problem if that happen, could you please draw the scenario?
 
->  - use 'select GENERIC_CPUFREQ_CPU0', not depends
+> Do you have a reason
+> why you don't want to doubly increase the generation?
 
-Bad :(
+That more easily causes the number wrap-around.
 
-It *has* to be a depends here, its not optional. That was outcome of the
-chat we had last time, if I remember it well..
-
->  - support unbinding of the platform device
->  - allocate a state structure instead of globals
->  - use of_match_machine()
->  - various style nits fixed
-> ---
-
-You don't need to add these --- here, just add a blank line and git
-will take care of things for you :)
-
->  drivers/cpufreq/Kconfig.arm        |   8 ++
->  drivers/cpufreq/Makefile           |   1 +
->  drivers/cpufreq/tegra124-cpufreq.c | 206 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 215 insertions(+)
->  create mode 100644 drivers/cpufreq/tegra124-cpufreq.c
->
-> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-> index 3795a16..07bfed1 100644
-> --- a/drivers/cpufreq/Kconfig.arm
-> +++ b/drivers/cpufreq/Kconfig.arm
-> @@ -247,3 +247,11 @@ config ARM_TEGRA20_CPUFREQ
->         default y
->         help
->           This adds the CPUFreq driver support for Tegra20 SOCs.
-> +
-> +config ARM_TEGRA124_CPUFREQ
-> +       bool "Tegra124 CPUFreq support"
-> +       depends on ARCH_TEGRA
-> +       select GENERIC_CPUFREQ_CPU0
-
-So it will become: depends on ARCH_TEGRA && GENERIC_CPUFREQ_CPU0
-
-> +static int tegra124_cpufreq_probe(struct platform_device *pdev)
-> +{
-
-> +       priv->vdd_cpu_reg = regulator_get(get_cpu_device(0), "vdd-cpu");
-
-get_cpu_device() can fail as well, and so you may want to check its return
-value as well..
-
-> +static int __init tegra_cpufreq_init(void)
-> +{
-> +       int ret;
-> +       struct platform_device *pdev;
-> +
-> +       if (!of_match_machine(soc_of_matches))
-> +               return -ENODEV;
-
-You may want to add a comment here on why you chose to add another layer
-of platform device/driver.. i.e. to catch -EPROBE_DEFER from clk-APIs..
-
-> +       ret = platform_driver_register(&tegra124_cpufreq_platdrv);
-> +       if (ret)
-> +               return ret;
-> +
-> +       pdev = platform_device_register_simple("cpufreq-tegra124", -1, NULL, 0);
-> +       if (IS_ERR(pdev)) {
-> +               platform_driver_unregister(&tegra124_cpufreq_platdrv);
-> +               return PTR_ERR(pdev);
-> +       }
-> +
-> +       return 0;
-> +}
-> +module_init(tegra_cpufreq_init);
-> +
-> +MODULE_AUTHOR("Tuomas Tynkkynen <ttynkkynen@nvidia.com>");
-> +MODULE_DESCRIPTION("cpufreq driver for NVIDIA Tegra124");
-> +MODULE_LICENSE("GPL v2");
-> --
-> 1.8.1.5
->
