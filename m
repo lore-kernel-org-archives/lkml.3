@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaHSUzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:55:23 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39933 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936AbaHSUzV convert rfc822-to-8bit (ORCPT
+	id S1751616AbaHSU4Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:56:16 -0400
+Received: from mail-pd0-f196.google.com ([209.85.192.196]:56676 "EHLO
+	mail-pd0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaHSU4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:55:21 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6] input: drv260x: Add TI drv260x haptics driver
-Thread-Topic: [PATCH v6] input: drv260x: Add TI drv260x haptics driver
-Thread-Index: AQHPuKBG/Qme4vynlkWiIpuXx8CBGw==
-Date: Tue, 19 Aug 2014 20:55:14 +0000
-Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DEC525@DFLE09.ent.ti.com>
-References: <1408117670-19750-1-git-send-email-dmurphy@ti.com>
- <20140819192401.GA32080@core.coreip.homeip.net>
- <00FC9A978A94B7418C33AFAE8A35ED49DEC1EF@DFLE09.ent.ti.com>
- <20140819200748.GB3626@core.coreip.homeip.net>
- <00FC9A978A94B7418C33AFAE8A35ED49DEC3E6@DFLE09.ent.ti.com>
- <20140819202438.GD3626@core.coreip.homeip.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 19 Aug 2014 16:56:15 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: [PATCH net-next] hyperv: Add handling of IP header with option field in netvsc_set_hash()
+Date: Tue, 19 Aug 2014 20:53:55 +0000
+Message-Id: <1408481635-29639-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry
+In case that the IP header has optional field at the end, this patch will 
+get the port numbers after that field, and compute the hash.
 
-On 08/19/2014 03:24 PM, Dmitry Torokhov wrote:
-> On Tue, Aug 19, 2014 at 08:13:32PM +0000, Murphy, Dan wrote:
->> On 08/19/2014 03:07 PM, Dmitry Torokhov wrote:
->>> On Tue, Aug 19, 2014 at 07:35:06PM +0000, Murphy, Dan wrote:
->>>> Dmitry
->>>>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-<snip>
+---
+ drivers/net/hyperv/netvsc_drv.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
->>> 	...
->>>
->>> That one I kept.
->>>
->>
->> Yes that is correct but the enable_gpio for non-dt enabled devices this enable_gpio
->> needs to come from the platform data structure.  Without the enable gpio in the platform data
->> structure there is no way for non-dt enabled devices to set the gpio value.
-> 
-> What else uses the platform data structure? You are accessing gpio by name, not
-> by number, in the driver so I am not sure how non-dt case will use u32 defined
-> in platform data.
-> 
->>
->> The haptics instance just stores the gpio descriptor returned from this call.
-> 
-> Right.
-> 
->>
->> The devm_gpiod looks at the platform data is CONFIG_OF is not set.
-> 
-> Umm, how? You do not pass it anywhere...
-
-OK I drop my argument after drilling through gpio code.
-
-Removal of this is OK.
-
-Thanks
-
-> 
-> Thanks.
-> 
-
-
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index a9c5eaa..b12dcd9 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -191,6 +191,8 @@ static u32 comp_hash(u8 *key, int klen, u8 *data, int dlen)
+ static bool netvsc_set_hash(u32 *hash, struct sk_buff *skb)
+ {
+ 	struct iphdr *iphdr;
++	u8 dbuf[12];
++	u8 *data;
+ 	int data_len;
+ 	bool ret = false;
+ 
+@@ -200,12 +202,18 @@ static bool netvsc_set_hash(u32 *hash, struct sk_buff *skb)
+ 	iphdr = ip_hdr(skb);
+ 
+ 	if (iphdr->version == 4) {
+-		if (iphdr->protocol == IPPROTO_TCP)
++		data = (u8 *)&iphdr->saddr;
++		if (iphdr->protocol == IPPROTO_TCP) {
+ 			data_len = 12;
+-		else
++			if (iphdr->ihl > 5) {
++				memcpy(dbuf, &iphdr->saddr, 8);
++				memcpy(&dbuf[8], &tcp_hdr(skb)->source, 4);
++				data = dbuf;
++			}
++		} else {
+ 			data_len = 8;
+-		*hash = comp_hash(netvsc_hash_key, HASH_KEYLEN,
+-				  (u8 *)&iphdr->saddr, data_len);
++		}
++		*hash = comp_hash(netvsc_hash_key, HASH_KEYLEN, data, data_len);
+ 		ret = true;
+ 	}
+ 
 -- 
-------------------
-Dan Murphy
+1.7.1
+
