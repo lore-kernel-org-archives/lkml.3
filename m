@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaHSHBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:01:55 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:33672 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763AbaHSHBx (ORCPT
+	id S1752924AbaHSHEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 03:04:00 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:36146 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752686AbaHSHD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 03:01:53 -0400
-Date: Tue, 19 Aug 2014 09:01:45 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, jonas.jensen@gmail.com
-Subject: Re: [PATCH] fs: Initialize mountpoint list head in new_mountpoint()
-Message-ID: <20140819070143.GB12859@ulmo>
-References: <20140818153327.GA12278@ulmo>
- <1408416234-7923-1-git-send-email-mopsfelder@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eJnRUKwClWJh1Khz"
-Content-Disposition: inline
-In-Reply-To: <1408416234-7923-1-git-send-email-mopsfelder@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 19 Aug 2014 03:03:59 -0400
+Subject: [PATCH v3 9/17] arcmsr: modify printing adapter model number and
+ F/W messages
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 19 Aug 2014 15:03:55 +0800
+Message-ID: <1408431835.4748.50.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ching Huang <ching2048@areca.com.tw>
 
---eJnRUKwClWJh1Khz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Adjust printing order of adapter model name and firmware version.
 
-On Mon, Aug 18, 2014 at 11:43:54PM -0300, Murilo Opsfelder Araujo wrote:
-> The commit 89f7ca1af15bdfe7a6aed343032a84af2a69f736 makes next-20140818
-> to panic because mountpoint list head was not initialized.  Initializing
-> it with NULL fixes the problem.
->=20
-> commit 89f7ca1af15bdfe7a6aed343032a84af2a69f736
-> Author: Eric W. Biederman <ebiederman@twitter.com>
-> Date:   Sun Sep 22 19:37:01 2013 -0700
->=20
->     vfs: Keep a list of mounts on a mount point
->=20
->     To spot any possible problems call BUG if a mountpoint
->         is put when it's list of mounts is not empty.
->=20
->     AV: use hlist instead of list_head
->=20
-> Signed-off-by: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-> ---
->  fs/namespace.c | 1 +
->  1 file changed, 1 insertion(+)
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+---
 
-It's considered good etiquette and polite to credit the original author
-of a patch. This should be:
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:39:48.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:00.000000000 +0800
+@@ -2182,10 +2182,10 @@ static bool arcmsr_get_hba_config(struct
+ 		iop_device_map++;
+ 		count--;
+ 	}
+-	printk(KERN_NOTICE "Areca RAID Controller%d: F/W %s & Model %s\n", 
++	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",
+ 		acb->host->host_no,
+-		acb->firm_version,
+-		acb->firm_model);
++		acb->firm_model,
++		acb->firm_version);
+ 	acb->signature = readl(&reg->message_rwbuffer[0]);
+ 	acb->firm_request_len = readl(&reg->message_rwbuffer[1]);
+ 	acb->firm_numbers_queue = readl(&reg->message_rwbuffer[2]);
+@@ -2258,10 +2258,10 @@ static bool arcmsr_get_hbb_config(struct
+ 		count--;
+ 	}
+ 	
+-	printk(KERN_NOTICE "Areca RAID Controller%d: F/W %s & Model %s\n",
++	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",
+ 		acb->host->host_no,
+-		acb->firm_version,
+-		acb->firm_model);
++		acb->firm_model,
++		acb->firm_version);
+ 
+ 	acb->signature = readl(&reg->message_rwbuffer[1]);
+ 	/*firm_signature,1,00-03*/
+@@ -2324,10 +2324,10 @@ static bool arcmsr_get_hbc_config(struct
+ 		iop_firm_version++;
+ 		count--;
+ 	}
+-	printk(KERN_NOTICE "Areca RAID Controller%d: F/W %s & Model %s\n",
++	pr_notice("Areca RAID Controller%d: Model %s, F/W %s\n",
+ 		pACB->host->host_no,
+-		pACB->firm_version,
+-		pACB->firm_model);
++		pACB->firm_model,
++		pACB->firm_version);
+ 	pACB->firm_request_len = readl(&reg->msgcode_rwbuffer[1]);   /*firm_request_len,1,04-07*/
+ 	pACB->firm_numbers_queue = readl(&reg->msgcode_rwbuffer[2]); /*firm_numbers_queue,2,08-11*/
+ 	pACB->firm_sdram_size = readl(&reg->msgcode_rwbuffer[3]);    /*firm_sdram_size,3,12-15*/
 
-Originally-by: Thierry Reding <treding@nvidia.com>
 
---eJnRUKwClWJh1Khz
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT8vZXAAoJEN0jrNd/PrOhNsEP/igW+CP1VkHeHpmODcUlFW4J
-sbvfFo3DSAkludOJx43CTouwAeaJkDIjpfYWTti47XX3xPxeElPvrBzIykJo5nEQ
-gxXfcTJtAS/mw5XkhYMDuNDJhjyoxwnSS55ADBxtIUz+ogFd1Df0JjhXabjG/LsB
-PIebwgdByDZLBKUNENxROkcbnPx/+KyQPpuE8NuVHnR3nvErQYs/1Jo2dAuHA2IB
-aDdSH0xU88AbTUzGbqdMPOsflVJBWomqKJ/z0uvLdRKnvaLrUj3dZjJQKBx0yoVv
-v4QoIKZffEP1h5zwH+48zKcGSgvjIC6FpkMpKutP43n0ulT4xW+P68ANT5y1i1Ty
-/Eny3SZgGF3kJB1faDt8qOU/ddPIC8z3m+Gt9Pwg/k5S0h8h4dR1J6n4NA99B0tS
-jwZV+FOTrjcR3CD6MpRFM04V4yo+vgLCazfu5DfjNbcYjiYivv+EbJTNQhqQAA/6
-/ORkJWDH3n1LKo4w3hOKTvANgJ9EGJh7h5otW48/j5bCs/l1Q1YFpJrQUcK1qKBH
-GCA4rjlE9Piq3OlXn/NKEakBOOPwjItwkQe98PqtCoXolDWHcvleg08+KZMUji60
-ZYhpH0iNGFBq0ujOCK9Tkv5leowNXqwPc/Xx/Bh1ha9Sr8qXYb7O03j4x60DiURo
-yDDJkIQHiwC80D8JOfCO
-=PN2T
------END PGP SIGNATURE-----
-
---eJnRUKwClWJh1Khz--
