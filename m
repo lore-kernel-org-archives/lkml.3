@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaHSHye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:54:34 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58442 "EHLO
+	id S1752994AbaHSHyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 03:54:38 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:58439 "EHLO
 	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaHSHyb (ORCPT
+	with ESMTP id S1751608AbaHSHyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 19 Aug 2014 03:54:31 -0400
 X-Original-SENDERIP: 10.177.222.156
@@ -19,95 +19,60 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Seth Jennings <sjennings@variantweb.net>,
         Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 2/4] zsmalloc: change return value unit of zs_get_total_size_bytes
-Date: Tue, 19 Aug 2014 16:54:45 +0900
-Message-Id: <1408434887-16387-3-git-send-email-minchan@kernel.org>
+Subject: [PATCH v2 0/4] zram memory control enhance
+Date: Tue, 19 Aug 2014 16:54:43 +0900
+Message-Id: <1408434887-16387-1-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1408434887-16387-1-git-send-email-minchan@kernel.org>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zs_get_total_size_bytes returns a amount of memory zsmalloc
-consumed with *byte unit* but zsmalloc operates *page unit*
-rather than byte unit so let's change the API so benefit
-we could get is that reduce unnecessary overhead
-(ie, change page unit with byte unit) in zsmalloc.
+Now, zram has no feature to limit memory usage even though so that
+theoretically zram can deplete system memory.
+In addition, it makes hard to control memory usage of the platform
+so zram users have asked it several times.
+This patchset adds the feature.
 
-Now, zswap can rollback to zswap_pool_pages.
-Over to zswap guys ;-)
+Patch 1 makes zs_get_total_size_bytes faster because it would be
+used frequently in later patches for the new feature.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- drivers/block/zram/zram_drv.c |  4 ++--
- include/linux/zsmalloc.h      |  2 +-
- mm/zsmalloc.c                 | 10 +++++-----
- 3 files changed, 8 insertions(+), 8 deletions(-)
+Patch 2 changes zs_get_total_size_bytes's return unit from bytes
+to page so that zsmalloc doesn't need unnecessary operation(ie,
+<< PAGE_SHIFT).
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index d00831c3d731..302dd37bcea3 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
- 
- 	down_read(&zram->init_lock);
- 	if (init_done(zram))
--		val = zs_get_total_size_bytes(meta->mem_pool);
-+		val = zs_get_total_size(meta->mem_pool);
- 	up_read(&zram->init_lock);
- 
--	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-+	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
- }
- 
- static ssize_t max_comp_streams_show(struct device *dev,
-diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-index e44d634e7fb7..105b56e45d23 100644
---- a/include/linux/zsmalloc.h
-+++ b/include/linux/zsmalloc.h
-@@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
- 			enum zs_mapmode mm);
- void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
- 
--u64 zs_get_total_size_bytes(struct zs_pool *pool);
-+unsigned long zs_get_total_size(struct zs_pool *pool);
- 
- #endif
-diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-index a65924255763..80408a1da03a 100644
---- a/mm/zsmalloc.c
-+++ b/mm/zsmalloc.c
-@@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
- 
- static u64 zs_zpool_total_size(void *pool)
- {
--	return zs_get_total_size_bytes(pool);
-+	return zs_get_total_size(pool) << PAGE_SHIFT;
- }
- 
- static struct zpool_driver zs_zpool_driver = {
-@@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
- }
- EXPORT_SYMBOL_GPL(zs_unmap_object);
- 
--u64 zs_get_total_size_bytes(struct zs_pool *pool)
-+unsigned long zs_get_total_size(struct zs_pool *pool)
- {
--	u64 npages;
-+	unsigned long npages;
- 
- 	spin_lock(&pool->stat_lock);
- 	npages = pool->pages_allocated;
- 	spin_unlock(&pool->stat_lock);
--	return npages << PAGE_SHIFT;
-+	return npages;
- }
--EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-+EXPORT_SYMBOL_GPL(zs_get_total_size);
- 
- module_init(zs_init);
- module_exit(zs_exit);
+Patch 3 adds new feature. I added the feature into zram layer,
+not zsmalloc because limiation is zram's requirement, not zsmalloc
+so any other user using zsmalloc(ie, zpool) shouldn't affected
+by unnecessary branch of zsmalloc. In future, if every users
+of zsmalloc want the feature, then, we could move the feature
+from client side to zsmalloc easily but vice versa would be
+painful.
+
+Patch 4 adds news facility to report maximum memory usage of zram
+so that user can get how many of peak memory zram used easily
+without extremely short inverval polling via
+/sys/block/zram0/mem_used_total.
+
+* From v1
+ * rebased on next-20140815
+ * fix up race problem - David, Dan
+ * reset mem_used_max as current total_bytes, rather than 0 - David
+ * resetting works with only "0" write for extensiblilty - David
+
+Minchan Kim (4):
+  [1] zsmalloc: move pages_allocated to zs_pool
+  [2] zsmalloc: change return value unit of zs_get_total_size_bytes
+  [3] zram: zram memory size limitation
+  [4] zram: report maximum used memory
+
+ Documentation/ABI/testing/sysfs-block-zram |  19 ++++++
+ Documentation/blockdev/zram.txt            |  21 ++++--
+ drivers/block/zram/zram_drv.c              | 101 ++++++++++++++++++++++++++++-
+ drivers/block/zram/zram_drv.h              |   6 ++
+ include/linux/zsmalloc.h                   |   2 +-
+ mm/zsmalloc.c                              |  38 ++++++-----
+ 6 files changed, 162 insertions(+), 25 deletions(-)
+
 -- 
 2.0.0
 
