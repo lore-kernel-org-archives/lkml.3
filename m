@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaHSRUZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:20:25 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43752 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127AbaHSRUY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:20:24 -0400
-Message-ID: <53F38754.2050808@redhat.com>
-Date: Tue, 19 Aug 2014 19:20:20 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753633AbaHSRU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:20:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35048 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753596AbaHSRUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:20:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,896,1400050800"; 
+   d="scan'208";a="470417553"
+Date: Tue, 19 Aug 2014 22:35:34 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: dan.j.williams@intel.com, michal.simek@xilinx.com, grant.likely@linaro.org,
+        robh+dt@kernel.org, levex@linux.com, jassisinghbrar@gmail.com,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        anirudh@xilinx.com, svemula@xilinx.com
+Subject: Re: [PATCH v3 1/2] dma: Add Xilinx AXI DMA DT Binding Documentation
+Message-ID: <20140819170534.GT13288@intel.com>
+References: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
 MIME-Version: 1.0
-To: Amit Shah <amit.shah@redhat.com>, jgarzik@bitpay.com
-CC: linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        hpa@linux.intel.com
-Subject: Re: [PATCH 2/2] Install udev rules in system-default directory
-References: <cover.1407416628.git.amit.shah@redhat.com> <3df55388b1b3acd142f391494f102c3ddb2270ed.1407416628.git.amit.shah__45224.3810439997$1407417016$gmane$org@redhat.com>
-In-Reply-To: <3df55388b1b3acd142f391494f102c3ddb2270ed.1407416628.git.amit.shah__45224.3810439997$1407417016$gmane$org@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406549869-24422-1-git-send-email-sthokal@xilinx.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/08/2014 15:09, Amit Shah ha scritto:
-> +udevrules_DATA	 = 90-virtio-rng.rules
+On Mon, Jul 28, 2014 at 05:47:48PM +0530, Srikanth Thokala wrote:
+> Device-tree binding documentation of Xilinx DMA Engine
 
-If rng-tools is packaged with "make dist" you need this to be
+Applied, thanks
 
-dist_udevrules_DATA	 = 90-virtio-rng.rules
+-- 
+~Vinod
 
-or alternatively
-
-EXTRA_DIST = 90-virtio-rng.rules
-udevrules_DATA	 = 90-virtio-rng.rules
-
-> +AC_ARG_WITH([udevrulesdir],
-> +	AS_HELP_STRING([--with-udevrulesdir=DIR], [Directory for udev rules]),
-> +	[],
-> +	[with_udevrulesdir=$($PKG_CONFIG --variable=udevdir udev)"/rules.d"])
-> +AC_SUBST([udevrulesdir], [$with_udevrulesdir])
-
-You can use AM_CONDITIONAL to skip the installation if
-$with_udevrulesdir is "no" (aka --without-udevrulesdir).  Then you'd have
-
-EXTRA_DIST = 90-virtio-rng.rules
-if INSTALL_UDEV_RULES
-udevrules_DATA	 = 90-virtio-rng.rules
-endif
-
-I don't know offhand if this works:
-
-if INSTALL_UDEV_RULES
-dist_udevrules_DATA	 = 90-virtio-rng.rules
-endif
-
-but I think so; you can check with "./configure --without-udevrulesdir
-&& make && make dist".
-
-Thanks,
-
-Paolo
