@@ -1,111 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaHSSZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:25:51 -0400
-Received: from gw03.mail.saunalahti.fi ([195.197.172.111]:51620 "EHLO
-	gw03.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625AbaHSSZt (ORCPT
+	id S1753554AbaHSS1e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:27:34 -0400
+Received: from regular1.263xmail.com ([211.150.99.138]:56596 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626AbaHSS1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:25:49 -0400
-Date: Tue, 19 Aug 2014 21:25:33 +0300
-From: Juha-Matti Tilli <juha-matti.tilli@iki.fi>
-To: "edubezval@gmail.com" <edubezval@gmail.com>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Cc: Zhang Rui <rui.zhang@intel.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Juha-Matti Tilli <jtilli@nvidia.com>
-Subject: Re: [PATCH v4 4/4] thermal: Add Tegra SOCTHERM thermal management
- driver
-Message-ID: <20140819182533.GA51539@sandfort.unics.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAC-25o-bLeDYpTgPy5UOvBGJ7k7HJkBM3YcCRPSZHBkyxugULA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 19 Aug 2014 14:27:32 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <1ec6c0757f8747870d575ef23b1b3bb1>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: heiko@sntech.de, dianders@chromium.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        olof@lixom.net, hj@rock-chips.com, kever.yang@rock-chips.com,
+        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
+        yzq@rock-chips.com, zhenfu.fang@rock-chips.com, cf@rock-chips.com,
+        zhangqing@rock-chips.com, hl@rock-chips.com,
+        Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH v3] ARM: dts: Add sdio0 and sdio1 to the rk3288
+Date: Tue, 19 Aug 2014 16:15:26 +0800
+Message-Id: <1408436126-23390-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1408415512-17275-1-git-send-email-addy.ke@rock-chips.com>
+References: <1408415512-17275-1-git-send-email-addy.ke@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Originally, I thought the fuse offsets were incorrect but as it turns
-> > out, the official Linux kernel starts counting the fuses at a different
-> > location than NVIDIA's internal kernel.
-> 
-> This is a major concern. Juha-Matti and Mikko, can you please cross
-> check if this driver is accessing to the correct fuse register
-> location?
+This patch requires that <https://patchwork.kernel.org/patch/4701721/>
+land in order to compile.
 
-Mikko told me that the official Linux kernel and NVIDIA's internal
-kernel have an offset of 0x100 between fuse registers. I believe it is
-accessing correct fuse register locations, as I tested the code and it
-works. But, if I port the code to a codebase that is using NVIDIA's
-internal kernel functions, it fails (all fuses read 0x0) unless I offset
-all fuses by 0x100. All fuse register locations in this code indeed have
-the same offset of 0x100 between NVIDIA's internal docs & code and the
-new driver code.
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+Changes in v2:
+- repost patch to match what's in Heiko's "wip/v3.18-next/dts" tree
+  for the other dwmmc controllers
+- add "cd" and "int" line, suggested by Doug Anderson
+- fix up sdio1 configuration error
 
-I'm not entirely sure why the official Linux kernel and NVIDIA's
-internal code starts counting the fuses at a different location, but the
-fuses read do have data in them and the temperature readings look sane,
-so I assume they are indeed the correct fuses. The calculated
-calibration values also seem to be similar to (but not identical with)
-the ones calculated by NVIDIA's internal driver, but more on this later.
+Changes in v3:
+- sort sdio0 and sdio1 by pin number, suggested by Doug Anderson
+- add "ro" and "bkpwr" line, suggested by Doug Anderson
 
-drivers/soc/tegra/fuse/fuse-tegra30.c in upstream has "#define
-FUSE_BEGIN 0x100" and the read is "readl_relaxed(fuse_base + FUSE_BEGIN
-+ offset);" so there's the explanation for the 0x100 offset.
+ arch/arm/boot/dts/rk3288.dtsi | 102 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 102 insertions(+)
 
-I believe Mikko's explanation about the 0x100 offset, so the code in my
-opinion seems correct as the offset of 0x100 is consistent, and the code
-does in fact work. Reading incorrect fuses would mean the fuses read 0x0
-and the temperatures are so strange that they are obviously incorrect.
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 36be7bb..12c0297 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -88,6 +88,26 @@
+ 		status = "disabled";
+ 	};
+ 
++	sdio0: dwmmc@ff0d0000 {
++		compatible = "rockchip,rk3288-dw-mshc";
++		clocks = <&cru HCLK_SDIO0>, <&cru SCLK_SDIO0>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x100>;
++		interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
++		reg = <0xff0d0000 0x4000>;
++		status = "disabled";
++	};
++
++	sdio1: dwmmc@ff0e0000 {
++		compatible = "rockchip,rk3288-dw-mshc";
++		clocks = <&cru HCLK_SDIO1>, <&cru SCLK_SDIO1>;
++		clock-names = "biu", "ciu";
++		fifo-depth = <0x100>;
++		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
++		reg = <0xff0e0000 0x4000>;
++		status = "disabled";
++	};
++
+ 	emmc: dwmmc@ff0f0000 {
+ 		compatible = "rockchip,rk3288-dw-mshc";
+ 		clocks = <&cru HCLK_EMMC>, <&cru SCLK_EMMC>;
+@@ -508,6 +528,88 @@
+ 			};
+ 		};
+ 
++		sdio0 {
++			sdio0_bus1: sdio0-bus1 {
++				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>;
++			};
++
++			sdio0_bus4: sdio0-bus4 {
++				rockchip,pins = <4 20 RK_FUNC_1 &pcfg_pull_up>,
++						<4 21 RK_FUNC_1 &pcfg_pull_up>,
++						<4 22 RK_FUNC_1 &pcfg_pull_up>,
++						<4 23 RK_FUNC_1 &pcfg_pull_up>;
++			};
++
++			sdio0_cmd: sdio0-cmd {
++				rockchip,pins = <4 24 RK_FUNC_1 &pcfg_pull_up>;
++			};
++
++			sdio0_clk: sdio0-clk {
++				rockchip,pins = <4 25 RK_FUNC_1 &pcfg_pull_none>;
++			};
++
++			sdio0_cd: sdio0-cd {
++				rockchip,pins = <4 26 RK_FUNC_1 &pcfg_pull_up>;
++			};
++
++			sdio0_ro: sdio0-ro {
++				rockchip,pins = <4 27 RK_FUNC_1 &pcfg_pull_up>;
++			};
++
++			sdio0_pwr: sdio0-pwr {
++				rockchip,pins = <4 28 RK_FUNC_1 &pcfg_pull_up>;
++			};
++
++			sdio0_bkpwr: sdio0-bkpwr {
++				rockchip,pins = <4 29 RK_FUNC_1 &pcfg_pull_up>;
++			};
++
++			sdio0_int: sdio0-int {
++				rockchip,pins = <4 30 RK_FUNC_1 &pcfg_pull_up>;
++			};
++		};
++
++		sdio1 {
++			sdio1_bus1: sdio1-bus1 {
++				rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>;
++			};
++
++			sdio1_bus4: sdio1-bus4 {
++				rockchip,pins = <3 24 RK_FUNC_4 &pcfg_pull_up>,
++						<3 25 RK_FUNC_4 &pcfg_pull_up>,
++						<3 26 RK_FUNC_4 &pcfg_pull_up>,
++						<3 27 RK_FUNC_4 &pcfg_pull_up>;
++			};
++
++			sdio1_cd: sdio1-cd {
++				rockchip,pins = <3 28 RK_FUNC_4 &pcfg_pull_up>;
++			};
++
++			sdio1_ro: sdio1-ro {
++				rockchip,pins = <3 29 RK_FUNC_4 &pcfg_pull_up>;
++			};
++
++			sdio1_bkpwr: sdio1-bkpwr {
++				rockchip,pins = <3 30 RK_FUNC_4 &pcfg_pull_up>;
++			};
++
++			sdio1_int: sdio1-int {
++				rockchip,pins = <3 31 RK_FUNC_4 &pcfg_pull_up>;
++			};
++
++			sdio1_cmd: sdio1-cmd {
++				rockchip,pins = <4 6 RK_FUNC_4 &pcfg_pull_up>;
++			};
++
++			sdio1_clk: sdio1-clk {
++				rockchip,pins = <4 7 RK_FUNC_4 &pcfg_pull_none>;
++			};
++
++			sdio1_pwr: sdio1-pwr {
++				rockchip,pins = <4 9 RK_FUNC_4 &pcfg_pull_up>;
++			};
++		};
++
+ 		emmc {
+ 			emmc_clk: emmc-clk {
+ 				rockchip,pins = <3 18 RK_FUNC_2 &pcfg_pull_none>;
+-- 
+1.8.3.2
 
-Mikko said he did the same mistake earlier and fixed it. Well, I too did
-the same mistake. I guess everyone working with fuses on both NVIDIA's
-internal code and the upstream kernel will make the same mistake once
-but not again.
 
-> > The temperature readings look sane and do vary with load, but I think
-> > they're a bit different than what NVIDIA's internal soc_therm driver
-> 
-> hmm..  Based on a single sample?
-
-Yes, the comparison between NVIDIA's internal driver and this driver was
-based only on a single sample. I don't now recall what the difference
-was, but I should probably test it multiple times tomorrow so I can
-report how large the difference is. Might be within the error margin, as
-the temperatures are not stable to a 0.5 degrees C precision. A problem
-here is that my test was basically loading code adopted from this new
-driver dynamically on a system already using the NVIDIA's existing
-driver as a static driver, so a new sample requires a reboot and there's
-always a time delay between the commands used to manually read the
-temperature, load the dynamic module and re-read the temperature. I
-could tomorrow write a userspace test program to overwrite the registers
-with the old and new values and read the temperature sensor register
-immediately before and after the value switch to see how much the
-readings differ. That way I could get multiple accurate data points with
-no reboots required.
-
-The test that the temperatures do vary with load was based on multiple
-samples of running four shell infinite loops in the background. I can
-easily reach 80 degrees C with that on my development board with passive
-cooling. Killing the four loops results in the temperature slowly
-trickling to the idle temperature. The idle temp seems to be a bit over
-30 degrees C. My Jetson TK1 has active cooling, so the peak temperatures
-are a lot lower than for the other development board. This loads only
-the CPU, though. Loading additionally the GPU would cause higher
-temperatures.
-
-Mikko already noticed that NVIDIA's internal driver uses
-div64_s64_precise and Mikko opted for a simpler implementation, so that
-might be indeed the cause for the different calibration values. I'll
-need to investigate this more. Yet another difference could be that
-Mikko posted a link to an older version of the downstream kernel sources
-(https://developer.nvidia.com/sites/default/files/akamai/mobile/files/L4T/kernel_src.tbz2)
--- if Mikko has based his code on that old code, it's possible that the
-calibration value calculation has been improved afterwards. We'll know
-for sure after I have had time to investigate this more.
