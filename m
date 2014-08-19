@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaHSJZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:25:09 -0400
-Received: from mail1.g1.pair.com ([66.39.3.162]:35868 "EHLO mail1.g1.pair.com"
+	id S1751786AbaHSJ2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:28:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28959 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997AbaHSJZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:25:08 -0400
-From: Sean Cross <xobs@kosagi.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: bunnie@kosagi.com, Sean Cross <xobs@kosagi.com>
-Subject: [PATCH] mfd: stmpe: add OF support for irq-over-gpio
-Date: Tue, 19 Aug 2014 17:24:48 +0800
-Message-Id: <1408440288-27323-1-git-send-email-xobs@kosagi.com>
-X-Mailer: git-send-email 2.0.0
+	id S1750768AbaHSJ2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 05:28:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,893,1400050800"; 
+   d="scan'208";a="586810907"
+Date: Tue, 19 Aug 2014 12:27:53 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
+        Max Eliaser <max.eliaser@intel.com>,
+        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-acpi@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 8/9] Input: gpio_keys_polled - Make use of device
+ property API
+Message-ID: <20140819092753.GI1660@lahna.fi.intel.com>
+References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408172039-32513-9-git-send-email-mika.westerberg@linux.intel.com>
+ <20140818105512.7889980b@ultegra>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818105512.7889980b@ultegra>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the STMPE610 or STMPE811 as a platform device, the platform data
-struct allows for irq_over_gpio to be set.  This patch allows for using a
-GPIO as an IRQ source when using device tree by specifying an irq-gpio
-property.
+On Mon, Aug 18, 2014 at 10:55:12AM -0700, Jacob Pan wrote:
+> On Sat, 16 Aug 2014 09:53:58 +0300
+> Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+> 
+> > From: Aaron Lu <aaron.lu@intel.com>
+> > 
+> > Make use of device property API in this driver so that both OF based
+> > system and ACPI based system can use this driver.
+> > 
+> Do we always assume OF and ACPI _DSD will have the same property name
+> strings? i.e. in this patch "gpios"
+> > +	if (device_property_get(dev, "gpios", NULL)) {
+> > -		if (!of_find_property(pp, "gpios", NULL)) {
+> 
+> Maybe i missed something, but I don't think we can make that assumption
+> in BIOS. If not, what is the point of having unified interface?
 
-Signed-off-by: Sean Cross <xobs@kosagi.com>
----
- Documentation/devicetree/bindings/mfd/stmpe.txt | 1 +
- drivers/mfd/stmpe.c                             | 7 ++++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-index 56edb55..3fb68bf 100644
---- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-+++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-@@ -13,6 +13,7 @@ Optional properties:
-  - interrupt-parent             : Specifies which IRQ controller we're connected to
-  - wakeup-source                : Marks the input device as wakable
-  - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
-+ - irq-gpio                     : If present, which GPIO to use for event IRQ
- 
- Example:
- 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 3b6bfa7..4c42b05 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -1122,7 +1122,12 @@ static void stmpe_of_probe(struct stmpe_platform_data *pdata,
- 	if (pdata->id < 0)
- 		pdata->id = -1;
- 
--	pdata->irq_trigger = IRQF_TRIGGER_NONE;
-+	pdata->irq_gpio = of_get_named_gpio_flags(np, "irq-gpio", 0,
-+				&pdata->irq_trigger);
-+	if (gpio_is_valid(pdata->irq_gpio))
-+		pdata->irq_over_gpio = 1;
-+	else
-+		pdata->irq_trigger = IRQF_TRIGGER_NONE;
- 
- 	of_property_read_u32(np, "st,autosleep-timeout",
- 			&pdata->autosleep_timeout);
--- 
-2.0.0
-
+We recommend that when it makes sense, the property names in _DSD follow
+the corresponding DT names.
