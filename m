@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694AbaHSIqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:46:17 -0400
-Received: from smtp-out-134.synserver.de ([212.40.185.134]:1153 "EHLO
-	smtp-out-134.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaHSIqP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:46:15 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 31564
-Message-ID: <53F30E90.8080902@metafoo.de>
-Date: Tue, 19 Aug 2014 10:45:04 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
-MIME-Version: 1.0
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-CC: fabio.estevam@freescale.com, sfr@canb.auug.org.au,
-        alsa-devel@alsa-project.org, timur@tabi.org, arnd@arndb.de,
-        shc_work@mail.ru, tiwai@suse.de, Li.Xiubo@freescale.com,
-        lgirdwood@gmail.com, nicoleotsuka@gmail.com, broonie@kernel.org,
-        xobs@kosagi.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
- of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-References: <cover.1408350626.git.shengjiu.wang@freescale.com> <f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com> <53F22F5E.2090601@metafoo.de> <20140819074103.GA5806@audiosh1> <53F30C91.7080700@metafoo.de>
-In-Reply-To: <53F30C91.7080700@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751786AbaHSItK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:49:10 -0400
+Received: from lifc.univ-fcomte.fr ([194.57.88.66]:36429 "EHLO
+	lifc-proxy.univ-fcomte.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721AbaHSItI (ORCPT
+	<rfc822;Linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 04:49:08 -0400
+Date: Tue, 19 Aug 2014 10:47:46 +0200
+From: "gwenhael.goavec" <gwen@trabucayre.com>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Shawn Guo <Shawn.Guo@freescale.com>, Philippe Reynes <tremyfr@gmail.com>,
+        "Linux-kernel@vger.kernel.org" <Linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC] usb issue on imx27: 3 clocks are needed
+Message-ID: <20140819104746.4a8f323c@x230>
+In-Reply-To: <20140819001816.GC2928@peterchendt>
+References: <53EF7AF6.2000405@gmail.com>
+	<20140818090056.GA29393@peterchendt>
+	<20140818092635.GI2114@dragon>
+	<782c806acb464f5781deb32e94548882@BN1PR0301MB0772.namprd03.prod.outlook.com>
+	<20140818134903.5b6e6c27@x230.trabucayre.com>
+	<20140819001816.GC2928@peterchendt>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 10:36 AM, Lars-Peter Clausen wrote:
-> On 08/19/2014 09:41 AM, Shengjiu Wang wrote:
->> On Mon, Aug 18, 2014 at 06:52:46PM +0200, Lars-Peter Clausen wrote:
->>> On 08/18/2014 10:38 AM, Shengjiu Wang wrote:
->>>> Build kernel with SND_SOC_IMC_PCM_DMA=m && SND_IMX_SOC=n leads the
->>>> following
->>>> error:
->>>>
->>>>     sound/built-in.o: In function `fsl_sai_probe':
->>>>>> fsl_sai.c:(.text+0x5f662): undefined reference to `imx_pcm_dma_init'
->>>>     sound/built-in.o: In function `fsl_esai_probe':
->>>>>> fsl_esai.c:(.text+0x6044b): undefined reference to `imx_pcm_dma_init'
->>>>
->>>> Most cpu driver in soc/fsl has use the function 'imx_pcm_dma_init' which is
->>>> defined in imx-pcm-dma.c, so need to select SND_SOC_IMX_PCM_DMA, but it
->>>> depends
->>>> on SND_IMX_SOC, if SND_IMX_SOC=n, then SND_SOC_IMX_PCM_DMA will not be
->>>> selected.
->>>> So remove the dependence of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA.
->>>>
->>>> Reported-by: kbuild test robot <fengguang.wu@intel.com>
->>>> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
->>>
->>> Those if conditions where just added[1] by Arnd to avoid other build
->>> failures. So just removing them again makes little sense.
->>>
->>> As far as I can see imx_pcm_dma_init() should be stubbed out when
->>> SND_SOC_IMX_PCM_DMA is not selected. So what's going on here?
->>>
->>> [1]
->>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ff40260f79dc0436604452bccd449bffd25ebafb
->>>
->>>
->> Lars-Peter Clausen & Arnd
->>
->> The purpose of Arnd's patch is same with me, which is to resolve the build
->> error when SND_SOC_IMX_PCM_DMA=m & SND_SOC_FSL_SSI/SAI/ESAI/SPDIF=y, the
->> error is "undefined reference to `imx_pcm_dma_init'".
->> But Arnd's patch didn't involve this situation that SND_IMX_SOC=n &
->> SND_SOC_IMX_PCM_DMA=m.
+On Tue, 19 Aug 2014 08:18:17 +0800
+Peter Chen <peter.chen@freescale.com> wrote:
+
+> On Mon, Aug 18, 2014 at 01:49:03PM +0200, gwenhael.goavec wrote:
+> > On Mon, 18 Aug 2014 10:35:53 +0000
+> > Peter Chen <Peter.Chen@freescale.com> wrote:
+> > 
+> > >  
+> > > > On Mon, Aug 18, 2014 at 05:00:59PM +0800, Peter Chen wrote:
+> > > > > On Sat, Aug 16, 2014 at 05:38:30PM +0200, Philippe Reynes wrote:
+> > > > > > Hi all,
+> > > > > >
+> > > > > > i.MX27's usb needs three clocks (usb_ipg_gate, usb_ahb_gate and
+> > > > > > usb_div) but the current chipidea driver implementation, and
+> > > > > > devicetree, provides only ipg and ahb. Consequently, if the
+> > > > > > bootloader don't enable the last one, the kernel will crash.
+> > > > > >
+> > > > > > Our approach/idea is to add a second, optionnal, clock in
+> > > > > > ci_hdrc_imx.c with 'per' name in devicetree  and to add  clock name
+> > > > 'main_clk' for mandatory clock.
+> > > > > > This approach it correct? Or an other approach seems better?
+> > > > > > Thank you very much for your point of view.
+> > > > > >
+> > > > >
+> > > > > It is ok for me to have ipg, ahb and per clocks at driver, but how can
+> > > > > you maintain DT consistent?
+> > > > 
+> > > > Adding new clock as optional one will just maintain the DT compatibility.
+> > > > 
+> > > 
+> > > How to handle node_usb_soc1's clock which is without clk name to consistent with three
+> > > clocks for node_usb_soc2 at driver? Except for adding some platform judge code at
+> > > driver, do you have other solutions?
+> > > 
+> > > node_usb_soc1: {
+> > > 	clocks = <&clks IMX6_CLK_USBOH3>;
+> > > };
+> > > 
+> > > node_usb_soc2: {
+> > > 	clocks = <&clks IMX27_CLK_USBIPG>, <&clks IMX27_CLK_USBOH3>, <&clks IMX27_CLK_USBPER>;
+> > > 	clock-names = "ipg", "ahb", "per";
+> > > };
+> > > 
+> > > Peter
+> > > --
+> > 
+> > Our idea is something like this :
+> > node_usb_soc: {
+> > 	clocks = <&clks IMX27_CLK_USBxxx>;
+> > 	clock-names = "main_clk";
+> > };
+> > for all CPUs
+> > 
+> > and 
+> > node_usb_imx27: {
+> > 	clocks = <&clks IMX27_CLK_USB_IPG_GATE>,
+> > 		<&clks IMX27_CLK_USB_DIV>;
+> > 	clock-names = "main_clk", "per";
+> > };
+> > 
+> > For imx27 and CPUs with the need of more than one clock.
+> > 
+> 
+> Just like Shawn said, it breaks DT compatibility, how the old dtb works
+> with newer version kernel after you change.
 >
-> Having SND_SOC_IMX_PCM_DMA selected if SND_IMX_SOC is not selected makes no
-> sense. I think the proper fix is to find out why it is selected and make
-> sure that it is not selected when SND_IMX_SOC is not selected.
+New dtsi must be updated according to the clock name and to avoid breaking old
+dtb, i think the best way is to to do something like :
 
+data->clk = devm_clk_get(&pdev->dev, "main_clk");
+if (IS_ERR(data->clk)) {
+	/* DT compatibility */
+	data->clk = devm_clk_get(&pdev->dev, NULL);
+	if (IS_ERR(data->clk)) {
+		dev_err(&pdev->dev,
+			"Failed to get main clock, err=%ld\n",
+			PTR_ERR(data->clk));
+		return PTR_ERR(data->clk);
+	}   
+}
+Gwenhael
 
-I guess the issue happens if SND_SOC_FSL_ASOC_CARD=m and 
-SND_SOC_FSL_{ESAI,SAI,SSI}=y. In this case the fix is simply to drop the 
-select SND_SOC_IMX_PCM_DMA from SND_SOC_FSL_ASOC_CARD.
-
-- Lars
-
+>
+> > The last clock (ie ahb) is handled by usbmisc.c and if "per" clock is not
+> > present in the dtsi chipidea will not fails, just setting data->per_clk = NULL
+> > for prepare/unprepare.
+> > 
+> > Gwenhael
+> 
+> -- 
+> Best Regards,
+> Peter Chen
