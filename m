@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaHSO70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:59:26 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:42757 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610AbaHSO7Z (ORCPT
+	id S1752713AbaHSPCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:02:31 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44858 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaHSPCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:59:25 -0400
-Date: Tue, 19 Aug 2014 07:59:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] watchdog: ts72xx_wdt: Kill superfluous variable in remove
-Message-ID: <20140819145916.GC18536@roeck-us.net>
-References: <1408449432-25274-1-git-send-email-mika.westerberg@linux.intel.com>
+	Tue, 19 Aug 2014 11:02:30 -0400
+Date: Tue, 19 Aug 2014 08:02:21 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ching Huang <ching2048@areca.com.tw>
+Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/17] arcmsr: change note since v13 or v2
+Message-ID: <20140819150221.GA4083@infradead.org>
+References: <1408422598.4801.112.camel@Centos6.3-64>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408449432-25274-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408422598.4801.112.camel@Centos6.3-64>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 02:57:12PM +0300, Mika Westerberg wrote:
-> There is no need to store the return value of misc_deregister() in a
-> variable. Instead we can just return the value directly.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/watchdog/ts72xx_wdt.c | 6 +-----
->  1 file changed, 1 insertion(+), 5 deletions(-)
-> 
-> diff --git a/drivers/watchdog/ts72xx_wdt.c b/drivers/watchdog/ts72xx_wdt.c
-> index afa9d6ef353a..dee9c6cbe6df 100644
-> --- a/drivers/watchdog/ts72xx_wdt.c
-> +++ b/drivers/watchdog/ts72xx_wdt.c
-> @@ -428,11 +428,7 @@ static int ts72xx_wdt_probe(struct platform_device *pdev)
->  
->  static int ts72xx_wdt_remove(struct platform_device *pdev)
->  {
-> -	int error;
-> -
-> -	error = misc_deregister(&ts72xx_wdt_miscdev);
-> -
-> -	return error;
-> +	return misc_deregister(&ts72xx_wdt_miscdev);
+Hi Ching,
 
-Is that worth it, and does it even reduce code size ?
-Converting the driver to use the watchdog infrastructure would make much more sense
-(if someone can test the result).
+I've fixed up various checkpatch errors and fixed up some descriptions
+and applied the patches to a branch.  This includes patch 4, so please
+send a fix for this and any other patches relative to the branch.
 
-Guenter
+Please find the branch at
+
+	git://git.infradead.org/users/hch/scsi-queue.git arcmsr-for-3.18
+
+Can the others help reviewing these patches and make sure we can get
+them into 3.18?
+
+Thanks,
+	Christoph
