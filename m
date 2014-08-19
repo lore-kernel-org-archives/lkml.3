@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaHSWIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 18:08:13 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:47464 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaHSWIK (ORCPT
+	id S1752003AbaHSWIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 18:08:24 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:41274 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaHSWIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 18:08:10 -0400
+	Tue, 19 Aug 2014 18:08:21 -0400
 From: =?UTF-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -17,34 +17,31 @@ To: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
 Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        =?UTF-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>
-Subject: [PATCH 0/3] ARM: at91/tclib: fix segmentation fault
-Date: Wed, 20 Aug 2014 00:07:49 +0200
-Message-Id: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
+        =?utf-8?q?Ga=C3=ABl=20PORTAY?= <gael.portay@gmail.com>
+Subject: [PATCH 3/3] ARM: at91/tclib: mask interruptions at shutdown and probe
+Date: Wed, 20 Aug 2014 00:07:52 +0200
+Message-Id: <1408486072-19268-4-git-send-email-gael.portay@gmail.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
+References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi every one,
+Shutdown properly the timer counter block by masking interruptions. Otherwise,
+a segmentation may happen when kexec-ing a new kernel (see backtrace below).
+An interruption may happen before the handler is set, leading to a kernel
+segmentation fault.
 
-This set of patches fix a segmentation fault happening when kexec-ing
-kernel on an at91 platform (see backtrace below).
+Furthermore, we make sure the interruptions are masked when the driver is
+initialized. This will prevent freshly kexec-ed kernel from crashing when
+launched from a kernel which does not properly mask interruptions at shutdown.
 
-While the previous kernel shuts down, the tcb_clksrc driver leaves its
-interruptions unmasked. When the new kernel initiliazes any tclib making use of
-a TC block, an interruption may happen before the interrupt handler is set,
-causing a kernel segmentation fault.
-
-To prevent from such cases from happening, the last patch sets up the shutdown
-callback which masks interruptions when the machine is shutdown. Furthermore,
-it also masks the interruptions at probe to make sure no interruption happens
-before the handler is set. This will prevent freshly kexec-ed kernel from
-crashing when launched from a kernel which does not properly mask interruptions
-at shutdown.
+The backtrace below happened after kexec-ing a new kernel, from a kernel
+that did not shut down properly leaving interruptions unmasked.
 
 Unable to handle kernel NULL pointer dereference at virtual address 00000000
 pgd = c0004000
@@ -123,20 +120,57 @@ Code: bad PC value
 ---[ end trace 5b30f0017e282e47 ]---
 Kernel panic - not syncing: Fatal exception in interrupt
 
-Your sincerly,
-Gaël PORTAY
+Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
+---
+ drivers/misc/atmel_tclib.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Gaël PORTAY (3):
-  ARM: at91/tclib: prefer using of devm_* functions
-  ARM: at91/tclib: move initialization from alloc to probe
-  ARM: at91/tclib: mask interruptions at shutdown and probe
-
- drivers/clocksource/tcb_clksrc.c |   2 +-
- drivers/misc/atmel_tclib.c       | 101 +++++++++++++++++----------------------
- drivers/pwm/pwm-atmel-tcb.c      |   2 +-
- include/linux/atmel_tc.h         |   8 ++--
- 4 files changed, 51 insertions(+), 62 deletions(-)
-
+diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
+index d505d1e..a680151 100644
+--- a/drivers/misc/atmel_tclib.c
++++ b/drivers/misc/atmel_tclib.c
+@@ -109,6 +109,7 @@ static int __init tc_probe(struct platform_device *pdev)
+ 	struct clk	*clk;
+ 	int		irq;
+ 	struct resource	*r;
++	unsigned int	i;
+ 
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0)
+@@ -157,18 +158,33 @@ static int __init tc_probe(struct platform_device *pdev)
+ 	if (tc->irq[2] < 0)
+ 		tc->irq[2] = irq;
+ 
++	for (i = 0; i < 3; i++)
++		__raw_writel(0xff, tc->regs + ATMEL_TC_REG(i, IDR));
++
+ 	spin_lock(&tc_list_lock);
+ 	list_add_tail(&tc->node, &tc_list);
+ 	spin_unlock(&tc_list_lock);
+ 
++	platform_set_drvdata(pdev, tc);
++
+ 	return 0;
+ }
+ 
++static void tc_shutdown (struct platform_device *pdev)
++{
++	int i;
++	struct atmel_tc *tc = platform_get_drvdata(pdev);
++
++	for (i = 0; i < 3; i++)
++		__raw_writel(0xff, tc->regs + ATMEL_TC_REG(i, IDR));
++}
++
+ static struct platform_driver tc_driver = {
+ 	.driver = {
+ 		.name	= "atmel_tcb",
+ 		.of_match_table	= of_match_ptr(atmel_tcb_dt_ids),
+ 	},
++	.shutdown = tc_shutdown,
+ };
+ 
+ static int __init tc_init(void)
 -- 
 1.9.3
 
