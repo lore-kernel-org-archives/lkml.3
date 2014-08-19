@@ -1,47 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604AbaHSWBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 18:01:36 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:29226 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaHSWBf (ORCPT
+	id S1751754AbaHSWCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 18:02:33 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:55029 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707AbaHSWCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 18:01:35 -0400
-X-IronPort-AV: E=Sophos;i="5.01,897,1400050800"; 
-   d="scan'208";a="43275294"
-Subject: Re: [PATCH 1/3] tg3: Limit minimum tx queue wakeup threshold
-From: Michael Chan <mchan@broadcom.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-CC: Prashant Sreedharan <prashant@broadcom.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
-References: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
-Content-Type: text/plain; charset="cp1252"
-Date: Tue, 19 Aug 2014 15:00:47 -0700
-Message-ID: <1408485647.7404.3.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	Tue, 19 Aug 2014 18:02:32 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1408474660-24999-2-git-send-email-beber@meleeweb.net>
+References: <1408474660-24999-1-git-send-email-beber@meleeweb.net>
+	<1408474660-24999-2-git-send-email-beber@meleeweb.net>
+Date: Tue, 19 Aug 2014 15:02:31 -0700
+Message-ID: <CA+r1ZhitXZXWWx6xsgiru8Z8PpMUqnrg=q4dKH4Sv4_wY9O13w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] modinst: wrap long lines in order to enhance cmd_modules_install
+From: Jim Davis <jim.epost@gmail.com>
+To: Bertrand Jacquin <beber@meleeweb.net>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kbuild@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-19 at 11:52 -0700, Benjamin Poirier wrote: 
-> diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-> index 3ac5d23..b11c0fd 100644
-> --- a/drivers/net/ethernet/broadcom/tg3.c
-> +++ b/drivers/net/ethernet/broadcom/tg3.c
-> @@ -202,7 +202,8 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
->  #endif
->  
->  /* minimum number of free TX descriptors required to wake up TX process */
-> -#define TG3_TX_WAKEUP_THRESH(tnapi)            ((tnapi)->tx_pending / 4)
-> +#define TG3_TX_WAKEUP_THRESH(tnapi)    max_t(u32, (tnapi)->tx_pending / 4, \
-> +                                             MAX_SKB_FRAGS + 1)
+On Tue, Aug 19, 2014 at 11:57 AM, Bertrand Jacquin <beber@meleeweb.net> wrote:
+> Note: shouldn't we use 'install -D $(2)/$@ $@' instead of mkdir
+> and cp ?
 
-I think we should precompute this and store it in something like
-tp->tx_wake_thresh.
-
->  #define TG3_TX_BD_DMA_MAX_2K           2048
->  #define TG3_TX_BD_DMA_MAX_4K           4096
->   
-
+Will an install with -D in that sense always be available?  That's not
+a flag in the original (BSD) program, and I did find one SPARC system
+-- admittedly an ancient one -- where the install program had a -D
+option but it did something else.  install isn't listed as a required
+program in Documentation/Changes, for that matter.
