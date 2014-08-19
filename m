@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216AbaHSPsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:48:22 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:56040 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaHSPsU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:48:20 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Robert Baldyga <r.baldyga@samsung.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "andrzej.p@samsung.com" <andrzej.p@samsung.com>
-Subject: RE: [PATCH RESEND v3 00/12] usb: dwc2/gadget: fix series
-Thread-Topic: [PATCH RESEND v3 00/12] usb: dwc2/gadget: fix series
-Thread-Index: AQHPu4tEm7Xp0r8L0ECcLL9ohLDz0JvYEGYQ
-Date: Tue, 19 Aug 2014 15:46:58 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844C8CA5@US01WEMBX2.internal.synopsys.com>
-References: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
-In-Reply-To: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753315AbaHSPuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:50:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37901 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752436AbaHSPuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:50:02 -0400
+Message-ID: <53F37221.5020508@redhat.com>
+Date: Tue, 19 Aug 2014 17:49:53 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>, gleb@kernel.org
+CC: kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] virt/kvm/assigned-dev.c: Set 'dev->irq_source_id' to
+ '-1' after free it
+References: <53E4EED7.6050302@gmail.com> <53F370CD.80201@gmail.com>
+In-Reply-To: <53F370CD.80201@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
-> Sent: Tuesday, August 19, 2014 1:54 AM
+Il 19/08/2014 17:44, Chen Gang ha scritto:
+> Hello maintainers:
 > 
-> Hi Paul,
-> 
-> I'm resending this patchset rebased on linux-next. Now it should apply.
-> 
-> Thanks,
-> Robert Baldyga
-> 
-> Changelog:
-> v3: https://lkml.org/lkml/2014/8/4/617
-> - use endpoint index instead of FIFO index for EPFIFO
-> - extend patch description
-> 
-> v2: https://lkml.org/lkml/2014/7/16/199
-> - add patch usb: dwc2/gadget: avoid disabling ep0
-> - fix FIFO flushing when it's assigned to endpoint dynamically
-> - write to proper FIFO in s3c_hsotg_write_fifo() function
-> - use real FIFO size in kill_all_requests
-> - fix comment in s3c_hsotg_init_fifo() function
-> 
-> v1: https://lkml.org/lkml/2014/6/23/67
-> 
-> Andrzej Pietrasiewicz (1):
->   usb: dwc2/gadget: Fix comment text
-> 
-> Kamil Debski (3):
->   usb: dwc2/gadget: fix phy disable sequence
->   usb: dwc2/gadget: fix phy initialization sequence
->   usb: dwc2/gadget: move phy bus legth initialization
-> 
-> Marek Szyprowski (5):
->   usb: dwc2/gadget: hide some not really needed debug messages
->   usb: dwc2/gadget: ensure that all fifos have correct memory buffers
->   usb: dwc2/gadget: break infinite loop in endpoint disable code
->   usb: dwc2/gadget: do not call disconnect method in pullup
->   usb: dwc2/gadget: delay enabling irq once hardware is configured
->     properly
-> 
-> Robert Baldyga (3):
->   usb: dwc2/gadget: assign TX FIFO dynamically
->   usb: dwc2/gadget: disable clock when it's not needed
->   usb: dwc2/gadget: avoid disabling ep0
-> 
->  drivers/usb/dwc2/core.h   |   3 +
->  drivers/usb/dwc2/gadget.c | 184 +++++++++++++++++++++++++++-------------------
->  2 files changed, 111 insertions(+), 76 deletions(-)
+> Please help check this patch, when you have time.
 
-Thanks Robert.
+Hi, it's already on its way to 3.17-rc2, but I first have to run a bunch
+of tests.
 
-For the entire series,
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
+Paolo
 
-Greg, can you please apply this to your usb-next tree? Thanks.
-
--- 
-Paul
+> Thanks.
+> 
+> On 08/08/2014 11:37 PM, Chen Gang wrote:
+>> As a generic function, deassign_guest_irq() assumes it can be called
+>> even if assign_guest_irq() is not be called successfully (which can be
+>> triggered by ioctl from user mode, indirectly).
+>>
+>> So for assign_guest_irq() failure process, need set 'dev->irq_source_id'
+>> to -1 after free 'dev->irq_source_id', or deassign_guest_irq() may free
+>> it again.
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  virt/kvm/assigned-dev.c | 4 +++-
+>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+>> index bf06577..5819a27 100644
+>> --- a/virt/kvm/assigned-dev.c
+>> +++ b/virt/kvm/assigned-dev.c
+>> @@ -526,8 +526,10 @@ static int assign_guest_irq(struct kvm *kvm,
+>>  		dev->irq_requested_type |= guest_irq_type;
+>>  		if (dev->ack_notifier.gsi != -1)
+>>  			kvm_register_irq_ack_notifier(kvm, &dev->ack_notifier);
+>> -	} else
+>> +	} else {
+>>  		kvm_free_irq_source_id(kvm, dev->irq_source_id);
+>> +		dev->irq_source_id = -1;
+>> +	}
+>>  
+>>  	return r;
+>>  }
+>>
 
