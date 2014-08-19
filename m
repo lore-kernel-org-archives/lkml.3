@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973AbaHSLcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:32:51 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:57781 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789AbaHSLcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:32:50 -0400
-From: Ian Abbott <abbotti@mev.co.uk>
-To: driverdev-devel@linuxdriverproject.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: comedi: amplc_pci230: fix DACOUT write
-Date: Tue, 19 Aug 2014 12:32:36 +0100
-Message-Id: <1408447956-10139-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.0.4
+	id S1752009AbaHSLe1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:34:27 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:52502 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaHSLeZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 07:34:25 -0400
+Message-ID: <53F3363E.3030601@suse.cz>
+Date: Tue, 19 Aug 2014 13:34:22 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH] drivers/tty/nozomi.c: Use 'nozomi_setup_memory' instead
+ of 'setup_memory'
+References: <53E4F332.2080407@gmail.com>
+In-Reply-To: <53E4F332.2080407@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4f9c63fe5333b27ab23ed399830c7977f6970744 ("staging: comedi:
-amplc_pci230: refactor iobase addresses") removed some parentheses
-(presumably to keep the line withing 80 chars) in
-`pci230_ao_write_nofifo()` when writing to the DACOUT1 or DACOUT2
-registers, but it removed the wrong parentheses.  Fix it.
+On 08/08/2014, 05:56 PM, Chen Gang wrote:
+> Several architectures (e.g. microblaze, um, and score) have already have
+> extern 'setup_memory', so need use 'nozomi_setup_memory' instead of, or
+> will cause compiling issue.
+> 
+> The related error (with allmodconfig for microblaze):
+> 
+>   CC [M]  drivers/tty/nozomi.o
+> drivers/tty/nozomi.c:526:13: error: conflicting types for 'setup_memory'
+>  static void setup_memory(struct nozomi *dc)
+>              ^
+> In file included from include/linux/mm.h:51:0,
+>                  from ./arch/microblaze/include/asm/io.h:17,
+>                  from include/linux/io.h:22,
+>                  from include/linux/pci.h:31,
+>                  from drivers/tty/nozomi.c:46:
+> ./arch/microblaze/include/asm/pgtable.h:569:6: note: previous declaration of 'setup_memory' was here
+>  void setup_memory(void);
+>       ^
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
-This bug is in linux-next master and staging-next.
----
- drivers/staging/comedi/drivers/amplc_pci230.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Oh, sure. Thanks.
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 0fd212f..dd69e47 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -628,7 +628,7 @@ static inline void pci230_ao_write_nofifo(struct comedi_device *dev,
- 
- 	/* Write mangled datum to appropriate DACOUT register. */
- 	outw(pci230_ao_mangle_datum(dev, datum),
--	     devpriv->daqio + ((chan) == 0) ? PCI230_DACOUT1 : PCI230_DACOUT2);
-+	     devpriv->daqio + (chan == 0 ? PCI230_DACOUT1 : PCI230_DACOUT2));
- }
- 
- static inline void pci230_ao_write_fifo(struct comedi_device *dev,
+Acked-by: Jiri Slaby <jslaby@suse.cz>
+
+
 -- 
-2.0.4
-
+js
+suse labs
