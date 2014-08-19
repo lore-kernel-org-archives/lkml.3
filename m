@@ -1,209 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaHSHyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 03:54:33 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:58430 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaHSHyb (ORCPT
+	id S1751671AbaHSIFP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:05:15 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58391 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806AbaHSIFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 03:54:31 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 3/4] zram: zram memory size limitation
-Date: Tue, 19 Aug 2014 16:54:46 +0900
-Message-Id: <1408434887-16387-4-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1408434887-16387-1-git-send-email-minchan@kernel.org>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
+	Tue, 19 Aug 2014 04:05:10 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-4a-53f305283063
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1408140229-54949-1-git-send-email-jaegeuk@kernel.org>
+ <1408140229-54949-3-git-send-email-jaegeuk@kernel.org>
+In-reply-to: <1408140229-54949-3-git-send-email-jaegeuk@kernel.org>
+Subject: RE: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
+Date: Tue, 19 Aug 2014 16:04:11 +0800
+Message-id: <003401cfbb84$441c5b60$cc551220$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQC+/WSTKaabHp5RCw8XejVnDbERIwIb0v+CnegYpIA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jAV1N1s/BBncnsVk8WT+L2eLSIneL
+	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAldF2pZetYJ9mxbGL
+	+5kbGD8pdjFyckgImEisvnefBcIWk7hwbz1bFyMXh5DAIkYgZz8ThPODUeLtg59sIFVsAioS
+	yzv+M4HYIgJqEr37poDZzAKZEhP6X7CD2EIC1RIdd1+D1XMKOEv8234eKM7BISzgJ7HrWA5I
+	mEVAVWLBkW6wEl4BS4ndd+6zQtiCEj8m32OBGKklsXlbEyuELS+xec1bZohDFSR2nH3NCHGC
+	lcS2zj5miBpxiY1HbrFMYBSahWTULCSjZiEZNQtJywJGllWMoqkFyQXFSem5RnrFibnFpXnp
+	esn5uZsYwYH/THoH46oGi0OMAhyMSjy8Cl8+BguxJpYVV+YeYpTgYFYS4XV88SlYiDclsbIq
+	tSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA2OU2NvIl8LMR17uniud
+	N2XLOZ5716TeFxgedi40PiFRHdHC891SiUn8/cu3D65vr5bY++/4L56vEqV2sRM6xdIa3BRL
+	PscGzDsmISV/2bbXeNGiIMU5m4qrrwr8WBG3qS1a+IK0fT4Ly2KnA6kx+g03O19U7FZ/+Mzq
+	r0L3ohwHoyxZ5znhUkosxRmJhlrMRcWJAESBNyJ4AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since zram has no control feature to limit memory usage,
-it makes hard to manage system memrory.
+Hi Jaegeuk,
 
-This patch adds new knob "mem_limit" via sysfs to set up the
-a limit so that zram could fail allocation once it reaches
-the limit.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Saturday, August 16, 2014 6:04 AM
+> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Cc: Jaegeuk Kim
+> Subject: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
+> 
+> The init_inode_metadata calls truncate_blocks when error is occurred.
+> The callers holds f2fs_lock_op, so we should not call it again in
+> truncate_blocks.
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/ABI/testing/sysfs-block-zram |  9 +++++++
- Documentation/blockdev/zram.txt            | 20 ++++++++++++---
- drivers/block/zram/zram_drv.c              | 41 ++++++++++++++++++++++++++++++
- drivers/block/zram/zram_drv.h              |  5 ++++
- 4 files changed, 71 insertions(+), 4 deletions(-)
+Nice catch! Your solution is a good way to fix this issue.
 
-diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-index 70ec992514d0..025331c19045 100644
---- a/Documentation/ABI/testing/sysfs-block-zram
-+++ b/Documentation/ABI/testing/sysfs-block-zram
-@@ -119,3 +119,12 @@ Description:
- 		efficiency can be calculated using compr_data_size and this
- 		statistic.
- 		Unit: bytes
-+
-+What:		/sys/block/zram<id>/mem_limit
-+Date:		August 2014
-+Contact:	Minchan Kim <minchan@kernel.org>
-+Description:
-+		The mem_limit file is read/write and specifies the amount
-+		of memory to be able to consume memory to store store
-+		compressed data.
-+		Unit: bytes
-diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-index 0595c3f56ccf..9f239ff8c444 100644
---- a/Documentation/blockdev/zram.txt
-+++ b/Documentation/blockdev/zram.txt
-@@ -74,14 +74,26 @@ There is little point creating a zram of greater than twice the size of memory
- since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
- size of the disk when not in use so a huge zram is wasteful.
- 
--5) Activate:
-+5) Set memory limit: Optional
-+	Set memory limit by writing the value to sysfs node 'mem_limit'.
-+	The value can be either in bytes or you can use mem suffixes.
-+	Examples:
-+	    # limit /dev/zram0 with 50MB memory
-+	    echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
-+
-+	    # Using mem suffixes
-+	    echo 256K > /sys/block/zram0/mem_limit
-+	    echo 512M > /sys/block/zram0/mem_limit
-+	    echo 1G > /sys/block/zram0/mem_limit
-+
-+6) Activate:
- 	mkswap /dev/zram0
- 	swapon /dev/zram0
- 
- 	mkfs.ext4 /dev/zram1
- 	mount /dev/zram1 /tmp
- 
--6) Stats:
-+7) Stats:
- 	Per-device statistics are exported as various nodes under
- 	/sys/block/zram<id>/
- 		disksize
-@@ -96,11 +108,11 @@ size of the disk when not in use so a huge zram is wasteful.
- 		compr_data_size
- 		mem_used_total
- 
--7) Deactivate:
-+8) Deactivate:
- 	swapoff /dev/zram0
- 	umount /dev/zram1
- 
--8) Reset:
-+9) Reset:
- 	Write any positive value to 'reset' sysfs node
- 	echo 1 > /sys/block/zram0/reset
- 	echo 1 > /sys/block/zram1/reset
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 302dd37bcea3..adc91c7ecaef 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -122,6 +122,33 @@ static ssize_t max_comp_streams_show(struct device *dev,
- 	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
- }
- 
-+static ssize_t mem_limit_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	u64 val;
-+	struct zram *zram = dev_to_zram(dev);
-+
-+	down_read(&zram->init_lock);
-+	val = zram->limit_pages;
-+	up_read(&zram->init_lock);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-+}
-+
-+static ssize_t mem_limit_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t len)
-+{
-+	u64 limit;
-+	struct zram *zram = dev_to_zram(dev);
-+
-+	limit = memparse(buf, NULL);
-+	down_write(&zram->init_lock);
-+	zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
-+	up_write(&zram->init_lock);
-+
-+	return len;
-+}
-+
- static ssize_t max_comp_streams_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t len)
- {
-@@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		ret = -ENOMEM;
- 		goto out;
- 	}
-+
-+	if (zram->limit_pages &&
-+		zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
-+		zs_free(meta->mem_pool, handle);
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
- 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
- 
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-@@ -617,6 +652,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 	struct zram_meta *meta;
- 
- 	down_write(&zram->init_lock);
-+
-+	zram->limit_pages = 0;
-+
- 	if (!init_done(zram)) {
- 		up_write(&zram->init_lock);
- 		return;
-@@ -857,6 +895,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
- static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
- static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
- static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-+static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
-+		mem_limit_store);
- static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
- 		max_comp_streams_show, max_comp_streams_store);
- static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-@@ -885,6 +925,7 @@ static struct attribute *zram_disk_attrs[] = {
- 	&dev_attr_orig_data_size.attr,
- 	&dev_attr_compr_data_size.attr,
- 	&dev_attr_mem_used_total.attr,
-+	&dev_attr_mem_limit.attr,
- 	&dev_attr_max_comp_streams.attr,
- 	&dev_attr_comp_algorithm.attr,
- 	NULL,
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index e0f725c87cc6..b7aa9c21553f 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -112,6 +112,11 @@ struct zram {
- 	u64 disksize;	/* bytes */
- 	int max_comp_streams;
- 	struct zram_stats stats;
-+	/*
-+	 * the number of pages zram can consume for storing compressed data
-+	 */
-+	unsigned long limit_pages;
-+
- 	char compressor[10];
- };
- #endif
--- 
-2.0.0
+Previously, in create inode path, I found there are some redundant codes between
+init_inode_metadata and evict_inode, including:
+	truncate_inode_pages(&inode->i_data, 0);
+	truncate_blocks(inode, 0);
+	remove_dirty_dir_inode(inode);
+	remove_inode_page(inode); 
+
+So I think there is another way to fix this issue by removing error path handling
+codes in init_inode_metadata, not making the inode bad to left garbage clean work in
+evict_inode. In this way we can avoid adding additional argument for all different
+callers.
+
+How do you think?
+
+Thanks,
+Yu
+
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> ---
+>  fs/f2fs/data.c   |  2 +-
+>  fs/f2fs/dir.c    |  2 +-
+>  fs/f2fs/f2fs.h   |  2 +-
+>  fs/f2fs/file.c   | 13 ++++++++-----
+>  fs/f2fs/inline.c |  2 +-
+>  5 files changed, 12 insertions(+), 9 deletions(-)
+> 
+> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> index 68834e2..14cc3e8 100644
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -935,7 +935,7 @@ static void f2fs_write_failed(struct address_space *mapping, loff_t to)
+> 
+>  	if (to > inode->i_size) {
+>  		truncate_pagecache(inode, inode->i_size);
+> -		truncate_blocks(inode, inode->i_size);
+> +		truncate_blocks(inode, inode->i_size, true);
+>  	}
+>  }
+> 
+> diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
+> index a69bbfa..155fb05 100644
+> --- a/fs/f2fs/dir.c
+> +++ b/fs/f2fs/dir.c
+> @@ -391,7 +391,7 @@ put_error:
+>  error:
+>  	/* once the failed inode becomes a bad inode, i_mode is S_IFREG */
+>  	truncate_inode_pages(&inode->i_data, 0);
+> -	truncate_blocks(inode, 0);
+> +	truncate_blocks(inode, 0, false);
+>  	remove_dirty_dir_inode(inode);
+>  	remove_inode_page(inode);
+>  	return ERR_PTR(err);
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index 2723b2d..7f976c1 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -1122,7 +1122,7 @@ static inline void f2fs_stop_checkpoint(struct f2fs_sb_info *sbi)
+>   */
+>  int f2fs_sync_file(struct file *, loff_t, loff_t, int);
+>  void truncate_data_blocks(struct dnode_of_data *);
+> -int truncate_blocks(struct inode *, u64);
+> +int truncate_blocks(struct inode *, u64, bool);
+>  void f2fs_truncate(struct inode *);
+>  int f2fs_getattr(struct vfsmount *, struct dentry *, struct kstat *);
+>  int f2fs_setattr(struct dentry *, struct iattr *);
+> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> index ecbdf6a..a8e97f8 100644
+> --- a/fs/f2fs/file.c
+> +++ b/fs/f2fs/file.c
+> @@ -422,7 +422,7 @@ out:
+>  	f2fs_put_page(page, 1);
+>  }
+> 
+> -int truncate_blocks(struct inode *inode, u64 from)
+> +int truncate_blocks(struct inode *inode, u64 from, bool lock)
+>  {
+>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>  	unsigned int blocksize = inode->i_sb->s_blocksize;
+> @@ -438,14 +438,16 @@ int truncate_blocks(struct inode *inode, u64 from)
+>  	free_from = (pgoff_t)
+>  			((from + blocksize - 1) >> (sbi->log_blocksize));
+> 
+> -	f2fs_lock_op(sbi);
+> +	if (lock)
+> +		f2fs_lock_op(sbi);
+> 
+>  	set_new_dnode(&dn, inode, NULL, NULL, 0);
+>  	err = get_dnode_of_data(&dn, free_from, LOOKUP_NODE);
+>  	if (err) {
+>  		if (err == -ENOENT)
+>  			goto free_next;
+> -		f2fs_unlock_op(sbi);
+> +		if (lock)
+> +			f2fs_unlock_op(sbi);
+>  		trace_f2fs_truncate_blocks_exit(inode, err);
+>  		return err;
+>  	}
+> @@ -463,7 +465,8 @@ int truncate_blocks(struct inode *inode, u64 from)
+>  	f2fs_put_dnode(&dn);
+>  free_next:
+>  	err = truncate_inode_blocks(inode, free_from);
+> -	f2fs_unlock_op(sbi);
+> +	if (lock)
+> +		f2fs_unlock_op(sbi);
+>  done:
+>  	/* lastly zero out the first data page */
+>  	truncate_partial_data_page(inode, from);
+> @@ -480,7 +483,7 @@ void f2fs_truncate(struct inode *inode)
+> 
+>  	trace_f2fs_truncate(inode);
+> 
+> -	if (!truncate_blocks(inode, i_size_read(inode))) {
+> +	if (!truncate_blocks(inode, i_size_read(inode), true)) {
+>  		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+>  		mark_inode_dirty(inode);
+>  	}
+> diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+> index 520758b..4d1f39f 100644
+> --- a/fs/f2fs/inline.c
+> +++ b/fs/f2fs/inline.c
+> @@ -247,7 +247,7 @@ process_inline:
+>  		update_inode(inode, ipage);
+>  		f2fs_put_page(ipage, 1);
+>  	} else if (ri && (ri->i_inline & F2FS_INLINE_DATA)) {
+> -		truncate_blocks(inode, 0);
+> +		truncate_blocks(inode, 0, false);
+>  		set_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
+>  		goto process_inline;
+>  	}
+> --
+> 1.8.5.2 (Apple Git-48)
+> 
+> 
+> ------------------------------------------------------------------------------
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
