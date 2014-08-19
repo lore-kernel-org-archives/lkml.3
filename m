@@ -1,207 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244AbaHSMMu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:12:50 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:56905 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721AbaHSMMt (ORCPT
+	id S1752799AbaHSMPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:15:03 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:51057 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083AbaHSMO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:12:49 -0400
-Message-ID: <53F33EDC.3090203@linaro.org>
-Date: Tue, 19 Aug 2014 20:11:08 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 19 Aug 2014 08:14:58 -0400
+X-ASG-Debug-ID: 1408450495-0759e7416b4764040002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Frans Klaver <frans.klaver@xsens.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexey Pelykh <alexey.pelykh@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Frans Klaver <fransklaver@gmail.com>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/4] tty: omap-serial: pull out calculation from baud_is_mode16
+Date: Tue, 19 Aug 2014 14:14:45 +0200
+X-ASG-Orig-Subj: [PATCH 1/4] tty: omap-serial: pull out calculation from baud_is_mode16
+Message-ID: <1408450488-4083-2-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408450488-4083-1-git-send-email-frans.klaver@xsens.com>
+References: <1406645577-18620-1-git-send-email-frans.klaver@xsens.com>
+ <1408450488-4083-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-To: Geoff Levand <geoff@infradead.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, linaro-acpi@lists.linaro.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>, Charles.Garcia-Tobin@arm.com,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v2 08/18] ARM64 / ACPI: Get the enable method for SMP
- initialization in ACPI way
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>	 <1407166105-17675-9-git-send-email-hanjun.guo@linaro.org> <1408388212.22761.100.camel@smoke>
-In-Reply-To: <1408388212.22761.100.camel@smoke>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.49]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1408450495
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.8612
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-8-19 2:56, Geoff Levand wrote:
-> Hi Hanjun,
+To determine the correct divisor, we need to know the difference between
+the desired baud rate and the actual baud rate. The calculation for this
+difference is implemented twice within omap_serial_baud_is_mode16().
+Pull out the calculation for easier maintenance.
 
-Hi Geoff,
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+ drivers/tty/serial/omap-serial.c | 26 ++++++++++++++++++--------
+ 1 file changed, 18 insertions(+), 8 deletions(-)
 
-> 
-> On Mon, 2014-08-04 at 23:28 +0800, Hanjun Guo wrote:
->> --- a/arch/arm64/include/asm/acpi.h
->> +++ b/arch/arm64/include/asm/acpi.h
->> @@ -14,6 +14,27 @@
->>  
->>  /* Basic configuration for ACPI */
->>  #ifdef	CONFIG_ACPI
-> 
-> By having this preprocessor conditional in the header leads
-> to a proliferation of preprocessor conditionals since any
-> code that includes this header will also need to have
-> preprocessor conditionals.  Another down side of having
-> this is that this code will not get a build test for
-> builds with CONFIG_ACPI=n.
-
-I will move some definitions out of preprocessor conditional and
-introduce some stub function when CONFIG_ACPI is disabled, then
-I think I can remove all the preprocessor conditionals in .c file.
-
-> 
->> +/*
->> + * ACPI 5.1 only has two explicit methods to
->> + * boot up SMP, PSCI and Parking protocol,
->> + * but the Parking protocol is only defined
->> + * for ARMv7 now, so make PSCI as the only
->> + * way for the SMP boot protocol before some
->> + * updates for the ACPI spec or the Parking
->> + * protocol spec.
->> + *
->> + * This enum is intend to make the boot method
->> + * scalable when above updates are happended,
->> + * which NOT means to support all of them.
->> + */
->> +enum acpi_smp_boot_protocol {
->> +	ACPI_SMP_BOOT_PSCI,
->> +	ACPI_SMP_BOOT_PARKING_PROTOCOL,
->> +	ACPI_SMP_BOOT_PROTOCOL_MAX
->> +};
->> +
->> +enum acpi_smp_boot_protocol smp_boot_protocol(void);
-> 
-> The name smp_boot_protocol() seems like it would be a generic
-> routine, but it is acpi specific.  Maybe:
-> 
-> enum acpi_boot_protocol_type {...};
-> 
-> enum acpi_boot_protocol_type acpi_boot_protocol(void);
-
-Agreed.
-
-> 
->> --- a/arch/arm64/kernel/cpu_ops.c
->> +++ b/arch/arm64/kernel/cpu_ops.c
->> @@ -49,12 +51,44 @@ static const struct cpu_operations * __init cpu_get_ops(const char *name)
->>  	return NULL;
->>  }
->>  
->> +#ifdef CONFIG_ACPI
->> +/*
->> + * Get a cpu's boot method in the ACPI way.
->> + */
->> +static char * __init acpi_get_cpu_boot_method(void)
->> +{
->> +	/*
->> +	 * For ACPI 5.1, only two kind of methods are provided,
->> +	 * Parking protocol and PSCI, but Parking protocol is
->> +	 * specified for ARMv7 only, so make PSCI as the only method
->> +	 * for SMP initialization before the ACPI spec or Parking
->> +	 * protocol spec is updated.
->> +	 */
->> +	switch (smp_boot_protocol()) {
->> +	case ACPI_SMP_BOOT_PSCI:
->> +		return "psci";
->> +	case ACPI_SMP_BOOT_PARKING_PROTOCOL:
->> +	default:
->> +		return NULL;
->> +	}
->> +}
->> +#else
->> +static inline char * __init acpi_get_cpu_boot_method(void) { return NULL; }
->> +#endif
-> 
-> Since this is inside a C source file, the inline keyword
-> isn't needed since the optimizer will inline regardless.
-> 
-> With that said, I think it would be cleaner to have this
-> as:
-> 
-> static char * __init acpi_get_cpu_boot_method(void)
-> {
-> #ifdef CONFIG_ACPI
-> 	return NULL;
-> #else
->  ...
-> #endif
-> }
-> 
-> Or better to make smp_boot_protocol() callable regardless
-> of CONFIG_ACPI and then no preprocessor conditionals at all
-> would be needed.
-> 
->> +
->>  /*
->> - * Read a cpu's enable method from the device tree and record it in cpu_ops.
->> + * Read a cpu's enable method and record it in cpu_ops.
->>   */
->>  int __init cpu_read_ops(struct device_node *dn, int cpu)
->>  {
->> -	const char *enable_method = of_get_property(dn, "enable-method", NULL);
->> +	const char *enable_method;
->> +
->> +	if (!acpi_disabled) {
->> +		enable_method = acpi_get_cpu_boot_method();
->> +		goto get_ops;
->> +	}
->> +
->> +	enable_method = of_get_property(dn, "enable-method", NULL);
->>  	if (!enable_method) {
->>  		/*
->>  		 * The boot CPU may not have an enable method (e.g. when
->> @@ -66,10 +100,17 @@ int __init cpu_read_ops(struct device_node *dn, int cpu)
->>  		return -ENOENT;
->>  	}
->>  
->> +get_ops:
->>  	cpu_ops[cpu] = cpu_get_ops(enable_method);
->>  	if (!cpu_ops[cpu]) {
->> -		pr_warn("%s: unsupported enable-method property: %s\n",
->> -			dn->full_name, enable_method);
->> +		if (acpi_disabled) {
->> +			pr_warn("%s: unsupported enable-method property: %s\n",
->> +				dn->full_name, enable_method);
->> +		} else {
->> +			pr_warn("CPU %d: boot protocol unsupported or unknown\n",
->> +				cpu);
->> +		}
->> +
-> 
-> Can't we have this more integrated, maybe something like this?
-> 
-> 	enable_method = acpi_disabled ? of_get_property(dn, "enable-method", NULL)
-> 		: acpi_get_cpu_boot_method();
-
-I like this :)
-
-> 	message = acpi_disabled ? dn->full_name : "";
-> 
-> 	...
-> 	
-> 	pr_warn("CPU %d: %s unsupported enable-method property: %s\n",
-> 				cpu, message, enable_method)
-
-In ACPI, there is no enable-method property, it is a term from, so I think the
-message printed can be separated.
-
-Thanks
-Hanjun
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index d017cec..ae935ce 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -239,6 +239,22 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
+ }
+ 
+ /*
++ * Calculate the absolute difference between the desired and actual baud
++ * rate for the given mode.
++ */
++static inline int calculate_baud_abs_diff(struct uart_port *port,
++				unsigned int baud, unsigned int mode)
++{
++	unsigned int n = port->uartclk / (mode * baud);
++	int abs_diff = baud - (port->uartclk / (mode * n));
++
++	if (abs_diff < 0)
++		abs_diff = -abs_diff;
++
++	return abs_diff;
++}
++
++/*
+  * serial_omap_baud_is_mode16 - check if baud rate is MODE16X
+  * @port: uart port info
+  * @baud: baudrate for which mode needs to be determined
+@@ -252,14 +268,8 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
+ static bool
+ serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
+ {
+-	unsigned int n13 = port->uartclk / (13 * baud);
+-	unsigned int n16 = port->uartclk / (16 * baud);
+-	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
+-	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
+-	if (baudAbsDiff13 < 0)
+-		baudAbsDiff13 = -baudAbsDiff13;
+-	if (baudAbsDiff16 < 0)
+-		baudAbsDiff16 = -baudAbsDiff16;
++	int baudAbsDiff13 = calculate_baud_abs_diff(port, baud, 13);
++	int baudAbsDiff16 = calculate_baud_abs_diff(port, baud, 16);
+ 
+ 	return (baudAbsDiff13 >= baudAbsDiff16);
+ }
+-- 
+1.9.3
 
