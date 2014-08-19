@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaHSOog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:44:36 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:54950 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752198AbaHSOof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:44:35 -0400
-Date: Tue, 19 Aug 2014 15:44:23 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        laurent.pinchart@ideasonboard.com,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] Documentation: dmaengine: Add a documentation for the
-	dma controller API
-Message-ID: <20140819144423.GE30401@n2100.arm.linux.org.uk>
-References: <1406736193-26685-1-git-send-email-maxime.ripard@free-electrons.com> <20140814085301.GJ2452@ldesroches-Latitude-E6320> <20140814085753.GS30401@n2100.arm.linux.org.uk> <20140819134507.GJ13288@intel.com>
+	id S1753276AbaHSOpH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:45:07 -0400
+Received: from sauhun.de ([89.238.76.85]:38196 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752737AbaHSOpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:45:05 -0400
+Date: Tue, 19 Aug 2014 09:44:51 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: mika.westerberg@linux.intel.com, torvalds@linux-foundation.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] I2C: Rework kernel config I2C_ACPI
+Message-ID: <20140819144450.GA15371@katana>
+References: <20140814093743.GB2824@katana>
+ <1408081139-6292-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
 Content-Disposition: inline
-In-Reply-To: <20140819134507.GJ13288@intel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1408081139-6292-1-git-send-email-tianyu.lan@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 07:15:07PM +0530, Vinod Koul wrote:
-> On Thu, Aug 14, 2014 at 09:57:53AM +0100, Russell King - ARM Linux wrote:
-> > It's got something to do with the async engine API, and seems to be
-> > something to do with whether a descriptor can have other transactions
-> > added to it, and whether a descriptor can be re-used (async-tx engines
-> > typically allocate a fixed set of descriptors and recycle them.)
-> Yes this is my understanding too. Async API IIUC can reuse descriptors and
-> if engine doesnt support this is a way to tell them please do use that.
-> 
-> For slave dmanegine API we need to ignore it.
 
-We shouldn't ignore it - ignoring it makes it harder to implement a DMA
-engine driver which supports both the slave and async APIs, because
-we then need to know the reason for the channel being requested.
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ignoring it until it can be understood and documented is an approach I
-would agree with though.
+On Fri, Aug 15, 2014 at 01:38:59PM +0800, Lan Tianyu wrote:
+> Commit da3c6647(I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI
+> config) adds a new kernel config I2C_ACPI and make I2C core built in
+> when the config is selected. This is wrong because distributions
+> etc generally compile I2C as a module and the commit broken that.
+> This patch is to rename I2C_ACPI to ACPI_I2C_OPREGION. New config
+> only controls ACPI I2C operation region code and depends on I2C=3Dy.
+>=20
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Removed the unrelated "menuconfig" change and applied to for-current,
+thanks! Please don't send V2 patches as "in-reply-to" V1. This gets
+confusing, especially when a series approaches V10.
+
+
+--bp/iNruPH9dso1Pn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT82LiAAoJEBQN5MwUoCm2jQEP/0t559EzXDLobua3YLKgiPi8
+KNv+E3DPYYiXx3TZ4jv0tSfx6UuhI6TUTmzVZ/Inv9wcO0lQiDBIuI0AUhdidI1s
+Ljjzm8wiryr0r6R9CNTzRqUvw6rnrFaEieKQR5doVA/GdjiQaFlXBXOSbOZ8loR+
+RkQtwYO7mN8W9WHLGpTMf3mOWRcuPIKkd9POQsT5Ax1PyBQlg0yKSzoGNleEnr0J
+bHK+IwQxVx57AU3uGDe//Y13x+czavhNhEXqc2y76Do8zx2A/qzIeWxlwTdsnxpN
+skYqrcyZC6DNevMJmIJyb2VaQNiPod+/VHOirdmrdOFJCEwdD1h/JGWNbzOJis1O
+3i2czT2APSDLu2yj/3mS38F7+wZXe4JjDxo3VEwFIu0W0HAh3PbxOXJUoO3TlLYq
+6TT7bYaRe2EJipUcGhMYzbgFM+5d2Dz7yfpLbi1MCKEI3wTL4u/JAQUsn9tA1Y5z
+0pis9z5Z3V+L/LqRS3OnNPEst/E8i7xI+dcE5Dwn5C0rGWh1Ltp7/igsWk1zRPov
+3muixEp0/pZFQsA84V4HLefU+JXA1OF1E+ZjoJWs/PrZz7pL0F4b7Klq69SJMiio
+ZRuNMvfqy4MPTFUCPsttL6LycVOIfuQ4sgghWurHfZ8R5Z84n2DJZdcYYoKg6Hxo
+iCGREOyL8HrkphV6LBal
+=iDqB
+-----END PGP SIGNATURE-----
+
+--bp/iNruPH9dso1Pn--
