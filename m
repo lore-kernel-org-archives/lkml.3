@@ -1,324 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaHSEgv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 00:36:51 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:60480 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaHSEgt (ORCPT
+	id S1752609AbaHSEk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 00:40:56 -0400
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:36502 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724AbaHSEky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 00:36:49 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <cdab52c5d0c67a5493d3f9b7c2a4a4cb>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
-        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
-        heiko@sntech.de, olof@lixom.net, dianders@chromium.org
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        zhenfu.fang@rock-chips.com, cf@rock-chips.com, lintao@rock-chips.com,
-        chenfen@rock-chips.com, zyf@rock-chips.com, xjq@rock-chips.com,
-        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
-        hj@rock-chips.com, kever.yang@rock-chips.com, zhangqing@rock-chips.com,
-        hl@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH v2] mmc: dw_mmc: move rockchip related code to a separate file
-Date: Tue, 19 Aug 2014 12:36:14 +0800
-Message-Id: <1408422974-22301-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
-References: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
+	Tue, 19 Aug 2014 00:40:54 -0400
+Date: Mon, 18 Aug 2014 22:40:50 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Thierry Reding <treding@nvidia.com>, Andrew Lunn <andrew@lunn.ch>
+Subject: [GIT PULL] PCI changes for v3.17 (part 3)
+Message-ID: <20140819044050.GA15551@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support HS200 and UHS-1, we need add a big hunk of code,
-as shown in the following patches. So a separate file for
-rockchip SOCs is suitable.
+Hi Linus,
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
-Changes in v2:
-- Kconfig: depend on ARCH_ROCKCHIP, suggested by Bartlomiej Zolnierkiewicz
-- Kconfig: depend on OF, suggested by Doug Anderson
-- Not change suspend/resume code, suggested by Doug Anderson
-- If pdev->dev.of_node is NULL, then return -ENODEV, suggested by Heiko Stübner
+I screwed up.  I intended these changes for v3.17, and I put them in my
+'next' branch just before leaving on vacation, but I forgot to include them
+in my merge window pull request when I returned.  They're low-risk, so I'm
+sending them to you now (late), but the world won't end if they wait until
+v3.18.
 
- drivers/mmc/host/Kconfig           |   9 +++
- drivers/mmc/host/Makefile          |   1 +
- drivers/mmc/host/dw_mmc-pltfm.c    |  57 ----------------
- drivers/mmc/host/dw_mmc-rockchip.c | 136 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 146 insertions(+), 57 deletions(-)
- create mode 100644 drivers/mmc/host/dw_mmc-rockchip.c
+The main reason to include them would be to support the TI DRA7xx.
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index a565254..f6095f6 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -621,6 +621,15 @@ config MMC_DW_PCI
- 
- 	  If unsure, say N.
- 
-+config MMC_DW_ROCKCHIP
-+	tristate "Rockchip specific extensions for Synopsys DW Memory Card Interface"
-+	depends on MMC_DW && ARCH_ROCKCHIP && OF
-+	select MMC_DW_PLTFM
-+	help
-+	  This selects support for Rockchip SoC specific extensions to the
-+	  Synopsys DesignWare Memory Card Interface driver. Select this option
-+	  for platforms based on RK3066, RK3188 and RK3288 SoC's.
-+
- config MMC_SH_MMCIF
- 	tristate "SuperH Internal MMCIF support"
- 	depends on MMC_BLOCK
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index 7f81ddf..5fce465 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -45,6 +45,7 @@ obj-$(CONFIG_MMC_DW_PLTFM)	+= dw_mmc-pltfm.o
- obj-$(CONFIG_MMC_DW_EXYNOS)	+= dw_mmc-exynos.o
- obj-$(CONFIG_MMC_DW_K3)		+= dw_mmc-k3.o
- obj-$(CONFIG_MMC_DW_PCI)	+= dw_mmc-pci.o
-+obj-$(CONFIG_MMC_DW_ROCKCHIP)	+= dw_mmc-rockchip.o
- obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
- obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
- obj-$(CONFIG_MMC_VUB300)	+= vub300.o
-diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
-index b547f7a..0c56c41 100644
---- a/drivers/mmc/host/dw_mmc-pltfm.c
-+++ b/drivers/mmc/host/dw_mmc-pltfm.c
-@@ -26,64 +26,11 @@
- #include "dw_mmc.h"
- #include "dw_mmc-pltfm.h"
- 
--#define RK3288_CLKGEN_DIV	2
--
- static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
- {
- 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
- }
- 
--static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
--{
--	host->bus_hz /= RK3288_CLKGEN_DIV;
--
--	return 0;
--}
--
--static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
--{
--	int ret;
--	unsigned int cclkin;
--	u32 bus_hz;
--
--	/*
--	 * cclkin: source clock of mmc controller.
--	 * bus_hz: card interface clock generated by CLKGEN.
--	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
--	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
--	 *
--	 * Note: div can only be 0 or 1
--	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
--	 *       div must be set 1
--	 */
--	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
--	    (ios->timing == MMC_TIMING_MMC_DDR52))
--		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
--	else
--		cclkin = ios->clock * RK3288_CLKGEN_DIV;
--
--	ret = clk_set_rate(host->ciu_clk, cclkin);
--	if (ret)
--		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
--
--	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
--	if (bus_hz != host->bus_hz) {
--		host->bus_hz = bus_hz;
--		/* force dw_mci_setup_bus() */
--		host->current_speed = 0;
--	}
--}
--
--static const struct dw_mci_drv_data rk2928_drv_data = {
--	.prepare_command	= dw_mci_pltfm_prepare_command,
--};
--
--static const struct dw_mci_drv_data rk3288_drv_data = {
--	.prepare_command	= dw_mci_pltfm_prepare_command,
--	.set_ios	= dw_mci_rk3288_set_ios,
--	.setup_clock	= dw_mci_rk3288_setup_clock,
--};
--
- static const struct dw_mci_drv_data socfpga_drv_data = {
- 	.prepare_command	= dw_mci_pltfm_prepare_command,
- };
-@@ -144,10 +91,6 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
- 
- static const struct of_device_id dw_mci_pltfm_match[] = {
- 	{ .compatible = "snps,dw-mshc", },
--	{ .compatible = "rockchip,rk2928-dw-mshc",
--		.data = &rk2928_drv_data },
--	{ .compatible = "rockchip,rk3288-dw-mshc",
--		.data = &rk3288_drv_data },
- 	{ .compatible = "altr,socfpga-dw-mshc",
- 		.data = &socfpga_drv_data },
- 	{},
-diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
-new file mode 100644
-index 0000000..f0c2cb1
---- /dev/null
-+++ b/drivers/mmc/host/dw_mmc-rockchip.c
-@@ -0,0 +1,136 @@
-+/*
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/mmc/host.h>
-+#include <linux/mmc/dw_mmc.h>
-+#include <linux/of_address.h>
-+
-+#include "dw_mmc.h"
-+#include "dw_mmc-pltfm.h"
-+
-+#define RK3288_CLKGEN_DIV       2
-+
-+static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32 *cmdr)
-+{
-+	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
-+}
-+
-+static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
-+{
-+	host->bus_hz /= RK3288_CLKGEN_DIV;
-+
-+	return 0;
-+}
-+
-+static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
-+{
-+	int ret;
-+	unsigned int cclkin;
-+	u32 bus_hz;
-+
-+	/*
-+	 * cclkin: source clock of mmc controller
-+	 * bus_hz: card interface clock generated by CLKGEN
-+	 * bus_hz = cclkin / RK3288_CLKGEN_DIV
-+	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
-+	 *
-+	 * Note: div can only be 0 or 1
-+	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
-+	 *       div must be set 1
-+	 */
-+	if (ios->bus_width == MMC_BUS_WIDTH_8 &&
-+	    ios->timing == MMC_TIMING_MMC_DDR52)
-+		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
-+	else
-+		cclkin = ios->clock * RK3288_CLKGEN_DIV;
-+
-+	ret = clk_set_rate(host->ciu_clk, cclkin);
-+	if (ret)
-+		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
-+
-+	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
-+	if (bus_hz != host->bus_hz) {
-+		host->bus_hz = bus_hz;
-+		/* force dw_mci_setup_bus() */
-+		host->current_speed = 0;
-+	}
-+}
-+
-+static const struct dw_mci_drv_data rk2928_drv_data = {
-+	.prepare_command        = dw_mci_rockchip_prepare_command,
-+};
-+
-+static const struct dw_mci_drv_data rk3288_drv_data = {
-+	.prepare_command        = dw_mci_rockchip_prepare_command,
-+	.set_ios		= dw_mci_rk3288_set_ios,
-+	.setup_clock    = dw_mci_rk3288_setup_clock,
-+};
-+
-+static const struct of_device_id dw_mci_rockchip_match[] = {
-+	{ .compatible = "rockchip,rk2928-dw-mshc",
-+		.data = &rk2928_drv_data },
-+	{ .compatible = "rockchip,rk3288-dw-mshc",
-+		.data = &rk3288_drv_data },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, dw_mci_rockchip_match);
-+
-+static int dw_mci_rockchip_probe(struct platform_device *pdev)
-+{
-+	const struct dw_mci_drv_data *drv_data;
-+	const struct of_device_id *match;
-+
-+	if (!pdev->dev.of_node)
-+		return -ENODEV;
-+
-+	match = of_match_node(dw_mci_rockchip_match, pdev->dev.of_node);
-+	drv_data = match->data;
-+
-+	return dw_mci_pltfm_register(pdev, drv_data);
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int dw_mci_rockchip_suspend(struct device *dev)
-+{
-+	struct dw_mci *host = dev_get_drvdata(dev);
-+
-+	return dw_mci_suspend(host);
-+}
-+
-+static int dw_mci_rockchip_resume(struct device *dev)
-+{
-+	struct dw_mci *host = dev_get_drvdata(dev);
-+
-+	return dw_mci_resume(host);
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
-+static SIMPLE_DEV_PM_OPS(dw_mci_rockchip_pmops,
-+			 dw_mci_rockchip_suspend,
-+			 dw_mci_rockchip_resume);
-+
-+static struct platform_driver dw_mci_rockchip_pltfm_driver = {
-+	.probe		= dw_mci_rockchip_probe,
-+	.remove		= __exit_p(dw_mci_pltfm_remove),
-+	.driver		= {
-+		.name		= "dwmmc_rockchip",
-+		.of_match_table	= dw_mci_rockchip_match,
-+		.pm		= &dw_mci_rockchip_pmops,
-+	},
-+};
-+
-+module_platform_driver(dw_mci_rockchip_pltfm_driver);
-+
-+MODULE_AUTHOR("Addy Ke <addy.ke@rock-chips.com>");
-+MODULE_DESCRIPTION("Rockchip Specific DW-MSHC Driver Extension");
-+MODULE_ALIAS("platform:dwmmc-rockchip");
-+MODULE_LICENSE("GPL v2");
--- 
-1.8.3.2
+Bjorn
 
 
+The following changes since commit 792688fde431b4fdb2cf10a6f7589a8176b6b14a:
+
+  Merge branches 'pci/host-generic', 'pci/host-mvebu', 'pci/host-rcar', 'pci/host-tegra', 'pci/msi', 'pci/misc', 'pci/resource' and 'pci/virtualization' into next (2014-07-16 17:09:47 -0600)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.17-changes-3
+
+for you to fetch changes up to 981c191778a4f92bc82456205a444d522843a630:
+
+  Merge branches 'pci/host-designware', 'pci/host-mvebu' and 'pci/host-tegra' into next (2014-07-22 17:55:50 -0600)
+
+----------------------------------------------------------------
+PCI changes for v3.17 (part 3):
+
+  Marvell MVEBU
+    - Remove ARCH_KIRKWOOD dependency (Andrew Lunn)
+
+  NVIDIA Tegra
+    - Add debugfs support (Thierry Reding)
+
+  Synopsys DesignWare
+    - Look for configuration space in 'reg', not 'ranges' (Kishon Vijay Abraham I)
+    - Program ATU with untranslated address (Kishon Vijay Abraham I)
+    - Add config access-related pcie_host_ops for v3.65 hardware (Murali Karicheri)
+    - Add MSI-related pcie_host_ops for v3.65 hardware (Murali Karicheri)
+
+  TI DRA7xx
+    - Add TI DR7xx PCIe driver (Kishon Vijay Abraham I)
+
+----------------------------------------------------------------
+Andrew Lunn (1):
+      PCI: mvebu: Remove ARCH_KIRKWOOD dependency
+
+Bjorn Helgaas (1):
+      Merge branches 'pci/host-designware', 'pci/host-mvebu' and 'pci/host-tegra' into next
+
+Kishon Vijay Abraham I (3):
+      PCI: designware: Look for configuration space in 'reg', not 'ranges'
+      PCI: designware: Program ATU with untranslated address
+      PCI: dra7xx: Add TI DRA7xx PCIe driver
+
+Murali Karicheri (2):
+      PCI: designware: Add config access-related pcie_host_ops for v3.65 hardware
+      PCI: designware: Add MSI-related pcie_host_ops for v3.65 hardware
+
+Thierry Reding (1):
+      PCI: tegra: Add debugfs support
+
+ .../devicetree/bindings/pci/designware-pcie.txt    |   4 +
+ Documentation/devicetree/bindings/pci/ti-pci.txt   |  59 +++
+ MAINTAINERS                                        |   8 +
+ drivers/pci/host/Kconfig                           |  11 +-
+ drivers/pci/host/Makefile                          |   1 +
+ drivers/pci/host/pci-dra7xx.c                      | 458 +++++++++++++++++++++
+ drivers/pci/host/pci-tegra.c                       | 118 ++++++
+ drivers/pci/host/pcie-designware.c                 | 134 ++++--
+ drivers/pci/host/pcie-designware.h                 |  11 +
+ 9 files changed, 771 insertions(+), 33 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+ create mode 100644 drivers/pci/host/pci-dra7xx.c
