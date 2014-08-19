@@ -1,146 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686AbaHSEfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 00:35:24 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:15604 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaHSEfV (ORCPT
+	id S1752699AbaHSEgv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 00:36:51 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:60480 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380AbaHSEgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 00:35:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 18 Aug 2014 21:21:40 -0700
-Message-ID: <53F2D454.2020000@nvidia.com>
-Date: Tue, 19 Aug 2014 12:36:36 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 19 Aug 2014 00:36:49 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: addy.ke@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: addy.ke@rock-chips.com
+X-UNIQUE-TAG: <cdab52c5d0c67a5493d3f9b7c2a4a4cb>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Addy Ke <addy.ke@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, tgih.jun@samsung.com, jh80.chung@samsung.com,
+        chris@printf.net, ulf.hansson@linaro.org, dinguyen@altera.com,
+        heiko@sntech.de, olof@lixom.net, dianders@chromium.org
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        zhenfu.fang@rock-chips.com, cf@rock-chips.com, lintao@rock-chips.com,
+        chenfen@rock-chips.com, zyf@rock-chips.com, xjq@rock-chips.com,
+        huangtao@rock-chips.com, zyw@rock-chips.com, yzq@rock-chips.com,
+        hj@rock-chips.com, kever.yang@rock-chips.com, zhangqing@rock-chips.com,
+        hl@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>
+Subject: [PATCH v2] mmc: dw_mmc: move rockchip related code to a separate file
+Date: Tue, 19 Aug 2014 12:36:14 +0800
+Message-Id: <1408422974-22301-1-git-send-email-addy.ke@rock-chips.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
+References: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
 MIME-Version: 1.0
-To: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-pm@vger.kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>, <devicetree@vger.kernel.org>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: Re: [PATCH v3 03/15] clk: tegra: Add closed loop support for the
- DFLL
-References: <1408419205-10048-1-git-send-email-tuomas.tynkkynen@iki.fi> <1408419205-10048-4-git-send-email-tuomas.tynkkynen@iki.fi>
-In-Reply-To: <1408419205-10048-4-git-send-email-tuomas.tynkkynen@iki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+To support HS200 and UHS-1, we need add a big hunk of code,
+as shown in the following patches. So a separate file for
+rockchip SOCs is suitable.
 
-On 08/19/2014 11:33 AM, Tuomas Tynkkynen wrote:
-> From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
->
-> With closed loop support, the clock rate of the DFLL can be adjusted.
->
-> The oscillator itself in the DFLL is a free-running oscillator whose
-> rate is directly determined the supply voltage. However, the DFLL
-> module contains logic to compare the DFLL output rate to a fixed
-> reference clock (51 MHz) and make a decision to either lower or raise
-> the DFLL supply voltage. The DFLL module can then autonomously change
-> the supply voltage by communicating with an off-chip PMIC via either I2C
-> or PWM signals. This driver currently supports only I2C.
->
-> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
->
-> ---
-> v3: Fix incorrect order of arguments to dfll_scale_dvco_rate
-> ---
->   drivers/clk/tegra/clk-dfll.c | 656 ++++++++++++++++++++++++++++++++++++++++++-
->   1 file changed, 653 insertions(+), 3 deletions(-)
-...
-> +
-> +/**
-> + * dfll_init_out_if - prepare DFLL-to-PMIC interface
-> + * @td: DFLL instance
-> + *
-> + * During DFLL driver initialization or resume from context loss,
-> + * disable the I2C command output to the PMIC, set safe voltage and
-> + * output limits, and disable and clear limit interrupts.
-> + */
-> +static void dfll_init_out_if(struct tegra_dfll *td)
-> +{
-> +	u32 val;
-> +
-> +	td->lut_min = 0;
-> +	td->lut_max = td->i2c_lut_size - 1;
-> +	td->lut_safe = td->lut_min + 1;
-> +
-> +	dfll_i2c_writel(td, 0, DFLL_OUTPUT_CFG);
-> +	val = (td->lut_safe << DFLL_OUTPUT_CFG_SAFE_SHIFT) |
-> +		(td->lut_max << DFLL_OUTPUT_CFG_MAX_SHIFT) |
-> +		(td->lut_min << DFLL_OUTPUT_CFG_MIN_SHIFT);
-> +	dfll_writel(td, val, DFLL_OUTPUT_CFG);
-> +	dfll_wmb(td);
-Sorry that I forgot to mention this in v2's comment. Could you squash 
-the change below in this patch? And actually it's pretty easy to misuse 
-the dfll read/write/wmb functions. We might want to have some generic 
-functions for these, and let the generic functions handle the offset to 
-different register blocks.
+Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+---
+Changes in v2:
+- Kconfig: depend on ARCH_ROCKCHIP, suggested by Bartlomiej Zolnierkiewicz
+- Kconfig: depend on OF, suggested by Doug Anderson
+- Not change suspend/resume code, suggested by Doug Anderson
+- If pdev->dev.of_node is NULL, then return -ENODEV, suggested by Heiko Stübner
 
-commit 4a1fdd54141b4f8f9425d54cdad13c42763e6186
-Author: Vince Hsu <vinceh@nvidia.com>
-Date:   Thu Aug 14 18:19:20 2014 +0800
+ drivers/mmc/host/Kconfig           |   9 +++
+ drivers/mmc/host/Makefile          |   1 +
+ drivers/mmc/host/dw_mmc-pltfm.c    |  57 ----------------
+ drivers/mmc/host/dw_mmc-rockchip.c | 136 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 146 insertions(+), 57 deletions(-)
+ create mode 100644 drivers/mmc/host/dw_mmc-rockchip.c
 
-     clk: tegra: use the correct write funtion for DFLL_OUTPUT_CFG
-
-     Signed-off-by: Vince Hsu <vinceh@nvidia.com>
-
-diff --git a/drivers/clk/tegra/clk-dfll.c b/drivers/clk/tegra/clk-dfll.c
-index 9b3eded6b880..71e4b256ea0d 100644
---- a/drivers/clk/tegra/clk-dfll.c
-+++ b/drivers/clk/tegra/clk-dfll.c
-@@ -645,7 +645,7 @@ static void dfll_init_out_if(struct tegra_dfll *td)
-         val = (td->lut_safe << DFLL_OUTPUT_CFG_SAFE_SHIFT) |
-                 (td->lut_max << DFLL_OUTPUT_CFG_MAX_SHIFT) |
-                 (td->lut_min << DFLL_OUTPUT_CFG_MIN_SHIFT);
--       dfll_writel(td, val, DFLL_OUTPUT_CFG);
-+       dfll_i2c_writel(td, val, DFLL_OUTPUT_CFG);
--        dfll_wmb(td);
-+        dfll_i2c_wmb(td);
-
-         dfll_writel(td, 0, DFLL_OUTPUT_FORCE);
-@@ -1146,7 +1146,8 @@ static int attr_registers_show(struct seq_file *s, 
-void *data)
-         seq_puts(s, "CONTROL REGISTERS:\n");
-         for (offs = 0; offs <= DFLL_MONITOR_DATA; offs += 4)
-                 seq_printf(s, "[0x%02x] = 0x%08x\n", offs,
--                          dfll_readl(td, offs));
-+                               offs == DFLL_OUTPUT_CFG ? 
-dfll_i2c_readl(td, offs) :
-+                                       dfll_readl(td, offs));
-
-         seq_puts(s, "\nI2C and INTR REGISTERS:\n");
-         for (offs = DFLL_I2C_CFG; offs <= DFLL_I2C_STS; offs += 4)
-
-
-
-Thanks,
-Vince
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index a565254..f6095f6 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -621,6 +621,15 @@ config MMC_DW_PCI
+ 
+ 	  If unsure, say N.
+ 
++config MMC_DW_ROCKCHIP
++	tristate "Rockchip specific extensions for Synopsys DW Memory Card Interface"
++	depends on MMC_DW && ARCH_ROCKCHIP && OF
++	select MMC_DW_PLTFM
++	help
++	  This selects support for Rockchip SoC specific extensions to the
++	  Synopsys DesignWare Memory Card Interface driver. Select this option
++	  for platforms based on RK3066, RK3188 and RK3288 SoC's.
++
+ config MMC_SH_MMCIF
+ 	tristate "SuperH Internal MMCIF support"
+ 	depends on MMC_BLOCK
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index 7f81ddf..5fce465 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -45,6 +45,7 @@ obj-$(CONFIG_MMC_DW_PLTFM)	+= dw_mmc-pltfm.o
+ obj-$(CONFIG_MMC_DW_EXYNOS)	+= dw_mmc-exynos.o
+ obj-$(CONFIG_MMC_DW_K3)		+= dw_mmc-k3.o
+ obj-$(CONFIG_MMC_DW_PCI)	+= dw_mmc-pci.o
++obj-$(CONFIG_MMC_DW_ROCKCHIP)	+= dw_mmc-rockchip.o
+ obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
+ obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
+ obj-$(CONFIG_MMC_VUB300)	+= vub300.o
+diff --git a/drivers/mmc/host/dw_mmc-pltfm.c b/drivers/mmc/host/dw_mmc-pltfm.c
+index b547f7a..0c56c41 100644
+--- a/drivers/mmc/host/dw_mmc-pltfm.c
++++ b/drivers/mmc/host/dw_mmc-pltfm.c
+@@ -26,64 +26,11 @@
+ #include "dw_mmc.h"
+ #include "dw_mmc-pltfm.h"
+ 
+-#define RK3288_CLKGEN_DIV	2
+-
+ static void dw_mci_pltfm_prepare_command(struct dw_mci *host, u32 *cmdr)
+ {
+ 	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
+ }
+ 
+-static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
+-{
+-	host->bus_hz /= RK3288_CLKGEN_DIV;
+-
+-	return 0;
+-}
+-
+-static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+-{
+-	int ret;
+-	unsigned int cclkin;
+-	u32 bus_hz;
+-
+-	/*
+-	 * cclkin: source clock of mmc controller.
+-	 * bus_hz: card interface clock generated by CLKGEN.
+-	 * bus_hz = cclkin / RK3288_CLKGEN_DIV;
+-	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
+-	 *
+-	 * Note: div can only be 0 or 1
+-	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
+-	 *       div must be set 1
+-	 */
+-	if ((ios->bus_width == MMC_BUS_WIDTH_8) &&
+-	    (ios->timing == MMC_TIMING_MMC_DDR52))
+-		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
+-	else
+-		cclkin = ios->clock * RK3288_CLKGEN_DIV;
+-
+-	ret = clk_set_rate(host->ciu_clk, cclkin);
+-	if (ret)
+-		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
+-
+-	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
+-	if (bus_hz != host->bus_hz) {
+-		host->bus_hz = bus_hz;
+-		/* force dw_mci_setup_bus() */
+-		host->current_speed = 0;
+-	}
+-}
+-
+-static const struct dw_mci_drv_data rk2928_drv_data = {
+-	.prepare_command	= dw_mci_pltfm_prepare_command,
+-};
+-
+-static const struct dw_mci_drv_data rk3288_drv_data = {
+-	.prepare_command	= dw_mci_pltfm_prepare_command,
+-	.set_ios	= dw_mci_rk3288_set_ios,
+-	.setup_clock	= dw_mci_rk3288_setup_clock,
+-};
+-
+ static const struct dw_mci_drv_data socfpga_drv_data = {
+ 	.prepare_command	= dw_mci_pltfm_prepare_command,
+ };
+@@ -144,10 +91,6 @@ EXPORT_SYMBOL_GPL(dw_mci_pltfm_pmops);
+ 
+ static const struct of_device_id dw_mci_pltfm_match[] = {
+ 	{ .compatible = "snps,dw-mshc", },
+-	{ .compatible = "rockchip,rk2928-dw-mshc",
+-		.data = &rk2928_drv_data },
+-	{ .compatible = "rockchip,rk3288-dw-mshc",
+-		.data = &rk3288_drv_data },
+ 	{ .compatible = "altr,socfpga-dw-mshc",
+ 		.data = &socfpga_drv_data },
+ 	{},
+diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
+new file mode 100644
+index 0000000..f0c2cb1
+--- /dev/null
++++ b/drivers/mmc/host/dw_mmc-rockchip.c
+@@ -0,0 +1,136 @@
++/*
++ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/dw_mmc.h>
++#include <linux/of_address.h>
++
++#include "dw_mmc.h"
++#include "dw_mmc-pltfm.h"
++
++#define RK3288_CLKGEN_DIV       2
++
++static void dw_mci_rockchip_prepare_command(struct dw_mci *host, u32 *cmdr)
++{
++	*cmdr |= SDMMC_CMD_USE_HOLD_REG;
++}
++
++static int dw_mci_rk3288_setup_clock(struct dw_mci *host)
++{
++	host->bus_hz /= RK3288_CLKGEN_DIV;
++
++	return 0;
++}
++
++static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
++{
++	int ret;
++	unsigned int cclkin;
++	u32 bus_hz;
++
++	/*
++	 * cclkin: source clock of mmc controller
++	 * bus_hz: card interface clock generated by CLKGEN
++	 * bus_hz = cclkin / RK3288_CLKGEN_DIV
++	 * ios->clock = (div == 0) ? bus_hz : (bus_hz / (2 * div))
++	 *
++	 * Note: div can only be 0 or 1
++	 *       if DDR50 8bit mode(only emmc work in 8bit mode),
++	 *       div must be set 1
++	 */
++	if (ios->bus_width == MMC_BUS_WIDTH_8 &&
++	    ios->timing == MMC_TIMING_MMC_DDR52)
++		cclkin = 2 * ios->clock * RK3288_CLKGEN_DIV;
++	else
++		cclkin = ios->clock * RK3288_CLKGEN_DIV;
++
++	ret = clk_set_rate(host->ciu_clk, cclkin);
++	if (ret)
++		dev_warn(host->dev, "failed to set rate %uHz\n", ios->clock);
++
++	bus_hz = clk_get_rate(host->ciu_clk) / RK3288_CLKGEN_DIV;
++	if (bus_hz != host->bus_hz) {
++		host->bus_hz = bus_hz;
++		/* force dw_mci_setup_bus() */
++		host->current_speed = 0;
++	}
++}
++
++static const struct dw_mci_drv_data rk2928_drv_data = {
++	.prepare_command        = dw_mci_rockchip_prepare_command,
++};
++
++static const struct dw_mci_drv_data rk3288_drv_data = {
++	.prepare_command        = dw_mci_rockchip_prepare_command,
++	.set_ios		= dw_mci_rk3288_set_ios,
++	.setup_clock    = dw_mci_rk3288_setup_clock,
++};
++
++static const struct of_device_id dw_mci_rockchip_match[] = {
++	{ .compatible = "rockchip,rk2928-dw-mshc",
++		.data = &rk2928_drv_data },
++	{ .compatible = "rockchip,rk3288-dw-mshc",
++		.data = &rk3288_drv_data },
++	{},
++};
++MODULE_DEVICE_TABLE(of, dw_mci_rockchip_match);
++
++static int dw_mci_rockchip_probe(struct platform_device *pdev)
++{
++	const struct dw_mci_drv_data *drv_data;
++	const struct of_device_id *match;
++
++	if (!pdev->dev.of_node)
++		return -ENODEV;
++
++	match = of_match_node(dw_mci_rockchip_match, pdev->dev.of_node);
++	drv_data = match->data;
++
++	return dw_mci_pltfm_register(pdev, drv_data);
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int dw_mci_rockchip_suspend(struct device *dev)
++{
++	struct dw_mci *host = dev_get_drvdata(dev);
++
++	return dw_mci_suspend(host);
++}
++
++static int dw_mci_rockchip_resume(struct device *dev)
++{
++	struct dw_mci *host = dev_get_drvdata(dev);
++
++	return dw_mci_resume(host);
++}
++#endif /* CONFIG_PM_SLEEP */
++
++static SIMPLE_DEV_PM_OPS(dw_mci_rockchip_pmops,
++			 dw_mci_rockchip_suspend,
++			 dw_mci_rockchip_resume);
++
++static struct platform_driver dw_mci_rockchip_pltfm_driver = {
++	.probe		= dw_mci_rockchip_probe,
++	.remove		= __exit_p(dw_mci_pltfm_remove),
++	.driver		= {
++		.name		= "dwmmc_rockchip",
++		.of_match_table	= dw_mci_rockchip_match,
++		.pm		= &dw_mci_rockchip_pmops,
++	},
++};
++
++module_platform_driver(dw_mci_rockchip_pltfm_driver);
++
++MODULE_AUTHOR("Addy Ke <addy.ke@rock-chips.com>");
++MODULE_DESCRIPTION("Rockchip Specific DW-MSHC Driver Extension");
++MODULE_ALIAS("platform:dwmmc-rockchip");
++MODULE_LICENSE("GPL v2");
+-- 
+1.8.3.2
 
 
