@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753786AbaHSPTr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:19:47 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:65508 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346AbaHSPRE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:17:04 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: [PATCH v9 1/9] arm: versatile: Enable DEBUG_LL_UART_PL01X
-Date: Tue, 19 Aug 2014 16:16:39 +0100
-Message-Id: <1408461407-10429-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408461407-10429-1-git-send-email-daniel.thompson@linaro.org>
-References: <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>
- <1408461407-10429-1-git-send-email-daniel.thompson@linaro.org>
+	id S1753298AbaHSPWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:22:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61316 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751676AbaHSPWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:22:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="590253512"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Tue, 19 Aug 2014 10:21:34 -0500
+Subject: Re: [RFC PATCH 8/9] Input: gpio_keys_polled - Make use of device
+ property API
+From: Darren Hart <dvhart@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: "Rafael J. Wysocki" <rafael@kernel.org>, Al Stone <al.stone@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
+        Max Eliaser <max.eliaser@intel.com>,
+        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-acpi@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <D018D57F.A1FED%dvhart@linux.intel.com>
+Thread-Topic: [RFC PATCH 8/9] Input: gpio_keys_polled - Make use of device
+ property API
+References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408172039-32513-9-git-send-email-mika.westerberg@linux.intel.com>
+ <20140818105512.7889980b@ultegra>
+ <20140819092753.GI1660@lahna.fi.intel.com>
+In-Reply-To: <20140819092753.GI1660@lahna.fi.intel.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defconfig already enables DEBUG_LL and by default DEBUG_LL_UART_NONE
-will be selected (but due to some back compability magic I'd like to
-remove is not actually honoured). DEBUG_LL_UART_PL01X is a much saner
-default.
+On 8/19/14, 4:27, "Mika Westerberg" <mika.westerberg@linux.intel.com>
+wrote:
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/configs/versatile_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+>On Mon, Aug 18, 2014 at 10:55:12AM -0700, Jacob Pan wrote:
+>> On Sat, 16 Aug 2014 09:53:58 +0300
+>> Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+>> 
+>> > From: Aaron Lu <aaron.lu@intel.com>
+>> > 
+>> > Make use of device property API in this driver so that both OF based
+>> > system and ACPI based system can use this driver.
+>> > 
+>> Do we always assume OF and ACPI _DSD will have the same property name
+>> strings? i.e. in this patch "gpios"
+>> > +	if (device_property_get(dev, "gpios", NULL)) {
+>> > -		if (!of_find_property(pp, "gpios", NULL)) {
+>> 
+>> Maybe i missed something, but I don't think we can make that assumption
+>> in BIOS. If not, what is the point of having unified interface?
+>
+>We recommend that when it makes sense, the property names in _DSD follow
+>the corresponding DT names.
+>
 
-diff --git a/arch/arm/configs/versatile_defconfig b/arch/arm/configs/versatile_defconfig
-index d52b4ff..ea49d37 100644
---- a/arch/arm/configs/versatile_defconfig
-+++ b/arch/arm/configs/versatile_defconfig
-@@ -82,5 +82,6 @@ CONFIG_MAGIC_SYSRQ=y
- CONFIG_DEBUG_KERNEL=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_PL01X=y
- CONFIG_FONTS=y
- CONFIG_FONT_ACORN_8x8=y
+This is especially try for platform drivers such as this.
+
+We will be creating subsystem types, "gpios", and defining them in the
+_DSD Implementors Guide (per our discussion this morning at Kernel Summit).
 -- 
-1.9.3
+Darren Hart					Open Source Technology Center
+darren.hart@intel.com				            Intel Corporation
+
+
 
