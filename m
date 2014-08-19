@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaHSTOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 15:14:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59056 "EHLO mx2.suse.de"
+	id S1753801AbaHSTPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 15:15:45 -0400
+Received: from sauhun.de ([89.238.76.85]:39981 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576AbaHSTOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 15:14:05 -0400
-Date: Tue, 19 Aug 2014 20:11:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [mm] f7b5d647946: -3.0% dbench.throughput-MB/sec
-Message-ID: <20140819191139.GG10146@suse.de>
-References: <20140819044134.GB8798@localhost>
- <20140819143428.GC10146@suse.de>
- <20140819154351.GA2697@localhost>
+	id S1752931AbaHSTPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 15:15:43 -0400
+Date: Tue, 19 Aug 2014 14:15:21 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: atull@opensource.altera.com
+Cc: baruch@tkos.co.il, mika.westerberg@linux.intel.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, skuribay@pobox.com,
+        Romain.Baeriswyl@abilis.com, rafael.j.wysocki@intel.com,
+        alan@linux.intel.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH 1/2] i2c: designware: device tree bindings for i2c speed
+ mode
+Message-ID: <20140819191521.GA7306@katana>
+References: <1408473276-10847-1-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140819154351.GA2697@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408473276-10847-1-git-send-email-atull@opensource.altera.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 11:43:51PM +0800, Fengguang Wu wrote:
-> On Tue, Aug 19, 2014 at 03:34:28PM +0100, Mel Gorman wrote:
-> > On Tue, Aug 19, 2014 at 12:41:34PM +0800, Fengguang Wu wrote:
-> > > Hi Mel,
-> > > 
-> > > We noticed a minor dbench throughput regression on commit
-> > > f7b5d647946aae1647bf5cd26c16b3a793c1ac49 ("mm: page_alloc: abort fair
-> > > zone allocation policy when remotes nodes are encountered").
-> > > 
-> > > testcase: ivb44/dbench/100%
-> > > 
-> > > bb0b6dffa2ccfbd  f7b5d647946aae1647bf5cd26
-> > > ---------------  -------------------------
-> > >      25692 ± 0%      -3.0%      24913 ± 0%  dbench.throughput-MB/sec
-> > >    6974259 ± 6%     -12.1%    6127616 ± 0%  meminfo.DirectMap2M
-> > >      18.43 ± 0%      -4.6%      17.59 ± 0%  turbostat.RAM_W
-> > >       9302 ± 0%      -3.6%       8965 ± 1%  time.user_time
-> > >    1425791 ± 1%      -2.0%    1396598 ± 0%  time.involuntary_context_switches
-> > > 
-> > > Disclaimer:
-> > > Results have been estimated based on internal Intel analysis and are provided
-> > > for informational purposes only. Any difference in system hardware or software
-> > > design or configuration may affect actual performance.
-> > > 
-> > 
-> > DirectMap2M changing is a major surprise and doesn't make sense for this
-> > machine.
-> 
-> The ivb44's hardware configuration is
-> 
->         model: Ivytown Ivy Bridge-EP
->         nr_cpu: 48
->         memory: 64G
-> 
-> And note that this is an in-memory dbench run, which is why
-> dbench.throughput-MB/sec is so high.
-> 
 
-Ok, it's a NUMA machine. I expect in this case that prior to the patch more
-local memory would have been used on node 0 due to the fair zone allocation
-policy skipping remote nodes. The patch corrects the behaviour of zonelist
-but the downside is more remote accesses for processes running on node 0. The
-behaviour is correct although not necessarily desirable from a performance
-point of view.  Users should boot with numa_zonelist_order=node if it's
-a problem.
+--bp/iNruPH9dso1Pn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--- 
-Mel Gorman
-SUSE Labs
+On Tue, Aug 19, 2014 at 01:34:35PM -0500, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+>=20
+> Add "speed-mode" Device Tree property to select between
+> standard and fast i2c mode.  Previously, driver was hardwired
+> as fast mode.  Default to fast mode if property is not
+> present.
+
+NACK. This should be deduced from the clock-frequency setting...
+
+>=20
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+>  .../devicetree/bindings/i2c/i2c-designware.txt     |    3 +++
+>  1 file changed, 3 insertions(+)
+>=20
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/D=
+ocumentation/devicetree/bindings/i2c/i2c-designware.txt
+> index 5199b0c..0e4cd21 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+> @@ -9,6 +9,8 @@ Required properties :
+>  Recommended properties :
+> =20
+>   - clock-frequency : desired I2C bus clock frequency in Hz.
+
+=2E.. which is described here, but surprisingly not supported in the
+driver yet :(
+
+Check i2c-riic for an example.
+
+> + - speed-mode      : 0 =3D standard (0 - 100Kb/s)
+> +                   : 1 =3D fast (<=3D 400Kb/s) <=3D=3D default
+> =20
+>  Optional properties :
+>   - i2c-sda-hold-time-ns : should contain the SDA hold time in nanosecond=
+s.
+> @@ -29,6 +31,7 @@ Example :
+>  		reg =3D <0xf0000 0x1000>;
+>  		interrupts =3D <11>;
+>  		clock-frequency =3D <400000>;
+> +		speed-mode =3D <0>;
+>  	};
+> =20
+>  	i2c@1120000 {
+> --=20
+> 1.7.9.5
+>=20
+
+--bp/iNruPH9dso1Pn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT86JJAAoJEBQN5MwUoCm2J1sP/3+Y/hrvVBddzW/1to/LO57V
+Ym+0fB4XobbMWLYnnX+I2ow3RfKBT4u/Vovmc1D2mvEXnh7f7bq2Cb1wIndhJz2x
+EvR0Ife/+ynIy2wdkiLujtfPIIYXvDQs5cEEU5MKRH2FfMpg0C0H4R5x+qYztPgC
+aLuOCpevp3oj4EJubhf0AKhvpGSBgf4D3RtTMbgPGFCUSSdlHuiXUA0Ux9hqU0cE
+A0Wkz9aQ7hJg5uh31hrFBTCnuUGgZuiQVL+9vWSCINpypFIDq1GUaknYr9YEYx8f
+2EXQ8Rj4Pnd/58zp7xoKkduL9Mvv+STba/UUyyvdkzeXHrThVX0Ul+mvdv24gWob
+5grlwiNb95NnPjJOLpkQH9qp5pB/BnW104iC/RBQ7RokTKCM8QNGA1UT6Iepk0p6
+/rqJu2qGmWuaMlJDKyiRtTjLpE9uLNhg+iAJnFhWK1XSgig7GrUKo3kfpoax7DvO
+yoxswfT3B4BumsBwAWIqERpobR5boiUq/y3LV/zez+Vna8VmFVtxXKoW140gFGI7
+Bgk882mKUjplvKfugzEODY2hHSpqiDWSBX/qOablxbYBhbTuVsBGjalucsxu6AqY
+7ipdXovlqOd5xIoeypdFrMpHeeBGc1NNVfGA9AtwwclZnsTHbaQr5YYtPnYTNdHx
+LUFUkF2x2m0vYGEpOA5r
+=I12S
+-----END PGP SIGNATURE-----
+
+--bp/iNruPH9dso1Pn--
