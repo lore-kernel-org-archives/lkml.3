@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaHSDjm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 23:39:42 -0400
+	id S1752880AbaHSDnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 23:43:40 -0400
 Received: from script.cs.helsinki.fi ([128.214.11.1]:35842 "EHLO
 	script.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaHSDjj (ORCPT
+	with ESMTP id S1752553AbaHSDjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 23:39:39 -0400
+	Mon, 18 Aug 2014 23:39:41 -0400
 X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Aug 2014 23:39:37 EDT
-X-DKIM: Courier DKIM Filter v0.50+pk-2014-03-23 mail.cs.helsinki.fi Tue, 19 Aug 2014 06:34:06 +0300
+X-DKIM: Courier DKIM Filter v0.50+pk-2014-03-23 mail.cs.helsinki.fi Tue, 19 Aug 2014 06:34:10 +0300
 From: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
 To: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org
@@ -21,9 +21,9 @@ Cc: Stephen Warren <swarren@wwwdotorg.org>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Paul Walmsley <pwalmsley@nvidia.com>, Vince Hsu <vinceh@nvidia.com>,
         devicetree@vger.kernel.org, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v3 01/15] clk: tegra: Add binding for the Tegra124 DFLL clocksource
-Date: Tue, 19 Aug 2014 06:33:11 +0300
-Message-Id: <1408419205-10048-2-git-send-email-tuomas.tynkkynen@iki.fi>
+Subject: [PATCH v3 09/15] ARM: tegra: Add the DFLL to Tegra124 device tree
+Date: Tue, 19 Aug 2014 06:33:19 +0300
+Message-Id: <1408419205-10048-10-git-send-email-tuomas.tynkkynen@iki.fi>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408419205-10048-1-git-send-email-tuomas.tynkkynen@iki.fi>
 References: <1408419205-10048-1-git-send-email-tuomas.tynkkynen@iki.fi>
@@ -34,92 +34,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 
-The DFLL is the main clocksource for the fast CPU cluster on Tegra124
-and also provides automatic CPU rail voltage scaling as well. The DFLL
-is a separate IP block from the usual Tegra124 clock-and-reset
-controller, so it gets its own node in the device tree.
+The DFLL clocksource is a separate IP block from the usual
+clock-and-reset controller, so it gets its own device tree node.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- .../bindings/clock/nvidia,tegra124-dfll.txt        | 69 ++++++++++++++++++++++
- 1 file changed, 69 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
+ arch/arm/boot/dts/tegra124.dtsi | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
-new file mode 100644
-index 0000000..54c62ac
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/nvidia,tegra124-dfll.txt
-@@ -0,0 +1,69 @@
-+NVIDIA Tegra124 DFLL FCPU clocksource
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index 03916ef..8ff4332 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -544,6 +544,28 @@
+ 		status = "disabled";
+ 	};
+ 
++	dfll: dfll@0,70110000 {
++		compatible = "nvidia,tegra124-dfll";
++		reg = <0 0x70110000 0 0x100>, /* DFLL control */
++		      <0 0x70110000 0 0x100>, /* I2C output control */
++		      <0 0x70110100 0 0x100>, /* Integrated I2C controller */
++		      <0 0x70110200 0 0x100>; /* Look-up table RAM */
++		interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_DFLL_SOC>,
++			 <&tegra_car TEGRA124_CLK_DFLL_REF>,
++			 <&tegra_car TEGRA124_CLK_I2C5>;
++		clock-names = "soc", "ref", "i2c";
++		#clock-cells = <0>;
++		clock-output-names = "dfllCPU_out";
++		nvidia,sample-rate = <12500>;
++		nvidia,droop-ctrl = <0x00000f00>;
++		nvidia,force-mode = <1>;
++		nvidia,cf = <10>;
++		nvidia,ci = <0>;
++		nvidia,cg = <2>;
++		status = "disabled";
++	};
 +
-+This binding uses the common clock binding:
-+Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+The DFLL IP block on Tegra is a root clocksource designed for clocking
-+the fast CPU cluster. It consists of a free-running voltage controlled
-+oscillator connected to the CPU voltage rail (VDD_CPU), and a closed loop
-+control module that will automatically adjust the VDD_CPU voltage by
-+communicating with an off-chip PMIC either via an I2C bus or via PWM signals.
-+
-+Required properties:
-+- compatible : should be "nvidia,tegra124-dfll-fcpu"
-+- reg : Defines the following set of registers, in the order listed:
-+        - registers for the DFLL control logic.
-+        - registers for the I2C output logic.
-+        - registers for the integrated I2C master controller.
-+        - look-up table RAM for voltage register values.
-+- interrupts: Should contain the DFLL block interrupt.
-+- clocks: Must contain an entry for each entry in clock-names.
-+  See ../clocks/clock-bindings.txt for details.
-+- clock-names: Must include the following entries:
-+  - soc: Clock source for the DFLL control logic.
-+  - ref: The closed loop reference clock
-+  - i2c: Clock source for the integrated I2C master.
-+- #clock-cells: Must be 0.
-+- clock-output-names: Name of the clock output.
-+- vdd-cpu-supply: Regulator for the CPU voltage rail that the DFLL
-+  hardware will start controlling.
-+
-+Required properties for the control loop parameters:
-+- nvidia,sample-rate: Sample rate of the DFLL control loop.
-+- nvidia,droop-ctrl: See the register CL_DVFS_DROOP_CTRL in the TRM.
-+- nvidia,force-mode: See the field DFLL_PARAMS_FORCE_MODE in the TRM.
-+- nvidia,cf: Numeric value, see the field DFLL_PARAMS_CF_PARAM in the TRM.
-+- nvidia,ci: Numeric value, see the field DFLL_PARAMS_CI_PARAM in the TRM.
-+- nvidia,cg: Numeric value, see the field DFLL_PARAMS_CG_PARAM in the TRM.
-+- nvidia,cg-scale: Boolean value, see the field DFLL_PARAMS_CG_SCALE in the TRM.
-+
-+Required properties for I2C mode:
-+- nvidia,i2c-fs-rate: I2C transfer rate, if using FS mode.
-+
-+Example:
-+
-+dfll@0,70110000 {
-+        compatible = "nvidia,tegra124-dfll";
-+        reg = <0 0x70110000 0 0x100>, /* DFLL control */
-+              <0 0x70110000 0 0x100>, /* I2C output control */
-+              <0 0x70110100 0 0x100>, /* Integrated I2C controller */
-+              <0 0x70110200 0 0x100>; /* Look-up table RAM */
-+        interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
-+        clocks = <&tegra_car TEGRA124_CLK_DFLL_SOC>,
-+                 <&tegra_car TEGRA124_CLK_DFLL_REF>,
-+                 <&tegra_car TEGRA124_CLK_I2C5>;
-+        clock-names = "soc", "ref", "i2c";
-+        #clock-cells = <0>;
-+        clock-output-names = "dfllCPU_out";
-+        vdd-cpu-supply = <&vdd_cpu>;
-+        status = "okay";
-+
-+        nvidia,sample-rate = <12500>;
-+        nvidia,droop-ctrl = <0x00000f00>;
-+        nvidia,force-mode = <1>;
-+        nvidia,cf = <10>;
-+        nvidia,ci = <0>;
-+        nvidia,cg = <2>;
-+
-+        nvidia,i2c-fs-rate = <400000>;
-+};
+ 	ahub@0,70300000 {
+ 		compatible = "nvidia,tegra124-ahub";
+ 		reg = <0x0 0x70300000 0x0 0x200>,
 -- 
 1.8.1.5
 
