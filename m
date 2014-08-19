@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaHSUYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:24:44 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51890 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaHSUYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:24:42 -0400
-Date: Tue, 19 Aug 2014 13:24:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Murphy, Dan" <dmurphy@ti.com>
-Cc: "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6] input: drv260x: Add TI drv260x haptics driver
-Message-ID: <20140819202438.GD3626@core.coreip.homeip.net>
-References: <1408117670-19750-1-git-send-email-dmurphy@ti.com>
- <20140819192401.GA32080@core.coreip.homeip.net>
- <00FC9A978A94B7418C33AFAE8A35ED49DEC1EF@DFLE09.ent.ti.com>
- <20140819200748.GB3626@core.coreip.homeip.net>
- <00FC9A978A94B7418C33AFAE8A35ED49DEC3E6@DFLE09.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00FC9A978A94B7418C33AFAE8A35ED49DEC3E6@DFLE09.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751843AbaHSU0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:26:13 -0400
+Received: from omr2.cc.vt.edu ([198.82.141.100]:51908 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258AbaHSU0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 16:26:11 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [UML] 3.16 build without optimization fails
+In-Reply-To: Your message of "Tue, 19 Aug 2014 22:19:58 +0200."
+             <E1XJpsx-0001oD-AE@www17.your-server.de>
+From: Valdis.Kletnieks@vt.edu
+References: <E1XJpsx-0001oD-AE@www17.your-server.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1408479955_2094P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 19 Aug 2014 16:25:55 -0400
+Message-ID: <21315.1408479955@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 08:13:32PM +0000, Murphy, Dan wrote:
-> On 08/19/2014 03:07 PM, Dmitry Torokhov wrote:
-> > On Tue, Aug 19, 2014 at 07:35:06PM +0000, Murphy, Dan wrote:
-> >> Dmitry
-> >>
-> >> On 08/19/2014 02:24 PM, Dmitry Torokhov wrote:
-> >>> Hi Dan,
-> >>>
-> >>> On Fri, Aug 15, 2014 at 10:47:50AM -0500, Dan Murphy wrote:
-> >>>> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> >>>> index 2ff4425..99f6762 100644
-> >>>> --- a/drivers/input/misc/Kconfig
-> >>>> +++ b/drivers/input/misc/Kconfig
-> >>>> @@ -676,4 +676,13 @@ config INPUT_SOC_BUTTON_ARRAY
-> >>>>  	  To compile this driver as a module, choose M here: the
-> >>>>  	  module will be called soc_button_array.
-> >>>>  
-> >>>> +config INPUT_DRV260X_HAPTICS
-> >>>> +	tristate "TI DRV260X haptics support"
-> >>>> +	depends on INPUT && I2C
-> >>>
-> >>> This also needs "select REGMAP_I2C"
-> >>>
-> >>
-> >> This one is OK
-> >>
-> >>>> +	help
-> >>>> +	  Say Y to enable support for the TI DRV260X haptics driver.
-> >>>> +
-> >>>> +	  To compile this driver as a module, choose M here: the
-> >>>> +	  module will be called drv260x-haptics.
-> >>>> +
-> >>>
-> >>> [...]
-> >>>
-> >>>> +#ifndef _LINUX_DRV260X_PDATA_H
-> >>>> +#define _LINUX_DRV260X_PDATA_H
-> >>>> +
-> >>>> +struct drv260x_platform_data {
-> >>>> +	int enable_gpio;
-> >>>
-> >>> I do not see this used anywhere.
-> >>
-> >> But this is actually used here
-> >>
-> >> haptics->enable_gpio = devm_gpiod_get(&client->dev, "enable");
-> >>
-> >> for the non-dt case
-> > 
-> > "haptics" is not instance of drv260x_platform_data but drv260x_data which
-> > defines:
-> > 
-> > struct drv260x_data {
-> > 	...
-> > 	struct gpio_desc *enable_gpio;
-> > 	...
-> > 
-> > That one I kept.
-> > 
-> 
-> Yes that is correct but the enable_gpio for non-dt enabled devices this enable_gpio
-> needs to come from the platform data structure.  Without the enable gpio in the platform data
-> structure there is no way for non-dt enabled devices to set the gpio value.
+--==_Exmh_1408479955_2094P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-What else uses the platform data structure? You are accessing gpio by name, not
-by number, in the driver so I am not sure how non-dt case will use u32 defined
-in platform data.
+On Tue, 19 Aug 2014 22:19:58 +0200, Thomas Meyer said:
 
-> 
-> The haptics instance just stores the gpio descriptor returned from this call.
+> Can you give an example function that relies on this GCC feature?
 
-Right.
+cd /usr/src/linux && find include -type f =7C xargs grep __builtin_return=
+_address
 
-> 
-> The devm_gpiod looks at the platform data is CONFIG_OF is not set.
+--==_Exmh_1408479955_2094P
+Content-Type: application/pgp-signature
 
-Umm, how? You do not pass it anywhere...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-Thanks.
+iQIVAwUBU/Oy0wdmEQWDXROgAQLTPA/+KhvF911vHckppc6ZcxJBXEmaExXX/i3P
+8Ox4jKMmu+iKUS+M74iDgtVVed1LjJKRyE/PuRBxo1rSpv8O4z9Mn3+vtFTcaNiZ
+dyyuUgzQwNwTxMrjmm7dHrtBlm5i3nl9BxZh0E4BEv5M60Fj39ygXsru7c1kP34z
+/ktWmLQAeiKqPuJEG9R9xR4g54IlV7sOA6vW9x5e9EU/2YGkFbZ0KjhZ7DK8krHe
+YOCQ9Nev3L8AXP60SEUSIrktK8AG8ujkpD9bqb+lDCdj0eN7kVuALfcPxjyQvlAA
+arSFaAlaUDcHzj6h0pLCDykUJNz/R8X0ylS+H7PCauFWHX3tbrTdUpVJhf6rciY8
+tkKPc3aiSYQspseVxaxPg8yUOwxUOXWnxU4fle9yyC/yqDWe0QFfZnLd59A20jU7
+ndOxNYyagjr8MCCqWfKEWeLFi1fcgjtJCwqZEecUlIdO78rRLVq1wjfCH7pHxQBz
+oLZH6+LvF7VNClX06NEF+dQpK+QDC1eH9CAim3dPVEB9CoFgT0eLezSP0Jur+DGh
+WgE3XEjx7fx3Qgl1jjon7YrVQLxdgpEuOka0B68Qyc+ytrSjJpuzxfoZce12QAqi
+OrFkNGiLgsVALxSYtHOa13l+27XucN9GFmJM4eEsbJH5PwnnqLVpTLoayYHwxcaP
+H/ZE54eiLDE=
+=5j+9
+-----END PGP SIGNATURE-----
 
--- 
-Dmitry
+--==_Exmh_1408479955_2094P--
