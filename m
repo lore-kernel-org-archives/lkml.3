@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642AbaHSLLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:11:18 -0400
-Received: from 8bytes.org ([81.169.241.247]:43865 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860AbaHSLLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:11:17 -0400
-Date: Tue, 19 Aug 2014 13:11:15 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] iommu/vt-d: Add new macros for invalidation event
-Message-ID: <20140819111115.GB26492@8bytes.org>
-References: <1408067751-30754-1-git-send-email-zhen-hual@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408067751-30754-1-git-send-email-zhen-hual@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752524AbaHSLNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:13:54 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:24654 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbaHSLNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 07:13:51 -0400
+X-AuditID: cbfee68f-b7fa26d0000039a0-9d-53f3316d5638
+Date: Tue, 19 Aug 2014 20:13:49 +0900
+From: Inha Song <ideal.song@samsung.com>
+To: broonie@kernel.org
+Cc: alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, lee.jones@linaro.org,
+        ckeepax@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
+        sameo@linux.intel.com, devicetree@vger.kernel.org,
+        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
+        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
+        cw00.choi@samsung.com
+Subject: [alsa-devel] [PATCH v4 0/2] mfd: arizona: add support for INn_MODE
+ register control using platform data
+Message-id: <20140819201349.18f4233f@songinha-Samsung-DeskTop-System>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsWyRsSkUDfX8HOwwaPZJhZXLh5ispj68Amb
+	xb8pN9gtrn95zmox/8g5Vov+NwtZLc69Wslocf/rUUaLb1c6mCwu75rDZrH0+kUmi+Vv/7NZ
+	TJi+lsWide8RdovT3awO/B4bPjexeayZt4bR43JfL5PHzll32T1WLv/C5rFpVSebx51re9g8
+	5p0M9Hg58TebR9+WVYwenzfJBXBHcdmkpOZklqUW6dslcGWcP/SFqWADW8WWt0/YGxgbWbsY
+	OTkkBEwkem6+ZoewxSQu3FvP1sXIxSEksJRRYuXWu3BFl+/NZYdITGeUWPX8JwuE088kcffY
+	AbB2FgFViRltB5hAbDYBDYnvnzczg9giQGNvz+lkBmlgFvjJJNG84glYQligSOLlzuVAKzg4
+	eAVcJXa9EYLYZiOxeuc6sBJeAUGJH5PvsYDYzAJaEpu3NbFC2PISm9e8BZspITCTQ+Lc3ROM
+	EEcISHybfIgFZKaEgKzEpgPMEDMlJQ6uuMEygVFkFpKxs5CMnYVk7AJG5lWMoqkFyQXFSelF
+	xnrFibnFpXnpesn5uZsYgRF9+t+z/h2Mdw9YH2JMBlo5kVlKNDkfmBDySuINjc2MLExNTI2N
+	zC3NSBNWEue9/zApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj5esn+xWNzuqsC9vJbtDS
+	uFfg4Ma/P7/v8ep7ybw6Yc0cV7kTqv6u9/LjeBVOffTndnCLULn69sHstUyhu+9ujpjw7/IS
+	joM8V9WtPROrAlqiV2x74bAg+8WGLVf1jHapLZPz2CKcw9p7p8OuZMND46RJJbxv9qdyBU7q
+	Pududb358TTH8081lViKMxINtZiLihMBMyGla/4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jQd1cw8/BBm/na1tcuXiIyWLqwyds
+	Fv+m3GC3uP7lOavF/CPnWC363yxktTj3aiWjxf2vRxktvl3pYLK4vGsOm8XS6xeZLJa//c9m
+	MWH6WhaL1r1H2C1Od7M68Hts+NzE5rFm3hpGj8t9vUweO2fdZfdYufwLm8emVZ1sHneu7WHz
+	mHcy0OPlxN9sHn1bVjF6fN4kF8Ad1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hp
+	Ya6kkJeYm2qr5OIToOuWmQP0i5JCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQ
+	sIYx4/yhL0wFG9gqtrx9wt7A2MjaxcjJISFgInH53lx2CFtM4sK99WxdjFwcQgLTGSVWPf/J
+	AuH0M0ncPXYArIpFQFViRtsBJhCbTUBD4vvnzcwgtghQ9+05ncwgDcwCP5kkmlc8AUsICxRJ
+	vNy5HGgdBwevgKvErjdCENtsJFbvXAdWwisgKPFj8j0WEJtZQEti87YmVghbXmLzmrfMExj5
+	ZiEpm4WkbBaSsgWMzKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgtPFM6kdjCsbLA4xCnAw
+	KvHwKnz5GCzEmlhWXJl7iFGCg1lJhLdD+nOwEG9KYmVValF+fFFpTmrxIUZToK8nMkuJJucD
+	U1leSbyhsYmZkaWRuaGFkbG5kjjvgVbrQCGB9MSS1OzU1ILUIpg+Jg5OqQbG7R5hbT63Z4We
+	F/MUnVsawLv0sInvTA8W6V+nOmu2xV6frrdQqfsWm87uTaynlfJWMaUrLz87TWJX1/ZNV96p
+	5R8r59DVjWFz0Hi/MS+jduIqH8EC+eKTWxa8jzbyf/hg1SWRxp0NEtMPn0gOZLpZlrajbNXX
+	C5MPVPB6uB010yhy5w17dc9eiaU4I9FQi7moOBEAAqO7rC0DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 09:55:51AM +0800, Li, Zhen-Hua wrote:
-> According to intel's spec
->         Intel® Virtualization Technology for Directed I/O,
->         Revision: 1.3 , February 2011,
->         Chaper 10.4.25 to 10.4.28
-> 
-> There are four registers
-> 
->         IECTL_REG   0xa0    Invalidation event control register
->         IEDATA_REG  0xa4    Invalidation event data register
->         IEADDR_REG  0xa8    Invalidation event address register
->         IEUADDR_REG 0xac    Invalidation event upper address register
-> 
-> Through they are not used in kernel in the latest version, the defination
->  should be added to kernel as well as other registers.
-> 
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> ---
->  include/linux/intel-iommu.h | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-> index a65208a..15fafd5 100644
-> --- a/include/linux/intel-iommu.h
-> +++ b/include/linux/intel-iommu.h
-> @@ -56,6 +56,10 @@
->  #define DMAR_IQ_SHIFT	4	/* Invalidation queue head/tail shift */
->  #define DMAR_IQA_REG	0x90	/* Invalidation queue addr register */
->  #define DMAR_ICS_REG	0x9c	/* Invalidation complete status register */
-> +#define DMAR_IECTL_REG	0xa0	/* Invalidation event control register */
-> +#define DMAR_IEDATA_REG	0xa4	/* Invalidation event data register */
-> +#define DMAR_IEADDR_REG	0xa8	/* Invalidation event address register */
-> +#define DMAR_IEUADDR_REG 0xac	/* Invalidation event upper address register */
->  #define DMAR_IRTA_REG	0xb8    /* Interrupt remapping table addr register */
->  
->  #define OFFSET_STRIDE		(9)
+This patch series add support for INn_MODE register control using platform data.
+Each input signal path can be configurated either as a Analogue or Digital using
+the INn_MODE registers.
 
-There is no point in adding register defines that are not used anywhere.
+Changes for v4
+- Update document content for more clarity
 
+Changes for v3
+- Change to use of_property_read_u32_array
+- Fix a few typos
+- Update commit message
 
-	Joerg
+Changes for v2
+- Change to support
+- Update commit message
+- Update document content for more clarity
 
+Inha Song (2):
+  mfd: arizona: Add support for INn_Mode register control
+  mfd: arizona: Update DT binding to support INn_MODE init_data
+
+ Documentation/devicetree/bindings/mfd/arizona.txt | 7 +++++++
+ drivers/mfd/arizona-core.c                        | 8 +++++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+-- 
+2.0.0.390.gcb682f8
