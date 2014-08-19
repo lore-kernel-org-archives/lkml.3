@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaHSUhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:37:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43373 "EHLO mx1.redhat.com"
+	id S1752084AbaHSUiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:38:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34420 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824AbaHSUhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:37:47 -0400
+	id S1751824AbaHSUh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 16:37:58 -0400
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Gleb Natapov <gleb@kernel.org>,
         Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
         Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
-Subject: [PATCH 6/9] KVM: trace kvm_ple_window grow/shrink
-Date: Tue, 19 Aug 2014 22:35:33 +0200
-Message-Id: <1408480536-8240-7-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH 8/9] KVM: VMX: runtime knobs for dynamic PLE window
+Date: Tue, 19 Aug 2014 22:35:35 +0200
+Message-Id: <1408480536-8240-9-git-send-email-rkrcmar@redhat.com>
 In-Reply-To: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
@@ -24,86 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tracepoint for dynamic PLE window, fired on every potential change.
+ple_window is updated on every vmentry, so there is no reason to have it
+read-only anymore.
+ple_window_* weren't writable to prevent runtime overflow races;
+they are mitigated by clamping the value of ple_window.
 
 Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
- arch/x86/kvm/trace.h | 29 +++++++++++++++++++++++++++++
- arch/x86/kvm/vmx.c   |  4 ++++
- arch/x86/kvm/x86.c   |  1 +
- 3 files changed, 34 insertions(+)
+ If we decide to ignore insane overflows, last two hunks can be dropped.
 
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index e850a7d..e4682f5 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -848,6 +848,35 @@ TRACE_EVENT(kvm_track_tsc,
- 		  __print_symbolic(__entry->host_clock, host_clocks))
- );
- 
-+TRACE_EVENT(kvm_ple_window,
-+	TP_PROTO(int grow, unsigned int vcpu_id, int new, int old),
-+	TP_ARGS(grow, vcpu_id, new, old),
-+
-+	TP_STRUCT__entry(
-+		__field(                 int,      grow         )
-+		__field(        unsigned int,   vcpu_id         )
-+		__field(                 int,       new         )
-+		__field(                 int,       old         )
-+	),
-+
-+	TP_fast_assign(
-+		__entry->grow           = grow;
-+		__entry->vcpu_id        = vcpu_id;
-+		__entry->new            = new;
-+		__entry->old            = old;
-+	),
-+
-+	TP_printk("vcpu %u: ple_window %d %s %d",
-+	          __entry->vcpu_id,
-+	          __entry->new,
-+	          __entry->grow ? "<+" : "<-",
-+	          __entry->old)
-+);
-+#define trace_kvm_ple_window_grow(vcpu_id, new, old) \
-+	trace_kvm_ple_window(1, vcpu_id, new, old)
-+#define trace_kvm_ple_window_shrink(vcpu_id, new, old) \
-+	trace_kvm_ple_window(0, vcpu_id, new, old)
-+
- #endif /* CONFIG_X86_64 */
- 
- #endif /* _TRACE_KVM_H */
+ arch/x86/kvm/vmx.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index e1192fb..a236a9f 100644
+index c6cfb71..d7f58e8 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -5709,6 +5709,8 @@ static void grow_ple_window(struct kvm_vcpu *vcpu)
- 		new = old + ple_window_grow;
+@@ -134,19 +134,19 @@ static int ple_gap = KVM_VMX_DEFAULT_PLE_GAP;
+ module_param(ple_gap, int, S_IRUGO);
  
- 	vmx->ple_window = min(new, ple_window_max);
+ static int ple_window = KVM_VMX_DEFAULT_PLE_WINDOW;
+-module_param(ple_window, int, S_IRUGO);
++module_param(ple_window, int, S_IRUGO | S_IWUSR);
+ 
+ /* Default doubles per-vcpu window every exit. */
+ static int ple_window_grow = KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
+-module_param(ple_window_grow, int, S_IRUGO);
++module_param(ple_window_grow, int, S_IRUGO | S_IWUSR);
+ 
+ /* Default resets per-vcpu window every exit to ple_window. */
+ static int ple_window_shrink = KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK;
+-module_param(ple_window_shrink, int, S_IRUGO);
++module_param(ple_window_shrink, int, S_IRUGO | S_IWUSR);
+ 
+ /* Default is to compute the maximum so we can never overflow. */
+ static int ple_window_max = INT_MAX / KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
+-module_param(ple_window_max, int, S_IRUGO);
++module_param(ple_window_max, int, S_IRUGO | S_IWUSR);
+ 
+ extern const ulong vmx_return;
+ 
+@@ -5694,7 +5694,8 @@ static int handle_invalid_guest_state(struct kvm_vcpu *vcpu)
+ out:
+ 	return ret;
+ }
+-#define make_ple_window_modifier(type, oplt, opge, cmp, bound) \
 +
-+	trace_kvm_ple_window_grow(vcpu->vcpu_id, vmx->ple_window, old);
++#define make_ple_window_modifier(type, oplt, opge) \
+ static void type##_ple_window(struct kvm_vcpu *vcpu) \
+ { \
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu); \
+@@ -5708,13 +5709,13 @@ static void type##_ple_window(struct kvm_vcpu *vcpu) \
+ 	else \
+ 		new = old opge ple_window_##type; \
+ \
+-	vmx->ple_window = cmp(new, bound); \
++	vmx->ple_window = clamp(new, ple_window, ple_window_max); \
+ \
+ 	trace_kvm_ple_window_##type(vcpu->vcpu_id, vmx->ple_window, old); \
  }
  
- static void shrink_ple_window(struct kvm_vcpu *vcpu)
-@@ -5725,6 +5727,8 @@ static void shrink_ple_window(struct kvm_vcpu *vcpu)
- 		new = old - ple_window_shrink;
- 
- 	vmx->ple_window = max(new, ple_window);
-+
-+	trace_kvm_ple_window_shrink(vcpu->vcpu_id, vmx->ple_window, old);
- }
+-make_ple_window_modifier(grow,   *, +, min, ple_window_max)
+-make_ple_window_modifier(shrink, /, -, max, ple_window)
++make_ple_window_modifier(grow,   *, +) /* grow_ple_window */
++make_ple_window_modifier(shrink, /, -) /* shrink_ple_window */
  
  /*
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 5696ee7..814b20c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7648,3 +7648,4 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_invlpga);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_skinit);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_nested_intercepts);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_write_tsc_offset);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_ple_window);
+  * Indicate a busy-waiting vcpu in spinlock. We do not enable the PAUSE
 -- 
 2.0.4
 
