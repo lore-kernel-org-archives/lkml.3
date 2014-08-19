@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaHSROf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:14:35 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:36385 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaHSROd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:14:33 -0400
-Date: Tue, 19 Aug 2014 20:14:26 +0300
-From: Dan Aloni <dan@kernelim.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
-        stable@vger.kernel.org
-Subject: Re: Revert "aio: fix aio request leak when events are reaped by user
- space"
-Message-ID: <20140819171426.GA11811@gmail.com>
-References: <cover.1403632276.git.bcrl@kvack.org>
- <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
- <20140819163733.GA10132@gmail.com>
- <20140819165404.GD13858@kvack.org>
+	id S1753411AbaHSRQB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:16:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57302 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148AbaHSRQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:16:00 -0400
+Date: Tue, 19 Aug 2014 18:13:58 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [mm] 3484b2de949: -56.2% vm-scalability.throughput, +9.3%
+ turbostat.Pkg_W
+Message-ID: <20140819171358.GE10146@suse.de>
+References: <20140819043252.GA8798@localhost>
+ <20140819142925.GB10146@suse.de>
+ <20140819155125.GB2697@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140819165404.GD13858@kvack.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140819155125.GB2697@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 12:54:04PM -0400, Benjamin LaHaise wrote:
-> On Tue, Aug 19, 2014 at 07:37:33PM +0300, Dan Aloni wrote:
-> > Some testing I've done today indicates that the original commit broke
-> > AIO with regard to users that overflow the maximum number of request
-> > per IO context (where -EAGAIN is returned).
+On Tue, Aug 19, 2014 at 11:51:25PM +0800, Fengguang Wu wrote:
+> On Tue, Aug 19, 2014 at 03:29:25PM +0100, Mel Gorman wrote:
+> > On Tue, Aug 19, 2014 at 12:32:52PM +0800, Fengguang Wu wrote:
+> > > Hi Mel,
+> > > 
+> > > We noticed the below vm-scalability performance/power regressions on
+> > > commit 3484b2de9499df23c4604a513b36f96326ae81ad ("mm: rearrange zone
+> > > fields into read-only, page alloc, statistics and page reclaim lines").
+> > > 
+> > > 24b7e5819ad5cbe  3484b2de9499df23c4604a513  testbox/testcase/testparams
+> > > ---------------  -------------------------  ---------------------------
+> > >      %stddev        %change               %stddev
+> > >             \          |                 /
+> > >       9.95 ± 2%     +69.1%      16.83 ± 5%  brickland3/vm-scalability/300s-lru-file-mmap-read
+> > >       2.32 ± 6%    +229.4%       7.63 ± 5%  brickland3/vm-scalability/300s-lru-file-readonce
+> > >      12.27 ± 3%     +99.4%      24.46 ± 5%  TOTAL vm-scalability.stddev
+> > > 
+> > > 24b7e5819ad5cbe  3484b2de9499df23c4604a513  
+> > > ---------------  -------------------------  
+> > >   13882598 ± 0%     -35.8%    8915310 ± 1%  brickland3/vm-scalability/300s-lru-file-mmap-read
+> > >   36379953 ± 1%     -64.0%   13093373 ± 0%  brickland3/vm-scalability/300s-lru-file-readonce
+> > >   50262551 ± 0%     -56.2%   22008683 ± 0%  TOTAL vm-scalability.throughput
+> > > 
 > > 
-> > In fact, it did worse - the attached C program can easily overrun the
-> > ring buffer that is responsible for managing the completed requests,
-> > and caused notification about their completion never to be returned.
+> > 
+> > What units are these? It's completely unclear what is good and bad from the
+> > figures. 300s-lru-file-mmap-read appears multiple times in this report,
+> > each with different numbers beside them but little clue as to what they
+> > mean or what I'm meant to be looking for :(
 > 
-> Argh, that would be a problem.
+> Sorry the output format is a bit obscure: the stats names are after
+> the "TOTAL" word, such as TOTAL vm-scalability.stddev, TOTAL
+> vm-scalability.throughput, ...
 > 
-> ...
-> > This reverts commit b34e0e1319b31202eb142dcd9688cf7145a30bf6.
+> > This is the same patch that was reported as having a performance gain in
+> > another set of tests from lkp so am a little confused.
 > 
-> Reverting isn't okay, as that reintroduces another regression.  We need 
-> to come up with a fix for this issue that doesn't reintroduce the other 
-> regression for events reaped in user space.  Let me have a look and see 
-> what I can come up with...
+> That can happen some times -- we've seen some commits to benefit some
+> workloads while hurting some others. I'm now running more complete
+> test set for the commit, hopefully can get some results tomorrow.
+> 
+> > More importantly, as this patch is primary abougt cache misses it should
+> > be very unlikely that it makes a noticable difference to IO as the
+> > relative cost of a cache miss is so low. Similarly any difference it
+> > makes to reclaim activity is likely to be a coincidence or due to test
+> > variance.
+> 
+> The test case creates tmpfs files and read them fast to exercise the LRU.
+> So it's VM test and do not involve disk IO.
+> 
 
-About the original regression you mention, is there a program you can
-indicate that reproduces it? On my setups, the regression testing in 
-libaio was not able to detect the current regression too.
+Ok. How reliable is this? I was reading down through some of the figures and
+some of them are extremely different in areas that this patch should have
+no impact on -- it's just rearranging a struct after all. I note for example
+that automatic NUMA balancing was enabled and there was activity from it so
+pages are getting migrated.  There is a large amount of reclaim activity on
+different nodes so where the test case gets scheduled and how nodes it runs
+on during the test matters. What I'm wondering is if the performance of the
+test tends to vary quite a lot naturally. Can you check if the performance
+is consistently lower after this patch or if it tends to vary please?
 
+Thanks
 
 -- 
-Dan Aloni
+Mel Gorman
+SUSE Labs
