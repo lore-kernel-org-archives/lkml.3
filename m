@@ -1,118 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589AbaHSTG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 15:06:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39943 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751851AbaHSTGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 15:06:54 -0400
-Date: Tue, 19 Aug 2014 14:06:44 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Peter Chen <Peter.Chen@freescale.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tim Bird <tbird20d@gmail.com>, <balbi@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] usb: chipidea: msm: Use USB PHY API to control
- PHY state
-Message-ID: <20140819190643.GF22003@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1408094479-13857-1-git-send-email-iivanov@mm-sol.com>
+	id S1753730AbaHSTHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 15:07:00 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:50856 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614AbaHSTG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 15:06:57 -0400
+Date: Tue, 19 Aug 2014 12:06:53 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 0/8] mtd: nand: Support for new DT NAND driver
+Message-ID: <20140819190653.GV18411@ld-irv-0074>
+References: <1407921127-8590-1-git-send-email-lee.jones@linaro.org>
+ <20140814224013.GE18411@ld-irv-0074>
+ <20140818083953.GA4266@lee--X1>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hK8Uo4Yp55NZU70L"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408094479-13857-1-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140818083953.GA4266@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hK8Uo4Yp55NZU70L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 18, 2014 at 09:39:53AM +0100, Lee Jones wrote:
+> On Thu, 14 Aug 2014, Brian Norris wrote:
+> > drivers/mtd/nand/stm_nand_bch.c: In function 'bch_calc_timing_registers':
+> > drivers/mtd/nand/stm_nand_bch.c:1022:6: warning: variable 'ren_half_off' set but not used [-Wunused-but-set-variable]
+> > drivers/mtd/nand/stm_nand_bch.c:1021:6: warning: variable 'ren_half_on' set but not used [-Wunused-but-set-variable]
+> 
+> This I have never seen.  I guess -Wunused-but-set-variable is normally
+> off.  This issue has been present since the beginning of this endeavour
+> and exists in the original (internal) code.
 
-On Fri, Aug 15, 2014 at 12:21:19PM +0300, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->=20
-> PHY drivers keep track of the current state of the hardware,
-> so don't change PHY settings under it.
->=20
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+BTW, you can get extra warnings by building with the W=[123] option to
+the Makefile (e.g., 'make W=1').
 
-looks correct to me from a PHY API perspective, so:
+$ make help
+[...]
+  make W=n   [targets] Enable extra gcc checks, n=1,2,3 where
+		1: warnings which may be relevant and do not occur too often
+		2: warnings which occur quite often but may still be relevant
+		3: more obscure warnings, can most likely be ignored
+		Multiple levels can be combined with W=12 or W=123
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
-However, it doesn't look like msm_phy_init() is equivalent to the lines
-removes. Care to comment ?
-
-> ---
->  drivers/usb/chipidea/ci_hdrc_msm.c | 9 ++-------
->  1 file changed, 2 insertions(+), 7 deletions(-)
->=20
-> diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci=
-_hdrc_msm.c
-> index d72b9d2..81de834 100644
-> --- a/drivers/usb/chipidea/ci_hdrc_msm.c
-> +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-> @@ -20,13 +20,11 @@
->  static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
->  {
->  	struct device *dev =3D ci->gadget.dev.parent;
-> -	int val;
-> =20
->  	switch (event) {
->  	case CI_HDRC_CONTROLLER_RESET_EVENT:
->  		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
-> -		writel(0, USB_AHBBURST);
-> -		writel(0, USB_AHBMODE);
-> +		usb_phy_init(ci->transceiver);
->  		break;
->  	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
->  		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
-> @@ -34,10 +32,7 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *c=
-i, unsigned event)
->  		 * Put the transceiver in non-driving mode. Otherwise host
->  		 * may not detect soft-disconnection.
->  		 */
-> -		val =3D usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
-> -		val &=3D ~ULPI_FUNC_CTRL_OPMODE_MASK;
-> -		val |=3D ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
-> -		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
-> +		usb_phy_notify_disconnect(ci->transceiver, USB_SPEED_UNKNOWN);
->  		break;
->  	default:
->  		dev_dbg(dev, "unknown ci_hdrc event\n");
-> --=20
-> 1.8.3.2
->=20
-
---=20
-balbi
-
---hK8Uo4Yp55NZU70L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT86BDAAoJEIaOsuA1yqREsk8P/i/PpJcuKgH7PHVpjtEYlCWe
-Y6p8wB9n/HHoXJ8IrGuaMBHspJKxSDGO6zBTh1UIrr55jdlh29DXBRDStENXalVg
-D8wWYEr/R8TywFgz2TrzcW3oK8ltpENmEfv0NEVeJiDIXdnbKKrl0Wo4Da5MLb8p
-kLV7/5iz1rwPBAPr1VkKda938Un8wHwTV9uD3Gv0xHKhe8hoJI0FNfSP4qvp3THd
-5pum1N+XWZVKO2+b3M4gFWGLWtO1m57acHyyyiRb2k8XNasv+P4SugWjGImbCbZ/
-EFAyJYKo0WVrchYyMHE8u0RAAnspuNEloip1ndlarLmcIFS+QMxuNekJcRMy3ivd
-V+Sd+0POe8KxAdWf+S6kgjwb3GggjNG/RTpWTfZDD72dgxWVcpi4cbKIQBWPihlM
-86VC67v2E6Z933d1YW3pzeFsOcE/UfHwrK2zXCYP5CmzG3QA8yjXuTVLe7zrTv7c
-aD5hiroVNH4EFDjLOZG2rOW4EosJNEp9P3bZjPcJARfyBtU9JtviulnPVStvOwrv
-JWHHn0ssajcqhQB4z1Jt77m9YyviimHRKrW/pyIrNa9KghKdNoKBKinU6pdYSQAG
-thA3WzaVzum/VQmd2bPW96QHK1dZ2FkIY+KPPjc09E6H86JavX04sId/cbR44Ian
-BFHlJs6PJqCuzpkm6AOk
-=nKtx
------END PGP SIGNATURE-----
-
---hK8Uo4Yp55NZU70L--
+Brian
