@@ -1,179 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaHSQsy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:48:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53657 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaHSQsw (ORCPT
+	id S1753056AbaHSQun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:50:43 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51513 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaHSQum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:48:52 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Thierry Reding <treding@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Xiubo Li <Li.Xiubo@freescale.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH V2] regmap: of_regmap_get_endian() cleanup
-Date: Tue, 19 Aug 2014 10:49:07 -0600
-Message-Id: <1408466947-26593-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
+	Tue, 19 Aug 2014 12:50:42 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        kgdb-bugreport@lists.sourceforge.net, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com,
+        Rob Herring <robherring2@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Nicolas Pitre <nico@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Sricharan R <r.sricharan@ti.com>, Marc Zyngier <marc.zyngier@arm.com>
+Subject: [PATCH v10 06/19] irqchip: gic: Provide support for interrupt grouping
+Date: Tue, 19 Aug 2014 17:45:56 +0100
+Message-Id: <1408466769-20004-7-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
+References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
+ <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+All GIC hardware except GICv1-without-TrustZone support provides a means
+to group exceptions into group 0 (which can optionally be signally using
+use FIQ) and group 1. The kernel currently provides no means to exploit
+this. This patch alters the initialization of the GIC to place all
+interrupts into group 1 which is the foundational requirement to meaningfully
+use FIQ.
 
-Commit d647c199510c ("regmap: add DT endianness binding support") had
-some issues. Commit ba1b53feb8ca ("regmap: Fix DT endianess parsing
-logic") fixed the main problem. This patch fixes the other.
+Note that the hardware functionality is unavailable to the kernel when a
+secure monitor is present because access to the grouping registers are
+prohibited outside "secure world" (this feature allows grouping to be
+used to allow hardware peripherals to send interrupts into the secure
+world). The GIC driver will automatically detect this and disable its
+attempts to group interrupts.
 
-Specifically, restore the overall default of REGMAP_ENDIAN_BIG if none of
-the config, DT, or the bus specify any endianness. Without this,
-of_regmap_get_endian() could return REGMAP_ENDIAN_DEFAULT, which the
-calling code can't handle. Since all busses do specify an endianness in
-the current code, this makes no difference right now, but I saw no
-justification in the patch description for removing this final default.
+On systems without TrustZone support the kernel has the power to route
+interrupt sources to FIQ, potentially allowing a driver to exploit the
+NMI-like properties of FIQ.
 
-Also, clean up the code a bit:
+Tested on Freescale i.MX6 (quad A9), STiH416 (dual A9) and a self-written
+qemu GICv2 model.
 
-* s/of_regmap_get_endian/regmap_get_endian/ since the function isn't DT-
-  specific, even if the reason it was originally added was to add some
-  DT-specific features.
-* After potentially reading an endianess specification from DT, the code
-  checks whether DT did specify an endianness, and if so, returns it. Move
-  this test outside the whole switch statement so that if the
-  REGMAP_ENDIAN_REG case ever modifies *endian, this check will pick that
-  up. This partially reverts part of commit ba1b53feb8ca ("regmap: Fix DT
-  endianess parsing logic"), while maintaining the bug-fix that commit
-  made to this code.
-* Make the comments briefer, and only refer to the specific action taken
-  at their location. This makes most of the comments independent of DT,
-  and easier to follow.
-
-Cc: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Thierry Reding <treding@nvidia.com>
-Fixes: d647c199510c ("regmap: add DT endianness binding support")
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Sricharan R <r.sricharan@ti.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Acked-by: Dirk Behme <dirk.behme@de.bosch.com>
 ---
-V2: Rebase on Javier's earlier fix, amend commit description due to this.
+ drivers/irqchip/irq-gic.c | 99 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 94 insertions(+), 5 deletions(-)
 
- drivers/base/regmap/regmap.c | 54 ++++++++++++++++----------------------------
- 1 file changed, 20 insertions(+), 34 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 055a9c3a3b12..bb4502a48be5 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -454,7 +454,7 @@ enum regmap_endian_type {
- 	REGMAP_ENDIAN_VAL,
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 4b959e6..423707c 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -41,6 +41,9 @@
+ #include <linux/irqchip/arm-gic.h>
+ 
+ #include <asm/cputype.h>
++#ifdef CONFIG_FIQ
++#include <asm/fiq.h>
++#endif
+ #include <asm/irq.h>
+ #include <asm/exception.h>
+ #include <asm/smp_plat.h>
+@@ -68,6 +71,9 @@ struct gic_chip_data {
+ #ifdef CONFIG_GIC_NON_BANKED
+ 	void __iomem *(*get_base)(union gic_base *);
+ #endif
++#ifdef CONFIG_FIQ
++	bool fiq_enable;
++#endif
  };
  
--static int of_regmap_get_endian(struct device *dev,
-+static int regmap_get_endian(struct device *dev,
- 				const struct regmap_bus *bus,
- 				const struct regmap_config *config,
- 				enum regmap_endian_type type,
-@@ -465,15 +465,7 @@ static int of_regmap_get_endian(struct device *dev,
- 	if (!endian || !config)
- 		return -EINVAL;
+ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+@@ -131,6 +137,16 @@ static inline void gic_set_base_accessor(struct gic_chip_data *data,
+ #define gic_set_base_accessor(d, f)
+ #endif
  
--	/*
--	 * Firstly, try to parse the endianness from driver's config,
--	 * this is to be compatible with the none DT or the old drivers.
--	 * From the driver's config the endianness value maybe:
--	 *   REGMAP_ENDIAN_BIG,
--	 *   REGMAP_ENDIAN_LITTLE,
--	 *   REGMAP_ENDIAN_NATIVE,
--	 *   REGMAP_ENDIAN_DEFAULT.
--	 */
-+	/* Retrieve the endianness specification from the regmap config */
- 	switch (type) {
- 	case REGMAP_ENDIAN_REG:
- 		*endian = config->reg_format_endian;
-@@ -485,31 +477,17 @@ static int of_regmap_get_endian(struct device *dev,
- 		return -EINVAL;
- 	}
- 
--	/*
--	 * If the endianness parsed from driver config is
--	 * REGMAP_ENDIAN_DEFAULT, that means maybe we are using the DT
--	 * node to specify the endianness information.
--	 */
-+	/* If the regmap config specified a non-default value, use that */
- 	if (*endian != REGMAP_ENDIAN_DEFAULT)
- 		return 0;
- 
--	/*
--	 * Secondly, try to parse the endianness from DT node if the
--	 * driver config does not specify it.
--	 * From the DT node the endianness value maybe:
--	 *   REGMAP_ENDIAN_BIG,
--	 *   REGMAP_ENDIAN_LITTLE,
--	 */
-+	/* Parse the device's DT node for an endianness specification */
- 	switch (type) {
- 	case REGMAP_ENDIAN_VAL:
- 		if (of_property_read_bool(np, "big-endian"))
- 			*endian = REGMAP_ENDIAN_BIG;
- 		else if (of_property_read_bool(np, "little-endian"))
- 			*endian = REGMAP_ENDIAN_LITTLE;
--
--		if (*endian != REGMAP_ENDIAN_DEFAULT)
--			return 0;
--
- 		break;
- 	case REGMAP_ENDIAN_REG:
- 		break;
-@@ -517,10 +495,11 @@ static int of_regmap_get_endian(struct device *dev,
- 		return -EINVAL;
- 	}
- 
--	/*
--	 * Finally, try to parse the endianness from regmap bus config
--	 * if in device's DT node the endianness property is absent.
--	 */
-+	/* If the endianness was specified in DT, use that */
-+	if (*endian != REGMAP_ENDIAN_DEFAULT)
-+		return 0;
++#ifdef CONFIG_FIQ
++static inline bool gic_data_fiq_enable(struct gic_chip_data *data)
++{
++	return data->fiq_enable;
++}
++#else
++static inline bool gic_data_fiq_enable(
++		struct gic_chip_data *data) { return false; }
++#endif
 +
-+	/* Retrieve the endianness specification from the bus config */
- 	switch (type) {
- 	case REGMAP_ENDIAN_REG:
- 		if (bus && bus->reg_format_endian_default)
-@@ -534,6 +513,13 @@ static int of_regmap_get_endian(struct device *dev,
- 		return -EINVAL;
- 	}
+ static inline void __iomem *gic_dist_base(struct irq_data *d)
+ {
+ 	struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
+@@ -325,6 +341,42 @@ static struct irq_chip gic_chip = {
+ 	.irq_set_wake		= gic_set_wake,
+ };
  
-+	/* If the bus specified a non-default value, use that */
-+	if (*endian != REGMAP_ENDIAN_DEFAULT)
-+		return 0;
++#ifdef CONFIG_FIQ
++static void __init gic_init_fiq(struct gic_chip_data *gic,
++				irq_hw_number_t first_irq,
++				unsigned int num_irqs)
++{
++	void __iomem *dist_base = gic_data_dist_base(gic_data);
++	unsigned int i;
 +
-+	/* Use this if no other value was found */
-+	*endian = REGMAP_ENDIAN_BIG;
++	/*
++	 * FIQ can only be supported on platforms without an extended irq_eoi
++	 * method (otherwise we take a lock during eoi handling).
++	 */
++	if (gic_arch_extn.irq_eoi)
++		return;
 +
- 	return 0;
++	/*
++	 * If grouping is not available (not implemented or prohibited by
++	 * security mode) these registers a read-as-zero/write-ignored.
++	 * However as a precaution we restore the reset default regardless of
++	 * the result of the test.
++	 */
++	writel_relaxed(1, dist_base + GIC_DIST_IGROUP + 0);
++	gic->fiq_enable = readl_relaxed(dist_base + GIC_DIST_IGROUP + 0);
++	writel_relaxed(0, dist_base + GIC_DIST_IGROUP + 0);
++	pr_debug("gic: FIQ support %s\n",
++		 gic->fiq_enable ? "enabled" : "disabled");
++
++	if (!gic->fiq_enable)
++		return;
++}
++#else /* CONFIG_FIQ */
++static inline void gic_init_fiq(struct gic_chip_data *gic,
++				irq_hw_number_t first_irq,
++				unsigned int num_irqs) {}
++#endif /* CONFIG_FIQ */
++
+ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+ {
+ 	if (gic_nr >= MAX_GIC_NR)
+@@ -373,7 +425,22 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
+ 
+ 	gic_dist_config(base, gic_irqs, NULL);
+ 
+-	writel_relaxed(1, base + GIC_DIST_CTRL);
++	/*
++	 * Optionally set all global interrupts to be group 1.
++	 */
++	if (gic_data_fiq_enable(gic))
++		for (i = 32; i < gic_irqs; i += 32)
++			writel_relaxed(0xffffffff,
++				       base + GIC_DIST_IGROUP + i * 4 / 32);
++
++	/*
++	 * Set EnableGrp1/EnableGrp0 (bit 1 and 0) or EnableGrp (bit 0 only,
++	 * bit 1 ignored)
++	 */
++	if (gic_data_fiq_enable(gic))
++		writel_relaxed(3, base + GIC_DIST_CTRL);
++	else
++		writel_relaxed(1, base + GIC_DIST_CTRL);
  }
  
-@@ -640,13 +626,13 @@ struct regmap *regmap_init(struct device *dev,
- 		map->reg_read  = _regmap_bus_read;
- 	}
+ static void gic_cpu_init(struct gic_chip_data *gic)
+@@ -400,8 +467,20 @@ static void gic_cpu_init(struct gic_chip_data *gic)
  
--	ret = of_regmap_get_endian(dev, bus, config, REGMAP_ENDIAN_REG,
--				   &reg_endian);
-+	ret = regmap_get_endian(dev, bus, config, REGMAP_ENDIAN_REG,
-+				&reg_endian);
- 	if (ret)
- 		return ERR_PTR(ret);
+ 	gic_cpu_config(dist_base, NULL);
  
--	ret = of_regmap_get_endian(dev, bus, config, REGMAP_ENDIAN_VAL,
--				   &val_endian);
-+	ret = regmap_get_endian(dev, bus, config, REGMAP_ENDIAN_VAL,
-+				&val_endian);
- 	if (ret)
- 		return ERR_PTR(ret);
++	/*
++	 * Set all PPI and SGI interrupts to be group 1.
++	 *
++	 * If grouping is not available (not implemented or prohibited by
++	 * security mode) these registers are read-as-zero/write-ignored.
++	 */
++	if (gic_data_fiq_enable(gic))
++		writel_relaxed(0xffffffff, dist_base + GIC_DIST_IGROUP + 0);
++
+ 	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, base + GIC_CPU_CTRL);
++	if (gic_data_fiq_enable(gic))
++		writel_relaxed(0x1f, base + GIC_CPU_CTRL);
++	else
++		writel_relaxed(1, base + GIC_CPU_CTRL);
+ }
  
+ void gic_cpu_if_down(void)
+@@ -485,7 +564,10 @@ static void gic_dist_restore(unsigned int gic_nr)
+ 		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
+ 			dist_base + GIC_DIST_ENABLE_SET + i * 4);
+ 
+-	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
++	if (gic_data_fiq_enable(&gic_data[gic_nr]))
++		writel_relaxed(3, dist_base + GIC_DIST_CTRL);
++	else
++		writel_relaxed(1, dist_base + GIC_DIST_CTRL);
+ }
+ 
+ static void gic_cpu_save(unsigned int gic_nr)
+@@ -542,7 +624,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+ 		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+ 
+ 	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+-	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
++	writel_relaxed(0x1f, cpu_base + GIC_CPU_CTRL);
+ }
+ 
+ static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+@@ -604,6 +686,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ {
+ 	int cpu;
+ 	unsigned long flags, map = 0;
++	unsigned long softint;
+ 
+ 	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+ 
+@@ -618,7 +701,11 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	dmb(ishst);
+ 
+ 	/* this always happens on GIC0 */
+-	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
++	softint = map << 16 | irq;
++	if (gic_data_fiq_enable(&gic_data[0]))
++		softint |= 0x8000;
++	writel_relaxed(softint,
++		       gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+ 
+ 	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
+ }
+@@ -964,6 +1051,8 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
+ 
+ 		gic->domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
+ 					hwirq_base, &gic_irq_domain_ops, gic);
++
++		gic_init_fiq(gic, irq_base, gic_irqs);
+ 	} else {
+ 		gic->domain = irq_domain_add_linear(node, nr_routable_irqs,
+ 						    &gic_irq_domain_ops,
 -- 
-1.9.1
+1.9.3
 
