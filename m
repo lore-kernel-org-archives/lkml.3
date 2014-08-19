@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340AbaHSSXo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:23:44 -0400
-Received: from mail.eperm.de ([89.247.134.16]:58719 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054AbaHSSXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:23:43 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: Re: Kernel crypto API: cryptoperf performance measurement
-Date: Tue, 19 Aug 2014 20:23:37 +0200
-Message-ID: <1477690.toHy6ei3xC@myon.chronox.de>
-User-Agent: KMail/4.13.3 (Linux/3.15.10-200.fc20.x86_64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <53F2FA10.2000300@iki.fi>
-References: <56334718.JSiBY74glM@myon.chronox.de> <53F2FA10.2000300@iki.fi>
+	id S1753524AbaHSSZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:25:53 -0400
+Received: from gw03.mail.saunalahti.fi ([195.197.172.111]:46577 "EHLO
+	gw03.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931AbaHSSZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 14:25:49 -0400
+Date: Tue, 19 Aug 2014 21:25:35 +0300
+From: Juha-Matti Tilli <juha-matti.tilli@iki.fi>
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Cc: "edubezval@gmail.com" <edubezval@gmail.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Juha-Matti Tilli <jtilli@nvidia.com>
+Subject: Re: [PATCH v4 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+Message-ID: <20140819182535.GA53418@sandfort.unics.fi>
+References: <1408100430-29461-1-git-send-email-mperttunen@nvidia.com>
+ <20140819140955.GA50475@sandfort.unics.fi>
+ <CAC-25o-bLeDYpTgPy5UOvBGJ7k7HJkBM3YcCRPSZHBkyxugULA@mail.gmail.com>
+ <53F36CC8.8090707@kapsi.fi>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F36CC8.8090707@kapsi.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 19. August 2014, 10:17:36 schrieb Jussi Kivilinna:
+On Tue, Aug 19, 2014 at 06:27:04PM +0300, Mikko Perttunen wrote:
+> > Well, I would suggest using the hardware documentation as a base here.
+> > I don't have access to the internal driver, thus, it is hard to judge
+> > what is right, what is wrong.
+> 
+> The hardware documentation (TRM) doesn't say anything about these 
+> registers, so I've mostly gone by the downstream driver. FYI, the driver 
+> is publicly available in the L4T kernel sources at 
+> https://developer.nvidia.com/sites/default/files/akamai/mobile/files/L4T/kernel_src.tbz2. 
+> I'm not how useful reading them would be, though.
 
-Hi Jussi,
+I also haven't seen anything about the calibration calculation in any
+hardware documentation so it may very well be the case that nothing has
+been documented and the official information source is the internal
+driver itself. Btw, this downstream driver code is most likely old code
+as I can only find kernel/arch/arm/mach-tegra/tegra11_socterm.c in
+there, and I do remember that on my development branch the file is named
+differently. The CONFIG2 value comparison I posted is most likely
+against a newer version of that code. I'm not sure if that new version
+of that code is publicly available anywhere yet. I'll need to
+investigate more if a newer version of that code calculates different
+calibration values than an older version of that code. I'm currently
+working on soc_therm for future chips, so I have plenty of time to
+investigate this.
 
-> Hello,
-> 
-> On 2014-08-17 18:55, Stephan Mueller wrote:
-> > Hi,
-> > 
-> > during playing around with the kernel crypto API, I implemented a
-> > performance measurement tool kit for the various kernel crypto API cipher
-> > types. The cryptoperf tool kit is provided in [1].
-> > 
-> > Comments are welcome.
-> 
-> Your results are quite slow compared to, for example "cryptsetup
-> benchmark", which uses kernel crypto from userspace.
-> 
-> With Intel i5-2450M (turbo enabled), I get:
-> 
-> #  Algorithm | Key |  Encryption |  Decryption
->      aes-cbc   128b   524,0 MiB/s  11909,1 MiB/s
->  serpent-cbc   128b    60,9 MiB/s   219,4 MiB/s
->  twofish-cbc   128b   143,4 MiB/s   240,3 MiB/s
->      aes-cbc   256b   330,4 MiB/s  1242,8 MiB/s
->  serpent-cbc   256b    66,1 MiB/s   220,3 MiB/s
->  twofish-cbc   256b   143,5 MiB/s   221,8 MiB/s
->      aes-xts   256b  1268,7 MiB/s  4193,0 MiB/s
->  serpent-xts   256b   234,8 MiB/s   224,6 MiB/s
->  twofish-xts   256b   253,5 MiB/s   254,7 MiB/s
->      aes-xts   512b  2535,0 MiB/s  2945,0 MiB/s
->  serpent-xts   512b   274,2 MiB/s   242,3 MiB/s
->  twofish-xts   512b   250,0 MiB/s   245,8 MiB/s
-
-One to four GB per second for XTS? 12 GB per second for AES CBC? Somehow that 
-does not sound right.
-> 
-> > In general, the results are as expected, i.e. the assembler
-> > implementations
-> > are faster than the pure C implementations. However, there are curious
-> > results which probably should be checked by the maintainers of the
-> > respective ciphers (hoping that my tool works correctly ;-) ):
-> > 
-> > ablkcipher
-> > ----------
-> > 
-> > - cryptd is slower by factor 10 across the board
-> > 
-> > blkcipher
-> > ---------
-> > 
-> > - Blowfish x86_64 assembler together with the generic C block chaining
-> > modes is significantly slower than Blowfish implemented in generic C
-> > 
-> > - Blowfish x86_64 assembler in ECB is significantly slower than generic C
-> > Blowfish ECB
-> > 
-> > - Serpent assembler implementations are not significantly faster than
-> > generic C implementations
-> > 
-> > - AES-NI ECB, LRW, CTR is significantly slower than AES i586 assembler.
-> > 
-> > - AES-NI ECB, LRW, CTR is not significantly faster than AES generic C
-> 
-> Quite many assembly implementations get speed up from processing
-> parallel block cipher blocks, which modes of operation that (CTR, XTS,
-> LWR, CBC(dec)). For small buffer sizes, these implementations will use
-> the non-parallel implementation of cipher.
-
-Thanks for the pointer, I will rerun my tests with multiple of the block size 
-(e.g. 1024 blocks).
--- 
-Ciao
-Stephan
+At least this internal driver can be used as a benchmark for code
+clarity. Mikko's code is a lot more clear than this internal driver, so
+that's why I decided to base my work on Mikko's code instead of this
+internal driver and which is why I noticed the missing --i bug. But now
+I'm wondering whether the calibration values are correct...
