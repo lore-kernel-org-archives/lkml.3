@@ -1,122 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaHSG3t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 02:29:49 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:51790 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbaHSG3s (ORCPT
+	id S1752794AbaHSGdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 02:33:13 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:49971 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752633AbaHSGdL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 02:29:48 -0400
-Subject: [PATCH v4 4/17] arcmsr: limit max. number of SCSI command request
-From: Ching Huang <ching2048@areca.com.tw>
-To: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 19 Aug 2014 14:29:41 +0800
-Message-ID: <1408429781.4748.15.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Aug 2014 02:33:11 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kraxel@redhat.com" <kraxel@redhat.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: RE: [PATCH v3] uas: replace WARN_ON_ONCE() with
+ lockdep_assert_held()
+Thread-Topic: [PATCH v3] uas: replace WARN_ON_ONCE() with
+ lockdep_assert_held()
+Thread-Index: AQHPtfZ/zzZmyRFO50yw6W1X3K4CA5vMcJ8AgAATFQCACv8JQA==
+Date: Tue, 19 Aug 2014 06:33:04 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF2FDA2@EU-MBX-02.mgc.mentorg.com>
+References: <yes>
+ <1407825621-23322-1-git-send-email-sanjeev_sharma@mentor.com>
+ <53E9B418.3050303@redhat.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 19 Aug 2014 06:33:06.0431 (UTC) FILETIME=[6F9100F0:01CFBB77]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching Huang <ching2048@areca.com.tw>
+Hi Greg,
 
-This patch limits the max. number of SCSI commmand request to avoid command overflow.
+Any feedback on this patch ?
 
-Signed-off-by: Ching Huang <ching2048@areca.com.tw>
----
+Regards
+Sanjeev Sharma
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:24:06.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:22:36.000000000 +0800
-@@ -45,11 +45,12 @@
- #include <linux/interrupt.h>
- struct device_attribute;
- /*The limit of outstanding scsi command that firmware can handle*/
--#define ARCMSR_MAX_OUTSTANDING_CMD						256
- #ifdef CONFIG_XEN
- 	#define ARCMSR_MAX_FREECCB_NUM	160
-+#define ARCMSR_MAX_OUTSTANDING_CMD	155
- #else
- 	#define ARCMSR_MAX_FREECCB_NUM	320
-+#define ARCMSR_MAX_OUTSTANDING_CMD	255
- #endif
- #define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
- #define ARCMSR_SCSI_INITIATOR_ID						255
-@@ -598,6 +599,7 @@ struct AdapterControlBlock
- 				#define	FW_DEADLOCK	0x0010
- 	atomic_t 			rq_map_token;
- 	atomic_t			ante_token_value;
-+	uint32_t	maxOutstanding;
- 	int		msix_vector_count;
- };/* HW_DEVICE_EXTENSION */
- /*
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:03:48.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-08 19:35:46.000000000 +0800
-@@ -134,7 +134,7 @@ static struct scsi_host_template arcmsr_
- 	.eh_bus_reset_handler	= arcmsr_bus_reset,
- 	.bios_param		= arcmsr_bios_param,
- 	.change_queue_depth	= arcmsr_adjust_disk_queue_depth,
--	.can_queue		= ARCMSR_MAX_FREECCB_NUM,
-+	.can_queue		= ARCMSR_MAX_OUTSTANDING_CMD,
- 	.this_id			= ARCMSR_SCSI_INITIATOR_ID,
- 	.sg_tablesize	        	= ARCMSR_DEFAULT_SG_ENTRIES, 
- 	.max_sectors    	    	= ARCMSR_MAX_XFER_SECTORS_C, 
-@@ -693,7 +693,7 @@ static int arcmsr_probe(struct pci_dev *
- 	host->max_lun = ARCMSR_MAX_TARGETLUN;
- 	host->max_id = ARCMSR_MAX_TARGETID;		/*16:8*/
- 	host->max_cmd_len = 16;	 			/*this is issue of 64bit LBA ,over 2T byte*/
--	host->can_queue = ARCMSR_MAX_FREECCB_NUM;	/* max simultaneous cmds */		
-+	host->can_queue = ARCMSR_MAX_OUTSTANDING_CMD;	/* max simultaneous cmds */		
- 	host->cmd_per_lun = ARCMSR_MAX_CMD_PERLUN;	    
- 	host->this_id = ARCMSR_SCSI_INITIATOR_ID;
- 	host->unique_id = (bus << 8) | dev_fun;
-@@ -2215,9 +2215,6 @@ static int arcmsr_queue_command_lck(stru
- 		arcmsr_handle_virtual_command(acb, cmd);
- 		return 0;
- 	}
--	if (atomic_read(&acb->ccboutstandingcount) >=
--			ARCMSR_MAX_OUTSTANDING_CMD)
--		return SCSI_MLQUEUE_HOST_BUSY;
- 	ccb = arcmsr_get_freeccb(acb);
- 	if (!ccb)
- 		return SCSI_MLQUEUE_HOST_BUSY;
-@@ -2427,12 +2424,27 @@ static bool arcmsr_get_hbc_config(struct
- }
- static bool arcmsr_get_firmware_spec(struct AdapterControlBlock *acb)
- {
--	if (acb->adapter_type == ACB_ADAPTER_TYPE_A)
--		return arcmsr_get_hba_config(acb);
--	else if (acb->adapter_type == ACB_ADAPTER_TYPE_B)
--		return arcmsr_get_hbb_config(acb);
-+	bool rtn = false;
-+
-+	switch (acb->adapter_type) {
-+	case ACB_ADAPTER_TYPE_A:
-+		rtn = arcmsr_get_hba_config(acb);
-+		break;
-+	case ACB_ADAPTER_TYPE_B:
-+		rtn = arcmsr_get_hbb_config(acb);
-+		break;
-+	case ACB_ADAPTER_TYPE_C:
-+		rtn = arcmsr_get_hbc_config(acb);
-+		break;
-+	default:
-+		break;
-+	}
-+	if(acb->firm_numbers_queue > ARCMSR_MAX_OUTSTANDING_CMD)
-+		acb->maxOutstanding = ARCMSR_MAX_OUTSTANDING_CMD;
- 	else
--		return arcmsr_get_hbc_config(acb);
-+		acb->maxOutstanding = acb->firm_numbers_queue - 1;
-+	acb->host->can_queue = acb->maxOutstanding;
-+	return rtn;
- }
- 
- static int arcmsr_polling_hba_ccbdone(struct AdapterControlBlock *acb,
+-----Original Message-----
+From: Sharma, Sanjeev 
+Sent: Tuesday, August 12, 2014 12:07 PM
+To: 'Hans de Goede'
+Cc: gregkh@linuxfoundation.org; kraxel@redhat.com; mdharm-usb@one-eyed-alien.net; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
+Subject: RE: [PATCH v3] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
 
+Yes I have incorporated review comment from Greg.
 
+Regards
+Sanjeev Sharma
+
+-----Original Message-----
+From: Hans de Goede [mailto:hdegoede@redhat.com]
+Sent: Tuesday, August 12, 2014 11:59 AM
+To: Sharma, Sanjeev
+Cc: gregkh@linuxfoundation.org; kraxel@redhat.com; mdharm-usb@one-eyed-alien.net; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
+Subject: Re: [PATCH v3] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
+
+Hi,
+
+On 08/12/2014 08:40 AM, Sanjeev Sharma wrote:
+> on some architecture spin_is_locked() always return false in 
+> uniprocessor configuration and therefore it would be advise to replace 
+> with lockdep_assert_held().
+> 
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+> ---
+> Changes in v3:
+>  incorporated review comment suggested by Greg
+
+Thanks, this is still:
+
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+
+Regards,
+
+Hans
+
+> 
+>  drivers/usb/storage/uas.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c 
+> index 3f42785..05b2d8e 100644
+> --- a/drivers/usb/storage/uas.c
+> +++ b/drivers/usb/storage/uas.c
+> @@ -154,7 +154,7 @@ static void uas_mark_cmd_dead(struct uas_dev_info *devinfo,
+>  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+>  
+>  	uas_log_cmd_state(cmnd, caller);
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
+>  	cmdinfo->state |= COMMAND_ABORTED;
+>  	cmdinfo->state &= ~IS_IN_WORK_LIST;
+> @@ -181,7 +181,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
+>  	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+>  	struct uas_dev_info *devinfo = cmnd->device->hostdata;
+>  
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	cmdinfo->state |= IS_IN_WORK_LIST;
+>  	schedule_work(&devinfo->work);
+>  }
+> @@ -283,7 +283,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+>  	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+>  	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
+>  
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	if (cmdinfo->state & (COMMAND_INFLIGHT |
+>  			      DATA_IN_URB_INFLIGHT |
+>  			      DATA_OUT_URB_INFLIGHT |
+> @@ -622,7 +622,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
+>  	struct urb *urb;
+>  	int err;
+>  
+> -	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+> +	lockdep_assert_held(&devinfo->lock);
+>  	if (cmdinfo->state & SUBMIT_STATUS_URB) {
+>  		urb = uas_submit_sense_urb(cmnd, gfp, cmdinfo->stream);
+>  		if (!urb)
+> 
