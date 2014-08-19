@@ -1,167 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaHSMf5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 08:35:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63031 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751492AbaHSMfz (ORCPT
+	id S1752954AbaHSMhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 08:37:01 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37743 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751867AbaHSMg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 08:35:55 -0400
-Date: Tue, 19 Aug 2014 13:36:07 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v4 8/8] ARM: mm: allow text and rodata sections to be
- read-only
-Message-ID: <20140819123607.GK23128@arm.com>
-References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
- <1407949593-16121-9-git-send-email-keescook@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1407949593-16121-9-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 19 Aug 2014 08:36:59 -0400
+X-Sasl-enc: ssmIjg/BoJ41HSz/X9Q0qJGbye6+F6lP/K/BEOcOKF2p 1408451817
+Message-ID: <1408451815.11314.15.camel@perseus.themaw.net>
+Subject: Re: [PATCH 0/5] RCU-walk support for autofs
+From: Ian Kent <raven@themaw.net>
+To: NeilBrown <neilb@suse.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 19 Aug 2014 20:36:55 +0800
+In-Reply-To: <20140819211654.5ec3853a@notabene.brown>
+References: <20140818062844.9860.43007.stgit@notabene.brown>
+	 <1408350340.2533.3.camel@perseus.fritz.box>
+	 <1408442547.11314.9.camel@perseus.themaw.net>
+	 <20140819211654.5ec3853a@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 06:06:33PM +0100, Kees Cook wrote:
-> This introduces CONFIG_DEBUG_RODATA, making kernel text and rodata
-> read-only. Additionally, this splits rodata from text so that rodata can
-> also be NX, which may lead to wasted memory when aligning to SECTION_SIZE.
-> The read-only areas are made writable during ftrace updates and kexec.
-
-[...]
-
-> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-> index af9a8a927a4e..b8c75e45a950 100644
-> --- a/arch/arm/kernel/ftrace.c
-> +++ b/arch/arm/kernel/ftrace.c
-> @@ -15,6 +15,7 @@
->  #include <linux/ftrace.h>
->  #include <linux/uaccess.h>
->  #include <linux/module.h>
-> +#include <linux/stop_machine.h>
+On Tue, 2014-08-19 at 21:16 +1000, NeilBrown wrote:
+> On Tue, 19 Aug 2014 18:02:27 +0800 Ian Kent <raven@themaw.net> wrote:
+> 
+> > On Mon, 2014-08-18 at 16:25 +0800, Ian Kent wrote:
+> > > On Mon, 2014-08-18 at 16:33 +1000, NeilBrown wrote:
+> > > > Hi Ian,
+> > > >  Have you had a chance to run your tests in these patches yet?
+> > > >  I've done what testing I can think of and cannot fault them.
+> > > 
+> > > I haven't, I've been plagued with illness so I'm not getting nearly
+> > > enough done. I'll try to put a kernel together and run the test in the
+> > > next week or so.
+> > 
+> > Just to let you know that I managed to spend some time on this. I built
+> > a kernel (3.17.0-rc1) with the series and ran a couple of tests.
+> > 
+> > I'm not certain that the patches I used are identical to your posting, I
+> > saw one difference, after the fact, that shouldn't matter, I'll have to
+> > check that.
+> > 
+> > It isn't possible to test expire to mount races because the mounts in
+> > the tree never expire.
+> > 
+> > At first I thought it was because so many processes were accessing the
+> > tree all the time but manually constructing the maps and mounting the
+> > mounts shows that nothing ever expires, at least for this tree.
+> > 
+> > However, issuing a shut down does expire all the mounts and shuts down
+> > autofs cleanly.
+> > 
+> > So there is something not quite right with the expire check or my
+> > patches have mistakes.
+> 
+> Ahh.. I bet I know what it is.
+> autofs4_can_expire() isn't idempotent.
+> Because we call should_expire twice, autofs4_can_expire() is called twice and
+> the second time it failed because  the first time it resets ->last_used.
+> 
+> diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+> index eb4b770a4bf6..80133a9d9427 100644
+> --- a/fs/autofs4/expire.c
+> +++ b/fs/autofs4/expire.c
+> @@ -26,6 +26,9 @@ static inline int autofs4_can_expire(struct dentry *dentry,
+>  	if (ino == NULL)
+>  		return 0;
 >  
->  #include <asm/cacheflush.h>
->  #include <asm/opcodes.h>
-> @@ -35,6 +36,22 @@
->  
->  #define	OLD_NOP		0xe1a00000	/* mov r0, r0 */
->  
-> +static int __ftrace_modify_code(void *data)
-> +{
-> +	int *command = data;
-> +
-> +	set_kernel_text_rw();
-> +	ftrace_modify_all_code(*command);
-> +	set_kernel_text_ro();
-> +
-> +	return 0;
-> +}
-> +
-> +void arch_ftrace_update_code(int command)
-> +{
-> +	stop_machine(__ftrace_modify_code, &command, NULL);
-> +}
-> +
->  static unsigned long ftrace_nop_replace(struct dyn_ftrace *rec)
->  {
->  	return rec->arch.old_mcount ? OLD_NOP : NOP;
-> @@ -73,6 +90,8 @@ int ftrace_arch_code_modify_prepare(void)
->  int ftrace_arch_code_modify_post_process(void)
->  {
->  	set_all_modules_text_ro();
-> +	/* Make sure any TLB misses during machine stop are cleared. */
-> +	flush_tlb_all();
+> +	if (ino->flags & AUTOFS_INF_NO_RCU)
+> +		/* Already performed this test */
+> +		return 1;
 
-I'm afraid I don't understand what you're trying to achieve here. What do
-you mean by `clearing a TLB miss'?
+Wouldn't it be better to perform this check, or similar, further down
+where the last_used time is updated? After all it's only updated to
+prevent rapid fire expires on dentrys that refuse to umount for some
+reason.
 
-[...]
+>  	if (!do_now) {
+>  		/* Too young to die */
+>  		if (!timeout || time_after(ino->last_used + timeout, now))
+> 
+> 
+> 
+> might fix it, but might be a hack.
+> (tests.... yep, that seems to fix it).
+> 
+> I'll think some more tomorrow.
+> 
+> Thanks,
+> NeilBrown
 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index ccf392ef40d4..35c838da90d5 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -626,9 +626,10 @@ struct section_perm {
->  	unsigned long end;
->  	pmdval_t mask;
->  	pmdval_t prot;
-> +	pmdval_t clear;
->  };
->  
-> -struct section_perm nx_perms[] = {
-> +static struct section_perm nx_perms[] = {
->  	/* Make pages tables, etc before _stext RW (set NX). */
->  	{
->  		.start	= PAGE_OFFSET,
-> @@ -643,8 +644,35 @@ struct section_perm nx_perms[] = {
->  		.mask	= ~PMD_SECT_XN,
->  		.prot	= PMD_SECT_XN,
->  	},
-> +#ifdef CONFIG_DEBUG_RODATA
-> +	/* Make rodata NX (set RO in ro_perms below). */
-> +	{
-> +		.start  = (unsigned long)__start_rodata,
-> +		.end    = (unsigned long)__init_begin,
-> +		.mask   = ~PMD_SECT_XN,
-> +		.prot   = PMD_SECT_XN,
-> +	},
-> +#endif
->  };
->  
-> +#ifdef CONFIG_DEBUG_RODATA
-> +static struct section_perm ro_perms[] = {
-> +	/* Make kernel code and rodata RX (set RO). */
-> +	{
-> +		.start  = (unsigned long)_stext,
-> +		.end    = (unsigned long)__init_begin,
-> +#ifdef CONFIG_ARM_LPAE
-> +		.mask   = ~PMD_SECT_RDONLY,
-> +		.prot   = PMD_SECT_RDONLY,
-> +#else
-> +		.mask   = ~(PMD_SECT_APX | PMD_SECT_AP_WRITE),
-> +		.prot   = PMD_SECT_APX | PMD_SECT_AP_WRITE,
-> +		.clear  = PMD_SECT_AP_WRITE,
-> +#endif
-> +	},
-> +};
-> +#endif
-> +
->  /*
->   * Updates section permissions only for the current mm (sections are
->   * copied into each mm). During startup, this is the init_mm.
-> @@ -713,6 +741,24 @@ static inline void fix_kernmem_perms(void)
->  {
->  	set_section_perms(nx_perms, prot);
->  }
-> +
-> +#ifdef CONFIG_DEBUG_RODATA
-> +void mark_rodata_ro(void)
-> +{
-> +	set_section_perms(ro_perms, prot);
-> +}
-> +
-> +void set_kernel_text_rw(void)
-> +{
-> +	set_section_perms(ro_perms, clear);
-> +}
 
-How does this work with LPAE? I don't see a populated clear field there.
-
-Will
