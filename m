@@ -1,304 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaHSKlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 06:41:37 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41557 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaHSKle (ORCPT
+	id S1752348AbaHSKnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 06:43:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50161 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaHSKn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 06:41:34 -0400
-Message-ID: <53F3297A.1040309@linaro.org>
-Date: Tue, 19 Aug 2014 18:39:54 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 19 Aug 2014 06:43:29 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <53F32A13.9010707@jp.fujitsu.com>
+Date: Tue, 19 Aug 2014 19:42:27 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>
-CC: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI flags
- for PSCI init
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org> <53F246D4.7040807@arm.com>
-In-Reply-To: <53F246D4.7040807@arm.com>
-Content-Type: text/plain; charset=windows-1252
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>,
+        David Rientjes <rientjes@google.com>, <toshi.kani@hp.com>,
+        <n-horiguchi@ah.jp.nec.com>, <wangnan0@huawei.com>,
+        <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
+References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com> <53EAE534.8030303@huawei.com> <53F19919.1070908@jp.fujitsu.com> <53F2FE4C.7020700@huawei.com>
+In-Reply-To: <53F2FE4C.7020700@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-8-19 2:32, Sudeep Holla wrote:
-> On 04/08/14 16:28, Hanjun Guo wrote:
->> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
->> the former signals to the OS that the hardware is PSCI compliant.
->> The latter selects the appropriate conduit for PSCI calls by
->> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
->> (SMC).
+(2014/08/19 16:35), Zhang Zhen wrote:
+> On 2014/8/18 14:11, Yasuaki Ishimatsu wrote:
+>> (2014/08/13 13:10), Zhang Zhen wrote:
+>>> Currently memory-hotplug has two limits:
+>>> 1. If the memory block is in ZONE_NORMAL, you can change it to
+>>> ZONE_MOVABLE, but this memory block must be adjacent to ZONE_MOVABLE.
+>>> 2. If the memory block is in ZONE_MOVABLE, you can change it to
+>>> ZONE_NORMAL, but this memory block must be adjacent to ZONE_NORMAL.
+>>>
+>>> With this patch, we can easy to know a memory block can be onlined to
+>>> which zone, and don't need to know the above two limits.
+>>>
+>>> Updated the related Documentation.
+>>>
+>>> Change v1 -> v2:
+>>> - optimize the implementation following Dave Hansen's suggestion
+>>>
+>>> Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
+>>> ---
+>>>    Documentation/ABI/testing/sysfs-devices-memory |  8 ++++
+>>>    Documentation/memory-hotplug.txt               |  4 +-
+>>>    drivers/base/memory.c                          | 62 ++++++++++++++++++++++++++
+>>>    include/linux/memory_hotplug.h                 |  1 +
+>>>    mm/memory_hotplug.c                            |  2 +-
+>>>    5 files changed, 75 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/Documentation/ABI/testing/sysfs-devices-memory b/Documentation/ABI/testing/sysfs-devices-memory
+>>> index 7405de2..2b2a1d7 100644
+>>> --- a/Documentation/ABI/testing/sysfs-devices-memory
+>>> +++ b/Documentation/ABI/testing/sysfs-devices-memory
+>>> @@ -61,6 +61,14 @@ Users:        hotplug memory remove tools
+>>>            http://www.ibm.com/developerworks/wikis/display/LinuxP/powerpc-utils
+>>>
+>>>
+>>> +What:           /sys/devices/system/memory/memoryX/zones_online_to
+>>> +Date:           July 2014
+>>> +Contact:    Zhang Zhen <zhenzhang.zhang@huawei.com>
+>>> +Description:
+>>> +        The file /sys/devices/system/memory/memoryX/zones_online_to
+>>> +        is read-only and is designed to show which zone this memory block can
+>>> +        be onlined to.
+>>> +
+>>>    What:        /sys/devices/system/memoryX/nodeY
+>>>    Date:        October 2009
+>>>    Contact:    Linux Memory Management list <linux-mm@kvack.org>
+>>> diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+>>> index 45134dc..5b34e33 100644
+>>> --- a/Documentation/memory-hotplug.txt
+>>> +++ b/Documentation/memory-hotplug.txt
+>>> @@ -155,6 +155,7 @@ Under each memory block, you can see 4 files:
+>>>    /sys/devices/system/memory/memoryXXX/phys_device
+>>>    /sys/devices/system/memory/memoryXXX/state
+>>>    /sys/devices/system/memory/memoryXXX/removable
+>>> +/sys/devices/system/memory/memoryXXX/zones_online_to
+>>>
+>>>    'phys_index'      : read-only and contains memory block id, same as XXX.
+>>>    'state'           : read-write
+>>> @@ -170,6 +171,8 @@ Under each memory block, you can see 4 files:
+>>>                        block is removable and a value of 0 indicates that
+>>>                        it is not removable. A memory block is removable only if
+>>>                        every section in the block is removable.
+>>> +'zones_online_to' : read-only: designed to show which zone this memory block
+>>> +            can be onlined to.
+>>>
+>>>    NOTE:
+>>>      These directories/files appear after physical memory hotplug phase.
+>>> @@ -408,7 +411,6 @@ node if necessary.
+>>>      - allowing memory hot-add to ZONE_MOVABLE. maybe we need some switch like
+>>>        sysctl or new control file.
+>>>      - showing memory block and physical device relationship.
+>>> -  - showing memory block is under ZONE_MOVABLE or not
+>>>      - test and make it better memory offlining.
+>>>      - support HugeTLB page migration and offlining.
+>>>      - memmap removing at memory offline.
+>>> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+>>> index a2e13e2..b5d693f 100644
+>>> --- a/drivers/base/memory.c
+>>> +++ b/drivers/base/memory.c
+>>> @@ -373,10 +373,71 @@ static ssize_t show_phys_device(struct device *dev,
+>>>        return sprintf(buf, "%d\n", mem->phys_device);
+>>>    }
+>>>
+>>> +static int __zones_online_to(unsigned long end_pfn,
+>>> +                struct page *first_page, unsigned long nr_pages)
+>>> +{
+>>> +    struct zone *zone_next;
+>>> +
 >>
->> FADT table contains such information, parse FADT to get the flags
->> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
->> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
+>>> +    /*The mem block is the last block of memory.*/
+>>> +    if (!pfn_valid(end_pfn + 1))
+>>> +        return 1;
 >>
->> At the same time, only ACPI 5.1 or higher verison supports PSCI,
->> and FADT Major.Minor version was introduced in ACPI 5.1, so we
->> will check the version and only parse FADT table with version >= 5.1.
+>> The check is not enough if memory has hole as follows:
 >>
->> If firmware provides ACPI tables with ACPI version less than 5.1,
->> OS will be messed up with those information and have no way to
->> bring up secondery CPUs, so disable ACPI if we get an FADT table
->> with version less that 5.1.
+>> PFN       0x00          0xd0          0xe0          0xf0
+>>              +-------------+-------------+-------------+
+>> zone type   |   Normal    |     hole    |   Normal    |
+>>              +-------------+-------------+-------------+
 >>
-[...]
+>> In this case, 0xd1 is invalid pfn. But __zones_online_to should return 0
+>> since 0xe0-0xf0 is Normal zone.
 >>
->> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
->> +{
->> +    struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
->> +
->> +    /*
->> +     * Revision in table header is the FADT Major version,
->> +     * and there is a minor version of FADT which was introduced
->> +     * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
->> +     * to get arm boot flags, or we will disable ACPI.
->> +     */
->> +    if (table->revision < 5 || fadt->minor_revision < 1) {
-> 
->                 &&
+>> Thanks,
+>> Yasuaki Ishimatsu
+>>
+> You are right, it is not enough.
+>
 
-Catalin also pointed out this bug :), but && is not enough, for example,
-this would not trigger of revision 4.1, although 4.1 is not exist, but
-the code will still confusing people, so I updated the code as:
+> Here we should make a check as follows.
+> if ((end_pfn + 1) > zone_end_pfn(page_zone(first_page)))
+> 	return 1;
+> I will send a patch to fix it.
 
-+       if (table->revision > 5 ||
-+           (table->revision == 5 && fadt->minor_revision >= 1)) {
-+               return 0;
-+       } else {
-+               pr_info("FADT revision is %d.%d, no PSCI support, should be 5.1
-or higher\n",
-+                       table->revision, fadt->minor_revision);
-+               disable_acpi();
-+               return -EINVAL;
-+       }
+It's looks good to me.
 
-> 
->> +        pr_info("FADT version is %d.%d, no PSCI support, should be 5.1 or
->> higher\n",
->> +            table->revision, fadt->minor_revision);
->> +        disable_acpi();
-> 
-> Instead of disabling ACPI at multiple places in the boot sequence, can't
-> it be done once if acpi_boot_init failed ?
-> 
->> +        return -EINVAL;
->> +    }
->> +
->> +    return 0;
->> +}
->> +
->>   /*
->>    * acpi_boot_table_init() called from setup_arch(), always.
->>    *    1. find RSDP and get its address, and then find XSDT
->> @@ -68,6 +90,21 @@ void __init acpi_boot_table_init(void)
->>       }
->>   }
->>
->> +int __init acpi_boot_init(void)
->> +{
->> +    int err = 0;
->> +
->> +    /* If acpi_disabled, bail out */
->> +    if (acpi_disabled)
->> +        return -ENODEV;
->> +
->> +    err = acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
->> +    if (err)
->> +        pr_err("Can't find FADT\n");
->> +
->> +    return err;
->> +}
->> +
->>   /*
->>    * acpi_suspend_lowlevel() - save kernel state and suspend.
->>    *
->> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
->> index 9e9798f..2ad2084 100644
->> --- a/arch/arm64/kernel/psci.c
->> +++ b/arch/arm64/kernel/psci.c
->> @@ -15,6 +15,7 @@
->>
->>   #define pr_fmt(fmt) "psci: " fmt
->>
->> +#include <linux/acpi.h>
->>   #include <linux/init.h>
->>   #include <linux/of.h>
->>   #include <linux/smp.h>
->> @@ -231,6 +232,33 @@ static void psci_sys_poweroff(void)
->>       invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
->>   }
->>
->> +static void psci_0_2_set_functions(void)
->> +{
->> +    pr_info("Using standard PSCI v0.2 function IDs\n");
->> +    psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
->> +    psci_ops.cpu_suspend = psci_cpu_suspend;
->> +
->> +    psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
->> +    psci_ops.cpu_off = psci_cpu_off;
->> +
->> +    psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
->> +    psci_ops.cpu_on = psci_cpu_on;
->> +
->> +    psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
->> +    psci_ops.migrate = psci_migrate;
->> +
->> +    psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
->> +    psci_ops.affinity_info = psci_affinity_info;
->> +
->> +    psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
->> +        PSCI_0_2_FN_MIGRATE_INFO_TYPE;
->> +    psci_ops.migrate_info_type = psci_migrate_info_type;
->> +
->> +    arm_pm_restart = psci_sys_reset;
->> +
->> +    pm_power_off = psci_sys_poweroff;
->> +}
->> +
-> 
-> Nit: IMO may be you can move these refactoring as separate patch before
-> ACPI related changes ?
+Thanks,
+Yasuaki Ishimatsu
 
-I'm ok with it, will format another patch and place it in the
-beginning of this patch set.
+>
+> Thanks !
+>>
+>>> +    zone_next = page_zone(first_page + nr_pages);
+>>> +    if (zone_idx(zone_next) == ZONE_MOVABLE)
+>>> +        return 1;
+>>> +    return 0;
+>>> +}
+>>> +
+>>> +static ssize_t show_zones_online_to(struct device *dev,
+>>> +                struct device_attribute *attr, char *buf)
+>>> +{
+>>> +    struct memory_block *mem = to_memory_block(dev);
+>>> +    unsigned long start_pfn, end_pfn;
+>>> +    unsigned long nr_pages = PAGES_PER_SECTION * sections_per_block;
+>>> +    struct page *first_page;
+>>> +    struct zone *zone, *zone_prev;
+>>> +
+>>> +    start_pfn = section_nr_to_pfn(mem->start_section_nr);
+>>> +    end_pfn = start_pfn + nr_pages;
+>>> +    first_page = pfn_to_page(start_pfn);
+>>> +
+>>> +    /*The block contains more than one zone can not be offlined.*/
+>>> +    if (!test_pages_in_a_zone(start_pfn, end_pfn))
+>>> +        return sprintf(buf, "none\n");
+>>> +
+>>> +    zone = page_zone(first_page);
+>>> +
+>>> +#ifdef CONFIG_HIGHMEM
+>>> +    if (zone_idx(zone) == ZONE_HIGHMEM) {
+>>> +        if (__zones_online_to(end_pfn, first_page, nr_pages))
+>>> +            return sprintf(buf, "%s %s\n",
+>>> +                    zone->name, (zone + 1)->name);
+>>> +    }
+>>> +#else
+>>> +    if (zone_idx(zone) == ZONE_NORMAL) {
+>>> +        if (__zones_online_to(end_pfn, first_page, nr_pages))
+>>> +            return sprintf(buf, "%s %s\n",
+>>> +                    zone->name, (zone + 1)->name);
+>>> +    }
+>>> +#endif
+>>> +
+>>> +    if (zone_idx(zone) == ZONE_MOVABLE) {
+>>> +        if (!pfn_valid(start_pfn - nr_pages))
+>>> +            return sprintf(buf, "%s %s\n",
+>>> +                        zone->name, (zone - 1)->name);
+>>> +        zone_prev = page_zone(first_page - nr_pages);
+>>> +        if (zone_idx(zone_prev) != ZONE_MOVABLE)
+>>> +            return sprintf(buf, "%s %s\n",
+>>> +                        zone->name, (zone - 1)->name);
+>>> +    }
+>>> +
+>>> +    return sprintf(buf, "%s\n", zone->name);
+>>> +}
+>>> +
+>>>    static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
+>>>    static DEVICE_ATTR(state, 0644, show_mem_state, store_mem_state);
+>>>    static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
+>>>    static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
+>>> +static DEVICE_ATTR(zones_online_to, 0444, show_zones_online_to, NULL);
+>>>
+>>>    /*
+>>>     * Block size attribute stuff
+>>> @@ -523,6 +584,7 @@ static struct attribute *memory_memblk_attrs[] = {
+>>>        &dev_attr_state.attr,
+>>>        &dev_attr_phys_device.attr,
+>>>        &dev_attr_removable.attr,
+>>> +    &dev_attr_zones_online_to.attr,
+>>>        NULL
+>>>    };
+>>>
+>>> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+>>> index d9524c4..8f1a419 100644
+>>> --- a/include/linux/memory_hotplug.h
+>>> +++ b/include/linux/memory_hotplug.h
+>>> @@ -84,6 +84,7 @@ extern int zone_grow_waitqueues(struct zone *zone, unsigned long nr_pages);
+>>>    extern int add_one_highpage(struct page *page, int pfn, int bad_ppro);
+>>>    /* VM interface that may be used by firmware interface */
+>>>    extern int online_pages(unsigned long, unsigned long, int);
+>>> +extern int test_pages_in_a_zone(unsigned long, unsigned long);
+>>>    extern void __offline_isolated_pages(unsigned long, unsigned long);
+>>>
+>>>    typedef void (*online_page_callback_t)(struct page *page);
+>>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>>> index 2ff8c23..29d8693 100644
+>>> --- a/mm/memory_hotplug.c
+>>> +++ b/mm/memory_hotplug.c
+>>> @@ -1307,7 +1307,7 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
+>>>    /*
+>>>     * Confirm all pages in a range [start, end) is belongs to the same zone.
+>>>     */
+>>> -static int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
+>>> +int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
+>>>    {
+>>>        unsigned long pfn;
+>>>        struct zone *zone = NULL;
+>>>
+>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
+>> .
+>>
+>
+>
 
-> 
->>   /*
->>    * PSCI Function IDs for v0.2+ are well defined so use
->>    * standard values.
->> @@ -264,29 +292,7 @@ static int psci_0_2_init(struct device_node *np)
->>           }
->>       }
->>
->> -    pr_info("Using standard PSCI v0.2 function IDs\n");
->> -    psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
->> -    psci_ops.cpu_suspend = psci_cpu_suspend;
->> -
->> -    psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
->> -    psci_ops.cpu_off = psci_cpu_off;
->> -
->> -    psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
->> -    psci_ops.cpu_on = psci_cpu_on;
->> -
->> -    psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
->> -    psci_ops.migrate = psci_migrate;
->> -
->> -    psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
->> -    psci_ops.affinity_info = psci_affinity_info;
->> -
->> -    psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
->> -        PSCI_0_2_FN_MIGRATE_INFO_TYPE;
->> -    psci_ops.migrate_info_type = psci_migrate_info_type;
->> -
->> -    arm_pm_restart = psci_sys_reset;
->> -
->> -    pm_power_off = psci_sys_poweroff;
->> +    psci_0_2_set_functions();
->>
->>   out_put_node:
->>       of_node_put(np);
->> @@ -333,6 +339,40 @@ out_put_node:
->>       return err;
->>   }
->>
->> +#ifdef CONFIG_ACPI
->> +static int get_set_conduit_method_acpi(void)
->> +{
->> +    pr_info("probing for conduit method from ACPI.\n");
->> +
->> +    if (acpi_psci_use_hvc())
->> +        invoke_psci_fn = __invoke_psci_fn_hvc;
->> +    else
->> +        invoke_psci_fn = __invoke_psci_fn_smc;
->> +
->> +    return 0;
->> +}
->> +
->> +/* We use PSCI 0.2+ when ACPI is deployed */
->> +static int psci_0_2_init_acpi(void)
-> 
-> May be this can be renamed psci_acpi_init and called from setup directly
-> instead of calling from DT function with acpi_disabled check.
-
-Also suggested by Catalin, will do it :)
-
-> 
->> +{
->> +    if (!acpi_psci_present()) {
->> +        pr_info("is not implemented in ACPI.\n");
->> +        return -EOPNOTSUPP;
->> +    }
->> +
->> +    get_set_conduit_method_acpi();
->> +
->> +    psci_0_2_set_functions();
->> +
->> +    return 0;
->> +}
->> +#else
->> +static inline int psci_0_2_init_acpi(void)
->> +{
->> +    return -ENODEV;
->> +}
->> +#endif
->> +
->>   static const struct of_device_id psci_of_match[] __initconst = {
->>       { .compatible = "arm,psci",    .data = psci_0_1_init},
->>       { .compatible = "arm,psci-0.2",    .data = psci_0_2_init},
->> @@ -345,6 +385,9 @@ int __init psci_init(void)
->>       const struct of_device_id *matched_np;
->>       psci_initcall_t init_fn;
->>
->> +    if (!acpi_disabled)
->> +        return psci_0_2_init_acpi();
->> +
-> 
-> As mentioned above you need not modify this.
-> 
->>       np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
->>
->>       if (!np)
->> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
->> index 85c6326..dfc4e4f3 100644
->> --- a/arch/arm64/kernel/setup.c
->> +++ b/arch/arm64/kernel/setup.c
->> @@ -395,6 +395,8 @@ void __init setup_arch(char **cmdline_p)
->>       efi_idmap_init();
->>
->>       cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
->> +    acpi_boot_init();
->> +
-> 
-> Check for the return error here and disable ACPI once rather than at
-> multiple places all over.
-
-ok.
-
-Thanks
-Hanjun
 
