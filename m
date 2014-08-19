@@ -1,44 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaHSPCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 11:02:31 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44858 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808AbaHSPCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 11:02:30 -0400
-Date: Tue, 19 Aug 2014 08:02:21 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ching Huang <ching2048@areca.com.tw>
-Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        thenzl@redhat.com, agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/17] arcmsr: change note since v13 or v2
-Message-ID: <20140819150221.GA4083@infradead.org>
-References: <1408422598.4801.112.camel@Centos6.3-64>
+	id S1753031AbaHSPDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 11:03:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41086 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752610AbaHSPDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 11:03:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,894,1400050800"; 
+   d="scan'208";a="578793321"
+Date: Tue, 19 Aug 2014 08:02:57 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        acme@kernel.org, mingo@kernel.org, peterz@infradead.org
+Subject: Re: [PATCH] perf, tools: Add PERF_PID
+Message-ID: <20140819150257.GX5803@tassilo.jf.intel.com>
+References: <1408449742-16402-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408422598.4801.112.camel@Centos6.3-64>
+In-Reply-To: <1408449742-16402-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ching,
+On Tue, Aug 19, 2014 at 05:02:22AM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 
-I've fixed up various checkpatch errors and fixed up some descriptions
-and applied the patches to a branch.  This includes patch 4, so please
-send a fix for this and any other patches relative to the branch.
+Please disregard. I posted the wrong patch.
 
-Please find the branch at
-
-	git://git.infradead.org/users/hch/scsi-queue.git arcmsr-for-3.18
-
-Can the others help reviewing these patches and make sure we can get
-them into 3.18?
-
-Thanks,
-	Christoph
+-Andi
