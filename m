@@ -1,92 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaHSSyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:54:13 -0400
-Received: from fr1.as29.net ([62.210.131.231]:38390 "EHLO
-	toothrot.meleeweb.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804AbaHSSyL (ORCPT
+	id S1753883AbaHSSyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:54:36 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53475 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753804AbaHSSyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:54:11 -0400
-Date: Tue, 19 Aug 2014 20:54:02 +0200
-From: Bertrand Jacquin <beber@meleeweb.net>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Willy Tarreau <w@1wt.eu>
-Subject: Re: [PATCH 2/3] kbuild: handle module compression while running
- 'make modules_install'.
-Message-ID: <20140819185402.GA10263@lemonhead.scabb>
-References: <1408215016-1848-1-git-send-email-beber@meleeweb.net>
- <1408215016-1848-3-git-send-email-beber@meleeweb.net>
- <87lhqkmxdl.fsf@tassilo.jf.intel.com>
- <87iolojrdq.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87iolojrdq.fsf@rustcorp.com.au>
-Jabber-ID: beber@meleeweb.net
-X-GPG-Key: 0x39BB8CF4
-X-GPG-DirectLink: https://www.cacert.org/gpg.php?id=3&cert=14964
-X-GPG-Fingerprint: 2CBD 6A23 D980 3E32 66D1  573D 89B8 C953 39BB 8CF4
-X-Pants: Off
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 19 Aug 2014 14:54:35 -0400
+Message-ID: <1408474472.14668.6.camel@jarvis>
+Subject: [GIT PULL] SCSI fixes for 3.17-rc1
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 19 Aug 2014 13:54:32 -0500
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+These are the two bug fixes I mentioned in the final merge window pull.
+One is a reversed logic check in the device busy tests which can cause a
+nasty hang and another crash seen in the new SCSI pool support if the
+use count ever goes to zero.
 
-D'ar meurzh 19 a viz Eost 2014 e 19 eur 55, « Rusty Russell » he deus skrivet :
-> Andi Kleen <andi@firstfloor.org> writes:
-> > Bertrand Jacquin <beber@meleeweb.net> writes:
-> >>  
-> >> +# CONFIG_MODULE_COMPRESS, if defined, will cause module to be compressed
-> >> +# after they are installed in agreement with CONFIG_MODULE_COMPRESS_GZIP
-> >> +# or CONFIG_MODULE_COMPRESS_XZ.
-> >> +
-> >> +mod_compress_cmd = true
-> >> +ifdef CONFIG_MODULE_COMPRESS
-> >> +  ifdef CONFIG_MODULE_COMPRESS_GZIP
-> >> +    mod_compress_cmd = gzip -n -9
-> >
-> > Please don't use gzip -9. The gain is very small, but it can make
-> > the time to compress much longer. Just use plain gzip.
-> 
-> Interesting:
-> 
-> $ time find * -name '*.ko' | xargs -n 1 gzip
-> real	0m9.404s
-> user	0m7.283s
-> sys	0m1.667s
-> $ du -c `find * -name '*.ko.gz'` | tail -n1
-> 56412	total
-> 
-> time find * -name '*.ko' | xargs -n 1 gzip -9
-> real	1m1.968s
-> user	0m58.850s
-> sys	0m1.786s
-> $ du -c `find * -name '*.ko.gz'` | tail -n1
-> 55764	total
-> 
-> $ time find * -name '*.ko' | xargs -n 1 xz
-> real	1m23.396s
-> user	1m13.893s
-> sys	0m9.134s
-> $ du -c `find * -name '*.ko.xz` | tail -n1
-> 46868	total
-> 
-> $ time find * -name '*.ko' | xargs -n 1 xz -9
-> real	1m47.202s
-> user	1m25.962s
-> sys	0m21.298s
-> $ du -c `find * -name '*.ko.xz` | tail -n1
-> 46868	total
-> 
-> So, Andi is right.  Please skip -9 for both options: it makes little
-> (.gz) or no (.xz) difference and it slows things down.
+The patch is available here:
 
-Thank you Andi and Rusty for the feedback. I'm current updating patches
-to drop -9 usage.
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
 
--- 
-Beber
+The short changelog is:
+
+Guenter Roeck (1):
+      fix qemu boot hang problem
+
+Juergen Gross (1):
+      save command pool address of Scsi_Host
+
+And the diffstat:
+
+ drivers/scsi/scsi.c     | 12 ++++++++++--
+ drivers/scsi/scsi_lib.c |  2 +-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+With full diff below.
+
+James
+
+---
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index df33060..d81f3cc 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -377,6 +377,10 @@ scsi_alloc_host_cmd_pool(struct Scsi_Host *shost)
+ 		pool->slab_flags |= SLAB_CACHE_DMA;
+ 		pool->gfp_mask = __GFP_DMA;
+ 	}
++
++	if (hostt->cmd_size)
++		hostt->cmd_pool = pool;
++
+ 	return pool;
+ }
+ 
+@@ -421,8 +425,10 @@ out:
+ out_free_slab:
+ 	kmem_cache_destroy(pool->cmd_slab);
+ out_free_pool:
+-	if (hostt->cmd_size)
++	if (hostt->cmd_size) {
+ 		scsi_free_host_cmd_pool(pool);
++		hostt->cmd_pool = NULL;
++	}
+ 	goto out;
+ }
+ 
+@@ -444,8 +450,10 @@ static void scsi_put_host_cmd_pool(struct Scsi_Host *shost)
+ 	if (!--pool->users) {
+ 		kmem_cache_destroy(pool->cmd_slab);
+ 		kmem_cache_destroy(pool->sense_slab);
+-		if (hostt->cmd_size)
++		if (hostt->cmd_size) {
+ 			scsi_free_host_cmd_pool(pool);
++			hostt->cmd_pool = NULL;
++		}
+ 	}
+ 	mutex_unlock(&host_cmd_pool_mutex);
+ }
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 9c44392..ce62e87 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1774,7 +1774,7 @@ static void scsi_request_fn(struct request_queue *q)
+ 	blk_requeue_request(q, req);
+ 	atomic_dec(&sdev->device_busy);
+ out_delay:
+-	if (atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
++	if (!atomic_read(&sdev->device_busy) && !scsi_device_blocked(sdev))
+ 		blk_delay_queue(q, SCSI_QUEUE_DELAY);
+ }
+ 
+
+
