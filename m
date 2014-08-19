@@ -1,228 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaHSWPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 18:15:20 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:35116 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbaHSWPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 18:15:17 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: linux-arm-kernel@lists.infradead.org
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <bf98697145bc3a79903162dec0ae7960>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <53F3CC71.8090005@rock-chips.com>
-Date: Wed, 20 Aug 2014 06:15:13 +0800
-From: Caesar Wang <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751964AbaHSWTW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 18:19:22 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:18148
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751688AbaHSWTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 18:19:21 -0400
+Message-ID: <1408486751.4058.37.camel@snotra.buserror.net>
+Subject: Re: [PATCH] powerpc: Make 256k pages depend on PPC32=n
+From: Scott Wood <scottwood@freescale.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Tue, 19 Aug 2014 17:19:11 -0500
+In-Reply-To: <1408484166-20711-1-git-send-email-bobby.prani@gmail.com>
+References: <1408484166-20711-1-git-send-email-bobby.prani@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
-        Eddie Cai <eddie.cai@rock-chips.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/4] pwm: rockchip: Allow polarity invert on rk3288
-References: <1408464476-28316-1-git-send-email-dianders@chromium.org> <1408464476-28316-3-git-send-email-dianders@chromium.org>
-In-Reply-To: <1408464476-28316-3-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=gbk; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:70b6:fbcb:548e:4486]
+X-ClientProxiedBy: CO1PR06CA053.namprd06.prod.outlook.com (10.242.160.43) To
+ BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0308EE423E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019006)(6009001)(199003)(377424004)(24454002)(189002)(51704005)(101416001)(50466002)(74662001)(92566001)(76482001)(95666004)(88136002)(87976001)(21056001)(79102001)(83072002)(89996001)(87286001)(85852003)(77096002)(107046002)(4396001)(80022001)(83322001)(77982001)(33646002)(110136001)(76176999)(102836001)(64706001)(77156001)(81542001)(23676002)(19580405001)(47776003)(20776003)(46102001)(42186005)(93916002)(86362001)(92726001)(106356001)(81342001)(50226001)(62966002)(74502001)(103116003)(99396002)(50986999)(19580395003)(31966008)(85306004)(104166001)(105586002)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:70b6:fbcb:548e:4486];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
-
-I reviewed it, the change is need.
-
-Reviewed-on: https://github.com/rkchrome/kernel.git
-Reviewed-by: Caesar Wang <caesar.wang@rock-chips.com>
-
-在 2014年08月20日 00:07, Doug Anderson 写道:
-> The rk3288 has the ability to invert the polarity of the PWM.  Let's
-> enable that ability.
->
-> To do this we increase the number of pwm_cells to 3 to allow using the
-> PWM_POLARITY_INVERTED flag.  Since the PWM driver on rk3288 is very
-> new, I thought this was OK.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Tue, 2014-08-19 at 17:36 -0400, Pranith Kumar wrote:
+> 256k pages are not tested on PPC32. On a randconfig I got the following error:
+> 
+> arch/powerpc/kernel/misc_32.S:1171: Error: operand out of range (0x0000000000010000 is not between 0xffffffffffff8000 and 0x0000000000007fff)
+> 
+> Disable 256K pages if PPC32=y
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 > ---
-> Changes in v3:
-> - Don't store a private copy of polarity.
-> - Use true instead of 1.
-> - Cleanup init order with "has_invert".
->
-> Changes in v2: None
->
->   .../devicetree/bindings/pwm/pwm-rockchip.txt       |  4 +-
->   drivers/pwm/pwm-rockchip.c                         | 48 ++++++++++++++++++----
->   2 files changed, 43 insertions(+), 9 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-> index d47d15a..b8be3d0 100644
-> --- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-> +++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-> @@ -7,8 +7,8 @@ Required properties:
->      "rockchip,vop-pwm": found integrated in VOP on RK3288 SoC
->    - reg: physical base address and length of the controller's registers
->    - clocks: phandle and clock specifier of the PWM reference clock
-> - - #pwm-cells: should be 2. See pwm.txt in this directory for a
-> -   description of the cell format.
-> + - #pwm-cells: must be 2 (rk2928) or 3 (rk3288). See pwm.txt in this directory
-> +   for a description of the cell format.
->   
->   Example:
->   
-> diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
-> index bdd8644..646aed2 100644
-> --- a/drivers/pwm/pwm-rockchip.c
-> +++ b/drivers/pwm/pwm-rockchip.c
-> @@ -24,7 +24,9 @@
->   #define PWM_ENABLE		(1 << 0)
->   #define PWM_CONTINUOUS		(1 << 1)
->   #define PWM_DUTY_POSITIVE	(1 << 3)
-> +#define PWM_DUTY_NEGATIVE	(0 << 3)
->   #define PWM_INACTIVE_NEGATIVE	(0 << 4)
-> +#define PWM_INACTIVE_POSITIVE	(1 << 4)
->   #define PWM_OUTPUT_LEFT		(0 << 5)
->   #define PWM_LP_DISABLE		(0 << 8)
->   
-> @@ -45,8 +47,10 @@ struct rockchip_pwm_regs {
->   struct rockchip_pwm_data {
->   	struct rockchip_pwm_regs regs;
->   	unsigned int prescaler;
-> +	bool has_invert;
->   
-> -	void (*set_enable)(struct pwm_chip *chip, bool enable);
-> +	void (*set_enable)(struct pwm_chip *chip,
-> +			   struct pwm_device *pwm, bool enable);
->   };
->   
->   static inline struct rockchip_pwm_chip *to_rockchip_pwm_chip(struct pwm_chip *c)
-> @@ -54,7 +58,8 @@ static inline struct rockchip_pwm_chip *to_rockchip_pwm_chip(struct pwm_chip *c)
->   	return container_of(c, struct rockchip_pwm_chip, chip);
->   }
->   
-> -static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
-> +static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip,
-> +				       struct pwm_device *pwm, bool enable)
->   {
->   	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
->   	u32 enable_conf = PWM_CTRL_OUTPUT_EN | PWM_CTRL_TIMER_EN;
-> @@ -70,14 +75,19 @@ static void rockchip_pwm_set_enable_v1(struct pwm_chip *chip, bool enable)
->   	writel_relaxed(val, pc->base + pc->data->regs.ctrl);
->   }
->   
-> -static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip, bool enable)
-> +static void rockchip_pwm_set_enable_v2(struct pwm_chip *chip,
-> +				       struct pwm_device *pwm, bool enable)
->   {
->   	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
->   	u32 enable_conf = PWM_OUTPUT_LEFT | PWM_LP_DISABLE | PWM_ENABLE |
-> -			  PWM_CONTINUOUS | PWM_DUTY_POSITIVE |
-> -			  PWM_INACTIVE_NEGATIVE;
-> +			  PWM_CONTINUOUS;
->   	u32 val;
->   
-> +	if (pwm->polarity == PWM_POLARITY_INVERSED)
-> +		enable_conf |= PWM_DUTY_NEGATIVE | PWM_INACTIVE_POSITIVE;
-> +	else
-> +		enable_conf |= PWM_DUTY_POSITIVE | PWM_INACTIVE_NEGATIVE;
-> +
->   	val = readl_relaxed(pc->base + pc->data->regs.ctrl);
->   
->   	if (enable)
-> @@ -124,6 +134,23 @@ static int rockchip_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
->   	return 0;
->   }
->   
-> +int rockchip_pwm_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-> +			      enum pwm_polarity polarity)
-> +{
-> +	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> +
-> +	if (!pc->data->has_invert)
-> +		return -ENOSYS;
-> +
-> +	/*
-> +	 * No action needed here because pwm->polarity will be set by the core
-> +	 * and the core will only change polarity when the PWM is not enabled.
-> +	 * We'll handle things in set_enable().
-> +	 */
-> +
-> +	return 0;
-> +}
-> +
->   static int rockchip_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
->   {
->   	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
-> @@ -133,7 +160,7 @@ static int rockchip_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
->   	if (ret)
->   		return ret;
->   
-> -	pc->data->set_enable(chip, true);
-> +	pc->data->set_enable(chip, pwm, true);
->   
->   	return 0;
->   }
-> @@ -142,13 +169,14 @@ static void rockchip_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
->   {
->   	struct rockchip_pwm_chip *pc = to_rockchip_pwm_chip(chip);
->   
-> -	pc->data->set_enable(chip, false);
-> +	pc->data->set_enable(chip, pwm, false);
->   
->   	clk_disable(pc->clk);
->   }
->   
->   static const struct pwm_ops rockchip_pwm_ops = {
->   	.config = rockchip_pwm_config,
-> +	.set_polarity = rockchip_pwm_set_polarity,
->   	.enable = rockchip_pwm_enable,
->   	.disable = rockchip_pwm_disable,
->   	.owner = THIS_MODULE,
-> @@ -173,6 +201,7 @@ static const struct rockchip_pwm_data pwm_data_v2 = {
->   		.ctrl = 0x0c,
->   	},
->   	.prescaler = 1,
-> +	.has_invert = true,
->   	.set_enable = rockchip_pwm_set_enable_v2,
->   };
->   
-> @@ -184,6 +213,7 @@ static const struct rockchip_pwm_data pwm_data_vop = {
->   		.ctrl = 0x00,
->   	},
->   	.prescaler = 1,
-> +	.has_invert = true,
->   	.set_enable = rockchip_pwm_set_enable_v2,
->   };
->   
-> @@ -230,6 +260,10 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
->   	pc->chip.ops = &rockchip_pwm_ops;
->   	pc->chip.base = -1;
->   	pc->chip.npwm = 1;
-> +	if (pc->data->has_invert) {
-> +		pc->chip.of_xlate = of_pwm_xlate_with_flags;
-> +		pc->chip.of_pwm_n_cells = 3;
-> +	}
->   
->   	ret = pwmchip_add(&pc->chip);
->   	if (ret < 0) {
+>  arch/powerpc/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index da16ffe..6cc518f 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -556,7 +556,7 @@ config PPC_64K_PAGES
+>  
+>  config PPC_256K_PAGES
+>  	bool "256k page size" if 44x
+> -	depends on !STDBINUTILS
+> +	depends on !PPC32 && !STDBINUTILS
+>  	help
+>  	  Make the page size 256k.
+>  
 
--- 
-Best regards,
-Caesar
+How will this ever be selected then?  44x is 32-bit only.
+
+-Scott
 
 
