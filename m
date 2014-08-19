@@ -1,59 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaHSJBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:01:48 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:56082 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaHSJBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:01:46 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-ed-53f3126cdf97
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: Paul.Zimmerman@synopsys.com
-Cc: gregkh@linuxfoundation.org, balbi@ti.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH RESEND v3 12/12] usb: dwc2/gadget: avoid disabling ep0
-Date: Tue, 19 Aug 2014 10:54:18 +0200
-Message-id: <1408438458-3317-13-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
-References: <1408438458-3317-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOLMWRmVeSWpSXmKPExsVy+t9jQd0coc/BBj9f8FnMetnOYnHwfr1F
-	8+L1bBaXd81hs1i0rJXZYu2Ru+wWjx5uZbV4cHgnuwOHx/65a9g9+rasYvTYsv8zo8fxG9uZ
-	PD5vkgtgjeKySUnNySxLLdK3S+DK6H3RyVxwm7ViyopFjA2M91i6GDk5JARMJL4t7WGFsMUk
-	LtxbzwZiCwlMZ5TYu6Kui5ELyG5nkjg/6RczSIJNQEdiy/cJjCC2iIC8xPWNN1lAipgFDjFK
-	vLpzjAkkISzgJvHj00ugIg4OFgFVic5DtiBhXgFXif7zaxghlslJnDw2GWwxJ1D87b5Z7BCL
-	XSQ2t55hm8DIu4CRYRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcHA9k9rBuLLB4hCjAAej
-	Eg+vwpePwUKsiWXFlblAx3AwK4nwOr74FCzEm5JYWZValB9fVJqTWnyIUZqDRUmc90CrdaCQ
-	QHpiSWp2ampBahFMlomDU6qBkefs1dJ0xQs2i/ob08JF9RmaZD5//77t2sz5cUVKvyX/sf0q
-	WNHXmtL65Of3C1LWzNd+zV4iNK0lWeTPiYQfpx8u6zkgVfXpfe36Px+2Pj7t0J639aSBU3en
-	Sv6T0wqyO5eJiYruPd/Ftygt5sb33fLfJu7Jvm9Yr/DDM33qHr6/evvzVR0bdJVYijMSDbWY
-	i4oTAe4Eb9sqAgAA
+	id S1753172AbaHSJCU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:02:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41285 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593AbaHSJCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 05:02:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,893,1400050800"; 
+   d="scan'208";a="578643952"
+Message-ID: <53F31291.20909@intel.com>
+Date: Tue, 19 Aug 2014 17:02:09 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+MIME-Version: 1.0
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>
+CC: Darren Hart <dvhart@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Max Eliaser <max.eliaser@intel.com>,
+        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 6/9] gpiolib: add API to get gpio desc and flags
+References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com> <1408172039-32513-7-git-send-email-mika.westerberg@linux.intel.com> <CAAVeFu+LRxcJkPRpQMYhyz-TTY1HB7qCEv44a8vTU=g1iKCsfA@mail.gmail.com> <20140819085631.GG1660@lahna.fi.intel.com>
+In-Reply-To: <20140819085631.GG1660@lahna.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Endpoint 0 should not be disabled, so we start loop counter from number 1.
-
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/dwc2/gadget.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 148ef3c..3c1dfe1 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -2929,7 +2929,7 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
- 		return -ENODEV;
+On 08/19/2014 04:56 PM, Mika Westerberg wrote:
+> On Mon, Aug 18, 2014 at 09:24:48AM -0700, Alexandre Courbot wrote:
+>> On Fri, Aug 15, 2014 at 11:53 PM, Mika Westerberg
+>> <mika.westerberg@linux.intel.com> wrote:
+>>> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+>>> index 2ebc9071e354..e6c2413a6fbf 100644
+>>> --- a/drivers/gpio/gpiolib.c
+>>> +++ b/drivers/gpio/gpiolib.c
+>>> @@ -2644,6 +2644,24 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
+>>>         return desc;
+>>>  }
+>>>
+>>> +struct gpio_desc *dev_get_gpiod_flags(struct device *dev, unsigned int idx,
+>>> +                                     enum gpio_lookup_flags *flags)
+>>> +{
+>>> +       struct gpio_desc *desc = ERR_PTR(-ENOENT);
+>>> +
+>>> +       if (!dev || !flags)
+>>> +               return ERR_PTR(-EINVAL);
+>>> +
+>>> +       /* Using device tree? */
+>>> +       if (IS_ENABLED(CONFIG_OF) && dev->of_node)
+>>> +               desc = of_find_gpio(dev, NULL, idx, flags);
+>>> +       else if (IS_ENABLED(CONFIG_ACPI) && ACPI_COMPANION(dev))
+>>> +               desc = acpi_get_gpiod_flags(dev, idx, flags);
+>>> +
+>>> +       return desc;
+>>> +}
+>>> +EXPORT_SYMBOL(dev_get_gpiod_flags);
+>>
+>> Putting aside the fact that this function is clearly ACPI-centric (no
+>> con_id parameter and no handling of the platform interface), I have
+>> two big problems with it and it ending up in the consumer interface:
+>>
+>> 1) The returned descriptor is not requested by gpiolib, which means no
+>> check is made about whether the GPIO has already been requested by
+>> someone else, and another driver can very well request the same GPIO
+>> later and obtain it. Any descriptor returned by a function in
+>> consumer.h *must* be properly requested. Furthermore the 1:1 mapping
+>> between GPIO descriptors and GPIO numbers is not something we can take
+>> for granted (since it will likely change soon), so this practice is
+>> definitely to ban.
+> 
+> My bad, somehow I missed the part that it never requested the GPIO.
+> Thanks for pointing it out.
+> 
+>> 2) It exposes the GPIO flags, while they are supposed to be opaque to consumers.
+> 
+> And this, of course we should be using gpiod_is_active_low() and similar
+> functions that work with descriptors.
+> 
+>> These two points would somehow be acceptable if this function was
+>> gpiolib-private, but here it is clearly not the case and this allows
+>> pretty nasty thing to happen. Basically you are using it to take
+>> advantage of the gpiod lookup mechanism and then quickly fall back to
+>> the legacy integer interface. That's really not something to encourage
+>> - these drivers should be converted to use gpiod internally (while
+>> preserving integer-based lookup for compatiblity, if needed).
+>>
+>> In patch 8 you say:
+>>
+>> "this can be solved by adding a new field of type
+>> struct gpio_desc but then there is another problem: the devm_gpiod_get
+>> needs to operate on the button device instead of its parent device that
+>> has the driver binded, so when the driver is unloaded, the resources for
+>> the gpio will not get freed automatically."
+>>
+>> I'd very much prefer that you use the non-devm variant of gpiod_get()
+>> and free the resources manually when the driver is unloaded than this
+>> workaround that introduces an loophole in the gpiod consumer lookup
+>> functions.
+> 
+> I agree and we are going to rework this and the consumer patches to do
+> exactly what you say.
  
- 	/* all endpoints should be shutdown */
--	for (ep = 0; ep < hsotg->num_of_eps; ep++)
-+	for (ep = 1; ep < hsotg->num_of_eps; ep++)
- 		s3c_hsotg_ep_disable(&hsotg->eps[ep].ep);
- 
- 	spin_lock_irqsave(&hsotg->lock, flags);
--- 
-1.9.1
+I agree, and thanks for the suggestions Alexandre.
+Will work on this and send an update when it's ready.
 
+Regards,
+Aaron
