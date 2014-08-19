@@ -1,109 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaHSKji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 06:39:38 -0400
-Received: from smtp-out-151.synserver.de ([212.40.185.151]:1194 "EHLO
-	smtp-out-134.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750721AbaHSKjh (ORCPT
+	id S1752183AbaHSKlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 06:41:37 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:41557 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaHSKle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 06:39:37 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22355
-Message-ID: <53F32965.8000302@metafoo.de>
-Date: Tue, 19 Aug 2014 12:39:33 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
+	Tue, 19 Aug 2014 06:41:34 -0400
+Message-ID: <53F3297A.1040309@linaro.org>
+Date: Tue, 19 Aug 2014 18:39:54 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-CC: "shengjiu.wang@freescale.com" <shengjiu.wang@freescale.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "perex@perex.cz" <perex@perex.cz>,
-        "nicoleotsuka@gmail.com" <nicoleotsuka@gmail.com>,
-        "shc_work@mail.ru" <shc_work@mail.ru>,
-        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
-        "xobs@kosagi.com" <xobs@kosagi.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        "timur@tabi.org" <timur@tabi.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH V1 1/3] ASoC: fsl: Kconfig: remove dependence
- of SND_IMX_SOC for SND_SOC_IMX_PCM_DMA
-References: <cover.1408350626.git.shengjiu.wang@freescale.com>	<f30ba4e2c4eb6702fa40bd255036e6e9ad6eb47d.1408350626.git.shengjiu.wang@freescale.com>	<53F22F5E.2090601@metafoo.de>	<20140819074103.GA5806@audiosh1>	<d7b06608abcc4f098789f63cb9f36eef@BN1PR0301MB0609.namprd03.prod.outlook.com>	<20140819082108.GB5806@audiosh1>	<3a0c98ca698e4d38b3e92f339049b883@BN1PR0301MB0609.namprd03.prod.outlook.com> <s5hha184viu.wl-tiwai@suse.de>
-In-Reply-To: <s5hha184viu.wl-tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Sudeep Holla <sudeep.holla@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>
+CC: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI flags
+ for PSCI init
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org> <53F246D4.7040807@arm.com>
+In-Reply-To: <53F246D4.7040807@arm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/19/2014 12:35 PM, Takashi Iwai wrote:
-> At Tue, 19 Aug 2014 09:00:06 +0000,
-> Li.Xiubo@freescale.com wrote:
+On 2014-8-19 2:32, Sudeep Holla wrote:
+> On 04/08/14 16:28, Hanjun Guo wrote:
+>> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
+>> the former signals to the OS that the hardware is PSCI compliant.
+>> The latter selects the appropriate conduit for PSCI calls by
+>> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
+>> (SMC).
 >>
->> How about the following :
+>> FADT table contains such information, parse FADT to get the flags
+>> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
+>> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
 >>
+>> At the same time, only ACPI 5.1 or higher verison supports PSCI,
+>> and FADT Major.Minor version was introduced in ACPI 5.1, so we
+>> will check the version and only parse FADT table with version >= 5.1.
 >>
->> diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
->> index 5ae777a..d42f18c 100644
->> --- a/sound/soc/fsl/Kconfig
->> +++ b/sound/soc/fsl/Kconfig
->> @@ -15,7 +15,7 @@ config SND_SOC_FSL_ASRC
->>   config SND_SOC_FSL_SAI
->>          tristate "Synchronous Audio Interface (SAI) module support"
->>          select REGMAP_MMIO
->> -       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
->> +       select SND_SOC_IMX_PCM_DMA
->>          select SND_SOC_GENERIC_DMAENGINE_PCM
->>          help
->>            Say Y if you want to add Synchronous Audio Interface (SAI)
->> @@ -25,7 +25,7 @@ config SND_SOC_FSL_SAI
+>> If firmware provides ACPI tables with ACPI version less than 5.1,
+>> OS will be messed up with those information and have no way to
+>> bring up secondery CPUs, so disable ACPI if we get an FADT table
+>> with version less that 5.1.
 >>
->>   config SND_SOC_FSL_SSI
->>          tristate "Synchronous Serial Interface module support"
->> -       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
->> +       select SND_SOC_IMX_PCM_DMA
->>          select SND_SOC_IMX_PCM_FIQ if SND_IMX_SOC != n && (MXC_TZIC || MXC_AVIC)
->>          select REGMAP_MMIO
->>          help
->> @@ -37,7 +37,7 @@ config SND_SOC_FSL_SSI
->>   config SND_SOC_FSL_SPDIF
->>          tristate "Sony/Philips Digital Interface module support"
->>          select REGMAP_MMIO
->> -       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
->> +       select SND_SOC_IMX_PCM_DMA
->>          select SND_SOC_IMX_PCM_FIQ if SND_IMX_SOC != n && (MXC_TZIC || MXC_AVIC)
->>          help
->>            Say Y if you want to add Sony/Philips Digital Interface (SPDIF)
->> @@ -48,7 +48,7 @@ config SND_SOC_FSL_SPDIF
->>   config SND_SOC_FSL_ESAI
->>          tristate "Enhanced Serial Audio Interface (ESAI) module support"
->>          select REGMAP_MMIO
->> -       select SND_SOC_IMX_PCM_DMA if SND_IMX_SOC != n
->> +       select SND_SOC_IMX_PCM_DMA
->>          help
->>            Say Y if you want to add Enhanced Synchronous Audio Interface
->>            (ESAI) support for the Freescale CPUs.
->> @@ -76,6 +76,7 @@ config SND_SOC_FSL_ASOC_CARD
+[...]
 >>
->>   config SND_SOC_IMX_PCM_DMA
->>          tristate
->> +       depends on SND_IMX_SOC
->>          select SND_SOC_GENERIC_DMAENGINE_PCM
->>
->>   config SND_SOC_IMX_AUDMUX
->
-> I see the problem has been addressed, so JFYI: a reverse selection
-> doesn't resolve "depends on".  It's a known shortcoming.  That is, a
-> selected item can select further others, but cannot depend on others.
+>> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
+>> +{
+>> +    struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+>> +
+>> +    /*
+>> +     * Revision in table header is the FADT Major version,
+>> +     * and there is a minor version of FADT which was introduced
+>> +     * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
+>> +     * to get arm boot flags, or we will disable ACPI.
+>> +     */
+>> +    if (table->revision < 5 || fadt->minor_revision < 1) {
+> 
+>                 &&
 
-The item will still be selected regardless of its dependencies, but Kconfig 
-will print a warning if one or more of the dependencies are not met along 
-with the dependency chain that causes the warning. So you'll have a clue why 
-things go wrong.
+Catalin also pointed out this bug :), but && is not enough, for example,
+this would not trigger of revision 4.1, although 4.1 is not exist, but
+the code will still confusing people, so I updated the code as:
 
-- Lars
++       if (table->revision > 5 ||
++           (table->revision == 5 && fadt->minor_revision >= 1)) {
++               return 0;
++       } else {
++               pr_info("FADT revision is %d.%d, no PSCI support, should be 5.1
+or higher\n",
++                       table->revision, fadt->minor_revision);
++               disable_acpi();
++               return -EINVAL;
++       }
+
+> 
+>> +        pr_info("FADT version is %d.%d, no PSCI support, should be 5.1 or
+>> higher\n",
+>> +            table->revision, fadt->minor_revision);
+>> +        disable_acpi();
+> 
+> Instead of disabling ACPI at multiple places in the boot sequence, can't
+> it be done once if acpi_boot_init failed ?
+> 
+>> +        return -EINVAL;
+>> +    }
+>> +
+>> +    return 0;
+>> +}
+>> +
+>>   /*
+>>    * acpi_boot_table_init() called from setup_arch(), always.
+>>    *    1. find RSDP and get its address, and then find XSDT
+>> @@ -68,6 +90,21 @@ void __init acpi_boot_table_init(void)
+>>       }
+>>   }
+>>
+>> +int __init acpi_boot_init(void)
+>> +{
+>> +    int err = 0;
+>> +
+>> +    /* If acpi_disabled, bail out */
+>> +    if (acpi_disabled)
+>> +        return -ENODEV;
+>> +
+>> +    err = acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
+>> +    if (err)
+>> +        pr_err("Can't find FADT\n");
+>> +
+>> +    return err;
+>> +}
+>> +
+>>   /*
+>>    * acpi_suspend_lowlevel() - save kernel state and suspend.
+>>    *
+>> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
+>> index 9e9798f..2ad2084 100644
+>> --- a/arch/arm64/kernel/psci.c
+>> +++ b/arch/arm64/kernel/psci.c
+>> @@ -15,6 +15,7 @@
+>>
+>>   #define pr_fmt(fmt) "psci: " fmt
+>>
+>> +#include <linux/acpi.h>
+>>   #include <linux/init.h>
+>>   #include <linux/of.h>
+>>   #include <linux/smp.h>
+>> @@ -231,6 +232,33 @@ static void psci_sys_poweroff(void)
+>>       invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
+>>   }
+>>
+>> +static void psci_0_2_set_functions(void)
+>> +{
+>> +    pr_info("Using standard PSCI v0.2 function IDs\n");
+>> +    psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+>> +    psci_ops.cpu_suspend = psci_cpu_suspend;
+>> +
+>> +    psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+>> +    psci_ops.cpu_off = psci_cpu_off;
+>> +
+>> +    psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+>> +    psci_ops.cpu_on = psci_cpu_on;
+>> +
+>> +    psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+>> +    psci_ops.migrate = psci_migrate;
+>> +
+>> +    psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+>> +    psci_ops.affinity_info = psci_affinity_info;
+>> +
+>> +    psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+>> +        PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+>> +    psci_ops.migrate_info_type = psci_migrate_info_type;
+>> +
+>> +    arm_pm_restart = psci_sys_reset;
+>> +
+>> +    pm_power_off = psci_sys_poweroff;
+>> +}
+>> +
+> 
+> Nit: IMO may be you can move these refactoring as separate patch before
+> ACPI related changes ?
+
+I'm ok with it, will format another patch and place it in the
+beginning of this patch set.
+
+> 
+>>   /*
+>>    * PSCI Function IDs for v0.2+ are well defined so use
+>>    * standard values.
+>> @@ -264,29 +292,7 @@ static int psci_0_2_init(struct device_node *np)
+>>           }
+>>       }
+>>
+>> -    pr_info("Using standard PSCI v0.2 function IDs\n");
+>> -    psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+>> -    psci_ops.cpu_suspend = psci_cpu_suspend;
+>> -
+>> -    psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+>> -    psci_ops.cpu_off = psci_cpu_off;
+>> -
+>> -    psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+>> -    psci_ops.cpu_on = psci_cpu_on;
+>> -
+>> -    psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+>> -    psci_ops.migrate = psci_migrate;
+>> -
+>> -    psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+>> -    psci_ops.affinity_info = psci_affinity_info;
+>> -
+>> -    psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+>> -        PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+>> -    psci_ops.migrate_info_type = psci_migrate_info_type;
+>> -
+>> -    arm_pm_restart = psci_sys_reset;
+>> -
+>> -    pm_power_off = psci_sys_poweroff;
+>> +    psci_0_2_set_functions();
+>>
+>>   out_put_node:
+>>       of_node_put(np);
+>> @@ -333,6 +339,40 @@ out_put_node:
+>>       return err;
+>>   }
+>>
+>> +#ifdef CONFIG_ACPI
+>> +static int get_set_conduit_method_acpi(void)
+>> +{
+>> +    pr_info("probing for conduit method from ACPI.\n");
+>> +
+>> +    if (acpi_psci_use_hvc())
+>> +        invoke_psci_fn = __invoke_psci_fn_hvc;
+>> +    else
+>> +        invoke_psci_fn = __invoke_psci_fn_smc;
+>> +
+>> +    return 0;
+>> +}
+>> +
+>> +/* We use PSCI 0.2+ when ACPI is deployed */
+>> +static int psci_0_2_init_acpi(void)
+> 
+> May be this can be renamed psci_acpi_init and called from setup directly
+> instead of calling from DT function with acpi_disabled check.
+
+Also suggested by Catalin, will do it :)
+
+> 
+>> +{
+>> +    if (!acpi_psci_present()) {
+>> +        pr_info("is not implemented in ACPI.\n");
+>> +        return -EOPNOTSUPP;
+>> +    }
+>> +
+>> +    get_set_conduit_method_acpi();
+>> +
+>> +    psci_0_2_set_functions();
+>> +
+>> +    return 0;
+>> +}
+>> +#else
+>> +static inline int psci_0_2_init_acpi(void)
+>> +{
+>> +    return -ENODEV;
+>> +}
+>> +#endif
+>> +
+>>   static const struct of_device_id psci_of_match[] __initconst = {
+>>       { .compatible = "arm,psci",    .data = psci_0_1_init},
+>>       { .compatible = "arm,psci-0.2",    .data = psci_0_2_init},
+>> @@ -345,6 +385,9 @@ int __init psci_init(void)
+>>       const struct of_device_id *matched_np;
+>>       psci_initcall_t init_fn;
+>>
+>> +    if (!acpi_disabled)
+>> +        return psci_0_2_init_acpi();
+>> +
+> 
+> As mentioned above you need not modify this.
+> 
+>>       np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
+>>
+>>       if (!np)
+>> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+>> index 85c6326..dfc4e4f3 100644
+>> --- a/arch/arm64/kernel/setup.c
+>> +++ b/arch/arm64/kernel/setup.c
+>> @@ -395,6 +395,8 @@ void __init setup_arch(char **cmdline_p)
+>>       efi_idmap_init();
+>>
+>>       cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+>> +    acpi_boot_init();
+>> +
+> 
+> Check for the return error here and disable ACPI once rather than at
+> multiple places all over.
+
+ok.
+
+Thanks
+Hanjun
 
