@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211AbaHSNDB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 09:03:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51127 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaHSNC5 (ORCPT
+	id S1753276AbaHSNHh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 09:07:37 -0400
+Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:52210 "EHLO
+	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752610AbaHSNHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 09:02:57 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 3/8] of: Decrement refcount of previous endpoint in of_graph_get_next_endpoint
-Date: Tue, 19 Aug 2014 15:02:41 +0200
-Message-Id: <1408453366-1366-4-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.0.rc1
-In-Reply-To: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
-References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 19 Aug 2014 09:07:35 -0400
+Message-ID: <1408453651.3746.41.camel@linaro1.home>
+Subject: [PATCH] video: ARM CLCD: Ensure bits-per-pixel is a power of 2 and
+ <= 32
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pawel Moll <Pawel.Moll@arm.com>, linux-arm-kernel@lists.infradead.org
+Date: Tue, 19 Aug 2014 14:07:31 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Decrementing the reference count of the previous endpoint node allows to
-use the of_graph_get_next_endpoint function in a for_each_... style macro.
-Prior to this patch, all current users of this function that actually pass
-a non-NULL prev parameter should be changed to not decrement the passed
-prev argument's refcount themselves.
+If the device-tree specifies a max-memory-bandwidth property then
+the CLCD driver uses that to calculate the bits-per-pixel supported,
+however, it doesn't ensure that the result is a sane value, i.e. a
+power of 2 and <= 32 as the rest of the code assumes.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Acked-by: Pawel Moll <pawel.moll@arm.com>
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
 ---
- drivers/of/base.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index d8574ad..a49b5628 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -2058,8 +2058,7 @@ EXPORT_SYMBOL(of_graph_parse_endpoint);
-  * @prev: previous endpoint node, or NULL to get first
-  *
-  * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-- * of the passed @prev node is not decremented, the caller have to use
-- * of_node_put() on it when done.
-+ * of the passed @prev node is decremented.
-  */
- struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 					struct device_node *prev)
-@@ -2095,12 +2094,6 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
- 			      __func__, prev->full_name))
- 			return NULL;
--
--		/*
--		 * Avoid dropping prev node refcount to 0 when getting the next
--		 * child below.
--		 */
--		of_node_get(prev);
- 	}
+This fixes code which is new in 3.17 (commit d10715be03) and so I assume
+is a candidate for adding to a coming -rc ? Without the fix, people can
+be left (as I was) with a blank non-functioning screen even if they
+create a valid device-tree for the new driver functionality.
+
+ drivers/video/fbdev/amba-clcd.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/fbdev/amba-clcd.c b/drivers/video/fbdev/amba-clcd.c
+index beadd3e..98b66b7 100644
+--- a/drivers/video/fbdev/amba-clcd.c
++++ b/drivers/video/fbdev/amba-clcd.c
+@@ -24,6 +24,7 @@
+ #include <linux/list.h>
+ #include <linux/amba/bus.h>
+ #include <linux/amba/clcd.h>
++#include <linux/bitops.h>
+ #include <linux/clk.h>
+ #include <linux/hardirq.h>
+ #include <linux/dma-mapping.h>
+@@ -650,6 +651,7 @@ static int clcdfb_of_init_display(struct clcd_fb *fb)
+ {
+ 	struct device_node *endpoint;
+ 	int err;
++	int bpp;
+ 	u32 max_bandwidth;
+ 	u32 tft_r0b0g0[3];
  
- 	while (1) {
+@@ -667,11 +669,15 @@ static int clcdfb_of_init_display(struct clcd_fb *fb)
+ 
+ 	err = of_property_read_u32(fb->dev->dev.of_node, "max-memory-bandwidth",
+ 			&max_bandwidth);
+-	if (!err)
+-		fb->panel->bpp = 8 * max_bandwidth / (fb->panel->mode.xres *
++	if (!err) {
++		bpp = 8 * max_bandwidth / (fb->panel->mode.xres *
+ 				fb->panel->mode.yres * fb->panel->mode.refresh);
+-	else
+-		fb->panel->bpp = 32;
++		bpp = rounddown_pow_of_two(bpp);
++		if (bpp > 32)
++			bpp = 32;
++	} else
++		bpp = 32;
++	fb->panel->bpp = bpp;
+ 
+ #ifdef CONFIG_CPU_BIG_ENDIAN
+ 	fb->panel->cntl |= CNTL_BEBO;
 -- 
-2.1.0.rc1
+2.0.1
+
 
