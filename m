@@ -1,93 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaHSOuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:50:13 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:54529 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbaHSOuK (ORCPT
+	id S1753453AbaHSOvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:51:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58835 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933AbaHSOtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:50:10 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, f.fainelli@gmail.com,
-        bhutchings@solarflare.com, Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v4 2/2] net: moxa: replace build_skb() with netdev_alloc_skb_ip_align() / memcpy()
-Date: Tue, 19 Aug 2014 16:49:44 +0200
-Message-Id: <1408459784-9385-2-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1408459784-9385-1-git-send-email-jonas.jensen@gmail.com>
-References: <1408459784-9385-1-git-send-email-jonas.jensen@gmail.com>
+	Tue, 19 Aug 2014 10:49:00 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH v8 6/9] arm: netx: Migrate DEBUG_LL macros to shared directory
+Date: Tue, 19 Aug 2014 15:48:32 +0100
+Message-Id: <1408459715-10151-7-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>
+References: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>
+ <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-build_skb() is used to make skbs out of existing RX ring memory
-which is bad because the RX ring is allocated only once, on probe.
-Memory corruption occur because said memory is reclaimed, i.e.
-__kfree_skb() (and eventually put_page()).
+As part of the migration we introduce DEBUG_UART_PHYS/DEBUG_UART_VIRT
+which default to UART1 but allow a user to configure UART2 or UART3.
+We also introduce symbolic names for the registers and flags.
 
-Replace build_skb() with netdev_alloc_skb_ip_align() and use memcpy().
-Also, synchronize DMA memory before passing skb to napi_gro_receive().
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=69041
-
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Acked-by: Arnd Bergmann <arnd.bergmann@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
 ---
+ arch/arm/Kconfig.debug                        | 17 +++++++++++--
+ arch/arm/include/debug/netx.S                 | 36 +++++++++++++++++++++++++++
+ arch/arm/mach-netx/include/mach/debug-macro.S | 36 ---------------------------
+ 3 files changed, 51 insertions(+), 38 deletions(-)
+ create mode 100644 arch/arm/include/debug/netx.S
+ delete mode 100644 arch/arm/mach-netx/include/mach/debug-macro.S
 
-Notes:
-    The original motivation was to avoid memcpy(), since the memory is
-    already allocated, why make a copy.
-    
-    Maybe the copy can be avoided updating RX ring descriptor addresses;
-    new memory must be allocated just the same, the only difference that
-    the controller could write directly to it.
-    
-    This fixes errors due to memory corruption, such as the following,
-    seen on wget download (or ncftp):
-    
-    "read error: Bad address"
-    
-    On receiving error, wget exits without resuming (busybox default).
-    
-    Changes since v3:
-    
-    1. commit message reworded
-    
-    Applies to next-20140818
-
- drivers/net/ethernet/moxa/moxart_ether.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
-index aa45607..17c9f0e 100644
---- a/drivers/net/ethernet/moxa/moxart_ether.c
-+++ b/drivers/net/ethernet/moxa/moxart_ether.c
-@@ -226,14 +226,21 @@ static int moxart_rx_poll(struct napi_struct *napi, int budget)
- 		if (len > RX_BUF_SIZE)
- 			len = RX_BUF_SIZE;
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 01f4ee2..d71427e 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -447,6 +447,14 @@ choice
+ 		  Say Y here if you want kernel low-level debugging support
+ 		  on Vybrid based platforms.
  
--		skb = build_skb(priv->rx_buf[rx_head], priv->rx_buf_size);
-+		dma_sync_single_for_cpu(&ndev->dev,
-+					priv->rx_mapping[rx_head],
-+					priv->rx_buf_size, DMA_FROM_DEVICE);
-+		skb = netdev_alloc_skb_ip_align(ndev, len);
- 		if (unlikely(!skb)) {
--			net_dbg_ratelimited("build_skb failed\n");
-+			net_dbg_ratelimited("netdev_alloc_skb_ip_align failed\n");
- 			priv->stats.rx_dropped++;
- 			priv->stats.rx_errors++;
- 		}
--
-+		memcpy(skb->data, priv->rx_buf[rx_head], len);
- 		skb_put(skb, len);
-+		dma_sync_single_for_device(&ndev->dev,
-+					   priv->rx_mapping[rx_head],
-+					   priv->rx_buf_size, DMA_FROM_DEVICE);
++	config DEBUG_NETX_UART
++		bool "Kernel low-level debugging messages via NetX UART"
++		depends on ARCH_NETX
++		select DEBUG_UART_NETX
++		help
++		  Say Y here if you want kernel low-level debugging support
++		  on Hilscher NetX based platforms.
 +
- 		skb->protocol = eth_type_trans(skb, ndev);
- 		napi_gro_receive(&priv->napi, skb);
- 		rx++;
+ 	config DEBUG_NOMADIK_UART
+ 		bool "Kernel low-level debugging messages via NOMADIK UART"
+ 		depends on ARCH_NOMADIK
+@@ -1074,6 +1082,7 @@ config DEBUG_LL_INCLUDE
+ 				 DEBUG_IMX6SX_UART
+ 	default "debug/ks8695.S" if DEBUG_KS8695_UART
+ 	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
++	default "debug/netx.S" if DEBUG_NETX_UART
+ 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
+ 	default "debug/s3c24xx.S" if DEBUG_S3C24XX_UART
+ 	default "debug/s5pv210.S" if DEBUG_S5PV210_UART
+@@ -1106,6 +1115,7 @@ config DEBUG_UART_8250
+ 
+ config DEBUG_UART_PHYS
+ 	hex "Physical base address of debug UART"
++	default 0x00100a00 if DEBUG_NETX_UART
+ 	default 0x01c20000 if DEBUG_DAVINCI_DMx_UART0
+ 	default 0x01c28000 if DEBUG_SUNXI_UART0
+ 	default 0x01c28400 if DEBUG_SUNXI_UART1
+@@ -1176,10 +1186,12 @@ config DEBUG_UART_PHYS
+ 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
+ 		DEBUG_LL_UART_EFM32 || \
+ 		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
+-		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART
++		DEBUG_MSM_UART || DEBUG_NETX_UART || DEBUG_QCOM_UARTDM || \
++		DEBUG_S3C24XX_UART
+ 
+ config DEBUG_UART_VIRT
+ 	hex "Virtual base address of debug UART"
++	default 0xe0000a00 if DEBUG_NETX_UART
+ 	default 0xe0010fe0 if ARCH_RPC
+ 	default 0xe1000000 if DEBUG_MSM_UART
+ 	default 0xf0000be0 if ARCH_EBSA110
+@@ -1247,7 +1259,8 @@ config DEBUG_UART_VIRT
+ 	default DEBUG_UART_PHYS if !MMU
+ 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
+ 		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
+-		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART
++		DEBUG_MSM_UART || DEBUG_NETX_UART || DEBUG_QCOM_UARTDM || \
++		DEBUG_S3C24XX_UART
+ 
+ config DEBUG_UART_8250_SHIFT
+ 	int "Register offset shift for the 8250 debug UART"
+diff --git a/arch/arm/include/debug/netx.S b/arch/arm/include/debug/netx.S
+new file mode 100644
+index 0000000..cf7522a
+--- /dev/null
++++ b/arch/arm/include/debug/netx.S
+@@ -0,0 +1,36 @@
++/*
++ * Debugging macro include header
++ *
++ *  Copyright (C) 1994-1999 Russell King
++ *  Moved from linux/arch/arm/kernel/debug.S by Ben Dooks
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++*/
++
++#define UART_DATA 0
++#define UART_FLAG 0x18
++#define UART_FLAG_BUSY (1 << 3)
++
++		.macro	addruart, rp, rv, tmp
++		ldr	\rp, =CONFIG_DEBUG_UART_PHYS
++		ldr	\rp, =CONFIG_DEBUG_UART_VIRT
++		.endm
++
++		.macro	senduart,rd,rx
++		str	\rd, [\rx, #UART_DATA]
++		.endm
++
++		.macro	busyuart,rd,rx
++1002:		ldr	\rd, [\rx, #UART_FLAG]
++		tst	\rd, #UART_FLAG_BUSY
++		bne	1002b
++		.endm
++
++		.macro	waituart,rd,rx
++1001:		ldr	\rd, [\rx, #UART_FLAG]
++		tst	\rd, #UART_FLAG_BUSY
++		bne	1001b
++		.endm
+diff --git a/arch/arm/mach-netx/include/mach/debug-macro.S b/arch/arm/mach-netx/include/mach/debug-macro.S
+deleted file mode 100644
+index 247781e..0000000
+--- a/arch/arm/mach-netx/include/mach/debug-macro.S
++++ /dev/null
+@@ -1,36 +0,0 @@
+-/* arch/arm/mach-netx/include/mach/debug-macro.S
+- *
+- * Debugging macro include header
+- *
+- *  Copyright (C) 1994-1999 Russell King
+- *  Moved from linux/arch/arm/kernel/debug.S by Ben Dooks
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+-*/
+-
+-#include "hardware.h"
+-
+-		.macro	addruart, rp, rv, tmp
+-		mov	\rp, #0x00000a00
+-		orr	\rv, \rp, #io_p2v(0x00100000)	@ virtual
+-		orr	\rp, \rp, #0x00100000		@ physical
+-		.endm
+-
+-		.macro	senduart,rd,rx
+-		str	\rd, [\rx, #0]
+-		.endm
+-
+-		.macro	busyuart,rd,rx
+-1002:		ldr	\rd, [\rx, #0x18]
+-		tst	\rd, #(1 << 3)
+-		bne	1002b
+-		.endm
+-
+-		.macro	waituart,rd,rx
+-1001:		ldr	\rd, [\rx, #0x18]
+-		tst	\rd, #(1 << 3)
+-		bne	1001b
+-		.endm
 -- 
-1.8.2.1
+1.9.3
 
