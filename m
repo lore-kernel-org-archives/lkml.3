@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaHSQu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 12:50:58 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:55550 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696AbaHSQuy (ORCPT
+	id S1753443AbaHSQus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 12:50:48 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:60612 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaHSQuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 12:50:54 -0400
+	Tue, 19 Aug 2014 12:50:44 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
@@ -22,10 +22,13 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         Dave Martin <Dave.Martin@arm.com>, Fabio Estevam <festevam@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Nicolas Pitre <nico@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH v10 10/19] irqchip: gic: Group 0 workaround.
-Date: Tue, 19 Aug 2014 17:46:00 +0100
-Message-Id: <1408466769-20004-11-git-send-email-daniel.thompson@linaro.org>
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Sricharan R <r.sricharan@ti.com>
+Subject: [PATCH v10 07/19] irqchip: gic: Add support for FIQ management
+Date: Tue, 19 Aug 2014 17:45:57 +0100
+Message-Id: <1408466769-20004-8-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408466769-20004-1-git-send-email-daniel.thompson@linaro.org>
 References: <1408369264-14242-1-git-send-email-daniel.thompson@linaro.org>
@@ -34,106 +37,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An ARM system based on GICv1 that runs by default in secure mode and
-uses both group 0 and group 1 interrupts (in order to exploit FIQ)
-will suffer a problem where the IRQ handler occasionally spuriously
-acknowledges a group 0 (FIQ) interrupt.
+This patch introduces callbacks to route interrupts to or away
+from the FIQ signal and registers these callbacks with the FIQ
+infrastructure (if the device can supports it).
 
-This can be prevented by ensuring the IRQ handler makes non-secure
-memory access to the GIC registers but this is complex because
-the non-secure bits cannot be apply to 4k pages (the bit is one level
-up in the page table and applies to 1MB at a time).
+Both these aspects combine and allow a driver to deploy a FIQ handler
+without any machine specific knowledge; it can be used effectively on
+multi-platform kernels.
 
-This workaround uses an alternative approach that spots the spurious
-acknowledgment and regenerates the FIQ. This keeps the workaround
-exclusively within the GIC driver (although there is a runtime
-perforamnce penalty resulting from this approach).
-
-Reported-by: Harro Haan <hrhaan@gmail.com>
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Tested-by: Harro Haan <hrhaan@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Sricharan R <r.sricharan@ti.com>
 ---
- drivers/irqchip/irq-gic.c | 52 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 49 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-gic.c | 69 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 69 insertions(+)
 
 diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 8834749..bda5a91 100644
+index 423707c..6fa0542 100644
 --- a/drivers/irqchip/irq-gic.c
 +++ b/drivers/irqchip/irq-gic.c
-@@ -279,14 +279,59 @@ static int gic_set_wake(struct irq_data *d, unsigned int on)
- #define gic_set_wake	NULL
- #endif
+@@ -342,6 +342,69 @@ static struct irq_chip gic_chip = {
+ };
  
-+#ifdef CONFIG_FIQ
-+/* This is a software emulation of the Aliased Interrupt Acknowledge Register
-+ * (GIC_AIAR) found in GICv2+.
+ #ifdef CONFIG_FIQ
++/*
++ * Shift an interrupt between Group 0 and Group 1.
++ *
++ * In addition to changing the group we also modify the priority to
++ * match what "ARM strongly recommends" for a system where no Group 1
++ * interrupt must ever preempt a Group 0 interrupt.
 + */
-+static u32 gic_handle_spurious_group_0(struct gic_chip_data *gic, u32 irqstat)
++static void gic_set_group_irq(struct irq_data *d, int group)
 +{
-+	u32 irqnr = irqstat & GICC_IAR_INT_ID_MASK;
-+	void __iomem *dist_base = gic_data_dist_base(gic);
-+	u32 offset, mask;
++	unsigned int grp_reg = gic_irq(d) / 32 * 4;
++	u32 grp_mask = 1 << (gic_irq(d) % 32);
++	u32 grp_val;
 +
-+	if (!gic_data_fiq_enable(gic) || irqnr >= 1021)
-+		return irqstat;
++	unsigned int pri_reg = (gic_irq(d) / 4) * 4;
++	u32 pri_mask = 1 << (7 + ((gic_irq(d) % 4) * 8));
++	u32 pri_val;
 +
-+	offset = irqnr / 32 * 4;
-+	mask = 1 << (irqnr % 32);
-+	if (readl_relaxed(dist_base + GIC_DIST_IGROUP + offset) & mask)
-+		return irqstat;
++	raw_spin_lock(&irq_controller_lock);
 +
-+	/* this interrupt must be taken as a FIQ so put it back into the
-+	 * pending state and end our own servicing of it.
-+	 */
-+	writel_relaxed(mask, dist_base + GIC_DIST_PENDING_SET + offset);
-+	readl_relaxed(dist_base + GIC_DIST_PENDING_SET + offset);
-+	writel_relaxed(irqstat, gic_data_cpu_base(gic) + GIC_CPU_EOI);
++	grp_val = readl_relaxed(gic_dist_base(d) + GIC_DIST_IGROUP + grp_reg);
++	pri_val = readl_relaxed(gic_dist_base(d) + GIC_DIST_PRI + pri_reg);
 +
-+	return 1023;
++	if (group) {
++		grp_val |= grp_mask;
++		pri_val |= pri_mask;
++	} else {
++		grp_val &= ~grp_mask;
++		pri_val &= ~pri_mask;
++	}
++
++	writel_relaxed(grp_val, gic_dist_base(d) + GIC_DIST_IGROUP + grp_reg);
++	writel_relaxed(pri_val, gic_dist_base(d) + GIC_DIST_PRI + pri_reg);
++
++	raw_spin_unlock(&irq_controller_lock);
 +}
 +
-+static u32 gic_ack_irq(struct gic_chip_data *gic)
++static void gic_enable_fiq(struct irq_data *d)
 +{
-+	u32 irqstat;
++	gic_set_group_irq(d, 0);
++}
 +
-+	local_fiq_disable();
++static void gic_disable_fiq(struct irq_data *d)
++{
++	gic_set_group_irq(d, 1);
++}
++
++static int gic_ack_fiq(struct irq_data *d)
++{
++	struct gic_chip_data *gic = irq_data_get_irq_chip_data(d);
++	u32 irqstat, irqnr;
++
 +	irqstat = readl_relaxed(gic_data_cpu_base(gic) + GIC_CPU_INTACK);
-+	irqstat = gic_handle_spurious_group_0(gic, irqstat);
-+	local_fiq_enable();
-+
-+	return irqstat;
++	irqnr = irqstat & GICC_IAR_INT_ID_MASK;
++	return irq_find_mapping(gic->domain, irqnr);
 +}
-+#else
-+static u32 gic_ack_irq(struct gic_chip_data *gic)
-+{
-+	return readl_relaxed(gic_data_cpu_base(gic) + GIC_CPU_INTACK);
-+}
-+#endif
 +
- static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
- {
- 	u32 irqstat, irqnr;
- 	struct gic_chip_data *gic = &gic_data[0];
--	void __iomem *cpu_base = gic_data_cpu_base(gic);
++static struct fiq_chip gic_fiq = {
++	.fiq_enable		= gic_enable_fiq,
++	.fiq_disable            = gic_disable_fiq,
++	.fiq_ack		= gic_ack_fiq,
++	.fiq_eoi		= gic_eoi_irq,
++};
++
+ static void __init gic_init_fiq(struct gic_chip_data *gic,
+ 				irq_hw_number_t first_irq,
+ 				unsigned int num_irqs)
+@@ -370,6 +433,12 @@ static void __init gic_init_fiq(struct gic_chip_data *gic,
  
- 	do {
--		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
-+		irqstat = gic_ack_irq(gic);
- 		irqnr = irqstat & GICC_IAR_INT_ID_MASK;
- 
- 		if (likely(irqnr > 15 && irqnr < 1021)) {
-@@ -295,7 +340,8 @@ static void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
- 			continue;
- 		}
- 		if (irqnr < 16) {
--			writel_relaxed(irqstat, cpu_base + GIC_CPU_EOI);
-+			writel_relaxed(irqstat,
-+				       gic_data_cpu_base(gic) + GIC_CPU_EOI);
- #ifdef CONFIG_SMP
- 			handle_IPI(irqnr, regs);
- #endif
+ 	if (!gic->fiq_enable)
+ 		return;
++
++	/*
++	 * FIQ is supported on this device! Register our chip data.
++	 */
++	for (i = 0; i < num_irqs; i++)
++		fiq_register_mapping(first_irq + i, &gic_fiq);
+ }
+ #else /* CONFIG_FIQ */
+ static inline void gic_init_fiq(struct gic_chip_data *gic,
 -- 
 1.9.3
 
