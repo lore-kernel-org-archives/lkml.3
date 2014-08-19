@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268AbaHSJDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:03:44 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38017 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476AbaHSJDQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:03:16 -0400
-Date: Tue, 19 Aug 2014 11:03:14 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: linux-pm@vger.kernel.org, Thierry Reding <thierry.reding@gmail.com>,
-        Terje =?iso-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH v3 3/3] memory: tegra124-emc: Add EMC driver
-Message-ID: <20140819090314.GC7862@amd>
-References: <1408437523-8542-1-git-send-email-tomeu.vizoso@collabora.com>
- <1408437523-8542-4-git-send-email-tomeu.vizoso@collabora.com>
+	id S1753255AbaHSJD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:03:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752007AbaHSJDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 05:03:21 -0400
+Message-ID: <53F312CE.9090004@redhat.com>
+Date: Tue, 19 Aug 2014 11:03:10 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408437523-8542-4-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        David Matlack <dmatlack@google.com>
+CC: Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
+        mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
+ generation number
+References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com> <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com> <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com> <53F2C997.6070605@linux.vnet.ibm.com> <53F30AA4.4050803@redhat.com> <53F30FCD.3080109@linux.vnet.ibm.com>
+In-Reply-To: <53F30FCD.3080109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-08-19 10:38:43, Tomeu Vizoso wrote:
-> Sets the EMC clock rate based on the bandwidth requirements registered by
-> memory clients through the PM_QOS_MEMORY_BANDWIDTH class.
+Il 19/08/2014 10:50, Xiao Guangrong ha scritto:
+> Okay, what confused me it that it seems that the single line patch
+> is ok to you. :)
+
+No, it was late and I was confused. :)
+
+> Now, do we really need to care the case 2? like David said:
+> "Sorry I didn't explain myself very well: Since we can get a single wrong
+> mmio exit no matter what, it has to be handled in userspace. So my point
+> was, it doesn't really help to fix that one very specific way that it can
+> happen, because it can just happen in other ways. (E.g. update memslots
+> occurs after is_noslot_pfn() and before mmio exit)."
 > 
-> Note: this is just an example and not a proper driver for a external memory
-> controller. Its only purpose is to illustrate how such a driver
-> would set the
+> What's your idea?
+> 
+> > I think if you always treat the low bit as zero in mmio sptes, you can 
+> > do that without losing a bit of the generation.
+> 
+> What's you did is avoiding cache a invalid generation number into spte, but
+> actually if we can figure it out when we check mmio access, it's ok. Like the
+> updated patch i posted should fix it, that way avoids doubly increase the number.
 
-So... you don't want this to be merged?
+Yes.
 
-									Pavel
+> Okay, if you're interested increasing the number doubly, there is the simpler
+> one:
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+This wastes a bit in the mmio spte though.  My idea is to increase the
+memslots generation twice, but drop the low bit in the mmio spte.
+
+Paolo
