@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaHSLKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 07:10:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61477 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752094AbaHSLKJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 07:10:09 -0400
-Date: Tue, 19 Aug 2014 12:10:00 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v2 05/18] ARM64 / ACPI: Parse FADT table to get PSCI
- flags for PSCI init
-Message-ID: <20140819111000.GG3302@leverpostej>
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
- <1407166105-17675-6-git-send-email-hanjun.guo@linaro.org>
- <20140818142721.GR20043@localhost>
- <53F2C983.8000800@linaro.org>
+	id S1752642AbaHSLLS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 07:11:18 -0400
+Received: from 8bytes.org ([81.169.241.247]:43865 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751860AbaHSLLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 07:11:17 -0400
+Date: Tue, 19 Aug 2014 13:11:15 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] iommu/vt-d: Add new macros for invalidation event
+Message-ID: <20140819111115.GB26492@8bytes.org>
+References: <1408067751-30754-1-git-send-email-zhen-hual@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <53F2C983.8000800@linaro.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408067751-30754-1-git-send-email-zhen-hual@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> @@ -47,6 +49,26 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
-> >>  	early_memunmap(map, size);
-> >>  }
-> >>  
-> >> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
-> >> +{
-> >> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
-> >> +
-> >> +	/*
-> >> +	 * Revision in table header is the FADT Major version,
-> >> +	 * and there is a minor version of FADT which was introduced
-> >> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
-> >> +	 * to get arm boot flags, or we will disable ACPI.
-> >> +	 */
-> >> +	if (table->revision < 5 || fadt->minor_revision < 1) {
-> > 
-> > If we ever get revision 6.0, this would trigger.
+On Fri, Aug 15, 2014 at 09:55:51AM +0800, Li, Zhen-Hua wrote:
+> According to intel's spec
+>         Intel® Virtualization Technology for Directed I/O,
+>         Revision: 1.3 , February 2011,
+>         Chaper 10.4.25 to 10.4.28
 > 
-> Yes, good catch, actually I already fixed that in my local git repo,
+> There are four registers
 > 
-> +       if (table->revision > 5 ||
-> +           (table->revision == 5 && fadt->minor_revision >= 1)) {
-> +               return 0;
-> +       } else {
-> +               pr_info("FADT revision is %d.%d, no PSCI support, should be 5.1
-> or higher\n",
-> +                       table->revision, fadt->minor_revision);
-> +               disable_acpi();
-> +               return -EINVAL;
-> +       }
+>         IECTL_REG   0xa0    Invalidation event control register
+>         IEDATA_REG  0xa4    Invalidation event data register
+>         IEADDR_REG  0xa8    Invalidation event address register
+>         IEUADDR_REG 0xac    Invalidation event upper address register
+> 
+> Through they are not used in kernel in the latest version, the defination
+>  should be added to kernel as well as other registers.
+> 
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>  include/linux/intel-iommu.h | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+> index a65208a..15fafd5 100644
+> --- a/include/linux/intel-iommu.h
+> +++ b/include/linux/intel-iommu.h
+> @@ -56,6 +56,10 @@
+>  #define DMAR_IQ_SHIFT	4	/* Invalidation queue head/tail shift */
+>  #define DMAR_IQA_REG	0x90	/* Invalidation queue addr register */
+>  #define DMAR_ICS_REG	0x9c	/* Invalidation complete status register */
+> +#define DMAR_IECTL_REG	0xa0	/* Invalidation event control register */
+> +#define DMAR_IEDATA_REG	0xa4	/* Invalidation event data register */
+> +#define DMAR_IEADDR_REG	0xa8	/* Invalidation event address register */
+> +#define DMAR_IEUADDR_REG 0xac	/* Invalidation event upper address register */
+>  #define DMAR_IRTA_REG	0xb8    /* Interrupt remapping table addr register */
+>  
+>  #define OFFSET_STRIDE		(9)
 
-Given you return in the first path, you don't need the remaining code to
-live in an else block.
+There is no point in adding register defines that are not used anywhere.
 
-Mark.
+
+	Joerg
+
