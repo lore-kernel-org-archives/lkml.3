@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaHSUiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:38:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25107 "EHLO mx1.redhat.com"
+	id S1752139AbaHSUja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:39:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41956 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824AbaHSUiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:38:01 -0400
+	id S1751883AbaHSUhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 16:37:41 -0400
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Gleb Natapov <gleb@kernel.org>,
         Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
         Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
-Subject: [PATCH 9/9] KVM: VMX: automatic PLE window maximum
-Date: Tue, 19 Aug 2014 22:35:36 +0200
-Message-Id: <1408480536-8240-10-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH 2/9] KVM: x86: introduce sched_in to kvm_x86_ops
+Date: Tue, 19 Aug 2014 22:35:29 +0200
+Message-Id: <1408480536-8240-3-git-send-email-rkrcmar@redhat.com>
 In-Reply-To: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
@@ -24,65 +24,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every increase of ple_window_grow creates potential overflows.
-They are not serious, because we clamp ple_window and userspace is
-expected to fix ple_window_max within a second.
----
- arch/x86/kvm/vmx.c | 34 +++++++++++++++++++++++++++++++++-
- 1 file changed, 33 insertions(+), 1 deletion(-)
+sched_in preempt notifier is available for x86, allow its use in
+specific virtualization technlogies as well.
 
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+---
+ arch/x86/include/asm/kvm_host.h | 2 ++
+ arch/x86/kvm/svm.c              | 6 ++++++
+ arch/x86/kvm/vmx.c              | 6 ++++++
+ arch/x86/kvm/x86.c              | 1 +
+ 4 files changed, 15 insertions(+)
+
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 5724601..358e2f3 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -772,6 +772,8 @@ struct kvm_x86_ops {
+ 	bool (*mpx_supported)(void);
+ 
+ 	int (*check_nested_events)(struct kvm_vcpu *vcpu, bool external_intr);
++
++	void (*sched_in)(struct kvm_vcpu *kvm, int cpu);
+ };
+ 
+ struct kvm_arch_async_pf {
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ddf7427..4baf1bc 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -4305,6 +4305,10 @@ static void svm_handle_external_intr(struct kvm_vcpu *vcpu)
+ 	local_irq_enable();
+ }
+ 
++static void svm_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ static struct kvm_x86_ops svm_x86_ops = {
+ 	.cpu_has_kvm_support = has_svm,
+ 	.disabled_by_bios = is_disabled,
+@@ -4406,6 +4410,8 @@ static struct kvm_x86_ops svm_x86_ops = {
+ 
+ 	.check_intercept = svm_check_intercept,
+ 	.handle_external_intr = svm_handle_external_intr,
++
++	.sched_in = svm_sched_in,
+ };
+ 
+ static int __init svm_init(void)
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index d7f58e8..6873a0b 100644
+index bfe11cf..2b306f9 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -138,7 +138,9 @@ module_param(ple_window, int, S_IRUGO | S_IWUSR);
+@@ -8846,6 +8846,10 @@ static int vmx_check_intercept(struct kvm_vcpu *vcpu,
+ 	return X86EMUL_CONTINUE;
+ }
  
- /* Default doubles per-vcpu window every exit. */
- static int ple_window_grow = KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
--module_param(ple_window_grow, int, S_IRUGO | S_IWUSR);
-+static struct kernel_param_ops ple_window_grow_ops;
-+module_param_cb(ple_window_grow, &ple_window_grow_ops,
-+                &ple_window_grow, S_IRUGO | S_IWUSR);
- 
- /* Default resets per-vcpu window every exit to ple_window. */
- static int ple_window_shrink = KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK;
-@@ -5717,6 +5719,36 @@ static void type##_ple_window(struct kvm_vcpu *vcpu) \
- make_ple_window_modifier(grow,   *, +) /* grow_ple_window */
- make_ple_window_modifier(shrink, /, -) /* shrink_ple_window */
- 
-+static void clamp_ple_window_max(void)
++void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
 +{
-+	int maximum;
-+
-+	if (ple_window_grow < 1)
-+		return;
-+
-+	if (ple_window_grow < ple_window)
-+		maximum = INT_MAX / ple_window_grow;
-+	else
-+		maximum = INT_MAX - ple_window_grow;
-+
-+	ple_window_max = clamp(ple_window_max, ple_window, maximum);
 +}
 +
-+static int set_ple_window_grow(const char *arg, const struct kernel_param *kp)
-+{
-+	int ret;
+ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.cpu_has_kvm_support = cpu_has_kvm_support,
+ 	.disabled_by_bios = vmx_disabled_by_bios,
+@@ -8951,6 +8955,8 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.mpx_supported = vmx_mpx_supported,
+ 
+ 	.check_nested_events = vmx_check_nested_events,
 +
-+	clamp_ple_window_max();
-+	ret = param_set_int(arg, kp);
-+
-+	return ret;
-+}
-+
-+static struct kernel_param_ops ple_window_grow_ops = {
-+	.set = set_ple_window_grow,
-+	.get = param_get_int,
-+};
-+
- /*
-  * Indicate a busy-waiting vcpu in spinlock. We do not enable the PAUSE
-  * exiting, so only get here on cpu with PAUSE-Loop-Exiting.
++	.sched_in = vmx_sched_in,
+ };
+ 
+ static int __init vmx_init(void)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index d7c214f..5696ee7 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7148,6 +7148,7 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ 
+ void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
+ {
++	kvm_x86_ops->sched_in(vcpu, cpu);
+ }
+ 
+ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
 -- 
 2.0.4
 
