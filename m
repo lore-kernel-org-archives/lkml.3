@@ -1,121 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaHSI2e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:28:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30501 "EHLO mx1.redhat.com"
+	id S1751958AbaHSI2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:28:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25773 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624AbaHSI2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:28:31 -0400
-Message-ID: <53F30AA4.4050803@redhat.com>
-Date: Tue, 19 Aug 2014 10:28:20 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        David Matlack <dmatlack@google.com>
-CC: Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
-        mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
- generation number
-References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com> <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com> <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com> <53F2C997.6070605@linux.vnet.ibm.com>
-In-Reply-To: <53F2C997.6070605@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1751624AbaHSI2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 04:28:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,892,1400050800"; 
+   d="scan'208";a="470215928"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Bandan Das <bsd@redhat.com>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v4] KVM: nVMX: nested TPR shadow/threshold emulation
+Date: Tue, 19 Aug 2014 16:30:40 +0800
+Message-Id: <1408437040-49181-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/08/2014 05:50, Xiao Guangrong ha scritto:
-> 
-> Note in the step *, my approach detects the invalid generation-number which
-> will invalidate the mmio spte properly .
+This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
 
-You are right, in fact my mail included another part: "Another 
-alternative could be to use the low bit to mark an in-progress change, 
-*and skip the caching if the low bit is set*."
+TPR shadow/threshold feature is important to speed up the Windows guest.
+Besides, it is a must feature for certain VMM.
 
-I think if you always treat the low bit as zero in mmio sptes, you can 
-do that without losing a bit of the generation.
+We map virtual APIC page address and TPR threshold from L1 VMCS. If
+TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
+in, we inject it into L1 VMM for handling.
 
-Something like this (untested/uncompiled):
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+v3 -> v4:
+ * add Paolo's Reviewed-by
+ * unconditionally fail the vmentry, with a comment  
+ * setup the TPR_SHADOW/virtual_apic_page of vmcs02 based on vmcs01 if L2 owns the APIC
+v2 -> v3:
+ * nested vm entry failure if both tpr shadow and cr8 exiting bits are not set
+v1 -> v2:
+ * don't take L0's "virtualize APIC accesses" setting into account
+ * virtual_apic_page do exactly the same thing that is done for apic_access_page
+ * add the tpr threshold field to the read-write fields for shadow VMCS
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 931467881da7..3a56d377c6d7 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -199,16 +199,20 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask)
- EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
+ arch/x86/kvm/vmx.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 47 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index bfe11cf..c8d8e9a 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -379,6 +379,7 @@ struct nested_vmx {
+ 	 * we must keep them pinned while L2 runs.
+ 	 */
+ 	struct page *apic_access_page;
++	struct page *virtual_apic_page;
+ 	u64 msr_ia32_feature_control;
  
- /*
-- * spte bits of bit 3 ~ bit 11 are used as low 9 bits of generation number,
-- * the bits of bits 52 ~ bit 61 are used as high 10 bits of generation
-- * number.
-+ * the low bit of the generation number is always presumed to be zero.
-+ * This disables mmio caching during memslot updates.  The concept is
-+ * similar to a seqcount but instead of retrying the access we just punt
-+ * and ignore the cache.
-+ *
-+ * spte bits 3-11 are used as bits 1-9 of the generation number,
-+ * the bits 52-61 are used as bits 10-19 of the generation number.
-  */
--#define MMIO_SPTE_GEN_LOW_SHIFT		3
-+#define MMIO_SPTE_GEN_LOW_SHIFT		2
- #define MMIO_SPTE_GEN_HIGH_SHIFT	52
+ 	struct hrtimer preemption_timer;
+@@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
+ 	ARRAY_SIZE(shadow_read_only_fields);
  
--#define MMIO_GEN_SHIFT			19
--#define MMIO_GEN_LOW_SHIFT		9
--#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 1)
-+#define MMIO_GEN_SHIFT			20
-+#define MMIO_GEN_LOW_SHIFT		10
-+#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 2)
- #define MMIO_GEN_MASK			((1 << MMIO_GEN_SHIFT) - 1)
- #define MMIO_MAX_GEN			((1 << MMIO_GEN_SHIFT) - 1)
+ static unsigned long shadow_read_write_fields[] = {
++	TPR_THRESHOLD,
+ 	GUEST_RIP,
+ 	GUEST_RSP,
+ 	GUEST_CR0,
+@@ -2330,7 +2332,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+ 		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
+ 		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
+ 		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
+-		CPU_BASED_PAUSE_EXITING |
++		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
+ 		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+ 	/*
+ 	 * We can allow some features even when not supported by the
+@@ -6148,6 +6150,10 @@ static void free_nested(struct vcpu_vmx *vmx)
+ 		nested_release_page(vmx->nested.apic_access_page);
+ 		vmx->nested.apic_access_page = 0;
+ 	}
++	if (vmx->nested.virtual_apic_page) {
++		nested_release_page(vmx->nested.virtual_apic_page);
++		vmx->nested.virtual_apic_page = 0;
++	}
  
-@@ -236,12 +240,7 @@ static unsigned int get_mmio_spte_generation(u64 spte)
+ 	nested_free_all_saved_vmcss(vmx);
+ }
+@@ -6936,7 +6942,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
+ 	case EXIT_REASON_MCE_DURING_VMENTRY:
+ 		return 0;
+ 	case EXIT_REASON_TPR_BELOW_THRESHOLD:
+-		return 1;
++		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
+ 	case EXIT_REASON_APIC_ACCESS:
+ 		return nested_cpu_has2(vmcs12,
+ 			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
+@@ -7057,6 +7063,12 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
  
- static unsigned int kvm_current_mmio_generation(struct kvm *kvm)
+ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
  {
--	/*
--	 * Init kvm generation close to MMIO_MAX_GEN to easily test the
--	 * code of handling generation number wrap-around.
--	 */
--	return (kvm_memslots(kvm)->generation +
--		      MMIO_MAX_GEN - 150) & MMIO_GEN_MASK;
-+	return kvm_memslots(kvm)->generation & MMIO_GEN_MASK;
- }
- 
- static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index a69a623938b8..c7e2800313b8 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -474,6 +476,13 @@ static struct kvm *kvm_create_vm(unsigned long type)
- 	kvm->memslots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
- 	if (!kvm->memslots)
- 		goto out_err_no_srcu;
++	struct vmcs12 *vmcs12 = get_vmcs12(vcpu);
 +
-+	/*
-+	 * Init kvm generation close to MMIO_MAX_GEN to easily test the
-+	 * code of handling generation number wrap-around.
-+	 */
-+	kvm->memslots->generation = -150;
++	if (is_guest_mode(vcpu) &&
++		nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
++		return;
 +
- 	kvm_init_memslots_id(kvm);
- 	if (init_srcu_struct(&kvm->srcu))
- 		goto out_err_no_srcu;
-@@ -725,6 +732,8 @@ static struct kvm_memslots *install_new_memslots(struct kvm *kvm,
- 	synchronize_srcu_expedited(&kvm->srcu);
+ 	if (irr == -1 || tpr < irr) {
+ 		vmcs_write32(TPR_THRESHOLD, 0);
+ 		return;
+@@ -8024,6 +8036,35 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+ 	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
+ 	exec_control &= ~CPU_BASED_TPR_SHADOW;
+ 	exec_control |= vmcs12->cpu_based_vm_exec_control;
++
++	if (exec_control & CPU_BASED_TPR_SHADOW) {
++		if (vmx->nested.virtual_apic_page)
++			nested_release_page(vmx->nested.virtual_apic_page);
++		vmx->nested.virtual_apic_page =
++		   nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
++		if (!vmx->nested.virtual_apic_page)
++			exec_control &=
++				~CPU_BASED_TPR_SHADOW;
++		else
++			vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
++				page_to_phys(vmx->nested.virtual_apic_page));
++
++		/*
++		 * If CR8 load exits are enabled, CR8 store exits are enabled,
++		 * and virtualize APIC access is disabled, the processor would
++		 * never notice. Doing it unconditionally is not correct, but
++		 * it is the simplest thing.
++		 */
++		if (!(exec_control & CPU_BASED_TPR_SHADOW) &&
++			!((exec_control & CPU_BASED_CR8_LOAD_EXITING) &&
++				(exec_control & CPU_BASED_CR8_STORE_EXITING)))
++			nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
++
++		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
++	} else if (vm_need_tpr_shadow(vmx->vcpu.kvm))
++		vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
++				__pa(vmx->vcpu.arch.apic->regs));
++
+ 	/*
+ 	 * Merging of IO and MSR bitmaps not currently supported.
+ 	 * Rather, exit every time.
+@@ -8792,6 +8833,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+ 		nested_release_page(vmx->nested.apic_access_page);
+ 		vmx->nested.apic_access_page = 0;
+ 	}
++	if (vmx->nested.virtual_apic_page) {
++		nested_release_page(vmx->nested.virtual_apic_page);
++		vmx->nested.virtual_apic_page = 0;
++	}
  
- 	kvm_arch_memslots_updated(kvm);
-+	slots->generation++;
-+	WARN_ON(slots->generation & 1);
- 
- 	return old_memslots;
- }
+ 	/*
+ 	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
+-- 
+1.9.1
 
-(modulo the changes to always set the generation in install_new_memslots, which
-I'm eliding for clarity).
-
-Moving the initialization to kvm_create_vm ensures that the low bit is untouched
-between install_new_memslots and kvm_current_mmio_generation.
