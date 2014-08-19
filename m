@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaHSDDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 18 Aug 2014 23:03:11 -0400
-Received: from hk5.cn4e.com ([58.64.128.120]:54253 "EHLO hk5.cn4e.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752025AbaHSDDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 18 Aug 2014 23:03:09 -0400
-X-Greylist: delayed 1460 seconds by postgrey-1.27 at vger.kernel.org; Mon, 18 Aug 2014 23:03:09 EDT
-Date: Tue, 19 Aug 2014 10:38:19 +0800
-From: "RAIN" <roy@topwayfreight.com>
-Reply-To: rain@topwayfreight.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: RE: AGENCY FOR SHIPPING AND CUSTOM BROKER
-Message-ID: <201408191038194588890@topwayfreight.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1752563AbaHSDV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 18 Aug 2014 23:21:59 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:1805
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752025AbaHSDV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 18 Aug 2014 23:21:58 -0400
+From: Peng Fan <van.freenix@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arm: Do not overwrite __machine_arch_type
+Date: Tue, 19 Aug 2014 11:21:31 +0800
+Message-ID: <1408418491-29330-1-git-send-email-van.freenix@gmail.com>
+X-Mailer: git-send-email 1.8.4
+X-EOPAttributedMessage: 0
+X-Matching-Connectors: 130528921142770950;(91ab9b29-cfa4-454e-5278-08d120cd25b8);()
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009006)(979002)(6009001)(199003)(189002)(4396001)(87572001)(50986999)(21056001)(89996001)(50226001)(81442001)(79102001)(55446002)(62966002)(77982001)(81342001)(97736001)(61266001)(73972005)(104166001)(99396002)(82202001)(105596002)(83072002)(84676001)(88136002)(92726001)(104016003)(81542001)(77156001)(85306004)(85852003)(102836001)(107046002)(47776003)(26826002)(20776003)(92566001)(44976005)(36756003)(53416004)(46102001)(106466001)(87936001)(6806004)(50466002)(48376002)(86362001)(68736004)(229853001)(80022001)(93916002)(73392001)(87286001)(31966008)(74502001)(74662001)(95666004)(33646002)(19580395003)(19580405001)(64706001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB360;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
+X-Forefront-PRVS: 0308EE423E
+Authentication-Results: spf=softfail (sender IP is 192.88.168.50)
+ smtp.mailfrom=van.freenix@gmail.com; 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7J33Vbp019322
 
-Dear Sir,
-Good day!
- 
-This is Rain Mao from Shenzhen Top Way International Forwarding Co.,Ltd in China. 
+If using DT_MACHINE_START when enabled CONFIG_OF, the nr of mdesc is ~0.
+The value of __machine_arch_type is passsed from bootloader using reigster
+r1, and assigned in head-common.S. Remove this line to avoid overwrite it.
 
-We interest & expect to establish the cooperation relationship with your esteem company.
+Signed-off-by: Peng Fan <van.freenix@gmail.com>
+---
+ arch/arm/kernel/devtree.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-This is the first letter you recieve from me.Could you please help me to forward my contact
-to the person whom manage the shipment?
-So that  I could share the lastest rates from China to AUSTRIALIA, Thanks! 
+diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+index 11c54de..3a04486 100644
+--- a/arch/arm/kernel/devtree.c
++++ b/arch/arm/kernel/devtree.c
+@@ -243,8 +243,5 @@ const struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
  
-Our competitive advantages :
-l  FCL&LCL freight china to all over the world. 
-l  DHL,UPS,FEDEX courier door to door price 30% discount to worldwide
-l  Door to door sea freight cargo.
-l  Free samples & small orders consolidation service.
-l  15 days free warehousing.
+ 	early_init_dt_scan_nodes();
  
-Any question and instruction will be highly appreciated.
-Let's talk more about the details.
+-	/* Change machine number to match the mdesc we're using */
+-	__machine_arch_type = mdesc->nr;
+-
+ 	return mdesc;
+ }
+-- 
+1.8.4
 
-Thanks&Best regards
- 
-Ms.Rain 
-Shenzhen Top Way International Forwarding Co., Ltd
-MOBILE & WHATSAPP:+86-13528787227
-TEL:+86-755-89367755-802
-Email:rain@topwayfreight.com
-Skype:rain-blestocean
-QQ:840626628
-website: topwayfreight.com
-http://hkkingway.en.alibaba.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
