@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaHSUSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 16:18:13 -0400
-Received: from 6.77.broadband6.iol.cz ([88.101.77.6]:39760 "EHLO
-	dhcp-27-160.brq.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751284AbaHSUSL (ORCPT
+	id S1751888AbaHSUUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 16:20:07 -0400
+Received: from www17.your-server.de ([213.133.104.17]:59083 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258AbaHSUUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 16:18:11 -0400
-X-Greylist: delayed 2215 seconds by postgrey-1.27 at vger.kernel.org; Tue, 19 Aug 2014 16:18:10 EDT
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Tadeusz Struk <tadeusz.struk@intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, qat-linux@intel.com,
-        linux-crypto@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH] crypto: qat - Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Tue, 19 Aug 2014 09:32:04 +0200
-Message-Id: <1408433524-11487-1-git-send-email-agordeev@redhat.com>
-X-Mailer: git-send-email 1.9.3
+	Tue, 19 Aug 2014 16:20:05 -0400
+Date: Tue, 19 Aug 2014 22:19:58 +0200
+Subject: Re: [UML] 3.16 build without optimization fails
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Valdis.Kletnieks@vt.edu
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Message-Id: <E1XJpsx-0001oD-AE@www17.your-server.de>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7JKKCww025414
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+Hi.
 
-Cc: Tadeusz Struk <tadeusz.struk@intel.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: qat-linux@intel.com
-Cc: linux-crypto@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/crypto/qat/qat_dh895xcc/adf_isr.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Thanks for your answer.
 
-diff --git a/drivers/crypto/qat/qat_dh895xcc/adf_isr.c b/drivers/crypto/qat/qat_dh895xcc/adf_isr.c
-index d4172de..1082e3b 100644
---- a/drivers/crypto/qat/qat_dh895xcc/adf_isr.c
-+++ b/drivers/crypto/qat/qat_dh895xcc/adf_isr.c
-@@ -70,9 +70,9 @@ static int adf_enable_msix(struct adf_accel_dev *accel_dev)
- 	for (i = 0; i < msix_num_entries; i++)
- 		pci_dev_info->msix_entries.entries[i].entry = i;
- 
--	if (pci_enable_msix(pci_dev_info->pci_dev,
--			    pci_dev_info->msix_entries.entries,
--			    msix_num_entries)) {
-+	if (pci_enable_msix_exact(pci_dev_info->pci_dev,
-+				  pci_dev_info->msix_entries.entries,
-+				  msix_num_entries)) {
- 		pr_err("QAT: Failed to enable MSIX IRQ\n");
- 		return -EFAULT;
- 	}
--- 
-1.9.3
+There goes my plan to better understand an UML kernel lock up by using a debugger... Everything gets optimised out with -O2 :-(
 
+Can you give an example function that relies on this GCC feature?
+
+With kind regards
+Thomas
+
+Am 19.08.2014 22:06 schrieb Valdis.Kletnieks@vt.edu:
+>
+> On Tue, 19 Aug 2014 21:12:10 +0200, Thomas Meyer said: 
+> > > Hi, 
+> > > 
+> > > the build with -O0 fails with: 
+>
+> > > bug or feature? 
+> > > 
+> > > any ideas? 
+>
+> Feature.Â  The kernel is *known* to not build with -O0, because that 
+> disables *all* function inlining, and there's several functions that *have* 
+> to be inlined in order to function properly (most notably, anything 
+> that uses the gcc __builtin_return_address in a function that is expected 
+> to be inlined). 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
