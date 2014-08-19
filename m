@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862AbaHSIGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 04:06:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44730 "EHLO mx2.suse.de"
+	id S1752003AbaHSIGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 04:06:39 -0400
+Received: from mout.gmx.net ([212.227.15.19]:52278 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834AbaHSIGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 04:06:07 -0400
-Message-ID: <53F3056C.7040705@suse.cz>
-Date: Tue, 19 Aug 2014 10:06:04 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1750834AbaHSIGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 04:06:37 -0400
+From: Marc Dietrich <marvin24@gmx.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com
+Subject: Re: [PATCH v2 3/4] zram: zram memory size limitation
+Date: Tue, 19 Aug 2014 10:06:22 +0200
+Message-ID: <7959928.Exbvf4HrNB@fb07-iapwap2>
+User-Agent: KMail/4.13.3 (Linux/3.17.0-rc1-12.gfc9498b-desktop; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1408434887-16387-4-git-send-email-minchan@kernel.org>
+References: <1408434887-16387-1-git-send-email-minchan@kernel.org> <1408434887-16387-4-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kbuild@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] Documentation: kbuild: Improve grammar
-References: <1407511390-5429-1-git-send-email-geert@linux-m68k.org> <1407511390-5429-4-git-send-email-geert@linux-m68k.org> <53EA48F2.6060003@infradead.org> <53EB4F39.6030501@suse.cz>
-In-Reply-To: <53EB4F39.6030501@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Provags-ID: V03:K0:dWTODOrFxvsP5D3TRwaav5aZDYvPMJcy6w1evkjXMA8dmkWThrF
+ OI0yv4g2/bu8+Rs3FWMmtMs9Ku1l9vVAN1wuHpFa5QDIcUr6ofMBCiAaRK2t6c8VmtK0thW
+ omzSGSnABlgUZwXzD21G4pz5rXAhX6n5H1G3puDbQpdGqughSxKwwvYRiFee5u3p0T+Kwvg
+ R35selbsg6I2wj/V0Rqzw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-13 13:42, Michal Marek wrote:
-> On 2014-08-12 19:03, Randy Dunlap wrote:
->> On 08/08/14 08:23, Geert Uytterhoeven wrote:
->>>   - singular versus plural,
->>>   - "by" versus "of",
->>>   - missing "if", "it", "the",
->>>   - consistent use of "xxx-specific" versus "xxx specific".
->>>
->>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->>> ---
->>>  Documentation/kbuild/makefiles.txt | 58 +++++++++++++++++++-------------------
->>>  1 file changed, 29 insertions(+), 29 deletions(-)
->>
->> Acked-by: Randy Dunlap <rdunlap@infradead.org>
->>
->> Michal, are you going to pick up Geert's 4 kbuild doc. patches
->> or should I do it?
+Am Dienstag, 19. August 2014, 16:54:46 schrieb Minchan Kim:
+> Since zram has no control feature to limit memory usage,
+> it makes hard to manage system memrory.
 > 
-> I can do it. I'm just waiting for Linus to merge what is currently in
-> the kbuild branches, before pushing anything else.
+> This patch adds new knob "mem_limit" via sysfs to set up the
+> a limit so that zram could fail allocation once it reaches
+> the limit.
 
-Applied to kbuild.git#misc now.
+Sorry to jump in late with a probably silly question, but I couldn't find the 
+answer easily. What's the difference between disksize and mem_limit?
+I assume the former is uncompressed size (virtual size) and the latter is 
+compressed size (real memory usage)? Maybe the difference should be made 
+clearer in the documentation.
+If disksize is the uncompressed size, why would we want to set this at all?
 
-Thanks,
-Michal
+Marc
 
