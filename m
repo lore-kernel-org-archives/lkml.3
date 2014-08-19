@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaHSOK0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 10:10:26 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:60816 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648AbaHSOKY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 10:10:24 -0400
-Date: Tue, 19 Aug 2014 07:10:14 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        davidlohr@hp.com
-Subject: Re: [PATCH BUGFIX] frv: Define cpu_relax_lowlatency()
-Message-ID: <20140819141014.GA20807@roeck-us.net>
-References: <1408392039.3718.6.camel@buesod1.americas.hpqcorp.net>
+	id S1752887AbaHSOOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 10:14:30 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51955 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789AbaHSOO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 10:14:28 -0400
+Date: Tue, 19 Aug 2014 09:14:23 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH] USB: pch_udc: Add support for Intel Quark X1000 USB
+ gadget device
+Message-ID: <20140819141423.GB16085@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1407175207-23260-1-git-send-email-alvin.chen@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="H+4ONPRPur6+Ovig"
 Content-Disposition: inline
-In-Reply-To: <1408392039.3718.6.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1407175207-23260-1-git-send-email-alvin.chen@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 01:00:39PM -0700, Davidlohr Bueso wrote:
-> 3a6bfbc9 (arch,locking: Ciao arch_mutex_cpu_relax()) broke building the frv
-> arch. Fixes errors such as:
-> 
-> kernel/locking/mcs_spinlock.h:87:2: error: implicit declaration of function 'cpu_relax_lowlatency'
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+--H+4ONPRPur6+Ovig
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-inventing a new tag...
+On Mon, Aug 04, 2014 at 11:00:07AM -0700, Chen, Alvin wrote:
+> From: "Alvin (Weike) Chen" <alvin.chen@intel.com>
+>=20
+> Hi,
+> Intel Quark X1000 consists of one USB gadget device which can be PCI enum=
+erated.=20
+> pch_udc layer doesn't support it. Thus, we add support for Intel Quark X1=
+000 USB
+> gadget device as well.
 
-Compile-tested-by: Guenter Roeck <linux@roeck-us.net>
+where is the patch ?
 
-> ---
-> Linus, as discussed, here's the resend.
-> Original thread: https://lkml.org/lkml/2014/8/5/442
-> 
->  arch/frv/include/asm/processor.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/frv/include/asm/processor.h b/arch/frv/include/asm/processor.h
-> index a34f309..6554e78 100644
-> --- a/arch/frv/include/asm/processor.h
-> +++ b/arch/frv/include/asm/processor.h
-> @@ -129,7 +129,8 @@ unsigned long get_wchan(struct task_struct *p);
->  #define	KSTK_EIP(tsk)	((tsk)->thread.frame0->pc)
->  #define	KSTK_ESP(tsk)	((tsk)->thread.frame0->sp)
->  
-> -#define cpu_relax()    barrier()
-> +#define cpu_relax() barrier()
-> +#define cpu_relax_lowlatency() cpu_relax()
->  
->  /* data cache prefetch */
->  #define ARCH_HAS_PREFETCH
-> -- 
-> 1.8.1.4
-> 
-> 
-> 
-> 
+--=20
+balbi
+
+--H+4ONPRPur6+Ovig
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT81u/AAoJEIaOsuA1yqREXOAP/30K7xi7fsyBtUgBWbQqImJQ
+KzfIf7DJCMrRHa/bEeV9z+engz2ig7PY0vkhoHHrOaaIpywDHik75ysHmI4HxJPs
+TP5UohjRfr1rukBSJyfjrp0QlDOZvoA6mBjlds5e7vXk5/miLlOeVHnaUwmSq/DU
+5zoQT7iwUkfNLKJtxCs3ZOULXNbzzTerBzDydkfcXMeIeLIQEdSB/jJMSm3SMn7V
+uwCvOMWK7IeruoZCILHM/bcinUhkSlOjiojnLvP+Sm31pTBrGkzM+QAsgMxSAnOl
+0wNRMq+x63d9GaT240Bwgz1opGxmtWuueKLqfwhjtysZpj8oAKHaPkTBTXabTWEy
+xwI79OuGXuDr3FIAM4Ow6qVb3glL+T+45gIyRv57DT45V9KUV57mcGkSKzOBHvG8
+3Ni120fC88M+ZuVoWGKp4MRAByoh0L6MGpzRqfiMetVX6QPYrlNjAZHOKs2zOLUz
+LuTKe5YAmbqw1cox95akOLHtHnlDmI1HP26yEH2ty/f/Hoe7Q08K2iKJ5dhdAKEo
+KV8ARCVghDY9P480eIf2waDLC0n5SPx4Es4T+XWCurtcmNaRdaQQ1fcbh5MigFQ8
+tuwyKIcG486zv5Vv0BEwfX+xCOJinQr4MurPIEVTDoajHu00XnvwiedaG3nIpO0d
+/IF4nswzX10w+8cX8IKL
+=j01f
+-----END PGP SIGNATURE-----
+
+--H+4ONPRPur6+Ovig--
