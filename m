@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbaHSSwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 14:52:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58775 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503AbaHSSwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 14:52:24 -0400
-Message-ID: <53F39CE3.8040303@suse.de>
-Date: Tue, 19 Aug 2014 20:52:19 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] ARM: dts: Add Peach Pit and Pi dts entry for max77802
- PMIC
-References: <1408460913-13863-1-git-send-email-javier.martinez@collabora.co.uk> <1408460913-13863-2-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1408460913-13863-2-git-send-email-javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+	id S1753582AbaHSSxO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 14:53:14 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:61011 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576AbaHSSxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 14:53:12 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Prashant Sreedharan <prashant@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] tg3: Limit minimum tx queue wakeup threshold
+Date: Tue, 19 Aug 2014 11:52:49 -0700
+Message-Id: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.08.2014 17:08, schrieb Javier Martinez Canillas:
-> diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> index 228a6b1..8619d58 100644
-> --- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> +++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-> @@ -144,6 +144,339 @@
->  	ddc = <&i2c_2>;
->  };
->  
-> +&hsi2c_4 {
-> +	status = "okay";
-> +	clock-frequency = <400000>;
-> +
-> +	max77802-pmic@9 {
-> +		compatible = "maxim,max77802";
-> +		interrupt-parent = <&gpx3>;
-> +		interrupts = <1 0>;
+tx_pending may be set by the user (via ethtool -G) to a low enough value that
+TG3_TX_WAKEUP_THRESH becomes smaller than MAX_SKB_FRAGS + 1. This may cause
+the tx queue to be waked when there are in fact not enough descriptors to
+handle an skb with max frags. This in turn causes tg3_start_xmit() to return
+NETDEV_TX_BUSY and print error messages. Fix the problem by putting a limit to
+how low TG3_TX_WAKEUP_THRESH can go.
 
-<1 IRQ_TYPE_NONE>?
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+---
 
-[...]
-> diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-> index f3ee48b..f753eae 100644
-> --- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
-> +++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-> @@ -142,6 +142,339 @@
->  	ddc = <&i2c_2>;
->  };
->  
-> +&hsi2c_4 {
-> +	status = "okay";
-> +	clock-frequency = <400000>;
-> +
-> +	max77802-pmic@9 {
-> +		compatible = "maxim,max77802";
-> +		interrupt-parent = <&gpx3>;
-> +		interrupts = <1 0>;
+I noticed the problem in a 3.0 kernel when setting `ethtool eth0 -G tx 50` and
+running a netperf TCP_STREAM test. The console fills up with 
+[10597.596155] tg3 0000:06:00.0: eth0: BUG! Tx Ring full when queue awake!
+The problem in tg3 remains in current kernels though it does not reproduce as
+easily since "5640f76 net: use a per task frag allocator (v3.7-rc1)". I
+reproduced on current kernels by using the fail_page_alloc fault injection
+mechanism to force the creation of skbs with many order-0 frags. Note that the
+following script may also trigger another bug (NETDEV WATCHDOG), which is
+fixed in the next patch.
 
-Dito?
+$ cat /tmp/doit.sh
+#!/bin/bash
 
-Cheers,
-Andreas
+F="/sys/kernel/debug/fail_page_alloc"
 
+echo -1 > "$F/times"
+echo 0 > "$F/verbose"
+echo 0 > "$F/ignore-gfp-wait"
+echo 1 > "$F/task-filter"
+echo 100 > "$F/probability"
+
+netperf -H 192.168.9.30 -l100 -t omni -- -d send &
+
+n=$!
+
+sleep 0.3
+echo 1 > "/proc/$n/make-it-fail"
+sleep 10
+
+kill "$n"
+
+---
+ drivers/net/ethernet/broadcom/tg3.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 3ac5d23..b11c0fd 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -202,7 +202,8 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
+ #endif
+ 
+ /* minimum number of free TX descriptors required to wake up TX process */
+-#define TG3_TX_WAKEUP_THRESH(tnapi)		((tnapi)->tx_pending / 4)
++#define TG3_TX_WAKEUP_THRESH(tnapi)	max_t(u32, (tnapi)->tx_pending / 4, \
++					      MAX_SKB_FRAGS + 1)
+ #define TG3_TX_BD_DMA_MAX_2K		2048
+ #define TG3_TX_BD_DMA_MAX_4K		4096
+ 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+1.8.4.5
+
