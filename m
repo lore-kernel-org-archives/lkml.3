@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaHSF2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 01:28:48 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:52943 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaHSF2q (ORCPT
+	id S1752604AbaHSFcq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 01:32:46 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:43587 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaHSFcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 01:28:46 -0400
-Date: Mon, 18 Aug 2014 22:28:42 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] doc: dt/bindings: input: introduce palmas power
- button description
-Message-ID: <20140819052842.GB21199@core.coreip.homeip.net>
-References: <1408392810-16011-1-git-send-email-nm@ti.com>
- <1408392810-16011-2-git-send-email-nm@ti.com>
+	Tue, 19 Aug 2014 01:32:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408392810-16011-2-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140818212116.GD24023@mtj.dyndns.org>
+References: <CAEuXFEy5=0XkqPiWQNiGbpi5EHSzq5f_U7Sj0t2bhO_1Lqe5vw@mail.gmail.com>
+	<53CEBFF2.7050100@hurleysoftware.com>
+	<20140723083937.GA3416@twins.programming.kicks-ass.net>
+	<CAPDOMVgjPyqTrk2YTQFufdQzeKBS5bgnWSqNJCqutxFV=fNz8Q@mail.gmail.com>
+	<20140818212116.GD24023@mtj.dyndns.org>
+Date: Mon, 18 Aug 2014 22:32:44 -0700
+Message-ID: <CAPcyv4gQp0==48=Ed3X1DG2i0okqWrq7vUumMfTFYOMF9EgW2A@mail.gmail.com>
+Subject: Re: PANIC: ata_qc_new_init crashes at boot
+From: Dan Williams <dan.j.williams@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Nick Krause <xerofoify@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Jesse Brandeburg <jesse.brandeburg@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 03:13:29PM -0500, Nishanth Menon wrote:
-> Many palmas family of PMICs have support for interrupt based power
-> button. This allows the device to notify the processor of external
-> push button events over the shared palmas interrupt.
-> 
-> Document the hardware support for the same.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
->  .../bindings/input/ti,palmas-pwrbutton.txt         |   32 ++++++++++++++++++++
->  1 file changed, 32 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/input/ti,palmas-pwrbutton.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/input/ti,palmas-pwrbutton.txt b/Documentation/devicetree/bindings/input/ti,palmas-pwrbutton.txt
-> new file mode 100644
-> index 0000000..6a89bcd
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/ti,palmas-pwrbutton.txt
-> @@ -0,0 +1,32 @@
-> +Texas Instruments Palmas family power button module
-> +
-> +This module is part of the Palmas family of PMICs. For more details
-> +about the whole chip see:
-> +Documentation/devicetree/bindings/mfd/palmas.txt.
-> +
-> +This module provides a simple power button event via an Interrupt.
-> +
-> +Required properties:
-> +- compatible: should be one of the following
-> +   - "ti,palmas-pwrbutton": For Palmas compatible power on button
-> +- interrupt-parent: Parent interrupt device, must be handle of palmas node.
-> +- interrupts: Interrupt number of power button submodule on device.
-> +
-> +Optional Properties:
-> +
-> +- ti,palmas-long-press-seconds: Duration in seconds which the power
-> +  button should be kept pressed for Palmas to power off automatically.
-> +  NOTE: This depends on OTP support and POWERHOLD signal configuration
-> +  on platform.
+On Mon, Aug 18, 2014 at 2:21 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> Sorry about the delay.  Cc'ing Dan.
+>
+> On Wed, Aug 06, 2014 at 02:02:47PM -0400, Nick Krause wrote:
+>> On Wed, Jul 23, 2014 at 4:39 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, Jul 22, 2014 at 03:48:02PM -0400, Peter Hurley wrote:
+>> >> [ +cc Tejun ]
+>> >>
+>> >> On 07/22/2014 03:26 PM, Jesse Brandeburg wrote:
+>> >> > This is a repeatable panic, happens every boot (and prevents starting my system)
+>> >> >
+>> >> > [    8.732993] sd 6:0:1:0: [sdb] Attached SCSI disk
+>> >> > [    8.733857]  sda: sda1 sda2 sda3
+>> >> > [    8.734318] sd 6:0:0:0: [sda] Attached SCSI disk
+>> >> > [    8.737943] BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
+>> >> > [    8.737947] IP: [<ffffffff814e0618>] ata_qc_new_init+0x188/0x1b0
+>> >
+>> > I too have this problem on one of my machines. Let me know if there's
+>> > anything you need.
+>
+> Are you still seeing this on every boot?  ISTR this getting fixed but
+> I could be confused.  Dan, the original thread is
+>
+>   http://lkml.kernel.org/g/CAEuXFEy5=0XkqPiWQNiGbpi5EHSzq5f_U7Sj0t2bhO_1Lqe5vw@mail.gmail.com
+>
 
-Only a few values are valid for this property, I think you should mention that.
+This is the last I heard:
 
-> +
-> +Example:
-> +
-> +&palmas {
-> +	palmas_pwr_button: pwrbutton {
-> +		compatible = "ti,palmas-pwrbutton";
-> +		interrupt-parent = <&tps659038>;
-> +		interrupts = <1 IRQ_TYPE_NONE>;
+http://marc.info/?l=linux-ide&m=140630768020241&w=2
 
-Why none? Can we specify appropriate trigger here instead of hard-coding in the
-driver?
+But I never saw a follow up.
 
-> +		wakeup-source;
+Hmmm, commit 1a112d10f03e libata: introduce ata_host->n_tags to avoid
+oops on SAS controllers
 
-What handles this attribute? I do not see it handled in the driver.
+...doesn't fix this?  Jesse reported positive results here:
 
-> +		ti,palmas-long-press-seconds = <12>;
-> +	};
-> +};
-> -- 
-> 1.7.9.5
-> 
-
-Thanks.
-
--- 
-Dmitry
+http://marc.info/?l=linux-ide&m=140624094731542&w=2
