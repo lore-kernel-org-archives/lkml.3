@@ -1,92 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301AbaHSR2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 13:28:16 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:38978 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaHSR2N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 13:28:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408422974-22301-1-git-send-email-addy.ke@rock-chips.com>
-References: <1408003293-27375-1-git-send-email-addy.ke@rock-chips.com>
-	<1408422974-22301-1-git-send-email-addy.ke@rock-chips.com>
-Date: Tue, 19 Aug 2014 10:28:12 -0700
-X-Google-Sender-Auth: 4dEmCKB4eTKotpV6lpg6ALz_aFw
-Message-ID: <CAD=FV=Xri1gVdBvmEmxzsyf3z=+Qpuzj4afJ-A2NJfPY0in00A@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: move rockchip related code to a separate file
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>, Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "zhenfu.fang" <zhenfu.fang@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, lintao <lintao@rock-chips.com>,
-        chenfen <chenfen@rock-chips.com>, zyf <zyf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Lin Huang <hl@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753652AbaHSR3c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 13:29:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28243 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751653AbaHSR3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 13:29:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,896,1400050800"; 
+   d="scan'208";a="587012965"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
+        Hein Tibosch <hein_tibosch@yahoo.es>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1 06/12] dmaengine: dw: move clock operations to platform.c
+Date: Tue, 19 Aug 2014 20:29:17 +0300
+Message-Id: <1408469363-15901-7-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On BayTrail platform DMA is not functional in the PCI mode, whereby it always
+failed and exit at the point when it tries to get a clock. It causes the PCI
+mode probe to exit with the error message:
+	dw_dmac_pci: probe of 0000:00:1e.0 failed with error -2
 
-On Mon, Aug 18, 2014 at 9:36 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
-> To support HS200 and UHS-1, we need add a big hunk of code,
-> as shown in the following patches. So a separate file for
-> rockchip SOCs is suitable.
->
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> ---
-> Changes in v2:
-> - Kconfig: depend on ARCH_ROCKCHIP, suggested by Bartlomiej Zolnierkiewicz
-> - Kconfig: depend on OF, suggested by Doug Anderson
-> - Not change suspend/resume code, suggested by Doug Anderson
-> - If pdev->dev.of_node is NULL, then return -ENODEV, suggested by Heiko Stübner
->
->  drivers/mmc/host/Kconfig           |   9 +++
->  drivers/mmc/host/Makefile          |   1 +
->  drivers/mmc/host/dw_mmc-pltfm.c    |  57 ----------------
->  drivers/mmc/host/dw_mmc-rockchip.c | 136 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 146 insertions(+), 57 deletions(-)
->  create mode 100644 drivers/mmc/host/dw_mmc-rockchip.c
->
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index a565254..f6095f6 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -621,6 +621,15 @@ config MMC_DW_PCI
->
->           If unsure, say N.
->
-> +config MMC_DW_ROCKCHIP
-> +       tristate "Rockchip specific extensions for Synopsys DW Memory Card Interface"
-> +       depends on MMC_DW && ARCH_ROCKCHIP && OF
+This patch moves clock operations to where it belongs to. Thus, the clock is
+provided only in ACPI / non-PCI cases.
 
-Actually, Heiko's change to check if pdev->dev.of_node is NULL means
-that you don't need to depend on OF anymore.
+Reported-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/dma/dw/core.c     | 16 ----------------
+ drivers/dma/dw/internal.h |  2 ++
+ drivers/dma/dw/platform.c | 25 ++++++++++++++++++++++---
+ drivers/dma/dw/regs.h     |  1 -
+ 4 files changed, 24 insertions(+), 20 deletions(-)
 
-Ulf: do you want Addy to spin again, or do you want to just remove
-this "&& OF" when applying the patch?
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index 10e43ea..9546b1f 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -11,7 +11,6 @@
+  */
+ 
+ #include <linux/bitops.h>
+-#include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/dmaengine.h>
+ #include <linux/dma-mapping.h>
+@@ -1488,13 +1487,6 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+ 	dw->regs = chip->regs;
+ 	chip->dw = dw;
+ 
+-	dw->clk = devm_clk_get(chip->dev, "hclk");
+-	if (IS_ERR(dw->clk))
+-		return PTR_ERR(dw->clk);
+-	err = clk_prepare_enable(dw->clk);
+-	if (err)
+-		return err;
+-
+ 	dw_params = dma_read_byaddr(chip->regs, DW_PARAMS);
+ 	autocfg = dw_params >> DW_PARAMS_EN & 0x1;
+ 
+@@ -1665,7 +1657,6 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
+ err_dma_register:
+ 	free_irq(chip->irq, dw);
+ err_pdata:
+-	clk_disable_unprepare(dw->clk);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(dw_dma_probe);
+@@ -1687,8 +1678,6 @@ int dw_dma_remove(struct dw_dma_chip *chip)
+ 		channel_clear_bit(dw, CH_EN, dwc->mask);
+ 	}
+ 
+-	clk_disable_unprepare(dw->clk);
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(dw_dma_remove);
+@@ -1698,7 +1687,6 @@ void dw_dma_shutdown(struct dw_dma_chip *chip)
+ 	struct dw_dma *dw = chip->dw;
+ 
+ 	dw_dma_off(dw);
+-	clk_disable_unprepare(dw->clk);
+ }
+ EXPORT_SYMBOL_GPL(dw_dma_shutdown);
+ 
+@@ -1709,8 +1697,6 @@ int dw_dma_suspend(struct dw_dma_chip *chip)
+ 	struct dw_dma *dw = chip->dw;
+ 
+ 	dw_dma_off(dw);
+-	clk_disable_unprepare(dw->clk);
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(dw_dma_suspend);
+@@ -1719,9 +1705,7 @@ int dw_dma_resume(struct dw_dma_chip *chip)
+ {
+ 	struct dw_dma *dw = chip->dw;
+ 
+-	clk_prepare_enable(dw->clk);
+ 	dma_writel(dw, CFG, DW_CFG_DMA_EN);
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(dw_dma_resume);
+diff --git a/drivers/dma/dw/internal.h b/drivers/dma/dw/internal.h
+index 2c8d02f..82258a1 100644
+--- a/drivers/dma/dw/internal.h
++++ b/drivers/dma/dw/internal.h
+@@ -21,12 +21,14 @@
+  * @dev:		struct device of the DMA controller
+  * @irq:		irq line
+  * @regs:		memory mapped I/O space
++ * @clk:		hclk clock
+  * @dw:			struct dw_dma that is filed by dw_dma_probe()
+  */
+ struct dw_dma_chip {
+ 	struct device	*dev;
+ 	int		irq;
+ 	void __iomem	*regs;
++	struct clk	*clk;
+ 	struct dw_dma	*dw;
+ };
+ 
+diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
+index 860c9ac..d50077e 100644
+--- a/drivers/dma/dw/platform.c
++++ b/drivers/dma/dw/platform.c
+@@ -178,10 +178,17 @@ static int dw_probe(struct platform_device *pdev)
+ 
+ 	chip->dev = dev;
+ 
+-	err = dw_dma_probe(chip, pdata);
++	chip->clk = devm_clk_get(chip->dev, "hclk");
++	if (IS_ERR(chip->clk))
++		return PTR_ERR(chip->clk);
++	err = clk_prepare_enable(chip->clk);
+ 	if (err)
+ 		return err;
+ 
++	err = dw_dma_probe(chip, pdata);
++	if (err)
++		goto err_dw_dma_probe;
++
+ 	platform_set_drvdata(pdev, chip);
+ 
+ 	if (pdev->dev.of_node) {
+@@ -196,6 +203,10 @@ static int dw_probe(struct platform_device *pdev)
+ 		dw_dma_acpi_controller_register(chip->dw);
+ 
+ 	return 0;
++
++err_dw_dma_probe:
++	clk_disable_unprepare(chip->clk);
++	return err;
+ }
+ 
+ static int dw_remove(struct platform_device *pdev)
+@@ -205,7 +216,10 @@ static int dw_remove(struct platform_device *pdev)
+ 	if (pdev->dev.of_node)
+ 		of_dma_controller_free(pdev->dev.of_node);
+ 
+-	return dw_dma_remove(chip);
++	dw_dma_remove(chip);
++	clk_disable_unprepare(chip->clk);
++
++	return 0;
+ }
+ 
+ static void dw_shutdown(struct platform_device *pdev)
+@@ -213,6 +227,7 @@ static void dw_shutdown(struct platform_device *pdev)
+ 	struct dw_dma_chip *chip = platform_get_drvdata(pdev);
+ 
+ 	dw_dma_shutdown(chip);
++	clk_disable_unprepare(chip->clk);
+ }
+ 
+ #ifdef CONFIG_OF
+@@ -238,7 +253,10 @@ static int dw_suspend_late(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct dw_dma_chip *chip = platform_get_drvdata(pdev);
+ 
+-	return dw_dma_suspend(chip);
++	dw_dma_suspend(chip);
++	clk_disable_unprepare(chip->clk);
++
++	return 0;
+ }
+ 
+ static int dw_resume_early(struct device *dev)
+@@ -246,6 +264,7 @@ static int dw_resume_early(struct device *dev)
+ 	struct platform_device *pdev = to_platform_device(dev);
+ 	struct dw_dma_chip *chip = platform_get_drvdata(pdev);
+ 
++	clk_prepare_enable(chip->clk);
+ 	return dw_dma_resume(chip);
+ }
+ 
+diff --git a/drivers/dma/dw/regs.h b/drivers/dma/dw/regs.h
+index 0e82d99..00d27a9 100644
+--- a/drivers/dma/dw/regs.h
++++ b/drivers/dma/dw/regs.h
+@@ -251,7 +251,6 @@ struct dw_dma {
+ 	void __iomem		*regs;
+ 	struct dma_pool		*desc_pool;
+ 	struct tasklet_struct	tasklet;
+-	struct clk		*clk;
+ 
+ 	/* channels */
+ 	struct dw_dma_chan	*chan;
+-- 
+2.1.0
 
-...I've tested this both with and without the "&& OF", and the "&& OF"
-won't really hurt anything, so:
-
-Tested-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
