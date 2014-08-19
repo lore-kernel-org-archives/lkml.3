@@ -1,259 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195AbaHSJh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:37:26 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:34846 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaHSJhX (ORCPT
+	id S1752225AbaHSJir (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:38:47 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:48415 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbaHSJip convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:37:23 -0400
-Message-ID: <53F31A6D.5090104@linaro.org>
-Date: Tue, 19 Aug 2014 17:35:41 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>
-CC: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Tue, 19 Aug 2014 05:38:45 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "kraxel@redhat.com" <kraxel@redhat.com>,
+        "mdharm-usb@one-eyed-alien.net" <mdharm-usb@one-eyed-alien.net>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v2 02/18] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-3-git-send-email-hanjun.guo@linaro.org> <53F24632.7030903@arm.com>
-In-Reply-To: <53F24632.7030903@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: RE: [PATCH v3] uas: replace WARN_ON_ONCE() with
+ lockdep_assert_held()
+Thread-Topic: [PATCH v3] uas: replace WARN_ON_ONCE() with
+ lockdep_assert_held()
+Thread-Index: AQHPtfZ/zzZmyRFO50yw6W1X3K4CA5vMcJ8AgAATFQCACv8JQIAAIRWAgAASrnA=
+Date: Tue, 19 Aug 2014 09:38:41 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF2FE70@EU-MBX-02.mgc.mentorg.com>
+References: <yes>
+ <1407825621-23322-1-git-send-email-sanjeev_sharma@mentor.com>
+ <53E9B418.3050303@redhat.com>
+ <FDC088D3B5555644AE135ED28A7ABDE94DF2FDA2@EU-MBX-02.mgc.mentorg.com>
+ <20140819093047.GA991@kroah.com>
+In-Reply-To: <20140819093047.GA991@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 19 Aug 2014 09:38:43.0594 (UTC) FILETIME=[5DD536A0:01CFBB91]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-8-19 2:30, Sudeep Holla wrote:
-> On 04/08/14 16:28, Hanjun Guo wrote:
->> From: Al Stone <al.stone@linaro.org>
->>
->> As we want to get ACPI tables to parse and then use the information
->> for system initialization, we should get the RSDP (Root System
->> Description Pointer) first, it then locates Extended Root Description
->> Table (XSDT) which contains all the 64-bit physical address that
->> pointer to other boot-time tables.
->>
->> Introduce acpi.c and its related head file in this patch to provide
->> fundamental needs of extern variables and functions for ACPI core,
->> and then get boot-time tables as needed.
->>    - asm/cpu.h need for ACPI core and will be updated in the future to
->>      add definitions for arch_(un)register_cpu which are required for
->>      ACPI based physical CPU hotplug;
+Thanks for letting me know.
+
+Sanjeev Sharma
+
+-----Original Message-----
+From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org] 
+Sent: Tuesday, August 19, 2014 3:01 PM
+To: Sharma, Sanjeev
+Cc: kraxel@redhat.com; mdharm-usb@one-eyed-alien.net; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org; Hans de Goede
+Subject: Re: [PATCH v3] uas: replace WARN_ON_ONCE() with lockdep_assert_held()
+
+On Tue, Aug 19, 2014 at 06:33:04AM +0000, Sharma, Sanjeev wrote:
+> Hi Greg,
 > 
-> This can go away now, as it's already present in v3.17-rc1
+> Any feedback on this patch ?
 
-Thanks for the reminding, I will rebase this patch set on top of
-3.17-rc1 and remove the outdated description.
+The merge window ended 2 days ago, _and_ I'm at the kernel summit this week, _and_ my queue is currently sitting at:
+	$ mdfrm -c ~/mail/todo/
+	1317 messages in /home/gregkh/mail/todo/
 
-> 
->>    - asm/acenv.h for arch specific ACPICA environments and
->>      implementation;
->>    - asm/acpi.h for arch specific variables and functions needed by
->>      ACPI driver core;
->>    - acpi.c for ARM64 related ACPI implementation for ACPI driver
->>      core;
->>
->> acpi_boot_table_init() is introduced to get RSDP and boot-time tables,
->> it will be called in setup_arch() before paging_init(), so we should
->> use eary_memremap() mechanism here to get the RSDP and all the table
->> pointers.
-[...]
->> +
->> +/*
->> + * Checking for the posibility that the CPU can be initialized from the MADT.
->> + * It's used from ACPI core in crash kernel case where boot CPU is not
->> + * necessarily CPU0 like spec demands. Since MADT must provide at least one
-> 
-> Do you mean ACPI spec demands CPU0 to be boot cpu ?
+So please be patient.  I'll get to it in a few weeks.
 
-ACPI spec demands CPU0 (BSP) should be the first entry in MADT.
-
-> 
-> IIUC it's basically to handle UP system with SMP kernel. IWO if all the
-> ACPI resources are reused from SMP system to boot UP system with SMP
-> kernel, with this check the ACPI core won't override the CPU index
-> obtained from GIC/APIC mapping to zero.
-
-Yes, you are right, I will update the comments.
-
-> 
->> + * GICC structure for GIC initialization, CPU will be always available in
->> + * MADT on ARM64.
->> + */
->> +static inline bool acpi_has_cpu_in_madt(void)
->> +{
->> +    return 1;
-> 
-> probably true instead of 1
-
-ok.
-
-> 
->> +}
->> +
->> +static inline void arch_fix_phys_package_id(int num, u32 slot) { }
->> +
->> +#endif /* CONFIG_ACPI */
->> +
->> +#endif /*_ASM_ACPI_H*/
->> diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
->> new file mode 100644
->> index 0000000..cee7d3f
->> --- /dev/null
->> +++ b/arch/arm64/include/asm/cpu.h
->> @@ -0,0 +1,11 @@
->> +/*
->> + *  Copyright (C) 2013-2014 ARM Ltd.
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +#ifndef __ASM_CPU_H
->> +#define __ASM_CPU_H
->> +
->> +#endif
->> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
->> index cdaedad..b568c26 100644
->> --- a/arch/arm64/kernel/Makefile
->> +++ b/arch/arm64/kernel/Makefile
->> @@ -29,6 +29,7 @@ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)    += sleep.o suspend.o
->>   arm64-obj-$(CONFIG_JUMP_LABEL)        += jump_label.o
->>   arm64-obj-$(CONFIG_KGDB)        += kgdb.o
->>   arm64-obj-$(CONFIG_EFI)            += efi.o efi-stub.o efi-entry.o
->> +arm64-obj-$(CONFIG_ACPI)        += acpi.o
->>
->>   obj-y                    += $(arm64-obj-y) vdso/
->>   obj-m                    += $(arm64-obj-m)
->> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
->> new file mode 100644
->> index 0000000..395778c
->> --- /dev/null
->> +++ b/arch/arm64/kernel/acpi.c
->> @@ -0,0 +1,69 @@
->> +/*
->> + *  ARM64 Specific Low-Level ACPI Boot Support
->> + *
->> + *  Copyright (C) 2013-2014, Linaro Ltd.
->> + *    Author: Al Stone <al.stone@linaro.org>
->> + *    Author: Graeme Gregory <graeme.gregory@linaro.org>
->> + *    Author: Hanjun Guo <hanjun.guo@linaro.org>
->> + *
->> + *  This program is free software; you can redistribute it and/or modify
->> + *  it under the terms of the GNU General Public License version 2 as
->> + *  published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/init.h>
->> +#include <linux/acpi.h>
->> +#include <linux/cpumask.h>
->> +#include <linux/memblock.h>
->> +#include <linux/irq.h>
->> +#include <linux/irqdomain.h>
->> +#include <linux/bootmem.h>
->> +#include <linux/smp.h>
->> +
->> +int acpi_noirq;            /* skip ACPI IRQ initialization */
->> +int acpi_disabled;
->> +EXPORT_SYMBOL(acpi_disabled);
->> +
->> +int acpi_pci_disabled;        /* skip ACPI PCI scan and IRQ initialization */
->> +EXPORT_SYMBOL(acpi_pci_disabled);
->> +
->> +/*
->> + * __acpi_map_table() will be called before page_init(), so early_ioremap()
->> + * or early_memremap() should be called here to for ACPI table mapping.
->> + */
->> +char *__init __acpi_map_table(unsigned long phys, unsigned long size)
->> +{
->> +    if (!phys || !size)
->> +        return NULL;
->> +
->> +    return early_memremap(phys, size);
->> +}
->> +
->> +void __init __acpi_unmap_table(char *map, unsigned long size)
->> +{
->> +    if (!map || !size)
->> +        return;
->> +
->> +    early_memunmap(map, size);
->> +}
->> +
->> +/*
->> + * acpi_boot_table_init() called from setup_arch(), always.
->> + *    1. find RSDP and get its address, and then find XSDT
->> + *    2. extract all tables and checksums them all
->> + *
->> + * We can parse ACPI boot-time tables such as FADT, MADT after
->> + * this function is called.
->> + */
->> +void __init acpi_boot_table_init(void)
->> +{
->> +    /* If acpi_disabled, bail out */
->> +    if (acpi_disabled)
->> +        return;
->> +
->> +    /* Initialize the ACPI boot-time table parser. */
->> +    if (acpi_table_init()) {
-> 
-> Can't we call acpi_table_init directly in setup ?
-> IIUC x86 has acpi_boot_table_init as it parses Boot Flags
-> table(ACPI_SIG_BOOT)
-
-Yes, we can. But I think it not a big deal to dot that, if that
-makes the code more readable, I will update it.
-
-> 
->> +        disable_acpi();
->> +        return;
->> +    }
->> +}
->> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
->> index fc50461..85c6326 100644
->> --- a/arch/arm64/kernel/setup.c
->> +++ b/arch/arm64/kernel/setup.c
->> @@ -43,6 +43,7 @@
->>   #include <linux/of_fdt.h>
->>   #include <linux/of_platform.h>
->>   #include <linux/efi.h>
->> +#include <linux/acpi.h>
->>
->>   #include <asm/fixmap.h>
->>   #include <asm/cputype.h>
->> @@ -385,6 +386,9 @@ void __init setup_arch(char **cmdline_p)
->>       efi_init();
->>       arm64_memblock_init();
->>
->> +    /* Parse the ACPI tables for possible boot-time configuration */
->> +    acpi_boot_table_init();
->> +
->>       paging_init();
->>       request_standard_resources();
-
-Thanks
-Hanjun
-
+greg k-h
