@@ -1,115 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696AbaHSJSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 05:18:42 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:57152 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767AbaHSJSj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:18:39 -0400
+	id S1751960AbaHSJVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 05:21:15 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:33685 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751528AbaHSJVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 05:21:13 -0400
+Message-ID: <53F31707.4040300@c-s.fr>
+Date: Tue, 19 Aug 2014 11:21:11 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpyZM8thDhtcw4PUhGPezdag=6Fv_J9nejvenPNdTu-aA@mail.gmail.com>
-References: <1408029833-6970-1-git-send-email-geert+renesas@glider.be>
-	<20140815134917.da77205b68f18341140c6593@codethink.co.uk>
-	<CAMuHMdXrWgW2iMDd7GA+QC-vcAsp+vH9fidkdnBj-f9F878yAw@mail.gmail.com>
-	<CAPDyKFpyZM8thDhtcw4PUhGPezdag=6Fv_J9nejvenPNdTu-aA@mail.gmail.com>
-Date: Tue, 19 Aug 2014 11:18:33 +0200
-X-Google-Sender-Auth: yAAs9BBILAXaApD5EKFuY3l2zFc
-Message-ID: <CAMuHMdUVwY_Y_jK6+EMbBDvF3OF0Aqio2zpw=dXcV9sLj4CHSg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: tmio: Fix hang during suspend
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Ian Molton <ian.molton@codethink.co.uk>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Chris Ball <chris@printf.net>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LinuxPPC-dev <linuxppc-dev@lists.ozlabs.org>,
+        linux-spi@vger.kernel.org
+Subject: Linux 3.16: all my drivers on SPI bus report WARNING: at drivers/base/dd.c:286
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+Since Linux 3.16, for all drivers tied to SPI bus, I get the following 
+warning on a PowerPC 8xx.
+It doesn't happen with Linux 3.15
 
-On Mon, Aug 18, 2014 at 3:10 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 18 August 2014 14:36, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> On Fri, Aug 15, 2014 at 2:49 PM, Ian Molton <ian.molton@codethink.co.uk> wrote:
->>> On Thu, 14 Aug 2014 17:23:53 +0200
->>> Geert Uytterhoeven <geert+renesas@glider.be> wrote:
->>>> On R-Car Gen 2, the SDHI registers cannot be accessed while the SDHI
->>>> module clock is disabled. Doing so will cause a lock-up.
->>>>
->>>> When suspending, enable the module clock before disabling the SDHI
->>>> interrupts, and disable the clock again afterwards.
->>>
->>> This feels wrong. Why can't interrupts be disabled prior to turning the clock off?
->>
->> The clock is handled by runtime PM. So if SDHI becomes idle, the clock
->> is turned off.
->> However, the card insertion interrupt is still enabled.
->> If all interrupts would be disabled when the clock is turned off, I believe card
->> insertion can no longer be detected.
->>
->> BTW, I'm still wondering why tmio_mmc_host_resume() works without
->> enabling the clock, as it calls tmio_mmc_enable_dma(), which also writes to
->> an SDHI register (CTL_DMA_ENABLE).
->
-> A while ago, I tried to rework the runtime PM handling of tmio.
->
-> http://www.spinics.net/lists/linux-mmc/msg23177.html
->
-> The hole set never got merged, due to that we couldn't get them tested
-> on hardware and there were a lack in review.
->
-> We might want to pick them up to see if those may solve our problem. :-)
+What can be the reason / what should I look at ?
 
-Thanks, I applied patches 4-8 (1-3 did get merged), and tried them on
-SDHI1 of r8a7791/koelsch. It still seems to work as before.
+[    3.086957] device: 'spi32766.1': device_add
+[    3.087179] bus: 'spi': add device spi32766.1
+[    3.087653] bus: 'spi': driver_probe_device: matched device 
+spi32766.1 with driver lm70
+[    3.087743] bus: 'spi': really_probe: probing driver lm70 with device 
+spi32766.1
+[    3.088014] ------------[ cut here ]------------
+[    3.092348] WARNING: at drivers/base/dd.c:286
+[    3.096637] Modules linked in:
+[    3.099697] CPU: 0 PID: 25 Comm: kworker/u2:1 Tainted: G W     
+3.16.1-s3k-drv-999-svn5771_knld-999 #158
+[    3.109610] Workqueue: deferwq deferred_probe_work_func
+[    3.114736] task: c787f020 ti: c790c000 task.ti: c790c000
+[    3.120062] NIP: c01df158 LR: c01df144 CTR: 00000000
+[    3.124983] REGS: c790db30 TRAP: 0700   Tainted: G        W 
+(3.16.1-s3k-drv-999-svn5771_knld-999)
+[    3.134162] MSR: 00029032 <EE,ME,IR,DR,RI>  CR: 22002082 XER: 20000000
+[    3.140703]
+[    3.140703] GPR00: 00000001 c790dbe0 c787f020 00000044 00000054 
+00000308 c056da0e 20737069
+[    3.140703] GPR08: 33323736 000ebfe0 00000308 000ebfdf 22002082 
+00000000 c046c5a0 c046c608
+[    3.140703] GPR16: c046c614 c046c620 c046c62c c046c638 c046c648 
+c046c654 c046c68c c046c6c4
+[    3.140703] GPR24: 00000000 00000000 00000003 c0401aa0 c0596638 
+c059662c c054e7a8 c7996800
+[    3.170102] NIP [c01df158] driver_probe_device+0xf8/0x334
+[    3.175431] LR [c01df144] driver_probe_device+0xe4/0x334
+[    3.180633] Call Trace:
+[    3.183093] [c790dbe0] [c01df144] driver_probe_device+0xe4/0x334 
+(unreliable)
+[    3.190147] [c790dc10] [c01dd15c] bus_for_each_drv+0x7c/0xc0
+[    3.195741] [c790dc40] [c01df5fc] device_attach+0xcc/0xf8
+[    3.201076] [c790dc60] [c01dd6d4] bus_probe_device+0xb4/0xc4
+[    3.206666] [c790dc80] [c01db9f8] device_add+0x270/0x564
+[    3.211923] [c790dcc0] [c0219e84] spi_add_device+0xc0/0x190
+[    3.217427] [c790dce0] [c021a79c] spi_register_master+0x720/0x834
+[    3.223455] [c790dd40] [c021cb48] of_fsl_spi_probe+0x55c/0x614
+[    3.229234] [c790dda0] [c01e0d2c] platform_drv_probe+0x30/0x74
+[    3.234987] [c790ddb0] [c01df18c] driver_probe_device+0x12c/0x334
+[    3.241008] [c790dde0] [c01dd15c] bus_for_each_drv+0x7c/0xc0
+[    3.246602] [c790de10] [c01df5fc] device_attach+0xcc/0xf8
+[    3.251937] [c790de30] [c01dd6d4] bus_probe_device+0xb4/0xc4
+[    3.257536] [c790de50] [c01de9d8] deferred_probe_work_func+0x98/0xe0
+[    3.263816] [c790de70] [c00305b8] process_one_work+0x18c/0x440
+[    3.269577] [c790dea0] [c0030a00] worker_thread+0x194/0x67c
+[    3.275105] [c790def0] [c0039198] kthread+0xd0/0xe4
+[    3.279911] [c790df40] [c000c6d0] ret_from_kernel_thread+0x5c/0x64
+[    3.285970] Instruction dump:
+[    3.288900] 80de0000 419e01d0 3b7b0038 3c60c046 7f65db78 38635264 
+48211b99 813f00a0
+[    3.296559] 381f00a0 7d290278 3169ffff 7c0b4910 <0f000000> 93df0044 
+7fe3fb78 4bfffd4d
+[    3.304401] ---[ end trace c75d3461bf9e2961 ]---
+[    3.309598] device: 'hwmon1': device_add
+[    3.310246] driver: 'lm70': driver_bound: bound to device 'spi32766.1'
+[    3.310342] bus: 'spi': really_probe: bound device spi32766.1 to 
+driver lm70
 
-However, I still need my patch to fix suspend.
-Your "[PATCH 8/8] mmc: tmio: Handle clock gating from runtime PM functions"
-manages the SDHI interface clock, while my patch manages the platform-specific
-SDHI module clock.
-
->>>> This fixes suspend and resume on r8a7791/koelsch.
->>>>
->>>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->>>> ---
->>>>  drivers/mmc/host/tmio_mmc_pio.c | 10 ++++++++++
->>>>  1 file changed, 10 insertions(+)
->>>>
->>>> diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
->>>> index faf0924e71cb..83192420a7e3 100644
->>>> --- a/drivers/mmc/host/tmio_mmc_pio.c
->>>> +++ b/drivers/mmc/host/tmio_mmc_pio.c
->>>> @@ -1147,8 +1147,18 @@ int tmio_mmc_host_suspend(struct device *dev)
->>>>  {
->>>>       struct mmc_host *mmc = dev_get_drvdata(dev);
->>>>       struct tmio_mmc_host *host = mmc_priv(mmc);
->>>> +     struct tmio_mmc_data *pdata = host->pdata;
->>>> +
->>>> +     if (pdata->clk_enable) {
->>>> +             unsigned int f;
->>>> +             pdata->clk_enable(host->pdev, &f);
->>>> +     }
->>>>
->>>>       tmio_mmc_disable_mmc_irqs(host, TMIO_MASK_ALL);
->>>> +
->>>> +     if (pdata->clk_disable)
->>>> +             pdata->clk_disable(host->pdev);
->>>> +
->>>>       return 0;
->>>>  }
->>>>  EXPORT_SYMBOL(tmio_mmc_host_suspend);
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Christophe
