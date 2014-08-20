@@ -1,187 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaHTPzO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:55:14 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:65164 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893AbaHTPzK (ORCPT
+	id S1752112AbaHTPzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:55:12 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:36582 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846AbaHTPzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 11:55:10 -0400
-Date: Wed, 20 Aug 2014 16:54:59 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>,
-        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
-        Max Eliaser <max.eliaser@intel.com>,
-        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-acpi@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 5/9] mfd: Add ACPI support
-Message-ID: <20140820155459.GM4266@lee--X1>
-References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
- <1408172039-32513-6-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408172039-32513-6-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140820153801.GB3427@ulmo>
+References: <1408381749-14156-1-git-send-email-dianders@chromium.org>
+	<1408381749-14156-2-git-send-email-dianders@chromium.org>
+	<20140819071011.GC12859@ulmo>
+	<CAD=FV=Xr4ywGT_pPK=r6f6tfVpwbduUY7D5LK61HVtc8=JmkaA@mail.gmail.com>
+	<20140820060759.GD13793@ulmo>
+	<CAD=FV=Uqm43x0N=eOCQkY_MXviiD2WMw55pOZmC=WVRbD2+veg@mail.gmail.com>
+	<20140820153801.GB3427@ulmo>
+Date: Wed, 20 Aug 2014 08:55:09 -0700
+X-Google-Sender-Auth: hmhKci0OkSUcnJVf6MRQCzfK59Y
+Message-ID: <CAD=FV=Xf4Hm5tCaaW3QG-ZSQGovh6RKH=1Og1K-yxj+jKyGsmA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ARM: rockchip: rk3288: Switch to use the proper PWM IP
+From: Doug Anderson <dianders@chromium.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Caesar Wang <caesar.wang@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Eddie Cai <eddie.cai@rock-chips.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Aug 2014, Mika Westerberg wrote:
-> If an MFD device is backed by ACPI namespace, we should allow subdevice
-> drivers to access their corresponding ACPI companion devices through normal
-> means (e.g using ACPI_COMPANION()).
-> 
-> This patch adds such support to the MFD core. If the MFD parent device
-> doesn't specify any ACPI _HID/_CID for the child device, the child device
-> will share the parent ACPI companion device. Otherwise the child device
-> will be assigned with the corresponding ACPI companion, if found in the
-> namespace below the parent.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-> ---
->  Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
->  drivers/mfd/mfd-core.c             | 41 ++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/core.h           |  3 +++
->  3 files changed, 71 insertions(+)
-> 
-> diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-> index e182be5e3c83..74e35c54febf 100644
-> --- a/Documentation/acpi/enumeration.txt
-> +++ b/Documentation/acpi/enumeration.txt
-> @@ -312,3 +312,30 @@ a code like this:
->  
->  There are also devm_* versions of these functions which release the
->  descriptors once the device is released.
-> +
-> +MFD devices
-> +~~~~~~~~~~~
-> +The MFD devices create platform devices from their children. For the
+Thierry,
 
-What does this mean?  MFD drivers register their children _as_
-platform devices.
+On Wed, Aug 20, 2014 at 8:38 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Wed, Aug 20, 2014 at 08:20:53AM -0700, Doug Anderson wrote:
+>> Thierry,
+>>
+>> On Tue, Aug 19, 2014 at 11:08 PM, Thierry Reding
+>> <thierry.reding@gmail.com> wrote:
+>> > On Tue, Aug 19, 2014 at 08:18:54AM -0700, Doug Anderson wrote:
+>> >> Thierry,
+>> >>
+>> >> On Tue, Aug 19, 2014 at 12:10 AM, Thierry Reding
+>> >> <thierry.reding@gmail.com> wrote:
+>> >> > On Mon, Aug 18, 2014 at 10:09:06AM -0700, Doug Anderson wrote:
+>> >> >> The rk3288 SoC has an option to switch all of the PWMs in the system
+>> >> >> between the old IP block and the new IP block.  The new IP block is
+>> >> >> working and tested and the suggested PWM to use, so setup the SoC to
+>> >> >> use it and then we can pretend that the other IP block doesn't exist.
+>> >
+>> > A few more questions as to how this actually works. Does it mean there
+>> > are two physically separate blocks (with different physical addresses)
+>> > to control the same PWM? And this register simply causes some of the
+>> > pins to be routed to one or another? As far as I recall there are a
+>> > number of instances of the PWM block, so the above would need to count
+>> > for all of them. Or are there separate bits for each of them?
+>>
+>> All I have is the TRM (technical reference manual) which doesn't give
+>> me much more info than I've provided you.  But I can answer some of
+>> your questoins:
+>>
+>> 1. If there are two physically separate blocks then the "old" block is
+>> not documented in my TRM.
+>>
+>> 1a) It's entirely possible it's located at some memory address that is
+>> marked "Reserved" in the TRM, but I have no idea.
+>>
+>> 1b) It's entirely possible that the old IP block and the new IP block
+>> are supposed to be "compatible" but that the old block is broken and
+>> thus isn't behaving properly.
+>>
+>> 1c) It's entirely possible that the old IP block and the new IP block
+>> are located at the same physical addresses but somehow work
+>> differently.  If so, the old IP block isn't documented.
+>>
+>>
+>> 2. As per the patch description, there is a single bit that controls
+>> all of the PWMs.  My guess is that there's actually a single IP block
+>> that implements all 4 PWMs.
+>
+> Looking at the register offsets in the device tree that seems likely. At
+> least PWMs 0 and 1 as well as 2 and 3 seem like they could be in the
+> same IP block. Their placement in the register map is somewhat strange:
+>
+>         pwm0: pwm@20030000 {
+>                 ...
+>                 reg = <0x20030000 0x10>;
+>                 ...
+>                 clocks = <&cru PCLK_PWM01>;
+>                 ...
+>         };
+>
+>         pwm1: pwm@20030010 {
+>                 ...
+>                 reg = <0x20030010 0x10>;
+>                 ...
+>                 clocks = <&cru PCLK_PWM01>;
+>                 ...
+>         };
+>
+>         ...
+>
+>         pwm2: pwm@20050020 {
+>                 ...
+>                 reg = <0x20050020 0x10>;
+>                 ...
+>                 clocks = <&cru PCLK_PWM23>;
+>                 ...
+>         };
+>
+>         pwm3: pwm@20050030 {
+>                 ...
+>                 reg = <0x20050030 0x10>;
+>                 ...
+>                 clocks = <&cru PCLK_PWM23>;
+>                 ...
+>         };
 
-> +child devices there needs to be an ACPI handle that they can use to
-> +reference parts of the ACPI namespace that relate to them. In the Linux
-> +MFD subsystem we provide two ways:
-> +
-> +	o The children share the parent ACPI handle.
-> +	o The MFD cell can specify the ACPI id of the device.
-> +
-> +For the first case, the MFD drivers do not need to do anything. The
-> +resulting child platform device will have its ACPI_COMPANION() set to point
-> +to the parent device.
-> +
-> +If the ACPI namespace has a device that we can match using an ACPI id,
-> +the id should be set like:
-> +
-> +	static struct mfd_cell my_subdevice_cell = {
-> +		.name = "my_subdevice",
-> +		/* set the resources relative to the parent */
-> +		.acpi_pnpid = "XYZ0001",
-> +	};
-> +
-> +The ACPI id "XYZ0001" is then used to lookup an ACPI device directly under
-> +the MFD device and if found, that ACPI companion device is bound to the
-> +resulting child platform device.
-> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-> index 892d343193ad..bb466b28b3b6 100644
-> --- a/drivers/mfd/mfd-core.c
-> +++ b/drivers/mfd/mfd-core.c
-> @@ -78,6 +78,45 @@ static int mfd_platform_add_cell(struct platform_device *pdev,
->  	return 0;
->  }
->  
-> +#if IS_ENABLED(CONFIG_ACPI)
-> +static void mfd_acpi_add_device(const struct mfd_cell *cell,
-> +				struct platform_device *pdev)
-> +{
-> +	struct acpi_device *parent_adev;
-> +	struct acpi_device *adev = NULL;
-> +
-> +	parent_adev = ACPI_COMPANION(pdev->dev.parent);
-> +	if (!parent_adev)
-> +		return;
-> +
-> +	/*
-> +	 * MFD child device gets its ACPI handle either from the ACPI
-> +	 * device directly under the parent that matches the acpi_pnpid or
-> +	 * it will use the parent handle if is no acpi_pnpid is given.
-> +	 */
-> +	if (cell->acpi_pnpid) {
-> +		struct acpi_device_id ids[2] = {};
-> +		struct acpi_device *child_adev;
-> +
-> +		strlcpy(ids[0].id, cell->acpi_pnpid, sizeof(ids[0].id));
-> +		list_for_each_entry(child_adev, &parent_adev->children, node)
-> +			if (acpi_match_device_ids(child_adev, ids)) {
-> +				adev = child_adev;
-> +				break;
-> +			}
-> +	} else {
-> +		adev = parent_adev;
-> +	}
-> +
-> +	ACPI_COMPANION_SET(&pdev->dev, adev);
-> +}
-> +#else
-> +static inline void mfd_acpi_add_device(const struct mfd_cell *cell,
-> +				       struct platform_device *pdev)
-> +{
-> +}
-> +#endif
-> +
+Ah, you're looking at "rk3xxx.dtsi".  That doesn't apply to rk3288
+(the downsides of trying to guess ahead of time what SoC vendors will
+name new models).
 
-I'm not keen on polluting the MFD core driver with #differy.  Can't you
-think of another way to do it?
+In rk3288 they have the same clocks.  See patch #3 in this series.
 
->  static int mfd_add_device(struct device *parent, int id,
->  			  const struct mfd_cell *cell, atomic_t *usage_count,
->  			  struct resource *mem_base,
-> @@ -118,6 +157,8 @@ static int mfd_add_device(struct device *parent, int id,
->  		}
->  	}
->  
-> +	mfd_acpi_add_device(cell, pdev);
-> +
->  	if (cell->pdata_size) {
->  		ret = platform_device_add_data(pdev,
->  					cell->platform_data, cell->pdata_size);
-> diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-> index f543de91ce19..73e1709d4c09 100644
-> --- a/include/linux/mfd/core.h
-> +++ b/include/linux/mfd/core.h
-> @@ -44,6 +44,9 @@ struct mfd_cell {
->  	 */
->  	const char		*of_compatible;
->  
-> +	/* Matches ACPI PNP id, either _HID or _CID */
-> +	const char		*acpi_pnpid;
-> +
->  	/*
->  	 * These resources can be specified relative to the parent device.
->  	 * For accessing hardware you should use resources from the platform dev
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> The clocks would also indicate that there are actually two blocks. I
+> seem to remember a discussion about whether to handle them as a single
+> block or two/four, but I can't seem to find a reference to it. Maybe I'm
+> confusing it with another driver.
+
+At this point it seems like the choice has already been made to handle
+them as separate PWMs.  I can change this choice if you want...
+
+
+>> >> >> This code could go lots of other places, but we've put it here.  Why?
+>> >> >> - Pushing it to the bootloader just makes the code harder to update in
+>> >> >>   the field.  If we later find a bug in the new IP block and want to
+>> >> >>   change our mind about what to use we want it to be easy to update.
+>> >
+>> > Depending on how this muxing works you won't be able to change your mind
+>> > anyway. If the IP blocks are different then the device tree will
+>> > effectively make the decision for you. So if you really want to be safe
+>> > you'd need to have code in the kernel that parses the device tree and
+>> > checks that all PWM instances are of the new type, then set this
+>> > register accordingly.
+>>
+>> Since there is no documentation about how you would instantiate the
+>> "old" type in the TRM and no good reason I can think of why someone
+>> would want to do this, it doesn't seem super fruitful.
+>
+> Okay, so if it's not at all documented and never used then yes, we'd
+> better just ignore it.
+
+Heiko just pointed me at the base address for the other block.
+There's nothing in the rk3288 TRM about it, but we can see the base
+address.  We could probably guess that it behaves the same as the
+older PWM if we need to.  I'm still not convinced there's a good
+reason for someone to use it.
+
+
+>> >> >> diff --git a/arch/arm/mach-rockchip/rockchip.c b/arch/arm/mach-rockchip/rockchip.c
+>> >> >> index 8ab9e0e..99133b9 100644
+>> >> >> --- a/arch/arm/mach-rockchip/rockchip.c
+>> >> >> +++ b/arch/arm/mach-rockchip/rockchip.c
+>> >> >> @@ -24,6 +24,24 @@
+>> >> >>  #include <asm/hardware/cache-l2x0.h>
+>> >> >>  #include "core.h"
+>> >> >>
+>> >> >> +static void __init rk3288_init_machine(void)
+>> >> >> +{
+>> >> >> +     void *grf = ioremap(0xff770000, 0x10000);
+>> >> >
+>> >> > This region of memory is part of the "grf" "syscon" device (according to
+>> >> > arch/arm/boot/dts/rk3288.dtsi) so the register should be accessed from
+>> >> > that driver. It looks as if no such driver currently exists, but given
+>> >> > the existence of the device tree node it's fair to assume that one will
+>> >> > eventually be merged.
+>> >>
+>> >> The "grf" syscon device is the "general register file".  It's a
+>> >> collection of totally random registers stuffed together in one address
+>> >> space.  Sometimes a single 32-bit register has things you need to
+>> >> tweak for completely different subsystems.
+>> >>
+>> >> Most drivers referene the syscon using this in dts:
+>> >>   rockchip,grf = <&grf>;
+>> >>
+>> >> Then the drivers do:
+>> >>   grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
+>> >>
+>> >>
+>> >> See the Rockchip i2c, pinctrl, or clock drivers for examples.
+>> >
+>> > That's one way to do it. But if it's really just a one-time thing, then
+>> > you could easily perform the register write from the syscon driver where
+>> > the memory is already parsed from device tree and mapped. That way you
+>> > don't have to hardcode the physical address in some other random piece
+>> > of code and map the memory again.
+>>
+>> Well, except that we're using the general "syscon" driver.  I could
+>> create a whole new driver that "subclasses" this syscon driver I
+>> suppose.
+>
+> Ah, I wasn't aware that there was even something like a generic syscon
+> driver. But yes, subclassing it sounds like a reasonable thing to do.
+
+I will do that if need be, but it's not my favorite.  I will let
+others chime in.
