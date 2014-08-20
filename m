@@ -1,43 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaHTINP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 04:13:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:36964 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444AbaHTINM (ORCPT
+	id S1751997AbaHTIO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 04:14:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35722 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751170AbaHTIO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 04:13:12 -0400
-Message-ID: <53F45893.6050305@redhat.com>
-Date: Wed, 20 Aug 2014 10:13:07 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 20 Aug 2014 04:14:26 -0400
+Date: Wed, 20 Aug 2014 10:14:22 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        =?UTF-8?B?R2HDq2w=?= PORTAY <gael.portay@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Nicolas FERRE <nicolas.ferre@atmel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH 3/3] ARM: at91/tclib: mask interruptions at shutdown and
+ probe
+Message-ID: <20140820101422.3e8da816@bbrezillon>
+In-Reply-To: <20140820073111.GH13793@ulmo>
+References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
+	<1408486072-19268-4-git-send-email-gael.portay@gmail.com>
+	<776D4128-09AC-418C-A710-28A2522D1D63@jcrosoft.com>
+	<20140820010130.10974326@bbrezillon>
+	<20140820073111.GH13793@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] KVM: vmx: fix ept reserved bits for 1-GByte page
-References: <1408519913-8943-1-git-send-email-wanpeng.li@linux.intel.com>
-In-Reply-To: <1408519913-8943-1-git-send-email-wanpeng.li@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/08/2014 09:31, Wanpeng Li ha scritto:
-> EPT misconfig handler in kvm will check which reason lead to EPT
-> misconfiguration after vmexit. One of the reasons is that an EPT
-> paging-structure entry is configured with settings reserved for
-> future functionality. However, the handler can't identify if
-> paging-structure entry of reserved bits for 1-GByte page are
-> configured, since PDPTE which point to 1-GByte page will reserve
-> bits 29:12 instead of bits 7:3 which are reserved for PDPTE that
-> references an EPT Page Directory. This patch fix it by reserve
-> bits 29:12 for 1-GByte page.
+Hi Thierry,
 
-Thanks, the patch looks good.
+On Wed, 20 Aug 2014 09:31:13 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
-Can you describe how you detected the problem and how you're testing for it?
+> On Wed, Aug 20, 2014 at 01:01:30AM +0200, Boris BREZILLON wrote:
+> > Hi Jean-Christophe,
+> > 
+> > On Wed, 20 Aug 2014 06:11:17 +0800
+> > Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
+> > 
+> > > Hi,
+> > > 
+> > > 	This is a bit weird as the clock of the TC should be off and the irq free
+> > > 
+> > > 	so this should never happened we need to investigate more why this append
+> > 
+> > I may have found the source of this bug.
+> > 
+> > As Gael stated, when you're kexec-ing a new kernel your previous kernel
+> > could be using the tbc_clksrc driver (and especially the clkevent
+> > device). Thus the kernel might have planned a timer event and then been
+> > asked to shutdown the machine (requested by the kexec code).
+> > In this case the AIC interrupt connected to the TC Block is disabled
+> > but not the interrupts within the TCB IP (IDR registers), possibly
+> > leaving a pending interrupt before booting the new kernel.
+> > 
+> > When the tcb_clksrc driver is loaded by the new kernel it enables the
+> > interrupt line by calling setup_irq [1] while the clockevent device is
+> > not registered yet [2]. Thus the event_handler is still NULL when the
+> > AIC line connected to the TCB is unmasked. Remember that an interrupt
+> > is still pending on this HW block, which will lead to an immediate call
+> > to the ch2_irq handler, which tries to call the event_handler, which in
+> > turns is NULL because clkevent device registration has not taken place
+> > at this moment => Kernel panic.
+> > ITOH, we can't register the clkevent device before the irq handler is
+> > set up, because we should be ready to handle clkevent request at the
+> > time clockevents_config_and_register is called.
+> > 
+> > This leaves two solution:
+> >  1) disable the TCB irqs (using TCB IDR registers) before calling
+> >  setup_irq in the tcb_clksrc driver
+> >  2) disable the TCB irqs at the tclib level (as proposed by Gael)
+> > 
+> > I prefer solution #2 because it fixes the bug for all TCB users (not
+> > just the tcb_clksrc driver).
+> 
+> Wouldn't a more proper fix be to only enable the IRQ (setup_irq()) once
+> everything has properly been set up? That's certainly how all other
+> drivers are doing this. Generally I think it's best to assume that an
+> interrupt can fire at any point after it's been enabled, so everything
+> should be set up prior to enabling it.
 
-Paolo
+Sure. And, AFAIK, another common practice is to disable all interrupts
+and acknowledge all pending interrupts before registering a new irq
+handler to avoid inheriting peripheral dirty state from previous usage
+(either the bootloader, or the previous kernel when using kexec).
+
+This being said, I really think we should leave the HW in a clean state
+when shutdown is called. And disabling interrupts at the tclib level
+(in a shutdown callback) ensure that.
+
+> 
+> Also, does anyone know why this driver uses setup_irq() rather than the
+> more idiomatic request_irq()?
+
+Because nobody has sanitized this driver yet ;-).
+
+Best Regards,
+
+Boris
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
