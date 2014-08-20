@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaHTAqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 20:46:35 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34550 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaHTAqa (ORCPT
+	id S1752293AbaHTAqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 20:46:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60657 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752266AbaHTAqn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 20:46:30 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v7 11/11] clk: rockchip: add restart handler
-Date: Tue, 19 Aug 2014 17:45:38 -0700
-Message-Id: <1408495538-27480-12-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
+	Tue, 19 Aug 2014 20:46:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,898,1400050800"; 
+   d="scan'208";a="560844624"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH] USB: pch_udc: USB gadget device support for Intel Quark
+ X1000
+Thread-Topic: [PATCH] USB: pch_udc: USB gadget device support for Intel
+ Quark X1000
+Thread-Index: AQHPu7jWizq2pocvXku+0qYGlydmoJvYqDsQ
+Date: Wed, 20 Aug 2014 00:46:33 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E97D609@SHSMSX101.ccr.corp.intel.com>
+References: <1407172974-22485-1-git-send-email-alvin.chen@intel.com>
+ <20140819141534.GC16085@saruman.home>
+In-Reply-To: <20140819141534.GC16085@saruman.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stübner <heiko@sntech.de>
 
-Add infrastructure to write the correct value to the restart register and
-register the restart notifier for both rk3188 (including rk3066) and rk3288.
+> Hi,
+> 
+> On Mon, Aug 04, 2014 at 10:22:54AM -0700, Chen, Alvin wrote:
+> > From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> >
+> > This patch is to enable the USB gadget device for Intel Quark X1000
+> >
+> > Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> > Signed-off-by: Bing Niu <bing.niu@intel.com>
+> > Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+> 
+> Can someone confirm to me this is not another incarnation of chipidea ?
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v7: Added patch to series.
+No, this is not another incarnation of chipidea. And its cover letter is as following:
 
- drivers/clk/rockchip/clk-rk3188.c |  2 ++
- drivers/clk/rockchip/clk-rk3288.c |  2 ++
- drivers/clk/rockchip/clk.c        | 25 +++++++++++++++++++++++++
- drivers/clk/rockchip/clk.h        |  1 +
- 4 files changed, 30 insertions(+)
-
-diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
-index a83a6d8..71b661a 100644
---- a/drivers/clk/rockchip/clk-rk3188.c
-+++ b/drivers/clk/rockchip/clk-rk3188.c
-@@ -631,6 +631,8 @@ static void __init rk3188_common_clk_init(struct device_node *np)
- 
- 	rockchip_register_softrst(np, 9, reg_base + RK2928_SOFTRST_CON(0),
- 				  ROCKCHIP_SOFTRST_HIWORD_MASK);
-+
-+	rockchip_register_restart_notifier(RK2928_GLB_SRST_FST);
- }
- 
- static void __init rk3066a_clk_init(struct device_node *np)
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index 0d8c6c5..b604217 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -713,5 +713,7 @@ static void __init rk3288_clk_init(struct device_node *np)
- 
- 	rockchip_register_softrst(np, 9, reg_base + RK3288_SOFTRST_CON(0),
- 				  ROCKCHIP_SOFTRST_HIWORD_MASK);
-+
-+	rockchip_register_restart_notifier(RK3288_GLB_SRST_FST);
- }
- CLK_OF_DECLARE(rk3288_cru, "rockchip,rk3288-cru", rk3288_clk_init);
-diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
-index 278cf9d..aa41433 100644
---- a/drivers/clk/rockchip/clk.c
-+++ b/drivers/clk/rockchip/clk.c
-@@ -25,6 +25,7 @@
- #include <linux/clk-provider.h>
- #include <linux/mfd/syscon.h>
- #include <linux/regmap.h>
-+#include <linux/reboot.h>
- #include "clk.h"
- 
- /**
-@@ -242,3 +243,27 @@ void __init rockchip_clk_register_branches(
- 		rockchip_clk_add_lookup(clk, list->id);
- 	}
- }
-+
-+static unsigned int reg_restart;
-+static int rockchip_restart_notify(struct notifier_block *this,
-+				   unsigned long mode, void *cmd)
-+{
-+	writel(0xfdb9, reg_base + reg_restart);
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block rockchip_restart_handler = {
-+	.notifier_call = rockchip_restart_notify,
-+	.priority = 128,
-+};
-+
-+void __init rockchip_register_restart_notifier(unsigned int reg)
-+{
-+	int ret;
-+
-+	reg_restart = reg;
-+	ret = register_restart_handler(&rockchip_restart_handler);
-+	if (ret)
-+		pr_err("%s: cannot register restart handler, %d\n",
-+		       __func__, ret);
-+}
-diff --git a/drivers/clk/rockchip/clk.h b/drivers/clk/rockchip/clk.h
-index 887cbde..0b5eab5 100644
---- a/drivers/clk/rockchip/clk.h
-+++ b/drivers/clk/rockchip/clk.h
-@@ -329,6 +329,7 @@ void rockchip_clk_register_branches(struct rockchip_clk_branch *clk_list,
- 				    unsigned int nr_clk);
- void rockchip_clk_register_plls(struct rockchip_pll_clock *pll_list,
- 				unsigned int nr_pll, int grf_lock_offset);
-+void rockchip_register_restart_notifier(unsigned int reg);
- 
- #define ROCKCHIP_SOFTRST_HIWORD_MASK	BIT(0)
- 
--- 
-1.9.1
-
+On Mon, Aug 04, 2014 at 11:00:07AM -0700, Chen, Alvin wrote:
+> From: "Alvin (Weike) Chen" <alvin.chen@intel.com>
+> 
+> Hi,
+> Intel Quark X1000 consists of one USB gadget device which can be PCI enumerated. 
+> pch_udc layer doesn't support it. Thus, we add support for Intel Quark 
+> X1000 USB gadget device as well.
