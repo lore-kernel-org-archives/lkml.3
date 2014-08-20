@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaHTL5f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:57:35 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58971 "EHLO
+	id S1753617AbaHTL5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:57:37 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58984 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752567AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752590AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 069/104] DMA-API: provide a helper to set both DMA and coherent DMA masks
-Date: Wed, 20 Aug 2014 13:43:32 +0200
-Message-Id: <3176e033e6957d0cf26c8ce3fbef56fc0b4ec32c.1408535000.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 080/104] DMA-API: net: intel/ixgbevf: fix 32-bit DMA mask handling
+Date: Wed, 20 Aug 2014 13:43:43 +0200
+Message-Id: <fe6fcbc1d730c9c3821acd55bb7e8c2de3785673.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -29,147 +29,66 @@ From: Russell King <rmk+kernel@arm.linux.org.uk>
 
 ===============
 
-commit 4aa806b771d16b810771d86ce23c4c3160888db3 upstream.
+commit 53567aa4e00399aa59339bba81b285a5b95f425c upstream.
 
-Provide a helper to set both the DMA and coherent DMA masks to the
-same value - this avoids duplicated code in a number of drivers,
-sometimes with buggy error handling, and also allows us identify
-which drivers do things differently.
+The fallback to 32-bit DMA mask is rather odd:
+	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
+	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
+		pci_using_dac = 1;
+	} else {
+		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+		if (err) {
+			err = dma_set_coherent_mask(&pdev->dev,
+						    DMA_BIT_MASK(32));
+			if (err) {
+				dev_err(&pdev->dev, "No usable DMA "
+					"configuration, aborting\n");
+				goto err_dma;
+			}
+		}
+		pci_using_dac = 0;
+	}
+This means we only set the coherent DMA mask in the fallback path if
+the DMA mask set failed, which is silly.  This fixes it to set the
+coherent DMA mask only if dma_set_mask() succeeded, and to error out
+if either fails.
 
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- Documentation/DMA-API-HOWTO.txt | 37 ++++++++++++++++++++++---------------
- Documentation/DMA-API.txt       |  8 ++++++++
- include/linux/dma-mapping.h     | 14 ++++++++++++++
- 3 files changed, 44 insertions(+), 15 deletions(-)
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
-index 14129f149a75..5e983031cc11 100644
---- a/Documentation/DMA-API-HOWTO.txt
-+++ b/Documentation/DMA-API-HOWTO.txt
-@@ -101,14 +101,23 @@ style to do this even if your device holds the default setting,
- because this shows that you did think about these issues wrt. your
- device.
+diff --git a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+index 59a62bbfb371..e34c2daac6a0 100644
+--- a/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
++++ b/drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c
+@@ -3326,19 +3326,14 @@ static int ixgbevf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (err)
+ 		return err;
  
--The query is performed via a call to dma_set_mask():
-+The query is performed via a call to dma_set_mask_and_coherent():
- 
--	int dma_set_mask(struct device *dev, u64 mask);
-+	int dma_set_mask_and_coherent(struct device *dev, u64 mask);
- 
--The query for consistent allocations is performed via a call to
--dma_set_coherent_mask():
-+which will query the mask for both streaming and coherent APIs together.
-+If you have some special requirements, then the following two separate
-+queries can be used instead:
- 
--	int dma_set_coherent_mask(struct device *dev, u64 mask);
-+	The query for streaming mappings is performed via a call to
-+	dma_set_mask():
-+
-+		int dma_set_mask(struct device *dev, u64 mask);
-+
-+	The query for consistent allocations is performed via a call
-+	to dma_set_coherent_mask():
-+
-+		int dma_set_coherent_mask(struct device *dev, u64 mask);
- 
- Here, dev is a pointer to the device struct of your device, and mask
- is a bit mask describing which bits of an address your device
-@@ -137,7 +146,7 @@ exactly why.
- 
- The standard 32-bit addressing device would do something like this:
- 
--	if (dma_set_mask(dev, DMA_BIT_MASK(32))) {
-+	if (dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32))) {
- 		printk(KERN_WARNING
- 		       "mydev: No suitable DMA available.\n");
- 		goto ignore_this_device;
-@@ -171,22 +180,20 @@ the case would look like this:
- 
- 	int using_dac, consistent_using_dac;
- 
--	if (!dma_set_mask(dev, DMA_BIT_MASK(64))) {
-+	if (!dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64))) {
- 		using_dac = 1;
- 	   	consistent_using_dac = 1;
--		dma_set_coherent_mask(dev, DMA_BIT_MASK(64));
--	} else if (!dma_set_mask(dev, DMA_BIT_MASK(32))) {
-+	} else if (!dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32))) {
- 		using_dac = 0;
- 		consistent_using_dac = 0;
--		dma_set_coherent_mask(dev, DMA_BIT_MASK(32));
+-	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
+-	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
++	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
+ 		pci_using_dac = 1;
  	} else {
- 		printk(KERN_WARNING
- 		       "mydev: No suitable DMA available.\n");
- 		goto ignore_this_device;
+-		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+ 		if (err) {
+-			err = dma_set_coherent_mask(&pdev->dev,
+-						    DMA_BIT_MASK(32));
+-			if (err) {
+-				dev_err(&pdev->dev, "No usable DMA "
+-					"configuration, aborting\n");
+-				goto err_dma;
+-			}
++			dev_err(&pdev->dev, "No usable DMA "
++				"configuration, aborting\n");
++			goto err_dma;
+ 		}
+ 		pci_using_dac = 0;
  	}
- 
--dma_set_coherent_mask() will always be able to set the same or a
--smaller mask as dma_set_mask(). However for the rare case that a
-+The coherent coherent mask will always be able to set the same or a
-+smaller mask as the streaming mask. However for the rare case that a
- device driver only uses consistent allocations, one would have to
- check the return value from dma_set_coherent_mask().
- 
-@@ -199,9 +206,9 @@ address you might do something like:
- 		goto ignore_this_device;
- 	}
- 
--When dma_set_mask() is successful, and returns zero, the kernel saves
--away this mask you have provided.  The kernel will use this
--information later when you make DMA mappings.
-+When dma_set_mask() or dma_set_mask_and_coherent() is successful, and
-+returns zero, the kernel saves away this mask you have provided.  The
-+kernel will use this information later when you make DMA mappings.
- 
- There is a case which we are aware of at this time, which is worth
- mentioning in this documentation.  If your device supports multiple
-diff --git a/Documentation/DMA-API.txt b/Documentation/DMA-API.txt
-index 78a6c569d204..e865279cec58 100644
---- a/Documentation/DMA-API.txt
-+++ b/Documentation/DMA-API.txt
-@@ -142,6 +142,14 @@ internal API for use by the platform than an external API for use by
- driver writers.
- 
- int
-+dma_set_mask_and_coherent(struct device *dev, u64 mask)
-+
-+Checks to see if the mask is possible and updates the device
-+streaming and coherent DMA mask parameters if it is.
-+
-+Returns: 0 if successful and a negative error if not.
-+
-+int
- dma_set_mask(struct device *dev, u64 mask)
- 
- Checks to see if the mask is possible and updates the device
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index 3a8d0a2af607..ec951f98e3d9 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -97,6 +97,20 @@ static inline int dma_set_coherent_mask(struct device *dev, u64 mask)
- }
- #endif
- 
-+/*
-+ * Set both the DMA mask and the coherent DMA mask to the same thing.
-+ * Note that we don't check the return value from dma_set_coherent_mask()
-+ * as the DMA API guarantees that the coherent DMA mask can be set to
-+ * the same or smaller than the streaming DMA mask.
-+ */
-+static inline int dma_set_mask_and_coherent(struct device *dev, u64 mask)
-+{
-+	int rc = dma_set_mask(dev, mask);
-+	if (rc == 0)
-+		dma_set_coherent_mask(dev, mask);
-+	return rc;
-+}
-+
- extern u64 dma_get_required_mask(struct device *dev);
- 
- static inline unsigned int dma_get_max_seg_size(struct device *dev)
 -- 
 2.0.4
 
