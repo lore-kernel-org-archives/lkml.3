@@ -1,74 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913AbaHTD4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 23:56:54 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:59341 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaHTD4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 23:56:52 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, LKP <lkp@01.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20140819114738.GB18960@localhost>
-Date: Tue, 19 Aug 2014 20:52:06 -0700
-In-Reply-To: <20140819114738.GB18960@localhost> (Fengguang Wu's message of
-	"Tue, 19 Aug 2014 19:47:38 +0800")
-Message-ID: <878umju8bd.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+xkGCkAPvgMV3Z5MppqhVcD59E/0sQk5I=
-X-SA-Exim-Connect-IP: 107.0.249.3
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4954]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Fengguang Wu <fengguang.wu@intel.com>
-X-Spam-Relay-Country: 
-Subject: Re: [vfs mnt_set_mountpoint] invalid opcode: 0000 [#1] DEBUG_PAGEALLOC
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	id S1752100AbaHTD5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 23:57:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54543 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979AbaHTD5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 23:57:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="374573965"
+Subject: [PATCH] [v2] TAINT_PERFORMANCE
+To: linux-kernel@vger.kernel.org
+Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
+        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
+        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
+        penberg@kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        lauraa@codeaurora.org
+From: Dave Hansen <dave@sr71.net>
+Date: Tue, 19 Aug 2014 20:57:51 -0700
+Message-Id: <20140820035751.08C980FB@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fengguang Wu <fengguang.wu@intel.com> writes:
 
-> // Fix email address for Eric and add another oops message.
-> // This commit seem to generate all kinds of oops.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-My apologies about the email.  This patch has taken so long to get
-somewhere that email address has bit-rotted.
+Changes from v1:
+ * remove schedstats
+ * add DEBUG_PAGEALLOC and SLUB_DEBUG_ON
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-> commit 89f7ca1af15bdfe7a6aed343032a84af2a69f736
-> Author:     Eric W. Biederman <ebiederman@twitter.com>
-> AuthorDate: Sun Sep 22 19:37:01 2013 -0700
-> Commit:     Al Viro <viro@zeniv.linux.org.uk>
-> CommitDate: Sun Aug 17 07:02:00 2014 -0400
->
->     vfs: Keep a list of mounts on a mount point
->     
->     To spot any possible problems call BUG if a mountpoint
->     is put when it's list of mounts is not empty.
->     
->     AV: use hlist instead of list_head
+--
 
-Hugh Dickins has a fix for an unitialized field he has sent to Stephen
-Rothwell.
+I have more than once myself been the victim of an accidentally-
+enabled kernel config option being mistaken for a true
+performance problem.
 
->     Reviewed-by: Miklos Szeredi <miklos@szeredi.hu>
->     Signed-off-by: Eric W. Biederman <ebiederman@twitter.com>
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+I'm sure I've also taken profiles or performance measurements
+and assumed they were real-world when really I was measuing the
+performance with an option that nobody turns on in production.
 
-I expect Al will sort things out when he get home from kernel summit.
+A warning like this late in boot will help remind folks when
+these kinds of things are enabled.
 
-Eric
+As for the patch...
+
+I originally wanted this for CONFIG_DEBUG_VM, but I think it also
+applies to things like lockdep and slab debugging.  See the patch
+for the list of offending config options.  I'm open to adding
+more, but this seemed like a good list to start.
+
+This could be done with Kconfig and an #ifdef to save us 8 bytes
+of text and the entry in the late_initcall() section.  Doing it
+this way lets us keep the list of these things in one spot, and
+also gives us a convenient way to dump out the name of the
+offending option.
+
+The dump_stack() is really just to be loud.
+
+For anybody that *really* cares, I put the whole thing under
+#ifdef CONFIG_DEBUG_KERNEL.
+
+The messages look like this:
+
+[    2.534574] CONFIG_LOCKDEP enabled
+[    2.536392] Do not use this kernel for performance measurement.
+[    2.547189] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.16.0-10473-gc8d6637-dirty #800
+[    2.558075] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+[    2.564483]  0000000080000000 ffff88009c70be78 ffffffff817ce318 0000000000000000
+[    2.582505]  ffffffff81dca5b6 ffff88009c70be88 ffffffff81dca5e2 ffff88009c70bef8
+[    2.588589]  ffffffff81000377 0000000000000000 0007000700000142 ffffffff81b78968
+[    2.592638] Call Trace:
+[    2.593762]  [<ffffffff817ce318>] dump_stack+0x4e/0x68
+[    2.597742]  [<ffffffff81dca5b6>] ? oops_setup+0x2e/0x2e
+[    2.601247]  [<ffffffff81dca5e2>] performance_taint+0x2c/0x3c
+[    2.603498]  [<ffffffff81000377>] do_one_initcall+0xe7/0x290
+[    2.606556]  [<ffffffff81db3215>] kernel_init_freeable+0x106/0x19a
+[    2.609718]  [<ffffffff81db29e8>] ? do_early_param+0x86/0x86
+[    2.613772]  [<ffffffff817bcfc0>] ? rest_init+0x150/0x150
+[    2.617333]  [<ffffffff817bcfce>] kernel_init+0xe/0xf0
+[    2.620840]  [<ffffffff817dbc7c>] ret_from_fork+0x7c/0xb0
+[    2.624718]  [<ffffffff817bcfc0>] ? rest_init+0x150/0x150
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: ak@linux.intel.com
+Cc: tim.c.chen@linux.intel.com
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org
+Cc: kirill@shutemov.name
+Cc: lauraa@codeaurora.org
+---
+
+ b/include/linux/kernel.h |    1 +
+ b/kernel/panic.c         |   41 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+)
+
+diff -puN include/linux/kernel.h~taint-performance include/linux/kernel.h
+--- a/include/linux/kernel.h~taint-performance	2014-08-19 11:38:07.424005355 -0700
++++ b/include/linux/kernel.h	2014-08-19 11:38:20.960615904 -0700
+@@ -471,6 +471,7 @@ extern enum system_states {
+ #define TAINT_OOT_MODULE		12
+ #define TAINT_UNSIGNED_MODULE		13
+ #define TAINT_SOFTLOCKUP		14
++#define TAINT_PERFORMANCE		15
+ 
+ extern const char hex_asc[];
+ #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+diff -puN kernel/panic.c~taint-performance kernel/panic.c
+--- a/kernel/panic.c~taint-performance	2014-08-19 11:38:28.928975233 -0700
++++ b/kernel/panic.c	2014-08-19 20:56:31.598705180 -0700
+@@ -225,6 +225,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_OOT_MODULE,		'O', ' ' },
+ 	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+ 	{ TAINT_SOFTLOCKUP,		'L', ' ' },
++	{ TAINT_PERFORMANCE,		'Q', ' ' },
+ };
+ 
+ /**
+@@ -501,3 +502,43 @@ static int __init oops_setup(char *s)
+ 	return 0;
+ }
+ early_param("oops", oops_setup);
++
++#ifdef CONFIG_DEBUG_KERNEL
++#define TAINT_PERF_IF(x) do {						\
++		if (IS_ENABLED(CONFIG_##x)) {				\
++			do_taint = 1;					\
++			pr_warn("CONFIG_%s enabled\n",	__stringify(x));\
++		}							\
++	} while (0)
++
++static int __init performance_taint(void)
++{
++	int do_taint = 0;
++
++	/*
++	 * This should list any kernel options that can substantially
++	 * affect performance.  This is intended to give a big, fat
++	 * warning during bootup so that folks have a fighting chance
++	 * of noticing these things.
++	 */
++	TAINT_PERF_IF(LOCKDEP);
++	TAINT_PERF_IF(LOCK_STAT);
++	TAINT_PERF_IF(DEBUG_VM);
++	TAINT_PERF_IF(DEBUG_VM_VMACACHE);
++	TAINT_PERF_IF(DEBUG_VM_RB);
++	TAINT_PERF_IF(DEBUG_SLAB);
++	TAINT_PERF_IF(DEBUG_OBJECTS_FREE);
++	TAINT_PERF_IF(DEBUG_KMEMLEAK);
++	TAINT_PERF_IF(DEBUG_PAGEALLOC);
++	TAINT_PERF_IF(SLUB_DEBUG_ON);
++
++	if (!do_taint)
++		return 0;
++
++	pr_warn("Do not use this kernel for performance measurement.");
++	dump_stack();
++	add_taint(TAINT_PERFORMANCE, LOCKDEP_STILL_OK);
++	return 0;
++}
++late_initcall(performance_taint);
++#endif
+_
