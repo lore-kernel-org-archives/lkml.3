@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893AbaHTLq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:46:28 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:37845 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172AbaHTLqZ (ORCPT
+	id S1752921AbaHTLrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:47:12 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59043 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752648AbaHTLoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:46:25 -0400
-Date: Wed, 20 Aug 2014 13:46:20 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net, jasowang@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
-        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
-        xii@google.com, stephen@networkplumber.org
-Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
- module_param
-Message-ID: <20140820114620.GC1916@nanopsycho.orion>
-References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
- <1408369040-1216-3-git-send-email-pagupta@redhat.com>
- <20140820105817.GB1916@nanopsycho.orion>
- <20140820111724.GE17371@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140820111724.GE17371@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Wed, 20 Aug 2014 07:44:12 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 098/104] PCI: rphahp: Fix endianess issues
+Date: Wed, 20 Aug 2014 13:44:01 +0200
+Message-Id: <520b3a651e2b629faac8e6765e51b7b0366a3026.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wed, Aug 20, 2014 at 01:17:24PM CEST, mst@redhat.com wrote:
->On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
->> Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
->> > This patch publishes maximum number of tun/tap queues allocated as a
->> > read_only module parameter which a user space application like libvirt
->> > can make use of to limit maximum number of queues. Value of read_only
->> > module parameter can be writable only at module load time. If no value is set
->> > at module load time a default value 256 is used which is equal to maximum number
->> > of vCPUS allowed by KVM.
->> >
->> > Administrator can specify maximum number of queues only at the driver
->> > module load time.
->> >
->> >Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
->> >---
->> > drivers/net/tun.c |   13 +++++++++++--
->> > 1 files changed, 11 insertions(+), 2 deletions(-)
->> >
->> >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> >index acaaf67..1f518e2 100644
->> >--- a/drivers/net/tun.c
->> >+++ b/drivers/net/tun.c
->> >@@ -119,6 +119,9 @@ struct tap_filter {
->> > 
->> > #define TUN_FLOW_EXPIRE (3 * HZ)
->> > 
->> >+static int max_tap_queues = MAX_TAP_QUEUES;
->> >+module_param(max_tap_queues, int, S_IRUGO);
->> 
->> Please do not introduce new module paramaters. Please other ways to
->> interchange values with userspace.
->
->I suggested this initially, but thinking more about it, I agree.
->
->It's a global limit (necessary to limit memory utilization by
->userspace), but it should be possible to change it
->after module load.
->
->Additionally, userspace that has the FD should be able to
->retrieve the value without guessing that the FD is
->for the tun device (and not e.g. macvtap).
->To retrieve the value, an ioctl is probably the
->cleanest approach.
->
->To set it, how about a sysctl? I think the limit can also apply to
->all devices, not just tun.
+From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 
-Or netlink?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
->
->-- 
->MST
+===============
+
+commit 761ce53330a4f02c58768631027d1c1dd0d538f7 upstream.
+
+Numerical values stored in the device tree are encoded in Big Endian and
+should be byte swapped when running in Little Endian.
+
+The RPA hotplug module should convert those values as well.
+
+Note that in rpaphp_get_drc_props(), the comparison between indexes[i+1]
+and *index is done using the BE values (whatever is the current endianess).
+This doesn't matter since we are checking for equality here.  This way only
+the returned value is byte swapped.
+
+RPA also made RTAS calls which implies BE values to be used.  According to
+the patch done in RTAS (http://patchwork.ozlabs.org/patch/336865), no
+additional conversion is required in RPA.
+
+Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/pci/hotplug/rpaphp_core.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/pci/hotplug/rpaphp_core.c b/drivers/pci/hotplug/rpaphp_core.c
+index 127d6e600185..d023af8260a2 100644
+--- a/drivers/pci/hotplug/rpaphp_core.c
++++ b/drivers/pci/hotplug/rpaphp_core.c
+@@ -223,16 +223,16 @@ int rpaphp_get_drc_props(struct device_node *dn, int *drc_index,
+ 	type_tmp = (char *) &types[1];
+ 
+ 	/* Iterate through parent properties, looking for my-drc-index */
+-	for (i = 0; i < indexes[0]; i++) {
++	for (i = 0; i < be32_to_cpu(indexes[0]); i++) {
+ 		if ((unsigned int) indexes[i + 1] == *my_index) {
+ 			if (drc_name)
+                 		*drc_name = name_tmp;
+ 			if (drc_type)
+ 				*drc_type = type_tmp;
+ 			if (drc_index)
+-				*drc_index = *my_index;
++				*drc_index = be32_to_cpu(*my_index);
+ 			if (drc_power_domain)
+-				*drc_power_domain = domains[i+1];
++				*drc_power_domain = be32_to_cpu(domains[i+1]);
+ 			return 0;
+ 		}
+ 		name_tmp += (strlen(name_tmp) + 1);
+@@ -321,16 +321,19 @@ int rpaphp_add_slot(struct device_node *dn)
+ 	/* register PCI devices */
+ 	name = (char *) &names[1];
+ 	type = (char *) &types[1];
+-	for (i = 0; i < indexes[0]; i++) {
++	for (i = 0; i < be32_to_cpu(indexes[0]); i++) {
++		int index;
+ 
+-		slot = alloc_slot_struct(dn, indexes[i + 1], name, power_domains[i + 1]);
++		index = be32_to_cpu(indexes[i + 1]);
++		slot = alloc_slot_struct(dn, index, name,
++					 be32_to_cpu(power_domains[i + 1]));
+ 		if (!slot)
+ 			return -ENOMEM;
+ 
+ 		slot->type = simple_strtoul(type, NULL, 10);
+ 				
+ 		dbg("Found drc-index:0x%x drc-name:%s drc-type:%s\n",
+-				indexes[i + 1], name, type);
++				index, name, type);
+ 
+ 		retval = rpaphp_enable_slot(slot);
+ 		if (!retval)
+-- 
+2.0.4
+
