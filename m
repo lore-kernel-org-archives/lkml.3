@@ -1,278 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaHTPFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:05:13 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:18031 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266AbaHTPFK (ORCPT
+	id S1752219AbaHTPEw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:04:52 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:17652 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaHTPEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:05:10 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-43-53f4b9213ee8
-Subject: [PATCH 6/7] mm/balloon_compaction: use common page ballooning
+	Wed, 20 Aug 2014 11:04:50 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-07-53f4b91023a9
+Subject: [PATCH 3/7] mm/balloon_compaction: isolate balloon pages without
+ lru_lock
 From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         Rafael Aquini <aquini@redhat.com>
 Cc: Sasha Levin <sasha.levin@oracle.com>,
         Andrey Ryabinin <ryabinin.a.a@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 20 Aug 2014 19:05:04 +0400
-Message-id: <20140820150503.4194.38388.stgit@buzz>
+Date: Wed, 20 Aug 2014 19:04:46 +0400
+Message-id: <20140820150446.4194.5716.stgit@buzz>
 In-reply-to: <20140820150435.4194.28003.stgit@buzz>
 References: <20140820150435.4194.28003.stgit@buzz>
 User-Agent: StGit/0.17.1-dirty
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xa7qKO78EG3Q8traYs34Nm8WMh79Y
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xq7oCO78EG6zqV7GYs34Nm8WMh79Y
 	LH7s7GW1uLxrDpvFvTX/WS2Ob93CbLH4yG1mB3aPnbPusnts+jSJ3ePEjN8sHh+f3mLxeL/v
-	KptH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZZxfeI+9YJlTRffidSwNjF9Muhg5OSQETCRe
-	TDjGDGGLSVy4t56ti5GLQ0hgKaPE2W3f2SGcRiaJR7fuMnUxcnAIC7hJHH5oBNLAJmAmsW3f
-	bUYQW0QgTeLrsy1sIDazQJHEi5uzwGwWAVWJ0wu3M4HYvAJGEn0r54PZnALGEmuOvwTrFQKK
-	X+v5DXaEqICcxMrLLawQ9YISPybfYwFZyyygLjFlSi7EeHmJzWveMk9gFJiFpGoWQtUsJFUL
-	GJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE/ZcdjIuPWR1iFOBgVOLhvbHoS7AQa2JZ
-	cWXuIUYJDmYlEd4TG4BCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGAtOJtxb/HHu1YWycz+1tacY
-	Vt93Xf1wsn/958eLi3V+T5UJyrR68zx1rtb+4GXhF/Sn39lY1bX634Lqko2dZ151CVS1XrJR
-	3L30lmDtzqOiziyxbWu+sqywfvabm/tO44zJ8881aRadrHMSu+v6Y4PtwjcSU+al8aZM89/Q
-	/fHh32CHq11VwnpKLMUZiYZazEXFiQAoBJxtWAIAAA==
+	KptH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZRw52sdecJmt4seM0ywNjDtYuxg5OCQETCQu
+	bo3sYuQEMsUkLtxbz9bFyMUhJLCUUaLn3QdmCKeRSeLuy/lsIFXCAiES9zf8YwGx2QTMJLbt
+	u80IYosIpEl8fbYFrIZZoEjixc1ZYDaLgKrEoof7mUBsXgFDiVXP7oPZnALGEmuOvwTrFRIw
+	krjW85sZxBYVkJNYebmFFaJeUOLH5HssIIcyC6hLTJmSCzFeXmLzmrfMExgFZiGpmoVQNQtJ
+	1QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIUH/ZQfj4mNWhxgFOBiVeHhvLPoSLMSa
+	WFZcmXuIUYKDWUmE98QGoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGucMxIRxSjP4vCzqtn7K8
+	T+0s1RY+c910r3y0+oyiKz0PTN6pcn0u4vD9HDffoF+7NOXqJOFbdd75t5uXV35vVbMTVVdc
+	e3Pe6iP/786PX/+SVyDy5Y68jBUhax1KPEPdCpdmSszw69jnWrbrz6NFJ2y2HpT/PutP9E/l
+	dwpzypKsJgVP7TupxFKckWioxVxUnAgA2IWNQFgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces checking AS_BALLOON_MAP in page->mapping->flags
-with PageBalloon which is stored directly in the struct page.
+LRU-lock isn't required for balloon page isolation. This check makes migration
+of some ballooned pages mostly impossible because isolate_migratepages_range()
+drops LRU lock periodically.
 
 Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Cc: stable <stable@vger.kernel.org> # v3.8
 ---
- include/linux/balloon_compaction.h |   85 ++----------------------------------
- mm/Kconfig                         |    2 -
- mm/balloon_compaction.c            |    7 +--
- mm/compaction.c                    |    9 ++--
- mm/migrate.c                       |    4 +-
- mm/vmscan.c                        |    2 -
- 6 files changed, 15 insertions(+), 94 deletions(-)
+ mm/compaction.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
-index 53d482e..f5fda8b 100644
---- a/include/linux/balloon_compaction.h
-+++ b/include/linux/balloon_compaction.h
-@@ -108,77 +108,6 @@ static inline void balloon_mapping_free(struct address_space *balloon_mapping)
- }
- 
- /*
-- * page_flags_cleared - helper to perform balloon @page ->flags tests.
-- *
-- * As balloon pages are obtained from buddy and we do not play with page->flags
-- * at driver level (exception made when we get the page lock for compaction),
-- * we can safely identify a ballooned page by checking if the
-- * PAGE_FLAGS_CHECK_AT_PREP page->flags are all cleared.  This approach also
-- * helps us skip ballooned pages that are locked for compaction or release, thus
-- * mitigating their racy check at balloon_page_movable()
-- */
--static inline bool page_flags_cleared(struct page *page)
--{
--	return !(page->flags & PAGE_FLAGS_CHECK_AT_PREP);
--}
--
--/*
-- * __is_movable_balloon_page - helper to perform @page mapping->flags tests
-- */
--static inline bool __is_movable_balloon_page(struct page *page)
--{
--	struct address_space *mapping = page->mapping;
--	return !PageAnon(page) && mapping_balloon(mapping);
--}
--
--/*
-- * balloon_page_movable - test page->mapping->flags to identify balloon pages
-- *			  that can be moved by compaction/migration.
-- *
-- * This function is used at core compaction's page isolation scheme, therefore
-- * most pages exposed to it are not enlisted as balloon pages and so, to avoid
-- * undesired side effects like racing against __free_pages(), we cannot afford
-- * holding the page locked while testing page->mapping->flags here.
-- *
-- * As we might return false positives in the case of a balloon page being just
-- * released under us, the page->mapping->flags need to be re-tested later,
-- * under the proper page lock, at the functions that will be coping with the
-- * balloon page case.
-- */
--static inline bool balloon_page_movable(struct page *page)
--{
--	/*
--	 * Before dereferencing and testing mapping->flags, let's make sure
--	 * this is not a page that uses ->mapping in a different way
--	 */
--	if (page_flags_cleared(page) && !page_mapped(page) &&
--	    page_count(page) == 1)
--		return __is_movable_balloon_page(page);
--
--	return false;
--}
--
--/*
-- * isolated_balloon_page - identify an isolated balloon page on private
-- *			   compaction/migration page lists.
-- *
-- * After a compaction thread isolates a balloon page for migration, it raises
-- * the page refcount to prevent concurrent compaction threads from re-isolating
-- * the same page. For that reason putback_movable_pages(), or other routines
-- * that need to identify isolated balloon pages on private pagelists, cannot
-- * rely on balloon_page_movable() to accomplish the task.
-- */
--static inline bool isolated_balloon_page(struct page *page)
--{
--	/* Already isolated balloon pages, by default, have a raised refcount */
--	if (page_flags_cleared(page) && !page_mapped(page) &&
--	    page_count(page) >= 2)
--		return __is_movable_balloon_page(page);
--
--	return false;
--}
--
--/*
-  * balloon_page_insert - insert a page into the balloon's page list and make
-  *		         the page->mapping assignment accordingly.
-  * @page    : page to be assigned as a 'balloon page'
-@@ -192,6 +121,7 @@ static inline void balloon_page_insert(struct page *page,
- 				       struct address_space *mapping,
- 				       struct list_head *head)
- {
-+	__SetPageBalloon(page);
- 	page->mapping = mapping;
- 	list_add(&page->lru, head);
- }
-@@ -206,6 +136,7 @@ static inline void balloon_page_insert(struct page *page,
-  */
- static inline void balloon_page_delete(struct page *page)
- {
-+	__ClearPageBalloon(page);
- 	page->mapping = NULL;
- 	list_del(&page->lru);
- }
-@@ -250,24 +181,16 @@ static inline void balloon_page_insert(struct page *page,
- 				       struct address_space *mapping,
- 				       struct list_head *head)
- {
-+	__SetPageBalloon(page);
- 	list_add(&page->lru, head);
- }
- 
- static inline void balloon_page_delete(struct page *page)
- {
-+	__ClearPageBalloon(page);
- 	list_del(&page->lru);
- }
- 
--static inline bool balloon_page_movable(struct page *page)
--{
--	return false;
--}
--
--static inline bool isolated_balloon_page(struct page *page)
--{
--	return false;
--}
--
- static inline bool balloon_page_isolate(struct page *page)
- {
- 	return false;
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 72e0db0..e09cf0a 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -237,7 +237,7 @@ config MEMORY_BALLOON
- config BALLOON_COMPACTION
- 	bool "Allow for balloon memory compaction/migration"
- 	def_bool y
--	depends on COMPACTION && VIRTIO_BALLOON
-+	depends on COMPACTION && MEMORY_BALLOON
- 	help
- 	  Memory fragmentation introduced by ballooning might reduce
- 	  significantly the number of 2MB contiguous memory blocks that can be
-diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
-index 533c567..22c8e03 100644
---- a/mm/balloon_compaction.c
-+++ b/mm/balloon_compaction.c
-@@ -253,8 +253,7 @@ bool balloon_page_isolate(struct page *page)
- 			 * Prevent concurrent compaction threads from isolating
- 			 * an already isolated balloon page by refcount check.
- 			 */
--			if (__is_movable_balloon_page(page) &&
--			    page_count(page) == 2) {
-+			if (PageBalloon(page) && page_count(page) == 2) {
- 				__isolate_balloon_page(page);
- 				unlock_page(page);
- 				return true;
-@@ -275,7 +274,7 @@ void balloon_page_putback(struct page *page)
- 	 */
- 	lock_page(page);
- 
--	if (__is_movable_balloon_page(page)) {
-+	if (PageBalloon(page)) {
- 		__putback_balloon_page(page);
- 		/* drop the extra ref count taken for page isolation */
- 		put_page(page);
-@@ -300,7 +299,7 @@ int balloon_page_migrate(struct page *newpage,
- 	 */
- 	BUG_ON(!trylock_page(newpage));
- 
--	if (WARN_ON(!__is_movable_balloon_page(page))) {
-+	if (WARN_ON(!PageBalloon(page))) {
- 		dump_page(page, "not movable balloon page");
- 		unlock_page(newpage);
- 		return rc;
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 0653f5f..e9aeed2 100644
+index 21bf292..0653f5f 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -596,11 +596,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 		 * Skip any other type of page
+@@ -597,7 +597,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
  		 */
  		if (!PageLRU(page)) {
--			if (unlikely(balloon_page_movable(page))) {
--				if (balloon_page_isolate(page)) {
--					/* Successfully isolated */
--					goto isolate_success;
--				}
-+			if (unlikely(PageBalloon(page)) &&
-+					balloon_page_isolate(page)) {
-+				/* Successfully isolated */
-+				goto isolate_success;
- 			}
- 			continue;
- 		}
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 161d044..c35e6f2 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -92,7 +92,7 @@ void putback_movable_pages(struct list_head *l)
- 		list_del(&page->lru);
- 		dec_zone_page_state(page, NR_ISOLATED_ANON +
- 				page_is_file_cache(page));
--		if (unlikely(isolated_balloon_page(page)))
-+		if (unlikely(PageBalloon(page)))
- 			balloon_page_putback(page);
- 		else
- 			putback_lru_page(page);
-@@ -873,7 +873,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 		}
- 	}
- 
--	if (unlikely(__is_movable_balloon_page(page))) {
-+	if (unlikely(PageBalloon(page))) {
- 		/*
- 		 * A ballooned page does not need any special attention from
- 		 * physical to virtual reverse mapping procedures.
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2836b53..f90f93e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1160,7 +1160,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- 
- 	list_for_each_entry_safe(page, next, page_list, lru) {
- 		if (page_is_file_cache(page) && !PageDirty(page) &&
--		    !isolated_balloon_page(page)) {
-+		    !PageBalloon(page)) {
- 			ClearPageActive(page);
- 			list_move(&page->lru, &clean_pages);
- 		}
+ 			if (unlikely(balloon_page_movable(page))) {
+-				if (locked && balloon_page_isolate(page)) {
++				if (balloon_page_isolate(page)) {
+ 					/* Successfully isolated */
+ 					goto isolate_success;
+ 				}
 
