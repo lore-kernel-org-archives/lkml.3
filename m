@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133AbaHTMUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:20:33 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:50970 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267AbaHTMUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:20:31 -0400
-Date: Wed, 20 Aug 2014 13:20:14 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Vojtech Pavlik <vojtech@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 1/2] SOUND: kill gameport bits
-Message-ID: <20140820132014.5acc35f4@alan.etchedpixels.co.uk>
-In-Reply-To: <20140820063951.GA6791@suse.cz>
-References: <20140820024638.GA25240@rhlx01.hs-esslingen.de>
-	<20140820051815.GA1109@core.coreip.homeip.net>
-	<20140820063951.GA6791@suse.cz>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	id S1753541AbaHTMV3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:21:29 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:33066 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334AbaHTMV1 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Wed, 20 Aug 2014 08:21:27 -0400
+Message-Id: <53F4A0D202000078000BAD84@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Wed, 20 Aug 2014 13:21:22 +0100
+From: "Jan Beulich" <jbeulich@suse.com>
+To: <gnomes@lxorguk.ukuu.org.uk>
+Cc: <stefan.bader@canonical.com>, <toshi.kani@hp.com>, <x86@kernel.org>,
+        <ville.syrjala@linux.intel.com>, <xen-devel@lists.xensource.com>,
+        "Juergen Gross" <JGross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH RFC 0/3] x86: Full support of PAT
+References: <1408454745-32358-1-git-send-email-jgross@suse.com>
+ <20140820130511.771aeafa@alan.etchedpixels.co.uk>
+In-Reply-To: <20140820130511.771aeafa@alan.etchedpixels.co.uk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It wouldn't be hard to fix: That code was developed when the timing
-> infrastructure in the kernel was non-existent, making use of it today
-> would make things a lot easier.
+>>> One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> 08/20/14 2:08 PM >>>
+>> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+>> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+>> top 4 entries in the PAT MSR are the same as the 4 lower entries.
+>> 
+>> This results in the kernel not supporting e.g. write-through mode. Especially
+>> this cache mode would speed up drivers of video cards which now have to use
+>> uncached accesses.
+>
+>Pentium II erratum A52 (and similar on quite a few other processors)
 
-You can also use pm_qos on most machines to stop PM messing it up. Ugly
-but works.
+But you're aware that for the last two major releases Xen hasn't been supporting
+32-bit CPUs at all anymore? I.e. why should we limit functionality under Xen
+based on errata on 64-bit-incapable CPUs?
 
-Alan
+Jan
+
