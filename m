@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaHTHbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 03:31:18 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36577 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaHTHbR (ORCPT
+	id S1751796AbaHTHcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 03:32:42 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:58828 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaHTHck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 03:31:17 -0400
-Date: Wed, 20 Aug 2014 09:31:13 +0200
+	Wed, 20 Aug 2014 03:32:40 -0400
+Date: Wed, 20 Aug 2014 09:32:35 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        =?utf-8?B?R2HDq2w=?= PORTAY <gael.portay@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Nicolas FERRE <nicolas.ferre@atmel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: Re: [PATCH 3/3] ARM: at91/tclib: mask interruptions at shutdown and
- probe
-Message-ID: <20140820073111.GH13793@ulmo>
-References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
- <1408486072-19268-4-git-send-email-gael.portay@gmail.com>
- <776D4128-09AC-418C-A710-28A2522D1D63@jcrosoft.com>
- <20140820010130.10974326@bbrezillon>
+To: Lothar =?utf-8?Q?Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Cc: Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jingoo Han <jg1.han@samsung.com>, Lee Jones <lee.jones@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
+Subject: Re: [PATCH] pwm-backlight: fix bogus request for GPIO#0 when
+ instantiated from DT
+Message-ID: <20140820073234.GI13793@ulmo>
+References: <1408516716-28828-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+Z7/5fzWRHDJ0o7Q"
+	protocol="application/pgp-signature"; boundary="IR1Y5IvQhrKgS4e6"
 Content-Disposition: inline
-In-Reply-To: <20140820010130.10974326@bbrezillon>
+In-Reply-To: <1408516716-28828-1-git-send-email-LW@KARO-electronics.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+Z7/5fzWRHDJ0o7Q
-Content-Type: text/plain; charset=us-ascii
+--IR1Y5IvQhrKgS4e6
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Aug 20, 2014 at 01:01:30AM +0200, Boris BREZILLON wrote:
-> Hi Jean-Christophe,
+On Wed, Aug 20, 2014 at 08:38:36AM +0200, Lothar Wa=C3=9Fmann wrote:
+> commit 257462dbf3ed ("pwm-backlight: switch to gpiod interface")
+> introduced a regression leading to acquiring a bogus GPIO-0 when
+> configured from DT without an 'enable-gpios' property.
+> The driver will happily accept the 0 initialized 'enable_gpio' member
+> of the struct platform_pwm_backlight_data as valid gpio number, and
+> request this GPIO as enable pin. In case of multiple driver instances,
+> the second will fail to register with the error message:
+> pwm-backlight backlight1.23: failed to request GPIO#0: -16
 >=20
-> On Wed, 20 Aug 2014 06:11:17 +0800
-> Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
+> Fix this by setting enable_gpio in the pdata struct to -EINVAL.
 >=20
-> > Hi,
-> >=20
-> > 	This is a bit weird as the clock of the TC should be off and the irq f=
-ree
-> >=20
-> > 	so this should never happened we need to investigate more why this app=
-end
+> Signed-off-by: Lothar Wa=C3=9Fmann <LW@KARO-electronics.de>
+> ---
+>  drivers/video/backlight/pwm_bl.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >=20
-> I may have found the source of this bug.
->=20
-> As Gael stated, when you're kexec-ing a new kernel your previous kernel
-> could be using the tbc_clksrc driver (and especially the clkevent
-> device). Thus the kernel might have planned a timer event and then been
-> asked to shutdown the machine (requested by the kexec code).
-> In this case the AIC interrupt connected to the TC Block is disabled
-> but not the interrupts within the TCB IP (IDR registers), possibly
-> leaving a pending interrupt before booting the new kernel.
->=20
-> When the tcb_clksrc driver is loaded by the new kernel it enables the
-> interrupt line by calling setup_irq [1] while the clockevent device is
-> not registered yet [2]. Thus the event_handler is still NULL when the
-> AIC line connected to the TCB is unmasked. Remember that an interrupt
-> is still pending on this HW block, which will lead to an immediate call
-> to the ch2_irq handler, which tries to call the event_handler, which in
-> turns is NULL because clkevent device registration has not taken place
-> at this moment =3D> Kernel panic.
-> ITOH, we can't register the clkevent device before the irq handler is
-> set up, because we should be ready to handle clkevent request at the
-> time clockevents_config_and_register is called.
->=20
-> This leaves two solution:
->  1) disable the TCB irqs (using TCB IDR registers) before calling
->  setup_irq in the tcb_clksrc driver
->  2) disable the TCB irqs at the tclib level (as proposed by Gael)
->=20
-> I prefer solution #2 because it fixes the bug for all TCB users (not
-> just the tcb_clksrc driver).
+> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/p=
+wm_bl.c
+> index d7a3d13..e6ef6b4 100644
+> --- a/drivers/video/backlight/pwm_bl.c
+> +++ b/drivers/video/backlight/pwm_bl.c
+> @@ -172,7 +172,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
+>  		data->dft_brightness =3D value;
+>  		data->max_brightness--;
+>  	}
+> -
+> +	data->enable_gpio =3D -EINVAL;
 
-Wouldn't a more proper fix be to only enable the IRQ (setup_irq()) once
-everything has properly been set up? That's certainly how all other
-drivers are doing this. Generally I think it's best to assume that an
-interrupt can fire at any point after it's been enabled, so everything
-should be set up prior to enabling it.
+I'd prefer to keep the blank line for readability. Other than that:
 
-Also, does anyone know why this driver uses setup_irq() rather than the
-more idiomatic request_irq()?
+Acked-by: Thierry Reding <treding@nvidia.com>
 
-Thierry
-
---+Z7/5fzWRHDJ0o7Q
+--IR1Y5IvQhrKgS4e6
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT9E6/AAoJEN0jrNd/PrOhiaQP/1B/JBX0jF8UpnyIkHbWtUqi
-w+nHLWZ7+V6KspwZsj82aZFouqly8ddFopPOFMrKnmGlgYCFt7zHMV7dvghnqqov
-3l3/fyQe/Sh06MqwqOG0DcN20GjKTJeJd8IlaI7gX1NmpyiU5JeHKSlBJwqmUHZ4
-fRx957+CmrZbfneckwX8fsufAS3MaAHpU+wKQ9Xoh/u/B0vy3yOi0+hJla7wJ+li
-+92jGda4dgcdWCGNl/rcSB2iuazetYJEj6HGaPv28x4WaOrrv/rrHTAfHofLhH6O
-F5dVnlIYvObsnGkeSxHxbuq5IzN7ggd2VM1kKRdG/HY5/wK7GiDSLFFuNNJNvx7C
-b9M2NOY24leksN4Yv08ALC0v2WXbFaykKRpvFZh7qcuWsVH3lt9/m3+VpxQrT2Fv
-NL3/C5XUEKwqtSx3fuH8l6F81Edh12LGWa+GOWOS32n3OMiw723dkFELh5nY43KX
-DJrYmi/8ZwWSZ2nQlJGIl756EQBj7YH+wSU2OdzN6GdnJR044sJ8d8m/J/vBexew
-jzvwyjIQuHkJ7UUW0dvtH4D+jj+duaQLDVDnOq1atZ043VlkgIQGsJYw3y9uJDZ/
-wXCeAw9EuTcaJRbN5q5bVumD+lXZWDAIcKEUdjcnI+I/W81FTjGnWuorDh9nDuMw
-hJXrNVIalsRy3wuFxBKG
-=IadM
+iQIcBAEBAgAGBQJT9E8SAAoJEN0jrNd/PrOhqdoQAI9+wA1wsYSEbkXrg9XDblJq
+YQcwDqEEeV8MhU26Jg5Yp68Dsiz2EH93O1rnwmLS0WKw75ql2jZw3lBvcM2UM5Lb
+qhN3r+MpO+arnXIPGHR//IPjD5V8Ug5fAwzkLpgjp0xzDnr3ecf/8TxzpX4uPDCh
+Xob5+O+RX1XQUkzwB2GEIY/UZ3gLnPHjm1hl03R8eVoK5luZjGwK355uGNJG8sfD
+lWoNw610nsLnxizUE5Nd2gJ1c7n3fwUEEth1rWEgLdRgx8WErmgknbDpsPI21Ra2
+RPchUB614zJ8LkNvaTYvSnDBjEkhgmxVAcNq794qWub8tKvAiDVg8sUsCZWdL0W9
+fu5mcxVksIAAwDcekqEkKInI5qRUzvJSWxi9nsrPF+bGHVdqyNVjWxybvcfwAdQm
+mxiya2hlgeJ8MXMTQWWggKVmpbPwRdsIUYNWrozQI3HogvMCU/bqQriR/wzL8iDg
+5/4YXAm7BbpdovAl8MruhWCIWBkr0xejV5B08TcqShkIPq9GLqXOzYnpzx0W1e4e
+oqSkfriZaWHqrJr1jjUbIRqplU9DIashceuLHzo2kgEiaf6jGpJE1hZHCMdmNETE
+O0rjcfiZ90myvOewTsNwFqJ/lgxkkXdywrrZrBWPIV4Skwe5Bq3HXb3NgKDFya0F
+RDCP4iHvx2YpA+c/w3pF
+=zqaJ
 -----END PGP SIGNATURE-----
 
---+Z7/5fzWRHDJ0o7Q--
+--IR1Y5IvQhrKgS4e6--
