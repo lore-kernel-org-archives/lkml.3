@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738AbaHTKNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 06:13:19 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:56060 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaHTKNR (ORCPT
+	id S1751802AbaHTKV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 06:21:26 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:35383 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaHTKVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 06:13:17 -0400
-Subject: Re: [PATCH v3 0/17] arcmsr: change note since v13 or v2
-From: Ching Huang <ching2048@areca.com.tw>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140819150221.GA4083@infradead.org>
-References: <1408422598.4801.112.camel@Centos6.3-64>
-	 <20140819150221.GA4083@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 20 Aug 2014 18:13:04 +0800
-Message-ID: <1408529584.5608.6.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+	Wed, 20 Aug 2014 06:21:25 -0400
+Message-ID: <53F4765E.2040105@ahsoftware.de>
+Date: Wed, 20 Aug 2014 12:20:14 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christian Grothoff <grothoff@in.tum.de>,
+        Jacob Appelbaum <jacob@appelbaum.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, knock@gnunet.org
+Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity
+ protection
+References: <52A75EF8.3010308@in.tum.de>	<20131211.150137.368953964178408437.davem@davemloft.net>	<52A8C8B4.4060109@in.tum.de>	<20131211122637.75b09074@nehalam.linuxnetplumber.net>	<87bo0nulkt.fsf@tassilo.jf.intel.com>	<52A8ECF5.3070604@in.tum.de>	<20131212012317.GL21717@two.firstfloor.org>	<52A98DBF.4090702@appelbaum.net>	<52A9A17F.6050505@in.tum.de>	<1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com>	<53F3A739.4070203@ahsoftware.de>	<CAPh34mckmKkRqG7M=37hHRJjBzZ+43BaPnjvpC5sEFnpPqj0aA@mail.gmail.com>	<53F4654C.10101@ahsoftware.de> <CAPh34mc8eGqLyGrq1AH6AP5yBGnJgePkK03Ys-Zhw9cz9h3Y2g@mail.gmail.com> <53F46EA3.60408@ahsoftware.de>
+In-Reply-To: <53F46EA3.60408@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+Am 20.08.2014 11:47, schrieb Alexander Holler:
+> Am 20.08.2014 11:28, schrieb Hagen Paul Pfeifer:
+>> On 20 August 2014 11:07, Alexander Holler <holler@ahsoftware.de> wrote:
+>>
+>>> For sure it could be better, but I'm already happy with the current
+>>> imperfect solution which I can use now and not some perfect solution
+>>> which
+>>> might be available in some years.
+>>
+>> Alexander, to make it clear: we cannot include mechanisms which
+>> probably open other (security) issues. This is not how things work
+>> out. TCP had so many issues in the past - regarding security,
+>> implementation f*ups, etc. pp. It is utterly important that there is
+>> no problem with an extension. Please join the discussion ob tcpm if
+>> you will drive things forward. That's all what I can say - sorry!
+>
+> Maybe I first should send a million syn-packets to a box where I've
+> enabled that feature. ;)
+>
+> Anyway, I still think there should be some room for experimental
+> features in the kernel. It makes them more visible to possible
+> contributors and helps to drive further development.
+>
+> Not necessarily in my case (as most people, I can't and don't want to
+> participate in all parties), but ...
 
-Thanks for your effort to fix up errors and apply the patches of arcmsr
-to a branch. It is great.
+And as I've just read the archives of tcpm, I don't think it would help. 
+Jacob Appelbaum already expressed everything I like to use this feature 
+for, so most of the time I just had to send a +1 to Jacobs comments, 
+which would be somewhat annoying. ;)
 
 Regards,
-Ching Huang
-On Tue, 2014-08-19 at 08:02 -0700, Christoph Hellwig wrote:
-> Hi Ching,
-> 
-> I've fixed up various checkpatch errors and fixed up some descriptions
-> and applied the patches to a branch.  This includes patch 4, so please
-> send a fix for this and any other patches relative to the branch.
-> 
-> Please find the branch at
-> 
-> 	git://git.infradead.org/users/hch/scsi-queue.git arcmsr-for-3.18
-> 
-> Can the others help reviewing these patches and make sure we can get
-> them into 3.18?
-> 
-> Thanks,
-> 	Christoph
+
+Alexander Holler
 
 
