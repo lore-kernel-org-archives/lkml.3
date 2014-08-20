@@ -1,103 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaHTRLf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 13:11:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27992 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752434AbaHTRLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 13:11:33 -0400
-Message-ID: <1408554623.11383.63.camel@ul30vt.home>
-Subject: Re: LPC IOMMU and VFIO MicroConference - Call for Participation
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olav Haugan <ohaugan@codeaurora.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        ddutile <ddutile@redhat.com>, Jerome Glisse <j.glisse@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Wed, 20 Aug 2014 11:10:23 -0600
-In-Reply-To: <20140812092019.GY9809@8bytes.org>
-References: <20140812092019.GY9809@8bytes.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752696AbaHTRL7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 13:11:59 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:65489 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbaHTRL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 13:11:57 -0400
+From: mathieu.poirier@linaro.org
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, mathieu.poirier@linaro.org
+Subject: [PATCH v4] coresight: bindings for coresight drivers
+Date: Wed, 20 Aug 2014 11:11:38 -0600
+Message-Id: <1408554698-24459-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Pratik Patel <pratikp@codeaurora.org>
 
-Ok folks, it's time to submit your discussion proposals for the LPC
-IOMMU and VFIO uconf.  If you added an idea to the wiki, now is the time
-to formally propose it as a discussion topic.  If you have ideas how to
-make the IOMMU or VFIO subsystems better, now is the time to propose it.
-If you can't figure out how to make something work in the current
-infrastructure, now is the time to propose a discussion.  If you're
-adding new features and want to make sure we can support them, now is
-the time to propose a discussion.
+Coresight IP blocks allow for the support of HW assisted tracing
+on ARM SoCs.  Bindings for the currently available blocks are
+presented herein.
 
-I don't think we've seen a formal schedule yet, but many of us have
-conflicts with KVM Forum this year and I expect the LPC planning
-committee to take that into account, so please submit your proposals
-anyway and feel free to note your availability/conflicts in the "Note to
-organizers" section.
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ .../devicetree/bindings/arm/coresight.txt          | 205 +++++++++++++++++++++
+ 1 file changed, 205 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
 
-LPC is full, but there is a waiting list and the sooner you can get on
-it, the more likely you are to be registered.  I expect uconf discussion
-leads to have an advantage in moving through the queue and we may be
-able to provide discounted registration for discussion leads.  Thanks,
-
-Alex
-
-On Tue, 2014-08-12 at 11:20 +0200, Joerg Roedel wrote:
-> LPC IOMMU and VFIO MicroConference - Call for Participation
-> ===========================================================
-> 
-> We are pleased to announce that this year there will be the first IOMMU
-> and VFIO MicroConference held at Linux Plumbers Conference in
-> Düsseldorf. An initial request for support of this micro conference
-> generated, among others, the following possible topic ideas:
-> 
-> 	* Improving generic IOMMU code and move code out of drivers
-> 	* IOMMU device error handling
-> 	* IOMMU Power Management
-> 	* Virtualizing IOMMUs
-> 	* Interface between IOMMUs an memory management
-> 
-> More suggested topics can be found at the wiki page of the micro
-> conference:
-> 
-> 	http://wiki.linuxplumbersconf.org/2014:iommu_microconference
-> 
-> We now ask for formal proposals for these discussions along with any
-> other topics or problems that need to be discussed in this area.
-> 
-> The format of the micro conference will be roughly half-hour slots for
-> each topic, where the discussion lead gives a short introduction to the
-> problem and maybe sketches possible solutions. The rest of the slot is
-> open for discussions so that we come to an agreement how to move
-> forward.
-> 
-> Please submit your formal proposal on the Linux Plumbers website (OpenID
-> login required) until August 31st at:
-> 
-> 	http://www.linuxplumbersconf.org/2014/how-to-submit-microconference-discussions-topics/
-> 
-> Hope to see you in Düsseldorf!
-> 
-> 
-> 	Joerg Roedel and Alex Williamson
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
+new file mode 100644
+index 0000000..2ee594d
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/coresight.txt
+@@ -0,0 +1,205 @@
++* CoreSight Components
++
++CoreSight components are compliant with the ARM CoreSight architecture
++specification and can be connected in various topologies to suit a particular
++SoCs tracing needs. These trace components can generally be classified as sinks,
++links and sources. Trace data produced by one or more sources flows through the
++intermediate links connecting the source to the currently selected sink. Each
++CoreSight component device should use these properties to describe its hardware
++characteristcs.
++
++Required properties for all components *except* non-configurable replicators:
++
++- compatible : name of the component used for driver matching.  Possible values
++include: "arm,coresight-etb10", "arm,coresight-tpiu", "arm,coresight-tmc",
++"arm,coresight-funnel", and "arm,coresight-etm3x".  All of these have to
++be supplemented with "arm,primecell" as drivers are using the AMBA bus
++interface.  Since non-configurable replicators don't show up on the AMBA
++bus they don't need to be post-fixed with "arm,primecell".
++
++- reg : physical base address and length of the register set(s) of the component.
++
++- clocks : the clock associated to this component.
++
++- clock-names: the name of the clock as referenced by the code.  Since we are
++using the AMBA framework, the name should be "apb_pclk".
++
++- ports or port: The representation of the component's port layout using the
++generic DT graph presentation found in "bindings/graph.txt".
++
++Non-configurable replicators:
++
++- compatible: currently supported value is "arm-replicator".  Since non-configurable
++replicators don't show up on the AMBA hey don't need to be post-fixed with
++"arm,primecell".
++
++- id: a unique number that will identify this replicator.
++
++- ports or port: same as above.
++
++Optional properties for Sinks:
++
++- coresight-default-sink: must be specified for one of the sink devices that is
++intended to be made the default sink. Other sink devices must not have this
++specified. Not specifying this property on any of the sinks is invalid.
++
++Optional properties for ETM/PTMs:
++
++- arm,cp14: must be present if the system accesses ETM/PTM management registers
++via co-processor 14.
++
++- arm,cp14: access to ETM/PTM management registers is made via cp14.
++
++- cpu: the cpu phandle this ETM/PTM is affined to. When omitted the source is
++considered to belong to CPU0.
++
++Optional property for TMC:
++
++- arm,buffer-size: size of contiguous buffer space for TMC ETR (embedded trace router)
++
++
++Example:
++
++1. Sinks
++	etb: etb@20010000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0x20010000 0 0x1000>;
++
++		coresight-default-sink;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etb_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port0>;
++			};
++		};
++	};
++
++	tpiu: tpiu@20030000 {
++		compatible = "arm,coresight-tpiu", "arm,primecell";
++		reg = <0 0x20030000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			tpiu_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port1>;
++			};
++		};
++	};
++
++2. Links
++	replicator {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++		/* this will show up in debugfs as "0.replicator" */
++		id = <0>;
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator_out_port0: endpoint {
++					remote-endpoint = <&etb_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator_out_port1: endpoint {
++					remote-endpoint = <&tpiu_in_port>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel_out_port0>;
++				};
++			};
++		};
++	};
++
++	funnel@20040000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0x20040000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel_out_port0: endpoint {
++					remote-endpoint = <&replicator_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm0_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm1_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&etm0_out_port>;
++				};
++			};
++
++		};
++	};
++
++3. Sources
++	ptm0: ptm@2201c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201c000 0 0x1000>;
++
++		cpu = <&cpu0>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm0_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port0>;
++			};
++		};
++	};
++
++	ptm1: ptm@2201d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201d000 0 0x1000>;
++
++		cpu = <&cpu1>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm1_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port1>;
++			};
++		};
++	};
+-- 
+1.9.1
 
