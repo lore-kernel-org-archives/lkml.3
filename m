@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaHTJnH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:43:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53692 "EHLO mga09.intel.com"
+	id S1752044AbaHTJnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:43:01 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60159 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852AbaHTJm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751844AbaHTJm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 05:42:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
-   d="scan'208";a="561005141"
+   d="scan'208";a="579224959"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: "John W . Linville" <linville@tuxdriver.com>,
         Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ To: "John W . Linville" <linville@tuxdriver.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Joe Perches <joe@perches.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 02/11] lib / string_helpers: refactoring the test suite
-Date: Wed, 20 Aug 2014 12:42:43 +0300
-Message-Id: <1408527772-27224-3-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 11/11] staging: rtl8192u: use %*pEn to escape buffer
+Date: Wed, 20 Aug 2014 12:42:52 +0300
+Message-Id: <1408527772-27224-12-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -27,85 +27,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares test suite for a following update. It introduces
-test_string_check_buf() helper which checks the result and dumps an error.
+Let's use kernel's native specifier to escape a buffer.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- lib/test-string_helpers.c | 39 +++++++++++++++++++++++++++------------
- 1 file changed, 27 insertions(+), 12 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/ieee80211.h | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/lib/test-string_helpers.c b/lib/test-string_helpers.c
-index 6ac48de..ac44c92 100644
---- a/lib/test-string_helpers.c
-+++ b/lib/test-string_helpers.c
-@@ -10,6 +10,26 @@
- #include <linux/string.h>
- #include <linux/string_helpers.h>
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+index c118551..078333b 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+@@ -2580,25 +2580,13 @@ static inline int ieee80211_get_scans(struct ieee80211_device *ieee)
  
-+static __init bool test_string_check_buf(const char *name, unsigned int flags,
-+					 char *in, size_t p,
-+					 char *out_real, size_t q_real,
-+					 char *out_test, size_t q_test)
-+{
-+	if (q_real == q_test && !memcmp(out_test, out_real, q_test))
-+		return true;
-+
-+	pr_warn("Test '%s' failed: flags = %u\n", name, flags);
-+
-+	print_hex_dump(KERN_WARNING, "Input: ", DUMP_PREFIX_NONE, 16, 1,
-+		       in, p, true);
-+	print_hex_dump(KERN_WARNING, "Expected: ", DUMP_PREFIX_NONE, 16, 1,
-+		       out_test, q_test, true);
-+	print_hex_dump(KERN_WARNING, "Got: ", DUMP_PREFIX_NONE, 16, 1,
-+		       out_real, q_real, true);
-+
-+	return false;
-+}
-+
- struct test_string {
- 	const char *in;
- 	const char *out;
-@@ -39,7 +59,8 @@ static const struct test_string strings[] __initconst = {
- 	},
- };
+ static inline const char *escape_essid(const char *essid, u8 essid_len) {
+ 	static char escaped[IW_ESSID_MAX_SIZE * 2 + 1];
+-	const char *s = essid;
+-	char *d = escaped;
  
--static void __init test_string_unescape(unsigned int flags, bool inplace)
-+static void __init test_string_unescape(const char *name, unsigned int flags,
-+					bool inplace)
- {
- 	char in[256];
- 	char out_test[256];
-@@ -77,15 +98,8 @@ static void __init test_string_unescape(unsigned int flags, bool inplace)
- 		q_real = string_unescape(in, out_real, q_real, flags);
+ 	if (ieee80211_is_empty_essid(essid, essid_len)) {
+ 		memcpy(escaped, "<hidden>", sizeof("<hidden>"));
+ 		return escaped;
  	}
  
--	if (q_real != q_test || memcmp(out_test, out_real, q_test)) {
--		pr_warn("Test failed: flags = %u\n", flags);
--		print_hex_dump(KERN_WARNING, "Input: ",
--			       DUMP_PREFIX_NONE, 16, 1, in, p - 1, true);
--		print_hex_dump(KERN_WARNING, "Expected: ",
--			       DUMP_PREFIX_NONE, 16, 1, out_test, q_test, true);
--		print_hex_dump(KERN_WARNING, "Got: ",
--			       DUMP_PREFIX_NONE, 16, 1, out_real, q_real, true);
+-	essid_len = min(essid_len, (u8)IW_ESSID_MAX_SIZE);
+-	while (essid_len--) {
+-		if (*s == '\0') {
+-			*d++ = '\\';
+-			*d++ = '0';
+-			s++;
+-		} else {
+-			*d++ = *s++;
+-		}
 -	}
-+	test_string_check_buf(name, flags, in, p - 1, out_real, q_real,
-+			      out_test, q_test);
+-	*d = '\0';
++	snprintf(escaped, sizeof(escaped), "%*pEn", essid_len, essid);
+ 	return escaped;
  }
  
- static int __init test_string_helpers_init(void)
-@@ -94,8 +108,9 @@ static int __init test_string_helpers_init(void)
- 
- 	pr_info("Running tests...\n");
- 	for (i = 0; i < UNESCAPE_ANY + 1; i++)
--		test_string_unescape(i, false);
--	test_string_unescape(get_random_int() % (UNESCAPE_ANY + 1), true);
-+		test_string_unescape("unescape", i, false);
-+	test_string_unescape("unescape inplace",
-+			     get_random_int() % (UNESCAPE_ANY + 1), true);
- 
- 	return -EINVAL;
- }
 -- 
 2.1.0
 
