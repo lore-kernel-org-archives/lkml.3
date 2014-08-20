@@ -1,227 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaHTMhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:37:19 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:53432 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251AbaHTMhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:37:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140819123342.GJ23128@arm.com>
-References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
-	<1407949593-16121-8-git-send-email-keescook@chromium.org>
-	<20140819123342.GJ23128@arm.com>
-Date: Wed, 20 Aug 2014 07:37:14 -0500
-X-Google-Sender-Auth: eBlVHmOnYxKb-dAK8eRmlrx5twE
-Message-ID: <CAGXu5jLnXeavr4E4YF9jtB03iA-y4vLZjf83a8ABzUC-hdkz9w@mail.gmail.com>
-Subject: Re: [PATCH v4 7/8] ARM: mm: allow non-text sections to be non-executable
-From: Kees Cook <keescook@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753673AbaHTMjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:39:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23530 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345AbaHTMje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:39:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,902,1400050800"; 
+   d="scan'208";a="561069322"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Subject: [PATCH v4 00/22] perf: Add infrastructure and support for Intel PT
+Date: Wed, 20 Aug 2014 15:35:57 +0300
+Message-Id: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 7:33 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Wed, Aug 13, 2014 at 06:06:32PM +0100, Kees Cook wrote:
->> Adds CONFIG_ARM_KERNMEM_PERMS to separate the kernel memory regions
->> into section-sized areas that can have different permisions. Performs
->> the NX permission changes during free_initmem, so that init memory can be
->> reclaimed.
->>
->> This uses section size instead of PMD size to reduce memory lost to
->> padding on non-LPAE systems.
->>
->> Based on work by Brad Spengler, Larry Bassel, and Laura Abbott.
->
-> [...]
->
->> diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
->> index 6f57cb94367f..a3d07ca2bbb4 100644
->> --- a/arch/arm/kernel/vmlinux.lds.S
->> +++ b/arch/arm/kernel/vmlinux.lds.S
->> @@ -8,6 +8,9 @@
->>  #include <asm/thread_info.h>
->>  #include <asm/memory.h>
->>  #include <asm/page.h>
->> +#ifdef CONFIG_ARM_KERNMEM_PERMS
->> +#include <asm/pgtable.h>
->> +#endif
->>
->>  #define PROC_INFO                                                    \
->>       . = ALIGN(4);                                                   \
->> @@ -90,6 +93,11 @@ SECTIONS
->>               _text = .;
->>               HEAD_TEXT
->>       }
->> +
->> +#ifdef CONFIG_ARM_KERNMEM_PERMS
->> +     . = ALIGN(1<<SECTION_SHIFT);
->> +#endif
->> +
->>       .text : {                       /* Real text segment            */
->>               _stext = .;             /* Text and read-only data      */
->>                       __exception_text_start = .;
->> @@ -145,7 +153,11 @@ SECTIONS
->>       _etext = .;                     /* End of text and rodata section */
->>
->>  #ifndef CONFIG_XIP_KERNEL
->> +# ifdef CONFIG_ARM_KERNMEM_PERMS
->> +     . = ALIGN(1<<SECTION_SHIFT);
->> +# else
->>       . = ALIGN(PAGE_SIZE);
->> +# endif
->
-> This might be cleaner if we had a single macro (ALIGN_MIN?) that expanded to
-> ALIGN(1 << SECTION_SHIFT) #ifdef  CONFIG_ARM_KERNMEM_PERMS.
+Hi Peter and all,
 
-I didn't see a cleaner way to do this, since some times it's optional
-(no alignment instead of different alignment), and sometimes it's not
-controlled by _KERNMEM_PERMS (i.e. sometimes it's _DEBUG_RODATA).
+This patchset adds support for Intel Processor Trace (PT) extension [1] of
+Intel Architecture that allows the capture of information about software
+execution flow, to the perf kernel infrastructure.
 
->
->> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
->> index ad82c05bfc3a..ccf392ef40d4 100644
->> --- a/arch/arm/mm/init.c
->> +++ b/arch/arm/mm/init.c
->> @@ -32,6 +32,11 @@
->>  #include <asm/tlb.h>
->>  #include <asm/fixmap.h>
->>
->> +#ifdef CONFIG_ARM_KERNMEM_PERMS
->> +#include <asm/system_info.h>
->> +#include <asm/cp15.h>
->> +#endif
->
-> We already #include cp15.h in this file. If you need system_info.h, I don't
-> think you should bother making the include conditional.
+The single most notable thing is that while PT outputs trace data in a
+compressed binary format, it will still generate hundreds of megabytes
+of trace data per second per core. Decoding this binary stream takes
+2-3 orders of magnitude the cpu time that it takes to generate
+it. These considerations make it impossible to carry out decoding in
+kernel space. Therefore, the trace data is exported to userspace as a
+zero-copy mapping that userspace can collect and store for later
+decoding. To address this, this patchset extends perf ring buffer with
+an "AUX space", which is allocated for hardware blocks such as PT to
+export their trace data with minimal overhead. This space can be
+configured via buffer's user page and mmapped from the same file
+descriptor with a given offset. Data can then be collected from it
+by reading the aux_head (write) pointer from the user page and updating
+aux_tail (read) pointer similarly to data_{head,tail} of the
+traditional perf buffer. There is an api between perf core and pmu
+drivers that wish to make use of this AUX space to export their data.
 
-Ah, yes. I will fix this.
+For tracing blocks that don't support hardware scatter-gather tables,
+we provide high-order physically contiguous allocations to minimize
+the overhead needed for software double buffering and PMI pressure.
 
->
->> +/*
->> + * Updates section permissions only for the current mm (sections are
->> + * copied into each mm). During startup, this is the init_mm.
->> + */
->> +static inline void section_update(unsigned long addr, pmdval_t mask,
->> +                               pmdval_t prot)
->> +{
->> +     struct mm_struct *mm;
->> +     pmd_t *pmd;
->> +
->> +     mm = current->active_mm;
->> +     pmd = pmd_offset(pud_offset(pgd_offset(mm, addr), addr), addr);
->> +
->> +#ifdef CONFIG_ARM_LPAE
->> +     pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
->> +#else
->> +     if (addr & SECTION_SIZE)
->> +             pmd[1] = __pmd((pmd_val(pmd[1]) & mask) | prot);
->> +     else
->> +             pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
->> +#endif
->> +     flush_pmd_entry(pmd);
->> +     local_flush_tlb_kernel_range(addr, addr + SECTION_SIZE);
->
-> Why only a local flush? You're changing global mappings here, right?
+This way we get a normal perf data stream that provides sideband
+information that is required to decode the trace data, such as MMAPs,
+COMMs etc, plus the actual trace in its own logical space.
 
-Yes, but with the a15 errata, it cannot use a global flush. As a
-result, section_update can only be used by a single CPU which is how
-the usage is managed. Perhaps I should add some comments to that
-effect? (There was a thread a few months ago on this problem and this
-shook out as a solution.)
+If the trace buffer is mapped writable, the driver will stop tracing
+when it fills up (aux_head approaches aux_tail), till data is read,
+aux_tail pointer is moved forward and an ioctl() is issued to
+re-enable tracing. If the trace buffer is mapped read only, the
+tracing will continue, overwriting older data, so that the buffer
+always contains the most recent data. Tracing can be stopped with an
+ioctl() and restarted once the data is collected.
 
->
->> +}
->> +
->> +/* Make sure extended page tables are in use. */
->> +static inline bool arch_has_strict_perms(void)
->> +{
->> +     unsigned int cr;
->> +
->> +     if (cpu_architecture() < CPU_ARCH_ARMv6)
->> +             return false;
->> +
->> +     cr = get_cr();
->> +     if (!(cr & CR_XP))
->> +             return false;
->> +
->> +     return true;
->
-> return !!(get_cr() & CR_XP)?
+Another use case is annotating samples of other perf events: setting
+PERF_SAMPLE_AUX requests attr.aux_sample_size bytes of trace to be
+included in each event's sample.
 
-Sure, I can reduce this.
+This patchset consists of necessary changes to the perf kernel
+infrastructure, and PT and BTS pmu drivers. The tooling support is not
+included in this series, however, it can be found in my github tree [2].
 
->
->> +}
->> +
->> +#define set_section_perms(perms, field)      {                               \
->> +     size_t i;                                                       \
->> +     unsigned long addr;                                             \
->> +                                                                     \
->> +     if (!arch_has_strict_perms())                                   \
->> +             return;                                                 \
->> +                                                                     \
->> +     for (i = 0; i < ARRAY_SIZE(perms); i++) {                       \
->> +             if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||        \
->> +                 !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {          \
->> +                     pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
->> +                             perms[i].start, perms[i].end,           \
->> +                             SECTION_SIZE);                          \
->> +                     continue;                                       \
->> +             }                                                       \
->> +                                                                     \
->> +             for (addr = perms[i].start;                             \
->> +                  addr < perms[i].end;                               \
->> +                  addr += SECTION_SIZE)                              \
->> +                     section_update(addr, perms[i].mask,             \
->> +                                    perms[i].field);                 \
->> +     }                                                               \
->> +}
->> +
->> +static inline void fix_kernmem_perms(void)
->> +{
->> +     set_section_perms(nx_perms, prot);
->> +}
->> +#else
->> +static inline void fix_kernmem_perms(void) { }
->> +#endif /* CONFIG_ARM_KERNMEM_PERMS */
->> +
->>  void free_initmem(void)
->>  {
->>  #ifdef CONFIG_HAVE_TCM
->>       extern char __tcm_start, __tcm_end;
->> +#endif
->> +
->> +     fix_kernmem_perms();
->>
->> +#ifdef CONFIG_HAVE_TCM
->
-> You could avoid the double #ifdef by moving the tcm stuff into another
-> function (free_tcmmem?)
+This version changes the way watermarks are handled for AUX area and
+gets rid of the notion of "itrace" both in the core and in the perf
+interface (event attribute), which makes it more logical.
 
-Sure, I can do that.
+[1] http://software.intel.com/en-us/intel-isa-extensions
+[2] http://github.com/virtuoso/linux-perf/tree/intel_pt
 
-Thanks!
+Alexander Shishkin (21):
+  perf: Add data_{offset,size} to user_page
+  perf: Support high-order allocations for AUX space
+  perf: Add a capability for AUX_NO_SG pmus to do software double
+    buffering
+  perf: Add a pmu capability for "exclusive" events
+  perf: Redirect output from inherited events to parents
+  perf: Add api for pmus to write to AUX space
+  perf: Add AUX record
+  perf: Support overwrite mode for AUX area
+  perf: Add wakeup watermark control to AUX area
+  perf: add ITRACE_START record to indicate that tracing has started
+  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
+  x86: perf: Intel PT and LBR/BTS are mutually exclusive
+  x86: perf: intel_pt: Intel PT PMU driver
+  x86: perf: intel_bts: Add BTS PMU driver
+  perf: Add rb_{alloc,free}_kernel api
+  perf: Add a helper to copy AUX data in the kernel
+  perf: Add a helper for looking up pmus by type
+  perf: Add infrastructure for using AUX data in perf samples
+  perf: Allocate ring buffers for inherited per-task kernel events
+  perf: Allow AUX sampling for multiple events
+  perf: Allow sampling of inherited events
 
--Kees
+Peter Zijlstra (1):
+  perf: Add AUX area to ring buffer for raw data streams
+
+ arch/x86/include/asm/cpufeature.h          |   1 +
+ arch/x86/include/uapi/asm/msr-index.h      |  18 +
+ arch/x86/kernel/cpu/Makefile               |   1 +
+ arch/x86/kernel/cpu/intel_pt.h             | 129 ++++
+ arch/x86/kernel/cpu/perf_event.h           |  14 +
+ arch/x86/kernel/cpu/perf_event_intel.c     |  14 +-
+ arch/x86/kernel/cpu/perf_event_intel_bts.c | 501 +++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |  11 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   9 +-
+ arch/x86/kernel/cpu/perf_event_intel_pt.c  | 973 +++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/scattered.c            |   1 +
+ include/linux/perf_event.h                 |  56 +-
+ include/uapi/linux/perf_event.h            |  69 +-
+ kernel/events/core.c                       | 545 +++++++++++++++-
+ kernel/events/internal.h                   |  50 ++
+ kernel/events/ring_buffer.c                | 310 ++++++++-
+ 16 files changed, 2658 insertions(+), 44 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/intel_pt.h
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
+ create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
 
 -- 
-Kees Cook
-Chrome OS Security
+2.1.0
+
