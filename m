@@ -1,194 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaHTEoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 00:44:23 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53482 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750866AbaHTEoW (ORCPT
+	id S1752076AbaHTEvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 00:51:25 -0400
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:54990 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaHTEvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 00:44:22 -0400
-Date: Tue, 19 Aug 2014 23:44:16 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>, Dan Streetman <ddstreet@ieee.org>,
-        ds2horner@gmail.com
-Subject: Re: [PATCH v2 2/4] zsmalloc: change return value unit of
- zs_get_total_size_bytes
-Message-ID: <20140820044416.GA26040@cerebellum.variantweb.net>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
- <1408434887-16387-3-git-send-email-minchan@kernel.org>
- <20140819144628.GA26403@cerebellum.variantweb.net>
- <20140819234621.GB32620@bbox>
+	Wed, 20 Aug 2014 00:51:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140819234621.GB32620@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1408492364-8012-1-git-send-email-cw00.choi@samsung.com>
+References: <1408450078-6296-1-git-send-email-cw00.choi@samsung.com>
+	<1408492364-8012-1-git-send-email-cw00.choi@samsung.com>
+Date: Wed, 20 Aug 2014 10:21:21 +0530
+X-Google-Sender-Auth: XngTv_CANrBNZj8OGI5gHw8OVvg
+Message-ID: <CADGdYn45A2aYY97rmC2WkxnWfFitvdNNrYK-2Nt=VDrY6HyH_w@mail.gmail.com>
+Subject: Re: [PATCHv3] thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        naveen krishna <ch.naveen@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        devicetree@vger.kernel.org, LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <edubezval@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 08:46:21AM +0900, Minchan Kim wrote:
-> Hey Seth,
-> 
-> On Tue, Aug 19, 2014 at 09:46:28AM -0500, Seth Jennings wrote:
-> > On Tue, Aug 19, 2014 at 04:54:45PM +0900, Minchan Kim wrote:
-> > > zs_get_total_size_bytes returns a amount of memory zsmalloc
-> > > consumed with *byte unit* but zsmalloc operates *page unit*
-> > > rather than byte unit so let's change the API so benefit
-> > > we could get is that reduce unnecessary overhead
-> > > (ie, change page unit with byte unit) in zsmalloc.
-> > > 
-> > > Now, zswap can rollback to zswap_pool_pages.
-> > > Over to zswap guys ;-)
-> > 
-> > I don't think that's how is it done :-/  Changing the API for a
-> > component that has two users, changing one, then saying "hope you guys
-> > change your newly broken stuff".
-> 
-> I don't get it. The zsmalloc's zs_zpool_total_size returns u64 with bytes,
-> not pages so what's broken stuff you mentioned?
-> 
-> static u64 zs_zpool_total_size(void *pool)
-> {
->     -	return zs_get_total_size_bytes(pool);
->     +	return zs_get_total_size(pool) << PAGE_SHIFT;
-> }
+On Wed, Aug 20, 2014 at 5:22 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> This patch add support for TRIM_RELOAD feature at Exynos3250. The TMU of
+> Exynos3250 has two TRIMINFO_CON register.
+>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Eduardo Valentin <edubezval@gmail.com>
+> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+The changes looks fine,
+Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
-Ah, that's my bad.  I forgot that there is zs_get_total_size() and
-zs_pool_total_size() and that the zpool driver calls
-zs_pool_total_size(), not zs_get_total_size().
-
-Nevermind!
-
-Seth
-
-> 
-> Thing I nudged to you is just you could roll back to pages count
-> instead of bytes if zswap guys want it and I dont' want it myself
-> for avoding unnecessary noise for this patchset's purpose.
-> 
-> > 
-> > I know you would rather not move zram to the zpool API but doing so
-> > would avoid situations like this.
-> > 
-> > Anyway, this does break the zpool API and by extension zswap, and that
-> > needs to be addressed in this patch or we create a point in the commit
-> > history where it is broken.
-> > 
-> > Quick glance:
-> > - zpool_get_total_size() return type is u64 but this patch changes to
-> > unsigned long.  Now mismatches between zbud and zsmalloc.
-> 
-> Nope. zs_zpool_total_size returns u64 with PAGE_SHIFT.
-> 
-> > - zbud_zpool_total_size needs to return pages, not bytes
-> 
-> It's up to you, not me.
-> 
-> > - as you noted s/pool_total_size/pool_pages/g in zswap.c plus
-> >   modification to zswap_is_full()
-> 
-> I didn't mean it. Sorry for the confusing.
-> If I miss your point, let me know it.
-> 
-> Thanks.
-> 
-> > 
-> > Thanks,
-> > Seth
-> > 
-> > > 
-> > > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > > ---
-> > >  drivers/block/zram/zram_drv.c |  4 ++--
-> > >  include/linux/zsmalloc.h      |  2 +-
-> > >  mm/zsmalloc.c                 | 10 +++++-----
-> > >  3 files changed, 8 insertions(+), 8 deletions(-)
-> > > 
-> > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > index d00831c3d731..302dd37bcea3 100644
-> > > --- a/drivers/block/zram/zram_drv.c
-> > > +++ b/drivers/block/zram/zram_drv.c
-> > > @@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
-> > >  
-> > >  	down_read(&zram->init_lock);
-> > >  	if (init_done(zram))
-> > > -		val = zs_get_total_size_bytes(meta->mem_pool);
-> > > +		val = zs_get_total_size(meta->mem_pool);
-> > >  	up_read(&zram->init_lock);
-> > >  
-> > > -	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> > > +	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> > >  }
-> > >  
-> > >  static ssize_t max_comp_streams_show(struct device *dev,
-> > > diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-> > > index e44d634e7fb7..105b56e45d23 100644
-> > > --- a/include/linux/zsmalloc.h
-> > > +++ b/include/linux/zsmalloc.h
-> > > @@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
-> > >  			enum zs_mapmode mm);
-> > >  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
-> > >  
-> > > -u64 zs_get_total_size_bytes(struct zs_pool *pool);
-> > > +unsigned long zs_get_total_size(struct zs_pool *pool);
-> > >  
-> > >  #endif
-> > > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> > > index a65924255763..80408a1da03a 100644
-> > > --- a/mm/zsmalloc.c
-> > > +++ b/mm/zsmalloc.c
-> > > @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
-> > >  
-> > >  static u64 zs_zpool_total_size(void *pool)
-> > >  {
-> > > -	return zs_get_total_size_bytes(pool);
-> > > +	return zs_get_total_size(pool) << PAGE_SHIFT;
-> > >  }
-> > >  
-> > >  static struct zpool_driver zs_zpool_driver = {
-> > > @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
-> > >  }
-> > >  EXPORT_SYMBOL_GPL(zs_unmap_object);
-> > >  
-> > > -u64 zs_get_total_size_bytes(struct zs_pool *pool)
-> > > +unsigned long zs_get_total_size(struct zs_pool *pool)
-> > >  {
-> > > -	u64 npages;
-> > > +	unsigned long npages;
-> > >  
-> > >  	spin_lock(&pool->stat_lock);
-> > >  	npages = pool->pages_allocated;
-> > >  	spin_unlock(&pool->stat_lock);
-> > > -	return npages << PAGE_SHIFT;
-> > > +	return npages;
-> > >  }
-> > > -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> > > +EXPORT_SYMBOL_GPL(zs_get_total_size);
-> > >  
-> > >  module_init(zs_init);
-> > >  module_exit(zs_exit);
-> > > -- 
-> > > 2.0.0
-> > > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+Thanks,
+Amit
+> ---
+> Changes from v2:
+> - Fix build break because of missing 'or' operation.
+> Changes from v1:
+> - Add missing 'TMU_SUPPORT_TRIM_RELOAD' feature
+>
+>  drivers/thermal/samsung/exynos_tmu.c      |  7 +++++--
+>  drivers/thermal/samsung/exynos_tmu.h      |  5 +++--
+>  drivers/thermal/samsung/exynos_tmu_data.c | 11 +++++++++--
+>  drivers/thermal/samsung/exynos_tmu_data.h |  7 +++++--
+>  4 files changed, 22 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index acbff14..ed01606 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -164,8 +164,11 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+>                 }
+>         }
+>
+> -       if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
+> -               __raw_writel(1, data->base + reg->triminfo_ctrl);
+> +       if (TMU_SUPPORTS(pdata, TRIM_RELOAD)) {
+> +               for (i = 0; i < pdata->triminfo_reload_count; i++)
+> +                       __raw_writel(pdata->triminfo_reload[i],
+> +                                       data->base + reg->triminfo_ctrl[i]);
+> +       }
+>
+>         if (pdata->cal_mode == HW_MODE)
+>                 goto skip_calib_data;
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+> index 1b4a644..72cb54e 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -151,8 +151,7 @@ struct exynos_tmu_registers {
+>         u32     triminfo_25_shift;
+>         u32     triminfo_85_shift;
+>
+> -       u32     triminfo_ctrl;
+> -       u32     triminfo_ctrl1;
+> +       u32     triminfo_ctrl[2];
+>         u32     triminfo_reload_shift;
+>
+>         u32     tmu_ctrl;
+> @@ -295,6 +294,8 @@ struct exynos_tmu_platform_data {
+>         u8 second_point_trim;
+>         u8 default_temp_offset;
+>         u8 test_mux;
+> +       u8 triminfo_reload[2];
+> +       u8 triminfo_reload_count;
+>
+>         enum calibration_type cal_type;
+>         enum calibration_mode cal_mode;
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+> index aa8e0de..8cd609c 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -95,6 +95,8 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
+>         .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+>         .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+>         .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+> +       .triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON1,
+> +       .triminfo_ctrl[1] = EXYNOS_TMU_TRIMINFO_CON2,
+>         .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+>         .test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+>         .buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+> @@ -160,8 +162,11 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
+>                 .temp_level = 95, \
+>         }, \
+>         .freq_tab_count = 2, \
+> +       .triminfo_reload[0] = 0x1, \
+> +       .triminfo_reload[1] = 0x11, \
+> +       .triminfo_reload_count = 2, \
+>         .registers = &exynos3250_tmu_registers, \
+> -       .features = (TMU_SUPPORT_EMULATION | \
+> +       .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+>                         TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+>                         TMU_SUPPORT_EMUL_TIME)
+>  #endif
+> @@ -184,7 +189,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+>         .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+>         .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+>         .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+> -       .triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
+> +       .triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON2,
+>         .triminfo_reload_shift = EXYNOS_TRIMINFO_RELOAD_SHIFT,
+>         .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+>         .test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+> @@ -252,6 +257,8 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+>                 .temp_level = 95, \
+>         }, \
+>         .freq_tab_count = 2, \
+> +       .triminfo_reload[0] = 0x1, \
+> +       .triminfo_reload_count = 1, \
+>         .registers = &exynos4412_tmu_registers, \
+>         .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+>                         TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+> index f0979e5..e0536c3 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+> @@ -57,8 +57,11 @@
+>  #define EXYNOS4210_TMU_TRIG_LEVEL_MASK 0x1111
+>  #define EXYNOS4210_TMU_INTCLEAR_VAL    0x1111
+>
+> -/* Exynos5250 and Exynos4412 specific registers */
+> -#define EXYNOS_TMU_TRIMINFO_CON        0x14
+> +/* Exynos3250 specific registers */
+> +#define EXYNOS_TMU_TRIMINFO_CON1       0x10
+> +
+> +/* Exynos5250, Exynos4412 and Exynos3250 specific registers */
+> +#define EXYNOS_TMU_TRIMINFO_CON2       0x14
+>  #define EXYNOS_THD_TEMP_RISE           0x50
+>  #define EXYNOS_THD_TEMP_FALL           0x54
+>  #define EXYNOS_EMUL_CON                0x80
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 1.8.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
