@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaHTOIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:08:15 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:14034 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750972AbaHTOIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:08:13 -0400
-Message-ID: <53F4ABB0.9000600@fb.com>
-Date: Wed, 20 Aug 2014 10:07:44 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <miaox@cn.fujitsu.com>, <dsterba@suse.cz>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, <lkp@01.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        Abhay Sachan <lkp.abhay@gmail.com>
-Subject: Re: [btrfs] 8d875f95: xfstests.generic.226.fail
-References: <20140816075233.GA26842@localhost> <20140819115820.GA21418@localhost> <20140819142348.GU1553@twin.jikos.cz> <53F36601.5020609@fb.com> <53F47E07.3080807@cn.fujitsu.com>
-In-Reply-To: <53F47E07.3080807@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751528AbaHTOKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:10:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31430 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750819AbaHTOKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 10:10:40 -0400
+Message-ID: <1408543798.11383.42.camel@ul30vt.home>
+Subject: Re: How to get the number of VFs assigned to the guests in XEN
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, konrad.wilk@oracle.com,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>, boris.ostrovsky@oracle.com,
+        Sathya Prakash <sathya.prakash@avagotech.com>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
+Date: Wed, 20 Aug 2014 08:09:58 -0600
+In-Reply-To: <CAK=zhgrFV10k0yzOrkSnmYJge3M+kQrcNz9e5qZZ5q180NY2xQ@mail.gmail.com>
+References: <CAK=zhgrv=e20s11v7Ls5ioWZrbyvp9Rzyv+QRDLR3mffr9E61A@mail.gmail.com>
+	 <1408538771.11383.33.camel@ul30vt.home>
+	 <CAK=zhgrFV10k0yzOrkSnmYJge3M+kQrcNz9e5qZZ5q180NY2xQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-20_04:2014-08-20,2014-08-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=6.49436060484732e-12 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.324642340081358
- urlsuspect_oldscore=0.324642340081358 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.324642340081358 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1408200143
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-08-20 at 19:14 +0530, Sreekanth Reddy wrote:
+> Thanks Alex,
+> 
+> Then, Is there any other ways to stop accidental unload of PF driver
+> while still some VFs are accessing by the running VMs.
+
+I believe the reason pci_vfs_assigned() and the pci_dev flag that backs
+it exists is because legacy KVM device assignment does not require a
+host driver for the device.  At best, the assigned device is bound to
+pci-stub, which is more than happy to release a device at any point in
+time.  This flag was therefore added to indicate that the device was in
+use, please don't make it disappear.  With VFIO, the device is bound to
+vfio-pci in the host which will only release the device when it is
+unused, just like any other device driver.  If the device is in use,
+either assigned to a VM or otherwise in use by a userspace driver,
+vfio-pci will block until unused.
+
+There are opportunities that we have yet to implement that we could
+notify the user of the removal request, triggering a hot-unplug in a
+guest.  Assuming some sort of revoke() functionality gets pushed
+upstream we could also make an unplug request, wait from some time, then
+revoke the device from the user.  The point however is that device
+assignment shouldn't be handled as a special case.  When
+pci_disable_sriov() is called, the release functions for any drivers
+owning an affected VF should be called where we have the opportunity to
+block until unused.  Thanks,
+
+Alex
+
+> On Wed, Aug 20, 2014 at 6:16 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > On Wed, 2014-08-20 at 16:39 +0530, Sreekanth Reddy wrote:
+> >> HI,
+> >>
+> >> For SRIOV support, currently in the KVM environment, mpt3sas driver
+> >> can use the API pci_vfs_assigned() to know the number of VFs that are
+> >> currently assigned to the running VMs. So that during the PF driver
+> >> unload time, if the return value of this API is greater than zero the
+> >> our driver won't call the pci_disable_sriov() to disable the VFs.
+> >>
+> >> Now for the same purpose in XEN environment, is there any API similar
+> >> to pci_vfs_assigned() which the low lever device driver can use to
+> >> know 'the number of VFs that are currently assigned to the running
+> >> VMs'. In XEN environment this API pci_vfs_assigned() will return
+> >> always zero even though VFs are assigned to the running VMs.
+> >
+> > Note that pci_vfs_assigned() assigned is only used by legacy KVM device
+> > assignment and primarily as a workaround for not using an actual
+> > host-based device driver to manage device ownership.  When using
+> > VFIO-based device assignment with KVM, pci_vfs_assigned() is not
+> > updated.  Please don't rely on this interface.  Thanks,
+> >
+> > Alex
+> >
 
 
-On 08/20/2014 06:52 AM, Miao Xie wrote:
-> On Tue, 19 Aug 2014 10:58:09 -0400, Chris Mason wrote:
->> On 08/19/2014 10:23 AM, David Sterba wrote:
->>> On Tue, Aug 19, 2014 at 07:58:20PM +0800, Fengguang Wu wrote:
->>>> We noticed an xfstests failure on commit
->>>>
->>>> 8d875f95da43c6a8f18f77869f2ef26e9594fecc ("btrfs: disable strict file flushes for renames and truncates")
->>>>
->>>> It's 100% reproducible in the 5 test runs.
->>>
->>> Same here, different mkfs configurations.
->>>
->>> generic/226 28s ...    [16:11:52] [16:12:55] - output mismatch (see /root/xfstests/results//generic/226.out.bad)
->>>     --- tests/generic/226.out   2013-05-29 17:16:03.000000000 +0200
->>>     +++ /root/xfstests/results//generic/226.out.bad     2014-08-19 16:12:55.000000000 +0200
->>>     @@ -1,6 +1,8 @@
->>>      QA output created by 226
->>>      --> mkfs 256m filesystem
->>>      --> 16 buffered 64m writes in a loop
->>>     -1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
->>>     +1 2 3 4 pwrite64: No space left on device
->>>     +5 6 7 8 9 10 11 12 pwrite64: No space left on device
->>>     +13 14 15 16
->>>
->>> enospc on a small filesystem (256M)
->>
->> I'm calling filemap flush more often, but otherwise everything else is
->> the same.  I'll take a look.
-> 
-> I found the problem is caused by the following function:
-> 
-> int btrfs_release_file(struct inode *inode, struct file *filp)
-> {
-> 	...
-> 	filemap_flush(inode->i_mapping);
-> 	return 0;
-> }
-> 
-> I don't think we need flush file at most situation. Ext4 flushes the file only
-> after someone truncate the file to be zero-length, I don't know the real reason
-> why ext4 flush the file only after the file is truncated, someone said it is to
-> reduce the risk that the users find a zero-length file after a crash, which happens
-> after truncate-write-close process.
-> 
-> If we change btrfs_release_file by ext4's implementation, both the failure of
-> xfstests's generic/226  and performance regression can be fixed.
-> 
-
-You're completely right, my original had more checks here and I stripped
-them out by accident.  Fixing, thanks!
-
--chris
 
