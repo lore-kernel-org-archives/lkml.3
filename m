@@ -1,86 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaHTMKl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:10:41 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58888 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752484AbaHTLoJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:09 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
-        Jonathan Cameron <jic23@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 012/104] iio:bma180: Fix scale factors to report correct acceleration units
-Date: Wed, 20 Aug 2014 13:42:35 +0200
-Message-Id: <357249fb9640cd72a4e6d8008ce1f1be0154e37c.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	id S1754417AbaHTMIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:08:48 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:56499 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754393AbaHTMIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:08:46 -0400
+Date: Wed, 20 Aug 2014 14:07:57 +0200 (CEST)
+From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+To: Mark Rutland <mark.rutland@arm.com>, atull@opensource.altera.com
+Cc: wsa@the-dreams.de, baruch@tkos.co.il,
+        mika westerberg <mika.westerberg@linux.intel.com>,
+        grant likely <grant.likely@linaro.org>, robh+dt@kernel.org,
+        skuribay@pobox.com, rafael j wysocki <rafael.j.wysocki@intel.com>,
+        alan@linux.intel.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        delicious quinoa <delicious.quinoa@gmail.com>,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Message-ID: <1757614617.2144.1408536477693.JavaMail.root@abilis.com>
+In-Reply-To: <944257148.1724.1408528177642.JavaMail.root@abilis.com>
+Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
+ setting
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Zimbra 7.2.4_GA_2900 (ZimbraWebClient - FF3.0 (Linux)/7.2.4_GA_2900)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Meerwald <pmeerw@pmeerw.net>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Please find below link to these patches:
 
-===============
+[PATCH 1/2] i2c designware make SCL and SDA falling time configurable
+https://lkml.org/lkml/2013/10/8/443
 
-commit 381676d5e86596b11e22a62f196e192df6091373 upstream.
+[PATCH V3 2/2] i2c designware add support of I2C standard mode
+https://lkml.org/lkml/2014/3/25/135
 
-The userspace interface for acceleration sensors is documented as using
-m/s^2 units [Documentation/ABI/testing/sysfs-bus-iio]
+Are they fine to be included in the mainline ?
 
-The fullscale raw values for the BMA80 corresponds to -/+ 1, 1.5, 2, etc G
-depending on the selected mode.
+Romain
 
-The scale table was converting to G rather than m/s^2.
-Change the scaling table to match the documented interface.
+----- Original Message -----
+From: "Romain Baeriswyl" <Romain.Baeriswyl@abilis.com>
+To: "Mark Rutland" <mark.rutland@arm.com>, atull@opensource.altera.com
+Cc: wsa@the-dreams.de, baruch@tkos.co.il, "mika westerberg" <mika.westerberg@linux.intel.com>, "grant likely" <grant.likely@linaro.org>, robh+dt@kernel.org, skuribay@pobox.com, "rafael j wysocki" <rafael.j.wysocki@intel.com>, alan@linux.intel.com, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, "delicious quinoa" <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Sent: Wednesday, August 20, 2014 11:49:37 AM
+Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree setting
 
-See commit 71702e6e, iio: mma8452: Use correct acceleration units,
-for a related fix.
+Hi,
 
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/iio/accel/bma180.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+With the patch "i2c designware add support of I2C standard mode" I already proposed:
+- I2C standard mode is selected with 100kHz clock frequency.
+- I2C fast mode is selected with 400kHy clock frequency.
+- EINVAL error is returned if clock frequency is not 100000 and not 400000.
 
-diff --git a/drivers/iio/accel/bma180.c b/drivers/iio/accel/bma180.c
-index 81e3dc260993..225aea63eaf5 100644
---- a/drivers/iio/accel/bma180.c
-+++ b/drivers/iio/accel/bma180.c
-@@ -68,13 +68,13 @@
- /* Defaults values */
- #define BMA180_DEF_PMODE	0
- #define BMA180_DEF_BW		20
--#define BMA180_DEF_SCALE	250
-+#define BMA180_DEF_SCALE	2452
- 
- /* Available values for sysfs */
- #define BMA180_FLP_FREQ_AVAILABLE \
- 	"10 20 40 75 150 300"
- #define BMA180_SCALE_AVAILABLE \
--	"0.000130 0.000190 0.000250 0.000380 0.000500 0.000990 0.001980"
-+	"0.001275 0.001863 0.002452 0.003727 0.004903 0.009709 0.019417"
- 
- struct bma180_data {
- 	struct i2c_client *client;
-@@ -94,7 +94,7 @@ enum bma180_axis {
- };
- 
- static int bw_table[] = { 10, 20, 40, 75, 150, 300 }; /* Hz */
--static int scale_table[] = { 130, 190, 250, 380, 500, 990, 1980 };
-+static int scale_table[] = { 1275, 1863, 2452, 3727, 4903, 9709, 19417 };
- 
- static int bma180_get_acc_reg(struct bma180_data *data, enum bma180_axis axis)
- {
--- 
-2.0.4
+but this patch seems not available yet.
+What about the other patch "i2c designware make SCL and SDA falling time configurable" ?
 
+In i2c-designware_platdrv.c the flag DW_IC_CON_SPEED_xxx is well set
+depending on the mode:
+
+  if (clk_freq == 100000)
+     dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+       DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_STD;
+   else
+     dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+       DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+
+
+So for me everything should be fine if there patches are applied.
+
+Regards,
+
+Romain
+
+----- Original Message -----
+From: "Mark Rutland" <mark.rutland@arm.com>
+To: atull@opensource.altera.com
+Cc: wsa@the-dreams.de, baruch@tkos.co.il, "mika westerberg" <mika.westerberg@linux.intel.com>, "grant likely" <grant.likely@linaro.org>, robh+dt@kernel.org, skuribay@pobox.com, "Romain Baeriswyl" <Romain.Baeriswyl@abilis.com>, "rafael j wysocki" <rafael.j.wysocki@intel.com>, alan@linux.intel.com, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, "delicious quinoa" <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Sent: Wednesday, August 20, 2014 11:22:57 AM
+Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree setting
+
+On Tue, Aug 19, 2014 at 09:18:49PM +0100, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Use the documented, but unimplemented "clock-frequency"
+> Device Tree setting as a guide on whether to set the speed
+> mode bits in DW_IC_CON to standard or fast i2c mode.
+> 
+> Previously, the driver was hardwired to fast mode.  Default
+> to fast mode if the "clock-frequency" property is not present
+> for backwards compatiblity.
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+>  drivers/i2c/busses/i2c-designware-platdrv.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+> index bc87733..18cd3d9 100644
+> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
+> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+> @@ -122,7 +122,8 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  	struct dw_i2c_dev *dev;
+>  	struct i2c_adapter *adap;
+>  	struct resource *mem;
+> -	int irq, r;
+> +	int irq, r, ret, speed = DW_IC_CON_SPEED_FAST;
+> +	u32 bus_rate;
+>  
+>  	irq = platform_get_irq(pdev, 0);
+>  	if (irq < 0) {
+> @@ -167,6 +168,11 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  		of_property_read_u32(pdev->dev.of_node,
+>  				     "i2c-scl-falling-time-ns",
+>  				     &dev->scl_falling_time);
+> +
+> +		ret = of_property_read_u32(pdev->dev.of_node,
+> +					   "clock-frequency", &bus_rate);
+> +		if (!ret && (bus_rate <= 100000))
+> +			speed = DW_IC_CON_SPEED_STD;
+
+This looks a bit odd.
+
+If the device only supports two particular speeds why do we accept any
+other speed in the clock-frequency property? Surely we should at least
+warn that something was off?
+
+Thanks,
+Mark
+
+>  	}
+>  
+>  	dev->functionality =
+> @@ -177,7 +183,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  		I2C_FUNC_SMBUS_WORD_DATA |
+>  		I2C_FUNC_SMBUS_I2C_BLOCK;
+>  	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+> -		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+> +		DW_IC_CON_RESTART_EN | speed;
+>  
+>  	/* Try first if we can configure the device from ACPI */
+>  	r = dw_i2c_acpi_configure(pdev);
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
