@@ -1,119 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753601AbaHTL5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:57:36 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58991 "EHLO
+	id S1753022AbaHTLyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:54:37 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58983 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752587AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752598AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:10 -0400
+	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Cedric Le Goater <clg@fr.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: linux-kernel@vger.kernel.org, yzhu1 <yanjun.zhu@windriver.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 067/104] offb: Little endian fixes
-Date: Wed, 20 Aug 2014 13:43:30 +0200
-Message-Id: <0d9f529a9b7d7f00b5441a39bbf97df0fee367cb.1408535000.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 074/104] e1000: prevent oops when adapter is being closed and reset simultaneously
+Date: Wed, 20 Aug 2014 13:43:37 +0200
+Message-Id: <3bb55aa77e9994467c7eb79a7eca2b33f427477b.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
 References: <cover.1408535000.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cedric Le Goater <clg@fr.ibm.com>
+From: yzhu1 <yanjun.zhu@windriver.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 212c0cbd5be721a39ef3e2f723e0c78008f9e955 upstream.
+commit 6a7d64e3e09e11181a07a2e8cd6af5d6355133be upstream.
 
-The "screen" properties : depth, width, height, linebytes need
-to be converted to the host endian order when read from the device
-tree.
+This change is based on a similar change made to e1000e support in
+commit bb9e44d0d0f4 ("e1000e: prevent oops when adapter is being closed
+and reset simultaneously").  The same issue has also been observed
+on the older e1000 cards.
 
-The offb_init_palette_hacks() routine also made assumption on the
-host endian order.
+Here, we have increased the RESET_COUNT value to 50 because there are too
+many accesses to e1000 nic on stress tests to e1000 nic, it is not enough
+to set RESET_COUT 25. Experimentation has shown that it is enough to set
+RESET_COUNT 50.
 
-Signed-off-by: Cédric Le Goater <clg@fr.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: yzhu1 <yanjun.zhu@windriver.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/video/offb.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/intel/e1000/e1000.h      | 5 +++++
+ drivers/net/ethernet/intel/e1000/e1000_main.c | 9 +++++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/drivers/video/offb.c b/drivers/video/offb.c
-index 0c4f34311eda..9a0109b664c5 100644
---- a/drivers/video/offb.c
-+++ b/drivers/video/offb.c
-@@ -301,7 +301,7 @@ static struct fb_ops offb_ops = {
- static void __iomem *offb_map_reg(struct device_node *np, int index,
- 				  unsigned long offset, unsigned long size)
+diff --git a/drivers/net/ethernet/intel/e1000/e1000.h b/drivers/net/ethernet/intel/e1000/e1000.h
+index 26d9cd59ec75..d5775aef5475 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000.h
++++ b/drivers/net/ethernet/intel/e1000/e1000.h
+@@ -83,6 +83,11 @@ struct e1000_adapter;
+ 
+ #define E1000_MAX_INTR			10
+ 
++/*
++ * Count for polling __E1000_RESET condition every 10-20msec.
++ */
++#define E1000_CHECK_RESET_COUNT	50
++
+ /* TX/RX descriptor defines */
+ #define E1000_DEFAULT_TXD		256
+ #define E1000_MAX_TXD			256
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index ad6800ad1bfc..4ca676cb7f04 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -1445,6 +1445,10 @@ static int e1000_close(struct net_device *netdev)
  {
--	const u32 *addrp;
-+	const __be32 *addrp;
- 	u64 asize, taddr;
- 	unsigned int flags;
+ 	struct e1000_adapter *adapter = netdev_priv(netdev);
+ 	struct e1000_hw *hw = &adapter->hw;
++	int count = E1000_CHECK_RESET_COUNT;
++
++	while (test_bit(__E1000_RESETTING, &adapter->flags) && count--)
++		usleep_range(10000, 20000);
  
-@@ -369,7 +369,11 @@ static void offb_init_palette_hacks(struct fb_info *info, struct device_node *dp
- 		}
- 		of_node_put(pciparent);
- 	} else if (dp && of_device_is_compatible(dp, "qemu,std-vga")) {
--		const u32 io_of_addr[3] = { 0x01000000, 0x0, 0x0 };
-+#ifdef __BIG_ENDIAN
-+		const __be32 io_of_addr[3] = { 0x01000000, 0x0, 0x0 };
-+#else
-+		const __be32 io_of_addr[3] = { 0x00000001, 0x0, 0x0 };
-+#endif
- 		u64 io_addr = of_translate_address(dp, io_of_addr);
- 		if (io_addr != OF_BAD_ADDR) {
- 			par->cmap_adr = ioremap(io_addr + 0x3c8, 2);
-@@ -536,7 +540,7 @@ static void __init offb_init_nodriver(struct device_node *dp, int no_real_node)
- 	unsigned int flags, rsize, addr_prop = 0;
- 	unsigned long max_size = 0;
- 	u64 rstart, address = OF_BAD_ADDR;
--	const u32 *pp, *addrp, *up;
-+	const __be32 *pp, *addrp, *up;
- 	u64 asize;
- 	int foreign_endian = 0;
+ 	WARN_ON(test_bit(__E1000_RESETTING, &adapter->flags));
+ 	e1000_down(adapter);
+@@ -4968,6 +4972,11 @@ static int __e1000_shutdown(struct pci_dev *pdev, bool *enable_wake)
+ 	netif_device_detach(netdev);
  
-@@ -552,25 +556,25 @@ static void __init offb_init_nodriver(struct device_node *dp, int no_real_node)
- 	if (pp == NULL)
- 		pp = of_get_property(dp, "depth", &len);
- 	if (pp && len == sizeof(u32))
--		depth = *pp;
-+		depth = be32_to_cpup(pp);
- 
- 	pp = of_get_property(dp, "linux,bootx-width", &len);
- 	if (pp == NULL)
- 		pp = of_get_property(dp, "width", &len);
- 	if (pp && len == sizeof(u32))
--		width = *pp;
-+		width = be32_to_cpup(pp);
- 
- 	pp = of_get_property(dp, "linux,bootx-height", &len);
- 	if (pp == NULL)
- 		pp = of_get_property(dp, "height", &len);
- 	if (pp && len == sizeof(u32))
--		height = *pp;
-+		height = be32_to_cpup(pp);
- 
- 	pp = of_get_property(dp, "linux,bootx-linebytes", &len);
- 	if (pp == NULL)
- 		pp = of_get_property(dp, "linebytes", &len);
- 	if (pp && len == sizeof(u32) && (*pp != 0xffffffffu))
--		pitch = *pp;
-+		pitch = be32_to_cpup(pp);
- 	else
- 		pitch = width * ((depth + 7) / 8);
- 
+ 	if (netif_running(netdev)) {
++		int count = E1000_CHECK_RESET_COUNT;
++
++		while (test_bit(__E1000_RESETTING, &adapter->flags) && count--)
++			usleep_range(10000, 20000);
++
+ 		WARN_ON(test_bit(__E1000_RESETTING, &adapter->flags));
+ 		e1000_down(adapter);
+ 	}
 -- 
 2.0.4
 
