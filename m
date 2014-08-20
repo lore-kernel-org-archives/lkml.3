@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973AbaHTURH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:17:07 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:45903 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594AbaHTURE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:17:04 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de
-Subject: Re: [PATCH 6/8] drm: use for_each_endpoint_of_node macro in drm_of_find_possible_crtcs
-Date: Wed, 20 Aug 2014 22:17:46 +0200
-Message-ID: <35240162.ybqbYegqRc@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1408453366-1366-7-git-send-email-p.zabel@pengutronix.de>
-References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de> <1408453366-1366-7-git-send-email-p.zabel@pengutronix.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753038AbaHTUSo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:18:44 -0400
+Received: from omr2.cc.vt.edu ([198.82.141.100]:45562 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037AbaHTUSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 16:18:43 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-firmware@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firmware: Automatically pull missing FW files
+In-Reply-To: Your message of "Wed, 20 Aug 2014 12:21:23 -0700."
+             <53F4F533.5010308@intel.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20140820182145.15596.86122.stgit@tstruk-mobl1> <1408559681.11365.1.camel@shinybook.infradead.org>
+            <53F4F533.5010308@intel.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1408565832_20555P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Aug 2014 16:17:13 -0400
+Message-ID: <22524.1408565833@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+--==_Exmh_1408565832_20555P
+Content-Type: text/plain; charset=us-ascii
 
-Thank you for the patch.
+On Wed, 20 Aug 2014 12:21:23 -0700, Tadeusz Struk said:
+> Hi David,
+> On 08/20/2014 11:34 AM, David Woodhouse wrote:
+> > I'm not sure I understand. Precisely what fails?
+>
+> I clone a subsystem, configure it to use
+> CONFIG_EXTRA_FIRMWARE="qat_895xcc.bin", type make && make install and get:
+>
+> MK_FW   firmware/qat_895xxc.bin.gen.S
+> make[1]: *** No rule to make target `firmware/qat_895xxc.bin', needed by
+> `firmware/qat_895xxc.bin.gen.o'.  Stop.
 
-On Tuesday 19 August 2014 15:02:44 Philipp Zabel wrote:
-> Using the for_each_... macro should make the code a bit shorter and
-> easier to read.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Is this what you were looking for?
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+config EXTRA_FIRMWARE_DIR
+        string "Firmware blobs root directory"
+        depends on EXTRA_FIRMWARE != ""
+        default "firmware"
+        help
+          This option controls the directory in which the kernel build system
+          looks for the firmware files listed in the EXTRA_FIRMWARE option.
+          The default is firmware/ in the kernel source tree, but by changing
+          this option you can point it elsewhere, such as /lib/firmware/ or
+          some other directory containing the firmware files.
 
-> ---
->  drivers/gpu/drm/drm_of.c | 8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/drm_of.c b/drivers/gpu/drm/drm_of.c
-> index 16150a0..024fa77 100644
-> --- a/drivers/gpu/drm/drm_of.c
-> +++ b/drivers/gpu/drm/drm_of.c
-> @@ -46,11 +46,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device
-> *dev, struct device_node *remote_port, *ep = NULL;
->  	uint32_t possible_crtcs = 0;
-> 
-> -	do {
-> -		ep = of_graph_get_next_endpoint(port, ep);
-> -		if (!ep)
-> -			break;
-> -
-> +	for_each_endpoint_of_node(port, ep) {
->  		remote_port = of_graph_get_remote_port(ep);
->  		if (!remote_port) {
->  			of_node_put(ep);
-> @@ -60,7 +56,7 @@ uint32_t drm_of_find_possible_crtcs(struct drm_device
-> *dev, possible_crtcs |= drm_crtc_port_mask(dev, remote_port);
-> 
->  		of_node_put(remote_port);
-> -	} while (1);
-> +	}
-> 
->  	return possible_crtcs;
->  }
 
--- 
-Regards,
 
-Laurent Pinchart
+--==_Exmh_1408565832_20555P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU/UCSAdmEQWDXROgAQIKLA/+LEc+DbfwJpVyHc64l17kkVYH2CH6IAoy
+7hZ5lHXiF2JR2XVMzFZA9GDLiCAYJ/iCRbt7PW48piApka5nZhXiEzJPml0UD83E
+7hW/8g8RWDx0U2PgerAGwexhi0tGA2hQBAk00JS3XY4o4K/POL1dGag1RxWlo5q/
+EbL9/sFDRlI3Vl3y4QlXdY62rY5zD5W6ZmnvNCh+Tk2406RWN2PVyLl6uypEGUrj
+sosjQep5InWqEe3dHIfslry2UfC+UAmlPiZ7BBknP83bhiGjcQgcLSspdSDT3vNW
+GY/TYSUhqOQxp14++P5P/qqRVSlHvLDMxFkBbzPznAz1A2JaFDx1SU3wmJF3i/uv
+icvPhvIDHhqGgQ7Lawg/0IidUuhb1tPNmEZr+CCQNep6xzUjWoupRfGd41Fmyp/Z
+1TB+DexEjKqWGn2YN9NiNQ3FMJWLEffCuWGRqBVNndrxsCswCv9kPFlv4Kw3AWGt
+rcH65A29kbQ4NmrR59yGSEiB7AXP90AY+LG5w0Nn8tTwaDP14B0IVNLz3FDqBpV6
+St3LVr9yFsctY/LNzyLcPU6c1eIPphdK1JwNLOKyrW6m2Ga9TqjQZJx3RvaNAfEr
+sGT9ETWKJ1JrK5RK9JNIk/9Fb9zvfdQJuQGxx+wZ0O3WGq5tGq7v1SojAM8pxNZF
+vO7+eojzbtc=
+=WQLp
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1408565832_20555P--
