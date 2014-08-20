@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaHTQQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 12:16:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39260 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936AbaHTQQe (ORCPT
+	id S1752246AbaHTQQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 12:16:50 -0400
+Received: from infra.glanzmann.de ([88.198.249.254]:46342 "EHLO
+	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936AbaHTQQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 12:16:34 -0400
-Date: Wed, 20 Aug 2014 11:15:05 -0500
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Chen, Alvin" <alvin.chen@intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Boon Leong Ong <boon.leong.ong@intel.com>
-Subject: Re: [PATCH] USB: pch_udc: USB gadget device support for Intel Quark
- X1000
-Message-ID: <20140820161505.GB17908@kroah.com>
-References: <1407172974-22485-1-git-send-email-alvin.chen@intel.com>
- <20140820145446.GB24500@saruman.home>
+	Wed, 20 Aug 2014 12:16:48 -0400
+Date: Wed, 20 Aug 2014 18:16:45 +0200
+From: Thomas Glanzmann <thomas@glanzmann.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: REGRESSION: 8fc5b4d: Unable to compile x86_64 kernel with x86_32
+ userland
+Message-ID: <20140820161645.GA25390@glanzmann.de>
+Mail-Followup-To: Thomas Glanzmann <thomas@glanzmann.de>,
+	Vivek Goyal <vgoyal@redhat.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20140820060423.GA14660@glanzmann.de>
+ <20140820062408.GB14660@glanzmann.de>
+ <20140820125630.GA12786@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140820145446.GB24500@saruman.home>
+In-Reply-To: <20140820125630.GA12786@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 09:54:46AM -0500, Felipe Balbi wrote:
-> Hi Greg,
-> 
-> On Mon, Aug 04, 2014 at 10:22:54AM -0700, Chen, Alvin wrote:
-> > From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> > 
-> > This patch is to enable the USB gadget device for Intel Quark X1000
-> > 
-> > Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-> > Signed-off-by: Bing Niu <bing.niu@intel.com>
-> > Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-> 
-> this patch is basically just a new device ID being added to an existing
-> driver, do you mind if I add it to the -rc or you prefer to wait for
-> v3.18 merge window ?
+Hello Vivek,
 
-New ids are fine for -rc and stable kernels, don't wait for 3.18.
+* Vivek Goyal <vgoyal@redhat.com> [2014-08-20 15:53]:
+> A patch is sitting in akpm's tree. That patch puts the new code under
+> a new config option CONFIG_KEXEC_FILE. So as long as you don't enable
+> CONFIG_KEXEC_FILE=y, you should be fine. This should not impact any of
+> the existing functionality. Just that you will not get the benefit of
+> new system call.
 
-thanks,
+> http://ozlabs.org/~akpm/mmotm/broken-out/kexec-create-a-new-config-option-config_kexec_file-for-new-syscall.patch
 
-greg k-h
+> I hope this patch gets merged soon.
+
+> In the mean time I am trying to figure out how can I move away from
+> using -mcmodel=large for purgatory.
+
+perfect. I tried the patch and with the patch the kernel compiles again.
+
+Cheers,
+        Thomas
