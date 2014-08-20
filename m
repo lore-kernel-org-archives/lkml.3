@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaHTTVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:21:39 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:59252 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933AbaHTTVi (ORCPT
+	id S1752743AbaHTTWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:22:42 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47412 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaHTTWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:21:38 -0400
+	Wed, 20 Aug 2014 15:22:40 -0400
+Date: Wed, 20 Aug 2014 12:22:39 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Naresh Kumar Inna <naresh@chelsio.com>,
+        Arvind Bhushan <arvindb@chelsio.com>,
+        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Tomas Henzl <thenzl@redhat.com>
+Subject: Re: [PATCH v3 00/13] scsi: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140820192239.GA25281@infradead.org>
+References: <cover.1408335523.git.agordeev@redhat.com>
+ <20140819170047.GA7237@infradead.org>
+ <20140820191416.GA1886@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJhHMCB_3x7479WUkipA+S8i6EwqCWxjzXZSW64Aaa-i-_GR8Q@mail.gmail.com>
-References: <1408553745-3536-1-git-send-email-bobby.prani@gmail.com>
- <20140820185955.GA23566@groeck-UX31A> <CAJhHMCB_3x7479WUkipA+S8i6EwqCWxjzXZSW64Aaa-i-_GR8Q@mail.gmail.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Wed, 20 Aug 2014 15:21:06 -0400
-Message-ID: <CAJhHMCDaS3j5g2RMNRhCGxOaTN27oFjeXVdmCkr+xXHzX=f+fQ@mail.gmail.com>
-Subject: Re: [PATCH] powerpc: booke_wdt: Fix build error as a module
-To: Guenter <linux@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-        "open list:WATCHDOG DEVICE D..." <linux-watchdog@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820191416.GA1886@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 3:18 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> On Wed, Aug 20, 2014 at 2:59 PM, Guenter <linux@roeck-us.net> wrote:
+On Wed, Aug 20, 2014 at 08:14:17PM +0100, Alexander Gordeev wrote:
+> > I've applied patches 1 to 7 to the drivers-for-3.18 branch.
+> 
+> Thanks, Christoph!
+> 
+> Not sure how to handle the rest, though. Chelsio driver has no
+> maintainers and none of be2iscsi, pmcraid and csiostor has been
+> reviewed for several months.
 
->>
->> Any reason for changing the default from false to true ?
->> Unless you have a reaslly good reason, I don't think that is a good idea.
->
-> I don't see where it was being set to false. It is
-> uninitialized AFAICT. Does that mean that it is false? (I thought only
-> static variables got that default).
-
-Ohk, some googling tells me both global and static variables are
-initialized to 0. Makes sense, I will send in a v2
-
-
-
--- 
-Pranith
+I've added Tomas to the Cc list who has been very helpful with reviewing
+drivers lately.  Tomas, can you take a quick look at these patches?
