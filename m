@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaHTJnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:43:04 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60163 "EHLO mga01.intel.com"
+	id S1752277AbaHTJnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:43:35 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37021 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842AbaHTJm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:42:57 -0400
+	id S1752129AbaHTJnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 05:43:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
-   d="scan'208";a="587369893"
+   d="scan'208";a="590683064"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: "John W . Linville" <linville@tuxdriver.com>,
         Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ To: "John W . Linville" <linville@tuxdriver.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Joe Perches <joe@perches.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 05/11] wireless: libertas: print esaped string via %*pE
-Date: Wed, 20 Aug 2014 12:42:46 +0300
-Message-Id: <1408527772-27224-6-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 08/11] lib80211: remove unused print_ssid()
+Date: Wed, 20 Aug 2014 12:42:49 +0300
+Message-Id: <1408527772-27224-9-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -27,73 +27,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of custom approach this allows to print escaped strings via recently
-added kernel extension: %*pE.
+In kernel we have %*pE specifier to print an escaped buffer. All users now
+switched to that approach.
+
+This fixes a bug as well. The current implementation wrongly prints octal
+numbers: only two first digits are used in case when 3 are required and the
+rest of the string ends up cut off.
+
+Additionally by default the \f, \v, \a, and \e are escaped to their alphabetic
+representation. It's safe to do since it is currently used for messaging only.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/net/wireless/libertas/cfg.c  | 8 ++------
- drivers/net/wireless/libertas/mesh.c | 7 +++----
- 2 files changed, 5 insertions(+), 10 deletions(-)
+ include/net/lib80211.h  |  5 -----
+ net/wireless/lib80211.c | 32 --------------------------------
+ 2 files changed, 37 deletions(-)
 
-diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
-index 47a998d..1188814 100644
---- a/drivers/net/wireless/libertas/cfg.c
-+++ b/drivers/net/wireless/libertas/cfg.c
-@@ -590,7 +590,6 @@ static int lbs_ret_scan(struct lbs_private *priv, unsigned long dummy,
- 		int chan_no = -1;
- 		const u8 *ssid = NULL;
- 		u8 ssid_len = 0;
--		DECLARE_SSID_BUF(ssid_buf);
+diff --git a/include/net/lib80211.h b/include/net/lib80211.h
+index be95b92..aab0f42 100644
+--- a/include/net/lib80211.h
++++ b/include/net/lib80211.h
+@@ -32,11 +32,6 @@
+ #include <linux/timer.h>
+ #include <linux/seq_file.h>
  
- 		int len = get_unaligned_le16(pos);
- 		pos += 2;
-@@ -644,10 +643,8 @@ static int lbs_ret_scan(struct lbs_private *priv, unsigned long dummy,
- 			struct ieee80211_channel *channel =
- 				ieee80211_get_channel(wiphy, freq);
+-/* print_ssid() is intended to be used in debug (and possibly error)
+- * messages. It should never be used for passing ssid to user space. */
+-const char *print_ssid(char *buf, const char *ssid, u8 ssid_len);
+-#define DECLARE_SSID_BUF(var) char var[IEEE80211_MAX_SSID_LEN * 4 + 1] __maybe_unused
+-
+ #define NUM_WEP_KEYS	4
  
--			lbs_deb_scan("scan: %pM, capa %04x, chan %2d, %s, "
--				     "%d dBm\n",
--				     bssid, capa, chan_no,
--				     print_ssid(ssid_buf, ssid, ssid_len),
-+			lbs_deb_scan("scan: %pM, capa %04x, chan %2d, %*pE, %d dBm\n",
-+				     bssid, capa, chan_no, ssid_len, ssid,
- 				     LBS_SCAN_RSSI_TO_MBM(rssi)/100);
+ enum {
+diff --git a/net/wireless/lib80211.c b/net/wireless/lib80211.c
+index a55c27b..4596115 100644
+--- a/net/wireless/lib80211.c
++++ b/net/wireless/lib80211.c
+@@ -46,38 +46,6 @@ static void lib80211_crypt_deinit_entries(struct lib80211_crypt_info *info,
+ static void lib80211_crypt_quiescing(struct lib80211_crypt_info *info);
+ static void lib80211_crypt_deinit_handler(unsigned long data);
  
- 			if (channel &&
-@@ -1982,7 +1979,6 @@ static int lbs_join_ibss(struct wiphy *wiphy, struct net_device *dev,
- 	struct lbs_private *priv = wiphy_priv(wiphy);
- 	int ret = 0;
- 	struct cfg80211_bss *bss;
--	DECLARE_SSID_BUF(ssid_buf);
- 
- 	if (dev == priv->mesh_dev)
- 		return -EOPNOTSUPP;
-diff --git a/drivers/net/wireless/libertas/mesh.c b/drivers/net/wireless/libertas/mesh.c
-index 01a67f6..d0c881d 100644
---- a/drivers/net/wireless/libertas/mesh.c
-+++ b/drivers/net/wireless/libertas/mesh.c
-@@ -93,7 +93,6 @@ static int lbs_mesh_config(struct lbs_private *priv, uint16_t action,
+-const char *print_ssid(char *buf, const char *ssid, u8 ssid_len)
+-{
+-	const char *s = ssid;
+-	char *d = buf;
+-
+-	ssid_len = min_t(u8, ssid_len, IEEE80211_MAX_SSID_LEN);
+-	while (ssid_len--) {
+-		if (isprint(*s)) {
+-			*d++ = *s++;
+-			continue;
+-		}
+-
+-		*d++ = '\\';
+-		if (*s == '\0')
+-			*d++ = '0';
+-		else if (*s == '\n')
+-			*d++ = 'n';
+-		else if (*s == '\r')
+-			*d++ = 'r';
+-		else if (*s == '\t')
+-			*d++ = 't';
+-		else if (*s == '\\')
+-			*d++ = '\\';
+-		else
+-			d += snprintf(d, 3, "%03o", *s);
+-		s++;
+-	}
+-	*d = '\0';
+-	return buf;
+-}
+-EXPORT_SYMBOL(print_ssid);
+-
+ int lib80211_crypt_info_init(struct lib80211_crypt_info *info, char *name,
+ 				spinlock_t *lock)
  {
- 	struct cmd_ds_mesh_config cmd;
- 	struct mrvl_meshie *ie;
--	DECLARE_SSID_BUF(ssid);
- 
- 	memset(&cmd, 0, sizeof(cmd));
- 	cmd.channel = cpu_to_le16(chan);
-@@ -122,9 +121,9 @@ static int lbs_mesh_config(struct lbs_private *priv, uint16_t action,
- 	default:
- 		return -1;
- 	}
--	lbs_deb_cmd("mesh config action %d type %x channel %d SSID %s\n",
--		    action, priv->mesh_tlv, chan,
--		    print_ssid(ssid, priv->mesh_ssid, priv->mesh_ssid_len));
-+	lbs_deb_cmd("mesh config action %d type %x channel %d SSID %*pE\n",
-+		    action, priv->mesh_tlv, chan, priv->mesh_ssid_len,
-+		    priv->mesh_ssid);
- 
- 	return __lbs_mesh_config_send(priv, &cmd, action, priv->mesh_tlv);
- }
 -- 
 2.1.0
 
