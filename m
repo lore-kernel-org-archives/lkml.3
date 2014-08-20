@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740AbaHTOQw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:16:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45166 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857AbaHTOQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:16:51 -0400
-Date: Wed, 20 Aug 2014 16:15:45 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
-        peterz@infradead.org, eranian@google.com, dev@codyps.com,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 00/14] Add support for parameterized events from sysfs
-Message-ID: <20140820141545.GA3242@krava.brq.redhat.com>
-References: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751868AbaHTOTA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:19:00 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:36905 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaHTOS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 10:18:59 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, f.fainelli@gmail.com,
+        eric.dumazet@gmail.com, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v5 1/2] net: moxa: clear TX descriptor length bits
+Date: Wed, 20 Aug 2014 16:18:42 +0200
+Message-Id: <1408544322-32023-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1408459784-9385-1-git-send-email-jonas.jensen@gmail.com>
+References: <1408459784-9385-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 15, 2014 at 12:26:09AM -0700, Sukadev Bhattiprolu wrote:
-> From: Cody P Schafer <dev@codyps.com>
-> 
-> What this patchset does:
-> 
->  - the first patch (override sysfs in tools/perf via SYSFS_PATH) was sent out
->    previously, but needed a resend anyhow. Having it is useful for testing the
->    later changes to tools/perf.
->  - the second patch is a bugfix to the powerpc hv-24x7 code which was
->    previously sent out, which is a good idea to have when testing these patches
->    on POWER8 hardware.
-> 
->  - document perf sysfs and the changes to add parameterized events
->    - semi-notably: removes the growing list of specific POWER cpu events and
->      begins documenting them generically, much like the docs for
->      /sys/modules/MODULENAME do for modules.
->  - tools/perf changes to support parameterized events
->  - export some parameterized events from the powerpc pmus hv_24x7 and hv_gpci
-> 
-> Description of "event parameters" from the documentation patch:
-> 
->     Event parameters are a basic way for partial events to be specified in
->     sysfs with per-event names given to the fields that need to be filled in
->     when using a particular event.
-> 
->     It is intended for supporting cases where the single 'cpu' parameter is
->     insufficient. For example, POWER 8 has events for physical
->     sockets/cores/cpus that are accessible from with virtual machines. To
->     keep using the single 'cpu' parameter we'd need to perform a mapping
->     between Linux's cpus and the physical machine's cpus (in this case
->     Linux is running under a hypervisor). This isn't possible because
->     bindings between our cpus and physical cpus may not be fixed, and we
->     probably won't have a "cpu" on each physical cpu.
-> 
-> Description of the sysfs contents when events are parameterized (copied from an
-> included patch):
-> 
-> 	Examples:
-> 
-> 		domain=0x1,offset=0x8,starting_index=phys_cpu
-> 
-> 	In the case of the last example, a value replacing "phys_cpu"
-> 	would need to be provided by the user selecting the particular
-> 	event. This is refered to as "event parameterization". All
-> 	non-numerical values indicate an event parameter.
-> 
-> Notes on how perf-list displays parameterized events (and how to use them,
-> again culled from an included patch):
-> 
-> 	PARAMETERIZED EVENTS
-> 	--------------------
-> 
-> 	Some pmu events listed by 'perf-list' will be displayed with '?' in
-> 	them. For example:
-> 
-> 	  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
-> 
-> 	This means that when provided as an event, a value for
-> 	phys_processor_idx must also be supplied. For example:
-> 
-> 	  perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
+TX buffer length is not cleared on ndo_start_xmit().
+Failing to do so can bug/hang the controller and
+cause TX interrupts to stop altogether.
 
-hi,
-is the reason for this to document this field for event
-in "events/<event>" file?
+Add TX_DESC1_BUF_SIZE_MASK to bits that are cleared,
+before the TX buffer length is set.
 
-Because once you have the field (phys_processor_idx) defined in
-"formats/phys_processor_idx" you should be able to use it as in
-your example:
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=69031
 
-   perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/'
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-without any changes
+Notes:
+    No changes since v4.
+    
+    Applies to next-20140820
 
-thanks,
-jirka
+ drivers/net/ethernet/moxa/moxart_ether.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/moxa/moxart_ether.c b/drivers/net/ethernet/moxa/moxart_ether.c
+index 5020fd4..aa45607 100644
+--- a/drivers/net/ethernet/moxa/moxart_ether.c
++++ b/drivers/net/ethernet/moxa/moxart_ether.c
+@@ -348,7 +348,8 @@ static int moxart_mac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 
+ 	txdes1 = readl(desc + TX_REG_OFFSET_DESC1);
+ 	txdes1 |= TX_DESC1_LTS | TX_DESC1_FTS;
+-	txdes1 &= ~(TX_DESC1_FIFO_COMPLETE | TX_DESC1_INTR_COMPLETE);
++	txdes1 &= ~(TX_DESC1_FIFO_COMPLETE | TX_DESC1_INTR_COMPLETE |
++		    TX_DESC1_BUF_SIZE_MASK);
+ 	txdes1 |= (len & TX_DESC1_BUF_SIZE_MASK);
+ 	writel(txdes1, desc + TX_REG_OFFSET_DESC1);
+ 	writel(TX_DESC0_DMA_OWN, desc + TX_REG_OFFSET_DESC0);
+-- 
+1.8.2.1
+
