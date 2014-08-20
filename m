@@ -1,168 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaHTMF3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:05:29 -0400
-Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:41924 "EHLO
-	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752053AbaHTMF1 (ORCPT
+	id S1754080AbaHTMDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:03:54 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58924 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752520AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:05:27 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        davidb@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Subject: [PATCH v2] ARM: apq8064: Add pinmux and i2c pinctrl nodes
-Date: Wed, 20 Aug 2014 17:32:13 +0530
-Message-Id: <1408536133-13824-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 20 Aug 2014 07:44:10 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 045/104] sparc64: Fix executable bit testing in set_pmd_at() paths.
+Date: Wed, 20 Aug 2014 13:43:08 +0200
+Message-Id: <bf42f839476f1f447ca696fbbab7e741861d9d7d.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
-It also adds necessary DT support for i2c eeprom which is present on
-IFC6410.
+From: "David S. Miller" <davem@davemloft.net>
 
-Tested on IFC6410 board.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+===============
+
+[ Upstream commit 5b1e94fa439a3227beefad58c28c17f68287a8e9 ]
+
+This code was mistakenly using the exec bit from the PMD in all
+cases, even when the PMD isn't a huge PMD.
+
+If it's not a huge PMD, test the exec bit in the individual ptes down
+in tlb_batch_pmd_scan().
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-Chages since v1:
-	- Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
-	- Updated pinmux interrupt.
+ arch/sparc/mm/tlb.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
- arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   29 ++++++++++++++
- arch/arm/boot/dts/qcom-apq8064.dtsi        |   59 ++++++++++++++++++++++++++++
- 2 files changed, 88 insertions(+)
-
-diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-index 7c2441d..d52ac3c 100644
---- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-+++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-@@ -5,6 +5,15 @@
- 	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
+diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
+index 7a91f288c708..b87ad6c5a8ab 100644
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -135,7 +135,7 @@ no_cache_flush:
  
- 	soc {
-+		pinmux@800000 {
-+			i2c1_pins: i2c1_pinmux {
-+				mux {
-+					pins = "gpio20", "gpio21";
-+					function = "gsbi1";
-+				};
-+			};
-+		};
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ static void tlb_batch_pmd_scan(struct mm_struct *mm, unsigned long vaddr,
+-			       pmd_t pmd, bool exec)
++			       pmd_t pmd)
+ {
+ 	unsigned long end;
+ 	pte_t *pte;
+@@ -143,8 +143,11 @@ static void tlb_batch_pmd_scan(struct mm_struct *mm, unsigned long vaddr,
+ 	pte = pte_offset_map(&pmd, vaddr);
+ 	end = vaddr + HPAGE_SIZE;
+ 	while (vaddr < end) {
+-		if (pte_val(*pte) & _PAGE_VALID)
++		if (pte_val(*pte) & _PAGE_VALID) {
++			bool exec = pte_exec(*pte);
 +
- 		gsbi@16600000 {
- 			status = "ok";
- 			qcom,mode = <GSBI_PROT_I2C_UART>;
-@@ -12,5 +21,25 @@
- 				status = "ok";
- 			};
- 		};
-+
-+		gsbi1: gsbi@12440000 {
-+			qcom,mode = <GSBI_PROT_I2C>;
-+			status = "ok";
-+
-+			i2c1: i2c@12460000 {
-+				status = "ok";
-+
-+				clock-frequency = <200000>;
-+
-+				pinctrl-0 = <&i2c1_pins>;
-+				pinctrl-names = "default";
-+
-+				eeprom: eeprom@52 {
-+					compatible = "atmel,24c128";
-+					reg = <0x52>;
-+					pagesize = <32>;
-+				};
-+			};
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-index 92bf793..bb2ccde 100644
---- a/arch/arm/boot/dts/qcom-apq8064.dtsi
-+++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-@@ -70,6 +70,17 @@
- 		ranges;
- 		compatible = "simple-bus";
+ 			tlb_batch_add_one(mm, vaddr, exec);
++		}
+ 		pte++;
+ 		vaddr += PAGE_SIZE;
+ 	}
+@@ -178,13 +181,13 @@ void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 	}
  
-+		tlmm_pinmux: pinmux@800000 {
-+			compatible = "qcom,apq8064-pinctrl";
-+			reg = <0x800000 0x4000>;
+ 	if (!pmd_none(orig)) {
+-		bool exec = ((pmd_val(orig) & PMD_HUGE_EXEC) != 0);
+-
+ 		addr &= HPAGE_MASK;
+-		if (pmd_val(orig) & PMD_ISHUGE)
++		if (pmd_val(orig) & PMD_ISHUGE) {
++			bool exec = ((pmd_val(orig) & PMD_HUGE_EXEC) != 0);
 +
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+			interrupt-controller;
-+			#interrupt-cells = <2>;
-+			interrupts = <0 16 0x4>;
-+		};
-+
- 		intc: interrupt-controller@2000000 {
- 			compatible = "qcom,msm-qgic2";
- 			interrupt-controller;
-@@ -133,6 +144,54 @@
- 			regulator;
- 		};
+ 			tlb_batch_add_one(mm, addr, exec);
+-		else
+-			tlb_batch_pmd_scan(mm, addr, orig, exec);
++		} else
++			tlb_batch_pmd_scan(mm, addr, orig);
+ 	}
+ }
  
-+		gsbi1: gsbi@12440000 {
-+			compatible = "qcom,gsbi-v1.0.0";
-+			reg = <0x12440000 0x100>;
-+			clocks = <&gcc GSBI1_H_CLK>;
-+			clock-names = "iface";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+			status = "disabled";
-+
-+			i2c@12460000 {
-+				compatible = "qcom,i2c-qup-v1.1.1";
-+				reg = <0x12460000 0x1000>;
-+				interrupts = <0 194 0>;
-+
-+				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
-+				clock-names = "core", "iface";
-+				status = "disabled";
-+
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+			};
-+		};
-+
-+		gsbi2: gsbi@12480000 {
-+			compatible = "qcom,gsbi-v1.0.0";
-+			reg = <0x12480000 0x100>;
-+			clocks = <&gcc GSBI2_H_CLK>;
-+			clock-names = "iface";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+			status = "disabled";
-+
-+			i2c@124a0000 {
-+				compatible = "qcom,i2c-qup-v1.1.1";
-+				reg = <0x124a0000 0x1000>;
-+				interrupts = <0 196 0>;
-+
-+				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
-+				clock-names = "core", "iface";
-+				status = "disabled";
-+
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+			};
-+		};
-+
- 		gsbi7: gsbi@16600000 {
- 			status = "disabled";
- 			compatible = "qcom,gsbi-v1.0.0";
 -- 
-1.7.9.5
+2.0.4
 
