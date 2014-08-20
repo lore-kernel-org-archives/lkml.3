@@ -1,52 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaHTTLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:11:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44414 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaHTTLP (ORCPT
+	id S1752659AbaHTTOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:14:20 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:24804 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751240AbaHTTOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:11:15 -0400
-Message-ID: <53F4F2D2.2050600@codeaurora.org>
-Date: Wed, 20 Aug 2014 12:11:14 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 20 Aug 2014 15:14:19 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq4GAIDvNVNFpamy/2dsb2JhbAA/GoMGO8NMgRcXdIIlAQEBAQIBOB4iAQULCw4KCRYPCQMCAQIBJxUJBg0BBwEBh20IDTbRVhMEjnoHhDgBA58biX6BaoNMIQ
+X-IPAS-Result: Aq4GAIDvNVNFpamy/2dsb2JhbAA/GoMGO8NMgRcXdIIlAQEBAQIBOB4iAQULCw4KCRYPCQMCAQIBJxUJBg0BBwEBh20IDTbRVhMEjnoHhDgBA58biX6BaoNMIQ
+X-IronPort-AV: E=Sophos;i="4.97,753,1389762000"; 
+   d="scan'208";a="87304049"
+Message-ID: <53F4F38C.4080407@voxpopuli.im>
+Date: Wed, 20 Aug 2014 15:14:20 -0400
+From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, linux-arm-msm@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] irqchip: gic: Allow gic_arch_extn hooks to call into
- scheduler
-References: <1407938238-21413-1-git-send-email-sboyd@codeaurora.org> <20140817173236.GG12769@titan.lakedaemon.net> <20140817185522.GX30401@n2100.arm.linux.org.uk> <20140817190434.GJ12769@titan.lakedaemon.net> <20140817214123.GY30401@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1408172005070.29347@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1408172005070.29347@knanqh.ubzr>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Olsa <jolsa@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: FW: [RFC 0/5] perf tools: Add perf data CTF conversion
+References: <53F38C74.4030300@voxpopuli.im> <20140820092858.GA1203@krava.brq.redhat.com>
+In-Reply-To: <20140820092858.GA1203@krava.brq.redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/14 17:17, Nicolas Pitre wrote:
-> On Sun, 17 Aug 2014, Russell King - ARM Linux wrote:
+On 08/20/2014 05:28 AM, Jiri Olsa wrote:
 >
->> I have no problem with changing gic_raise_softirq() to use a different
->> lock, which gic_migrate_target(), and gic_set_affinity() can also use.
->> There's no need for horrid locking here, because the only thing we're
->> protecting is gic_map[] and the write to the register to trigger an
->> IPI - and nothing using gic_arch_extn has any business knowing about
->> SGIs.
->>
->> No need for these crappy sgi_map_lock() macros and all the ifdeffery.
-> Those macros are there only to conditionalize the locking in 
-> gic_raise_softirq() because no locking what so ever is needed there when 
-> gic_migrate_target() is configured out.  I suggested the macros to cut 
-> down on the #ifdefery in the code.
+> ok, easy enough ;-) so I'm guessing this governs the expected
+> CTF layout for event/stream headers/contexts, right?
 
-Ok I can resend with the sgi lock around the gic_cpu_map updating code.
-Let's see how v5 goes.
+Correct, if the domain is "kernel" we then assume that the rest of the 
+trace contains the expected elements of a kernel trace.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Of course, one could craft a CTF trace to advertize itself as "kernel" 
+or "ust", and not actually have the layout of that trace type, in which 
+case it would fail parsing later on.
 
+> Also judging from the trace display, you have hardcoded specific
+> displays/actions for specific events? That's all connected/specific
+> under trace type?
+
+Yes the trace type is the main "provider" of functionality. I could go 
+into more details, but we use Eclipse extension points to define which 
+columns to put in the event table, which views are available, etc. for 
+each supported trace type.
+
+>> Once we have some views or analysis specific to perf CTF traces, we could
+>> definitely add a separate trace type for those too.
+> I guess tracepoints and breakpoints should display something like
+> the standard kernel trace. As for HW events it's usual to display
+> profile infomation as the perf report does:
+>    https://perf.wiki.kernel.org/index.php/Tutorial#Sampling_with_perf_record
+
+Interesting, I haven't tried the perf CTF output yet, but I could see it 
+using the Statistics view (which by default just prints the % of events, 
+per event type) to print the results of the different "perf reports", 
+calculated from the CTF events. Eventually with pie charts!
+
+> I tried to record/display lttng event perf:cpu:cycles, but got nothing
+> displayed in eclipse. Looks like this data provides only summary count
+> of the event for the workload?
+
+Just to be sure I understand, you recorded an LTTng kernel trace, in 
+which you enabled the "perf:cpu:cycles" context? Did this trace display 
+anything in Babeltrace?
+It should display the same in the Eclipse viewer, the value of the 
+context will be visible in the "Contents" column in the the table (and 
+in the Properties view), although for now we don't make any use of it.
+
+ From what I understand, yes, the value of the different perf:* contexts 
+represents the value of the perf counter at the moment the tracepoint 
+was hit. So you cannot get perf data "in between" trace events when 
+using this method.
+
+
+Cheers,
+Alexandre
