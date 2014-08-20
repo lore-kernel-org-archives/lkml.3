@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaHTLzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:55:00 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38380 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222AbaHTLy6 (ORCPT
+	id S1753483AbaHTLyn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:54:43 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58989 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752592AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:54:58 -0400
-Message-ID: <53F48C8B.4020707@codeaurora.org>
-Date: Wed, 20 Aug 2014 17:24:51 +0530
-From: Chintan Pandya <cpandya@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] ksm: provide support to use deferrable timers
- for scanner thread
-References: <1406793591-26793-2-git-send-email-cpandya@codeaurora.org> <1406793591-26793-3-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408110332350.1500@eggly.anvils> <53EA3FF5.1050709@codeaurora.org>
-In-Reply-To: <53EA3FF5.1050709@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Aug 2014 07:44:11 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Vladimir Davydov <VDavydov@parallels.com>,
+        Tushar Dave <tushar.n.dave@intel.com>,
+        Patrick McHardy <kaber@trash.net>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 075/104] e1000: fix possible reset_task running after adapter down
+Date: Wed, 20 Aug 2014 13:43:38 +0200
+Message-Id: <ef0e551d4c0bd15a4cc46dba73da8e7c38fc86d2.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+From: Vladimir Davydov <VDavydov@parallels.com>
 
->>> + unsigned long enable;
->>> + int err;
->>> +
->>> + err = kstrtoul(buf, 10,&enable);
->>> + if (err< 0)
->>> + return err;
->>> + if (enable>= 1)
->>> + return -EINVAL;
->>
->> I haven't studied the patch itself, I'm still worrying about the concept.
->> But this caught my eye just before hitting Send: I don't think we need
->> a tunable which only accepts the value 0 ;)
->
-> Okay. I can correct this to accept any non-zero value. Is that okay ?
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-I missed that to reply earlier. This was suggested by Andrew. And I 
-think that is okay as displaying any non-zero value to user via this 
-knob may not be completely right.
+===============
 
->
->>
->>> + use_deferrable_timer = enable;
->
+commit 74a1b1ea8a30b035aaad833bbd6b9263e72acfac upstream.
 
+On e1000_down(), we should ensure every asynchronous work is canceled
+before proceeding. Since the watchdog_task can schedule other works
+apart from itself, it should be stopped first, but currently it is
+stopped after the reset_task. This can result in the following race
+leading to the reset_task running after the module unload:
 
+e1000_down_and_stop():			e1000_watchdog():
+----------------------			-----------------
+
+cancel_work_sync(reset_task)
+					schedule_work(reset_task)
+cancel_delayed_work_sync(watchdog_task)
+
+The patch moves cancel_delayed_work_sync(watchdog_task) at the beginning
+of e1000_down_and_stop() thus ensuring the race is impossible.
+
+Cc: Tushar Dave <tushar.n.dave@intel.com>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/net/ethernet/intel/e1000/e1000_main.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index 4ca676cb7f04..15c85d4f3774 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -494,13 +494,20 @@ static void e1000_down_and_stop(struct e1000_adapter *adapter)
+ {
+ 	set_bit(__E1000_DOWN, &adapter->flags);
+ 
+-	/* Only kill reset task if adapter is not resetting */
+-	if (!test_bit(__E1000_RESETTING, &adapter->flags))
+-		cancel_work_sync(&adapter->reset_task);
+-
+ 	cancel_delayed_work_sync(&adapter->watchdog_task);
++
++	/*
++	 * Since the watchdog task can reschedule other tasks, we should cancel
++	 * it first, otherwise we can run into the situation when a work is
++	 * still running after the adapter has been turned down.
++	 */
++
+ 	cancel_delayed_work_sync(&adapter->phy_info_task);
+ 	cancel_delayed_work_sync(&adapter->fifo_stall_task);
++
++	/* Only kill reset task if adapter is not resetting */
++	if (!test_bit(__E1000_RESETTING, &adapter->flags))
++		cancel_work_sync(&adapter->reset_task);
+ }
+ 
+ void e1000_down(struct e1000_adapter *adapter)
 -- 
-Chintan Pandya
+2.0.4
 
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
