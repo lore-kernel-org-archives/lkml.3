@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaHTX1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 19:27:18 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:45268 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073AbaHTX1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 19:27:16 -0400
+	id S1753383AbaHTX2F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 19:28:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57194 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753072AbaHTX2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 19:28:03 -0400
+Date: Thu, 21 Aug 2014 01:27:56 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Martin Jambor <mjambor@suse.cz>, Petr Mladek <pmladek@suse.cz>,
+        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org
+Subject: Re: [PATCH] tell gcc optimizer to never introduce new data races
+In-Reply-To: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+Message-ID: <alpine.LRH.2.00.1408210127150.12153@twin.jikos.cz>
+References: <alpine.LNX.2.00.1406101517300.9378@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <87ppfvrdux.fsf@x220.int.ebiederm.org>
-References: <1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com>
-	<87ppfvrdux.fsf@x220.int.ebiederm.org>
-Date: Wed, 20 Aug 2014 19:27:15 -0400
-Message-ID: <CAHQdGtS41PsfH5SKr2kcpUjnb7QL4CPFey1zSasXmHbhnZqtEQ@mail.gmail.com>
-Subject: Re: [PATCH v2] nfs: fix kernel warning when removing proc entry
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Dan Aloni <dan@kernelim.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 12:20 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Cong Wang <xiyou.wangcong@gmail.com> writes:
->
->> I saw the following kernel warning:
->
-> Cong thanks for finding and tracking this.  I was clearly asleep at the
-> switch when I was testing my fix to the nfs client code :(
->
-> I have applied this patch and will push it to Linus after it has a
-> little bit to sit in linux-next.
->
+On Tue, 10 Jun 2014, Jiri Kosina wrote:
 
-This is precisely _WHY_ it is supposed to go through the maintainer,
-and not through arbitrary namespace trees. I'm tired of the namespace
-folks pushing crap and just assuming that a "Cc:" is OK. A "Cc:
-maintainer" means this is an RFC, not something that is to be
-committed.
+> We have been chasing a memory corruption bug, which turned out to be 
+> caused by very old gcc (4.3.4), which happily turned conditional load into 
+> a non-conditional one, and that broke correctness (the condition was met 
+> only if lock was held) and corrupted memory.
+> 
+> This particular problem with that particular code did not happen when 
+> never gccs were used. I've brought this up with our gcc folks, as I wanted 
+> to make sure that this can't really happen again, and it turns out it 
+> actually can.
 
-Trond
+For the record (and for mailinglist archives to catch this information) -- 
+the default has been changed for gcc 4.10 to a sane value (0).
+ 
+I'd however suggest we keep changes made by commit 69102311a ("./Makefile:
+tell gcc optimizer to never introduce new data races") for rather a long  
+time.
+
+-- 
+Jiri Kosina
+SUSE Labs
+
