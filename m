@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663AbaHTMM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:12:27 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58869 "EHLO
+	id S1754698AbaHTMMa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:12:30 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58871 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752392AbaHTLoJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752391AbaHTLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:09 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 003/104] ARM: 8115/1: LPAE: reduce damage caused by idmap to virtual memory layout
-Date: Wed, 20 Aug 2014 13:42:26 +0200
-Message-Id: <8e49be939c5868035f26a77e997cab2e4f6b5d13.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>,
+        Mike Snitzer <snitzer@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 015/104] dm bufio: fully initialize shrinker
+Date: Wed, 20 Aug 2014 13:42:38 +0200
+Message-Id: <9ee4fa038c195fc4ccd45aedaafbc8fd489ec33b.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -25,57 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Greg Thelen <gthelen@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 811a2407a3cf7bbd027fbe92d73416f17485a3d8 upstream.
+commit d8c712ea471ce7a4fd1734ad2211adf8469ddddc upstream.
 
-On LPAE, each level 1 (pgd) page table entry maps 1GiB, and the level 2
-(pmd) entries map 2MiB.
+1d3d4437eae1 ("vmscan: per-node deferred work") added a flags field to
+struct shrinker assuming that all shrinkers were zero filled.  The dm
+bufio shrinker is not zero filled, which leaves arbitrary kmalloc() data
+in flags.  So far the only defined flags bit is SHRINKER_NUMA_AWARE.
+But there are proposed patches which add other bits to shrinker.flags
+(e.g. memcg awareness).
 
-When the identity mapping is created on LPAE, the pgd pointers are copied
-from the swapper_pg_dir.  If we find that we need to modify the contents
-of a pmd, we allocate a new empty pmd table and insert it into the
-appropriate 1GB slot, before then filling it with the identity mapping.
+Rather than simply initializing the shrinker, this patch uses kzalloc()
+when allocating the dm_bufio_client to ensure that the embedded shrinker
+and any other similar structures are zeroed.
 
-However, if the 1GB slot covers the kernel lowmem mappings, we obliterate
-those mappings.
+This fixes theoretical over aggressive shrinking of dm bufio objects.
+If the uninitialized dm_bufio_client.shrinker.flags contains
+SHRINKER_NUMA_AWARE then shrink_slab() would call the dm shrinker for
+each numa node rather than just once.  This has been broken since 3.12.
 
-When replacing a PMD, first copy the old PMD contents to the new PMD, so
-that we preserve the existing mappings, particularly the mappings of the
-kernel itself.
-
-[rewrote commit message and added code comment -- rmk]
-
-Fixes: ae2de101739c ("ARM: LPAE: Add identity mapping support for the 3-level page table format")
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Thelen <gthelen@google.com>
+Acked-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/arm/mm/idmap.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/md/dm-bufio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mm/idmap.c b/arch/arm/mm/idmap.c
-index 83cb3ac27095..c61d2373408c 100644
---- a/arch/arm/mm/idmap.c
-+++ b/arch/arm/mm/idmap.c
-@@ -24,6 +24,13 @@ static void idmap_add_pmd(pud_t *pud, unsigned long addr, unsigned long end,
- 			pr_warning("Failed to allocate identity pmd.\n");
- 			return;
- 		}
-+		/*
-+		 * Copy the original PMD to ensure that the PMD entries for
-+		 * the kernel image are preserved.
-+		 */
-+		if (!pud_none(*pud))
-+			memcpy(pmd, pmd_offset(pud, 0),
-+			       PTRS_PER_PMD * sizeof(pmd_t));
- 		pud_populate(&init_mm, pud, pmd);
- 		pmd += pmd_index(addr);
- 	} else
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index 54bdd923316f..5056c45be97f 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1511,7 +1511,7 @@ struct dm_bufio_client *dm_bufio_client_create(struct block_device *bdev, unsign
+ 	BUG_ON(block_size < 1 << SECTOR_SHIFT ||
+ 	       (block_size & (block_size - 1)));
+ 
+-	c = kmalloc(sizeof(*c), GFP_KERNEL);
++	c = kzalloc(sizeof(*c), GFP_KERNEL);
+ 	if (!c) {
+ 		r = -ENOMEM;
+ 		goto bad_client;
 -- 
 2.0.4
 
