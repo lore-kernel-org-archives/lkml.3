@@ -1,154 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417AbaHTMIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:08:48 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:56499 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393AbaHTMIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:08:46 -0400
-Date: Wed, 20 Aug 2014 14:07:57 +0200 (CEST)
-From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
-To: Mark Rutland <mark.rutland@arm.com>, atull@opensource.altera.com
-Cc: wsa@the-dreams.de, baruch@tkos.co.il,
-        mika westerberg <mika.westerberg@linux.intel.com>,
-        grant likely <grant.likely@linaro.org>, robh+dt@kernel.org,
-        skuribay@pobox.com, rafael j wysocki <rafael.j.wysocki@intel.com>,
-        alan@linux.intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        delicious quinoa <delicious.quinoa@gmail.com>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Message-ID: <1757614617.2144.1408536477693.JavaMail.root@abilis.com>
-In-Reply-To: <944257148.1724.1408528177642.JavaMail.root@abilis.com>
-Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
- setting
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 7.2.4_GA_2900 (ZimbraWebClient - FF3.0 (Linux)/7.2.4_GA_2900)
+	id S1754454AbaHTMJD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:09:03 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58900 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752497AbaHTLoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:44:09 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 025/104] x86_64/entry/xen: Do not invoke espfix64 on Xen
+Date: Wed, 20 Aug 2014 13:42:48 +0200
+Message-Id: <ad878a9e0f1bb5e5c81039ab10d1b416c5fa58f1.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andy Lutomirski <luto@amacapital.net>
 
-Please find below link to these patches:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-[PATCH 1/2] i2c designware make SCL and SDA falling time configurable
-https://lkml.org/lkml/2013/10/8/443
+===============
 
-[PATCH V3 2/2] i2c designware add support of I2C standard mode
-https://lkml.org/lkml/2014/3/25/135
+commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
 
-Are they fine to be included in the mainline ?
+This moves the espfix64 logic into native_iret.  To make this work,
+it gets rid of the native patch for INTERRUPT_RETURN:
+INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
 
-Romain
+This changes the 16-bit SS behavior on Xen from OOPSing to leaking
+some bits of the Xen hypervisor's RSP (I think).
 
------ Original Message -----
-From: "Romain Baeriswyl" <Romain.Baeriswyl@abilis.com>
-To: "Mark Rutland" <mark.rutland@arm.com>, atull@opensource.altera.com
-Cc: wsa@the-dreams.de, baruch@tkos.co.il, "mika westerberg" <mika.westerberg@linux.intel.com>, "grant likely" <grant.likely@linaro.org>, robh+dt@kernel.org, skuribay@pobox.com, "rafael j wysocki" <rafael.j.wysocki@intel.com>, alan@linux.intel.com, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, "delicious quinoa" <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Sent: Wednesday, August 20, 2014 11:49:37 AM
-Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree setting
+[ hpa: this is a nonzero cost on native, but probably not enough to
+  measure. Xen needs to fix this in their own code, probably doing
+  something equivalent to espfix64. ]
 
-Hi,
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/x86/include/asm/irqflags.h     |  2 +-
+ arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
+ arch/x86/kernel/paravirt_patch_64.c |  2 --
+ 3 files changed, 11 insertions(+), 21 deletions(-)
 
-With the patch "i2c designware add support of I2C standard mode" I already proposed:
-- I2C standard mode is selected with 100kHz clock frequency.
-- I2C fast mode is selected with 400kHy clock frequency.
-- EINVAL error is returned if clock frequency is not 100000 and not 400000.
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index bba3cf88e624..0a8b519226b8 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -129,7 +129,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
+ 
+ #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
+ 
+-#define INTERRUPT_RETURN	iretq
++#define INTERRUPT_RETURN	jmp native_iret
+ #define USERGS_SYSRET64				\
+ 	swapgs;					\
+ 	sysretq;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index c4f437e20a57..207da8d92f75 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1041,27 +1041,24 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
++	INTERRUPT_RETURN
++
++ENTRY(native_iret)
+ 	/*
+ 	 * Are we returning to a stack segment from the LDT?  Note: in
+ 	 * 64-bit mode SS:RSP on the exception stack is always valid.
+ 	 */
+ #ifdef CONFIG_X86_ESPFIX64
+ 	testb $4,(SS-RIP)(%rsp)
+-	jnz irq_return_ldt
++	jnz native_irq_return_ldt
+ #endif
+ 
+-irq_return_iret:
+-	INTERRUPT_RETURN
+-	_ASM_EXTABLE(irq_return_iret, bad_iret)
+-
+-#ifdef CONFIG_PARAVIRT
+-ENTRY(native_iret)
++native_irq_return_iret:
+ 	iretq
+-	_ASM_EXTABLE(native_iret, bad_iret)
+-#endif
++	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_X86_ESPFIX64
+-irq_return_ldt:
++native_irq_return_ldt:
+ 	pushq_cfi %rax
+ 	pushq_cfi %rdi
+ 	SWAPGS
+@@ -1083,7 +1080,7 @@ irq_return_ldt:
+ 	SWAPGS
+ 	movq %rax,%rsp
+ 	popq_cfi %rax
+-	jmp irq_return_iret
++	jmp native_irq_return_iret
+ #endif
+ 
+ 	.section .fixup,"ax"
+@@ -1169,13 +1166,8 @@ __do_double_fault:
+ 	cmpl $__KERNEL_CS,CS(%rdi)
+ 	jne do_double_fault
+ 	movq RIP(%rdi),%rax
+-	cmpq $irq_return_iret,%rax
+-#ifdef CONFIG_PARAVIRT
+-	je 1f
+-	cmpq $native_iret,%rax
+-#endif
++	cmpq $native_irq_return_iret,%rax
+ 	jne do_double_fault		/* This shouldn't happen... */
+-1:
+ 	movq PER_CPU_VAR(kernel_stack),%rax
+ 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+ 	movq %rax,RSP(%rdi)
+@@ -1665,7 +1657,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return_iret(%rip),%rcx
++	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
+index 3f08f34f93eb..a1da6737ba5b 100644
+--- a/arch/x86/kernel/paravirt_patch_64.c
++++ b/arch/x86/kernel/paravirt_patch_64.c
+@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
+ DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
+ DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
+ DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
+-DEF_NATIVE(pv_cpu_ops, iret, "iretq");
+ DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
+ DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
+ DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
+@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
+ 		PATCH_SITE(pv_irq_ops, save_fl);
+ 		PATCH_SITE(pv_irq_ops, irq_enable);
+ 		PATCH_SITE(pv_irq_ops, irq_disable);
+-		PATCH_SITE(pv_cpu_ops, iret);
+ 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
+ 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
+-- 
+2.0.4
 
-but this patch seems not available yet.
-What about the other patch "i2c designware make SCL and SDA falling time configurable" ?
-
-In i2c-designware_platdrv.c the flag DW_IC_CON_SPEED_xxx is well set
-depending on the mode:
-
-  if (clk_freq == 100000)
-     dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-       DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_STD;
-   else
-     dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-       DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
-
-
-So for me everything should be fine if there patches are applied.
-
-Regards,
-
-Romain
-
------ Original Message -----
-From: "Mark Rutland" <mark.rutland@arm.com>
-To: atull@opensource.altera.com
-Cc: wsa@the-dreams.de, baruch@tkos.co.il, "mika westerberg" <mika.westerberg@linux.intel.com>, "grant likely" <grant.likely@linaro.org>, robh+dt@kernel.org, skuribay@pobox.com, "Romain Baeriswyl" <Romain.Baeriswyl@abilis.com>, "rafael j wysocki" <rafael.j.wysocki@intel.com>, alan@linux.intel.com, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, "delicious quinoa" <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Sent: Wednesday, August 20, 2014 11:22:57 AM
-Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree setting
-
-On Tue, Aug 19, 2014 at 09:18:49PM +0100, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Use the documented, but unimplemented "clock-frequency"
-> Device Tree setting as a guide on whether to set the speed
-> mode bits in DW_IC_CON to standard or fast i2c mode.
-> 
-> Previously, the driver was hardwired to fast mode.  Default
-> to fast mode if the "clock-frequency" property is not present
-> for backwards compatiblity.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> ---
->  drivers/i2c/busses/i2c-designware-platdrv.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> index bc87733..18cd3d9 100644
-> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -122,7 +122,8 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  	struct dw_i2c_dev *dev;
->  	struct i2c_adapter *adap;
->  	struct resource *mem;
-> -	int irq, r;
-> +	int irq, r, ret, speed = DW_IC_CON_SPEED_FAST;
-> +	u32 bus_rate;
->  
->  	irq = platform_get_irq(pdev, 0);
->  	if (irq < 0) {
-> @@ -167,6 +168,11 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  		of_property_read_u32(pdev->dev.of_node,
->  				     "i2c-scl-falling-time-ns",
->  				     &dev->scl_falling_time);
-> +
-> +		ret = of_property_read_u32(pdev->dev.of_node,
-> +					   "clock-frequency", &bus_rate);
-> +		if (!ret && (bus_rate <= 100000))
-> +			speed = DW_IC_CON_SPEED_STD;
-
-This looks a bit odd.
-
-If the device only supports two particular speeds why do we accept any
-other speed in the clock-frequency property? Surely we should at least
-warn that something was off?
-
-Thanks,
-Mark
-
->  	}
->  
->  	dev->functionality =
-> @@ -177,7 +183,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  		I2C_FUNC_SMBUS_WORD_DATA |
->  		I2C_FUNC_SMBUS_I2C_BLOCK;
->  	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-> -		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
-> +		DW_IC_CON_RESTART_EN | speed;
->  
->  	/* Try first if we can configure the device from ACPI */
->  	r = dw_i2c_acpi_configure(pdev);
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
