@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbaHTMBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:01:50 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58939 "EHLO
+	id S1753859AbaHTL7m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:59:42 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58956 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752545AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752563AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 048/104] sparc64: Add basic validations to {pud,pmd}_bad().
-Date: Wed, 20 Aug 2014 13:43:11 +0200
-Message-Id: <6acda98c75b536deaba1bf21f93411fcc484fbb5.1408535000.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 054/104] sparc64: Guard against flushing openfirmware mappings.
+Date: Wed, 20 Aug 2014 13:43:17 +0200
+Message-Id: <a4ec094065b40797f44059799876f9f83a128099.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -29,105 +29,120 @@ From: "David S. Miller" <davem@davemloft.net>
 
 ===============
 
-[ Upstream commit 26cf432551d749e7d581db33529507a711c6eaab ]
+[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
 
-Instead of returning false we should at least check the most basic
-things, otherwise page table corruptions will be very difficult to
-debug.
+Based almost entirely upon a patch by Christopher Alexander Tobias
+Schulze.
 
-PMD and PTE tables are of size PAGE_SIZE, so none of the sub-PAGE_SIZE
-bits should be set.
+In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
+layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
+causes problems on sparc64.
 
-We also complement this with a check that the physical address the
-pud/pmd points to is valid memory.
+Sparc64 has two VMAP mapped regions and they are not contiguous with
+eachother.  First we have the malloc mapping area, then another
+unrelated region, then the vmalloc region.
 
-PowerPC was used as a guide while implementating this.
+This "another unrelated region" is where the firmware is mapped.
+
+If the lazy TLB flushing logic in the vmalloc code triggers after
+we've had both a module unload and a vfree or similar, it will pass an
+address range that goes from somewhere inside the malloc region to
+somewhere inside the vmalloc region, and thus covering the
+openfirmware area entirely.
+
+The sparc64 kernel learns about openfirmware's dynamic mappings in
+this region early in the boot, and then services TLB misses in this
+area.  But openfirmware has some locked TLB entries which are not
+mentioned in those dynamic mappings and we should thus not disturb
+them.
+
+These huge lazy TLB flush ranges causes those openfirmware locked TLB
+entries to be removed, resulting in all kinds of problems including
+hard hangs and crashes during reboot/reset.
+
+Besides causing problems like this, such huge TLB flush ranges are
+also incredibly inefficient.  A plea has been made with the author of
+the VMAP lazy TLB flushing code, but for now we'll put a safety guard
+into our flush_tlb_kernel_range() implementation.
+
+Since the implementation has become non-trivial, stop defining it as a
+macro and instead make it a function in a C source file.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/sparc/include/asm/pgtable_64.h | 46 +++++++++++++++++++++++++------------
- 1 file changed, 31 insertions(+), 15 deletions(-)
+ arch/sparc/include/asm/tlbflush_64.h | 12 ++----------
+ arch/sparc/mm/init_64.c              | 23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 10 deletions(-)
 
-diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
-index 90f289f0ec8e..d80b4204a774 100644
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -94,6 +94,23 @@
+diff --git a/arch/sparc/include/asm/tlbflush_64.h b/arch/sparc/include/asm/tlbflush_64.h
+index f0d6a9700f4c..1a4bb971e06d 100644
+--- a/arch/sparc/include/asm/tlbflush_64.h
++++ b/arch/sparc/include/asm/tlbflush_64.h
+@@ -35,6 +35,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
+ {
+ }
  
- #include <linux/sched.h>
- 
-+extern unsigned long sparc64_valid_addr_bitmap[];
++void flush_tlb_kernel_range(unsigned long start, unsigned long end);
 +
-+/* Needs to be defined here and not in linux/mm.h, as it is arch dependent */
-+static inline bool __kern_addr_valid(unsigned long paddr)
+ #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
+ 
+ extern void flush_tlb_pending(void);
+@@ -49,11 +51,6 @@ extern void __flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ 
+ #ifndef CONFIG_SMP
+ 
+-#define flush_tlb_kernel_range(start,end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	__flush_tlb_kernel_range(start,end); \
+-} while (0)
+-
+ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
+@@ -64,11 +61,6 @@ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vad
+ extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
+ extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
+ 
+-#define flush_tlb_kernel_range(start, end) \
+-do {	flush_tsb_kernel_range(start,end); \
+-	smp_flush_tlb_kernel_range(start, end); \
+-} while (0)
+-
+ #define global_flush_tlb_page(mm, vaddr) \
+ 	smp_flush_tlb_page(mm, vaddr)
+ 
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 774ba41dba4d..b26015f49c0d 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2750,3 +2750,26 @@ void hugetlb_setup(struct pt_regs *regs)
+ 	}
+ }
+ #endif
++
++#ifdef CONFIG_SMP
++#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
++#else
++#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
++#endif
++
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
 +{
-+	if ((paddr >> 41UL) != 0UL)
-+		return false;
-+	return test_bit(paddr >> 22, sparc64_valid_addr_bitmap);
++	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
++		if (start < LOW_OBP_ADDRESS) {
++			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
++		}
++		if (end > HI_OBP_ADDRESS) {
++			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
++			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++		}
++	} else {
++		flush_tsb_kernel_range(start, end);
++		do_flush_tlb_kernel_range(start, end);
++	}
 +}
-+
-+static inline bool kern_addr_valid(unsigned long addr)
-+{
-+	unsigned long paddr = __pa(addr);
-+
-+	return __kern_addr_valid(paddr);
-+}
-+
- /* Entries per page directory level. */
- #define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-4))
- #define PTRS_PER_PMD	(1UL << PMD_BITS)
-@@ -715,6 +732,20 @@ static inline int pmd_present(pmd_t pmd)
- 
- #define pmd_none(pmd)			(!pmd_val(pmd))
- 
-+/* pmd_bad() is only called on non-trans-huge PMDs.  Our encoding is
-+ * very simple, it's just the physical address.  PTE tables are of
-+ * size PAGE_SIZE so make sure the sub-PAGE_SIZE bits are clear and
-+ * the top bits outside of the range of any physical address size we
-+ * support are clear as well.  We also validate the physical itself.
-+ */
-+#define pmd_bad(pmd)			((pmd_val(pmd) & ~PAGE_MASK) || \
-+					 !__kern_addr_valid(pmd_val(pmd)))
-+
-+#define pud_none(pud)			(!pud_val(pud))
-+
-+#define pud_bad(pud)			((pud_val(pud) & ~PAGE_MASK) || \
-+					 !__kern_addr_valid(pud_val(pud)))
-+
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- extern void set_pmd_at(struct mm_struct *mm, unsigned long addr,
- 		       pmd_t *pmdp, pmd_t pmd);
-@@ -749,10 +780,7 @@ static inline unsigned long __pmd_page(pmd_t pmd)
- #define pud_page_vaddr(pud)		\
- 	((unsigned long) __va((((unsigned long)pud_val(pud))<<PGD_PADDR_SHIFT)))
- #define pud_page(pud) 			virt_to_page((void *)pud_page_vaddr(pud))
--#define pmd_bad(pmd)			(0)
- #define pmd_clear(pmdp)			(pmd_val(*(pmdp)) = 0U)
--#define pud_none(pud)			(!pud_val(pud))
--#define pud_bad(pud)			(0)
- #define pud_present(pud)		(pud_val(pud) != 0U)
- #define pud_clear(pudp)			(pud_val(*(pudp)) = 0U)
- 
-@@ -878,18 +906,6 @@ extern unsigned long pte_file(pte_t);
- extern pte_t pgoff_to_pte(unsigned long);
- #define PTE_FILE_MAX_BITS	(64UL - PAGE_SHIFT - 1UL)
- 
--extern unsigned long sparc64_valid_addr_bitmap[];
--
--/* Needs to be defined here and not in linux/mm.h, as it is arch dependent */
--static inline bool kern_addr_valid(unsigned long addr)
--{
--	unsigned long paddr = __pa(addr);
--
--	if ((paddr >> 41UL) != 0UL)
--		return false;
--	return test_bit(paddr >> 22, sparc64_valid_addr_bitmap);
--}
--
- extern int page_in_phys_avail(unsigned long paddr);
- 
- /*
 -- 
 2.0.4
 
