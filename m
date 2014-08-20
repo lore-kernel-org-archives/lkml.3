@@ -1,90 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbaHTITw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 04:19:52 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35783 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751656AbaHTITu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 04:19:50 -0400
-Date: Wed, 20 Aug 2014 10:19:46 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: =?UTF-8?B?R2HDq2w=?= PORTAY <gael.portay@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 1/3] ARM: at91/tclib: prefer using of devm_* functions
-Message-ID: <20140820101946.3c894130@bbrezillon>
-In-Reply-To: <1408486072-19268-2-git-send-email-gael.portay@gmail.com>
-References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
-	<1408486072-19268-2-git-send-email-gael.portay@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751875AbaHTITv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 04:19:51 -0400
+Received: from srv2.trombetti.net ([65.254.53.252]:2238 "EHLO server"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751292AbaHTITt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 04:19:49 -0400
+Message-ID: <53F45A29.6060604@shiftmail.org>
+Date: Wed, 20 Aug 2014 10:19:53 +0200
+From: Ethan Wilson <ethan.wilson@shiftmail.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: (trying again) how to get kernel stack trace if process not blocked?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Aug 2014 00:07:50 +0200
-Gaël PORTAY <gael.portay@gmail.com> wrote:
+Hello list,
+I know cat /proc/pid/stack shows the kernel call stack of a process, and 
+this is so good, but it will show just 0xffffffffffffffff if the process 
+is running in kernel space and not blocked (sleeping).
 
-> Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
+It would be *very* useful to get the kernel stack trace for a running 
+process, even if imprecise, or at least knowing the name of the kernel 
+function executing now (top of the stack). Why is it not doable?
 
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+I tried to disable CONFIG_SCHED_OMIT_FRAME_POINTER but it didn't allow 
+to print the stack from /proc/pid/stack anyway. What is the benefit of 
+disabling such kernel option (i.e. having the frame pointer)?
 
-> ---
->  drivers/misc/atmel_tclib.c | 14 ++++++--------
->  1 file changed, 6 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
-> index c8d8e38..b514a2d 100644
-> --- a/drivers/misc/atmel_tclib.c
-> +++ b/drivers/misc/atmel_tclib.c
-> @@ -150,17 +150,15 @@ static int __init tc_probe(struct platform_device *pdev)
->  	if (irq < 0)
->  		return -EINVAL;
->  
-> -	tc = kzalloc(sizeof(struct atmel_tc), GFP_KERNEL);
-> +	tc = devm_kzalloc(&pdev->dev, sizeof(struct atmel_tc), GFP_KERNEL);
->  	if (!tc)
->  		return -ENOMEM;
->  
->  	tc->pdev = pdev;
->  
-> -	clk = clk_get(&pdev->dev, "t0_clk");
-> -	if (IS_ERR(clk)) {
-> -		kfree(tc);
-> -		return -EINVAL;
-> -	}
-> +	clk = devm_clk_get(&pdev->dev, "t0_clk");
-> +	if (IS_ERR(clk))
-> +		return PTR_ERR(clk);
->  
->  	/* Now take SoC information if available */
->  	if (pdev->dev.of_node) {
-> @@ -171,10 +169,10 @@ static int __init tc_probe(struct platform_device *pdev)
->  	}
->  
->  	tc->clk[0] = clk;
-> -	tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
-> +	tc->clk[1] = devm_clk_get(&pdev->dev, "t1_clk");
->  	if (IS_ERR(tc->clk[1]))
->  		tc->clk[1] = clk;
-> -	tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
-> +	tc->clk[2] = devm_clk_get(&pdev->dev, "t2_clk");
->  	if (IS_ERR(tc->clk[2]))
->  		tc->clk[2] = clk;
->  
+I guessed that maybe with EIP from /proc/pid/stat it is possible to do 
+something like that but I can't find much information on how to do that.
 
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Thanks for any information
+EW
