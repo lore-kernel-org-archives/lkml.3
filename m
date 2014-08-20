@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaHTITS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 04:19:18 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:53296 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaHTITP (ORCPT
+	id S1751999AbaHTITw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 04:19:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35783 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751656AbaHTITu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 04:19:15 -0400
-Date: Wed, 20 Aug 2014 09:19:09 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Daniel Drake <drake@endlessm.com>, Tobias Jakobi <Liquid.Acid@gmx.net>,
-        Olof Johansson <olof@lixom.net>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: Re: [PATCH] mfd: max77686: make interrupts support optional
-Message-ID: <20140820081909.GH4266@lee--X1>
-References: <1408516009-22106-1-git-send-email-m.szyprowski@samsung.com>
+	Wed, 20 Aug 2014 04:19:50 -0400
+Date: Wed, 20 Aug 2014 10:19:46 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: =?UTF-8?B?R2HDq2w=?= PORTAY <gael.portay@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH 1/3] ARM: at91/tclib: prefer using of devm_* functions
+Message-ID: <20140820101946.3c894130@bbrezillon>
+In-Reply-To: <1408486072-19268-2-git-send-email-gael.portay@gmail.com>
+References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
+	<1408486072-19268-2-git-send-email-gael.portay@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408516009-22106-1-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Aug 2014, Marek Szyprowski wrote:
+On Wed, 20 Aug 2014 00:07:50 +0200
+Gaël PORTAY <gael.portay@gmail.com> wrote:
 
-> Commit 6f1c1e71d93 ("mfd: max77686: Convert to use regmap_irq") broke
-> support for boards, which provide no irq for MAX 77686 PMIC. In such
-> case, not all functions of PMIC are available, but the driver still
-> should at least handle voltage regulators instead of failing to init.
-> This patch restores previous behavior.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Signed-off-by: Gaël PORTAY <gael.portay@gmail.com>
+
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+
 > ---
-> Hello,
+>  drivers/misc/atmel_tclib.c | 14 ++++++--------
+>  1 file changed, 6 insertions(+), 8 deletions(-)
 > 
-> This patch fixes booting issues with recently merged support for
-> Exynos4412 based Odroid X2/U3 boards. See
-> http://www.spinics.net/lists/linux-samsung-soc/msg35773.html
-> thread for more details.
-> 
-> Best regards
-> Marek Szyprowski
-> Samsung R&D Institute Poland
-> ---
->  drivers/mfd/max77686.c | 46 +++++++++++++++++++++++++++-------------------
->  1 file changed, 27 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-> index 86e552348db4..525718c448c8 100644
-> --- a/drivers/mfd/max77686.c
-> +++ b/drivers/mfd/max77686.c
-
-[...]
-
-> @@ -357,8 +363,10 @@ static int max77686_i2c_remove(struct i2c_client *i2c)
+> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
+> index c8d8e38..b514a2d 100644
+> --- a/drivers/misc/atmel_tclib.c
+> +++ b/drivers/misc/atmel_tclib.c
+> @@ -150,17 +150,15 @@ static int __init tc_probe(struct platform_device *pdev)
+>  	if (irq < 0)
+>  		return -EINVAL;
 >  
->  	mfd_remove_devices(max77686->dev);
+> -	tc = kzalloc(sizeof(struct atmel_tc), GFP_KERNEL);
+> +	tc = devm_kzalloc(&pdev->dev, sizeof(struct atmel_tc), GFP_KERNEL);
+>  	if (!tc)
+>  		return -ENOMEM;
 >  
-> -	regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
-> -	regmap_del_irq_chip(max77686->irq, max77686->irq_data);
-> +	if (max77686->irq)
-> +		regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
-> +	if (max77686->irq)
-> +		regmap_del_irq_chip(max77686->irq, max77686->irq_data);
-
-Looks like you rushed this patch and went a bit crazy with
-copy-paste. :)
-
-Please put these two regmap_del_irq_chip()'s as results of the same
-conditional i.e:
-
-  if (max77686->irq) {
-	  regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
-	  regmap_del_irq_chip(max77686->irq, max77686->irq_data);
-  }
-
+>  	tc->pdev = pdev;
 >  
->  	if (max77686->type == TYPE_MAX77686)
->  		i2c_unregister_device(max77686->rtc);
+> -	clk = clk_get(&pdev->dev, "t0_clk");
+> -	if (IS_ERR(clk)) {
+> -		kfree(tc);
+> -		return -EINVAL;
+> -	}
+> +	clk = devm_clk_get(&pdev->dev, "t0_clk");
+> +	if (IS_ERR(clk))
+> +		return PTR_ERR(clk);
+>  
+>  	/* Now take SoC information if available */
+>  	if (pdev->dev.of_node) {
+> @@ -171,10 +169,10 @@ static int __init tc_probe(struct platform_device *pdev)
+>  	}
+>  
+>  	tc->clk[0] = clk;
+> -	tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
+> +	tc->clk[1] = devm_clk_get(&pdev->dev, "t1_clk");
+>  	if (IS_ERR(tc->clk[1]))
+>  		tc->clk[1] = clk;
+> -	tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
+> +	tc->clk[2] = devm_clk_get(&pdev->dev, "t2_clk");
+>  	if (IS_ERR(tc->clk[2]))
+>  		tc->clk[2] = clk;
+>  
+
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
