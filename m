@@ -1,266 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366AbaHTQUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 12:20:45 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:42718 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494AbaHTQUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 12:20:44 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Eddie Cai <eddie.cai@rock-chips.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ARM: rockchip: rk3288: Switch to use the proper PWM IP
-Date: Wed, 20 Aug 2014 18:20:31 +0200
-Message-ID: <2927513.T62GI7nq9T@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAD=FV=Xf4Hm5tCaaW3QG-ZSQGovh6RKH=1Og1K-yxj+jKyGsmA@mail.gmail.com>
-References: <1408381749-14156-1-git-send-email-dianders@chromium.org> <20140820153801.GB3427@ulmo> <CAD=FV=Xf4Hm5tCaaW3QG-ZSQGovh6RKH=1Og1K-yxj+jKyGsmA@mail.gmail.com>
+	id S1752438AbaHTQUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 12:20:52 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:58238
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752061AbaHTQUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 12:20:50 -0400
+Message-ID: <53F4CAD7.5060904@freescale.com>
+Date: Wed, 20 Aug 2014 11:20:39 -0500
+From: German Rivera <German.Rivera@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Joe Perches <joe@perches.com>
+CC: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <stuart.yoder@freescale.com>,
+        <linuxppc-release@linux.freescale.net>
+Subject: Re: [RFC PATCH 1/4 v2] drivers/bus: Added Freescale Management Complex
+ APIs
+References: <1408496070-6252-1-git-send-email-German.Rivera@freescale.com>	 <1408496070-6252-2-git-send-email-German.Rivera@freescale.com> <1408497589.23250.12.camel@joe-AO725>
+In-Reply-To: <1408497589.23250.12.camel@joe-AO725>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.88.168.50]
+X-ClientProxiedBy: BLUPR05CA0063.namprd05.prod.outlook.com (10.141.20.33) To
+ DM2PR03MB335.namprd03.prod.outlook.com (10.141.54.20)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03094A4065
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6049001)(6009001)(199003)(189002)(479174003)(377454003)(24454002)(377424004)(164054003)(51704005)(65816999)(79102001)(20776003)(80316001)(46102001)(86362001)(87266999)(85852003)(21056001)(64126003)(64706001)(76482001)(54356999)(76176999)(47776003)(50986999)(77982001)(83322001)(81342001)(59896002)(42186005)(81542001)(66066001)(85306004)(80022001)(106356001)(36756003)(105586002)(95666004)(107046002)(50466002)(102836001)(65806001)(74662001)(92566001)(33656002)(87976001)(74502001)(101416001)(83506001)(83072002)(77096002)(92726001)(99396002)(31966008)(110136001)(4396001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB335;H:[10.81.33.65];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 20. August 2014, 08:55:09 schrieb Doug Anderson:
-> Thierry,
-> 
-> On Wed, Aug 20, 2014 at 8:38 AM, Thierry Reding
-> 
-> <thierry.reding@gmail.com> wrote:
-> > On Wed, Aug 20, 2014 at 08:20:53AM -0700, Doug Anderson wrote:
-> >> Thierry,
-> >> 
-> >> On Tue, Aug 19, 2014 at 11:08 PM, Thierry Reding
-> >> 
-> >> <thierry.reding@gmail.com> wrote:
-> >> > On Tue, Aug 19, 2014 at 08:18:54AM -0700, Doug Anderson wrote:
-> >> >> Thierry,
-> >> >> 
-> >> >> On Tue, Aug 19, 2014 at 12:10 AM, Thierry Reding
-> >> >> 
-> >> >> <thierry.reding@gmail.com> wrote:
-> >> >> > On Mon, Aug 18, 2014 at 10:09:06AM -0700, Doug Anderson wrote:
-> >> >> >> The rk3288 SoC has an option to switch all of the PWMs in the
-> >> >> >> system
-> >> >> >> between the old IP block and the new IP block.  The new IP block is
-> >> >> >> working and tested and the suggested PWM to use, so setup the SoC
-> >> >> >> to
-> >> >> >> use it and then we can pretend that the other IP block doesn't
-> >> >> >> exist.
-> >> > 
-> >> > A few more questions as to how this actually works. Does it mean there
-> >> > are two physically separate blocks (with different physical addresses)
-> >> > to control the same PWM? And this register simply causes some of the
-> >> > pins to be routed to one or another? As far as I recall there are a
-> >> > number of instances of the PWM block, so the above would need to count
-> >> > for all of them. Or are there separate bits for each of them?
-> >> 
-> >> All I have is the TRM (technical reference manual) which doesn't give
-> >> me much more info than I've provided you.  But I can answer some of
-> >> your questoins:
-> >> 
-> >> 1. If there are two physically separate blocks then the "old" block is
-> >> not documented in my TRM.
-> >> 
-> >> 1a) It's entirely possible it's located at some memory address that is
-> >> marked "Reserved" in the TRM, but I have no idea.
-> >> 
-> >> 1b) It's entirely possible that the old IP block and the new IP block
-> >> are supposed to be "compatible" but that the old block is broken and
-> >> thus isn't behaving properly.
-> >> 
-> >> 1c) It's entirely possible that the old IP block and the new IP block
-> >> are located at the same physical addresses but somehow work
-> >> differently.  If so, the old IP block isn't documented.
-> >> 
-> >> 
-> >> 2. As per the patch description, there is a single bit that controls
-> >> all of the PWMs.  My guess is that there's actually a single IP block
-> >> that implements all 4 PWMs.
-> > 
-> > Looking at the register offsets in the device tree that seems likely. At
-> > least PWMs 0 and 1 as well as 2 and 3 seem like they could be in the
-> > 
-> > same IP block. Their placement in the register map is somewhat strange:
-> >         pwm0: pwm@20030000 {
-> >         
-> >                 ...
-> >                 reg = <0x20030000 0x10>;
-> >                 ...
-> >                 clocks = <&cru PCLK_PWM01>;
-> >                 ...
-> >         
-> >         };
-> >         
-> >         pwm1: pwm@20030010 {
-> >         
-> >                 ...
-> >                 reg = <0x20030010 0x10>;
-> >                 ...
-> >                 clocks = <&cru PCLK_PWM01>;
-> >                 ...
-> >         
-> >         };
-> >         
-> >         ...
-> >         
-> >         pwm2: pwm@20050020 {
-> >         
-> >                 ...
-> >                 reg = <0x20050020 0x10>;
-> >                 ...
-> >                 clocks = <&cru PCLK_PWM23>;
-> >                 ...
-> >         
-> >         };
-> >         
-> >         pwm3: pwm@20050030 {
-> >         
-> >                 ...
-> >                 reg = <0x20050030 0x10>;
-> >                 ...
-> >                 clocks = <&cru PCLK_PWM23>;
-> >                 ...
-> >         
-> >         };
-> 
-> Ah, you're looking at "rk3xxx.dtsi".  That doesn't apply to rk3288
-> (the downsides of trying to guess ahead of time what SoC vendors will
-> name new models).
-
-It did sound like a nice idea at the time to hold the common stuff of 
-rk3066/rk3188 and all their derivatives and I assumed a SoC that changed 
-dramatically (including the core) would be called 4xxx or so :-) .
-
-> 
-> In rk3288 they have the same clocks.  See patch #3 in this series.
-> 
-> > The clocks would also indicate that there are actually two blocks. I
-> > seem to remember a discussion about whether to handle them as a single
-> > block or two/four, but I can't seem to find a reference to it. Maybe I'm
-> > confusing it with another driver.
-> 
-> At this point it seems like the choice has already been made to handle
-> them as separate PWMs.  I can change this choice if you want...
-> 
-> >> >> >> This code could go lots of other places, but we've put it here. 
-> >> >> >> Why?
-> >> >> >> - Pushing it to the bootloader just makes the code harder to update
-> >> >> >> in
-> >> >> >> 
-> >> >> >>   the field.  If we later find a bug in the new IP block and want
-> >> >> >>   to
-> >> >> >>   change our mind about what to use we want it to be easy to
-> >> >> >>   update.
-> >> > 
-> >> > Depending on how this muxing works you won't be able to change your
-> >> > mind
-> >> > anyway. If the IP blocks are different then the device tree will
-> >> > effectively make the decision for you. So if you really want to be safe
-> >> > you'd need to have code in the kernel that parses the device tree and
-> >> > checks that all PWM instances are of the new type, then set this
-> >> > register accordingly.
-> >> 
-> >> Since there is no documentation about how you would instantiate the
-> >> "old" type in the TRM and no good reason I can think of why someone
-> >> would want to do this, it doesn't seem super fruitful.
-> > 
-> > Okay, so if it's not at all documented and never used then yes, we'd
-> > better just ignore it.
-> 
-> Heiko just pointed me at the base address for the other block.
-> There's nothing in the rk3288 TRM about it, but we can see the base
-> address.  We could probably guess that it behaves the same as the
-> older PWM if we need to.  I'm still not convinced there's a good
-> reason for someone to use it.
-
->From what I understood the old one was included as a fallback in case some 
-drastic problem appeared with the newly developed IP. Similarly for the I2C 
-the rk2928 and before contained the old IP, the rk3xxx SoCs did contain both 
-old and new i2c IP and now the rk3288 only contains the new one, as the new IP 
-seems to have proven stable.
-
-So there really is no incentive to use the old one if no drastic issue has 
-appeared with the new one until now.
 
 
-> >> >> >> diff --git a/arch/arm/mach-rockchip/rockchip.c
-> >> >> >> b/arch/arm/mach-rockchip/rockchip.c index 8ab9e0e..99133b9 100644
-> >> >> >> --- a/arch/arm/mach-rockchip/rockchip.c
-> >> >> >> +++ b/arch/arm/mach-rockchip/rockchip.c
-> >> >> >> @@ -24,6 +24,24 @@
-> >> >> >> 
-> >> >> >>  #include <asm/hardware/cache-l2x0.h>
-> >> >> >>  #include "core.h"
-> >> >> >> 
-> >> >> >> +static void __init rk3288_init_machine(void)
-> >> >> >> +{
-> >> >> >> +     void *grf = ioremap(0xff770000, 0x10000);
-> >> >> > 
-> >> >> > This region of memory is part of the "grf" "syscon" device
-> >> >> > (according to
-> >> >> > arch/arm/boot/dts/rk3288.dtsi) so the register should be accessed
-> >> >> > from
-> >> >> > that driver. It looks as if no such driver currently exists, but
-> >> >> > given
-> >> >> > the existence of the device tree node it's fair to assume that one
-> >> >> > will
-> >> >> > eventually be merged.
-> >> >> 
-> >> >> The "grf" syscon device is the "general register file".  It's a
-> >> >> collection of totally random registers stuffed together in one address
-> >> >> space.  Sometimes a single 32-bit register has things you need to
-> >> >> tweak for completely different subsystems.
-> >> >> 
-> >> >> Most drivers referene the syscon using this in dts:
-> >> >>   rockchip,grf = <&grf>;
-> >> >> 
-> >> >> Then the drivers do:
-> >> >>   grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
-> >> >> 
-> >> >> See the Rockchip i2c, pinctrl, or clock drivers for examples.
-> >> > 
-> >> > That's one way to do it. But if it's really just a one-time thing, then
-> >> > you could easily perform the register write from the syscon driver
-> >> > where
-> >> > the memory is already parsed from device tree and mapped. That way you
-> >> > don't have to hardcode the physical address in some other random piece
-> >> > of code and map the memory again.
-> >> 
-> >> Well, except that we're using the general "syscon" driver.  I could
-> >> create a whole new driver that "subclasses" this syscon driver I
-> >> suppose.
-> > 
-> > Ah, I wasn't aware that there was even something like a generic syscon
-> > driver. But yes, subclassing it sounds like a reasonable thing to do.
-> 
-> I will do that if need be, but it's not my favorite.  I will let
-> others chime in.
+On 08/19/2014 08:19 PM, Joe Perches wrote:
+> On Tue, 2014-08-19 at 19:54 -0500, J. German Rivera wrote:
+>> APIs to access the Management Complex (MC) hardware
+>> module of Freescale LS2 SoCs. This patch includes
+>> APIs to check the MC firmware version and to manipulate
+>> DPRC objects in the MC.
+> []
+>>   include/linux/fsl_dpmng.h          |  120 ++++++
+>>   include/linux/fsl_dprc.h           |  790 ++++++++++++++++++++++++++++++++++++
+>>   include/linux/fsl_mc_cmd.h         |  182 +++++++++
+>>   include/linux/fsl_mc_sys.h         |   50 +++
+>
+> Why should any of these files be put in include/linux?
+>
+These header files are going to be shared by more than one of our 
+drivers. Should they be in a new directory under include
+(such as include/fsl/) or under include/linux (such as include/linux/fsl/)?
 
-I guess personally I like the idea best of just setting the relevant bit in 
-_probe of the pwm driver, like the i2c driver does:
+Thanks,
 
-if (of_device_is_compatible(np, "rockchip,rk3288-pwm") {
-	/* get regmap and set bit */
-}
-
-The downside would be that the bit would be written 4 times, but I guess this 
-shouldn't matter to much. And I don't think anybody will get the idea of 
-combining both ip variants in one dts anyway.
-And of course in the next SoC the old IP will mostly have gone away and keep 
-this somewhat close to the driver and not scatter pwm settings into other 
-kernel parts.
-
-Hacking up the syscon driver feels bad to me, especially as it is meant to be 
-generic and export such shared registers to other drivers for just these stuff.
-
-
-Heiko
+German
+>
