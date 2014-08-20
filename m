@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaHTLxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:53:51 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:45160 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaHTLxs (ORCPT
+	id S1752733AbaHTLxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:53:36 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59008 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752604AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:53:48 -0400
-Date: Wed, 20 Aug 2014 13:53:44 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, davem@davemloft.net, jasowang@redhat.com,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
-        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
-        xii@google.com, stephen@networkplumber.org
-Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
- module_param
-Message-ID: <20140820115344.GD1916@nanopsycho.orion>
-References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
- <1408369040-1216-3-git-send-email-pagupta@redhat.com>
- <20140820105817.GB1916@nanopsycho.orion>
- <20140820111724.GE17371@redhat.com>
- <20140820114620.GC1916@nanopsycho.orion>
- <20140820114907.GA17943@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140820114907.GA17943@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Wed, 20 Aug 2014 07:44:11 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Christopher Alexander Tobias Schulze 
+	<cat.schulze@alice-dsl.net>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 056/104] sunsab: Fix detection of BREAK on sunsab serial console
+Date: Wed, 20 Aug 2014 13:43:19 +0200
+Message-Id: <add908eff1c76d0d1a08284ef97ffc017bd75270.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wed, Aug 20, 2014 at 01:49:07PM CEST, mst@redhat.com wrote:
->On Wed, Aug 20, 2014 at 01:46:20PM +0200, Jiri Pirko wrote:
->> Wed, Aug 20, 2014 at 01:17:24PM CEST, mst@redhat.com wrote:
->> >On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
->> >> Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
->> >> > This patch publishes maximum number of tun/tap queues allocated as a
->> >> > read_only module parameter which a user space application like libvirt
->> >> > can make use of to limit maximum number of queues. Value of read_only
->> >> > module parameter can be writable only at module load time. If no value is set
->> >> > at module load time a default value 256 is used which is equal to maximum number
->> >> > of vCPUS allowed by KVM.
->> >> >
->> >> > Administrator can specify maximum number of queues only at the driver
->> >> > module load time.
->> >> >
->> >> >Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
->> >> >---
->> >> > drivers/net/tun.c |   13 +++++++++++--
->> >> > 1 files changed, 11 insertions(+), 2 deletions(-)
->> >> >
->> >> >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> >> >index acaaf67..1f518e2 100644
->> >> >--- a/drivers/net/tun.c
->> >> >+++ b/drivers/net/tun.c
->> >> >@@ -119,6 +119,9 @@ struct tap_filter {
->> >> > 
->> >> > #define TUN_FLOW_EXPIRE (3 * HZ)
->> >> > 
->> >> >+static int max_tap_queues = MAX_TAP_QUEUES;
->> >> >+module_param(max_tap_queues, int, S_IRUGO);
->> >> 
->> >> Please do not introduce new module paramaters. Please other ways to
->> >> interchange values with userspace.
->> >
->> >I suggested this initially, but thinking more about it, I agree.
->> >
->> >It's a global limit (necessary to limit memory utilization by
->> >userspace), but it should be possible to change it
->> >after module load.
->> >
->> >Additionally, userspace that has the FD should be able to
->> >retrieve the value without guessing that the FD is
->> >for the tun device (and not e.g. macvtap).
->> >To retrieve the value, an ioctl is probably the
->> >cleanest approach.
->> >
->> >To set it, how about a sysctl? I think the limit can also apply to
->> >all devices, not just tun.
->> 
->> Or netlink?
->
->Are there examples of netlink being used to set global defaults
->as opposed to per-device parameters?
+From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
 
-That is so far not possible. But I believe that it can be implemented.
-I'm just thinking out loud.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
->
->> >
->> >-- 
->> >MST
+===============
+
+[ Upstream commit fe418231b195c205701c0cc550a03f6c9758fd9e ]
+
+Fix detection of BREAK on sunsab serial console: BREAK detection was only
+performed when there were also serial characters received simultaneously.
+To handle all BREAKs correctly, the check for BREAK and the corresponding
+call to uart_handle_break() must also be done if count == 0, therefore
+duplicate this code fragment and pull it out of the loop over the received
+characters.
+
+Patch applies to 3.16-rc6.
+
+Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/serial/sunsab.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
+index 2fee558f2b13..09c86720cb03 100644
+--- a/drivers/tty/serial/sunsab.c
++++ b/drivers/tty/serial/sunsab.c
+@@ -157,6 +157,15 @@ receive_chars(struct uart_sunsab_port *up,
+ 	    (up->port.line == up->port.cons->index))
+ 		saw_console_brk = 1;
+ 
++	if (count == 0) {
++		if (unlikely(stat->sreg.isr1 & SAB82532_ISR1_BRK)) {
++			stat->sreg.isr0 &= ~(SAB82532_ISR0_PERR |
++					     SAB82532_ISR0_FERR);
++			up->port.icount.brk++;
++			uart_handle_break(&up->port);
++		}
++	}
++
+ 	for (i = 0; i < count; i++) {
+ 		unsigned char ch = buf[i], flag;
+ 
+-- 
+2.0.4
+
