@@ -1,192 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaHTCQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 22:16:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36559 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738AbaHTCQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 22:16:30 -0400
-Date: Wed, 20 Aug 2014 04:16:23 +0200
-From: Jan Kara <jack@suse.cz>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+	id S1752057AbaHTCb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 22:31:28 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:57744 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaHTCb0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 22:31:26 -0400
+Date: Tue, 19 Aug 2014 19:31:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Sasha Levin <sasha.levin@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
-Subject: Re: [PATCHv2 1/3] fs/buffer.c: allocate buffer cache with user
- specific flag
-Message-ID: <20140820021623.GB3271@quack.suse.cz>
-References: <53F2F3E6.1030901@lge.com>
- <53F2F436.4070307@lge.com>
- <20140819130324.GB27553@quack.suse.cz>
- <53F3DFA3.6040303@lge.com>
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+Message-ID: <20140820023121.GS4752@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53A2F406.4010109@oracle.com>
+ <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
+ <20140619165247.GA4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192127100.5170@nanos>
+ <alpine.DEB.2.11.1406191519090.4002@gentwo.org>
+ <20140818163757.GA30742@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1408182147400.28727@gentwo.org>
+ <20140819035828.GI4752@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1408192057200.32428@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F3DFA3.6040303@lge.com>
+In-Reply-To: <alpine.DEB.2.11.1408192057200.32428@gentwo.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082002-1542-0000-0000-000004245647
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 20-08-14 08:37:07, Gioh Kim wrote:
+On Tue, Aug 19, 2014 at 09:00:05PM -0500, Christoph Lameter wrote:
+> On Mon, 18 Aug 2014, Paul E. McKenney wrote:
 > 
-> 
-> 2014-08-19 오후 10:03, Jan Kara 쓴 글:
-> >   Hello,
+> > > +#ifdef CONFIG_RCU_DEBUG_XYZ
 > >
-> >On Tue 19-08-14 15:52:38, Gioh Kim wrote:
-> >>A buffer cache is allocated from movable area
-> >>because it is referred for a while and released soon.
-> >>But some filesystems are taking buffer cache for a long time
-> >>and it can disturb page migration.
-> >>
-> >>A new API should be introduced to allocate buffer cache
-> >>with user specific flag.
-> >>For instance if user set flag to zero, buffer cache is allocated from
-> >>non-movable area.
-> >>
-> >>Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> >>---
-> >>  fs/buffer.c                 |   52 +++++++++++++++++++++++++++++--------------
-> >>  include/linux/buffer_head.h |   12 +++++++++-
-> >>  2 files changed, 46 insertions(+), 18 deletions(-)
-> >>
-> >>diff --git a/fs/buffer.c b/fs/buffer.c
-> >>index 8f05111..14f2f21 100644
-> >>--- a/fs/buffer.c
-> >>+++ b/fs/buffer.c
-> >>@@ -993,7 +993,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
-> >>   */
-> >>  static int
-> >>  grow_dev_page(struct block_device *bdev, sector_t block,
-> >>-               pgoff_t index, int size, int sizebits)
-> >>+             pgoff_t index, int size, int sizebits, gfp_t gfp)
-> >>  {
-> >>         struct inode *inode = bdev->bd_inode;
-> >>         struct page *page;
-> >>@@ -1002,10 +1002,10 @@ grow_dev_page(struct block_device *bdev, sector_t block,
-> >>         int ret = 0;            /* Will call free_more_memory() */
-> >>         gfp_t gfp_mask;
-> >>
-> >>-       gfp_mask = mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS;
-> >>-       gfp_mask |= __GFP_MOVABLE;
-> >>+       gfp_mask = (mapping_gfp_mask(inode->i_mapping) & ~__GFP_FS) | gfp;
-> >>+
-> >   Hum, it seems a bit misleading that the 'gfp' flags are just or-ed to
-> >mapping_gfp_mask(inode->i_mapping). Usually, passed gfp mask is just
-> >directly used. There are also interfaces like pagecache_get_page() which
-> >play more complex tricks with mapping_gfp_mask(). This would be yet another
-> >convention which I don't think is desirable. I know Andrew suggested what
-> >you wrote so I guess I have to settle this with him. Andrew?
+> > If you make CONFIG_RCU_DEBUG_XYZ instead be CONFIG_DEBUG_OBJECTS_RCU_HEAD,
+> > then it will automatically show up when it needs to.
 > 
-> I don't know mapping_gfp_mask(). I just add gfp at the original code.
-> Whould you tell me why it is undesirable?
-  Well, it's not that mapping_gfp_mask() would be undesirable. It's that
-the interface where you pass in gfp mask but it gets silently combined with
-another gfp mask seems a bit error prone to me. So would prefer
-grow_dev_page() to just use the gfp mask passed and then do something like:
-
-struct buffer_head *getblk_unmovable(struct block_device *bdev, sector_t block,
-            unsigned size)
-{
-       return __getblk_gfp(bdev, block, size,
-			   mapping_gfp_mask(bdev->bd_inode->i_mapping));
-}
-
-And similarly in getblk() and other places. But before you go and do this,
-I'd like Andrew to say what he thinks about it because maybe he had a good
-reason why he wanted it the way you've implemented it.
-
-
-> >>@@ -1381,12 +1383,7 @@ EXPORT_SYMBOL(__find_get_block);
-> >>  struct buffer_head *
-> >>  __getblk(struct block_device *bdev, sector_t block, unsigned size)
-> >>  {
-> >>-       struct buffer_head *bh = __find_get_block(bdev, block, size);
-> >>-
-> >>-       might_sleep();
-> >>-       if (bh == NULL)
-> >>-               bh = __getblk_slow(bdev, block, size);
-> >>-       return bh;
-> >>+       return __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
-> >>  }
-> >>  EXPORT_SYMBOL(__getblk);
-> >   Why did you remove the __find_get_block() call? That looks like a bug.
-  I'm not sure if you didn't miss this comment....
-
-> I think the common interface is important.
+> Ok.
 > 
-> If sb_getblk_unmovable() is obvious for the filesystem,
-> I will add some codes for getblk_unmovable() which calling __getblk_gfp(),
-> and sb_bread_unmovable() calling __bread_gfp().
-> If so, sb_bread_gfp is not necessary.
+> > The rest looks plausible, for whatever that is worth.
 > 
-> It might be like followings:
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 14f2f21..35caf77 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -1088,7 +1088,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int siz
->         return grow_dev_page(bdev, block, index, size, sizebits, gfp);
+> We talked in the hallway about init_rcu_head not touching
+> the contents of the rcu_head. If that is the case then we can simplify
+> the patch.
+
+That is correct -- the debug-objects code uses separate storage to track
+states, and does not touch the memory to which the state applies.
+
+> We could also remove the #ifdefs if init_rcu_head and destroy_rcu_head
+> are no ops if CONFIG_DEBUG_RCU_HEAD is not defined.
+
+And indeed they are, good point!  It appears to me that both sets of
+#ifdefs can go away.
+
+							Thanx, Paul
+
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c
+> +++ linux/mm/slub.c
+> @@ -1308,6 +1308,25 @@ static inline struct page *alloc_slab_pa
+>  	return page;
 >  }
 > 
-> -struct buffer_head *
-> +static struct buffer_head *
->  __getblk_gfp(struct block_device *bdev, sector_t block,
->              unsigned size, gfp_t gfp)
->  {
-> @@ -1119,7 +1119,13 @@ __getblk_gfp(struct block_device *bdev, sector_t block,
->                         free_more_memory();
->         }
->  }
-> -EXPORT_SYMBOL(__getblk_gfp);
+> +#define need_reserve_slab_rcu						\
+> +	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
 > +
-> +struct buffer_head *getblk_unmovable(struct block_device *bdev, sector_t block,
-> +            unsigned size)
+> +static struct rcu_head *get_rcu_head(struct kmem_cache *s, struct page *page)
 > +{
-> +       return __getblk_gfp(bdev, block, size, 0);
+> +	if (need_reserve_slab_rcu) {
+> +		int order = compound_order(page);
+> +		int offset = (PAGE_SIZE << order) - s->reserved;
+> +
+> +		VM_BUG_ON(s->reserved != sizeof(struct rcu_head));
+> +		return page_address(page) + offset;
+> +	} else {
+> +		/*
+> +		 * RCU free overloads the RCU head over the LRU
+> +		 */
+> +		return (void *)&page->lru;
+> +	}
 > +}
-> +EXPORT_SYMBOL(getblk_unmovable);
-> 
->  /*
->   * The relationship between dirty buffers and dirty pages:
-> diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-> index a1d73fd..c5fb4fc 100644
-> --- a/include/linux/buffer_head.h
-> +++ b/include/linux/buffer_head.h
-> @@ -177,8 +177,8 @@ struct buffer_head *__find_get_block(struct block_device *bdev, s
->                         unsigned size);
->  struct buffer_head *__getblk(struct block_device *bdev, sector_t block,
->                         unsigned size);
-> -struct buffer_head *__getblk_gfp(struct block_device *bdev, sector_t block,
-> -                                unsigned size, gfp_t gfp);
-> +struct buffer_head *getblk_unmovable(struct block_device *bdev, sector_t block,
-> +                                    unsigned size);
->  void __brelse(struct buffer_head *);
->  void __bforget(struct buffer_head *);
->  void __breadahead(struct block_device *, sector_t block, unsigned int size);
-> @@ -303,9 +303,9 @@ sb_bread(struct super_block *sb, sector_t block)
->  }
-> 
->  static inline struct buffer_head *
-> -sb_bread_gfp(struct super_block *sb, sector_t block, gfp_t gfp)
-> +sb_bread_unmovable(struct super_block *sb, sector_t block)
+> +
+>  static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
 >  {
-> -       return __bread_gfp(sb->s_bdev, block, sb->s_blocksize, gfp);
-> +       return __bread_gfp(sb->s_bdev, block, sb->s_blocksize, 0);
+>  	struct page *page;
+> @@ -1357,6 +1376,22 @@ static struct page *allocate_slab(struct
+>  			kmemcheck_mark_unallocated_pages(page, pages);
+>  	}
+> 
+> +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU) && page)
+> +		/*
+> +		 * Initialize various things. However, this init is
+> +	 	 * not allowed to modify the contents of the rcu head.
+> +		 * Allocations are permitted. However, the use of
+> +		 * the same cache or another cache with SLAB_RCU_DESTROY
+> +		 * set may cause additional recursions.
+> +		 *
+> +		 * So in order to be safe the slab caches used
+> +		 * in init_rcu_head should be restricted to be of the
+> +		 * non rcu kind only.
+> +		 */
+> +		init_rcu_head(get_rcu_head(s, page));
+> +#endif
+> +
+>  	if (flags & __GFP_WAIT)
+>  		local_irq_disable();
+>  	if (!page)
+> @@ -1452,13 +1487,13 @@ static void __free_slab(struct kmem_cach
+>  	memcg_uncharge_slab(s, order);
 >  }
 > 
-> Is it better?
-  Yes, this is what I meant.
+> -#define need_reserve_slab_rcu						\
+> -	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
+> -
+>  static void rcu_free_slab(struct rcu_head *h)
+>  {
+>  	struct page *page;
+> 
+> +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> +	destroy_rcu_head(h);
+> +#endif
+>  	if (need_reserve_slab_rcu)
+>  		page = virt_to_head_page(h);
+>  	else
+> @@ -1469,24 +1504,9 @@ static void rcu_free_slab(struct rcu_hea
+> 
+>  static void free_slab(struct kmem_cache *s, struct page *page)
+>  {
+> -	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+> -		struct rcu_head *head;
+> -
+> -		if (need_reserve_slab_rcu) {
+> -			int order = compound_order(page);
+> -			int offset = (PAGE_SIZE << order) - s->reserved;
+> -
+> -			VM_BUG_ON(s->reserved != sizeof(*head));
+> -			head = page_address(page) + offset;
+> -		} else {
+> -			/*
+> -			 * RCU free overloads the RCU head over the LRU
+> -			 */
+> -			head = (void *)&page->lru;
+> -		}
+> -
+> -		call_rcu(head, rcu_free_slab);
+> -	} else
+> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU))
+> +		call_rcu(get_rcu_head(s, page), rcu_free_slab);
+> +	else
+>  		__free_slab(s, page);
+>  }
+> 
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
