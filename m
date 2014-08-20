@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848AbaHTJ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:28:25 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:60761 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaHTJ2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:28:23 -0400
-MIME-Version: 1.0
-X-Originating-IP: [80.246.32.33]
-In-Reply-To: <53F4654C.10101@ahsoftware.de>
-References: <52A75EF8.3010308@in.tum.de>
-	<20131211.150137.368953964178408437.davem@davemloft.net>
-	<52A8C8B4.4060109@in.tum.de>
-	<20131211122637.75b09074@nehalam.linuxnetplumber.net>
-	<87bo0nulkt.fsf@tassilo.jf.intel.com>
-	<52A8ECF5.3070604@in.tum.de>
-	<20131212012317.GL21717@two.firstfloor.org>
-	<52A98DBF.4090702@appelbaum.net>
-	<52A9A17F.6050505@in.tum.de>
-	<1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com>
-	<53F3A739.4070203@ahsoftware.de>
-	<CAPh34mckmKkRqG7M=37hHRJjBzZ+43BaPnjvpC5sEFnpPqj0aA@mail.gmail.com>
-	<53F4654C.10101@ahsoftware.de>
-Date: Wed, 20 Aug 2014 11:28:21 +0200
-Message-ID: <CAPh34mc8eGqLyGrq1AH6AP5yBGnJgePkK03Ys-Zhw9cz9h3Y2g@mail.gmail.com>
-Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity protection
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Christian Grothoff <grothoff@in.tum.de>,
-        Jacob Appelbaum <jacob@appelbaum.net>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, knock@gnunet.org
-Content-Type: text/plain; charset=UTF-8
+	id S1751964AbaHTJ23 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:28:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58215 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750861AbaHTJ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 05:28:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
+   d="scan'208";a="579221136"
+Message-ID: <1408526900.14919.0.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v1 01/12] dmaengine: dw: move dw_dmac.h to where it
+ belongs to
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
+        Hein Tibosch <hein_tibosch@yahoo.es>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Aug 2014 12:28:20 +0300
+In-Reply-To: <CAOh2x=nxqJkN45TD1xcqgsxndLv2bJ0zSp2Cg_2rVDsdMM6bNw@mail.gmail.com>
+References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <1408469363-15901-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <CAOh2x=nxqJkN45TD1xcqgsxndLv2bJ0zSp2Cg_2rVDsdMM6bNw@mail.gmail.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 August 2014 11:07, Alexander Holler <holler@ahsoftware.de> wrote:
 
-> For sure it could be better, but I'm already happy with the current
-> imperfect solution which I can use now and not some perfect solution which
-> might be available in some years.
+On Wed, 2014-08-20 at 14:25 +0530, Viresh Kumar wrote:
+> On Tue, Aug 19, 2014 at 10:59 PM, Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com> wrote:
+> > There is a common storage for platform data related structures and definitions
+> > inside kernel source tree. The patch moves file from include/linux to
+> > include/linux/platform_data and renames it acoordingly. The users are also
+> > updated.
+> >
+> > Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > ---
+> 
+> >  include/linux/dw_dmac.h                         | 111 ------------------------
+> >  include/linux/platform_data/dma-dw.h            | 111 ++++++++++++++++++++++++
+> 
+> Nice work but wrong git commands to produce this patch..
+> Always run format-patch with these options Atleast:
+> 
+> git format-patch -C -M --thread=shallow
+> 
+> With the -C -M option you would have got something like:
+> 
+>  include/linux/{dw_dmac.h => platform_data/dma-dw.h} | 0
+> 
+> Which would have made review so so easy :)
 
-Alexander, to make it clear: we cannot include mechanisms which
-probably open other (security) issues. This is not how things work
-out. TCP had so many issues in the past - regarding security,
-implementation f*ups, etc. pp. It is utterly important that there is
-no problem with an extension. Please join the discussion ob tcpm if
-you will drive things forward. That's all what I can say - sorry!
+Thanks for reminding me this, though I thought I would do that way and
+*forgot* while rebasing series.
+
+And thanks for Ack!
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
