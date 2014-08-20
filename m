@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaHTLvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:51:31 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59005 "EHLO
+	id S1753268AbaHTLvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:51:33 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59023 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752612AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752616AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Fujinaka, Todd" <todd.fujinaka@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 086/104] igb: Don't let ethtool try to write to iNVM in i210/i211
-Date: Wed, 20 Aug 2014 13:43:49 +0200
-Message-Id: <2de264873cb1027f8bae30d320005ac1fd391d10.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Roland Dreier <roland@purestorage.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 093/104] RDMA/cxgb3: Fix information leak in send_abort()
+Date: Wed, 20 Aug 2014 13:43:56 +0200
+Message-Id: <066c1c484969b9a151d2c5e39f61f1829f65fe22.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -24,42 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a71fc313c4f569be5788caff07ef1fe346842c5b upstream.
+commit e4514cbd972786af67dd6c442c072685387e22a2 upstream.
 
-Don't let ethtool try to write to iNVM in i210/i211.
+The cpl_abort_req struct has several reserved members which need to be
+cleared to avoid disclosing kernel information.  I have added a memset()
+so now it matches the cxgb4 version of this function.
 
-This fixes an issue seen by Marek Vasut.
-
-Reported-by: Marek Vasut <marex@denx.de>
-Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/intel/igb/igb_ethtool.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/cxgb3/iwch_cm.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-index 7bcf1ce59b41..6a5b67ba45c8 100644
---- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
-+++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-@@ -771,8 +771,10 @@ static int igb_set_eeprom(struct net_device *netdev,
- 	if (eeprom->len == 0)
- 		return -EOPNOTSUPP;
- 
--	if (hw->mac.type == e1000_i211)
-+	if ((hw->mac.type >= e1000_i210) &&
-+	    !igb_get_flash_presence_i210(hw)) {
- 		return -EOPNOTSUPP;
-+	}
- 
- 	if (eeprom->magic != (hw->vendor_id | (hw->device_id << 16)))
- 		return -EFAULT;
+diff --git a/drivers/infiniband/hw/cxgb3/iwch_cm.c b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+index 095bb046e2c8..cb78b1e9bcd9 100644
+--- a/drivers/infiniband/hw/cxgb3/iwch_cm.c
++++ b/drivers/infiniband/hw/cxgb3/iwch_cm.c
+@@ -418,6 +418,7 @@ static int send_abort(struct iwch_ep *ep, struct sk_buff *skb, gfp_t gfp)
+ 	skb->priority = CPL_PRIORITY_DATA;
+ 	set_arp_failure_handler(skb, abort_arp_failure);
+ 	req = (struct cpl_abort_req *) skb_put(skb, sizeof(*req));
++	memset(req, 0, sizeof(*req));
+ 	req->wr.wr_hi = htonl(V_WR_OP(FW_WROPCODE_OFLD_HOST_ABORT_CON_REQ));
+ 	req->wr.wr_lo = htonl(V_WR_TID(ep->hwtid));
+ 	OPCODE_TID(req) = htonl(MK_OPCODE_TID(CPL_ABORT_REQ, ep->hwtid));
 -- 
 2.0.4
 
