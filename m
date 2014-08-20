@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaHTMbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:31:34 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:60728 "EHLO smtp.dudau.co.uk"
+	id S1753359AbaHTMcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:32:35 -0400
+Received: from sauhun.de ([89.238.76.85]:46651 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752492AbaHTMbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:31:32 -0400
-Date: Wed, 20 Aug 2014 13:31:12 +0100
-From: Liviu Dudau <liviu@dudau.co.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] drivers: pci: convert generic host controller to DT host
- bridge creation API
-Message-ID: <20140820123112.GG13147@bart.dudau.co.uk>
-References: <1407861695-25549-1-git-send-email-Liviu.Dudau@arm.com>
- <201408201327.57376.arnd@arndb.de>
+	id S1752377AbaHTMcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:32:33 -0400
+Date: Wed, 20 Aug 2014 07:32:11 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, atull@opensource.altera.com,
+        baruch@tkos.co.il, mika westerberg <mika.westerberg@linux.intel.com>,
+        grant likely <grant.likely@linaro.org>, robh+dt@kernel.org,
+        skuribay@pobox.com, rafael j wysocki <rafael.j.wysocki@intel.com>,
+        alan@linux.intel.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        delicious quinoa <delicious.quinoa@gmail.com>,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
+ setting
+Message-ID: <20140820123210.GA1373@katana>
+References: <20140820092257.GA21174@leverpostej>
+ <944257148.1724.1408528177642.JavaMail.root@abilis.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
 Content-Disposition: inline
-In-Reply-To: <201408201327.57376.arnd@arndb.de>
+In-Reply-To: <944257148.1724.1408528177642.JavaMail.root@abilis.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Wed Aug 20 13:31:30 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 13,53f495223123282415815
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 01:27:57PM +0200, Arnd Bergmann wrote:
-> On Tuesday 12 August 2014, Liviu Dudau wrote:
-> > +       return of_create_pci_host_bridge(dev, 0, 0xff, &gen_pci_ops,
-> > +                                       gen_pci_setup, pci);
-> 
-> I had not noticed it earlier, but the setup callback is actually a feature
-> of the arm32 PCI code that I had hoped to avoid when moving to the
-> generic API. Can we do this as a more regular sequence of
-> 
-> 
-> 	ret = of_create_pci_host_bridge(dev, 0, 0xff, &gen_pci_ops, pci);
-> 	if (ret)
-> 		return ret;
-> 
-> 	ret = gen_pci_setup(pci);
-> 	if (ret)
-> 		pci_destroy_host_bridge(dev, pci);
-> 	return ret;
-> 
-> ?
-> 
-> 	Arnd
 
-Hi Arnd,
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That has been the general approach of my patchset up to v9. But, as Bjorn has
-mentioned in his v8 review and I have put in my cover letter, the regular
-aproach means that architectures that use pci_scan_root_bus() will have to
-drop their one liner and replace it with the more verbose of_create_pci_host_bridge()
-followed by pci_scan_child_bus() and pci_bus_add_devices() (basically, the content
-of pci_scan_root_bus()). For those architectures it will lead to a net increase of
-lines of code.
 
-The patch for pci-host-generic.c is the first to use the callback setup function, but
-not the only one. My PCI host bridge driver for Juno has the same need, and I'm betting
-all other host bridge controllers will use it as it will be the only opportunity to
-finish the controller setup before we start scanning the child busses. I'm trying to
-balance ease of read vs ease of use here and it is the best version I've come up with
-so far.
+> With the patch "i2c designware add support of I2C standard mode" I already proposed:
+> - I2C standard mode is selected with 100kHz clock frequency.
+> - I2C fast mode is selected with 400kHy clock frequency.
+> - EINVAL error is returned if clock frequency is not 100000 and not 400000.
 
-Best regards,
-Liviu
+You forgot to send this patch to the i2c list. So, it didn't get into
+patchwork which I rely on for tracking patches.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Please resend an updated version to the latest codebase. I like that it
+has the EINVAL error checking.
 
--- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
+> What about the other patch "i2c designware make SCL and SDA falling time configurable" ?
 
- One small step
-   for me ...
+6468276b22069d4442aafcd8c59e5d8ccae23f5f upstream.
 
+
+--rwEMma7ioTxnRzrJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT9JVKAAoJEBQN5MwUoCm2H3sQAIJTQq4H42z9vdiU5cIB5Z55
+nmKDv0oi/VlZzrVrgfbF3fdr0oin06Y5WbD70WvWGyEGZEb+GhpDEHlrqx8xLFNR
+EutzYS1Qfc3A12204V2xghnhLGneLGY0bZuiNjAV390wEbnBCq1J1ehsPDVAQBeE
+1bUi1kFslH9Lk1fd0tYCPR3bq5OjF1BqqipGRMpcbhGVUyG0YikgIDDVzZrMz8Tf
+7RFaXZC8ScHT2ZpiHclmN7A3aZmirIgdz2ItCP3ZsOz+5v3WNKwIkCVZlG8hCn5K
+RS3nXr2tgzop7KXB2/awpuNmZVVfa2tS1GHqvq1vEL2yL8CV1oMhOdX57KegK4sU
+p189MwzAjAGRF8fEDO6I23NZz1T3Ad2ABLxE2LYG26yhC+Om89mxQj9rSNataslt
+AwJUT5CMZ9XbtFHSPj28sEUyaXESOl2c2nl6fdPBXKvt9A/DmYtFujLxd9oWHWJu
+AjKVAD0ReY5cO7Gt/dzt+8e/dQdaBBarXyKswxfksl5SkY+FXRc4lOyV/i2RlBv6
+I8NLJ2k5kyr0sF7TZbI+m+G8ghoEV5ZdOynmvfWfsze+Spk3TPjhehCQOF7fZ1lu
+Xo0ysoh8pVT+TA3cmkq0N1DCQuQNu8qBWDrUfrKruF7byfSA3YBSd7OzhMr4U9vm
+kMXDUShBMaOslR6esLYj
+=EIDY
+-----END PGP SIGNATURE-----
+
+--rwEMma7ioTxnRzrJ--
