@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049AbaHTT55 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:57:57 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:45877 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaHTT54 (ORCPT
+	id S1752807AbaHTUAi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:00:38 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41425 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaHTUAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:57:56 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de
-Subject: Re: [PATCH 4/8] of: Add for_each_endpoint_of_node helper macro
-Date: Wed, 20 Aug 2014 21:58:35 +0200
-Message-ID: <8667517.hS1cvPvpF8@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1408453366-1366-5-git-send-email-p.zabel@pengutronix.de>
-References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de> <1408453366-1366-5-git-send-email-p.zabel@pengutronix.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 20 Aug 2014 16:00:37 -0400
+From: Arjun Sreedharan <arjun024@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] params: fix potential memory leak in add_sysfs_param()
+Date: Thu, 21 Aug 2014 01:30:16 +0530
+Message-Id: <1408564816-1778-1-git-send-email-arjun024@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+Do not leak memory when attrs is non NULL and
+krealloc() fails. Without temporary variable,
+reference to it is lost.
 
-Thank you for the patch.
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+---
+ kernel/params.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-On Tuesday 19 August 2014 15:02:42 Philipp Zabel wrote:
-> Note that while of_graph_get_next_endpoint decrements the reference count
-> of the child node passed to it, of_node_put(child) still has to be called
-> manually when breaking out of the loop.
-
-I think this is important enough to be mentioned in a comment in of_graph.h.
-
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
->  include/linux/of_graph.h | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-> index befef42..2890a4c 100644
-> --- a/include/linux/of_graph.h
-> +++ b/include/linux/of_graph.h
-> @@ -26,6 +26,10 @@ struct of_endpoint {
->  	const struct device_node *local_node;
->  };
-> 
-> +#define for_each_endpoint_of_node(parent, child) \
-> +	for (child = of_graph_get_next_endpoint(parent, NULL); child != NULL; \
-> +	     child = of_graph_get_next_endpoint(parent, child))
-> +
->  #ifdef CONFIG_OF
->  int of_graph_parse_endpoint(const struct device_node *node,
->  				struct of_endpoint *endpoint);
-
+diff --git a/kernel/params.c b/kernel/params.c
+index 34f5270..b69d683 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -594,7 +594,7 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+ 				     const char *name)
+ {
+ 	struct module_param_attrs *new;
+-	struct attribute **attrs;
++	struct attribute **attrs, **new_attrs;
+ 	int err, num;
+ 
+ 	/* We don't bother calling this with invisible parameters. */
+@@ -613,15 +613,12 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+ 		       sizeof(*mk->mp) + sizeof(mk->mp->attrs[0]) * (num+1),
+ 		       GFP_KERNEL);
+ 	if (!new) {
+-		kfree(attrs);
+ 		err = -ENOMEM;
+ 		goto fail;
+ 	}
+-	/* Despite looking like the typical realloc() bug, this is safe.
+-	 * We *want* the old 'attrs' to be freed either way, and we'll store
+-	 * the new one in the success case. */
+-	attrs = krealloc(attrs, sizeof(new->grp.attrs[0])*(num+2), GFP_KERNEL);
+-	if (!attrs) {
++
++	new_attrs = krealloc(attrs, sizeof(new->grp.attrs[0])*(num+2), GFP_KERNEL);
++	if (!new_attrs) {
+ 		err = -ENOMEM;
+ 		goto fail_free_new;
+ 	}
+@@ -629,9 +626,9 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+ 	/* Sysfs wants everything zeroed. */
+ 	memset(new, 0, sizeof(*new));
+ 	memset(&new->attrs[num], 0, sizeof(new->attrs[num]));
+-	memset(&attrs[num], 0, sizeof(attrs[num]));
++	memset(&new_attrs[num], 0, sizeof(new_attrs[num]));
+ 	new->grp.name = "parameters";
+-	new->grp.attrs = attrs;
++	new->grp.attrs = new_attrs;
+ 
+ 	/* Tack new one on the end. */
+ 	sysfs_attr_init(&new->attrs[num].mattr.attr);
+@@ -653,6 +650,7 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+ fail_free_new:
+ 	kfree(new);
+ fail:
++	kfree(attrs);
+ 	mk->mp = NULL;
+ 	return err;
+ }
 -- 
-Regards,
-
-Laurent Pinchart
-
+1.8.1.msysgit.1
 
