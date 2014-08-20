@@ -1,116 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499AbaHTLyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:54:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58977 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752591AbaHTLoK (ORCPT
+	id S1753508AbaHTLzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:55:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38380 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222AbaHTLy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:10 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Dave Ertman <davidx.m.ertman@intel.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 072/104] e1000e: Fix compilation warning when !CONFIG_PM_SLEEP
-Date: Wed, 20 Aug 2014 13:43:35 +0200
-Message-Id: <20e7aadfcf5f6af2507bbc414f7d9a0419a6ecf7.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 07:54:58 -0400
+Message-ID: <53F48C8B.4020707@codeaurora.org>
+Date: Wed, 20 Aug 2014 17:24:51 +0530
+From: Chintan Pandya <cpandya@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Hugh Dickins <hughd@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+References: <1406793591-26793-2-git-send-email-cpandya@codeaurora.org> <1406793591-26793-3-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408110332350.1500@eggly.anvils> <53EA3FF5.1050709@codeaurora.org>
+In-Reply-To: <53EA3FF5.1050709@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Hi Hugh,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+>>> + unsigned long enable;
+>>> + int err;
+>>> +
+>>> + err = kstrtoul(buf, 10,&enable);
+>>> + if (err< 0)
+>>> + return err;
+>>> + if (enable>= 1)
+>>> + return -EINVAL;
+>>
+>> I haven't studied the patch itself, I'm still worrying about the concept.
+>> But this caught my eye just before hitting Send: I don't think we need
+>> a tunable which only accepts the value 0 ;)
+>
+> Okay. I can correct this to accept any non-zero value. Is that okay ?
 
-===============
+I missed that to reply earlier. This was suggested by Andrew. And I 
+think that is okay as displaying any non-zero value to user via this 
+knob may not be completely right.
 
-commit 38a529b5d42e4cfc5ac94844e61335a00eb2d320 upstream.
+>
+>>
+>>> + use_deferrable_timer = enable;
+>
 
-Commit 7509963c703b (e1000e: Fix a compile flag mis-match for
-suspend/resume) moved suspend and resume hooks to be available when
-CONFIG_PM is set. However, it can be set even if CONFIG_PM_SLEEP is not set
-causing following warnings to be emitted:
 
-drivers/net/ethernet/intel/e1000e/netdev.c:6178:12: warning:
-  	‘e1000_suspend’ defined but not used [-Wunused-function]
-
-drivers/net/ethernet/intel/e1000e/netdev.c:6185:12: warning:
-	‘e1000_resume’ defined but not used [-Wunused-function]
-
-To fix this make the hooks to be available only when CONFIG_PM_SLEEP is set
-and remove CONFIG_PM wrapping from driver ops because this is already
-handled by SET_SYSTEM_SLEEP_PM_OPS() and SET_RUNTIME_PM_OPS().
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Dave Ertman <davidx.m.ertman@intel.com>
-Cc: Aaron Brown <aaron.f.brown@intel.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/net/ethernet/intel/e1000e/netdev.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 2778858957f6..07547f67b0a4 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -6186,7 +6186,7 @@ static int __e1000_resume(struct pci_dev *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- static int e1000_suspend(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -6205,7 +6205,7 @@ static int e1000_resume(struct device *dev)
- 
- 	return __e1000_resume(pdev);
- }
--#endif /* CONFIG_PM */
-+#endif /* CONFIG_PM_SLEEP */
- 
- #ifdef CONFIG_PM_RUNTIME
- static int e1000_runtime_suspend(struct device *dev)
-@@ -7027,13 +7027,11 @@ static DEFINE_PCI_DEVICE_TABLE(e1000_pci_tbl) = {
- };
- MODULE_DEVICE_TABLE(pci, e1000_pci_tbl);
- 
--#ifdef CONFIG_PM
- static const struct dev_pm_ops e1000_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(e1000_suspend, e1000_resume)
- 	SET_RUNTIME_PM_OPS(e1000_runtime_suspend, e1000_runtime_resume,
- 			   e1000_idle)
- };
--#endif
- 
- /* PCI Device API Driver */
- static struct pci_driver e1000_driver = {
-@@ -7041,11 +7039,9 @@ static struct pci_driver e1000_driver = {
- 	.id_table = e1000_pci_tbl,
- 	.probe    = e1000_probe,
- 	.remove   = e1000_remove,
--#ifdef CONFIG_PM
- 	.driver   = {
- 		.pm = &e1000_pm_ops,
- 	},
--#endif
- 	.shutdown = e1000_shutdown,
- 	.err_handler = &e1000_err_handler
- };
 -- 
-2.0.4
+Chintan Pandya
 
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
