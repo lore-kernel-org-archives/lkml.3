@@ -1,147 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbaHTTWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:22:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46515 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772AbaHTTWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:22:48 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH v5] irqchip: gic: Allow gic_arch_extn hooks to call into scheduler
-Date: Wed, 20 Aug 2014 12:22:41 -0700
-Message-Id: <1408562561-10424-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.rc2.4.g1a517f0
+	id S1752727AbaHTTZI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:25:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12837 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037AbaHTTZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 15:25:05 -0400
+Date: Wed, 20 Aug 2014 21:22:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] mempolicy: get_task_policy() cleanups/preparations
+Message-ID: <20140820192207.GA8524@redhat.com>
+References: <20140805194627.GA30693@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140805194627.GA30693@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-2012-04-12) introduced an acquisition of the irq_controller_lock
-in gic_raise_softirq() which can lead to a spinlock recursion if
-the gic_arch_extn hooks call into the scheduler (via complete()
-or wake_up(), etc.). This happens because gic_arch_extn hooks are
-normally called with the irq_controller_lock held and calling
-into the scheduler may cause us to call smp_send_reschedule()
-which will grab the irq_controller_lock again. Here's an example
-from a vendor kernel (note that the gic_arch_extn hook code here
-isn't actually in mainline):
+On 08/20, Oleg Nesterov wrote:
+>
+> With this change the only user of proc_maps_private->task is
+> hold_task_mempolicy/release_task_mempolicy. I believe this code is buggy
+> and should die, but this needs the changes in mm/mempolicy.c.
 
-BUG: spinlock recursion on CPU#0, swapper/0/1
- lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
-er_cpu: 0
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
+I belive that 9e7814404b77c3e8 "hold task->mempolicy while numa_maps scans"
+was wrong and it doesn't fix the problem.
 
-Call trace:
-[<ffffffc000087e1c>] dump_backtrace+0x0/0x140
-[<ffffffc000087f6c>] show_stack+0x10/0x1c
-[<ffffffc00064732c>] dump_stack+0x74/0xc4
-[<ffffffc0006446c0>] spin_dump+0x78/0x88
-[<ffffffc0006446f4>] spin_bug+0x24/0x34
-[<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
-[<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
-[<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
-[<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
-[<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
-[<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
-[<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
-[<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
-[<ffffffc0000cf734>] complete+0x3c/0x5c
-[<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
-[<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
-[<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
-[<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
-[<ffffffc0000de5f4>] irq_enable+0x2c/0x48
-[<ffffffc0000de65c>] irq_startup+0x4c/0x74
-[<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
-[<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
-[<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
-[<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
-[<ffffffc000337374>] platform_drv_probe+0x20/0x54
-[<ffffffc00033598c>] driver_probe_device+0x158/0x340
-[<ffffffc000335c20>] __driver_attach+0x60/0x90
-[<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
-[<ffffffc000335304>] driver_attach+0x1c/0x28
-[<ffffffc000334f14>] bus_add_driver+0x120/0x204
-[<ffffffc0003362e4>] driver_register+0xbc/0x10c
-[<ffffffc000337348>] __platform_driver_register+0x5c/0x68
-[<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
-[<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
-[<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
-[<ffffffc000642578>] kernel_init+0xc/0xd4
+I'll try to send the fix tomorrow, could you review the initial preparations?
+To me, these changes make sense as cleanups in any case, but I don't really
+understand this code and this was only compile tested.
 
-We really just want to synchronize the sending of an SGI with the
-update of the gic_cpu_map[], so introduce a new SGI lock that we
-can use to synchronize the two code paths. To further optimize
-we don't take any locks at all if the BL switcher code isn't used.
-
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/irqchip/irq-gic.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 4b959e606fe8..052762638b1c 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -80,6 +80,16 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
- #define NR_GIC_CPU_IF 8
- static u8 gic_cpu_map[NR_GIC_CPU_IF] __read_mostly;
- 
-+#ifdef CONFIG_BL_SWITCHER
-+/* Synchronize switching CPU interface and sending SGIs */
-+static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
-+#define sgi_map_lock(flags) raw_spin_lock_irqsave(&gic_sgi_lock, flags)
-+#define sgi_map_unlock(flags) raw_spin_unlock_irqrestore(&gic_sgi_lock, flags)
-+#else
-+#define sgi_map_lock(flags) (void)(flags)
-+#define sgi_map_unlock(flags) (void)(flags)
-+#endif
-+
- /*
-  * Supported arch specific GIC irq extension.
-  * Default make them NULL.
-@@ -605,7 +615,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	int cpu;
- 	unsigned long flags, map = 0;
- 
--	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-+	sgi_map_lock(flags);
- 
- 	/* Convert our logical CPU mask into a physical one. */
- 	for_each_cpu(cpu, mask)
-@@ -620,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- 	/* this always happens on GIC0 */
- 	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
- 
--	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-+	sgi_map_unlock(flags);
- }
- #endif
- 
-@@ -690,6 +700,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 	ror_val = (cur_cpu_id - new_cpu_id) & 31;
- 
- 	raw_spin_lock(&irq_controller_lock);
-+	raw_spin_lock(&gic_sgi_lock);
- 
- 	/* Update the target interface for this logical CPU */
- 	gic_cpu_map[cpu] = 1 << new_cpu_id;
-@@ -709,6 +720,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
- 		}
- 	}
- 
-+	raw_spin_unlock(&gic_sgi_lock);
- 	raw_spin_unlock(&irq_controller_lock);
- 
- 	/*
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Oleg.
 
