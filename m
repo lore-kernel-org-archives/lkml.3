@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaHTP4n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:56:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34651 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213AbaHTP4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:56:42 -0400
-Date: Wed, 20 Aug 2014 10:56:33 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Richard Leitner <richard.leitner@skidata.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: serial: replace {V,}DBG macro with
- dev_{v,}dbg
-Message-ID: <20140820155633.GE24500@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140718111121.7a400529@lxbuild.skidata.net>
+	id S1752292AbaHTP44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:56:56 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:63645 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812AbaHTP4y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:56:54 -0400
+Date: Wed, 20 Aug 2014 16:56:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Peter Tyser <ptyser@xes-inc.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] mfd: lpc_ich: Add PCI ID for Intel Braswell
+Message-ID: <20140820155646.GN4266@lee--X1>
+References: <1408462743-9462-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XuV1QlJbYrcVoo+x"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140718111121.7a400529@lxbuild.skidata.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408462743-9462-1-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---XuV1QlJbYrcVoo+x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 19 Aug 2014, Mika Westerberg wrote:
 
-Hi,
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> This is the same as used in Baytrail so add the new PCI ID to the driver's
+> list of supported IDs.
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  drivers/mfd/lpc_ich.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+> index 7d8482ff5868..597f5f495d49 100644
+> --- a/drivers/mfd/lpc_ich.c
+> +++ b/drivers/mfd/lpc_ich.c
+> @@ -216,6 +216,7 @@ enum lpc_chipsets {
+>  	LPC_BAYTRAIL,   /* Bay Trail SoC */
+>  	LPC_COLETO,	/* Coleto Creek */
+>  	LPC_WPT_LP,	/* Wildcat Point-LP */
+> +	LPC_BRASWELL,	/* Braswell SoC */
+>  };
+>  
+>  static struct lpc_ich_info lpc_chipset_info[] = {
+> @@ -519,6 +520,10 @@ static struct lpc_ich_info lpc_chipset_info[] = {
+>  		.name = "Wildcat Point_LP",
+>  		.iTCO_version = 2,
+>  	},
+> +	[LPC_BRASWELL] = {
+> +		.name = "Braswell SoC",
+> +		.iTCO_version = 3,
+> +	},
+>  };
+>  
+>  /*
+> @@ -745,6 +750,7 @@ static const struct pci_device_id lpc_ich_ids[] = {
+>  	{ PCI_VDEVICE(INTEL, 0x9cc6), LPC_WPT_LP},
+>  	{ PCI_VDEVICE(INTEL, 0x9cc7), LPC_WPT_LP},
+>  	{ PCI_VDEVICE(INTEL, 0x9cc9), LPC_WPT_LP},
+> +	{ PCI_VDEVICE(INTEL, 0x229C), LPC_BRASWELL},
 
-On Fri, Jul 18, 2014 at 11:11:21AM +0200, Richard Leitner wrote:
-> Replace the VDBG and DBG macro with the kernels "proper" debug macros
-> (dev_vdbg and dev_dbg) in f_acm.c, f_obex.c & f_serial.c
->=20
-> Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+Nit: All the other numbers are in lower case.
 
-please rebase this one on top of v3.17-rc1
+Please fix and re-send.
 
---=20
-balbi
+>  	{ 0, },			/* End of list */
+>  };
+>  MODULE_DEVICE_TABLE(pci, lpc_ich_ids);
 
---XuV1QlJbYrcVoo+x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT9MUxAAoJEIaOsuA1yqREdTkP/04E/2ObH7IkPlQ1Wm6p2T9L
-UoSU8ta4yZOvNjx6gFodtXn/qaYTpNhsdwx7rCYi3HgJTcfe4pFsPOhYKR2VLfsE
-bHaJ/xXAHxCfd3Z6oFqJdVp4VhipQ2ds/LoAy0QT6b0Wi8VkPt/gwC0lOmUvqRSd
-4IeYU/5lIWRnYrOlAVGgATt77+vfOLsDXJIMyMhDgR81NEVAvWgVt7gBncLkCO9k
-v0WiEbeKgwyGEbuoezICxPEl+qmk4QLTRCESqjkBkkZJu586G6nhHVU/sVfHAeAu
-MZE5CCDXPWV0bJs6TSp4Q/WksixSycR+hy46rSGe2g2gisKa6XgZLNWnjoejL2xh
-sWg5C4ImasQxn2Vwk9S0wYtBD1suWALh7Aq69pxLnG5JJ9RcPJtdM9Q0T2b9fBgR
-ICTQIBZd57hTLihOnycHn/F1zjBe08+i9QeD9ytdosiy+YeUJCJ3hBRKosxdg88n
-+aBz0+YMr6VhEkxvxTFbJOku29O/B+ebXXWpKxCmLfq5yChMSNYrSUEYpQB/gk1I
-52tJ0wmLgRQLzmImnXgiBgRIw1KwgRbg8qMj3uQcYVddGlpxMbGfe9SnCYrfqYVM
-Yhd/V1iO48Id9Fo9aiBKgpf7xy6kxVJFo0p36bMfhkv1r4HWuWAOe5zJ0lfbgCiN
-ZGtg6reLxd246qgWgboA
-=f2ig
------END PGP SIGNATURE-----
-
---XuV1QlJbYrcVoo+x--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
