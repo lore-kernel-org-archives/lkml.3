@@ -1,33 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaHTIWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 04:22:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47017 "EHLO
+	id S1752294AbaHTIWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 04:22:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47018 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244AbaHTIWI (ORCPT
+	with ESMTP id S1752267AbaHTIWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 04:22:08 -0400
-Date: Wed, 20 Aug 2014 01:18:54 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-5d07f4202c5d63b73ba1734ed38e08461a689313@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, seto.hidetoshi@jp.fujitsu.com,
-        peterz@infradead.org, umgwanakikbuti@gmail.com, riel@redhat.com,
-        fmayhar@google.com, akpm@linux-foundation.org, srao@redhat.com,
-        fweisbec@redhat.com, tglx@linutronix.de, oleg@redhat.com,
-        lwoodman@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        seto.hidetoshi@jp.fujitsu.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, umgwanakikbuti@gmail.com, riel@redhat.com,
-        fmayhar@google.com, akpm@linux-foundation.org, fweisbec@redhat.com,
-        srao@redhat.com, oleg@redhat.com, tglx@linutronix.de,
-        lwoodman@redhat.com
-In-Reply-To: <20140813191953.GA19315@redhat.com>
-References: <20140813191953.GA19315@redhat.com>
+	Wed, 20 Aug 2014 04:22:18 -0400
+Date: Wed, 20 Aug 2014 01:20:01 -0700
+From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
+Message-ID: <tip-f36c019c79edb3a89920afae1b2b45987af1a112@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1407312361.8424.35.camel@tkhai>
+References: <1407312361.8424.35.camel@tkhai>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: s/do_each_thread/for_each_process_thread/
-  in core.c
-Git-Commit-ID: 5d07f4202c5d63b73ba1734ed38e08461a689313
+Subject: [tip:sched/core] sched/fair:
+  Fix reschedule which is generated on throttled cfs_rq
+Git-Commit-ID: f36c019c79edb3a89920afae1b2b45987af1a112
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,85 +34,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5d07f4202c5d63b73ba1734ed38e08461a689313
-Gitweb:     http://git.kernel.org/tip/5d07f4202c5d63b73ba1734ed38e08461a689313
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Wed, 13 Aug 2014 21:19:53 +0200
+Commit-ID:  f36c019c79edb3a89920afae1b2b45987af1a112
+Gitweb:     http://git.kernel.org/tip/f36c019c79edb3a89920afae1b2b45987af1a112
+Author:     Kirill Tkhai <ktkhai@parallels.com>
+AuthorDate: Wed, 6 Aug 2014 12:06:01 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 20 Aug 2014 09:47:17 +0200
+CommitDate: Wed, 20 Aug 2014 09:47:20 +0200
 
-sched: s/do_each_thread/for_each_process_thread/ in core.c
+sched/fair: Fix reschedule which is generated on throttled cfs_rq
 
-Change kernel/sched/core.c to use for_each_process_thread().
+(sched_entity::on_rq == 1) does not guarantee the task is pickable;
+changes on throttled cfs_rq must not lead to reschedule.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Check for task_struct::on_rq instead.
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: Frank Mayhar <fmayhar@google.com>
-Cc: Frederic Weisbecker <fweisbec@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sanjay Rao <srao@redhat.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140813191953.GA19315@redhat.com
+Link: http://lkml.kernel.org/r/1407312361.8424.35.camel@tkhai
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ kernel/sched/fair.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7d1ec6e..4f2826f 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4505,7 +4505,7 @@ void show_state_filter(unsigned long state_filter)
- 		"  task                        PC stack   pid father\n");
- #endif
- 	rcu_read_lock();
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		/*
- 		 * reset the NMI-timeout, listing all files on a slow
- 		 * console might take a lot of time:
-@@ -4513,7 +4513,7 @@ void show_state_filter(unsigned long state_filter)
- 		touch_nmi_watchdog();
- 		if (!state_filter || (p->state & state_filter))
- 			sched_show_task(p);
--	} while_each_thread(g, p);
-+	}
- 
- 	touch_all_softlockup_watchdogs();
- 
-@@ -7137,7 +7137,7 @@ void normalize_rt_tasks(void)
- 	struct rq *rq;
- 
- 	read_lock_irqsave(&tasklist_lock, flags);
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		/*
- 		 * Only normalize user tasks:
- 		 */
-@@ -7168,8 +7168,7 @@ void normalize_rt_tasks(void)
- 
- 		__task_rq_unlock(rq);
- 		raw_spin_unlock(&p->pi_lock);
--	} while_each_thread(g, p);
--
-+	}
- 	read_unlock_irqrestore(&tasklist_lock, flags);
- }
- 
-@@ -7357,10 +7356,10 @@ static inline int tg_has_rt_tasks(struct task_group *tg)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1413c44..bc37bb9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -7494,7 +7494,7 @@ static void task_fork_fair(struct task_struct *p)
+ static void
+ prio_changed_fair(struct rq *rq, struct task_struct *p, int oldprio)
  {
- 	struct task_struct *g, *p;
+-	if (!p->se.on_rq)
++	if (!p->on_rq)
+ 		return;
  
--	do_each_thread(g, p) {
-+	for_each_process_thread(g, p) {
- 		if (rt_task(p) && task_rq(p)->rt.tg == tg)
- 			return 1;
--	} while_each_thread(g, p);
-+	}
+ 	/*
+@@ -7550,15 +7550,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+  */
+ static void switched_to_fair(struct rq *rq, struct task_struct *p)
+ {
+-	struct sched_entity *se = &p->se;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
++	struct sched_entity *se = &p->se;
+ 	/*
+ 	 * Since the real-depth could have been changed (only FAIR
+ 	 * class maintain depth value), reset depth properly.
+ 	 */
+ 	se->depth = se->parent ? se->parent->depth + 1 : 0;
+ #endif
+-	if (!se->on_rq)
++	if (!p->on_rq)
+ 		return;
  
- 	return 0;
- }
+ 	/*
