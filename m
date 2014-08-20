@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaHTLzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:55:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1224 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286AbaHTLzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:55:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
-   d="scan'208";a="561050564"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 4/4] usb: dwc3: add ACPI support
-Date: Wed, 20 Aug 2014 14:55:28 +0300
-Message-Id: <1408535728-10518-5-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1753452AbaHTLyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:54:40 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59001 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752594AbaHTLoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:44:11 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Fujinaka, Todd" <todd.fujinaka@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 083/104] igb: Add ethtool offline tests for i354
+Date: Wed, 20 Aug 2014 13:43:46 +0200
+Message-Id: <0f65001beb4ddac42def967c2ae6c6387cec9848.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding ACPI ID used on newer Intel SoCs.
+From: "Fujinaka, Todd" <todd.fujinaka@intel.com>
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit a4e979a27db3eb77e286dbe484e96c0c9c986e83 upstream.
+
+Add the ethtool offline tests for i354 devices.
+
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/usb/dwc3/core.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/ethernet/intel/igb/igb_ethtool.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index 3f307f6..6b0dcdb 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -32,6 +32,7 @@
- #include <linux/delay.h>
- #include <linux/dma-mapping.h>
- #include <linux/of.h>
-+#include <linux/acpi.h>
+diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+index 151e00cad113..7bcf1ce59b41 100644
+--- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
++++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
+@@ -1659,7 +1659,8 @@ static int igb_setup_loopback_test(struct igb_adapter *adapter)
+ 		if ((hw->device_id == E1000_DEV_ID_DH89XXCC_SGMII) ||
+ 		(hw->device_id == E1000_DEV_ID_DH89XXCC_SERDES) ||
+ 		(hw->device_id == E1000_DEV_ID_DH89XXCC_BACKPLANE) ||
+-		(hw->device_id == E1000_DEV_ID_DH89XXCC_SFP)) {
++		(hw->device_id == E1000_DEV_ID_DH89XXCC_SFP) ||
++		(hw->device_id == E1000_DEV_ID_I354_SGMII)) {
  
- #include <linux/usb/ch9.h>
- #include <linux/usb/gadget.h>
-@@ -962,12 +963,21 @@ static const struct of_device_id of_dwc3_match[] = {
- MODULE_DEVICE_TABLE(of, of_dwc3_match);
- #endif
+ 			/* Enable DH89xxCC MPHY for near end loopback */
+ 			reg = rd32(E1000_MPHY_ADDR_CTL);
+@@ -1725,7 +1726,8 @@ static void igb_loopback_cleanup(struct igb_adapter *adapter)
+ 	if ((hw->device_id == E1000_DEV_ID_DH89XXCC_SGMII) ||
+ 	(hw->device_id == E1000_DEV_ID_DH89XXCC_SERDES) ||
+ 	(hw->device_id == E1000_DEV_ID_DH89XXCC_BACKPLANE) ||
+-	(hw->device_id == E1000_DEV_ID_DH89XXCC_SFP)) {
++	(hw->device_id == E1000_DEV_ID_DH89XXCC_SFP) ||
++	(hw->device_id == E1000_DEV_ID_I354_SGMII)) {
+ 		u32 reg;
  
-+#ifdef CONFIG_ACPI
-+static const struct acpi_device_id dwc3_acpi_match[] = {
-+	{ "808622B7", 0 },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, dwc3_acpi_match);
-+#endif
-+
- static struct platform_driver dwc3_driver = {
- 	.probe		= dwc3_probe,
- 	.remove		= dwc3_remove,
- 	.driver		= {
- 		.name	= "dwc3",
- 		.of_match_table	= of_match_ptr(of_dwc3_match),
-+		.acpi_match_table = ACPI_PTR(dwc3_acpi_match),
- 		.pm	= DWC3_PM_OPS,
- 	},
- };
+ 		/* Disable near end loopback on DH89xxCC */
 -- 
-2.1.0
+2.0.4
 
