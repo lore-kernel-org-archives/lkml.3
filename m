@@ -1,135 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaHTKg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 06:36:57 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:14635 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751170AbaHTKgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 06:36:55 -0400
-X-Greylist: delayed 2755 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Aug 2014 06:36:54 EDT
-Date: Wed, 20 Aug 2014 11:49:37 +0200 (CEST)
-From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
-To: Mark Rutland <mark.rutland@arm.com>, atull@opensource.altera.com
-Cc: wsa@the-dreams.de, baruch@tkos.co.il,
-        mika westerberg <mika.westerberg@linux.intel.com>,
-        grant likely <grant.likely@linaro.org>, robh+dt@kernel.org,
-        skuribay@pobox.com, rafael j wysocki <rafael.j.wysocki@intel.com>,
-        alan@linux.intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        delicious quinoa <delicious.quinoa@gmail.com>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Message-ID: <944257148.1724.1408528177642.JavaMail.root@abilis.com>
-In-Reply-To: <20140820092257.GA21174@leverpostej>
-Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
- setting
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Zimbra 7.2.4_GA_2900 (ZimbraWebClient - FF3.0 (Linux)/7.2.4_GA_2900)
+	id S1752206AbaHTKho (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 06:37:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:37578 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaHTKhm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 06:37:42 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-5f-53f47a6706f0
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 1/3] f2fs: fix incorrect calculation with total/free
+ inode num
+Date: Wed, 20 Aug 2014 18:36:46 +0800
+Message-id: <008001cfbc62$bb9959c0$32cc0d40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+6wLJThgCr64cKSzCbCdwER7Oq8g==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jAd30qi/BBk8+iVs8WT+L2eLSIneL
+	y7vmsDkwe2xa1cnmsXvBZyaPz5vkApijuGxSUnMyy1KL9O0SuDJmLtrGWnBAqGL9sn0sDYxb
+	+bsYOTkkBEwkDjR9ZIGwxSQu3FvP1sXIxSEksIhRomf2bRYI5wejxL9tJ9hAqtgEVCSWd/xn
+	ArFFgOxDiy6zg9jMAh4SjR3fWUFsYYEoiQ3fJ4LVswioStx8sROsnlfAUmJL4wlGCFtQ4sfk
+	eywQvVoSm7c1sULY8hKb17xlhrhIQWLH2deMELv0JJ6s6mODqBGX2HjkFssERoFZSEbNQjJq
+	FpJRs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHMDPpHYwrmywOMQowMGoxMOr
+	kP05WIg1say4MvcQowQHs5IIr0/ul2Ah3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNIT
+	S1KzU1MLUotgskwcnFINjH0exTFSnx+Y/2Seesc8fOnGS8v2atUuWN4090v5J9Hvxn8uRyzh
+	Mjb8PG9Dz4t1Mee4TQ8KN3AbS7GnchwuzN+3PkvxxHHbvTqd59bN3cLMbOC04+SrQImW9sku
+	U4wZfz65sPJ1doWG1IQd+5fyFU8o7WyXXtKgvySk4bpa/4Rb6y4YKBZ/OabEUpyRaKjFXFSc
+	CABcp0SUXAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Theoretically, our total inodes number is the same as total node number, but
+there are three node ids are reserved in f2fs, they are 0, 1 (node nid), and 2
+(meta nid), and they should never be used by user, so our total/free inode
+number calculated in ->statfs is wrong.
 
-With the patch "i2c designware add support of I2C standard mode" I already proposed:
-- I2C standard mode is selected with 100kHz clock frequency.
-- I2C fast mode is selected with 400kHy clock frequency.
-- EINVAL error is returned if clock frequency is not 100000 and not 400000.
+This patch indroduces F2FS_RESERVED_NODE_NUM and then fixes this issue by
+recalculating total/free inode number with the macro.
 
-but this patch seems not available yet.
-What about the other patch "i2c designware make SCL and SDA falling time configurable" ?
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/node.c          | 2 +-
+ fs/f2fs/super.c         | 4 ++--
+ include/linux/f2fs_fs.h | 3 +++
+ 3 files changed, 6 insertions(+), 3 deletions(-)
 
-In i2c-designware_platdrv.c the flag DW_IC_CON_SPEED_xxx is well set
-depending on the mode:
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index d3d90d2..b21a04d 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1967,7 +1967,7 @@ static int init_node_manager(struct f2fs_sb_info *sbi)
+ 	nm_i->max_nid = NAT_ENTRY_PER_BLOCK * nat_blocks;
+ 
+ 	/* not used nids: 0, node, meta, (and root counted as valid node) */
+-	nm_i->available_nids = nm_i->max_nid - 3;
++	nm_i->available_nids = nm_i->max_nid - F2FS_RESERVED_NODE_NUM;
+ 	nm_i->fcnt = 0;
+ 	nm_i->nat_cnt = 0;
+ 	nm_i->ram_thresh = DEF_RAM_THRESHOLD;
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 657582f..85d0ae3 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -505,8 +505,8 @@ static int f2fs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	buf->f_bfree = buf->f_blocks - valid_user_blocks(sbi) - ovp_count;
+ 	buf->f_bavail = user_block_count - valid_user_blocks(sbi);
+ 
+-	buf->f_files = sbi->total_node_count;
+-	buf->f_ffree = sbi->total_node_count - valid_inode_count(sbi);
++	buf->f_files = sbi->total_node_count - F2FS_RESERVED_NODE_NUM;
++	buf->f_ffree = buf->f_files - valid_inode_count(sbi);
+ 
+ 	buf->f_namelen = F2FS_NAME_LEN;
+ 	buf->f_fsid.val[0] = (u32)id;
+diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+index 6ff0b0b..0ed77f3 100644
+--- a/include/linux/f2fs_fs.h
++++ b/include/linux/f2fs_fs.h
+@@ -24,6 +24,9 @@
+ #define NULL_ADDR		((block_t)0)	/* used as block_t addresses */
+ #define NEW_ADDR		((block_t)-1)	/* used as block_t addresses */
+ 
++/* 0, 1(node nid), 2(meta nid) are reserved node id */
++#define F2FS_RESERVED_NODE_NUM		3
++
+ #define F2FS_ROOT_INO(sbi)	(sbi->root_ino_num)
+ #define F2FS_NODE_INO(sbi)	(sbi->node_ino_num)
+ #define F2FS_META_INO(sbi)	(sbi->meta_ino_num)
+-- 
+2.0.1.474.g72c7794
 
-  if (clk_freq == 100000)
-     dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-       DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_STD;
-   else
-     dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-       DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
 
-
-So for me everything should be fine if there patches are applied.
-
-Regards,
-
-Romain
-
------ Original Message -----
-From: "Mark Rutland" <mark.rutland@arm.com>
-To: atull@opensource.altera.com
-Cc: wsa@the-dreams.de, baruch@tkos.co.il, "mika westerberg" <mika.westerberg@linux.intel.com>, "grant likely" <grant.likely@linaro.org>, robh+dt@kernel.org, skuribay@pobox.com, "Romain Baeriswyl" <Romain.Baeriswyl@abilis.com>, "rafael j wysocki" <rafael.j.wysocki@intel.com>, alan@linux.intel.com, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, "delicious quinoa" <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Sent: Wednesday, August 20, 2014 11:22:57 AM
-Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree setting
-
-On Tue, Aug 19, 2014 at 09:18:49PM +0100, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Use the documented, but unimplemented "clock-frequency"
-> Device Tree setting as a guide on whether to set the speed
-> mode bits in DW_IC_CON to standard or fast i2c mode.
-> 
-> Previously, the driver was hardwired to fast mode.  Default
-> to fast mode if the "clock-frequency" property is not present
-> for backwards compatiblity.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> ---
->  drivers/i2c/busses/i2c-designware-platdrv.c |   10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> index bc87733..18cd3d9 100644
-> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -122,7 +122,8 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  	struct dw_i2c_dev *dev;
->  	struct i2c_adapter *adap;
->  	struct resource *mem;
-> -	int irq, r;
-> +	int irq, r, ret, speed = DW_IC_CON_SPEED_FAST;
-> +	u32 bus_rate;
->  
->  	irq = platform_get_irq(pdev, 0);
->  	if (irq < 0) {
-> @@ -167,6 +168,11 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  		of_property_read_u32(pdev->dev.of_node,
->  				     "i2c-scl-falling-time-ns",
->  				     &dev->scl_falling_time);
-> +
-> +		ret = of_property_read_u32(pdev->dev.of_node,
-> +					   "clock-frequency", &bus_rate);
-> +		if (!ret && (bus_rate <= 100000))
-> +			speed = DW_IC_CON_SPEED_STD;
-
-This looks a bit odd.
-
-If the device only supports two particular speeds why do we accept any
-other speed in the clock-frequency property? Surely we should at least
-warn that something was off?
-
-Thanks,
-Mark
-
->  	}
->  
->  	dev->functionality =
-> @@ -177,7 +183,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
->  		I2C_FUNC_SMBUS_WORD_DATA |
->  		I2C_FUNC_SMBUS_I2C_BLOCK;
->  	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
-> -		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
-> +		DW_IC_CON_RESTART_EN | speed;
->  
->  	/* Try first if we can configure the device from ACPI */
->  	r = dw_i2c_acpi_configure(pdev);
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
