@@ -1,177 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565AbaHTMLE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:11:04 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39221 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918AbaHTMLA (ORCPT
+	id S1754681AbaHTMM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:12:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58874 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752472AbaHTLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:11:00 -0400
-From: Chintan Pandya <cpandya@codeaurora.org>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chintan Pandya <cpandya@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH v4 1/2] timer: provide an api for deferrable timeout
-Date: Wed, 20 Aug 2014 17:40:27 +0530
-Message-Id: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Wed, 20 Aug 2014 07:44:09 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 010/104] memcg: oom_notify use-after-free fix
+Date: Wed, 20 Aug 2014 13:42:33 +0200
+Message-Id: <5f24f2a63160e8bc5f12bc2d786048d5ce2f49cb.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-schedule_timeout wakes up the CPU from IDLE state. For some use cases it
-is not desirable, hence introduce a convenient API
-(schedule_timeout_deferrable_interruptible) on similar pattern which uses
-a deferrable timer.
+From: Michal Hocko <mhocko@suse.cz>
 
-Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit 2bcf2e92c3918ce62ab4e934256e47e9a16d19c3 upstream.
+
+Paul Furtado has reported the following GPF:
+
+  general protection fault: 0000 [#1] SMP
+  Modules linked in: ipv6 dm_mod xen_netfront coretemp hwmon x86_pkg_temp_thermal crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 microcode pcspkr ext4 jbd2 mbcache raid0 xen_blkfront
+  CPU: 3 PID: 3062 Comm: java Not tainted 3.16.0-rc5 #1
+  task: ffff8801cfe8f170 ti: ffff8801d2ec4000 task.ti: ffff8801d2ec4000
+  RIP: e030:mem_cgroup_oom_synchronize+0x140/0x240
+  RSP: e02b:ffff8801d2ec7d48  EFLAGS: 00010283
+  RAX: 0000000000000001 RBX: ffff88009d633800 RCX: 000000000000000e
+  RDX: fffffffffffffffe RSI: ffff88009d630200 RDI: ffff88009d630200
+  RBP: ffff8801d2ec7da8 R08: 0000000000000012 R09: 00000000fffffffe
+  R10: 0000000000000000 R11: 0000000000000000 R12: ffff88009d633800
+  R13: ffff8801d2ec7d48 R14: dead000000100100 R15: ffff88009d633a30
+  FS:  00007f1748bb4700(0000) GS:ffff8801def80000(0000) knlGS:0000000000000000
+  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 00007f4110300308 CR3: 00000000c05f7000 CR4: 0000000000002660
+  Call Trace:
+    pagefault_out_of_memory+0x18/0x90
+    mm_fault_error+0xa9/0x1a0
+    __do_page_fault+0x478/0x4c0
+    do_page_fault+0x2c/0x40
+    page_fault+0x28/0x30
+  Code: 44 00 00 48 89 df e8 40 ca ff ff 48 85 c0 49 89 c4 74 35 4c 8b b0 30 02 00 00 4c 8d b8 30 02 00 00 4d 39 fe 74 1b 0f 1f 44 00 00 <49> 8b 7e 10 be 01 00 00 00 e8 42 d2 04 00 4d 8b 36 4d 39 fe 75
+  RIP  mem_cgroup_oom_synchronize+0x140/0x240
+
+Commit fb2a6fc56be6 ("mm: memcg: rework and document OOM waiting and
+wakeup") has moved mem_cgroup_oom_notify outside of memcg_oom_lock
+assuming it is protected by the hierarchical OOM-lock.
+
+Although this is true for the notification part the protection doesn't
+cover unregistration of event which can happen in parallel now so
+mem_cgroup_oom_notify can see already unlinked and/or freed
+mem_cgroup_eventfd_list.
+
+Fix this by using memcg_oom_lock also in mem_cgroup_oom_notify.
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=80881
+
+Fixes: fb2a6fc56be6 (mm: memcg: rework and document OOM waiting and wakeup)
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reported-by: Paul Furtado <paulfurtado91@gmail.com>
+Tested-by: Paul Furtado <paulfurtado91@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-Changes:
+ mm/memcontrol.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-V3-->V4:
-	- No change
-
-V2-->V3:
-	- Big comment moved from static function to exported function
-	- Using __setup_timer_on_stack for better readability
-
-V2:
-	- this patch has been newly introduced in patch v2
-
-
- include/linux/sched.h |  2 ++
- kernel/time/timer.c   | 73 +++++++++++++++++++++++++++++++--------------------
- 2 files changed, 47 insertions(+), 28 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..13fe361 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -376,6 +376,8 @@ extern int in_sched_functions(unsigned long addr);
- #define	MAX_SCHEDULE_TIMEOUT	LONG_MAX
- extern signed long schedule_timeout(signed long timeout);
- extern signed long schedule_timeout_interruptible(signed long timeout);
-+extern signed long
-+schedule_timeout_deferrable_interruptible(signed long timeout);
- extern signed long schedule_timeout_killable(signed long timeout);
- extern signed long schedule_timeout_uninterruptible(signed long timeout);
- asmlinkage void schedule(void);
-diff --git a/kernel/time/timer.c b/kernel/time/timer.c
-index aca5dfe..f4c4082 100644
---- a/kernel/time/timer.c
-+++ b/kernel/time/timer.c
-@@ -1431,33 +1431,8 @@ static void process_timeout(unsigned long __data)
- 	wake_up_process((struct task_struct *)__data);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 213d1b4aafd7..4e705ed74b81 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5648,8 +5648,12 @@ static int mem_cgroup_oom_notify_cb(struct mem_cgroup *memcg)
+ {
+ 	struct mem_cgroup_eventfd_list *ev;
+ 
++	spin_lock(&memcg_oom_lock);
++
+ 	list_for_each_entry(ev, &memcg->oom_notify, list)
+ 		eventfd_signal(ev->eventfd, 1);
++
++	spin_unlock(&memcg_oom_lock);
+ 	return 0;
  }
  
--/**
-- * schedule_timeout - sleep until timeout
-- * @timeout: timeout value in jiffies
-- *
-- * Make the current task sleep until @timeout jiffies have
-- * elapsed. The routine will return immediately unless
-- * the current task state has been set (see set_current_state()).
-- *
-- * You can set the task state as follows -
-- *
-- * %TASK_UNINTERRUPTIBLE - at least @timeout jiffies are guaranteed to
-- * pass before the routine returns. The routine will return 0
-- *
-- * %TASK_INTERRUPTIBLE - the routine may return early if a signal is
-- * delivered to the current task. In this case the remaining time
-- * in jiffies will be returned, or 0 if the timer expired in time
-- *
-- * The current task state is guaranteed to be TASK_RUNNING when this
-- * routine returns.
-- *
-- * Specifying a @timeout value of %MAX_SCHEDULE_TIMEOUT will schedule
-- * the CPU away without a bound on the timeout. In this case the return
-- * value will be %MAX_SCHEDULE_TIMEOUT.
-- *
-- * In all cases the return value is guaranteed to be non-negative.
-- */
--signed long __sched schedule_timeout(signed long timeout)
-+static signed long
-+__sched __schedule_timeout(signed long timeout, unsigned long flag)
- {
- 	struct timer_list timer;
- 	unsigned long expire;
-@@ -1493,7 +1468,9 @@ signed long __sched schedule_timeout(signed long timeout)
- 
- 	expire = timeout + jiffies;
- 
--	setup_timer_on_stack(&timer, process_timeout, (unsigned long)current);
-+	__setup_timer_on_stack(&timer, process_timeout, (unsigned long)current,
-+				flag);
-+
- 	__mod_timer(&timer, expire, false, TIMER_NOT_PINNED);
- 	schedule();
- 	del_singleshot_timer_sync(&timer);
-@@ -1506,12 +1483,52 @@ signed long __sched schedule_timeout(signed long timeout)
-  out:
- 	return timeout < 0 ? 0 : timeout;
- }
-+
-+/**
-+ * schedule_timeout - sleep until timeout
-+ * @timeout: timeout value in jiffies
-+ *
-+ * Make the current task sleep until @timeout jiffies have
-+ * elapsed. The routine will return immediately unless
-+ * the current task state has been set (see set_current_state()).
-+ *
-+ * You can set the task state as follows -
-+ *
-+ * %TASK_UNINTERRUPTIBLE - at least @timeout jiffies are guaranteed to
-+ * pass before the routine returns. The routine will return 0
-+ *
-+ * %TASK_INTERRUPTIBLE - the routine may return early if a signal is
-+ * delivered to the current task. In this case the remaining time
-+ * in jiffies will be returned, or 0 if the timer expired in time
-+ *
-+ * The current task state is guaranteed to be TASK_RUNNING when this
-+ * routine returns.
-+ *
-+ * Specifying a @timeout value of %MAX_SCHEDULE_TIMEOUT will schedule
-+ * the CPU away without a bound on the timeout. In this case the return
-+ * value will be %MAX_SCHEDULE_TIMEOUT.
-+ *
-+ * In all cases the return value is guaranteed to be non-negative.
-+ */
-+signed long __sched schedule_timeout(signed long timeout)
-+{
-+	return __schedule_timeout(timeout, 0);
-+}
- EXPORT_SYMBOL(schedule_timeout);
- 
- /*
-  * We can use __set_current_state() here because schedule_timeout() calls
-  * schedule() unconditionally.
-  */
-+
-+signed long
-+__sched schedule_timeout_deferrable_interruptible(signed long timeout)
-+{
-+	__set_current_state(TASK_INTERRUPTIBLE);
-+	return __schedule_timeout(timeout, TIMER_DEFERRABLE);
-+}
-+EXPORT_SYMBOL(schedule_timeout_deferrable_interruptible);
-+
- signed long __sched schedule_timeout_interruptible(signed long timeout)
- {
- 	__set_current_state(TASK_INTERRUPTIBLE);
 -- 
-Chintan Pandya
-
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+2.0.4
 
