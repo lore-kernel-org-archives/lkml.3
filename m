@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaHTO5K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:57:10 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51223 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751213AbaHTO5H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:57:07 -0400
-Date: Wed, 20 Aug 2014 15:56:54 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v2 09/18] ACPI / processor: Make it possible to get CPU
- hardware ID via GICC
-Message-ID: <20140820145654.GP24600@localhost>
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
- <1407166105-17675-10-git-send-email-hanjun.guo@linaro.org>
- <20140818142740.GU20043@localhost>
- <53F30CCE.9040705@linaro.org>
+	id S1752185AbaHTO5U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:57:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47294 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213AbaHTO5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 10:57:16 -0400
+Message-ID: <53F4B700.1010302@ti.com>
+Date: Wed, 20 Aug 2014 20:26:00 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F30CCE.9040705@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        alexandre torgue <alexandre.torgue@st.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Subject: Re: [PATCH 1/5] phy: miphy28lp: Add Device Tree bindings for the
+ MiPHY28lp
+References: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org> <1407944075-8093-2-git-send-email-gabriel.fernandez@linaro.org>
+In-Reply-To: <1407944075-8093-2-git-send-email-gabriel.fernandez@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 09:37:34AM +0100, Hanjun Guo wrote:
-> On 2014-8-18 22:27, Catalin Marinas wrote:
-> > On Mon, Aug 04, 2014 at 04:28:16PM +0100, Hanjun Guo wrote:
-> >> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
-> >> index e32321c..4007313 100644
-> >> --- a/drivers/acpi/processor_core.c
-> >> +++ b/drivers/acpi/processor_core.c
-> >> @@ -64,6 +64,38 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
-> >>  	return 0;
-> >>  }
-> >>  
-> >> +/*
-> >> + * On ARM platform, MPIDR value is the hardware ID as apic ID
-> >> + * on Intel platforms
-> >> + */
-> >> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
-> >> +		int device_declaration, u32 acpi_id, int *mpidr)
-> >> +{
-> >> +	struct acpi_madt_generic_interrupt *gicc =
-> >> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
-> >> +
-> >> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
-> >> +		return -ENODEV;
-> >> +
-> >> +	/* In the GIC interrupt model, logical processors are
-> >> +	 * required to have a Processor Device object in the DSDT,
-> >> +	 * so we should check device_declaration here
-> >> +	 */
-> >> +	if (device_declaration && (gicc->uid == acpi_id)) {
-> >> +		/*
-> >> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
-> >> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
-> >> +		 * fields into a single 32 bit identifier to accommodate the
-> >> +		 * acpi processor drivers.
-> >> +		 */
-> >> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
-> >> +			 | gicc->arm_mpidr;
-> > 
-> > You can use pack_mpidr_into_32_bits().
+
+
+On Wednesday 13 August 2014 09:04 PM, Gabriel FERNANDEZ wrote:
+> The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
+> or USB3 devices.
 > 
-> processor_core.c will be used by x86 and ia64 too, it will cause
-> compile error on !ARM64 platforms.
+> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
+> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> ---
+>  .../devicetree/bindings/phy/phy-miphy28lp.txt      | 126 +++++++++++++++++++++
+>  1 file changed, 126 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+> new file mode 100644
+> index 0000000..6e57bd5
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/phy/phy-miphy28lp.txt
+> @@ -0,0 +1,126 @@
+> +STMicroelectronics STi MIPHY28LP PHY binding
+> +============================================
+> +
+> +This binding describes a miphy device that is used to control PHY hardware
+> +for SATA, PCIe or USB3.
+> +
+> +Required properties (controller (parent) node):
+> +- compatible	: Should be "st,miphy28lp-phy"
+> +- st,syscfg     : Should be a phandle of the system configuration register group
 
-Oh. So we do we have an ARM-specific function in core ACPI code?
-
--- 
-Catalin
+		^^^
+I think here you used space and in the rest of places used tabs.
