@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaHTJop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:44:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53697 "EHLO mga09.intel.com"
+	id S1752352AbaHTJoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:44:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37021 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936AbaHTJm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:42:59 -0400
+	id S1751844AbaHTJnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 05:43:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
-   d="scan'208";a="561005140"
+   d="scan'208";a="590683063"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: "John W . Linville" <linville@tuxdriver.com>,
         Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ To: "John W . Linville" <linville@tuxdriver.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Joe Perches <joe@perches.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 01/11] lib / string_helpers: move documentation to c-file
-Date: Wed, 20 Aug 2014 12:42:42 +0300
-Message-Id: <1408527772-27224-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 04/11] lib/vsprintf: add %*pE[achnops] format specifier
+Date: Wed, 20 Aug 2014 12:42:45 +0300
+Message-Id: <1408527772-27224-5-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -27,110 +27,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation of API belongs to c-file. This patch moves it accordingly.
+This allows user to print a given buffer as an escaped string. The rules are
+applied according to an optional mix of flags provided by additional format
+letters.
 
-There is no functional change.
+For example, if the given buffer is:
+
+	1b 62 20 5c 43 07 22 90 0d 5d
+
+The result strings would be:
+	%*pE            "\eb \C\a"\220\r]"
+	%*pEhp          "\x1bb \C\x07"\x90\x0d]"
+	%*pEa           "\e\142\040\\\103\a\042\220\r\135"
+
+Please, read Documentation/printk-formats.txt and lib/string_helpers.c kernel
+documentation to get further information.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Suggested-by: Joe Perches <joe@perches.com>
 ---
- include/linux/string_helpers.h | 34 ----------------------------------
- lib/string_helpers.c           | 38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 34 deletions(-)
+ Documentation/printk-formats.txt | 32 ++++++++++++++++++
+ lib/vsprintf.c                   | 72 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 104 insertions(+)
 
-diff --git a/include/linux/string_helpers.h b/include/linux/string_helpers.h
-index 3eeee96..5a30f2a 100644
---- a/include/linux/string_helpers.h
-+++ b/include/linux/string_helpers.h
-@@ -20,40 +20,6 @@ int string_get_size(u64 size, enum string_size_units units,
- #define UNESCAPE_ANY		\
- 	(UNESCAPE_SPACE | UNESCAPE_OCTAL | UNESCAPE_HEX | UNESCAPE_SPECIAL)
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 3b56a99..8858db8 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -70,6 +70,38 @@ DMA addresses types dma_addr_t:
+ 	For printing a dma_addr_t type which can vary based on build options,
+ 	regardless of the width of the CPU data path. Passed by reference.
  
--/**
-- * string_unescape - unquote characters in the given string
-- * @src:	source buffer (escaped)
-- * @dst:	destination buffer (unescaped)
-- * @size:	size of the destination buffer (0 to unlimit)
-- * @flags:	combination of the flags (bitwise OR):
-- *	%UNESCAPE_SPACE:
-- *		'\f' - form feed
-- *		'\n' - new line
-- *		'\r' - carriage return
-- *		'\t' - horizontal tab
-- *		'\v' - vertical tab
-- *	%UNESCAPE_OCTAL:
-- *		'\NNN' - byte with octal value NNN (1 to 3 digits)
-- *	%UNESCAPE_HEX:
-- *		'\xHH' - byte with hexadecimal value HH (1 to 2 digits)
-- *	%UNESCAPE_SPECIAL:
-- *		'\"' - double quote
-- *		'\\' - backslash
-- *		'\a' - alert (BEL)
-- *		'\e' - escape
-- *	%UNESCAPE_ANY:
-- *		all previous together
-- *
-- * Returns amount of characters processed to the destination buffer excluding
-- * trailing '\0'.
-- *
-- * Because the size of the output will be the same as or less than the size of
-- * the input, the transformation may be performed in place.
-- *
-- * Caller must provide valid source and destination pointers. Be aware that
-- * destination buffer will always be NULL-terminated. Source string must be
-- * NULL-terminated as well.
-- */
- int string_unescape(char *src, char *dst, size_t size, unsigned int flags);
++Raw buffer as an escaped string:
++
++	%*pE[achnops]
++
++	For printing raw buffer as an escaped string. For the following buffer
++
++		1b 62 20 5c 43 07 22 90 0d 5d
++
++	few examples show how the conversion would be done (the result string
++	without surrounding quotes):
++
++		%*pE		"\eb \C\a"\220\r]"
++		%*pEhp		"\x1bb \C\x07"\x90\x0d]"
++		%*pEa		"\e\142\040\\\103\a\042\220\r\135"
++
++	The conversion rules are applied according to an optional combination
++	of flags (see string_escape_mem() kernel documentation for the
++	details):
++		a - ESCAPE_ANY
++		c - ESCAPE_SPECIAL
++		h - ESCAPE_HEX
++		n - ESCAPE_NULL
++		o - ESCAPE_OCTAL
++		p - ESCAPE_NP
++		s - ESCAPE_SPACE
++	By default ESCAPE_ANY_NP is used.
++
++	ESCAPE_ANY_NP is the sane choice for many cases, in particularly for
++	printing SSIDs.
++
++	If field width is omitted the 1 byte only will be escaped.
++
+ Raw buffer as a hex string:
+ 	%*ph	00 01 02  ...  3f
+ 	%*phC	00:01:02: ... :3f
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 0eced40..6913046 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -33,6 +33,7 @@
+ #include <asm/page.h>		/* for PAGE_SIZE */
+ #include <asm/sections.h>	/* for dereference_function_descriptor() */
  
- static inline int string_unescape_inplace(char *buf, unsigned int flags)
-diff --git a/lib/string_helpers.c b/lib/string_helpers.c
-index 29033f3..74ec604 100644
---- a/lib/string_helpers.c
-+++ b/lib/string_helpers.c
-@@ -168,6 +168,44 @@ static bool unescape_special(char **src, char **dst)
- 	return true;
++#include <linux/string_helpers.h>
+ #include "kstrtox.h"
+ 
+ /**
+@@ -1101,6 +1102,63 @@ char *ip4_addr_string_sa(char *buf, char *end, const struct sockaddr_in *sa,
  }
  
-+/**
-+ * string_unescape - unquote characters in the given string
-+ * @src:	source buffer (escaped)
-+ * @dst:	destination buffer (unescaped)
-+ * @size:	size of the destination buffer (0 to unlimit)
-+ * @flags:	combination of the flags (bitwise OR):
-+ *	%UNESCAPE_SPACE:
-+ *		'\f' - form feed
-+ *		'\n' - new line
-+ *		'\r' - carriage return
-+ *		'\t' - horizontal tab
-+ *		'\v' - vertical tab
-+ *	%UNESCAPE_OCTAL:
-+ *		'\NNN' - byte with octal value NNN (1 to 3 digits)
-+ *	%UNESCAPE_HEX:
-+ *		'\xHH' - byte with hexadecimal value HH (1 to 2 digits)
-+ *	%UNESCAPE_SPECIAL:
-+ *		'\"' - double quote
-+ *		'\\' - backslash
-+ *		'\a' - alert (BEL)
-+ *		'\e' - escape
-+ *	%UNESCAPE_ANY:
-+ *		all previous together
-+ *
-+ * Description:
-+ * The function unquotes characters in the given string.
-+ *
-+ * Because the size of the output will be the same as or less than the size of
-+ * the input, the transformation may be performed in place.
-+ *
-+ * Caller must provide valid source and destination pointers. Be aware that
-+ * destination buffer will always be NULL-terminated. Source string must be
-+ * NULL-terminated as well.
-+ *
-+ * Return:
-+ * The amount of the characters processed to the destination buffer excluding
-+ * trailing '\0' is returned.
-+ */
- int string_unescape(char *src, char *dst, size_t size, unsigned int flags)
+ static noinline_for_stack
++char *escaped_string(char *buf, char *end, u8 *addr, struct printf_spec spec,
++		     const char *fmt)
++{
++	bool found = true;
++	int count = 1;
++	unsigned int flags = 0;
++	int len;
++
++	if (spec.field_width == 0)
++		/* nothing to print */
++		return buf;
++
++	if (ZERO_OR_NULL_PTR(addr))
++		/* NULL pointer */
++		return string(buf, end, NULL, spec);
++
++	do {
++		switch (fmt[count++]) {
++		case 'a':
++			flags |= ESCAPE_ANY;
++			break;
++		case 'c':
++			flags |= ESCAPE_SPECIAL;
++			break;
++		case 'h':
++			flags |= ESCAPE_HEX;
++			break;
++		case 'n':
++			flags |= ESCAPE_NULL;
++			break;
++		case 'o':
++			flags |= ESCAPE_OCTAL;
++			break;
++		case 'p':
++			flags |= ESCAPE_NP;
++			break;
++		case 's':
++			flags |= ESCAPE_SPACE;
++			break;
++		default:
++			found = false;
++			break;
++		}
++	} while (found);
++
++	if (!flags)
++		flags = ESCAPE_ANY_NP;
++
++	len = spec.field_width < 0 ? 1 : spec.field_width;
++
++	/* Ignore the error. We print as many characters as we can */
++	string_escape_mem(addr, len, &buf, end - buf, flags, NULL);
++
++	return buf;
++}
++
++static noinline_for_stack
+ char *uuid_string(char *buf, char *end, const u8 *addr,
+ 		  struct printf_spec spec, const char *fmt)
  {
- 	char *out = dst;
+@@ -1236,6 +1294,17 @@ int kptr_restrict __read_mostly;
+  * - '[Ii][4S][hnbl]' IPv4 addresses in host, network, big or little endian order
+  * - 'I[6S]c' for IPv6 addresses printed as specified by
+  *       http://tools.ietf.org/html/rfc5952
++ * - 'E[achnops]' For an escaped buffer, where rules are defined by combination
++ *                of the following flags (see string_escape_mem() for the
++ *                details):
++ *                  a - ESCAPE_ANY
++ *                  c - ESCAPE_SPECIAL
++ *                  h - ESCAPE_HEX
++ *                  n - ESCAPE_NULL
++ *                  o - ESCAPE_OCTAL
++ *                  p - ESCAPE_NP
++ *                  s - ESCAPE_SPACE
++ *                By default ESCAPE_ANY_NP is used.
+  * - 'U' For a 16 byte UUID/GUID, it prints the UUID/GUID in the form
+  *       "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  *       Options for %pU are:
+@@ -1337,6 +1406,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 			}}
+ 		}
+ 		break;
++	case 'E':
++		return escaped_string(buf, end, ptr, spec, fmt);
+ 	case 'U':
+ 		return uuid_string(buf, end, ptr, spec, fmt);
+ 	case 'V':
+@@ -1651,6 +1722,7 @@ qualifier:
+  * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
+  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
+  *   case.
++ * %*pE[achnops] print an escaped buffer
+  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
+  *           bytes of the input)
+  * %n is ignored
 -- 
 2.1.0
 
