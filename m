@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaHTKWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 06:22:07 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42975 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaHTKWE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 06:22:04 -0400
-Message-ID: <53F476C6.9030809@collabora.co.uk>
-Date: Wed, 20 Aug 2014 12:21:58 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] ARM: dts: Add vmmc and vqmmc supplies for Peach Pit
- and Pi boards
-References: <1408460913-13863-1-git-send-email-javier.martinez@collabora.co.uk> <1408460913-13863-6-git-send-email-javier.martinez@collabora.co.uk> <53F39978.3080901@suse.de>
-In-Reply-To: <53F39978.3080901@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+	id S1751754AbaHTK1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 06:27:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63381 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750861AbaHTK1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 06:27:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
+   d="scan'208";a="587384543"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: sdhci: Add PCI IDs for Intel Braswell
+Date: Wed, 20 Aug 2014 13:27:44 +0300
+Message-Id: <1408530464-8025-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andreas,
+From: Alan Cox <alan@linux.intel.com>
 
-Thanks a lot for your feedback.
+The hardware is the same as used in Baytrail. Add these new PCI IDs to the
+driver's list of supported IDs.
 
-On 08/19/2014 08:37 PM, Andreas Färber wrote:
->>  &mmc_2 {
->> +	vmmc-supply = <&tps65090_fet4>;
->> +	vqmmc-supply = <&vqmmc_sdcard>;
->>  	status = "okay";
->>  	num-slots = <1>;
->>  	supports-highspeed;
-> 
-> A convention that I picked up was to place overridden status property
-> first. Do your new properties really need to go before that?
->
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/mmc/host/sdhci-pci.c | 23 +++++++++++++++++++++++
+ drivers/mmc/host/sdhci-pci.h |  3 +++
+ 2 files changed, 26 insertions(+)
 
-OF doesn't care about the order of the child nodes but I do agree that
-consistency is a good thing so I'll change that on v2.
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index c3a1debc9289..03daad56d884 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -876,6 +876,29 @@ static const struct pci_device_id pci_ids[] = {
+ 		.driver_data	= (kernel_ulong_t)&sdhci_intel_byt_emmc,
+ 	},
+ 
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_BSW_EMMC,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.driver_data	= (kernel_ulong_t)&sdhci_intel_byt_emmc,
++	},
++
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_BSW_SDIO,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.driver_data	= (kernel_ulong_t)&sdhci_intel_byt_sdio,
++	},
++
++	{
++		.vendor		= PCI_VENDOR_ID_INTEL,
++		.device		= PCI_DEVICE_ID_INTEL_BSW_SD,
++		.subvendor	= PCI_ANY_ID,
++		.subdevice	= PCI_ANY_ID,
++		.driver_data	= (kernel_ulong_t)&sdhci_intel_byt_sd,
++	},
+ 
+ 	{
+ 		.vendor		= PCI_VENDOR_ID_INTEL,
+diff --git a/drivers/mmc/host/sdhci-pci.h b/drivers/mmc/host/sdhci-pci.h
+index c101477ef3be..9c1909b2a3ad 100644
+--- a/drivers/mmc/host/sdhci-pci.h
++++ b/drivers/mmc/host/sdhci-pci.h
+@@ -11,6 +11,9 @@
+ #define PCI_DEVICE_ID_INTEL_BYT_SDIO	0x0f15
+ #define PCI_DEVICE_ID_INTEL_BYT_SD	0x0f16
+ #define PCI_DEVICE_ID_INTEL_BYT_EMMC2	0x0f50
++#define PCI_DEVICE_ID_INTEL_BSW_EMMC	0x2294
++#define PCI_DEVICE_ID_INTEL_BSW_SDIO	0x2295
++#define PCI_DEVICE_ID_INTEL_BSW_SD	0x2296
+ #define PCI_DEVICE_ID_INTEL_MRFL_MMC	0x1190
+ #define PCI_DEVICE_ID_INTEL_CLV_SDIO0	0x08f9
+ #define PCI_DEVICE_ID_INTEL_CLV_SDIO1	0x08fa
+-- 
+2.1.0
 
-> Also, if you look at today's for-next, then supports-highspeed should be
-> cap-{sd,mmc}-highspeed, so it may be worth to rebase.
-> 
-
-You are right, this patch used to be part of an older series so I didn't
-realize that "[PATCHv10 3/5] ARM: dts: exynos: unuse the slot-node and
-deprecate the supports-highspeed for dw-mmc" was already merged. Thanks
-for the reminder!
-
-> Regards,
-> Andreas
-> 
-
-Best regards,
-Javier
