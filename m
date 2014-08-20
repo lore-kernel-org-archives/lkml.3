@@ -1,121 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaHTOPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:15:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaHTOPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:15:07 -0400
-Date: Wed, 20 Aug 2014 16:12:52 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sasha Levin <sasha.levin@oracle.com>, David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, richard@nod.at,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kernel: signal: NULL ptr deref when killing process
-Message-ID: <20140820141252.GA27301@redhat.com>
-References: <53F48402.4080302@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F48402.4080302@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751991AbaHTOQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:16:23 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:63428 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaHTOQV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 10:16:21 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-eb-53f4adb34e20
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: "edubezval@gmail.com" <edubezval@gmail.com>
+Cc: amit daniel kachhap <amit.daniel@samsung.com>,
+        Zhang Rui <rui.zhang@intel.com>, Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/9] thermal: exynos: various cleanups
+Date: Wed, 20 Aug 2014 16:16:15 +0200
+Message-id: <1748435.DsACgyNnAN@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <CAC-25o9xxKtsphuY51Fhv3CBFKxMoJ1SGMJypLkt9fvHnTsQxA@mail.gmail.com>
+References: <1403026045-16024-1-git-send-email-b.zolnierkie@samsung.com>
+ <5064578.QsHz5kKYq8@amdc1032>
+ <CAC-25o9xxKtsphuY51Fhv3CBFKxMoJ1SGMJypLkt9fvHnTsQxA@mail.gmail.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQd3Na78EG9y9LWrRcDXEYv6Va6wW
+	Z5vesFtc3jWHzeJz7xFGixnn9zFZnDl9idXiycM+Nov1M16zOHB67Jx1l91j8Z6XTB5brraz
+	ePRtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfG6TtbmQvm61VMvzWFpYGxWaWLkZNDQsBE4s2h
+	Z6wQtpjEhXvr2UBsIYHpjBLH7qt2MXIB2S1MEp+mzGAHSbAJWElMbF/FCGKLCOhLPGp6wQhS
+	xCwwmVni6P5+sISwgK3E0R2HwBpYBFQlnnZ2gm3gFdCUuDrrOQuILSrgKbFj+0qgbRwcnALB
+	EvNO+UMsW88osf7LFEaIekGJH5PvgdUzC8hL7Ns/lRXCVpeYNG8R8wRGgVlIymYhKZuFpGwB
+	I/MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjODAfya1g3Flg8UhRgEORiUe3oYFX4KFWBPL
+	iitzDzFKcDArifC2dwKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5otQ4UEkhPLEnNTk0tSC2C
+	yTJxcEo1MOocOL7Z2mHpTLN7rntvB6z5fPCU3P0ND77qBRpdnp/KEuCUfKxSTu3p0dB93t9T
+	13KvWnp+9232zHkFqZN2KJ+PccoJf7OQOdfobvH/b22tq/3PLAvKzTxnuuFAupdZxIdU7gW/
+	G/nOqQq9v/XlkczK2VLlW2N7a9bwTG670D37mv49bjWhGaeVWIozEg21mIuKEwHym/aYeAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20, Sasha Levin wrote:
->
-> Hi all,
->
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
 
-Thanks...
+Hi,
 
-looks like, kill_ok_by_cred()->__task_cred(t) returns NULL at first glance.
-perhaps you can show the result of "make kernel/signal.s" to be sure? Or at
-least the full "objdump -d kernel/signal.o".
-
-This looks strange. ->real_cred can be NULL only after __put_task_struct(),
-so this task_struct is already freed or soon-to-be-freed. But everything looks
-correct in this path, this task was found by pid_task() under rcu_read_lock().
-
-> [  512.602559] BUG: unable to handle kernel NULL pointer dereference at 000000000000001c
-> [  512.602566] IP: check_kill_permission (kernel/signal.c:746 kernel/signal.c:781)
-> [  512.602576] PGD 4c10d0067 PUD 4c1738067 PMD 0
-> [  512.602584] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  512.602612] Dumping ftrace buffer:
-> [  512.602697]    (ftrace buffer empty)
-> [  512.602704] Modules linked in:
-> [  512.602708] CPU: 18 PID: 8516 Comm: trinity-watchdo Tainted: G    B          3.16.0-next-20140815-sasha-00034-g615561b #1071
-> [  512.602711] task: ffff8804c1e88000 ti: ffff8804c1290000 task.ti: ffff8804c1290000
-> [  512.602718] RIP: check_kill_permission (kernel/signal.c:746 kernel/signal.c:781)
-> [  512.602720] RSP: 0018:ffff8804c1293e00  EFLAGS: 00010246
-> [  512.602722] RAX: 0000000000000000 RBX: ffff8804c1293ec0 RCX: 0000000000000000
-> [  512.602723] RDX: ffff880546803000 RSI: ffff8804c1293ec0 RDI: 0000000000000000
-> [  512.602726] RBP: ffff8804c1293e28 R08: 0000000000000000 R09: 0000000000000000
-> [  512.602728] R10: 0000000000000000 R11: 0000000000000246 R12: ffff880546803000
-> [  512.602729] R13: 0000000000000000 R14: 0000000000000000 R15: ffff8804c3fe4200
-> [  512.602732] FS:  00007fb2ed5e8700(0000) GS:ffff88071c400000(0000) knlGS:0000000000000000
-> [  512.602735] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  512.602737] CR2: 000000000000001c CR3: 00000004c16ff000 CR4: 00000000000006a0
-> [  512.602750] DR0: 00000000006f0000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  512.602753] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [  512.602754] Stack:
-> [  512.602761]  00000000000026ce 0000000000000000 ffff8804c1293ec0 ffff880546803000
-> [  512.602769]  0000000000000002 ffff8804c1293e60 ffffffff8c17ccb5 ffffffff8c17cc55
-> [  512.602777]  00000000000026ce ffff880565319180 0000000000000000 ffff8804c1293ec0
-> [  512.602779] Call Trace:
-> [  512.602786] group_send_sig_info (kernel/signal.c:1300)
-> [  512.602791] ? group_send_sig_info (kernel/signal.c:1296)
-> [  512.602795] kill_pid_info (kernel/signal.c:1338)
-> [  512.602800] ? kill_pid_info (kernel/signal.c:1330)
-> [  512.602805] SYSC_kill (kernel/signal.c:1423 kernel/signal.c:2896)
-> [  512.602809] ? SYSC_kill (include/linux/rcupdate.h:814 kernel/signal.c:1422 kernel/signal.c:2896)
-> [  512.602814] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
-> [  512.602820] ? trace_hardirqs_on (kernel/locking/lockdep.c:2609)
-> [  512.602824] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
-> [  512.602828] SyS_kill (kernel/signal.c:2886)
-> [  512.602833] tracesys (arch/x86/kernel/entry_64.S:541)
-> [ 512.602921] Code: 06 00 4d 8b b4 24 38 0a 00 00 65 48 8b 04 25 c0 da 00 00 4c 8b b8 40 0a 00 00 e8 ab e3 06 00 85 c0 0f 85 8b 00 00 00 41 8b 47 24 <41> 8b 56 1c 39 d0 74 60 41 8b 4e 14 39 c8 74 58 41 8b 47 14 39
-> All code
-> ========
->    0:	06                   	(bad)
->    1:	00 4d 8b             	add    %cl,-0x75(%rbp)
->    4:	b4 24                	mov    $0x24,%ah
->    6:	38 0a                	cmp    %cl,(%rdx)
->    8:	00 00                	add    %al,(%rax)
->    a:	65 48 8b 04 25 c0 da 	mov    %gs:0xdac0,%rax
->   11:	00 00
->   13:	4c 8b b8 40 0a 00 00 	mov    0xa40(%rax),%r15
->   1a:	e8 ab e3 06 00       	callq  0x6e3ca
->   1f:	85 c0                	test   %eax,%eax
->   21:	0f 85 8b 00 00 00    	jne    0xb2
->   27:	41 8b 47 24          	mov    0x24(%r15),%eax
->   2b:*	41 8b 56 1c          	mov    0x1c(%r14),%edx		<-- trapping instruction
->   2f:	39 d0                	cmp    %edx,%eax
->   31:	74 60                	je     0x93
->   33:	41 8b 4e 14          	mov    0x14(%r14),%ecx
->   37:	39 c8                	cmp    %ecx,%eax
->   39:	74 58                	je     0x93
->   3b:	41 8b 47 14          	mov    0x14(%r15),%eax
->   3f:	39 00                	cmp    %eax,(%rax)
+On Friday, August 01, 2014 09:18:30 AM edubezval@gmail.com wrote:
+> Bartlomiej,
 > 
-> Code starting with the faulting instruction
-> ===========================================
->    0:	41 8b 56 1c          	mov    0x1c(%r14),%edx
->    4:	39 d0                	cmp    %edx,%eax
->    6:	74 60                	je     0x68
->    8:	41 8b 4e 14          	mov    0x14(%r14),%ecx
->    c:	39 c8                	cmp    %ecx,%eax
->    e:	74 58                	je     0x68
->   10:	41 8b 47 14          	mov    0x14(%r15),%eax
->   14:	39 00                	cmp    %eax,(%rax)
-> [  512.602927] RIP check_kill_permission (kernel/signal.c:746 kernel/signal.c:781)
-> [  512.602929]  RSP <ffff8804c1293e00>
-> [  512.602931] CR2: 000000000000001c
+> On Thu, Jul 31, 2014 at 1:37 PM, Bartlomiej Zolnierkiewicz
+> <b.zolnierkie@samsung.com> wrote:
+> >
+> > Hi,
+> >
+> > On Tuesday, July 29, 2014 08:58:48 AM Eduardo Valentin wrote:
+> >> On Mon, Jul 28, 2014 at 08:30:53PM +0530, amit daniel kachhap wrote:
+> >> > Hi Eduardo,
+> >>
+> >> Hello Amit,
+> >>
+> >> >
+> >> > Please reject this entire series as this is not re-based recently.
+> >> > Actually two point trimming which this series seeks to remove is used
+> >> > by exynos3250 and is in Rui's tree
+> >> > (https://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/commit/?h=next&id=1fe56dc16a3dab400206443f70ae158c8f595c42).
+> >> >
+> >>
+> >> Yeah, that was my original concern when I first looked this series.
+> >> However, as I saw a couple of your acks I thought you would be in sync
+> >> with Bartlomiej.
+> >>
+> >> I agree with Bartlomiej that we need to keep the kernel code in very
+> >> good shape, but if we are removing features for the sake of reducing
+> >> LOCs and we end up dropping support to known chips, I definitely won't
+> >> agree.
+> >
+> > There is no intention to drop support for known chips.  Two months after
+> > initial posting of my patchset support for the new Exynos3250 SoC was
+> > posted and it happens to use the two point trimming calibration code (that
+> > was introduced back in September 2011 but never used previously).  If we
+> > had removed it earlier it would have to be readded partially but we are
+> > talking about less than 100 lines of rather straightforward code (also
+> > the calibration code in question is not perfect anyway and would profit
+> > from some cleaning but I left it as it is for now).
+> >
+> >> Can you guys please reach a common agreement on these cleanups?
+> >>
+> >> Bartlomiej, best thing to do is to sync your work on top of Rui's tree.
+> >
+> > Done, I posted v3 of patchset today:
+> >
+> >   http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg35013.html
+> >
+> > I hope that it is acceptable for Amit now (Amit, please take a look at
+> > patches when you find some time, thanks!).
+> >
 > 
+> Thanks for updating the series.
 > 
-> Thanks,
-> Sasha
+> Amit, can you please test the series on socs you have available? I
+> would prefer to merge this one now if we have a proper tested-by.
+
+Amit, could you please respond and give your opinion on this patch
+series?  It has been almost three weeks since I've posted updated
+version (over 3.5 months since the initial posting).
+
+Eduardo, when it comes to testing this patch series I tested it on
+Exynos4412 only but please note that it should not cause any
+functionality changes (as stated in the cover letter) on any SoC.
+This means that unless there are some bugs in the patches itself
+there should be no behavior changes for the driver (including no
+changes in the way hardware is accessed by the driver).
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+> > Best regards,
+> > --
+> > Bartlomiej Zolnierkiewicz
+> > Samsung R&D Institute Poland
+> > Samsung Electronics
+> >
+> >> For now I am dropping this series from my -next branch. :-(
+> >>
+> >> > Thanks,
+> >> > Amit D
+> >> >
+> >> >
+> >> > On Mon, Jul 28, 2014 at 8:07 PM, Eduardo Valentin <edubezval@gmail.com> wrote:
+> >> > > On Tue, Jun 17, 2014 at 07:27:16PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> >> > >> Hi,
+> >> > >>
+> >> > >> This patch series contains various cleanups for EXYNOS thermal
+> >> > >> driver.  Overall it decreases driver's LOC by 12%.  It is based
+> >> > >> on next-20140617 kernel.  It should not cause any functionality
+> >> > >> changes.
+> >> > >>
+> >> > >> Changes since v1:
+> >> > >> - synced patches against next-20140617
+> >> > >> - merged patch "thermal: exynos: remove unused defines" into
+> >> > >>   "thermal: exynos: remove unused struct exynos_tmu_registers
+> >> > >>   entries" one (per request from Eduardo)
+> >> > >> - improved patch descriptions for patches #1-5
+> >> > >> - fixed documentation for pdata->gain and pdata->reference_voltage
+> >> > >> - added Reviewed-by from Amit to patches #6, #7 and #10
+> >> > >> - added missing Acked-by from Kyungmin Park
+> >> > >
+> >> > > Pulled the series.
+> >> > >
+> >> > > Thanks.
+> >> > >
+> >> > >>
+> >> > >> Best regards,
+> >> > >> --
+> >> > >> Bartlomiej Zolnierkiewicz
+> >> > >> Samsung R&D Institute Poland
+> >> > >> Samsung Electronics
+> >> > >>
+> >> > >>
+> >> > >> Bartlomiej Zolnierkiewicz (9):
+> >> > >>   thermal: exynos: remove unused struct exynos_tmu_registers entries
+> >> > >>   thermal: exynos: remove dead code for HW_MODE calibration
+> >> > >>   thermal: exynos: remove dead code for TYPE_TWO_POINT_TRIMMING
+> >> > >>     calibration
+> >> > >>   thermal: exynos: remove redundant pdata checks from
+> >> > >>     exynos_tmu_initialize()
+> >> > >>   thermal: exynos: remove redundant threshold_code checks from
+> >> > >>     exynos_tmu_initialize()
+> >> > >>   thermal: exynos: simplify temp_to_code() and code_to_temp()
+> >> > >>   thermal: exynos: cache non_hw_trigger_levels in pdata
+> >> > >>   thermal: exynos: remove redundant pdata checks from
+> >> > >>     exynos_tmu_control()
+> >> > >>   thermal: exynos: remove identical values from exynos*_tmu_registers
+> >> > >>     structures
+> >> > >>
+> >> > >>  drivers/thermal/samsung/exynos_thermal_common.h |   1 -
+> >> > >>  drivers/thermal/samsung/exynos_tmu.c            | 181 ++++--------------------
+> >> > >>  drivers/thermal/samsung/exynos_tmu.h            |  90 +-----------
+> >> > >>  drivers/thermal/samsung/exynos_tmu_data.c       |  64 +--------
+> >> > >>  drivers/thermal/samsung/exynos_tmu_data.h       |  33 +----
+> >> > >>  5 files changed, 41 insertions(+), 328 deletions(-)
+> >> > >>
+> >> > >> --
+> >> > >> 1.8.2.3
 
