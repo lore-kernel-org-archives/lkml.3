@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaHTVIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 17:08:12 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19980 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087AbaHTVFh (ORCPT
+	id S1753594AbaHTVIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 17:08:38 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3577 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246AbaHTVFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 17:05:37 -0400
+	Wed, 20 Aug 2014 17:05:30 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 20 Aug 2014 13:55:57 -0700
+	by hqnvupgp07.nvidia.com on Wed, 20 Aug 2014 13:51:42 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-pm@vger.kernel.org>
@@ -21,9 +21,9 @@ CC: Stephen Warren <swarren@wwwdotorg.org>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Paul Walmsley <pwalmsley@nvidia.com>, Vince Hsu <vinceh@nvidia.com>,
         <devicetree@vger.kernel.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v4 09/16] ARM: tegra: Add the DFLL to Tegra124 device tree
-Date: Thu, 21 Aug 2014 00:04:37 +0300
-Message-ID: <1408568684-11016-10-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v4 07/16] clk: tegra: Save/restore CCLKG_BURST_POLICY on suspend
+Date: Thu, 21 Aug 2014 00:04:35 +0300
+Message-ID: <1408568684-11016-8-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1408568684-11016-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1408568684-11016-1-git-send-email-ttynkkynen@nvidia.com>
@@ -34,47 +34,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DFLL clocksource is a separate IP block from the usual
-clock-and-reset controller, so it gets its own device tree node.
+Save and restore this register since the LP1 restore assembly routines
+fiddle with it. Otherwise the CPU would keep running on PLLX after
+resume from suspend even when DFLL was the original clocksource.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 ---
- arch/arm/boot/dts/tegra124.dtsi | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/clk/tegra/clk-tegra124.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index a579fab..608fa29 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -545,6 +545,28 @@
- 		status = "disabled";
- 	};
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index cc81eab..4b12ddc 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -89,6 +89,8 @@
+ #define PMC_PLLM_WB0_OVERRIDE 0x1dc
+ #define PMC_PLLM_WB0_OVERRIDE_2 0x2b0
  
-+	dfll: dfll@0,70110000 {
-+		compatible = "nvidia,tegra124-dfll";
-+		reg = <0 0x70110000 0 0x100>, /* DFLL control */
-+		      <0 0x70110000 0 0x100>, /* I2C output control */
-+		      <0 0x70110100 0 0x100>, /* Integrated I2C controller */
-+		      <0 0x70110200 0 0x100>; /* Look-up table RAM */
-+		interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_DFLL_SOC>,
-+			 <&tegra_car TEGRA124_CLK_DFLL_REF>,
-+			 <&tegra_car TEGRA124_CLK_I2C5>;
-+		clock-names = "soc", "ref", "i2c";
-+		#clock-cells = <0>;
-+		clock-output-names = "dfllCPU_out";
-+		nvidia,sample-rate = <12500>;
-+		nvidia,droop-ctrl = <0x00000f00>;
-+		nvidia,force-mode = <1>;
-+		nvidia,cf = <10>;
-+		nvidia,ci = <0>;
-+		nvidia,cg = <2>;
-+		status = "disabled";
-+	};
++#define CCLKG_BURST_POLICY 0x368
 +
- 	ahub@0,70300000 {
- 		compatible = "nvidia,tegra124-ahub";
- 		reg = <0x0 0x70300000 0x0 0x200>,
+ #define UTMIP_PLL_CFG2 0x488
+ #define UTMIP_PLL_CFG2_STABLE_COUNT(x) (((x) & 0xffff) << 6)
+ #define UTMIP_PLL_CFG2_ACTIVE_DLY_COUNT(x) (((x) & 0x3f) << 18)
+@@ -121,6 +123,8 @@
+ #ifdef CONFIG_PM_SLEEP
+ static struct cpu_clk_suspend_context {
+ 	u32 clk_csite_src;
++	u32 cclkg_burst;
++	u32 cclkg_divider;
+ } tegra124_cpu_clk_sctx;
+ #endif
+ 
+@@ -1318,12 +1322,22 @@ static void tegra124_cpu_clock_suspend(void)
+ 	tegra124_cpu_clk_sctx.clk_csite_src =
+ 				readl(clk_base + CLK_SOURCE_CSITE);
+ 	writel(3 << 30, clk_base + CLK_SOURCE_CSITE);
++
++	tegra124_cpu_clk_sctx.cclkg_burst =
++				readl(clk_base + CCLKG_BURST_POLICY);
++	tegra124_cpu_clk_sctx.cclkg_divider =
++				readl(clk_base + CCLKG_BURST_POLICY + 4);
+ }
+ 
+ static void tegra124_cpu_clock_resume(void)
+ {
+ 	writel(tegra124_cpu_clk_sctx.clk_csite_src,
+ 				clk_base + CLK_SOURCE_CSITE);
++
++	writel(tegra124_cpu_clk_sctx.cclkg_burst,
++					clk_base + CCLKG_BURST_POLICY);
++	writel(tegra124_cpu_clk_sctx.cclkg_divider,
++					clk_base + CCLKG_BURST_POLICY + 4);
+ }
+ #endif
+ 
 -- 
 1.8.1.5
 
