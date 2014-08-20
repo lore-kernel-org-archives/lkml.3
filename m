@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaHTPWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:22:45 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51088 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaHTPWo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:22:44 -0400
-Date: Wed, 20 Aug 2014 10:21:54 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140820152154.GW24407@sirena.org.uk>
-References: <1408500257.5309.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0zDq8CFkxn2hi9iJ"
-Content-Disposition: inline
-In-Reply-To: <1408500257.5309.2.camel@phoenix>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 63.139.182.64
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: max77802: Remove unused fields from struct
- max77802_regulator_prv
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1751719AbaHTPZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:25:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaHTPZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:25:56 -0400
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
+        hechjie@cn.ibm.com, akpm@linux-foundation.org, dave.hansen@intel.com,
+        dvlasenk@redhat.com, prarit@redhat.com, lwoodman@redhat.com,
+        hannsj_uhl@de.ibm.com
+Subject: [PATCH 1/2] x86: add high_memory check to (xlate|unxlate)_dev_mem_ptr
+Date: Wed, 20 Aug 2014 17:25:25 +0200
+Message-Id: <1408548326-18665-2-git-send-email-fhrbata@redhat.com>
+In-Reply-To: <1408548326-18665-1-git-send-email-fhrbata@redhat.com>
+References: <1408103043-31015-1-git-send-email-fhrbata@redhat.com>
+ <1408548326-18665-1-git-send-email-fhrbata@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+So far (xlate|unxlate)_dev_mem_ptr for read/write /dev/mem relies on a generic
+high_memory check in valid_phys_addr_range(), which does not allow to access any
+memory above high_memory whatsoever. By adding the high_memory check to
+(xlate|unxlate)_dev_mem_ptr, it still will be possible to use __va safely for
+kernel mapped memory and it will also allow read/write to access non-system RAM
+above high_memory once the high_memory check is removed from
+valid_phys_addr_range.
 
---0zDq8CFkxn2hi9iJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+---
+ arch/x86/mm/ioremap.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-On Wed, Aug 20, 2014 at 10:04:17AM +0800, Axel Lin wrote:
-> Both num_regulators and *rdev[MAX77802_REG_MAX] are not used, remove them.
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index baff1da..1ae7323 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -320,8 +320,11 @@ void *xlate_dev_mem_ptr(unsigned long phys)
+ 	void *addr;
+ 	unsigned long start = phys & PAGE_MASK;
+ 
+-	/* If page is RAM, we can use __va. Otherwise ioremap and unmap. */
+-	if (page_is_ram(start >> PAGE_SHIFT))
++	/*
++	 * If page is RAM and is mapped by kernel, we can use __va.
++	 * Otherwise ioremap and unmap.
++	 */
++	if (page_is_ram(start >> PAGE_SHIFT) && phys <= __pa(high_memory))
+ 		return __va(phys);
+ 
+ 	addr = (void __force *)ioremap_cache(start, PAGE_SIZE);
+@@ -333,7 +336,7 @@ void *xlate_dev_mem_ptr(unsigned long phys)
+ 
+ void unxlate_dev_mem_ptr(unsigned long phys, void *addr)
+ {
+-	if (page_is_ram(phys >> PAGE_SHIFT))
++	if (page_is_ram(phys >> PAGE_SHIFT) && phys <= __pa(high_memory))
+ 		return;
+ 
+ 	iounmap((void __iomem *)((unsigned long)addr & PAGE_MASK));
+-- 
+1.9.3
 
-Applied, thanks.
-
---0zDq8CFkxn2hi9iJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT9L0PAAoJELSic+t+oim9C2wQAIeJs1dwG6b2aV2RgeS7now6
-af6N5AHzbzSCyF0JtFYosAvoPoXX8YpOLUUaAt6DnJf3GOgEAMluQOTKooZvpfI0
-0S0x37gpgSyYS0IGPpID2XHEcGRD359ECqyfIKOKrhDo4gkrQTTH6sbNA47JY2xE
-AHuEgkt/C40oq6ml39paxdLu9h7jEKCK7CSYPwt2DoePyKTdfcE323Xr0gsp1QkW
-nv0DKcldXhu7+FDYH1GDwoC8mP4NzGD7o4EB/6HS0Ei+XN/GrX7FMrcLwLNUFEIU
-VLkJLxfKDOgU+03aVZKajIYdlwUEJNBgnZcadlMkA1VzN1y4mPRv95eF0o9HADz5
-f6hZYFAEnfy+8549OfhDPlk1lOvLhsDW7Vydm4Nh60KBK9SYfBKrE/5DU1wgjWzX
-3d0sa6KqMaFa2ezdlk6qBBL+5RLAXwIP0am05UCcj4H4FdGTr7hs8TBKBA005J5M
-UCSFDU5n+5S9jCSLXkLX8E+u3KcJewxTjmgmFctRgGVWvrmvDOp3Bp5vjoLYNR2g
-GnyqCXsAUd8nR+spFYpwfLfVp+PVPe6ho6heewF0Slk711NfOtHJQSpPeXNfsuKZ
-xHtkeaEzpjYCY1AnJo0UjmCCjFTUHtBlMtEWU14WMgHB/L95Yh6P6xa6Xx89HS9i
-2/6okSs0LabK8nMlVGGV
-=o2tG
------END PGP SIGNATURE-----
-
---0zDq8CFkxn2hi9iJ--
