@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaHTTyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:54:50 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:55400 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680AbaHTTyt (ORCPT
+	id S1753032AbaHTTzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:55:36 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:52186 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553AbaHTTzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:54:49 -0400
-Date: Wed, 20 Aug 2014 12:54:36 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
-Message-ID: <20140820195436.GA22902@roeck-us.net>
-References: <cover.1408535000.git.jslaby@suse.cz>
- <20140820165459.GA21275@roeck-us.net>
+	Wed, 20 Aug 2014 15:55:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140820165459.GA21275@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201408202130.28389.arnd@arndb.de>
+References: <1404918119-3676-1-git-send-email-geert+renesas@glider.be>
+	<CAMuHMdXp0ruZjjJLXmWyCdfAXs9_9xFHDcmJ08M9_SbZqqq04g@mail.gmail.com>
+	<201408202130.28389.arnd@arndb.de>
+Date: Wed, 20 Aug 2014 21:55:33 +0200
+X-Google-Sender-Auth: 7rxAjPDtm6CNr4YuBA0sTXaqt-I
+Message-ID: <CAMuHMdVp3xeJ2nDYJ00tLc7HuZ5v+jC-T8omWV5+G_3C8XoyoA@mail.gmail.com>
+Subject: Re: [PATCH v3] arm/smp: Absorb boot_secondary()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 09:54:59AM -0700, Guenter Roeck wrote:
-> On Wed, Aug 20, 2014 at 01:43:51PM +0200, Jiri Slaby wrote:
-> > This is the start of the stable review cycle for the 3.12.27 release.
-> > There are 104 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
-> > Anything received after that time might be too late.
-> > 
-> Build results look good:
-> 	total: 135 pass: 135 fail: 0
-> 
-> qemu tests passed except for sparc64 which hangs during boot, both for SMP and
-> non-SMP builds. I'll try to bisect as soon as I have a somewhat stable internet
-> connection.
-> 
-Bisect result:
+Hi Arnd,
 
-# bad: [c07d9e5da83f1470ccc58d37fe222dab36dbca67] drivers/rtc/interface.c: fix infinite loop in initializing the alarm
-# good: [d83a3234d2e1e2a55e7f2430fc9ca29a9bd315e7] Linux 3.12.26
-git bisect start 'HEAD' 'v3.12.26'
-# bad: [0d543dade2be5f0ddb268c6d6ea0e86938e3bf42] sparc64: Add membar to Niagara2 memcpy code.
-git bisect bad 0d543dade2be5f0ddb268c6d6ea0e86938e3bf42
-# good: [6e1af05639abfc6f1841e6bf8b5c8492971ed1f2] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
-git bisect good 6e1af05639abfc6f1841e6bf8b5c8492971ed1f2
-# good: [6a25e8f778995cabb0cfe2acb3247e3b42dec35f] macvlan: Initialize vlan_features to turn on offload support.
-git bisect good 6a25e8f778995cabb0cfe2acb3247e3b42dec35f
-# good: [bf42f839476f1f447ca696fbbab7e741861d9d7d] sparc64: Fix executable bit testing in set_pmd_at() paths.
-git bisect good bf42f839476f1f447ca696fbbab7e741861d9d7d
-# bad: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
-git bisect bad 6acda98c75b536deaba1bf21f93411fcc484fbb5
-# good: [a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6] sparc64: Fix top-level fault handling bugs.
-git bisect good a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6
-# first bad commit: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
+On Wed, Aug 20, 2014 at 9:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 20 August 2014, Geert Uytterhoeven wrote:
+>>
+>> Ping?
+>>
+>> On Wed, Jul 9, 2014 at 5:01 PM, Geert Uytterhoeven
+>> <geert+renesas@glider.be> wrote:
+>> > After becoming a mandatory function, boot_secondary() is no longer used
+>> > outside arch/arm/kernel/smp.c. Hence remove its public prototype, and,
+>> > as suggested by Arnd, let it be absorbed by its single caller.
+>> >
+>> > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> I think you should add the patch to Russell's patch tracking system
+> at http://www.arm.linux.org.uk/developer/patches to get it applied.
 
-Reverting the offending patch ('Add basic validations ...') fixes the problem.
+<surprised>
+Thanks for the info!
+</surprised>
 
-There is a twist: The final kernel hangs during boot. Some of the interim
-builds crash. I did not try to track down where it stops crashing and starts
-hanging.
+Has anyone already written a "git-send-email"-compatible script to
+submit patches there?
 
-Adding Dave for additional input. I suspect there may be some missing patch,
-but no idea where to even start looking.
+Gr{oetje,eeting}s,
 
-Guenter
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
