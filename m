@@ -1,232 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaHTPAN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:00:13 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47443 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaHTPAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:00:10 -0400
-Message-ID: <53F4B7AB.1020009@ti.com>
-Date: Wed, 20 Aug 2014 20:28:51 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        alexandre torgue <alexandre.torgue@st.com>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>
-Subject: Re: [PATCH 3/5] phy: miphy28lp: Provide support for the MiPHY28lp
- Generic PHY
-References: <1407944075-8093-1-git-send-email-gabriel.fernandez@linaro.org> <1407944075-8093-4-git-send-email-gabriel.fernandez@linaro.org>
-In-Reply-To: <1407944075-8093-4-git-send-email-gabriel.fernandez@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752016AbaHTPBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:01:05 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:56792 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220AbaHTPBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:01:03 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
+ for PSCI init
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>
+Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi-private@linaro.org,
+        Hanjun Guo <hanjun.guo@linaro.org>
+In-Reply-To: <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+	<1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
+Date: Wed, 20 Aug 2014 10:00:28 -0500
+Message-Id: <20140820150029.0BB3FC41205@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wednesday 13 August 2014 09:04 PM, Gabriel FERNANDEZ wrote:
-> The MiPHY28lp is a Generic PHY which can serve various SATA or PCIe
-> or USB3 devices.
+On Thu, 24 Jul 2014 21:00:12 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
+> the former signals to the OS that the hardware is PSCI compliant.
+> The latter selects the appropriate conduit for PSCI calls by
+> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
+> (SMC).
 > 
-> Signed-off-by: alexandre torgue <alexandre.torgue@st.com>
-> Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> FADT table contains such information, parse FADT to get the flags
+> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
+> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
+> 
+> At the same time, only ACPI 5.1 or higher verison supports PSCI,
+> and FADT Major.Minor version was introduced in ACPI 5.1, so we
+> will check the version and only parse FADT table with version >= 5.1.
+> 
+> If firmware provides ACPI tables with ACPI version less than 5.1,
+> OS will be messed up with those information and have no way to
+> bring up secondery CPUs, so disable ACPI if we get an FADT table
+> with version less that 5.1.
+> 
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 > ---
->  drivers/phy/Kconfig         |   8 +
->  drivers/phy/Makefile        |   1 +
->  drivers/phy/phy-miphy28lp.c | 736 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 745 insertions(+)
->  create mode 100644 drivers/phy/phy-miphy28lp.c
+>  arch/arm64/include/asm/acpi.h |    2 +
+>  arch/arm64/kernel/acpi.c      |   50 ++++++++++++++++++++++
+>  arch/arm64/kernel/psci.c      |   95 +++++++++++++++++++++++++++++------------
+>  arch/arm64/kernel/setup.c     |    2 +
+>  4 files changed, 121 insertions(+), 28 deletions(-)
 > 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index 0dd7427..2053f72 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -230,4 +230,12 @@ config PHY_XGENE
->  	help
->  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+> index 44b617f..67dac90 100644
+> --- a/arch/arm64/include/asm/acpi.h
+> +++ b/arch/arm64/include/asm/acpi.h
+> @@ -18,6 +18,8 @@ extern int acpi_disabled;
+>  extern int acpi_noirq;
+>  extern int acpi_pci_disabled;
+>  extern int acpi_strict;
+> +extern int acpi_psci_present;
+> +extern int acpi_psci_use_hvc;
 >  
-> +config PHY_MIPHY28LP
-> +	tristate "STMicroelectronics MIPHY28LP PHY driver for STiH407"
-> +	depends on ARCH_STI
-> +	depends on GENERIC_PHY
-> +	help
-> +	  Enable this to support the miphy transceiver (for SATA/PCIE/USB3)
-> +	  that is part of STMicroelectronics STiH407 SoC.
+>  static inline void disable_acpi(void)
+>  {
+> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> index f5a10b5..374926f 100644
+> --- a/arch/arm64/kernel/acpi.c
+> +++ b/arch/arm64/kernel/acpi.c
+> @@ -11,6 +11,8 @@
+>   *  published by the Free Software Foundation.
+>   */
+>  
+> +#define pr_fmt(fmt) "ACPI: " fmt
 > +
->  endmenu
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index 95c69ed..f7e7c59 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -8,6 +8,7 @@ obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
->  obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
->  obj-$(CONFIG_PHY_EXYNOS_MIPI_VIDEO)	+= phy-exynos-mipi-video.o
->  obj-$(CONFIG_PHY_MVEBU_SATA)		+= phy-mvebu-sata.o
-> +obj-$(CONFIG_PHY_MIPHY28LP) 		+= phy-miphy28lp.o
->  obj-$(CONFIG_PHY_MIPHY365X)		+= phy-miphy365x.o
->  obj-$(CONFIG_OMAP_CONTROL_PHY)		+= phy-omap-control.o
->  obj-$(CONFIG_OMAP_USB2)			+= phy-omap-usb2.o
-> diff --git a/drivers/phy/phy-miphy28lp.c b/drivers/phy/phy-miphy28lp.c
-> new file mode 100644
-> index 0000000..767614c
-> --- /dev/null
-> +++ b/drivers/phy/phy-miphy28lp.c
-> @@ -0,0 +1,736 @@
-> +/*
-> + * Copyright (C) 2014 STMicroelectronics
-> + *
-> + * STMicroelectronics PHY driver MiPHY28lp (for SoC STiH407).
-> + *
-> + * Author: Alexandre Torgue <alexandre.torgue@st.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + */
+>  #include <linux/init.h>
+>  #include <linux/acpi.h>
+>  #include <linux/cpumask.h>
+> @@ -34,6 +36,12 @@ EXPORT_SYMBOL(acpi_disabled);
+>  int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
+>  EXPORT_SYMBOL(acpi_pci_disabled);
+>  
+> +/* 1 to indicate PSCI is implemented */
+> +int acpi_psci_present;
 > +
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_address.h>
-> +#include <linux/clk.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/delay.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
-> +#include <linux/reset.h>
+> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
+> +int acpi_psci_use_hvc;
 > +
-> +#include <dt-bindings/phy/phy-miphy28lp.h>
+>  /*
+>   * __acpi_map_table() will be called before page_init(), so early_ioremap()
+>   * or early_memremap() should be called here to for ACPI table mapping.
+> @@ -54,6 +62,33 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>  	early_iounmap(map, size);
+>  }
+>  
+> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
+> +{
+> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
 > +
-> +/* MiPHY registers */
-> +#define MIPHY_STATUS_1		0x02
-> +#define MIPHY_PHY_RDY		0x01
-> +#define MIPHY_PLL_HFC_RDY	0x06
-> +#define MIPHY_COMP_FSM_6	0x3f
-> +#define MIPHY_COMP_DONE		0x80
+> +	/*
+> +	 * Revision in table header is the FADT Major version,
+> +	 * and there is a minor version of FADT which was introduced
+> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher version
+> +	 * to get arm boot flags, or we will disable ACPI.
+> +	 */
+> +	if (table->revision < 5 || fadt->minor_version < 1) {
+> +		pr_info("FADT version is %d.%d, no PSCI support, should be 5.1 or higher\n",
+> +			table->revision, fadt->minor_version);
+> +		acpi_psci_present = 0;
+> +		disable_acpi();
+> +		return -EINVAL;
+> +	}
 > +
-> +#define MIPHY_CTRL_REG		0x04
-> +#define MIPHY_PX_RX_POL		BIT(5)
+> +	if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_COMPLIANT)
+> +		acpi_psci_present = 1;
 > +
-> +/*
-> + * On STiH407 the glue logic can be different among MiPHY devices; for example:
-> + * MiPHY0: OSC_FORCE_EXT means:
-> + *  0: 30MHz crystal clk - 1: 100MHz ext clk routed through MiPHY1
-> + * MiPHY1: OSC_FORCE_EXT means:
-> + *  1: 30MHz crystal clk - 0: 100MHz ext clk routed through MiPHY1
-> + * Some devices have not the possibility to check if the osc is ready.
-> + */
-> +#define MIPHY_OSC_FORCE_EXT	BIT(3)
-> +#define MIPHY_OSC_RDY		BIT(5)
+> +	if (acpi_gbl_FADT.arm_boot_flags & ACPI_FADT_PSCI_USE_HVC)
+> +		acpi_psci_use_hvc = 1;
 > +
-> +#define MIPHY_CTRL_MASK		0xf
-> +#define MIPHY_CTRL_DEFAULT	0
-> +#define MIPHY_CTRL_SYNC_D_EN	BIT(2)
+> +	return 0;
+> +}
 > +
-> +/* SATA / PCIe defines */
-> +#define SATA_CTRL_MASK		0x7
-> +#define PCIE_CTRL_MASK		0xff
-> +#define SATA_CTRL_SELECT_SATA	1
-> +#define SATA_CTRL_SELECT_PCIE	0
-> +#define SYSCFG_PCIE_PCIE_VAL	0x80
-> +#define SATA_SPDMODE		1
+>  /*
+>   * acpi_boot_table_init() called from setup_arch(), always.
+>   *	1. find RSDP and get its address, and then find XSDT
+> @@ -75,6 +110,21 @@ void __init acpi_boot_table_init(void)
+>  	}
+>  }
+>  
+> +int __init acpi_boot_init(void)
+> +{
+> +	int err = 0;
 > +
-> +struct miphy28lp_phy {
-> +	struct phy *phy;
-> +	struct miphy28lp_dev *phydev;
-> +	void __iomem *base;
-> +	void __iomem *pipebase;
+> +	/* If acpi_disabled, bail out */
+> +	if (acpi_disabled)
+> +		return -ENODEV;
 > +
-> +	bool osc_force_ext;
-> +	bool osc_rdy;
-> +	bool px_rx_pol_inv;
+> +	err = acpi_table_parse(ACPI_SIG_FADT, acpi_parse_fadt);
+> +	if (err)
+> +		pr_err("Can't find FADT\n");
 > +
-> +	struct reset_control *miphy_rst;
+> +	return err;
+> +}
 > +
-> +	u32 sata_gen;
+>  static int __init parse_acpi(char *arg)
+>  {
+>  	if (!arg)
+> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
+> index 9e9798f..adb25f3 100644
+> --- a/arch/arm64/kernel/psci.c
+> +++ b/arch/arm64/kernel/psci.c
+> @@ -15,6 +15,7 @@
+>  
+>  #define pr_fmt(fmt) "psci: " fmt
+>  
+> +#include <linux/acpi.h>
+>  #include <linux/init.h>
+>  #include <linux/of.h>
+>  #include <linux/smp.h>
+> @@ -231,6 +232,33 @@ static void psci_sys_poweroff(void)
+>  	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
+>  }
+>  
+> +static void psci_0_2_set_functions(void)
+> +{
+> +	pr_info("Using standard PSCI v0.2 function IDs\n");
+> +	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+> +	psci_ops.cpu_suspend = psci_cpu_suspend;
 > +
-> +	/* Sysconfig registers offsets needed to configure the device */
-> +	u32 syscfg_miphy_ctrl;
-> +	u32 syscfg_miphy_status;
-> +	u32 syscfg_pci;
-> +	u32 syscfg_sata;
-> +	u8 type;
-> +};
+> +	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+> +	psci_ops.cpu_off = psci_cpu_off;
 > +
-> +struct miphy28lp_dev {
-> +	struct device *dev;
-> +	struct regmap *regmap;
-> +	struct mutex miphy_mutex;
-> +	struct miphy28lp_phy **phys;
-> +};
+> +	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+> +	psci_ops.cpu_on = psci_cpu_on;
 > +
-> +struct miphy_initval {
-> +	u16 reg;
-> +	u16 val;
-> +};
+> +	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+> +	psci_ops.migrate = psci_migrate;
 > +
-> +enum miphy_sata_gen { SATA_GEN1, SATA_GEN2, SATA_GEN3 };
+> +	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+> +	psci_ops.affinity_info = psci_affinity_info;
 > +
-> +static char *miphy_type_name[] = { "sata-up", "pcie-up", "usb3-up" };
+> +	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+> +		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+> +	psci_ops.migrate_info_type = psci_migrate_info_type;
 > +
-> +static const struct miphy_initval miphylp28_initvals_sata[] = {
-> +	/* Putting Macro in reset */
-> +	{0x00, 0x01}, {0x00, 0x03},
-> +	/* Wait for a while */
-> +	{0x00, 0x01}, {0x04, 0x1c},
-> +	/* PLL calibration */
-> +	{0xeb, 0x1d}, {0x0d, 0x1e}, {0x0f, 0x00},
-> +	/* Writing The PLL Ratio */
-> +	{0xd4, 0xc8}, {0xd5, 0x00}, {0xd6, 0x00}, {0xd7, 0x00},
-> +	{0xd3, 0x00}, {0x0f, 0x02}, {0x0e, 0x0a}, {0x0f, 0x01},
-> +	{0x0e, 0x0a}, {0x0f, 0x00}, {0x0e, 0x0a}, {0x4e, 0xd1},
-> +	{0x4e, 0xd1},
-> +	/* Rx Calibration */
-> +	{0x99, 0x1f}, {0x0a, 0x41}, {0x7a, 0x0d}, {0x7f, 0x7d},
-> +	{0x80, 0x56}, {0x81, 0x00}, {0x7b, 0x00}, {0xc1, 0x01},
-> +	{0xc2, 0x01}, {0x97, 0xf3}, {0xc9, 0x02}, {0xca, 0x02},
-> +	{0xcb, 0x02}, {0xcc, 0x0a}, {0x9d, 0xe5}, {0x0f, 0x00},
-> +	{0x0e, 0x02}, {0x0e, 0x00}, {0x63, 0x00}, {0x64, 0xaf},
-> +	{0x0f, 0x00}, {0x49, 0x07}, {0x0f, 0x01}, {0x49, 0x07},
-> +	{0x0f, 0x02}, {0x49, 0x07}, {0x0f, 0x03}, {0x49, 0x07},
-> +	{0x0f, 0x00}, {0x4a, 0x50}, {0x4a, 0x53}, {0x4b, 0x00},
-> +	{0x4b, 0x00}, {0x0f, 0x01}, {0x0e, 0x04}, {0x0e, 0x05},
-> +	{0x63, 0x00}, {0x64, 0xae}, {0x0f, 0x00}, {0x49, 0x07},
-> +	{0x0f, 0x01}, {0x49, 0x07}, {0x0f, 0x02}, {0x49, 0x07},
-> +	{0x0f, 0x03}, {0x49, 0x07}, {0x0f, 0x01}, {0x4a, 0x73},
-> +	{0x4a, 0x72}, {0x4b, 0x20}, {0x4b, 0x20}, {0x0f, 0x02},
-> +	{0x0e, 0x09}, {0x0e, 0x0a}, {0x63, 0x00}, {0x64, 0xae},
-> +	{0x0f, 0x00}, {0x49, 0x07}, {0x0f, 0x01}, {0x49, 0x07},
-> +	{0x0f, 0x02}, {0x49, 0x07}, {0x0f, 0x03}, {0x49, 0x07},
-> +	{0x0f, 0x02}, {0x4a, 0xc2}, {0x4a, 0xc0}, {0x4b, 0x20},
-> +	{0x4b, 0x20}, {0xcd, 0x21}, {0xcd, 0x21}, {0x00, 0x00},
-> +	{0x00, 0x01}, {0x00, 0x00}, {0x01, 0x04}, {0x01, 0x05},
-> +	{0xe9, 0x00}, {0x0d, 0x1e}, {0x3a, 0x40}, {0x01, 0x01},
-> +	{0x01, 0x00}, {0xe9, 0x40}, {0x0a, 0x41}, {0x0f, 0X00},
-> +	{0x0b, 0x00}, {0x0b, 0x00}, {0x62, 0x00}, {0x0f, 0x00},
-> +	{0xe3, 0x02}, {0xe3, 0x02}, {0x26, 0x27}, {0x26, 0x00},
-> +	{0x26, 0x62}, {0x26, 0x00}, {0x0f, 0x00}, {0x0f, 0x01},
-> +	{0x0f, 0x02}, {0x0f, 0x00},
+> +	arm_pm_restart = psci_sys_reset;
+> +
+> +	pm_power_off = psci_sys_poweroff;
+> +}
+> +
+>  /*
+>   * PSCI Function IDs for v0.2+ are well defined so use
+>   * standard values.
+> @@ -264,29 +292,7 @@ static int psci_0_2_init(struct device_node *np)
+>  		}
+>  	}
+>  
+> -	pr_info("Using standard PSCI v0.2 function IDs\n");
+> -	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+> -	psci_ops.cpu_suspend = psci_cpu_suspend;
+> -
+> -	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+> -	psci_ops.cpu_off = psci_cpu_off;
+> -
+> -	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+> -	psci_ops.cpu_on = psci_cpu_on;
+> -
+> -	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+> -	psci_ops.migrate = psci_migrate;
+> -
+> -	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+> -	psci_ops.affinity_info = psci_affinity_info;
+> -
+> -	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+> -		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+> -	psci_ops.migrate_info_type = psci_migrate_info_type;
+> -
+> -	arm_pm_restart = psci_sys_reset;
+> -
+> -	pm_power_off = psci_sys_poweroff;
+> +	psci_0_2_set_functions();
+>  
+>  out_put_node:
+>  	of_node_put(np);
+> @@ -333,6 +339,33 @@ out_put_node:
+>  	return err;
+>  }
+>  
+> +#ifdef CONFIG_ACPI
+> +static int get_set_conduit_method_acpi(void)
+> +{
+> +	if (acpi_psci_use_hvc)
+> +		invoke_psci_fn = __invoke_psci_fn_hvc;
+> +	else
+> +		invoke_psci_fn = __invoke_psci_fn_smc;
+> +
+> +	return 0;
+> +}
+> +
+> +/* We use PSCI 0.2+ when ACPI is deployed */
+> +static int psci_0_2_init_acpi(void)
+> +{
+> +	get_set_conduit_method_acpi();
+> +
+> +	psci_0_2_set_functions();
+> +
+> +	return 0;
+> +}
+> +#else
+> +static inline int psci_0_2_init_acpi(void)
+> +{
+> +	return -ENODEV;
+> +}
+> +#endif
+> +
+>  static const struct of_device_id psci_of_match[] __initconst = {
+>  	{ .compatible = "arm,psci",	.data = psci_0_1_init},
+>  	{ .compatible = "arm,psci-0.2",	.data = psci_0_2_init},
+> @@ -345,13 +378,19 @@ int __init psci_init(void)
+>  	const struct of_device_id *matched_np;
+>  	psci_initcall_t init_fn;
+>  
+> -	np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
+> +	if (acpi_disabled) {
+> +		np = of_find_matching_node_and_match(NULL,
+> +				psci_of_match, &matched_np);
+>  
+> -	if (!np)
+> -		return -ENODEV;
+> +		if (!np)
+> +			return -ENODEV;
+> +
+> +		init_fn = (psci_initcall_t)matched_np->data;
+> +
+> +		return init_fn(np);
+> +	}
+>  
+> -	init_fn = (psci_initcall_t)matched_np->data;
+> -	return init_fn(np);
+> +	return psci_0_2_init_acpi();
+>  }
 
-I'm not in for doing this sort of initialization. Sorry.
+So, while the functionality is sound, this is kind of a stinky diff. The
+ACPI path should not push the OF code into a sub branch. Make it look
+like this instead (with the advantage that the diff will be simpler):
 
-Thanks
-Kishon
++	if (IS_ENABLED(CONFIG_ACPI) && !acpi_disabled)
++		return psci_0_2_init_acpi();
+
+ 	np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
+ 
+ 	if (!np)
+ 		return -ENODEV;
+ 
+ 	init_fn = (psci_initcall_t)matched_np->data;
+ 	return init_fn(np);
+
+g.
