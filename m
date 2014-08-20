@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784AbaHTRG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 13:06:29 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:35194 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499AbaHTREU (ORCPT
+	id S1752825AbaHTRG4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 13:06:56 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:48822 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398AbaHTRET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 13:04:20 -0400
+	Wed, 20 Aug 2014 13:04:19 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         00regkh@linuxfoundation.org
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, pratikp@codeaurora.org, varshney@ti.com,
         robbelibobban@gmail.com, Tony.Armitstead@arm.com,
         daniel.thompson@linaro.org, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/11 v4] coresight-replicator: add CoreSight Replicator driver
-Date: Wed, 20 Aug 2014 11:03:46 -0600
-Message-Id: <1408554231-24321-7-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 03/11 v4] coresight-tpiu: add CoreSight TPIU driver
+Date: Wed, 20 Aug 2014 11:03:43 -0600
+Message-Id: <1408554231-24321-4-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408554231-24321-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1408554231-24321-1-git-send-email-mathieu.poirier@linaro.org>
@@ -29,38 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratik Patel <pratikp@codeaurora.org>
 
-This driver manages non-configurable CoreSight Replicator that
-takes a single input trace data stream and replicates it to
-produce two identical trace data output streams. Replicators
-are typically used to route single interleaved trace data
-stream to two or more sinks.
+This driver manages CoreSight TPIU (Trace Port Interface Unit)
+which acts as a sink. TPIU is typically connected to some offchip
+hardware hosting a storage buffer.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/coresight/Makefile               |   3 +-
- drivers/coresight/coresight-replicator.c | 153 +++++++++++++++++++++++++++++++
- 2 files changed, 155 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/coresight-replicator.c
+ drivers/coresight/Makefile         |   2 +-
+ drivers/coresight/coresight-tpiu.c | 212 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 213 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/coresight-tpiu.c
 
 diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 26a07e1..3a32c06 100644
+index 16e26c5..540df99 100644
 --- a/drivers/coresight/Makefile
 +++ b/drivers/coresight/Makefile
-@@ -4,4 +4,5 @@
+@@ -3,4 +3,4 @@
+ #
  obj-$(CONFIG_CORESIGHT) += coresight.o
  obj-$(CONFIG_OF) += of_coresight.o
- obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
--					   coresight-etb10.o coresight-funnel.o
-+					   coresight-etb10.o coresight-funnel.o \
-+					   coresight-replicator.o
-diff --git a/drivers/coresight/coresight-replicator.c b/drivers/coresight/coresight-replicator.c
+-obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o
++obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
+diff --git a/drivers/coresight/coresight-tpiu.c b/drivers/coresight/coresight-tpiu.c
 new file mode 100644
-index 0000000..24286c6
+index 0000000..bd3ddbe
 --- /dev/null
-+++ b/drivers/coresight/coresight-replicator.c
-@@ -0,0 +1,153 @@
++++ b/drivers/coresight/coresight-tpiu.c
+@@ -0,0 +1,212 @@
 +/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -77,143 +74,202 @@ index 0000000..24286c6
 +#include <linux/module.h>
 +#include <linux/init.h>
 +#include <linux/device.h>
-+#include <linux/platform_device.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
 +#include <linux/slab.h>
 +#include <linux/clk.h>
-+#include <linux/of.h>
 +#include <linux/coresight.h>
++#include <linux/amba/bus.h>
 +
 +#include "coresight-priv.h"
 +
-+struct replicator_drvdata {
++#define TPIU_SUPP_PORTSZ	0x000
++#define TPIU_CURR_PORTSZ	0x004
++#define TPIU_SUPP_TRIGMODES	0x100
++#define TPIU_TRIG_CNTRVAL	0x104
++#define TPIU_TRIG_MULT		0x108
++#define TPIU_SUPP_TESTPATM	0x200
++#define TPIU_CURR_TESTPATM	0x204
++#define TPIU_TEST_PATREPCNTR	0x208
++#define TPIU_FFSR		0x300
++#define TPIU_FFCR		0x304
++#define TPIU_FSYNC_CNTR		0x308
++#define TPIU_EXTCTL_INPORT	0x400
++#define TPIU_EXTCTL_OUTPORT	0x404
++#define TPIU_ITTRFLINACK	0xee4
++#define TPIU_ITTRFLIN		0xee8
++#define TPIU_ITATBDATA0		0xeec
++#define TPIU_ITATBCTR2		0xef0
++#define TPIU_ITATBCTR1		0xef4
++#define TPIU_ITATBCTR0		0xef8
++
++/** register definition **/
++/* FFCR - 0x304 */
++#define FFCR_FON_MAN		BIT(6)
++
++struct tpiu_drvdata {
++	void __iomem		*base;
 +	struct device		*dev;
 +	struct coresight_device	*csdev;
++	struct clk		*clk;
 +};
 +
-+static int replicator_enable(struct coresight_device *csdev, int inport,
-+			     int outport)
++static void tpiu_enable_hw(struct tpiu_drvdata *drvdata)
 +{
-+	struct replicator_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	CS_UNLOCK(drvdata->base);
 +
-+	dev_info(drvdata->dev, "REPLICATOR enabled\n");
++	/* TODO: fill this up */
++
++	CS_LOCK(drvdata->base);
++}
++
++static int tpiu_enable(struct coresight_device *csdev)
++{
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	int ret;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	tpiu_enable_hw(drvdata);
++
++	dev_info(drvdata->dev, "TPIU enabled\n");
 +	return 0;
 +}
 +
-+static void replicator_disable(struct coresight_device *csdev, int inport,
-+			       int outport)
++static void tpiu_disable_hw(struct tpiu_drvdata *drvdata)
 +{
-+	struct replicator_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	CS_UNLOCK(drvdata->base);
 +
-+	dev_info(drvdata->dev, "REPLICATOR disabled\n");
++	/* clear formatter controle reg. */
++	writel_relaxed(0x0, drvdata->base + TPIU_FFCR);
++	/* generate manual flush */
++	writel_relaxed(FFCR_FON_MAN, drvdata->base + TPIU_FFCR);
++
++	CS_LOCK(drvdata->base);
 +}
 +
-+static char *replicator_fix_name(struct device *dev, int id)
++static void tpiu_disable(struct coresight_device *csdev)
 +{
-+	char *name;
-+	int ret, size;
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +
-+	size = (sizeof(u64) * 2) + strlen(".replicator") + 1;
-+	name = devm_kzalloc(dev, size, GFP_KERNEL);
-+	if (!name)
-+		return NULL;
++	tpiu_disable_hw(drvdata);
 +
-+	ret = scnprintf(name, size, "%08x.replicator", id);
++	clk_disable_unprepare(drvdata->clk);
 +
-+	return name;
++	dev_info(drvdata->dev, "TPIU disabled\n");
 +}
 +
-+static const struct coresight_ops_link replicator_link_ops = {
-+	.enable		= replicator_enable,
-+	.disable	= replicator_disable,
++static const struct coresight_ops_sink tpiu_sink_ops = {
++	.enable		= tpiu_enable,
++	.disable	= tpiu_disable,
 +};
 +
-+static const struct coresight_ops replicator_cs_ops = {
-+	.link_ops	= &replicator_link_ops,
++static const struct coresight_ops tpiu_cs_ops = {
++	.sink_ops	= &tpiu_sink_ops,
 +};
 +
-+static int replicator_probe(struct platform_device *pdev)
++static int tpiu_probe(struct amba_device *adev, const struct amba_id *id)
 +{
-+	struct device *dev = &pdev->dev;
++	int ret;
++	void __iomem *base;
++	struct device *dev = &adev->dev;
 +	struct coresight_platform_data *pdata = NULL;
-+	struct replicator_drvdata *drvdata;
++	struct tpiu_drvdata *drvdata;
++	struct resource *res = &adev->res;
 +	struct coresight_desc *desc;
-+	struct device_node *np = pdev->dev.of_node;
++	struct device_node *np = adev->dev.of_node;
 +
 +	if (np) {
 +		pdata = of_get_coresight_platform_data(dev, np);
 +		if (IS_ERR(pdata))
 +			return PTR_ERR(pdata);
-+		pdev->dev.platform_data = pdata;
-+
-+		pdata->name = replicator_fix_name(dev, pdata->id);
-+		if (!pdata->name)
-+			return -EINVAL;
++		adev->dev.platform_data = pdata;
 +	}
 +
 +	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
 +	if (!drvdata)
 +		return -ENOMEM;
 +
-+	drvdata->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, drvdata);
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
++
++	/* validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	drvdata->base = base;
++
++	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	/* Disable tpiu to support older devices */
++	tpiu_disable_hw(drvdata);
++
++	clk_disable_unprepare(drvdata->clk);
 +
 +	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
 +	if (!desc)
 +		return -ENOMEM;
 +
-+	desc->type = CORESIGHT_DEV_TYPE_LINK;
-+	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_LINK_SPLIT;
-+	desc->ops = &replicator_cs_ops;
-+	desc->pdata = pdev->dev.platform_data;
-+	desc->dev = &pdev->dev;
++	desc->type = CORESIGHT_DEV_TYPE_SINK;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_PORT;
++	desc->ops = &tpiu_cs_ops;
++	desc->pdata = pdata;
++	desc->dev = dev;
 +	desc->owner = THIS_MODULE;
 +	drvdata->csdev = coresight_register(desc);
 +	if (IS_ERR(drvdata->csdev))
 +		return PTR_ERR(drvdata->csdev);
 +
-+	dev_info(dev, "REPLICATOR initialized\n");
++	dev_info(dev, "TPIU initialized\n");
 +	return 0;
 +}
 +
-+static int replicator_remove(struct platform_device *pdev)
++static int tpiu_remove(struct amba_device *adev)
 +{
-+	struct replicator_drvdata *drvdata = platform_get_drvdata(pdev);
++	struct tpiu_drvdata *drvdata = amba_get_drvdata(adev);
 +
 +	coresight_unregister(drvdata->csdev);
 +	return 0;
 +}
 +
-+static struct of_device_id replicator_match[] = {
-+	{.compatible = "arm,coresight-replicator"},
-+	{}
-+};
-+
-+static struct platform_driver replicator_driver = {
-+	.probe          = replicator_probe,
-+	.remove         = replicator_remove,
-+	.driver         = {
-+		.name   = "coresight-replicator",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = replicator_match,
++static struct amba_id tpiu_ids[] = {
++	{
++		.id	= 0x0003b912,
++		.mask	= 0x0003ffff,
 +	},
++	{ 0, 0},
 +};
 +
-+static int __init replicator_init(void)
-+{
-+	return platform_driver_register(&replicator_driver);
-+}
-+module_init(replicator_init);
++static struct amba_driver tpiu_driver = {
++	.drv = {
++		.name	= "coresight-tpiu",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= tpiu_probe,
++	.remove		= tpiu_remove,
++	.id_table	= tpiu_ids,
++};
 +
-+static void __exit replicator_exit(void)
++static int __init tpiu_init(void)
 +{
-+	platform_driver_unregister(&replicator_driver);
++	return amba_driver_register(&tpiu_driver);
 +}
-+module_exit(replicator_exit);
++module_init(tpiu_init);
++
++static void __exit tpiu_exit(void)
++{
++	amba_driver_unregister(&tpiu_driver);
++}
++module_exit(tpiu_exit);
 +
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Replicator driver");
++MODULE_DESCRIPTION("CoreSight Trace Port Interface Unit driver");
 -- 
 1.9.1
 
