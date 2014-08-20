@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaHTPEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:04:42 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:17641 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaHTPEk (ORCPT
+	id S1752181AbaHTPEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:04:47 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:29720 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686AbaHTPEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:04:40 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-a3-53f4b9053610
-Subject: [PATCH 1/7] mm/balloon_compaction: ignore anonymous pages
+	Wed, 20 Aug 2014 11:04:45 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-f3-53f4b90ab1e9
+Subject: [PATCH 2/7] mm/balloon_compaction: keep ballooned pages away from
+ normal migration path
 From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         Rafael Aquini <aquini@redhat.com>
 Cc: Sasha Levin <sasha.levin@oracle.com>,
         Andrey Ryabinin <ryabinin.a.a@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 20 Aug 2014 19:04:35 +0400
-Message-id: <20140820150435.4194.28003.stgit@buzz>
+Date: Wed, 20 Aug 2014 19:04:40 +0400
+Message-id: <20140820150440.4194.70267.stgit@buzz>
+In-reply-to: <20140820150435.4194.28003.stgit@buzz>
+References: <20140820150435.4194.28003.stgit@buzz>
 User-Agent: StGit/0.17.1-dirty
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xa7qsO78EG0xoYrSYs34Nm8WMh79Y
-	LH7s7GW1uLxrDpvFvTX/WS2Ob93CbLH4yG1mB3aPnbPusnts+jSJ3ePEjN8sHh+f3mLxeL/v
-	KptH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZbTO+sJW8JqjYt+MLewNjFfZuxg5OSQETCQm
-	XfsAZYtJXLi3ng3EFhJYyijxcQU3hN3IJLFofy2ILSzgJPFjWi8ziM0mYCaxbd9tRhBbRCBN
-	4uuzLWC9zAJFEi9uzgKzWQRUJV6+3c0KYvMKGEl0TvgLtktUQE5i5eUWqLigxI/J91i6GDmA
-	etUlpkzJhRgjL7F5zVvmCYx8s5BUzUKomoWkagEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT8
-	3E2MkBD+uoNx6TGrQ4wCHIxKPLw3F30JFmJNLCuuzD3EKMHBrCTCe2IDUIg3JbGyKrUoP76o
-	NCe1+BAjEwenVANj3qbZXFOPPznU/7JX69uE/cdTeltuhlgX5GbMeejjN3n2i76y5umTeGtu
-	v079fLgmUG5Oz8EXX300m2wOuU9qmffuzQvlCapV9zi9Upq31mT/ii38FVCmf1H06KOn+1WS
-	MtepT7Tq+r3Cy2655YJ6TjGVwIzFvlmPM54yrkq6vft2nvTc/p/GSizFGYmGWsxFxYkAY4ni
-	Tz8CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xy7pcO78EGzybb2oxZ/0aNosZD3+x
+	WPzY2ctqcXnXHDaLe2v+s1oc37qF2WLxkdvMDuweO2fdZffY9GkSu8eJGb9ZPD4+vcXi8X7f
+	VTaPvi2rGD0+b5ILYI/isklJzcksSy3St0vgyjh03qngMFfF0XtH2RsYH3J0MXJySAiYSExa
+	OosZwhaTuHBvPVsXIxeHkMBSRom5N/axQDiNTBKH3nYxdTFycAgLJEl8PO8D0sAmYCaxbd9t
+	RhBbRCBN4uuzLWwgNrNAkcSLm7PAbBYBVYmFezqYQGxeASOJK0++gNmcAsYSa46/BOsVAopf
+	6/kNdoSogJzEysstrBD1ghI/Jt9jAVnLLKAuMWVKLsR4eYnNa94yT2AUmIWkahZC1SwkVQsY
+	mVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihIT8lx2Mi49ZHWIU4GBU4uG9sehLsBBrYllx
+	Ze4hRgkOZiUR3hMbgEK8KYmVValF+fFFpTmpxYcYmTg4pRoYZ6ff42U0fvPRKvXFo6IpfKKr
+	87Tyzij6vznfsOJGXfsuuWPxP3bsqeH28GzOt1L0ZfX6n7owzn2+w81NwQ+uvtyfr+xQ/VrM
+	qP2Mc1/9+RIl08Zo3g1Wq6d9ZN2Udz/4i89Dt+gV33Stnps12++tO+jZ2ZLxa36exdbdXyIa
+	51maHWdd0SKmxFKckWioxVxUnAgAvKglxFcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin reported KASAN splash inside isolate_migratepages_range().
-Problem is in function __is_movable_balloon_page() which tests AS_BALLOON_MAP
-in page->mapping->flags. This function has no protection against anonymous
-pages. As result it tried to check address space flags in inside anon-vma.
+Proper testing shows yet another problem in balloon migration: it works only
+once for each page. balloon_page_movable() check page flags and page_count.
+In __unmap_and_move page is locked, reference counter is elevated, so
+balloon_page_movable() _always_ fails here. As result in __unmap_and_move()
+migration goes to the normal migration path.
+
+Balloon ->migratepage() is so special, it returns MIGRATEPAGE_BALLOON_SUCCESS
+instead of MIGRATEPAGE_SUCCESS. After that in move_to_new_page() successfully
+migrated page got NULL into its mapping pointer and loses connectivity with
+balloon and ability for further migration.
+
+It's safe to use __is_movable_balloon_page here: page is isolated and pinned.
 
 Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Link: http://lkml.kernel.org/p/53E6CEAA.9020105@oracle.com
 Cc: stable <stable@vger.kernel.org> # v3.8
 ---
- include/linux/balloon_compaction.h |    2 +-
+ mm/migrate.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
-index 089743a..53d482e 100644
---- a/include/linux/balloon_compaction.h
-+++ b/include/linux/balloon_compaction.h
-@@ -128,7 +128,7 @@ static inline bool page_flags_cleared(struct page *page)
- static inline bool __is_movable_balloon_page(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
--	return mapping_balloon(mapping);
-+	return !PageAnon(page) && mapping_balloon(mapping);
- }
+diff --git a/mm/migrate.c b/mm/migrate.c
+index f78ec9b..161d044 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -873,7 +873,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+ 		}
+ 	}
  
- /*
+-	if (unlikely(balloon_page_movable(page))) {
++	if (unlikely(__is_movable_balloon_page(page))) {
+ 		/*
+ 		 * A ballooned page does not need any special attention from
+ 		 * physical to virtual reverse mapping procedures.
 
