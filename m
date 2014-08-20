@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaHTMI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:08:27 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58904 "EHLO
+	id S1752923AbaHTMKk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:10:40 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58884 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752499AbaHTLoJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752480AbaHTLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:09 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 027/104] Revert "mac80211: move "bufferable MMPDU" check to fix AP mode scan"
-Date: Wed, 20 Aug 2014 13:42:50 +0200
-Message-Id: <3516cca653f2c410b8f736a73daf8089f7a18628.1408535000.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 019/104] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+Date: Wed, 20 Aug 2014 13:42:42 +0200
+Message-Id: <a7b4794cc25bdfb541d77f190fee9784542927ef.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,90 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 08b9939997df30e42a228e1ecb97f99e9c8ea84e upstream.
+commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
 
-This reverts commit 277d916fc2e959c3f106904116bb4f7b1148d47a as it was
-at least breaking iwlwifi by setting the IEEE80211_TX_CTL_NO_PS_BUFFER
-flag in all kinds of interface modes, not only for AP mode where it is
-appropriate.
+This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
+preparation of merging in the proper fix (espfix64).
 
-To avoid reintroducing the original problem, explicitly check for probe
-request frames in the multicast buffering code.
-
-Fixes: 277d916fc2e9 ("mac80211: move "bufferable MMPDU" check to fix AP mode scan")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/mac80211/tx.c | 27 +++++++++++++--------------
- 1 file changed, 13 insertions(+), 14 deletions(-)
+ arch/x86/kernel/ldt.c        | 4 +---
+ arch/x86/vdso/vdso32-setup.c | 8 --------
+ 2 files changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 267bc8e4b8b6..c2785b2af97c 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -413,6 +413,9 @@ ieee80211_tx_h_multicast_ps_buf(struct ieee80211_tx_data *tx)
- 	if (ieee80211_has_order(hdr->frame_control))
- 		return TX_CONTINUE;
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index dcbbaa165bde..af1d14a9ebda 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,8 +20,6 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
  
-+	if (ieee80211_is_probe_req(hdr->frame_control))
-+		return TX_CONTINUE;
-+
- 	if (tx->local->hw.flags & IEEE80211_HW_QUEUE_CONTROL)
- 		info->hw_queue = tx->sdata->vif.cab_queue;
- 
-@@ -463,6 +466,7 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
+-int sysctl_ldt16 = 0;
+-
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
  {
- 	struct sta_info *sta = tx->sta;
- 	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
-+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
- 	struct ieee80211_local *local = tx->local;
+@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
++	if (!ldt_info.seg_32bit) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index f1d633a43f8e..d6bfb876cfb0 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,7 +41,6 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
+-extern int sysctl_ldt16;
+ #endif
  
- 	if (unlikely(!sta))
-@@ -473,6 +477,15 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- 		     !(info->flags & IEEE80211_TX_CTL_NO_PS_BUFFER))) {
- 		int ac = skb_get_queue_mapping(tx->skb);
+ /*
+@@ -381,13 +380,6 @@ static struct ctl_table abi_table2[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
+-	{
+-		.procname	= "ldt16",
+-		.data		= &sysctl_ldt16,
+-		.maxlen		= sizeof(int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
+-	},
+ 	{}
+ };
  
-+		/* only deauth, disassoc and action are bufferable MMPDUs */
-+		if (ieee80211_is_mgmt(hdr->frame_control) &&
-+		    !ieee80211_is_deauth(hdr->frame_control) &&
-+		    !ieee80211_is_disassoc(hdr->frame_control) &&
-+		    !ieee80211_is_action(hdr->frame_control)) {
-+			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
-+			return TX_CONTINUE;
-+		}
-+
- 		ps_dbg(sta->sdata, "STA %pM aid %d: PS buffer for AC %d\n",
- 		       sta->sta.addr, sta->sta.aid, ac);
- 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
-@@ -530,22 +543,8 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- static ieee80211_tx_result debug_noinline
- ieee80211_tx_h_ps_buf(struct ieee80211_tx_data *tx)
- {
--	struct ieee80211_tx_info *info = IEEE80211_SKB_CB(tx->skb);
--	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)tx->skb->data;
--
- 	if (unlikely(tx->flags & IEEE80211_TX_PS_BUFFERED))
- 		return TX_CONTINUE;
--
--	/* only deauth, disassoc and action are bufferable MMPDUs */
--	if (ieee80211_is_mgmt(hdr->frame_control) &&
--	    !ieee80211_is_deauth(hdr->frame_control) &&
--	    !ieee80211_is_disassoc(hdr->frame_control) &&
--	    !ieee80211_is_action(hdr->frame_control)) {
--		if (tx->flags & IEEE80211_TX_UNICAST)
--			info->flags |= IEEE80211_TX_CTL_NO_PS_BUFFER;
--		return TX_CONTINUE;
--	}
--
- 	if (tx->flags & IEEE80211_TX_UNICAST)
- 		return ieee80211_tx_h_unicast_ps_buf(tx);
- 	else
 -- 
 2.0.4
 
