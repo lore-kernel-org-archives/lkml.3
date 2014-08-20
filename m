@@ -1,76 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741AbaHTG4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 02:56:10 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:60602 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaHTG4H (ORCPT
+	id S1752046AbaHTG5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 02:57:18 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:60844 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990AbaHTG5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 02:56:07 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Arnd Bergmann <arnd@arndb.de>, Tony Prisk <linux@prisktech.co.nz>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv4 3/4] pwm: imx: indentation cleanup
-Date: Wed, 20 Aug 2014 08:55:55 +0200
-Message-Id: <1408517756-9412-4-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1408517756-9412-3-git-send-email-LW@KARO-electronics.de>
-References: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
- <1408517756-9412-2-git-send-email-LW@KARO-electronics.de>
- <1408517756-9412-3-git-send-email-LW@KARO-electronics.de>
+	Wed, 20 Aug 2014 02:57:16 -0400
 MIME-Version: 1.0
+In-Reply-To: <1408516413-2928-1-git-send-email-lftan@altera.com>
+References: <1408516413-2928-1-git-send-email-lftan@altera.com>
+Date: Wed, 20 Aug 2014 14:57:15 +0800
+Message-ID: <CAFiDJ59usgQGA7rGiR_D+cBdVLRPhAMgLUb2F4tgHBSXFwk7Pw@mail.gmail.com>
+Subject: Re: [PATCH] net: stmmac: add fix_mac_speed support for socfpga
+From: "LF.Tan" <lftan.linux@gmail.com>
+To: netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Ley Foon Tan <lftan@altera.com>, LeyFoon Tan <lftan.linux@gmail.com>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Vince Bridgers <vbridger@altera.com>, davem@davemloft.net
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 20, 2014 at 2:33 PM, Ley Foon Tan <lftan@altera.com> wrote:
+> This patch adds fix_mac_speed() support for
+> Altera socfpga Ethernet controller. Emac splitter is a
+> soft IP core in FPGA system that converts GMII interface from
+> Synopsys mac to RGMII/SGMII interface. This splitter core is
+> an optional IP if user would like to use RGMII/SGMII
+> interface in their system. Software needs to update a register
+> in splitter core when there is speed change.
+>
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+>  .../devicetree/bindings/net/socfpga-dwmac.txt      |  4 ++
+>  .../net/ethernet/stmicro/stmmac/dwmac-socfpga.c    | 63 ++++++++++++++++++++++
+>  2 files changed, 67 insertions(+)
+>
+> diff --git a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+> index 2a60cd3..3a9d679 100644
+> --- a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+> +++ b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+> @@ -12,6 +12,10 @@ Required properties:
+>   - altr,sysmgr-syscon : Should be the phandle to the system manager node that
+>     encompasses the glue register, the register offset, and the register shift.
+>
+> +Optional properties:
+> +altr,emac-splitter: Should be the phandle to the emac splitter soft IP node if
+> +               DWMAC controller is connected emac splitter.
+> +
+>  Example:
+>
+>  gmac0: ethernet@ff700000 {
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+> index ec632e6..cd613d7 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-socfpga.c
+> @@ -17,6 +17,7 @@
+>
+>  #include <linux/mfd/syscon.h>
+>  #include <linux/of.h>
+> +#include <linux/of_address.h>
+>  #include <linux/of_net.h>
+>  #include <linux/phy.h>
+>  #include <linux/regmap.h>
+> @@ -30,6 +31,12 @@
+>  #define SYSMGR_EMACGRP_CTRL_PHYSEL_WIDTH 2
+>  #define SYSMGR_EMACGRP_CTRL_PHYSEL_MASK 0x00000003
+>
+> +#define EMAC_SPLITTER_CTRL_REG                 0x0
+> +#define EMAC_SPLITTER_CTRL_SPEED_MASK          0x3
+> +#define EMAC_SPLITTER_CTRL_SPEED_10            0x2
+> +#define EMAC_SPLITTER_CTRL_SPEED_100           0x3
+> +#define EMAC_SPLITTER_CTRL_SPEED_1000          0x0
+> +
+>  struct socfpga_dwmac {
+>         int     interface;
+>         u32     reg_offset;
+> @@ -37,14 +44,46 @@ struct socfpga_dwmac {
+>         struct  device *dev;
+>         struct regmap *sys_mgr_base_addr;
+>         struct reset_control *stmmac_rst;
+> +       void __iomem *splitter_base;
+>  };
+>
+> +static void socfpga_dwmac_fix_mac_speed(void *priv, unsigned int speed)
+> +{
+> +       struct socfpga_dwmac *dwmac = (struct socfpga_dwmac *)priv;
+> +       void __iomem *splitter_base = dwmac->splitter_base;
+> +       u32 val;
+> +
+> +       if (!splitter_base)
+> +               return;
+> +
+> +       val = readl(splitter_base + EMAC_SPLITTER_CTRL_REG);
+> +       val &= ~EMAC_SPLITTER_CTRL_SPEED_MASK;
+> +
+> +       switch (speed) {
+> +       case 1000:
+> +               val |= EMAC_SPLITTER_CTRL_SPEED_1000;
+> +               break;
+> +       case 100:
+> +               val |= EMAC_SPLITTER_CTRL_SPEED_100;
+> +               break;
+> +       case 10:
+> +               val |= EMAC_SPLITTER_CTRL_SPEED_10;
+> +               break;
+> +       default:
+> +               return;
+> +       }
+> +
+> +       writel(val, splitter_base + EMAC_SPLITTER_CTRL_REG);
+> +}
+> +
+>  static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *dev)
+>  {
+>         struct device_node *np = dev->of_node;
+>         struct regmap *sys_mgr_base_addr;
+>         u32 reg_offset, reg_shift;
+>         int ret;
+> +       struct device_node *np_splitter;
+> +       struct resource res_splitter;
+>
+>         dwmac->stmmac_rst = devm_reset_control_get(dev,
+>                                                   STMMAC_RESOURCE_NAME);
+> @@ -73,6 +112,21 @@ static int socfpga_dwmac_parse_data(struct socfpga_dwmac *dwmac, struct device *
+>                 return -EINVAL;
+>         }
+>
+> +       np_splitter = of_parse_phandle(np, "altr,emac-splitter", 0);
+> +       if (np_splitter) {
+> +               if (of_address_to_resource(np_splitter, 0, &res_splitter)) {
+> +                       dev_info(dev, "Missing emac splitter address\n");
+> +                       return -EINVAL;
+> +               }
+> +
+> +               dwmac->splitter_base = (void *)devm_ioremap_resource(dev,
+> +                       &res_splitter);
+> +               if (!dwmac->splitter_base) {
+> +                       dev_info(dev, "Failed to mapping emac splitter\n");
+> +                       return -EINVAL;
+> +               }
+> +       }
+> +
+>         dwmac->reg_offset = reg_offset;
+>         dwmac->reg_shift = reg_shift;
+>         dwmac->sys_mgr_base_addr = sys_mgr_base_addr;
+> @@ -91,6 +145,7 @@ static int socfpga_dwmac_setup(struct socfpga_dwmac *dwmac)
+>
+>         switch (phymode) {
+>         case PHY_INTERFACE_MODE_RGMII:
+> +       case PHY_INTERFACE_MODE_RGMII_ID:
+>                 val = SYSMGR_EMACGRP_CTRL_PHYSEL_ENUM_RGMII;
+>                 break;
+>         case PHY_INTERFACE_MODE_MII:
+> @@ -102,6 +157,13 @@ static int socfpga_dwmac_setup(struct socfpga_dwmac *dwmac)
+>                 return -EINVAL;
+>         }
+>
+> +       /* Overwrite val to GMII if splitter core is enabled. The phymode here
+> +        * is the actual phy mode on phy hardware, but phy interface from
+> +        * EMAC core is GMII.
+> +        */
+> +       if (dwmac->splitter_base)
+> +               val = SYSMGR_EMACGRP_CTRL_PHYSEL_ENUM_GMII_MII;
+> +
+>         regmap_read(sys_mgr_base_addr, reg_offset, &ctrl);
+>         ctrl &= ~(SYSMGR_EMACGRP_CTRL_PHYSEL_MASK << reg_shift);
+>         ctrl |= val << reg_shift;
+> @@ -196,4 +258,5 @@ const struct stmmac_of_data socfpga_gmac_data = {
+>         .setup = socfpga_dwmac_probe,
+>         .init = socfpga_dwmac_init,
+>         .exit = socfpga_dwmac_exit,
+> +       .fix_mac_speed = socfpga_dwmac_fix_mac_speed,
+>  };
+> --
+> 1.8.2.1
+>
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/pwm/pwm-imx.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
-index 5449d91..f836635 100644
---- a/drivers/pwm/pwm-imx.c
-+++ b/drivers/pwm/pwm-imx.c
-@@ -25,20 +25,21 @@
- #define MX1_PWMS    0x04   /* PWM Sample Register */
- #define MX1_PWMP    0x08   /* PWM Period Register */
- 
--#define MX1_PWMC_EN		(1 << 4)
-+#define MX1_PWMC_EN			(1 << 4)
- 
- /* i.MX27, i.MX31, i.MX35 share the same PWM function block: */
- 
--#define MX3_PWMCR                 0x00    /* PWM Control Register */
--#define MX3_PWMSAR                0x0C    /* PWM Sample Register */
--#define MX3_PWMPR                 0x10    /* PWM Period Register */
--#define MX3_PWMCR_PRESCALER(x)    (((x - 1) & 0xFFF) << 4)
--#define MX3_PWMCR_DOZEEN                (1 << 24)
--#define MX3_PWMCR_WAITEN                (1 << 23)
-+#define MX3_PWMCR			0x00	  /* PWM Control Register */
-+#define MX3_PWMSAR			0x0C	  /* PWM Sample Register */
-+#define MX3_PWMPR			0x10	  /* PWM Period Register */
-+#define MX3_PWMCR_PRESCALER(x)		((((x) - 1) & 0xFFF) << 4)
-+#define MX3_PWMCR_DOZEEN		(1 << 24)
-+#define MX3_PWMCR_WAITEN		(1 << 23)
- #define MX3_PWMCR_DBGEN			(1 << 22)
--#define MX3_PWMCR_CLKSRC_IPG_HIGH (2 << 16)
--#define MX3_PWMCR_CLKSRC_IPG      (1 << 16)
--#define MX3_PWMCR_EN              (1 << 0)
-+#define MX3_PWMCR_POUTC			(1 << 18)
-+#define MX3_PWMCR_CLKSRC_IPG_HIGH	(2 << 16)
-+#define MX3_PWMCR_CLKSRC_IPG		(1 << 16)
-+#define MX3_PWMCR_EN			(1 << 0)
- 
- struct imx_chip {
- 	struct clk	*clk_per;
--- 
-1.7.10.4
-
+Adding David S. Miller to CC list.
