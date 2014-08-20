@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911AbaHTVq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 17:46:28 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:61167 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612AbaHTVq0 (ORCPT
+	id S1752991AbaHTV4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 17:56:22 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34704 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618AbaHTV4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 17:46:26 -0400
-From: Peter Feiner <pfeiner@google.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Peter Feiner <pfeiner@google.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mm: softdirty: write protect PTEs created for read faults after VM_SOFTDIRTY cleared
-Date: Wed, 20 Aug 2014 17:46:22 -0400
-Message-Id: <1408571182-28750-1-git-send-email-pfeiner@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Wed, 20 Aug 2014 17:56:21 -0400
+Date: Wed, 20 Aug 2014 23:56:18 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Nick Krause <xerofoiffy@gmail.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] spi: Remove unused definitions
+Message-ID: <20140820215618.GA744@amd>
+References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
+ <17153.1407349640@turing-police.cc.vt.edu>
+ <20140820202235.GA28350@xo-6d-61-c0.localdomain>
+ <26099.1408569162@turing-police.cc.vt.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <26099.1408569162@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In readable+writable+shared VMAs, PTEs created for read faults have
-their write bit set. If the read fault happens after VM_SOFTDIRTY is
-cleared, then the PTE's softdirty bit will remain clear after
-subsequent writes.
+On Wed 2014-08-20 17:12:42, Valdis.Kletnieks@vt.edu wrote:
+> (Adding Al Viro and linux-fsdevel, dropping Mark Brown and the SPI list, because this is
+> heading off in a different direction now)
+> 
+> On Wed, 20 Aug 2014 22:26:02 +0200, Pavel Machek said:
+> > On Wed 2014-08-06 14:27:20, Valdis.Kletnieks@vt.edu wrote:
+> > > On Wed, 06 Aug 2014 13:53:17 -0400, Nick Krause said:
+> > > > Remove unused definition which cause the following warnings
+> > > >
+> > > > drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
+> > > > include/linux/fs.h:193:0: note: this is the location of the previous definition
+> > > > drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
+> > > > include/linux/fs.h:192:0: note: this is the location of the previous definition
+> > >
+> > > > -#define WRITE 0
+> > > > -#define READ  1
+> > >
+> > > NAK.  Full stop.  These are potentially used in an inner macro someplace, and by
+> > > removing these, the conflicting values from fs.h will be used instead.
+> > >
+> > > #define READ                    0
+> > > #define WRITE                   RW_MASK
+> > >
+> > > So if there *is* a use in an inner macro, you just screwed the pooch
+> > > and introduced a bug in this "clean up" - somebody will be expecting to see
+> > > a 0 for a READ, and will receive a 1 instead.  This can't end well.
+> >
+> > Actually.. having macros called READ and WRITE in fs.h is already something I'd say
+> > can't end well. Can we rename those?
+> 
+> I had the same thought, but other than a test rename to XYZZY_READ and PLUGH_WRITE
+> and doing a 'make allmodconfig' and seeing what throws an error, I'm not sure how
+> to track down all the users.  On my fairly stripped-down .config, I have:
+> 
+> [/usr/src/linux-next] find * -name '.*.cmd' | wc -l
+> 4671
+> [/usr/src/linux-next] find * -name '.*.cmd' | xargs grep include/linux/fs.h | wc -l
+> 2339
+> 
+> Which is telling me that pretty much half the world ends up including fs.h indirectly.
 
-Here's a simple code snippet to demonstrate the bug:
+Yep.
 
-  char* m = mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE,
-                 MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-  system("echo 4 > /proc/$PPID/clear_refs"); /* clear VM_SOFTDIRTY */
-  assert(*m == '\0');     /* new PTE allows write access */
-  assert(!soft_dirty(x));
-  *m = 'x';               /* should dirty the page */
-  assert(soft_dirty(x));  /* fails */
+I hope sh math emulator does not include fs.h.
 
-With this patch, new PTEs created for read faults are write protected
-if the VMA has VM_SOFTDIRTY clear.
+arch/sh/math-emu/math.c:#define READ(d,a)       ({if(get_user(d, (typeof (d)*)a)
 
-Signed-off-by: Peter Feiner <pfeiner@google.com>
----
- mm/memory.c | 2 ++
- 1 file changed, 2 insertions(+)
+> Now for the mandatory bikeshedding:
+> 
+> What do we want to rename them to? :)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index ab3537b..282a959 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2755,6 +2755,8 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
- 		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 	else if (pte_file(*pte) && pte_file_soft_dirty(*pte))
- 		entry = pte_mksoft_dirty(entry);
-+	else if (!(vma->vm_flags & VM_SOFTDIRTY))
-+		entry = pte_wrprotect(entry);
- 	if (anon) {
- 		inc_mm_counter_fast(vma->vm_mm, MM_ANONPAGES);
- 		page_add_new_anon_rmap(page, vma, address);
+REQ_ prefix would fit there well, I'd say.
+									Pavel
+
+
 -- 
-2.1.0.rc2.206.gedb03e5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
