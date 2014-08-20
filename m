@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192AbaHTK6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 06:58:22 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55559 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaHTK6V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 06:58:21 -0400
-Date: Wed, 20 Aug 2014 12:58:17 +0200
-From: Jiri Pirko <jiri@resnulli.us>
-To: Pankaj Gupta <pagupta@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        jasowang@redhat.com, mst@redhat.com, dgibson@redhat.com,
-        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
-        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
-        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
-        stephen@networkplumber.org
-Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
- module_param
-Message-ID: <20140820105817.GB1916@nanopsycho.orion>
-References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
- <1408369040-1216-3-git-send-email-pagupta@redhat.com>
+	id S1751936AbaHTLEx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:04:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48620 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258AbaHTLEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:04:51 -0400
+Date: Wed, 20 Aug 2014 13:05:15 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Razya Ladelsky <RAZYA@il.ibm.com>
+Cc: abel.gordon@gmail.com, Alex Glikson <GLIKSON@il.ibm.com>,
+        David Miller <davem@davemloft.net>,
+        Eran Raichstein <ERANRA@il.ibm.com>, Joel Nider <JOELN@il.ibm.com>,
+        kvm@vger.kernel.org, kvm-owner@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
+Subject: Re: [PATCH] vhost: Add polling mode
+Message-ID: <20140820110515.GD17371@redhat.com>
+References: <1407659404-razya@il.ibm.com>
+ <20140810083035.0CF58380729@moren.haifa.ibm.com>
+ <20140810194559.GA4344@redhat.com>
+ <20140811.124621.576073630604147753.davem@davemloft.net>
+ <20140812091850.GD6440@redhat.com>
+ <OF93E480CE.EFA0854D-ONC2257D32.003BE092-C2257D32.003C1F49@il.ibm.com>
+ <20140813121550.GA21026@redhat.com>
+ <OFFB3DD9F0.3A92A6A0-ONC2257D37.0043D722-C2257D37.004522A0@il.ibm.com>
+ <20140817125809.GA22213@redhat.com>
+ <OFB79DEF3C.1ADC0F14-ONC2257D39.002F0F0A-C2257D39.002F3CBC@il.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408369040-1216-3-git-send-email-pagupta@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <OFB79DEF3C.1ADC0F14-ONC2257D39.002F0F0A-C2257D39.002F3CBC@il.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
-> This patch publishes maximum number of tun/tap queues allocated as a
-> read_only module parameter which a user space application like libvirt
-> can make use of to limit maximum number of queues. Value of read_only
-> module parameter can be writable only at module load time. If no value is set
-> at module load time a default value 256 is used which is equal to maximum number
-> of vCPUS allowed by KVM.
->
-> Administrator can specify maximum number of queues only at the driver
-> module load time.
->
->Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
->---
-> drivers/net/tun.c |   13 +++++++++++--
-> 1 files changed, 11 insertions(+), 2 deletions(-)
->
->diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->index acaaf67..1f518e2 100644
->--- a/drivers/net/tun.c
->+++ b/drivers/net/tun.c
->@@ -119,6 +119,9 @@ struct tap_filter {
+On Tue, Aug 19, 2014 at 11:36:31AM +0300, Razya Ladelsky wrote:
+> > That was just one example. There many other possibilities.  Either
+> > actually make the systems load all host CPUs equally, or divide
+> > throughput by host CPU.
+> > 
 > 
-> #define TUN_FLOW_EXPIRE (3 * HZ)
+> The polling patch adds this capability to vhost, reducing costly exit 
+> overhead when the vm is loaded.
 > 
->+static int max_tap_queues = MAX_TAP_QUEUES;
->+module_param(max_tap_queues, int, S_IRUGO);
+> In order to load the vm I ran netperf  with msg size of 256:
+> 
+> Without polling:  2480 Mbits/sec,  utilization: vm - 100%   vhost - 64% 
+> With Polling: 4160 Mbits/sec,  utilization: vm - 100%   vhost - 100% 
+> 
+> Therefore, throughput/cpu without polling is 15.1, and 20.8 with polling.
+> 
 
-Please do not introduce new module paramaters. Please other ways to
-interchange values with userspace.
+Can you please present results in a form that makes
+it possible to see the effect on various configurations
+and workloads?
+
+Here's one example where this was done:
+https://lkml.org/lkml/2014/8/14/495
+
+You really should also provide data about your host
+configuration (missing in the above link).
+
+> My intention was to load vhost as close as possible to 100% utilization 
+> without polling, in order to compare it to the polling utilization case 
+> (where vhost is always 100%). 
+> The best use case, of course, would be when the shared vhost thread work 
+> (TBD) is integrated and then vhost will actually be using its polling 
+> cycles to handle requests of multiple devices (even from multiple vms).
+> 
+> Thanks,
+> Razya
+
+
+-- 
+MST
