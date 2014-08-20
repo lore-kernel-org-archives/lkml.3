@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbaHTMV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:21:29 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:33066 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334AbaHTMV1 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Wed, 20 Aug 2014 08:21:27 -0400
-Message-Id: <53F4A0D202000078000BAD84@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Wed, 20 Aug 2014 13:21:22 +0100
-From: "Jan Beulich" <jbeulich@suse.com>
-To: <gnomes@lxorguk.ukuu.org.uk>
-Cc: <stefan.bader@canonical.com>, <toshi.kani@hp.com>, <x86@kernel.org>,
-        <ville.syrjala@linux.intel.com>, <xen-devel@lists.xensource.com>,
-        "Juergen Gross" <JGross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH RFC 0/3] x86: Full support of PAT
-References: <1408454745-32358-1-git-send-email-jgross@suse.com>
- <20140820130511.771aeafa@alan.etchedpixels.co.uk>
-In-Reply-To: <20140820130511.771aeafa@alan.etchedpixels.co.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752884AbaHTMZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:25:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752047AbaHTMZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:25:56 -0400
+Date: Wed, 20 Aug 2014 14:25:41 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
+Subject: Re: [PATCH 7/9] KVM: VMX: abstract ple_window modifiers
+Message-ID: <20140820122541.GA28873@potion.brq.redhat.com>
+References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
+ <1408480536-8240-8-git-send-email-rkrcmar@redhat.com>
+ <53F44815.9020309@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53F44815.9020309@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> 08/20/14 2:08 PM >>>
->> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
->> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
->> top 4 entries in the PAT MSR are the same as the 4 lower entries.
->> 
->> This results in the kernel not supporting e.g. write-through mode. Especially
->> this cache mode would speed up drivers of video cards which now have to use
->> uncached accesses.
->
->Pentium II erratum A52 (and similar on quite a few other processors)
+2014-08-20 09:02+0200, Paolo Bonzini:
+> Il 19/08/2014 22:35, Radim Krčmář ha scritto:
+> > They were almost identical and thus merged with a loathable macro.
+> > 
+> > Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> > ---
+> >  This solution is hopefully more acceptable than function pointers.
+> 
+> I think a little amount of duplication is not a problem.
 
-But you're aware that for the last two major releases Xen hasn't been supporting
-32-bit CPUs at all anymore? I.e. why should we limit functionality under Xen
-based on errata on 64-bit-incapable CPUs?
-
-Jan
-
+Ok, I'll drop this patch from from v2.
