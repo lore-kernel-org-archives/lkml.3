@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaHTOtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:49:33 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:20331 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750916AbaHTOtc (ORCPT
+	id S1752146AbaHTOtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:49:40 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:47678 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096AbaHTOtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:49:32 -0400
-Message-ID: <53F4B555.7060403@fb.com>
-Date: Wed, 20 Aug 2014 10:48:53 -0400
-From: Chris Mason <clm@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <miaox@cn.fujitsu.com>, <dsterba@suse.cz>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, <lkp@01.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        Abhay Sachan <lkp.abhay@gmail.com>
-Subject: [PATCH] Btrfs: fix filemap_flush call in btrfs_file_release
-References: <20140816075233.GA26842@localhost> <20140819115820.GA21418@localhost> <20140819142348.GU1553@twin.jikos.cz> <53F36601.5020609@fb.com> <53F47E07.3080807@cn.fujitsu.com>
-In-Reply-To: <53F47E07.3080807@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-20_05:2014-08-20,2014-08-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=6.49436060484732e-12 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.533125042697551
- urlsuspect_oldscore=0.533125042697551 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.533125042697551 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1408200152
-X-FB-Internal: deliver
+	Wed, 20 Aug 2014 10:49:36 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] irqchip: renesas-intc-irqpin: Add suspend-to-RAM wake up support
+Date: Wed, 20 Aug 2014 16:49:32 +0200
+Message-Id: <1408546172-22484-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Set the ->irq_enable() and ->irq_disable() methods to NULL to enable
+lazy disable of interrupts, and set IRQCHIP_MASK_ON_SUSPEND to tell the
+core that only IRQs marked as wake-ups need to stay enabled during
+suspend-to-RAM.
 
-We should only be flushing on close if the file was flagged as needing
-it during truncate.  I broke this with my ordered data vs transaction
-commit deadlock fix.
+This makes wake-up by gpio-keys from suspend-to-RAM work on
+r8a7740/Armadillo.
 
-Thanks to Miao Xie for catching this.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+Not tested on sh73a0/kzm9g, r8a7778/bock-w, r8a7779/marzen
 
-Signed-off-by: Chris Mason <clm@fb.com>
-Reported-by: Miao Xie <miaox@cn.fujitsu.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Similar changes for gpio-rcar and renesas-irqc went in before, but
+split in two parts:
+  - commit 272012d0f748de2e ("irqchip: renesas-irqc: Use lazy disable")
+  - commit 6a7e3b3007b5396a ("irqchip: renesas-irqc: Enable mask on suspend")
+  - commit fba968a1e6b84be0 ("gpio: rcar: Use lazy disable")
+  - commit 403961120667bed7 ("gpio: rcar: Enable mask on suspend")
 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index f15c13f..36861b7 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -1840,7 +1840,15 @@ int btrfs_release_file(struct inode *inode, struct file *filp)
- {
- 	if (filp->private_data)
- 		btrfs_ioctl_trans_end(filp);
--	filemap_flush(inode->i_mapping);
-+	/*
-+	 * ordered_data_close is set by settattr when we are about to truncate
-+	 * a file from a non-zero size to a zero size.  This tries to
-+	 * flush down new bytes that may have been written if the
-+	 * application were using truncate to replace a file in place.
-+	 */
-+	if (test_and_clear_bit(BTRFS_INODE_ORDERED_DATA_CLOSE,
-+			       &BTRFS_I(inode)->runtime_flags))
-+			filemap_flush(inode->i_mapping);
- 	return 0;
- }
+However, I believe it doesn't make much sense to split this:
+  - Enabling lazy disable on its own introduces a regression, as it
+    causes the system to wake-up on IRQs not marked as wake-ups,
+  - Adding IRQCHIP_MASK_ON_SUSPEND on its own doesn't have any impact.
+---
+ drivers/irqchip/irq-renesas-intc-irqpin.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/irqchip/irq-renesas-intc-irqpin.c b/drivers/irqchip/irq-renesas-intc-irqpin.c
+index 3ee78f02e5d7..a9efceb0c4a0 100644
+--- a/drivers/irqchip/irq-renesas-intc-irqpin.c
++++ b/drivers/irqchip/irq-renesas-intc-irqpin.c
+@@ -454,10 +454,8 @@ static int intc_irqpin_probe(struct platform_device *pdev)
+ 	irq_chip->name = name;
+ 	irq_chip->irq_mask = disable_fn;
+ 	irq_chip->irq_unmask = enable_fn;
+-	irq_chip->irq_enable = enable_fn;
+-	irq_chip->irq_disable = disable_fn;
+ 	irq_chip->irq_set_type = intc_irqpin_irq_set_type;
+-	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
++	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_MASK_ON_SUSPEND;
  
+ 	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
+ 					      p->number_of_irqs,
+-- 
+1.9.1
+
