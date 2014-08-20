@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332AbaHTUzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:55:35 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54763 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816AbaHTUzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:55:32 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] PM / sleep: Fix racing timers
-Date: Wed, 20 Aug 2014 13:55:09 -0700
-Message-Id: <1408568109-30297-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.0.1.1.gfbfc394
+	id S1753399AbaHTUz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:55:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3231 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190AbaHTUyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 16:54:07 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: [PATCH v2 2/6] KVM: x86: introduce sched_in to kvm_x86_ops
+Date: Wed, 20 Aug 2014 22:53:13 +0200
+Message-Id: <1408567997-21222-3-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
+References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,159 +25,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On platforms that do not power off during suspend, successfully entering
-suspend races with timers.
+sched_in preempt notifier is available for x86, allow its use in
+specific virtualization technlogies as well.
 
-The race happening in a couple of location is:
-
-  1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
-     ...
-  2. syscore_suspend()
-      -> timekeeping_suspend()
-       -> clockevents_notify(SUSPEND)
-        -> tick_suspend()   	(timers are turned off here)
-     ...
-  3. wfi            		(wait for wake-IRQ here)
-
-Between steps 1 and 2 the timers can still generate interrupts that are
-not handled and stay pending until step 3. That pending IRQ causes an
-immediate - spurious - wake.
-
-The solution is to move the clockevents suspend/resume notification
-out of the syscore_suspend step and explictly call them at the appropriate
-time in the suspend/hibernation paths. I.e. timers are suspend _before_
-IRQs get disabled. And accordingly in the resume path.
-
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
-Hi,
+ arch/x86/include/asm/kvm_host.h | 2 ++
+ arch/x86/kvm/svm.c              | 6 ++++++
+ arch/x86/kvm/vmx.c              | 6 ++++++
+ arch/x86/kvm/x86.c              | 1 +
+ 4 files changed, 15 insertions(+)
 
-there was a little of an dicussion on the RFC for this patch, but that
-eventually ended (https://lkml.org/lkml/2014/7/21/493).
-In the meantime I found one small flaw that is fixed in this patch (changelog
-below).
-This resolves the issues I see on my Zynq (ARM) platform and I also patched my
-Laptop's (x86_64) kernel with this where it looks good as well. Though, in both
-cases only suspend is used. Any testing - especially of hibernation - would
-be much appreciated.
-
-	Thanks,
-	Sören
-
-Changes since RFC:
- - remove resume notification from syscore_resume path.
----
- kernel/power/hibernate.c  | 9 +++++++++
- kernel/power/suspend.c    | 5 +++++
- kernel/time/timekeeping.c | 3 ---
- 3 files changed, 14 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index a9dfa79b6bab..76f15644aec8 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -285,6 +285,8 @@ static int create_image(int platform_mode)
- 	if (error || hibernation_test(TEST_CPUS))
- 		goto Enable_cpus;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 5724601..358e2f3 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -772,6 +772,8 @@ struct kvm_x86_ops {
+ 	bool (*mpx_supported)(void);
  
-+	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
+ 	int (*check_nested_events)(struct kvm_vcpu *vcpu, bool external_intr);
 +
- 	local_irq_disable();
++	void (*sched_in)(struct kvm_vcpu *kvm, int cpu);
+ };
  
- 	error = syscore_suspend();
-@@ -316,6 +318,7 @@ static int create_image(int platform_mode)
- 	syscore_resume();
- 
-  Enable_irqs:
-+	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
+ struct kvm_arch_async_pf {
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index ddf7427..4baf1bc 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -4305,6 +4305,10 @@ static void svm_handle_external_intr(struct kvm_vcpu *vcpu)
  	local_irq_enable();
- 
-  Enable_cpus:
-@@ -438,6 +441,8 @@ static int resume_target_kernel(bool platform_mode)
- 	if (error)
- 		goto Enable_cpus;
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
-+
- 	local_irq_disable();
- 
- 	error = syscore_suspend();
-@@ -472,6 +477,7 @@ static int resume_target_kernel(bool platform_mode)
- 	syscore_resume();
- 
-  Enable_irqs:
-+	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
- 	local_irq_enable();
- 
-  Enable_cpus:
-@@ -550,6 +556,8 @@ int hibernation_platform_enter(void)
- 	if (error)
- 		goto Platform_finish;
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
-+
- 	local_irq_disable();
- 	syscore_suspend();
- 	if (pm_wakeup_pending()) {
-@@ -563,6 +571,7 @@ int hibernation_platform_enter(void)
- 
-  Power_up:
- 	syscore_resume();
-+	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
- 	local_irq_enable();
- 	enable_nonboot_cpus();
- 
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 6dadb25cb0d8..6bba2f907bcb 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -12,6 +12,7 @@
- #include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/init.h>
-+#include <linux/clockchips.h>
- #include <linux/console.h>
- #include <linux/cpu.h>
- #include <linux/cpuidle.h>
-@@ -294,6 +295,8 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
- 	if (error || suspend_test(TEST_CPUS))
- 		goto Enable_cpus;
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
-+
- 	arch_suspend_disable_irqs();
- 	BUG_ON(!irqs_disabled());
- 
-@@ -311,6 +314,8 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
- 		syscore_resume();
- 	}
- 
-+	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
-+
- 	arch_suspend_enable_irqs();
- 	BUG_ON(irqs_disabled());
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index fb4a9c2cf8d9..f13332185b07 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1188,8 +1188,6 @@ static void timekeeping_resume(void)
- 
- 	touch_softlockup_watchdog();
- 
--	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
--
- 	/* Resume hrtimers */
- 	hrtimers_resume();
  }
-@@ -1242,7 +1240,6 @@ static int timekeeping_suspend(void)
- 	write_seqcount_end(&tk_core.seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
  
--	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
- 	clocksource_suspend();
- 	clockevents_suspend();
++static void svm_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ static struct kvm_x86_ops svm_x86_ops = {
+ 	.cpu_has_kvm_support = has_svm,
+ 	.disabled_by_bios = is_disabled,
+@@ -4406,6 +4410,8 @@ static struct kvm_x86_ops svm_x86_ops = {
  
+ 	.check_intercept = svm_check_intercept,
+ 	.handle_external_intr = svm_handle_external_intr,
++
++	.sched_in = svm_sched_in,
+ };
+ 
+ static int __init svm_init(void)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index bfe11cf..2b306f9 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -8846,6 +8846,10 @@ static int vmx_check_intercept(struct kvm_vcpu *vcpu,
+ 	return X86EMUL_CONTINUE;
+ }
+ 
++void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
++{
++}
++
+ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.cpu_has_kvm_support = cpu_has_kvm_support,
+ 	.disabled_by_bios = vmx_disabled_by_bios,
+@@ -8951,6 +8955,8 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.mpx_supported = vmx_mpx_supported,
+ 
+ 	.check_nested_events = vmx_check_nested_events,
++
++	.sched_in = vmx_sched_in,
+ };
+ 
+ static int __init vmx_init(void)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index d7c214f..5696ee7 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7148,6 +7148,7 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
+ 
+ void kvm_arch_sched_in(struct kvm_vcpu *vcpu, int cpu)
+ {
++	kvm_x86_ops->sched_in(vcpu, cpu);
+ }
+ 
+ int kvm_arch_init_vm(struct kvm *kvm, unsigned long type)
 -- 
-2.0.1.1.gfbfc394
+2.0.4
 
