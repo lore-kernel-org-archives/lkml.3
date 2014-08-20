@@ -1,250 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaHTRL7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 13:11:59 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:65489 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaHTRL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 13:11:57 -0400
-From: mathieu.poirier@linaro.org
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, mathieu.poirier@linaro.org
-Subject: [PATCH v4] coresight: bindings for coresight drivers
-Date: Wed, 20 Aug 2014 11:11:38 -0600
-Message-Id: <1408554698-24459-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1752648AbaHTRM6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 13:12:58 -0400
+Received: from mail.cs.hut.fi ([130.233.192.7]:47621 "EHLO mail.cs.hut.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516AbaHTRM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 13:12:56 -0400
+X-Greylist: delayed 568 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Aug 2014 13:12:56 EDT
+Date: Wed, 20 Aug 2014 20:03:26 +0300 (EEST)
+From: Ari Sundholm <asundhol@cs.hut.fi>
+X-X-Sender: asundhol@hutcs
+To: platform-driver-x86@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH] Revert "platform/x86/toshiba-apci.c possible bad if test?"
+Message-ID: <alpine.GSO.2.00.1408201955290.8292@hutcs>
+User-Agent: Alpine 2.00 (GSO 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratik Patel <pratikp@codeaurora.org>
+From: Ari Sundholm <ari@tuxera.com>
 
-Coresight IP blocks allow for the support of HW assisted tracing
-on ARM SoCs.  Bindings for the currently available blocks are
-presented herein.
+This reverts commit bdc3ae7221213963f438faeaa69c8b4a2195f491.
 
-Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Signed-off-by: Ari Sundholm <ari@tuxera.com>
 ---
- .../devicetree/bindings/arm/coresight.txt          | 205 +++++++++++++++++++++
- 1 file changed, 205 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
+ drivers/platform/x86/toshiba_acpi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
-new file mode 100644
-index 0000000..2ee594d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/coresight.txt
-@@ -0,0 +1,205 @@
-+* CoreSight Components
-+
-+CoreSight components are compliant with the ARM CoreSight architecture
-+specification and can be connected in various topologies to suit a particular
-+SoCs tracing needs. These trace components can generally be classified as sinks,
-+links and sources. Trace data produced by one or more sources flows through the
-+intermediate links connecting the source to the currently selected sink. Each
-+CoreSight component device should use these properties to describe its hardware
-+characteristcs.
-+
-+Required properties for all components *except* non-configurable replicators:
-+
-+- compatible : name of the component used for driver matching.  Possible values
-+include: "arm,coresight-etb10", "arm,coresight-tpiu", "arm,coresight-tmc",
-+"arm,coresight-funnel", and "arm,coresight-etm3x".  All of these have to
-+be supplemented with "arm,primecell" as drivers are using the AMBA bus
-+interface.  Since non-configurable replicators don't show up on the AMBA
-+bus they don't need to be post-fixed with "arm,primecell".
-+
-+- reg : physical base address and length of the register set(s) of the component.
-+
-+- clocks : the clock associated to this component.
-+
-+- clock-names: the name of the clock as referenced by the code.  Since we are
-+using the AMBA framework, the name should be "apb_pclk".
-+
-+- ports or port: The representation of the component's port layout using the
-+generic DT graph presentation found in "bindings/graph.txt".
-+
-+Non-configurable replicators:
-+
-+- compatible: currently supported value is "arm-replicator".  Since non-configurable
-+replicators don't show up on the AMBA hey don't need to be post-fixed with
-+"arm,primecell".
-+
-+- id: a unique number that will identify this replicator.
-+
-+- ports or port: same as above.
-+
-+Optional properties for Sinks:
-+
-+- coresight-default-sink: must be specified for one of the sink devices that is
-+intended to be made the default sink. Other sink devices must not have this
-+specified. Not specifying this property on any of the sinks is invalid.
-+
-+Optional properties for ETM/PTMs:
-+
-+- arm,cp14: must be present if the system accesses ETM/PTM management registers
-+via co-processor 14.
-+
-+- arm,cp14: access to ETM/PTM management registers is made via cp14.
-+
-+- cpu: the cpu phandle this ETM/PTM is affined to. When omitted the source is
-+considered to belong to CPU0.
-+
-+Optional property for TMC:
-+
-+- arm,buffer-size: size of contiguous buffer space for TMC ETR (embedded trace router)
-+
-+
-+Example:
-+
-+1. Sinks
-+	etb: etb@20010000 {
-+		compatible = "arm,coresight-etb10", "arm,primecell";
-+		reg = <0 0x20010000 0 0x1000>;
-+
-+		coresight-default-sink;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			etb_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port0>;
-+			};
-+		};
-+	};
-+
-+	tpiu: tpiu@20030000 {
-+		compatible = "arm,coresight-tpiu", "arm,primecell";
-+		reg = <0 0x20030000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			tpiu_in_port: endpoint@0 {
-+				slave-mode;
-+				remote-endpoint = <&replicator_out_port1>;
-+			};
-+		};
-+	};
-+
-+2. Links
-+	replicator {
-+		/* non-configurable replicators don't show up on the
-+		 * AMBA bus.  As such no need to add "arm,primecell".
-+		 */
-+		compatible = "arm,coresight-replicator";
-+		/* this will show up in debugfs as "0.replicator" */
-+		id = <0>;
-+
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* replicator output ports */
-+			port@0 {
-+				reg = <0>;
-+				replicator_out_port0: endpoint {
-+					remote-endpoint = <&etb_in_port>;
-+				};
-+			};
-+
-+			port@1 {
-+				reg = <1>;
-+				replicator_out_port1: endpoint {
-+					remote-endpoint = <&tpiu_in_port>;
-+				};
-+			};
-+
-+			/* replicator input port */
-+			port@2 {
-+				reg = <0>;
-+				replicator_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&funnel_out_port0>;
-+				};
-+			};
-+		};
-+	};
-+
-+	funnel@20040000 {
-+		compatible = "arm,coresight-funnel", "arm,primecell";
-+		reg = <0 0x20040000 0 0x1000>;
-+
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		ports {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+
-+			/* funnel output port */
-+			port@0 {
-+				reg = <0>;
-+				funnel_out_port0: endpoint {
-+					remote-endpoint = <&replicator_in_port0>;
-+				};
-+			};
-+
-+			/* funnel input ports */
-+			port@1 {
-+				reg = <0>;
-+				funnel_in_port0: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm0_out_port>;
-+				};
-+			};
-+
-+			port@2 {
-+				reg = <1>;
-+				funnel_in_port1: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&ptm1_out_port>;
-+				};
-+			};
-+
-+			port@3 {
-+				reg = <2>;
-+				funnel_in_port2: endpoint {
-+					slave-mode;
-+					remote-endpoint = <&etm0_out_port>;
-+				};
-+			};
-+
-+		};
-+	};
-+
-+3. Sources
-+	ptm0: ptm@2201c000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201c000 0 0x1000>;
-+
-+		cpu = <&cpu0>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm0_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port0>;
-+			};
-+		};
-+	};
-+
-+	ptm1: ptm@2201d000 {
-+		compatible = "arm,coresight-etm3x", "arm,primecell";
-+		reg = <0 0x2201d000 0 0x1000>;
-+
-+		cpu = <&cpu1>;
-+		clocks = <&oscclk6a>;
-+		clock-names = "apb_pclk";
-+		port {
-+			ptm1_out_port: endpoint {
-+				remote-endpoint = <&funnel_in_port1>;
-+			};
-+		};
-+	};
+diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+index e4da61b..b062d3d 100644
+--- a/drivers/platform/x86/toshiba_acpi.c
++++ b/drivers/platform/x86/toshiba_acpi.c
+@@ -1258,7 +1258,7 @@ static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
+ 	int mode = -1;
+ 	int time = -1;
+ 
+-	if (sscanf(buf, "%i", &mode) != 1  || (mode != 2 || mode != 1))
++	if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
+ 		return -EINVAL;
+ 
+ 	/* Set the Keyboard Backlight Mode where:
 -- 
 1.9.1
-
