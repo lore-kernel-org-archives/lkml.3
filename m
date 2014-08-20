@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477AbaHTNsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 09:48:04 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60798 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125AbaHTNo3 (ORCPT
+	id S1752570AbaHTNn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 09:43:27 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:40194 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109AbaHTNnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 09:44:29 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-9b-53f4a63ba98c
+	Wed, 20 Aug 2014 09:43:23 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-1f-53f4a5f8330b
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>
-Subject: [PATCH/RFC v5 00/10] LED / flash API integration - documentation
-Date: Wed, 20 Aug 2014 15:44:09 +0200
-Message-id: <1408542259-415-1-git-send-email-j.anaszewski@samsung.com>
+Subject: [PATCH/RFC v5 0/3] LED / flash API integration - V4L2 Flash
+Date: Wed, 20 Aug 2014 15:43:08 +0200
+Message-id: <1408542191-335-1-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJJMWRmVeSWpSXmKPExsVy+t9jAV3rZV+CDc7cMbHYOGM9q8X8I+dY
-	LXqvPme0ONv0ht3i8q45bBZb36xjtOjZsJXVgd2jb8sqRo/Pm+QCmKK4bFJSczLLUov07RK4
-	Mu4udy94ylfx5s5WlgbGn9xdjJwcEgImEs2TLrFA2GISF+6tZwOxhQQWMUoc2m7WxcgFZLcz
-	SXTu/wpWxCZgKPHzxWsmEFtEoFyi5/0zsAZmgTSJNevvM4LYwgKeEm9uLgOrYRFQldgxaS5z
-	FyMHB6+Am0T3MmUQU0JAQWLOJJsJjNwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQH
-	wDPpHYyrGiwOMQpwMCrx8N5Y9CVYiDWxrLgy9xCjBAezkghveydQiDclsbIqtSg/vqg0J7X4
-	EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA2NabxV7mrnFJi31uxZ/f7DwOJolNq85
-	kTfH4WvBu0D+GTfkG/Pa/moev2UuwjLlcfzLyQb/H3ge4vuXczSiLq3s464socublObd2HyI
-	LXHKvTmmyfevJzVv2vOTnaXjwqnmS3JK7F39OzMyTYunsGxoejLhf/R5Ll3xf5/fT757SVa5
-	qfwNM7cSS3FGoqEWc1FxIgCxrJOy/AEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDJMWRmVeSWpSXmKPExsVy+t9jAd0fS78EGyx7y2exccZ6Vov5R86x
+	WvRefc5ocbbpDbvF5V1z2Cy2vlnHaNGzYSurA7tH35ZVjB6fN8kFMEVx2aSk5mSWpRbp2yVw
+	ZZy8PoGp4C1Xxbd9vawNjHM5uhg5OSQETCTOvFjCBGGLSVy4t56ti5GLQ0hgEaPEnX+9TBBO
+	O5NEx8UHjCBVbAKGEj9fvAbrEBEol+h5/4wNxGYWSJNYs/4+WI2wgIvEre0bWEBsFgFViVvH
+	3oLV8wq4SWztaQOq5wDapiAxZ5LNBEbuBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC
+	w+CZ9A7GVQ0WhxgFOBiVeHhvLPoSLMSaWFZcmXuIUYKDWUmEt70TKMSbklhZlVqUH19UmpNa
+	fIhRmoNFSZz3YKt1oJBAemJJanZqakFqEUyWiYNTqoHRO3SDwzH7x0v6b3w4XPXz8Te+ycpv
+	3j5+w2by15xf7P6J4/8DK9Zwr197gUFs5muDlpd8swWrosJjZm8Q9jxkJ6zatqvq5yel1Xul
+	OkPen+lU9jiwYsmk3fs3vz+yavEXd1HFRauv7m3ceOnwUqUfK23ei3jcPVL26fO/rK1p6/WW
+	+7UsnPyqw0iJpTgj0VCLuag4EQCySsYg/wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -48,32 +48,25 @@ Jacek Anaszewski
 
 [1] https://lkml.org/lkml/2014/7/11/914
 
-Jacek Anaszewski (10):
-  Documentation: leds: Add description of LED Flash Class extension
-  Documentation: leds: Add description of Flash Manager
-  Documentation: leds: add exemplary asynchronous mux driver
-  DT: leds: Add flash led devices related properties
-  DT: Add documentation for LED Class Flash Manger
-  DT: Add documentation for exynos4-is 'flashes' property
-  DT: Add documentation for the mfd Maxim max77693
-  of: Add Skyworks Solutions, Inc. vendor prefix
-  DT: Add documentation for the Skyworks AAT1290
-  ARM: dts: add aat1290 current regulator device node
+Jacek Anaszewski (3):
+  v4l2-ctrls: add control for flash strobe signal providers
+  media: Add registration helpers for V4L2 flash
+  exynos4-is: Add support for v4l2-flash subdevs
 
- Documentation/devicetree/bindings/leds/common.txt  |   16 ++
- .../devicetree/bindings/leds/leds-aat1290.txt      |   17 ++
- .../bindings/leds/leds-flash-manager.txt           |  163 ++++++++++++++++++++
- .../devicetree/bindings/media/samsung-fimc.txt     |    5 +
- Documentation/devicetree/bindings/mfd/max77693.txt |   62 ++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- Documentation/leds/leds-async-mux.c                |   65 ++++++++
- Documentation/leds/leds-class-flash.txt            |  118 ++++++++++++++
- arch/arm/boot/dts/exynos4412-trats2.dts            |   24 +++
- 9 files changed, 471 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/leds/leds-aat1290.txt
- create mode 100644 Documentation/devicetree/bindings/leds/leds-flash-manager.txt
- create mode 100644 Documentation/leds/leds-async-mux.c
- create mode 100644 Documentation/leds/leds-class-flash.txt
+ Documentation/DocBook/media/v4l/controls.xml  |   11 +
+ drivers/leds/led-class-flash.c                |   25 ++
+ drivers/media/platform/exynos4-is/media-dev.c |   37 +-
+ drivers/media/platform/exynos4-is/media-dev.h |   13 +-
+ drivers/media/v4l2-core/Kconfig               |   11 +
+ drivers/media/v4l2-core/Makefile              |    2 +
+ drivers/media/v4l2-core/v4l2-ctrls.c          |    2 +
+ drivers/media/v4l2-core/v4l2-flash.c          |  577 +++++++++++++++++++++++++
+ include/linux/led-class-flash.h               |   11 +
+ include/media/v4l2-flash.h                    |  121 ++++++
+ include/uapi/linux/v4l2-controls.h            |    2 +
+ 11 files changed, 809 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/media/v4l2-core/v4l2-flash.c
+ create mode 100644 include/media/v4l2-flash.h
 
 -- 
 1.7.9.5
