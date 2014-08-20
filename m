@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107AbaHTLs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:48:29 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59057 "EHLO
+	id S1753210AbaHTLtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:49:31 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59055 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752636AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752631AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 073/104] e1000: fix wrong queue idx calculation
-Date: Wed, 20 Aug 2014 13:43:36 +0200
-Message-Id: <da4a978cbadcf5641ba5a33e365e126474cf42e5.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
+        Michal Schmidt <mschmidt@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 032/104] bnx2x: fix crash during TSO tunneling
+Date: Wed, 20 Aug 2014 13:42:55 +0200
+Message-Id: <9ac1f1f2b7b385891a5a63d09337a2d66fd76673.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -24,39 +24,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hong Zhiguo <zhiguohong@tencent.com>
+From: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 49a45a0686cc2b43bcb3834a68416a201475dc77 upstream.
+[ Upstream commit fe26566d8a05151ba1dce75081f6270f73ec4ae1 ]
 
-tx_ring and adapter->tx_ring are already of type "struct
-e1000_tx_ring *"
+When TSO packet is transmitted additional BD w/o mapping is used
+to describe the packed. The BD needs special handling in tx
+completion.
 
-Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+kernel: Call Trace:
+kernel: <IRQ>  [<ffffffff815e19ba>] dump_stack+0x19/0x1b
+kernel: [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
+kernel: [<ffffffff8105df5c>] warn_slowpath_fmt+0x5c/0x80
+kernel: [<ffffffff814a8c0d>] ? find_iova+0x4d/0x90
+kernel: [<ffffffff814ab0e2>] intel_unmap_page.part.36+0x142/0x160
+kernel: [<ffffffff814ad0e6>] intel_unmap_page+0x26/0x30
+kernel: [<ffffffffa01f55d7>] bnx2x_free_tx_pkt+0x157/0x2b0 [bnx2x]
+kernel: [<ffffffffa01f8dac>] bnx2x_tx_int+0xac/0x220 [bnx2x]
+kernel: [<ffffffff8101a0d9>] ? read_tsc+0x9/0x20
+kernel: [<ffffffffa01f8fdb>] bnx2x_poll+0xbb/0x3c0 [bnx2x]
+kernel: [<ffffffff814d041a>] net_rx_action+0x15a/0x250
+kernel: [<ffffffff81067047>] __do_softirq+0xf7/0x290
+kernel: [<ffffffff815f3a5c>] call_softirq+0x1c/0x30
+kernel: [<ffffffff81014d25>] do_softirq+0x55/0x90
+kernel: [<ffffffff810673e5>] irq_exit+0x115/0x120
+kernel: [<ffffffff815f4358>] do_IRQ+0x58/0xf0
+kernel: [<ffffffff815e94ad>] common_interrupt+0x6d/0x6d
+kernel: <EOI>  [<ffffffff810bbff7>] ? clockevents_notify+0x127/0x140
+kernel: [<ffffffff814834df>] ? cpuidle_enter_state+0x4f/0xc0
+kernel: [<ffffffff81483615>] cpuidle_idle_call+0xc5/0x200
+kernel: [<ffffffff8101bc7e>] arch_cpu_idle+0xe/0x30
+kernel: [<ffffffff810b4725>] cpu_startup_entry+0xf5/0x290
+kernel: [<ffffffff815cfee1>] start_secondary+0x265/0x27b
+kernel: ---[ end trace 11aa7726f18d7e80 ]---
+
+Fixes: a848ade408b ("bnx2x: add CSUM and TSO support for encapsulation protocols")
+Reported-by: Yulong Pei <ypei@redhat.com>
+Cc: Michal Schmidt <mschmidt@redhat.com>
+Signed-off-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/intel/e1000/e1000_main.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     | 1 +
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 9 +++++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index 59ad007dd5aa..ad6800ad1bfc 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -3917,8 +3917,7 @@ static bool e1000_clean_tx_irq(struct e1000_adapter *adapter,
- 			      "  next_to_watch        <%x>\n"
- 			      "  jiffies              <%lx>\n"
- 			      "  next_to_watch.status <%x>\n",
--				(unsigned long)((tx_ring - adapter->tx_ring) /
--					sizeof(struct e1000_tx_ring)),
-+				(unsigned long)(tx_ring - adapter->tx_ring),
- 				readl(hw->hw_addr + tx_ring->tdh),
- 				readl(hw->hw_addr + tx_ring->tdt),
- 				tx_ring->next_to_use,
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
+index c5e375ddd6c0..930ced0bcc8b 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
+@@ -337,6 +337,7 @@ struct sw_tx_bd {
+ 	u8		flags;
+ /* Set on the first BD descriptor when there is a split BD */
+ #define BNX2X_TSO_SPLIT_BD		(1<<0)
++#define BNX2X_HAS_SECOND_PBD		(1<<1)
+ };
+ 
+ struct sw_rx_page {
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+index 9846d3e712a1..c3ba4bf20363 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+@@ -186,6 +186,12 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
+ 	--nbd;
+ 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+ 
++	if (tx_buf->flags & BNX2X_HAS_SECOND_PBD) {
++		/* Skip second parse bd... */
++		--nbd;
++		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
++	}
++
+ 	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
+ 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
+ 		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
+@@ -3822,6 +3828,9 @@ netdev_tx_t bnx2x_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			/* set encapsulation flag in start BD */
+ 			SET_FLAG(tx_start_bd->general_data,
+ 				 ETH_TX_START_BD_TUNNEL_EXIST, 1);
++
++			tx_buf->flags |= BNX2X_HAS_SECOND_PBD;
++
+ 			nbd++;
+ 		} else if (xmit_type & XMIT_CSUM) {
+ 			/* Set PBD in checksum offload case w/o encapsulation */
 -- 
 2.0.4
 
