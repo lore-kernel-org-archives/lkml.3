@@ -1,69 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283AbaHTMA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:00:58 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:46218 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400AbaHTMAz (ORCPT
+	id S1754001AbaHTMBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:01:50 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58939 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752545AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:00:55 -0400
-Message-ID: <53F48DF3.8000705@cogentembedded.com>
-Date: Wed, 20 Aug 2014 16:00:51 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org
-CC: nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 3/4] r8152: remove clear_bp function
-References: <1394712342-15778-16-Taiwan-albertk@realtek.com> <1394712342-15778-19-Taiwan-albertk@realtek.com>
-In-Reply-To: <1394712342-15778-19-Taiwan-albertk@realtek.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Aug 2014 07:44:10 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 048/104] sparc64: Add basic validations to {pud,pmd}_bad().
+Date: Wed, 20 Aug 2014 13:43:11 +0200
+Message-Id: <6acda98c75b536deaba1bf21f93411fcc484fbb5.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: "David S. Miller" <davem@davemloft.net>
 
-On 8/20/2014 12:58 PM, Hayes Wang wrote:
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> The functions are used to update the firmware. Move the actions into
-> the firmware files.
+===============
 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->   drivers/net/usb/r8152.c | 24 ------------------------
->   1 file changed, 24 deletions(-)
+[ Upstream commit 26cf432551d749e7d581db33529507a711c6eaab ]
 
-> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-> index 33dcc97..937d132 100644
-> --- a/drivers/net/usb/r8152.c
-> +++ b/drivers/net/usb/r8152.c
-[...]
-> @@ -2248,7 +2226,6 @@ static void r8152b_hw_phy_cfg(struct r8152 *tp)
->
->   	r8152b_disable_aldps(tp);
->
-> -	rtl_clear_bp(tp);
->
+Instead of returning false we should at least check the most basic
+things, otherwise page table corruptions will be very difficult to
+debug.
 
-    Why leave 2 empty lines? One is enough.
+PMD and PTE tables are of size PAGE_SIZE, so none of the sub-PAGE_SIZE
+bits should be set.
 
->   	r8152b_enable_aldps(tp);
->   	set_bit(PHY_RESET, &tp->flags);
-> @@ -2404,7 +2381,6 @@ static void r8153_hw_phy_cfg(struct r8152 *tp)
->   		r8152_mdio_write(tp, MII_BMCR, data);
->   	}
->
-> -	r8153_clear_bp(tp);
->
+We also complement this with a check that the physical address the
+pud/pmd points to is valid memory.
 
-    Ditto.
+PowerPC was used as a guide while implementating this.
 
->   	if (tp->version == RTL_VER_03) {
->   		data = ocp_reg_read(tp, OCP_EEE_CFG);
->
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/sparc/include/asm/pgtable_64.h | 46 +++++++++++++++++++++++++------------
+ 1 file changed, 31 insertions(+), 15 deletions(-)
 
-WBR, Sergei
+diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
+index 90f289f0ec8e..d80b4204a774 100644
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -94,6 +94,23 @@
+ 
+ #include <linux/sched.h>
+ 
++extern unsigned long sparc64_valid_addr_bitmap[];
++
++/* Needs to be defined here and not in linux/mm.h, as it is arch dependent */
++static inline bool __kern_addr_valid(unsigned long paddr)
++{
++	if ((paddr >> 41UL) != 0UL)
++		return false;
++	return test_bit(paddr >> 22, sparc64_valid_addr_bitmap);
++}
++
++static inline bool kern_addr_valid(unsigned long addr)
++{
++	unsigned long paddr = __pa(addr);
++
++	return __kern_addr_valid(paddr);
++}
++
+ /* Entries per page directory level. */
+ #define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-4))
+ #define PTRS_PER_PMD	(1UL << PMD_BITS)
+@@ -715,6 +732,20 @@ static inline int pmd_present(pmd_t pmd)
+ 
+ #define pmd_none(pmd)			(!pmd_val(pmd))
+ 
++/* pmd_bad() is only called on non-trans-huge PMDs.  Our encoding is
++ * very simple, it's just the physical address.  PTE tables are of
++ * size PAGE_SIZE so make sure the sub-PAGE_SIZE bits are clear and
++ * the top bits outside of the range of any physical address size we
++ * support are clear as well.  We also validate the physical itself.
++ */
++#define pmd_bad(pmd)			((pmd_val(pmd) & ~PAGE_MASK) || \
++					 !__kern_addr_valid(pmd_val(pmd)))
++
++#define pud_none(pud)			(!pud_val(pud))
++
++#define pud_bad(pud)			((pud_val(pud) & ~PAGE_MASK) || \
++					 !__kern_addr_valid(pud_val(pud)))
++
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ extern void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 		       pmd_t *pmdp, pmd_t pmd);
+@@ -749,10 +780,7 @@ static inline unsigned long __pmd_page(pmd_t pmd)
+ #define pud_page_vaddr(pud)		\
+ 	((unsigned long) __va((((unsigned long)pud_val(pud))<<PGD_PADDR_SHIFT)))
+ #define pud_page(pud) 			virt_to_page((void *)pud_page_vaddr(pud))
+-#define pmd_bad(pmd)			(0)
+ #define pmd_clear(pmdp)			(pmd_val(*(pmdp)) = 0U)
+-#define pud_none(pud)			(!pud_val(pud))
+-#define pud_bad(pud)			(0)
+ #define pud_present(pud)		(pud_val(pud) != 0U)
+ #define pud_clear(pudp)			(pud_val(*(pudp)) = 0U)
+ 
+@@ -878,18 +906,6 @@ extern unsigned long pte_file(pte_t);
+ extern pte_t pgoff_to_pte(unsigned long);
+ #define PTE_FILE_MAX_BITS	(64UL - PAGE_SHIFT - 1UL)
+ 
+-extern unsigned long sparc64_valid_addr_bitmap[];
+-
+-/* Needs to be defined here and not in linux/mm.h, as it is arch dependent */
+-static inline bool kern_addr_valid(unsigned long addr)
+-{
+-	unsigned long paddr = __pa(addr);
+-
+-	if ((paddr >> 41UL) != 0UL)
+-		return false;
+-	return test_bit(paddr >> 22, sparc64_valid_addr_bitmap);
+-}
+-
+ extern int page_in_phys_avail(unsigned long paddr);
+ 
+ /*
+-- 
+2.0.4
 
