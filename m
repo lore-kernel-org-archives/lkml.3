@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682AbaHTL6R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:58:17 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58982 "EHLO
+	id S1753721AbaHTL6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:58:20 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58966 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752582AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752573AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Emil Tantilov <emil.s.tantilov@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 077/104] ixgbe: fix rx-usecs range checks for BQL
-Date: Wed, 20 Aug 2014 13:43:40 +0200
-Message-Id: <922246ebf3952682d697d7f7f76d11332ee9b58f.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Eliad Peller <eliad@wizery.com>,
+        Eliad Peller <eliadx.peller@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 060/104] mac80211: reset probe_send_count also in HW_CONNECTION_MONITOR case
+Date: Wed, 20 Aug 2014 13:43:23 +0200
+Message-Id: <cfaf9b6286a0e61b259c2b3b572ecb623ab85bd4.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -24,50 +24,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emil Tantilov <emil.s.tantilov@intel.com>
+From: Eliad Peller <eliad@wizery.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 2e0103810c6fed6a736c4a3af87b0f5c6bd8cd5b upstream.
+commit 448cd2e248732326632957e52ea9c44729affcb2 upstream.
 
-This patch resolves an issue where the logic used to detect changes in rx-usecs
-was incorrect and was masked by the call to ixgbe_update_rsc().
+In case of beacon_loss with IEEE80211_HW_CONNECTION_MONITOR
+device, mac80211 probes the ap (and disconnects on timeout)
+but ignores the ack.
 
-Setting rx-usecs between 0,2-9 and 1,10 and up requires a reset to allow
-ixgbe_configure_tx_ring() to set the correct value for TXDCTL.WTHRESH in
-order to avoid Tx hangs with BQL enabled.
+If we already got an ack, there's no reason to continue
+disconnecting. this can help devices that supports
+IEEE80211_HW_CONNECTION_MONITOR only partially (e.g. take
+care of keep alives, but does not probe the ap.
 
-Signed-off-by: Emil Tantilov <emil.s.tantilov@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+In case the device wants to disconnect without probing,
+it can just call ieee80211_connection_loss.
+
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/net/mac80211.h | 2 --
+ net/mac80211/mlme.c    | 4 ++--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-index e8649abf97c0..2cd86d30508b 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -2212,13 +2212,13 @@ static int ixgbe_set_coalesce(struct net_device *netdev,
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index cc6035f1a2f1..0218c3d67f46 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1449,8 +1449,6 @@ struct ieee80211_tx_control {
+  * @IEEE80211_HW_CONNECTION_MONITOR:
+  *	The hardware performs its own connection monitoring, including
+  *	periodic keep-alives to the AP and probing the AP on beacon loss.
+- *	When this flag is set, signaling beacon-loss will cause an immediate
+- *	change to disassociated state.
+  *
+  * @IEEE80211_HW_NEED_DTIM_BEFORE_ASSOC:
+  *	This device needs to get data from beacon before association (i.e.
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index cd8d55c99ceb..591d990a06e7 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -131,13 +131,13 @@ void ieee80211_sta_reset_conn_monitor(struct ieee80211_sub_if_data *sdata)
+ 	if (unlikely(!sdata->u.mgd.associated))
+ 		return;
  
- #if IS_ENABLED(CONFIG_BQL)
- 	/* detect ITR changes that require update of TXDCTL.WTHRESH */
--	if ((adapter->tx_itr_setting > 1) &&
-+	if ((adapter->tx_itr_setting != 1) &&
- 	    (adapter->tx_itr_setting < IXGBE_100K_ITR)) {
- 		if ((tx_itr_prev == 1) ||
--		    (tx_itr_prev > IXGBE_100K_ITR))
-+		    (tx_itr_prev >= IXGBE_100K_ITR))
- 			need_reset = true;
- 	} else {
--		if ((tx_itr_prev > 1) &&
-+		if ((tx_itr_prev != 1) &&
- 		    (tx_itr_prev < IXGBE_100K_ITR))
- 			need_reset = true;
- 	}
++	ifmgd->probe_send_count = 0;
++
+ 	if (sdata->local->hw.flags & IEEE80211_HW_CONNECTION_MONITOR)
+ 		return;
+ 
+ 	mod_timer(&sdata->u.mgd.conn_mon_timer,
+ 		  round_jiffies_up(jiffies + IEEE80211_CONNECTION_IDLE_TIME));
+-
+-	ifmgd->probe_send_count = 0;
+ }
+ 
+ static int ecw2cw(int ecw)
 -- 
 2.0.4
 
