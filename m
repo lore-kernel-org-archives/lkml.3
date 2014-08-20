@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaHTTFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:05:12 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:64229 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaHTTFJ convert rfc822-to-8bit (ORCPT
+	id S1752469AbaHTTGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:06:19 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:53974 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419AbaHTTGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:05:09 -0400
+	Wed, 20 Aug 2014 15:06:17 -0400
+Date: Wed, 20 Aug 2014 11:59:55 -0700
+From: Guenter <linux@roeck-us.net>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        "open list:WATCHDOG DEVICE D..." <linux-watchdog@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] powerpc: booke_wdt: Fix build error as a module
+Message-ID: <20140820185955.GA23566@groeck-UX31A>
+References: <1408553745-3536-1-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140820170520.GF29733@console-pimps.org>
-References: <53E62EEF.9040801@gmail.com>
-	<CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>
-	<20140809192302.GJ15082@console-pimps.org>
-	<CAPWNY8X+pRf4GuYAzKj-co0fkLMY0KNw+wB4KA8eaJ0QbE4MnA@mail.gmail.com>
-	<CAE9FiQVDURMvgVd55-onMDejCZT+OZ2vrr92wx8FJMKRNSX_GA@mail.gmail.com>
-	<CAPWNY8WvyAt5oT3cJ53A07tbfZctE9Y-m5f2Nucgc3hVvCgdjQ@mail.gmail.com>
-	<20140813140219.GP15082@console-pimps.org>
-	<CAPWNY8WdA+Q+WjXirGOsrYjMGp+69sCqYa8ST7_owQeVhQkT0w@mail.gmail.com>
-	<20140813184449.GV15082@console-pimps.org>
-	<20140820170520.GF29733@console-pimps.org>
-Date: Wed, 20 Aug 2014 22:05:08 +0300
-Message-ID: <CAPWNY8V_gFutOcow5rBUSz2updGzf4hkQ98qBZ9WRGkb_sA2jA@mail.gmail.com>
-Subject: Re: Loading initrd above 4G causes freeze on boot
-From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408553745-3536-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 8:05 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> On Wed, 13 Aug, at 07:44:49PM, Matt Fleming wrote:
->>
->> At this point, I think modifying the max address is the best way to
->> debug this further, and figure out what address causes the hang.
->
-> Mantas, did you manage to get to the bottom of this issue?
+On Wed, Aug 20, 2014 at 12:55:44PM -0400, Pranith Kumar wrote:
+> Building booke_wdt fails when trying to build as a module as there is no
+> early_param() in module. Fix by using module_param() instead of early_param().
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> CC: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/watchdog/booke_wdt.c | 28 +++++-----------------------
+>  1 file changed, 5 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
+> index 08a7853..65f5e9f 100644
+> --- a/drivers/watchdog/booke_wdt.c
+> +++ b/drivers/watchdog/booke_wdt.c
+> @@ -30,8 +30,6 @@
+>   * occur, and the final time the board will reset.
+>   */
+>  
+> -u32 booke_wdt_enabled;
+> -u32 booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
+>  
+>  #ifdef	CONFIG_PPC_FSL_BOOK3E
+>  #define WDTP(x)		((((x)&0x3)<<30)|(((x)&0x3c)<<15))
+> @@ -41,27 +39,10 @@ u32 booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
+>  #define WDTP_MASK	(TCR_WP_MASK)
+>  #endif
+>  
+> -/* Checks wdt=x and wdt_period=xx command-line option */
+> -notrace int __init early_parse_wdt(char *p)
+> -{
+> -	if (p && strncmp(p, "0", 1) != 0)
+> -		booke_wdt_enabled = 1;
+> -
+> -	return 0;
+> -}
+> -early_param("wdt", early_parse_wdt);
+> -
+> -int __init early_parse_wdt_period(char *p)
+> -{
+> -	unsigned long ret;
+> -	if (p) {
+> -		if (!kstrtol(p, 0, &ret))
+> -			booke_wdt_period = ret;
+> -	}
+> -
+> -	return 0;
+> -}
+> -early_param("wdt_period", early_parse_wdt_period);
+> +static bool booke_wdt_enabled = true;
 
-I experimented with some things (like setting chunk size to a few kB
-to see if it hangs earlier or only at the very end; etc.), and finally
-found out that it stops freezing if I pad the initrd file to a
-multiple of 512 bytes :/ That is, 5684268 bytes will freeze, 5684736
-bytes will not.
+Any reason for changing the default from false to true ? 
+Unless you have a reaslly good reason, I don't think that is a good idea.
 
-...In other words, seems like it cannot read chunks that aren't
-multiples of 512 into a location above 4 GB. Or something like that...
+> +module_param(booke_wdt_enabled, bool, 0444);
+> +static int  booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
+> +module_param(booke_wdt_period, int, 0444);
+>  
+Also not sure if it adds value to have the module parameters visible
+from user space. Why not use 0 for the permission flags ?
 
--- 
-Mantas Mikulėnas <grawity@gmail.com>
+Thanks,
+Guenter
