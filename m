@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321AbaHTJdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:33:24 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42929 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaHTJdX (ORCPT
+	id S1751995AbaHTJfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:35:06 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:60769 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876AbaHTJfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:33:23 -0400
-Message-ID: <53F46B5B.80400@collabora.co.uk>
-Date: Wed, 20 Aug 2014 11:33:15 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, Mark Brown <broonie@kernel.org>
-CC: Thierry Reding <treding@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: Re: [PATCH V2] regmap: of_regmap_get_endian() cleanup
-References: <1408466947-26593-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1408466947-26593-1-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Aug 2014 05:35:03 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-4e-53f46bc53c98
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <1408467177-69746-1-git-send-email-jaegeuk@kernel.org>
+ <1408467177-69746-2-git-send-email-jaegeuk@kernel.org>
+In-reply-to: <1408467177-69746-2-git-send-email-jaegeuk@kernel.org>
+Subject: RE: [f2fs-dev] [PATCH 2/2] f2fs: trigger release_dirty_inode in
+	f2fs_put_super
+Date: Wed, 20 Aug 2014 17:33:58 +0800
+Message-id: <007a01cfbc5a$035849f0$0a08ddd0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIRsEQNpbtGJR6jwHxlc6l54GvPMQILZQIOm0T0gTA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAd2j2V+CDc71Gls8WT+L2eLSIneL
+	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAldHb2cZa8Iy/4s2b
+	/2wNjDN4uxg5OSQETCRmbF/JBmGLSVy4tx7MFhJYxCgx+b9BFyMXkP2DUWLurq3sIAk2ARWJ
+	5R3/mUBsEQE1id59U8BsZoFMiQn9L9ghmqslFp/aztjFyMHBKeAsceWRMEhYWCBS4sOzfmYQ
+	m0VAVWLv3cksIDavgKXEofbtULagxI/J91ggRmpJbN7WxAphy0tsXvOWGeJOBYkdZ18zQpxg
+	JTHv9CtGiBpxiY1HbrFMYBSahWTULCSjZiEZNQtJywJGllWMoqkFyQXFSem5hnrFibnFpXnp
+	esn5uZsYwWH/TGoH48oGi0OMAhyMSjy8Ctmfg4VYE8uKK3MPMUpwMCuJ8BYlfAkW4k1JrKxK
+	LcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwLjqnkBgZHasweEbKmYT
+	YzicViXML1zsYXr6Zr3R5VtRanHaRoJnPqhe1AtqZgns81xjxfuG4eu96mu1v1YZOZ94VNFw
+	pe3oob7pCxYd/qX5zecRw7bFYhfsk1+1rLggsVJ34uXdO6ZevlA76ULSaVaJ688abmRN52LR
+	UQtrv/juQ4HqpDfOgoVKLMUZiYZazEXFiQA0uwuHdwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
-
-On 08/19/2014 06:49 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Wednesday, August 20, 2014 12:53 AM
+> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Cc: Jaegeuk Kim
+> Subject: [f2fs-dev] [PATCH 2/2] f2fs: trigger release_dirty_inode in f2fs_put_super
 > 
-> Commit d647c199510c ("regmap: add DT endianness binding support") had
-> some issues. Commit ba1b53feb8ca ("regmap: Fix DT endianess parsing
-> logic") fixed the main problem. This patch fixes the other.
+> The generic_shutdown_super calls sync_filesystem, evict_inode, and then
+> f2fs_put_super. In f2fs_evict_inode, we remain some dirty inode information
+> so we should release them at f2fs_put_super.
 > 
-> Specifically, restore the overall default of REGMAP_ENDIAN_BIG if none of
-> the config, DT, or the bus specify any endianness. Without this,
-> of_regmap_get_endian() could return REGMAP_ENDIAN_DEFAULT, which the
-> calling code can't handle. Since all busses do specify an endianness in
-> the current code, this makes no difference right now, but I saw no
-> justification in the patch description for removing this final default.
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+
+Looks good to me now, add this please:
+
+Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+
+> ---
+>  fs/f2fs/checkpoint.c | 2 +-
+>  fs/f2fs/super.c      | 3 +++
+>  2 files changed, 4 insertions(+), 1 deletion(-)
 > 
-
-Yes, I also wondered about the second issue you are mentioning when I was
-fixing the main problem. But since Xiubo's patch also set
-REGMAP_ENDIAN_BIG as default for both the I2C and SPI buses (making no
-difference as you said) I assumed that the intention was to make buses to
-explicitly define their default instead of rely on a global one so I just
-kept that way.
-
-But I agree with you that is better to go back to the default
-REGMAP_ENDIAN_BIG as it used to be before since buses can change the
-default if needed anyways.
-
-Best regards,
-Javier
-
+> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> index 7e1c13b..f14af91 100644
+> --- a/fs/f2fs/checkpoint.c
+> +++ b/fs/f2fs/checkpoint.c
+> @@ -348,7 +348,7 @@ bool exist_written_data(struct f2fs_sb_info *sbi, nid_t ino, int mode)
+>  	return e ? true : false;
+>  }
+> 
+> -static void release_dirty_inode(struct f2fs_sb_info *sbi)
+> +void release_dirty_inode(struct f2fs_sb_info *sbi)
+>  {
+>  	struct ino_entry *e, *tmp;
+>  	int i;
+> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> index 60e3554..7a54779 100644
+> --- a/fs/f2fs/super.c
+> +++ b/fs/f2fs/super.c
+> @@ -435,6 +435,9 @@ static void f2fs_put_super(struct super_block *sb)
+>  	if (sbi->s_dirty)
+>  		write_checkpoint(sbi, true);
+> 
+> +	/* normally superblock is clean, so we need to release this */
+> +	release_dirty_inode(sbi);
+> +
+>  	iput(sbi->node_inode);
+>  	iput(sbi->meta_inode);
+> 
+> --
+> 1.8.5.2 (Apple Git-48)
+> 
+> 
+> ------------------------------------------------------------------------------
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
