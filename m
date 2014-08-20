@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009AbaHTLrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:47:45 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59031 "EHLO
+	id S1753129AbaHTLsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:48:30 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59051 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752624AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752634AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+Cc: linux-kernel@vger.kernel.org, Ales Novak <alnovak@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 065/104] mnt: Correct permission checks in do_remount
-Date: Wed, 20 Aug 2014 13:43:28 +0200
-Message-Id: <ac9bfbc60931cae246eff6380449d6c2b0dced50.1408535000.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 104/104] drivers/rtc/interface.c: fix infinite loop in initializing the alarm
+Date: Wed, 20 Aug 2014 13:44:07 +0200
+Message-Id: <c07d9e5da83f1470ccc58d37fe222dab36dbca67.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,137 +25,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Ales Novak <alnovak@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 9566d6742852c527bf5af38af5cbb878dad75705 upstream.
+commit ee1d90146815fdc8d653c558b327fff2acba041d upstream.
 
-While invesgiating the issue where in "mount --bind -oremount,ro ..."
-would result in later "mount --bind -oremount,rw" succeeding even if
-the mount started off locked I realized that there are several
-additional mount flags that should be locked and are not.
+In __rtc_read_alarm(), if the alarm time retrieved by
+rtc_read_alarm_internal() from the device contains invalid values (e.g.
+month=2,mday=31) and the year not set (=-1), the initialization will
+loop infinitely because the year-fixing loop expects the time being
+invalid due to leap year.
 
-In particular MNT_NOSUID, MNT_NODEV, MNT_NOEXEC, and the atime
-flags in addition to MNT_READONLY should all be locked.  These
-flags are all per superblock, can all be changed with MS_BIND,
-and should not be changable if set by a more privileged user.
+Fix reduces the loop to the leap years and adds final validity check.
 
-The following additions to the current logic are added in this patch.
-- nosuid may not be clearable by a less privileged user.
-- nodev  may not be clearable by a less privielged user.
-- noexec may not be clearable by a less privileged user.
-- atime flags may not be changeable by a less privileged user.
-
-The logic with atime is that always setting atime on access is a
-global policy and backup software and auditing software could break if
-atime bits are not updated (when they are configured to be updated),
-and serious performance degradation could result (DOS attack) if atime
-updates happen when they have been explicitly disabled.  Therefore an
-unprivileged user should not be able to mess with the atime bits set
-by a more privileged user.
-
-The additional restrictions are implemented with the addition of
-MNT_LOCK_NOSUID, MNT_LOCK_NODEV, MNT_LOCK_NOEXEC, and MNT_LOCK_ATIME
-mnt flags.
-
-Taken together these changes and the fixes for MNT_LOCK_READONLY
-should make it safe for an unprivileged user to create a user
-namespace and to call "mount --bind -o remount,... ..." without
-the danger of mount flags being changed maliciously.
-
-Cc: stable@vger.kernel.org
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Ales Novak <alnovak@suse.cz>
+Acked-by: Alessandro Zummo <a.zummo@towertech.it>
+Reported-by: Jiri Bohac <jbohac@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- fs/namespace.c        | 36 +++++++++++++++++++++++++++++++++---
- include/linux/mount.h |  5 +++++
- 2 files changed, 38 insertions(+), 3 deletions(-)
+ drivers/rtc/interface.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 8e90b037b706..7c67de88f3f1 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -827,8 +827,21 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 72c5cdbe0791..ff20d90ea8e7 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -290,7 +290,8 @@ int __rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ 		dev_dbg(&rtc->dev, "alarm rollover: %s\n", "year");
+ 		do {
+ 			alarm->time.tm_year++;
+-		} while (rtc_valid_tm(&alarm->time) != 0);
++		} while (!is_leap_year(alarm->time.tm_year + 1900)
++			&& rtc_valid_tm(&alarm->time) != 0);
+ 		break;
  
- 	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
- 	/* Don't allow unprivileged users to change mount flags */
--	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
--		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+	if (flag & CL_UNPRIVILEGED) {
-+		mnt->mnt.mnt_flags |= MNT_LOCK_ATIME;
-+
-+		if (mnt->mnt.mnt_flags & MNT_READONLY)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NODEV)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NODEV;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOSUID)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOSUID;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOEXEC)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOEXEC;
-+	}
- 
- 	/* Don't allow unprivileged users to reveal what is under a mount */
- 	if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
-@@ -1841,6 +1854,23 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 	    !(mnt_flags & MNT_READONLY)) {
- 		return -EPERM;
- 	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NODEV) &&
-+	    !(mnt_flags & MNT_NODEV)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOSUID) &&
-+	    !(mnt_flags & MNT_NOSUID)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOEXEC) &&
-+	    !(mnt_flags & MNT_NOEXEC)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_ATIME) &&
-+	    ((mnt->mnt.mnt_flags & MNT_ATIME_MASK) != (mnt_flags & MNT_ATIME_MASK))) {
-+		return -EPERM;
-+	}
-+
- 	err = security_sb_remount(sb, data);
- 	if (err)
- 		return err;
-@@ -2043,7 +2073,7 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
- 		 */
- 		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
- 			flags |= MS_NODEV;
--			mnt_flags |= MNT_NODEV;
-+			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
- 		}
+ 	default:
+@@ -298,7 +299,16 @@ int __rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
  	}
  
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 8707c9e9dbb9..22e5b96059cf 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -45,10 +45,15 @@ struct mnt_namespace;
- #define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
- 				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
- 				 | MNT_READONLY)
-+#define MNT_ATIME_MASK (MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME )
+ done:
+-	return 0;
++	err = rtc_valid_tm(&alarm->time);
++
++	if (err) {
++		dev_warn(&rtc->dev, "invalid alarm value: %d-%d-%d %d:%d:%d\n",
++			alarm->time.tm_year + 1900, alarm->time.tm_mon + 1,
++			alarm->time.tm_mday, alarm->time.tm_hour, alarm->time.tm_min,
++			alarm->time.tm_sec);
++	}
++
++	return err;
+ }
  
- 
- #define MNT_INTERNAL	0x4000
- 
-+#define MNT_LOCK_ATIME		0x040000
-+#define MNT_LOCK_NOEXEC		0x080000
-+#define MNT_LOCK_NOSUID		0x100000
-+#define MNT_LOCK_NODEV		0x200000
- #define MNT_LOCK_READONLY	0x400000
- #define MNT_LOCKED		0x800000
- 
+ int rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
 -- 
 2.0.4
 
