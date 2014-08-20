@@ -1,319 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaHTHw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 03:52:58 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60985 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaHTHw4 (ORCPT
+	id S1751556AbaHTH4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 03:56:43 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:38636 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaHTH4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 03:52:56 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 20 Aug 2014 16:53:26 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Horner <ds2horner@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>
-Subject: Re: [PATCH v2 4/4] zram: report maximum used memory
-Message-ID: <20140820075326.GC17372@bbox>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
- <1408434887-16387-5-git-send-email-minchan@kernel.org>
- <CAFdhcLQcgME18U2NfEc6dXfvHnJWpyqcMR=Y16MyyghWiNRo1w@mail.gmail.com>
- <20140820065318.GB17372@bbox>
- <CAFdhcLQub+VkMAQSdjLCfB2W=NHWu=Hv5K3ua1YbGWZUrCjOmw@mail.gmail.com>
+	Wed, 20 Aug 2014 03:56:40 -0400
+Message-ID: <53F45482.4020505@huawei.com>
+Date: Wed, 20 Aug 2014 15:55:46 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAFdhcLQub+VkMAQSdjLCfB2W=NHWu=Hv5K3ua1YbGWZUrCjOmw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
+        "arnab.basu@freescale.com" <arnab.basu@freescale.com>
+CC: Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Paul.Mundt@huawei.com" <Paul.Mundt@huawei.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
+References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <c6d34fe1bbe9457ea8cff7dcd97902b8@DM2PR03MB317.namprd03.prod.outlook.com> <53DEF80C.1010608@huawei.com> <8a2b4e237f2d4c7e95ef72867658b53a@BLUPR03MB566.namprd03.prod.outlook.com> <53F44022.6030706@huawei.com> <c3b2bd89ef3d462cb302f6ede56a0d44@BLUPR03MB566.namprd03.prod.outlook.com>
+In-Reply-To: <c3b2bd89ef3d462cb302f6ede56a0d44@BLUPR03MB566.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020207.53F45492.00AA,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2011-05-27 18:58:46
+X-Mirapoint-Loop-Id: 0933722c5f04936e103810e26ab3ed3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 03:38:27AM -0400, David Horner wrote:
-> On Wed, Aug 20, 2014 at 2:53 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > On Wed, Aug 20, 2014 at 02:26:50AM -0400, David Horner wrote:
-> >> On Tue, Aug 19, 2014 at 3:54 AM, Minchan Kim <minchan@kernel.org> wrote:
-> >> > Normally, zram user could get maximum memory usage zram consumed
-> >> > via polling mem_used_total with sysfs in userspace.
-> >> >
-> >> > But it has a critical problem because user can miss peak memory
-> >> > usage during update inverval of polling. For avoiding that,
-> >> > user should poll it with shorter interval(ie, 0.0000000001s)
-> >> > with mlocking to avoid page fault delay when memory pressure
-> >> > is heavy. It would be troublesome.
-> >> >
-> >> > This patch adds new knob "mem_used_max" so user could see
-> >> > the maximum memory usage easily via reading the knob and reset
-> >> > it via "echo 0 > /sys/block/zram0/mem_used_max".
-> >> >
-> >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >> > ---
-> >> >  Documentation/ABI/testing/sysfs-block-zram | 10 +++++
-> >> >  Documentation/blockdev/zram.txt            |  1 +
-> >> >  drivers/block/zram/zram_drv.c              | 60 +++++++++++++++++++++++++++++-
-> >> >  drivers/block/zram/zram_drv.h              |  1 +
-> >> >  4 files changed, 70 insertions(+), 2 deletions(-)
-> >> >
-> >> > diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> >> > index 025331c19045..ffd1ea7443dd 100644
-> >> > --- a/Documentation/ABI/testing/sysfs-block-zram
-> >> > +++ b/Documentation/ABI/testing/sysfs-block-zram
-> >> > @@ -120,6 +120,16 @@ Description:
-> >> >                 statistic.
-> >> >                 Unit: bytes
-> >> >
-> >> > +What:          /sys/block/zram<id>/mem_used_max
-> >> > +Date:          August 2014
-> >> > +Contact:       Minchan Kim <minchan@kernel.org>
-> >> > +Description:
-> >> > +               The mem_used_max file is read/write and specifies the amount
-> >> > +               of maximum memory zram have consumed to store compressed data.
-> >> > +               For resetting the value, you should do "echo 0". Otherwise,
-> >> > +               you could see -EINVAL.
-> >> > +               Unit: bytes
-> >> > +
-> >> >  What:          /sys/block/zram<id>/mem_limit
-> >> >  Date:          August 2014
-> >> >  Contact:       Minchan Kim <minchan@kernel.org>
-> >> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> >> > index 9f239ff8c444..3b2247c2d4cf 100644
-> >> > --- a/Documentation/blockdev/zram.txt
-> >> > +++ b/Documentation/blockdev/zram.txt
-> >> > @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
-> >> >                 orig_data_size
-> >> >                 compr_data_size
-> >> >                 mem_used_total
-> >> > +               mem_used_max
-> >> >
-> >> >  8) Deactivate:
-> >> >         swapoff /dev/zram0
-> >> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >> > index adc91c7ecaef..e4d44842a91d 100644
-> >> > --- a/drivers/block/zram/zram_drv.c
-> >> > +++ b/drivers/block/zram/zram_drv.c
-> >> > @@ -149,6 +149,40 @@ static ssize_t mem_limit_store(struct device *dev,
-> >> >         return len;
-> >> >  }
-> >> >
-> >> > +static ssize_t mem_used_max_show(struct device *dev,
-> >> > +               struct device_attribute *attr, char *buf)
-> >> > +{
-> >> > +       u64 val = 0;
-> >> > +       struct zram *zram = dev_to_zram(dev);
-> >> > +
-> >> > +       down_read(&zram->init_lock);
-> >> > +       if (init_done(zram))
-> >> > +               val = atomic64_read(&zram->stats.max_used_pages);
-> >> > +       up_read(&zram->init_lock);
-> >> > +
-> >> > +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> >> > +}
-> >> > +
-> >> > +static ssize_t mem_used_max_store(struct device *dev,
-> >> > +               struct device_attribute *attr, const char *buf, size_t len)
-> >> > +{
-> >> > +       u64 limit;
-> >> > +       struct zram *zram = dev_to_zram(dev);
-> >> > +       struct zram_meta *meta = zram->meta;
-> >> > +
-> >> > -       limit = memparse(buf, NULL);
-> >> > -       if (0 != limit)
-> >>
-> >> we wanted explicit "0" and nothing else for extensibility
-> >>
-> >>      if (len != 1 || *buf != "0")
-> >>
-> >
-> > I wanted to work with "0", "0K", "0M", "0G" but agree it's meaningless
-> > at the moment so your version is better.
-> >
-> >
-> >> > +               return -EINVAL;
-> >> > +
-> >> > +       down_read(&zram->init_lock);
-> >> > +       if (init_done(zram))
-> >> > +               atomic64_set(&zram->stats.max_used_pages,
-> >> > +                               zs_get_total_size(meta->mem_pool));
-> >> > +       up_read(&zram->init_lock);
-> >> > +
-> >> > +       return len;
-> >>           return 1;
-> >>
-> >> the standard convention is to return used amount of buffer
-> >
-> > If I follow your suggestion, len should be 1 right before returning
-> > so no problem for functionality POV but I agree explicit "1" is better
-> > for readability so your version is better, better.
-> >
-> >>
-> >>
-> >>
-> >> > +}
-> >> > +
-> >> >  static ssize_t max_comp_streams_store(struct device *dev,
-> >> >                 struct device_attribute *attr, const char *buf, size_t len)
-> >> >  {
-> >> > @@ -461,6 +495,26 @@ out_cleanup:
-> >> >         return ret;
-> >> >  }
-> >> >
-> >> > +static bool check_limit(struct zram *zram)
-> >> > +{
-> >> > +       unsigned long alloced_pages;
-> >> > +       u64 old_max, cur_max;
-> >> > +       struct zram_meta *meta = zram->meta;
-> >> > +
-> >> > +       do {
-> >> > +               alloced_pages = zs_get_total_size(meta->mem_pool);
-> >> > +               if (zram->limit_pages && alloced_pages > zram->limit_pages)
-> >> > +                       return false;
-> >> > +
-> >> > +               old_max = cur_max = atomic64_read(&zram->stats.max_used_pages);
-> >> > +               if (alloced_pages > cur_max)
-> >> > +                       old_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
-> >> > +                                       cur_max, alloced_pages);
-> >> > +       } while (old_max != cur_max);
-> >> > +
-> >> > +       return true;
-> >> > +}
-> >> > +
-> >>
-> >> Check_limit does more than check limit - it has a substantial side
-> >> effect of updating max used.
-> >
-> > Hmm, Normally, limit check is best place to update the max although
-> > function name imply just checking the limit and I don't think
-> > code piece for max updating doesn't hurt readbilty.
-> > If you or other reviewer is strong against, I will be happy to
-> > factor out part of max updating into another function because
-> > I think it's just preference problem for small logic and don't want
-> > to waste argue for that.
-> >
-> > If you really want it, pz, ping me again.
-> >
-> >>
-> >> Basically if we already allocated the buffer and our alloced_pages is
-> >> less than the limit then we are good to go.
-> >
-> > Yeb.
-> >
-> >>
-> >> It is the race to update that we need to have the cmpxchg.
-> >> And maybe a helper function would aid readability - not sure, see next point.
-> >>
-> >> I don't believe there is need for the loop either.
-> >> Any other updater will also be including our allocated pages
-> >> (and at this point in the code eliminated from roll back)
-> >>  so if they beat us to it, then no problem, their max is better than ours.
-> >
-> > Let's assume we don't have the loop.
-> >
-> >
-> > CPU A                                   CPU B
-> >
-> > alloced_pages = 2001
-> > old_max = cur_max = 2000
-> >                                         alloced_pages = 2005
-> >                                         old_max = cur_max = 2000
-> >
-> > cmpxchg(2000, 2000, 2001) -> OK
-> >
-> >                                         cmpxchg(2001, 2000, 2005) -> FAIL
-> >
-> > So, we lose 2005 which is bigger vaule.
-> >
+>>> We in Freescale will be using MSI for the devices behind a new-bus (which is
+>> not PCI based), We have a separate bus driver for same. And this new bus driver
+>> register/provide its own address/data write function which is based on that
+>> specific bus protocol.
+>>
+>> Hi Bharat, I'm glad to know your MSI device working mode.
+>> Provide the private MSI setup functions in bus-driver layer can't apply to all
+>> Non-PCI MSI devices, because we can not guarantee Non-PCI MSI devices are always
+>> on a bus. The existing HPET, DMAR device both have no bus bind.
 > 
-> Yes - you are absolutely correct - I missed that scenario.
+> Yes, that's why I was not sure of bus-driver or device-driver model.
 > 
-> but there isn't the need to redo  zs_get_total_size.
+>> I'm working on a
+>> new MSI setup framework, as you mentioned before, in device-driver model.
+>>
+>> I abstracted a new virtual device (called struct msi_dev), this msi_dev will
+>> manage all MSI info,
 > 
-> we only need to loop while our value is still the max.
+> Will this "struct msi_dev" will be part of "struct device"?
 
-Yes - you are absolutely right. :)
+struct msi_dev contains the struct device
+
+piece code:
+
+struct msi_dev {
+    u8 type;
+    u8 enabled;
+    u8 nvec;
+    u8 nvec_retry;
+    char *id;
+    void __iomem *base;
+    struct msix_entry *entries;
+    struct list_head msi_list;
+    struct device dev;
+    void *msi_data;
+    struct msi_driver *driver;
+    const struct attribute_group **irq_groups;
+};
+
+
+struct msi_driver {
+    const char *name;
+    char *id;
+    void (*msi_set_enable)(struct msi_dev *dev, int enable);
+    int (*msi_setup_entry)(struct msi_dev *dev, struct msi_desc *entry);
+    int (*msix_setup_entries)(struct msi_dev *dev, struct msi_desc *entry, int index);
+    u32 (*msi_mask_irq)(struct msi_desc *desc, u32 mask, u32 flag);
+    u32 (*msix_mask_irq)(struct msi_desc *desc, u32 flag);
+    void (*msi_read_message)(struct msi_desc *desc, struct msi_msg *msg);
+    void (*msi_write_message)(struct msi_desc *desc, struct msi_msg *msg);
+    void (*msi_set_legacy_irq)(struct msi_dev *dev, int enable);
+    struct device_driver driver;
+};
+
+Thanks!
+Yijing.
 
 > 
-> So the two parts are not closely coupled and the inline code for the
-> exceeded check is simple enough.
-> And the loop to apply max would be best in helper function.
-
-Okay, you proved helper function would be better for readabilty
-to indicate limit check and max_used_check is not coupled.
-
-Thanks for the review, David!
-
+>> and a new bus named msi_bus, also introduced a new driver
+>> msi_driver, msi_bus is responsible for binding msi_dev and msi_driver.
+>> All MSI devices will be classified into different MSI device types, like
+>> MSI_TYPE_PCI, MSI_TYPE_HPET, MSI_TYPE_DMAR, etc..
+>>
+>> Each MSI type device should provide a private struct msi_driver. msi_driver
+>> should contain the type specific MSI ops functions to help setup and enable MSI
+>> device, request MSI irq.
+>>
+>> I almost finish the first draft, and will post out next week in plan :)
 > 
-> >>
-> >>
-> >>
-> >> >  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >> >                            int offset)
-> >> >  {
-> >> > @@ -541,8 +595,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >> >                 goto out;
-> >> >         }
-> >> >
-> >> > -       if (zram->limit_pages &&
-> >> > -               zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
-> >> > +       if (!check_limit(zram)) {
-> >> >                 zs_free(meta->mem_pool, handle);
-> >> >                 ret = -ENOMEM;
-> >> >                 goto out;
-> >> > @@ -897,6 +950,8 @@ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
-> >> >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> >> >  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
-> >> >                 mem_limit_store);
-> >> > +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-> >> > +               mem_used_max_store);
-> >> >  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
-> >> >                 max_comp_streams_show, max_comp_streams_store);
-> >> >  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> >> > @@ -926,6 +981,7 @@ static struct attribute *zram_disk_attrs[] = {
-> >> >         &dev_attr_compr_data_size.attr,
-> >> >         &dev_attr_mem_used_total.attr,
-> >> >         &dev_attr_mem_limit.attr,
-> >> > +       &dev_attr_mem_used_max.attr,
-> >> >         &dev_attr_max_comp_streams.attr,
-> >> >         &dev_attr_comp_algorithm.attr,
-> >> >         NULL,
-> >> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> >> > index b7aa9c21553f..29383312d543 100644
-> >> > --- a/drivers/block/zram/zram_drv.h
-> >> > +++ b/drivers/block/zram/zram_drv.h
-> >> > @@ -90,6 +90,7 @@ struct zram_stats {
-> >> >         atomic64_t notify_free; /* no. of swap slot free notifications */
-> >> >         atomic64_t zero_pages;          /* no. of zero filled pages */
-> >> >         atomic64_t pages_stored;        /* no. of pages currently stored */
-> >> > +       atomic64_t max_used_pages;      /* no. of maximum pages stored */
-> >> >  };
-> >> >
-> >> >  struct zram_meta {
-> >> > --
-> >> > 2.0.0
-> >> >
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> > --
-> > Kind regards,
-> > Minchan Kim
+> Will be looking forward to next version.
 > 
+> Thanks
+> -Bharat
+> 
+>>
+>>
+>> Thanks!
+>> Yijing.
+>>
+>>>
+>>> Thanks
+>>> -Bharat
+>>>
+>>>>
+>>>> My patchset is just a RFC draft, I will update it later, all we want
+>>>> to do is make kernel support Non-PCI MSI devices.
+>>>>
+>>>> Thanks!
+>>>> Yijing.
+>>>>
+>>>>
+>>>>>
+>>>>> Thanks
+>>>>> Arnab
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe
+>>>>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>>
+>>>>> .
+>>>>>
+>>>>
+>>>>
+>>>> --
+>>>> Thanks!
+>>>> Yijing
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-pci"
+>>>> in the body of a message to majordomo@vger.kernel.org More majordomo
+>>>> info at http://vger.kernel.org/majordomo-info.html
+>>>
+>>> .
+>>>
+>>
+>>
+>> --
+>> Thanks!
+>> Yijing
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in the body
+>> of a message to majordomo@vger.kernel.org More majordomo info at
+>> http://vger.kernel.org/majordomo-info.html
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> .
+> 
+
 
 -- 
-Kind regards,
-Minchan Kim
+Thanks!
+Yijing
+
