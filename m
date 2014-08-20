@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaHTQBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 12:01:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540AbaHTQBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 12:01:49 -0400
-Date: Wed, 20 Aug 2014 18:01:38 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
-Subject: Re: [PATCH 9/9] KVM: VMX: automatic PLE window maximum
-Message-ID: <20140820160137.GB20453@potion.brq.redhat.com>
-References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
- <1408480536-8240-10-git-send-email-rkrcmar@redhat.com>
- <53F44B40.6060806@redhat.com>
- <20140820124112.GC28873@potion.brq.redhat.com>
- <53F49F80.1090408@redhat.com>
- <20140820153115.GA20453@potion.brq.redhat.com>
- <53F4BFF3.3060606@redhat.com>
+	id S1752300AbaHTQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 12:02:09 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:63841 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751421AbaHTQCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 12:02:06 -0400
+Date: Wed, 20 Aug 2014 17:01:57 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linus.walleij@linaro.org
+Subject: Re: [PATCH v3 0/7] i2c: Relax mandatory I2C ID table passing
+Message-ID: <20140820160157.GO4266@lee--X1>
+References: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
+ <20140717102342.GD30888@lee--X1>
+ <20140717130306.GG2740@katana>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F4BFF3.3060606@redhat.com>
+In-Reply-To: <20140717130306.GG2740@katana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-20 17:34+0200, Paolo Bonzini:
-> Il 20/08/2014 17:31, Radim Krčmář ha scritto:
-> > Btw. without extra code, we are still going to overflow on races when
-> > changing PW_grow, should they be covered as well?
+On Thu, 17 Jul 2014, Wolfram Sang wrote:
+
+> On Thu, Jul 17, 2014 at 11:23:42AM +0100, Lee Jones wrote:
+> > Hi Wolfram,
+> > 
+> > Are you going to take a look at this set?
 > 
-> You mean because there is no spinlock or similar protecting the changes?
->  I guess you could use a seqlock.
+> Sure thing, yet I won't make it for 3.17, sadly :( It has high priority
+> for 3.18, though.
 
-Yes, for example between a modification of ple_window
-  new = min(old, PW_actual_max) * PW_grow
-which gets compiled into something like this:
-  1) tmp = min(old, PW_actual_max)
-  2) new = tmp * PW_grow
-and a write to increase PW_grow
-  3) PW_actual_max = min(PW_max / new_PW_grow, PW_actual_max)
-  4) PW_grow = new_PW_grow
-  5) PW_actual_max = PW_max / new_PW_grow
+Do you want me to re-send now the -rc1 had been released?
 
-3 and 4 can exectute between 1 and 2, which could overflow.
-
-I don't think they are important enough to warrant a significant
-performance hit of locking.
-Or even more checks that would prevent it in a lockless way.
-
-(I'd just see that the result is set to something legal and also drop
- line 3, because it does not help things that much.)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
