@@ -1,155 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaHTPRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:17:05 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:39320 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaHTPRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:17:00 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
- for PSCI init
-To: Hanjun Guo <hanjun.guo@linaro.org>, Olof Johansson <olof@lixom.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linaro-acpi-private@linaro.org
-In-Reply-To: <53DA1916.1030907@linaro.org>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
-	<1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
-	<CAOesGMjzFyd_=+ToFmjyn958F86KsDJDht+9ZmniAERz16K_VQ@mail.gmail.com>
-	<53DA1916.1030907@linaro.org>
-Date: Wed, 20 Aug 2014 10:02:54 -0500
-Message-Id: <20140820150254.E115EC41205@trevor.secretlab.ca>
+	id S1751960AbaHTPRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:17:39 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:13866
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751292AbaHTPRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:17:37 -0400
+Date: Wed, 20 Aug 2014 10:12:14 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+CC: Mark Rutland <mark.rutland@arm.com>, <wsa@the-dreams.de>,
+        <baruch@tkos.co.il>, mika westerberg <mika.westerberg@linux.intel.com>,
+        grant likely <grant.likely@linaro.org>, <robh+dt@kernel.org>,
+        <skuribay@pobox.com>, rafael j wysocki <rafael.j.wysocki@intel.com>,
+        <alan@linux.intel.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        delicious quinoa <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
+ setting
+In-Reply-To: <1791089693.2989.1408545513401.JavaMail.root@abilis.com>
+Message-ID: <alpine.DEB.2.02.1408201008400.11079@atx-linux-37>
+References: <1791089693.2989.1408545513401.JavaMail.root@abilis.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BN1PR02CA0045.namprd02.prod.outlook.com (10.141.56.45) To
+ DM2PR03MB317.namprd03.prod.outlook.com (10.141.54.15)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03094A4065
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(189002)(51704005)(164054003)(24454002)(13464003)(199003)(377454003)(101416001)(79102001)(15202345003)(64706001)(46406003)(77096002)(66066001)(83506001)(23726002)(80022001)(15975445006)(53416004)(77982001)(20776003)(46102001)(102836001)(81342001)(76482001)(47776003)(110136001)(107046002)(50466002)(106356001)(81156004)(69596002)(50986999)(33716001)(95666004)(85306004)(99396002)(74502001)(86362001)(74662001)(19580405001)(54356999)(31966008)(76176999)(86152002)(105586002)(42186005)(85852003)(4396001)(83322001)(83072002)(81542001)(87976001)(92566001)(92726001)(19580395003)(21056001)(21314002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB317;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014 18:23:18 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> On 2014-7-31 12:22, Olof Johansson wrote:
+
+
+On Wed, 20 Aug 2014, Romain Baeriswyl wrote:
+
+> Hi Alan,
+> 
+> We got board issue using I2C and they were solved by changing the i2c timing.
+> 
+> It is possible to change the tLOW and tHIGH period with the following parameters:
+>   i2c-sda-hold-time-ns
+>   i2c-sda-falling-time-ns
+>   i2c-scl-falling-time-ns
+> 
+> Romain
+
+Hi Romain,
+
+This thread is getting kind of messed up.  Yep, that's how I am slowing 
+down the bus, using i2c-sda-falling-time-ns and i2c-scl-falling-time-ns.
+It is fine with me if you want to test for == 100KHz, just not my 
+(probably hair-splitting) preference. :)
+
+Alan
+
+> 
+> ----- Original Message -----
+> From: "atull" <atull@opensource.altera.com>
+> To: "Romain Baeriswyl" <Romain.Baeriswyl@abilis.com>
+> Cc: "Mark Rutland" <mark.rutland@arm.com>, wsa@the-dreams.de, baruch@tkos.co.il, "mika westerberg" <mika.westerberg@linux.intel.com>, "grant likely" <grant.likely@linaro.org>, robh+dt@kernel.org, skuribay@pobox.com, "rafael j wysocki" <rafael.j.wysocki@intel.com>, alan@linux.intel.com, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, "delicious quinoa" <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+> Sent: Wednesday, August 20, 2014 4:24:45 PM
+> Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree setting
+> 
+> 
+> 
+> On Wed, 20 Aug 2014, Romain Baeriswyl wrote:
+> 
 > > Hi,
+> > 
+> > With the patch "i2c designware add support of I2C standard mode" I already proposed:
+> > - I2C standard mode is selected with 100kHz clock frequency.
+> > - I2C fast mode is selected with 400kHy clock frequency.
+> > - EINVAL error is returned if clock frequency is not 100000 and not 400000.
+> > 
+> > but this patch seems not available yet.
+> > What about the other patch "i2c designware make SCL and SDA falling time configurable" ?
+> > 
+> > In i2c-designware_platdrv.c the flag DW_IC_CON_SPEED_xxx is well set
+> > depending on the mode:
+> > 
+> >   if (clk_freq == 100000)
 > 
-> Hi Olof,
+> Romain,
 > 
-> > 
-> > On Thu, Jul 24, 2014 at 6:00 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> >> There are two flags: PSCI_COMPLIANT and PSCI_USE_HVC. When set,
-> >> the former signals to the OS that the hardware is PSCI compliant.
-> >> The latter selects the appropriate conduit for PSCI calls by
-> >> toggling between Hypervisor Calls (HVC) and Secure Monitor Calls
-> >> (SMC).
-> >>
-> >> FADT table contains such information, parse FADT to get the flags
-> >> for PSCI init. Since ACPI 5.1 doesn't support self defined PSCI
-> >> function IDs, which means that only PSCI 0.2+ is supported in ACPI.
-> >>
-> >> At the same time, only ACPI 5.1 or higher verison supports PSCI,
-> >> and FADT Major.Minor version was introduced in ACPI 5.1, so we
-> >> will check the version and only parse FADT table with version >= 5.1.
-> >>
-> >> If firmware provides ACPI tables with ACPI version less than 5.1,
-> >> OS will be messed up with those information and have no way to
-> >> bring up secondery CPUs, so disable ACPI if we get an FADT table
-> >> with version less that 5.1.
-> >>
-> >> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> >> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-> >> ---
-> >>  arch/arm64/include/asm/acpi.h |    2 +
-> >>  arch/arm64/kernel/acpi.c      |   50 ++++++++++++++++++++++
-> >>  arch/arm64/kernel/psci.c      |   95 +++++++++++++++++++++++++++++------------
-> >>  arch/arm64/kernel/setup.c     |    2 +
-> >>  4 files changed, 121 insertions(+), 28 deletions(-)
-> >>
-> >> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-> >> index 44b617f..67dac90 100644
-> >> --- a/arch/arm64/include/asm/acpi.h
-> >> +++ b/arch/arm64/include/asm/acpi.h
-> >> @@ -18,6 +18,8 @@ extern int acpi_disabled;
-> >>  extern int acpi_noirq;
-> >>  extern int acpi_pci_disabled;
-> >>  extern int acpi_strict;
-> >> +extern int acpi_psci_present;
-> >> +extern int acpi_psci_use_hvc;
-> >>
-> >>  static inline void disable_acpi(void)
-> >>  {
-> >> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> >> index f5a10b5..374926f 100644
-> >> --- a/arch/arm64/kernel/acpi.c
-> >> +++ b/arch/arm64/kernel/acpi.c
-> >> @@ -11,6 +11,8 @@
-> >>   *  published by the Free Software Foundation.
-> >>   */
-> >>
-> >> +#define pr_fmt(fmt) "ACPI: " fmt
-> >> +
-> >>  #include <linux/init.h>
-> >>  #include <linux/acpi.h>
-> >>  #include <linux/cpumask.h>
-> >> @@ -34,6 +36,12 @@ EXPORT_SYMBOL(acpi_disabled);
-> >>  int acpi_pci_disabled;         /* skip ACPI PCI scan and IRQ initialization */
-> >>  EXPORT_SYMBOL(acpi_pci_disabled);
-> >>
-> >> +/* 1 to indicate PSCI is implemented */
-> >> +int acpi_psci_present;
-> >> +
-> >> +/* 1 to indicate HVC must be used instead of SMC as the PSCI conduit */
-> >> +int acpi_psci_use_hvc;
-> > 
-> > Here's a prime example of where it would just make more sense to
-> > populate DT based on what's in the ACPI info.
-> > 
-> > Have a acpi_parse_fadt() that, if needed, creates a /psci node in the
-> > system-wide DT and populates it with the few properties needed.
-> > 
-> > That way, the rest of the code path in the kernel setup is identical,
-> > instead of dealing with separate functions for setup, two exported
-> > variables just to communicate the state, and so on. It's just extra
-> > complexity for no good reason. The ACPi side code isn't even adding
-> > significant complexity compared to this. We'll need to add an
-> > of_add_node() property though.
+> I'm really happy if your patches get accepted.  Can this be <= 100000?
+> It is really common to run I2C at a lower speed if you have some
+> board issues with the i2c bus.
 > 
-> Yes, this will make the code path in the kernel setup is identical, but
-> I think mixture of ACPI and DT (converting ACPI into DT at run-time) is
-> not a good solution, and this had been discussed last year:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-November/211662.html
-
-Agreed. I don't want to get into populating DT structures with ACPI
-data. I think doing so ends up increasing the conceptual complexity.
-
-> >> -       np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
-> >> +       if (acpi_disabled) {
-> >> +               np = of_find_matching_node_and_match(NULL,
-> >> +                               psci_of_match, &matched_np);
-> > 
-> > Ideally this code should go away by changing the rest of it, but for
-> > future cases: It'd be a lot cleaner to do this as:
-> > 
-> >         if (!acpi_disabled)
-> >                 return psci_0_2_init_acpi();
-> > 
-> > ... then fall through to the current implementation instead.
+> Alan
 > 
-> I prefer this one :)
-
-Good! :-)
-
-g.
+> >      dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+> >        DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_STD;
+> >    else
+> >      dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+> >        DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+> > 
+> > 
+> > So for me everything should be fine if there patches are applied.
+> > 
+> > Regards,
+> > 
+> > Romain
+> > 
+> > ----- Original Message -----
+> > From: "Mark Rutland" <mark.rutland@arm.com>
+> > To: atull@opensource.altera.com
+> > Cc: wsa@the-dreams.de, baruch@tkos.co.il, "mika westerberg" <mika.westerberg@linux.intel.com>, "grant likely" <grant.likely@linaro.org>, robh+dt@kernel.org, skuribay@pobox.com, "Romain Baeriswyl" <Romain.Baeriswyl@abilis.com>, "rafael j wysocki" <rafael.j.wysocki@intel.com>, alan@linux.intel.com, linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, devicetree@vger.kernel.org, "delicious quinoa" <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+> > Sent: Wednesday, August 20, 2014 11:22:57 AM
+> > Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree setting
+> > 
+> > On Tue, Aug 19, 2014 at 09:18:49PM +0100, atull@opensource.altera.com wrote:
+> > > From: Alan Tull <atull@opensource.altera.com>
+> > > 
+> > > Use the documented, but unimplemented "clock-frequency"
+> > > Device Tree setting as a guide on whether to set the speed
+> > > mode bits in DW_IC_CON to standard or fast i2c mode.
+> > > 
+> > > Previously, the driver was hardwired to fast mode.  Default
+> > > to fast mode if the "clock-frequency" property is not present
+> > > for backwards compatiblity.
+> > > 
+> > > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > > ---
+> > >  drivers/i2c/busses/i2c-designware-platdrv.c |   10 ++++++++--
+> > >  1 file changed, 8 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+> > > index bc87733..18cd3d9 100644
+> > > --- a/drivers/i2c/busses/i2c-designware-platdrv.c
+> > > +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+> > > @@ -122,7 +122,8 @@ static int dw_i2c_probe(struct platform_device *pdev)
+> > >  	struct dw_i2c_dev *dev;
+> > >  	struct i2c_adapter *adap;
+> > >  	struct resource *mem;
+> > > -	int irq, r;
+> > > +	int irq, r, ret, speed = DW_IC_CON_SPEED_FAST;
+> > > +	u32 bus_rate;
+> > >  
+> > >  	irq = platform_get_irq(pdev, 0);
+> > >  	if (irq < 0) {
+> > > @@ -167,6 +168,11 @@ static int dw_i2c_probe(struct platform_device *pdev)
+> > >  		of_property_read_u32(pdev->dev.of_node,
+> > >  				     "i2c-scl-falling-time-ns",
+> > >  				     &dev->scl_falling_time);
+> > > +
+> > > +		ret = of_property_read_u32(pdev->dev.of_node,
+> > > +					   "clock-frequency", &bus_rate);
+> > > +		if (!ret && (bus_rate <= 100000))
+> > > +			speed = DW_IC_CON_SPEED_STD;
+> > 
+> > This looks a bit odd.
+> > 
+> > If the device only supports two particular speeds why do we accept any
+> > other speed in the clock-frequency property? Surely we should at least
+> > warn that something was off?
+> > 
+> > Thanks,
+> > Mark
+> > 
+> > >  	}
+> > >  
+> > >  	dev->functionality =
+> > > @@ -177,7 +183,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
+> > >  		I2C_FUNC_SMBUS_WORD_DATA |
+> > >  		I2C_FUNC_SMBUS_I2C_BLOCK;
+> > >  	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+> > > -		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+> > > +		DW_IC_CON_RESTART_EN | speed;
+> > >  
+> > >  	/* Try first if we can configure the device from ACPI */
+> > >  	r = dw_i2c_acpi_configure(pdev);
+> > > -- 
+> > > 1.7.9.5
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > 
+> > 
+> 
