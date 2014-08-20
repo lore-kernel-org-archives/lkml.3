@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaHTXKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 19:10:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46967 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752988AbaHTXKw (ORCPT
+	id S1753120AbaHTXQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 19:16:45 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:37192 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaHTXQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 19:10:52 -0400
-Message-ID: <1408576235.2618.47.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] nfs: use canonical path in nfs_show_devname
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Xiong Zhou <xzhou@redhat.com>
-Cc: trond.myklebust@primarydata.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 20 Aug 2014 16:10:35 -0700
-In-Reply-To: <1927160445.21851828.1408504000719.JavaMail.zimbra@redhat.com>
-References: <1927160445.21851828.1408504000719.JavaMail.zimbra@redhat.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-sIVnMayMqgVW4+IhREkr"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 71.39.140.21
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 20 Aug 2014 19:16:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.19.4.1408192222470.2758@trent.utfs.org>
+References: <1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com>
+	<87ppfvrdux.fsf@x220.int.ebiederm.org>
+	<alpine.DEB.2.19.4.1408192222470.2758@trent.utfs.org>
+Date: Wed, 20 Aug 2014 19:16:43 -0400
+Message-ID: <CAHQdGtQ0_2cnvbuQxYDrU2nuZ2iw1gZtxB5PeR-2QZL008OOwg@mail.gmail.com>
+Subject: Re: [PATCH v2] nfs: fix kernel warning when removing proc entry
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Dan Aloni <dan@kernelim.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 20, 2014 at 1:24 AM, Christian Kujau <lists@nerdbynature.de> wrote:
+> On Tue, 19 Aug 2014 at 21:20, Eric W. Biederman wrote:
+>
+>> Cong Wang <xiyou.wangcong@gmail.com> writes:
+>>
+>> > I saw the following kernel warning:
+>>
+>> Cong thanks for finding and tracking this.  I was clearly asleep at the
+>> switch when I was testing my fix to the nfs client code :(
+>>
+>> I have applied this patch and will push it to Linus after it has a
+>> little bit to sit in linux-next.
+>
+> This made the boot warning go away for me as well:
+> http://lkml.iu.edu/hypermail/linux/kernel/1408.2/01792.html
+>
+> Tested-by: Christian Kujau <lists@nerdbynature.de>
+>
+> Thanks!
+> Christian.
+> --
+> BOFH excuse #182:
+>
+> endothermal recalibration
 
---=-sIVnMayMqgVW4+IhREkr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+It is customary (and expected!) to send these patches through the
+maintainer; not to push them yourself.
 
-On Tue, 2014-08-19 at 23:06 -0400, Xiong Zhou wrote:
-> When export root dir(/) via nfs, and mount a particular dir under root, e=
-g
-> /nfsexport, there will be defect double slash output in /proc/mounts, lik=
-e
-> localhost://nfsexport.
->=20
-> Signed-off-by: Xiong Zhou <xzhou@redhat.com>
-> ---
->  fs/nfs/super.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-> index e4499d5..62b1cab 100644
-> --- a/fs/nfs/super.c
-> +++ b/fs/nfs/super.c
-> @@ -780,7 +780,7 @@ int nfs_show_devname(struct seq_file *m, struct dentr=
-y *root)
->  	int err =3D 0;
->  	if (!page)
->  		return -ENOMEM;
-> -	devname =3D nfs_path(&dummy, root, page, PAGE_SIZE, 0);
-> +	devname =3D nfs_path(&dummy, root, page, PAGE_SIZE, 1);
->  	if (IS_ERR(devname))
->  		err =3D PTR_ERR(devname);
->  	else
+-- 
+Trond Myklebust
 
-This will reintroduce the problem reported in
-<https://bugs.debian.org/669314>.
+Linux NFS client maintainer, PrimaryData
 
-Ben.
-
---=20
-Ben Hutchings
-If at first you don't succeed, you're doing about average.
-
---=-sIVnMayMqgVW4+IhREkr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAU/Uq8Oe/yOyVhhEJAQqLbA/+Jgab2JOwo2qzEKMDNJrvDgKh/nYAUZq9
-bXtVr0uCk0idEbuYo9MYQCIApzlub+bX8LhpyisyDKes9FM1pJr2MAq5/nQs26W+
-vr3I5u2sGPtf00VBOYYAZQv5OZlS7/ZPDIGitMaUGsRBGNoO2L5cPdx72Sss2zu9
-epTwE49aB5InNigoQiTdVy1K+IJ2aoq83Latxe+fIKLAtrO7J5673OdJ4RswAzdc
-8YejLNd0AMukG6F0vjsZIs6WNAY5JSL/1TOoPm/GmZQgmXM2z2mmRR0Ru/mVluqI
-3PLOhxVCpIEnvHGR9q01DLPmx4kv47yUpSw4Z3Kw1q7LGZyairJ8MHG796DhWn5M
-jsAghou7dHPvuuFpHVUd3ShDRh3Kh9k+RCqkap4aPICc5WecZWxY0/7cWzLv4a3T
-YQilk3W3rQ3Q540J/V4e25J2nUNNBA+DK2aDQf5L8MDKJNVY1ttVbcfMSoiMZl5x
-Z9CNfpoweltKDADrYMrhzIYyGifCmI3dcfW7v0LTl5sOOM8f9YrK4BBlI9z+z2Nm
-6/qu0D3Jpxf9NMesgIbGUIY52Hi+u/XnWNF6YtCYc13gqCOKEBddw765j2+Rd4dj
-QasQQ4u85dJwo0Ez3Zl3/ylAyOMU2gkWDhKo0Y514uSU01IlYFwRu+zYuXcBs/4y
-NhK2ZiiBz/4=
-=Iobq
------END PGP SIGNATURE-----
-
---=-sIVnMayMqgVW4+IhREkr--
+trond.myklebust@primarydata.com
