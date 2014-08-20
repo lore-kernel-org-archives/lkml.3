@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578AbaHTLZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:25:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38824 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000AbaHTLZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:25:53 -0400
-Date: Wed, 20 Aug 2014 08:25:49 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>, eranian@google.com,
-        LKML <linux-kernel@vger.kernel.org>, Joe Mario <jmario@redhat.com>
-Subject: Re: [PATCH] perf, map:  Don't try to find DSOs in SYSV maps
-Message-ID: <20140820112549.GB2892@kernel.org>
-References: <1408501874-244377-1-git-send-email-dzickus@redhat.com>
+	id S1752461AbaHTL2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:28:37 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:49382 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827AbaHTL2f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:28:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH] drivers: pci: convert generic host controller to DT host bridge creation API
+Date: Wed, 20 Aug 2014 13:27:57 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        "linux-pci" <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1407861695-25549-1-git-send-email-Liviu.Dudau@arm.com>
+In-Reply-To: <1407861695-25549-1-git-send-email-Liviu.Dudau@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408501874-244377-1-git-send-email-dzickus@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408201327.57376.arnd@arndb.de>
+X-Provags-ID: V02:K0:ubYGfXKxpVTTh0kYIKfMxehpIl/nR+Yc36ZtD+4yPmC
+ kJjZlpgDA5cUXJnJW8fRMNwaK4X2BscV2c4nc0G3M/a1NFiteU
+ 07FimL1a+H7GvL0Uounbac11pjNSrBrciKx46IZ+B0kOxXQsRC
+ C3BwR42Td01L9o8JdOwWp2ORb3eJaKxP58yckonVhZJ/s+GSC2
+ 4Y2mhGyz/Gd8zBd5IAEvTwf6xHWo77vV+UI43hBWdhQQ8sKICE
+ LFQOQmIDxjNLgjhcpIm16b98nMFHSJIC2bJHxCaHsGNO7tEZ7X
+ tx0orFAbW7temPYYhjBhbEALy4TgUgBmLV9DhwfK2VD9vhUj+A
+ Ui6elKav5X2k4TgqcnM0=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 19, 2014 at 10:31:14PM -0400, Don Zickus escreveu:
-> We are seeing a lot of the following with regards to SYSV memory
-> 
-> Failed to open /SYSV0000279c, continuing without symbols
-> 
-> We don't believe this memory will have DSO info, so treat it like the heap and
-> stack for now and skip it to prevent the warning.
+On Tuesday 12 August 2014, Liviu Dudau wrote:
+> +       return of_create_pci_host_bridge(dev, 0, 0xff, &gen_pci_ops,
+> +                                       gen_pci_setup, pci);
 
-Thanks, applied.
- 
-> Signed-off-by: Joe Mario <jmario@redhat.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> --
-> I am open to suggetions for a different fix - dcz
-> ---
->  tools/perf/util/map.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index 25c571f..0294f40 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -29,6 +29,7 @@ static inline int is_anon_memory(const char *filename)
->  static inline int is_no_dso_memory(const char *filename)
->  {
->  	return !strncmp(filename, "[stack", 6) ||
-> +	       !strncmp(filename, "/SYSV",5)   ||
->  	       !strcmp(filename, "[heap]");
->  }
->  
-> -- 
-> 1.7.1
+I had not noticed it earlier, but the setup callback is actually a feature
+of the arm32 PCI code that I had hoped to avoid when moving to the
+generic API. Can we do this as a more regular sequence of
+
+
+	ret = of_create_pci_host_bridge(dev, 0, 0xff, &gen_pci_ops, pci);
+	if (ret)
+		return ret;
+
+	ret = gen_pci_setup(pci);
+	if (ret)
+		pci_destroy_host_bridge(dev, pci);
+	return ret;
+
+?
+
+	Arnd
