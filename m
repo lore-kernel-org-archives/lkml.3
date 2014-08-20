@@ -1,198 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaHTNiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 09:38:14 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:36190 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaHTNiM (ORCPT
+	id S1750978AbaHTNje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 09:39:34 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:49136 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaHTNjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 09:38:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408492364-8012-1-git-send-email-cw00.choi@samsung.com>
-References: <1408450078-6296-1-git-send-email-cw00.choi@samsung.com>
-	<1408492364-8012-1-git-send-email-cw00.choi@samsung.com>
-Date: Wed, 20 Aug 2014 09:38:05 -0400
-Message-ID: <CAC-25o9LjKwjBwwxcOvV75bXEHGdUh2vU=ae1STsXxD6q4YsiA@mail.gmail.com>
-Subject: Re: [PATCHv3] thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
-From: "edubezval@gmail.com" <edubezval@gmail.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
-        Amit Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, l.majewski@samsung.com,
-        naveen krishna <ch.naveen@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Aug 2014 09:39:31 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 2/2] ARM: shmobile: Move legacy INTC definitions from irqs.h to intc.h
+Date: Wed, 20 Aug 2014 15:39:23 +0200
+Message-Id: <1408541963-20736-3-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408541963-20736-1-git-send-email-geert+renesas@glider.be>
+References: <1408541963-20736-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Chanwoo,
+Move all definitions for legacy INTC from the common "irqs.h" to the
+INTC-specific "intc.h".
+Include "intc.h" in sh7372/sh73a0 CPU and board files where needed.
 
-On Tue, Aug 19, 2014 at 7:52 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch add support for TRIM_RELOAD feature at Exynos3250. The TMU of
-> Exynos3250 has two TRIMINFO_CON register.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ arch/arm/mach-shmobile/board-kzm9g.c    | 1 +
+ arch/arm/mach-shmobile/board-mackerel.c | 1 +
+ arch/arm/mach-shmobile/intc.h           | 6 ++++++
+ arch/arm/mach-shmobile/irqs.h           | 6 ------
+ arch/arm/mach-shmobile/setup-sh7372.c   | 1 +
+ arch/arm/mach-shmobile/setup-sh73a0.c   | 1 +
+ 6 files changed, 10 insertions(+), 6 deletions(-)
 
-Can you please split the two changes above into two patches? Meaning,
-one that adds TRIMINFO_CON2 and another that adds TRIM_RELOAD?
-
->
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Eduardo Valentin <edubezval@gmail.com>
-> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
-> Changes from v2:
-> - Fix build break because of missing 'or' operation.
-> Changes from v1:
-> - Add missing 'TMU_SUPPORT_TRIM_RELOAD' feature
->
->  drivers/thermal/samsung/exynos_tmu.c      |  7 +++++--
->  drivers/thermal/samsung/exynos_tmu.h      |  5 +++--
->  drivers/thermal/samsung/exynos_tmu_data.c | 11 +++++++++--
->  drivers/thermal/samsung/exynos_tmu_data.h |  7 +++++--
->  4 files changed, 22 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index acbff14..ed01606 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -164,8 +164,11 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->                 }
->         }
->
-> -       if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
-> -               __raw_writel(1, data->base + reg->triminfo_ctrl);
-> +       if (TMU_SUPPORTS(pdata, TRIM_RELOAD)) {
-> +               for (i = 0; i < pdata->triminfo_reload_count; i++)
-> +                       __raw_writel(pdata->triminfo_reload[i],
-> +                                       data->base + reg->triminfo_ctrl[i]);
-> +       }
-
-What is the logic behind the trim reload feature? Which SoCs support it?
-
->
->         if (pdata->cal_mode == HW_MODE)
->                 goto skip_calib_data;
-> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index 1b4a644..72cb54e 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.h
-> +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -151,8 +151,7 @@ struct exynos_tmu_registers {
->         u32     triminfo_25_shift;
->         u32     triminfo_85_shift;
->
-> -       u32     triminfo_ctrl;
-> -       u32     triminfo_ctrl1;
-> +       u32     triminfo_ctrl[2];
-
-
-The above change needs to be documented.
-
->         u32     triminfo_reload_shift;
->
->         u32     tmu_ctrl;
-> @@ -295,6 +294,8 @@ struct exynos_tmu_platform_data {
->         u8 second_point_trim;
->         u8 default_temp_offset;
->         u8 test_mux;
-> +       u8 triminfo_reload[2];
-> +       u8 triminfo_reload_count;
->
-
-The above addition needs to be documented too.
-
->         enum calibration_type cal_type;
->         enum calibration_mode cal_mode;
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index aa8e0de..8cd609c 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -95,6 +95,8 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
->         .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
->         .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
->         .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-> +       .triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON1,
-> +       .triminfo_ctrl[1] = EXYNOS_TMU_TRIMINFO_CON2,
->         .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->         .test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
->         .buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
-> @@ -160,8 +162,11 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
->                 .temp_level = 95, \
->         }, \
->         .freq_tab_count = 2, \
-> +       .triminfo_reload[0] = 0x1, \
-> +       .triminfo_reload[1] = 0x11, \
-
-What does 0x1 mean? How about 0x11?
-
-> +       .triminfo_reload_count = 2, \
-
-What is count?
-
->         .registers = &exynos3250_tmu_registers, \
-> -       .features = (TMU_SUPPORT_EMULATION | \
-> +       .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
->                         TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
->                         TMU_SUPPORT_EMUL_TIME)
->  #endif
-> @@ -184,7 +189,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->         .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
->         .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
->         .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-> -       .triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
-> +       .triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON2,
->         .triminfo_reload_shift = EXYNOS_TRIMINFO_RELOAD_SHIFT,
->         .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->         .test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
-> @@ -252,6 +257,8 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->                 .temp_level = 95, \
->         }, \
->         .freq_tab_count = 2, \
-> +       .triminfo_reload[0] = 0x1, \
-> +       .triminfo_reload_count = 1, \
-
-
-Your patch description says nothing about TRIM_RELOAD on 4412, does it?
-
-What about the other SoCs?
-
->         .registers = &exynos4412_tmu_registers, \
->         .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
->                         TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-> index f0979e5..e0536c3 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.h
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-> @@ -57,8 +57,11 @@
->  #define EXYNOS4210_TMU_TRIG_LEVEL_MASK 0x1111
->  #define EXYNOS4210_TMU_INTCLEAR_VAL    0x1111
->
-> -/* Exynos5250 and Exynos4412 specific registers */
-> -#define EXYNOS_TMU_TRIMINFO_CON        0x14
-> +/* Exynos3250 specific registers */
-> +#define EXYNOS_TMU_TRIMINFO_CON1       0x10
-> +
-> +/* Exynos5250, Exynos4412 and Exynos3250 specific registers */
-> +#define EXYNOS_TMU_TRIMINFO_CON2       0x14
->  #define EXYNOS_THD_TEMP_RISE           0x50
->  #define EXYNOS_THD_TEMP_FALL           0x54
->  #define EXYNOS_EMUL_CON                0x80
-> --
-> 1.8.0
->
-
-
-
+diff --git a/arch/arm/mach-shmobile/board-kzm9g.c b/arch/arm/mach-shmobile/board-kzm9g.c
+index 36593cb20e57..77e36fa0b142 100644
+--- a/arch/arm/mach-shmobile/board-kzm9g.c
++++ b/arch/arm/mach-shmobile/board-kzm9g.c
+@@ -50,6 +50,7 @@
+ #include <video/sh_mobile_lcdc.h>
+ 
+ #include "common.h"
++#include "intc.h"
+ #include "irqs.h"
+ #include "sh73a0.h"
+ 
+diff --git a/arch/arm/mach-shmobile/board-mackerel.c b/arch/arm/mach-shmobile/board-mackerel.c
+index 79f448e93abb..b7c4261492b0 100644
+--- a/arch/arm/mach-shmobile/board-mackerel.c
++++ b/arch/arm/mach-shmobile/board-mackerel.c
+@@ -63,6 +63,7 @@
+ #include <asm/mach-types.h>
+ 
+ #include "common.h"
++#include "intc.h"
+ #include "irqs.h"
+ #include "pm-rmobile.h"
+ #include "sh-gpio.h"
+diff --git a/arch/arm/mach-shmobile/intc.h b/arch/arm/mach-shmobile/intc.h
+index a5603c76cfe0..0313cf798c32 100644
+--- a/arch/arm/mach-shmobile/intc.h
++++ b/arch/arm/mach-shmobile/intc.h
+@@ -1,5 +1,6 @@
+ #ifndef __ASM_MACH_INTC_H
+ #define __ASM_MACH_INTC_H
++
+ #include <linux/sh_intc.h>
+ 
+ #define INTC_IRQ_PINS_ENUM_16L(p)				\
+@@ -287,4 +288,9 @@ static struct intc_desc p ## _desc __initdata = {			\
+ 			     p ## _sense_registers, NULL),		\
+ }
+ 
++/* INTCS */
++#define INTCS_VECT_BASE		0x3400
++#define INTCS_VECT(n, vect)	INTC_VECT((n), INTCS_VECT_BASE + (vect))
++#define intcs_evt2irq(evt)	evt2irq(INTCS_VECT_BASE + (evt))
++
+ #endif  /* __ASM_MACH_INTC_H */
+diff --git a/arch/arm/mach-shmobile/irqs.h b/arch/arm/mach-shmobile/irqs.h
+index 8e28223f1b3c..3070f6d887eb 100644
+--- a/arch/arm/mach-shmobile/irqs.h
++++ b/arch/arm/mach-shmobile/irqs.h
+@@ -1,18 +1,12 @@
+ #ifndef __SHMOBILE_IRQS_H
+ #define __SHMOBILE_IRQS_H
+ 
+-#include <linux/sh_intc.h>
+ #include "include/mach/irqs.h"
+ 
+ /* GIC */
+ #define gic_spi(nr)		((nr) + 32)
+ #define gic_iid(nr)		(nr) /* ICCIAR / interrupt ID */
+ 
+-/* INTCS */
+-#define INTCS_VECT_BASE		0x3400
+-#define INTCS_VECT(n, vect)	INTC_VECT((n), INTCS_VECT_BASE + (vect))
+-#define intcs_evt2irq(evt)	evt2irq(INTCS_VECT_BASE + (evt))
+-
+ /* GPIO IRQ */
+ #define _GPIO_IRQ_BASE		2500
+ #define GPIO_IRQ_BASE(x)	(_GPIO_IRQ_BASE + (32 * x))
+diff --git a/arch/arm/mach-shmobile/setup-sh7372.c b/arch/arm/mach-shmobile/setup-sh7372.c
+index 3731eccccef4..eaf5d1332c4b 100644
+--- a/arch/arm/mach-shmobile/setup-sh7372.c
++++ b/arch/arm/mach-shmobile/setup-sh7372.c
+@@ -41,6 +41,7 @@
+ 
+ #include "common.h"
+ #include "dma-register.h"
++#include "intc.h"
+ #include "irqs.h"
+ #include "pm-rmobile.h"
+ #include "sh7372.h"
+diff --git a/arch/arm/mach-shmobile/setup-sh73a0.c b/arch/arm/mach-shmobile/setup-sh73a0.c
+index e7a0296b81b1..4c7022830e30 100644
+--- a/arch/arm/mach-shmobile/setup-sh73a0.c
++++ b/arch/arm/mach-shmobile/setup-sh73a0.c
+@@ -40,6 +40,7 @@
+ 
+ #include "common.h"
+ #include "dma-register.h"
++#include "intc.h"
+ #include "irqs.h"
+ #include "sh73a0.h"
+ 
 -- 
-Eduardo Bezerra Valentin
+1.9.1
+
