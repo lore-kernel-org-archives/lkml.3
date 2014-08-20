@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaHTSyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 14:54:17 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:40939 "EHLO
+	id S1752828AbaHTSyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 14:54:15 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:64197 "EHLO
 	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661AbaHTSyK (ORCPT
+	with ESMTP id S1752684AbaHTSyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 14:54:10 -0400
 From: Doug Anderson <dianders@chromium.org>
@@ -14,120 +14,79 @@ To: Heiko Stuebner <heiko@sntech.de>,
 Cc: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
         Eddie Cai <eddie.cai@rock-chips.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 4/4] ARM: dts: Enable PWM backlight on rk3288-evb
-Date: Wed, 20 Aug 2014 11:54:02 -0700
-Message-Id: <1408560842-3746-5-git-send-email-dianders@chromium.org>
+        Doug Anderson <dianders@chromium.org>, mark.rutland@arm.com,
+        linux-pwm@vger.kernel.org, linux@arm.linux.org.uk, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, devicetree@vger.kernel.org, galak@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 0/4] PWM changes for rk3288-evb
+Date: Wed, 20 Aug 2014 11:53:58 -0700
+Message-Id: <1408560842-3746-1-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408560842-3746-1-git-send-email-dianders@chromium.org>
-References: <1408560842-3746-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PWM0 is the PWM associated with the LCD backlight.  Enable it.
+These patches enable the PWM backlight for the rk3288-evb board.
+There were tested by watching the backlight grow from off to max with
+the following instructions:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v4: None
+  cd /sys/class/backlight/backlight*/
+  for i in $(seq 255); do echo $i > brightness; sleep .01; done
+
+The first patch switches PWM cells from 2 to 3 on rk3288.  I think it
+could land in Thierry's tree.  This patch will break backward
+compatibility for rk3288 until changes land handling PWM cells more
+dynamically, but since there are no rk3288 boards shipping yet it
+seems OK.
+
+The second patch enables the proper IP.  This will also break backward
+compatibility, but again should be OK since there are no users.  If
+needed we could make the "grf" optional and assume any shipping boards
+enabled the bit in their bootloader.  I think this could land in
+Thierry's tree with Heiko's ACK.
+
+The 3rd and 4th patches are DTS ones.  They could land in Heiko's tree
+after the first two patches.  They are based atop his current WIP 3.18
+dts tree.  Note that instantiating the PWM backlight will cause the
+system to hang unless Heiko's (clk: rockchip: protect critical clocks
+from getting disabled) <patchwork.kernel.org/patch/4725391> is landed.
+
+There are no compile time or runtime dependencies between these
+patches except that patch #3 needs to come before patch #4.  ...and of
+course the PWM won't work without all 4 patches.
+
+Changes in v4:
+- Updated comment not to add caveats about pwm_cells 3.
+- rockchip_pwm_set_polarity() is now static.
+- Separate pwm_ops for v1 and v2; no set_polarity() in v1.
+- Added a blank line.
+- Totally rewrote to go in the PWM driver.
+- Reordered IP switch to be atop invert patch.
+- Add rockchip,grf to pwm nodes.
+
 Changes in v3:
+- Don't store a private copy of polarity.
+- Use true instead of 1.
+- Cleanup init order with "has_invert".
 - Fix space to tab in 2 places in DTS.
 - Make sure PWM is upper case in prose.
 
-Changes in v2: None
+Changes in v2:
+- Check for failed ioremap()
 
- arch/arm/boot/dts/rk3288-evb.dtsi | 53 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
+Doug Anderson (4):
+  pwm: rockchip: Allow polarity invert on rk3288
+  ARM: rockchip: rk3288: Switch to use the proper PWM IP
+  ARM: dts: Add main PWM info to rk3288
+  ARM: dts: Enable PWM backlight on rk3288-evb
 
-diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
-index 2964370..98b69d0 100644
---- a/arch/arm/boot/dts/rk3288-evb.dtsi
-+++ b/arch/arm/boot/dts/rk3288-evb.dtsi
-@@ -10,6 +10,7 @@
-  * GNU General Public License for more details.
-  */
- 
-+#include <dt-bindings/pwm/pwm.h>
- #include "rk3288.dtsi"
- 
- / {
-@@ -17,6 +18,48 @@
- 		reg = <0x0 0x80000000>;
- 	};
- 
-+	backlight {
-+		compatible = "pwm-backlight";
-+		brightness-levels = <
-+			  0   1   2   3   4   5   6   7
-+			  8   9  10  11  12  13  14  15
-+			 16  17  18  19  20  21  22  23
-+			 24  25  26  27  28  29  30  31
-+			 32  33  34  35  36  37  38  39
-+			 40  41  42  43  44  45  46  47
-+			 48  49  50  51  52  53  54  55
-+			 56  57  58  59  60  61  62  63
-+			 64  65  66  67  68  69  70  71
-+			 72  73  74  75  76  77  78  79
-+			 80  81  82  83  84  85  86  87
-+			 88  89  90  91  92  93  94  95
-+			 96  97  98  99 100 101 102 103
-+			104 105 106 107 108 109 110 111
-+			112 113 114 115 116 117 118 119
-+			120 121 122 123 124 125 126 127
-+			128 129 130 131 132 133 134 135
-+			136 137 138 139 140 141 142 143
-+			144 145 146 147 148 149 150 151
-+			152 153 154 155 156 157 158 159
-+			160 161 162 163 164 165 166 167
-+			168 169 170 171 172 173 174 175
-+			176 177 178 179 180 181 182 183
-+			184 185 186 187 188 189 190 191
-+			192 193 194 195 196 197 198 199
-+			200 201 202 203 204 205 206 207
-+			208 209 210 211 212 213 214 215
-+			216 217 218 219 220 221 222 223
-+			224 225 226 227 228 229 230 231
-+			232 233 234 235 236 237 238 239
-+			240 241 242 243 244 245 246 247
-+			248 249 250 251 252 253 254 255>;
-+		default-brightness-level = <128>;
-+		enable-gpios = <&gpio7 2 GPIO_ACTIVE_HIGH>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&bl_en>;
-+		pwms = <&pwm0 0 1000000 PWM_POLARITY_INVERTED>;
-+	};
-+
- 	gpio-keys {
- 		compatible = "gpio-keys";
- 		#address-cells = <1>;
-@@ -81,6 +124,10 @@
- 	status = "okay";
- };
- 
-+&pwm0 {
-+	status = "okay";
-+};
-+
- &uart0 {
- 	status = "okay";
- };
-@@ -102,6 +149,12 @@
- };
- 
- &pinctrl {
-+	backlight {
-+		bl_en: bl-en {
-+			rockchip,pins = <7 2 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
-+	};
-+
- 	buttons {
- 		pwrbtn: pwrbtn {
- 			rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
+ .../devicetree/bindings/pwm/pwm-rockchip.txt       |  8 +-
+ arch/arm/boot/dts/rk3288-evb.dtsi                  | 53 +++++++++++++
+ arch/arm/boot/dts/rk3288.dtsi                      | 72 ++++++++++++++++++
+ drivers/pwm/pwm-rockchip.c                         | 86 +++++++++++++++++++---
+ 4 files changed, 208 insertions(+), 11 deletions(-)
+
 -- 
 2.1.0.rc2.206.gedb03e5
 
