@@ -1,174 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbaHTGBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 02:01:24 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:42447 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750984AbaHTGBW (ORCPT
+	id S1752125AbaHTGC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 02:02:26 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:47538 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbaHTGCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 02:01:22 -0400
-Date: Wed, 20 Aug 2014 01:01:19 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Thomas Gleixner <tglx@linutronix.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: slub/debugobjects: lockup when freeing memory
-In-Reply-To: <20140820023121.GS4752@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1408200059260.2810@gentwo.org>
-References: <53A2F406.4010109@oracle.com> <alpine.DEB.2.11.1406191001090.2785@gentwo.org> <20140619165247.GA4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192127100.5170@nanos> <alpine.DEB.2.11.1406191519090.4002@gentwo.org> <20140818163757.GA30742@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1408182147400.28727@gentwo.org> <20140819035828.GI4752@linux.vnet.ibm.com> <alpine.DEB.2.11.1408192057200.32428@gentwo.org> <20140820023121.GS4752@linux.vnet.ibm.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 20 Aug 2014 02:02:24 -0400
+Date: Wed, 20 Aug 2014 08:01:30 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
+        Hein Tibosch <hein_tibosch@yahoo.es>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 01/12] dmaengine: dw: move dw_dmac.h to where it
+ belongs to
+Message-ID: <20140820060130.GA17757@samfundet.no>
+References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1408469363-15901-2-git-send-email-andriy.shevchenko@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408469363-15901-2-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Aug 2014, Paul E. McKenney wrote:
+Around Tue 19 Aug 2014 20:29:12 +0300 or thereabout, Andy Shevchenko wrote:
+> There is a common storage for platform data related structures and definitions
+> inside kernel source tree. The patch moves file from include/linux to
+> include/linux/platform_data and renames it acoordingly. The users are also
+> updated.
 
-> > We could also remove the #ifdefs if init_rcu_head and destroy_rcu_head
-> > are no ops if CONFIG_DEBUG_RCU_HEAD is not defined.
+Nice cleanup, thanks.
+
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 >
-> And indeed they are, good point!  It appears to me that both sets of
-> #ifdefs can go away.
 
-Ok then this is a first workable version I think. How do we test this?
+For the arch/avr32/.* and .*sound/atmel.* related changes
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-From: Christoph Lameter <cl@linux.com>
-Subject: slub: Add init/destroy function calls for rcu_heads
+> ---
+>  MAINTAINERS                                     |   2 +-
+>  arch/avr32/mach-at32ap/at32ap700x.c             |   2 +-
+>  arch/avr32/mach-at32ap/include/mach/atmel-mci.h |   2 +-
+>  drivers/dma/dw/internal.h                       |   2 +-
+>  drivers/dma/dw/regs.h                           |   6 +-
+>  include/linux/dw_dmac.h                         | 111 ------------------------
+>  include/linux/platform_data/dma-dw.h            | 111 ++++++++++++++++++++++++
+>  include/sound/atmel-abdac.h                     |   2 +-
+>  include/sound/atmel-ac97c.h                     |   2 +-
+>  sound/atmel/abdac.c                             |   2 +-
+>  sound/atmel/ac97c.c                             |   2 +-
+>  11 files changed, 122 insertions(+), 122 deletions(-)
+>  delete mode 100644 include/linux/dw_dmac.h
+>  create mode 100644 include/linux/platform_data/dma-dw.h
 
-In order to do proper debugging for rcu_head use we need some
-additional structures allocated when an object potentially
-using a rcu_head is allocated in the slub allocator.
+<snipp diff>
 
-This adds the proper calls to init_rcu_head()
-and destroy_rcu_head().
-
-init_rcu_head() is a bit of an unusual function since:
-1. It does not touch the contents of the rcu_head. This is
-   required since the rcu_head is only used during
-   slab_page freeing. Outside of that the same memory location
-   is used for slab page list management. However, the
-   initialization occurs when the slab page is initially allocated.
-   So in the time between init_rcu_head() and destroy_rcu_head()
-   there may be multiple uses of the indicated address as a
-   list_head.
-
-2. It is called without gfp flags and could potentially
-   be called from atomic contexts. Allocations from init_rcu_head()
-   context need to deal with this.
-
-3. init_rcu_head() is called from within the slab allocation
-   functions. Since init_rcu_head() calls the allocator again
-   for more allocations it must avoid to use slabs that use
-   rcu freeing. Otherwise endless recursion may occur
-   (We may have to convince lockdep that what we do here is sane).
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/mm/slub.c
-===================================================================
---- linux.orig/mm/slub.c
-+++ linux/mm/slub.c
-@@ -1308,6 +1308,25 @@ static inline struct page *alloc_slab_pa
- 	return page;
- }
-
-+#define need_reserve_slab_rcu						\
-+	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
-+
-+static struct rcu_head *get_rcu_head(struct kmem_cache *s, struct page *page)
-+{
-+	if (need_reserve_slab_rcu) {
-+		int order = compound_order(page);
-+		int offset = (PAGE_SIZE << order) - s->reserved;
-+
-+		VM_BUG_ON(s->reserved != sizeof(struct rcu_head));
-+		return page_address(page) + offset;
-+	} else {
-+		/*
-+		 * RCU free overloads the RCU head over the LRU
-+		 */
-+		return (void *)&page->lru;
-+	}
-+}
-+
- static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
- {
- 	struct page *page;
-@@ -1357,6 +1376,29 @@ static struct page *allocate_slab(struct
- 			kmemcheck_mark_unallocated_pages(page, pages);
- 	}
-
-+	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU) && page)
-+		/*
-+		 * Initialize various things. However, this init is
-+	 	 * not allowed to modify the contents of the rcu head.
-+		 * The allocator typically overloads the rcu head over
-+		 * page->lru which is also used to manage lists of
-+		 * slab pages.
-+		 *
-+		 * Allocations are permitted in init_rcu_head().
-+		 * However, the use of the same cache or another
-+		 * cache with SLAB_DESTROY_BY_RCU set will cause
-+		 * additional recursions.
-+		 *
-+		 * So in order to be safe the slab caches used
-+		 * in init_rcu_head() should be restricted to be of the
-+		 * non rcu kind only.
-+		 *
-+		 * Note also that no GFPFLAG is passed. The function
-+		 * may therefore be called from atomic contexts
-+		 * and somehow(?) needs to do the right thing.
-+		 */
-+		init_rcu_head(get_rcu_head(s, page));
-+
- 	if (flags & __GFP_WAIT)
- 		local_irq_disable();
- 	if (!page)
-@@ -1452,13 +1494,11 @@ static void __free_slab(struct kmem_cach
- 	memcg_uncharge_slab(s, order);
- }
-
--#define need_reserve_slab_rcu						\
--	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
--
- static void rcu_free_slab(struct rcu_head *h)
- {
- 	struct page *page;
-
-+	destroy_rcu_head(h);
- 	if (need_reserve_slab_rcu)
- 		page = virt_to_head_page(h);
- 	else
-@@ -1469,24 +1509,9 @@ static void rcu_free_slab(struct rcu_hea
-
- static void free_slab(struct kmem_cache *s, struct page *page)
- {
--	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
--		struct rcu_head *head;
--
--		if (need_reserve_slab_rcu) {
--			int order = compound_order(page);
--			int offset = (PAGE_SIZE << order) - s->reserved;
--
--			VM_BUG_ON(s->reserved != sizeof(*head));
--			head = page_address(page) + offset;
--		} else {
--			/*
--			 * RCU free overloads the RCU head over the LRU
--			 */
--			head = (void *)&page->lru;
--		}
--
--		call_rcu(head, rcu_free_slab);
--	} else
-+	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU))
-+		call_rcu(get_rcu_head(s, page), rcu_free_slab);
-+	else
- 		__free_slab(s, page);
- }
-
+-- 
+BR, HcE
