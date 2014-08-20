@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128AbaHTMoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:44:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58902 "EHLO mga11.intel.com"
+	id S1754144AbaHTMot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:44:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43778 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882AbaHTMmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:42:16 -0400
+	id S1753044AbaHTMor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:44:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,902,1400050800"; 
-   d="scan'208";a="579289664"
+   d="scan'208";a="579290562"
 From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
         Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
         kan.liang@intel.com,
         Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v4 04/22] perf: Add a capability for AUX_NO_SG pmus to do software double buffering
-Date: Wed, 20 Aug 2014 15:36:01 +0300
-Message-Id: <1408538179-792-5-git-send-email-alexander.shishkin@linux.intel.com>
+Subject: [PATCH v4 13/22] x86: perf: Intel PT and LBR/BTS are mutually exclusive
+Date: Wed, 20 Aug 2014 15:36:10 +0300
+Message-Id: <1408538179-792-14-git-send-email-alexander.shishkin@linux.intel.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
 References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com>
@@ -28,58 +28,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For pmus that don't support scatter-gather for AUX data in hardware, it
-might still make sense to implement software double buffering to avoid
-losing data while the user is reading data out. For this purpose, add
-a pmu capability that guarantees multiple high-order chunks for AUX buffer,
-so that the pmu driver can do switchover tricks.
+Intel PT cannot be used at the same time as LBR or BTS and will cause a
+general protection fault if they are used together. In order to avoid
+fixing up GPs in the fast path, instead we use flags to indicate that
+that one of these is in use so that the other avoids MSR access altogether.
 
 Signed-off-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
 ---
- include/linux/perf_event.h  |  1 +
- kernel/events/ring_buffer.c | 15 ++++++++++++++-
- 2 files changed, 15 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event.h           | 6 ++++++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  | 8 +++++++-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 9 +++++----
+ 3 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index fe10bf6f94..1e7b659b49 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -172,6 +172,7 @@ struct perf_event;
-  */
- #define PERF_PMU_CAP_NO_INTERRUPT		0x01
- #define PERF_PMU_CAP_AUX_NO_SG			0x02
-+#define PERF_PMU_CAP_AUX_SW_DOUBLEBUF		0x04
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index fc5eb390b3..a542fa8a1d 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -148,6 +148,7 @@ struct cpu_hw_events {
+ 	 * Intel DebugStore bits
+ 	 */
+ 	struct debug_store	*ds;
++	unsigned int		bts_enabled;
+ 	u64			pebs_enabled;
  
- /**
-  * struct pmu - generic performance monitoring unit
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index d10919ca42..f5ee3669f8 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -286,9 +286,22 @@ int rb_alloc_aux(struct ring_buffer *rb, struct perf_event *event,
- 	if (!has_aux(event))
- 		return -ENOTSUPP;
+ 	/*
+@@ -161,6 +162,11 @@ struct cpu_hw_events {
+ 	u64				br_sel;
  
--	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG)
-+	if (event->pmu->capabilities & PERF_PMU_CAP_AUX_NO_SG) {
- 		order = get_order(nr_pages * PAGE_SIZE);
- 
-+		/*
-+		 * PMU requests more than one contiguous chunks of memory
-+		 * for SW double buffering
-+		 */
-+		if ((event->pmu->capabilities & PERF_PMU_CAP_AUX_SW_DOUBLEBUF) &&
-+		    !overwrite) {
-+			if (!order)
-+				return -EINVAL;
+ 	/*
++	 * Intel Processor Trace
++	 */
++	unsigned int			pt_enabled;
 +
-+			order--;
-+		}
-+	}
++	/*
+ 	 * Intel host/guest exclude bits
+ 	 */
+ 	u64				intel_ctrl_guest_mask;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 9dc4199917..5ae212af23 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -455,8 +455,13 @@ struct event_constraint bts_constraint =
+ 
+ void intel_pmu_enable_bts(u64 config)
+ {
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	unsigned long debugctlmsr;
+ 
++	if (cpuc->pt_enabled)
++		return;
 +
- 	rb->aux_pages = kzalloc_node(nr_pages * sizeof(void *), GFP_KERNEL, node);
- 	if (!rb->aux_pages)
- 		return -ENOMEM;
++	cpuc->bts_enabled = 1;
+ 	debugctlmsr = get_debugctlmsr();
+ 
+ 	debugctlmsr |= DEBUGCTLMSR_TR;
+@@ -477,9 +482,10 @@ void intel_pmu_disable_bts(void)
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	unsigned long debugctlmsr;
+ 
+-	if (!cpuc->ds)
++	if (!cpuc->ds || cpuc->pt_enabled)
+ 		return;
+ 
++	cpuc->bts_enabled = 0;
+ 	debugctlmsr = get_debugctlmsr();
+ 
+ 	debugctlmsr &=
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 9dd2459a4c..516e52d0ac 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -172,7 +172,9 @@ static void intel_pmu_lbr_reset_64(void)
+ 
+ void intel_pmu_lbr_reset(void)
+ {
+-	if (!x86_pmu.lbr_nr)
++	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++
++	if (!x86_pmu.lbr_nr || cpuc->pt_enabled)
+ 		return;
+ 
+ 	if (x86_pmu.intel_cap.lbr_format == LBR_FORMAT_32)
+@@ -185,7 +187,7 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (!x86_pmu.lbr_nr)
++	if (!x86_pmu.lbr_nr || cpuc->pt_enabled)
+ 		return;
+ 
+ 	/*
+@@ -205,11 +207,10 @@ void intel_pmu_lbr_disable(struct perf_event *event)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (!x86_pmu.lbr_nr)
++	if (!x86_pmu.lbr_nr || !cpuc->lbr_users || cpuc->pt_enabled)
+ 		return;
+ 
+ 	cpuc->lbr_users--;
+-	WARN_ON_ONCE(cpuc->lbr_users < 0);
+ 
+ 	if (cpuc->enabled && !cpuc->lbr_users) {
+ 		__intel_pmu_lbr_disable();
 -- 
 2.1.0
 
