@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaHTX04 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 19:26:56 -0400
-Received: from ozlabs.org ([103.22.144.67]:53184 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981AbaHTX0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 19:26:54 -0400
-Date: Thu, 21 Aug 2014 09:26:52 +1000
-From: Anton Blanchard <anton@samba.org>
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, dllehr@us.ibm.com, miltonm@us.ibm.com
-Subject: [PATCH] PCI: Increase BAR size quirk for IBM ipr SAS Crocodile
- adapters
-Message-ID: <20140821092652.604d7484@kryten>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753346AbaHTX1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 19:27:18 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:45268 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073AbaHTX1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 19:27:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87ppfvrdux.fsf@x220.int.ebiederm.org>
+References: <1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com>
+	<87ppfvrdux.fsf@x220.int.ebiederm.org>
+Date: Wed, 20 Aug 2014 19:27:15 -0400
+Message-ID: <CAHQdGtS41PsfH5SKr2kcpUjnb7QL4CPFey1zSasXmHbhnZqtEQ@mail.gmail.com>
+Subject: Re: [PATCH v2] nfs: fix kernel warning when removing proc entry
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Dan Aloni <dan@kernelim.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Douglas Lehr <dllehr@us.ibm.com>
+On Wed, Aug 20, 2014 at 12:20 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Cong Wang <xiyou.wangcong@gmail.com> writes:
+>
+>> I saw the following kernel warning:
+>
+> Cong thanks for finding and tracking this.  I was clearly asleep at the
+> switch when I was testing my fix to the nfs client code :(
+>
+> I have applied this patch and will push it to Linus after it has a
+> little bit to sit in linux-next.
+>
 
-The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.
-Due to an errata, setting the SR-IOV page size causes the physical
-function BARs to expand to the system page size.  Since ppc64 uses
-64k pages, when Linux tries to assign the smaller resource sizes
-to the now 64k BARs the address will be truncated and the BARs will
-overlap.
+This is precisely _WHY_ it is supposed to go through the maintainer,
+and not through arbitrary namespace trees. I'm tired of the namespace
+folks pushing crap and just assuming that a "Cc:" is OK. A "Cc:
+maintainer" means this is an RFC, not something that is to be
+committed.
 
-This quirk will force Linux to allocate the resource as a full page,
-which will avoid the overlap.
-
-Cc: <stable@vger.kernel.org> 
-Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Milton Miller <miltonm@us.ibm.com>
----
- drivers/pci/quirks.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 80c2d01..45b946d 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -24,6 +24,7 @@
- #include <linux/ioport.h>
- #include <linux/sched.h>
- #include <linux/ktime.h>
-+#include <linux/mm.h>
- #include <asm/dma.h>	/* isa_dma_bridge_buggy */
- #include "pci.h"
- 
-@@ -287,6 +288,24 @@ static void quirk_citrine(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
- 
-+/*  On IBM Crocodile ipr SAS adapters, expand bar size to system page size. */
-+static void quirk_extend_bar_to_page(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
-+		struct resource *r = &dev->resource[i];
-+
-+		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
-+			dev_info(&dev->dev, "Setting Bar size to Page size");
-+			r->end = PAGE_SIZE-1;
-+			r->start = 0;
-+			r->flags |= IORESOURCE_UNSET;
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
-+
- /*
-  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
-  *  If it's needed, re-allocate the region.
--- 
-1.7.9.5
-
+Trond
