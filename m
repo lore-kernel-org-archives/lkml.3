@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaHTPoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:44:05 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:47849 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaHTPoD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:44:03 -0400
-Date: Wed, 20 Aug 2014 16:43:58 +0100
-From: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi-private@linaro.org" <linaro-acpi-private@linaro.org>
-Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
- for PSCI init
-Message-ID: <20140820154358.GA27927@xora-yoga-deb.xora.org.uk>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
- <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
- <20140820150029.0BB3FC41205@trevor.secretlab.ca>
- <20140820152944.GR24600@localhost>
+	id S1751669AbaHTPsx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:48:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220AbaHTPsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:48:52 -0400
+Date: Wed, 20 Aug 2014 11:48:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Glanzmann <thomas@glanzmann.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, Baoquan He <bhe@redhat.com>,
+        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        WANG Chao <chaowang@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        ubuntu@iam.tj
+Subject: Re: REGRESSION: 8fc5b4d: Unable to compile x86_64 kernel with x86_32
+ userland
+Message-ID: <20140820154817.GA21518@redhat.com>
+References: <20140820060423.GA14660@glanzmann.de>
+ <20140820062408.GB14660@glanzmann.de>
+ <20140820125630.GA12786@redhat.com>
+ <30d943a9-ba4a-47ee-9333-0ffeea00c3a1@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140820152944.GR24600@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <30d943a9-ba4a-47ee-9333-0ffeea00c3a1@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 04:29:44PM +0100, Catalin Marinas wrote:
-> On Wed, Aug 20, 2014 at 04:00:28PM +0100, Grant Likely wrote:
-> > On Thu, 24 Jul 2014 21:00:12 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > > @@ -345,13 +378,19 @@ int __init psci_init(void)
-> > >  	const struct of_device_id *matched_np;
-> > >  	psci_initcall_t init_fn;
-> > >  
-> > > -	np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
-> > > +	if (acpi_disabled) {
-> > > +		np = of_find_matching_node_and_match(NULL,
-> > > +				psci_of_match, &matched_np);
-> > >  
-> > > -	if (!np)
-> > > -		return -ENODEV;
-> > > +		if (!np)
-> > > +			return -ENODEV;
-> > > +
-> > > +		init_fn = (psci_initcall_t)matched_np->data;
-> > > +
-> > > +		return init_fn(np);
-> > > +	}
-> > >  
-> > > -	init_fn = (psci_initcall_t)matched_np->data;
-> > > -	return init_fn(np);
-> > > +	return psci_0_2_init_acpi();
-> > >  }
-> > 
-> > So, while the functionality is sound, this is kind of a stinky diff. The
-> > ACPI path should not push the OF code into a sub branch. Make it look
-> > like this instead (with the advantage that the diff will be simpler):
-> > 
-> > +	if (IS_ENABLED(CONFIG_ACPI) && !acpi_disabled)
-> > +		return psci_0_2_init_acpi();
-> 
-> Minor point: we should define acpi_disabled to 1 when !CONFIG_ACPI and
-> avoid additional IS_ENABLED(CONFIG_ACPI) checks (unless already don this
-> way).
-> 
-This is the default behaviour already.
+On Wed, Aug 20, 2014 at 10:07:01AM -0500, H. Peter Anvin wrote:
+> It says "32-bit mode" which means it is another issue: we are dropping -m64 at some point.
 
-Graeme
+Thanks hpa. I am not adding -m64 to kbuild flags at all. So 32bit tool
+chain must be assuming -m32 by default, and probably that's the issue.
 
+Thomas, 
+
+Can you please try attached single line patch and see if it fixes the
+issue for you.
+
+Thanks
+Vivek
+
+
+---
+ arch/x86/purgatory/Makefile |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/arch/x86/purgatory/Makefile
+===================================================================
+--- linux-2.6.orig/arch/x86/purgatory/Makefile	2014-08-20 11:32:21.723559119 -0400
++++ linux-2.6/arch/x86/purgatory/Makefile	2014-08-20 11:32:23.654570231 -0400
+@@ -11,6 +11,7 @@ targets += purgatory.ro
+ # sure how to relocate those. Like kexec-tools, use custom flags.
+ 
+ KBUILD_CFLAGS := -fno-strict-aliasing -Wall -Wstrict-prototypes -fno-zero-initialized-in-bss -fno-builtin -ffreestanding -c -MD -Os -mcmodel=large
++KBUILD_CFLAGS += -m$(BITS)
+ 
+ $(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE
+ 		$(call if_changed,ld)
