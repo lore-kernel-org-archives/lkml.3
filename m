@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359AbaHTMcf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:32:35 -0400
-Received: from sauhun.de ([89.238.76.85]:46651 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377AbaHTMcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:32:33 -0400
-Date: Wed, 20 Aug 2014 07:32:11 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, atull@opensource.altera.com,
-        baruch@tkos.co.il, mika westerberg <mika.westerberg@linux.intel.com>,
-        grant likely <grant.likely@linaro.org>, robh+dt@kernel.org,
-        skuribay@pobox.com, rafael j wysocki <rafael.j.wysocki@intel.com>,
-        alan@linux.intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        delicious quinoa <delicious.quinoa@gmail.com>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
- setting
-Message-ID: <20140820123210.GA1373@katana>
-References: <20140820092257.GA21174@leverpostej>
- <944257148.1724.1408528177642.JavaMail.root@abilis.com>
+	id S1753314AbaHTMfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:35:19 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:52403 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385AbaHTMfQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:35:16 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7KCZ9KI027020, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: Daniele Forsi <dforsi@gmail.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 4/4] r8152: support firmware files
+Thread-Topic: [PATCH net-next 4/4] r8152: support firmware files
+Thread-Index: AQHPvFUJI5Y4Te6UqUOH5yD4+22UEZvY3hKAgACKVgA=
+Date: Wed, 20 Aug 2014 12:35:09 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB251585A@RTITMBSV03.realtek.com.tw>
+References: <1394712342-15778-16-Taiwan-albertk@realtek.com>
+	<1394712342-15778-20-Taiwan-albertk@realtek.com>
+ <CAN_we7P2LDvR8miAsoSeL6+iEOK+ucgjRDC8jtPbc4_-2nn7MQ@mail.gmail.com>
+In-Reply-To: <CAN_we7P2LDvR8miAsoSeL6+iEOK+ucgjRDC8jtPbc4_-2nn7MQ@mail.gmail.com>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-In-Reply-To: <944257148.1724.1408528177642.JavaMail.root@abilis.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ Daniele Forsi [mailto:dforsi@gmail.com] 
+> Sent: Wednesday, August 20, 2014 8:01 PM
+> To: Hayes Wang
+> Cc: netdev@vger.kernel.org; nic_swsd; 
+> linux-kernel@vger.kernel.org; USB list
+> Subject: Re: [PATCH net-next 4/4] r8152: support firmware files
+[...]
+> > +       start = le32_to_cpu(fw_header->fw_start);
+> > +       if (start > fw->size)
+> > +               goto out;
+> 
+> since "start" is an offset in an array of size "fw->size" this should
+> check for ">=" and if a command is at least cmd(2 bytes) + length(2
+> bytes), shouldn't this check for "start >= fw->size - 4"?
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-
-> With the patch "i2c designware add support of I2C standard mode" I already proposed:
-> - I2C standard mode is selected with 100kHz clock frequency.
-> - I2C fast mode is selected with 400kHy clock frequency.
-> - EINVAL error is returned if clock frequency is not 100000 and not 400000.
-
-You forgot to send this patch to the i2c list. So, it didn't get into
-patchwork which I rely on for tracking patches.
-
-Please resend an updated version to the latest codebase. I like that it
-has the EINVAL error checking.
-
-> What about the other patch "i2c designware make SCL and SDA falling time configurable" ?
-
-6468276b22069d4442aafcd8c59e5d8ccae23f5f upstream.
-
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT9JVKAAoJEBQN5MwUoCm2H3sQAIJTQq4H42z9vdiU5cIB5Z55
-nmKDv0oi/VlZzrVrgfbF3fdr0oin06Y5WbD70WvWGyEGZEb+GhpDEHlrqx8xLFNR
-EutzYS1Qfc3A12204V2xghnhLGneLGY0bZuiNjAV390wEbnBCq1J1ehsPDVAQBeE
-1bUi1kFslH9Lk1fd0tYCPR3bq5OjF1BqqipGRMpcbhGVUyG0YikgIDDVzZrMz8Tf
-7RFaXZC8ScHT2ZpiHclmN7A3aZmirIgdz2ItCP3ZsOz+5v3WNKwIkCVZlG8hCn5K
-RS3nXr2tgzop7KXB2/awpuNmZVVfa2tS1GHqvq1vEL2yL8CV1oMhOdX57KegK4sU
-p189MwzAjAGRF8fEDO6I23NZz1T3Ad2ABLxE2LYG26yhC+Om89mxQj9rSNataslt
-AwJUT5CMZ9XbtFHSPj28sEUyaXESOl2c2nl6fdPBXKvt9A/DmYtFujLxd9oWHWJu
-AjKVAD0ReY5cO7Gt/dzt+8e/dQdaBBarXyKswxfksl5SkY+FXRc4lOyV/i2RlBv6
-I8NLJ2k5kyr0sF7TZbI+m+G8ghoEV5ZdOynmvfWfsze+Spk3TPjhehCQOF7fZ1lu
-Xo0ysoh8pVT+TA3cmkq0N1DCQuQNu8qBWDrUfrKruF7byfSA3YBSd7OzhMr4U9vm
-kMXDUShBMaOslR6esLYj
-=EIDY
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+Is this necessary? Besides the check of the "start",
+there are checks of the "size" and rtl_fw_data_ok().
+I think they cover the situations which you indicate.
+ 
+Best Regards,
+Hayes
