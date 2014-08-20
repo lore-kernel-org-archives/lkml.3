@@ -1,193 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaHTXKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 19:10:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47303 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaHTXKV (ORCPT
+	id S1753312AbaHTXKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 19:10:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46967 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752988AbaHTXKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 19:10:21 -0400
-Message-ID: <1408576214.9540.2.camel@infradead.org>
-Subject: Re: [PATCH] params: fix potential memory leak in add_sysfs_param()
-From: David Woodhouse <dwmw2@infradead.org>
-To: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Cc: "arjun024@gmail.com" <arjun024@gmail.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Wed, 20 Aug 2014 18:10:14 -0500
-In-Reply-To: <1408573066.9484.11.camel@intel.com>
-References: <1408564816-1778-1-git-send-email-arjun024@gmail.com>
-	 <87mwayj39c.fsf@rustcorp.com.au>
-	 <CAJFMrCG1OXrdRoUNqtZYdBqE_0dj+a3yAfFhuyFvTte7Ozbo0w@mail.gmail.com>
-	 <87ha16izpu.fsf@rustcorp.com.au> <1408573066.9484.11.camel@intel.com>
-Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
-	boundary="=-8FTKF5fDrDRDwdiFFbMh"
-X-Mailer: Evolution 3.12.5 (3.12.5-1.fc20) 
+	Wed, 20 Aug 2014 19:10:52 -0400
+Message-ID: <1408576235.2618.47.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] nfs: use canonical path in nfs_show_devname
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Xiong Zhou <xzhou@redhat.com>
+Cc: trond.myklebust@primarydata.com, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 20 Aug 2014 16:10:35 -0700
+In-Reply-To: <1927160445.21851828.1408504000719.JavaMail.zimbra@redhat.com>
+References: <1927160445.21851828.1408504000719.JavaMail.zimbra@redhat.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-sIVnMayMqgVW4+IhREkr"
+X-Mailer: Evolution 3.12.2-1+b1 
 Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-SA-Exim-Connect-IP: 71.39.140.21
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-8FTKF5fDrDRDwdiFFbMh
+--=-sIVnMayMqgVW4+IhREkr
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2014-08-20 at 22:17 +0000, Woodhouse, David wrote:
+On Tue, 2014-08-19 at 23:06 -0400, Xiong Zhou wrote:
+> When export root dir(/) via nfs, and mount a particular dir under root, e=
+g
+> /nfsexport, there will be defect double slash output in /proc/mounts, lik=
+e
+> localhost://nfsexport.
 >=20
-> Except that in the failure case we *free* the old mk->mp and never free
-> mk->mp->grp.attrs so it *is* indeed lost.
+> Signed-off-by: Xiong Zhou <xzhou@redhat.com>
+> ---
+>  fs/nfs/super.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >=20
-> A simpler version of Arjun's patch might look like this:
->=20
-> diff --git a/kernel/params.c b/kernel/params.c
-> index 34f5270..f9459bc 100644
-> --- a/kernel/params.c
-> +++ b/kernel/params.c
-> @@ -613,7 +613,6 @@ static __modinit int add_sysfs_param(struct module_ko=
-bject *mk,
->                        sizeof(*mk->mp) + sizeof(mk->mp->attrs[0]) * (num+=
-1),
->                        GFP_KERNEL);
->         if (!new) {
-> -               kfree(attrs);
->                 err =3D -ENOMEM;
->                 goto fail;
->         }
-> @@ -653,7 +652,10 @@ static __modinit int add_sysfs_param(struct module_k=
-object *mk,
->  fail_free_new:
->         kfree(new);
->  fail:
-> -       mk->mp =3D NULL;
-> +       if (mk->mp) {
-> +               kfree(mk->mp->grp.attrs);
-> +               mk->mp =3D NULL;
-> +       }
->         return err;
->  }
+> diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+> index e4499d5..62b1cab 100644
+> --- a/fs/nfs/super.c
+> +++ b/fs/nfs/super.c
+> @@ -780,7 +780,7 @@ int nfs_show_devname(struct seq_file *m, struct dentr=
+y *root)
+>  	int err =3D 0;
+>  	if (!page)
+>  		return -ENOMEM;
+> -	devname =3D nfs_path(&dummy, root, page, PAGE_SIZE, 0);
+> +	devname =3D nfs_path(&dummy, root, page, PAGE_SIZE, 1);
+>  	if (IS_ERR(devname))
+>  		err =3D PTR_ERR(devname);
+>  	else
 
-Of course this and Arjun's original *both* fail to fix the classic bug
-in the 'new =3D krealloc(mk->mp=E2=80=A6)' bit, failing to free the old mk-=
->mp if
-the realloc fails. I think my alternative fix that didn't kill the old
-params is probably the better way forward.
+This will reintroduce the problem reported in
+<https://bugs.debian.org/669314>.
+
+Ben.
 
 --=20
-dwmw2
+Ben Hutchings
+If at first you don't succeed, you're doing about average.
 
+--=-sIVnMayMqgVW4+IhREkr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
---=-8FTKF5fDrDRDwdiFFbMh
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
-AwIBAgIDCdkyMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTQwNTA0MTczMDIyWhcNMTUwNTA0MjM0MTAxWjBdMRkwFwYDVQQNExAzODNCMTVkSHFQSUR0cDZO
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy7K+t+REIdZGFUfgR8Io
-QrJ/VLZil9I00JcwqTo8BiGy1dqSIB2y923siya5SDKMh1YurtCPsX96cNzwPmmN2cs0MKeVPQWz
-iQhHk3uKcB6LvvS7pzTahRWMRmTyW3CH+RphRM9plvyClY23GEeEnpBnGz4GaJJiPcJjGgzyZ/tI
-q473pOlSrDPZnZk43vt/5CJN46nIZOZ2I+PzlgINI+EbiwsXVn3VohHB7nVTwGaRLk5oywGt8ZT7
-tDdxn3BQ3inO1sr5MtkV1o2cHlenIC8mlU8nL/mrqqVve7Vib1YQUycW+Pj4CBYm4FTeuctAvNzK
-U/daeBclOZ8ofgQe2wIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBRAjCSCV70BpLBeXge5DXi+mPhHTTAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
-YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
-cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
-IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
-ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
-MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
-gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
-dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
-Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
-cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEAWS2KNN7O3vZVtNHXVqgbmijeptKwt+8b6yiF
-wT3kJoywInPl5U+OeKRZfQKTHghM4Ohof6lF244ZMxhir/xp7l/zkZ/BUbxLwp6kIL27Gi5pgP4D
-KLnTZheQL9N5Yi/vMONxMWcpcW+ZNv5hnDCfEsfVcLXC8sNLPjx2ezfMIhSSPwBuJpmOun70te4E
-P0YBqjSalPfvc5fC5KgaYtqTDFwo9Mw25X5HHDC0r6BK5aNrF1nD/xYTX7cdvZZWl7cUApr4PCrn
-uI2DEn7OWQ/rY407ytV1c5pjvmuv/IT/ZUb/kXV6Q47UvrJp2Ifi2VhsBcnHHasKavjtRCmpDsGM
-rTCCBkIwggUqoAMCAQICAwnZMjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
-BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
-ZW50IENBMB4XDTE0MDUwNDE3MzAyMloXDTE1MDUwNDIzNDEwMVowXTEZMBcGA1UEDRMQMzgzQjE1
-ZEhxUElEdHA2TjEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
-ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMuyvrfk
-RCHWRhVH4EfCKEKyf1S2YpfSNNCXMKk6PAYhstXakiAdsvdt7IsmuUgyjIdWLq7Qj7F/enDc8D5p
-jdnLNDCnlT0Fs4kIR5N7inAei770u6c02oUVjEZk8ltwh/kaYUTPaZb8gpWNtxhHhJ6QZxs+BmiS
-Yj3CYxoM8mf7SKuO96TpUqwz2Z2ZON77f+QiTeOpyGTmdiPj85YCDSPhG4sLF1Z91aIRwe51U8Bm
-kS5OaMsBrfGU+7Q3cZ9wUN4pztbK+TLZFdaNnB5XpyAvJpVPJy/5q6qlb3u1Ym9WEFMnFvj4+AgW
-JuBU3rnLQLzcylP3WngXJTmfKH4EHtsCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUQIwkgle9AaSwXl4H
-uQ14vpj4R00wHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
-dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
-CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
-AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
-aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
-cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
-aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
-bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
-MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
-dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
-cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAFktijTezt72VbTR11aoG5oo
-3qbSsLfvG+sohcE95CaMsCJz5eVPjnikWX0Ckx4ITODoaH+pRduOGTMYYq/8ae5f85GfwVG8S8Ke
-pCC9uxouaYD+Ayi502YXkC/TeWIv7zDjcTFnKXFvmTb+YZwwnxLH1XC1wvLDSz48dns3zCIUkj8A
-biaZjrp+9LXuBD9GAao0mpT373OXwuSoGmLakwxcKPTMNuV+RxwwtK+gSuWjaxdZw/8WE1+3Hb2W
-Vpe3FAKa+Dwq57iNgxJ+zlkP62ONO8rVdXOaY75rr/yE/2VG/5F1ekOO1L6yadiH4tlYbAXJxx2r
-Cmr47UQpqQ7BjK0xggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
-BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMJ
-2TIwCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-DxcNMTQwODIwMjMxMDE0WjAjBgkqhkiG9w0BCQQxFgQUUFwhQtr6gyWT+VNZj0dbd7BrvbswgaUG
-CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
-KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
-YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMJ2TIwgacGCyqG
-SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
-MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
-cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwnZMjANBgkqhkiG
-9w0BAQEFAASCAQAZ5EyHZxfsqLeN49CGtt32AwCFDkh4QS9Kqz8QkfnXXIx8tGEYyPa6yO8hrUk3
-WA/NwIfIS3X1z5Gx1cJEyb3Xi4A4zHrseR6eliHS5Pxehg7ntfK7mh8C5eOKtqzb/sSNgiNpwKSj
-G8aWMPf8W839eC6YHnFhfZ5UUOcuQFEgAsTNpNb0RhlPlVhBjZQSk4x2LEe+wkDSHyRgE7u5iGab
-g8pcINVN2DT+042jX+v1GFZqasJJM58paIaRUXGvIoDFPf7tNB9p1JOirj0zWvfxxq29DWW+JCan
-CeER7dAehkcdDEKpfg7IgqgLhngICCDtmp4JMWlFgGbfA5DenXPZAAAAAAAA
+iQIVAwUAU/Uq8Oe/yOyVhhEJAQqLbA/+Jgab2JOwo2qzEKMDNJrvDgKh/nYAUZq9
+bXtVr0uCk0idEbuYo9MYQCIApzlub+bX8LhpyisyDKes9FM1pJr2MAq5/nQs26W+
+vr3I5u2sGPtf00VBOYYAZQv5OZlS7/ZPDIGitMaUGsRBGNoO2L5cPdx72Sss2zu9
+epTwE49aB5InNigoQiTdVy1K+IJ2aoq83Latxe+fIKLAtrO7J5673OdJ4RswAzdc
+8YejLNd0AMukG6F0vjsZIs6WNAY5JSL/1TOoPm/GmZQgmXM2z2mmRR0Ru/mVluqI
+3PLOhxVCpIEnvHGR9q01DLPmx4kv47yUpSw4Z3Kw1q7LGZyairJ8MHG796DhWn5M
+jsAghou7dHPvuuFpHVUd3ShDRh3Kh9k+RCqkap4aPICc5WecZWxY0/7cWzLv4a3T
+YQilk3W3rQ3Q540J/V4e25J2nUNNBA+DK2aDQf5L8MDKJNVY1ttVbcfMSoiMZl5x
+Z9CNfpoweltKDADrYMrhzIYyGifCmI3dcfW7v0LTl5sOOM8f9YrK4BBlI9z+z2Nm
+6/qu0D3Jpxf9NMesgIbGUIY52Hi+u/XnWNF6YtCYc13gqCOKEBddw765j2+Rd4dj
+QasQQ4u85dJwo0Ez3Zl3/ylAyOMU2gkWDhKo0Y514uSU01IlYFwRu+zYuXcBs/4y
+NhK2ZiiBz/4=
+=Iobq
+-----END PGP SIGNATURE-----
 
-
---=-8FTKF5fDrDRDwdiFFbMh--
-
+--=-sIVnMayMqgVW4+IhREkr--
