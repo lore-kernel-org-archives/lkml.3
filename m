@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaHTLxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:53:36 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59008 "EHLO
+	id S1753468AbaHTLyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:54:41 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58980 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752604AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752595AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Christopher Alexander Tobias Schulze 
-	<cat.schulze@alice-dsl.net>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 056/104] sunsab: Fix detection of BREAK on sunsab serial console
-Date: Wed, 20 Aug 2014 13:43:19 +0200
-Message-Id: <add908eff1c76d0d1a08284ef97ffc017bd75270.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 076/104] DMA-API: net: intel/ixgbe: fix 32-bit DMA mask handling
+Date: Wed, 20 Aug 2014 13:43:39 +0200
+Message-Id: <318b6d3e866f59ad9f72bf56e77f6418d1dd5373.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -25,50 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit fe418231b195c205701c0cc550a03f6c9758fd9e ]
+commit f5f2eda8049644a27af5fdf59c3766589358e435 upstream.
 
-Fix detection of BREAK on sunsab serial console: BREAK detection was only
-performed when there were also serial characters received simultaneously.
-To handle all BREAKs correctly, the check for BREAK and the corresponding
-call to uart_handle_break() must also be done if count == 0, therefore
-duplicate this code fragment and pull it out of the loop over the received
-characters.
+The fallback to 32-bit DMA mask is rather odd:
+	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
+	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
+		pci_using_dac = 1;
+	} else {
+		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+		if (err) {
+			err = dma_set_coherent_mask(&pdev->dev,
+						    DMA_BIT_MASK(32));
+			if (err) {
+				dev_err(&pdev->dev,
+					"No usable DMA configuration, aborting\n");
+				goto err_dma;
+			}
+		}
+		pci_using_dac = 0;
+	}
+This means we only set the coherent DMA mask in the fallback path if
+the DMA mask set failed, which is silly.  This fixes it to set the
+coherent DMA mask only if dma_set_mask() succeeded, and to error out
+if either fails.
 
-Patch applies to 3.16-rc6.
-
-Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/serial/sunsab.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/tty/serial/sunsab.c b/drivers/tty/serial/sunsab.c
-index 2fee558f2b13..09c86720cb03 100644
---- a/drivers/tty/serial/sunsab.c
-+++ b/drivers/tty/serial/sunsab.c
-@@ -157,6 +157,15 @@ receive_chars(struct uart_sunsab_port *up,
- 	    (up->port.line == up->port.cons->index))
- 		saw_console_brk = 1;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 0ade0cd5ef53..bf046e14ceb5 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -7490,19 +7490,14 @@ static int ixgbe_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (err)
+ 		return err;
  
-+	if (count == 0) {
-+		if (unlikely(stat->sreg.isr1 & SAB82532_ISR1_BRK)) {
-+			stat->sreg.isr0 &= ~(SAB82532_ISR0_PERR |
-+					     SAB82532_ISR0_FERR);
-+			up->port.icount.brk++;
-+			uart_handle_break(&up->port);
-+		}
-+	}
-+
- 	for (i = 0; i < count; i++) {
- 		unsigned char ch = buf[i], flag;
- 
+-	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64)) &&
+-	    !dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64))) {
++	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) {
+ 		pci_using_dac = 1;
+ 	} else {
+-		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
++		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
+ 		if (err) {
+-			err = dma_set_coherent_mask(&pdev->dev,
+-						    DMA_BIT_MASK(32));
+-			if (err) {
+-				dev_err(&pdev->dev,
+-					"No usable DMA configuration, aborting\n");
+-				goto err_dma;
+-			}
++			dev_err(&pdev->dev,
++				"No usable DMA configuration, aborting\n");
++			goto err_dma;
+ 		}
+ 		pci_using_dac = 0;
+ 	}
 -- 
 2.0.4
 
