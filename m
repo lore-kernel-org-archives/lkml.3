@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaHTOsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:48:32 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:51839 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaHTOsa (ORCPT
+	id S1752089AbaHTOtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:49:33 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:20331 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750916AbaHTOtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:48:30 -0400
-Date: Wed, 20 Aug 2014 07:48:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Takashi Iwai <tiwai@suse.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/2] SOUND: kill gameport bits
-Message-ID: <20140820144746.GA18099@core.coreip.homeip.net>
-References: <20140820024638.GA25240@rhlx01.hs-esslingen.de>
- <20140820051815.GA1109@core.coreip.homeip.net>
- <s5hwqa3hetu.wl-tiwai@suse.de>
- <20140820142719.GA15319@rhlx01.hs-esslingen.de>
+	Wed, 20 Aug 2014 10:49:32 -0400
+Message-ID: <53F4B555.7060403@fb.com>
+Date: Wed, 20 Aug 2014 10:48:53 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140820142719.GA15319@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <miaox@cn.fujitsu.com>, <dsterba@suse.cz>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, <lkp@01.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        Abhay Sachan <lkp.abhay@gmail.com>
+Subject: [PATCH] Btrfs: fix filemap_flush call in btrfs_file_release
+References: <20140816075233.GA26842@localhost> <20140819115820.GA21418@localhost> <20140819142348.GU1553@twin.jikos.cz> <53F36601.5020609@fb.com> <53F47E07.3080807@cn.fujitsu.com>
+In-Reply-To: <53F47E07.3080807@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-20_05:2014-08-20,2014-08-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=6.49436060484732e-12 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.533125042697551
+ urlsuspect_oldscore=0.533125042697551 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.533125042697551 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408200152
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 04:27:19PM +0200, Andreas Mohr wrote:
-> > > > Also, I'm left wondering why e.g. my Athlon XP system (a very popular
-> > > > choice for longer times) would be affected by Cpufreq...
-> > > > And there are no details on how exactly cpufreq is a problem or how this
-> > > > timing issue could be fixed...
-> > > 
-> > > If you take a look at gameport_measure_speed() in gameport.c you will see that
-> > > it counts cycles for timing, which obviously does not work that well when CPU
-> > > frequency changes.
-> > > 
-> > > The bugs have been opened in bugzilla/reported on lists ages ago but nobody
-> > > stepped up to fix that.
-> 
-> He probably meant one issue filed about this problem here:
-> "Direct use of tsc: Analog joystick doesn't work properly with CPU
-> frequency scaling activated"
-> https://bugzilla.kernel.org/show_bug.cgi?id=12297
-> right?
 
-Right. There is also about a3d joystick not workign and I think a few others.
+We should only be flushing on close if the file was flagged as needing
+it during truncate.  I broke this with my ordered data vs transaction
+commit deadlock fix.
 
-> 
-> > Hm, can't we just use the standard ktime for measuring the time diff?
-> > And, I guess only few programs care the speed parameter.
-> 
-> For clocksource matters, I've got an initial patch for Azt3328 which
-> adds its 1MHz timer as a clocksource, which probably means that on this
-> hardware the gameport would be accurate for both digital and non-digital
-> modes (not that that would help much for machines without this soundcard
-> which also don't sport a high-res timer...).
-> 
-> Since I've got some more patches waiting for some gameport compatible
-> soundcard devices, I should be able to take this opportunity to retest
-> gameport support, too...
-> And since there's in fact my VIA system which has my second azt3328 in
-> its single-slot PCI and which in fact probably is a cpufreq system,
-> I might be able to work on fixing the cpufreq timer issue (but if
-> Vojtech managed to golden his offer to work on a fix to this issue, I
-> would be far from unhappy :).
-> 
-> 
-> 
-> BTW, I think I spotted a bug in the gameport removal commit (one driver
-> did an if (!joystick) ... where the subsequent line was removed as well
-> even though logically it quite likely shouldn't).
-> 
-> 
-> From my POV it would be much more favourable to do this relatively simple(??)
-> timer fix rather than removing an entire subsystem since it's partially(?)
-> broken.
+Thanks to Miao Xie for catching this.
 
-Fair enough. If you send me patches that fixes issues then I do not see any
-problem with it staying in. Vojtech also promised to dig out his old hardware.
+Signed-off-by: Chris Mason <clm@fb.com>
+Reported-by: Miao Xie <miaox@cn.fujitsu.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 
-Thanks.
-
--- 
-Dmitry
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index f15c13f..36861b7 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1840,7 +1840,15 @@ int btrfs_release_file(struct inode *inode, struct file *filp)
+ {
+ 	if (filp->private_data)
+ 		btrfs_ioctl_trans_end(filp);
+-	filemap_flush(inode->i_mapping);
++	/*
++	 * ordered_data_close is set by settattr when we are about to truncate
++	 * a file from a non-zero size to a zero size.  This tries to
++	 * flush down new bytes that may have been written if the
++	 * application were using truncate to replace a file in place.
++	 */
++	if (test_and_clear_bit(BTRFS_INODE_ORDERED_DATA_CLOSE,
++			       &BTRFS_I(inode)->runtime_flags))
++			filemap_flush(inode->i_mapping);
+ 	return 0;
+ }
+ 
