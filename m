@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260AbaHTNGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 09:06:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46205 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703AbaHTNGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 09:06:39 -0400
-Message-ID: <53F49D5C.4050007@suse.de>
-Date: Wed, 20 Aug 2014 15:06:36 +0200
-From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751552AbaHTNJi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 09:09:38 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:65068 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbaHTNJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 09:09:36 -0400
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+In-Reply-To: <CAMuHMdX4HXf91RcuxzdU=HRvqtikBd=7Q62msQUMGVFuHuJ4+g@mail.gmail.com>
+References: <1408483010-32689-1-git-send-email-bobby.prani@gmail.com> <CAMuHMdX4HXf91RcuxzdU=HRvqtikBd=7Q62msQUMGVFuHuJ4+g@mail.gmail.com>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Wed, 20 Aug 2014 09:09:04 -0400
+Message-ID: <CAJhHMCBzRy_-nKmW3Wpsck9KhzoL1JCkaNvok1JOFU0r44m19Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] powerpc: Make SPU_FS depend on SPARSEMEM
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        "open list:CELL BROADBAND EN..." <linuxppc-dev@lists.ozlabs.org>,
+        "open list:CELL BROADBAND EN..." <cbe-oss-dev@lists.ozlabs.org>,
         open list <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Stephan van Schaik <stephan@synkhronix.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Ben Dooks <ben-linux@fluff.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 03/10] ARM: dts: Prepare node labels for exynos5250
-References: <1406940750-15880-1-git-send-email-afaerber@suse.de> <1406940750-15880-4-git-send-email-afaerber@suse.de> <53DCD74B.8090400@gmail.com> <53DCE0F4.4060101@suse.de>
-In-Reply-To: <53DCE0F4.4060101@suse.de>
+        Geoff Levand <geoffrey.levand@am.sony.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.08.2014 15:00, schrieb Andreas Färber:
-> Am 02.08.2014 14:19, schrieb Tomasz Figa:
->> Andreas,
->>
->> Ehh, one more thing. It looks like my memory is playing tricks on me.
->> Please see inline.
->>
->> On 02.08.2014 02:52, Andreas Färber wrote:
->>> Allows them to be extended by reference.
->>>
->>> Signed-off-by: Andreas Färber <afaerber@suse.de>
->>> ---
->>>  v6: Split off from Snow/SMDK cleanups (Doug Anderson)
->>
->> [snip]
->>
->>> -	serial@12C00000 {
->>> +	uart0: serial@12C00000 {
->>>  		clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
->>>  		clock-names = "uart", "clk_uart_baud0";
->>>  	};
->>>  
->>> -	serial@12C10000 {
->>> +	uart1: serial@12C10000 {
->>>  		clocks = <&clock CLK_UART1>, <&clock CLK_SCLK_UART1>;
->>>  		clock-names = "uart", "clk_uart_baud0";
->>>  	};
->>>  
->>> -	serial@12C20000 {
->>> +	uart2: serial@12C20000 {
->>>  		clocks = <&clock CLK_UART2>, <&clock CLK_SCLK_UART2>;
->>>  		clock-names = "uart", "clk_uart_baud0";
->>>  	};
->>>  
->>> -	serial@12C30000 {
->>> +	uart3: serial@12C30000 {
->>>  		clocks = <&clock CLK_UART3>, <&clock CLK_SCLK_UART3>;
->>>  		clock-names = "uart", "clk_uart_baud0";
->>>  	};
->>
->> I forgot about a series [1] that went through tty tree, which is going
->> to conflict with this patch. It already adds labels to uart nodes in
->> serial_X format. I don't really remember why I went with this format for
->> Exynos SoCs and with uartX for older ones...
->>
->> [1]
->> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/arch/arm/boot/dts?id=1e64f48ea7c59fb94acd7551dd9fa68b8a752efc
-> 
-> I doubt that I'll manage to resend another time today, [...]
+On Wed, Aug 20, 2014 at 3:49 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
 
-Sorry, forgot about this. Done now. v7 as individual reply.
+> Is this a randconfig kernel?
 
-Andreas
+Yes, randconfig with ARCH=powerpc.
+
+>
+> config ARCH_SPARSEMEM_DEFAULT
+>        def_bool y
+>        depends on (SMP && PPC_PSERIES) || PPC_PS3
+>
+> Why is this not enabled? !SMP? !PPC_PSERIES? !PPC_PS3?
+
+This was indeed enabled, but that does not do much. We will need
+CONFIG_SPARSEMEM which depends on CONFIG_SPARSEMEM_MANUAL which was
+not enabled.
+
+
+>
+> If PPC_CELL is enabled, this issue was introduced by
+>
+> commit 78bde53e351bc89cff85d1c2c7e6d7c2ffdf120d
+> Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Date:   Tue Feb 13 11:46:06 2007 +1100
+>
+>     [POWERPC] spufs: remove need for struct page for SPEs
+>
+>     This patch removes the need for struct page for SPE local store
+>     and registers from spufs. It also makes the locking much more
+>     obvious and no longer relying on the truncate logic black magic
+>     for protecting against races between unmap_mapping_range() and
+>     new pages faulted in. It does so by switching to a nopfn() handler
+>     and using the new vm_insert_pfn() to setup the PTEs itself while
+>     holding a lock on the SPE.
+>
+>     The nice thing is that this patch actually removes a lot more code
+>     than it adds :-)
+>
+>     Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>     Signed-off-by: Paul Mackerras <paulus@samba.org>
+>
+>
+> Another question: why does SPU_FS select MEMORY_HOTPLUG?
+
+Not really sure :(
+
+>
+> commit 4da30d15b6d5036b0d96422d6946ca758111fae3
+> Author: Geoff Levand <geoffrey.levand@am.sony.com>
+> Date:   Fri Jun 23 20:57:49 2006 +0200
+>
+>     [POWERPC] spufs: fix memory hotplug dependency
+>
+>     spufs_base.c calls __add_pages, which depends on CONFIG_MEMORY_HOTPLUG.
+>
+>     Moved the selection of CONFIG_MEMORY_HOTPLUG from CONFIG_SPUFS_MMAP
+>     to CONFIG_SPU_FS.
+>
+>     Signed-off-by: Geoff Levand <geoffrey.levand@am.sony.com>
+>     Signed-off-by: Arnd Bergmann <arnd.bergmann@de.ibm.com>
+>     Signed-off-by: Paul Mackerras <paulus@samba.org>
+>
+> However, the call to __add_pages() has been moved a few times afterwards,
+> to be finally removed in the aforementioned commit
+> 78bde53e351bc89cff85d1c2c7e6d7c2ffdf120d.
+>
+> Does it still build/work if you just drop the "select MEMORY_HOTPLUG"?
+
+I should have saved the config file :(. I think it will build since
+the problem was that hotplug-memory.o needs CONFIG_SPARSEMEM.
+
+
 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Pranith
