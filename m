@@ -1,308 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300AbaHTJsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:48:40 -0400
-Received: from relay.parallels.com ([195.214.232.42]:59277 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742AbaHTJsh (ORCPT
+	id S1752654AbaHTJsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:48:15 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:40372 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267AbaHTJsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:48:37 -0400
-Message-ID: <1408528109.23412.94.camel@tkhai>
-Subject: [PATCH v5 5/5] sched/fair: Remove double_lock_balance() from
- load_balance()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        "Mike Galbraith" <umgwanakikbuti@gmail.com>,
-        Kirill Tkhai <tkhai@yandex.ru>,
-        "Tim Chen" <tim.c.chen@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Nicolas Pitre" <nicolas.pitre@linaro.org>
-Date: Wed, 20 Aug 2014 13:48:29 +0400
-In-Reply-To: <20140820092458.27076.30955.stgit@tkhai>
-References: <20140820092458.27076.30955.stgit@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Wed, 20 Aug 2014 05:48:12 -0400
+Date: Wed, 20 Aug 2014 11:48:08 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        =?utf-8?B?R2HDq2w=?= PORTAY <gael.portay@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Nicolas FERRE <nicolas.ferre@atmel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH 3/3] ARM: at91/tclib: mask interruptions at shutdown and
+ probe
+Message-ID: <20140820094807.GE15414@ulmo>
+References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com>
+ <1408486072-19268-4-git-send-email-gael.portay@gmail.com>
+ <776D4128-09AC-418C-A710-28A2522D1D63@jcrosoft.com>
+ <20140820010130.10974326@bbrezillon>
+ <20140820073111.GH13793@ulmo>
+ <20140820101422.3e8da816@bbrezillon>
+ <20140820082818.GB15414@ulmo>
+ <20140820110625.17f77c9f@bbrezillon>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WK3l2KTTmXPVedZ6"
+Content-Disposition: inline
+In-Reply-To: <20140820110625.17f77c9f@bbrezillon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Avoid double_rq_lock() and use TASK_ON_RQ_MIGRATING for load_balance().
-The advantage is (obviously) not holding two 'rq->lock's at the same time
-and thereby increasing parallelism.
+--WK3l2KTTmXPVedZ6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Further note that if there was no task to migrate we will not have
-acquired the second rq->lock at all.
+On Wed, Aug 20, 2014 at 11:06:25AM +0200, Boris BREZILLON wrote:
+> On Wed, 20 Aug 2014 10:28:20 +0200
+> Thierry Reding <thierry.reding@gmail.com> wrote:
+>=20
+> > On Wed, Aug 20, 2014 at 10:14:22AM +0200, Boris BREZILLON wrote:
+> > > Hi Thierry,
+> > >=20
+> > > On Wed, 20 Aug 2014 09:31:13 +0200
+> > > Thierry Reding <thierry.reding@gmail.com> wrote:
+> > >=20
+> > > > On Wed, Aug 20, 2014 at 01:01:30AM +0200, Boris BREZILLON wrote:
+> > > > > Hi Jean-Christophe,
+> > > > >=20
+> > > > > On Wed, 20 Aug 2014 06:11:17 +0800
+> > > > > Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
+> > > > >=20
+> > > > > > Hi,
+> > > > > >=20
+> > > > > > 	This is a bit weird as the clock of the TC should be off and t=
+he irq free
+> > > > > >=20
+> > > > > > 	so this should never happened we need to investigate more why =
+this append
+> > > > >=20
+> > > > > I may have found the source of this bug.
+> > > > >=20
+> > > > > As Gael stated, when you're kexec-ing a new kernel your previous =
+kernel
+> > > > > could be using the tbc_clksrc driver (and especially the clkevent
+> > > > > device). Thus the kernel might have planned a timer event and the=
+n been
+> > > > > asked to shutdown the machine (requested by the kexec code).
+> > > > > In this case the AIC interrupt connected to the TC Block is disab=
+led
+> > > > > but not the interrupts within the TCB IP (IDR registers), possibly
+> > > > > leaving a pending interrupt before booting the new kernel.
+> > > > >=20
+> > > > > When the tcb_clksrc driver is loaded by the new kernel it enables=
+ the
+> > > > > interrupt line by calling setup_irq [1] while the clockevent devi=
+ce is
+> > > > > not registered yet [2]. Thus the event_handler is still NULL when=
+ the
+> > > > > AIC line connected to the TCB is unmasked. Remember that an inter=
+rupt
+> > > > > is still pending on this HW block, which will lead to an immediat=
+e call
+> > > > > to the ch2_irq handler, which tries to call the event_handler, wh=
+ich in
+> > > > > turns is NULL because clkevent device registration has not taken =
+place
+> > > > > at this moment =3D> Kernel panic.
+> > > > > ITOH, we can't register the clkevent device before the irq handle=
+r is
+> > > > > set up, because we should be ready to handle clkevent request at =
+the
+> > > > > time clockevents_config_and_register is called.
+> > > > >=20
+> > > > > This leaves two solution:
+> > > > >  1) disable the TCB irqs (using TCB IDR registers) before calling
+> > > > >  setup_irq in the tcb_clksrc driver
+> > > > >  2) disable the TCB irqs at the tclib level (as proposed by Gael)
+> > > > >=20
+> > > > > I prefer solution #2 because it fixes the bug for all TCB users (=
+not
+> > > > > just the tcb_clksrc driver).
+> > > >=20
+> > > > Wouldn't a more proper fix be to only enable the IRQ (setup_irq()) =
+once
+> > > > everything has properly been set up? That's certainly how all other
+> > > > drivers are doing this. Generally I think it's best to assume that =
+an
+> > > > interrupt can fire at any point after it's been enabled, so everyth=
+ing
+> > > > should be set up prior to enabling it.
+> > >=20
+> > > Sure. And, AFAIK, another common practice is to disable all interrupts
+> > > and acknowledge all pending interrupts before registering a new irq
+> > > handler to avoid inheriting peripheral dirty state from previous usage
+> > > (either the bootloader, or the previous kernel when using kexec).
+> >=20
+> > Discarding all pending interrupts may not always be what we want. And
+> > masking interrupts prior to registering the handler isn't always going
+> > to work either (shared interrupts), so device drivers should always set
+> > things up in the correct order.
+> >=20
+>=20
+> I meant disabling/acknowledging interrupts within the HW block not
+> the interrupt line connected to the interrupt controller (which indeed
+> can be shared among several peripherals).
+> The TCB IP provides SR (Status Register) to acknowledge interrupts at
+> the TCB level and IER/IDR/ISR (Interrupt Enable/Disable/Status
+> Register) to manipulate TCB interrupts.
 
-The important point to note is that because we acquire dst->lock
-immediately after releasing src->lock the potential wait time of
-task_rq_lock() callers on TASK_ON_RQ_MIGRATING is not longer than
-it would have been in the double rq lock scenario.
+But when you share interrupts, then when an incoming interrupt will
+cause all handlers to be called, so you still need to set it up
+properly.
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
----
- kernel/sched/fair.c |  151 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 99 insertions(+), 52 deletions(-)
+Thierry
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7e5cf05..d3427a8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4709,7 +4709,7 @@ static void check_preempt_wakeup(struct rq *rq, struct task_struct *p, int wake_
- 		return;
- 
- 	/*
--	 * This is possible from callers such as move_task(), in which we
-+	 * This is possible from callers such as attach_tasks(), in which we
- 	 * unconditionally check_prempt_curr() after an enqueue (which may have
- 	 * lead to a throttle).  This both saves work and prevents false
- 	 * next-buddy nomination below.
-@@ -5117,21 +5117,10 @@ struct lb_env {
- 	unsigned int		loop_max;
- 
- 	enum fbq_type		fbq_type;
-+	struct list_head	tasks;
- };
- 
- /*
-- * move_task - move a task from one runqueue to another runqueue.
-- * Both runqueues must be locked.
-- */
--static void move_task(struct task_struct *p, struct lb_env *env)
--{
--	deactivate_task(env->src_rq, p, 0);
--	set_task_cpu(p, env->dst_cpu);
--	activate_task(env->dst_rq, p, 0);
--	check_preempt_curr(env->dst_rq, p, 0);
--}
--
--/*
-  * Is this task likely cache-hot:
-  */
- static int task_hot(struct task_struct *p, struct lb_env *env)
-@@ -5346,6 +5335,18 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- }
- 
- /*
-+ * detach_task() -- detach the task for the migration specified in env
-+ */
-+static void detach_task(struct task_struct *p, struct lb_env *env)
-+{
-+	lockdep_assert_held(&env->src_rq->lock);
-+
-+	deactivate_task(env->src_rq, p, 0);
-+	p->on_rq = TASK_ON_RQ_MIGRATING;
-+	set_task_cpu(p, env->dst_cpu);
-+}
-+
-+/*
-  * detach_one_task() -- tries to dequeue exactly one task from env->src_rq, as
-  * part of active balancing operations within "domain".
-  *
-@@ -5361,15 +5362,13 @@ static struct task_struct *detach_one_task(struct lb_env *env)
- 		if (!can_migrate_task(p, env))
- 			continue;
- 
--		deactivate_task(env->src_rq, p, 0);
--		p->on_rq = TASK_ON_RQ_MIGRATING;
--		set_task_cpu(p, env->dst_cpu);
-+		detach_task(p, env);
- 
- 		/*
- 		 * Right now, this is only the second place where
--		 * lb_gained[env->idle] is updated (other is move_tasks)
-+		 * lb_gained[env->idle] is updated (other is detach_tasks)
- 		 * so we can safely collect stats here rather than
--		 * inside move_tasks().
-+		 * inside detach_tasks().
- 		 */
- 		schedstat_inc(env->sd, lb_gained[env->idle]);
- 		return p;
-@@ -5377,35 +5376,22 @@ static struct task_struct *detach_one_task(struct lb_env *env)
- 	return NULL;
- }
- 
--/*
-- * attach_one_task() -- attaches the task returned from detach_one_task() to
-- * its new rq.
-- */
--static void attach_one_task(struct rq *rq, struct task_struct *p)
--{
--	raw_spin_lock(&rq->lock);
--	BUG_ON(task_rq(p) != rq);
--	p->on_rq = TASK_ON_RQ_QUEUED;
--	activate_task(rq, p, 0);
--	check_preempt_curr(rq, p, 0);
--	raw_spin_unlock(&rq->lock);
--}
--
- static const unsigned int sched_nr_migrate_break = 32;
- 
- /*
-- * move_tasks tries to move up to imbalance weighted load from busiest to
-- * this_rq, as part of a balancing operation within domain "sd".
-- * Returns 1 if successful and 0 otherwise.
-+ * detach_tasks() -- tries to detach up to imbalance weighted load from
-+ * busiest_rq, as part of a balancing operation within domain "sd".
-  *
-- * Called with both runqueues locked.
-+ * Returns number of detached tasks if successful and 0 otherwise.
-  */
--static int move_tasks(struct lb_env *env)
-+static int detach_tasks(struct lb_env *env)
- {
- 	struct list_head *tasks = &env->src_rq->cfs_tasks;
- 	struct task_struct *p;
- 	unsigned long load;
--	int pulled = 0;
-+	int detached = 0;
-+
-+	lockdep_assert_held(&env->src_rq->lock);
- 
- 	if (env->imbalance <= 0)
- 		return 0;
-@@ -5436,14 +5422,16 @@ static int move_tasks(struct lb_env *env)
- 		if ((load / 2) > env->imbalance)
- 			goto next;
- 
--		move_task(p, env);
--		pulled++;
-+		detach_task(p, env);
-+		list_add(&p->se.group_node, &env->tasks);
-+
-+		detached++;
- 		env->imbalance -= load;
- 
- #ifdef CONFIG_PREEMPT
- 		/*
- 		 * NEWIDLE balancing is a source of latency, so preemptible
--		 * kernels will stop after the first task is pulled to minimize
-+		 * kernels will stop after the first task is detached to minimize
- 		 * the critical section.
- 		 */
- 		if (env->idle == CPU_NEWLY_IDLE)
-@@ -5463,13 +5451,58 @@ static int move_tasks(struct lb_env *env)
- 	}
- 
- 	/*
--	 * Right now, this is one of only two places move_task() is called,
--	 * so we can safely collect move_task() stats here rather than
--	 * inside move_task().
-+	 * Right now, this is one of only two places we collect this stat
-+	 * so we can safely collect detach_one_task() stats here rather
-+	 * than inside detach_one_task().
- 	 */
--	schedstat_add(env->sd, lb_gained[env->idle], pulled);
-+	schedstat_add(env->sd, lb_gained[env->idle], detached);
- 
--	return pulled;
-+	return detached;
-+}
-+
-+/*
-+ * attach_task() -- attach the task detached by detach_task() to its new rq.
-+ */
-+static void attach_task(struct rq *rq, struct task_struct *p)
-+{
-+	lockdep_assert_held(&rq->lock);
-+
-+	BUG_ON(task_rq(p) != rq);
-+	p->on_rq = TASK_ON_RQ_QUEUED;
-+	activate_task(rq, p, 0);
-+	check_preempt_curr(rq, p, 0);
-+}
-+
-+/*
-+ * attach_one_task() -- attaches the task returned from detach_one_task() to
-+ * its new rq.
-+ */
-+static void attach_one_task(struct rq *rq, struct task_struct *p)
-+{
-+	raw_spin_lock(&rq->lock);
-+	attach_task(rq, p);
-+	raw_spin_unlock(&rq->lock);
-+}
-+
-+/*
-+ * attach_tasks() -- attaches all tasks detached by detach_tasks() to their
-+ * new rq.
-+ */
-+static void attach_tasks(struct lb_env *env)
-+{
-+	struct list_head *tasks = &env->tasks;
-+	struct task_struct *p;
-+
-+	raw_spin_lock(&env->dst_rq->lock);
-+
-+	while (!list_empty(tasks)) {
-+		p = list_first_entry(tasks, struct task_struct, se.group_node);
-+		list_del_init(&p->se.group_node);
-+
-+		attach_task(env->dst_rq, p);
-+	}
-+
-+	raw_spin_unlock(&env->dst_rq->lock);
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-@@ -6603,6 +6636,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.loop_break	= sched_nr_migrate_break,
- 		.cpus		= cpus,
- 		.fbq_type	= all,
-+		.tasks		= LIST_HEAD_INIT(env.tasks),
- 	};
- 
- 	/*
-@@ -6652,16 +6686,29 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
- 
- more_balance:
--		local_irq_save(flags);
--		double_rq_lock(env.dst_rq, busiest);
-+		raw_spin_lock_irqsave(&busiest->lock, flags);
- 
- 		/*
- 		 * cur_ld_moved - load moved in current iteration
- 		 * ld_moved     - cumulative load moved across iterations
- 		 */
--		cur_ld_moved = move_tasks(&env);
--		ld_moved += cur_ld_moved;
--		double_rq_unlock(env.dst_rq, busiest);
-+		cur_ld_moved = detach_tasks(&env);
-+
-+		/*
-+		 * We've detached some tasks from busiest_rq. Every
-+		 * task is masked "TASK_ON_RQ_MIGRATING", so we can safely
-+		 * unlock busiest->lock, and we are able to be sure
-+		 * that nobody can manipulate the tasks in parallel.
-+		 * See task_rq_lock() family for the details.
-+		 */
-+
-+		raw_spin_unlock(&busiest->lock);
-+
-+		if (cur_ld_moved) {
-+			attach_tasks(&env);
-+			ld_moved += cur_ld_moved;
-+		}
-+
- 		local_irq_restore(flags);
- 
- 		/*
-@@ -6797,7 +6844,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		 * If we've begun active balancing, start to back off. This
- 		 * case may not be covered by the all_pinned logic if there
- 		 * is only 1 task on the busy runqueue (because we don't call
--		 * move_tasks).
-+		 * detach_tasks).
- 		 */
- 		if (sd->balance_interval < sd->max_interval)
- 			sd->balance_interval *= 2;
+--WK3l2KTTmXPVedZ6
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJT9G7XAAoJEN0jrNd/PrOh1ywP/1AkYRnb2Kf3sksAxSFQYLia
+nUNB84b5AmuBGUlHbykkDLiWcbbefJzBwzcvJIK9glFrG8dd99dzw66fgi/Y6Lls
+KyMlhsBM2nJQVMGszPSMZofSuqeUGT8w7KtEJPd6vh5JS6hX8ivSlnWZn9pUYaCJ
+mrvn/ukCUdfU2nDFCAH8gIsBazxEQuPZjaIVpX85bfR3m5Hd74bTwmMpumxzjFwQ
+iB+geKi1MuXiANKgOXWQSiDM5ngWREeTRIlhsTvsyP25Pk+MFNHEjNjJX5buOO8l
+gstpkskqkfADRs9mCPDU7J26V7jaC27EVRUltJnMK27omR2dupVUfdy/gYqz7M/3
+MhC6pvBUvBeXcfGBrcvAKaqJo2cCJhpE081R4M6ymT5caAwTOeMtHlZNzYtzByiH
+wA+XthK+Q2Z3JV7fJpMWG1WO47B3PcjQZGG5oN3UtwtFUB0sY8co/LwDY/qp7obg
+2GjalSroLpxV7Xs5oCZQWcD7UR+ohkk45vyLWvT1VTyHPCJoJh5W7AWrW8rCOO88
+rH6J/sl9gY/ArtWC29qdiGbbtUVMeI1b6lKOQybjKdxjfXzk4k+e/cNsrAFGHnFm
+xMU7JBqtVE/1rJgyJbH5QtthXMlSXgJJjyW1/ot4hhJI/tBwa3bziYkMaYCn36OD
+MFoA9f/cmA0YB/RE0BMR
+=nCVB
+-----END PGP SIGNATURE-----
 
+--WK3l2KTTmXPVedZ6--
