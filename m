@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315AbaHTWGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 18:06:52 -0400
-Received: from ozlabs.org ([103.22.144.67]:51002 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210AbaHTWGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 18:06:51 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Arjun Sreedharan <arjun024@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: Re: [PATCH] params: fix potential memory leak in add_sysfs_param()
-In-Reply-To: <CAJFMrCG1OXrdRoUNqtZYdBqE_0dj+a3yAfFhuyFvTte7Ozbo0w@mail.gmail.com>
-References: <1408564816-1778-1-git-send-email-arjun024@gmail.com> <87mwayj39c.fsf@rustcorp.com.au> <CAJFMrCG1OXrdRoUNqtZYdBqE_0dj+a3yAfFhuyFvTte7Ozbo0w@mail.gmail.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 21 Aug 2014 07:35:33 +0930
-Message-ID: <87ha16izpu.fsf@rustcorp.com.au>
+	id S1753151AbaHTWKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 18:10:30 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:15839 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752736AbaHTWK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 18:10:28 -0400
+Date: Wed, 20 Aug 2014 15:10:14 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Daniel <delta.tatham@me.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/6] pinctrl: Device tree bindings for Qualcomm pm8xxx
+ gpio block
+Message-ID: <20140820221013.GC16274@sonymobile.com>
+References: <1407771634-14946-1-git-send-email-iivanov@mm-sol.com>
+ <1407771634-14946-2-git-send-email-iivanov@mm-sol.com>
+ <ED4952FE-A292-4724-9283-B5226AB20E3E@me.com>
+ <1408346162.2695.33.camel@iivanov-dev>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1408346162.2695.33.camel@iivanov-dev>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arjun Sreedharan <arjun024@gmail.com> writes:
-> On 21 August 2014 02:19, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> Arjun Sreedharan <arjun024@gmail.com> writes:
->>> Do not leak memory when attrs is non NULL and
->>> krealloc() fails. Without temporary variable,
->>> reference to it is lost.
->>>
->>> Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
->>
->> ...
->>
->>>       }
->>> -     /* Despite looking like the typical realloc() bug, this is safe.
->>> -      * We *want* the old 'attrs' to be freed either way, and we'll store
->>> -      * the new one in the success case. */
->>> -     attrs = krealloc(attrs, sizeof(new->grp.attrs[0])*(num+2), GFP_KERNEL);
->>> -     if (!attrs) {
->>> +
->>> +     new_attrs = krealloc(attrs, sizeof(new->grp.attrs[0])*(num+2), GFP_KERNEL);
->>> +     if (!new_attrs) {
->>
->> I think that comment you deleted is pretty clear.  Is it wrong?
->>
->> Cheers,
->> Rusty.
->
-> I believe it's wrong. I do not understand how `this is safe` from memory leak.
-> If krealloc() fails, there is nothing in place to free memory held by @attrs
+On Mon 18 Aug 00:16 PDT 2014, Ivan T. Ivanov wrote:
 
-Above this:
-	if (!mk->mp) {
-		num = 0;
-		attrs = NULL;
-	} else {
-		num = mk->mp->num;
-		attrs = mk->mp->grp.attrs;
-	}
+> On Sat, 2014-08-16 at 16:24 +0100, Daniel wrote:
+> > @Ivan: sorry about the double post.
+> > 
+> > Am 11.08.2014 um 16:40 schrieb Ivan T. Ivanov <iivanov@mm-sol.com>:
+[...]
+> > > +#define PMIC_GPIO_PULL_UP_30		1
+> > > +#define PMIC_GPIO_PULL_UP_1P5		2
+> > > +#define PMIC_GPIO_PULL_UP_31P5		3
+> > > +#define PMIC_GPIO_PULL_UP_1P5_30	4
+> > 
+> > Looking at drivers/pinctrl/qcom/pinctrl-ssbi-pmic.c, shouldn't these defines start at 0?
+> > e.g. #define PMIC_GPIO_PULL_UP_30 	0
+> > 
+> 
+> Initially "bias-pull-up" was used to set this parameter. 
+> Zero value for "bias-pull-up" has special meaning "...the 
+> pin is connected to VDD...". So values in DTS have to have
+> offset by one. Micro Amps are non-standard for pull-ups, 
+> thats why I have changed this to "qcom,pull-up-strength", but I 
+> have made mistake in config_set function. Following patch should 
+> fix the issue. I will send updated version soon.
+> 
 
-So, attrs is just a temporary: either NULL (doesn't need freeing), or
-is the old mk->mp->grp.attrs ptr.
+The bias-pull-up is read as u32 and 0 means that it's not pull-up, therefor i
+shifted them all. Sorry about that.
 
-But David was the one who placed this comment; I'll let him figure out
-whether it's bogus or not :)
+Now that we have this in a separate property there's no point in such
+"trickery" and  we should make them follow the register values, i.e:
+#define PM8XXX_GPIO_BIAS_PU_30          0
+#define PM8XXX_GPIO_BIAS_PU_1P5         1
+#define PM8XXX_GPIO_BIAS_PU_31P5        2
+#define PM8XXX_GPIO_BIAS_PU_1P5_30      3
 
-Cheers,
-Rusty.
+I find it cleaner and we don't need the translation.
 
+> > However, I still cannot get any data from those 2 pins if I export them through /sys/class/gpio...
+> 
+
+Reading should work, but most other gpio operations was off by one it seems. I
+have corrected this (and other reported things) and will send out a new version
+soon.
+
+> -			pin->bias = arg - PM8XXX_GPIO_BIAS_PU_30;
+> +			pin->bias = arg - PMIC_GPIO_PULL_UP_30;
+
+If we just make it follow the register value (starting at 0) we just use arg
+straight off.
+
+Regards,
+Bjorn
