@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaHTUyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:54:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24243 "EHLO mx1.redhat.com"
+	id S1753379AbaHTUyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:54:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12932 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752921AbaHTUyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:54:20 -0400
+	id S1753332AbaHTUyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 16:54:23 -0400
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
         Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH v2 5/6] KVM: trace kvm_ple_window
-Date: Wed, 20 Aug 2014 22:53:16 +0200
-Message-Id: <1408567997-21222-6-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH v2 6/6] KVM: VMX: runtime knobs for dynamic PLE window
+Date: Wed, 20 Aug 2014 22:53:17 +0200
+Message-Id: <1408567997-21222-7-git-send-email-rkrcmar@redhat.com>
 In-Reply-To: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
 References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
@@ -25,85 +25,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tracepoint for dynamic PLE window, fired on every potential change.
+ple_window is updated on every vmentry, so there is no reason to have it
+read-only anymore.
+ple_window* weren't writable to prevent runtime overflow races;
+they are prevented by a seqlock.
 
 Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
- arch/x86/kvm/trace.h | 25 +++++++++++++++++++++++++
- arch/x86/kvm/vmx.c   |  8 +++++---
- arch/x86/kvm/x86.c   |  1 +
- 3 files changed, 31 insertions(+), 3 deletions(-)
+ arch/x86/kvm/vmx.c | 48 +++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 37 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index e850a7d..4b8e6cb 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -848,6 +848,31 @@ TRACE_EVENT(kvm_track_tsc,
- 		  __print_symbolic(__entry->host_clock, host_clocks))
- );
- 
-+TRACE_EVENT(kvm_ple_window,
-+	TP_PROTO(int grow, unsigned int vcpu_id, int new, int old),
-+	TP_ARGS(grow, vcpu_id, new, old),
-+
-+	TP_STRUCT__entry(
-+		__field(                 int,      grow         )
-+		__field(        unsigned int,   vcpu_id         )
-+		__field(                 int,       new         )
-+		__field(                 int,       old         )
-+	),
-+
-+	TP_fast_assign(
-+		__entry->grow           = grow;
-+		__entry->vcpu_id        = vcpu_id;
-+		__entry->new            = new;
-+		__entry->old            = old;
-+	),
-+
-+	TP_printk("vcpu %u: ple_window %d %s %d",
-+	          __entry->vcpu_id,
-+	          __entry->new,
-+	          __entry->grow ? "<+" : "<-",
-+	          __entry->old)
-+);
-+
- #endif /* CONFIG_X86_64 */
- 
- #endif /* _TRACE_KVM_H */
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index e63d7ac..f63ac5d 100644
+index f63ac5d..bd73fa1 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -5728,15 +5728,17 @@ static int __shrink_ple_window(int val, int shrinker, int minimum)
- static void modify_ple_window(struct kvm_vcpu *vcpu, int grow)
- {
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
-+	int old = vmx->ple_window;
- 	int new;
+@@ -132,24 +132,29 @@ module_param(nested, bool, S_IRUGO);
+ #define KVM_VMX_DEFAULT_PLE_WINDOW_MAX    \
+ 		INT_MAX / KVM_VMX_DEFAULT_PLE_WINDOW_GROW
  
- 	if (grow)
--		new = __grow_ple_window(vmx->ple_window);
-+		new = __grow_ple_window(old)
- 	else
--		new = __shrink_ple_window(vmx->ple_window, ple_window_shrink,
--		                          ple_window);
-+		new = __shrink_ple_window(old, ple_window_shrink, ple_window);
- 
- 	vmx->ple_window = max(new, ple_window);
++static struct kernel_param_ops param_ops_ple_t;
++#define param_check_ple_t(name, p) __param_check(name, p, int)
 +
-+	trace_kvm_ple_window(grow, vcpu->vcpu_id, vmx->ple_window, old);
++static DEFINE_SEQLOCK(ple_window_seqlock);
++
+ static int ple_gap = KVM_VMX_DEFAULT_PLE_GAP;
+ module_param(ple_gap, int, S_IRUGO);
+ 
+ static int ple_window = KVM_VMX_DEFAULT_PLE_WINDOW;
+-module_param(ple_window, int, S_IRUGO);
++module_param(ple_window, ple_t, S_IRUGO | S_IWUSR);
+ 
+ /* Default doubles per-vcpu window every exit. */
+ static int ple_window_grow = KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
+-module_param(ple_window_grow, int, S_IRUGO);
++module_param(ple_window_grow, ple_t, S_IRUGO | S_IWUSR);
+ 
+ /* Default resets per-vcpu window every exit to ple_window. */
+ static int ple_window_shrink = KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK;
+-module_param(ple_window_shrink, int, S_IRUGO);
++module_param(ple_window_shrink, int, S_IRUGO | S_IWUSR);
+ 
+ /* Default is to compute the maximum so we can never overflow. */
+ static int ple_window_actual_max = KVM_VMX_DEFAULT_PLE_WINDOW_MAX;
+ static int ple_window_max        = KVM_VMX_DEFAULT_PLE_WINDOW_MAX;
+-module_param(ple_window_max, int, S_IRUGO);
++module_param(ple_window_max, ple_t, S_IRUGO | S_IWUSR);
+ 
+ extern const ulong vmx_return;
+ 
+@@ -5730,13 +5735,19 @@ static void modify_ple_window(struct kvm_vcpu *vcpu, int grow)
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+ 	int old = vmx->ple_window;
+ 	int new;
++	unsigned seq;
+ 
+-	if (grow)
+-		new = __grow_ple_window(old)
+-	else
+-		new = __shrink_ple_window(old, ple_window_shrink, ple_window);
++	do {
++		seq = read_seqbegin(&ple_window_seqlock);
+ 
+-	vmx->ple_window = max(new, ple_window);
++		if (grow)
++			new = __grow_ple_window(old);
++		else
++			new = __shrink_ple_window(old, ple_window_shrink,
++			                          ple_window);
++
++		vmx->ple_window = max(new, ple_window);
++	} while (read_seqretry(&ple_window_seqlock, seq));
+ 
+ 	trace_kvm_ple_window(grow, vcpu->vcpu_id, vmx->ple_window, old);
  }
- #define grow_ple_window(vcpu)   modify_ple_window(vcpu, 1)
- #define shrink_ple_window(vcpu) modify_ple_window(vcpu, 0)
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 5696ee7..814b20c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7648,3 +7648,4 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_invlpga);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_skinit);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_nested_intercepts);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_write_tsc_offset);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_ple_window);
+@@ -5750,6 +5761,23 @@ static void update_ple_window_actual_max(void)
+ 			                    ple_window_grow, INT_MIN);
+ }
+ 
++static int param_set_ple_t(const char *arg, const struct kernel_param *kp)
++{
++	int ret;
++
++	write_seqlock(&ple_window_seqlock);
++	ret = param_set_int(arg, kp);
++	update_ple_window_actual_max();
++	write_sequnlock(&ple_window_seqlock);
++
++	return ret;
++}
++
++static struct kernel_param_ops param_ops_ple_t = {
++	.set = param_set_ple_t,
++	.get = param_get_int,
++};
++
+ /*
+  * Indicate a busy-waiting vcpu in spinlock. We do not enable the PAUSE
+  * exiting, so only get here on cpu with PAUSE-Loop-Exiting.
+@@ -9153,8 +9181,6 @@ static int __init vmx_init(void)
+ 	} else
+ 		kvm_disable_tdp();
+ 
+-	update_ple_window_actual_max();
+-
+ 	return 0;
+ 
+ out7:
 -- 
 2.0.4
 
