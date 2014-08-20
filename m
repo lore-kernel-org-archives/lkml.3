@@ -1,110 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaHTHwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 03:52:45 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:60758 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaHTHwn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 03:52:43 -0400
-Date: Wed, 20 Aug 2014 09:52:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, pjt@google.com,
-        oleg@redhat.com, rostedt@goodmis.org, umgwanakikbuti@gmail.com,
-        tkhai@yandex.ru, tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org
-Subject: Re: [PATCH v4 2/6] sched: Wrapper for checking task_struct::on_rq
-Message-ID: <20140820075238.GA28179@gmail.com>
-References: <20140806075138.24858.23816.stgit@tkhai>
- <1407312372.8424.36.camel@tkhai>
+	id S1751604AbaHTHwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 03:52:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30588 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745AbaHTHwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 03:52:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,900,1400050800"; 
+   d="scan'208";a="590644224"
+Date: Wed, 20 Aug 2014 10:52:22 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: atull@opensource.altera.com
+Cc: wsa@the-dreams.de, baruch@tkos.co.il, grant.likely@linaro.org,
+        robh+dt@kernel.org, skuribay@pobox.com, Romain.Baeriswyl@abilis.com,
+        rafael.j.wysocki@intel.com, alan@linux.intel.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
+ setting
+Message-ID: <20140820075222.GA1660@lahna.fi.intel.com>
+References: <1408479529-24249-1-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407312372.8424.36.camel@tkhai>
+In-Reply-To: <1408479529-24249-1-git-send-email-atull@opensource.altera.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Kirill Tkhai <ktkhai@parallels.com> wrote:
-
+On Tue, Aug 19, 2014 at 03:18:49PM -0500, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
 > 
-> Implement task_queued() and use it everywhere instead of on_rq check.
-> No functional changes.
+> Use the documented, but unimplemented "clock-frequency"
+> Device Tree setting as a guide on whether to set the speed
+> mode bits in DW_IC_CON to standard or fast i2c mode.
 > 
-> The only exception is we do not use the wrapper in check_for_tasks(),
-> because it requires to export task_queued() in global header files.
-> Next patch in series would return it back, so it doesn't matter.
+> Previously, the driver was hardwired to fast mode.  Default
+> to fast mode if the "clock-frequency" property is not present
+> for backwards compatiblity.
 > 
-> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> ---
->  kernel/sched/core.c      |   82 +++++++++++++++++++++++-----------------------
->  kernel/sched/deadline.c  |   14 ++++----
->  kernel/sched/fair.c      |   22 ++++++------
->  kernel/sched/rt.c        |   16 ++++-----
->  kernel/sched/sched.h     |    7 ++++
->  kernel/sched/stop_task.c |    2 +
->  6 files changed, 75 insertions(+), 68 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 1211575..67e8d1e 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1043,7 +1043,7 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
->  	 * A queue event has occurred, and we're going to schedule.  In
->  	 * this case, we can save a useless back to back clock update.
->  	 */
-> -	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr))
-> +	if (task_queued(rq->curr) && test_tsk_need_resched(rq->curr))
->  		rq->skip_clock_update = 1;
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
 
-> -	p->on_rq = 1;
-> +	p->on_rq = ONRQ_QUEUED;
+I don't know much about the Device Tree bindings but the patch looks
+good to me,
 
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -15,6 +15,9 @@
->  
->  struct rq;
->  
-> +/* task_struct::on_rq states: */
-> +#define ONRQ_QUEUED	1
-> +
->  extern __read_mostly int scheduler_running;
->  
->  extern unsigned long calc_load_update;
-> @@ -942,6 +945,10 @@ static inline int task_running(struct rq *rq, struct task_struct *p)
->  #endif
->  }
->  
-> +static inline int task_queued(struct task_struct *p)
-> +{
-> +	return p->on_rq == ONRQ_QUEUED;
-> +}
-
-So I agree with splitting p->on_rq into more states, but the 
-new naming used looks pretty random, we can and should do 
-better.
-
-For example 'task_queued()' gives very little clue that it's 
-all about the p->on_rq state. The 'ONRQ_QUEUED' name does not 
-signal that this is a task's scheduler internal state, etc.
-
-So I'd suggest a more structured naming scheme, something along 
-the lines of:
-
-	TASK_ON_RQ_QUEUED
-	TASK_ON_RQ_MIGRATING
-
-	task_on_rq_queued()
-	task_on_rq_migrating()
-
-etc.
-
-It's a bit longer, but also more logical and thus easier to 
-read and maintain.
-
-Thanks,
-
-	Ingo
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
