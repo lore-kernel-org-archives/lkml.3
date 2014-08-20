@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaHTPEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:04:12 -0400
-Received: from smtprelay0045.hostedemail.com ([216.40.44.45]:49612 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750983AbaHTPEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:04:10 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3868:3871:3873:4321:5007:7652:10004:10400:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12740:13019:13069:13071:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bells01_7082d4ee7d3a
-X-Filterd-Recvd-Size: 1769
-Message-ID: <1408547047.23250.27.camel@joe-AO725>
-Subject: Re: [PATCH] staging: android: fix style issue
-From: Joe Perches <joe@perches.com>
-To: Purnendu Kapadia <pro8linux@gmail.com>
-Cc: konkers@android.com, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 20 Aug 2014 08:04:07 -0700
-In-Reply-To: <1408544006-26673-1-git-send-email-pro8linux@gmail.com>
-References: <1408544006-26673-1-git-send-email-pro8linux@gmail.com>
+	id S1752076AbaHTPEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:04:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56554 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751686AbaHTPEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:04:37 -0400
+Message-ID: <53F4B8CE.50300@ti.com>
+Date: Wed, 20 Aug 2014 20:33:42 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Peter Griffin <peter.griffin@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kgene.kim@samsung.com>, <maxime.ripard@free-electrons.com>,
+        <linux-samsung-soc@vger.kernel.org>
+CC: <patches@linaro.org>, <lee.jones@linaro.org>
+Subject: Re: [PATCH 0/9] phy: various misc cleanups to phy drivers
+References: <1408106416-19044-1-git-send-email-peter.griffin@linaro.org>
+In-Reply-To: <1408106416-19044-1-git-send-email-peter.griffin@linaro.org>
 Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-20 at 15:13 +0100, Purnendu Kapadia wrote:
-> checkpatch fix. add a line before the switch statement
+Hi,
 
-Hello Purnendu.
+On Friday 15 August 2014 06:10 PM, Peter Griffin wrote:
+> Hi,
+> 
+> This series some a few misc cleanups to the PHY drivers: -
+> 
+> 1) Use module_platform_driver to register spear PHY drivers. This gets rid
+> of a lof of boiler plate code.
+> 
+> 2) Remove .owner field from drivers using module_platform_driver, as this gets
+> overridden anyway in __platform_driver_register.
+> 
+> 3) Remove OOM site specific failure messages. These are unecessary and make
+> the kernel bigger.
+> 
+> 4) Add missing kzalloc error check, which could avoid NULL ptr dereference.
 
-This is a suboptimal patch description.
+Thanks for doing this clean-up.
+But I can queue this only for 3.18 (since these are cleanups) after -rc4 is tagged.
 
-There is no generic style asking for a blank line
-before a switch statement.
+Thanks
+Kishon
 
-You are actually adding a blank line separating
-declarations and code.
-
-Specifying the change as a "checkpatch fix" is
-also unnecessary.
-
-A patch subject of
-
-"[PATCH] staging: android: Add blank line after declaration"
-
-with no patch description at all is probably good
-enough.
-
-> diff --git a/drivers/staging/android/sync.c b/drivers/staging/androchd/sync.c
-[]
-> @@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
->  			     unsigned long arg)
->  {
->  	struct sync_fence *fence = file->private_data;
-> +
->  	switch (cmd) {
->  	case SYNC_IOC_WAIT:
->  		return sync_fence_ioctl_wait(fence, arg);
-
-
-
+> 
+> regards,
+> 
+> Peter.
+> 
+> Peter Griffin (9):
+>   phy: phy-omap-control: Remove unncessary site specific OOM messages
+>   phy: phy-mvebu-sata: Add missing error check for devm_kzalloc
+>   phy: phy-omap-usb2: Remove unncessary site specific OOM messages
+>   phy: phy-ti-pipe3: Remove unncessary site specific OOM messages
+>   phy: phy-spear1310-miphy: Remove unncessary site specific OOM messages
+>   phy: phy-spear1340-miphy: Remove unncessary site specific OOM messages
+>   phy: remove .owner field for drivers using module_platform_driver
+>   phy: phy-spear1310-miphy: Use module_platform_driver to register
+>     driver.
+>   phy: phy-spear1340-miphy: Use module_platform_driver to register
+>     driver.
+> 
+>  drivers/phy/phy-bcm-kona-usb2.c     |  1 -
+>  drivers/phy/phy-berlin-sata.c       |  1 -
+>  drivers/phy/phy-exynos-dp-video.c   |  1 -
+>  drivers/phy/phy-exynos-mipi-video.c |  1 -
+>  drivers/phy/phy-exynos5-usbdrd.c    |  1 -
+>  drivers/phy/phy-exynos5250-sata.c   |  1 -
+>  drivers/phy/phy-hix5hd2-sata.c      |  1 -
+>  drivers/phy/phy-miphy365x.c         |  1 -
+>  drivers/phy/phy-mvebu-sata.c        |  3 ++-
+>  drivers/phy/phy-omap-control.c      |  5 +----
+>  drivers/phy/phy-omap-usb2.c         |  9 ++-------
+>  drivers/phy/phy-qcom-apq8064-sata.c |  1 -
+>  drivers/phy/phy-qcom-ipq806x-sata.c |  1 -
+>  drivers/phy/phy-samsung-usb2.c      |  1 -
+>  drivers/phy/phy-spear1310-miphy.c   | 17 ++---------------
+>  drivers/phy/phy-spear1340-miphy.c   | 17 ++---------------
+>  drivers/phy/phy-sun4i-usb.c         |  1 -
+>  drivers/phy/phy-ti-pipe3.c          |  6 ++----
+>  drivers/phy/phy-twl4030-usb.c       |  1 -
+>  drivers/phy/phy-xgene.c             |  1 -
+>  20 files changed, 11 insertions(+), 60 deletions(-)
+> 
