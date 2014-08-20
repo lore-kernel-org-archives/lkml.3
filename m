@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaHTUod (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:44:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34970 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752991AbaHTUmm (ORCPT
+	id S1752886AbaHTUmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:42:35 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:56388 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736AbaHTUmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:42:42 -0400
+	Wed, 20 Aug 2014 16:42:32 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Michal Simek <michal.simek@xilinx.com>,
         Russell King <linux@arm.linux.org.uk>,
@@ -19,160 +19,94 @@ Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
         Pawel Moll <pawel.moll@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 4/9] ARM: zynq: PM: Enable DDR self-refresh and clock stop
-Date: Wed, 20 Aug 2014 13:41:50 -0700
-Message-Id: <1408567315-28479-5-git-send-email-soren.brinkmann@xilinx.com>
+Subject: [PATCH 1/9] ARM: zynq: PM: Enable A9 internal clock gating feature
+Date: Wed, 20 Aug 2014 13:41:47 -0700
+Message-Id: <1408567315-28479-2-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 2.0.1.1.gfbfc394
 In-Reply-To: <1408567315-28479-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1408567315-28479-1-git-send-email-soren.brinkmann@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DDR controller can detect idle periods and leverage low power
-features like self-refresh and clock stop.
-When new requests occur, the DDRC resumes normal operation.
-
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- arch/arm/mach-zynq/Makefile |  2 +-
- arch/arm/mach-zynq/common.c |  1 +
- arch/arm/mach-zynq/common.h |  2 ++
- arch/arm/mach-zynq/pm.c     | 84 +++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 88 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/mach-zynq/pm.c
+ arch/arm/mach-zynq/common.c  |  6 ++++++
+ arch/arm/mach-zynq/common.h  | 11 +++++++++++
+ arch/arm/mach-zynq/platsmp.c |  9 +++++++++
+ 3 files changed, 26 insertions(+)
 
-diff --git a/arch/arm/mach-zynq/Makefile b/arch/arm/mach-zynq/Makefile
-index 1b25d92ebf22..820dff6e1eba 100644
---- a/arch/arm/mach-zynq/Makefile
-+++ b/arch/arm/mach-zynq/Makefile
-@@ -3,7 +3,7 @@
- #
- 
- # Common support
--obj-y				:= common.o slcr.o
-+obj-y				:= common.o slcr.o pm.o
- CFLAGS_REMOVE_hotplug.o		=-march=armv6k
- CFLAGS_hotplug.o 		=-Wa,-march=armv7-a -mcpu=cortex-a9
- obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
 diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index 3cb7c198615a..6bd13e5ce6b7 100644
+index 31a6fa40ba37..3cb7c198615a 100644
 --- a/arch/arm/mach-zynq/common.c
 +++ b/arch/arm/mach-zynq/common.c
-@@ -101,6 +101,7 @@ static int __init zynq_get_revision(void)
- static void __init zynq_init_late(void)
- {
- 	zynq_core_pm_init();
-+	zynq_pm_late_init();
+@@ -98,6 +98,11 @@ static int __init zynq_get_revision(void)
+ 	return revision;
  }
  
++static void __init zynq_init_late(void)
++{
++	zynq_core_pm_init();
++}
++
  /**
+  * zynq_init_machine - System specific initialization, intended to be
+  *		       called from board specific initialization.
+@@ -204,6 +209,7 @@ DT_MACHINE_START(XILINX_EP107, "Xilinx Zynq Platform")
+ 	.map_io		= zynq_map_io,
+ 	.init_irq	= zynq_irq_init,
+ 	.init_machine	= zynq_init_machine,
++	.init_late	= zynq_init_late,
+ 	.init_time	= zynq_timer_init,
+ 	.dt_compat	= zynq_dt_match,
+ 	.reserve	= zynq_memory_init,
 diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h
-index 596ef0b5067c..87945fa2a179 100644
+index f652f0a884a6..596ef0b5067c 100644
 --- a/arch/arm/mach-zynq/common.h
 +++ b/arch/arm/mach-zynq/common.h
-@@ -40,6 +40,8 @@ extern void __iomem *zynq_scu_base;
+@@ -40,4 +40,15 @@ extern void __iomem *zynq_scu_base;
  /* Hotplug */
  extern void zynq_platform_cpu_die(unsigned int cpu);
  
-+int zynq_pm_late_init(void);
++static inline void zynq_core_pm_init(void)
++{
++	/* A9 clock gating */
++	asm volatile ("mrc  p15, 0, r12, c15, c0, 0\n"
++		      "orr  r12, r12, #1\n"
++		      "mcr  p15, 0, r12, c15, c0, 0\n"
++		      : /* no outputs */
++		      : /* no inputs */
++		      : "r12");
++}
 +
- static inline void zynq_core_pm_init(void)
- {
- 	/* A9 clock gating */
-diff --git a/arch/arm/mach-zynq/pm.c b/arch/arm/mach-zynq/pm.c
-new file mode 100644
-index 000000000000..19955917aac8
---- /dev/null
-+++ b/arch/arm/mach-zynq/pm.c
-@@ -0,0 +1,84 @@
+ #endif
+diff --git a/arch/arm/mach-zynq/platsmp.c b/arch/arm/mach-zynq/platsmp.c
+index abc82ef085c1..616b99e07c60 100644
+--- a/arch/arm/mach-zynq/platsmp.c
++++ b/arch/arm/mach-zynq/platsmp.c
+@@ -112,6 +112,14 @@ static void __init zynq_smp_prepare_cpus(unsigned int max_cpus)
+ 	scu_enable(zynq_scu_base);
+ }
+ 
 +/*
-+ * Zynq power management
-+ *
-+ *  Copyright (C) 2012 - 2014 Xilinx
-+ *
-+ *  Sören Brinkmann <soren.brinkmann@xilinx.com>
-+ *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ * This function is in the hotplug path. Don't move it into the init section!!
 + */
-+
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/of_device.h>
-+#include "common.h"
-+
-+/* register offsets */
-+#define DDRC_CTRL_REG1_OFFS		0x60
-+#define DDRC_DRAM_PARAM_REG3_OFFS	0x20
-+
-+/* bitfields */
-+#define DDRC_CLOCKSTOP_MASK	BIT(23)
-+#define DDRC_SELFREFRESH_MASK	BIT(12)
-+
-+static void __iomem *ddrc_base;
-+
-+/**
-+ * zynq_pm_ioremap() - Create IO mappings
-+ * @comp:	DT compatible string
-+ * Returns a pointer to the mapped memory or NULL.
-+ *
-+ * Remap the memory region for a compatible DT node.
-+ */
-+static void __iomem *zynq_pm_ioremap(const char *comp)
++static void zynq_secondary_init(unsigned int cpu)
 +{
-+	struct device_node *np;
-+	void __iomem *base = NULL;
-+
-+	np = of_find_compatible_node(NULL, NULL, comp);
-+	if (np) {
-+		base = of_iomap(np, 0);
-+		of_node_put(np);
-+	} else {
-+		pr_warn("%s: no compatible node found for '%s'\n", __func__,
-+				comp);
-+	}
-+
-+	return base;
++	zynq_core_pm_init();
 +}
 +
-+int __init zynq_pm_late_init(void)
-+{
-+	u32 reg;
-+
-+	ddrc_base = zynq_pm_ioremap("xlnx,zynq-ddrc-a05");
-+	if (!ddrc_base) {
-+		pr_warn("%s: Unable to map DDRC IO memory.\n", __func__);
-+	} else {
-+		/*
-+		 * Enable DDRC self-refresh and clock stop features. The HW
-+		 * takes care of entering/exiting the correct modes depending
-+		 * on activity state.
-+		 */
-+		reg = readl(ddrc_base + DDRC_CTRL_REG1_OFFS);
-+		reg |= DDRC_SELFREFRESH_MASK;
-+		writel(reg, ddrc_base + DDRC_CTRL_REG1_OFFS);
-+
-+		reg = readl(ddrc_base + DDRC_DRAM_PARAM_REG3_OFFS);
-+		reg |= DDRC_CLOCKSTOP_MASK;
-+		writel(reg, ddrc_base + DDRC_DRAM_PARAM_REG3_OFFS);
-+	}
-+
-+	return 0;
-+}
+ #ifdef CONFIG_HOTPLUG_CPU
+ static int zynq_cpu_kill(unsigned cpu)
+ {
+@@ -124,6 +132,7 @@ struct smp_operations zynq_smp_ops __initdata = {
+ 	.smp_init_cpus		= zynq_smp_init_cpus,
+ 	.smp_prepare_cpus	= zynq_smp_prepare_cpus,
+ 	.smp_boot_secondary	= zynq_boot_secondary,
++	.smp_secondary_init	= zynq_secondary_init,
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	.cpu_die		= zynq_platform_cpu_die,
+ 	.cpu_kill		= zynq_cpu_kill,
 -- 
 2.0.1.1.gfbfc394
 
