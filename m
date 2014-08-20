@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975AbaHTOke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:40:34 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:29704 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaHTOkc (ORCPT
+	id S1752042AbaHTOlO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:41:14 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:50923 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750942AbaHTOlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:40:32 -0400
-From: Markos Chandras <markos.chandras@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Markos Chandras <markos.chandras@imgtec.com>,
-        Mark Brown <broonie@kernel.org>,
-        Himangi Saraogi <himangi774@gmail.com>, <linux-spi@vger.kernel.org>,
-        <linux-mips@linux-mips.org>
-Subject: [PATCH] SPI: spi-au1550: Fix build problem in au1550_spi_remove
-Date: Wed, 20 Aug 2014 15:40:13 +0100
-Message-ID: <1408545613-28348-1-git-send-email-markos.chandras@imgtec.com>
-X-Mailer: git-send-email 2.0.4
+	Wed, 20 Aug 2014 10:41:12 -0400
+Date: Wed, 20 Aug 2014 15:38:17 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v2 06/18] ARM64 / ACPI: Parse MADT to map logical cpu to
+ MPIDR and get cpu_possible/present_map
+Message-ID: <20140820143817.GN24600@localhost>
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org>
+ <1407166105-17675-7-git-send-email-hanjun.guo@linaro.org>
+ <20140818142728.GS20043@localhost>
+ <53F2FE8E.60307@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.158]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F2FE8E.60307@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 30670539b867 ("spi: au1550: Fix bug in deallocation of memory")
-switched from release_resource to release_mem_region to release
-memory regions allocated using the request_mem_region. However,
-a build problem was introduced due to 'r' being undefined in that
-function. We fix this by having 'r' being defined as the platform's
-IORESROUCE_MEM region.
+On Tue, Aug 19, 2014 at 08:36:46AM +0100, Hanjun Guo wrote:
+> On 2014-8-18 22:27, Catalin Marinas wrote:
+> > On Mon, Aug 04, 2014 at 04:28:13PM +0100, Hanjun Guo wrote:
+> >> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+> >> index 6e04868..e877967 100644
+> >> --- a/arch/arm64/include/asm/acpi.h
+> >> +++ b/arch/arm64/include/asm/acpi.h
+> >> @@ -64,6 +64,8 @@ static inline void arch_fix_phys_package_id(int num, u32 slot) { }
+> >>  extern int (*acpi_suspend_lowlevel)(void);
+> >>  #define acpi_wakeup_address 0
+> >>  
+> >> +#define MAX_GIC_CPU_INTERFACE 65535
+> > 
+> > Does this need to be more than NR_CPUS?
+> 
+> Sometimes yes, CPU structure entries in MADT just like CPU nodes in
+> device tree, the number of them may more than NR_CPUS.
 
-This fixes a problem triggered by the db1xxx defconfig in the MIPS tree:
+I have a more general question here. In ACPI, is MADT the only way to
+build a CPU topology? It looks weird that we use GIC properties to
+create the cpu_logical_map(). A side-effect is that the GIC-related
+functions are now scattered all over the kernel rather than being
+contained in the GIC driver itself.
 
-drivers/spi/spi-au1550.c: In function 'au1550_spi_remove':
-drivers/spi/spi-au1550.c:948:21: error: 'r' undeclared (first use in this
-							function)
-release_mem_region(r->start, sizeof(psc_spi_t));
-
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Himangi Saraogi <himangi774@gmail.com>
-Cc: linux-spi@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
----
-This has only been compile tested
----
- drivers/spi/spi-au1550.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/spi/spi-au1550.c b/drivers/spi/spi-au1550.c
-index 40c3d43c9292..f7edb504df78 100644
---- a/drivers/spi/spi-au1550.c
-+++ b/drivers/spi/spi-au1550.c
-@@ -937,6 +937,7 @@ err_nomem:
- 
- static int au1550_spi_remove(struct platform_device *pdev)
- {
-+	struct resource *r;
- 	struct au1550_spi *hw = platform_get_drvdata(pdev);
- 
- 	dev_info(&pdev->dev, "spi master remove: bus_num=%d\n",
-@@ -945,6 +946,13 @@ static int au1550_spi_remove(struct platform_device *pdev)
- 	spi_bitbang_stop(&hw->bitbang);
- 	free_irq(hw->irq, hw);
- 	iounmap((void __iomem *)hw->regs);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r) {
-+		dev_err(&pdev->dev, "no mmio resource\n");
-+		return -ENODEV;
-+	}
-+
- 	release_mem_region(r->start, sizeof(psc_spi_t));
- 
- 	if (hw->usedma) {
 -- 
-2.0.4
-
+Catalin
