@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaHTAqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 20:46:09 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34040 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaHTAqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 20:46:00 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v7 03/11] arm64: Support restart through restart handler call chain
-Date: Tue, 19 Aug 2014 17:45:30 -0700
-Message-Id: <1408495538-27480-4-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
+	id S1751978AbaHTAyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 20:54:38 -0400
+Received: from mail-by2lp0241.outbound.protection.outlook.com ([207.46.163.241]:36776
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751647AbaHTAyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 20:54:37 -0400
+From: "J. German Rivera" <German.Rivera@freescale.com>
+To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>
+CC: <stuart.yoder@freescale.com>, <linuxppc-release@linux.freescale.net>
+Subject: [RFC PATCH 0/4 v2] drivers/bus: Freescale Management Complex bus driver patch series
+Date: Tue, 19 Aug 2014 19:54:26 -0500
+Message-ID: <1408496070-6252-1-git-send-email-German.Rivera@freescale.com>
+X-Mailer: git-send-email 1.7.9.7
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(87286001)(81342001)(69596002)(50226001)(104166001)(86362001)(44976005)(62966002)(92566001)(6806004)(83322001)(77156001)(50986999)(97736001)(26826002)(84676001)(83072002)(99396002)(68736004)(107046002)(81156004)(4396001)(93916002)(87936001)(89996001)(77982001)(36756003)(74502001)(229853001)(102836001)(74662001)(76482001)(31966008)(104016003)(106466001)(48376002)(64706001)(80022001)(81542001)(79102001)(88136002)(92726001)(50466002)(105606002)(85306004)(21056001)(2201001)(46102001)(95666004)(85852003)(47776003)(20776003)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:BN1PR0301MB0737;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03094A4065
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=German.Rivera@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel core now supports a restart handler call chain to restart
-the system. Call it if arm_pm_restart is not set.
+This patch series introduces Linux support for the Freescale
+Management Complex (fsl-mc) hardware.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Acked-by: Heiko Stuebner <heiko@sntech.de>
----
-v7: No change.
-v6: No change.
-v5: Renamed restart function to do_kernel_restart
-v4: No change.
-v3: Use wrapper function to execute notifier call chain.
-v2: Only call notifier call chain if arm_pm_restart is not set.
-    Do not include linux/watchdog.h.
+The fsl-mc is a hardware resource manager that manages specialized
+hardware objects used in network-oriented packet processing
+applications.  After the fsl-mc block is enabled, pools of hardware
+resources are available, such as queues, buffer poools, I/O
+interfaces.  These resources are building blocks that can be
+used to create functional hardware objects such as network
+interfaces, crypto accelerator instances, or L2 switches.
 
- arch/arm64/kernel/process.c | 2 ++
- 1 file changed, 2 insertions(+)
+All the fsl-mc managed hardware resources/objects are represented in
+a physical grouping mechanism called a 'container' or DPRC (data
+path resource container).
 
-diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 1309d64..0d3fb9f 100644
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -180,6 +180,8 @@ void machine_restart(char *cmd)
- 	/* Now call the architecture specific reboot code. */
- 	if (arm_pm_restart)
- 		arm_pm_restart(reboot_mode, cmd);
-+	else
-+		do_kernel_restart(cmd);
- 
- 	/*
- 	 * Whoops - the architecture was unable to reboot.
--- 
-1.9.1
+>From the point of view of an OS, a DPRC functions similar to a plug
+and play bus.  Using fsl-mc commands software can enumerate the
+contents of the DPRC discovering the hardware objects present
+and binding them to drivers.  Hardware objects can be created
+and removed dynamically, providing hot pluggability of the hardware
+objects.
+
+Software contexts interact with the fsl-mc by sending commands through
+a memory mapped hardware interface called an "MC portal". Every
+fsl-mc object type has a command set to manage the objects. Key
+DPRC commands include:
+   -create/destroy a DPRC
+   -enumerate objects and resource pools in the DPRC, including
+    identifying mappable regions and the number of IRQs an object
+    may have
+   -IRQ configuration
+   -move objects/resources between DPRCs
+   -connecting objects (e.g. connecting a network interface to
+    an L2 switch port)
+   -reset
+
+Patch 1 contains a minimal set of low level functions to send an
+d receive commands to the fsl-mc. It includes support for basic
+management commands and commands to manipulate DPRC objects.
+
+Patch 2 contains a platform device driver that sets up and registers
+the basic bus infrastructure including support for adding/removing
+devices, register/unregister of drivers, and bus match support
+to bind devices to drivers.
+
+Patch 3 contains an driver that manages DPRC objects (the
+container that holds the hardware resources). This driver
+functions as a bus controller and handles enumeration
+of the objects in the container and hotplug events.
+
+Patch 4 contains the update to the MAINTAINERS file.
 
