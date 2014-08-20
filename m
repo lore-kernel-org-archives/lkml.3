@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaHTWB5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 18:01:57 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:35094 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775AbaHTWBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 18:01:55 -0400
+	id S1753302AbaHTWCd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 18:02:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56278 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752775AbaHTWCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 18:02:31 -0400
+Date: Thu, 21 Aug 2014 00:02:24 +0200
+From: Jan Kara <jack@suse.cz>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?utf-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+Subject: Re: [PATCHv2 1/3] fs/buffer.c: allocate buffer cache with user
+ specific flag
+Message-ID: <20140820220224.GA5752@quack.suse.cz>
+References: <53F2F3E6.1030901@lge.com>
+ <53F2F436.4070307@lge.com>
+ <20140819130324.GB27553@quack.suse.cz>
+ <53F3DFA3.6040303@lge.com>
+ <20140820021623.GB3271@quack.suse.cz>
+ <53F40A12.6040506@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <1408506009-29923-1-git-send-email-zyw@rock-chips.com>
-References: <1408506009-29923-1-git-send-email-zyw@rock-chips.com>
-Date: Wed, 20 Aug 2014 15:01:54 -0700
-X-Google-Sender-Auth: 31psOFtzRcsVXKBYSBVyi0FLFck
-Message-ID: <CAD=FV=W1JNibtJMkyTW3ASo3MjWxS-Yjw7vNDVq-4pCL+a0_Og@mail.gmail.com>
-Subject: Re: [PATCH v2 5/5] Clk: RK808: Add clkout driver for RK808
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Dmitry Torokhov <dtor@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F40A12.6040506@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On Wed 20-08-14 11:38:10, Gioh Kim wrote:
+> 
+> >>>>@@ -1381,12 +1383,7 @@ EXPORT_SYMBOL(__find_get_block);
+> >>>>  struct buffer_head *
+> >>>>  __getblk(struct block_device *bdev, sector_t block, unsigned size)
+> >>>>  {
+> >>>>-       struct buffer_head *bh = __find_get_block(bdev, block, size);
+> >>>>-
+> >>>>-       might_sleep();
+> >>>>-       if (bh == NULL)
+> >>>>-               bh = __getblk_slow(bdev, block, size);
+> >>>>-       return bh;
+> >>>>+       return __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
+> >>>>  }
+> >>>>  EXPORT_SYMBOL(__getblk);
+> >>>   Why did you remove the __find_get_block() call? That looks like a bug.
+> >   I'm not sure if you didn't miss this comment....
+> 
+> I'm sorry I missed it.
+> I think calling __find_get_block() in __getblk_gfp() can replace it.
+> I'm not sure about it.
+> 
+> If anybody disagree with it, I'll change it as the original code.
+  OK, I see. Thanks for explanation. I agree we can remove
+__find_get_block() from __getblk() but please make this change a separate
+patch and also please put the might_sleep() check __getblk_gfp().
 
-On Tue, Aug 19, 2014 at 8:40 PM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->
-> ---
->
-> Changes in v2: None
->
->  drivers/clk/Kconfig     |    9 +++
->  drivers/clk/Makefile    |    1 +
->  drivers/clk/clk-rk808.c |  146 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 156 insertions(+)
->  create mode 100644 drivers/clk/clk-rk808.c
->
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index cfd3af7..84e0590 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -38,6 +38,15 @@ config COMMON_CLK_MAX77686
->         ---help---
->           This driver supports Maxim 77686 crystal oscillator clock.
->
-> +config COMMON_CLK_RK808
-> +       tristate "Clock driver for RK808"
-> +       depends on MFD_RK808
-> +       ---help---
-> +         This driver supports RK808 crystal oscillator clock. These
-> +         multi-function devices have two fixed-rate oscillators,
-> +         clocked at 32KHz each. Clkout1 is always on, Clkout2 can off
-> +         by control register.
-> +
->  config COMMON_CLK_SI5351
->         tristate "Clock driver for SiLabs 5351A/B/C"
->         depends on I2C
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index f537a0b..99f53d5 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -28,6 +28,7 @@ obj-$(CONFIG_ARCH_NOMADIK)            += clk-nomadik.o
->  obj-$(CONFIG_ARCH_NSPIRE)              += clk-nspire.o
->  obj-$(CONFIG_COMMON_CLK_PALMAS)                += clk-palmas.o
->  obj-$(CONFIG_CLK_PPC_CORENET)          += clk-ppc-corenet.o
-> +obj-$(CONFIG_COMMON_CLK_RK808)         += clk-rk808.o
->  obj-$(CONFIG_COMMON_CLK_S2MPS11)       += clk-s2mps11.o
->  obj-$(CONFIG_COMMON_CLK_SI5351)                += clk-si5351.o
->  obj-$(CONFIG_COMMON_CLK_SI570)         += clk-si570.o
-> diff --git a/drivers/clk/clk-rk808.c b/drivers/clk/clk-rk808.c
-> new file mode 100644
-> index 0000000..8d0467a
-> --- /dev/null
-> +++ b/drivers/clk/clk-rk808.c
-> @@ -0,0 +1,146 @@
-> +/*
-> + * Clkout driver for Rockchip RK808
-> + *
-> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> + *
-> + * Author: Chris Zhong <zyw@rock-chips.com>
-> + * Author: Zhang Qing <zhangqing@rock-chips.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/mfd/rk808>
-
-This is the wrong name for the file, so this doesn't compile.
-
-It makes me question how this was tested.
-
-Once I fix this I get a slew of other compiler errors.  Perhaps you
-managed to post an old version?
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
