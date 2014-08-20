@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaHTLyn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:54:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58989 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752592AbaHTLoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:11 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vladimir Davydov <VDavydov@parallels.com>,
-        Tushar Dave <tushar.n.dave@intel.com>,
-        Patrick McHardy <kaber@trash.net>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 075/104] e1000: fix possible reset_task running after adapter down
-Date: Wed, 20 Aug 2014 13:43:38 +0200
-Message-Id: <ef0e551d4c0bd15a4cc46dba73da8e7c38fc86d2.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	id S1753514AbaHTLzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:55:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1224 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752414AbaHTLze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:55:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
+   d="scan'208";a="561050524"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 1/4] usb: dwc3: pci: Add PCI ID for Intel Braswell
+Date: Wed, 20 Aug 2014 14:55:25 +0300
+Message-Id: <1408535728-10518-2-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1408535728-10518-1-git-send-email-heikki.krogerus@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vladimir Davydov <VDavydov@parallels.com>
+From: Alan Cox <alan@linux.intel.com>
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+The device controller is the same but it has different PCI ID. Add this new
+ID to the driver's list of supported IDs.
 
-===============
-
-commit 74a1b1ea8a30b035aaad833bbd6b9263e72acfac upstream.
-
-On e1000_down(), we should ensure every asynchronous work is canceled
-before proceeding. Since the watchdog_task can schedule other works
-apart from itself, it should be stopped first, but currently it is
-stopped after the reset_task. This can result in the following race
-leading to the reset_task running after the module unload:
-
-e1000_down_and_stop():			e1000_watchdog():
-----------------------			-----------------
-
-cancel_work_sync(reset_task)
-					schedule_work(reset_task)
-cancel_delayed_work_sync(watchdog_task)
-
-The patch moves cancel_delayed_work_sync(watchdog_task) at the beginning
-of e1000_down_and_stop() thus ensuring the race is impossible.
-
-Cc: Tushar Dave <tushar.n.dave@intel.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/net/ethernet/intel/e1000/e1000_main.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/usb/dwc3/dwc3-pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index 4ca676cb7f04..15c85d4f3774 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -494,13 +494,20 @@ static void e1000_down_and_stop(struct e1000_adapter *adapter)
- {
- 	set_bit(__E1000_DOWN, &adapter->flags);
+diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
+index a60bab7..3eb0229 100644
+--- a/drivers/usb/dwc3/dwc3-pci.c
++++ b/drivers/usb/dwc3/dwc3-pci.c
+@@ -30,6 +30,7 @@
+ #define PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3	0xabcd
+ #define PCI_DEVICE_ID_INTEL_BYT		0x0f37
+ #define PCI_DEVICE_ID_INTEL_MRFLD	0x119e
++#define PCI_DEVICE_ID_INTEL_BSW		0x22B7
  
--	/* Only kill reset task if adapter is not resetting */
--	if (!test_bit(__E1000_RESETTING, &adapter->flags))
--		cancel_work_sync(&adapter->reset_task);
--
- 	cancel_delayed_work_sync(&adapter->watchdog_task);
-+
-+	/*
-+	 * Since the watchdog task can reschedule other tasks, we should cancel
-+	 * it first, otherwise we can run into the situation when a work is
-+	 * still running after the adapter has been turned down.
-+	 */
-+
- 	cancel_delayed_work_sync(&adapter->phy_info_task);
- 	cancel_delayed_work_sync(&adapter->fifo_stall_task);
-+
-+	/* Only kill reset task if adapter is not resetting */
-+	if (!test_bit(__E1000_RESETTING, &adapter->flags))
-+		cancel_work_sync(&adapter->reset_task);
- }
- 
- void e1000_down(struct e1000_adapter *adapter)
+ struct dwc3_pci {
+ 	struct device		*dev;
+@@ -183,6 +184,7 @@ static const struct pci_device_id dwc3_pci_id_table[] = {
+ 		PCI_DEVICE(PCI_VENDOR_ID_SYNOPSYS,
+ 				PCI_DEVICE_ID_SYNOPSYS_HAPSUSB3),
+ 	},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BSW), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRFLD), },
+ 	{  }	/* Terminating Entry */
 -- 
-2.0.4
+2.1.0
 
