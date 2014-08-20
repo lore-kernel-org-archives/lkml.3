@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaHTJra (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:47:30 -0400
-Received: from relay.parallels.com ([195.214.232.42]:59143 "EHLO
+	id S1752619AbaHTJrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:47:51 -0400
+Received: from relay.parallels.com ([195.214.232.42]:59176 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170AbaHTJr2 (ORCPT
+	with ESMTP id S1752175AbaHTJrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:47:28 -0400
-Message-ID: <1408528040.23412.86.camel@tkhai>
-Subject: [PATCH v5 0/5] sched: Add on_rq states and remove several double rq
- locks
+	Wed, 20 Aug 2014 05:47:49 -0400
+Message-ID: <1408528062.23412.88.camel@tkhai>
+Subject: [PATCH v5 2/5] sched: Teach scheduler to understand
+ TASK_ON_RQ_MIGRATING state
 From: Kirill Tkhai <ktkhai@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
@@ -19,7 +19,9 @@ CC: Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
         "Tim Chen" <tim.c.chen@linux.intel.com>,
         Ingo Molnar <mingo@kernel.org>,
         "Nicolas Pitre" <nicolas.pitre@linaro.org>
-Date: Wed, 20 Aug 2014 13:47:20 +0400
+Date: Wed, 20 Aug 2014 13:47:42 +0400
+In-Reply-To: <20140820092458.27076.30955.stgit@tkhai>
+References: <20140820092458.27076.30955.stgit@tkhai>
 Organization: Parallels
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.8.5-2+b3 
@@ -30,73 +32,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v5: New names: TASK_ON_RQ_QUEUED, TASK_ON_RQ_MIGRATING, task_on_rq_migrating()
-and task_on_rq_queued().
 
-    I've pulled the latest version from peterz/queue.git, and Peter's changes
-    are included.
+This is a new state which will be used to indicate that a task is in a
+process of migrating between two RQs. It allows to get rid of
+double_rq_lock(), which we used to use to change a rq of a queued task
+before.
 
-This series aims to get rid of some places where locks of two RQs are held
-at the same time.
+Let's consider the example. To move a task between src_rq and dst_rq
+we will do the following:
 
-Patch [1/5] is a preparation/cleanup. It replaces old (task_struct::on_rq == 1)
-with new (task_struct::on_rq == TASK_ON_RQ_QUEUED) everywhere. No functional changes.
+	raw_spin_lock(&src_rq->lock);
+	/* p is a task which is queued on src_rq */
+	p = ...;
 
-Patch [2/5] is main in the series. It introduces new TASK_ON_RQ_MIGRATING state and
-teaches scheduler to understand it (we need little changes in try_to_wake_up()
-and task_rq_lock() family). This will be used in the following way:
+	dequeue_task(src_rq, p, 0);
+	p->on_rq = TASK_ON_RQ_MIGRATING;
+	set_task_cpu(p, dst_cpu);
+	raw_spin_unlock(&src_rq->lock);
 
-        (we are changing task's rq)
+    	/*
+    	 * Both of RQs are unlocked here.
+    	 * Task p is dequeued from src_rq
+    	 * but its on_rq is not zero.
+    	 */
 
-        raw_spin_lock(&src_rq->lock);
+	raw_spin_lock(&dst_rq->lock);
+	p->on_rq = TASK_ON_RQ_QUEUED;
+	enqueue_task(dst_rq, p, 0);
+	raw_spin_unlock(&dst_rq->lock);
 
-        p = ...; /* Some src_rq task */
+While p->on_rq is TASK_ON_RQ_MIGRATING, task is considered as "migrating",
+and other parallel scheduler actions with it are not available for
+parallel caller. The parallel caller is spining till migration is
+completed.
 
-        dequeue_task(src_rq, p, 0);
-        p->on_rq = TASK_ON_RQ_MIGRATING;
-        set_task_cpu(p, dst_cpu);
-        raw_spin_unlock(&src_rq->lock);
+The unavailable actions are changing of cpu affinity, changing of
+priority etc, in other words all the functionality which used to
+require task_rq(p)->lock before (and related to the task).
 
-        /*
-         * Now p is dequeued, and both
-         * RQ locks are unlocked, but
-         * its on_rq is not zero.
-         * Nobody can manipulate p
-         * while it's migrating,
-         * even when spinlocks are
-         * unlocked.
-         */
+To implement TASK_ON_RQ_MIGRATING support we primarily are using the
+following fact. Most of scheduler users (from which we are protecting
+a migrating task) use task_rq_lock() and __task_rq_lock() to get the
+lock of task_rq(p). These primitives know that task's cpu may change,
+and they are spining while the lock of the right RQ is not held. We
+add one more condition into them, so they will be also spinning until
+the migration is finished.
 
-        raw_spin_lock(&dst_rq->lock);
-        p->on_rq = TASK_ON_RQ_QUEUED;
-        enqueue_task(dst_rq, p, 0);
-        raw_spin_unlock(&dst_rq->lock);
-
-Patches [3,4,5/5] remove double locks and use new TASK_ON_RQ_MIGRATING state.
-They allow unlocked using of 3-4 function, which looks safe for me.
-
-The profit is that double_rq_lock() is not need in several places. We reduce
-the total time when RQs are locked.
-
----
-
-Kirill Tkhai (5):
-      sched: Wrapper for checking task_struct::on_rq
-      sched: Teach scheduler to understand TASK_ON_RQ_MIGRATING state
-      sched: Remove double_rq_lock() from __migrate_task()
-      sched/fair: Remove double_lock_balance() from active_load_balance_cpu_stop()
-      sched/fair: Remove double_lock_balance() from load_balance()
-
-
- kernel/sched/core.c      |  113 +++++++++++++++------------
- kernel/sched/deadline.c  |   15 ++--
- kernel/sched/fair.c      |  195 ++++++++++++++++++++++++++++++++--------------
- kernel/sched/rt.c        |   16 ++--
- kernel/sched/sched.h     |   13 +++
- kernel/sched/stop_task.c |    2 
- 6 files changed, 228 insertions(+), 126 deletions(-)
-
---
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ kernel/sched/core.c  |   12 +++++++++---
+ kernel/sched/sched.h |    6 ++++++
+ 2 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1276ba2..cef1a13 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -317,9 +317,12 @@ static inline struct rq *__task_rq_lock(struct task_struct *p)
+ 	for (;;) {
+ 		rq = task_rq(p);
+ 		raw_spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p)))
++		if (likely(rq == task_rq(p) && !task_on_rq_migrating(p)))
+ 			return rq;
+ 		raw_spin_unlock(&rq->lock);
++
++		while (unlikely(task_on_rq_migrating(p)))
++			cpu_relax();
+ 	}
+ }
+ 
+@@ -336,10 +339,13 @@ static struct rq *task_rq_lock(struct task_struct *p, unsigned long *flags)
+ 		raw_spin_lock_irqsave(&p->pi_lock, *flags);
+ 		rq = task_rq(p);
+ 		raw_spin_lock(&rq->lock);
+-		if (likely(rq == task_rq(p)))
++		if (likely(rq == task_rq(p) && !task_on_rq_migrating(p)))
+ 			return rq;
+ 		raw_spin_unlock(&rq->lock);
+ 		raw_spin_unlock_irqrestore(&p->pi_lock, *flags);
++
++		while (unlikely(task_on_rq_migrating(p)))
++			cpu_relax();
+ 	}
+ }
+ 
+@@ -1662,7 +1668,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	success = 1; /* we're going to change ->state */
+ 	cpu = task_cpu(p);
+ 
+-	if (task_on_rq_queued(p) && ttwu_remote(p, wake_flags))
++	if (p->on_rq && ttwu_remote(p, wake_flags))
+ 		goto stat;
+ 
+ #ifdef CONFIG_SMP
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 26566d0..aa0f73b 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -17,6 +17,7 @@ struct rq;
+ 
+ /* task_struct::on_rq states: */
+ #define TASK_ON_RQ_QUEUED	1
++#define TASK_ON_RQ_MIGRATING	2
+ 
+ extern __read_mostly int scheduler_running;
+ 
+@@ -950,6 +951,11 @@ static inline int task_on_rq_queued(struct task_struct *p)
+ 	return p->on_rq == TASK_ON_RQ_QUEUED;
+ }
+ 
++static inline int task_on_rq_migrating(struct task_struct *p)
++{
++	return p->on_rq == TASK_ON_RQ_MIGRATING;
++}
++
+ #ifndef prepare_arch_switch
+ # define prepare_arch_switch(next)	do { } while (0)
+ #endif
+
 
 
