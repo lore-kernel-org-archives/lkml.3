@@ -1,165 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaHTUnV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:43:21 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:42623 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190AbaHTUnS (ORCPT
+	id S1753127AbaHTUmu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:42:50 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:54090 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077AbaHTUmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:43:18 -0400
-Date: Wed, 20 Aug 2014 16:43:13 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v5] irqchip: gic: Allow gic_arch_extn hooks to call into
- scheduler
-In-Reply-To: <1408562561-10424-1-git-send-email-sboyd@codeaurora.org>
-Message-ID: <alpine.LFD.2.11.1408201641080.29347@knanqh.ubzr>
-References: <1408562561-10424-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 20 Aug 2014 16:42:47 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
+Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-pm@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH 7/9] ARM: zynq: Synchronise zynq_cpu_die/kill
+Date: Wed, 20 Aug 2014 13:41:53 -0700
+Message-Id: <1408567315-28479-8-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.0.1.1.gfbfc394
+In-Reply-To: <1408567315-28479-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1408567315-28479-1-git-send-email-soren.brinkmann@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Aug 2014, Stephen Boyd wrote:
+Avoid races and add synchronisation between the arch specific
+kill and die routines.
 
-> Commit 1a6b69b6548c (ARM: gic: add CPU migration support,
-> 2012-04-12) introduced an acquisition of the irq_controller_lock
-> in gic_raise_softirq() which can lead to a spinlock recursion if
-> the gic_arch_extn hooks call into the scheduler (via complete()
-> or wake_up(), etc.). This happens because gic_arch_extn hooks are
-> normally called with the irq_controller_lock held and calling
-> into the scheduler may cause us to call smp_send_reschedule()
-> which will grab the irq_controller_lock again. Here's an example
-> from a vendor kernel (note that the gic_arch_extn hook code here
-> isn't actually in mainline):
-> 
-> BUG: spinlock recursion on CPU#0, swapper/0/1
+The same synchronisation issue was fixed on IMX platform
+by this commit:
+"ARM: imx: fix sync issue between imx_cpu_die and imx_cpu_kill"
+(sha1: 2f3edfd7e27ad4206acbc2ae99c9df5f46353024)
 
-Given the actual source of the bug is contested, you probably should 
-only talk about the locking optimization which is the only undisputed 
-reason for this patch.
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ arch/arm/mach-zynq/common.h  |  2 ++
+ arch/arm/mach-zynq/hotplug.c |  2 ++
+ arch/arm/mach-zynq/platsmp.c |  6 ++++++
+ arch/arm/mach-zynq/slcr.c    | 43 ++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 52 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm/mach-zynq/common.h b/arch/arm/mach-zynq/common.h
+index 87945fa2a179..c0773e87e83c 100644
+--- a/arch/arm/mach-zynq/common.h
++++ b/arch/arm/mach-zynq/common.h
+@@ -24,6 +24,8 @@ extern int zynq_early_slcr_init(void);
+ extern void zynq_slcr_system_reset(void);
+ extern void zynq_slcr_cpu_stop(int cpu);
+ extern void zynq_slcr_cpu_start(int cpu);
++extern bool zynq_slcr_cpu_state_read(int cpu);
++extern void zynq_slcr_cpu_state_write(int cpu, bool die);
+ extern u32 zynq_slcr_get_device_id(void);
+ 
+ #ifdef CONFIG_SMP
+diff --git a/arch/arm/mach-zynq/hotplug.c b/arch/arm/mach-zynq/hotplug.c
+index 366f46c91365..fe44a05677e2 100644
+--- a/arch/arm/mach-zynq/hotplug.c
++++ b/arch/arm/mach-zynq/hotplug.c
+@@ -19,6 +19,8 @@
+  */
+ void zynq_platform_cpu_die(unsigned int cpu)
+ {
++	zynq_slcr_cpu_state_write(cpu, true);
++
+ 	/*
+ 	 * there is no power-control hardware on this platform, so all
+ 	 * we can do is put the core into WFI; this is safe as the calling
+diff --git a/arch/arm/mach-zynq/platsmp.c b/arch/arm/mach-zynq/platsmp.c
+index 616b99e07c60..f77f7ca4c45b 100644
+--- a/arch/arm/mach-zynq/platsmp.c
++++ b/arch/arm/mach-zynq/platsmp.c
+@@ -123,6 +123,12 @@ static void zynq_secondary_init(unsigned int cpu)
+ #ifdef CONFIG_HOTPLUG_CPU
+ static int zynq_cpu_kill(unsigned cpu)
+ {
++	unsigned long timeout = jiffies + msecs_to_jiffies(50);
++
++	while (zynq_slcr_cpu_state_read(cpu))
++		if (time_after(jiffies, timeout))
++			return 0;
++
+ 	zynq_slcr_cpu_stop(cpu);
+ 	return 1;
+ }
+diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
+index c43a2d16e223..d4cb50cf97c0 100644
+--- a/arch/arm/mach-zynq/slcr.c
++++ b/arch/arm/mach-zynq/slcr.c
+@@ -138,6 +138,8 @@ void zynq_slcr_cpu_start(int cpu)
+ 	zynq_slcr_write(reg, SLCR_A9_CPU_RST_CTRL_OFFSET);
+ 	reg &= ~(SLCR_A9_CPU_CLKSTOP << cpu);
+ 	zynq_slcr_write(reg, SLCR_A9_CPU_RST_CTRL_OFFSET);
++
++	zynq_slcr_cpu_state_write(cpu, false);
+ }
+ 
+ /**
+@@ -154,8 +156,47 @@ void zynq_slcr_cpu_stop(int cpu)
+ }
+ 
+ /**
+- * zynq_slcr_init - Regular slcr driver init
++ * zynq_slcr_cpu_state - Read/write cpu state
++ * @cpu:	cpu number
+  *
++ * SLCR_REBOOT_STATUS save upper 2 bits (31/30 cpu states for cpu0 and cpu1)
++ * 0 means cpu is running, 1 cpu is going to die.
++ *
++ * Return: true if cpu is running, false if cpu is going to die
++ */
++bool zynq_slcr_cpu_state_read(int cpu)
++{
++	u32 state;
++
++	state = readl(zynq_slcr_base + SLCR_REBOOT_STATUS_OFFSET);
++	state &= 1 << (31 - cpu);
++
++	return !state;
++}
++
++/**
++ * zynq_slcr_cpu_state - Read/write cpu state
++ * @cpu:	cpu number
++ * @die:	cpu state - true if cpu is going to die
++ *
++ * SLCR_REBOOT_STATUS save upper 2 bits (31/30 cpu states for cpu0 and cpu1)
++ * 0 means cpu is running, 1 cpu is going to die.
++ */
++void zynq_slcr_cpu_state_write(int cpu, bool die)
++{
++	u32 state, mask;
++
++	state = readl(zynq_slcr_base + SLCR_REBOOT_STATUS_OFFSET);
++	mask = 1 << (31 - cpu);
++	if (die)
++		state |= mask;
++	else
++		state &= ~mask;
++	writel(state, zynq_slcr_base + SLCR_REBOOT_STATUS_OFFSET);
++}
++
++/**
++ * zynq_slcr_init - Regular slcr driver init
+  * Return:	0 on success, negative errno otherwise.
+  *
+  * Called early during boot from platform code to remap SLCR area.
+-- 
+2.0.1.1.gfbfc394
 
-
-
-
->  lock: irq_controller_lock+0x0/0x18, .magic: dead4ead, .owner: sw
-> er_cpu: 0
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.10-00430-g3d433c4e
-> 
-> Call trace:
-> [<ffffffc000087e1c>] dump_backtrace+0x0/0x140
-> [<ffffffc000087f6c>] show_stack+0x10/0x1c
-> [<ffffffc00064732c>] dump_stack+0x74/0xc4
-> [<ffffffc0006446c0>] spin_dump+0x78/0x88
-> [<ffffffc0006446f4>] spin_bug+0x24/0x34
-> [<ffffffc0000d47d0>] do_raw_spin_lock+0x58/0x148
-> [<ffffffc00064d398>] _raw_spin_lock_irqsave+0x24/0x38
-> [<ffffffc0002c9d7c>] gic_raise_softirq+0x2c/0xbc
-> [<ffffffc00008daa4>] smp_send_reschedule+0x34/0x40
-> [<ffffffc0000c1e94>] try_to_wake_up+0x224/0x288
-> [<ffffffc0000c1f4c>] default_wake_function+0xc/0x18
-> [<ffffffc0000ceef0>] __wake_up_common+0x50/0x8c
-> [<ffffffc0000cef3c>] __wake_up_locked+0x10/0x1c
-> [<ffffffc0000cf734>] complete+0x3c/0x5c
-> [<ffffffc0002f0e78>] msm_mpm_enable_irq_exclusive+0x1b8/0x1c8
-> [<ffffffc0002f0f58>] __msm_mpm_enable_irq+0x4c/0x7c
-> [<ffffffc0002f0f94>] msm_mpm_enable_irq+0xc/0x18
-> [<ffffffc0002c9bb0>] gic_unmask_irq+0x40/0x7c
-> [<ffffffc0000de5f4>] irq_enable+0x2c/0x48
-> [<ffffffc0000de65c>] irq_startup+0x4c/0x74
-> [<ffffffc0000dd2fc>] __setup_irq+0x264/0x3f0
-> [<ffffffc0000dd5e0>] request_threaded_irq+0xcc/0x11c
-> [<ffffffc0000df254>] devm_request_threaded_irq+0x68/0xb4
-> [<ffffffc000471520>] msm_iommu_ctx_probe+0x124/0x2d4
-> [<ffffffc000337374>] platform_drv_probe+0x20/0x54
-> [<ffffffc00033598c>] driver_probe_device+0x158/0x340
-> [<ffffffc000335c20>] __driver_attach+0x60/0x90
-> [<ffffffc000333c9c>] bus_for_each_dev+0x6c/0x8c
-> [<ffffffc000335304>] driver_attach+0x1c/0x28
-> [<ffffffc000334f14>] bus_add_driver+0x120/0x204
-> [<ffffffc0003362e4>] driver_register+0xbc/0x10c
-> [<ffffffc000337348>] __platform_driver_register+0x5c/0x68
-> [<ffffffc00094c478>] msm_iommu_driver_init+0x54/0x7c
-> [<ffffffc0000813ec>] do_one_initcall+0xa4/0x130
-> [<ffffffc00091d928>] kernel_init_freeable+0x138/0x1dc
-> [<ffffffc000642578>] kernel_init+0xc/0xd4
-> 
-> We really just want to synchronize the sending of an SGI with the
-> update of the gic_cpu_map[], so introduce a new SGI lock that we
-> can use to synchronize the two code paths. To further optimize
-> we don't take any locks at all if the BL switcher code isn't used.
-> 
-> Cc: Nicolas Pitre <nico@linaro.org>
-> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/irqchip/irq-gic.c | 16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 4b959e606fe8..052762638b1c 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -80,6 +80,16 @@ static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->  #define NR_GIC_CPU_IF 8
->  static u8 gic_cpu_map[NR_GIC_CPU_IF] __read_mostly;
->  
-> +#ifdef CONFIG_BL_SWITCHER
-> +/* Synchronize switching CPU interface and sending SGIs */
-> +static DEFINE_RAW_SPINLOCK(gic_sgi_lock);
-> +#define sgi_map_lock(flags) raw_spin_lock_irqsave(&gic_sgi_lock, flags)
-> +#define sgi_map_unlock(flags) raw_spin_unlock_irqrestore(&gic_sgi_lock, flags)
-> +#else
-> +#define sgi_map_lock(flags) (void)(flags)
-> +#define sgi_map_unlock(flags) (void)(flags)
-> +#endif
-> +
->  /*
->   * Supported arch specific GIC irq extension.
->   * Default make them NULL.
-> @@ -605,7 +615,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	int cpu;
->  	unsigned long flags, map = 0;
->  
-> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> +	sgi_map_lock(flags);
->  
->  	/* Convert our logical CPU mask into a physical one. */
->  	for_each_cpu(cpu, mask)
-> @@ -620,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	/* this always happens on GIC0 */
->  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
->  
-> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-> +	sgi_map_unlock(flags);
->  }
->  #endif
->  
-> @@ -690,6 +700,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  	ror_val = (cur_cpu_id - new_cpu_id) & 31;
->  
->  	raw_spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&gic_sgi_lock);
->  
->  	/* Update the target interface for this logical CPU */
->  	gic_cpu_map[cpu] = 1 << new_cpu_id;
-> @@ -709,6 +720,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  		}
->  	}
->  
-> +	raw_spin_unlock(&gic_sgi_lock);
->  	raw_spin_unlock(&irq_controller_lock);
->  
->  	/*
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> 
