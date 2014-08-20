@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaHTL7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:59:41 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58960 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752564AbaHTLoK (ORCPT
+	id S1753283AbaHTMA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:00:58 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:46218 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400AbaHTMAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:10 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 057/104] sparc64: ldc_connect() should not return EINVAL when handshake is in progress.
-Date: Wed, 20 Aug 2014 13:43:20 +0200
-Message-Id: <fc52b92969d39a8a36ea174ab93cf10bf4b8a2ce.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 08:00:55 -0400
+Message-ID: <53F48DF3.8000705@cogentembedded.com>
+Date: Wed, 20 Aug 2014 16:00:51 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org
+CC: nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 3/4] r8152: remove clear_bp function
+References: <1394712342-15778-16-Taiwan-albertk@realtek.com> <1394712342-15778-19-Taiwan-albertk@realtek.com>
+In-Reply-To: <1394712342-15778-19-Taiwan-albertk@realtek.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Hello.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 8/20/2014 12:58 PM, Hayes Wang wrote:
 
-===============
+> The functions are used to update the firmware. Move the actions into
+> the firmware files.
 
-[ Upstream commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 ]
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>   drivers/net/usb/r8152.c | 24 ------------------------
+>   1 file changed, 24 deletions(-)
 
-The LDC handshake could have been asynchronously triggered
-after ldc_bind() enables the ldc_rx() receive interrupt-handler
-(and thus intercepts incoming control packets)
-and before vio_port_up() calls ldc_connect(). If that is the case,
-ldc_connect() should return 0 and let the state-machine
-progress.
+> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+> index 33dcc97..937d132 100644
+> --- a/drivers/net/usb/r8152.c
+> +++ b/drivers/net/usb/r8152.c
+[...]
+> @@ -2248,7 +2226,6 @@ static void r8152b_hw_phy_cfg(struct r8152 *tp)
+>
+>   	r8152b_disable_aldps(tp);
+>
+> -	rtl_clear_bp(tp);
+>
 
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Acked-by: Karl Volz <karl.volz@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- arch/sparc/kernel/ldc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+    Why leave 2 empty lines? One is enough.
 
-diff --git a/arch/sparc/kernel/ldc.c b/arch/sparc/kernel/ldc.c
-index e01d75d40329..66dacd56bb10 100644
---- a/arch/sparc/kernel/ldc.c
-+++ b/arch/sparc/kernel/ldc.c
-@@ -1336,7 +1336,7 @@ int ldc_connect(struct ldc_channel *lp)
- 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
- 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
- 	    lp->hs_state != LDC_HS_OPEN)
--		err = -EINVAL;
-+		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
- 	else
- 		err = start_handshake(lp);
- 
--- 
-2.0.4
+>   	r8152b_enable_aldps(tp);
+>   	set_bit(PHY_RESET, &tp->flags);
+> @@ -2404,7 +2381,6 @@ static void r8153_hw_phy_cfg(struct r8152 *tp)
+>   		r8152_mdio_write(tp, MII_BMCR, data);
+>   	}
+>
+> -	r8153_clear_bp(tp);
+>
+
+    Ditto.
+
+>   	if (tp->version == RTL_VER_03) {
+>   		data = ocp_reg_read(tp, OCP_EEE_CFG);
+>
+
+WBR, Sergei
 
