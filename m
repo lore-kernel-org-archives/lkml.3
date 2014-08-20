@@ -1,193 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaHTD3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 23:29:39 -0400
-Received: from regular1.263xmail.com ([211.150.99.140]:46014 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaHTD3h (ORCPT
+	id S1751809AbaHTDcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 23:32:32 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:52691 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaHTDca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 23:29:37 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <f418fcdf9e9add88f99fbe855a7900ed>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Chris Zhong <zyw@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH v2 1/5] MFD: Add rk808 device tree bindings documentation
-Date: Wed, 20 Aug 2014 11:27:28 +0800
-Message-Id: <1408505248-23995-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 19 Aug 2014 23:32:30 -0400
+Message-ID: <1408505546.5540.25.camel@marge.simpson.net>
+Subject: Re: [PATCH] [RFC] TAINT_PERFORMANCE
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
+        dave.hansen@linux.intel.com, peterz@infradead.org, mingo@redhat.com,
+        ak@linux.intel.com, tim.c.chen@linux.intel.com,
+        akpm@linux-foundation.org, cl@linux.com, penberg@kernel.org,
+        linux-mm@kvack.org
+Date: Wed, 20 Aug 2014 05:32:26 +0200
+In-Reply-To: <20140819222621.GA32690@node.dhcp.inet.fi>
+References: <20140819212604.6C94DF09@viggo.jf.intel.com>
+	 <20140819222621.GA32690@node.dhcp.inet.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rk808.txt: Add device tree bindings for rockchip's rk808 pmic.
+On Wed, 2014-08-20 at 01:26 +0300, Kirill A. Shutemov wrote: 
+> On Tue, Aug 19, 2014 at 02:26:04PM -0700, Dave Hansen wrote:
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> > +	TAINT_PERF_IF(SCHEDSTATS);
+> 
+> Is SCHEDSTATS really harmful?
 
----
+If your config is minimalist, a tad.  If your config is.. Rubenesque
+(distro), you probably won't notice the extra beauty.
 
-Changes in v2:
-Adviced by javier.martinez
-- separated from rtc-rk808.c
+> It's enabled in some distro kernels.
+> At least in Arch:
+> 
+> https://projects.archlinux.org/svntogit/packages.git/tree/trunk/config.x86_64?h=packages/linux
 
- Documentation/devicetree/bindings/mfd/rk808.txt |  128 +++++++++++++++++++++++
- 1 file changed, 128 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/rk808.txt
+Ditto for SUSE.
 
-diff --git a/Documentation/devicetree/bindings/mfd/rk808.txt b/Documentation/devicetree/bindings/mfd/rk808.txt
-new file mode 100644
-index 0000000..876291d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/rk808.txt
-@@ -0,0 +1,128 @@
-+RK808 Power Management Integrated Circuit
-+
-+Required properties:
-+- compatible: "rockchip,rk808"
-+- reg: I2C slave address
-+- interrupt-parent: The parent interrupt controller.
-+- interrupts: the interrupt outputs of the controller.
-+- pinctrl-names: Should contain only one value - "default".
-+- pinctrl-0: Should specify pin control groups used for this controller.
-+- regulators: This is the list of child nodes that specify the regulator
-+  initialization data for defined regulators. Not all regulators for the given
-+  device need to be present. The definition for each of these nodes is defined
-+  using the standard binding for regulators found at
-+  Documentation/devicetree/bindings/regulator/regulator.txt.
-+
-+Optional properties:
-+- rockchip,system-power-controller: Telling whether or not this pmic is controlling
-+  the system power.
-+
-+Example:
-+rk808: pmic@1b {
-+	compatible = "rockchip,rk808";
-+	interrupt-parent = <&gpio0>;
-+	interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pmic_int>;
-+	reg = <0x1b>;
-+	rockchip,system-power-controller;
-+
-+		regulators {
-+			rk808_dcdc1_reg: DCDC_REG1 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <1200000>;
-+				regulator-name = "vdd_arm";
-+			};
-+
-+			rk808_dcdc2_reg: DCDC_REG2 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <850000>;
-+				regulator-max-microvolt = <1250000>;
-+				regulator-name = "vdd_gpu";
-+			};
-+
-+			rk808_dcdc3_reg: DCDC_REG3 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-name = "vdd_ddr";
-+			};
-+
-+			rk808_dcdc4_reg: DCDC_REG4 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+				regulator-name = "vccio";
-+			};
-+
-+			rk808_ldo1_reg: LDO_REG1 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+
-+			rk808_ldo2_reg: LDO_REG2 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+
-+			rk808_ldo3_reg: LDO_REG3 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+				regulator-name = "LDO_REG3";
-+			};
-+
-+			rk808_ldo4_reg: LDO_REG4 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			rk808_ldo5_reg: LDO_REG5 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+
-+			rk808_ldo6_reg: LDO_REG6 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <1000000>;
-+				regulator-max-microvolt = <1000000>;
-+			};
-+
-+			rk808_ldo7_reg: LDO_REG7 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
-+			};
-+
-+			rk808_ldo8_reg: LDO_REG8 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+				regulator-min-microvolt = <3300000>;
-+				regulator-max-microvolt = <3300000>;
-+			};
-+
-+			rk808_switch1_reg: SWITCH_REG1 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+
-+			rk808_switch2_reg: SWITCH_REG2 {
-+				regulator-always-on;
-+				regulator-boot-on;
-+			};
-+		};
-+	};
--- 
-1.7.9.5
+-Mike
 
 
