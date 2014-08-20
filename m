@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950AbaHTT0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:26:48 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:49641 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920AbaHTT0q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:26:46 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org (open list:WATCHDOG DEVICE D...),
-        linux-kernel@vger.kernel.org (open list)
-Cc: Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2] powerpc: booke_wdt: Fix build error as a module
-Date: Wed, 20 Aug 2014 15:26:46 -0400
-Message-Id: <1408562806-22950-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752997AbaHTT1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:27:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42805 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752975AbaHTT1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 15:27:01 -0400
+Date: Wed, 20 Aug 2014 21:23:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] mempolicy: remove the "task" arg of vma_policy_mof()
+	and simplify it
+Message-ID: <20140820192355.GE8524@redhat.com>
+References: <20140805194627.GA30693@redhat.com> <20140820192207.GA8524@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820192207.GA8524@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building booke_wdt fails when trying to build as a module as there is no
-early_param() in module. Fix by using module_param() instead of early_param().
+1. vma_policy_mof(task) is simply not safe unless task == current,
+   it can race with do_exit()->mpol_put(). Remove this arg and update
+   its single caller.
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-CC: Guenter Roeck <linux@roeck-us.net>
+2. vma can not be NULL, remove this check and simplify the code.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- drivers/watchdog/booke_wdt.c | 28 +++++-----------------------
- 1 file changed, 5 insertions(+), 23 deletions(-)
+ include/linux/mempolicy.h |    2 +-
+ kernel/sched/fair.c       |    2 +-
+ mm/mempolicy.c            |   25 +++++++++++--------------
+ 3 files changed, 13 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
-index 08a7853..e96b09b 100644
---- a/drivers/watchdog/booke_wdt.c
-+++ b/drivers/watchdog/booke_wdt.c
-@@ -30,8 +30,6 @@
-  * occur, and the final time the board will reset.
-  */
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index f230a97..5e4bfce 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -136,7 +136,7 @@ struct mempolicy *mpol_shared_policy_lookup(struct shared_policy *sp,
  
--u32 booke_wdt_enabled;
--u32 booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
+ struct mempolicy *get_vma_policy(struct task_struct *tsk,
+ 		struct vm_area_struct *vma, unsigned long addr);
+-bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma);
++bool vma_policy_mof(struct vm_area_struct *vma);
  
- #ifdef	CONFIG_PPC_FSL_BOOK3E
- #define WDTP(x)		((((x)&0x3)<<30)|(((x)&0x3c)<<15))
-@@ -41,27 +39,10 @@ u32 booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
- #define WDTP_MASK	(TCR_WP_MASK)
- #endif
+ extern void numa_default_policy(void);
+ extern void numa_policy_init(void);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index bfa3c86..82088b2 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1946,7 +1946,7 @@ void task_numa_work(struct callback_head *work)
+ 		vma = mm->mmap;
+ 	}
+ 	for (; vma; vma = vma->vm_next) {
+-		if (!vma_migratable(vma) || !vma_policy_mof(p, vma))
++		if (!vma_migratable(vma) || !vma_policy_mof(vma))
+ 			continue;
  
--/* Checks wdt=x and wdt_period=xx command-line option */
--notrace int __init early_parse_wdt(char *p)
--{
--	if (p && strncmp(p, "0", 1) != 0)
--		booke_wdt_enabled = 1;
+ 		/*
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index b86b08e..ad27bbc 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1646,27 +1646,24 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 	return pol;
+ }
+ 
+-bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma)
++bool vma_policy_mof(struct vm_area_struct *vma)
+ {
+-	struct mempolicy *pol = NULL;
 -
--	return 0;
--}
--early_param("wdt", early_parse_wdt);
--
--int __init early_parse_wdt_period(char *p)
--{
--	unsigned long ret;
--	if (p) {
--		if (!kstrtol(p, 0, &ret))
--			booke_wdt_period = ret;
--	}
--
--	return 0;
--}
--early_param("wdt_period", early_parse_wdt_period);
-+static bool booke_wdt_enabled;
-+module_param(booke_wdt_enabled, bool, 0);
-+static int  booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
-+module_param(booke_wdt_period, int, 0);
+-	if (vma) {
+-		if (vma->vm_ops && vma->vm_ops->get_policy) {
+-			bool ret = false;
++	struct mempolicy *pol;
  
- #ifdef CONFIG_PPC_FSL_BOOK3E
+-			pol = vma->vm_ops->get_policy(vma, vma->vm_start);
+-			if (pol && (pol->flags & MPOL_F_MOF))
+-				ret = true;
+-			mpol_cond_put(pol);
++	if (vma->vm_ops && vma->vm_ops->get_policy) {
++		bool ret = false;
  
-@@ -259,5 +240,6 @@ static int __init booke_wdt_init(void)
- module_init(booke_wdt_init);
- module_exit(booke_wdt_exit);
+-			return ret;
+-		}
++		pol = vma->vm_ops->get_policy(vma, vma->vm_start);
++		if (pol && (pol->flags & MPOL_F_MOF))
++			ret = true;
++		mpol_cond_put(pol);
  
-+MODULE_ALIAS("booke_wdt");
- MODULE_DESCRIPTION("PowerPC Book-E watchdog driver");
- MODULE_LICENSE("GPL");
+-		pol = vma->vm_policy;
++		return ret;
+ 	}
+ 
++	pol = vma->vm_policy;
+ 	if (!pol)
+-		pol = get_task_policy(task);
++		pol = get_task_policy(current);
+ 
+ 	return pol->flags & MPOL_F_MOF;
+ }
 -- 
-1.9.1
+1.5.5.1
+
 
