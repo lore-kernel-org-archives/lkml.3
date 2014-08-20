@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997AbaHTT1F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:27:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42805 "EHLO mx1.redhat.com"
+	id S1752788AbaHTT3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:29:23 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:46802 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752975AbaHTT1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:27:01 -0400
-Date: Wed, 20 Aug 2014 21:23:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] mempolicy: remove the "task" arg of vma_policy_mof()
-	and simplify it
-Message-ID: <20140820192355.GE8524@redhat.com>
-References: <20140805194627.GA30693@redhat.com> <20140820192207.GA8524@redhat.com>
+	id S1750734AbaHTT3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 15:29:22 -0400
+Date: Wed, 20 Aug 2014 19:29:20 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Nicolas Iooss <nicolas.iooss_linux@m4x.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        NeilBrown <neilb@suse.de>, Jason Baron <jbaron@akamai.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Amit Pundir <amit.pundir@linaro.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] eventpoll: fix uninitialized variable in epoll_ctl
+Message-ID: <20140820192920.GA25619@dcvr.yhbt.net>
+References: <1408469053-9262-1-git-send-email-nicolas.iooss_linux@m4x.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140820192207.GA8524@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1408469053-9262-1-git-send-email-nicolas.iooss_linux@m4x.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. vma_policy_mof(task) is simply not safe unless task == current,
-   it can race with do_exit()->mpol_put(). Remove this arg and update
-   its single caller.
+Nicolas Iooss <nicolas.iooss_linux@m4x.org> wrote:
+> When calling epoll_ctl with operation EPOLL_CTL_DEL, structure epds is
+> not initialized but ep_take_care_of_epollwakeup reads its event field.
+> When this unintialized field has EPOLLWAKEUP bit set, a capability check
+> is done for CAP_BLOCK_SUSPEND in ep_take_care_of_epollwakeup.  This
+> produces unexpected messages in the audit log, such as (on a system
+> running SELinux):
+> 
+>     type=AVC msg=audit(1408212798.866:410): avc:  denied
+>     { block_suspend } for  pid=7754 comm="dbus-daemon" capability=36
+>     scontext=unconfined_u:unconfined_r:unconfined_t
+>     tcontext=unconfined_u:unconfined_r:unconfined_t
+>     tclass=capability2 permissive=1
+> 
+>     type=SYSCALL msg=audit(1408212798.866:410): arch=c000003e syscall=233
+>     success=yes exit=0 a0=3 a1=2 a2=9 a3=7fffd4d66ec0 items=0 ppid=1
+>     pid=7754 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0
+>     fsgid=0 tty=(none) ses=3 comm="dbus-daemon"
+>     exe="/usr/bin/dbus-daemon"
+>     subj=unconfined_u:unconfined_r:unconfined_t key=(null)
+> 
+> ("arch=c000003e syscall=233 a1=2" means "epoll_ctl(op=EPOLL_CTL_DEL)")
+> 
+> Remove use of epds in epoll_ctl when op == EPOLL_CTL_DEL.
+> 
+> Fixes: 4d7e30d98939 ("epoll: Add a flag, EPOLLWAKEUP, to prevent suspend
+> while epoll events are ready")
+> Signed-off-by: Nicolas Iooss <nicolas.iooss_linux@m4x.org>
 
-2. vma can not be NULL, remove this check and simplify the code.
+Looks good to me.  Tested without regressions on several of my
+(non-EPOLLWAKEUP) projects.  Adding a few more folks to the Cc: list.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/mempolicy.h |    2 +-
- kernel/sched/fair.c       |    2 +-
- mm/mempolicy.c            |   25 +++++++++++--------------
- 3 files changed, 13 insertions(+), 16 deletions(-)
+Acked-by: Eric Wong <normalperson@yhbt.net>
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index f230a97..5e4bfce 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -136,7 +136,7 @@ struct mempolicy *mpol_shared_policy_lookup(struct shared_policy *sp,
- 
- struct mempolicy *get_vma_policy(struct task_struct *tsk,
- 		struct vm_area_struct *vma, unsigned long addr);
--bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma);
-+bool vma_policy_mof(struct vm_area_struct *vma);
- 
- extern void numa_default_policy(void);
- extern void numa_policy_init(void);
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bfa3c86..82088b2 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1946,7 +1946,7 @@ void task_numa_work(struct callback_head *work)
- 		vma = mm->mmap;
- 	}
- 	for (; vma; vma = vma->vm_next) {
--		if (!vma_migratable(vma) || !vma_policy_mof(p, vma))
-+		if (!vma_migratable(vma) || !vma_policy_mof(vma))
- 			continue;
- 
- 		/*
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index b86b08e..ad27bbc 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1646,27 +1646,24 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 	return pol;
- }
- 
--bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma)
-+bool vma_policy_mof(struct vm_area_struct *vma)
- {
--	struct mempolicy *pol = NULL;
--
--	if (vma) {
--		if (vma->vm_ops && vma->vm_ops->get_policy) {
--			bool ret = false;
-+	struct mempolicy *pol;
- 
--			pol = vma->vm_ops->get_policy(vma, vma->vm_start);
--			if (pol && (pol->flags & MPOL_F_MOF))
--				ret = true;
--			mpol_cond_put(pol);
-+	if (vma->vm_ops && vma->vm_ops->get_policy) {
-+		bool ret = false;
- 
--			return ret;
--		}
-+		pol = vma->vm_ops->get_policy(vma, vma->vm_start);
-+		if (pol && (pol->flags & MPOL_F_MOF))
-+			ret = true;
-+		mpol_cond_put(pol);
- 
--		pol = vma->vm_policy;
-+		return ret;
- 	}
- 
-+	pol = vma->vm_policy;
- 	if (!pol)
--		pol = get_task_policy(task);
-+		pol = get_task_policy(current);
- 
- 	return pol->flags & MPOL_F_MOF;
- }
--- 
-1.5.5.1
-
-
+> ---
+>  fs/eventpoll.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index b10b48c..7bcfff9 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -1852,7 +1852,8 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+>  		goto error_tgt_fput;
+>  
+>  	/* Check if EPOLLWAKEUP is allowed */
+> -	ep_take_care_of_epollwakeup(&epds);
+> +	if (ep_op_has_event(op))
+> +		ep_take_care_of_epollwakeup(&epds);
+>  
+>  	/*
+>  	 * We have to check that the file structure underneath the file descriptor
+> -- 
+> 1.7.10.4
