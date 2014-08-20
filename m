@@ -1,106 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaHTN5a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 09:57:30 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:61837 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaHTN52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 09:57:28 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-9f-53f4a9451678
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] thermal: samsung: Exynos5260 and Exynos5420 should not use
- TRIM_RELOAD flag
-Date: Wed, 20 Aug 2014 15:57:20 +0200
-Message-id: <1633286.4v5Jz9xi2j@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t9jAV3XlV+CDd79VLRouBpicff5YUaL
-	61+es1rMv3KN1eJs0xt2i8u75rBZfO49wmgx4/w+JosnD/vYHDg9ds66y+6xeM9LJo++LasY
-	PT5vkgtgieKySUnNySxLLdK3S+DKOL5zMlPBLdGK/uYXTA2Mp4W6GDk4JARMJD7PY+ti5AQy
-	xSQu3FsPZHNxCAksYpT4tugCK4TTwiQx899mZpAqNgEriYntqxhBbBEBLYkTl7YzgRQxC+xi
-	kph2ZwULSEJYIFHiXdd1sAYWAVWJbVs+g63gFdCUOL18K1hcVMBTYsf2lVBxQYkfk++B9TIL
-	yEvs2z+VFcLWkli/8zjTBEa+WUjKZiEpm4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT8
-	3E2M4PB9Jr2DcVWDxSFGAQ5GJR7eG4u+BAuxJpYVV+YeYpTgYFYS4W3vBArxpiRWVqUW5ccX
-	leakFh9ilOZgURLnPdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgnB69SN/9yga/5T69PTJyeVeY
-	d5+eZmu3ZtM2xfU8IccvM33L91i1SdOu5ZSi+NkvNyv3JS9LcvL0KAtdeSFpus2EZ563tPKv
-	R57s7tZ4pDJn7dF1s78FSdSte2/86/qynSkbuvtOntsfofMwhHnPUa68ySoKtR9ExDPC+6a2
-	vstbInzSQLDrqBJLcUaioRZzUXEiALlCQQ9bAgAA
+	id S1752129AbaHTOEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:04:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24962 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056AbaHTOEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 10:04:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,902,1400050800"; 
+   d="scan'208";a="590782843"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <53F487EB.7070703@oracle.com>
+References: <53F487EB.7070703@oracle.com>
+Subject: RE: mm: kernel BUG at mm/rmap.c:530
+Content-Transfer-Encoding: 7bit
+Message-Id: <20140820140247.C729CE00A3@blue.fi.intel.com>
+Date: Wed, 20 Aug 2014 17:02:47 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently these SoCs claim TRIM_RELOAD support but don't have
-triminfo_ctrl register address defined in their struct
-exynos_tmu_registers entries.  This causes incorrect write of
-value "1" to data->base + 0x00 address (which happens to be
-TRIMINFO register).  Additionally according to the documentation
-that I have neither Exynos5260 nor Exynos5420 support/require
-TRIM_RELOAD feature.  Thus fix the aforementioned issue by
-removing TMU_SUPPORT_TRIM_RELOAD flag for both Exynos5260 and
-Exynos5420.
+Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following spew:
+> 
+> [ 2581.180086] kernel BUG at mm/rmap.c:530!
 
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-v2:
-- enhanced patch description per Eduardo's request
+Page is mapped where it shouldn't be. Or vma/struct page/pgtable is corrupted.
+Basically, I have no idea what happend :-P
 
- drivers/thermal/samsung/exynos_tmu_data.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+We really should dump page and vma info there. It's strange we don't have
+dump_vma() helper yet.
 
-diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index aa8e0de..8c0ada2 100644
---- a/drivers/thermal/samsung/exynos_tmu_data.c
-+++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -359,9 +359,8 @@ static const struct exynos_tmu_registers exynos5260_tmu_registers = {
- #define EXYNOS5260_TMU_DATA \
- 	__EXYNOS5260_TMU_DATA \
- 	.type = SOC_ARCH_EXYNOS5260, \
--	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
--			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
--			TMU_SUPPORT_EMUL_TIME)
-+	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-+			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME)
- 
- struct exynos_tmu_init_data const exynos5260_default_tmu_data = {
- 	.tmu_data = {
-@@ -451,16 +450,15 @@ static const struct exynos_tmu_registers exynos5420_tmu_registers = {
- #define EXYNOS5420_TMU_DATA \
- 	__EXYNOS5420_TMU_DATA \
- 	.type = SOC_ARCH_EXYNOS5250, \
--	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
--			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
--			TMU_SUPPORT_EMUL_TIME)
-+	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-+			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME)
- 
- #define EXYNOS5420_TMU_DATA_SHARED \
- 	__EXYNOS5420_TMU_DATA \
- 	.type = SOC_ARCH_EXYNOS5420_TRIMINFO, \
--	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
--			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
--			TMU_SUPPORT_EMUL_TIME | TMU_SUPPORT_ADDRESS_MULTIPLE)
-+	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-+			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME | \
-+			TMU_SUPPORT_ADDRESS_MULTIPLE)
- 
- struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
- 	.tmu_data = {
+> [ 2581.180086] invalid opcode: 0000 [#1]
+> [ 2581.180086] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 2581.180086] Dumping ftrace buffer:
+> [ 2581.180086]    (ftrace buffer empty)
+> [ 2581.180086] Modules linked in:
+> [ 2581.180086] CPU: 13 PID: 8515 Comm: trinity-main Not tainted 3.16.0-next-20140815-sasha-00034-g615561b #1071
+> [ 2581.180086] task: ffff8804c1b30000 ti: ffff8804bd9e4000 task.ti: ffff8804bd9e4000
+> [ 2581.180086] RIP: rmap_walk (mm/rmap.c:530 mm/rmap.c:1675 mm/rmap.c:1707)
+> [ 2581.180086] RSP: 0018:ffff8804bd9e7bb8  EFLAGS: 00010206
+> [ 2581.180086] RAX: 0000000000000000 RBX: ffffea000b39e3c0 RCX: ffff8803c501fb18
+> [ 2581.180086] RDX: 00007fffffffd000 RSI: 00000007fffffffd RDI: ffffea000b39e3c0
+> [ 2581.180086] RBP: ffff8804bd9e7bf0 R08: ffff880254972200 R09: 0000000000000000
+> [ 2581.180086] R10: 0000000000000001 R11: 0000000000000008 R12: ffff8804bd9e7c00
+> [ 2581.180086] R13: ffff8801e2d40ff0 R14: 00000007fffffffd R15: ffff880254972200
+> [ 2581.180086] FS:  00007fb53e50d700(0000) GS:ffff8804ca200000(0000) knlGS:0000000000000000
+> [ 2581.180086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 2581.180086] CR2: 00000000025e5000 CR3: 00000004c19fa000 CR4: 00000000000006a0
+> [ 2581.180086] Stack:
+> [ 2581.180086]  ffff8804c125a400 ffff8804bd9e7bf8 ffffea000b39e3c0 ffffea0020b86cc0
+> [ 2581.180086]  0000000000000001 0000000000000000 0000000000000000 ffff8804bd9e7c30
+> [ 2581.180086]  ffffffffab30e7b1 ffffea0020b86cc0 ffffffffab30f050 0000000000000000
+> [ 2581.180086] Call Trace:
+> [ 2581.180086] remove_migration_ptes (mm/migrate.c:222)
+> [ 2581.180086] ? __migration_entry_wait.isra.25 (mm/migrate.c:107)
+> [ 2581.180086] ? remove_migration_pte (mm/migrate.c:193)
+> [ 2581.180086] move_to_new_page (mm/migrate.c:785)
+> [ 2581.180086] ? try_to_unmap (mm/rmap.c:1527)
+> [ 2581.180086] ? try_to_unmap_nonlinear (mm/rmap.c:1124)
+> [ 2581.180086] ? invalid_migration_vma (mm/rmap.c:1483)
+> [ 2581.273353] ? page_remove_rmap (mm/rmap.c:1391)
+> [ 2581.273353] migrate_pages (mm/migrate.c:916 mm/migrate.c:953 mm/migrate.c:1141)
+> [ 2581.273353] ? buffer_migrate_lock_buffers (mm/migrate.c:1589)
+> [ 2581.273353] migrate_misplaced_page (mm/migrate.c:1749)
+> [ 2581.273353] handle_mm_fault (mm/memory.c:3175 mm/memory.c:3228 mm/memory.c:3341 mm/memory.c:3370)
+> [ 2581.273353] ? __lock_is_held (kernel/locking/lockdep.c:3518)
+> [ 2581.273353] __do_page_fault (arch/x86/mm/fault.c:1231)
+> [ 2581.273353] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 2581.273353] ? vtime_account_user (kernel/sched/cputime.c:687)
+> [ 2581.273353] ? context_tracking_user_exit (kernel/context_tracking.c:184)
+> [ 2581.273353] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+> [ 2581.273353] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
+> [ 2581.273353] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:114 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
+> [ 2581.273353] do_async_page_fault (arch/x86/kernel/kvm.c:279)
+> [ 2581.273353] async_page_fault (arch/x86/kernel/entry_64.S:1313)
+> [ 2581.273353] Code: 17 02 00 00 49 8b 14 24 4c 89 ee 48 89 df ff d0 48 8b 7d c8 89 45 d0 e8 77 24 ee ff 8b 45 d0 e9 38 01 00 00 0f 1f 80 00 00 00 00 <0f> 0b 66 0f 1f 44 00 00 e8 3b ff 00 00 4c 8b 73 10 85 c0 0f 85
+> All code
+> ========
+>    0:	17                   	(bad)
+>    1:	02 00                	add    (%rax),%al
+>    3:	00 49 8b             	add    %cl,-0x75(%rcx)
+>    6:	14 24                	adc    $0x24,%al
+>    8:	4c 89 ee             	mov    %r13,%rsi
+>    b:	48 89 df             	mov    %rbx,%rdi
+>    e:	ff d0                	callq  *%rax
+>   10:	48 8b 7d c8          	mov    -0x38(%rbp),%rdi
+>   14:	89 45 d0             	mov    %eax,-0x30(%rbp)
+>   17:	e8 77 24 ee ff       	callq  0xffffffffffee2493
+>   1c:	8b 45 d0             	mov    -0x30(%rbp),%eax
+>   1f:	e9 38 01 00 00       	jmpq   0x15c
+>   24:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+>   2b:*	0f 0b                	ud2    		<-- trapping instruction
+>   2d:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+>   33:	e8 3b ff 00 00       	callq  0xff73
+>   38:	4c 8b 73 10          	mov    0x10(%rbx),%r14
+>   3c:	85 c0                	test   %eax,%eax
+>   3e:	0f                   	.byte 0xf
+>   3f:	85 00                	test   %eax,(%rax)
+> 
+> Code starting with the faulting instruction
+> ===========================================
+>    0:	0f 0b                	ud2
+>    2:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+>    8:	e8 3b ff 00 00       	callq  0xff48
+>    d:	4c 8b 73 10          	mov    0x10(%rbx),%r14
+>   11:	85 c0                	test   %eax,%eax
+>   13:	0f                   	.byte 0xf
+>   14:	85 00                	test   %eax,(%rax)
+> [ 2581.273353] RIP rmap_walk (mm/rmap.c:530 mm/rmap.c:1675 mm/rmap.c:1707)
+> [ 2581.273353]  RSP <ffff8804bd9e7bb8>
+> 
+> 
+> Thanks,
+> Sasha
+
 -- 
-1.8.2.3
-
-
+ Kirill A. Shutemov
