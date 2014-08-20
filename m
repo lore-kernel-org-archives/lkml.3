@@ -1,161 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775AbaHTLpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:45:08 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59058 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752638AbaHTLoM (ORCPT
+	id S1752893AbaHTLq2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:46:28 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:37845 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172AbaHTLqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:12 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andrey Ryabinin <ryabinin.a.a@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 035/104] net: sendmsg: fix NULL pointer dereference
-Date: Wed, 20 Aug 2014 13:42:58 +0200
-Message-Id: <2cf6a6ae722a13c73219a698f873955926252026.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 07:46:25 -0400
+Date: Wed, 20 Aug 2014 13:46:20 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, davem@davemloft.net, jasowang@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
+        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
+        xii@google.com, stephen@networkplumber.org
+Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
+ module_param
+Message-ID: <20140820114620.GC1916@nanopsycho.orion>
+References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
+ <1408369040-1216-3-git-send-email-pagupta@redhat.com>
+ <20140820105817.GB1916@nanopsycho.orion>
+ <20140820111724.GE17371@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820111724.GE17371@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Wed, Aug 20, 2014 at 01:17:24PM CEST, mst@redhat.com wrote:
+>On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
+>> Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
+>> > This patch publishes maximum number of tun/tap queues allocated as a
+>> > read_only module parameter which a user space application like libvirt
+>> > can make use of to limit maximum number of queues. Value of read_only
+>> > module parameter can be writable only at module load time. If no value is set
+>> > at module load time a default value 256 is used which is equal to maximum number
+>> > of vCPUS allowed by KVM.
+>> >
+>> > Administrator can specify maximum number of queues only at the driver
+>> > module load time.
+>> >
+>> >Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+>> >---
+>> > drivers/net/tun.c |   13 +++++++++++--
+>> > 1 files changed, 11 insertions(+), 2 deletions(-)
+>> >
+>> >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+>> >index acaaf67..1f518e2 100644
+>> >--- a/drivers/net/tun.c
+>> >+++ b/drivers/net/tun.c
+>> >@@ -119,6 +119,9 @@ struct tap_filter {
+>> > 
+>> > #define TUN_FLOW_EXPIRE (3 * HZ)
+>> > 
+>> >+static int max_tap_queues = MAX_TAP_QUEUES;
+>> >+module_param(max_tap_queues, int, S_IRUGO);
+>> 
+>> Please do not introduce new module paramaters. Please other ways to
+>> interchange values with userspace.
+>
+>I suggested this initially, but thinking more about it, I agree.
+>
+>It's a global limit (necessary to limit memory utilization by
+>userspace), but it should be possible to change it
+>after module load.
+>
+>Additionally, userspace that has the FD should be able to
+>retrieve the value without guessing that the FD is
+>for the tun device (and not e.g. macvtap).
+>To retrieve the value, an ioctl is probably the
+>cleanest approach.
+>
+>To set it, how about a sysctl? I think the limit can also apply to
+>all devices, not just tun.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Or netlink?
 
-===============
-
-[ Upstream commit 40eea803c6b2cfaab092f053248cbeab3f368412 ]
-
-Sasha's report:
-	> While fuzzing with trinity inside a KVM tools guest running the latest -next
-	> kernel with the KASAN patchset, I've stumbled on the following spew:
-	>
-	> [ 4448.949424] ==================================================================
-	> [ 4448.951737] AddressSanitizer: user-memory-access on address 0
-	> [ 4448.952988] Read of size 2 by thread T19638:
-	> [ 4448.954510] CPU: 28 PID: 19638 Comm: trinity-c76 Not tainted 3.16.0-rc4-next-20140711-sasha-00046-g07d3099-dirty #813
-	> [ 4448.956823]  ffff88046d86ca40 0000000000000000 ffff880082f37e78 ffff880082f37a40
-	> [ 4448.958233]  ffffffffb6e47068 ffff880082f37a68 ffff880082f37a58 ffffffffb242708d
-	> [ 4448.959552]  0000000000000000 ffff880082f37a88 ffffffffb24255b1 0000000000000000
-	> [ 4448.961266] Call Trace:
-	> [ 4448.963158] dump_stack (lib/dump_stack.c:52)
-	> [ 4448.964244] kasan_report_user_access (mm/kasan/report.c:184)
-	> [ 4448.965507] __asan_load2 (mm/kasan/kasan.c:352)
-	> [ 4448.966482] ? netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.967541] netlink_sendmsg (net/netlink/af_netlink.c:2339)
-	> [ 4448.968537] ? get_parent_ip (kernel/sched/core.c:2555)
-	> [ 4448.970103] sock_sendmsg (net/socket.c:654)
-	> [ 4448.971584] ? might_fault (mm/memory.c:3741)
-	> [ 4448.972526] ? might_fault (./arch/x86/include/asm/current.h:14 mm/memory.c:3740)
-	> [ 4448.973596] ? verify_iovec (net/core/iovec.c:64)
-	> [ 4448.974522] ___sys_sendmsg (net/socket.c:2096)
-	> [ 4448.975797] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-	> [ 4448.977030] ? lock_release_holdtime (kernel/locking/lockdep.c:273)
-	> [ 4448.978197] ? lock_release_non_nested (kernel/locking/lockdep.c:3434 (discriminator 1))
-	> [ 4448.979346] ? check_chain_key (kernel/locking/lockdep.c:2188)
-	> [ 4448.980535] __sys_sendmmsg (net/socket.c:2181)
-	> [ 4448.981592] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.982773] ? trace_hardirqs_on (kernel/locking/lockdep.c:2607)
-	> [ 4448.984458] ? syscall_trace_enter (arch/x86/kernel/ptrace.c:1500 (discriminator 2))
-	> [ 4448.985621] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2600)
-	> [ 4448.986754] SyS_sendmmsg (net/socket.c:2201)
-	> [ 4448.987708] tracesys (arch/x86/kernel/entry_64.S:542)
-	> [ 4448.988929] ==================================================================
-
-This reports means that we've come to netlink_sendmsg() with msg->msg_name == NULL and msg->msg_namelen > 0.
-
-After this report there was no usual "Unable to handle kernel NULL pointer dereference"
-and this gave me a clue that address 0 is mapped and contains valid socket address structure in it.
-
-This bug was introduced in f3d3342602f8bcbf37d7c46641cb9bca7618eb1c
-(net: rework recvmsg handler msg_name and msg_namelen logic).
-Commit message states that:
-	"Set msg->msg_name = NULL if user specified a NULL in msg_name but had a
-	 non-null msg_namelen in verify_iovec/verify_compat_iovec. This doesn't
-	 affect sendto as it would bail out earlier while trying to copy-in the
-	 address."
-But in fact this affects sendto when address 0 is mapped and contains
-socket address structure in it. In such case copy-in address will succeed,
-verify_iovec() function will successfully exit with msg->msg_namelen > 0
-and msg->msg_name == NULL.
-
-This patch fixes it by setting msg_namelen to 0 if msg_name == NULL.
-
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: <stable@vger.kernel.org>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/compat.c     | 9 +++++----
- net/core/iovec.c | 6 +++---
- 2 files changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/net/compat.c b/net/compat.c
-index f50161fb812e..cbc1a2a26587 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -85,7 +85,7 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
- {
- 	int tot_len;
- 
--	if (kern_msg->msg_namelen) {
-+	if (kern_msg->msg_name && kern_msg->msg_namelen) {
- 		if (mode == VERIFY_READ) {
- 			int err = move_addr_to_kernel(kern_msg->msg_name,
- 						      kern_msg->msg_namelen,
-@@ -93,10 +93,11 @@ int verify_compat_iovec(struct msghdr *kern_msg, struct iovec *kern_iov,
- 			if (err < 0)
- 				return err;
- 		}
--		if (kern_msg->msg_name)
--			kern_msg->msg_name = kern_address;
--	} else
-+		kern_msg->msg_name = kern_address;
-+	} else {
- 		kern_msg->msg_name = NULL;
-+		kern_msg->msg_namelen = 0;
-+	}
- 
- 	tot_len = iov_from_user_compat_to_kern(kern_iov,
- 					  (struct compat_iovec __user *)kern_msg->msg_iov,
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index 7d84ea1fbb20..dcf0bd5fbc20 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -39,7 +39,7 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
- {
- 	int size, ct, err;
- 
--	if (m->msg_namelen) {
-+	if (m->msg_name && m->msg_namelen) {
- 		if (mode == VERIFY_READ) {
- 			void __user *namep;
- 			namep = (void __user __force *) m->msg_name;
-@@ -48,10 +48,10 @@ int verify_iovec(struct msghdr *m, struct iovec *iov, struct sockaddr_storage *a
- 			if (err < 0)
- 				return err;
- 		}
--		if (m->msg_name)
--			m->msg_name = address;
-+		m->msg_name = address;
- 	} else {
- 		m->msg_name = NULL;
-+		m->msg_namelen = 0;
- 	}
- 
- 	size = m->msg_iovlen * sizeof(struct iovec);
--- 
-2.0.4
-
+>
+>-- 
+>MST
