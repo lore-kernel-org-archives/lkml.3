@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaHTMGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:06:07 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58935 "EHLO
+	id S1754359AbaHTMI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:08:26 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58910 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752527AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752505AbaHTLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:10 -0400
+	Wed, 20 Aug 2014 07:44:09 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 042/104] sctp: fix possible seqlock seadlock in sctp_packet_transmit()
-Date: Wed, 20 Aug 2014 13:43:05 +0200
-Message-Id: <76ae4fcb2283279d807fa56c10455f35ccc09e22.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 031/104] x86/espfix/xen: Fix allocation of pages for paravirt page tables
+Date: Wed, 20 Aug 2014 13:42:54 +0200
+Message-Id: <9377a0c19fd479731713fca0e653d9d0d55f4415.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -24,78 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
+commit 8762e5092828c4dc0f49da5a47a644c670df77f3 upstream.
 
-Dave reported following splat, caused by improper use of
-IP_INC_STATS_BH() in process context.
+init_espfix_ap() is currently off by one level when informing hypervisor
+that allocated pages will be used for ministacks' page tables.
 
-BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
-caller is __this_cpu_preempt_check+0x13/0x20
-CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
- ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
- 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
- ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
-Call Trace:
- [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
- [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
- [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
- [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
- [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
- [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
- [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
- [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
- [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
- [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
- [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
- [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
- [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
- [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
- [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
- [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
- [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
- [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
- [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
- [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
- [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
- [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
- [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
- [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
+The most immediate effect of this on a PV guest is that if
+'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
+will refuse to use it for a page table (which it shouldn't be anyway). This will
+result in warnings by both Xen and Linux.
 
-This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
-seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
-deadlock in ip6_finish_output2")
+More importantly, a subsequent write to that page (again, by a PV guest) is
+likely to result in fatal page fault.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/sctp/output.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/espfix_64.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index 319137340d15..2a41465729ab 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -606,7 +606,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+index 6afbb16e9b79..94d857fb1033 100644
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -175,7 +175,7 @@ void init_espfix_ap(void)
+ 	if (!pud_present(pud)) {
+ 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
+ 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
+ 			set_pud(&pud_p[n], pud);
+ 	}
+@@ -185,7 +185,7 @@ void init_espfix_ap(void)
+ 	if (!pmd_present(pmd)) {
+ 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
+ 			set_pmd(&pmd_p[n], pmd);
+ 	}
+@@ -193,7 +193,6 @@ void init_espfix_ap(void)
+ 	pte_p = pte_offset_kernel(&pmd, addr);
+ 	stack_page = (void *)__get_free_page(GFP_KERNEL);
+ 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
+-	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
+ 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
+ 		set_pte(&pte_p[n*PTE_STRIDE], pte);
  
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
 -- 
 2.0.4
 
