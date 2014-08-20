@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaHTSYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 14:24:38 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57036 "EHLO arroyo.ext.ti.com"
+	id S1752559AbaHTSZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 14:25:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30738 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851AbaHTSYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 14:24:36 -0400
-Date: Wed, 20 Aug 2014 13:24:06 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Griffin <peter.griffin@linaro.org>
-CC: Felipe Balbi <balbi@ti.com>, Lee Jones <lee.jones@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <maxime.coquelin@st.com>, <patrice.chotard@st.com>,
-        <srinivas.kandagatla@gmail.com>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <peppe.cavallaro@st.com>
-Subject: Re: [PATCH v2 1/3] usb: dwc3: add ST dwc3 glue layer to manage dwc3
- HC
-Message-ID: <20140820182405.GD6023@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1404541530-27856-1-git-send-email-peter.griffin@linaro.org>
- <1404541530-27856-2-git-send-email-peter.griffin@linaro.org>
- <20140707124627.GG6407@lee--X1>
- <20140722091800.GB8233@griffinp-ThinkPad-X1-Carbon-2nd>
- <20140722145711.GC20588@saruman.home>
- <20140723143323.GA26565@griffinp-ThinkPad-X1-Carbon-2nd>
+	id S1751468AbaHTSZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 14:25:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,903,1400050800"; 
+   d="scan'208";a="470878087"
+Subject: [PATCH] firmware: Automatically pull missing FW files
+To: linux-firmware@kernel.org
+From: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 20 Aug 2014 11:21:45 -0700
+Message-ID: <20140820182145.15596.86122.stgit@tstruk-mobl1>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UfEAyuTBtIjiZzX6"
-Content-Disposition: inline
-In-Reply-To: <20140723143323.GA26565@griffinp-ThinkPad-X1-Carbon-2nd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---UfEAyuTBtIjiZzX6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
+When a binary FW file is not present in the firmware dir then the build
+will fail. This patch enables auto-download any missing FW file for both shipped
+and external targets.
+Generated against linux-next.
 
-On Wed, Jul 23, 2014 at 03:33:23PM +0100, Peter Griffin wrote:
-> > > > > +	reset_control_assert(dwc3_data->rstc_pwrdn);
-> > > > > +
-> > > > > +	pinctrl_pm_select_sleep_state(dev);
-> >=20
-> > pinctrl will select sleep and default states automatically for you.
->=20
-> I've left this in v3, as greping around I couldn't see how that could
-> happen automatically.
->=20
-> Also I just double checked with linusw on irc who confirmed that the
-> only state which is ever auto-selected is "default". All other states,
-> as well as going back to default state need to be explicitly called.
->=20
-> Hope thats ok.
+Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
+---
+ firmware/Makefile |   25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
-yeah, that's fine. Thanks :-)
+diff --git a/firmware/Makefile b/firmware/Makefile
+index 5747417..3ad12f6 100644
+--- a/firmware/Makefile
++++ b/firmware/Makefile
+@@ -178,10 +178,31 @@ wordsize_deps := $(wildcard include/config/64bit.h include/config/32bit.h \
+ 		include/config/superh32.h include/config/superh64.h \
+ 		include/config/x86_32.h include/config/x86_64.h)
+ 
+-$(patsubst %,$(obj)/%.gen.S, $(fw-shipped-y)): %: $(wordsize_deps)
++FW_URL := git.kernel.org/cgit/linux/kernel/git/firmware/linux-firmware.git/plain
++
++.NOTPARALLEL: get_missing_external $(patsubst %,$(obj)/%.gen.S, $(fw-external-y))
++.NOTPARALLEL: get_missing_shipped $(patsubst %,$(obj)/%.gen.S, $(fw-shipped-y))
++
++get_missing_shipped:
++	@for file in $(fw-shipped-y) $(fw-shipped-m); do \
++		if [ ! -f $(obj)/$$file ]; then \
++			wget $(FW_URL)/$$file -o /dev/null -O $(obj)/$$file; \
++		fi; \
++	done;
++
++get_missing_external:
++	@for file in $(fw-external-y); do \
++		if [ ! -f $(obj)/$$file ]; then \
++			wget $(FW_URL)/$$file -o /dev/null -O $(obj)/$$file; \
++		fi; \
++	done;
++
++$(patsubst %,$(obj)/%.gen.S, $(fw-shipped-y)): %: $(wordsize_deps) \
++		get_missing_shipped
+ 	$(call cmd,fwbin,$(patsubst %.gen.S,%,$@))
++
+ $(patsubst %,$(obj)/%.gen.S, $(fw-external-y)): %: $(wordsize_deps) \
+-		include/config/extra/firmware/dir.h
++		include/config/extra/firmware/dir.h get_missing_external
+ 	$(call cmd,fwbin,$(fwabs)/$(patsubst $(obj)/%.gen.S,%,$@))
+ 
+ # The .o files depend on the binaries directly; the .S files don't.
 
---=20
-balbi
-
---UfEAyuTBtIjiZzX6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT9OfFAAoJEIaOsuA1yqRE7ZMP+QFujkPZLmG7pVG6EUWoixnW
-83+89d+QhI7lUlofX9cKV51O+xpsk/8bn28KyGwBfpYeKsv29ViSlDP29kBYLSQt
-DH1E3v4jgbGhgoHqqJGC+r1CIxGMtfWXo9onIPzpEJublS1tir+YdoGrHWd7nHW4
-lQvwLZ5k8MWKmPCjcJQCVBZU8C8SP9sZdf8CXqDsY/aTdnZETX2tvfve3IfMYper
-Ap5X4q3HYtSyrPWvbn+abpUWllJWv4yy2exMhKMR1IYD8gFcpEEoHZxK7mmwsdAV
-Yx0Gq//MC0lSFTQJvGzewEfNqmIhMWDLGcg/oJOYLnl32u0kuQva/xd67TAZTnAt
-QS64OKUoux/gkxhXrggHym+NTXZ9O/s4OQh5m9Y6pe1tLeB+grS23U8eYQBVmYo8
-xO96rVPkemgCJB+SR2PPOwvmO23WszkcJvdqtbzyXQ/6SLx2qd2RxTz8DnExfsd7
-xcmzduFXEofoM83kIaa4yOQSXGVH1UL+ijqFssK7UVxYe2hWvjxHS4CpxG7BQy9v
-N13Ia4mVgfyj76TTldGAiN2fUCuBxI1aW0+U0GX/aexZCyy7h/Bvzn49sjpfMU0h
-L++iNPeIsWwKUDjwYq5slEgSF5h7dZmz7Fp4xqfcjO4FVJY1m8+IQQAO3TZzwMQx
-r9bPL5oyUM5l9qWnW7Sz
-=bvi4
------END PGP SIGNATURE-----
-
---UfEAyuTBtIjiZzX6--
