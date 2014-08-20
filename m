@@ -1,128 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894AbaHTL7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:59:45 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58946 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752555AbaHTLoK (ORCPT
+	id S1753810AbaHTL7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:59:10 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53595 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793AbaHTL7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:10 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Bohac <jbohac@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 017/104] printk: rename printk_sched to printk_deferred
-Date: Wed, 20 Aug 2014 13:42:40 +0200
-Message-Id: <d6a1cfb5f64485010bb0429a7bcb899b96ee92e9.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 07:59:07 -0400
+Date: Wed, 20 Aug 2014 12:59:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Drake <drake@endlessm.com>, Tobias Jakobi <Liquid.Acid@gmx.net>,
+        Olof Johansson <olof@lixom.net>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: Re: [PATCH] mfd: max77686: make interrupts support optional
+Message-ID: <20140820115901.GJ4266@lee--X1>
+References: <1408516009-22106-1-git-send-email-m.szyprowski@samsung.com>
+ <20140820081909.GH4266@lee--X1>
+ <53F45C73.1030304@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53F45C73.1030304@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Stultz <john.stultz@linaro.org>
+On Wed, 20 Aug 2014, Javier Martinez Canillas wrote:
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+> Hello Lee, Marek,
+> 
+> On 08/20/2014 10:19 AM, Lee Jones wrote:
+> > On Wed, 20 Aug 2014, Marek Szyprowski wrote:
+> > 
+> >> Commit 6f1c1e71d93 ("mfd: max77686: Convert to use regmap_irq") broke
+> >> support for boards, which provide no irq for MAX 77686 PMIC. In such
+> >> case, not all functions of PMIC are available, but the driver still
+> >> should at least handle voltage regulators instead of failing to init.
+> >> This patch restores previous behavior.
+> >> 
+> >> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> >> ---
+> >> Hello,
+> >> 
+> >> This patch fixes booting issues with recently merged support for
+> >> Exynos4412 based Odroid X2/U3 boards. See
+> >> http://www.spinics.net/lists/linux-samsung-soc/msg35773.html
+> >> thread for more details.
+> >> 
+> >> Best regards
+> >> Marek Szyprowski
+> >> Samsung R&D Institute Poland
+> 
+> I already gave my opinion about this patch on thread:
+> 
+> "[PATCH v2 0/4] Add Exynos4412 based Odroid X2 and U2/U3/U3+ support"
+> 
+> where the issue was reported by Olof but I'll add it here as well for
+> completeness since I don't know if the same people are cc'ed on both threads.
+> 
+> Bartlomiej Zolnierkiewicz posted a similar patch [0] before but as I said
+> on that thread, I'm not sure if is correct to make that DT property
+> optional. Or rather, if we need to make it optional then we should also
+> change the Documentation/devicetree/bindings/mfd/max77686.txt that list
+> "interrupts" DT property as required.
+> 
+> It's true that before converting the max77686 to use the regmap irq API,
+> the driver was loose on that regard but max77686_irq_init() in
+> max77686-irq.c was returning -ENODEV when the IRQ was not provided and
+> that error code was not checked in max77686_i2c_probe() (which was a bug
+> IMHO).
+> 
+> More importantly I wonder if a design where a IRQ line is not connected to
+> the max77686 PMIC makes even sense. If such a design is possible then the
+> "interrupt" property should be made optional but if not then I think that
+> the driver should fail to probe in that case. Yes, it is a regression but
+> the Odroid DTS was not following the DT binding and was just lucky that
+> the driver was not checking the required DT properties.
+> 
+> Daniel Drake posted the correct fix for the Odroid DTS [1]. So I tend to
+> say that Daniel's fix should be added as a -rc fix and we should keep both
+> the max77686 driver and its DT binding as it is now but as I said, if from
+> a hardware point of view makes sense to leave that line unconnected then I
+> don't oppose to this change.
 
-===============
+I wasn't aware that this had already been discussed.
 
-commit aac74dc495456412c4130a1167ce4beb6c1f0b38 upstream.
+FWIW, I agree with everything you just said, so unless someone insists
+that the device can be functional without an IRQ line, I'm going to
+shelve (not accept) this patch.
 
-After learning we'll need some sort of deferred printk functionality in
-the timekeeping core, Peter suggested we rename the printk_sched function
-so it can be reused by needed subsystems.
+> [0]: https://lkml.org/lkml/2014/8/7/374
+> [1]:
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/272869.html
 
-This only changes the function name. No logic changes.
-
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Bohac <jbohac@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- include/linux/printk.h | 6 +++---
- kernel/printk/printk.c | 2 +-
- kernel/sched/core.c    | 2 +-
- kernel/sched/rt.c      | 2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 694925837a16..1864d94d1a89 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -124,9 +124,9 @@ asmlinkage __printf(1, 2) __cold
- int printk(const char *fmt, ...);
- 
- /*
-- * Special printk facility for scheduler use only, _DO_NOT_USE_ !
-+ * Special printk facility for scheduler/timekeeping use only, _DO_NOT_USE_ !
-  */
--__printf(1, 2) __cold int printk_sched(const char *fmt, ...);
-+__printf(1, 2) __cold int printk_deferred(const char *fmt, ...);
- 
- /*
-  * Please don't use printk_ratelimit(), because it shares ratelimiting state
-@@ -161,7 +161,7 @@ int printk(const char *s, ...)
- 	return 0;
- }
- static inline __printf(1, 2) __cold
--int printk_sched(const char *s, ...)
-+int printk_deferred(const char *s, ...)
- {
- 	return 0;
- }
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index c59896c65ac3..0f9149036885 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2470,7 +2470,7 @@ void wake_up_klogd(void)
- 	preempt_enable();
- }
- 
--int printk_sched(const char *fmt, ...)
-+int printk_deferred(const char *fmt, ...)
- {
- 	unsigned long flags;
- 	va_list args;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 07039cba59d9..f09e22163be3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1224,7 +1224,7 @@ out:
- 		 * leave kernel.
- 		 */
- 		if (p->mm && printk_ratelimit()) {
--			printk_sched("process %d (%s) no longer affine to cpu%d\n",
-+			printk_deferred("process %d (%s) no longer affine to cpu%d\n",
- 					task_pid_nr(p), p->comm, cpu);
- 		}
- 	}
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index ff04e1a06412..e849d4070c7f 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -829,7 +829,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
- 
- 			if (!once) {
- 				once = true;
--				printk_sched("sched: RT throttling activated\n");
-+				printk_deferred("sched: RT throttling activated\n");
- 			}
- 		} else {
- 			/*
 -- 
-2.0.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
