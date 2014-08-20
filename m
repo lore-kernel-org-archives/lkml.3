@@ -1,114 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989AbaHTNog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 09:44:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:36219 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898AbaHTNod (ORCPT
+	id S1753105AbaHTNoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 09:44:46 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:25646 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753014AbaHTNok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 09:44:33 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-9e-53f4a63fc7eb
+	Wed, 20 Aug 2014 09:44:40 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-02-53f4a6462315
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>,
         Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH/RFC v5 01/10] Documentation: leds: Add description of LED Flash
- Class extension
-Date: Wed, 20 Aug 2014 15:44:10 +0200
-Message-id: <1408542259-415-2-git-send-email-j.anaszewski@samsung.com>
+Subject: [PATCH/RFC v5 03/10] Documentation: leds: add exemplary asynchronous
+ mux driver
+Date: Wed, 20 Aug 2014 15:44:12 +0200
+Message-id: <1408542259-415-4-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1408542259-415-1-git-send-email-j.anaszewski@samsung.com>
 References: <1408542259-415-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jAV37ZV+CDc63SVhsnLGe1eLozolM
-	FvOPnGO16L36nNHibNMbdovLu+awWWx9s47RomfDVlaL3buesjpweuycdZfdY8/8H6wefVtW
-	MXp83iQXwBLFZZOSmpNZllqkb5fAlXGx6xlLwRWZipN/lrA3MG4S72Lk5JAQMJGY2/yXBcIW
-	k7hwbz1bFyMXh5DAIkaJIxOWMEI47UwSl/9eZgWpYhMwlPj54jUTiC0iUC7R8/4ZWAezwGpG
-	iTtbv4IVCQskSlz6cYAZxGYRUJU4f2M7O4jNK+Amce7UMaBmDqB1ChJzJtmAmJwC7hJb3quA
-	VAgBVZx+N5tlAiPvAkaGVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjB4fVMegfjqgaLQ4wC
-	HIxKPLw3Fn0JFmJNLCuuzD3EKMHBrCTC294JFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6
-	UEggPbEkNTs1tSC1CCbLxMEpBQweVZbUQ+3bpVbEGi//dzDuwewAjRj5Kq4nkRPl79yzN96x
-	qEYqKGN/8suatodmnvKyGscl+dWD7dZeunXY4oXwJiuZM78cz6xeaijyPil4ocO05uSErROP
-	Xg9+ZOEc/XNpiHL8hUt31CznNLzc/IO3su5rVlDjynVaJ3xnbuXauyGu2mKj8EslluKMREMt
-	5qLiRAAFHViPKwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jAV23ZV+CDdafl7XYOGM9q8XRnROZ
+	LOYfOcdq0Xv1OaPF2aY37BaXd81hs9j6Zh2jRc+GrawWu3c9ZXXg9Ng56y67x575P1g9+ras
+	YvT4vEkugCWKyyYlNSezLLVI3y6BK6N1y1XmgifCFT9PH2ZrYHwh0MXIySEhYCKx4fxrNghb
+	TOLCvfVANheHkMAiRomru26xQzjtTBIvZ/aDVbEJGEr8fPGaCcQWESiX6Hn/DKyDWWA1o8Sd
+	rV9ZQRLCAlESnz/MZwGxWQRUJbruTmcHsXkF3CRuTJjC2MXIAbROQWLOJBsQk1PAXWLLexWQ
+	CiGgitPvZrNMYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4vJ5J7WBc2WBxiFGA
+	g1GJh7dhwZdgIdbEsuLK3EOMEhzMSiK87Z1AId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0D
+	hQTSE0tSs1NTC1KLYLJMHJxSDYxbrvh8DY56cXSG7pUljFbnvz9LeFJ3uedy0yvBP0kq9Qce
+	nV/wtTr4maj3C+MbZkeuJT3iS/07+9kO82j3yU/qGdK+fE9O3bgoUZvZev2ySRLdU18cfztZ
+	ZDFP2wJNKc0DL1dsSuIzKpxYs6JJY3aI75UvR22NpfLVK5aE/sk4LFCtfUf3881/SizFGYmG
+	WsxFxYkALxuqgysCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation being added contains overall description of the
-LED Flash Class and the related sysfs attributes. There are also
-chapters devoted specifically to the Flash Manager feature.
+Exemplary driver showing usage of the Flash Manager API
+for registering/unregistering asynchronous multiplexers
 
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Bryan Wu <cooloney@gmail.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- Documentation/leds/leds-class-flash.txt |   54 +++++++++++++++++++++++++++++++
- 1 file changed, 54 insertions(+)
- create mode 100644 Documentation/leds/leds-class-flash.txt
+ Documentation/leds/leds-async-mux.c |   65 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 Documentation/leds/leds-async-mux.c
 
-diff --git a/Documentation/leds/leds-class-flash.txt b/Documentation/leds/leds-class-flash.txt
+diff --git a/Documentation/leds/leds-async-mux.c b/Documentation/leds/leds-async-mux.c
 new file mode 100644
-index 0000000..8a9c17e
+index 0000000..ee35d2f
 --- /dev/null
-+++ b/Documentation/leds/leds-class-flash.txt
-@@ -0,0 +1,54 @@
++++ b/Documentation/leds/leds-async-mux.c
+@@ -0,0 +1,65 @@
++/*
++ * Exemplary driver showing usage of the Flash Manager API
++ * for registering/unregistering asynchronous multiplexers.
++ *
++ *	Copyright (C) 2014, Samsung Electronics Co., Ltd.
++ *	Author: Jacek Anaszewski <j.anaszewski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ */
 +
-+Flash LED handling under Linux
-+==============================
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/led-class-flash.h>
++#include <linux/led-flash-manager.h>
++#include <linux/leds.h>
++#include <linux/of.h>
 +
-+Some LED devices support two modes - torch and flash. In order to enable
-+support for flash LEDs CONFIG_LEDS_CLASS_FLASH symbol must be defined
-+in the kernel config. A flash LED driver must register in the LED subsystem
-+with led_classdev_flash_register to gain flash capabilities.
++static int led_async_mux_select_line(u32 line_id, void *mux)
++{
++	pr_info("led_async_mux_select_line line_id: %d\n", line_id);
++	return 0;
++}
 +
-+Following sysfs attributes are exposed for controlling flash led devices:
++struct led_flash_mux_ops mux_ops = {
++	.select_line = led_async_mux_select_line,
++};
 +
-+	- flash_brightness - flash LED brightness in microamperes (RW)
-+	- max_flash_brightness - maximum available flash LED brightness (RO)
-+	- indicator_brightness - privacy LED brightness in microamperes (RW)
-+	- max_indicator_brightness - maximum privacy LED brightness in
-+				     microamperes (RO)
-+	- flash_timeout - flash strobe duration in microseconds (RW)
-+	- max_flash_timeout - maximum available flash strobe duration (RO)
-+	- flash_strobe - flash strobe state (RW)
-+	- external_strobe - some devices expose dedicated hardware pins for
-+			    triggering a flash LED - this attribute allows to
-+			    set this mode (RW)
-+	- flash_fault - bitmask of flash faults that may have occurred,
-+			possible flags are:
-+		* 0x01 - flash controller voltage to the flash LED has exceeded
-+			 the limit specific to the flash controller
-+		* 0x02 - the flash strobe was still on when the timeout set by
-+			 the user has expired; not all flash controllers may
-+			 set this in all such conditions
-+		* 0x04 - the flash controller has overheated
-+		* 0x08 - the short circuit protection of the flash controller
-+			 has been triggered
-+		* 0x10 - current in the LED power supply has exceeded the limit
-+			 specific to the flash controller
-+		* 0x40 - flash controller voltage to the flash LED has been
-+			 below the minimum limit specific to the flash
-+		* 0x80 - the input voltage of the flash controller is below
-+			 the limit under which strobing the flash at full
-+			 current will not be possible. The condition persists
-+			 until this flag is no longer set
-+		* 0x100 - the temperature of the LED has exceeded its allowed
-+			  upper limit
++static int led_async_mux_probe(struct platform_device *pdev)
++{
++	struct led_flash_mux mux;
 +
-+A LED subsystem driver can be controlled also from the level of VideoForLinux2
-+subsystem. In order to enable this CONFIG_V4L2_FLASH_LED_CLASS symbol has to
-+be defined in the kernel config. The driver must call v4l2_flash_init function
-+to get registered in the V4L2 subsystem. On remove v4l2_flash_release function
-+has to be called (see <media/v4l2-flash.h>).
++	mux.ops = &mux_ops;
++	mux.owner = THIS_MODULE;
++	mux.node = pdev->dev->of_node;
 +
-+After proper initialization V4L2 Flash sub-device is created. The sub-device
-+exposes a number of V4L2 controls. When the V4L2_CID_FLASH_LED_MODE control
-+is set to V4L2_FLASH_LED_MODE_TORCH or V4L2_FLASH_LED_MODE_FLASH the
-+LED subsystem sysfs interface becomes unavailable. The interface can be
-+unlocked by setting the mode back to V4L2_FLASH_LED_MODE_NONE.
++	return led_flash_manager_bind_async_mux(&mux);
++}
++
++static int led_async_mux_remove(struct platform_device *pdev)
++{
++	return led_flash_manager_unbind_async_mux(pdev->dev->of_node);
++}
++
++static struct of_device_id led_async_mux_dt_match[] = {
++	{.compatible = "led-async-mux"},
++	{},
++};
++
++static struct platform_driver led_async_mux_driver = {
++	.probe		= led_async_mux_probe,
++	.remove		= led_async_mux_remove,
++	.driver		= {
++		.name		= "led-async-mux",
++		.owner		= THIS_MODULE,
++		.of_match_table = led_async_mux_dt_match,
++	},
++};
++
++module_platform_driver(led_async_mux_driver);
++
++MODULE_AUTHOR("Jacek Anaszewski <j.anaszewski@samsung.com>");
++MODULE_DESCRIPTION("LED async mux");
++MODULE_LICENSE("GPL");
 -- 
 1.7.9.5
 
