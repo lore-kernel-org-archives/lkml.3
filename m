@@ -1,199 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694AbaHTMPG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:15:06 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:30951 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbaHTMPD (ORCPT
+	id S1754745AbaHTMQL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:16:11 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59575 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752252AbaHTMQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:15:03 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-79-53f49143e20d
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rui.zhang@intel.com, eduardo.valentin@ti.com, amit.daniel@samsung.com,
-        kgene.kim@samsung.com, t.figa@samsung.com, l.majewski@samsung.com,
-        ch.naveen@samsung.com, kyungmin.park@samsung.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eduardo Valentin <edubezval@gmail.com>
-Subject: Re: [PATCHv3] thermal: exynos: Add support for TRIM_RELOAD feature at
- Exynos3250
-Date: Wed, 20 Aug 2014 14:14:52 +0200
-Message-id: <1706216.YJ4TzvQvn4@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1408492364-8012-1-git-send-email-cw00.choi@samsung.com>
-References: <1408450078-6296-1-git-send-email-cw00.choi@samsung.com>
- <1408492364-8012-1-git-send-email-cw00.choi@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+xgK7zxC/BBlseqFg0XA2xuPv8MKPF
-	9S/PWS3mHznHarFm/08mi/lXrrFa9C64ymZxtukNu8Wbh5sZLTY9Bopd3jWHzeJz7xFGixnn
-	9zFZPHnYx2axfsZrFgd+j52z7rJ7LN7zkslj85J6j74tqxg9jt/YzuTxeZNcAFsUl01Kak5m
-	WWqRvl0CV8akTdcZC+YbVvzf/ZGxgXGWZhcjJ4eEgInEs3tbmSFsMYkL99azdTFycQgJLGKU
-	6Pn/iAnCaWGS+NvyjBWkik3ASmJi+ypGEFtEQENi5t8rjCBFzAK9zBL7Tm1iB0kIC0RLLL/R
-	ygZiswioSkzdMwGsmVdAU2La3PVgtqiAp8SO7SvBajgFXCVO9F8Cs4UE6iXmfDgOVS8o8WPy
-	PRYQm1lAXmLf/qmsELaOxP7WaWwTGAVmISmbhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoTc4tL
-	89L1kvNzNzGC4+eZ1A7GlQ0WhxgFOBiVeHgVsj8HC7EmlhVX5h5ilOBgVhLhbe/8EizEm5JY
-	WZValB9fVJqTWnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBccI+kwyPrNArL64U
-	hl3u4Vc9rmEnerP2qs3xg3edZY7M0Cl8s37Xxah+FuuzmpLpr4UeBOdNm7iRIUKrav25w1Ln
-	Lkirv2q5E1J+pfnTvPv6at+ijau/sj935Pp0qErul5i5tEv/9BUBWjM8Y5y3p65ZrL1G3OS4
-	f9zOT5cf5Sr4WKzY9LPqnxJLcUaioRZzUXEiAPMZhFKbAgAA
+	Wed, 20 Aug 2014 08:16:07 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 062/104] mm: hugetlb: fix copy_hugetlb_page_range()
+Date: Wed, 20 Aug 2014 13:43:25 +0200
+Message-Id: <14caac0809872e49094ecd8ee6412759222a218f.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-Hi,
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-On Wednesday, August 20, 2014 08:52:44 AM Chanwoo Choi wrote:
-> This patch add support for TRIM_RELOAD feature at Exynos3250. The TMU of
-> Exynos3250 has two TRIMINFO_CON register.
+===============
 
-This patch also silently fixes wrong behavior of the Exynos thermal
-driver and TRIM_RELOAD feature for Exynos5260 and Exynos5420.  Currently
-these SoCs claim TRIM_RELOAD support but don't have triminfo_ctrl
-register address defined in their struct exynos_tmu_registers entries.
-This causes write of value "1" to data->base + 0x00 address (which
-happens to be TRIMINFO register).  Your patch doesn't define
-triminfo_reload_count on all SoCs that use TRIM_RELOAD flag so wrong
-write to TRIMINFO register no longer happens but I think that it would
-be the best to fix it explicitly by removing TRIM_RELOAD flag for
-Exynos5260 and Exynos5420 in a pre-patch to your patch, please see:
+commit 0253d634e0803a8376a0d88efee0bf523d8673f9 upstream.
 
-	https://lkml.org/lkml/2014/8/20/334
+Commit 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry") changed the order of
+huge_ptep_set_wrprotect() and huge_ptep_get(), which leads to breakage
+in some workloads like hugepage-backed heap allocation via libhugetlbfs.
+This patch fixes it.
 
-One other issue with your patch is that it modifies struct
-exynos_tmu_registers and struct exynos_tmu_platform_data without
-updating corresponding documentation.  Please fix it.
+The test program for the problem is shown below:
 
-Otherwise it looks fine to me.
+  $ cat heap.c
+  #include <unistd.h>
+  #include <stdlib.h>
+  #include <string.h>
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
- 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Eduardo Valentin <edubezval@gmail.com>
-> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> ---
-> Changes from v2:
-> - Fix build break because of missing 'or' operation.
-> Changes from v1:
-> - Add missing 'TMU_SUPPORT_TRIM_RELOAD' feature
-> 
->  drivers/thermal/samsung/exynos_tmu.c      |  7 +++++--
->  drivers/thermal/samsung/exynos_tmu.h      |  5 +++--
->  drivers/thermal/samsung/exynos_tmu_data.c | 11 +++++++++--
->  drivers/thermal/samsung/exynos_tmu_data.h |  7 +++++--
->  4 files changed, 22 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index acbff14..ed01606 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -164,8 +164,11 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
->  		}
->  	}
->  
-> -	if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
-> -		__raw_writel(1, data->base + reg->triminfo_ctrl);
-> +	if (TMU_SUPPORTS(pdata, TRIM_RELOAD)) {
-> +		for (i = 0; i < pdata->triminfo_reload_count; i++)
-> +			__raw_writel(pdata->triminfo_reload[i],
-> +					data->base + reg->triminfo_ctrl[i]);
-> +	}
->  
->  	if (pdata->cal_mode == HW_MODE)
->  		goto skip_calib_data;
-> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-> index 1b4a644..72cb54e 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.h
-> +++ b/drivers/thermal/samsung/exynos_tmu.h
-> @@ -151,8 +151,7 @@ struct exynos_tmu_registers {
->  	u32	triminfo_25_shift;
->  	u32	triminfo_85_shift;
->  
-> -	u32	triminfo_ctrl;
-> -	u32	triminfo_ctrl1;
-> +	u32	triminfo_ctrl[2];
->  	u32	triminfo_reload_shift;
->  
->  	u32	tmu_ctrl;
-> @@ -295,6 +294,8 @@ struct exynos_tmu_platform_data {
->  	u8 second_point_trim;
->  	u8 default_temp_offset;
->  	u8 test_mux;
-> +	u8 triminfo_reload[2];
-> +	u8 triminfo_reload_count;
->  
->  	enum calibration_type cal_type;
->  	enum calibration_mode cal_mode;
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index aa8e0de..8cd609c 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -95,6 +95,8 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
->  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
->  	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
->  	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-> +	.triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON1,
-> +	.triminfo_ctrl[1] = EXYNOS_TMU_TRIMINFO_CON2,
->  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->  	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
->  	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
-> @@ -160,8 +162,11 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
->  		.temp_level = 95, \
->  	}, \
->  	.freq_tab_count = 2, \
-> +	.triminfo_reload[0] = 0x1, \
-> +	.triminfo_reload[1] = 0x11, \
-> +	.triminfo_reload_count = 2, \
->  	.registers = &exynos3250_tmu_registers, \
-> -	.features = (TMU_SUPPORT_EMULATION | \
-> +	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
->  			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
->  			TMU_SUPPORT_EMUL_TIME)
->  #endif
-> @@ -184,7 +189,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
->  	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
->  	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
-> -	.triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
-> +	.triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON2,
->  	.triminfo_reload_shift = EXYNOS_TRIMINFO_RELOAD_SHIFT,
->  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
->  	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
-> @@ -252,6 +257,8 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
->  		.temp_level = 95, \
->  	}, \
->  	.freq_tab_count = 2, \
-> +	.triminfo_reload[0] = 0x1, \
-> +	.triminfo_reload_count = 1, \
->  	.registers = &exynos4412_tmu_registers, \
->  	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
->  			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-> index f0979e5..e0536c3 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.h
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-> @@ -57,8 +57,11 @@
->  #define EXYNOS4210_TMU_TRIG_LEVEL_MASK	0x1111
->  #define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
->  
-> -/* Exynos5250 and Exynos4412 specific registers */
-> -#define EXYNOS_TMU_TRIMINFO_CON	0x14
-> +/* Exynos3250 specific registers */
-> +#define EXYNOS_TMU_TRIMINFO_CON1	0x10
-> +
-> +/* Exynos5250, Exynos4412 and Exynos3250 specific registers */
-> +#define EXYNOS_TMU_TRIMINFO_CON2	0x14
->  #define EXYNOS_THD_TEMP_RISE		0x50
->  #define EXYNOS_THD_TEMP_FALL		0x54
->  #define EXYNOS_EMUL_CON		0x80
+  #define HPS 0x200000
+
+  int main() {
+  	int i;
+  	char *p = malloc(HPS);
+  	memset(p, '1', HPS);
+  	for (i = 0; i < 5; i++) {
+  		if (!fork()) {
+  			memset(p, '2', HPS);
+  			p = malloc(HPS);
+  			memset(p, '3', HPS);
+  			free(p);
+  			return 0;
+  		}
+  	}
+  	sleep(1);
+  	free(p);
+  	return 0;
+  }
+
+  $ export HUGETLB_MORECORE=yes ; export HUGETLB_NO_PREFAULT= ; hugectl --heap ./heap
+
+Fixes 4a705fef9862 ("hugetlb: fix copy_hugetlb_page_range() to handle
+migration/hwpoisoned entry"), so is applicable to -stable kernels which
+include it.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Guillaume Morin <guillaume@morinfr.org>
+Suggested-by: Guillaume Morin <guillaume@morinfr.org>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: <stable@vger.kernel.org>	[2.6.37+]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ mm/hugetlb.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 11c2b7fed052..f80b17106d24 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2453,6 +2453,7 @@ int copy_hugetlb_page_range(struct mm_struct *dst, struct mm_struct *src,
+ 		} else {
+ 			if (cow)
+ 				huge_ptep_set_wrprotect(src, addr, src_pte);
++			entry = huge_ptep_get(src_pte);
+ 			ptepage = pte_page(entry);
+ 			get_page(ptepage);
+ 			page_dup_rmap(ptepage);
+-- 
+2.0.4
 
