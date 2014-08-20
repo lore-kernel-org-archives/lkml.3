@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745AbaHTNZI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 09:25:08 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:54659 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaHTNZG (ORCPT
+	id S1751895AbaHTNZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 09:25:39 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:46186 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbaHTNZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 09:25:06 -0400
-Date: Wed, 20 Aug 2014 09:24:57 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] thermal: samsung: Exynos5260 and Exynos5420 should not
- use TRIM_RELOAD flag
-Message-ID: <20140820132457.GA15735@developer>
-References: <6263189.obPAjoFMg7@amdc1032>
+	Wed, 20 Aug 2014 09:25:37 -0400
+Date: Wed, 20 Aug 2014 06:25:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        "open list:WATCHDOG DEVICE D..." <linux-watchdog@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] booke_wdt: Fix build failure as a module
+Message-ID: <20140820132527.GB8664@roeck-us.net>
+References: <1408504328-11324-1-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6263189.obPAjoFMg7@amdc1032>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1408504328-11324-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bartlomiej,
-
-On Wed, Aug 20, 2014 at 02:04:18PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> Currently these SoCs claim TRIM_RELOAD support but don't have
-> triminfo_ctrl register address defined in their struct
-> exynos_tmu_registers entries.  This causes incorrect write of
-> value "1" to data->base + 0x00 address (which happens to be
-> TRIMINFO register).  Fix it by removing TMU_SUPPORT_TRIM_RELOAD
-> flag for Exynos5260 and Exynos5420
-
-Do the Exynos5260 and Exynos5420 hardwares support TRIM_RELOAD?
-
-Based on the above description, you state that they lack the definition
-in their struct exynos_tmu_register. But that does not mean necessarily
-that they do not support it right?
-
-If they support the TRIM_RELOAD feature, then please add the proper
-triminfo_ctrl entry in their exynos_tmu_registers.
-
-But If they do not support TRIM_RELOAD, please, keep the changes below,
-but improve the commit message, simply stating that these SoC do not
-support TRIM_RELOAD.
-
+On Tue, Aug 19, 2014 at 11:12:07PM -0400, Pranith Kumar wrote:
+> Building booke_wdt fails when trying to build as a module as there is no
+> early_param() in module. Fix by enclosing within MODULE check.
 > 
-> Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Cc: Chanwoo Choi <cw00.choi@samsung.com>
-> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Might make more sense to replace the early_param with a normal module parameter.
+Taking the module parameter away if the driver is built as module seems to be
+a bit excessive.
+
+Any idea why early_param was chosen over a standard module parameter ?
+
+Guenter
+
+> Also remove notrace attribute as it is implicit in the __init attribute.
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 > ---
->  drivers/thermal/samsung/exynos_tmu_data.c | 16 +++++++---------
->  1 file changed, 7 insertions(+), 9 deletions(-)
+>  drivers/watchdog/booke_wdt.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-> index aa8e0de..8c0ada2 100644
-> --- a/drivers/thermal/samsung/exynos_tmu_data.c
-> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-> @@ -359,9 +359,8 @@ static const struct exynos_tmu_registers exynos5260_tmu_registers = {
->  #define EXYNOS5260_TMU_DATA \
->  	__EXYNOS5260_TMU_DATA \
->  	.type = SOC_ARCH_EXYNOS5260, \
-> -	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
-> -			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-> -			TMU_SUPPORT_EMUL_TIME)
-> +	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-> +			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME)
+> diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
+> index 08a7853..8a26b54 100644
+> --- a/drivers/watchdog/booke_wdt.c
+> +++ b/drivers/watchdog/booke_wdt.c
+> @@ -41,8 +41,9 @@ u32 booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
+>  #define WDTP_MASK	(TCR_WP_MASK)
+>  #endif
 >  
->  struct exynos_tmu_init_data const exynos5260_default_tmu_data = {
->  	.tmu_data = {
-> @@ -451,16 +450,15 @@ static const struct exynos_tmu_registers exynos5420_tmu_registers = {
->  #define EXYNOS5420_TMU_DATA \
->  	__EXYNOS5420_TMU_DATA \
->  	.type = SOC_ARCH_EXYNOS5250, \
-> -	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
-> -			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-> -			TMU_SUPPORT_EMUL_TIME)
-> +	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-> +			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME)
+> +#ifndef MODULE
+>  /* Checks wdt=x and wdt_period=xx command-line option */
+> -notrace int __init early_parse_wdt(char *p)
+> +int __init early_parse_wdt(char *p)
+>  {
+>  	if (p && strncmp(p, "0", 1) != 0)
+>  		booke_wdt_enabled = 1;
+> @@ -63,6 +64,8 @@ int __init early_parse_wdt_period(char *p)
+>  }
+>  early_param("wdt_period", early_parse_wdt_period);
 >  
->  #define EXYNOS5420_TMU_DATA_SHARED \
->  	__EXYNOS5420_TMU_DATA \
->  	.type = SOC_ARCH_EXYNOS5420_TRIMINFO, \
-> -	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
-> -			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
-> -			TMU_SUPPORT_EMUL_TIME | TMU_SUPPORT_ADDRESS_MULTIPLE)
-> +	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
-> +			TMU_SUPPORT_READY_STATUS | TMU_SUPPORT_EMUL_TIME | \
-> +			TMU_SUPPORT_ADDRESS_MULTIPLE)
+> +#endif /* #ifndef MODULE */
+> +
+>  #ifdef CONFIG_PPC_FSL_BOOK3E
 >  
->  struct exynos_tmu_init_data const exynos5420_default_tmu_data = {
->  	.tmu_data = {
+>  /* For the specified period, determine the number of seconds
 > -- 
-> 1.8.2.3
+> 1.9.1
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
