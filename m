@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649AbaHTRoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 13:44:24 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:43666 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaHTRoW (ORCPT
+	id S1752205AbaHTRu0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 13:50:26 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:37335 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643AbaHTRuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 13:44:22 -0400
-Date: Wed, 20 Aug 2014 23:14:10 +0530
+	Wed, 20 Aug 2014 13:50:24 -0400
+Date: Wed, 20 Aug 2014 23:20:09 +0530
 From: Himangi Saraogi <himangi774@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH] ipconfig: Use time_before
-Message-ID: <20140820174410.GA4225@himangi-Dell>
+Subject: [PATCH] decnet: Use time_after_eq
+Message-ID: <20140820175009.GA4316@himangi-Dell>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -35,29 +32,36 @@ is as follows:
 @change@
 expression E1,E2;
 @@
-- jiffies - E1 < E2
-+ time_before(jiffies, E1+E2)
+- (jiffies - E1) >= E2
++ time_after_eq(jiffies, E1+E2)
 
 Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 ---
- net/ipv4/ipconfig.c | 3 ++-
+ net/decnet/dn_timer.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index 5bbef4f..648fa14 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -262,7 +262,8 @@ static int __init ic_open_devs(void)
- 	/* wait for a carrier on at least one device */
- 	start = jiffies;
- 	next_msg = start + msecs_to_jiffies(CONF_CARRIER_TIMEOUT/12);
--	while (jiffies - start < msecs_to_jiffies(CONF_CARRIER_TIMEOUT)) {
-+	while (time_before(jiffies, start +
-+			   msecs_to_jiffies(CONF_CARRIER_TIMEOUT))) {
- 		int wait, elapsed;
+diff --git a/net/decnet/dn_timer.c b/net/decnet/dn_timer.c
+index d9c150c..1d330fd 100644
+--- a/net/decnet/dn_timer.c
++++ b/net/decnet/dn_timer.c
+@@ -23,6 +23,7 @@
+ #include <linux/spinlock.h>
+ #include <net/sock.h>
+ #include <linux/atomic.h>
++#include <linux/jiffies.h>
+ #include <net/flow.h>
+ #include <net/dn.h>
  
- 		for_each_netdev(&init_net, dev)
+@@ -91,7 +92,7 @@ static void dn_slow_timer(unsigned long arg)
+ 	 * since the last successful transmission.
+ 	 */
+ 	if (scp->keepalive && scp->keepalive_fxn && (scp->state == DN_RUN)) {
+-		if ((jiffies - scp->stamp) >= scp->keepalive)
++		if (time_after_eq(jiffies, scp->stamp + scp->keepalive))
+ 			scp->keepalive_fxn(sk);
+ 	}
+ 
 -- 
 1.9.1
 
