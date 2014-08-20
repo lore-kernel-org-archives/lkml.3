@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbaHTTrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:47:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:51684 "EHLO ozlabs.org"
+	id S1752872AbaHTTrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:47:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:45265 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaHTTrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751610AbaHTTrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 15:47:04 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Bertrand Jacquin <beber@meleeweb.net>, linux-kbuild@vger.kernel.org
-Cc: Bertrand Jacquin <beber@meleeweb.net>, linux-kernel@vger.kernel.org,
+To: Jim Davis <jim.epost@gmail.com>, Bertrand Jacquin <beber@meleeweb.net>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
         Willy Tarreau <w@1wt.eu>
-Subject: Re: [PATCH 3/3] modsign: lookup lines ending in .ko in .mod files
-In-Reply-To: <1408474660-24999-4-git-send-email-beber@meleeweb.net>
-References: <1408474660-24999-1-git-send-email-beber@meleeweb.net> <1408474660-24999-4-git-send-email-beber@meleeweb.net>
+Subject: Re: [PATCH 1/3] modinst: wrap long lines in order to enhance cmd_modules_install
+In-Reply-To: <CA+r1ZhitXZXWWx6xsgiru8Z8PpMUqnrg=q4dKH4Sv4_wY9O13w@mail.gmail.com>
+References: <1408474660-24999-1-git-send-email-beber@meleeweb.net> <1408474660-24999-2-git-send-email-beber@meleeweb.net> <CA+r1ZhitXZXWWx6xsgiru8Z8PpMUqnrg=q4dKH4Sv4_wY9O13w@mail.gmail.com>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 21 Aug 2014 01:36:50 +0930
-Message-ID: <87wqa3i1r9.fsf@rustcorp.com.au>
+Date: Thu, 21 Aug 2014 01:38:10 +0930
+Message-ID: <87tx57i1p1.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bertrand Jacquin <beber@meleeweb.net> writes:
-> This does the same as commit ef591a5 (scripts/Makefile.modpost: error
-> in finding modules from .mod files), but for scripts/Makefile.modsign
+Jim Davis <jim.epost@gmail.com> writes:
+> On Tue, Aug 19, 2014 at 11:57 AM, Bertrand Jacquin <beber@meleeweb.net> wrote:
+>> Note: shouldn't we use 'install -D $(2)/$@ $@' instead of mkdir
+>> and cp ?
 >
-> Maybe we should also apply to Makefile.modsign and Makefile.modinst
-> the change applied to Makefile.modpost by commit ea4054a (modpost:
-> handle huge numbers of modules) ?
+> Will an install with -D in that sense always be available?  That's not
+> a flag in the original (BSD) program, and I did find one SPARC system
+> -- admittedly an ancient one -- where the install program had a -D
+> option but it did something else.  install isn't listed as a required
+> program in Documentation/Changes, for that matter.
 
-Probably, yes.
+Yes, we don't count on install.  And ISTR that install -D would try to
+change perms on directories in the path, which can fail if you don't own
+them and aren't root...
 
-Applied!
+Cheers,
 Rusty.
-
->
-> Reviewed-by: Willy Tarreau <w@1wt.eu>
-> Signed-off-by: Bertrand Jacquin <beber@meleeweb.net>
-> ---
->  scripts/Makefile.modsign | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/scripts/Makefile.modsign b/scripts/Makefile.modsign
-> index abfda62..b6ac708 100644
-> --- a/scripts/Makefile.modsign
-> +++ b/scripts/Makefile.modsign
-> @@ -7,7 +7,7 @@ __modsign:
->  
->  include scripts/Kbuild.include
->  
-> -__modules := $(sort $(shell grep -h '\.ko' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
-> +__modules := $(sort $(shell grep -h '\.ko$$' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
->  modules := $(patsubst %.o,%.ko,$(wildcard $(__modules:.ko=.o)))
->  
->  PHONY += $(modules)
-> -- 
-> 2.0.4
