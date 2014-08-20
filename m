@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316AbaHTM5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:57:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096AbaHTM5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:57:09 -0400
-Date: Wed, 20 Aug 2014 14:56:57 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
-Subject: Re: [PATCH 1/9] KVM: add kvm_arch_sched_in
-Message-ID: <20140820125656.GE28873@potion.brq.redhat.com>
-References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
- <1408480536-8240-2-git-send-email-rkrcmar@redhat.com>
- <53F4529A.5060806@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F4529A.5060806@de.ibm.com>
+	id S1752994AbaHTNDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 09:03:09 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:43715 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751976AbaHTNDI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 09:03:08 -0400
+Message-ID: <1408539787.21533.79.camel@hornet>
+Subject: Re: [PATCH v2] video: ARM CLCD: Fix calculation of bits-per-pixel
+From: Pawel Moll <pawel.moll@arm.com>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 20 Aug 2014 14:03:07 +0100
+In-Reply-To: <1408538464.3858.43.camel@linaro1.home>
+References: <1408538464.3858.43.camel@linaro1.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-20 09:47+0200, Christian Borntraeger:
-> On 19/08/14 22:35, Radim Krčmář wrote:
+On Wed, 2014-08-20 at 13:41 +0100, Jon Medhurst (Tixy) wrote:
+> If the device-tree specifies a max-memory-bandwidth property then the
+> CLCD driver uses that to calculate the bits-per-pixel supported,
+> however, this calculation is faulty for two reasons.
 > 
-> > --- a/virt/kvm/kvm_main.c
-> > +++ b/virt/kvm/kvm_main.c
-> > @@ -3123,6 +3123,8 @@ static void kvm_sched_in(struct preempt_notifier *pn, int cpu)
-> >  	if (vcpu->preempted)
-> >  		vcpu->preempted = false;
-> > 
-> > +	kvm_arch_sched_in(vcpu, cpu);
-> > +
-> >  	kvm_arch_vcpu_load(vcpu, cpu);
-> >  }
-> > 
+> 1. It doesn't ensure that the result is a sane value, i.e. a power of 2
+>    and <= 32 as the rest of the code assumes.
 > 
-> Why cant you reuse kvm_arch_vcpu_load? Its also called on each sched_in and is architecture specific.
+> 2. It uses the displayed resolution and calculates the average bandwidth
+>    across the whole frame. It should instead calculate the peak
+>    bandwidth based on the pixel clock.
+> 
+> This patch fixes both the above.
+> 
+> Signed-off-by: Jon Medhurst <tixy@linaro.org>
 
-kvm_arch_vcpu_load is also called from kvm_vcpu_ioctl, so we'd be
-shrinking unnecessarily.
-(sched_in gives us a bit of useful information about the state of the
- system, kvm_vcpu_ioctl not that much.)
+Acked-by: Pawel Moll <pawel.moll@arm.com>
+
