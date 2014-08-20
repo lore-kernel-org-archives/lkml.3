@@ -1,131 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaHTOEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:04:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24962 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaHTOEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:04:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,902,1400050800"; 
-   d="scan'208";a="590782843"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <53F487EB.7070703@oracle.com>
-References: <53F487EB.7070703@oracle.com>
-Subject: RE: mm: kernel BUG at mm/rmap.c:530
+	id S1752128AbaHTOIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:08:15 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:14034 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750972AbaHTOIN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 10:08:13 -0400
+Message-ID: <53F4ABB0.9000600@fb.com>
+Date: Wed, 20 Aug 2014 10:07:44 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: <miaox@cn.fujitsu.com>, <dsterba@suse.cz>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, <lkp@01.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        Abhay Sachan <lkp.abhay@gmail.com>
+Subject: Re: [btrfs] 8d875f95: xfstests.generic.226.fail
+References: <20140816075233.GA26842@localhost> <20140819115820.GA21418@localhost> <20140819142348.GU1553@twin.jikos.cz> <53F36601.5020609@fb.com> <53F47E07.3080807@cn.fujitsu.com>
+In-Reply-To: <53F47E07.3080807@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <20140820140247.C729CE00A3@blue.fi.intel.com>
-Date: Wed, 20 Aug 2014 17:02:47 +0300 (EEST)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-20_04:2014-08-20,2014-08-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=6.49436060484732e-12 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.324642340081358
+ urlsuspect_oldscore=0.324642340081358 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.324642340081358 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1408200143
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
-> 
-> [ 2581.180086] kernel BUG at mm/rmap.c:530!
 
-Page is mapped where it shouldn't be. Or vma/struct page/pgtable is corrupted.
-Basically, I have no idea what happend :-P
 
-We really should dump page and vma info there. It's strange we don't have
-dump_vma() helper yet.
+On 08/20/2014 06:52 AM, Miao Xie wrote:
+> On Tue, 19 Aug 2014 10:58:09 -0400, Chris Mason wrote:
+>> On 08/19/2014 10:23 AM, David Sterba wrote:
+>>> On Tue, Aug 19, 2014 at 07:58:20PM +0800, Fengguang Wu wrote:
+>>>> We noticed an xfstests failure on commit
+>>>>
+>>>> 8d875f95da43c6a8f18f77869f2ef26e9594fecc ("btrfs: disable strict file flushes for renames and truncates")
+>>>>
+>>>> It's 100% reproducible in the 5 test runs.
+>>>
+>>> Same here, different mkfs configurations.
+>>>
+>>> generic/226 28s ...    [16:11:52] [16:12:55] - output mismatch (see /root/xfstests/results//generic/226.out.bad)
+>>>     --- tests/generic/226.out   2013-05-29 17:16:03.000000000 +0200
+>>>     +++ /root/xfstests/results//generic/226.out.bad     2014-08-19 16:12:55.000000000 +0200
+>>>     @@ -1,6 +1,8 @@
+>>>      QA output created by 226
+>>>      --> mkfs 256m filesystem
+>>>      --> 16 buffered 64m writes in a loop
+>>>     -1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+>>>     +1 2 3 4 pwrite64: No space left on device
+>>>     +5 6 7 8 9 10 11 12 pwrite64: No space left on device
+>>>     +13 14 15 16
+>>>
+>>> enospc on a small filesystem (256M)
+>>
+>> I'm calling filemap flush more often, but otherwise everything else is
+>> the same.  I'll take a look.
+> 
+> I found the problem is caused by the following function:
+> 
+> int btrfs_release_file(struct inode *inode, struct file *filp)
+> {
+> 	...
+> 	filemap_flush(inode->i_mapping);
+> 	return 0;
+> }
+> 
+> I don't think we need flush file at most situation. Ext4 flushes the file only
+> after someone truncate the file to be zero-length, I don't know the real reason
+> why ext4 flush the file only after the file is truncated, someone said it is to
+> reduce the risk that the users find a zero-length file after a crash, which happens
+> after truncate-write-close process.
+> 
+> If we change btrfs_release_file by ext4's implementation, both the failure of
+> xfstests's generic/226  and performance regression can be fixed.
+> 
 
-> [ 2581.180086] invalid opcode: 0000 [#1]
-> [ 2581.180086] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 2581.180086] Dumping ftrace buffer:
-> [ 2581.180086]    (ftrace buffer empty)
-> [ 2581.180086] Modules linked in:
-> [ 2581.180086] CPU: 13 PID: 8515 Comm: trinity-main Not tainted 3.16.0-next-20140815-sasha-00034-g615561b #1071
-> [ 2581.180086] task: ffff8804c1b30000 ti: ffff8804bd9e4000 task.ti: ffff8804bd9e4000
-> [ 2581.180086] RIP: rmap_walk (mm/rmap.c:530 mm/rmap.c:1675 mm/rmap.c:1707)
-> [ 2581.180086] RSP: 0018:ffff8804bd9e7bb8  EFLAGS: 00010206
-> [ 2581.180086] RAX: 0000000000000000 RBX: ffffea000b39e3c0 RCX: ffff8803c501fb18
-> [ 2581.180086] RDX: 00007fffffffd000 RSI: 00000007fffffffd RDI: ffffea000b39e3c0
-> [ 2581.180086] RBP: ffff8804bd9e7bf0 R08: ffff880254972200 R09: 0000000000000000
-> [ 2581.180086] R10: 0000000000000001 R11: 0000000000000008 R12: ffff8804bd9e7c00
-> [ 2581.180086] R13: ffff8801e2d40ff0 R14: 00000007fffffffd R15: ffff880254972200
-> [ 2581.180086] FS:  00007fb53e50d700(0000) GS:ffff8804ca200000(0000) knlGS:0000000000000000
-> [ 2581.180086] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 2581.180086] CR2: 00000000025e5000 CR3: 00000004c19fa000 CR4: 00000000000006a0
-> [ 2581.180086] Stack:
-> [ 2581.180086]  ffff8804c125a400 ffff8804bd9e7bf8 ffffea000b39e3c0 ffffea0020b86cc0
-> [ 2581.180086]  0000000000000001 0000000000000000 0000000000000000 ffff8804bd9e7c30
-> [ 2581.180086]  ffffffffab30e7b1 ffffea0020b86cc0 ffffffffab30f050 0000000000000000
-> [ 2581.180086] Call Trace:
-> [ 2581.180086] remove_migration_ptes (mm/migrate.c:222)
-> [ 2581.180086] ? __migration_entry_wait.isra.25 (mm/migrate.c:107)
-> [ 2581.180086] ? remove_migration_pte (mm/migrate.c:193)
-> [ 2581.180086] move_to_new_page (mm/migrate.c:785)
-> [ 2581.180086] ? try_to_unmap (mm/rmap.c:1527)
-> [ 2581.180086] ? try_to_unmap_nonlinear (mm/rmap.c:1124)
-> [ 2581.180086] ? invalid_migration_vma (mm/rmap.c:1483)
-> [ 2581.273353] ? page_remove_rmap (mm/rmap.c:1391)
-> [ 2581.273353] migrate_pages (mm/migrate.c:916 mm/migrate.c:953 mm/migrate.c:1141)
-> [ 2581.273353] ? buffer_migrate_lock_buffers (mm/migrate.c:1589)
-> [ 2581.273353] migrate_misplaced_page (mm/migrate.c:1749)
-> [ 2581.273353] handle_mm_fault (mm/memory.c:3175 mm/memory.c:3228 mm/memory.c:3341 mm/memory.c:3370)
-> [ 2581.273353] ? __lock_is_held (kernel/locking/lockdep.c:3518)
-> [ 2581.273353] __do_page_fault (arch/x86/mm/fault.c:1231)
-> [ 2581.273353] ? put_lock_stats.isra.13 (./arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-> [ 2581.273353] ? vtime_account_user (kernel/sched/cputime.c:687)
-> [ 2581.273353] ? context_tracking_user_exit (kernel/context_tracking.c:184)
-> [ 2581.273353] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> [ 2581.273353] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2641 (discriminator 8))
-> [ 2581.273353] trace_do_page_fault (arch/x86/mm/fault.c:1314 include/linux/jump_label.h:114 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1315)
-> [ 2581.273353] do_async_page_fault (arch/x86/kernel/kvm.c:279)
-> [ 2581.273353] async_page_fault (arch/x86/kernel/entry_64.S:1313)
-> [ 2581.273353] Code: 17 02 00 00 49 8b 14 24 4c 89 ee 48 89 df ff d0 48 8b 7d c8 89 45 d0 e8 77 24 ee ff 8b 45 d0 e9 38 01 00 00 0f 1f 80 00 00 00 00 <0f> 0b 66 0f 1f 44 00 00 e8 3b ff 00 00 4c 8b 73 10 85 c0 0f 85
-> All code
-> ========
->    0:	17                   	(bad)
->    1:	02 00                	add    (%rax),%al
->    3:	00 49 8b             	add    %cl,-0x75(%rcx)
->    6:	14 24                	adc    $0x24,%al
->    8:	4c 89 ee             	mov    %r13,%rsi
->    b:	48 89 df             	mov    %rbx,%rdi
->    e:	ff d0                	callq  *%rax
->   10:	48 8b 7d c8          	mov    -0x38(%rbp),%rdi
->   14:	89 45 d0             	mov    %eax,-0x30(%rbp)
->   17:	e8 77 24 ee ff       	callq  0xffffffffffee2493
->   1c:	8b 45 d0             	mov    -0x30(%rbp),%eax
->   1f:	e9 38 01 00 00       	jmpq   0x15c
->   24:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
->   2b:*	0f 0b                	ud2    		<-- trapping instruction
->   2d:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
->   33:	e8 3b ff 00 00       	callq  0xff73
->   38:	4c 8b 73 10          	mov    0x10(%rbx),%r14
->   3c:	85 c0                	test   %eax,%eax
->   3e:	0f                   	.byte 0xf
->   3f:	85 00                	test   %eax,(%rax)
-> 
-> Code starting with the faulting instruction
-> ===========================================
->    0:	0f 0b                	ud2
->    2:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
->    8:	e8 3b ff 00 00       	callq  0xff48
->    d:	4c 8b 73 10          	mov    0x10(%rbx),%r14
->   11:	85 c0                	test   %eax,%eax
->   13:	0f                   	.byte 0xf
->   14:	85 00                	test   %eax,(%rax)
-> [ 2581.273353] RIP rmap_walk (mm/rmap.c:530 mm/rmap.c:1675 mm/rmap.c:1707)
-> [ 2581.273353]  RSP <ffff8804bd9e7bb8>
-> 
-> 
-> Thanks,
-> Sasha
+You're completely right, my original had more checks here and I stripped
+them out by accident.  Fixing, thanks!
 
--- 
- Kirill A. Shutemov
+-chris
+
