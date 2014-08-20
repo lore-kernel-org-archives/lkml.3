@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806AbaHTLZA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:25:00 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:37197 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaHTLY6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:24:58 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: bdas@redhat.com
-Subject: [PATCH] KVM: emulate: do not return X86EMUL_PROPAGATE_FAULT explicitly
-Date: Wed, 20 Aug 2014 13:24:52 +0200
-Message-Id: <1408533892-18365-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752578AbaHTLZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:25:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38824 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000AbaHTLZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:25:53 -0400
+Date: Wed, 20 Aug 2014 08:25:49 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, eranian@google.com,
+        LKML <linux-kernel@vger.kernel.org>, Joe Mario <jmario@redhat.com>
+Subject: Re: [PATCH] perf, map:  Don't try to find DSOs in SYSV maps
+Message-ID: <20140820112549.GB2892@kernel.org>
+References: <1408501874-244377-1-git-send-email-dzickus@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408501874-244377-1-git-send-email-dzickus@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always get it through emulate_exception or emulate_ts.  This
-ensures that the ctxt->exception fields have been populated.
+Em Tue, Aug 19, 2014 at 10:31:14PM -0400, Don Zickus escreveu:
+> We are seeing a lot of the following with regards to SYSV memory
+> 
+> Failed to open /SYSV0000279c, continuing without symbols
+> 
+> We don't believe this memory will have DSO info, so treat it like the heap and
+> stack for now and skip it to prevent the warning.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/emulate.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index ef297919a691..4fbf4b598f92 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1549,8 +1549,7 @@ load:
- 	ctxt->ops->set_segment(ctxt, selector, &seg_desc, base3, seg);
- 	return X86EMUL_CONTINUE;
- exception:
--	emulate_exception(ctxt, err_vec, err_code, true);
--	return X86EMUL_PROPAGATE_FAULT;
-+	return emulate_exception(ctxt, err_vec, err_code, true);
- }
+Thanks, applied.
  
- static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
-@@ -2723,8 +2722,7 @@ static int emulator_do_task_switch(struct x86_emulate_ctxt *ctxt,
- 	if (!next_tss_desc.p ||
- 	    ((desc_limit < 0x67 && (next_tss_desc.type & 8)) ||
- 	     desc_limit < 0x2b)) {
--		emulate_ts(ctxt, tss_selector & 0xfffc);
--		return X86EMUL_PROPAGATE_FAULT;
-+		return emulate_ts(ctxt, tss_selector & 0xfffc);
- 	}
- 
- 	if (reason == TASK_SWITCH_IRET || reason == TASK_SWITCH_JMP) {
-@@ -3016,7 +3014,7 @@ static int em_movbe(struct x86_emulate_ctxt *ctxt)
- 		ctxt->dst.val = swab64(ctxt->src.val);
- 		break;
- 	default:
--		return X86EMUL_PROPAGATE_FAULT;
-+		BUG();
- 	}
- 	return X86EMUL_CONTINUE;
- }
--- 
-1.8.3.1
-
+> Signed-off-by: Joe Mario <jmario@redhat.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> --
+> I am open to suggetions for a different fix - dcz
+> ---
+>  tools/perf/util/map.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+> index 25c571f..0294f40 100644
+> --- a/tools/perf/util/map.c
+> +++ b/tools/perf/util/map.c
+> @@ -29,6 +29,7 @@ static inline int is_anon_memory(const char *filename)
+>  static inline int is_no_dso_memory(const char *filename)
+>  {
+>  	return !strncmp(filename, "[stack", 6) ||
+> +	       !strncmp(filename, "/SYSV",5)   ||
+>  	       !strcmp(filename, "[heap]");
+>  }
+>  
+> -- 
+> 1.7.1
