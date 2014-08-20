@@ -1,98 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaHTFS3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 01:18:29 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54502 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaHTFS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 01:18:27 -0400
-Date: Tue, 19 Aug 2014 22:18:15 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 1/2] SOUND: kill gameport bits
-Message-ID: <20140820051815.GA1109@core.coreip.homeip.net>
-References: <20140820024638.GA25240@rhlx01.hs-esslingen.de>
+	id S1752003AbaHTFWY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 01:22:24 -0400
+Received: from trent.utfs.org ([94.185.90.103]:56990 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978AbaHTFWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 01:22:23 -0400
+Date: Tue, 19 Aug 2014 22:22:11 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+cc: Jiang Liu <jiang.liu@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: WARNING: CPU: 6 PID: 79 at fs/proc/generic.c:521
+ remove_proc_entry+0x170/0x180()
+In-Reply-To: <CAM_iQpWMtakj2QUEsF3NdzHyD-VULCkgMR4yf5VrPPBm03joEg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.19.4.1408192221430.2758@trent.utfs.org>
+References: <alpine.DEB.2.19.4.1408191754390.2758@trent.utfs.org> <53F40CF8.8050504@linux.intel.com> <CAM_iQpWMtakj2QUEsF3NdzHyD-VULCkgMR4yf5VrPPBm03joEg@mail.gmail.com>
+User-Agent: Alpine 2.19.4 (DEB 40 2013-11-18)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140820024638.GA25240@rhlx01.hs-esslingen.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1 at Wed Aug 20 07:22:11 2014 +0200 (CEST))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andreas,
-
-On Wed, Aug 20, 2014 at 04:46:38AM +0200, Andreas Mohr wrote:
-
-> Hi,
+On Tue, 19 Aug 2014 at 20:13, Cong Wang wrote:
+> On Tue, Aug 19, 2014 at 7:50 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> > Hi Kujau,
+> >         It seems like a different issue, something wrong with
+> > void nfs_fs_proc_net_exit(struct net *net)
 > 
-> > Gameport support hasn't been working well ever since cpufreq became
-> > mainstream and it becomes increasingly hard to find hardware and
-> > software
-> > that would run on such old hardware.
-> 
-> Given that I'm puzzled why one would want to deprecate a whole subsystem
-> which appears to be supported by a whole 14 different PCI sound card
-> drivers (where the ones I'm owning hardware of are intended to be in
-> active maintenance)
+> http://marc.info/?l=linux-nfs&m=140821782107427&w=2
 
-Are you actively testing gameport interfaces with real joysticks/gamepads on
-these cards? And what software is still in use that runs on these old boxes
-(with mainline kernel)?
+Thanks, that helped!
 
-> and only 3 ISA-based ones, I'm missing several
-> details and justifications of that decision here (perhaps there was a
-> prior discussion/activity that I'm missing?).
-
-There was a post to linux-input a few days ago when I ased if anyone woudl cry
-over gameport going away.
-
-> 
-> Also, I'm left wondering why e.g. my Athlon XP system (a very popular
-> choice for longer times) would be affected by Cpufreq...
-> And there are no details on how exactly cpufreq is a problem or how this
-> timing issue could be fixed...
-
-If you take a look at gameport_measure_speed() in gameport.c you will see that
-it counts cycles for timing, which obviously does not work that well when CPU
-frequency changes.
-
-The bugs have been opened in bugzilla/reported on lists ages ago but nobody
-stepped up to fix that.
-
-> The obvious workaround for such an ensuing dearth of hardware support
-> could be USB 15-pin gameport adapters - but are they even supported on
-> Linux? Haven't seen info on this...
-> And even if supported, these adapters (at least the non-perfect ones, as
-> can be seen from reviews on a well-known online shop site) are said to
-> be hit-or-miss.
-> 
-> http://www.flightsim.com/vbfs/showthread.php?238938-joystick-GamePort-to-USB-adapter-question
-> http://reviews.thesource.ca/9026/2600164/nexxtech-usb-gameport-adapter-reviews/reviews.htm
-> 
-
-They have better chance of being supported ;) I had a couple a few years back
-and they did work for me.
-
-> If we keep removing functionality like this, then why stop short of
-> removing x86 32bit as a whole? By having Linux support nicely restricted
-> to hardware made within the last 5 years, we would surely be doing the
-> planned-obsolescence Micro$oft "ecosystem" (what was ecological about
-> this again?) a huge favour...
-
-I really do not care about Microsoft and favors, I just go by the fact that
-this hardware is becoming naturally extinct. And not only hardware, but also
-software that uses it. Do you still play a lot of games with joysticks on such
-hardware?
-
-Thanks.
-
+Christian.
 -- 
-Dmitry
+BOFH excuse #182:
 
-
+endothermal recalibration
