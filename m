@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaHTUpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:45:09 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:57021 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaHTUme (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:42:34 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-pm@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 2/9] Documentation: devicetree: Add binding for Synopsys DDR controller
-Date: Wed, 20 Aug 2014 13:41:48 -0700
-Message-Id: <1408567315-28479-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.0.1.1.gfbfc394
-In-Reply-To: <1408567315-28479-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1408567315-28479-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752958AbaHTUtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:49:20 -0400
+Received: from mailout.ofir.com ([193.138.124.31]:3875 "EHLO mailout.ofir.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610AbaHTUtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 16:49:19 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=192.168.193.2;
+X-Default-Received-SPF: pass (skip=loggedin (res=PASS)) x-ip-name=94.109.107.23;
+From: lilbetten6@godmail.dk
+To: <lil@org.fr>
+Subject: Write back!!!
+Date: Wed, 20 Aug 2014 22:36:58 +0200
+Message-ID: <53f506ea.39c.232c.77cb@godmail.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+X-X-Originating-IP: 94.109.107.23
+X-Mailer: SurgeWeb - Ajax Webmail Client
+X-X-Authenticated-User: lilbetten6@godmail.dk 
+X-To-Not-Matched: true
+X-Originating-IP: 192.168.193.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- .../devicetree/bindings/memory-controllers/synopsys.txt       | 11 +++++++++++
- 1 file changed, 11 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/memory-controllers/synopsys.txt
 
-diff --git a/Documentation/devicetree/bindings/memory-controllers/synopsys.txt b/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-new file mode 100644
-index 000000000000..f9c6454146b6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/memory-controllers/synopsys.txt
-@@ -0,0 +1,11 @@
-+Binding for Synopsys IntelliDDR Multi Protocol Memory Controller
-+
-+Required properties:
-+ - compatible: Should be 'xlnx,zynq-ddrc-a05'
-+ - reg: Base address and size of the controllers memory area
-+
-+Example:
-+	memory-controller@f8006000 {
-+		compatible = "xlnx,zynq-ddrc-a05";
-+		reg = <0xf8006000 0x1000>;
-+	};
--- 
-2.0.1.1.gfbfc394
+Write back!!!
+I, Liliane authenticate this email, you can read about me on:
+http://en.wikipedia.org/wiki/Liliane_Bettencourt
+I write to you because I intend to give to you a portion of my
+Net-worth which I have been banking. I want to cede it out as gift
+hoping it would be of help to you and others too. Respond for
+confirmation to this email address: Liliabette@aol.fr
+With love,
+Liliane Bettencourt
+Liliabette@aol.fr
+
+
+
 
