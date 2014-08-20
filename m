@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaHTP5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:57:34 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:54691 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaHTP52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:57:28 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 3/3] ARM: zynq: DT: Add Ethernet phys
-Date: Wed, 20 Aug 2014 08:56:59 -0700
-Message-Id: <1408550219-19825-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.0.1.1.gfbfc394
-In-Reply-To: <1408550219-19825-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1408550219-19825-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752506AbaHTP5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:57:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59448 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752466AbaHTP5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:57:48 -0400
+Date: Wed, 20 Aug 2014 10:57:40 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: phy: msm: Make phy_reset clk and reset line
+ optional.
+Message-ID: <20140820155740.GF24500@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1405628200-21776-1-git-send-email-srinivas.kandagatla@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7mxbaLlpDEyR1+x6"
+Content-Disposition: inline
+In-Reply-To: <1405628200-21776-1-git-send-email-srinivas.kandagatla@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing Ethernet phys to Zynq DTs.
+--7mxbaLlpDEyR1+x6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- arch/arm/boot/dts/zynq-zc702.dts | 6 ++++++
- arch/arm/boot/dts/zynq-zc706.dts | 6 ++++++
- arch/arm/boot/dts/zynq-zed.dts   | 6 ++++++
- 3 files changed, 18 insertions(+)
+On Thu, Jul 17, 2014 at 09:16:40PM +0100, Srinivas Kandagatla wrote:
+> This patch makes the phy reset clk and reset line optional as this clk
+> is not available on boards like IFC6410 with APQ8064.
+>=20
+> phy-reset clk is only used as argument to the mach level callbacks, so
+> this patch adds condition before clk_get calls so that the driver
+> wouldn't fail on SOCs which do not have this support.
+>=20
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> ---
+> Hi Felipe,
+>=20
+> With this new patch now the error message is only printed if the SOC actu=
+ally supports
+> the phy reset clk, for SOCs like APQ8064 where there is no phy reset cloc=
+k or
+> the callback which takes it there is no point in doing a clk_get call in =
+the first place.
 
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-index 30bcfe20f0bc..fa810505ab8f 100644
---- a/arch/arm/boot/dts/zynq-zc702.dts
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -36,6 +36,12 @@
- &gem0 {
- 	status = "okay";
- 	phy-mode = "rgmii-id";
-+	phy-handle = <&ethernet_phy>;
-+
-+	ethernet_phy: ethernet-phy@7 {
-+		compatible = "marvell,88e1116r", "ethernet-phy-ieee802.3-c22";
-+		reg = <7>;
-+	};
- };
- 
- &i2c0 {
-diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
-index 3d9cb023e158..d446b44d45a2 100644
---- a/arch/arm/boot/dts/zynq-zc706.dts
-+++ b/arch/arm/boot/dts/zynq-zc706.dts
-@@ -33,6 +33,12 @@
- &gem0 {
- 	status = "okay";
- 	phy-mode = "rgmii-id";
-+	phy-handle = <&ethernet_phy>;
-+
-+	ethernet_phy: ethernet-phy@7 {
-+		compatible = "marvell,88e1116r", "ethernet-phy-ieee802.3-c22";
-+		reg = <7>;
-+	};
- };
- 
- &i2c0 {
-diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
-index 42deb1b7dbc8..92662eb078ce 100644
---- a/arch/arm/boot/dts/zynq-zed.dts
-+++ b/arch/arm/boot/dts/zynq-zed.dts
-@@ -33,6 +33,12 @@
- &gem0 {
- 	status = "okay";
- 	phy-mode = "rgmii-id";
-+	phy-handle = <&ethernet_phy>;
-+
-+	ethernet_phy: ethernet-phy@0 {
-+		compatible = "marvell,88e1518", "ethernet-phy-ieee802.3-c22";
-+		reg = <0>;
-+	};
- };
- 
- &sdhci0 {
--- 
-2.0.1.1.gfbfc394
+doesn't apply. Please rebase on top of v3.17-rc1
 
+--=20
+balbi
+
+--7mxbaLlpDEyR1+x6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT9MV0AAoJEIaOsuA1yqREtzEP/0LnUcPgjBEt003OoBH/Re2h
+eq6LwjI3r9hNFBMjCu3CPs3STbLzQfmYi61AqqhcUoM1QQ8ZAoaLnNnpec1/VfNl
+eLj+ac4pNHH5Oucmt+YGaRNORZd6GvrJyrayefjI22glnNf3IGV7Na+flxP4ts58
+xXysNwCaGUuqJK8y8voIArcXt0Puj0X+B/dZTPMmcCaZnOWY36ApFiydmA1MELWg
+3+iwcWkUdpUMLQVqlCGpKmfToTorrO8bvFWp0RlW3+yOv9NLUhPGgicDufQvcsUU
+NWI3eRZwPdVyF8ANREN/bBHfwhej24DSKgVsRJ7fkPIS/ZFZtC32Zd1pUSnF08Mc
+l31pncm+VV0mYcBl6cnO85tiySEok/Y3LL2xKKm2H75FSQ/GFperARGHq+w84rey
+p3FwydbDpclHOfwlwVDJvFhmG/FqEkj2uf2wDHg+3LbfeQ0wSahoTCo6u1y5S1On
+r53HugqtKq0cWZJwzPB1KYTpVqqmWI6XmHKxR8NI27l65kjrDanZ9GF5MNV+5Vbc
+fzmMTqfBwpWKPl/8kVMtNRyFvjIv+wvGg4ev4yy0W7bzvy8HQn88TatbIVA7RddO
+pD9pTOGfnWKDJiuwmX70mVEgWznL0TvjHFJVQzim5lapm/uIVviJWuWA+z2mt/Qk
+ufsXRKsaNbTexHjTtmv4
+=XFJB
+-----END PGP SIGNATURE-----
+
+--7mxbaLlpDEyR1+x6--
