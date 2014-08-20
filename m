@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaHTLYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:24:50 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:42538 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbaHTLYs (ORCPT
+	id S1752780AbaHTLYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:24:38 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:52011 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762AbaHTLYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:24:48 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Cc: bdas@redhat.com
-Subject: [PATCH] KVM: emulate: warn on invalid or uninitialized exception numbers
-Date: Wed, 20 Aug 2014 13:24:42 +0200
-Message-Id: <1408533882-18304-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 20 Aug 2014 07:24:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH] drivers: pci: convert generic host controller to DT host bridge creation API
+Date: Wed, 20 Aug 2014 13:23:52 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Jingoo Han <jg1.han@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        "linux-pci" <linux-pci@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+References: <1407861695-25549-1-git-send-email-Liviu.Dudau@arm.com> <20140819120553.GA23128@arm.com>
+In-Reply-To: <20140819120553.GA23128@arm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408201323.52404.arnd@arndb.de>
+X-Provags-ID: V02:K0:vaewTIHSx/rr8WLRaUYPZbkU+k+IGIJ6YlDBb2voqkj
+ TgBf+/2VB9xtDFV2vdNqVj/HAJD9diiE6kk16Ajj6WztCXaiuM
+ IlXX/d/OcTpUINmJjuwOhlqhHfw0iJR+q4whVQCr6okw2LJlXO
+ Bzy+g9USu1RI1AMWKBF0Y6e96CwJ9cPJ1ymiiVQDjP5Do63v/w
+ Ck6YG1c97Sn6DoYk/9+AevctL8J91lqxOSKx4odMwaIYDc5Drn
+ 5j4cozTGC64kfmj6806goQf410o/wfcjpv6pSMwbf3LfAMh+PZ
+ 21g/uzRfwz6oHGWdntVttI/jSIgdYytjkcKq9BC55R1+pb4vZm
+ bJkDs0tmMkrxW6/0lvds=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These were reported when running Jailhouse on AMD processors.
+On Tuesday 19 August 2014, Will Deacon wrote:
+> On Tue, Aug 12, 2014 at 05:41:35PM +0100, Liviu Dudau wrote:
 
-Initialize ctxt->exception.vector with an invalid exception number,
-and warn if it remained invalid even though the emulator got
-an X86EMUL_PROPAGATE_FAULT return code.
+> > +     if (!res_valid) {
+> > +             dev_err(dev, "non-prefetchable memory resource required\n");
+> > +             return -EINVAL;
+> > +     }
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/emulate.c | 5 ++++-
- arch/x86/kvm/x86.c     | 1 +
- 2 files changed, 5 insertions(+), 1 deletion(-)
+I don't see why this part should be in the host controller driver. It's really
+a sanity check that could apply anywhere, so could we just move it into the
+common code, or alternatively drop it?
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 4fbf4b598f92..e5bf13003cd2 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -527,6 +527,7 @@ static unsigned long seg_base(struct x86_emulate_ctxt *ctxt, int seg)
- static int emulate_exception(struct x86_emulate_ctxt *ctxt, int vec,
- 			     u32 error, bool valid)
- {
-+	WARN_ON(vec > 0x1f);
- 	ctxt->exception.vector = vec;
- 	ctxt->exception.error_code = error;
- 	ctxt->exception.error_code_valid = valid;
-@@ -4827,8 +4828,10 @@ writeback:
- 	ctxt->eip = ctxt->_eip;
- 
- done:
--	if (rc == X86EMUL_PROPAGATE_FAULT)
-+	if (rc == X86EMUL_PROPAGATE_FAULT) {
-+		WARN_ON(ctxt->exception.vector > 0x1f);
- 		ctxt->have_exception = true;
-+	}
- 	if (rc == X86EMUL_INTERCEPTED)
- 		return EMULATION_INTERCEPTED;
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 737b4bdac41c..cd718c01cdf1 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5248,6 +5248,7 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
- 
- 		ctxt->interruptibility = 0;
- 		ctxt->have_exception = false;
-+		ctxt->exception.vector = -1;
- 		ctxt->perm_ok = false;
- 
- 		ctxt->ud = emulation_type & EMULTYPE_TRAP_UD;
--- 
-1.8.3.1
+> > +     if (iores) {
+> > +             if (!PAGE_ALIGNED(io_cpuaddr))
+> > +                     return -EINVAL;
+> 
+> Why is this alignment check not in the core code?
 
+This confused me too. I have to look back at the core code, but I assume it's
+either aligned already based on the way this number gets created, or it
+can have an offset within the page that is the same as the offset within the
+physical address of iores and that hould be handled internally by
+pci_remap_iospace().
+
+> Probably a question for
+> somebody like Arnd, but do we need to deal with multiple IO resources?
+> Currently we'll just silently take the last one that we found, which doesn't
+> sound ideal.
+
+I can't think of a case where you'd actually have multiple IO resources,
+but I agree we should either treat that as an error or handle it right.
+My guess is that handling it is actually easier.
+
+	Arnd
