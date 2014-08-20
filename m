@@ -1,116 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089AbaHTMEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:04:47 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58932 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752528AbaHTLoK (ORCPT
+	id S1753397AbaHTMF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:05:29 -0400
+Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:41924 "EHLO
+	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752053AbaHTMF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:10 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Bob Liu <lliubbo@gmail.com>, Dave Hansen <dave.hansen@linux.intel.com>,
-        Hedi Berriche <hedi@sgi.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 009/104] mm, thp: do not allow thp faults to avoid cpuset restrictions
-Date: Wed, 20 Aug 2014 13:42:32 +0200
-Message-Id: <06c188135130cd30aade48dfaa3beac58c08f074.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 08:05:27 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        davidb@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH v2] ARM: apq8064: Add pinmux and i2c pinctrl nodes
+Date: Wed, 20 Aug 2014 17:32:13 +0530
+Message-Id: <1408536133-13824-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Rientjes <rientjes@google.com>
+This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
+It also adds necessary DT support for i2c eeprom which is present on
+IFC6410.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Tested on IFC6410 board.
 
-===============
-
-commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
-
-The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
-should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
-should be restricted only to the set of allowed cpuset mems.
-
-Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
-the fault path from using memory compaction or direct reclaim.  Thus, it
-is unfairly able to allocate outside of its cpuset mems restriction as a
-side-effect.
-
-This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
-truly GFP_ATOMIC by verifying it is also not a thp allocation.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Alex Thorlton <athorlton@sgi.com>
-Tested-by: Alex Thorlton <athorlton@sgi.com>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Hedi Berriche <hedi@sgi.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
 ---
- mm/page_alloc.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+Chages since v1:
+	- Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
+	- Updated pinmux interrupt.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 6e0a9cf8d02a..a280f772bc66 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2425,7 +2425,7 @@ static inline int
- gfp_to_alloc_flags(gfp_t gfp_mask)
- {
- 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
--	const gfp_t wait = gfp_mask & __GFP_WAIT;
-+	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   29 ++++++++++++++
+ arch/arm/boot/dts/qcom-apq8064.dtsi        |   59 ++++++++++++++++++++++++++++
+ 2 files changed, 88 insertions(+)
+
+diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+index 7c2441d..d52ac3c 100644
+--- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
++++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+@@ -5,6 +5,15 @@
+ 	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
  
- 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
- 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
-@@ -2434,20 +2434,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
- 	 * The caller may dip into page reserves a bit more if the caller
- 	 * cannot run direct reclaim, or if the caller has realtime scheduling
- 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
--	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
-+	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
- 	 */
- 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
+ 	soc {
++		pinmux@800000 {
++			i2c1_pins: i2c1_pinmux {
++				mux {
++					pins = "gpio20", "gpio21";
++					function = "gsbi1";
++				};
++			};
++		};
++
+ 		gsbi@16600000 {
+ 			status = "ok";
+ 			qcom,mode = <GSBI_PROT_I2C_UART>;
+@@ -12,5 +21,25 @@
+ 				status = "ok";
+ 			};
+ 		};
++
++		gsbi1: gsbi@12440000 {
++			qcom,mode = <GSBI_PROT_I2C>;
++			status = "ok";
++
++			i2c1: i2c@12460000 {
++				status = "ok";
++
++				clock-frequency = <200000>;
++
++				pinctrl-0 = <&i2c1_pins>;
++				pinctrl-names = "default";
++
++				eeprom: eeprom@52 {
++					compatible = "atmel,24c128";
++					reg = <0x52>;
++					pagesize = <32>;
++				};
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
+index 92bf793..bb2ccde 100644
+--- a/arch/arm/boot/dts/qcom-apq8064.dtsi
++++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+@@ -70,6 +70,17 @@
+ 		ranges;
+ 		compatible = "simple-bus";
  
--	if (!wait) {
-+	if (atomic) {
- 		/*
--		 * Not worth trying to allocate harder for
--		 * __GFP_NOMEMALLOC even if it can't schedule.
-+		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
-+		 * if it can't schedule.
- 		 */
--		if  (!(gfp_mask & __GFP_NOMEMALLOC))
-+		if (!(gfp_mask & __GFP_NOMEMALLOC))
- 			alloc_flags |= ALLOC_HARDER;
- 		/*
--		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
--		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
-+		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
-+		 * comment for __cpuset_node_allowed_softwall().
- 		 */
- 		alloc_flags &= ~ALLOC_CPUSET;
- 	} else if (unlikely(rt_task(current)) && !in_interrupt())
++		tlmm_pinmux: pinmux@800000 {
++			compatible = "qcom,apq8064-pinctrl";
++			reg = <0x800000 0x4000>;
++
++			gpio-controller;
++			#gpio-cells = <2>;
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			interrupts = <0 16 0x4>;
++		};
++
+ 		intc: interrupt-controller@2000000 {
+ 			compatible = "qcom,msm-qgic2";
+ 			interrupt-controller;
+@@ -133,6 +144,54 @@
+ 			regulator;
+ 		};
+ 
++		gsbi1: gsbi@12440000 {
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12440000 0x100>;
++			clocks = <&gcc GSBI1_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			status = "disabled";
++
++			i2c@12460000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x12460000 0x1000>;
++				interrupts = <0 194 0>;
++
++				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
++				clock-names = "core", "iface";
++				status = "disabled";
++
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
++		gsbi2: gsbi@12480000 {
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12480000 0x100>;
++			clocks = <&gcc GSBI2_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++			status = "disabled";
++
++			i2c@124a0000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x124a0000 0x1000>;
++				interrupts = <0 196 0>;
++
++				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
++				clock-names = "core", "iface";
++				status = "disabled";
++
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
+ 		gsbi7: gsbi@16600000 {
+ 			status = "disabled";
+ 			compatible = "qcom,gsbi-v1.0.0";
 -- 
-2.0.4
+1.7.9.5
 
