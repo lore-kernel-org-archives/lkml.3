@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaHTJvq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:51:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:44502 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819AbaHTJvp (ORCPT
+	id S1752408AbaHTJwB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:52:01 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:33376 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258AbaHTJv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:51:45 -0400
-From: Wang Long <long.wanglong@huawei.com>
-To: <linux@arm.linux.org.uk>, <nicolas.pitre@linaro.org>,
-        <ben.dooks@codethink.co.uk>, <taras.kondratiuk@linaro.org>,
-        <heiko@sntech.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: avoid corrupts register in mcaro kputc kphex etc.
-Date: Wed, 20 Aug 2014 17:50:02 +0800
-Message-ID: <1408528202-152139-1-git-send-email-long.wanglong@huawei.com>
-X-Mailer: git-send-email 1.8.3.4
+	Wed, 20 Aug 2014 05:51:58 -0400
+Message-ID: <53F46EA3.60408@ahsoftware.de>
+Date: Wed, 20 Aug 2014 11:47:15 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.200]
-X-CFilter-Loop: Reflected
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+CC: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christian Grothoff <grothoff@in.tum.de>,
+        Jacob Appelbaum <jacob@appelbaum.net>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, knock@gnunet.org
+Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity
+ protection
+References: <52A75EF8.3010308@in.tum.de>	<20131211.150137.368953964178408437.davem@davemloft.net>	<52A8C8B4.4060109@in.tum.de>	<20131211122637.75b09074@nehalam.linuxnetplumber.net>	<87bo0nulkt.fsf@tassilo.jf.intel.com>	<52A8ECF5.3070604@in.tum.de>	<20131212012317.GL21717@two.firstfloor.org>	<52A98DBF.4090702@appelbaum.net>	<52A9A17F.6050505@in.tum.de>	<1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com>	<53F3A739.4070203@ahsoftware.de>	<CAPh34mckmKkRqG7M=37hHRJjBzZ+43BaPnjvpC5sEFnpPqj0aA@mail.gmail.com>	<53F4654C.10101@ahsoftware.de> <CAPh34mc8eGqLyGrq1AH6AP5yBGnJgePkK03Ys-Zhw9cz9h3Y2g@mail.gmail.com>
+In-Reply-To: <CAPh34mc8eGqLyGrq1AH6AP5yBGnJgePkK03Ys-Zhw9cz9h3Y2g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when use macro 'kputc' kphex' to print the content of
-register r0-r3, they will corrupts these registers.
+Am 20.08.2014 11:28, schrieb Hagen Paul Pfeifer:
+> On 20 August 2014 11:07, Alexander Holler <holler@ahsoftware.de> wrote:
+>
+>> For sure it could be better, but I'm already happy with the current
+>> imperfect solution which I can use now and not some perfect solution which
+>> might be available in some years.
+>
+> Alexander, to make it clear: we cannot include mechanisms which
+> probably open other (security) issues. This is not how things work
+> out. TCP had so many issues in the past - regarding security,
+> implementation f*ups, etc. pp. It is utterly important that there is
+> no problem with an extension. Please join the discussion ob tcpm if
+> you will drive things forward. That's all what I can say - sorry!
 
-the same as the macro 'debug_reloc_start' and 'debug_reloc_end'.
+Maybe I first should send a million syn-packets to a box where I've 
+enabled that feature. ;)
 
-so using 'push' when enter the macro and 'pop' when leave
-the macro to fix it.
+Anyway, I still think there should be some room for experimental 
+features in the kernel. It makes them more visible to possible 
+contributors and helps to drive further development.
 
-Signed-off-by: Wang Long <long.wanglong@huawei.com>
----
- arch/arm/boot/compressed/head.S | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Not necessarily in my case (as most people, I can't and don't want to 
+participate in all parties), but ...
 
-diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-index 413fd94..aa57a09 100644
---- a/arch/arm/boot/compressed/head.S
-+++ b/arch/arm/boot/compressed/head.S
-@@ -19,6 +19,7 @@
-  * 100% relocatable.  Any attempt to do so will result in a crash.
-  * Please select one of the following when turning on debugging.
-  */
-+#define DEBUG
- #ifdef DEBUG
- 
- #if defined(CONFIG_DEBUG_ICEDCC)
-@@ -69,18 +70,23 @@
- #endif
- 
- 		.macro	kputc,val
-+		push	{r0-r3}
- 		mov	r0, \val
- 		bl	putc
-+		pop	{r0-r3}
- 		.endm
- 
- 		.macro	kphex,val,len
-+		push	{r0-r3}
- 		mov	r0, \val
- 		mov	r1, #\len
- 		bl	phex
-+		pop	{r0-r3}
- 		.endm
- 
- 		.macro	debug_reloc_start
- #ifdef DEBUG
-+		push	{r0-r3}
- 		kputc	#'\n'
- 		kphex	r6, 8		/* processor id */
- 		kputc	#':'
-@@ -97,15 +103,18 @@
- 		kputc	#'>'
- 		kphex	r4, 8		/* kernel execution address */
- 		kputc	#'\n'
-+		pop	{r0-r3}
- #endif
- 		.endm
- 
- 		.macro	debug_reloc_end
- #ifdef DEBUG
-+		push    {r0-r3,r10-r12}
- 		kphex	r5, 8		/* end of kernel */
- 		kputc	#'\n'
- 		mov	r0, r4
- 		bl	memdump		/* dump 256 bytes at start of kernel */
-+		pop	{r0-r3,r10-r12}
- #endif
- 		.endm
- 
--- 
-1.8.3.4
+Regards,
 
+Alexander Holler
