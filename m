@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaHTMGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:06:11 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58922 "EHLO
+	id S1754250AbaHTMGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:06:13 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58905 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752519AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752501AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 041/104] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-Date: Wed, 20 Aug 2014 13:43:04 +0200
-Message-Id: <cb3770c1f6b13463dcb48802d2cc99591651fa63.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Max Filippov <jcmvbkbc@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 028/104] xtensa: add fixup for double exception raised in window overflow
+Date: Wed, 20 Aug 2014 13:42:51 +0200
+Message-Id: <e0a37035c42e82250492cce9a914f78a3a8c036a.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,39 +23,270 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 06ebb06d49486676272a3c030bfeef4bd969a8e6 ]
+commit 17290231df16eeee5dfc198dbf5ee4b419996dcd upstream.
 
-Check for cases when the caller requests 0 bytes instead of running off
-and dereferencing potentially invalid iovecs.
+There are two FIXMEs in the double exception handler 'for the extremely
+unlikely case'. This case gets hit by gcc during kernel build once in
+a few hours, resulting in an unrecoverable exception condition.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Provide missing fixup routine to handle this case. Double exception
+literals now need 8 more bytes, add them to the linker script.
+
+Also replace bbsi instructions with bbsi.l as we're branching depending
+on 8th and 7th LSB-based bits of exception address.
+
+This may be tested by adding the explicit DTLB invalidation to window
+overflow handlers, like the following:
+
+#    --- a/arch/xtensa/kernel/vectors.S
+#    +++ b/arch/xtensa/kernel/vectors.S
+#    @@ -592,6 +592,14 @@ ENDPROC(_WindowUnderflow4)
+#     ENTRY_ALIGN64(_WindowOverflow8)
+#
+#    	s32e	a0, a9, -16
+#    +	bbsi.l	a9, 31, 1f
+#    +	rsr	a0, ccount
+#    +	bbsi.l	a0, 4, 1f
+#    +	pdtlb	a0, a9
+#    +	idtlb	a0
+#    +	movi	a0, 9
+#    +	idtlb	a0
+#    +1:
+#    	l32e    a0, a1, -12
+#    	s32e    a2, a9,  -8
+#    	s32e    a1, a9, -12
+
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/core/iovec.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/xtensa/kernel/vectors.S     | 158 +++++++++++++++++++++++++++++++++------
+ arch/xtensa/kernel/vmlinux.lds.S |   4 +-
+ 2 files changed, 138 insertions(+), 24 deletions(-)
 
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index dcf0bd5fbc20..8254497bda65 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -107,6 +107,10 @@ EXPORT_SYMBOL(memcpy_toiovecend);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len)
- {
-+	/* No data? Done! */
-+	if (len == 0)
-+		return 0;
+diff --git a/arch/xtensa/kernel/vectors.S b/arch/xtensa/kernel/vectors.S
+index cb8fd44caabc..da0224dcad30 100644
+--- a/arch/xtensa/kernel/vectors.S
++++ b/arch/xtensa/kernel/vectors.S
+@@ -376,38 +376,42 @@ _DoubleExceptionVector_WindowOverflow:
+ 	beqz	a2, 1f		# if at start of vector, don't restore
+ 
+ 	addi	a0, a0, -128
+-	bbsi	a0, 8, 1f	# don't restore except for overflow 8 and 12
+-	bbsi	a0, 7, 2f
++	bbsi.l	a0, 8, 1f	# don't restore except for overflow 8 and 12
 +
- 	/* Skip over the finished iovecs */
- 	while (offset >= iov->iov_len) {
- 		offset -= iov->iov_len;
++	/*
++	 * This fixup handler is for the extremely unlikely case where the
++	 * overflow handler's reference thru a0 gets a hardware TLB refill
++	 * that bumps out the (distinct, aliasing) TLB entry that mapped its
++	 * prior references thru a9/a13, and where our reference now thru
++	 * a9/a13 gets a 2nd-level miss exception (not hardware TLB refill).
++	 */
++	movi	a2, window_overflow_restore_a0_fixup
++	s32i	a2, a3, EXC_TABLE_FIXUP
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++
++	bbsi.l	a0, 7, 2f
+ 
+ 	/*
+ 	 * Restore a0 as saved by _WindowOverflow8().
+-	 *
+-	 * FIXME:  we really need a fixup handler for this L32E,
+-	 * for the extremely unlikely case where the overflow handler's
+-	 * reference thru a0 gets a hardware TLB refill that bumps out
+-	 * the (distinct, aliasing) TLB entry that mapped its prior
+-	 * references thru a9, and where our reference now thru a9
+-	 * gets a 2nd-level miss exception (not hardware TLB refill).
+ 	 */
+ 
+-	l32e	a2, a9, -16
+-	wsr	a2, depc	# replace the saved a0
+-	j	1f
++	l32e	a0, a9, -16
++	wsr	a0, depc	# replace the saved a0
++	j	3f
+ 
+ 2:
+ 	/*
+ 	 * Restore a0 as saved by _WindowOverflow12().
+-	 *
+-	 * FIXME:  we really need a fixup handler for this L32E,
+-	 * for the extremely unlikely case where the overflow handler's
+-	 * reference thru a0 gets a hardware TLB refill that bumps out
+-	 * the (distinct, aliasing) TLB entry that mapped its prior
+-	 * references thru a13, and where our reference now thru a13
+-	 * gets a 2nd-level miss exception (not hardware TLB refill).
+ 	 */
+ 
+-	l32e	a2, a13, -16
+-	wsr	a2, depc	# replace the saved a0
++	l32e	a0, a13, -16
++	wsr	a0, depc	# replace the saved a0
++3:
++	xsr	a3, excsave1
++	movi	a0, 0
++	s32i	a0, a3, EXC_TABLE_FIXUP
++	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
+ 1:
+ 	/*
+ 	 * Restore WindowBase while leaving all address registers restored.
+@@ -449,6 +453,7 @@ _DoubleExceptionVector_WindowOverflow:
+ 
+ 	s32i	a0, a2, PT_DEPC
+ 
++_DoubleExceptionVector_handle_exception:
+ 	addx4	a0, a0, a3
+ 	l32i	a0, a0, EXC_TABLE_FAST_USER
+ 	xsr	a3, excsave1
+@@ -464,11 +469,120 @@ _DoubleExceptionVector_WindowOverflow:
+ 	rotw	-3
+ 	j	1b
+ 
+-	.end literal_prefix
+ 
+ ENDPROC(_DoubleExceptionVector)
+ 
+ /*
++ * Fixup handler for TLB miss in double exception handler for window owerflow.
++ * We get here with windowbase set to the window that was being spilled and
++ * a0 trashed. a0 bit 7 determines if this is a call8 (bit clear) or call12
++ * (bit set) window.
++ *
++ * We do the following here:
++ * - go to the original window retaining a0 value;
++ * - set up exception stack to return back to appropriate a0 restore code
++ *   (we'll need to rotate window back and there's no place to save this
++ *    information, use different return address for that);
++ * - handle the exception;
++ * - go to the window that was being spilled;
++ * - set up window_overflow_restore_a0_fixup as a fixup routine;
++ * - reload a0;
++ * - restore the original window;
++ * - reset the default fixup routine;
++ * - return to user. By the time we get to this fixup handler all information
++ *   about the conditions of the original double exception that happened in
++ *   the window overflow handler is lost, so we just return to userspace to
++ *   retry overflow from start.
++ *
++ * a0: value of depc, original value in depc
++ * a2: trashed, original value in EXC_TABLE_DOUBLE_SAVE
++ * a3: exctable, original value in excsave1
++ */
++
++ENTRY(window_overflow_restore_a0_fixup)
++
++	rsr	a0, ps
++	extui	a0, a0, PS_OWB_SHIFT, PS_OWB_WIDTH
++	rsr	a2, windowbase
++	sub	a0, a2, a0
++	extui	a0, a0, 0, 3
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++
++	_beqi	a0, 1, .Lhandle_1
++	_beqi	a0, 3, .Lhandle_3
++
++	.macro	overflow_fixup_handle_exception_pane n
++
++	rsr	a0, depc
++	rotw	-\n
++
++	xsr	a3, excsave1
++	wsr	a2, depc
++	l32i	a2, a3, EXC_TABLE_KSTK
++	s32i	a0, a2, PT_AREG0
++
++	movi	a0, .Lrestore_\n
++	s32i	a0, a2, PT_DEPC
++	rsr	a0, exccause
++	j	_DoubleExceptionVector_handle_exception
++
++	.endm
++
++	overflow_fixup_handle_exception_pane 2
++.Lhandle_1:
++	overflow_fixup_handle_exception_pane 1
++.Lhandle_3:
++	overflow_fixup_handle_exception_pane 3
++
++	.macro	overflow_fixup_restore_a0_pane n
++
++	rotw	\n
++	/* Need to preserve a0 value here to be able to handle exception
++	 * that may occur on a0 reload from stack. It may occur because
++	 * TLB miss handler may not be atomic and pointer to page table
++	 * may be lost before we get here. There are no free registers,
++	 * so we need to use EXC_TABLE_DOUBLE_SAVE area.
++	 */
++	xsr	a3, excsave1
++	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	movi	a2, window_overflow_restore_a0_fixup
++	s32i	a2, a3, EXC_TABLE_FIXUP
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++	bbsi.l	a0, 7, 1f
++	l32e	a0, a9, -16
++	j	2f
++1:
++	l32e	a0, a13, -16
++2:
++	rotw	-\n
++
++	.endm
++
++.Lrestore_2:
++	overflow_fixup_restore_a0_pane 2
++
++.Lset_default_fixup:
++	xsr	a3, excsave1
++	s32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	movi	a2, 0
++	s32i	a2, a3, EXC_TABLE_FIXUP
++	l32i	a2, a3, EXC_TABLE_DOUBLE_SAVE
++	xsr	a3, excsave1
++	rfe
++
++.Lrestore_1:
++	overflow_fixup_restore_a0_pane 1
++	j	.Lset_default_fixup
++.Lrestore_3:
++	overflow_fixup_restore_a0_pane 3
++	j	.Lset_default_fixup
++
++ENDPROC(window_overflow_restore_a0_fixup)
++
++	.end literal_prefix
++/*
+  * Debug interrupt vector
+  *
+  * There is not much space here, so simply jump to another handler.
+diff --git a/arch/xtensa/kernel/vmlinux.lds.S b/arch/xtensa/kernel/vmlinux.lds.S
+index 21acd11b5df2..af84f8fbf7d9 100644
+--- a/arch/xtensa/kernel/vmlinux.lds.S
++++ b/arch/xtensa/kernel/vmlinux.lds.S
+@@ -262,13 +262,13 @@ SECTIONS
+ 		  .UserExceptionVector.literal)
+   SECTION_VECTOR (_DoubleExceptionVector_literal,
+ 		  .DoubleExceptionVector.literal,
+-		  DOUBLEEXC_VECTOR_VADDR - 16,
++		  DOUBLEEXC_VECTOR_VADDR - 40,
+ 		  SIZEOF(.UserExceptionVector.text),
+ 		  .UserExceptionVector.text)
+   SECTION_VECTOR (_DoubleExceptionVector_text,
+ 		  .DoubleExceptionVector.text,
+ 		  DOUBLEEXC_VECTOR_VADDR,
+-		  32,
++		  40,
+ 		  .DoubleExceptionVector.literal)
+ 
+   . = (LOADADDR( .DoubleExceptionVector.text ) + SIZEOF( .DoubleExceptionVector.text ) + 3) & ~ 3;
 -- 
 2.0.4
 
