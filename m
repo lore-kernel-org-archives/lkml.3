@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaHTGMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 02:12:03 -0400
-Received: from infra.glanzmann.de ([88.198.249.254]:44451 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaHTGMC (ORCPT
+	id S1752055AbaHTGPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 02:15:39 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:36684 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaHTGPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 02:12:02 -0400
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Aug 2014 02:12:01 EDT
-Date: Wed, 20 Aug 2014 08:04:24 +0200
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Regression: Can't compile x86_64 with 32 Bit userland:
- arch/x86/purgatory/purgatory.c:1:0: error: code model 'large' not supported
- in the 32 bit mode
-Message-ID: <20140820060423.GA14660@glanzmann.de>
-Mail-Followup-To: Thomas Glanzmann <thomas@glanzmann.de>,
-	LKML <linux-kernel@vger.kernel.org>
+	Wed, 20 Aug 2014 02:15:37 -0400
+Date: Wed, 20 Aug 2014 08:15:27 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
+        Hein Tibosch <hein_tibosch@yahoo.es>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 03/12] dmaengine: dw: convert dw_dma_slave to use
+ explicit HS interfaces
+Message-ID: <20140820061526.GB20366@samfundet.no>
+References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+ <1408469363-15901-4-git-send-email-andriy.shevchenko@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1408469363-15901-4-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I used to compile 64 Bit Kernel on 32 Bit Userland and until v3.16 it
-worked. But with todays git head from Linus it does not:
+Around Tue 19 Aug 2014 20:29:14 +0300 or thereabout, Andy Shevchenko wrote:
+> Instead of exposing the possibility to set DMA registers CFG_HI and CFG_LO
+> strict user to provide handshake interfaces explicitly.
+> 
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-(mini) [~/work/linux-2.6] make                                                                                                                                                                         scripts/kconfig/conf --silentoldconfig Kconfig
-  CHK     include/config/kernel.release
-  UPD     include/config/kernel.release
-  CHK     include/generated/uapi/linux/version.h
-  CHK     include/generated/utsrelease.h
-  UPD     include/generated/utsrelease.h
-  CC      arch/x86/purgatory/purgatory.o
-arch/x86/purgatory/purgatory.c:1:0: error: code model 'large' not supported in the 32 bit mode
-make[1]: *** [arch/x86/purgatory/purgatory.o] Error 1
-make: *** [archprepare] Error 2
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-I'll do git bisect to identify the offending commit.
+> ---
+>  arch/avr32/mach-at32ap/at32ap700x.c  | 15 +++++----------
+>  drivers/dma/dw/core.c                |  4 ++--
+>  include/linux/platform_data/dma-dw.h | 10 ++++------
+>  3 files changed, 11 insertions(+), 18 deletions(-)
 
-I'm using Debian Wheezy 7 32 Bit on x86 with gcc version 4.7.2 (Debian
-4.7.2-5).
+<snipp diff>
 
-Cheers,
-        Thomas
+-- 
+mvh
+Hans-Christian Egtvedt
