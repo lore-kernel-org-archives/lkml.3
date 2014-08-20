@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaHTS2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 14:28:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50036 "EHLO mx1.redhat.com"
+	id S1752673AbaHTS2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 14:28:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49752 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751516AbaHTS22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751353AbaHTS22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 14:28:28 -0400
 From: Andy Grover <agrover@redhat.com>
 To: target-devel@vger.kernel.org
 Cc: linux-scsi@vger.kernel.org, hch@lst.de, nab@linux-iscsi.org,
         shli@kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFCv2 2/4] uio: Export definition of struct uio_device
-Date: Wed, 20 Aug 2014 11:28:16 -0700
-Message-Id: <1408559298-20037-3-git-send-email-agrover@redhat.com>
+Subject: [RFCv2 1/4] target: Remove unneeded check in sbc_parse_cdb
+Date: Wed, 20 Aug 2014 11:28:15 -0700
+Message-Id: <1408559298-20037-2-git-send-email-agrover@redhat.com>
 In-Reply-To: <1408559298-20037-1-git-send-email-agrover@redhat.com>
 References: <1408559298-20037-1-git-send-email-agrover@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to prevent a O(n) search of the filesystem to link up its uio
-node with its target configuration, TCMU needs to know the minor number
-that UIO assigned. Expose the definition of this struct so TCMU can
-access this field.
+The check of SCF_SCSI_DATA_CDB seems to be a remnant from before hch's
+refactoring of this function. There are no places where that flag is set
+that cmd->execute_cmd isn't also set.
 
 Signed-off-by: Andy Grover <agrover@redhat.com>
 ---
- drivers/uio/uio.c          | 12 ------------
- include/linux/uio_driver.h | 12 +++++++++++-
- 2 files changed, 11 insertions(+), 13 deletions(-)
+ drivers/target/target_core_sbc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index a673e5b..60fa627 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -28,18 +28,6 @@
+diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+index bd78d92..ebe62af 100644
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -948,7 +948,7 @@ sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops)
+ 	}
  
- #define UIO_MAX_DEVICES		(1U << MINORBITS)
+ 	/* reject any command that we don't have a handler for */
+-	if (!(cmd->se_cmd_flags & SCF_SCSI_DATA_CDB) && !cmd->execute_cmd)
++	if (!cmd->execute_cmd)
+ 		return TCM_UNSUPPORTED_SCSI_OPCODE;
  
--struct uio_device {
--	struct module		*owner;
--	struct device		*dev;
--	int			minor;
--	atomic_t		event;
--	struct fasync_struct	*async_queue;
--	wait_queue_head_t	wait;
--	struct uio_info		*info;
--	struct kobject		*map_dir;
--	struct kobject		*portio_dir;
--};
--
- static int uio_major;
- static struct cdev *uio_cdev;
- static DEFINE_IDR(uio_idr);
-diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-index 1ad4724..baa8171 100644
---- a/include/linux/uio_driver.h
-+++ b/include/linux/uio_driver.h
-@@ -63,7 +63,17 @@ struct uio_port {
- 
- #define MAX_UIO_PORT_REGIONS	5
- 
--struct uio_device;
-+struct uio_device {
-+        struct module           *owner;
-+        struct device           *dev;
-+        int                     minor;
-+        atomic_t                event;
-+        struct fasync_struct    *async_queue;
-+        wait_queue_head_t       wait;
-+        struct uio_info         *info;
-+        struct kobject          *map_dir;
-+        struct kobject          *portio_dir;
-+};
- 
- /**
-  * struct uio_info - UIO device capabilities
+ 	if (cmd->se_cmd_flags & SCF_SCSI_DATA_CDB) {
 -- 
 1.9.3
 
