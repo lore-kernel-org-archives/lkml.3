@@ -1,71 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586AbaHTMSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:18:06 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:38714 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745AbaHTMSD (ORCPT
+	id S1752880AbaHTMUJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:20:09 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57991 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208AbaHTMUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:18:03 -0400
-Date: Wed, 20 Aug 2014 13:17:56 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Bryan Wu <cooloney@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
-Subject: Re: [PATCH] pwm-backlight: fix bogus request for GPIO#0 when
- instantiated from DT
-Message-ID: <20140820121756.GK4266@lee--X1>
-References: <1408516716-28828-1-git-send-email-LW@KARO-electronics.de>
+	Wed, 20 Aug 2014 08:20:06 -0400
+Date: Wed, 20 Aug 2014 05:19:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Sasha Levin <sasha.levin@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+Message-ID: <20140820121959.GT4752@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
+ <20140619165247.GA4904@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1406192127100.5170@nanos>
+ <alpine.DEB.2.11.1406191519090.4002@gentwo.org>
+ <20140818163757.GA30742@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1408182147400.28727@gentwo.org>
+ <20140819035828.GI4752@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1408192057200.32428@gentwo.org>
+ <20140820023121.GS4752@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1408200059260.2810@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408516716-28828-1-git-send-email-LW@KARO-electronics.de>
+In-Reply-To: <alpine.DEB.2.11.1408200059260.2810@gentwo.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082012-6688-0000-0000-000004268796
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Aug 2014, Lothar Waßmann wrote:
-
-> commit 257462dbf3ed ("pwm-backlight: switch to gpiod interface")
-> introduced a regression leading to acquiring a bogus GPIO-0 when
-> configured from DT without an 'enable-gpios' property.
-> The driver will happily accept the 0 initialized 'enable_gpio' member
-> of the struct platform_pwm_backlight_data as valid gpio number, and
-> request this GPIO as enable pin. In case of multiple driver instances,
-> the second will fail to register with the error message:
-> pwm-backlight backlight1.23: failed to request GPIO#0: -16
+On Wed, Aug 20, 2014 at 01:01:19AM -0500, Christoph Lameter wrote:
+> On Tue, 19 Aug 2014, Paul E. McKenney wrote:
 > 
-> Fix this by setting enable_gpio in the pdata struct to -EINVAL.
+> > > We could also remove the #ifdefs if init_rcu_head and destroy_rcu_head
+> > > are no ops if CONFIG_DEBUG_RCU_HEAD is not defined.
+> >
+> > And indeed they are, good point!  It appears to me that both sets of
+> > #ifdefs can go away.
 > 
-> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> ---
->  drivers/video/backlight/pwm_bl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Ok then this is a first workable version I think. How do we test this?
 
-Applied to -fixes with Thierry's Ack and the blank line left.
+It looks good to me.
 
-> diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-> index d7a3d13..e6ef6b4 100644
-> --- a/drivers/video/backlight/pwm_bl.c
-> +++ b/drivers/video/backlight/pwm_bl.c
-> @@ -172,7 +172,7 @@ static int pwm_backlight_parse_dt(struct device *dev,
->  		data->dft_brightness = value;
->  		data->max_brightness--;
->  	}
-> -
-> +	data->enable_gpio = -EINVAL;
->  	return 0;
+Sasha, could you please try this out?  This should fix the problem
+you reported here:  https://lkml.org/lkml/2014/6/19/306
+
+							Thanx, Paul
+
+> From: Christoph Lameter <cl@linux.com>
+> Subject: slub: Add init/destroy function calls for rcu_heads
+> 
+> In order to do proper debugging for rcu_head use we need some
+> additional structures allocated when an object potentially
+> using a rcu_head is allocated in the slub allocator.
+> 
+> This adds the proper calls to init_rcu_head()
+> and destroy_rcu_head().
+> 
+> init_rcu_head() is a bit of an unusual function since:
+> 1. It does not touch the contents of the rcu_head. This is
+>    required since the rcu_head is only used during
+>    slab_page freeing. Outside of that the same memory location
+>    is used for slab page list management. However, the
+>    initialization occurs when the slab page is initially allocated.
+>    So in the time between init_rcu_head() and destroy_rcu_head()
+>    there may be multiple uses of the indicated address as a
+>    list_head.
+> 
+> 2. It is called without gfp flags and could potentially
+>    be called from atomic contexts. Allocations from init_rcu_head()
+>    context need to deal with this.
+> 
+> 3. init_rcu_head() is called from within the slab allocation
+>    functions. Since init_rcu_head() calls the allocator again
+>    for more allocations it must avoid to use slabs that use
+>    rcu freeing. Otherwise endless recursion may occur
+>    (We may have to convince lockdep that what we do here is sane).
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c
+> +++ linux/mm/slub.c
+> @@ -1308,6 +1308,25 @@ static inline struct page *alloc_slab_pa
+>  	return page;
 >  }
->  
+> 
+> +#define need_reserve_slab_rcu						\
+> +	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
+> +
+> +static struct rcu_head *get_rcu_head(struct kmem_cache *s, struct page *page)
+> +{
+> +	if (need_reserve_slab_rcu) {
+> +		int order = compound_order(page);
+> +		int offset = (PAGE_SIZE << order) - s->reserved;
+> +
+> +		VM_BUG_ON(s->reserved != sizeof(struct rcu_head));
+> +		return page_address(page) + offset;
+> +	} else {
+> +		/*
+> +		 * RCU free overloads the RCU head over the LRU
+> +		 */
+> +		return (void *)&page->lru;
+> +	}
+> +}
+> +
+>  static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+>  {
+>  	struct page *page;
+> @@ -1357,6 +1376,29 @@ static struct page *allocate_slab(struct
+>  			kmemcheck_mark_unallocated_pages(page, pages);
+>  	}
+> 
+> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU) && page)
+> +		/*
+> +		 * Initialize various things. However, this init is
+> +	 	 * not allowed to modify the contents of the rcu head.
+> +		 * The allocator typically overloads the rcu head over
+> +		 * page->lru which is also used to manage lists of
+> +		 * slab pages.
+> +		 *
+> +		 * Allocations are permitted in init_rcu_head().
+> +		 * However, the use of the same cache or another
+> +		 * cache with SLAB_DESTROY_BY_RCU set will cause
+> +		 * additional recursions.
+> +		 *
+> +		 * So in order to be safe the slab caches used
+> +		 * in init_rcu_head() should be restricted to be of the
+> +		 * non rcu kind only.
+> +		 *
+> +		 * Note also that no GFPFLAG is passed. The function
+> +		 * may therefore be called from atomic contexts
+> +		 * and somehow(?) needs to do the right thing.
+> +		 */
+> +		init_rcu_head(get_rcu_head(s, page));
+> +
+>  	if (flags & __GFP_WAIT)
+>  		local_irq_disable();
+>  	if (!page)
+> @@ -1452,13 +1494,11 @@ static void __free_slab(struct kmem_cach
+>  	memcg_uncharge_slab(s, order);
+>  }
+> 
+> -#define need_reserve_slab_rcu						\
+> -	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
+> -
+>  static void rcu_free_slab(struct rcu_head *h)
+>  {
+>  	struct page *page;
+> 
+> +	destroy_rcu_head(h);
+>  	if (need_reserve_slab_rcu)
+>  		page = virt_to_head_page(h);
+>  	else
+> @@ -1469,24 +1509,9 @@ static void rcu_free_slab(struct rcu_hea
+> 
+>  static void free_slab(struct kmem_cache *s, struct page *page)
+>  {
+> -	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+> -		struct rcu_head *head;
+> -
+> -		if (need_reserve_slab_rcu) {
+> -			int order = compound_order(page);
+> -			int offset = (PAGE_SIZE << order) - s->reserved;
+> -
+> -			VM_BUG_ON(s->reserved != sizeof(*head));
+> -			head = page_address(page) + offset;
+> -		} else {
+> -			/*
+> -			 * RCU free overloads the RCU head over the LRU
+> -			 */
+> -			head = (void *)&page->lru;
+> -		}
+> -
+> -		call_rcu(head, rcu_free_slab);
+> -	} else
+> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU))
+> +		call_rcu(get_rcu_head(s, page), rcu_free_slab);
+> +	else
+>  		__free_slab(s, page);
+>  }
+> 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
