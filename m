@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaHTDP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 23:15:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58713 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716AbaHTDP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 23:15:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,898,1400050800"; 
-   d="scan'208";a="470599012"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v3] KVM: vmx: fix ept reserved bits for 1-GByte page
-Date: Wed, 20 Aug 2014 11:17:31 +0800
-Message-Id: <1408504651-7341-1-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751853AbaHTDT0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 23:19:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52816 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaHTDTY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 23:19:24 -0400
+Date: Tue, 19 Aug 2014 22:19:19 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: Re: [PATCH] USB: pch_udc: USB gadget device support for Intel Quark
+ X1000
+Message-ID: <20140820031919.GB12639@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1407172974-22485-1-git-send-email-alvin.chen@intel.com>
+ <20140819141534.GC16085@saruman.home>
+ <4656BEB6164FC34F8171C6538F1A595B2E97D609@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
+Content-Disposition: inline
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E97D609@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EPT misconfig handler in kvm will check which reason lead to EPT
-misconfiguration after vmexit. One of the reasons is that an EPT
-paging-structure entry is configured with settings reserved for
-future functionality. However, the handler can't identify if
-paging-structure entry of reserved bits for 1-GByte page are
-configured, since PDPTE which point to 1-GByte page will reserve
-bits 29:12 instead of bits 7:3 which are reserved for PDPTE that
-references an EPT Page Directory. This patch fix it by reserve
-bits 29:12 for 1-GByte page.
+--Pd0ReVV5GZGQvF3a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
-v2 -> v3:
- * return 0xf8 for level == 4
- * check spte & (1ULL << 7) if level == 1 
- * (rsvd_mask & 0x38) == 0 for large page or leaf page 
-v1 -> v2:
- * same "if" statement cover both 2MB and 1GB pages
- * return 0xf8 for level == 4
- * get the level by checking the return value of ept_rsvd_mask
+Hi,
 
- arch/x86/kvm/vmx.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+On Wed, Aug 20, 2014 at 12:46:33AM +0000, Chen, Alvin wrote:
+>=20
+> > Hi,
+> >=20
+> > On Mon, Aug 04, 2014 at 10:22:54AM -0700, Chen, Alvin wrote:
+> > > From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> > >
+> > > This patch is to enable the USB gadget device for Intel Quark X1000
+> > >
+> > > Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> > > Signed-off-by: Bing Niu <bing.niu@intel.com>
+> > > Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+> >=20
+> > Can someone confirm to me this is not another incarnation of chipidea ?
+>=20
+> No, this is not another incarnation of chipidea. And its cover letter is =
+as following:
+>=20
+> On Mon, Aug 04, 2014 at 11:00:07AM -0700, Chen, Alvin wrote:
+> > From: "Alvin (Weike) Chen" <alvin.chen@intel.com>
+> >=20
+> > Hi,
+> > Intel Quark X1000 consists of one USB gadget device which can be PCI en=
+umerated.=20
+> > pch_udc layer doesn't support it. Thus, we add support for Intel Quark=
+=20
+> > X1000 USB gadget device as well.
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index cad37d5..3218359 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5521,17 +5521,18 @@ static u64 ept_rsvd_mask(u64 spte, int level)
- 	for (i = 51; i > boot_cpu_data.x86_phys_bits; i--)
- 		mask |= (1ULL << i);
- 
--	if (level > 2)
-+	if (level == 4)
- 		/* bits 7:3 reserved */
- 		mask |= 0xf8;
--	else if (level == 2) {
--		if (spte & (1ULL << 7))
--			/* 2MB ref, bits 20:12 reserved */
--			mask |= 0x1ff000;
--		else
--			/* bits 6:3 reserved */
--			mask |= 0x78;
--	}
-+	else if (spte & (1ULL << 7))
-+		/*
-+		 * 1GB/2MB page, bits 29:12 or 20:12 reserved respectively,
-+		 * level == 1 if the hypervisor is using the ignored bit 7.
-+		 */
-+		mask |= (PAGE_SIZE << ((level - 1) * 9)) - PAGE_SIZE;
-+	else
-+		/* bits 6:3 reserved */
-+		mask |= 0x78;
- 
- 	return mask;
- }
-@@ -5561,7 +5562,8 @@ static void ept_misconfig_inspect_spte(struct kvm_vcpu *vcpu, u64 spte,
- 			WARN_ON(1);
- 		}
- 
--		if (level == 1 || (level == 2 && (spte & (1ULL << 7)))) {
-+		/* bits 5:3 are _not_ reserved for large page or leaf page */
-+		if ((rsvd_bits & 0x38) == 0) {
- 			u64 ept_mem_type = (spte & 0x38) >> 3;
- 
- 			if (ept_mem_type == 2 || ept_mem_type == 3 ||
--- 
-1.9.1
+hehe, right I *know* what the patch is doing. I can read the diff and
+figure out that you're adding support for Quark to PCH UDC because
+Quark's USB IP is the same, what I wasking was if that IP was actually
+an instance of the chipidea UDC. After looking at the address space
+definitions on both drivers, I see that it's not.
 
+So tomorrow I'll look at this patch again.
+
+--=20
+balbi
+
+--Pd0ReVV5GZGQvF3a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT9BO3AAoJEIaOsuA1yqRE+8AP/RWNKvnShtYuOuIgutkJ8Coz
+IVqk9nZmQ+DCstnQnlB2b9E6pmDCdH6P4ED2/Fpb6HuVvloaM3Ocv2soKXezECTv
+aTblkrTtxaelN4qFeZbY8PQvVqlCn5DSogy9Ho6AIILHJLouIGdP3kbKoX4ETqEj
+SWc4/wSmN1I/dHr6c+pwkBueI6llA9amZjlec5//8URElTr0hX0XHTUv6wBOcFNP
+ao8CdhWlUKgLlRDkSGxEslt+37r1yis4UpjtlqfN7JrxRFb1snARfpc16sMijMbC
+Mk5p3T4lrY6prTmbXXqWNdVeI86a0b83XCwyaTFHmZOxQAwpmjY5qyiAR3RbVmze
+xrJ+qBF+mym2PnzTwZE/0V+OGXdUblnoIgzwr2eaAHbQDao7D3Onn+5lh+0KxhsC
+SLsRqQYw/8aGSe35vsK3TSmqUf3GAPUvkDGapTE4TiZuSToO5Z+XS6f4ChdRRhme
+VFXknoACBZY3NEu8l46O+Y+q1b09h0zYn8f9B5wRNIwazaDs2iR+c5o0O9QWjTPf
+7kjbpWGKQcnVAsHn2fgAAJVxA0QKUjTDpVBSfb7OP7fZhBgkhs03FSuoatAHXaCw
+FpodZUN8pqj58i2NRgQiRZvnfbqr+QDdO6NgHw8rhSyREPP3GwxMJ6BEseXcj3X5
+TYNYsjG95jfUhcqyP+vv
+=eNkN
+-----END PGP SIGNATURE-----
+
+--Pd0ReVV5GZGQvF3a--
