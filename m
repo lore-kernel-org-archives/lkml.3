@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaHTBEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 21:04:07 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:50784 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaHTBEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 21:04:05 -0400
+	id S1752049AbaHTBEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 21:04:51 -0400
+Received: from trent.utfs.org ([94.185.90.103]:44298 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751728AbaHTBEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 21:04:50 -0400
+Date: Tue, 19 Aug 2014 18:04:43 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: viro@zeniv.linux.org.uk, adobriyan@gmail.com, jiang.liu@linux.intel.com
+Subject: WARNING: CPU: 6 PID: 79 at fs/proc/generic.c:521
+ remove_proc_entry+0x170/0x180()
+Message-ID: <alpine.DEB.2.19.4.1408191754390.2758@trent.utfs.org>
+User-Agent: Alpine 2.19.4 (DEB 40 2013-11-18)
 MIME-Version: 1.0
-In-Reply-To: <53F3EBEE.1030107@linux.vnet.ibm.com>
-References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com>
- <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com>
- <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com>
- <53F2C997.6070605@linux.vnet.ibm.com> <53F30AA4.4050803@redhat.com>
- <53F30FCD.3080109@linux.vnet.ibm.com> <53F312CE.9090004@redhat.com> <53F3EBEE.1030107@linux.vnet.ibm.com>
-From: David Matlack <dmatlack@google.com>
-Date: Tue, 19 Aug 2014 18:03:43 -0700
-Message-ID: <CALzav=c1OS+TUjr0S_4BmkPicRxgKv2QhfOB+jWPt0VNEmugHQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
- generation number
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Avi Kivity <avi.kivity@gmail.com>, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (from: 127.0.0.1 on 127.0.0.1 at Wed Aug 20 03:04:44 2014 +0200 (CEST))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 5:29 PM, Xiao Guangrong
-<xiaoguangrong@linux.vnet.ibm.com> wrote:
-> On 08/19/2014 05:03 PM, Paolo Bonzini wrote:
->> Il 19/08/2014 10:50, Xiao Guangrong ha scritto:
->>> Okay, what confused me it that it seems that the single line patch
->>> is ok to you. :)
->>
->> No, it was late and I was confused. :)
->>
->>> Now, do we really need to care the case 2? like David said:
->>> "Sorry I didn't explain myself very well: Since we can get a single wrong
->>> mmio exit no matter what, it has to be handled in userspace. So my point
->>> was, it doesn't really help to fix that one very specific way that it can
->>> happen, because it can just happen in other ways. (E.g. update memslots
->>> occurs after is_noslot_pfn() and before mmio exit)."
->>>
->>> What's your idea?
->>>
->>>> I think if you always treat the low bit as zero in mmio sptes, you can
->>>> do that without losing a bit of the generation.
->>>
->>> What's you did is avoiding cache a invalid generation number into spte, but
->>> actually if we can figure it out when we check mmio access, it's ok. Like the
->>> updated patch i posted should fix it, that way avoids doubly increase the number.
->>
->> Yes.
->>
->>> Okay, if you're interested increasing the number doubly, there is the simpler
->>> one:
->>
->> This wastes a bit in the mmio spte though.  My idea is to increase the
->> memslots generation twice, but drop the low bit in the mmio spte.
->
-> Yeah, really smart idea. :)
->
-> Paolo/David, would you mind making a patch for this (+ the comments in David's
-> patch)?
+Hi,
 
-Paolo, since it was your idea would you like to write it? I don't mind either
-way.
+the warning below appeared while booting 3.17.0-rc1. I haven't seen the 
+warning before, but found a recent report on oops.kernel.org:
 
->
-> Please feel free to add my:
-> Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+http://oops.kernel.org/oops/warning-at-fs-proc-generic-c521-remove_proc_entry0x18f-0x1a0/
+
+and also reports from July 2014, where the issue was reported to be fixed:
+
+https://lkml.org/lkml/2014/7/16/9
+https://lkml.org/lkml/2014/7/18/116
+
+And the patch really made it into 3.17.0-rc1, so maybe it's something else 
+this time. Details and .config: http://nerdbynature.de/bits/3.17-rc1/
+
+Thanks,
+Christian.
+
+------------[ cut here ]------------
+WARNING: CPU: 6 PID: 79 at /usr/local/src/linux-git/fs/proc/generic.c:521 remove_proc_entry+0x170/0x180()
+remove_proc_entry: removing non-empty directory 'fs/nfsfs', leaking at least 'volumes'
+Modules linked in: uvcvideo videobuf2_vmalloc videobuf2_memops 
+videobuf2_core v4l2_common btusb videodev bluetooth hid_logitech_dj 
+sha256_ssse3 sha256_generic twofish_generic twofish_avx_x86_64 twofish_x86_64_3way twofish_x86_64 twofish_common 
+nfs xts lockd sunrpc arc4 coretemp x86_pkg_temp_thermal usbhid 
+intel_powerclamp hid iwldvm kvm_intel
+ mac80211 kvm snd_hda_codec_hdmi i2c_i801 iwlwifi cfg80211 thinkpad_acpi 
+snd_hda_codec_conexant snd_hda_codec_generic nvram hwmon led_class wmi 
+rtc_cmos i915 snd_hda_intel 
+i2c_algo_bit snd_hda_controller drm_kms_helper snd_hda_codec drm snd_hwdep 
+snd_pcm i2ccore snd_timer snd soundcore fuse autofs4 btrfs xor raid6_pq 
+aesni_intel aes_x86_64 glue_helper lrw gf128mul ablk_helper cryptd sr_mod cdrom sg ehci_pci 
+ehci_hcd xhci_hcd
+CPU: 6 PID: 79 Comm: kworker/u16:6 Not tainted 3.17.0-rc1 #1
+Hardware name: LENOVO 6277CTO/6277CTO, BIOS HEET42WW (1.23 ) 01/27/2014
+Workqueue: netns cleanup_net
+ 0000000000000009 ffffffff8149c1e2 ffff880406c8fd18 ffffffff8104ee6d
+ ffff880406701580 ffff880406c8fd68 0000000000000005 ffffffffc0883bae
+ ffffffffc0883bb1 ffffffff8104eed7 ffffffff815b1578 ffff880400000030
+Call Trace:
+ [<ffffffff8149c1e2>] ? dump_stack+0x41/0x51
+ [<ffffffff8104ee6d>] ? warn_slowpath_common+0x6d/0x90
+ [<ffffffff8104eed7>] ? warn_slowpath_fmt+0x47/0x50
+ [<ffffffff811955d1>] ? proc_entry_rundown+0x41/0x80
+ [<ffffffff81199b50>] ? remove_proc_entry+0x170/0x180
+ [<ffffffffc0873a79>] ? nfs_net_exit+0x9/0x20 [nfs]
+ [<ffffffff813e5951>] ? ops_exit_list.isra.2+0x31/0x60
+ [<ffffffff813e6150>] ? cleanup_net+0x100/0x1e0
+ [<ffffffff8106316b>] ? process_one_work+0x16b/0x3b0
+ [<ffffffff81063ed3>] ? worker_thread+0x63/0x490
+ [<ffffffff81063e70>] ? rescuer_thread+0x280/0x280
+ [<ffffffff8106848a>] ? kthread+0xca/0xe0
+ [<ffffffff810683c0>] ? kthread_create_on_node+0x170/0x170
+ [<ffffffff814a1b7c>] ? ret_from_fork+0x7c/0xb0
+ [<ffffffff810683c0>] ? kthread_create_on_node+0x170/0x170
+---[ end trace c92165dd3f372cf6 ]---
+
+
+-- 
+BOFH excuse #285:
+
+Telecommunications is upgrading.
