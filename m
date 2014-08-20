@@ -1,143 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaHTQZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 12:25:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32731 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbaHTQZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 12:25:20 -0400
-Date: Wed, 20 Aug 2014 12:25:11 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, serge@hallyn.com, linux-api@vger.kernel.org
-Subject: Re: [PATCH V3 0/6] namespaces: log namespaces per task
-Message-ID: <20140820162511.GS4462@madcap2.tricolour.ca>
-References: <cover.1400271129.git.rgb@redhat.com>
- <1400593754.15733.4.camel@flatline.rdu.redhat.com>
- <20140520140146.GA8079@madcap2.tricolour.ca>
- <20140819164617.GE9003@madcap2.tricolour.ca>
- <8738crst5i.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8738crst5i.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752290AbaHTQ0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 12:26:11 -0400
+Received: from server102.greatnet.de ([83.133.97.2]:45466 "EHLO
+	server102.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaHTQ0J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 12:26:09 -0400
+X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Aug 2014 12:26:08 EDT
+From: Benjamin Block <bebl@mageta.org>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Block <bebl@mageta.org>
+Subject: [PATCH] net: ipv6: fib: don't sleep inside atomic lock
+Date: Wed, 20 Aug 2014 18:16:06 +0200
+Message-Id: <1408551366-24237-1-git-send-email-bebl@mageta.org>
+X-Mailer: git-send-email 1.8.5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/08/19, Eric W. Biederman wrote:
-> Richard Guy Briggs <rgb@redhat.com> writes:
-> 
-> > On 14/05/20, Richard Guy Briggs wrote:
-> >> On 14/05/20, Eric Paris wrote:
-> >> > On Tue, 2014-05-20 at 09:12 -0400, Richard Guy Briggs wrote:
-> >> > > The purpose is to track namespaces in use by logged processes from the
-> >> > > perspective of init_*_ns.
-> >
-> > (Including the Linux API list due to the additions to /proc/<pid>/ns/.
-> > Please see http://www.kernelhub.org/?p=2&msg=477668 and in particular
-> > http://www.kernelhub.org/?msg=477678&p=2 )
-> 
-> Sigh if you have to use something like this use the proc inode
-> number.  It is the same thing.
-> 
-> I hate to claim it is unique absent of the proc superblock but it is and
-> will be for the forseable future.  
-> 
-> It would be better to include the block device number that appears in
-> proc of 3h of the primary mount of to qualify the number.  But it is not
-> particularly important.  Coming up with an additional unique number that
-> needs to be maintained seems stronlgy silly.
+The function fib6_commit_metrics() allocates a piece of memory in mode
+GFP_KERNEL while holding an atomic lock from higher up in the stack, in
+the function __ip6_ins_rt(). This produces the following BUG:
 
-I am reading a contradiction here:
-	https://www.redhat.com/archives/linux-audit/2013-March/msg00032.html
+> BUG: sleeping function called from invalid context at mm/slub.c:1250
+> in_atomic(): 1, irqs_disabled(): 0, pid: 2909, name: dhcpcd
+> 2 locks held by dhcpcd/2909:
+>  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81978e67>] rtnl_lock+0x17/0x20
+>  #1:  (&tb->tb6_lock){++--+.}, at: [<ffffffff81a6951a>] ip6_route_add+0x65a/0x800
+> CPU: 1 PID: 2909 Comm: dhcpcd Not tainted 3.17.0-rc1 #1
+> Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
+>  0000000000000008 ffff8800c8f13858 ffffffff81af135a 0000000000000000
+>  ffff880212202430 ffff8800c8f13878 ffffffff810f8d3a ffff880212202c98
+>  0000000000000010 ffff8800c8f138c8 ffffffff8121ad0e 0000000000000001
+> Call Trace:
+>  [<ffffffff81af135a>] dump_stack+0x4e/0x68
+>  [<ffffffff810f8d3a>] __might_sleep+0x10a/0x120
+>  [<ffffffff8121ad0e>] kmem_cache_alloc_trace+0x4e/0x190
+>  [<ffffffff81a6bcd6>] ? fib6_commit_metrics+0x66/0x110
+>  [<ffffffff81a6bcd6>] fib6_commit_metrics+0x66/0x110
+>  [<ffffffff81a6cbf3>] fib6_add+0x883/0xa80
+>  [<ffffffff81a6951a>] ? ip6_route_add+0x65a/0x800
+>  [<ffffffff81a69535>] ip6_route_add+0x675/0x800
+>  [<ffffffff81a68f2a>] ? ip6_route_add+0x6a/0x800
+>  [<ffffffff81a6990c>] inet6_rtm_newroute+0x5c/0x80
+>  [<ffffffff8197cf01>] rtnetlink_rcv_msg+0x211/0x260
+>  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
+>  [<ffffffff81119708>] ? lock_release_holdtime+0x28/0x180
+>  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
+>  [<ffffffff8197ccf0>] ? __rtnl_unlock+0x20/0x20
+>  [<ffffffff819a989e>] netlink_rcv_skb+0x6e/0xd0
+>  [<ffffffff81978ee5>] rtnetlink_rcv+0x25/0x40
+>  [<ffffffff819a8e59>] netlink_unicast+0xd9/0x180
+>  [<ffffffff819a9600>] netlink_sendmsg+0x700/0x770
+>  [<ffffffff81103735>] ? local_clock+0x25/0x30
+>  [<ffffffff8194e83c>] sock_sendmsg+0x6c/0x90
+>  [<ffffffff811f98e3>] ? might_fault+0xa3/0xb0
+>  [<ffffffff8195ca6d>] ? verify_iovec+0x7d/0xf0
+>  [<ffffffff8194ec3e>] ___sys_sendmsg+0x37e/0x3b0
+>  [<ffffffff8111ef15>] ? trace_hardirqs_on_caller+0x185/0x220
+>  [<ffffffff81af979e>] ? mutex_unlock+0xe/0x10
+>  [<ffffffff819a55ec>] ? netlink_insert+0xbc/0xe0
+>  [<ffffffff819a65e5>] ? netlink_autobind.isra.30+0x125/0x150
+>  [<ffffffff819a6520>] ? netlink_autobind.isra.30+0x60/0x150
+>  [<ffffffff819a84f9>] ? netlink_bind+0x159/0x230
+>  [<ffffffff811f989a>] ? might_fault+0x5a/0xb0
+>  [<ffffffff8194f25e>] ? SYSC_bind+0x7e/0xd0
+>  [<ffffffff8194f8cd>] __sys_sendmsg+0x4d/0x80
+>  [<ffffffff8194f912>] SyS_sendmsg+0x12/0x20
+>  [<ffffffff81afc692>] system_call_fastpath+0x16/0x1b
 
-and this posting went completely ignored:
-	https://www.redhat.com/archives/linux-audit/2014-January/msg00180.html
+Fixing this by replacing the mode GFP_KERNEL with GFP_NOWAIT.
 
-And then there was this patchset and thread where there was some good
-discussion to clarify the use case:
-	https://lkml.org/lkml/2014/4/22/662
+Signed-off-by: Benjamin Block <bebl@mageta.org>
+---
+ net/ipv6/ip6_fib.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Then V2:
-	https://lkml.org/lkml/2014/5/9/637
+diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
+index cb4459b..7eef9fc 100644
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -643,7 +643,7 @@ static int fib6_commit_metrics(struct dst_entry *dst,
+ 	if (dst->flags & DST_HOST) {
+ 		mp = dst_metrics_write_ptr(dst);
+ 	} else {
+-		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
++		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_NOWAIT);
+ 		if (!mp)
+ 			return -ENOMEM;
+ 		dst_init_metrics(dst, mp, 0);
+-- 
+1.8.5.5
 
-Then V3 3 months ago:
-	https://www.redhat.com/archives/linux-audit/2014-May/msg00071.html
-
-I'm about to post another version of the patchset addressing Eric Paris'
-concerns about record types, field naming...
-
-> Eric
-> 
-> > <snip>
-> >
-> >> > > 5/6 provides an example of usage for audit_log_task_info() which is used by
-> >> > > syscall audits, among others.  audit_log_task() and audit_common_recv_message()
-> >> > > would be other potential use cases.
-> >> > > 
-> >> > > Proposed output format:
-> >> > > This differs slightly from Aristeu's patch because of the label conflict with
-> >> > > "pid=" due to including it in existing records rather than it being a seperate
-> >> > > record.  The serial numbers are printed in hex.
-> >> > > 	type=SYSCALL msg=audit(1399651071.433:72): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=483 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" netns=97 utsns=2 ipcns=1 pidns=4 userns=3 mntns=5 subj=system_u:system_r:init_t:s0 key=(null)
-> >> > 
-> >> > I'm undecided if I'd rather see this as a separate NS_INFO record type.
-> >> > It would mean we could filter them out of the logs...
-> >> 
-> >> I don't have a strong opinion either way.  Steve G.'s opinion would be
-> >> helpful here.
-> >
-> > Breaking this out into a seperate record type would mean calling
-> > audit_log_namespace_info() from the callers of audit_log_task_info()
-> > (presently audit_log_link_denied(), ima_audit_measurement(),
-> > audit_log_exit() ), but would make it easier to emit with other record
-> > types.
-> >
-> >> > Do we print out lots of pidns=0 for tasks not in a newly created NS?  Do
-> >> > we want to?
-> >> 
-> >> There is no "pidns=0", but I understand your point.  This would come
-> >> back to Steve G.'s point about disappearing fields, and the value of
-> >> having it as a seperate record that could be filtered.
-> >> 
-> >> > > 6/6 tracks the creation and deletion of of namespaces, listing the type of
-> >> > > namespace instance, related namespace id if there is one and the newly minted
-> >> > > serial number.
-> >> > > 
-> >> > > Proposed output format:
-> >> > > 	type=NS_INIT msg=audit(1400217435.706:94): pid=524 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:mount_t:s0 type=20000 old_snum=0 snum=a1 res=1
-> >> > 
-> >> > I'd love to be able to grep for netns=20 and find both the NS_INIT and
-> >> > the SYSCALL/NS_INFO records, instead of having them named different
-> >> > things.  So basically I think you want to translate the type= into a
-> >> > string for the old_X= and X=...
-> >> 
-> >> That actually makes a bit more sense, and we could do away with the
-> >> "type=" field since the "Xns=" fields are self-describing.
-> >
-> > Steve, how do you feel about this since the NS_INIT/NS_DEL record type
-> > would have changing fields amongst the 6 namespace types.  Only one of
-> > the 6 would be present in each message.  I suppose we could have an
-> > NS_INIT_XXX/NS_DEL_XXX for each namespace type.
-> >
-> >> - RGB
-> >
-> > - RGB
-> >
-> > --
-> > Richard Guy Briggs <rbriggs@redhat.com>
-> > Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> > Remote, Ottawa, Canada
-> > Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
