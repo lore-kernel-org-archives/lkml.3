@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491AbaHTMJG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:09:06 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58902 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752495AbaHTLoJ (ORCPT
+	id S1754303AbaHTMHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:07:03 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:50862 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174AbaHTMGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:09 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Malcolm Priestley <tvboxspy@gmail.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 026/104] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
-Date: Wed, 20 Aug 2014 13:42:49 +0200
-Message-Id: <6e1af05639abfc6f1841e6bf8b5c8492971ed1f2.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 08:06:09 -0400
+Date: Wed, 20 Aug 2014 13:05:11 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: jgross@suse.com
+Cc: stefan.bader@canonical.com, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
+        x86@kernel.org
+Subject: Re: [PATCH RFC 0/3] x86: Full support of PAT
+Message-ID: <20140820130511.771aeafa@alan.etchedpixels.co.uk>
+In-Reply-To: <1408454745-32358-1-git-send-email-jgross@suse.com>
+References: <1408454745-32358-1-git-send-email-jgross@suse.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+> top 4 entries in the PAT MSR are the same as the 4 lower entries.
+> 
+> This results in the kernel not supporting e.g. write-through mode. Especially
+> this cache mode would speed up drivers of video cards which now have to use
+> uncached accesses.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
 
-===============
+Pentium II erratum A52 (and similar on quite a few other processors)
 
-commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
+Problem: The Page Attribute Table (PAT) contains eight entries, which
+must all be initialized and considered when setting up memory types for
+the Pentium II processor. However, in Mode B or Mode C paging, the upper
+four entries do not function correctly for 4-Kbyte pages. Specifically,
+bit seven of page table entries that translate addresses to 4-Kbyte pages
+should be used as the upper bit of a three-bit index to determine the PAT
+entry that specifies the memory type for the page. When Mode B (CR4.PSE =
+1) and/or Mode C (CR4.PAE) are enabled, the processor forces this bit to
+zero when determining the memory type regardless of the value in the page
+table entry. The upper four entries of the PAT function correctly for
+2-Mbyte and 4-Mbyte large pages (specified by bit 12 of the page
+directory entry for those translations). Implication: Only the lower four
+PAT entries are useful for 4 KB translations when Mode B or C paging is
+used. In Mode A paging (4-Kbyte pages only), all eight entries may be
+used. All eight entries may be used for large pages in Mode B or C paging.
 
-WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
-irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
 
-Using spin_lock_irqsave appears to fix this.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/staging/vt6655/device_main.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Doing this stuff for Xen also IMHO makes no sense at all. We shouldn't
+have a kernel full of crap to deal with Xen-isms. IFF it means the
+changes can also implement a mix of four PAT entries on Pentium-M or
+earlier CPUs with PAT errata, and the full PAT on processors without
+errata then IMHO it becomes a whole world more interesting.
 
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index 7f36a7103c3e..7268354e139a 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -2434,6 +2434,7 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
- 	int             handled = 0;
- 	unsigned char byData = 0;
- 	int             ii = 0;
-+	unsigned long flags;
- //    unsigned char byRSSI;
- 
- 	MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
-@@ -2459,7 +2460,8 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
- 
- 	handled = 1;
- 	MACvIntDisable(pDevice->PortOffset);
--	spin_lock_irq(&pDevice->lock);
-+
-+	spin_lock_irqsave(&pDevice->lock, flags);
- 
- 	//Make sure current page is 0
- 	VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
-@@ -2700,7 +2702,8 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance) {
- 		MACvSelectPage1(pDevice->PortOffset);
- 	}
- 
--	spin_unlock_irq(&pDevice->lock);
-+	spin_unlock_irqrestore(&pDevice->lock, flags);
-+
- 	MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
- 
- 	return IRQ_RETVAL(handled);
--- 
-2.0.4
-
+Alan
