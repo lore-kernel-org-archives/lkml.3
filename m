@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706AbaHTSyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 14:54:10 -0400
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:48817 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990AbaHTSyH (ORCPT
+	id S1752854AbaHTSyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 14:54:17 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:40939 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661AbaHTSyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 14:54:07 -0400
+	Wed, 20 Aug 2014 14:54:10 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Heiko Stuebner <heiko@sntech.de>,
         Thierry Reding <thierry.reding@gmail.com>,
@@ -17,11 +17,11 @@ Cc: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
         Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
         pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v4 2/4] ARM: rockchip: rk3288: Switch to use the proper PWM IP
-Date: Wed, 20 Aug 2014 11:54:00 -0700
-Message-Id: <1408560842-3746-3-git-send-email-dianders@chromium.org>
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 4/4] ARM: dts: Enable PWM backlight on rk3288-evb
+Date: Wed, 20 Aug 2014 11:54:02 -0700
+Message-Id: <1408560842-3746-5-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1408560842-3746-1-git-send-email-dianders@chromium.org>
 References: <1408560842-3746-1-git-send-email-dianders@chromium.org>
@@ -29,100 +29,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rk3288 SoC has an option to switch all of the PWMs in the system
-between the old IP block and the new IP block.  The rk3288 PWM driver
-is written for the new block, so make sure that we enable the new
-block in the GRF (general register file) when the PWM driver probes.
-
-We emulate the solution to this problem used in i2c-rk3x.c.  One
-difference for the PWM is that there's a single "enable new IP" that's
-used for all 4 PWMs.  That means we set this bit 4 times if we've got
-all 4 PWMs enabled.  That shouldn't hurt.
+PWM0 is the PWM associated with the LCD backlight.  Enable it.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
-Changes in v4:
-- Totally rewrote to go in the PWM driver.
-- Reordered IP switch to be atop invert patch.
+Changes in v4: None
+Changes in v3:
+- Fix space to tab in 2 places in DTS.
+- Make sure PWM is upper case in prose.
 
-Changes in v3: None
-Changes in v2:
-- Check for failed ioremap()
+Changes in v2: None
 
- .../devicetree/bindings/pwm/pwm-rockchip.txt       |  4 +++
- drivers/pwm/pwm-rockchip.c                         | 29 ++++++++++++++++++++++
- 2 files changed, 33 insertions(+)
+ arch/arm/boot/dts/rk3288-evb.dtsi | 53 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-index b8be3d0..39190ec 100644
---- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-+++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
-@@ -10,6 +10,10 @@ Required properties:
-  - #pwm-cells: must be 2 (rk2928) or 3 (rk3288). See pwm.txt in this directory
-    for a description of the cell format.
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index 2964370..98b69d0 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -10,6 +10,7 @@
+  * GNU General Public License for more details.
+  */
  
-+Required for "rockchip,rk3288-pwm":
-+ - rockchip,grf : the phandle of the syscon node for the general register
-+		  file (GRF)
-+
- Example:
++#include <dt-bindings/pwm/pwm.h>
+ #include "rk3288.dtsi"
  
- 	pwm0: pwm@20030000 {
-diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
-index 9442df2..08cbde6 100644
---- a/drivers/pwm/pwm-rockchip.c
-+++ b/drivers/pwm/pwm-rockchip.c
-@@ -16,7 +16,12 @@
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/pwm.h>
-+#include <linux/regmap.h>
- #include <linux/time.h>
-+#include <linux/mfd/syscon.h>
-+
-+#define RK3288_GRF_PWM_ENABLE_OFFSET	0x024c
-+#define RK3288_GRF_PWM_ENABLE_BIT	0
+ / {
+@@ -17,6 +18,48 @@
+ 		reg = <0x0 0x80000000>;
+ 	};
  
- #define PWM_CTRL_TIMER_EN	(1 << 0)
- #define PWM_CTRL_OUTPUT_EN	(1 << 3)
-@@ -231,6 +236,7 @@ MODULE_DEVICE_TABLE(of, rockchip_pwm_dt_ids);
++	backlight {
++		compatible = "pwm-backlight";
++		brightness-levels = <
++			  0   1   2   3   4   5   6   7
++			  8   9  10  11  12  13  14  15
++			 16  17  18  19  20  21  22  23
++			 24  25  26  27  28  29  30  31
++			 32  33  34  35  36  37  38  39
++			 40  41  42  43  44  45  46  47
++			 48  49  50  51  52  53  54  55
++			 56  57  58  59  60  61  62  63
++			 64  65  66  67  68  69  70  71
++			 72  73  74  75  76  77  78  79
++			 80  81  82  83  84  85  86  87
++			 88  89  90  91  92  93  94  95
++			 96  97  98  99 100 101 102 103
++			104 105 106 107 108 109 110 111
++			112 113 114 115 116 117 118 119
++			120 121 122 123 124 125 126 127
++			128 129 130 131 132 133 134 135
++			136 137 138 139 140 141 142 143
++			144 145 146 147 148 149 150 151
++			152 153 154 155 156 157 158 159
++			160 161 162 163 164 165 166 167
++			168 169 170 171 172 173 174 175
++			176 177 178 179 180 181 182 183
++			184 185 186 187 188 189 190 191
++			192 193 194 195 196 197 198 199
++			200 201 202 203 204 205 206 207
++			208 209 210 211 212 213 214 215
++			216 217 218 219 220 221 222 223
++			224 225 226 227 228 229 230 231
++			232 233 234 235 236 237 238 239
++			240 241 242 243 244 245 246 247
++			248 249 250 251 252 253 254 255>;
++		default-brightness-level = <128>;
++		enable-gpios = <&gpio7 2 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&bl_en>;
++		pwms = <&pwm0 0 1000000 PWM_POLARITY_INVERTED>;
++	};
++
+ 	gpio-keys {
+ 		compatible = "gpio-keys";
+ 		#address-cells = <1>;
+@@ -81,6 +124,10 @@
+ 	status = "okay";
+ };
  
- static int rockchip_pwm_probe(struct platform_device *pdev)
- {
-+	struct device_node *np = pdev->dev.of_node;
- 	const struct of_device_id *id;
- 	struct rockchip_pwm_chip *pc;
- 	struct resource *r;
-@@ -240,6 +246,29 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
- 	if (!id)
- 		return -EINVAL;
++&pwm0 {
++	status = "okay";
++};
++
+ &uart0 {
+ 	status = "okay";
+ };
+@@ -102,6 +149,12 @@
+ };
  
-+	/*
-+	 * Switch to new interface on rk3288.
-+	 * The control bit is located in the GRF register space.
-+	 */
-+	if (of_device_is_compatible(np, "rockchip,rk3288-pwm")) {
-+		struct regmap *grf;
+ &pinctrl {
++	backlight {
++		bl_en: bl-en {
++			rockchip,pins = <7 2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
 +
-+		grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
-+		if (IS_ERR(grf)) {
-+			dev_err(&pdev->dev, "Missing rockchip,grf property\n");
-+			return PTR_ERR(grf);
-+		}
-+
-+		/* Set bit 16 for write mask, 0 for switch to new IP */
-+		ret = regmap_write(grf, RK3288_GRF_PWM_ENABLE_OFFSET,
-+				   BIT(RK3288_GRF_PWM_ENABLE_BIT + 16) |
-+				   BIT(RK3288_GRF_PWM_ENABLE_BIT));
-+		if (ret != 0) {
-+			dev_err(&pdev->dev, "Could not access GRF: %d\n", ret);
-+			return ret;
-+		}
-+	}
-+
- 	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
- 	if (!pc)
- 		return -ENOMEM;
+ 	buttons {
+ 		pwrbtn: pwrbtn {
+ 			rockchip,pins = <0 5 RK_FUNC_GPIO &pcfg_pull_up>;
 -- 
 2.1.0.rc2.206.gedb03e5
 
