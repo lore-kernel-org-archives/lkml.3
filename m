@@ -1,142 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaHTUM5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:12:57 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:45891 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaHTUM4 (ORCPT
+	id S1752896AbaHTUQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:16:30 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35790 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010AbaHTUQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:12:56 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de
-Subject: Re: [PATCH 5/8] of: Add of_graph_get_port_by_id function
-Date: Wed, 20 Aug 2014 22:13:34 +0200
-Message-ID: <2335139.eKsPusnO4R@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1408453366-1366-6-git-send-email-p.zabel@pengutronix.de>
-References: <1408453366-1366-1-git-send-email-p.zabel@pengutronix.de> <1408453366-1366-6-git-send-email-p.zabel@pengutronix.de>
+	Wed, 20 Aug 2014 16:16:29 -0400
+Message-ID: <53F50231.5010605@wwwdotorg.org>
+Date: Wed, 20 Aug 2014 14:16:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Mikko Perttunen <mperttunen@nvidia.com>, thierry.reding@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, wni@nvidia.com
+Subject: Re: [PATCH v2 1/5] of: Add descriptions of thermtrip properties to
+ Tegra PMC bindings
+References: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com> <1407933685-12404-2-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1407933685-12404-2-git-send-email-mperttunen@nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+On 08/13/2014 06:41 AM, Mikko Perttunen wrote:
+> Hardware-triggered thermal reset requires configuring the I2C
+> reset procedure. This configuration is read from the device tree,
+> so document the relevant properties in the binding documentation.
 
-Thank you for the patch.
+> diff --git a/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt b/Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-pmc.txt
 
-On Tuesday 19 August 2014 15:02:43 Philipp Zabel wrote:
-> This patch adds a function to get a port device tree node by port id,
-> or reg property value.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
->  drivers/of/base.c        | 30 ++++++++++++++++++++++++++++++
->  include/linux/of_graph.h |  7 +++++++
->  2 files changed, 37 insertions(+)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index a49b5628..6044c15 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2053,6 +2053,36 @@ int of_graph_parse_endpoint(const struct device_node
-> *node, EXPORT_SYMBOL(of_graph_parse_endpoint);
-> 
->  /**
-> + * of_graph_get_port_by_id() - get the port matching a given id
-> + * @parent: pointer to the parent device node
-> + * @id: id of the port
-> + *
-> + * Return: A 'port' node pointer with refcount incremented.The caller
+> +Hardware-triggered thermal reset:
+> +On Tegra30, Tegra114 and Tegra124, if the 'i2c-thermtrip' subnode exists,
+> +hardware-triggered thermal reset will be enabled.
 
-Missing space before "The".
+"will be enabled" sounds like SW behaviour, whereas DT is suppose to 
+describe HW, and leave SW to define its own behaviour. I would suggest:
 
-> + * has to use of_node_put() on it when done.
-> + */
-> +struct device_node *of_graph_get_port_by_id(struct device_node *node, int
-> id)
+Optional sub-nodes:
+i2c-thermtrip: Describes how to power off the system in the event of a
+   thermal emergency.
 
-How about making id and unsigned int, as it can't be negative ?
+> +Required properties for hardware-triggered thermal reset (inside 'i2c-thermtrip'):
 
-> +{
-> +	struct device_node *port = NULL;
-> +	int port_id;
-> +
-> +	while (true) {
-> +		port = of_get_next_child(node, port);
-> +		if (!port)
-> +			return NULL;
-> +		if (of_node_cmp(port->name, "port") != 0)
-> +			continue;
-> +		if (of_property_read_u32(port, "reg", &port_id)) {
-> +			if (!id)
-> +				return port;
-> +		} else {
-> +			if (id == port_id)
-> +				return port;
-> +		}
+Simpler might be:
 
-Nitpicking here, I would have written this
+Required properties for i2c-thermtrip node:
 
-		int port_id = 0;
+> +- nvidia,pmu : Phandle to power management unit / PMIC handling poweroff
+> +- nvidia,reg-addr : I2C register address to write poweroff command to
+> +- nvidia,reg-data : Poweroff command to write to PMU
 
-		port = of_get_next_child(node, port);
-		if (!port)
-			return NULL;
-		if (of_node_cmp(port->name, "port") != 0)
-			continue;
-		of_property_read_u32(port, "reg", &port_id);
-		if (id == port_id)
-			return port;
+Why are both the PMU/PMIC phandle and the register address/data 
+required? I thought the purpose of having the phandle was to allow the 
+register address and data to be queried from the PMU/PMIC driver.
 
-That saves 8 bytes with my ARM cross-compiler (at the expense of using two 
-extra local registers).
-
-Please free to ignore this is you find your code layout easier to read.
-
-> +	}
-> +}
-> +EXPORT_SYMBOL(of_graph_get_port_by_id);
-> +
-> +/**
->   * of_graph_get_next_endpoint() - get next endpoint node
->   * @parent: pointer to the parent device node
->   * @prev: previous endpoint node, or NULL to get first
-> diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
-> index 2890a4c..24ceb4b 100644
-> --- a/include/linux/of_graph.h
-> +++ b/include/linux/of_graph.h
-> @@ -33,6 +33,7 @@ struct of_endpoint {
->  #ifdef CONFIG_OF
->  int of_graph_parse_endpoint(const struct device_node *node,
->  				struct of_endpoint *endpoint);
-> +struct device_node *of_graph_get_port_by_id(struct device_node *node, int
-> id); struct device_node *of_graph_get_next_endpoint(const struct
-> device_node *parent, struct device_node *previous);
->  struct device_node *of_graph_get_remote_port_parent(
-> @@ -46,6 +47,12 @@ static inline int of_graph_parse_endpoint(const struct
-> device_node *node, return -ENOSYS;
->  }
-> 
-> +static inline struct device_node *of_graph_get_port_by_id(
-> +					struct device_node *node, int id)
-> +{
-> +	return NULL;
-> +}
-> +
->  static inline struct device_node *of_graph_get_next_endpoint(
->  					const struct device_node *parent,
->  					struct device_node *previous)
-
--- 
-Regards,
-
-Laurent Pinchart
-
+To me, it seems much simpler to get rid of the phandle and just 
+hard-code the I2C bus number, address, and data into this node, rather 
+than having to go query it from the PMU/PMIC driver, then find the I2C 
+controller, then query it for its ID (and hope that all HW modules that 
+talk to I2C controllers directly use the same numbering scheme...)
