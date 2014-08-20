@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaHTEbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 00:31:40 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:62332 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaHTEb1 (ORCPT
+	id S1752181AbaHTEbq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 00:31:46 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:46996 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaHTEbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 00:31:27 -0400
+	Wed, 20 Aug 2014 00:31:32 -0400
 From: Valentina Manea <valentina.manea.m@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
@@ -14,9 +14,9 @@ Cc: tulinizer@gmail.com, stern@rowland.harvard.edu, mail@beyermatthias.de,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         firefly@lists.rosedu.org, andy.grover@gmail.com, max@vozeler.com,
         shuahkhan@gmail.com, Valentina Manea <valentina.manea.m@gmail.com>
-Subject: [PATCH 1/4] usbip: move usbip userspace code out of staging
-Date: Wed, 20 Aug 2014 07:30:59 +0300
-Message-Id: <1408509062-1375-2-git-send-email-valentina.manea.m@gmail.com>
+Subject: [PATCH 3/4] usbip: remove struct usb_device_id table
+Date: Wed, 20 Aug 2014 07:31:01 +0300
+Message-Id: <1408509062-1375-4-git-send-email-valentina.manea.m@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1408509062-1375-1-git-send-email-valentina.manea.m@gmail.com>
 References: <1408509062-1375-1-git-send-email-valentina.manea.m@gmail.com>
@@ -24,235 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At this point, USB/IP userspace code is fully functional
-and can be moved out of staging.
+This was used back when usbip-host was an interface device driver;
+after the conversion to device driver, the table remained unused.
+Remove it in order to stop receiving a warning about it.
 
 Signed-off-by: Valentina Manea <valentina.manea.m@gmail.com>
 ---
- {drivers/staging/usbip/userspace => tools/usb/usbip}/.gitignore           | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/AUTHORS              | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/COPYING              | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/INSTALL              | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/Makefile.am          | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/README               | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/autogen.sh           | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/cleanup.sh           | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/configure.ac         | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/doc/usbip.8          | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/doc/usbipd.8         | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/Makefile.am   | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/list.h        | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/names.c       | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/names.h       | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/sysfs_utils.c | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/sysfs_utils.h | 0
- .../staging/usbip/userspace => tools/usb/usbip}/libsrc/usbip_common.c     | 0
- .../staging/usbip/userspace => tools/usb/usbip}/libsrc/usbip_common.h     | 0
- .../usbip/userspace => tools/usb/usbip}/libsrc/usbip_host_driver.c        | 0
- .../usbip/userspace => tools/usb/usbip}/libsrc/usbip_host_driver.h        | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/vhci_driver.c | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/vhci_driver.h | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/Makefile.am      | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip.c          | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip.h          | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_attach.c   | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_bind.c     | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_detach.c   | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_list.c     | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_network.c  | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_network.h  | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_port.c     | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_unbind.c   | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbipd.c         | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/utils.c          | 0
- {drivers/staging/usbip/userspace => tools/usb/usbip}/src/utils.h          | 0
- 37 files changed, 0 insertions(+), 0 deletions(-)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/.gitignore (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/AUTHORS (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/COPYING (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/INSTALL (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/Makefile.am (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/README (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/autogen.sh (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/cleanup.sh (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/configure.ac (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/doc/usbip.8 (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/doc/usbipd.8 (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/Makefile.am (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/list.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/names.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/names.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/sysfs_utils.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/sysfs_utils.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/usbip_common.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/usbip_common.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/usbip_host_driver.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/usbip_host_driver.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/vhci_driver.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/libsrc/vhci_driver.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/Makefile.am (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_attach.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_bind.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_detach.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_list.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_network.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_network.h (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_port.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbip_unbind.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/usbipd.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/utils.c (100%)
- rename {drivers/staging/usbip/userspace => tools/usb/usbip}/src/utils.h (100%)
+ drivers/usb/usbip/stub_dev.c | 27 ---------------------------
+ 1 file changed, 27 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/.gitignore b/tools/usb/usbip/.gitignore
-similarity index 100%
-rename from drivers/staging/usbip/userspace/.gitignore
-rename to tools/usb/usbip/.gitignore
-diff --git a/drivers/staging/usbip/userspace/AUTHORS b/tools/usb/usbip/AUTHORS
-similarity index 100%
-rename from drivers/staging/usbip/userspace/AUTHORS
-rename to tools/usb/usbip/AUTHORS
-diff --git a/drivers/staging/usbip/userspace/COPYING b/tools/usb/usbip/COPYING
-similarity index 100%
-rename from drivers/staging/usbip/userspace/COPYING
-rename to tools/usb/usbip/COPYING
-diff --git a/drivers/staging/usbip/userspace/INSTALL b/tools/usb/usbip/INSTALL
-similarity index 100%
-rename from drivers/staging/usbip/userspace/INSTALL
-rename to tools/usb/usbip/INSTALL
-diff --git a/drivers/staging/usbip/userspace/Makefile.am b/tools/usb/usbip/Makefile.am
-similarity index 100%
-rename from drivers/staging/usbip/userspace/Makefile.am
-rename to tools/usb/usbip/Makefile.am
-diff --git a/drivers/staging/usbip/userspace/README b/tools/usb/usbip/README
-similarity index 100%
-rename from drivers/staging/usbip/userspace/README
-rename to tools/usb/usbip/README
-diff --git a/drivers/staging/usbip/userspace/autogen.sh b/tools/usb/usbip/autogen.sh
-similarity index 100%
-rename from drivers/staging/usbip/userspace/autogen.sh
-rename to tools/usb/usbip/autogen.sh
-diff --git a/drivers/staging/usbip/userspace/cleanup.sh b/tools/usb/usbip/cleanup.sh
-similarity index 100%
-rename from drivers/staging/usbip/userspace/cleanup.sh
-rename to tools/usb/usbip/cleanup.sh
-diff --git a/drivers/staging/usbip/userspace/configure.ac b/tools/usb/usbip/configure.ac
-similarity index 100%
-rename from drivers/staging/usbip/userspace/configure.ac
-rename to tools/usb/usbip/configure.ac
-diff --git a/drivers/staging/usbip/userspace/doc/usbip.8 b/tools/usb/usbip/doc/usbip.8
-similarity index 100%
-rename from drivers/staging/usbip/userspace/doc/usbip.8
-rename to tools/usb/usbip/doc/usbip.8
-diff --git a/drivers/staging/usbip/userspace/doc/usbipd.8 b/tools/usb/usbip/doc/usbipd.8
-similarity index 100%
-rename from drivers/staging/usbip/userspace/doc/usbipd.8
-rename to tools/usb/usbip/doc/usbipd.8
-diff --git a/drivers/staging/usbip/userspace/libsrc/Makefile.am b/tools/usb/usbip/libsrc/Makefile.am
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/Makefile.am
-rename to tools/usb/usbip/libsrc/Makefile.am
-diff --git a/drivers/staging/usbip/userspace/libsrc/list.h b/tools/usb/usbip/libsrc/list.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/list.h
-rename to tools/usb/usbip/libsrc/list.h
-diff --git a/drivers/staging/usbip/userspace/libsrc/names.c b/tools/usb/usbip/libsrc/names.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/names.c
-rename to tools/usb/usbip/libsrc/names.c
-diff --git a/drivers/staging/usbip/userspace/libsrc/names.h b/tools/usb/usbip/libsrc/names.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/names.h
-rename to tools/usb/usbip/libsrc/names.h
-diff --git a/drivers/staging/usbip/userspace/libsrc/sysfs_utils.c b/tools/usb/usbip/libsrc/sysfs_utils.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/sysfs_utils.c
-rename to tools/usb/usbip/libsrc/sysfs_utils.c
-diff --git a/drivers/staging/usbip/userspace/libsrc/sysfs_utils.h b/tools/usb/usbip/libsrc/sysfs_utils.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/sysfs_utils.h
-rename to tools/usb/usbip/libsrc/sysfs_utils.h
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.c b/tools/usb/usbip/libsrc/usbip_common.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/usbip_common.c
-rename to tools/usb/usbip/libsrc/usbip_common.c
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_common.h b/tools/usb/usbip/libsrc/usbip_common.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/usbip_common.h
-rename to tools/usb/usbip/libsrc/usbip_common.h
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c b/tools/usb/usbip/libsrc/usbip_host_driver.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
-rename to tools/usb/usbip/libsrc/usbip_host_driver.c
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.h b/tools/usb/usbip/libsrc/usbip_host_driver.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/usbip_host_driver.h
-rename to tools/usb/usbip/libsrc/usbip_host_driver.h
-diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.c b/tools/usb/usbip/libsrc/vhci_driver.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/vhci_driver.c
-rename to tools/usb/usbip/libsrc/vhci_driver.c
-diff --git a/drivers/staging/usbip/userspace/libsrc/vhci_driver.h b/tools/usb/usbip/libsrc/vhci_driver.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/libsrc/vhci_driver.h
-rename to tools/usb/usbip/libsrc/vhci_driver.h
-diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/tools/usb/usbip/src/Makefile.am
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/Makefile.am
-rename to tools/usb/usbip/src/Makefile.am
-diff --git a/drivers/staging/usbip/userspace/src/usbip.c b/tools/usb/usbip/src/usbip.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip.c
-rename to tools/usb/usbip/src/usbip.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip.h b/tools/usb/usbip/src/usbip.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip.h
-rename to tools/usb/usbip/src/usbip.h
-diff --git a/drivers/staging/usbip/userspace/src/usbip_attach.c b/tools/usb/usbip/src/usbip_attach.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_attach.c
-rename to tools/usb/usbip/src/usbip_attach.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip_bind.c b/tools/usb/usbip/src/usbip_bind.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_bind.c
-rename to tools/usb/usbip/src/usbip_bind.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip_detach.c b/tools/usb/usbip/src/usbip_detach.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_detach.c
-rename to tools/usb/usbip/src/usbip_detach.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip_list.c b/tools/usb/usbip/src/usbip_list.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_list.c
-rename to tools/usb/usbip/src/usbip_list.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/tools/usb/usbip/src/usbip_network.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_network.c
-rename to tools/usb/usbip/src/usbip_network.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/tools/usb/usbip/src/usbip_network.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_network.h
-rename to tools/usb/usbip/src/usbip_network.h
-diff --git a/drivers/staging/usbip/userspace/src/usbip_port.c b/tools/usb/usbip/src/usbip_port.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_port.c
-rename to tools/usb/usbip/src/usbip_port.c
-diff --git a/drivers/staging/usbip/userspace/src/usbip_unbind.c b/tools/usb/usbip/src/usbip_unbind.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbip_unbind.c
-rename to tools/usb/usbip/src/usbip_unbind.c
-diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/tools/usb/usbip/src/usbipd.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/usbipd.c
-rename to tools/usb/usbip/src/usbipd.c
-diff --git a/drivers/staging/usbip/userspace/src/utils.c b/tools/usb/usbip/src/utils.c
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/utils.c
-rename to tools/usb/usbip/src/utils.c
-diff --git a/drivers/staging/usbip/userspace/src/utils.h b/tools/usb/usbip/src/utils.h
-similarity index 100%
-rename from drivers/staging/usbip/userspace/src/utils.h
-rename to tools/usb/usbip/src/utils.h
+diff --git a/drivers/usb/usbip/stub_dev.c b/drivers/usb/usbip/stub_dev.c
+index 51d0c71..fac20e0 100644
+--- a/drivers/usb/usbip/stub_dev.c
++++ b/drivers/usb/usbip/stub_dev.c
+@@ -26,33 +26,6 @@
+ #include "stub.h"
+ 
+ /*
+- * Define device IDs here if you want to explicitly limit exportable devices.
+- * In most cases, wildcard matching will be okay because driver binding can be
+- * changed dynamically by a userland program.
+- */
+-static struct usb_device_id stub_table[] = {
+-#if 0
+-	/* just an example */
+-	{ USB_DEVICE(0x05ac, 0x0301) },   /* Mac 1 button mouse */
+-	{ USB_DEVICE(0x0430, 0x0009) },   /* Plat Home Keyboard */
+-	{ USB_DEVICE(0x059b, 0x0001) },   /* Iomega USB Zip 100 */
+-	{ USB_DEVICE(0x04b3, 0x4427) },   /* IBM USB CD-ROM */
+-	{ USB_DEVICE(0x05a9, 0xa511) },   /* LifeView USB cam */
+-	{ USB_DEVICE(0x55aa, 0x0201) },   /* Imation card reader */
+-	{ USB_DEVICE(0x046d, 0x0870) },   /* Qcam Express(QV-30) */
+-	{ USB_DEVICE(0x04bb, 0x0101) },   /* IO-DATA HD 120GB */
+-	{ USB_DEVICE(0x04bb, 0x0904) },   /* IO-DATA USB-ET/TX */
+-	{ USB_DEVICE(0x04bb, 0x0201) },   /* IO-DATA USB-ET/TX */
+-	{ USB_DEVICE(0x08bb, 0x2702) },   /* ONKYO USB Speaker */
+-	{ USB_DEVICE(0x046d, 0x08b2) },   /* Logicool Qcam 4000 Pro */
+-#endif
+-	/* magic for wild card */
+-	{ .driver_info = 1 },
+-	{ 0, }                                     /* Terminating entry */
+-};
+-MODULE_DEVICE_TABLE(usb, stub_table);
+-
+-/*
+  * usbip_status shows the status of usbip-host as long as this driver is bound
+  * to the target device.
+  */
 -- 
 1.8.1.2
 
