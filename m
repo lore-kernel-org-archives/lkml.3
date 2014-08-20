@@ -1,142 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaHTMzA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:55:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3966 "EHLO relay.sw.ru"
+	id S1752953AbaHTM46 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:56:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56073 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099AbaHTMyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:54:53 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: akinobu.mita@gmail.com, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH 2/2] fault-inject: add ratelimit option
-Date: Wed, 20 Aug 2014 16:54:42 +0400
-Message-Id: <1408539282-5699-2-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1408539282-5699-1-git-send-email-dmonakhov@openvz.org>
-References: <1408539282-5699-1-git-send-email-dmonakhov@openvz.org>
+	id S1751885AbaHTM44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:56:56 -0400
+Date: Wed, 20 Aug 2014 08:56:30 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Thomas Glanzmann <thomas@glanzmann.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, Baoquan He <bhe@redhat.com>,
+        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <greg@kroah.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        WANG Chao <chaowang@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        ubuntu@iam.tj
+Subject: Re: REGRESSION: 8fc5b4d: Unable to compile x86_64 kernel with x86_32
+ userland
+Message-ID: <20140820125630.GA12786@redhat.com>
+References: <20140820060423.GA14660@glanzmann.de>
+ <20140820062408.GB14660@glanzmann.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820062408.GB14660@glanzmann.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current debug levels are not optimal. Especially if one want to
-provoke big numbers of faults(broken device simulator) then any verbose
-level will produce giant numbers of identical logging messages.
-Let's add ratelimit parameter for that purpose.
+On Wed, Aug 20, 2014 at 08:24:08AM +0200, Thomas Glanzmann wrote:
+> Hello Vivek,
+> commit 8fc5b4d introduces a regression that no longer allows to compile
+> x86_64 kernel under x86_32 userland. TJ on freenode/#kernel did analyze
+> it:
+> 
+> > (mini) [~/work/linux-2.6] make
+> > scripts/kconfig/conf --silentoldconfig Kconfig
+> >   CHK     include/config/kernel.release
+> >   UPD     include/config/kernel.release
+> >   CHK     include/generated/uapi/linux/version.h
+> >   CHK     include/generated/utsrelease.h
+> >   UPD     include/generated/utsrelease.h
+> >   CC      arch/x86/purgatory/purgatory.o
+> > arch/x86/purgatory/purgatory.c:1:0: error: code model 'large' not supported in the 32 bit mode
+> > make[1]: *** [arch/x86/purgatory/purgatory.o] Error 1
+> > make: *** [archprepare] Error 2
+> 
+> 08:10 < TJ-> Glanzmann: The purgatory code from kexec is specifying ".code64"
+> 08:11 < TJ-> Glanzmann: so when your local 32-bit linker tries to deal with that ... it errors
+> 08:14 < TJ-> Glanzmann: there's only one introducing the purgatory stuff
+> 08:14 < TJ-> 8fc5b4d Fri Aug 8 15:57:32 2014 -0700 Vivek Goyal purgatory: core purgatory functionality
 
-Change-log:
-- Dump fault_attr configuration on minimal verbose level.
-- Add name to fault_attr
-- Add ratelimit parameter
+Hi Thomas,
 
+Thanks for the report. I think this is also happening because purgatory is
+right now being compiled with compiler option -mcmodel=large. There was
+another report where older version of gcc did not support -mcmodel=large.
 
-Example:
-  # Limit verbosity to one at 5 seconds
-  echo 1 > /sys/kernel/debug/fail_make_request/verbose_ratelimit_burst
-  echo 5000 > /sys/kernel/debug/fail_make_request/verbose_ratelimit_interval_ms
+A patch is sitting in akpm's tree. That patch puts the new code under
+a new config option CONFIG_KEXEC_FILE. So as long as you don't enable
+CONFIG_KEXEC_FILE=y, you should be fine. This should not impact any of
+the existing functionality. Just that you will not get the benefit of
+new system call.
 
-  # dump only once in a day
-  echo 1 > /sys/kernel/debug/fail_make_request/verbose_ratelimit_burst
-  echo $((24 * 60 * 60* 1000)) > /sys/kernel/debug/fail_make_request/verbose_ratelimit_interval_ms
+http://ozlabs.org/~akpm/mmotm/broken-out/kexec-create-a-new-config-option-config_kexec_file-for-new-syscall.patch
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- include/linux/fault-inject.h |   17 +++++++++++------
- lib/fault-inject.c           |   30 ++++++++++++++++++++++++++----
- 2 files changed, 37 insertions(+), 10 deletions(-)
+I hope this patch gets merged soon.
 
-diff --git a/include/linux/fault-inject.h b/include/linux/fault-inject.h
-index c6f996f..798fad9 100644
---- a/include/linux/fault-inject.h
-+++ b/include/linux/fault-inject.h
-@@ -5,6 +5,7 @@
- 
- #include <linux/types.h>
- #include <linux/debugfs.h>
-+#include <linux/ratelimit.h>
- #include <linux/atomic.h>
- 
- /*
-@@ -25,14 +26,18 @@ struct fault_attr {
- 	unsigned long reject_end;
- 
- 	unsigned long count;
-+	struct ratelimit_state ratelimit_state;
-+	struct dentry *dname;
- };
- 
--#define FAULT_ATTR_INITIALIZER {				\
--		.interval = 1,					\
--		.times = ATOMIC_INIT(1),			\
--		.require_end = ULONG_MAX,			\
--		.stacktrace_depth = 32,				\
--		.verbose = 2,					\
-+#define FAULT_ATTR_INITIALIZER {					\
-+		.interval = 1,						\
-+		.times = ATOMIC_INIT(1),				\
-+		.require_end = ULONG_MAX,				\
-+		.stacktrace_depth = 32,					\
-+		.ratelimit_state = RATELIMIT_STATE_INIT_DISABLED,	\
-+		.verbose = 2,						\
-+		.dname = NULL,						\
- 	}
- 
- #define DECLARE_FAULT_ATTR(name) struct fault_attr name = FAULT_ATTR_INITIALIZER
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index d7d501e..ebb3485 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
-@@ -40,10 +40,25 @@ EXPORT_SYMBOL_GPL(setup_fault_attr);
- 
- static void fail_dump(struct fault_attr *attr)
- {
--	if (attr->verbose > 0)
--		printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure\n");
--	if (attr->verbose > 1)
--		dump_stack();
-+	if (attr->verbose > 0 &&
-+	    ___ratelimit(&attr->ratelimit_state, __func__)) {
-+		if (attr->dname)
-+			printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure."
-+			       "name %pd, interval %lu, probability %lu, "
-+			       "space %d, times %d\n", attr->dname,
-+			       attr->probability, attr->interval,
-+			       atomic_read(&attr->space),
-+			       atomic_read(&attr->times));
-+		else
-+			printk(KERN_NOTICE "FAULT_INJECTION: forcing a "
-+			       "failure, interval %lu, probability %lu, "
-+			       "space %d, times %d\n", attr->probability,
-+			       attr->interval, atomic_read(&attr->space),
-+			       atomic_read(&attr->times));
-+
-+		if (attr->verbose > 1)
-+			dump_stack();
-+	}
- }
- 
- #define atomic_dec_not_zero(v)		atomic_add_unless((v), -1, 0)
-@@ -202,6 +217,12 @@ struct dentry *fault_create_debugfs_attr(const char *name,
- 		goto fail;
- 	if (!debugfs_create_ul("verbose", mode, dir, &attr->verbose))
- 		goto fail;
-+	if (!debugfs_create_u32("verbose_ratelimit_interval_ms", mode, dir,
-+				&attr->ratelimit_state.interval))
-+		goto fail;
-+	if (!debugfs_create_u32("verbose_ratelimit_burst", mode, dir,
-+				&attr->ratelimit_state.burst))
-+		goto fail;
- 	if (!debugfs_create_bool("task-filter", mode, dir, &attr->task_filter))
- 		goto fail;
- 
-@@ -222,6 +243,7 @@ struct dentry *fault_create_debugfs_attr(const char *name,
- 
- #endif /* CONFIG_FAULT_INJECTION_STACKTRACE_FILTER */
- 
-+	attr->dname = dget(dir);
- 	return dir;
- fail:
- 	debugfs_remove_recursive(dir);
--- 
-1.7.1
+In the mean time I am trying to figure out how can I move away from
+using -mcmodel=large for purgatory.
 
+Thanks
+Vivek
