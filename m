@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaHTLVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:21:30 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:57776 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731AbaHTLV1 (ORCPT
+	id S1752655AbaHTLVp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:21:45 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:46559 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731AbaHTLVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:21:27 -0400
-Message-ID: <53F484B2.1090808@gmail.com>
-Date: Wed, 20 Aug 2014 19:21:22 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: gleb@kernel.org, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] virt/kvm/assigned-dev.c: Set 'dev->irq_source_id' to
- '-1' after free it
-References: <53E4EED7.6050302@gmail.com> <53F370CD.80201@gmail.com> <53F37221.5020508@redhat.com> <53F3E490.1060400@gmail.com> <53F3E55B.8010009@gmail.com>
-In-Reply-To: <53F3E55B.8010009@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Aug 2014 07:21:43 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: bdas@redhat.com
+Subject: [PATCH] KVM: emulate: do not return X86EMUL_PROPAGATE_FAULT explicitly
+Date: Wed, 20 Aug 2014 13:21:35 +0200
+Message-Id: <1408533695-17826-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2014 08:01 AM, Chen Gang wrote:
-> 
-> By the way, at present, I use Qemu as user mode program, is there common
-> test with both Qemu and KVM/Xen? And is a PC enough for the common test?
->
+Always get it through emulate_exception or emulate_ts.  This
+ensures that the ctxt->exception fields have been populated.
 
-Oh, I find Qemu have "make check" just like gcc/binutils, so for each of
-my patch, next, shall run "./configure && make && make check" at least.
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/emulate.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-And also welcome any additional ideas, suggestions or completions about
-test for kvm/xen/qemu.
-
-
-Thanks.
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index ef297919a691..4fbf4b598f92 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -1549,8 +1549,7 @@ load:
+ 	ctxt->ops->set_segment(ctxt, selector, &seg_desc, base3, seg);
+ 	return X86EMUL_CONTINUE;
+ exception:
+-	emulate_exception(ctxt, err_vec, err_code, true);
+-	return X86EMUL_PROPAGATE_FAULT;
++	return emulate_exception(ctxt, err_vec, err_code, true);
+ }
  
-> 
-> On 08/20/2014 07:58 AM, Chen Gang wrote:
->> On 08/19/2014 11:49 PM, Paolo Bonzini wrote:
->>> Il 19/08/2014 17:44, Chen Gang ha scritto:
->>>>> Hello maintainers:
->>>>>
->>>>> Please help check this patch, when you have time.
->>> Hi, it's already on its way to 3.17-rc2, but I first have to run a bunch
->>> of tests.
->>
->> OK, thanks. Also can let me try the test, although I am not quite
->> familiar with KVM. Since I plan to focus on KVM/Xen next, I shall
->> construct related environments for its' common test, at least.
->>
->> I am just constructing the gcc common test environments under a new PC,
->> is a PC also enough for KVM/Xen common test?
->>
->> Welcome any ideas, suggestions or completions about it (especially the
->> information about KVM/Xen common test).
->>
->>
->> Thanks.
->>
-> 
-> 
-
-
+ static int load_segment_descriptor(struct x86_emulate_ctxt *ctxt,
+@@ -2723,8 +2722,7 @@ static int emulator_do_task_switch(struct x86_emulate_ctxt *ctxt,
+ 	if (!next_tss_desc.p ||
+ 	    ((desc_limit < 0x67 && (next_tss_desc.type & 8)) ||
+ 	     desc_limit < 0x2b)) {
+-		emulate_ts(ctxt, tss_selector & 0xfffc);
+-		return X86EMUL_PROPAGATE_FAULT;
++		return emulate_ts(ctxt, tss_selector & 0xfffc);
+ 	}
+ 
+ 	if (reason == TASK_SWITCH_IRET || reason == TASK_SWITCH_JMP) {
+@@ -3016,7 +3014,7 @@ static int em_movbe(struct x86_emulate_ctxt *ctxt)
+ 		ctxt->dst.val = swab64(ctxt->src.val);
+ 		break;
+ 	default:
+-		return X86EMUL_PROPAGATE_FAULT;
++		BUG();
+ 	}
+ 	return X86EMUL_CONTINUE;
+ }
 -- 
-Chen Gang
+1.8.3.1
 
-Open share and attitude like air water and life which God blessed
