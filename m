@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaHTPmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:42:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53400 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292AbaHTPmD (ORCPT
+	id S1752004AbaHTPoF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:44:05 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:47849 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaHTPoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:42:03 -0400
-Date: Wed, 20 Aug 2014 10:42:00 -0500
-From: Andy Gross <agross@codeaurora.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Georgi Djakov <gdjakov@mm-sol.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "iivanov@mm-sol.com" <iivanov@mm-sol.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Wed, 20 Aug 2014 11:44:03 -0400
+Date: Wed, 20 Aug 2014 16:43:58 +0100
+From: "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v1 1/3] pinctrl: qcom: Add APQ8084 pinctrl support
-Message-ID: <20140820154200.GA14731@qualcomm.com>
-References: <1408468936-12252-1-git-send-email-gdjakov@mm-sol.com>
- <1408468936-12252-2-git-send-email-gdjakov@mm-sol.com>
- <20140820043929.GH7070@sonymobile.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi-private@linaro.org" <linaro-acpi-private@linaro.org>
+Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
+ for PSCI init
+Message-ID: <20140820154358.GA27927@xora-yoga-deb.xora.org.uk>
+References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
+ <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
+ <20140820150029.0BB3FC41205@trevor.secretlab.ca>
+ <20140820152944.GR24600@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140820043929.GH7070@sonymobile.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140820152944.GR24600@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 09:39:30PM -0700, Bjorn Andersson wrote:
-> On Tue 19 Aug 10:22 PDT 2014, Georgi Djakov wrote:
-> 
-> > This patch adds support for the TLMM (Top-Level Mode Mux) block found
-> > in the APQ8084 platform.
+On Wed, Aug 20, 2014 at 04:29:44PM +0100, Catalin Marinas wrote:
+> On Wed, Aug 20, 2014 at 04:00:28PM +0100, Grant Likely wrote:
+> > On Thu, 24 Jul 2014 21:00:12 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> > > @@ -345,13 +378,19 @@ int __init psci_init(void)
+> > >  	const struct of_device_id *matched_np;
+> > >  	psci_initcall_t init_fn;
+> > >  
+> > > -	np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
+> > > +	if (acpi_disabled) {
+> > > +		np = of_find_matching_node_and_match(NULL,
+> > > +				psci_of_match, &matched_np);
+> > >  
+> > > -	if (!np)
+> > > -		return -ENODEV;
+> > > +		if (!np)
+> > > +			return -ENODEV;
+> > > +
+> > > +		init_fn = (psci_initcall_t)matched_np->data;
+> > > +
+> > > +		return init_fn(np);
+> > > +	}
+> > >  
+> > > -	init_fn = (psci_initcall_t)matched_np->data;
+> > > -	return init_fn(np);
+> > > +	return psci_0_2_init_acpi();
+> > >  }
 > > 
-> [...]
-> > +
-> > +#define NUM_GPIO_PINGROUPS 143
-> > +
+> > So, while the functionality is sound, this is kind of a stinky diff. The
+> > ACPI path should not push the OF code into a sub branch. Make it look
+> > like this instead (with the advantage that the diff will be simpler):
+> > 
+> > +	if (IS_ENABLED(CONFIG_ACPI) && !acpi_disabled)
+> > +		return psci_0_2_init_acpi();
 > 
-> I think this looks good overall, but in my APQ8084 documentation
-> (80-NG550-2X Rev. B) there are 147 (0..146) gpio pins in the TLMM block.
+> Minor point: we should define acpi_disabled to 1 when !CONFIG_ACPI and
+> avoid additional IS_ENABLED(CONFIG_ACPI) checks (unless already don this
+> way).
 > 
-> Any suggestion to why there's a discrepancy?
-> 
+This is the default behaviour already.
 
-We have some discrepancies internally on the documentation.  However, in this
-case I'd expect the OEM documentation to be correct.  So this needs to change to
-bjorn's version, as it appears to be the correct version.
+Graeme
 
-I have no idea why some pins are missing.
-
-
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
