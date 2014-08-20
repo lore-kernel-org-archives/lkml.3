@@ -1,58 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaHTU0M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 16:26:12 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59961 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbaHTU0L (ORCPT
+	id S1752913AbaHTU34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 16:29:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59316 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaHTU3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 16:26:11 -0400
-Date: Wed, 20 Aug 2014 22:26:02 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Valdis.Kletnieks@vt.edu
-Cc: Nick Krause <xerofoiffy@gmail.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "open list:SPI SUBSYSTEM" <linux-spi@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] spi: Remove unused definitions
-Message-ID: <20140820202235.GA28350@xo-6d-61-c0.localdomain>
-References: <1407347597-2168-1-git-send-email-xerofoiffy@gmail.com>
- <17153.1407349640@turing-police.cc.vt.edu>
+	Wed, 20 Aug 2014 16:29:54 -0400
+Message-ID: <53F50554.3050505@wwwdotorg.org>
+Date: Wed, 20 Aug 2014 14:30:12 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17153.1407349640@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        Javier Martinez Canillas <javier@dowhile0.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>, Vince Hsu <vinceh@nvidia.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Handling commit change logs
+References: <1408419205-10048-1-git-send-email-tuomas.tynkkynen@iki.fi>	<1408419205-10048-14-git-send-email-tuomas.tynkkynen@iki.fi>	<CAKohpokQOALPH13Ykz4nTBOby8J1X6_F30LNKz=gsC4wN3=3vg@mail.gmail.com>	<53F3A900.8010805@nvidia.com>	<CAKohponcZv9-MFNUQFxC_49-+P6QOhdjxsnYAyL3i4sXdCBYrw@mail.gmail.com> <CABxcv=ncm3Y7Ecfymro6TOuP=d10OV5--8n=dYmHyj6zi8hwEw@mail.gmail.com> <53F4FED4.7060408@suse.de>
+In-Reply-To: <53F4FED4.7060408@suse.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-08-06 14:27:20, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 06 Aug 2014 13:53:17 -0400, Nick Krause said:
-> > Remove unused definition which cause the following warnings
-> > 
-> > drivers/spi/spi-omap-100k.c:73:0: warning: "WRITE" redefined [enabled by default]
-> > include/linux/fs.h:193:0: note: this is the location of the previous definition
-> > drivers/spi/spi-omap-100k.c:74:0: warning: "READ" redefined [enabled by default]
-> > include/linux/fs.h:192:0: note: this is the location of the previous definition
-> 
-> > -#define WRITE 0
-> > -#define READ  1
-> 
-> NAK.  Full stop.  These are potentially used in an inner macro someplace, and by
-> removing these, the conflicting values from fs.h will be used instead.
-> 
-> #define READ                    0
-> #define WRITE                   RW_MASK
-> 
-> So if there *is* a use in an inner macro, you just screwed the pooch
-> and introduced a bug in this "clean up" - somebody will be expecting to see
-> a 0 for a READ, and will receive a 1 instead.  This can't end well.
+On 08/20/2014 02:02 PM, Andreas Färber wrote:
+> Hi Javier,
+>
+> Am 20.08.2014 17:39, schrieb Javier Martinez Canillas:
+>> As you already know when you apply a patch with git am, everything
+>> that is between a line with 3 dashes line (---) and the actual diff is
+>> omitted since that is where the generated diffstat is placed by git
+>> format-patch.
+>>
+>> We usually rely on that behavior to put there the history of a patch
+>> or any information that we think that is useful for reviewers but is
+>> not suitable to end in the commit message. Now that means that you
+>> have to generate the patch and then manually edit it to add the
+>> history there.
+>>
+>> But since git am omits any text between the first "---" and the diff,
+>> it means that you can add a "---" on your actual commit message and
+>> anything that follows will be discarded by git am, that way you can
+>> maintain your history on your commit message which is way less tedious
+>> than manually editing patches.
+>>
+>> So the second "---" from Tuomas patch is actually the one generated by
+>> git format-patch but that gets discarded by git am just like any other
+>> text so it causes no harm when other apply the patches.
+>>
+>> If this not the correct workflow and you have a better way to manage
+>> this, I would love to know about it.
+>
+> One drawback of having --- in the commit message is that you can't
+> cherry-pick but really need to use git-am for it to be stripped.
 
-Actually.. having macros called READ and WRITE in fs.h is already something I'd say
-can't end well. Can we rename those?
+You can, you just have to either:
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+* Pass -e to git cherry-pick so you get to edit the patch description,
+
+* Run "git commit --amend" right afterwards,
+
+... and then delete everything starting at ---.
+
+I do this reasonably often on my own patches; I send them to the list, 
+get them reviewed, and then cherry-pick them into the Tegra maintainer 
+tree rather than saving them from the email client and running git am.
