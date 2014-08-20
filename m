@@ -1,654 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaHTStD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 14:49:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52825 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280AbaHTStA (ORCPT
+	id S1752706AbaHTSyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 14:54:10 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:48817 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990AbaHTSyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 14:49:00 -0400
-Date: Wed, 20 Aug 2014 11:45:37 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-da0c1e65b51a289540159663aa4b90ba2366bc21@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, pjt@google.com,
-        peterz@infradead.org, nicolas.pitre@linaro.org,
-        tim.c.chen@linux.intel.com, umgwanakikbuti@gmail.com,
-        rostedt@goodmis.org, tkhai@yandex.ru, tglx@linutronix.de,
-        oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, pjt@google.com, tim.c.chen@linux.intel.com,
-        nicolas.pitre@linaro.org, umgwanakikbuti@gmail.com,
-        rostedt@goodmis.org, tkhai@yandex.ru, oleg@redhat.com,
-        tglx@linutronix.de
-In-Reply-To: <1408528052.23412.87.camel@tkhai>
-References: <1408528052.23412.87.camel@tkhai>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Add wrapper for checking task_struct::
- on_rq
-Git-Commit-ID: da0c1e65b51a289540159663aa4b90ba2366bc21
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 20 Aug 2014 14:54:07 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>, olof@lixom.net,
+        Eddie Cai <eddie.cai@rock-chips.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux-pwm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v4 2/4] ARM: rockchip: rk3288: Switch to use the proper PWM IP
+Date: Wed, 20 Aug 2014 11:54:00 -0700
+Message-Id: <1408560842-3746-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1408560842-3746-1-git-send-email-dianders@chromium.org>
+References: <1408560842-3746-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  da0c1e65b51a289540159663aa4b90ba2366bc21
-Gitweb:     http://git.kernel.org/tip/da0c1e65b51a289540159663aa4b90ba2366bc21
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Wed, 20 Aug 2014 13:47:32 +0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 20 Aug 2014 14:52:59 +0200
+The rk3288 SoC has an option to switch all of the PWMs in the system
+between the old IP block and the new IP block.  The rk3288 PWM driver
+is written for the new block, so make sure that we enable the new
+block in the GRF (general register file) when the PWM driver probes.
 
-sched: Add wrapper for checking task_struct::on_rq
+We emulate the solution to this problem used in i2c-rk3x.c.  One
+difference for the PWM is that there's a single "enable new IP" that's
+used for all 4 PWMs.  That means we set this bit 4 times if we've got
+all 4 PWMs enabled.  That shouldn't hurt.
 
-Implement task_on_rq_queued() and use it everywhere instead of
-on_rq check. No functional changes.
-
-The only exception is we do not use the wrapper in
-check_for_tasks(), because it requires to export
-task_on_rq_queued() in global header files. Next patch in series
-would return it back, so we do not twist it from here to there.
-
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1408528052.23412.87.camel@tkhai
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- kernel/sched/core.c      | 82 ++++++++++++++++++++++++------------------------
- kernel/sched/deadline.c  | 15 ++++-----
- kernel/sched/fair.c      | 22 ++++++-------
- kernel/sched/rt.c        | 16 +++++-----
- kernel/sched/sched.h     |  7 +++++
- kernel/sched/stop_task.c |  2 +-
- 6 files changed, 76 insertions(+), 68 deletions(-)
+Changes in v4:
+- Totally rewrote to go in the PWM driver.
+- Reordered IP switch to be atop invert patch.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4f2826f..a02b624 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1043,7 +1043,7 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
- 	 * A queue event has occurred, and we're going to schedule.  In
- 	 * this case, we can save a useless back to back clock update.
- 	 */
--	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr))
-+	if (task_on_rq_queued(rq->curr) && test_tsk_need_resched(rq->curr))
- 		rq->skip_clock_update = 1;
- }
+Changes in v3: None
+Changes in v2:
+- Check for failed ioremap()
+
+ .../devicetree/bindings/pwm/pwm-rockchip.txt       |  4 +++
+ drivers/pwm/pwm-rockchip.c                         | 29 ++++++++++++++++++++++
+ 2 files changed, 33 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+index b8be3d0..39190ec 100644
+--- a/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
++++ b/Documentation/devicetree/bindings/pwm/pwm-rockchip.txt
+@@ -10,6 +10,10 @@ Required properties:
+  - #pwm-cells: must be 2 (rk2928) or 3 (rk3288). See pwm.txt in this directory
+    for a description of the cell format.
  
-@@ -1088,7 +1088,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 
- static void __migrate_swap_task(struct task_struct *p, int cpu)
- {
--	if (p->on_rq) {
-+	if (task_on_rq_queued(p)) {
- 		struct rq *src_rq, *dst_rq;
- 
- 		src_rq = task_rq(p);
-@@ -1214,7 +1214,7 @@ static int migration_cpu_stop(void *data);
- unsigned long wait_task_inactive(struct task_struct *p, long match_state)
- {
- 	unsigned long flags;
--	int running, on_rq;
-+	int running, queued;
- 	unsigned long ncsw;
- 	struct rq *rq;
- 
-@@ -1252,7 +1252,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
- 		rq = task_rq_lock(p, &flags);
- 		trace_sched_wait_task(p);
- 		running = task_running(rq, p);
--		on_rq = p->on_rq;
-+		queued = task_on_rq_queued(p);
- 		ncsw = 0;
- 		if (!match_state || p->state == match_state)
- 			ncsw = p->nvcsw | LONG_MIN; /* sets MSB */
-@@ -1284,7 +1284,7 @@ unsigned long wait_task_inactive(struct task_struct *p, long match_state)
- 		 * running right now), it's preempted, and we should
- 		 * yield - it could be a while.
- 		 */
--		if (unlikely(on_rq)) {
-+		if (unlikely(queued)) {
- 			ktime_t to = ktime_set(0, NSEC_PER_SEC/HZ);
- 
- 			set_current_state(TASK_UNINTERRUPTIBLE);
-@@ -1478,7 +1478,7 @@ ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
- static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
- {
- 	activate_task(rq, p, en_flags);
--	p->on_rq = 1;
-+	p->on_rq = TASK_ON_RQ_QUEUED;
- 
- 	/* if a worker is waking up, notify workqueue */
- 	if (p->flags & PF_WQ_WORKER)
-@@ -1537,7 +1537,7 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
- 	int ret = 0;
- 
- 	rq = __task_rq_lock(p);
--	if (p->on_rq) {
-+	if (task_on_rq_queued(p)) {
- 		/* check_preempt_curr() may use rq clock */
- 		update_rq_clock(rq);
- 		ttwu_do_wakeup(rq, p, wake_flags);
-@@ -1678,7 +1678,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 	success = 1; /* we're going to change ->state */
- 	cpu = task_cpu(p);
- 
--	if (p->on_rq && ttwu_remote(p, wake_flags))
-+	if (task_on_rq_queued(p) && ttwu_remote(p, wake_flags))
- 		goto stat;
- 
- #ifdef CONFIG_SMP
-@@ -1742,7 +1742,7 @@ static void try_to_wake_up_local(struct task_struct *p)
- 	if (!(p->state & TASK_NORMAL))
- 		goto out;
- 
--	if (!p->on_rq)
-+	if (!task_on_rq_queued(p))
- 		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
- 
- 	ttwu_do_wakeup(rq, p, 0);
-@@ -2095,7 +2095,7 @@ void wake_up_new_task(struct task_struct *p)
- 	init_task_runnable_average(p);
- 	rq = __task_rq_lock(p);
- 	activate_task(rq, p, 0);
--	p->on_rq = 1;
-+	p->on_rq = TASK_ON_RQ_QUEUED;
- 	trace_sched_wakeup_new(p, true);
- 	check_preempt_curr(rq, p, WF_FORK);
- #ifdef CONFIG_SMP
-@@ -2444,7 +2444,7 @@ static u64 do_task_delta_exec(struct task_struct *p, struct rq *rq)
- 	 * project cycles that may never be accounted to this
- 	 * thread, breaking clock_gettime().
- 	 */
--	if (task_current(rq, p) && p->on_rq) {
-+	if (task_current(rq, p) && task_on_rq_queued(p)) {
- 		update_rq_clock(rq);
- 		ns = rq_clock_task(rq) - p->se.exec_start;
- 		if ((s64)ns < 0)
-@@ -2490,7 +2490,7 @@ unsigned long long task_sched_runtime(struct task_struct *p)
- 	 * If we see ->on_cpu without ->on_rq, the task is leaving, and has
- 	 * been accounted, so we're correct here as well.
- 	 */
--	if (!p->on_cpu || !p->on_rq)
-+	if (!p->on_cpu || !task_on_rq_queued(p))
- 		return p->se.sum_exec_runtime;
- #endif
- 
-@@ -2794,7 +2794,7 @@ need_resched:
- 		switch_count = &prev->nvcsw;
- 	}
- 
--	if (prev->on_rq || rq->skip_clock_update < 0)
-+	if (task_on_rq_queued(prev) || rq->skip_clock_update < 0)
- 		update_rq_clock(rq);
- 
- 	next = pick_next_task(rq, prev);
-@@ -2959,7 +2959,7 @@ EXPORT_SYMBOL(default_wake_function);
-  */
- void rt_mutex_setprio(struct task_struct *p, int prio)
- {
--	int oldprio, on_rq, running, enqueue_flag = 0;
-+	int oldprio, queued, running, enqueue_flag = 0;
- 	struct rq *rq;
- 	const struct sched_class *prev_class;
- 
-@@ -2988,9 +2988,9 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 	trace_sched_pi_setprio(p, prio);
- 	oldprio = p->prio;
- 	prev_class = p->sched_class;
--	on_rq = p->on_rq;
-+	queued = task_on_rq_queued(p);
- 	running = task_current(rq, p);
--	if (on_rq)
-+	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
- 		p->sched_class->put_prev_task(rq, p);
-@@ -3030,7 +3030,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
--	if (on_rq)
-+	if (queued)
- 		enqueue_task(rq, p, enqueue_flag);
- 
- 	check_class_changed(rq, p, prev_class, oldprio);
-@@ -3041,7 +3041,7 @@ out_unlock:
- 
- void set_user_nice(struct task_struct *p, long nice)
- {
--	int old_prio, delta, on_rq;
-+	int old_prio, delta, queued;
- 	unsigned long flags;
- 	struct rq *rq;
- 
-@@ -3062,8 +3062,8 @@ void set_user_nice(struct task_struct *p, long nice)
- 		p->static_prio = NICE_TO_PRIO(nice);
- 		goto out_unlock;
- 	}
--	on_rq = p->on_rq;
--	if (on_rq)
-+	queued = task_on_rq_queued(p);
-+	if (queued)
- 		dequeue_task(rq, p, 0);
- 
- 	p->static_prio = NICE_TO_PRIO(nice);
-@@ -3072,7 +3072,7 @@ void set_user_nice(struct task_struct *p, long nice)
- 	p->prio = effective_prio(p);
- 	delta = p->prio - old_prio;
- 
--	if (on_rq) {
-+	if (queued) {
- 		enqueue_task(rq, p, 0);
- 		/*
- 		 * If the task increased its priority or is running and
-@@ -3344,7 +3344,7 @@ static int __sched_setscheduler(struct task_struct *p,
- {
- 	int newprio = dl_policy(attr->sched_policy) ? MAX_DL_PRIO - 1 :
- 		      MAX_RT_PRIO - 1 - attr->sched_priority;
--	int retval, oldprio, oldpolicy = -1, on_rq, running;
-+	int retval, oldprio, oldpolicy = -1, queued, running;
- 	int policy = attr->sched_policy;
- 	unsigned long flags;
- 	const struct sched_class *prev_class;
-@@ -3541,9 +3541,9 @@ change:
- 		return 0;
- 	}
- 
--	on_rq = p->on_rq;
-+	queued = task_on_rq_queued(p);
- 	running = task_current(rq, p);
--	if (on_rq)
-+	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
- 		p->sched_class->put_prev_task(rq, p);
-@@ -3553,7 +3553,7 @@ change:
- 
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
--	if (on_rq) {
-+	if (queued) {
- 		/*
- 		 * We enqueue to tail when the priority of a task is
- 		 * increased (user space view).
-@@ -4568,7 +4568,7 @@ void init_idle(struct task_struct *idle, int cpu)
- 	rcu_read_unlock();
- 
- 	rq->curr = rq->idle = idle;
--	idle->on_rq = 1;
-+	idle->on_rq = TASK_ON_RQ_QUEUED;
- #if defined(CONFIG_SMP)
- 	idle->on_cpu = 1;
- #endif
-@@ -4645,7 +4645,7 @@ int set_cpus_allowed_ptr(struct task_struct *p, const struct cpumask *new_mask)
- 		goto out;
- 
- 	dest_cpu = cpumask_any_and(cpu_active_mask, new_mask);
--	if (p->on_rq) {
-+	if (task_on_rq_queued(p)) {
- 		struct migration_arg arg = { p, dest_cpu };
- 		/* Need help from migration thread: drop lock and wait. */
- 		task_rq_unlock(rq, p, &flags);
-@@ -4695,7 +4695,7 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
- 	 * If we're not on a rq, the next wake-up will ensure we're
- 	 * placed properly.
- 	 */
--	if (p->on_rq) {
-+	if (task_on_rq_queued(p)) {
- 		dequeue_task(rq_src, p, 0);
- 		set_task_cpu(p, dest_cpu);
- 		enqueue_task(rq_dest, p, 0);
-@@ -4736,13 +4736,13 @@ void sched_setnuma(struct task_struct *p, int nid)
- {
- 	struct rq *rq;
- 	unsigned long flags;
--	bool on_rq, running;
-+	bool queued, running;
- 
- 	rq = task_rq_lock(p, &flags);
--	on_rq = p->on_rq;
-+	queued = task_on_rq_queued(p);
- 	running = task_current(rq, p);
- 
--	if (on_rq)
-+	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
- 		p->sched_class->put_prev_task(rq, p);
-@@ -4751,7 +4751,7 @@ void sched_setnuma(struct task_struct *p, int nid)
- 
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
--	if (on_rq)
-+	if (queued)
- 		enqueue_task(rq, p, 0);
- 	task_rq_unlock(rq, p, &flags);
- }
-@@ -7116,13 +7116,13 @@ static void normalize_task(struct rq *rq, struct task_struct *p)
- 		.sched_policy = SCHED_NORMAL,
- 	};
- 	int old_prio = p->prio;
--	int on_rq;
-+	int queued;
- 
--	on_rq = p->on_rq;
--	if (on_rq)
-+	queued = task_on_rq_queued(p);
-+	if (queued)
- 		dequeue_task(rq, p, 0);
- 	__setscheduler(rq, p, &attr);
--	if (on_rq) {
-+	if (queued) {
- 		enqueue_task(rq, p, 0);
- 		resched_curr(rq);
- 	}
-@@ -7309,16 +7309,16 @@ void sched_offline_group(struct task_group *tg)
- void sched_move_task(struct task_struct *tsk)
- {
- 	struct task_group *tg;
--	int on_rq, running;
-+	int queued, running;
- 	unsigned long flags;
- 	struct rq *rq;
- 
- 	rq = task_rq_lock(tsk, &flags);
- 
- 	running = task_current(rq, tsk);
--	on_rq = tsk->on_rq;
-+	queued = task_on_rq_queued(tsk);
- 
--	if (on_rq)
-+	if (queued)
- 		dequeue_task(rq, tsk, 0);
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
-@@ -7331,14 +7331,14 @@ void sched_move_task(struct task_struct *tsk)
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	if (tsk->sched_class->task_move_group)
--		tsk->sched_class->task_move_group(tsk, on_rq);
-+		tsk->sched_class->task_move_group(tsk, queued);
- 	else
- #endif
- 		set_task_rq(tsk, task_cpu(tsk));
- 
- 	if (unlikely(running))
- 		tsk->sched_class->set_curr_task(rq);
--	if (on_rq)
-+	if (queued)
- 		enqueue_task(rq, tsk, 0);
- 
- 	task_rq_unlock(rq, tsk, &flags);
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 255ce13..d21a8e0 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -530,7 +530,7 @@ again:
- 	update_rq_clock(rq);
- 	dl_se->dl_throttled = 0;
- 	dl_se->dl_yielded = 0;
--	if (p->on_rq) {
-+	if (task_on_rq_queued(p)) {
- 		enqueue_task_dl(rq, p, ENQUEUE_REPLENISH);
- 		if (task_has_dl_policy(rq->curr))
- 			check_preempt_curr_dl(rq, p, 0);
-@@ -1030,7 +1030,7 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
- 		 * means a stop task can slip in, in which case we need to
- 		 * re-start task selection.
- 		 */
--		if (rq->stop && rq->stop->on_rq)
-+		if (rq->stop && task_on_rq_queued(rq->stop))
- 			return RETRY_TASK;
- 	}
- 
-@@ -1257,7 +1257,8 @@ static struct rq *find_lock_later_rq(struct task_struct *task, struct rq *rq)
- 			if (unlikely(task_rq(task) != rq ||
- 				     !cpumask_test_cpu(later_rq->cpu,
- 				                       &task->cpus_allowed) ||
--				     task_running(rq, task) || !task->on_rq)) {
-+				     task_running(rq, task) ||
-+				     !task_on_rq_queued(task))) {
- 				double_unlock_balance(rq, later_rq);
- 				later_rq = NULL;
- 				break;
-@@ -1296,7 +1297,7 @@ static struct task_struct *pick_next_pushable_dl_task(struct rq *rq)
- 	BUG_ON(task_current(rq, p));
- 	BUG_ON(p->nr_cpus_allowed <= 1);
- 
--	BUG_ON(!p->on_rq);
-+	BUG_ON(!task_on_rq_queued(p));
- 	BUG_ON(!dl_task(p));
- 
- 	return p;
-@@ -1443,7 +1444,7 @@ static int pull_dl_task(struct rq *this_rq)
- 		     dl_time_before(p->dl.deadline,
- 				    this_rq->dl.earliest_dl.curr))) {
- 			WARN_ON(p == src_rq->curr);
--			WARN_ON(!p->on_rq);
-+			WARN_ON(!task_on_rq_queued(p));
- 
- 			/*
- 			 * Then we pull iff p has actually an earlier
-@@ -1596,7 +1597,7 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
- 	if (unlikely(p->dl.dl_throttled))
- 		return;
- 
--	if (p->on_rq && rq->curr != p) {
-+	if (task_on_rq_queued(p) && rq->curr != p) {
- #ifdef CONFIG_SMP
- 		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
- 			/* Only reschedule if pushing failed */
-@@ -1614,7 +1615,7 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
- static void prio_changed_dl(struct rq *rq, struct task_struct *p,
- 			    int oldprio)
- {
--	if (p->on_rq || rq->curr == p) {
-+	if (task_on_rq_queued(p) || rq->curr == p) {
- #ifdef CONFIG_SMP
- 		/*
- 		 * This might be too much, but unfortunately
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bc37bb9..9e6ca0d 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -7494,7 +7494,7 @@ static void task_fork_fair(struct task_struct *p)
- static void
- prio_changed_fair(struct rq *rq, struct task_struct *p, int oldprio)
- {
--	if (!p->on_rq)
-+	if (!task_on_rq_queued(p))
- 		return;
- 
- 	/*
-@@ -7519,11 +7519,11 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
- 	 * switched back to the fair class the enqueue_entity(.flags=0) will
- 	 * do the right thing.
- 	 *
--	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
--	 * have normalized the vruntime, if it's !on_rq, then only when
-+	 * If it's queued, then the dequeue_entity(.flags=0) will already
-+	 * have normalized the vruntime, if it's !queued, then only when
- 	 * the task is sleeping will it still have non-normalized vruntime.
- 	 */
--	if (!p->on_rq && p->state != TASK_RUNNING) {
-+	if (!task_on_rq_queued(p) && p->state != TASK_RUNNING) {
- 		/*
- 		 * Fix up our vruntime so that the current sleep doesn't
- 		 * cause 'unlimited' sleep bonus.
-@@ -7558,7 +7558,7 @@ static void switched_to_fair(struct rq *rq, struct task_struct *p)
- 	 */
- 	se->depth = se->parent ? se->parent->depth + 1 : 0;
- #endif
--	if (!p->on_rq)
-+	if (!task_on_rq_queued(p))
- 		return;
- 
- 	/*
-@@ -7604,7 +7604,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
--static void task_move_group_fair(struct task_struct *p, int on_rq)
-+static void task_move_group_fair(struct task_struct *p, int queued)
- {
- 	struct sched_entity *se = &p->se;
- 	struct cfs_rq *cfs_rq;
-@@ -7623,7 +7623,7 @@ static void task_move_group_fair(struct task_struct *p, int on_rq)
- 	 * fair sleeper stuff for the first placement, but who cares.
- 	 */
- 	/*
--	 * When !on_rq, vruntime of the task has usually NOT been normalized.
-+	 * When !queued, vruntime of the task has usually NOT been normalized.
- 	 * But there are some cases where it has already been normalized:
- 	 *
- 	 * - Moving a forked child which is waiting for being woken up by
-@@ -7634,14 +7634,14 @@ static void task_move_group_fair(struct task_struct *p, int on_rq)
- 	 * To prevent boost or penalty in the new cfs_rq caused by delta
- 	 * min_vruntime between the two cfs_rqs, we skip vruntime adjustment.
- 	 */
--	if (!on_rq && (!se->sum_exec_runtime || p->state == TASK_WAKING))
--		on_rq = 1;
-+	if (!queued && (!se->sum_exec_runtime || p->state == TASK_WAKING))
-+		queued = 1;
- 
--	if (!on_rq)
-+	if (!queued)
- 		se->vruntime -= cfs_rq_of(se)->min_vruntime;
- 	set_task_rq(p, task_cpu(p));
- 	se->depth = se->parent ? se->parent->depth + 1 : 0;
--	if (!on_rq) {
-+	if (!queued) {
- 		cfs_rq = cfs_rq_of(se);
- 		se->vruntime += cfs_rq->min_vruntime;
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 5f6edca..4feac8f 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1448,7 +1448,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 		 * means a dl or stop task can slip in, in which case we need
- 		 * to re-start task selection.
- 		 */
--		if (unlikely((rq->stop && rq->stop->on_rq) ||
-+		if (unlikely((rq->stop && task_on_rq_queued(rq->stop)) ||
- 			     rq->dl.dl_nr_running))
- 			return RETRY_TASK;
- 	}
-@@ -1624,7 +1624,7 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
- 				     !cpumask_test_cpu(lowest_rq->cpu,
- 						       tsk_cpus_allowed(task)) ||
- 				     task_running(rq, task) ||
--				     !task->on_rq)) {
-+				     !task_on_rq_queued(task))) {
- 
- 				double_unlock_balance(rq, lowest_rq);
- 				lowest_rq = NULL;
-@@ -1658,7 +1658,7 @@ static struct task_struct *pick_next_pushable_task(struct rq *rq)
- 	BUG_ON(task_current(rq, p));
- 	BUG_ON(p->nr_cpus_allowed <= 1);
- 
--	BUG_ON(!p->on_rq);
-+	BUG_ON(!task_on_rq_queued(p));
- 	BUG_ON(!rt_task(p));
- 
- 	return p;
-@@ -1809,7 +1809,7 @@ static int pull_rt_task(struct rq *this_rq)
- 		 */
- 		if (p && (p->prio < this_rq->rt.highest_prio.curr)) {
- 			WARN_ON(p == src_rq->curr);
--			WARN_ON(!p->on_rq);
-+			WARN_ON(!task_on_rq_queued(p));
- 
- 			/*
- 			 * There's a chance that p is higher in priority
-@@ -1870,7 +1870,7 @@ static void set_cpus_allowed_rt(struct task_struct *p,
- 
- 	BUG_ON(!rt_task(p));
- 
--	if (!p->on_rq)
-+	if (!task_on_rq_queued(p))
- 		return;
- 
- 	weight = cpumask_weight(new_mask);
-@@ -1936,7 +1936,7 @@ static void switched_from_rt(struct rq *rq, struct task_struct *p)
- 	 * we may need to handle the pulling of RT tasks
- 	 * now.
- 	 */
--	if (!p->on_rq || rq->rt.rt_nr_running)
-+	if (!task_on_rq_queued(p) || rq->rt.rt_nr_running)
- 		return;
- 
- 	if (pull_rt_task(rq))
-@@ -1970,7 +1970,7 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
- 	 * If that current running task is also an RT task
- 	 * then see if we can move to another run queue.
- 	 */
--	if (p->on_rq && rq->curr != p) {
-+	if (task_on_rq_queued(p) && rq->curr != p) {
- #ifdef CONFIG_SMP
- 		if (p->nr_cpus_allowed > 1 && rq->rt.overloaded &&
- 		    /* Don't resched if we changed runqueues */
-@@ -1989,7 +1989,7 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
- static void
- prio_changed_rt(struct rq *rq, struct task_struct *p, int oldprio)
- {
--	if (!p->on_rq)
-+	if (!task_on_rq_queued(p))
- 		return;
- 
- 	if (rq->curr == p) {
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 4c2b87f..26566d0 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -15,6 +15,9 @@
- 
- struct rq;
- 
-+/* task_struct::on_rq states: */
-+#define TASK_ON_RQ_QUEUED	1
++Required for "rockchip,rk3288-pwm":
++ - rockchip,grf : the phandle of the syscon node for the general register
++		  file (GRF)
 +
- extern __read_mostly int scheduler_running;
+ Example:
  
- extern unsigned long calc_load_update;
-@@ -942,6 +945,10 @@ static inline int task_running(struct rq *rq, struct task_struct *p)
- #endif
- }
+ 	pwm0: pwm@20030000 {
+diff --git a/drivers/pwm/pwm-rockchip.c b/drivers/pwm/pwm-rockchip.c
+index 9442df2..08cbde6 100644
+--- a/drivers/pwm/pwm-rockchip.c
++++ b/drivers/pwm/pwm-rockchip.c
+@@ -16,7 +16,12 @@
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/pwm.h>
++#include <linux/regmap.h>
+ #include <linux/time.h>
++#include <linux/mfd/syscon.h>
++
++#define RK3288_GRF_PWM_ENABLE_OFFSET	0x024c
++#define RK3288_GRF_PWM_ENABLE_BIT	0
  
-+static inline int task_on_rq_queued(struct task_struct *p)
-+{
-+	return p->on_rq == TASK_ON_RQ_QUEUED;
-+}
+ #define PWM_CTRL_TIMER_EN	(1 << 0)
+ #define PWM_CTRL_OUTPUT_EN	(1 << 3)
+@@ -231,6 +236,7 @@ MODULE_DEVICE_TABLE(of, rockchip_pwm_dt_ids);
  
- #ifndef prepare_arch_switch
- # define prepare_arch_switch(next)	do { } while (0)
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index bfe0eda..67426e5 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -28,7 +28,7 @@ pick_next_task_stop(struct rq *rq, struct task_struct *prev)
+ static int rockchip_pwm_probe(struct platform_device *pdev)
  {
- 	struct task_struct *stop = rq->stop;
++	struct device_node *np = pdev->dev.of_node;
+ 	const struct of_device_id *id;
+ 	struct rockchip_pwm_chip *pc;
+ 	struct resource *r;
+@@ -240,6 +246,29 @@ static int rockchip_pwm_probe(struct platform_device *pdev)
+ 	if (!id)
+ 		return -EINVAL;
  
--	if (!stop || !stop->on_rq)
-+	if (!stop || !task_on_rq_queued(stop))
- 		return NULL;
- 
- 	put_prev_task(rq, prev);
++	/*
++	 * Switch to new interface on rk3288.
++	 * The control bit is located in the GRF register space.
++	 */
++	if (of_device_is_compatible(np, "rockchip,rk3288-pwm")) {
++		struct regmap *grf;
++
++		grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
++		if (IS_ERR(grf)) {
++			dev_err(&pdev->dev, "Missing rockchip,grf property\n");
++			return PTR_ERR(grf);
++		}
++
++		/* Set bit 16 for write mask, 0 for switch to new IP */
++		ret = regmap_write(grf, RK3288_GRF_PWM_ENABLE_OFFSET,
++				   BIT(RK3288_GRF_PWM_ENABLE_BIT + 16) |
++				   BIT(RK3288_GRF_PWM_ENABLE_BIT));
++		if (ret != 0) {
++			dev_err(&pdev->dev, "Could not access GRF: %d\n", ret);
++			return ret;
++		}
++	}
++
+ 	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
+ 	if (!pc)
+ 		return -ENOMEM;
+-- 
+2.1.0.rc2.206.gedb03e5
+
