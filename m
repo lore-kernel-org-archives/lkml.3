@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaHTLtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:49:31 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59055 "EHLO
+	id S1753088AbaHTLs2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:48:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59025 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752631AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752620AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>,
-        Michal Schmidt <mschmidt@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 032/104] bnx2x: fix crash during TSO tunneling
-Date: Wed, 20 Aug 2014 13:42:55 +0200
-Message-Id: <9ac1f1f2b7b385891a5a63d09337a2d66fd76673.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jacob Keller <jacob.e.keller@intel.com>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Alexander Duyck <alexander.duyck@intel.com>,
+        Hyong-Youb Kim <hykim@myri.com>, Amir Vadai <amirv@mellanox.com>,
+        Dmitry Kravkov <dmitry@broadcom.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 078/104] ixgbe: fix qv_lock_napi call in ixgbe_napi_disable_all
+Date: Wed, 20 Aug 2014 13:43:41 +0200
+Message-Id: <0977e9849d561464d21afb92b9f3746588a19c4f.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -24,94 +28,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit fe26566d8a05151ba1dce75081f6270f73ec4ae1 ]
+commit 27d9ce4fd0e2e75c2907f6d3dc0487012a3e4298 upstream.
 
-When TSO packet is transmitted additional BD w/o mapping is used
-to describe the packed. The BD needs special handling in tx
-completion.
+ixgbe_napi_disable_all calls napi_disable on each queue, however the busy
+polling code introduced a local_bh_disable()d context around the napi_disable.
+The original author did not realize that napi_disable might sleep, which would
+cause a sleep while atomic BUG. In addition, on a single processor system, the
+ixgbe_qv_lock_napi loop shouldn't have to mdelay. This patch adds an
+ixgbe_qv_disable along with a new IXGBE_QV_STATE_DISABLED bit, which it uses to
+indicate to the poll and napi routines that the q_vector has been disabled. Now
+the ixgbe_napi_disable_all function will wait until all pending work has been
+finished and prevent any future work from being started.
 
-kernel: Call Trace:
-kernel: <IRQ>  [<ffffffff815e19ba>] dump_stack+0x19/0x1b
-kernel: [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
-kernel: [<ffffffff8105df5c>] warn_slowpath_fmt+0x5c/0x80
-kernel: [<ffffffff814a8c0d>] ? find_iova+0x4d/0x90
-kernel: [<ffffffff814ab0e2>] intel_unmap_page.part.36+0x142/0x160
-kernel: [<ffffffff814ad0e6>] intel_unmap_page+0x26/0x30
-kernel: [<ffffffffa01f55d7>] bnx2x_free_tx_pkt+0x157/0x2b0 [bnx2x]
-kernel: [<ffffffffa01f8dac>] bnx2x_tx_int+0xac/0x220 [bnx2x]
-kernel: [<ffffffff8101a0d9>] ? read_tsc+0x9/0x20
-kernel: [<ffffffffa01f8fdb>] bnx2x_poll+0xbb/0x3c0 [bnx2x]
-kernel: [<ffffffff814d041a>] net_rx_action+0x15a/0x250
-kernel: [<ffffffff81067047>] __do_softirq+0xf7/0x290
-kernel: [<ffffffff815f3a5c>] call_softirq+0x1c/0x30
-kernel: [<ffffffff81014d25>] do_softirq+0x55/0x90
-kernel: [<ffffffff810673e5>] irq_exit+0x115/0x120
-kernel: [<ffffffff815f4358>] do_IRQ+0x58/0xf0
-kernel: [<ffffffff815e94ad>] common_interrupt+0x6d/0x6d
-kernel: <EOI>  [<ffffffff810bbff7>] ? clockevents_notify+0x127/0x140
-kernel: [<ffffffff814834df>] ? cpuidle_enter_state+0x4f/0xc0
-kernel: [<ffffffff81483615>] cpuidle_idle_call+0xc5/0x200
-kernel: [<ffffffff8101bc7e>] arch_cpu_idle+0xe/0x30
-kernel: [<ffffffff810b4725>] cpu_startup_entry+0xf5/0x290
-kernel: [<ffffffff815cfee1>] start_secondary+0x265/0x27b
-kernel: ---[ end trace 11aa7726f18d7e80 ]---
-
-Fixes: a848ade408b ("bnx2x: add CSUM and TSO support for encapsulation protocols")
-Reported-by: Yulong Pei <ypei@redhat.com>
-Cc: Michal Schmidt <mschmidt@redhat.com>
-Signed-off-by: Dmitry Kravkov <Dmitry.Kravkov@qlogic.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: Alexander Duyck <alexander.duyck@intel.com>
+Cc: Hyong-Youb Kim <hykim@myri.com>
+Cc: Amir Vadai <amirv@mellanox.com>
+Cc: Dmitry Kravkov <dmitry@broadcom.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h     | 1 +
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 9 +++++++++
- 2 files changed, 10 insertions(+)
+ drivers/net/ethernet/intel/ixgbe/ixgbe.h      | 48 ++++++++++++++++++++-------
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |  6 ++--
+ 2 files changed, 38 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-index c5e375ddd6c0..930ced0bcc8b 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x.h
-@@ -337,6 +337,7 @@ struct sw_tx_bd {
- 	u8		flags;
- /* Set on the first BD descriptor when there is a split BD */
- #define BNX2X_TSO_SPLIT_BD		(1<<0)
-+#define BNX2X_HAS_SECOND_PBD		(1<<1)
- };
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+index 0ac6b11c6e4e..4506f8a15c8a 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
+@@ -369,11 +369,13 @@ struct ixgbe_q_vector {
+ #ifdef CONFIG_NET_RX_BUSY_POLL
+ 	unsigned int state;
+ #define IXGBE_QV_STATE_IDLE        0
+-#define IXGBE_QV_STATE_NAPI	   1    /* NAPI owns this QV */
+-#define IXGBE_QV_STATE_POLL	   2    /* poll owns this QV */
+-#define IXGBE_QV_LOCKED (IXGBE_QV_STATE_NAPI | IXGBE_QV_STATE_POLL)
+-#define IXGBE_QV_STATE_NAPI_YIELD  4    /* NAPI yielded this QV */
+-#define IXGBE_QV_STATE_POLL_YIELD  8    /* poll yielded this QV */
++#define IXGBE_QV_STATE_NAPI	   1     /* NAPI owns this QV */
++#define IXGBE_QV_STATE_POLL	   2     /* poll owns this QV */
++#define IXGBE_QV_STATE_DISABLED	   4     /* QV is disabled */
++#define IXGBE_QV_OWNED (IXGBE_QV_STATE_NAPI | IXGBE_QV_STATE_POLL)
++#define IXGBE_QV_LOCKED (IXGBE_QV_OWNED | IXGBE_QV_STATE_DISABLED)
++#define IXGBE_QV_STATE_NAPI_YIELD  8     /* NAPI yielded this QV */
++#define IXGBE_QV_STATE_POLL_YIELD  16    /* poll yielded this QV */
+ #define IXGBE_QV_YIELD (IXGBE_QV_STATE_NAPI_YIELD | IXGBE_QV_STATE_POLL_YIELD)
+ #define IXGBE_QV_USER_PEND (IXGBE_QV_STATE_POLL | IXGBE_QV_STATE_POLL_YIELD)
+ 	spinlock_t lock;
+@@ -394,7 +396,7 @@ static inline void ixgbe_qv_init_lock(struct ixgbe_q_vector *q_vector)
+ static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
+ {
+ 	int rc = true;
+-	spin_lock(&q_vector->lock);
++	spin_lock_bh(&q_vector->lock);
+ 	if (q_vector->state & IXGBE_QV_LOCKED) {
+ 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
+ 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
+@@ -405,7 +407,7 @@ static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
+ 	} else
+ 		/* we don't care if someone yielded */
+ 		q_vector->state = IXGBE_QV_STATE_NAPI;
+-	spin_unlock(&q_vector->lock);
++	spin_unlock_bh(&q_vector->lock);
+ 	return rc;
+ }
  
- struct sw_rx_page {
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 9846d3e712a1..c3ba4bf20363 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -186,6 +186,12 @@ static u16 bnx2x_free_tx_pkt(struct bnx2x *bp, struct bnx2x_fp_txdata *txdata,
- 	--nbd;
- 	bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
+@@ -413,14 +415,15 @@ static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
+ static inline bool ixgbe_qv_unlock_napi(struct ixgbe_q_vector *q_vector)
+ {
+ 	int rc = false;
+-	spin_lock(&q_vector->lock);
++	spin_lock_bh(&q_vector->lock);
+ 	WARN_ON(q_vector->state & (IXGBE_QV_STATE_POLL |
+ 			       IXGBE_QV_STATE_NAPI_YIELD));
  
-+	if (tx_buf->flags & BNX2X_HAS_SECOND_PBD) {
-+		/* Skip second parse bd... */
-+		--nbd;
-+		bd_idx = TX_BD(NEXT_TX_IDX(bd_idx));
-+	}
+ 	if (q_vector->state & IXGBE_QV_STATE_POLL_YIELD)
+ 		rc = true;
+-	q_vector->state = IXGBE_QV_STATE_IDLE;
+-	spin_unlock(&q_vector->lock);
++	/* will reset state to idle, unless QV is disabled */
++	q_vector->state &= IXGBE_QV_STATE_DISABLED;
++	spin_unlock_bh(&q_vector->lock);
+ 	return rc;
+ }
+ 
+@@ -451,7 +454,8 @@ static inline bool ixgbe_qv_unlock_poll(struct ixgbe_q_vector *q_vector)
+ 
+ 	if (q_vector->state & IXGBE_QV_STATE_POLL_YIELD)
+ 		rc = true;
+-	q_vector->state = IXGBE_QV_STATE_IDLE;
++	/* will reset state to idle, unless QV is disabled */
++	q_vector->state &= IXGBE_QV_STATE_DISABLED;
+ 	spin_unlock_bh(&q_vector->lock);
+ 	return rc;
+ }
+@@ -459,9 +463,23 @@ static inline bool ixgbe_qv_unlock_poll(struct ixgbe_q_vector *q_vector)
+ /* true if a socket is polling, even if it did not get the lock */
+ static inline bool ixgbe_qv_ll_polling(struct ixgbe_q_vector *q_vector)
+ {
+-	WARN_ON(!(q_vector->state & IXGBE_QV_LOCKED));
++	WARN_ON(!(q_vector->state & IXGBE_QV_OWNED));
+ 	return q_vector->state & IXGBE_QV_USER_PEND;
+ }
 +
- 	/* TSO headers+data bds share a common mapping. See bnx2x_tx_split() */
- 	if (tx_buf->flags & BNX2X_TSO_SPLIT_BD) {
- 		tx_data_bd = &txdata->tx_desc_ring[bd_idx].reg_bd;
-@@ -3822,6 +3828,9 @@ netdev_tx_t bnx2x_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 			/* set encapsulation flag in start BD */
- 			SET_FLAG(tx_start_bd->general_data,
- 				 ETH_TX_START_BD_TUNNEL_EXIST, 1);
++/* false if QV is currently owned */
++static inline bool ixgbe_qv_disable(struct ixgbe_q_vector *q_vector)
++{
++	int rc = true;
++	spin_lock_bh(&q_vector->lock);
++	if (q_vector->state & IXGBE_QV_OWNED)
++		rc = false;
++	q_vector->state |= IXGBE_QV_STATE_DISABLED;
++	spin_unlock_bh(&q_vector->lock);
 +
-+			tx_buf->flags |= BNX2X_HAS_SECOND_PBD;
++	return rc;
++}
 +
- 			nbd++;
- 		} else if (xmit_type & XMIT_CSUM) {
- 			/* Set PBD in checksum offload case w/o encapsulation */
+ #else /* CONFIG_NET_RX_BUSY_POLL */
+ static inline void ixgbe_qv_init_lock(struct ixgbe_q_vector *q_vector)
+ {
+@@ -491,6 +509,12 @@ static inline bool ixgbe_qv_ll_polling(struct ixgbe_q_vector *q_vector)
+ {
+ 	return false;
+ }
++
++static inline bool ixgbe_qv_disable(struct ixgbe_q_vector *q_vector)
++{
++	return true;
++}
++
+ #endif /* CONFIG_NET_RX_BUSY_POLL */
+ 
+ #ifdef CONFIG_IXGBE_HWMON
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index bf046e14ceb5..a178a9caa763 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -3893,15 +3893,13 @@ static void ixgbe_napi_disable_all(struct ixgbe_adapter *adapter)
+ {
+ 	int q_idx;
+ 
+-	local_bh_disable(); /* for ixgbe_qv_lock_napi() */
+ 	for (q_idx = 0; q_idx < adapter->num_q_vectors; q_idx++) {
+ 		napi_disable(&adapter->q_vector[q_idx]->napi);
+-		while (!ixgbe_qv_lock_napi(adapter->q_vector[q_idx])) {
++		while (!ixgbe_qv_disable(adapter->q_vector[q_idx])) {
+ 			pr_info("QV %d locked\n", q_idx);
+-			mdelay(1);
++			usleep_range(1000, 20000);
+ 		}
+ 	}
+-	local_bh_enable();
+ }
+ 
+ #ifdef CONFIG_IXGBE_DCB
 -- 
 2.0.4
 
