@@ -1,285 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686AbaHTGwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 02:52:55 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47998 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879AbaHTGwy (ORCPT
+	id S1751960AbaHTG4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 02:56:15 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:60604 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaHTG4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 02:52:54 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Wed, 20 Aug 2014 15:53:18 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Horner <ds2horner@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>
-Subject: Re: [PATCH v2 4/4] zram: report maximum used memory
-Message-ID: <20140820065318.GB17372@bbox>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
- <1408434887-16387-5-git-send-email-minchan@kernel.org>
- <CAFdhcLQcgME18U2NfEc6dXfvHnJWpyqcMR=Y16MyyghWiNRo1w@mail.gmail.com>
+	Wed, 20 Aug 2014 02:56:08 -0400
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        Arnd Bergmann <arnd@arndb.de>, Tony Prisk <linux@prisktech.co.nz>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv4 2/4] pwm: make the PWM_POLARITY flag in DTB optional
+Date: Wed, 20 Aug 2014 08:55:54 +0200
+Message-Id: <1408517756-9412-3-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1408517756-9412-2-git-send-email-LW@KARO-electronics.de>
+References: <1408517756-9412-1-git-send-email-LW@KARO-electronics.de>
+ <1408517756-9412-2-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAFdhcLQcgME18U2NfEc6dXfvHnJWpyqcMR=Y16MyyghWiNRo1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 02:26:50AM -0400, David Horner wrote:
-> On Tue, Aug 19, 2014 at 3:54 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > Normally, zram user could get maximum memory usage zram consumed
-> > via polling mem_used_total with sysfs in userspace.
-> >
-> > But it has a critical problem because user can miss peak memory
-> > usage during update inverval of polling. For avoiding that,
-> > user should poll it with shorter interval(ie, 0.0000000001s)
-> > with mlocking to avoid page fault delay when memory pressure
-> > is heavy. It would be troublesome.
-> >
-> > This patch adds new knob "mem_used_max" so user could see
-> > the maximum memory usage easily via reading the knob and reset
-> > it via "echo 0 > /sys/block/zram0/mem_used_max".
-> >
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  Documentation/ABI/testing/sysfs-block-zram | 10 +++++
-> >  Documentation/blockdev/zram.txt            |  1 +
-> >  drivers/block/zram/zram_drv.c              | 60 +++++++++++++++++++++++++++++-
-> >  drivers/block/zram/zram_drv.h              |  1 +
-> >  4 files changed, 70 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> > index 025331c19045..ffd1ea7443dd 100644
-> > --- a/Documentation/ABI/testing/sysfs-block-zram
-> > +++ b/Documentation/ABI/testing/sysfs-block-zram
-> > @@ -120,6 +120,16 @@ Description:
-> >                 statistic.
-> >                 Unit: bytes
-> >
-> > +What:          /sys/block/zram<id>/mem_used_max
-> > +Date:          August 2014
-> > +Contact:       Minchan Kim <minchan@kernel.org>
-> > +Description:
-> > +               The mem_used_max file is read/write and specifies the amount
-> > +               of maximum memory zram have consumed to store compressed data.
-> > +               For resetting the value, you should do "echo 0". Otherwise,
-> > +               you could see -EINVAL.
-> > +               Unit: bytes
-> > +
-> >  What:          /sys/block/zram<id>/mem_limit
-> >  Date:          August 2014
-> >  Contact:       Minchan Kim <minchan@kernel.org>
-> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> > index 9f239ff8c444..3b2247c2d4cf 100644
-> > --- a/Documentation/blockdev/zram.txt
-> > +++ b/Documentation/blockdev/zram.txt
-> > @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
-> >                 orig_data_size
-> >                 compr_data_size
-> >                 mem_used_total
-> > +               mem_used_max
-> >
-> >  8) Deactivate:
-> >         swapoff /dev/zram0
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index adc91c7ecaef..e4d44842a91d 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -149,6 +149,40 @@ static ssize_t mem_limit_store(struct device *dev,
-> >         return len;
-> >  }
-> >
-> > +static ssize_t mem_used_max_show(struct device *dev,
-> > +               struct device_attribute *attr, char *buf)
-> > +{
-> > +       u64 val = 0;
-> > +       struct zram *zram = dev_to_zram(dev);
-> > +
-> > +       down_read(&zram->init_lock);
-> > +       if (init_done(zram))
-> > +               val = atomic64_read(&zram->stats.max_used_pages);
-> > +       up_read(&zram->init_lock);
-> > +
-> > +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> > +}
-> > +
-> > +static ssize_t mem_used_max_store(struct device *dev,
-> > +               struct device_attribute *attr, const char *buf, size_t len)
-> > +{
-> > +       u64 limit;
-> > +       struct zram *zram = dev_to_zram(dev);
-> > +       struct zram_meta *meta = zram->meta;
-> > +
-> > -       limit = memparse(buf, NULL);
-> > -       if (0 != limit)
-> 
-> we wanted explicit "0" and nothing else for extensibility
-> 
->      if (len != 1 || *buf != "0")
-> 
+Change the pwm chip driver registration, so that a chip driver that
+supports polarity inversion can still be used with DTBs that don't
+provide the 'PWM_POLARITY' flag.
 
-I wanted to work with "0", "0K", "0M", "0G" but agree it's meaningless
-at the moment so your version is better.
+This is done to provide polarity inversion support for the pwm-imx
+driver without having to modify all existing DTS files.
 
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/pwm/core.c            |   18 ++++++------------
+ drivers/pwm/pwm-atmel-tcb.c   |    1 -
+ drivers/pwm/pwm-atmel.c       |    4 +---
+ drivers/pwm/pwm-pxa.c         |    5 ++---
+ drivers/pwm/pwm-renesas-tpu.c |    1 -
+ drivers/pwm/pwm-samsung.c     |    1 -
+ drivers/pwm/pwm-tiecap.c      |    1 -
+ drivers/pwm/pwm-tiehrpwm.c    |    1 -
+ drivers/pwm/pwm-vt8500.c      |    1 -
+ include/linux/pwm.h           |    1 -
+ 10 files changed, 9 insertions(+), 25 deletions(-)
 
-> > +               return -EINVAL;
-> > +
-> > +       down_read(&zram->init_lock);
-> > +       if (init_done(zram))
-> > +               atomic64_set(&zram->stats.max_used_pages,
-> > +                               zs_get_total_size(meta->mem_pool));
-> > +       up_read(&zram->init_lock);
-> > +
-> > +       return len;
->           return 1;
-> 
-> the standard convention is to return used amount of buffer
-
-If I follow your suggestion, len should be 1 right before returning
-so no problem for functionality POV but I agree explicit "1" is better
-for readability so your version is better, better.
-
-> 
-> 
-> 
-> > +}
-> > +
-> >  static ssize_t max_comp_streams_store(struct device *dev,
-> >                 struct device_attribute *attr, const char *buf, size_t len)
-> >  {
-> > @@ -461,6 +495,26 @@ out_cleanup:
-> >         return ret;
-> >  }
-> >
-> > +static bool check_limit(struct zram *zram)
-> > +{
-> > +       unsigned long alloced_pages;
-> > +       u64 old_max, cur_max;
-> > +       struct zram_meta *meta = zram->meta;
-> > +
-> > +       do {
-> > +               alloced_pages = zs_get_total_size(meta->mem_pool);
-> > +               if (zram->limit_pages && alloced_pages > zram->limit_pages)
-> > +                       return false;
-> > +
-> > +               old_max = cur_max = atomic64_read(&zram->stats.max_used_pages);
-> > +               if (alloced_pages > cur_max)
-> > +                       old_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
-> > +                                       cur_max, alloced_pages);
-> > +       } while (old_max != cur_max);
-> > +
-> > +       return true;
-> > +}
-> > +
-> 
-> Check_limit does more than check limit - it has a substantial side
-> effect of updating max used.
-
-Hmm, Normally, limit check is best place to update the max although
-function name imply just checking the limit and I don't think
-code piece for max updating doesn't hurt readbilty.
-If you or other reviewer is strong against, I will be happy to
-factor out part of max updating into another function because
-I think it's just preference problem for small logic and don't want
-to waste argue for that.
-
-If you really want it, pz, ping me again.
-
-> 
-> Basically if we already allocated the buffer and our alloced_pages is
-> less than the limit then we are good to go.
-
-Yeb.
-
-> 
-> It is the race to update that we need to have the cmpxchg.
-> And maybe a helper function would aid readability - not sure, see next point.
-> 
-> I don't believe there is need for the loop either.
-> Any other updater will also be including our allocated pages
-> (and at this point in the code eliminated from roll back)
->  so if they beat us to it, then no problem, their max is better than ours.
-
-Let's assume we don't have the loop.
-
-
-CPU A                                   CPU B
-
-alloced_pages = 2001
-old_max = cur_max = 2000
-                                        alloced_pages = 2005
-                                        old_max = cur_max = 2000
-
-cmpxchg(2000, 2000, 2001) -> OK
-
-                                        cmpxchg(2001, 2000, 2005) -> FAIL
-
-So, we lose 2005 which is bigger vaule.
-
-> 
-> 
-> 
-> >  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >                            int offset)
-> >  {
-> > @@ -541,8 +595,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >                 goto out;
-> >         }
-> >
-> > -       if (zram->limit_pages &&
-> > -               zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
-> > +       if (!check_limit(zram)) {
-> >                 zs_free(meta->mem_pool, handle);
-> >                 ret = -ENOMEM;
-> >                 goto out;
-> > @@ -897,6 +950,8 @@ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
-> >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> >  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
-> >                 mem_limit_store);
-> > +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-> > +               mem_used_max_store);
-> >  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
-> >                 max_comp_streams_show, max_comp_streams_store);
-> >  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> > @@ -926,6 +981,7 @@ static struct attribute *zram_disk_attrs[] = {
-> >         &dev_attr_compr_data_size.attr,
-> >         &dev_attr_mem_used_total.attr,
-> >         &dev_attr_mem_limit.attr,
-> > +       &dev_attr_mem_used_max.attr,
-> >         &dev_attr_max_comp_streams.attr,
-> >         &dev_attr_comp_algorithm.attr,
-> >         NULL,
-> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > index b7aa9c21553f..29383312d543 100644
-> > --- a/drivers/block/zram/zram_drv.h
-> > +++ b/drivers/block/zram/zram_drv.h
-> > @@ -90,6 +90,7 @@ struct zram_stats {
-> >         atomic64_t notify_free; /* no. of swap slot free notifications */
-> >         atomic64_t zero_pages;          /* no. of zero filled pages */
-> >         atomic64_t pages_stored;        /* no. of pages currently stored */
-> > +       atomic64_t max_used_pages;      /* no. of maximum pages stored */
-> >  };
-> >
-> >  struct zram_meta {
-> > --
-> > 2.0.0
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index 7af0043..ab0fc5a 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -136,7 +136,7 @@ of_pwm_xlate_with_flags(struct pwm_chip *pc, const struct of_phandle_args *args)
+ {
+ 	struct pwm_device *pwm;
+ 
+-	if (pc->of_pwm_n_cells < 3)
++	if (args->args_count != 3)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	if (args->args[0] >= pc->npwm)
+@@ -162,12 +162,15 @@ of_pwm_simple_xlate(struct pwm_chip *pc, const struct of_phandle_args *args)
+ {
+ 	struct pwm_device *pwm;
+ 
+-	if (pc->of_pwm_n_cells < 2)
++	if (args->args_count < 2)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	if (args->args[0] >= pc->npwm)
+ 		return ERR_PTR(-EINVAL);
+ 
++	if (args->args_count > 2)
++		return of_pwm_xlate_with_flags(pc, args);
++
+ 	pwm = pwm_request_from_chip(pc, args->args[0], NULL);
+ 	if (IS_ERR(pwm))
+ 		return pwm;
+@@ -182,10 +185,8 @@ static void of_pwmchip_add(struct pwm_chip *chip)
+ 	if (!chip->dev || !chip->dev->of_node)
+ 		return;
+ 
+-	if (!chip->of_xlate) {
++	if (!chip->of_xlate)
+ 		chip->of_xlate = of_pwm_simple_xlate;
+-		chip->of_pwm_n_cells = 2;
+-	}
+ 
+ 	of_node_get(chip->dev->of_node);
+ }
+@@ -536,13 +537,6 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id)
+ 		goto put;
+ 	}
+ 
+-	if (args.args_count != pc->of_pwm_n_cells) {
+-		pr_debug("%s: wrong #pwm-cells for %s\n", np->full_name,
+-			 args.np->full_name);
+-		pwm = ERR_PTR(-EINVAL);
+-		goto put;
+-	}
+-
+ 	pwm = pc->of_xlate(pc, &args);
+ 	if (IS_ERR(pwm))
+ 		goto put;
+diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
+index f3dcd02..55fabf8 100644
+--- a/drivers/pwm/pwm-atmel-tcb.c
++++ b/drivers/pwm/pwm-atmel-tcb.c
+@@ -395,7 +395,6 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
+ 	tcbpwm->chip.dev = &pdev->dev;
+ 	tcbpwm->chip.ops = &atmel_tcb_pwm_ops;
+ 	tcbpwm->chip.of_xlate = of_pwm_xlate_with_flags;
+-	tcbpwm->chip.of_pwm_n_cells = 3;
+ 	tcbpwm->chip.base = -1;
+ 	tcbpwm->chip.npwm = NPWM;
+ 	tcbpwm->tc = tc;
+diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
+index 6e700a5..ae7c946 100644
+--- a/drivers/pwm/pwm-atmel.c
++++ b/drivers/pwm/pwm-atmel.c
+@@ -350,10 +350,8 @@ static int atmel_pwm_probe(struct platform_device *pdev)
+ 	atmel_pwm->chip.dev = &pdev->dev;
+ 	atmel_pwm->chip.ops = &atmel_pwm_ops;
+ 
+-	if (pdev->dev.of_node) {
++	if (pdev->dev.of_node)
+ 		atmel_pwm->chip.of_xlate = of_pwm_xlate_with_flags;
+-		atmel_pwm->chip.of_pwm_n_cells = 3;
+-	}
+ 
+ 	atmel_pwm->chip.base = -1;
+ 	atmel_pwm->chip.npwm = 4;
+diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
+index 0b312ec..5656052 100644
+--- a/drivers/pwm/pwm-pxa.c
++++ b/drivers/pwm/pwm-pxa.c
+@@ -191,10 +191,9 @@ static int pwm_probe(struct platform_device *pdev)
+ 	pwm->chip.base = -1;
+ 	pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
+ 
+-	if (IS_ENABLED(CONFIG_OF)) {
++	if (IS_ENABLED(CONFIG_OF))
+ 		pwm->chip.of_xlate = pxa_pwm_of_xlate;
+-		pwm->chip.of_pwm_n_cells = 1;
+-	}
++
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
+diff --git a/drivers/pwm/pwm-renesas-tpu.c b/drivers/pwm/pwm-renesas-tpu.c
+index 3b71b42..5271da3 100644
+--- a/drivers/pwm/pwm-renesas-tpu.c
++++ b/drivers/pwm/pwm-renesas-tpu.c
+@@ -419,7 +419,6 @@ static int tpu_probe(struct platform_device *pdev)
+ 	tpu->chip.dev = &pdev->dev;
+ 	tpu->chip.ops = &tpu_pwm_ops;
+ 	tpu->chip.of_xlate = of_pwm_xlate_with_flags;
+-	tpu->chip.of_pwm_n_cells = 3;
+ 	tpu->chip.base = -1;
+ 	tpu->chip.npwm = TPU_CHANNEL_MAX;
+ 
+diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
+index ba6b650..317d7d1 100644
+--- a/drivers/pwm/pwm-samsung.c
++++ b/drivers/pwm/pwm-samsung.c
+@@ -484,7 +484,6 @@ static int pwm_samsung_probe(struct platform_device *pdev)
+ 			return ret;
+ 
+ 		chip->chip.of_xlate = of_pwm_xlate_with_flags;
+-		chip->chip.of_pwm_n_cells = 3;
+ 	} else {
+ 		if (!pdev->dev.platform_data) {
+ 			dev_err(&pdev->dev, "no platform data specified\n");
+diff --git a/drivers/pwm/pwm-tiecap.c b/drivers/pwm/pwm-tiecap.c
+index 74efbe7..a8e8282 100644
+--- a/drivers/pwm/pwm-tiecap.c
++++ b/drivers/pwm/pwm-tiecap.c
+@@ -227,7 +227,6 @@ static int ecap_pwm_probe(struct platform_device *pdev)
+ 	pc->chip.dev = &pdev->dev;
+ 	pc->chip.ops = &ecap_pwm_ops;
+ 	pc->chip.of_xlate = of_pwm_xlate_with_flags;
+-	pc->chip.of_pwm_n_cells = 3;
+ 	pc->chip.base = -1;
+ 	pc->chip.npwm = 1;
+ 
+diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
+index cb75133..12a8ae4 100644
+--- a/drivers/pwm/pwm-tiehrpwm.c
++++ b/drivers/pwm/pwm-tiehrpwm.c
+@@ -458,7 +458,6 @@ static int ehrpwm_pwm_probe(struct platform_device *pdev)
+ 	pc->chip.dev = &pdev->dev;
+ 	pc->chip.ops = &ehrpwm_pwm_ops;
+ 	pc->chip.of_xlate = of_pwm_xlate_with_flags;
+-	pc->chip.of_pwm_n_cells = 3;
+ 	pc->chip.base = -1;
+ 	pc->chip.npwm = NUM_PWM_CHANNEL;
+ 
+diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
+index 652e6b5..e04a3c0 100644
+--- a/drivers/pwm/pwm-vt8500.c
++++ b/drivers/pwm/pwm-vt8500.c
+@@ -217,7 +217,6 @@ static int vt8500_pwm_probe(struct platform_device *pdev)
+ 	chip->chip.dev = &pdev->dev;
+ 	chip->chip.ops = &vt8500_pwm_ops;
+ 	chip->chip.of_xlate = of_pwm_xlate_with_flags;
+-	chip->chip.of_pwm_n_cells = 3;
+ 	chip->chip.base = -1;
+ 	chip->chip.npwm = VT8500_NR_PWMS;
+ 
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index e90628c..4cf1569 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -174,7 +174,6 @@ struct pwm_chip {
+ 
+ 	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
+ 					    const struct of_phandle_args *args);
+-	unsigned int		of_pwm_n_cells;
+ 	bool			can_sleep;
+ };
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.10.4
+
