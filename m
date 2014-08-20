@@ -1,70 +1,788 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaHTJUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:20:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55833 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaHTJUF (ORCPT
+	id S1751950AbaHTJVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:21:30 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:35562 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258AbaHTJV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:20:05 -0400
-From: Colin King <colin.king@canonical.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org
-Cc: ezequiel.garcia@free-electrons.com, linux-kernel@vger.kernel.org
-Subject: [PATCH][V2] UBI: block: fix dereference on uninitialized dev
-Date: Wed, 20 Aug 2014 10:19:38 +0100
-Message-Id: <1408526378-12972-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 2.1.0
+	Wed, 20 Aug 2014 05:21:27 -0400
+Date: Wed, 20 Aug 2014 10:21:17 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lgirdwood@gmail.com, broonie@kernel.org,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Subject: Re: [PATCH v2 2/5] MFD: RK808: Add new mfd driver for RK808
+Message-ID: <20140820092117.GI4266@lee--X1>
+References: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408505461-24200-1-git-send-email-zyw@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On Wed, 20 Aug 2014, Chris Zhong wrote:
 
-commit 4df38926f337 ("UBI: block: Avoid disk size integer overflow")
-introduced a dereference on dev (which is not initialized at that
-point) when printing a warning message.  Re-order disk_capacity check
-after the dev is found.
+> The RK808 chip is a power management IC for multimedia and handheld
+> devices. It contains the following components:
+> 
+> - Regulators
+> - RTC
+> 
+> The rk808 core driver is registered as a platform driver and provides
+> communication through I2C with the host device for the different
+> components.
+> 
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+> 
+> ---
+> 
+> Changes in v2:
+> Adviced by Mark Browm:
+> - change of_find_node_by_name to find_child_by_name
+> - use RK808_NUM_REGULATORS as the name of the constant
+> - create a pdata when missing platform data
+> - use the rk808_reg name to supply_regulator name
+> - replace regulator_register with devm_regulator_register
+> - some other problem with coding style
+> 
+>  drivers/mfd/Kconfig       |   13 ++
+>  drivers/mfd/Makefile      |    1 +
+>  drivers/mfd/rk808.c       |  297 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/rk808.h |  219 +++++++++++++++++++++++++++++++++
+>  4 files changed, 530 insertions(+)
+>  create mode 100644 drivers/mfd/rk808.c
+>  create mode 100644 include/linux/mfd/rk808.h
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index de5abf2..1df133e 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -582,6 +582,19 @@ config MFD_RC5T583
+>  	  Additional drivers must be enabled in order to use the
+>  	  different functionality of the device.
+>  
+> +config MFD_RK808
+> +	tristate "Rockchip RK808 Power Management chip"
+> +	depends on I2C
+> +	select MFD_CORE
+> +	select REGMAP_I2C
+> +	select REGMAP_IRQ
+> +	help
 
-Found by cppcheck:
- [drivers/mtd/ubi/block.c:509]: (error) Uninitialized variable: dev
+   <---------------------- Use more of the allotted space ----------------------->
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/mtd/ubi/block.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+> +	  Select this option to get support for the RK808 Power
+> +	  Management system device.
 
-diff --git a/drivers/mtd/ubi/block.c b/drivers/mtd/ubi/block.c
-index 33c6495..7a9805a 100644
---- a/drivers/mtd/ubi/block.c
-+++ b/drivers/mtd/ubi/block.c
-@@ -504,11 +504,6 @@ static int ubiblock_resize(struct ubi_volume_info *vi)
- 	struct ubiblock *dev;
- 	u64 disk_capacity = ((u64)vi->size * vi->usable_leb_size) >> 9;
- 
--	if ((sector_t)disk_capacity != disk_capacity) {
--		ubi_warn("%s: the volume is too big, cannot resize (%d LEBs)",
--			 dev->gd->disk_name, vi->size);
--		return -EFBIG;
--	}
- 	/*
- 	 * Need to lock the device list until we stop using the device,
- 	 * otherwise the device struct might get released in
-@@ -520,6 +515,12 @@ static int ubiblock_resize(struct ubi_volume_info *vi)
- 		mutex_unlock(&devices_mutex);
- 		return -ENODEV;
- 	}
-+	if ((sector_t)disk_capacity != disk_capacity) {
-+		mutex_unlock(&devices_mutex);
-+		ubi_warn("%s: the volume is too big, cannot resize (%d LEBs)",
-+			dev->gd->disk_name, vi->size);
-+		return -EFBIG;
-+	}
- 
- 	mutex_lock(&dev->dev_mutex);
- 	set_capacity(dev->gd, disk_capacity);
+What's a 'system device', and how does that differ to a controller?
+
+> +	  This driver provides common support for accessing the device
+> +	  through i2c interface. The device supports multiple sub-devices
+
+s/i2c/I2C/
+
+> +	  like interrupts, RTC, LDO and DCDC regulators, onkey.
+
+s/like/including/
+
+I would s/and/&/, then put an "and" before "onkey".
+
+this, this, this 'and' that.
+
+>  config MFD_SEC_CORE
+>  	bool "SAMSUNG Electronics PMIC Series Support"
+>  	depends on I2C=y
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index f001487..dbc28e7 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -160,6 +160,7 @@ obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
+>  obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
+>  obj-$(CONFIG_MFD_VIPERBOARD)    += viperboard.o
+>  obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
+> +obj-$(CONFIG_MFD_RK808)		+= rk808.o
+>  obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
+>  obj-$(CONFIG_MFD_SYSCON)	+= syscon.o
+>  obj-$(CONFIG_MFD_LM3533)	+= lm3533-core.o lm3533-ctrlbank.o
+> diff --git a/drivers/mfd/rk808.c b/drivers/mfd/rk808.c
+> new file mode 100644
+> index 0000000..667cfdf
+> --- /dev/null
+> +++ b/drivers/mfd/rk808.c
+> @@ -0,0 +1,297 @@
+> +/*
+> + * Mfd core driver for Rockchip RK808
+
+s/Mfd/MFD
+
+> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+> + *
+> + * Author: Chris Zhong <zyw@rock-chips.com>
+> + * Author: Zhang Qing <zhangqing@rock-chips.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+
+Remove this line.
+
+> + */
+> +
+> +#include <linux/bug.h>
+> +#include <linux/delay.h>
+> +#include <linux/err.h>
+> +#include <linux/i2c.h>
+> +#include <linux/kernel.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/mfd/rk808.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/mutex.h>
+> +#include <linux/module.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/regulator/driver.h>
+> +#include <linux/regulator/of_regulator.h>
+> +#include <linux/regulator/driver.h>
+> +#include <linux/regulator/machine.h>
+> +#include <linux/regmap.h>
+> +#include <linux/slab.h>
+
+I'm pretty sure you don't need all of these includes.
+
+Remove the ones you're not using.
+
+> +struct rk808_reg_data {
+> +	int addr;
+> +	int mask;
+> +	int value;
+> +};
+> +
+> +static struct rk808 *g_rk808;
+
+Grim.
+
+> +static struct resource rtc_resources[] = {
+> +	{
+> +		.start  = RK808_IRQ_RTC_ALARM,
+> +		.end    = RK808_IRQ_RTC_ALARM,
+> +		.flags  = IORESOURCE_IRQ,
+> +	}
+> +};
+> +
+> +static const struct mfd_cell rk808s[] = {
+> +	{
+> +		.name = "rk808-regulator",
+> +	},
+> +	{
+> +		.name = "rk808-rtc",
+> +		.num_resources = ARRAY_SIZE(rtc_resources),
+> +		.resources = &rtc_resources[0],
+> +	},
+> +	{
+> +		.name = "rk808-clkout",
+> +	},
+
+Can you reorder these, with the single liners at the start and
+actually make them one line, so:
+
+  { .name = "rk808-clkout" },
+  { .name = "rk808-regulator" },
+  {
+  	.name = "rk808-rtc",
+  	.num_resources = ARRAY_SIZE(rtc_resources),
+  	.resources = &rtc_resources[0],
+  },
+
+This also happens to be alphabetical.
+
+> +};
+> +
+> +static const struct rk808_reg_data pre_init_reg[] = {
+> +	{RK808_BUCK3_CONFIG_REG, BUCK_ILMIN_MASK, BUCK_ILMIN_150MA},
+> +	{RK808_BUCK4_CONFIG_REG, BUCK_ILMIN_MASK, BUCK_ILMIN_200MA},
+> +	{RK808_BOOST_CONFIG_REG, BOOST_ILMIN_MASK, BOOST_ILMIN_100MA},
+> +	{RK808_BUCK1_CONFIG_REG, BUCK1_RATE_MASK,  BUCK_ILMIN_200MA},
+> +	{RK808_BUCK2_CONFIG_REG, BUCK2_RATE_MASK,  BUCK_ILMIN_200MA},
+> +	{RK808_VB_MON_REG,       MASK_ALL,  VB_LO_ACT | VB_LO_SEL_3500MV},
+> +	{RK808_INT_STS_REG1,     MASK_NONE, 0},
+> +	{RK808_INT_STS_REG2,     MASK_NONE, 0},
+> +};
+
+Can you also line up the third column?
+
+/me likes straight lines.
+
+> +static const struct regmap_irq rk808_irqs[] = {
+> +	/* INT_STS */
+> +	[RK808_IRQ_VOUT_LO] = {
+> +		.mask = RK808_IRQ_VOUT_LO_MSK,
+> +		.reg_offset = 0,
+> +	},
+> +	[RK808_IRQ_VB_LO] = {
+> +		.mask = RK808_IRQ_VB_LO_MSK,
+> +		.reg_offset = 0,
+> +	},
+> +	[RK808_IRQ_PWRON] = {
+> +		.mask = RK808_IRQ_PWRON_MSK,
+> +		.reg_offset = 0,
+> +	},
+> +	[RK808_IRQ_PWRON_LP] = {
+> +		.mask = RK808_IRQ_PWRON_LP_MSK,
+> +		.reg_offset = 0,
+> +	},
+> +	[RK808_IRQ_HOTDIE] = {
+> +		.mask = RK808_IRQ_HOTDIE_MSK,
+> +		.reg_offset = 0,
+> +	},
+> +	[RK808_IRQ_RTC_ALARM] = {
+> +		.mask = RK808_IRQ_RTC_ALARM_MSK,
+> +		.reg_offset = 0,
+> +	},
+> +	[RK808_IRQ_RTC_PERIOD] = {
+> +		.mask = RK808_IRQ_RTC_PERIOD_MSK,
+> +		.reg_offset = 0,
+> +	},
+> +
+> +	/* INT_STS2 */
+> +	[RK808_IRQ_PLUG_IN_INT] = {
+> +		.mask = RK808_IRQ_PLUG_IN_INT_MSK,
+> +		.reg_offset = 1,
+> +	},
+> +	[RK808_IRQ_PLUG_OUT_INT] = {
+> +		.mask = RK808_IRQ_PLUG_OUT_INT_MSK,
+> +		.reg_offset = 1,
+> +	},
+> +};
+> +
+> +static struct regmap_irq_chip rk808_irq_chip = {
+> +	.name = "rk808",
+> +	.irqs = rk808_irqs,
+> +	.num_irqs = ARRAY_SIZE(rk808_irqs),
+> +	.num_regs = 2,
+> +	.irq_reg_stride = 2,
+> +	.status_base = RK808_INT_STS_REG1,
+> +	.mask_base = RK808_INT_STS_MSK_REG1,
+> +	.ack_base = RK808_INT_STS_REG1,
+> +};
+> +
+> +static struct rk808_board *rk808_parse_dt(struct device *dev)
+> +{
+> +	struct rk808_board *pdata;
+> +	struct device_node *np = dev->of_node;
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata)
+> +		return NULL;
+
+As you check for IS_ERR() you need to return -ENOMEM here, not NULL.
+
+> +	pdata->pm_off = of_property_read_bool(np,
+> +					"rockchip,system-power-controller");
+> +
+> +	return pdata;
+> +}
+> +
+> +static void rk808_device_shutdown(void)
+> +{
+> +	int ret;
+> +	struct rk808 *rk808 = g_rk808;
+> +
+> +	if (!rk808) {
+> +		dev_err(rk808->dev, "%s have no g_rk808\n", __func__);
+
+Can you issue a more user friendly message?  Users don't normally care
+about kernel structs and function names and kernel devs know now to
+grep through kernel source.
+
+> +		return;
+> +	}
+> +
+> +	ret = regmap_update_bits(rk808->regmap,
+> +				 RK808_DEVCTRL_REG,
+> +				 DEV_OFF_RST, DEV_OFF_RST);
+> +	if (ret < 0)
+
+You can just check for 'if (ret)' here - it's a little tidier.
+
+> +		dev_err(rk808->dev, "rk808 power off error!\n");
+
+No need to put "rk808", dev_err() will do that for you.
+
+> +}
+> +
+> +static int rk808_pre_init(struct rk808 *rk808)
+> +{
+> +	int i;
+> +	int ret = 0;
+
+Unless someone surreptitiously removes 'pre_init_reg', 'table_size'
+will never be 0, so there is no need to pre-initialise 'ret'.  I've
+also just noticed that you return 0 anyway, so definitely no
+requirement to initialise.
+
+> +	int table_size = sizeof(pre_init_reg) / sizeof(struct rk808_reg_data);
+
+ARRAY_SIZE()?
+
+> +	for (i = 0; i < table_size; i++) {
+> +		ret = regmap_update_bits(rk808->regmap, pre_init_reg[i].addr,
+> +					 pre_init_reg[i].mask,
+> +					 pre_init_reg[i].value);
+> +		if (ret < 0) {
+
+if (ret)
+
+> +			dev_err(rk808->dev,
+> +				"0x%x write err\n", pre_init_reg[i].addr);
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int rk808_probe(struct i2c_client *client,
+> +		       const struct i2c_device_id *id)
+> +{
+> +	int ret;
+> +	uint32_t val;
+> +	struct rk808_board *pdata = dev_get_platdata(&client->dev);
+> +	struct rk808 *rk808;
+
+Personal preference alert: Can you put the structs declarations, above
+the smaller ones.
+
+> +	if (!pdata) {
+> +		pdata = rk808_parse_dt(&client->dev);
+> +		if (IS_ERR(pdata))
+> +			return PTR_ERR(pdata);
+> +	}
+> +
+> +	rk808 = devm_kzalloc(&client->dev, sizeof(struct rk808), GFP_KERNEL);
+
+sizeof(*rk808)
+
+> +	if (!rk808)
+> +		return -ENOMEM;
+> +
+> +	rk808->pdata = pdata;
+
+Remove pdata from 'struct rk808'.  You can obtain it from dev.
+
+> +	rk808->i2c = client;
+> +	rk808->dev = &client->dev;
+
+Remove dev from 'struct rk808', you can obtain it from i2c.
+
+> +	i2c_set_clientdata(client, rk808);
+> +
+> +	rk808->regmap = devm_regmap_init_i2c(client, &rk808_regmap_config);
+> +	if (IS_ERR(rk808->regmap)) {
+> +		ret = PTR_ERR(rk808->regmap);
+
+This line is wasted, just:
+
+  return PTR_ERR(rk808->regmap);
+
+> +		dev_err(rk808->dev, "regmap initialization failed\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = rk808_pre_init(rk808);
+> +	if (ret < 0) {
+
+if (ret)
+
+> +		dev_err(rk808->dev, "The rk808_pre_init failed %d\n", ret);
+
+Remove this, you already have an error message in rk808_pre_init().
+
+> +		return ret;
+> +	}
+> +
+> +	pdata->irq = client->irq;
+> +	pdata->irq_base = -1;
+
+When is this used after regmap_add_irq_chip()?
+
+> +	if (!pdata->irq) {
+
+Best to check client->irq, then populate pdata->irq if and only if the
+test passes.  Actually, why are you putting it in pdata in the first
+place?  You already have it in 'client', which you have access to?
+
+> +		dev_err(rk808->dev, "No interrupt support, no core IRQ\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = regmap_add_irq_chip(rk808->regmap, pdata->irq,
+> +				  IRQF_ONESHOT, pdata->irq_base,
+> +				  &rk808_irq_chip, &rk808->irq_data);
+> +	if (ret < 0) {
+
+if (ret)
+
+Same for the rest of the file.
+
+> +		dev_err(rk808->dev, "Failed to add irq_chip %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	ret = mfd_add_devices(rk808->dev, -1,
+> +			      rk808s, ARRAY_SIZE(rk808s),
+> +			      NULL, 0, regmap_irq_get_domain(rk808->irq_data));
+> +	if (ret < 0) {
+> +		dev_err(rk808->dev, "failed to add MFD devices %d\n", ret);
+> +		goto err_irq_init_done;
+
+The "_done" part is confusing.  "done" to me says "completed successfully".
+
+> +	}
+> +
+> +	g_rk808 = rk808;
+> +	if (pdata->pm_off && !pm_power_off)
+> +		pm_power_off = rk808_device_shutdown;
+> +
+> +	return 0;
+> +
+> +err_irq_init_done:
+> +	regmap_del_irq_chip(pdata->irq, rk808->irq_data);
+> +	return ret;
+> +}
+> +
+> +static int rk808_remove(struct i2c_client *i2c)
+
+Why do you call it 'i2c' there and 'client' in probe?  Please
+standardise. 
+
+> +{
+> +	struct rk808 *rk808 = i2c_get_clientdata(i2c);
+> +	struct rk808_board *pdata = rk808->pdata;
+> +
+> +	regmap_del_irq_chip(pdata->irq, rk808->irq_data);
+
+Isn't pdata->irq already in i2c->irq?
+
+> +	mfd_remove_devices(rk808->dev);
+
+And dev already in i2c->dev?
+
+> +	return 0;
+> +}
+> +
+> +static struct of_device_id rk808_of_match[] = {
+> +	{ .compatible = "rockchip,rk808"},
+
+You keep missing a space before '}'.
+
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, rk808_of_match);
+> +
+> +static const struct i2c_device_id rk808_ids[] = {
+> +	 { "rk808", 0},
+
+Remove the second attribute, as it's never used.
+
+> +	 { }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(i2c, rk808_ids);
+> +
+> +static struct i2c_driver rk808_i2c_driver = {
+> +	.driver = {
+> +		.name = "rk808",
+> +		.owner = THIS_MODULE,
+
+Remove this line, it's taken care of for you elsewhere.
+
+> +		.of_match_table = of_match_ptr(rk808_of_match),
+> +	},
+> +	.probe    = rk808_probe,
+> +	.remove   = rk808_remove,
+> +	.id_table = rk808_ids,
+> +};
+> +
+> +module_i2c_driver(rk808_i2c_driver);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
+> +MODULE_AUTHOR("Zhang Qing<zhangqing@rock-chips.com>");
+
+Space after author's name.
+
+Other author probably should add his Sign-off-by.
+
+> +MODULE_DESCRIPTION("rk808 PMIC driver");
+
+RK808
+
+> diff --git a/include/linux/mfd/rk808.h b/include/linux/mfd/rk808.h
+> new file mode 100644
+> index 0000000..6835327
+> --- /dev/null
+> +++ b/include/linux/mfd/rk808.h
+> @@ -0,0 +1,219 @@
+> +/*
+> + * rk808.h for Rockchip RK808
+> + *
+> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+> + *
+> + * Author: Chris Zhong <zyw@rock-chips.com>
+> + * Author: Zhang Qing <zhangqing@rock-chips.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+
+Remove this line.
+
+> + */
+> +
+> +#ifndef __LINUX_REGULATOR_rk808_H
+> +#define __LINUX_REGULATOR_rk808_H
+> +
+> +#include <linux/regulator/machine.h>
+> +#include <linux/regmap.h>
+> +
+> +/*
+> + * rk808 Global Register Map.
+> + */
+> +
+> +#define RK808_DCDC1	0 /* (0+RK808_START) */
+> +#define RK808_LDO1	4 /* (4+RK808_START) */
+> +#define RK808_NUM_REGULATORS   14
+> +
+> +#define RK808_ID_DCDC1	0
+> +#define RK808_ID_DCDC2	1
+> +#define RK808_ID_DCDC3	2
+> +#define RK808_ID_DCDC4	3
+> +#define RK808_ID_LDO1	4
+> +#define RK808_ID_LDO2	5
+> +#define RK808_ID_LDO3	6
+> +#define RK808_ID_LDO4	7
+> +#define RK808_ID_LDO5	8
+> +#define RK808_ID_LDO6	9
+> +#define RK808_ID_LDO7	10
+> +#define RK808_ID_LDO8	11
+> +#define RK808_ID_SWITCH1	12
+> +#define RK808_ID_SWITCH2	13
+
+Aren't these better off as enums?
+
+> +#define RK808_SECONDS_REG	0x00
+> +#define RK808_MINUTES_REG	0x01
+> +#define RK808_HOURS_REG		0x02
+> +#define RK808_DAYS_REG		0x03
+> +#define RK808_MONTHS_REG	0x04
+> +#define RK808_YEARS_REG		0x05
+> +#define RK808_WEEKS_REG		0x06
+> +#define RK808_ALARM_SECONDS_REG	0x08
+> +#define RK808_ALARM_MINUTES_REG	0x09
+> +#define RK808_ALARM_HOURS_REG	0x0a
+> +#define RK808_ALARM_DAYS_REG	0x0b
+> +#define RK808_ALARM_MONTHS_REG	0x0c
+> +#define RK808_ALARM_YEARS_REG	0x0d
+> +#define RK808_RTC_CTRL_REG	0x10
+> +#define RK808_RTC_STATUS_REG	0x11
+> +#define RK808_RTC_INT_REG	0x12
+> +#define RK808_RTC_COMP_LSB_REG	0x13
+> +#define RK808_RTC_COMP_MSB_REG	0x14
+> +#define RK808_CLK32OUT_REG	0x20
+> +#define RK808_VB_MON_REG	0x21
+> +#define RK808_THERMAL_REG	0x22
+> +#define RK808_DCDC_EN_REG	0x23
+> +#define RK808_LDO_EN_REG	0x24
+> +#define RK808_SLEEP_SET_OFF_REG1	0x25
+> +#define RK808_SLEEP_SET_OFF_REG2	0x26
+> +#define RK808_DCDC_UV_STS_REG	0x27
+> +#define RK808_DCDC_UV_ACT_REG	0x28
+> +#define RK808_LDO_UV_STS_REG	0x29
+> +#define RK808_LDO_UV_ACT_REG	0x2a
+> +#define RK808_DCDC_PG_REG	0x2b
+> +#define RK808_LDO_PG_REG	0x2c
+> +#define RK808_VOUT_MON_TDB_REG	0x2d
+> +#define RK808_BUCK1_CONFIG_REG		0x2e
+> +#define RK808_BUCK1_ON_VSEL_REG		0x2f
+> +#define RK808_BUCK1_SLP_VSEL_REG	0x30
+> +#define RK808_BUCK1_DVS_VSEL_REG	0x31
+> +#define RK808_BUCK2_CONFIG_REG		0x32
+> +#define RK808_BUCK2_ON_VSEL_REG		0x33
+> +#define RK808_BUCK2_SLP_VSEL_REG	0x34
+> +#define RK808_BUCK2_DVS_VSEL_REG	0x35
+> +#define RK808_BUCK3_CONFIG_REG		0x36
+> +#define RK808_BUCK4_CONFIG_REG		0x37
+> +#define RK808_BUCK4_ON_VSEL_REG		0x38
+> +#define RK808_BUCK4_SLP_VSEL_REG	0x39
+> +#define RK808_BOOST_CONFIG_REG		0x3a
+> +#define RK808_LDO1_ON_VSEL_REG		0x3b
+> +#define RK808_LDO1_SLP_VSEL_REG		0x3c
+> +#define RK808_LDO2_ON_VSEL_REG		0x3d
+> +#define RK808_LDO2_SLP_VSEL_REG		0x3e
+> +#define RK808_LDO3_ON_VSEL_REG		0x3f
+> +#define RK808_LDO3_SLP_VSEL_REG		0x40
+> +#define RK808_LDO4_ON_VSEL_REG		0x41
+> +#define RK808_LDO4_SLP_VSEL_REG		0x42
+> +#define RK808_LDO5_ON_VSEL_REG		0x43
+> +#define RK808_LDO5_SLP_VSEL_REG		0x44
+> +#define RK808_LDO6_ON_VSEL_REG		0x45
+> +#define RK808_LDO6_SLP_VSEL_REG		0x46
+> +#define RK808_LDO7_ON_VSEL_REG		0x47
+> +#define RK808_LDO7_SLP_VSEL_REG		0x48
+> +#define RK808_LDO8_ON_VSEL_REG		0x49
+> +#define RK808_LDO8_SLP_VSEL_REG		0x4a
+> +#define RK808_DEVCTRL_REG	0x4b
+> +#define RK808_INT_STS_REG1	0x4c
+> +#define RK808_INT_STS_MSK_REG1	0x4d
+> +#define RK808_INT_STS_REG2	0x4e
+> +#define RK808_INT_STS_MSK_REG2	0x4f
+> +#define RK808_IO_POL_REG	0x50
+> +
+> +/* IRQ Definitions */
+> +#define RK808_IRQ_VOUT_LO	0
+> +#define RK808_IRQ_VB_LO		1
+> +#define RK808_IRQ_PWRON		2
+> +#define RK808_IRQ_PWRON_LP	3
+> +#define RK808_IRQ_HOTDIE	4
+> +#define RK808_IRQ_RTC_ALARM	5
+> +#define RK808_IRQ_RTC_PERIOD	6
+> +#define RK808_IRQ_PLUG_IN_INT	7
+> +#define RK808_IRQ_PLUG_OUT_INT	8
+> +#define RK808_NUM_IRQ		9
+> +
+> +#define RK808_IRQ_VOUT_LO_MSK		BIT(0)
+> +#define RK808_IRQ_VB_LO_MSK		BIT(1)
+> +#define RK808_IRQ_PWRON_MSK		BIT(2)
+> +#define RK808_IRQ_PWRON_LP_MSK		BIT(3)
+> +#define RK808_IRQ_HOTDIE_MSK		BIT(4)
+> +#define RK808_IRQ_RTC_ALARM_MSK		BIT(5)
+> +#define RK808_IRQ_RTC_PERIOD_MSK	BIT(6)
+> +#define RK808_IRQ_PLUG_IN_INT_MSK	BIT(0)
+> +#define RK808_IRQ_PLUG_OUT_INT_MSK	BIT(1)
+> +
+> +#define RK808_VBAT_LOW_2V8	0x00
+> +#define RK808_VBAT_LOW_2V9	0x01
+> +#define RK808_VBAT_LOW_3V0	0x02
+> +#define RK808_VBAT_LOW_3V1	0x03
+> +#define RK808_VBAT_LOW_3V2	0x04
+> +#define RK808_VBAT_LOW_3V3	0x05
+> +#define RK808_VBAT_LOW_3V4	0x06
+> +#define RK808_VBAT_LOW_3V5	0x07
+> +#define VBAT_LOW_VOL_MASK	(0x07 << 0)
+> +#define EN_VABT_LOW_SHUT_DOWN	(0x00 << 4)
+> +#define EN_VBAT_LOW_IRQ		(0x1 << 4)
+> +#define VBAT_LOW_ACT_MASK	(0x1 << 4)
+> +
+> +#define BUCK_ILMIN_MASK		(7 << 0)
+> +#define BOOST_ILMIN_MASK	(7 << 0)
+> +#define BUCK1_RATE_MASK		(3<<3)
+> +#define BUCK2_RATE_MASK		(3<<3)
+> +#define MASK_ALL	0xff
+> +#define MASK_NONE	0
+> +
+> +#define SWITCH2_EN	BIT(6)
+> +#define SWITCH1_EN	BIT(5)
+> +
+> +#define VB_LO_ACT		BIT(4)
+> +#define VB_LO_SEL_3500MV	(7<<0)
+
+Spaces around the '<<'.  Same everywhere else too.
+
+> +#define VOUT_LO_INT	BIT(0)
+> +#define CLK32KOUT2_EN	BIT(0)
+> +
+> +enum {
+> +	BUCK_ILMIN_50MA,
+> +	BUCK_ILMIN_100MA,
+> +	BUCK_ILMIN_150MA,
+> +	BUCK_ILMIN_200MA,
+> +	BUCK_ILMIN_250MA,
+> +	BUCK_ILMIN_300MA,
+> +	BUCK_ILMIN_350MA,
+> +	BUCK_ILMIN_400MA,
+> +};
+> +
+> +enum {
+> +	BOOST_ILMIN_75MA,
+> +	BOOST_ILMIN_100MA,
+> +	BOOST_ILMIN_125MA,
+> +	BOOST_ILMIN_150MA,
+> +	BOOST_ILMIN_175MA,
+> +	BOOST_ILMIN_200MA,
+> +	BOOST_ILMIN_225MA,
+> +	BOOST_ILMIN_250MA,
+> +};
+> +
+> +struct rk808_board {
+> +	int irq;
+> +	int irq_base;
+> +	int wakeup;
+> +	bool pm_off;
+> +	struct regulator_init_data *rk808_init_data[RK808_NUM_REGULATORS];
+> +	struct device_node *of_node[RK808_NUM_REGULATORS];
+
+This is unusual?  Although, I haven't seen the client driver.
+
+> +	int pmic_sleep_gpio;
+> +	unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
+> +	unsigned int ldo_slp_voltage[7];
+> +};
+> +
+> +struct rk808 {
+> +	struct rk808_board *pdata;
+> +	struct device *dev;
+> +	struct i2c_client *i2c;
+> +	int num_regulators;
+> +	struct regulator_dev **rdev;
+> +	struct regmap_irq_chip_data *irq_data;
+> +	struct regmap *regmap;
+> +	unsigned int dcdc_slp_voltage[3]; /* buckx_voltage in uV */
+> +	unsigned int ldo_slp_voltage[7];
+> +};
+> +
+> +static const struct regmap_config rk808_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +	.max_register = RK808_IO_POL_REG,
+> +};
+
+Why is this in the header file.
+
+> +#endif
+
+Place a comment on the same line: 
+
+  #endif /* __LINUX_REGULATOR_rk808_H */
+
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
