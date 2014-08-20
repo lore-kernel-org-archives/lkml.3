@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbaHTPCe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:02:34 -0400
-Received: from www.sr71.net ([198.145.64.142]:35514 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876AbaHTPCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:02:33 -0400
-Message-ID: <53F4B887.7060701@sr71.net>
-Date: Wed, 20 Aug 2014 08:02:31 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
-        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
-        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
-        penberg@kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        lauraa@codeaurora.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] [v2] TAINT_PERFORMANCE
-References: <20140820035751.08C980FB@viggo.jf.intel.com> <20140820081158.GA3991@gmail.com>
-In-Reply-To: <20140820081158.GA3991@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751865AbaHTPEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:04:12 -0400
+Received: from smtprelay0045.hostedemail.com ([216.40.44.45]:49612 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750983AbaHTPEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:04:10 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3868:3871:3873:4321:5007:7652:10004:10400:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12740:13019:13069:13071:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bells01_7082d4ee7d3a
+X-Filterd-Recvd-Size: 1769
+Message-ID: <1408547047.23250.27.camel@joe-AO725>
+Subject: Re: [PATCH] staging: android: fix style issue
+From: Joe Perches <joe@perches.com>
+To: Purnendu Kapadia <pro8linux@gmail.com>
+Cc: konkers@android.com, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Wed, 20 Aug 2014 08:04:07 -0700
+In-Reply-To: <1408544006-26673-1-git-send-email-pro8linux@gmail.com>
+References: <1408544006-26673-1-git-send-email-pro8linux@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2014 01:11 AM, Ingo Molnar wrote:
-> In any case I don't think it's a good idea to abuse existing 
-> facilities just to gain attention: you'll get the extra 
-> attention, but the abuse dilutes the utility of those only 
-> tangentially related facilities.
+On Wed, 2014-08-20 at 15:13 +0100, Purnendu Kapadia wrote:
+> checkpatch fix. add a line before the switch statement
 
-I'm happy to rip the TAINT parts out.  I was just hoping that some
-tooling might pick up the taint flags today, and this could get picked
-up without modification of whatever those tools are.
+Hello Purnendu.
 
-I was _really_ hoping the dmesg from the taint would be ugly and loud
-enough to be sufficient, but it was relatively terse.
+This is a suboptimal patch description.
 
-> A better option might be to declare known performance killers 
-> in /proc/config_debug or so, and maybe print them once at the 
-> end of the bootup, with a 'WARNING:' or 'INFO:' prefix. That 
-> way tooling (benchmarks, profilers, etc.) can print them, but 
-> it's also present in the syslog, just in case.
+There is no generic style asking for a blank line
+before a switch statement.
 
-Sounds reasonable to me.  As long as we have _something_ that shows up
-in dmesg, it will help.
+You are actually adding a blank line separating
+declarations and code.
+
+Specifying the change as a "checkpatch fix" is
+also unnecessary.
+
+A patch subject of
+
+"[PATCH] staging: android: Add blank line after declaration"
+
+with no patch description at all is probably good
+enough.
+
+> diff --git a/drivers/staging/android/sync.c b/drivers/staging/androchd/sync.c
+[]
+> @@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
+>  			     unsigned long arg)
+>  {
+>  	struct sync_fence *fence = file->private_data;
+> +
+>  	switch (cmd) {
+>  	case SYNC_IOC_WAIT:
+>  		return sync_fence_ioctl_wait(fence, arg);
+
+
+
