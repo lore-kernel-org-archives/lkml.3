@@ -1,215 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253AbaHTPE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:04:59 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:54272 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226AbaHTPE5 (ORCPT
+	id S1752325AbaHTPFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:05:13 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:18031 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266AbaHTPFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:04:57 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-d9-53f4b916235a
-Subject: [PATCH 4/7] selftests/vm/transhuge-stress: stress test for memory
- compaction
+	Wed, 20 Aug 2014 11:05:10 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-43-53f4b9213ee8
+Subject: [PATCH 6/7] mm/balloon_compaction: use common page ballooning
 From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         Rafael Aquini <aquini@redhat.com>
 Cc: Sasha Levin <sasha.levin@oracle.com>,
         Andrey Ryabinin <ryabinin.a.a@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 20 Aug 2014 19:04:52 +0400
-Message-id: <20140820150452.4194.85926.stgit@buzz>
+Date: Wed, 20 Aug 2014 19:05:04 +0400
+Message-id: <20140820150503.4194.38388.stgit@buzz>
 In-reply-to: <20140820150435.4194.28003.stgit@buzz>
 References: <20140820150435.4194.28003.stgit@buzz>
 User-Agent: StGit/0.17.1-dirty
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xK7piO78EG8z8L2YxZ/0aNosZD3+x
-	WPzY2ctqcXnXHDaLe2v+s1oc37qF2WLxkdvMDuweO2fdZffY9GkSu8eJGb9ZPD4+vcXi8X7f
-	VTaPvi2rGD0+b5ILYI/isklJzcksSy3St0vgynj44w1jQZN6xdr5N5kaGF/KdTFyckgImEjc
-	2ruXBcIWk7hwbz0biC0ksJRR4uOqwi5GLiC7kUni+bHPYAlhgXCJd62T2EFsNgEziW37bjOC
-	2CICaRJfn20Bq2EWKJJ4cXMWmM0ioCpxfvkJZhCbV8BIYvu2P6wgNqeAscSa4y8ZIZYZSVzr
-	+Q1WIyogJ7HycgsrRL2gxI/J94CO4wCaqS4xZUouxHh5ic1r3jJPYBSYhaRqFkLVLCRVCxiZ
-	VzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBP3XHYxLj1kdYhTgYFTi4b256EuwEGtiWXFl
-	7iFGCQ5mJRHeExuAQrwpiZVVqUX58UWlOanFhxiZODilGhgtXNNzy6/XTnsqInK1i73M+lhg
-	QBbTtBPpegzhFn2FLV3vH337+tOywNPB34MnbvmURxsXeK659jDw2VSdjtlvBFfy7tnFwqj5
-	+pTW737b0kX53LYLHF7b/0rXNyiyMH3J0nU69qTLi4YXzZzmn67dMrlUeOzd2oQ662Czi8xl
-	ko7MfI9f71BiKc5INNRiLipOBABCJWLIWAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xa7qKO78EG3Q8traYs34Nm8WMh79Y
+	LH7s7GW1uLxrDpvFvTX/WS2Ob93CbLH4yG1mB3aPnbPusnts+jSJ3ePEjN8sHh+f3mLxeL/v
+	KptH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZZxfeI+9YJlTRffidSwNjF9Muhg5OSQETCRe
+	TDjGDGGLSVy4t56ti5GLQ0hgKaPE2W3f2SGcRiaJR7fuMnUxcnAIC7hJHH5oBNLAJmAmsW3f
+	bUYQW0QgTeLrsy1sIDazQJHEi5uzwGwWAVWJ0wu3M4HYvAJGEn0r54PZnALGEmuOvwTrFQKK
+	X+v5DXaEqICcxMrLLawQ9YISPybfYwFZyyygLjFlSi7EeHmJzWveMk9gFJiFpGoWQtUsJFUL
+	GJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE/ZcdjIuPWR1iFOBgVOLhvbHoS7AQa2JZ
+	cWXuIUYJDmYlEd4TG4BCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGAtOJtxb/HHu1YWycz+1tacY
+	Vt93Xf1wsn/958eLi3V+T5UJyrR68zx1rtb+4GXhF/Sn39lY1bX634Lqko2dZ151CVS1XrJR
+	3L30lmDtzqOiziyxbWu+sqywfvabm/tO44zJ8881aRadrHMSu+v6Y4PtwjcSU+al8aZM89/Q
+	/fHh32CHq11VwnpKLMUZiYZazEXFiQAoBJxtWAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konstantin Khlebnikov <koct9i@gmail.com>
+This patch replaces checking AS_BALLOON_MAP in page->mapping->flags
+with PageBalloon which is stored directly in the struct page.
 
-This tool induces memory fragmentation via sequential allocation of transparent
-huge pages and splitting off everything except their last sub-pages.
-
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 ---
- tools/testing/selftests/vm/Makefile           |    1 
- tools/testing/selftests/vm/transhuge-stress.c |  144 +++++++++++++++++++++++++
- 2 files changed, 145 insertions(+)
- create mode 100644 tools/testing/selftests/vm/transhuge-stress.c
+ include/linux/balloon_compaction.h |   85 ++----------------------------------
+ mm/Kconfig                         |    2 -
+ mm/balloon_compaction.c            |    7 +--
+ mm/compaction.c                    |    9 ++--
+ mm/migrate.c                       |    4 +-
+ mm/vmscan.c                        |    2 -
+ 6 files changed, 15 insertions(+), 94 deletions(-)
 
-diff --git a/tools/testing/selftests/vm/Makefile b/tools/testing/selftests/vm/Makefile
-index 3f94e1a..4c4b1f6 100644
---- a/tools/testing/selftests/vm/Makefile
-+++ b/tools/testing/selftests/vm/Makefile
-@@ -3,6 +3,7 @@
- CC = $(CROSS_COMPILE)gcc
- CFLAGS = -Wall
- BINARIES = hugepage-mmap hugepage-shm map_hugetlb thuge-gen hugetlbfstest
-+BINARIES += transhuge-stress
+diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
+index 53d482e..f5fda8b 100644
+--- a/include/linux/balloon_compaction.h
++++ b/include/linux/balloon_compaction.h
+@@ -108,77 +108,6 @@ static inline void balloon_mapping_free(struct address_space *balloon_mapping)
+ }
  
- all: $(BINARIES)
- %: %.c
-diff --git a/tools/testing/selftests/vm/transhuge-stress.c b/tools/testing/selftests/vm/transhuge-stress.c
-new file mode 100644
-index 0000000..fd7f1b4
---- /dev/null
-+++ b/tools/testing/selftests/vm/transhuge-stress.c
-@@ -0,0 +1,144 @@
-+/*
-+ * Stress test for transparent huge pages, memory compaction and migration.
-+ *
-+ * Authors: Konstantin Khlebnikov <koct9i@gmail.com>
-+ *
-+ * This is free and unencumbered software released into the public domain.
-+ */
-+
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <stdint.h>
-+#include <err.h>
-+#include <time.h>
-+#include <unistd.h>
-+#include <fcntl.h>
-+#include <string.h>
-+#include <sys/mman.h>
-+
-+#define PAGE_SHIFT 12
-+#define HPAGE_SHIFT 21
-+
-+#define PAGE_SIZE (1 << PAGE_SHIFT)
-+#define HPAGE_SIZE (1 << HPAGE_SHIFT)
-+
-+#define PAGEMAP_PRESENT(ent)	(((ent) & (1ull << 63)) != 0)
-+#define PAGEMAP_PFN(ent)	((ent) & ((1ull << 55) - 1))
-+
-+int pagemap_fd;
-+
-+int64_t allocate_transhuge(void *ptr)
-+{
-+	uint64_t ent[2];
-+
-+	/* drop pmd */
-+	if (mmap(ptr, HPAGE_SIZE, PROT_READ | PROT_WRITE,
-+				MAP_FIXED | MAP_ANONYMOUS |
-+				MAP_NORESERVE | MAP_PRIVATE, -1, 0) != ptr)
-+		errx(2, "mmap transhuge");
-+
-+	if (madvise(ptr, HPAGE_SIZE, MADV_HUGEPAGE))
-+		err(2, "MADV_HUGEPAGE");
-+
-+	/* allocate transparent huge page */
-+	*(volatile void **)ptr = ptr;
-+
-+	if (pread(pagemap_fd, ent, sizeof(ent),
-+			(uintptr_t)ptr >> (PAGE_SHIFT - 3)) != sizeof(ent))
-+		err(2, "read pagemap");
-+
-+	if (PAGEMAP_PRESENT(ent[0]) && PAGEMAP_PRESENT(ent[1]) &&
-+	    PAGEMAP_PFN(ent[0]) + 1 == PAGEMAP_PFN(ent[1]) &&
-+	    !(PAGEMAP_PFN(ent[0]) & ((1 << (HPAGE_SHIFT - PAGE_SHIFT)) - 1)))
-+		return PAGEMAP_PFN(ent[0]);
-+
-+	return -1;
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	size_t ram, len;
-+	void *ptr, *p;
-+	struct timespec a, b;
-+	double s;
-+	uint8_t *map;
-+	size_t map_len;
-+
-+	ram = sysconf(_SC_PHYS_PAGES);
-+	if (ram > SIZE_MAX / sysconf(_SC_PAGESIZE) / 4)
-+		ram = SIZE_MAX / 4;
-+	else
-+		ram *= sysconf(_SC_PAGESIZE);
-+
-+	if (argc == 1)
-+		len = ram;
-+	else if (!strcmp(argv[1], "-h"))
-+		errx(1, "usage: %s [size in MiB]", argv[0]);
-+	else
-+		len = atoll(argv[1]) << 20;
-+
-+	warnx("allocate %zd transhuge pages, using %zd MiB virtual memory"
-+	      " and %zd MiB of ram", len >> HPAGE_SHIFT, len >> 20,
-+	      len >> (20 + HPAGE_SHIFT - PAGE_SHIFT - 1));
-+
-+	pagemap_fd = open("/proc/self/pagemap", O_RDONLY);
-+	if (pagemap_fd < 0)
-+		err(2, "open pagemap");
-+
-+	len -= len % HPAGE_SIZE;
-+	ptr = mmap(NULL, len + HPAGE_SIZE, PROT_READ | PROT_WRITE,
-+			MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE, -1, 0);
-+	if (ptr == MAP_FAILED)
-+		err(2, "initial mmap");
-+	ptr += HPAGE_SIZE - (uintptr_t)ptr % HPAGE_SIZE;
-+
-+	if (madvise(ptr, len, MADV_HUGEPAGE))
-+		err(2, "MADV_HUGEPAGE");
-+
-+	map_len = ram >> (HPAGE_SHIFT - 1);
-+	map = malloc(map_len);
-+	if (!map)
-+		errx(2, "map malloc");
-+
-+	while (1) {
-+		int nr_succeed = 0, nr_failed = 0, nr_pages = 0;
-+
-+		memset(map, 0, map_len);
-+
-+		clock_gettime(CLOCK_MONOTONIC, &a);
-+		for (p = ptr; p < ptr + len; p += HPAGE_SIZE) {
-+			int64_t pfn;
-+
-+			pfn = allocate_transhuge(p);
-+
-+			if (pfn < 0) {
-+				nr_failed++;
-+			} else {
-+				size_t idx = pfn >> (HPAGE_SHIFT - PAGE_SHIFT);
-+
-+				nr_succeed++;
-+				if (idx >= map_len) {
-+					map = realloc(map, idx + 1);
-+					if (!map)
-+						errx(2, "map realloc");
-+					memset(map + map_len, 0, idx + 1 - map_len);
-+					map_len = idx + 1;
-+				}
-+				if (!map[idx])
-+					nr_pages++;
-+				map[idx] = 1;
-+			}
-+
-+			/* split transhuge page, keep last page */
-+			if (madvise(p, HPAGE_SIZE - PAGE_SIZE, MADV_DONTNEED))
-+				err(2, "MADV_DONTNEED");
-+		}
-+		clock_gettime(CLOCK_MONOTONIC, &b);
-+		s = b.tv_sec - a.tv_sec + (b.tv_nsec - a.tv_nsec) / 1000000000.;
-+
-+		warnx("%.3f s/loop, %.3f ms/page, %10.3f MiB/s\t"
-+		      "%4d succeed, %4d failed, %4d different pages",
-+		      s, s * 1000 / (len >> HPAGE_SHIFT), len / s / (1 << 20),
-+		      nr_succeed, nr_failed, nr_pages);
-+	}
-+}
+ /*
+- * page_flags_cleared - helper to perform balloon @page ->flags tests.
+- *
+- * As balloon pages are obtained from buddy and we do not play with page->flags
+- * at driver level (exception made when we get the page lock for compaction),
+- * we can safely identify a ballooned page by checking if the
+- * PAGE_FLAGS_CHECK_AT_PREP page->flags are all cleared.  This approach also
+- * helps us skip ballooned pages that are locked for compaction or release, thus
+- * mitigating their racy check at balloon_page_movable()
+- */
+-static inline bool page_flags_cleared(struct page *page)
+-{
+-	return !(page->flags & PAGE_FLAGS_CHECK_AT_PREP);
+-}
+-
+-/*
+- * __is_movable_balloon_page - helper to perform @page mapping->flags tests
+- */
+-static inline bool __is_movable_balloon_page(struct page *page)
+-{
+-	struct address_space *mapping = page->mapping;
+-	return !PageAnon(page) && mapping_balloon(mapping);
+-}
+-
+-/*
+- * balloon_page_movable - test page->mapping->flags to identify balloon pages
+- *			  that can be moved by compaction/migration.
+- *
+- * This function is used at core compaction's page isolation scheme, therefore
+- * most pages exposed to it are not enlisted as balloon pages and so, to avoid
+- * undesired side effects like racing against __free_pages(), we cannot afford
+- * holding the page locked while testing page->mapping->flags here.
+- *
+- * As we might return false positives in the case of a balloon page being just
+- * released under us, the page->mapping->flags need to be re-tested later,
+- * under the proper page lock, at the functions that will be coping with the
+- * balloon page case.
+- */
+-static inline bool balloon_page_movable(struct page *page)
+-{
+-	/*
+-	 * Before dereferencing and testing mapping->flags, let's make sure
+-	 * this is not a page that uses ->mapping in a different way
+-	 */
+-	if (page_flags_cleared(page) && !page_mapped(page) &&
+-	    page_count(page) == 1)
+-		return __is_movable_balloon_page(page);
+-
+-	return false;
+-}
+-
+-/*
+- * isolated_balloon_page - identify an isolated balloon page on private
+- *			   compaction/migration page lists.
+- *
+- * After a compaction thread isolates a balloon page for migration, it raises
+- * the page refcount to prevent concurrent compaction threads from re-isolating
+- * the same page. For that reason putback_movable_pages(), or other routines
+- * that need to identify isolated balloon pages on private pagelists, cannot
+- * rely on balloon_page_movable() to accomplish the task.
+- */
+-static inline bool isolated_balloon_page(struct page *page)
+-{
+-	/* Already isolated balloon pages, by default, have a raised refcount */
+-	if (page_flags_cleared(page) && !page_mapped(page) &&
+-	    page_count(page) >= 2)
+-		return __is_movable_balloon_page(page);
+-
+-	return false;
+-}
+-
+-/*
+  * balloon_page_insert - insert a page into the balloon's page list and make
+  *		         the page->mapping assignment accordingly.
+  * @page    : page to be assigned as a 'balloon page'
+@@ -192,6 +121,7 @@ static inline void balloon_page_insert(struct page *page,
+ 				       struct address_space *mapping,
+ 				       struct list_head *head)
+ {
++	__SetPageBalloon(page);
+ 	page->mapping = mapping;
+ 	list_add(&page->lru, head);
+ }
+@@ -206,6 +136,7 @@ static inline void balloon_page_insert(struct page *page,
+  */
+ static inline void balloon_page_delete(struct page *page)
+ {
++	__ClearPageBalloon(page);
+ 	page->mapping = NULL;
+ 	list_del(&page->lru);
+ }
+@@ -250,24 +181,16 @@ static inline void balloon_page_insert(struct page *page,
+ 				       struct address_space *mapping,
+ 				       struct list_head *head)
+ {
++	__SetPageBalloon(page);
+ 	list_add(&page->lru, head);
+ }
+ 
+ static inline void balloon_page_delete(struct page *page)
+ {
++	__ClearPageBalloon(page);
+ 	list_del(&page->lru);
+ }
+ 
+-static inline bool balloon_page_movable(struct page *page)
+-{
+-	return false;
+-}
+-
+-static inline bool isolated_balloon_page(struct page *page)
+-{
+-	return false;
+-}
+-
+ static inline bool balloon_page_isolate(struct page *page)
+ {
+ 	return false;
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 72e0db0..e09cf0a 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -237,7 +237,7 @@ config MEMORY_BALLOON
+ config BALLOON_COMPACTION
+ 	bool "Allow for balloon memory compaction/migration"
+ 	def_bool y
+-	depends on COMPACTION && VIRTIO_BALLOON
++	depends on COMPACTION && MEMORY_BALLOON
+ 	help
+ 	  Memory fragmentation introduced by ballooning might reduce
+ 	  significantly the number of 2MB contiguous memory blocks that can be
+diff --git a/mm/balloon_compaction.c b/mm/balloon_compaction.c
+index 533c567..22c8e03 100644
+--- a/mm/balloon_compaction.c
++++ b/mm/balloon_compaction.c
+@@ -253,8 +253,7 @@ bool balloon_page_isolate(struct page *page)
+ 			 * Prevent concurrent compaction threads from isolating
+ 			 * an already isolated balloon page by refcount check.
+ 			 */
+-			if (__is_movable_balloon_page(page) &&
+-			    page_count(page) == 2) {
++			if (PageBalloon(page) && page_count(page) == 2) {
+ 				__isolate_balloon_page(page);
+ 				unlock_page(page);
+ 				return true;
+@@ -275,7 +274,7 @@ void balloon_page_putback(struct page *page)
+ 	 */
+ 	lock_page(page);
+ 
+-	if (__is_movable_balloon_page(page)) {
++	if (PageBalloon(page)) {
+ 		__putback_balloon_page(page);
+ 		/* drop the extra ref count taken for page isolation */
+ 		put_page(page);
+@@ -300,7 +299,7 @@ int balloon_page_migrate(struct page *newpage,
+ 	 */
+ 	BUG_ON(!trylock_page(newpage));
+ 
+-	if (WARN_ON(!__is_movable_balloon_page(page))) {
++	if (WARN_ON(!PageBalloon(page))) {
+ 		dump_page(page, "not movable balloon page");
+ 		unlock_page(newpage);
+ 		return rc;
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 0653f5f..e9aeed2 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -596,11 +596,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		 * Skip any other type of page
+ 		 */
+ 		if (!PageLRU(page)) {
+-			if (unlikely(balloon_page_movable(page))) {
+-				if (balloon_page_isolate(page)) {
+-					/* Successfully isolated */
+-					goto isolate_success;
+-				}
++			if (unlikely(PageBalloon(page)) &&
++					balloon_page_isolate(page)) {
++				/* Successfully isolated */
++				goto isolate_success;
+ 			}
+ 			continue;
+ 		}
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 161d044..c35e6f2 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -92,7 +92,7 @@ void putback_movable_pages(struct list_head *l)
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+-		if (unlikely(isolated_balloon_page(page)))
++		if (unlikely(PageBalloon(page)))
+ 			balloon_page_putback(page);
+ 		else
+ 			putback_lru_page(page);
+@@ -873,7 +873,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+ 		}
+ 	}
+ 
+-	if (unlikely(__is_movable_balloon_page(page))) {
++	if (unlikely(PageBalloon(page))) {
+ 		/*
+ 		 * A ballooned page does not need any special attention from
+ 		 * physical to virtual reverse mapping procedures.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 2836b53..f90f93e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1160,7 +1160,7 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ 
+ 	list_for_each_entry_safe(page, next, page_list, lru) {
+ 		if (page_is_file_cache(page) && !PageDirty(page) &&
+-		    !isolated_balloon_page(page)) {
++		    !PageBalloon(page)) {
+ 			ClearPageActive(page);
+ 			list_move(&page->lru, &clean_pages);
+ 		}
 
