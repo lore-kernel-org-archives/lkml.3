@@ -1,160 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaHTOgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:36:23 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:46971 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaHTOgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:36:22 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] fault-inject: add ratelimit option
-In-Reply-To: <CAC5umyjaE6HimXyBc52jMvGYM3OgQCX1aOhQxtZ90j+9vfGnSg@mail.gmail.com>
-References: <1408539282-5699-1-git-send-email-dmonakhov@openvz.org> <1408539282-5699-2-git-send-email-dmonakhov@openvz.org> <CAC5umyjaE6HimXyBc52jMvGYM3OgQCX1aOhQxtZ90j+9vfGnSg@mail.gmail.com>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Wed, 20 Aug 2014 18:36:17 +0400
-Message-ID: <87ppfvqlcu.fsf@openvz.org>
+	id S1751738AbaHTOiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:38:15 -0400
+Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:53451
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750942AbaHTOiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 10:38:13 -0400
+Date: Wed, 20 Aug 2014 09:32:49 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
+CC: Wolfram Sang <wsa@the-dreams.de>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, <baruch@tkos.co.il>,
+        <grant.likely@linaro.org>, <robh+dt@kernel.org>, <skuribay@pobox.com>,
+        <alan@linux.intel.com>, <devicetree@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>,
+        Romain Baeriswyl <romainba@abilis.com>
+Subject: Re: [PATCH] i2c designware add support of I2C standard mode
+In-Reply-To: <1408544948-22339-1-git-send-email-romainba@abilis.com>
+Message-ID: <alpine.DEB.2.02.1408200928130.11079@atx-linux-37>
+References: <20140820124231.GD21734@leverpostej> <1408544948-22339-1-git-send-email-romainba@abilis.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CO1PR06CA039.namprd06.prod.outlook.com (10.242.160.29) To
+ BY2PR03MB316.namprd03.prod.outlook.com (10.141.139.26)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03094A4065
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(51704005)(199003)(24454002)(189002)(64706001)(23726002)(20776003)(47776003)(4396001)(42186005)(79102001)(102836001)(21056001)(53416004)(66066001)(80022001)(46102001)(86152002)(86362001)(85306004)(92566001)(77982001)(69596002)(83506001)(19580395003)(19580405001)(76176999)(46406003)(50466002)(92726001)(54356999)(76482001)(85852003)(74662001)(50986999)(99396002)(81542001)(31966008)(81156004)(81342001)(83322001)(101416001)(105586002)(77096002)(33716001)(83072002)(106356001)(107046002)(74502001)(95666004)(87976001)(110136001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB316;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
 
-On Wed, 20 Aug 2014 23:20:18 +0900, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> This looks a bit redundant.  NULL pointer to "%pd" format produces
-> "(null)" string, so this printk and if-else can be removed.
+
+On Wed, 20 Aug 2014, Romain Baeriswyl wrote:
+
+> From: Romain Baeriswyl <Romain.Baeriswyl@abilis.com>
 > 
-> Also, this message line is a bit longer than usual kernel message.
-> Should we put '\n' after "forcing a failure."?
+> Some legacy devices support ony I2C standard mode at 100kHz.
+> This patch allows to select the standard mode through the DTS
+> with the use of the existing clock-frequency parameter.
 > 
-> This patch looks good to me.  Please feel free to add my ACK.
-Ok. Here is updated version.
+> When clock-frequency parameter is not set, the fast mode is selected.
+> Only when the parameter is set at 100000, the standard mode is selected.
+> 
+> Signed-off-by: Romain Baeriswyl <romainba@abilis.com>
+> Reviewed-by: Christian Ruppert <christian.ruppert@abilis.com>
+> ---
+>  drivers/i2c/busses/i2c-designware-platdrv.c |   23 +++++++++++++++++++++--
+>  1 files changed, 21 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+> index 402ec39..b543fe1 100644
+> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
+> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+> @@ -122,6 +122,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  	struct i2c_adapter *adap;
+>  	struct resource *mem;
+>  	int irq, r;
+> +	u32 clk_freq;
+>  
+>  	irq = platform_get_irq(pdev, 0);
+>  	if (irq < 0) {
+> @@ -151,6 +152,9 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  		return PTR_ERR(dev->clk);
+>  	clk_prepare_enable(dev->clk);
+>  
+> +	/* fast mode by default because of legacy reasons */
+> +	clk_freq = 400000;
+> +
+>  	if (pdev->dev.of_node) {
+>  		u32 ht = 0;
+>  		u32 ic_clk = dev->get_clk_rate_khz(dev);
+> @@ -166,6 +170,17 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  		of_property_read_u32(pdev->dev.of_node,
+>  				     "i2c-scl-falling-time-ns",
+>  				     &dev->scl_falling_time);
+> +
+> +		of_property_read_u32(pdev->dev.of_node, "clock-frequency",
+> +				     &clk_freq);
+> +
+> +		/* Only standard mode at 100kHz and fast mode at 400kHz
+> +		 * are supported.
+> +		 */
+> +		if (clk_freq != 100000 && clk_freq != 400000) {
+> +			dev_err(&pdev->dev, "Only 100kHz and 400kHz supported");
+> +			return -EINVAL;
+> +		}
 
---=-=-=
-Content-Type: text/x-patch
-Content-Disposition: inline;
- filename=0001-fault-inject-add-ratelimit-option-v2.patch
+Hi Romain,
 
->From d06acefdd4da0d590e6dc0b1351e7adefad98fc7 Mon Sep 17 00:00:00 2001
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-Date: Wed, 20 Aug 2014 18:31:06 +0400
-Subject: [PATCH] fault-inject: add ratelimit option  v2
+It is common to operate i2c at <100KHz on boards that have i2c 
+issues.  I am using this driver at 50KHz because I have a LCD module 
+that just doesn't work at a full 100KHz.  Please remove the check for 
+these two frequency points.
 
-Current debug levels are not optimal. Especially if one want to
-provoke big numbers of faults(broken device simulator) then any verbose
-level will produce giant numbers of identical logging messages.
-Let's add ratelimit parameter for that purpose.
+>  	}
+>  
+>  	dev->functionality =
+> @@ -175,8 +190,12 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  		I2C_FUNC_SMBUS_BYTE_DATA |
+>  		I2C_FUNC_SMBUS_WORD_DATA |
+>  		I2C_FUNC_SMBUS_I2C_BLOCK;
+> -	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+> -		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+> +	if (clk_freq == 100000)
 
-Change-log:
-- Dump fault_attr configuration on minimal verbose level.
-- Add name to fault_attr
-- Add ratelimit parameter
+Please change to <=
 
-Example:
-  # Limit verbosity to one at 5 seconds
-  echo 1 > /sys/kernel/debug/fail_make_request/verbose_ratelimit_burst
-  echo 5000 > /sys/kernel/debug/fail_make_request/verbose_ratelimit_interval_ms
-
-  # dump only once in a day
-  echo 1 > /sys/kernel/debug/fail_make_request/verbose_ratelimit_burst
-  echo $((24 * 60 * 60* 1000)) > /sys/kernel/debug/fail_make_request/verbose_ratelimit_interval_ms
-
-Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- include/linux/fault-inject.h |   17 +++++++++++------
- lib/fault-inject.c           |   21 +++++++++++++++++----
- 2 files changed, 28 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/fault-inject.h b/include/linux/fault-inject.h
-index c6f996f..798fad9 100644
---- a/include/linux/fault-inject.h
-+++ b/include/linux/fault-inject.h
-@@ -5,6 +5,7 @@
- 
- #include <linux/types.h>
- #include <linux/debugfs.h>
-+#include <linux/ratelimit.h>
- #include <linux/atomic.h>
- 
- /*
-@@ -25,14 +26,18 @@ struct fault_attr {
- 	unsigned long reject_end;
- 
- 	unsigned long count;
-+	struct ratelimit_state ratelimit_state;
-+	struct dentry *dname;
- };
- 
--#define FAULT_ATTR_INITIALIZER {				\
--		.interval = 1,					\
--		.times = ATOMIC_INIT(1),			\
--		.require_end = ULONG_MAX,			\
--		.stacktrace_depth = 32,				\
--		.verbose = 2,					\
-+#define FAULT_ATTR_INITIALIZER {					\
-+		.interval = 1,						\
-+		.times = ATOMIC_INIT(1),				\
-+		.require_end = ULONG_MAX,				\
-+		.stacktrace_depth = 32,					\
-+		.ratelimit_state = RATELIMIT_STATE_INIT_DISABLED,	\
-+		.verbose = 2,						\
-+		.dname = NULL,						\
- 	}
- 
- #define DECLARE_FAULT_ATTR(name) struct fault_attr name = FAULT_ATTR_INITIALIZER
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index d7d501e..f1cdeb0 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
-@@ -40,10 +40,16 @@ EXPORT_SYMBOL_GPL(setup_fault_attr);
- 
- static void fail_dump(struct fault_attr *attr)
- {
--	if (attr->verbose > 0)
--		printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure\n");
--	if (attr->verbose > 1)
--		dump_stack();
-+	if (attr->verbose > 0 && __ratelimit(&attr->ratelimit_state)) {
-+		printk(KERN_NOTICE "FAULT_INJECTION: forcing a failure.\n"
-+		       "name %pd, interval %lu, probability %lu, "
-+		       "space %d, times %d\n", attr->dname,
-+		       attr->probability, attr->interval,
-+		       atomic_read(&attr->space),
-+		       atomic_read(&attr->times));
-+		if (attr->verbose > 1)
-+			dump_stack();
-+	}
- }
- 
- #define atomic_dec_not_zero(v)		atomic_add_unless((v), -1, 0)
-@@ -202,6 +208,12 @@ struct dentry *fault_create_debugfs_attr(const char *name,
- 		goto fail;
- 	if (!debugfs_create_ul("verbose", mode, dir, &attr->verbose))
- 		goto fail;
-+	if (!debugfs_create_u32("verbose_ratelimit_interval_ms", mode, dir,
-+				&attr->ratelimit_state.interval))
-+		goto fail;
-+	if (!debugfs_create_u32("verbose_ratelimit_burst", mode, dir,
-+				&attr->ratelimit_state.burst))
-+		goto fail;
- 	if (!debugfs_create_bool("task-filter", mode, dir, &attr->task_filter))
- 		goto fail;
- 
-@@ -222,6 +234,7 @@ struct dentry *fault_create_debugfs_attr(const char *name,
- 
- #endif /* CONFIG_FAULT_INJECTION_STACKTRACE_FILTER */
- 
-+	attr->dname = dget(dir);
- 	return dir;
- fail:
- 	debugfs_remove_recursive(dir);
--- 
-1.7.1
-
-
---=-=-=--
+> +		dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+> +			DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_STD;
+> +	else
+> +		dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+> +			DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+>  
+>  	/* Try first if we can configure the device from ACPI */
+>  	r = dw_i2c_acpi_configure(pdev);
+> -- 
+> 1.7.1
+> 
+> 
