@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893AbaHTI3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 04:29:47 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42891 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaHTI3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 04:29:45 -0400
-Message-ID: <53F45C73.1030304@collabora.co.uk>
-Date: Wed, 20 Aug 2014 10:29:39 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1751316AbaHTIhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 04:37:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50870 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809AbaHTIg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 04:36:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="374650619"
+Date: Wed, 20 Aug 2014 16:38:34 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] KVM: vmx: fix ept reserved bits for 1-GByte page
+Message-ID: <20140820083833.GA27197@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1408519913-8943-1-git-send-email-wanpeng.li@linux.intel.com>
+ <53F45893.6050305@redhat.com>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Daniel Drake <drake@endlessm.com>, Tobias Jakobi <Liquid.Acid@gmx.net>,
-        Olof Johansson <olof@lixom.net>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: Re: [PATCH] mfd: max77686: make interrupts support optional
-References: <1408516009-22106-1-git-send-email-m.szyprowski@samsung.com> <20140820081909.GH4266@lee--X1>
-In-Reply-To: <20140820081909.GH4266@lee--X1>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F45893.6050305@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lee, Marek,
+On Wed, Aug 20, 2014 at 10:13:07AM +0200, Paolo Bonzini wrote:
+>Il 20/08/2014 09:31, Wanpeng Li ha scritto:
+>> EPT misconfig handler in kvm will check which reason lead to EPT
+>> misconfiguration after vmexit. One of the reasons is that an EPT
+>> paging-structure entry is configured with settings reserved for
+>> future functionality. However, the handler can't identify if
+>> paging-structure entry of reserved bits for 1-GByte page are
+>> configured, since PDPTE which point to 1-GByte page will reserve
+>> bits 29:12 instead of bits 7:3 which are reserved for PDPTE that
+>> references an EPT Page Directory. This patch fix it by reserve
+>> bits 29:12 for 1-GByte page.
+>
+>Thanks, the patch looks good.
+>
+>Can you describe how you detected the problem and how you're testing for it?
+>
 
-On 08/20/2014 10:19 AM, Lee Jones wrote:
-> On Wed, 20 Aug 2014, Marek Szyprowski wrote:
-> 
->> Commit 6f1c1e71d93 ("mfd: max77686: Convert to use regmap_irq") broke
->> support for boards, which provide no irq for MAX 77686 PMIC. In such
->> case, not all functions of PMIC are available, but the driver still
->> should at least handle voltage regulators instead of failing to init.
->> This patch restores previous behavior.
->> 
->> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
->> ---
->> Hello,
->> 
->> This patch fixes booting issues with recently merged support for
->> Exynos4412 based Odroid X2/U3 boards. See
->> http://www.spinics.net/lists/linux-samsung-soc/msg35773.html
->> thread for more details.
->> 
->> Best regards
->> Marek Szyprowski
->> Samsung R&D Institute Poland
+I found the issue by reviewing codes.
 
-I already gave my opinion about this patch on thread:
+Regards,
+Wanpeng Li 
 
-"[PATCH v2 0/4] Add Exynos4412 based Odroid X2 and U2/U3/U3+ support"
-
-where the issue was reported by Olof but I'll add it here as well for
-completeness since I don't know if the same people are cc'ed on both threads.
-
-Bartlomiej Zolnierkiewicz posted a similar patch [0] before but as I said
-on that thread, I'm not sure if is correct to make that DT property
-optional. Or rather, if we need to make it optional then we should also
-change the Documentation/devicetree/bindings/mfd/max77686.txt that list
-"interrupts" DT property as required.
-
-It's true that before converting the max77686 to use the regmap irq API,
-the driver was loose on that regard but max77686_irq_init() in
-max77686-irq.c was returning -ENODEV when the IRQ was not provided and
-that error code was not checked in max77686_i2c_probe() (which was a bug
-IMHO).
-
-More importantly I wonder if a design where a IRQ line is not connected to
-the max77686 PMIC makes even sense. If such a design is possible then the
-"interrupt" property should be made optional but if not then I think that
-the driver should fail to probe in that case. Yes, it is a regression but
-the Odroid DTS was not following the DT binding and was just lucky that
-the driver was not checking the required DT properties.
-
-Daniel Drake posted the correct fix for the Odroid DTS [1]. So I tend to
-say that Daniel's fix should be added as a -rc fix and we should keep both
-the max77686 driver and its DT binding as it is now but as I said, if from
-a hardware point of view makes sense to leave that line unconnected then I
-don't oppose to this change.
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/8/7/374
-[1]:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/272869.html
+>Paolo
