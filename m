@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342AbaHTLT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:19:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35715 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaHTLT4 (ORCPT
+	id S1752421AbaHTLUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:20:16 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:43047 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367AbaHTLUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:19:56 -0400
-Date: Wed, 20 Aug 2014 06:19:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Hoang Tran <hoangtran.gwr@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8821ae: fix sparse warning for static
- declarations in rtl8821ae/stats.c
-Message-ID: <20140820111916.GA12812@kroah.com>
-References: <1408524802-27441-1-git-send-email-hoangtran.gwr@gmail.com>
+	Wed, 20 Aug 2014 07:20:12 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 0/5] Add max77802 support for Peach boards
+Date: Wed, 20 Aug 2014 13:19:48 +0200
+Message-Id: <1408533593-32346-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408524802-27441-1-git-send-email-hoangtran.gwr@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 04:53:22PM +0800, Hoang Tran wrote:
-> This patch fixes the following sparse warnings in rtl8821ae/stats.c
-> 
-> drivers/staging/rtl8821ae/stats.c:62:6: warning: symbol 'rtl_translate_todbm' was not declared. Should it be static?
-> drivers/staging/rtl8821ae/stats.c:101:6: warning: symbol 'rtl_process_ui_rssi' was not declared. Should it be static?
-> 
-> Signed-off-by: Hoang Tran <hoangtran.gwr@gmail.com>
-> ---
->  drivers/staging/rtl8821ae/stats.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+Hello Kukjin,
 
-You sent 2 patches that look to do the same thing, but are different, so
-I have no idea which to apply.  Always properly "version" your patches
-so as to not confuse easily-confused maintainers.
+This is a second version of th series that adds max77802 support for
+the Peach Pit and Pi boards. The series also have all the pending
+patches that were posted but depended on this support. I've picked
+all the patches I found and rebased them to be sure that they apply
+cleanly on top of linux-next. Also I've taken some DT snippets from
+the downstream Chrome OS 3.8 kernel DTS for devices that use one of
+these regulators as their input supply.
 
-I've dropped both of these, please resend the one you really want to be
-considered.
+Changes sinve v1 [0]:
+ - Dropped patch that added vmmc and vqmmc supplies as suggested
+   by Doug Anderson.
+ - Use IRQ flags define instead of a magic number as suggested by
+   Andreas Färber.
 
-thanks,
+The series is composed of the following patches:
 
-greg k-h
+Javier Martinez Canillas (2):
+  ARM: dts: Add Peach Pit and Pi dts entry for max77802 PMIC
+  ARM: dts: Add Peach Pit and Pi dts entry for ISL29018 sensor
+
+Naveen Krishna Chatradhi (1):
+  ARM: dts: Add thermistor dts fragment used by exynos based Peach
+    boards
+
+Rahul Sharma (2):
+  ARM: dts: add hdmi regulators for exynos5800 based peach-pi board
+  ARM: dts: add hdmi regulators for exynos5420 based peach-pit board
+
+ arch/arm/boot/dts/cros-adc-thermistors.dtsi |  44 ++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts  | 389 ++++++++++++++++++++++++++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts   | 389 ++++++++++++++++++++++++++++
+ 3 files changed, 822 insertions(+)
+ create mode 100644 arch/arm/boot/dts/cros-adc-thermistors.dtsi
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/8/19/372
+
