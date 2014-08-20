@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaHTPje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:39:34 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:55494 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669AbaHTPjb (ORCPT
+	id S1752073AbaHTPmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:42:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53400 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaHTPmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:39:31 -0400
-MIME-Version: 1.0
-X-Originating-IP: [95.23.97.15]
-In-Reply-To: <CAKohponcZv9-MFNUQFxC_49-+P6QOhdjxsnYAyL3i4sXdCBYrw@mail.gmail.com>
-References: <1408419205-10048-1-git-send-email-tuomas.tynkkynen@iki.fi>
-	<1408419205-10048-14-git-send-email-tuomas.tynkkynen@iki.fi>
-	<CAKohpokQOALPH13Ykz4nTBOby8J1X6_F30LNKz=gsC4wN3=3vg@mail.gmail.com>
-	<53F3A900.8010805@nvidia.com>
-	<CAKohponcZv9-MFNUQFxC_49-+P6QOhdjxsnYAyL3i4sXdCBYrw@mail.gmail.com>
-Date: Wed, 20 Aug 2014 17:39:29 +0200
-Message-ID: <CABxcv=ncm3Y7Ecfymro6TOuP=d10OV5--8n=dYmHyj6zi8hwEw@mail.gmail.com>
-Subject: Re: [PATCH v3 13/15] cpufreq: Add cpufreq driver for Tegra124
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Wed, 20 Aug 2014 11:42:03 -0400
+Date: Wed, 20 Aug 2014 10:42:00 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Georgi Djakov <gdjakov@mm-sol.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "iivanov@mm-sol.com" <iivanov@mm-sol.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Paul Walmsley <pwalmsley@nvidia.com>, Vince Hsu <vinceh@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v1 1/3] pinctrl: qcom: Add APQ8084 pinctrl support
+Message-ID: <20140820154200.GA14731@qualcomm.com>
+References: <1408468936-12252-1-git-send-email-gdjakov@mm-sol.com>
+ <1408468936-12252-2-git-send-email-gdjakov@mm-sol.com>
+ <20140820043929.GH7070@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820043929.GH7070@sonymobile.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Viresh,
+On Tue, Aug 19, 2014 at 09:39:30PM -0700, Bjorn Andersson wrote:
+> On Tue 19 Aug 10:22 PDT 2014, Georgi Djakov wrote:
+> 
+> > This patch adds support for the TLMM (Top-Level Mode Mux) block found
+> > in the APQ8084 platform.
+> > 
+> [...]
+> > +
+> > +#define NUM_GPIO_PINGROUPS 143
+> > +
+> 
+> I think this looks good overall, but in my APQ8084 documentation
+> (80-NG550-2X Rev. B) there are 147 (0..146) gpio pins in the TLMM block.
+> 
+> Any suggestion to why there's a discrepancy?
+> 
 
-On Wed, Aug 20, 2014 at 8:39 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 20 August 2014 01:14, Tuomas Tynkkynen <ttynkkynen@nvidia.com> wrote:
->> There's actually a (mis-?)feature in git format-patch: a literal '---'
->> line in a commit message won't be escaped, so the patch notes can be
->> written in the commit message directly so the patch files don't need
->> to be modified by hand.
->
-> How exactly? Can you list the command here please..
-> --
+We have some discrepancies internally on the documentation.  However, in this
+case I'd expect the OEM documentation to be correct.  So this needs to change to
+bjorn's version, as it appears to be the correct version.
 
-I rely on the behavior that Tuomas is mentioning as well but is not
-about git format-patch but git am.
+I have no idea why some pins are missing.
 
-As you already know when you apply a patch with git am, everything
-that is between a line with 3 dashes line (---) and the actual diff is
-omitted since that is where the generated diffstat is placed by git
-format-patch.
 
-We usually rely on that behavior to put there the history of a patch
-or any information that we think that is useful for reviewers but is
-not suitable to end in the commit message. Now that means that you
-have to generate the patch and then manually edit it to add the
-history there.
-
-But since git am omits any text between the first "---" and the diff,
-it means that you can add a "---" on your actual commit message and
-anything that follows will be discarded by git am, that way you can
-maintain your history on your commit message which is way less tedious
-than manually editing patches.
-
-So the second "---" from Tuomas patch is actually the one generated by
-git format-patch but that gets discarded by git am just like any other
-text so it causes no harm when other apply the patches.
-
-If this not the correct workflow and you have a better way to manage
-this, I would love to know about it.
-
-Best regards,
-Javier
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
