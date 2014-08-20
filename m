@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaHTMBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:01:47 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58940 "EHLO
+	id S1754132AbaHTMEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:04:49 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58920 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752551AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752522AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vlad Yasevich <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 3.12 039/104] macvlan: Initialize vlan_features to turn on offload support.
-Date: Wed, 20 Aug 2014 13:43:02 +0200
-Message-Id: <6a25e8f778995cabb0cfe2acb3247e3b42dec35f.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 043/104] sparc64: Fix argument sign extension for compat_sys_futex().
+Date: Wed, 20 Aug 2014 13:43:06 +0200
+Message-Id: <b87c3db222bba76dfc08d6ce65d9c73c8f1df00c.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -24,38 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 081e83a78db9b0ae1f5eabc2dedecc865f509b98 ]
+[ Upstream commit aa3449ee9c87d9b7660dd1493248abcc57769e31 ]
 
-Macvlan devices do not initialize vlan_features.  As a result,
-any vlan devices configured on top of macvlans perform very poorly.
-Initialize vlan_features based on the vlan features of the lower-level
-device.
+Only the second argument, 'op', is signed.
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/macvlan.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/kernel/sys32.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index f6b7257466bc..1124ea0dbb7b 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -505,6 +505,7 @@ static int macvlan_init(struct net_device *dev)
- 				  (lowerdev->state & MACVLAN_STATE_MASK);
- 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
- 	dev->features		|= NETIF_F_LLTX;
-+	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
- 	dev->gso_max_size	= lowerdev->gso_max_size;
- 	dev->iflink		= lowerdev->ifindex;
- 	dev->hard_header_len	= lowerdev->hard_header_len;
+diff --git a/arch/sparc/kernel/sys32.S b/arch/sparc/kernel/sys32.S
+index f7c72b6efc27..d066eb18650c 100644
+--- a/arch/sparc/kernel/sys32.S
++++ b/arch/sparc/kernel/sys32.S
+@@ -44,7 +44,7 @@ SIGN1(sys32_timer_settime, compat_sys_timer_settime, %o1)
+ SIGN1(sys32_io_submit, compat_sys_io_submit, %o1)
+ SIGN1(sys32_mq_open, compat_sys_mq_open, %o1)
+ SIGN1(sys32_select, compat_sys_select, %o0)
+-SIGN3(sys32_futex, compat_sys_futex, %o1, %o2, %o5)
++SIGN1(sys32_futex, compat_sys_futex, %o1)
+ SIGN1(sys32_recvfrom, compat_sys_recvfrom, %o0)
+ SIGN1(sys32_recvmsg, compat_sys_recvmsg, %o0)
+ SIGN1(sys32_sendmsg, compat_sys_sendmsg, %o0)
 -- 
 2.0.4
 
