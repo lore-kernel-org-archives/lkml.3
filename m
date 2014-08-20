@@ -1,139 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaHTBxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 21:53:04 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:38847 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaHTBxB (ORCPT
+	id S1752015AbaHTCAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 22:00:11 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:46865
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751733AbaHTCAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 21:53:01 -0400
-Date: Tue, 19 Aug 2014 18:51:14 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Vincent Donnefort <vdonnefort@gmail.com>
-cc: Valdis.Kletnieks@vt.edu, cooloney@gmail.com, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] leds: make led_blink_set IRQ safe
-In-Reply-To: <1408453101-30290-2-git-send-email-vdonnefort@gmail.com>
-Message-ID: <alpine.LSU.2.11.1408191835200.3003@eggly.anvils>
-References: <alpine.LSU.2.11.1408161946450.1064@eggly.anvils> <1408453101-30290-1-git-send-email-vdonnefort@gmail.com> <1408453101-30290-2-git-send-email-vdonnefort@gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
+	Tue, 19 Aug 2014 22:00:09 -0400
+Date: Tue, 19 Aug 2014 21:00:05 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, Sasha Levin <sasha.levin@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: slub/debugobjects: lockup when freeing memory
+In-Reply-To: <20140819035828.GI4752@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1408192057200.32428@gentwo.org>
+References: <53A2F406.4010109@oracle.com> <alpine.DEB.2.11.1406191001090.2785@gentwo.org> <20140619165247.GA4904@linux.vnet.ibm.com> <alpine.DEB.2.10.1406192127100.5170@nanos> <alpine.DEB.2.11.1406191519090.4002@gentwo.org> <20140818163757.GA30742@linux.vnet.ibm.com>
+ <alpine.DEB.2.11.1408182147400.28727@gentwo.org> <20140819035828.GI4752@linux.vnet.ibm.com>
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Aug 2014, Vincent Donnefort wrote:
+On Mon, 18 Aug 2014, Paul E. McKenney wrote:
 
-> This patch introduces a work which take care of reseting the blink workqueue and
-> avoid calling the cancel_delayed_work_sync function which may sleep, from an IRQ
-> context.
-> 
-> Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
+> > +#ifdef CONFIG_RCU_DEBUG_XYZ
+>
+> If you make CONFIG_RCU_DEBUG_XYZ instead be CONFIG_DEBUG_OBJECTS_RCU_HEAD,
+> then it will automatically show up when it needs to.
 
-Thanks.  It does work for me.  Though the problem was more general than
-stated above: not just a problem in IRQ context, but in any atomic context.
+Ok.
 
-I don't suppose it has any effect on Valdis's lockdep issue, which I
-didn't get to see myself; but we should let Valdis report back on that.
+> The rest looks plausible, for whatever that is worth.
 
-May I (most ungratefully!) say that your patch doesn't fill me with
-confidence that it's the right solution: adding yet another work_struct
-to get around the issue seemed dubious to me, I wonder if it might expose
-new races.
+We talked in the hallway about init_rcu_head not touching
+the contents of the rcu_head. If that is the case then we can simplify
+the patch.
 
-But rest assured that I know nothing about this, and I'm not at all
-qualified to review your patch: I hope Bryan and others will do so.
+We could also remove the #ifdefs if init_rcu_head and destroy_rcu_head
+are no ops if CONFIG_DEBUG_RCU_HEAD is not defined.
 
-Thanks,
-Hugh
 
-> 
-> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-> index 129729d..0971554 100644
-> --- a/drivers/leds/led-class.c
-> +++ b/drivers/leds/led-class.c
-> @@ -148,6 +148,24 @@ static void led_work_function(struct work_struct *ws)
->  			   msecs_to_jiffies(delay));
->  }
->  
-> +static void reset_blink_work_delayed(struct work_struct *ws)
-> +{
-> +	struct led_classdev *led_cdev =
-> +		container_of(ws, struct led_classdev, reset_blink_work);
-> +
-> +	cancel_delayed_work_sync(&led_cdev->blink_work);
-> +
-> +	if (!led_cdev->blink_delay_on) {
-> +		__led_set_brightness(led_cdev, LED_OFF);
-> +		return;
-> +	} else if (!led_cdev->blink_delay_off) {
-> +		__led_set_brightness(led_cdev, led_cdev->blink_brightness);
-> +		return;
-> +	}
-> +
-> +	queue_delayed_work(system_wq, &led_cdev->blink_work, 1);
-> +}
-> +
->  static void set_brightness_delayed(struct work_struct *ws)
->  {
->  	struct led_classdev *led_cdev =
-> @@ -234,6 +252,7 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
->  	INIT_WORK(&led_cdev->set_brightness_work, set_brightness_delayed);
->  
->  	INIT_DELAYED_WORK(&led_cdev->blink_work, led_work_function);
-> +	INIT_WORK(&led_cdev->reset_blink_work, reset_blink_work_delayed);
->  
->  #ifdef CONFIG_LEDS_TRIGGERS
->  	led_trigger_set_default(led_cdev);
-> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-> index 4bb1168..959510a 100644
-> --- a/drivers/leds/led-core.c
-> +++ b/drivers/leds/led-core.c
-> @@ -40,19 +40,7 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
->  	led_cdev->blink_delay_on = delay_on;
->  	led_cdev->blink_delay_off = delay_off;
->  
-> -	/* never on - just set to off */
-> -	if (!delay_on) {
-> -		__led_set_brightness(led_cdev, LED_OFF);
-> -		return;
-> -	}
-> -
-> -	/* never off - just set to brightness */
-> -	if (!delay_off) {
-> -		__led_set_brightness(led_cdev, led_cdev->blink_brightness);
-> -		return;
-> -	}
-> -
-> -	queue_delayed_work(system_wq, &led_cdev->blink_work, 1);
-> +	schedule_work(&led_cdev->reset_blink_work);
->  }
->  
->  
-> @@ -76,8 +64,6 @@ void led_blink_set(struct led_classdev *led_cdev,
->  		   unsigned long *delay_on,
->  		   unsigned long *delay_off)
->  {
-> -	cancel_delayed_work_sync(&led_cdev->blink_work);
-> -
->  	led_cdev->flags &= ~LED_BLINK_ONESHOT;
->  	led_cdev->flags &= ~LED_BLINK_ONESHOT_STOP;
->  
-> diff --git a/include/linux/leds.h b/include/linux/leds.h
-> index 6a599dc..6e5523d 100644
-> --- a/include/linux/leds.h
-> +++ b/include/linux/leds.h
-> @@ -69,6 +69,7 @@ struct led_classdev {
->  
->  	unsigned long		 blink_delay_on, blink_delay_off;
->  	struct delayed_work	 blink_work;
-> +	struct work_struct	 reset_blink_work;
->  	int			 blink_brightness;
->  
->  	struct work_struct	set_brightness_work;
-> -- 
-> 1.9.1
-> 
-> 
+
+Index: linux/mm/slub.c
+===================================================================
+--- linux.orig/mm/slub.c
++++ linux/mm/slub.c
+@@ -1308,6 +1308,25 @@ static inline struct page *alloc_slab_pa
+ 	return page;
+ }
+
++#define need_reserve_slab_rcu						\
++	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
++
++static struct rcu_head *get_rcu_head(struct kmem_cache *s, struct page *page)
++{
++	if (need_reserve_slab_rcu) {
++		int order = compound_order(page);
++		int offset = (PAGE_SIZE << order) - s->reserved;
++
++		VM_BUG_ON(s->reserved != sizeof(struct rcu_head));
++		return page_address(page) + offset;
++	} else {
++		/*
++		 * RCU free overloads the RCU head over the LRU
++		 */
++		return (void *)&page->lru;
++	}
++}
++
+ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ {
+ 	struct page *page;
+@@ -1357,6 +1376,22 @@ static struct page *allocate_slab(struct
+ 			kmemcheck_mark_unallocated_pages(page, pages);
+ 	}
+
++#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
++	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU) && page)
++		/*
++		 * Initialize various things. However, this init is
++	 	 * not allowed to modify the contents of the rcu head.
++		 * Allocations are permitted. However, the use of
++		 * the same cache or another cache with SLAB_RCU_DESTROY
++		 * set may cause additional recursions.
++		 *
++		 * So in order to be safe the slab caches used
++		 * in init_rcu_head should be restricted to be of the
++		 * non rcu kind only.
++		 */
++		init_rcu_head(get_rcu_head(s, page));
++#endif
++
+ 	if (flags & __GFP_WAIT)
+ 		local_irq_disable();
+ 	if (!page)
+@@ -1452,13 +1487,13 @@ static void __free_slab(struct kmem_cach
+ 	memcg_uncharge_slab(s, order);
+ }
+
+-#define need_reserve_slab_rcu						\
+-	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
+-
+ static void rcu_free_slab(struct rcu_head *h)
+ {
+ 	struct page *page;
+
++#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
++	destroy_rcu_head(h);
++#endif
+ 	if (need_reserve_slab_rcu)
+ 		page = virt_to_head_page(h);
+ 	else
+@@ -1469,24 +1504,9 @@ static void rcu_free_slab(struct rcu_hea
+
+ static void free_slab(struct kmem_cache *s, struct page *page)
+ {
+-	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+-		struct rcu_head *head;
+-
+-		if (need_reserve_slab_rcu) {
+-			int order = compound_order(page);
+-			int offset = (PAGE_SIZE << order) - s->reserved;
+-
+-			VM_BUG_ON(s->reserved != sizeof(*head));
+-			head = page_address(page) + offset;
+-		} else {
+-			/*
+-			 * RCU free overloads the RCU head over the LRU
+-			 */
+-			head = (void *)&page->lru;
+-		}
+-
+-		call_rcu(head, rcu_free_slab);
+-	} else
++	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU))
++		call_rcu(get_rcu_head(s, page), rcu_free_slab);
++	else
+ 		__free_slab(s, page);
+ }
+
