@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaHTLoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:44:20 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58863 "EHLO
+	id S1752696AbaHTLoQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:44:16 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58867 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752328AbaHTLoJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752331AbaHTLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:09 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eliad Peller <eliad@wizery.com>,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 005/104] cfg80211: fix mic_failure tracing
-Date: Wed, 20 Aug 2014 13:42:28 +0200
-Message-Id: <a774b9a4f275ebc272f8cc8e6c4f29f601aa695d.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Malcolm Priestley <tvboxspy@gmail.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 011/104] staging: vt6655: Fix disassociated messages every 10 seconds
+Date: Wed, 20 Aug 2014 13:42:34 +0200
+Message-Id: <0a5d8d71f528efeeffa3415fb61846e6f18541ae.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -25,39 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eliad Peller <eliad@wizery.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 8c26d458394be44e135d1c6bd4557e1c4e1a0535 upstream.
+commit 4aa0abed3a2a11b7d71ad560c1a3e7631c5a31cd upstream.
 
-tsc can be NULL (mac80211 currently always passes NULL),
-resulting in NULL-dereference. check before copying it.
+byReAssocCount is incremented every second resulting in
+disassociated message being send every 10 seconds whether
+connection or not.
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+byReAssocCount should only advance while eCommandState
+is in WLAN_ASSOCIATE_WAIT
+
+Change existing scope to if condition.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/wireless/trace.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/vt6655/bssdb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/wireless/trace.h b/net/wireless/trace.h
-index ba5f0d6614d5..064b471b5275 100644
---- a/net/wireless/trace.h
-+++ b/net/wireless/trace.h
-@@ -2029,7 +2029,8 @@ TRACE_EVENT(cfg80211_michael_mic_failure,
- 		MAC_ASSIGN(addr, addr);
- 		__entry->key_type = key_type;
- 		__entry->key_id = key_id;
--		memcpy(__entry->tsc, tsc, 6);
-+		if (tsc)
-+			memcpy(__entry->tsc, tsc, 6);
- 	),
- 	TP_printk(NETDEV_PR_FMT ", " MAC_PR_FMT ", key type: %d, key id: %d, tsc: %pm",
- 		  NETDEV_PR_ARG, MAC_PR_ARG(addr), __entry->key_type,
+diff --git a/drivers/staging/vt6655/bssdb.c b/drivers/staging/vt6655/bssdb.c
+index f983915168b7..3496a77612ba 100644
+--- a/drivers/staging/vt6655/bssdb.c
++++ b/drivers/staging/vt6655/bssdb.c
+@@ -1026,7 +1026,7 @@ start:
+ 		pDevice->byERPFlag &= ~(WLAN_SET_ERP_USE_PROTECTION(1));
+ 	}
+ 
+-	{
++	if (pDevice->eCommandState == WLAN_ASSOCIATE_WAIT) {
+ 		pDevice->byReAssocCount++;
+ 		if ((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != true)) {  //10 sec timeout
+ 			printk("Re-association timeout!!!\n");
 -- 
 2.0.4
 
