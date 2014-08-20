@@ -1,94 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923AbaHTMKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:10:40 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58884 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752480AbaHTLoJ (ORCPT
+	id S1754575AbaHTMLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:11:21 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39239 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbaHTMLQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:09 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 019/104] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
-Date: Wed, 20 Aug 2014 13:42:42 +0200
-Message-Id: <a7b4794cc25bdfb541d77f190fee9784542927ef.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 08:11:16 -0400
+From: Chintan Pandya <cpandya@codeaurora.org>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chintan Pandya <cpandya@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH v4 2/2] ksm: provide support to use deferrable timers for scanner thread
+Date: Wed, 20 Aug 2014 17:40:28 +0530
+Message-Id: <1408536628-29379-2-git-send-email-cpandya@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+KSM thread to scan pages is scheduled on definite timeout. That wakes up
+CPU from idle state and hence may affect the power consumption. Provide
+an optional support to use deferrable timer which suites low-power
+use-cases.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Typically, on our setup we observed, 10% less power consumption with some
+use-cases in which CPU goes to power collapse frequently. For example,
+playing audio on Soc which has HW based Audio encoder/decoder, CPU
+remains idle for longer duration of time. This idle state will save
+significant CPU power consumption if KSM don't wakes them up
+periodically.
 
-===============
+Note that, deferrable timers won't be deferred if any CPU is active and
+not in IDLE state.
 
-commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
+By default, deferrable timers is enabled. To disable deferrable timers,
+$ echo 0 > /sys/kernel/mm/ksm/deferrable_timer
 
-This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
-preparation of merging in the proper fix (espfix64).
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
 ---
- arch/x86/kernel/ldt.c        | 4 +---
- arch/x86/vdso/vdso32-setup.c | 8 --------
- 2 files changed, 1 insertion(+), 11 deletions(-)
+Changes:
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index dcbbaa165bde..af1d14a9ebda 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -20,8 +20,6 @@
- #include <asm/mmu_context.h>
- #include <asm/syscalls.h>
+V3-->V4:
+	- Use deferrable timers by default
+
+V2-->V3:
+	- Handled error case properly
+	- Corrected indentation in Documentation
+	- Fixed build failure
+	- Removed left over process_timeout()
+V1-->V2:
+	- allowing only valid values to be updated as use_deferrable_timer
+	- using only 'deferrable' and not 'deferred'
+	- moved out schedule_timeout code for deferrable timer into timer.c
+
+
+ Documentation/vm/ksm.txt |  6 ++++++
+ mm/ksm.c                 | 36 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 40 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/vm/ksm.txt b/Documentation/vm/ksm.txt
+index f34a8ee..23e26c3 100644
+--- a/Documentation/vm/ksm.txt
++++ b/Documentation/vm/ksm.txt
+@@ -87,6 +87,12 @@ pages_sharing    - how many more sites are sharing them i.e. how much saved
+ pages_unshared   - how many pages unique but repeatedly checked for merging
+ pages_volatile   - how many pages changing too fast to be placed in a tree
+ full_scans       - how many times all mergeable areas have been scanned
++deferrable_timer - whether to use deferrable timers or not
++                   e.g. "echo 1 > /sys/kernel/mm/ksm/deferrable_timer"
++                   Default: 1 (means, we are using deferrable timers. Users
++		   might want to clear deferrable_timer option if they want
++		   ksm thread to wakeup CPU to carryout ksm activities thus
++		   loosing on battery while gaining on memory savings.)
  
--int sysctl_ldt16 = 0;
--
- #ifdef CONFIG_SMP
- static void flush_ldt(void *current_mm)
- {
-@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 	 * IRET leaking the high bits of the kernel stack address.
- 	 */
- #ifdef CONFIG_X86_64
--	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
-+	if (!ldt_info.seg_32bit) {
- 		error = -EINVAL;
- 		goto out_unlock;
- 	}
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index f1d633a43f8e..d6bfb876cfb0 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -41,7 +41,6 @@ enum {
- #ifdef CONFIG_X86_64
- #define vdso_enabled			sysctl_vsyscall32
- #define arch_setup_additional_pages	syscall32_setup_pages
--extern int sysctl_ldt16;
+ A high ratio of pages_sharing to pages_shared indicates good sharing, but
+ a high ratio of pages_unshared to pages_sharing indicates wasted effort.
+diff --git a/mm/ksm.c b/mm/ksm.c
+index fb75902..af90e30 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -223,6 +223,9 @@ static unsigned int ksm_thread_pages_to_scan = 100;
+ /* Milliseconds ksmd should sleep between batches */
+ static unsigned int ksm_thread_sleep_millisecs = 20;
+ 
++/* Boolean to indicate whether to use deferrable timer or not */
++static bool use_deferrable_timer = 1;
++
+ #ifdef CONFIG_NUMA
+ /* Zeroed when merging across nodes is not allowed */
+ static unsigned int ksm_merge_across_nodes = 1;
+@@ -1725,8 +1728,13 @@ static int ksm_scan_thread(void *nothing)
+ 		try_to_freeze();
+ 
+ 		if (ksmd_should_run()) {
+-			schedule_timeout_interruptible(
+-				msecs_to_jiffies(ksm_thread_sleep_millisecs));
++			signed long to;
++
++			to = msecs_to_jiffies(ksm_thread_sleep_millisecs);
++			if (use_deferrable_timer)
++				schedule_timeout_deferrable_interruptible(to);
++			else
++				schedule_timeout_interruptible(to);
+ 		} else {
+ 			wait_event_freezable(ksm_thread_wait,
+ 				ksmd_should_run() || kthread_should_stop());
+@@ -2175,6 +2183,29 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
+ }
+ KSM_ATTR(run);
+ 
++static ssize_t deferrable_timer_show(struct kobject *kobj,
++				    struct kobj_attribute *attr, char *buf)
++{
++	return snprintf(buf, 8, "%d\n", use_deferrable_timer);
++}
++
++static ssize_t deferrable_timer_store(struct kobject *kobj,
++				     struct kobj_attribute *attr,
++				     const char *buf, size_t count)
++{
++	unsigned long enable;
++	int err;
++
++	err = kstrtoul(buf, 10, &enable);
++	if (err < 0)
++		return err;
++	if (enable >= 1)
++		return -EINVAL;
++	use_deferrable_timer = enable;
++	return count;
++}
++KSM_ATTR(deferrable_timer);
++
+ #ifdef CONFIG_NUMA
+ static ssize_t merge_across_nodes_show(struct kobject *kobj,
+ 				struct kobj_attribute *attr, char *buf)
+@@ -2287,6 +2318,7 @@ static struct attribute *ksm_attrs[] = {
+ 	&pages_unshared_attr.attr,
+ 	&pages_volatile_attr.attr,
+ 	&full_scans_attr.attr,
++	&deferrable_timer_attr.attr,
+ #ifdef CONFIG_NUMA
+ 	&merge_across_nodes_attr.attr,
  #endif
- 
- /*
-@@ -381,13 +380,6 @@ static struct ctl_table abi_table2[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
--	{
--		.procname	= "ldt16",
--		.data		= &sysctl_ldt16,
--		.maxlen		= sizeof(int),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec
--	},
- 	{}
- };
- 
 -- 
-2.0.4
+Chintan Pandya
+
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
 
