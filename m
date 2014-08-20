@@ -1,62 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaHTMMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:12:23 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58882 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752477AbaHTLoJ (ORCPT
+	id S1754565AbaHTMLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:11:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39221 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918AbaHTMLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:09 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 014/104] iio: buffer: Fix demux table creation
-Date: Wed, 20 Aug 2014 13:42:37 +0200
-Message-Id: <8504485d7e3adb86929a240e7e3fafc855c52bc2.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 08:11:00 -0400
+From: Chintan Pandya <cpandya@codeaurora.org>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chintan Pandya <cpandya@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH v4 1/2] timer: provide an api for deferrable timeout
+Date: Wed, 20 Aug 2014 17:40:27 +0530
+Message-Id: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+schedule_timeout wakes up the CPU from IDLE state. For some use cases it
+is not desirable, hence introduce a convenient API
+(schedule_timeout_deferrable_interruptible) on similar pattern which uses
+a deferrable timer.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-===============
-
-commit 61bd55ce1667809f022be88da77db17add90ea4e upstream.
-
-When creating the demux table we need to iterate over the selected scan mask for
-the buffer to get the samples which should be copied to destination buffer.
-Right now the code uses the mask which contains all active channels, which means
-the demux table contains entries which causes it to copy all the samples from
-source to destination buffer one by one without doing any demuxing.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
 ---
- drivers/iio/industrialio-buffer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Changes:
 
-diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
-index 376de1cc85db..ae7ac20edf2c 100644
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -876,7 +876,7 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
+V3-->V4:
+	- No change
+
+V2-->V3:
+	- Big comment moved from static function to exported function
+	- Using __setup_timer_on_stack for better readability
+
+V2:
+	- this patch has been newly introduced in patch v2
+
+
+ include/linux/sched.h |  2 ++
+ kernel/time/timer.c   | 73 +++++++++++++++++++++++++++++++--------------------
+ 2 files changed, 47 insertions(+), 28 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5c2c885..13fe361 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -376,6 +376,8 @@ extern int in_sched_functions(unsigned long addr);
+ #define	MAX_SCHEDULE_TIMEOUT	LONG_MAX
+ extern signed long schedule_timeout(signed long timeout);
+ extern signed long schedule_timeout_interruptible(signed long timeout);
++extern signed long
++schedule_timeout_deferrable_interruptible(signed long timeout);
+ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+diff --git a/kernel/time/timer.c b/kernel/time/timer.c
+index aca5dfe..f4c4082 100644
+--- a/kernel/time/timer.c
++++ b/kernel/time/timer.c
+@@ -1431,33 +1431,8 @@ static void process_timeout(unsigned long __data)
+ 	wake_up_process((struct task_struct *)__data);
+ }
  
- 	/* Now we have the two masks, work from least sig and build up sizes */
- 	for_each_set_bit(out_ind,
--			 indio_dev->active_scan_mask,
-+			 buffer->scan_mask,
- 			 indio_dev->masklength) {
- 		in_ind = find_next_bit(indio_dev->active_scan_mask,
- 				       indio_dev->masklength,
+-/**
+- * schedule_timeout - sleep until timeout
+- * @timeout: timeout value in jiffies
+- *
+- * Make the current task sleep until @timeout jiffies have
+- * elapsed. The routine will return immediately unless
+- * the current task state has been set (see set_current_state()).
+- *
+- * You can set the task state as follows -
+- *
+- * %TASK_UNINTERRUPTIBLE - at least @timeout jiffies are guaranteed to
+- * pass before the routine returns. The routine will return 0
+- *
+- * %TASK_INTERRUPTIBLE - the routine may return early if a signal is
+- * delivered to the current task. In this case the remaining time
+- * in jiffies will be returned, or 0 if the timer expired in time
+- *
+- * The current task state is guaranteed to be TASK_RUNNING when this
+- * routine returns.
+- *
+- * Specifying a @timeout value of %MAX_SCHEDULE_TIMEOUT will schedule
+- * the CPU away without a bound on the timeout. In this case the return
+- * value will be %MAX_SCHEDULE_TIMEOUT.
+- *
+- * In all cases the return value is guaranteed to be non-negative.
+- */
+-signed long __sched schedule_timeout(signed long timeout)
++static signed long
++__sched __schedule_timeout(signed long timeout, unsigned long flag)
+ {
+ 	struct timer_list timer;
+ 	unsigned long expire;
+@@ -1493,7 +1468,9 @@ signed long __sched schedule_timeout(signed long timeout)
+ 
+ 	expire = timeout + jiffies;
+ 
+-	setup_timer_on_stack(&timer, process_timeout, (unsigned long)current);
++	__setup_timer_on_stack(&timer, process_timeout, (unsigned long)current,
++				flag);
++
+ 	__mod_timer(&timer, expire, false, TIMER_NOT_PINNED);
+ 	schedule();
+ 	del_singleshot_timer_sync(&timer);
+@@ -1506,12 +1483,52 @@ signed long __sched schedule_timeout(signed long timeout)
+  out:
+ 	return timeout < 0 ? 0 : timeout;
+ }
++
++/**
++ * schedule_timeout - sleep until timeout
++ * @timeout: timeout value in jiffies
++ *
++ * Make the current task sleep until @timeout jiffies have
++ * elapsed. The routine will return immediately unless
++ * the current task state has been set (see set_current_state()).
++ *
++ * You can set the task state as follows -
++ *
++ * %TASK_UNINTERRUPTIBLE - at least @timeout jiffies are guaranteed to
++ * pass before the routine returns. The routine will return 0
++ *
++ * %TASK_INTERRUPTIBLE - the routine may return early if a signal is
++ * delivered to the current task. In this case the remaining time
++ * in jiffies will be returned, or 0 if the timer expired in time
++ *
++ * The current task state is guaranteed to be TASK_RUNNING when this
++ * routine returns.
++ *
++ * Specifying a @timeout value of %MAX_SCHEDULE_TIMEOUT will schedule
++ * the CPU away without a bound on the timeout. In this case the return
++ * value will be %MAX_SCHEDULE_TIMEOUT.
++ *
++ * In all cases the return value is guaranteed to be non-negative.
++ */
++signed long __sched schedule_timeout(signed long timeout)
++{
++	return __schedule_timeout(timeout, 0);
++}
+ EXPORT_SYMBOL(schedule_timeout);
+ 
+ /*
+  * We can use __set_current_state() here because schedule_timeout() calls
+  * schedule() unconditionally.
+  */
++
++signed long
++__sched schedule_timeout_deferrable_interruptible(signed long timeout)
++{
++	__set_current_state(TASK_INTERRUPTIBLE);
++	return __schedule_timeout(timeout, TIMER_DEFERRABLE);
++}
++EXPORT_SYMBOL(schedule_timeout_deferrable_interruptible);
++
+ signed long __sched schedule_timeout_interruptible(signed long timeout)
+ {
+ 	__set_current_state(TASK_INTERRUPTIBLE);
 -- 
-2.0.4
+Chintan Pandya
+
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
 
