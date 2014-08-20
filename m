@@ -1,78 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaHTQ5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 12:57:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51702 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867AbaHTQ5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 12:57:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140820154817.GA21518@redhat.com>
-References: <20140820060423.GA14660@glanzmann.de> <20140820062408.GB14660@glanzmann.de> <20140820125630.GA12786@redhat.com> <30d943a9-ba4a-47ee-9333-0ffeea00c3a1@email.android.com> <20140820154817.GA21518@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: REGRESSION: 8fc5b4d: Unable to compile x86_64 kernel with x86_32 userland
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 20 Aug 2014 11:56:14 -0500
-To: Vivek Goyal <vgoyal@redhat.com>, Thomas Glanzmann <thomas@glanzmann.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, Baoquan He <bhe@redhat.com>,
-        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        WANG Chao <chaowang@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        ubuntu@iam.tj
-Message-ID: <f7583da0-c49c-48d9-b69e-0257db583115@email.android.com>
+	id S1752700AbaHTQ5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 12:57:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58142 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637AbaHTQ4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 12:56:40 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 140/141] mnt: Correct permission checks in do_remount
+Date: Wed, 20 Aug 2014 17:56:31 +0100
+Message-Id: <1408553792-25134-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, that is exactly right.  The lack of -m64 is a bug.
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-On August 20, 2014 10:48:18 AM CDT, Vivek Goyal <vgoyal@redhat.com> wrote:
->On Wed, Aug 20, 2014 at 10:07:01AM -0500, H. Peter Anvin wrote:
->> It says "32-bit mode" which means it is another issue: we are
->dropping -m64 at some point.
->
->Thanks hpa. I am not adding -m64 to kbuild flags at all. So 32bit tool
->chain must be assuming -m32 by default, and probably that's the issue.
->
->Thomas, 
->
->Can you please try attached single line patch and see if it fixes the
->issue for you.
->
->Thanks
->Vivek
->
->
->---
-> arch/x86/purgatory/Makefile |    1 +
-> 1 file changed, 1 insertion(+)
->
->Index: linux-2.6/arch/x86/purgatory/Makefile
->===================================================================
->--- linux-2.6.orig/arch/x86/purgatory/Makefile	2014-08-20
->11:32:21.723559119 -0400
->+++ linux-2.6/arch/x86/purgatory/Makefile	2014-08-20 11:32:23.654570231
->-0400
->@@ -11,6 +11,7 @@ targets += purgatory.ro
-> # sure how to relocate those. Like kexec-tools, use custom flags.
-> 
->KBUILD_CFLAGS := -fno-strict-aliasing -Wall -Wstrict-prototypes
->-fno-zero-initialized-in-bss -fno-builtin -ffreestanding -c -MD -Os
->-mcmodel=large
->+KBUILD_CFLAGS += -m$(BITS)
-> 
-> $(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE
-> 		$(call if_changed,ld)
+commit 9566d6742852c527bf5af38af5cbb878dad75705 upstream.
 
+While invesgiating the issue where in "mount --bind -oremount,ro ..."
+would result in later "mount --bind -oremount,rw" succeeding even if
+the mount started off locked I realized that there are several
+additional mount flags that should be locked and are not.
+
+In particular MNT_NOSUID, MNT_NODEV, MNT_NOEXEC, and the atime
+flags in addition to MNT_READONLY should all be locked.  These
+flags are all per superblock, can all be changed with MS_BIND,
+and should not be changable if set by a more privileged user.
+
+The following additions to the current logic are added in this patch.
+- nosuid may not be clearable by a less privileged user.
+- nodev  may not be clearable by a less privielged user.
+- noexec may not be clearable by a less privileged user.
+- atime flags may not be changeable by a less privileged user.
+
+The logic with atime is that always setting atime on access is a
+global policy and backup software and auditing software could break if
+atime bits are not updated (when they are configured to be updated),
+and serious performance degradation could result (DOS attack) if atime
+updates happen when they have been explicitly disabled.  Therefore an
+unprivileged user should not be able to mess with the atime bits set
+by a more privileged user.
+
+The additional restrictions are implemented with the addition of
+MNT_LOCK_NOSUID, MNT_LOCK_NODEV, MNT_LOCK_NOEXEC, and MNT_LOCK_ATIME
+mnt flags.
+
+Taken together these changes and the fixes for MNT_LOCK_READONLY
+should make it safe for an unprivileged user to create a user
+namespace and to call "mount --bind -o remount,... ..." without
+the danger of mount flags being changed maliciously.
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/namespace.c        | 36 +++++++++++++++++++++++++++++++++---
+ include/linux/mount.h |  5 +++++
+ 2 files changed, 38 insertions(+), 3 deletions(-)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 343158cb021c..456c3e00cb04 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -828,8 +828,21 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
+ 
+ 	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
+ 	/* Don't allow unprivileged users to change mount flags */
+-	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
+-		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
++	if (flag & CL_UNPRIVILEGED) {
++		mnt->mnt.mnt_flags |= MNT_LOCK_ATIME;
++
++		if (mnt->mnt.mnt_flags & MNT_READONLY)
++			mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
++
++		if (mnt->mnt.mnt_flags & MNT_NODEV)
++			mnt->mnt.mnt_flags |= MNT_LOCK_NODEV;
++
++		if (mnt->mnt.mnt_flags & MNT_NOSUID)
++			mnt->mnt.mnt_flags |= MNT_LOCK_NOSUID;
++
++		if (mnt->mnt.mnt_flags & MNT_NOEXEC)
++			mnt->mnt.mnt_flags |= MNT_LOCK_NOEXEC;
++	}
+ 
+ 	atomic_inc(&sb->s_active);
+ 	mnt->mnt.mnt_sb = sb;
+@@ -1799,6 +1812,23 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
+ 	    !(mnt_flags & MNT_READONLY)) {
+ 		return -EPERM;
+ 	}
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_NODEV) &&
++	    !(mnt_flags & MNT_NODEV)) {
++		return -EPERM;
++	}
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOSUID) &&
++	    !(mnt_flags & MNT_NOSUID)) {
++		return -EPERM;
++	}
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOEXEC) &&
++	    !(mnt_flags & MNT_NOEXEC)) {
++		return -EPERM;
++	}
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_ATIME) &&
++	    ((mnt->mnt.mnt_flags & MNT_ATIME_MASK) != (mnt_flags & MNT_ATIME_MASK))) {
++		return -EPERM;
++	}
++
+ 	err = security_sb_remount(sb, data);
+ 	if (err)
+ 		return err;
+@@ -1998,7 +2028,7 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
+ 		 */
+ 		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
+ 			flags |= MS_NODEV;
+-			mnt_flags |= MNT_NODEV;
++			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
+ 		}
+ 	}
+ 
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 16fc05d816d4..f058e131e6bb 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -45,10 +45,15 @@ struct mnt_namespace;
+ #define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
+ 				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
+ 				 | MNT_READONLY)
++#define MNT_ATIME_MASK (MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME )
+ 
+ 
+ #define MNT_INTERNAL	0x4000
+ 
++#define MNT_LOCK_ATIME		0x040000
++#define MNT_LOCK_NOEXEC		0x080000
++#define MNT_LOCK_NOSUID		0x100000
++#define MNT_LOCK_NODEV		0x200000
+ #define MNT_LOCK_READONLY	0x400000
+ 
+ struct vfsmount {
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+1.9.1
+
