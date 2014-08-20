@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbaHTRbo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 13:31:44 -0400
-Received: from omr2.cc.vt.edu ([198.82.141.100]:56809 "EHLO omr2.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaHTRbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 13:31:43 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Ari Sundholm <asundhol@cs.hut.fi>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: [PATCH] Revert "platform/x86/toshiba-apci.c possible bad if test?"
-In-Reply-To: Your message of "Wed, 20 Aug 2014 20:03:26 +0300."
-             <alpine.GSO.2.00.1408201955290.8292@hutcs>
-From: Valdis.Kletnieks@vt.edu
-References: <alpine.GSO.2.00.1408201955290.8292@hutcs>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1408555890_2096P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 20 Aug 2014 13:31:30 -0400
-Message-ID: <11648.1408555890@turing-police.cc.vt.edu>
+	id S1752526AbaHTRcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 13:32:22 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:47941 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564AbaHTRcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 13:32:20 -0400
+Date: Wed, 20 Aug 2014 20:32:11 +0300
+From: Andreea Bernat <bernat.ada@gmail.com>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] carl9170: Replace rcu_dereference() with
+ rcu_access_pointer()
+Message-ID: <20140820173210.GA18892@ada>
+References: <20140817104806.GA14533@ada>
+ <3029076.uaUkTd8nru@debian64>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3029076.uaUkTd8nru@debian64>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1408555890_2096P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Aug 18, 2014 at 09:29:36PM +0200, Christian Lamparter wrote:
+> On Sunday, August 17, 2014 01:48:07 PM Andreea-Cristina Bernat wrote:
+> > The rcu_dereference() call is used directly in a condition.
+> > Since its return value is never dereferenced it is recommended to use
+> > "rcu_access_pointer()" instead of "rcu_dereference()".
+> > Therefore, this patch makes the replacement.
+> > [...]
+> > Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> > ---
+> >  drivers/net/wireless/ath/carl9170/main.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
+> > index f8ded84..12018ff 100644
+> > --- a/drivers/net/wireless/ath/carl9170/main.c
+> > +++ b/drivers/net/wireless/ath/carl9170/main.c
+> > @@ -1431,7 +1431,7 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+> >  			return -EOPNOTSUPP;
+> >  
+> >  		rcu_read_lock();
+> > -		if (rcu_dereference(sta_info->agg[tid])) {
+> > +		if (rcu_access_pointer(sta_info->agg[tid])) {
+> >  			rcu_read_unlock();
+> >  			return -EBUSY;
+> >  		}
+> 
+> There's more. The check does not do a whole lot. I think *it* [the check] and the
+> rcu_read_[un]lock [and the return -EBUSY] can be removed completely from the
+> IEEE80211_AMPDU_TX_START code-path in carl9170_op_ampdu_action.
+> 
+> It would be awesome, if you could you make a patch which removes this 
+> unneeded cosmic-ray-protection check :-) .
 
-On Wed, 20 Aug 2014 20:03:26 +0300, Ari Sundholm said:
-> From: Ari Sundholm <ari@tuxera.com>
->
-> This reverts commit bdc3ae7221213963f438faeaa69c8b4a2195f491.
+Could you tell me why you think that those lines have to be removed?
+I would like to fully understand this before I remove them.
 
-> +	if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
->  		return -EINVAL;
+Thank you,
+Andreea
 
-I'm not convinced that's right either.  If we come in and mode == 1, then
-the mode != 2 is true, and yoinks...
-
-I think this wanted to be   sscanf() != 1 || ! (mode == 2 || mode == 1)
-
-I'll spin a patch against the reverted version if desired.
-
---==_Exmh_1408555890_2096P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU/TbcgdmEQWDXROgAQLGqA//UX72WK2I8d8z633JPstX2ryZGM93m4J0
-CtZfqje9Wypcxs/CceuIvQ93uwbui4L0aWPvXt8HWuBuakLJxoPPkWY4GBZSP/4f
-w8Y7G84EyAGXQAGd/dIOWWgrYL+AOSgPoxeWZnvFr/hZmutPGQB/uKMFHNFTpubL
-MtXu3PU/FONLZdWPoGWKn867Jype5utEr0jDdiFP4sICv64hLXgQJtOcNZChAqul
-Xijz/QeRgdD6raI4VoSRJfftrYAabDmexYU8Z8oLINpODKMzqvIojMjJYRlkKTgf
-039qsTP3N4G1M9GQW/XgkSezo/fhBiQYGdCBZUvWLspjBhJsmKVIg6cysMNk56hH
-VzbcwEQLl4zuILJ6wdZ1SZJuON4O7bSlPL7oQi+sUsADrTCksnazg2nxT4s6BUAz
-HBbacBJ+RVKojphE+CK34ufDDxGd1tnPXmm+bAv3u8jsFU3lWj3MVuX+x0LEVP4z
-46kVjvh3oCjIgvXVglhB3n/Y5WgyLvYBq8PgHXS5Gm0L6fCA5B1pKTuyXUuAbUxz
-n0vD92ZvjM1fGhENnD4ReTqpF9ewenurGOLN4LPoJyku0Y/4wJyUqtyfjjeWXRYt
-gFfLwyetSfE1aPJ/ubC7G/oeBPkWHKxIDfSpcgU14ELFPgt9OUAuNFX4sC9U3CQ0
-iS/Tsd+KLgk=
-=fvAC
------END PGP SIGNATURE-----
-
---==_Exmh_1408555890_2096P--
+> 
+> Thanks
+> Christian
