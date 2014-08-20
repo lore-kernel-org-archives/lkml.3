@@ -1,195 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaHTLs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:48:28 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59025 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752620AbaHTLoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:11 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Jacob Keller <jacob.e.keller@intel.com>,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Alexander Duyck <alexander.duyck@intel.com>,
-        Hyong-Youb Kim <hykim@myri.com>, Amir Vadai <amirv@mellanox.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 078/104] ixgbe: fix qv_lock_napi call in ixgbe_napi_disable_all
-Date: Wed, 20 Aug 2014 13:43:41 +0200
-Message-Id: <0977e9849d561464d21afb92b9f3746588a19c4f.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	id S1753156AbaHTLsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:48:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41763 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753131AbaHTLss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:48:48 -0400
+Date: Wed, 20 Aug 2014 13:49:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jiri Pirko <jiri@resnulli.us>
+Cc: Pankaj Gupta <pagupta@redhat.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, davem@davemloft.net, jasowang@redhat.com,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
+        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
+        xii@google.com, stephen@networkplumber.org
+Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
+ module_param
+Message-ID: <20140820114907.GA17943@redhat.com>
+References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
+ <1408369040-1216-3-git-send-email-pagupta@redhat.com>
+ <20140820105817.GB1916@nanopsycho.orion>
+ <20140820111724.GE17371@redhat.com>
+ <20140820114620.GC1916@nanopsycho.orion>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820114620.GC1916@nanopsycho.orion>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+On Wed, Aug 20, 2014 at 01:46:20PM +0200, Jiri Pirko wrote:
+> Wed, Aug 20, 2014 at 01:17:24PM CEST, mst@redhat.com wrote:
+> >On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
+> >> Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
+> >> > This patch publishes maximum number of tun/tap queues allocated as a
+> >> > read_only module parameter which a user space application like libvirt
+> >> > can make use of to limit maximum number of queues. Value of read_only
+> >> > module parameter can be writable only at module load time. If no value is set
+> >> > at module load time a default value 256 is used which is equal to maximum number
+> >> > of vCPUS allowed by KVM.
+> >> >
+> >> > Administrator can specify maximum number of queues only at the driver
+> >> > module load time.
+> >> >
+> >> >Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> >> >---
+> >> > drivers/net/tun.c |   13 +++++++++++--
+> >> > 1 files changed, 11 insertions(+), 2 deletions(-)
+> >> >
+> >> >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> >> >index acaaf67..1f518e2 100644
+> >> >--- a/drivers/net/tun.c
+> >> >+++ b/drivers/net/tun.c
+> >> >@@ -119,6 +119,9 @@ struct tap_filter {
+> >> > 
+> >> > #define TUN_FLOW_EXPIRE (3 * HZ)
+> >> > 
+> >> >+static int max_tap_queues = MAX_TAP_QUEUES;
+> >> >+module_param(max_tap_queues, int, S_IRUGO);
+> >> 
+> >> Please do not introduce new module paramaters. Please other ways to
+> >> interchange values with userspace.
+> >
+> >I suggested this initially, but thinking more about it, I agree.
+> >
+> >It's a global limit (necessary to limit memory utilization by
+> >userspace), but it should be possible to change it
+> >after module load.
+> >
+> >Additionally, userspace that has the FD should be able to
+> >retrieve the value without guessing that the FD is
+> >for the tun device (and not e.g. macvtap).
+> >To retrieve the value, an ioctl is probably the
+> >cleanest approach.
+> >
+> >To set it, how about a sysctl? I think the limit can also apply to
+> >all devices, not just tun.
+> 
+> Or netlink?
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Are there examples of netlink being used to set global defaults
+as opposed to per-device parameters?
 
-===============
-
-commit 27d9ce4fd0e2e75c2907f6d3dc0487012a3e4298 upstream.
-
-ixgbe_napi_disable_all calls napi_disable on each queue, however the busy
-polling code introduced a local_bh_disable()d context around the napi_disable.
-The original author did not realize that napi_disable might sleep, which would
-cause a sleep while atomic BUG. In addition, on a single processor system, the
-ixgbe_qv_lock_napi loop shouldn't have to mdelay. This patch adds an
-ixgbe_qv_disable along with a new IXGBE_QV_STATE_DISABLED bit, which it uses to
-indicate to the poll and napi routines that the q_vector has been disabled. Now
-the ixgbe_napi_disable_all function will wait until all pending work has been
-finished and prevent any future work from being started.
-
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Cc: Alexander Duyck <alexander.duyck@intel.com>
-Cc: Hyong-Youb Kim <hykim@myri.com>
-Cc: Amir Vadai <amirv@mellanox.com>
-Cc: Dmitry Kravkov <dmitry@broadcom.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/net/ethernet/intel/ixgbe/ixgbe.h      | 48 ++++++++++++++++++++-------
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |  6 ++--
- 2 files changed, 38 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index 0ac6b11c6e4e..4506f8a15c8a 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -369,11 +369,13 @@ struct ixgbe_q_vector {
- #ifdef CONFIG_NET_RX_BUSY_POLL
- 	unsigned int state;
- #define IXGBE_QV_STATE_IDLE        0
--#define IXGBE_QV_STATE_NAPI	   1    /* NAPI owns this QV */
--#define IXGBE_QV_STATE_POLL	   2    /* poll owns this QV */
--#define IXGBE_QV_LOCKED (IXGBE_QV_STATE_NAPI | IXGBE_QV_STATE_POLL)
--#define IXGBE_QV_STATE_NAPI_YIELD  4    /* NAPI yielded this QV */
--#define IXGBE_QV_STATE_POLL_YIELD  8    /* poll yielded this QV */
-+#define IXGBE_QV_STATE_NAPI	   1     /* NAPI owns this QV */
-+#define IXGBE_QV_STATE_POLL	   2     /* poll owns this QV */
-+#define IXGBE_QV_STATE_DISABLED	   4     /* QV is disabled */
-+#define IXGBE_QV_OWNED (IXGBE_QV_STATE_NAPI | IXGBE_QV_STATE_POLL)
-+#define IXGBE_QV_LOCKED (IXGBE_QV_OWNED | IXGBE_QV_STATE_DISABLED)
-+#define IXGBE_QV_STATE_NAPI_YIELD  8     /* NAPI yielded this QV */
-+#define IXGBE_QV_STATE_POLL_YIELD  16    /* poll yielded this QV */
- #define IXGBE_QV_YIELD (IXGBE_QV_STATE_NAPI_YIELD | IXGBE_QV_STATE_POLL_YIELD)
- #define IXGBE_QV_USER_PEND (IXGBE_QV_STATE_POLL | IXGBE_QV_STATE_POLL_YIELD)
- 	spinlock_t lock;
-@@ -394,7 +396,7 @@ static inline void ixgbe_qv_init_lock(struct ixgbe_q_vector *q_vector)
- static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- {
- 	int rc = true;
--	spin_lock(&q_vector->lock);
-+	spin_lock_bh(&q_vector->lock);
- 	if (q_vector->state & IXGBE_QV_LOCKED) {
- 		WARN_ON(q_vector->state & IXGBE_QV_STATE_NAPI);
- 		q_vector->state |= IXGBE_QV_STATE_NAPI_YIELD;
-@@ -405,7 +407,7 @@ static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- 	} else
- 		/* we don't care if someone yielded */
- 		q_vector->state = IXGBE_QV_STATE_NAPI;
--	spin_unlock(&q_vector->lock);
-+	spin_unlock_bh(&q_vector->lock);
- 	return rc;
- }
- 
-@@ -413,14 +415,15 @@ static inline bool ixgbe_qv_lock_napi(struct ixgbe_q_vector *q_vector)
- static inline bool ixgbe_qv_unlock_napi(struct ixgbe_q_vector *q_vector)
- {
- 	int rc = false;
--	spin_lock(&q_vector->lock);
-+	spin_lock_bh(&q_vector->lock);
- 	WARN_ON(q_vector->state & (IXGBE_QV_STATE_POLL |
- 			       IXGBE_QV_STATE_NAPI_YIELD));
- 
- 	if (q_vector->state & IXGBE_QV_STATE_POLL_YIELD)
- 		rc = true;
--	q_vector->state = IXGBE_QV_STATE_IDLE;
--	spin_unlock(&q_vector->lock);
-+	/* will reset state to idle, unless QV is disabled */
-+	q_vector->state &= IXGBE_QV_STATE_DISABLED;
-+	spin_unlock_bh(&q_vector->lock);
- 	return rc;
- }
- 
-@@ -451,7 +454,8 @@ static inline bool ixgbe_qv_unlock_poll(struct ixgbe_q_vector *q_vector)
- 
- 	if (q_vector->state & IXGBE_QV_STATE_POLL_YIELD)
- 		rc = true;
--	q_vector->state = IXGBE_QV_STATE_IDLE;
-+	/* will reset state to idle, unless QV is disabled */
-+	q_vector->state &= IXGBE_QV_STATE_DISABLED;
- 	spin_unlock_bh(&q_vector->lock);
- 	return rc;
- }
-@@ -459,9 +463,23 @@ static inline bool ixgbe_qv_unlock_poll(struct ixgbe_q_vector *q_vector)
- /* true if a socket is polling, even if it did not get the lock */
- static inline bool ixgbe_qv_ll_polling(struct ixgbe_q_vector *q_vector)
- {
--	WARN_ON(!(q_vector->state & IXGBE_QV_LOCKED));
-+	WARN_ON(!(q_vector->state & IXGBE_QV_OWNED));
- 	return q_vector->state & IXGBE_QV_USER_PEND;
- }
-+
-+/* false if QV is currently owned */
-+static inline bool ixgbe_qv_disable(struct ixgbe_q_vector *q_vector)
-+{
-+	int rc = true;
-+	spin_lock_bh(&q_vector->lock);
-+	if (q_vector->state & IXGBE_QV_OWNED)
-+		rc = false;
-+	q_vector->state |= IXGBE_QV_STATE_DISABLED;
-+	spin_unlock_bh(&q_vector->lock);
-+
-+	return rc;
-+}
-+
- #else /* CONFIG_NET_RX_BUSY_POLL */
- static inline void ixgbe_qv_init_lock(struct ixgbe_q_vector *q_vector)
- {
-@@ -491,6 +509,12 @@ static inline bool ixgbe_qv_ll_polling(struct ixgbe_q_vector *q_vector)
- {
- 	return false;
- }
-+
-+static inline bool ixgbe_qv_disable(struct ixgbe_q_vector *q_vector)
-+{
-+	return true;
-+}
-+
- #endif /* CONFIG_NET_RX_BUSY_POLL */
- 
- #ifdef CONFIG_IXGBE_HWMON
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index bf046e14ceb5..a178a9caa763 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -3893,15 +3893,13 @@ static void ixgbe_napi_disable_all(struct ixgbe_adapter *adapter)
- {
- 	int q_idx;
- 
--	local_bh_disable(); /* for ixgbe_qv_lock_napi() */
- 	for (q_idx = 0; q_idx < adapter->num_q_vectors; q_idx++) {
- 		napi_disable(&adapter->q_vector[q_idx]->napi);
--		while (!ixgbe_qv_lock_napi(adapter->q_vector[q_idx])) {
-+		while (!ixgbe_qv_disable(adapter->q_vector[q_idx])) {
- 			pr_info("QV %d locked\n", q_idx);
--			mdelay(1);
-+			usleep_range(1000, 20000);
- 		}
- 	}
--	local_bh_enable();
- }
- 
- #ifdef CONFIG_IXGBE_DCB
--- 
-2.0.4
-
+> >
+> >-- 
+> >MST
