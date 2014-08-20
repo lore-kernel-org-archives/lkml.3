@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaHTMDK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:03:10 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58945 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752550AbaHTLoK (ORCPT
+	id S1754149AbaHTMFe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:05:34 -0400
+Received: from gw02.mail.saunalahti.fi ([195.197.172.116]:55806 "EHLO
+	gw02.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404AbaHTMFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:44:10 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Neal Cardwell <ncardwell@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Doug Leith <doug.leith@nuim.ie>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 037/104] tcp: Fix integer-overflow in TCP vegas
-Date: Wed, 20 Aug 2014 13:43:00 +0200
-Message-Id: <3ef99737f145fce80734b1e868b77422676489d7.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 08:05:31 -0400
+Date: Wed, 20 Aug 2014 15:05:13 +0300
+From: Juha-Matti Tilli <juha-matti.tilli@iki.fi>
+To: "edubezval@gmail.com" <edubezval@gmail.com>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Juha-Matti Tilli <jtilli@nvidia.com>
+Subject: Re: [PATCH v4 4/4] thermal: Add Tegra SOCTHERM thermal management
+ driver
+Message-ID: <20140820120513.GA76825@sandfort.unics.fi>
+References: <1408100430-29461-1-git-send-email-mperttunen@nvidia.com>
+ <20140819140955.GA50475@sandfort.unics.fi>
+ <CAC-25o-bLeDYpTgPy5UOvBGJ7k7HJkBM3YcCRPSZHBkyxugULA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAC-25o-bLeDYpTgPy5UOvBGJ7k7HJkBM3YcCRPSZHBkyxugULA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+On Tue, Aug 19, 2014 at 10:33:13AM -0400, edubezval@gmail.com wrote:
+> > The temperature readings look sane and do vary with load, but I think
+> > they're a bit different than what NVIDIA's internal soc_therm driver
+> 
+> hmm..  Based on a single sample?
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+Now I have more than one sample. I wrote a test program to load the
+CONFIG2 registers with the values NVIDIA's internal driver sets and also
+with the values the patch sets. The difference on my development board
+is between 3 and 4 degrees C, with the patch giving hotter readings than
+the downstream driver. This is repeatable; I have made about ten test
+runs and every time I can observe the difference.
 
-===============
+As a matter of fact, I believe there are two other bugs in the patch in
+addition to the --i error handling bug.
 
-[ Upstream commit 1f74e613ded11517db90b2bd57e9464d9e0fb161 ]
+Firstly, shifted_ft seems to be read from the wrong register. It should
+be read from FUSE_TSENSOR8_CALIB (and it's read from there in the
+downstream driver), but Mikko's code erroneously reads it from
+FUSE_SPARE_REALIGNMENT_REG_0. So, the downstream code has fields like
+this:
+FUSE_TSENSOR8_CALIB = zero-padding | shifted_ft | base_ft | base_cp
+FUSE_SPARE_REALIGNMENT_REG_0 = zero-padding | shifted_cp
 
-In vegas we do a multiplication of the cwnd and the rtt. This
-may overflow and thus their result is stored in a u64. However, we first
-need to cast the cwnd so that actually 64-bit arithmetic is done.
+While the patch has the fields like that:
+FUSE_TSENSOR8_CALIB = zero-padding | base_ft | base_cp
+FUSE_SPARE_REALIGNMENT_REG_0 = zero-padding | shifted_ft | zero-padding  shifted_cp
 
-Then, we need to do do_div to allow this to be used on 32-bit arches.
+Note the illogical zero-padding in the middle of
+FUSE_SPARE_REALIGNMENT_REG_0 according to the patch.
 
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Laight <David.Laight@ACULAB.COM>
-Cc: Doug Leith <doug.leith@nuim.ie>
-Fixes: 8d3a564da34e (tcp: tcp_vegas cong avoid fix)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- net/ipv4/tcp_vegas.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+As a result of that, the patch reads shifted_ft as 0 on my system even
+though it should read -2, which is the value the downstream driver
+reads. This also suggests that the patch is reading the incorrect
+location as it gets all zeroes. This is the major reason for the
+differing temperature readings between the downstream code and this
+driver.
 
-diff --git a/net/ipv4/tcp_vegas.c b/net/ipv4/tcp_vegas.c
-index 80fa2bfd7ede..c042e529a11e 100644
---- a/net/ipv4/tcp_vegas.c
-+++ b/net/ipv4/tcp_vegas.c
-@@ -218,7 +218,8 @@ static void tcp_vegas_cong_avoid(struct sock *sk, u32 ack, u32 in_flight)
- 			 * This is:
- 			 *     (actual rate in segments) * baseRTT
- 			 */
--			target_cwnd = tp->snd_cwnd * vegas->baseRTT / rtt;
-+			target_cwnd = (u64)tp->snd_cwnd * vegas->baseRTT;
-+			do_div(target_cwnd, rtt);
- 
- 			/* Calculate the difference between the window we had,
- 			 * and the window we would like to have. This quantity
--- 
-2.0.4
+Secondly, .tsample_ate should be 480, not 481.
 
+I communicated a patch to fix these issues to Mikko; he'll surely send a
+version 5 of the patch with these issues fixed back to these mailing
+lists.
+
+As Mikko already noticed, yet another difference is that
+div64_s64_precise is used in the downstream code instead of div_s64. I'm
+not sure if that should be included in the code: it would mean higher
+precision, but it would make the code more complicated. The difference
+between div64_s64_precise and div_s64 is anyway small so either way is
+fine with me.
+
+Other than these issues, the code has been both tested by me and
+reviewed by me and in my opinion it seems to have good code clarity and
+be a good addition to the kernel, once the --i bug, the .tsample_ate bug
+and the shifted_ft bug are fixed.
