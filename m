@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaHTREV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 13:04:21 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:65045 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467AbaHTREO (ORCPT
+	id S1752764AbaHTRFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 13:05:49 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41747 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752245AbaHTRE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 13:04:14 -0400
+	Wed, 20 Aug 2014 13:04:27 -0400
 From: mathieu.poirier@linaro.org
 To: linus.walleij@linaro.org, will.deacon@arm.com, linux@arm.linux.org.uk,
         00regkh@linuxfoundation.org
@@ -17,9 +17,9 @@ Cc: mathieu.poirier@linaro.org, pratikp@codeaurora.org, varshney@ti.com,
         robbelibobban@gmail.com, Tony.Armitstead@arm.com,
         daniel.thompson@linaro.org, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/11 v4] coresight: add CoreSight core layer framework
-Date: Wed, 20 Aug 2014 11:03:41 -0600
-Message-Id: <1408554231-24321-2-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 08/11 v4] coresight: adding documentation for coresight
+Date: Wed, 20 Aug 2014 11:03:48 -0600
+Message-Id: <1408554231-24321-9-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408554231-24321-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1408554231-24321-1-git-send-email-mathieu.poirier@linaro.org>
@@ -27,1280 +27,257 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratik Patel <pratikp@codeaurora.org>
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-CoreSight components are compliant with the ARM CoreSight
-architecture specification and can be connected in various
-topologies to suite a particular SoCs tracing needs. These trace
-components can generally be classified as sources, links and
-sinks. Trace data produced by one or more sources flows through
-the intermediate links connecting the source to the currently
-selected sink.
+Documentation for the coresight framework and drivers.
 
-CoreSight framework provides an interface for the CoreSight trace
-drivers to register themselves with. It's intended to build up a
-topological view of the CoreSight components and configure the
-right series of components on user input via debugfs.
-
-For eg., when enabling a source, framework builds up a path
-consisting of all the components connecting the source to the
-currently selected sink(s) and enables all of them.
-
-The framework also supports switching between available sinks
-and also provides status information to user space applications
-through the debugfs interface.
-
-Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
-Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/Kconfig.debug             |   9 +
- drivers/Makefile                   |   1 +
- drivers/amba/bus.c                 |   2 +-
- drivers/coresight/Makefile         |   9 +
- drivers/coresight/coresight-priv.h |  63 ++++
- drivers/coresight/coresight.c      | 669 +++++++++++++++++++++++++++++++++++++
- drivers/coresight/of_coresight.c   | 202 +++++++++++
- include/linux/amba/bus.h           |   1 +
- include/linux/coresight.h          | 206 ++++++++++++
- 9 files changed, 1161 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/Makefile
- create mode 100644 drivers/coresight/coresight-priv.h
- create mode 100644 drivers/coresight/coresight.c
- create mode 100644 drivers/coresight/of_coresight.c
- create mode 100644 include/linux/coresight.h
+ Documentation/trace/coresight.txt | 235 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 235 insertions(+)
+ create mode 100644 Documentation/trace/coresight.txt
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 8f90595..c04d0d9 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -1257,4 +1257,13 @@ config DEBUG_SET_MODULE_RONX
- 	  against certain classes of kernel exploits.
- 	  If in doubt, say "N".
- 
-+menuconfig CORESIGHT
-+	bool "CoreSight Tracing Support"
-+	select ARM_AMBA
-+	help
-+	  This framework provides a kernel interface for the CoreSight debug
-+	  and trace drivers to register themselves with. It's intended to build
-+	  a topological view of the CoreSight components based on a DT
-+	  specification and configure the right serie of components when a
-+	  trace source gets enabled.
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index f98b50d..fb58a94 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -158,3 +158,4 @@ obj-$(CONFIG_NTB)		+= ntb/
- obj-$(CONFIG_FMC)		+= fmc/
- obj-$(CONFIG_POWERCAP)		+= powercap/
- obj-$(CONFIG_MCB)		+= mcb/
-+obj-$(CONFIG_CORESIGHT)		+= coresight/
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 3cf61a1..131258b 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -327,7 +327,7 @@ int amba_device_add(struct amba_device *dev, struct resource *parent)
- 
- 		amba_put_disable_pclk(dev);
- 
--		if (cid == AMBA_CID)
-+		if (cid == AMBA_CID || cid == CORESIGHT_CID)
- 			dev->periphid = pid;
- 
- 		if (!dev->periphid)
-diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+diff --git a/Documentation/trace/coresight.txt b/Documentation/trace/coresight.txt
 new file mode 100644
-index 0000000..fef87bc
+index 0000000..a88e2aa
 --- /dev/null
-+++ b/drivers/coresight/Makefile
-@@ -0,0 +1,9 @@
-+#
-+# Makefile for CoreSight drivers.
-+#
-+obj-$(CONFIG_CORESIGHT) += coresight.o
-+obj-$(CONFIG_OF) += of_coresight.o
-+obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
-+					   coresight-etb10.o coresight-funnel.o \
-+					   coresight-replicator.o
-+obj-$(CONFIG_CORESIGHT_SOURCE_ETM3X) += coresight-etm3x.o coresight-etm-cp14.o
-diff --git a/drivers/coresight/coresight-priv.h b/drivers/coresight/coresight-priv.h
-new file mode 100644
-index 0000000..83172c4
---- /dev/null
-+++ b/drivers/coresight/coresight-priv.h
-@@ -0,0 +1,63 @@
-+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++++ b/Documentation/trace/coresight.txt
+@@ -0,0 +1,235 @@
++		Coresight - HW Assisted Tracing on ARM
++		======================================
 +
-+#ifndef _CORESIGHT_PRIV_H
-+#define _CORESIGHT_PRIV_H
++   Author:   Mathieu Poirier <mathieu.poirier@linaro.org>
++   Date:     August 15th 2014
 +
-+#include <linux/bitops.h>
-+#include <linux/io.h>
-+#include <linux/coresight.h>
++Introduction
++------------
 +
-+/*
-+ * Coresight management registers (0xf00-0xfcc)
-+ * 0xfa0 - 0xfa4: Management	registers in PFTv1.0
-+ *		  Trace		registers in PFTv1.1
-+ */
-+#define CORESIGHT_ITCTRL	0xf00
-+#define CORESIGHT_CLAIMSET	0xfa0
-+#define CORESIGHT_CLAIMCLR	0xfa4
-+#define CORESIGHT_LAR		0xfb0
-+#define CORESIGHT_LSR		0xfb4
-+#define CORESIGHT_AUTHSTATUS	0xfb8
-+#define CORESIGHT_DEVID		0xfc8
-+#define CORESIGHT_DEVTYPE	0xfcc
++Coresight is an umbrella of technologies allowing for the debugging of ARM
++based SoC.  It includes solutions for JTAG and HW assisted tracing.  This
++document is concerned with the latter.
 +
-+#define TIMEOUT_US		100
-+#define BMVAL(val, lsb, msb)	((val & GENMASK(msb, lsb)) >> lsb)
++HW assisted tracing is becoming increasingly useful when dealing with systems
++that have many SoCs and other components like GPU and DMA engines.  ARM has
++developed an HW assisted tracing solution by means of different components, each
++being added to a design at systhesis time to cater to specific tracing needs.
++Compoments are generally categorised as source, link and sinks and are
++discovered using the AMBA bus.
 +
-+static inline void CS_LOCK(void __iomem *addr)
-+{
-+	do {
-+		/* wait for things to settle */
-+		mb();
-+		writel_relaxed(0x0, addr + CORESIGHT_LAR);
-+	} while (0);
-+}
++"Sources" generate a compressed stream representing the processor instruction
++path based on tracing scenarios as configured by users.  From there the stream
++flows through the coresight system (via ATB bus) using links that are connecting
++the emanating source to a sink(s).  Sinks serve as endpoints to the coresight
++implementation, either storing the compressed stream in a memory buffer or
++creating an interface to the outside world where data can be transfered to a
++host without fear of filling up the onboard coresight memory buffer.
 +
-+static inline void CS_UNLOCK(void __iomem *addr)
-+{
-+	do {
-+		writel_relaxed(CORESIGHT_UNLOCK, addr + CORESIGHT_LAR);
-+		/* make sure eveyone has seen this */
-+		mb();
-+	} while (0);
-+}
 +
-+#ifdef CONFIG_CORESIGHT_SOURCE_ETM3X
-+extern unsigned int etm_readl_cp14(u32 off);
-+extern void etm_writel_cp14(u32 val, u32 off);
-+#else
-+static inline unsigned int etm_readl_cp14(u32 off) { return 0; }
-+static inline void etm_writel_cp14(u32 val, u32 off) {}
-+#endif
++Acronyms and Classification
++---------------------------
 +
-+#endif
-diff --git a/drivers/coresight/coresight.c b/drivers/coresight/coresight.c
-new file mode 100644
-index 0000000..fb5e61e
---- /dev/null
-+++ b/drivers/coresight/coresight.c
-@@ -0,0 +1,669 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++Acronyms:
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/device.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/export.h>
-+#include <linux/slab.h>
-+#include <linux/semaphore.h>
-+#include <linux/clk.h>
-+#include <linux/coresight.h>
-+#include <linux/of_platform.h>
-+#include <linux/debugfs.h>
-+#include <linux/delay.h>
++PTM:     Program Trace Macrocell
++ETM:     Embedded Trace Macrocell
++STM:     System trace Macrocell
++ETB:     Embedded Trace Buffer
++ITM:     Instrumentation Trace Macrocell
++TPIU:    Trace Port Interface Unit
++TMC-ETR: Trace Memory Controller, configured as Embedded Trace Router
++TMC-ETF: Trace Memory Controller, configured as Embedded Trace FIFO
++CTI:     Cross Trigger Interface
 +
-+#include "coresight-priv.h"
++Classification:
 +
-+struct dentry *cs_debugfs_parent = NULL;
++Source:
++   ETMv3.x ETMv4, PTMv1.0, PTMv1.1, STM, STM500, ITM
++Link:
++   Funnel, replicator (intelligent or not), TMC-ETR
++Sinks:
++   ETBv1.0, ETB1.1, TPIU, TMC-ETF
++Misc:
++   CTI
 +
-+static LIST_HEAD(coresight_orph_conns);
-+static LIST_HEAD(coresight_devs);
-+static DEFINE_SEMAPHORE(coresight_semaphore);
 +
-+static int coresight_source_is_unique(struct coresight_device *csdev)
-+{
-+	struct coresight_device *cd;
-+	int trace_id = source_ops(csdev)->trace_id(csdev);
++Device Tree Bindings
++----------------------
 +
-+	/* this shouldn't happen */
-+	if (trace_id < 0)
-+		return 0;
++See Documentation/devicetree/bindings/arm/coresight.txt for details.
 +
-+	/* circle through all known components looking for sources */
-+	list_for_each_entry(cd, &coresight_devs, dev_link) {
-+		/* no need to care about oneself and components that are not
-+		 * sources or not enabled
-+		 */
-+		if (cd == csdev || !cd->enable ||
-+		    cd->type != CORESIGHT_DEV_TYPE_SOURCE)
-+			continue;
++As of this writing drivers for ITM, STMs and CTIs are not provided but are
++expected to be added as the solution matures.
 +
-+		/* all you need is one */
-+		if (trace_id == source_ops(cd)->trace_id(cd))
-+			return 0;
-+	}
 +
-+	return 1;
-+}
++Framework and implementation
++----------------------------
 +
-+static int coresight_find_link_inport(struct coresight_device *csdev)
-+{
-+	int i;
-+	struct coresight_device *parent;
-+	struct coresight_connection *conn;
++The coresight framework provides a central point to represent, configure and
++manage coresight devices on a platform.  Any coresight compliant device can
++register with the framework for as long as they use the right APIs:
 +
-+	parent = container_of(csdev->path_link.next, struct coresight_device,
-+			     path_link);
-+	for (i = 0; i < parent->nr_conns; i++) {
-+		conn = &parent->conns[i];
-+		if (conn->child_dev == csdev)
-+			return conn->child_port;
-+	}
++struct coresight_device *coresight_register(struct coresight_desc *desc);
++void coresight_unregister(struct coresight_device *csdev);
 +
-+	pr_err("coresight: couldn't find inport, parent: %d, child: %d\n",
-+	       parent->id, csdev->id);
-+	return 0;
-+}
++Both functions are taking a "struct coresight_device *csdev" and register or
++unregister the device with the core framework.  If everything goes well
++the new devices will show up under /sys/kernel/debug/coresight/, as showns
++here for a TC2 platform:
 +
-+static int coresight_find_link_outport(struct coresight_device *csdev)
-+{
-+	int i;
-+	struct coresight_device *child;
-+	struct coresight_connection *conn;
++root@linaro-developer:~# ls /sys/kernel/debug/coresight/
++00000000.replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
++20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
++root@linaro-developer:~#
 +
-+	child = container_of(csdev->path_link.prev, struct coresight_device,
-+			      path_link);
-+	for (i = 0; i < csdev->nr_conns; i++) {
-+		conn = &csdev->conns[i];
-+		if (conn->child_dev == child)
-+			return conn->outport;
-+	}
-+
-+	pr_err("coresight: couldn't find outport, parent: %d, child: %d\n",
-+	       csdev->id, child->id);
-+	return 0;
-+}
-+
-+static int coresight_enable_sink(struct coresight_device *csdev)
-+{
-+	int ret;
-+
-+	if (csdev->refcnt.sink_refcnt == 0) {
-+		if (sink_ops(csdev)->enable) {
-+			ret = sink_ops(csdev)->enable(csdev);
-+			if (ret)
-+				goto err;
-+			csdev->enable = true;
-+		}
-+	}
-+	csdev->refcnt.sink_refcnt++;
-+
-+	return 0;
-+err:
-+	return ret;
-+}
-+
-+static void coresight_disable_sink(struct coresight_device *csdev)
-+{
-+	if (csdev->refcnt.sink_refcnt == 1) {
-+		if (sink_ops(csdev)->disable) {
-+			sink_ops(csdev)->disable(csdev);
-+			csdev->enable = false;
-+		}
-+	}
-+	csdev->refcnt.sink_refcnt--;
-+}
-+
-+static int coresight_enable_link(struct coresight_device *csdev)
-+{
-+	int ret;
-+	int link_subtype;
-+	int refport, inport, outport;
-+
-+	inport = coresight_find_link_inport(csdev);
-+	outport = coresight_find_link_outport(csdev);
-+
-+	link_subtype = csdev->subtype.link_subtype;
-+	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+		refport = inport;
-+	else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+		refport = outport;
-+	else
-+		refport = 0;
-+
-+	if (csdev->refcnt.link_refcnts[refport] == 0) {
-+		if (link_ops(csdev)->enable) {
-+			ret = link_ops(csdev)->enable(csdev, inport, outport);
-+			if (ret)
-+				goto err;
-+			csdev->enable = true;
-+		}
-+	}
-+	csdev->refcnt.link_refcnts[refport]++;
-+
-+	return 0;
-+err:
-+	return ret;
-+}
-+
-+static void coresight_disable_link(struct coresight_device *csdev)
-+{
-+	int link_subtype;
-+	int refport, inport, outport;
-+
-+	inport = coresight_find_link_inport(csdev);
-+	outport = coresight_find_link_outport(csdev);
-+
-+	link_subtype = csdev->subtype.link_subtype;
-+	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+		refport = inport;
-+	else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+		refport = outport;
-+	else
-+		refport = 0;
-+
-+	if (csdev->refcnt.link_refcnts[refport] == 1) {
-+		if (link_ops(csdev)->disable) {
-+			link_ops(csdev)->disable(csdev, inport, outport);
-+			csdev->enable = false;
-+		}
-+	}
-+	csdev->refcnt.link_refcnts[refport]--;
-+}
-+
-+static int coresight_enable_source(struct coresight_device *csdev)
-+{
-+	int ret = -1;
-+
-+	if (!coresight_source_is_unique(csdev)) {
-+		pr_warn("coresight: traceID %d not unique\n",
-+			   source_ops(csdev)->trace_id(csdev));
-+		goto err;
-+	}
-+
-+	if (csdev->refcnt.source_refcnt == 0) {
-+		if (source_ops(csdev)->enable) {
-+			ret = source_ops(csdev)->enable(csdev);
-+			if (ret)
-+				goto err;
-+			csdev->enable = true;
-+			ret = 0;
-+		}
-+	}
-+	csdev->refcnt.source_refcnt++;
-+
-+err:
-+	return ret;
-+}
-+
-+static void coresight_disable_source(struct coresight_device *csdev)
-+{
-+	if (csdev->refcnt.source_refcnt == 1) {
-+		if (source_ops(csdev)->disable) {
-+			source_ops(csdev)->disable(csdev);
-+			csdev->enable = false;
-+		}
-+	}
-+	csdev->refcnt.source_refcnt--;
-+}
-+
-+static int coresight_enable_path(struct list_head *path)
-+{
-+	int ret = 0;
-+	struct coresight_device *cd;
-+
-+	list_for_each_entry(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			ret = coresight_enable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			/* dont' enable the source just yet - this needs to
-+			 * happen at the very end when all links and sink
-+			 * along the path have been configured properly.
-+			 */
-+			;
-+		} else {
-+			ret = coresight_enable_link(cd);
-+		}
-+		if (ret)
-+			goto err;
-+	}
-+	return 0;
-+err:
-+	list_for_each_entry_continue_reverse(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			coresight_disable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			;
-+		} else {
-+			coresight_disable_link(cd);
-+		}
-+	}
-+	return ret;
-+}
-+
-+static int coresight_disable_path(struct list_head *path)
-+{
-+	struct coresight_device *cd;
-+
-+	list_for_each_entry_reverse(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			coresight_disable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			/* the source has already been stopped, no need
-+			 * to do it again here.
-+			 */
-+			;
-+		} else {
-+			coresight_disable_link(cd);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int coresight_build_paths(struct coresight_device *csdev,
-+				 struct list_head *path,
-+				 bool enable)
-+{
-+	int i, ret = -1;
-+	struct coresight_connection *conn;
-+
-+	list_add(&csdev->path_link, path);
-+
-+	if (csdev->type == CORESIGHT_DEV_TYPE_SINK && csdev->activated) {
-+		if (enable)
-+			ret = coresight_enable_path(path);
-+		else
-+			ret = coresight_disable_path(path);
-+	} else {
-+		for (i = 0; i < csdev->nr_conns; i++) {
-+			conn = &csdev->conns[i];
-+			if (coresight_build_paths(conn->child_dev,
-+						    path, enable) == 0)
-+				ret = 0;
-+		}
-+	}
-+
-+	if (list_first_entry(path, struct coresight_device, path_link) != csdev)
-+		pr_err("coresight: wrong device in %s\n", __func__);
-+
-+	list_del(&csdev->path_link);
-+	return ret;
-+}
-+
-+int coresight_enable(struct coresight_device *csdev)
-+{
-+	int ret = 0;
-+	LIST_HEAD(path);
-+
-+	WARN_ON(IS_ERR_OR_NULL(csdev));
-+
-+	down(&coresight_semaphore);
-+	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
-+		ret = -EINVAL;
-+		pr_err("coresight: wrong device type in %s\n", __func__);
-+		goto out;
-+	}
-+	if (csdev->enable)
-+		goto out;
-+
-+	if (coresight_build_paths(csdev, &path, true)) {
-+		pr_err("coresight: building path(s) failed\n");
-+		goto out;
-+	}
-+
-+	if (coresight_enable_source(csdev))
-+		pr_err("coresight: source enable failed\n");
-+out:
-+	up(&coresight_semaphore);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(coresight_enable);
-+
-+void coresight_disable(struct coresight_device *csdev)
-+{
-+	LIST_HEAD(path);
-+
-+	WARN_ON(IS_ERR_OR_NULL(csdev));
-+
-+	down(&coresight_semaphore);
-+	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
-+		pr_err("coresight: wrong device type in %s\n", __func__);
-+		goto out;
-+	}
-+	if (!csdev->enable)
-+		goto out;
-+
-+	coresight_disable_source(csdev);
-+	if (coresight_build_paths(csdev, &path, false))
-+		pr_err("coresight: releasing path(s) failed\n");
-+
-+out:
-+	up(&coresight_semaphore);
-+}
-+EXPORT_SYMBOL_GPL(coresight_disable);
-+
-+static ssize_t debugfs_active_get(void *data, u64 *val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	*val = csdev->activated;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_active_set(void *data, u64 val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	val ? (csdev->activated = 1) : (csdev->activated = 0);
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_active, "active",
-+			S_IRUGO | S_IWUSR, debugfs_active_get,
-+			debugfs_active_set, "%llx\n");
-+
-+static ssize_t debugfs_enable_get(void *data, u64 *val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	*val = csdev->enable;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_enable_set(void *data, u64 val)
-+{
-+	struct coresight_device *csdev = data;
-+
-+	if (val)
-+		return coresight_enable(csdev);
-+	else
-+		coresight_disable(csdev);
-+
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_enable, "enable",
-+			S_IRUGO | S_IWUSR, debugfs_enable_get,
-+			debugfs_enable_set, "%llx\n");
-+
-+
-+static const struct coresight_ops_entry *coresight_grps_sink[] = {
-+	&debugfs_active_entry,
-+	NULL,
-+};
-+
-+static const struct coresight_ops_entry *coresight_grps_source[] = {
-+	&debugfs_enable_entry,
-+	NULL,
-+};
-+
-+struct coresight_group_entries {
-+	const char *name;
-+	const struct coresight_ops_entry **entries;
-+};
-+
-+struct coresight_group_entries coresight_debugfs_entries[] = {
-+	{
-+		.name = "none",
-+	},
-+	{
-+		.name = "sink",
-+		.entries = coresight_grps_sink,
-+	},
-+	{
-+		.name = "link",
-+	},
-+	{
-+		.name = "linksink",
-+	},
-+	{
-+		.name = "source",
-+		.entries = coresight_grps_source,
-+	},
-+};
-+
-+static void coresight_device_release(struct device *dev)
-+{
-+	struct coresight_device *csdev = to_coresight_device(dev);
-+
-+	kfree(csdev);
-+}
-+
-+static void coresight_fixup_orphan_conns(struct coresight_device *csdev)
-+{
-+	struct coresight_connection *conn, *temp;
-+
-+	list_for_each_entry_safe(conn, temp, &coresight_orph_conns, link) {
-+		if (conn->child_id == csdev->id) {
-+			conn->child_dev = csdev;
-+			list_del(&conn->link);
-+		}
-+	}
-+}
-+
-+static void coresight_fixup_device_conns(struct coresight_device *csdev)
-+{
-+	int i;
-+	struct coresight_device *cd;
-+	bool found;
-+
-+	for (i = 0; i < csdev->nr_conns; i++) {
-+		found = false;
-+		list_for_each_entry(cd, &coresight_devs, dev_link) {
-+			if (csdev->conns[i].child_id == cd->id) {
-+				csdev->conns[i].child_dev = cd;
-+				found = true;
-+				break;
-+			}
-+		}
-+		if (!found)
-+			list_add_tail(&csdev->conns[i].link,
-+				      &coresight_orph_conns);
-+	}
-+}
-+
-+static int debugfs_coresight_init(void)
-+{
-+	if (!cs_debugfs_parent) {
-+		cs_debugfs_parent = debugfs_create_dir("coresight", 0);
-+		if (IS_ERR(cs_debugfs_parent))
-+			return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct dentry *coresight_debugfs_desc_init(
-+				struct coresight_device *csdev,
-+				const struct coresight_ops_entry **debugfs_ops)
-+{
-+	int i = 0;
-+	struct dentry *parent;
-+	struct device *dev = &csdev->dev;
-+	const struct coresight_ops_entry *ops_entry, **ops_entries;
-+
-+	parent = debugfs_create_dir(dev_name(dev), cs_debugfs_parent);
-+	if (IS_ERR(parent))
-+		return NULL;
-+
-+	/* device-specific ops */
-+	while (debugfs_ops && debugfs_ops[i]) {
-+		ops_entry = debugfs_ops[i];
-+		if (!debugfs_create_file(ops_entry->name, ops_entry->mode,
-+					 parent, dev_get_drvdata(dev->parent),
-+					 ops_entry->ops)) {
-+			debugfs_remove_recursive(parent);
-+			return NULL;
-+		}
-+		i++;
-+	}
-+
-+	/* group-specific ops */
-+	i = 0;
-+	ops_entries = coresight_debugfs_entries[csdev->type].entries;
-+
-+	while (ops_entries && ops_entries[i]) {
-+		if (!debugfs_create_file(ops_entries[i]->name,
-+					 ops_entries[i]->mode,
-+					 parent, csdev, ops_entries[i]->ops)) {
-+			debugfs_remove_recursive(parent);
-+			return NULL;
-+		}
-+		i++;
-+	}
-+
-+	return parent;
-+}
-+
-+/*
-+ * return 1 if the bit @position in @val is set to @value
-+ */
-+int coresight_is_bit_set(u32 val, int position, int value)
-+{
-+	val &= BIT(position);
-+	val >>= position;
-+	return (val == value);
-+}
-+
-+void coresight_timeout(void __iomem *addr, u32 offset, int position, int value)
-+{
-+	int i;
-+	u32 val;
-+
-+	for (i = TIMEOUT_US; i > 0; i--) {
-+		val = __raw_readl(addr + offset);
-+		if (coresight_is_bit_set(val, position, value))
-+			return;
-+		udelay(1);
-+	}
-+
-+	WARN(1,
-+	     "coresight: timeout observed when proving at offset %#x\n",
-+	     offset);
-+}
-+
-+struct coresight_device *coresight_register(struct coresight_desc *desc)
-+{
-+	int i;
-+	int ret;
-+	int link_subtype;
-+	int nr_refcnts;
-+	int *refcnts = NULL;
-+	struct coresight_device *csdev;
-+	struct coresight_connection *conns;
-+
-+	WARN_ON(IS_ERR_OR_NULL(desc));
-+
-+	csdev = kzalloc(sizeof(*csdev), GFP_KERNEL);
-+	if (!csdev) {
-+		ret = -ENOMEM;
-+		goto err_kzalloc_csdev;
-+	}
-+
-+	csdev->id = desc->pdata->id;
-+
-+	if (desc->type == CORESIGHT_DEV_TYPE_LINK ||
-+	    desc->type == CORESIGHT_DEV_TYPE_LINKSINK) {
-+		link_subtype = desc->subtype.link_subtype;
-+		if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+			nr_refcnts = desc->pdata->nr_inports;
-+		else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+			nr_refcnts = desc->pdata->nr_outports;
-+		else
-+			nr_refcnts = 1;
-+
-+		refcnts = kcalloc(nr_refcnts, sizeof(*refcnts), GFP_KERNEL);
-+		if (!refcnts) {
-+			ret = -ENOMEM;
-+			goto err_kzalloc_refcnts;
-+		}
-+		csdev->refcnt.link_refcnts = refcnts;
-+	}
-+
-+	csdev->nr_conns = desc->pdata->nr_outports;
-+	conns = kcalloc(csdev->nr_conns, sizeof(*conns), GFP_KERNEL);
-+	if (!conns) {
-+		ret = -ENOMEM;
-+		goto err_kzalloc_conns;
-+	}
-+
-+	for (i = 0; i < csdev->nr_conns; i++) {
-+		conns[i].outport = desc->pdata->outports[i];
-+		conns[i].child_id = desc->pdata->child_ids[i];
-+		conns[i].child_port = desc->pdata->child_ports[i];
-+	}
-+	csdev->conns = conns;
-+
-+	csdev->type = desc->type;
-+	csdev->subtype = desc->subtype;
-+	csdev->ops = desc->ops;
-+	csdev->owner = desc->owner;
-+
-+	csdev->dev.parent = desc->dev;
-+	csdev->dev.release = coresight_device_release;
-+	dev_set_name(&csdev->dev, "%s", desc->pdata->name);
-+
-+	down(&coresight_semaphore);
-+
-+	coresight_fixup_device_conns(csdev);
-+
-+	ret = debugfs_coresight_init();
-+	if (ret < 0)
-+		goto err_coresight_init;
-+
-+	csdev->de = coresight_debugfs_desc_init(csdev, desc->debugfs_ops);
-+
-+	coresight_fixup_orphan_conns(csdev);
-+
-+	list_add_tail(&csdev->dev_link, &coresight_devs);
-+	up(&coresight_semaphore);
-+
-+	return csdev;
-+
-+
-+err_coresight_init:
-+	up(&coresight_semaphore);
-+	kfree(conns);
-+err_kzalloc_conns:
-+	kfree(refcnts);
-+err_kzalloc_refcnts:
-+	kfree(csdev);
-+err_kzalloc_csdev:
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(coresight_register);
-+
-+void coresight_unregister(struct coresight_device *csdev)
-+{
-+	WARN_ON(IS_ERR_OR_NULL(csdev));
-+
-+	down(&coresight_semaphore);
-+
-+	list_del(&csdev->dev_link);
-+	debugfs_remove_recursive(csdev->de);
-+	kfree(csdev->conns);
-+	kfree(csdev->refcnt.link_refcnts);
-+	if (list_empty(&coresight_devs))
-+		kfree(cs_debugfs_parent);
-+
-+	up(&coresight_semaphore);
-+}
-+EXPORT_SYMBOL_GPL(coresight_unregister);
-+
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
-new file mode 100644
-index 0000000..f90a024
---- /dev/null
-+++ b/drivers/coresight/of_coresight.c
-@@ -0,0 +1,202 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_graph.h>
-+#include <linux/coresight.h>
-+#include <asm/smp_plat.h>
-+
-+static int of_get_coresight_id(struct device_node *node, int *id)
-+{
-+	const __be32 *reg;
-+	u64 addr;
-+
-+	/* derive component id from its memory map */
-+	reg = of_get_property(node, "reg", NULL);
-+	if (reg) {
-+		addr = of_translate_address(node, reg);
-+		if (addr != OF_BAD_ADDR) {
-+			*id = addr;
-+			return 0;
-+		}
-+	}
-+
-+	/* no "reg", we have a non-configurable replicator */
-+	reg = of_get_property(node, "id", NULL);
-+	if (reg) {
-+		*id = of_read_ulong(reg, 1);
-+		return 0;
-+	}
-+
-+	return -1;
-+}
-+
-+static struct device_node *of_get_coresight_endpoint(
-+		const struct device_node *parent, struct device_node *prev)
-+{
-+	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
-+
-+	of_node_put(prev);
-+	return node;
-+}
-+
-+static bool of_coresight_is_input_port(struct device_node *port)
-+{
-+	return of_find_property(port, "slave-mode", NULL);
-+}
-+
-+static void of_coresight_get_ports(struct device_node *node,
-+				   int *nr_inports, int *nr_outports)
-+{
-+	struct device_node *ep = NULL;
-+	int in = 0, out = 0;
-+
-+	do {
-+		ep = of_get_coresight_endpoint(node, ep);
-+		if (!ep)
-+			break;
-+		of_coresight_is_input_port(ep) ? in++ : out++;
-+
-+	} while (ep);
-+
-+	*nr_inports = in;
-+	*nr_outports = out;
-+}
-+
-+static int of_coresight_alloc_memory(struct device *dev,
-+			struct coresight_platform_data *pdata)
-+{
-+	/* list of output port on this component */
-+	pdata->outports = devm_kzalloc(dev, pdata->nr_outports *
-+				       sizeof(*pdata->outports),
-+				       GFP_KERNEL);
-+	if (!pdata->outports)
-+		return -ENOMEM;
-+
-+
-+	/* children connected to this component via @outport */
-+	pdata->child_ids = devm_kzalloc(dev, pdata->nr_outports *
-+					sizeof(*pdata->child_ids),
-+					GFP_KERNEL);
-+	if (!pdata->child_ids)
-+		return -ENOMEM;
-+
-+	/* port number on the child this component is connected to */
-+	pdata->child_ports = devm_kzalloc(dev, pdata->nr_outports *
-+					  sizeof(*pdata->child_ports),
-+					  GFP_KERNEL);
-+	if (!pdata->child_ports)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+struct coresight_platform_data *of_get_coresight_platform_data(
-+				struct device *dev, struct device_node *node)
-+{
-+	int id, i = 0, ret = 0;
-+	struct device_node *cpu;
-+	struct coresight_platform_data *pdata;
-+	struct of_endpoint endpoint, rendpoint;
-+	struct device_node *ep = NULL;
-+	struct device_node *rparent = NULL;
-+	struct device_node *rport = NULL;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* use the base address as id */
-+	ret = of_get_coresight_id(node, &id);
-+	if (ret)
-+		return ERR_PTR(-EINVAL);
-+	pdata->id = id;
-+
-+	/* use device name as debugfs handle */
-+	pdata->name = dev_name(dev);
-+
-+	/* get the number of input and output port for this component */
-+	of_coresight_get_ports(node, &pdata->nr_inports, &pdata->nr_outports);
-+
-+	if (pdata->nr_outports) {
-+		ret = of_coresight_alloc_memory(dev, pdata);
-+		if (ret)
-+			return ERR_PTR(-ENOMEM);
-+
-+		/* iterate through each port to discover topology */
-+		do {
-+			/* get a handle on a port */
-+			ep = of_get_coresight_endpoint(node, ep);
-+			if (!ep)
-+				break;
-+
-+			/* no need to deal with input ports, processing for as
-+			 * processing for output ports will deal with them.
-+			 */
-+			if (of_coresight_is_input_port(ep))
-+				continue;
-+
-+			/* get a handle on the local endpoint */
-+			ret = of_graph_parse_endpoint(ep, &endpoint);
-+
-+			if (ret)
-+				continue;
-+
-+			/* the local out port number */
-+			pdata->outports[i] = endpoint.id;
-+
-+			/* get a handle the remote port and parent
-+			 * attached to it.
-+			 */
-+			rparent = of_graph_get_remote_port_parent(ep);
-+			rport = of_graph_get_remote_port(ep);
-+
-+			if (!rparent || !rport)
-+				continue;
-+
-+			if (of_graph_parse_endpoint(rport, &rendpoint))
-+				continue;
-+
-+			ret = of_get_coresight_id(rparent, &id);
-+			if (ret)
-+				continue;
-+			pdata->child_ids[i] = id;
-+			pdata->child_ports[i] = rendpoint.id;
-+
-+			i++;
-+		} while (ep);
-+	}
-+
-+	/* affinity defaults to CPU0 */
-+	pdata->cpu = 0;
-+	cpu = of_parse_phandle(node, "cpu", 0);
-+	if (cpu) {
-+		const u32 *mpidr;
-+		int len, index;
-+
-+		mpidr = of_get_property(cpu, "reg", &len);
-+		if (mpidr && len == 4) {
-+			index = get_logical_index(be32_to_cpup(mpidr));
-+			if (index != -EINVAL)
-+				pdata->cpu = index;
-+		}
-+	}
-+
-+	return pdata;
-+}
-+EXPORT_SYMBOL_GPL(of_get_coresight_platform_data);
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index fdd7e1b..cdddabe 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -23,6 +23,7 @@
- 
- #define AMBA_NR_IRQS	9
- #define AMBA_CID	0xb105f00d
-+#define CORESIGHT_CID	0xb105900d
- 
- struct clk;
- 
-diff --git a/include/linux/coresight.h b/include/linux/coresight.h
-new file mode 100644
-index 0000000..b0f9ee8
---- /dev/null
-+++ b/include/linux/coresight.h
-@@ -0,0 +1,206 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _LINUX_CORESIGHT_H
-+#define _LINUX_CORESIGHT_H
-+
-+#include <linux/device.h>
-+
-+/* Peripheral id registers (0xFD0-0xFEC) */
-+#define CORESIGHT_PERIPHIDR4	0xfd0
-+#define CORESIGHT_PERIPHIDR5	0xfd4
-+#define CORESIGHT_PERIPHIDR6	0xfd8
-+#define CORESIGHT_PERIPHIDR7	0xfdC
-+#define CORESIGHT_PERIPHIDR0	0xfe0
-+#define CORESIGHT_PERIPHIDR1	0xfe4
-+#define CORESIGHT_PERIPHIDR2	0xfe8
-+#define CORESIGHT_PERIPHIDR3	0xfeC
-+/* Component id registers (0xFF0-0xFFC) */
-+#define CORESIGHT_COMPIDR0	0xff0
-+#define CORESIGHT_COMPIDR1	0xff4
-+#define CORESIGHT_COMPIDR2	0xff8
-+#define CORESIGHT_COMPIDR3	0xffC
-+
-+#define ETM_ARCH_V3_3		0x23
-+#define ETM_ARCH_V3_5		0x25
-+#define PFT_ARCH_V1_0		0x30
-+#define PFT_ARCH_V1_1		0x31
-+
-+#define CORESIGHT_UNLOCK	0xc5acce55
-+
-+enum coresight_clk_rate {
-+	CORESIGHT_CLK_RATE_OFF,
-+	CORESIGHT_CLK_RATE_TRACE,
-+	CORESIGHT_CLK_RATE_HSTRACE,
-+};
-+
-+enum coresight_dev_type {
-+	CORESIGHT_DEV_TYPE_NONE,
-+	CORESIGHT_DEV_TYPE_SINK,
-+	CORESIGHT_DEV_TYPE_LINK,
-+	CORESIGHT_DEV_TYPE_LINKSINK,
-+	CORESIGHT_DEV_TYPE_SOURCE,
-+};
-+
-+enum coresight_dev_subtype_sink {
-+	CORESIGHT_DEV_SUBTYPE_SINK_NONE,
-+	CORESIGHT_DEV_SUBTYPE_SINK_PORT,
-+	CORESIGHT_DEV_SUBTYPE_SINK_BUFFER,
-+};
-+
-+enum coresight_dev_subtype_link {
-+	CORESIGHT_DEV_SUBTYPE_LINK_NONE,
-+	CORESIGHT_DEV_SUBTYPE_LINK_MERG,
-+	CORESIGHT_DEV_SUBTYPE_LINK_SPLIT,
-+	CORESIGHT_DEV_SUBTYPE_LINK_FIFO,
-+};
-+
-+enum coresight_dev_subtype_source {
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_NONE,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_PROC,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_BUS,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_SOFTWARE,
-+};
-+
-+struct coresight_ops_entry {
-+	const char *name;
-+	umode_t mode;
-+	const struct file_operations *ops;
-+};
-+
-+struct coresight_dev_subtype {
-+	enum coresight_dev_subtype_sink sink_subtype;
-+	enum coresight_dev_subtype_link link_subtype;
-+	enum coresight_dev_subtype_source source_subtype;
-+};
-+
-+struct coresight_platform_data {
-+	int id;
-+	int cpu;
-+	const char *name;
-+	int nr_inports;
-+	int *outports;
-+	int *child_ids;
-+	int *child_ports;
-+	int nr_outports;
-+	struct clk *clk;
-+};
++The functions take a "struct coresight_device", which looks like this:
 +
 +struct coresight_desc {
-+	enum coresight_dev_type type;
-+	struct coresight_dev_subtype subtype;
-+	const struct coresight_ops *ops;
-+	struct coresight_platform_data *pdata;
-+	struct device *dev;
-+	const struct coresight_ops_entry **debugfs_ops;
-+	struct module *owner;
++        enum coresight_dev_type type;
++        struct coresight_dev_subtype subtype;
++        const struct coresight_ops *ops;
++        struct coresight_platform_data *pdata;
++        struct device *dev;
++        const struct coresight_ops_entry **debugfs_ops;
++        struct module *owner;
 +};
 +
-+struct coresight_connection {
-+	int outport;
-+	int child_id;
-+	int child_port;
-+	struct coresight_device *child_dev;
-+	struct list_head link;
-+};
 +
-+struct coresight_refcnt {
-+	int sink_refcnt;
-+	int *link_refcnts;
-+	int source_refcnt;
-+};
++The "coresight_dev_type" identifies what the device is, i.e, source link or
++sink while the "coresight_dev_subtype" will characterise that type further.
 +
-+struct coresight_device {
-+	int id;
-+	struct coresight_connection *conns;
-+	int nr_conns;
-+	enum coresight_dev_type type;
-+	struct coresight_dev_subtype subtype;
-+	const struct coresight_ops *ops;
-+	struct dentry *de;
-+	struct device dev;
-+	struct coresight_refcnt refcnt;
-+	struct list_head dev_link;
-+	struct list_head path_link;
-+	struct module *owner;
-+	bool enable;	/* true only if configured as part of a path */
-+	bool activated;	/* only valid for sinks */
-+};
++The "struct coresight_ops" is mandatory and will tell the framework how to
++perform base operations related to the components, each component having
++a different set of requirement.  For that "struct coresight_ops_sink",
++"struct coresight_ops_link" and "struct coresight_ops_source" have been
++provided.
 +
-+#define to_coresight_device(d) container_of(d, struct coresight_device, dev)
++The next field, "struct coresight_platform_data *pdata" is acquired by calling
++"of_get_coresight_platform_data()", as part of the driver's _probe routine and
++"struct device *dev" gets the device reference embedded in the "amba_device":
 +
-+#define source_ops(csdev)	csdev->ops->source_ops
-+#define sink_ops(csdev)		csdev->ops->sink_ops
-+#define link_ops(csdev)		csdev->ops->link_ops
-+
-+#define CORESIGHT_DEBUGFS_ENTRY(__name, __entry_name,			\
-+				 __mode, __get, __set, __fmt)		\
-+DEFINE_SIMPLE_ATTRIBUTE(__name ## _ops, __get, __set, __fmt)		\
-+static const struct coresight_ops_entry __name ## _entry = {		\
-+	.name = __entry_name,						\
-+	.mode = __mode,							\
-+	.ops  = &__name ## _ops						\
++static int etm_probe(struct amba_device *adev, const struct amba_id *id)
++{
++ ...
++ ...
++ drvdata->dev = &adev->dev;
++ ...
 +}
 +
-+struct coresight_ops_sink {
-+	int (*enable)(struct coresight_device *csdev);
-+	void (*disable)(struct coresight_device *csdev);
-+};
++Specific class of device (source, link, or sink) have generic operations
++that can be performed on them (see "struct coresight_ops").  The
++"**debugfs_ops" is a list of debugfs entries pertaining to operations
++specific to that component only.  "Implementation defined" customisations are
++expected to be accessed and controlled using those entries.
 +
-+struct coresight_ops_link {
-+	int (*enable)(struct coresight_device *csdev, int iport, int oport);
-+	void (*disable)(struct coresight_device *csdev, int iport, int oport);
-+};
++Last but not least, "struct module *owner" is expected to be set to reflect
++the information carried in "THIS_MODULE".
 +
-+struct coresight_ops_source {
-+	int (*trace_id)(struct coresight_device *csdev);
-+	int (*enable)(struct coresight_device *csdev);
-+	void (*disable)(struct coresight_device *csdev);
-+};
++How to use
++----------
 +
-+struct coresight_ops {
-+	const struct coresight_ops_sink *sink_ops;
-+	const struct coresight_ops_link *link_ops;
-+	const struct coresight_ops_source *source_ops;
-+};
++Before trace collection can start, a coresight sink needs to be identify.
++There is no limit on the amount of sinks (nor sources) that can be enabled at
++any given moment.  As a generic operation, all device pertaining to the sink
++class will have an "active" entry in debugfs:
 +
-+#ifdef CONFIG_CORESIGHT
-+extern struct coresight_device *
-+coresight_register(struct coresight_desc *desc);
-+extern void coresight_unregister(struct coresight_device *csdev);
-+extern int coresight_enable(struct coresight_device *csdev);
-+extern void coresight_disable(struct coresight_device *csdev);
-+extern int coresight_is_bit_set(u32 val, int position, int value);
-+extern void coresight_timeout(void __iomem *addr, u32 offset,
-+			      int position, int value);
-+#ifdef CONFIG_OF
-+extern struct coresight_platform_data *of_get_coresight_platform_data(
-+				struct device *dev, struct device_node *node);
-+#endif
-+#else
-+static inline struct coresight_device *
-+coresight_register(struct coresight_desc *desc) { return NULL; }
-+static inline void coresight_unregister(struct coresight_device *csdev) {}
-+static inline int
-+coresight_enable(struct coresight_device *csdev) { return -ENOSYS; }
-+static inline void coresight_disable(struct coresight_device *csdev) {}
-+static inline int coresight_is_bit_set(u32 val, int position, int value)
-+					 { return 0; }
-+static inline void coresight_timeout(void __iomem *addr, u32 offset,
-+				     int position, int value) {}
-+#ifdef CONFIG_OF
-+static inline struct coresight_platform_data *of_get_coresight_platform_data(
-+	struct device *dev, struct device_node *node) { return NULL; }
-+#endif
-+#endif
++root@linaro-developer:/sys/kernel/debug/coresight# ls
++00000000.replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
++20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
++root@linaro-developer:/sys/kernel/debug/coresight# ls 20010000.etb
++active  status  trigger_cntr
++root@linaro-developer:/sys/kernel/debug/coresight# echo 1 > 20010000.etb/active
++root@linaro-developer:/sys/kernel/debug/coresight# cat 20010000.etb/active
++1
++root@linaro-developer:/sys/kernel/debug/coresight#
 +
-+#endif
++At boot time the current etm3x driver will configure the first address
++comparator with "_stext" and "_etext", essentially tracing any instruction
++that falls within that range.  As such "enabling" a source will immediately
++trigger a trace capture:
++
++root@linaro-developer:/sys/kernel/debug/coresight# echo 1 > 2201c000.ptm/enable
++root@linaro-developer:/sys/kernel/debug/coresight# cat 2201c000.ptm/enable
++1
++root@linaro-developer:/sys/kernel/debug/coresight# cat 20010000.etb/status
++Depth:          0x2000
++Status:         0x1
++RAM read ptr:   0x0
++RAM wrt ptr:    0x19d3   <----- The write pointer is moving
++Trigger cnt:    0x0
++Control:        0x1
++Flush status:   0x0
++Flush ctrl:     0x2001
++root@linaro-developer:/sys/kernel/debug/coresight#
++
++Trace collection is stopped the same way:
++
++root@linaro-developer:/sys/kernel/debug/coresight# echo 0 > 2201c000.ptm/enable
++root@linaro-developer:/sys/kernel/debug/coresight#
++
++The content of the ETB buffer can be harvested directly from /dev:
++
++root@linaro-developer:/sys/kernel/debug/coresight# dd if=/dev/20010000.etb \
++of=~/cstrace.bin
++
++64+0 records in
++64+0 records out
++32768 bytes (33 kB) copied, 0.00125258 s, 26.2 MB/s
++root@linaro-developer:/sys/kernel/debug/coresight#
++
++The file cstrace.bin can be decompressed using "ptm2human", DS-5 or Trace32.
++
++Following is a DS-5 output of an experimental loop that increments a variable up
++to a certain value.  The example is simple and yet provides a glimpse of the
++wealth of possibilities that coresight provides.
++
++Info                                    Tracing enabled
++Instruction     106378866       0x8026B53C      E52DE004        false   PUSH     {lr}
++Instruction     0       0x8026B540      E24DD00C        false   SUB      sp,sp,#0xc
++Instruction     0       0x8026B544      E3A03000        false   MOV      r3,#0
++Instruction     0       0x8026B548      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Timestamp                                       Timestamp: 17106715833
++Instruction     319     0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     9       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     10      0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     6       0x8026B560      EE1D3F30        false   MRC      p15,#0x0,r3,c13,c0,#1
++Instruction     0       0x8026B564      E1A0100D        false   MOV      r1,sp
++Instruction     0       0x8026B568      E3C12D7F        false   BIC      r2,r1,#0x1fc0
++Instruction     0       0x8026B56C      E3C2203F        false   BIC      r2,r2,#0x3f
++Instruction     0       0x8026B570      E59D1004        false   LDR      r1,[sp,#4]
++Instruction     0       0x8026B574      E59F0010        false   LDR      r0,[pc,#16] ; [0x8026B58C] = 0x80550368
++Instruction     0       0x8026B578      E592200C        false   LDR      r2,[r2,#0xc]
++Instruction     0       0x8026B57C      E59221D0        false   LDR      r2,[r2,#0x1d0]
++Instruction     0       0x8026B580      EB07A4CF        true    BL       {pc}+0x1e9344 ; 0x804548c4
++Info                                    Tracing enabled
++Instruction     13570831        0x8026B584      E28DD00C        false   ADD      sp,sp,#0xc
++Instruction     0       0x8026B588      E8BD8000        true    LDM      sp!,{pc}
++Timestamp                                       Timestamp: 17107041535
 -- 
 1.9.1
 
