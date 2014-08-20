@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaHTMqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:46:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45745 "EHLO mx1.redhat.com"
+	id S1754460AbaHTMqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:46:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58262 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754386AbaHTMqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753220AbaHTMqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 08:46:19 -0400
-Message-ID: <1408538771.11383.33.camel@ul30vt.home>
-Subject: Re: How to get the number of VFs assigned to the guests in XEN
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, konrad.wilk@oracle.com,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>, boris.ostrovsky@oracle.com,
-        Sathya Prakash <sathya.prakash@avagotech.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>
-Date: Wed, 20 Aug 2014 06:46:11 -0600
-In-Reply-To: <CAK=zhgrv=e20s11v7Ls5ioWZrbyvp9Rzyv+QRDLR3mffr9E61A@mail.gmail.com>
-References: <CAK=zhgrv=e20s11v7Ls5ioWZrbyvp9Rzyv+QRDLR3mffr9E61A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Date: Wed, 20 Aug 2014 14:46:08 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
+Subject: Re: [PATCH 5/9] KVM: VMX: clamp PLE window
+Message-ID: <20140820124607.GD28873@potion.brq.redhat.com>
+References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com>
+ <1408480536-8240-6-git-send-email-rkrcmar@redhat.com>
+ <53F44BAE.9040405@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53F44BAE.9040405@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-20 at 16:39 +0530, Sreekanth Reddy wrote:
-> HI,
+2014-08-20 09:18+0200, Paolo Bonzini:
+> Il 19/08/2014 22:35, Radim Krčmář ha scritto:
+> > Modifications could get unwanted values of PLE window. (low or negative)
+> > Use ple_window and the maximal value that cannot overflow as bounds.
+> > 
+> > ple_window_max defaults to a very high value, but it would make sense to
+> > set it to some fraction of the scheduler tick.
+> > 
+> > Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> > ---
+> Please introduce a dynamic overflow-avoiding ple_window_max (like what
+> you have in patch 9) already in patch 4...
 > 
-> For SRIOV support, currently in the KVM environment, mpt3sas driver
-> can use the API pci_vfs_assigned() to know the number of VFs that are
-> currently assigned to the running VMs. So that during the PF driver
-> unload time, if the return value of this API is greater than zero the
-> our driver won't call the pci_disable_sriov() to disable the VFs.
+> >  static void shrink_ple_window(struct kvm_vcpu *vcpu)
+> > @@ -5720,7 +5724,7 @@ static void shrink_ple_window(struct kvm_vcpu *vcpu)
+> >  	else
+> >  		new = old - ple_window_shrink;
+> >  
+> > -	vmx->ple_window = new;
+> > +	vmx->ple_window = max(new, ple_window);
 > 
-> Now for the same purpose in XEN environment, is there any API similar
-> to pci_vfs_assigned() which the low lever device driver can use to
-> know 'the number of VFs that are currently assigned to the running
-> VMs'. In XEN environment this API pci_vfs_assigned() will return
-> always zero even though VFs are assigned to the running VMs.
+> ... and also squash this in patch 4.
+> 
+> This patch can then introduce the ple_window_max module parameter (using
+> module_param_cb to avoid overflows).
 
-Note that pci_vfs_assigned() assigned is only used by legacy KVM device
-assignment and primarily as a workaround for not using an actual
-host-based device driver to manage device ownership.  When using
-VFIO-based device assignment with KVM, pci_vfs_assigned() is not
-updated.  Please don't rely on this interface.  Thanks,
+Will do.
 
-Alex
-
+---
+It is going to make the patches slightly harder to review;
+Are we doing it because git doesn't bisect on series boundaries?
