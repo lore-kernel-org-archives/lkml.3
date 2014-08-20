@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752366AbaHTLt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:49:28 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59048 "EHLO
+	id S1753212AbaHTLuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:50:04 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59045 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752627AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752626AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Minfei Huang <huangminfei@ucloud.cn>,
-        Joern Engel <joern@logfs.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 030/104] lib/btree.c: fix leak of whole btree nodes
-Date: Wed, 20 Aug 2014 13:42:53 +0200
-Message-Id: <834ed96b54b04bfd07c7e0964d20ccc2da0c534d.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ying Xue <ying.xue@windriver.com>,
+        Jon Maloy <jon.maloy@ericsson.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 097/104] tipc: don't use memcpy to copy from user space
+Date: Wed, 20 Aug 2014 13:44:00 +0200
+Message-Id: <4d6b3a202070a739e3bc2a5ea986a8df04eccb1d.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -27,52 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Minfei Huang <huangminfei@ucloud.cn>
+From: Ying Xue <ying.xue@windriver.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c75b53af2f0043aff500af0a6f878497bef41bca upstream.
+commit 5c0a0fc81f4dc786b42c4fc9c7c72ba635406ab5 upstream.
 
-I use btree from 3.14-rc2 in my own module.  When the btree module is
-removed, a warning arises:
+tipc_msg_build() calls skb_copy_to_linear_data_offset() to copy data
+from user space to kernel space. However, the latter function does
+in its turn call memcpy() to perform the actual copying. This poses
+an obvious security and robustness risk, since memcpy() never makes
+any validity check on the pointer it is copying from.
 
- kmem_cache_destroy btree_node: Slab cache still has objects
- CPU: 13 PID: 9150 Comm: rmmod Tainted: GF          O 3.14.0-rc2 #1
- Hardware name: Inspur NF5270M3/NF5270M3, BIOS CHEETAH_2.1.3 09/10/2013
- Call Trace:
-   dump_stack+0x49/0x5d
-   kmem_cache_destroy+0xcf/0xe0
-   btree_module_exit+0x10/0x12 [btree]
-   SyS_delete_module+0x198/0x1f0
-   system_call_fastpath+0x16/0x1b
+To correct this, we the replace the offending function call with
+a call to memcpy_fromiovecend(), which uses copy_from_user() to
+perform the copying.
 
-The cause is that it doesn't release the last btree node, when height = 1
-and fill = 1.
-
-[akpm@linux-foundation.org: remove unneeded test of NULL]
-Signed-off-by: Minfei Huang <huangminfei@ucloud.cn>
-Cc: Joern Engel <joern@logfs.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Reviewed-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- lib/btree.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/tipc/msg.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/lib/btree.c b/lib/btree.c
-index f9a484676cb6..4264871ea1a0 100644
---- a/lib/btree.c
-+++ b/lib/btree.c
-@@ -198,6 +198,7 @@ EXPORT_SYMBOL_GPL(btree_init);
- 
- void btree_destroy(struct btree_head *head)
+diff --git a/net/tipc/msg.c b/net/tipc/msg.c
+index ced60e2fc4f7..1e76d91e5691 100644
+--- a/net/tipc/msg.c
++++ b/net/tipc/msg.c
+@@ -76,10 +76,11 @@ int tipc_msg_build(struct tipc_msg *hdr, struct iovec const *msg_sect,
+ 		   u32 num_sect, unsigned int total_len, int max_size,
+ 		   struct sk_buff **buf)
  {
-+	mempool_free(head->node, head->mempool);
- 	mempool_destroy(head->mempool);
- 	head->mempool = NULL;
+-	int dsz, sz, hsz, pos, res, cnt;
++	int dsz, sz, hsz;
++	unsigned char *to;
+ 
+ 	dsz = total_len;
+-	pos = hsz = msg_hdr_sz(hdr);
++	hsz = msg_hdr_sz(hdr);
+ 	sz = hsz + dsz;
+ 	msg_set_size(hdr, sz);
+ 	if (unlikely(sz > max_size)) {
+@@ -91,16 +92,11 @@ int tipc_msg_build(struct tipc_msg *hdr, struct iovec const *msg_sect,
+ 	if (!(*buf))
+ 		return -ENOMEM;
+ 	skb_copy_to_linear_data(*buf, hdr, hsz);
+-	for (res = 1, cnt = 0; res && (cnt < num_sect); cnt++) {
+-		skb_copy_to_linear_data_offset(*buf, pos,
+-					       msg_sect[cnt].iov_base,
+-					       msg_sect[cnt].iov_len);
+-		pos += msg_sect[cnt].iov_len;
++	to = (*buf)->data + hsz;
++	if (total_len && memcpy_fromiovecend(to, msg_sect, 0, dsz)) {
++		kfree_skb(*buf);
++		*buf = NULL;
++		return -EFAULT;
+ 	}
+-	if (likely(res))
+-		return dsz;
+-
+-	kfree_skb(*buf);
+-	*buf = NULL;
+-	return -EFAULT;
++	return dsz;
  }
 -- 
 2.0.4
