@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044AbaHTMDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:03:51 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58933 "EHLO
+	id S1753930AbaHTMBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:01:45 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58959 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752532AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752557AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Vlad Yasevich <vyasevic@redhat.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 3.12 040/104] net: Correctly set segment mac_len in skb_segment().
-Date: Wed, 20 Aug 2014 13:43:03 +0200
-Message-Id: <4b29e9c0a64a0ce0256505315cc3f5819ddbec64.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 053/104] sparc64: Do not insert non-valid PTEs into the TSB hash table.
+Date: Wed, 20 Aug 2014 13:43:16 +0200
+Message-Id: <e97836fc9b0c3e4bc6d8d3e0298a777c2b5fdb8a.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -25,70 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
+[ Upstream commit 18f38132528c3e603c66ea464727b29e9bbcb91b ]
 
-When performing segmentation, the mac_len value is copied right
-out of the original skb.  However, this value is not always set correctly
-(like when the packet is VLAN-tagged) and we'll end up copying a bad
-value.
+The assumption was that update_mmu_cache() (and the equivalent for PMDs) would
+only be called when the PTE being installed will be accessible by the user.
 
-One way to demonstrate this is to configure a VM which tags
-packets internally and turn off VLAN acceleration on the forwarding
-bridge port.  The packets show up corrupt like this:
-16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
-(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
-        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
-        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
-        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
-        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
-        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
-        ...
+This is not true for code paths originating from remove_migration_pte().
 
-This also leads to awful throughput as GSO packets are dropped and
-cause retransmissions.
+There are dire consequences for placing a non-valid PTE into the TSB.  The TLB
+miss frramework assumes thatwhen a TSB entry matches we can just load it into
+the TLB and return from the TLB miss trap.
 
-The solution is to set the mac_len using the values already available
-in then new skb.  We've already adjusted all of the header offset, so we
-might as well correctly figure out the mac_len using skb_reset_mac_len().
-After this change, packets are segmented correctly and performance
-is restored.
+So if a non-valid PTE is in there, we will deadlock taking the TLB miss over
+and over, never satisfying the miss.
 
-CC: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Just exit early from update_mmu_cache() and friends in this situation.
+
+Based upon a report and patch from Christopher Alexander Tobias Schulze.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/core/skbuff.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/mm/init_64.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index aeb870c5c134..174ebd563868 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2831,7 +2831,6 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
- 		tail = nskb;
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index ed82edad1a39..774ba41dba4d 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -350,6 +350,10 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
  
- 		__copy_skb_header(nskb, head_skb);
--		nskb->mac_len = head_skb->mac_len;
+ 	mm = vma->vm_mm;
  
- 		/* nskb and skb might have different headroom */
- 		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-@@ -2841,6 +2840,7 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
- 		skb_set_network_header(nskb, head_skb->mac_len);
- 		nskb->transport_header = (nskb->network_header +
- 					  skb_network_header_len(head_skb));
-+		skb_reset_mac_len(nskb);
++	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
++	if (!pte_accessible(mm, pte))
++		return;
++
+ 	spin_lock_irqsave(&mm->context.lock, flags);
  
- 		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
- 						 nskb->data - tnl_hlen,
+ #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
 -- 
 2.0.4
 
