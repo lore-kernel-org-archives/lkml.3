@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713AbaHTIxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 04:53:39 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:60335 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaHTIxh (ORCPT
+	id S1751753AbaHTIzy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 04:55:54 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:36642 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaHTIzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 04:53:37 -0400
-From: Hoang Tran <hoangtran.gwr@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Hoang Tran <hoangtran.gwr@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8821ae: fix sparse warning for static declarations in rtl8821ae/stats.c
-Date: Wed, 20 Aug 2014 16:53:22 +0800
-Message-Id: <1408524802-27441-1-git-send-email-hoangtran.gwr@gmail.com>
-X-Mailer: git-send-email 2.0.2
+	Wed, 20 Aug 2014 04:55:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408469363-15901-2-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1408469363-15901-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Date: Wed, 20 Aug 2014 14:25:50 +0530
+X-Google-Sender-Auth: Ec-7Ct_f5BM_bjSigixmk8Ox6ys
+Message-ID: <CAOh2x=nxqJkN45TD1xcqgsxndLv2bJ0zSp2Cg_2rVDsdMM6bNw@mail.gmail.com>
+Subject: Re: [PATCH v1 01/12] dmaengine: dw: move dw_dmac.h to where it
+ belongs to
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@kernel.org>,
+        Hein Tibosch <hein_tibosch@yahoo.es>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        Kweh Hock Leong <hock.leong.kweh@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, dmaengine@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following sparse warnings in rtl8821ae/stats.c
+On Tue, Aug 19, 2014 at 10:59 PM, Andy Shevchenko
+<andriy.shevchenko@linux.intel.com> wrote:
+> There is a common storage for platform data related structures and definitions
+> inside kernel source tree. The patch moves file from include/linux to
+> include/linux/platform_data and renames it acoordingly. The users are also
+> updated.
+>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> ---
 
-drivers/staging/rtl8821ae/stats.c:62:6: warning: symbol 'rtl_translate_todbm' was not declared. Should it be static?
-drivers/staging/rtl8821ae/stats.c:101:6: warning: symbol 'rtl_process_ui_rssi' was not declared. Should it be static?
+>  include/linux/dw_dmac.h                         | 111 ------------------------
+>  include/linux/platform_data/dma-dw.h            | 111 ++++++++++++++++++++++++
 
-Signed-off-by: Hoang Tran <hoangtran.gwr@gmail.com>
----
- drivers/staging/rtl8821ae/stats.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Nice work but wrong git commands to produce this patch..
+Always run format-patch with these options Atleast:
 
-diff --git a/drivers/staging/rtl8821ae/stats.c b/drivers/staging/rtl8821ae/stats.c
-index 4d383d1..fdbde43 100644
---- a/drivers/staging/rtl8821ae/stats.c
-+++ b/drivers/staging/rtl8821ae/stats.c
-@@ -59,7 +59,7 @@ u8 rtl_evm_db_to_percentage(char value)
- }
- //EXPORT_SYMBOL(rtl_evm_db_to_percentage);
- 
--long rtl_translate_todbm(struct ieee80211_hw *hw,
-+static long rtl_translate_todbm(struct ieee80211_hw *hw,
- 			 u8 signal_strength_index)
- {
- 	long signal_power;
-@@ -98,7 +98,8 @@ long rtl_signal_scale_mapping(struct ieee80211_hw *hw, long currsig)
- }
- //EXPORT_SYMBOL(rtl_signal_scale_mapping);
- 
--void rtl_process_ui_rssi(struct ieee80211_hw *hw, struct rtl_stats *pstatus)
-+static void rtl_process_ui_rssi(struct ieee80211_hw *hw,
-+				struct rtl_stats *pstatus)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
--- 
-2.0.2
+git format-patch -C -M --thread=shallow
 
+With the -C -M option you would have got something like:
+
+ include/linux/{dw_dmac.h => platform_data/dma-dw.h} | 0
+
+Which would have made review so so easy :)
