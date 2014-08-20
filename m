@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727AbaHTPaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:30:10 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11109 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750916AbaHTPaI (ORCPT
+	id S1752079AbaHTPar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:30:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51121 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbaHTPap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:30:08 -0400
-Date: Wed, 20 Aug 2014 16:29:44 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@linaro.org>, Robert Richter <rric@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi-private@linaro.org" <linaro-acpi-private@linaro.org>
-Subject: Re: [PATCH 06/19] ARM64 / ACPI: Parse FADT table to get PSCI flags
- for PSCI init
-Message-ID: <20140820152944.GR24600@localhost>
-References: <1406206825-15590-1-git-send-email-hanjun.guo@linaro.org>
- <1406206825-15590-7-git-send-email-hanjun.guo@linaro.org>
- <20140820150029.0BB3FC41205@trevor.secretlab.ca>
+	Wed, 20 Aug 2014 11:30:45 -0400
+Date: Wed, 20 Aug 2014 10:26:33 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        a.zummo@towertech.it, mturquette@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
+Message-ID: <20140820152633.GX24407@sirena.org.uk>
+References: <1408505248-23995-1-git-send-email-zyw@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uN3tURjgVTLfI0kr"
 Content-Disposition: inline
-In-Reply-To: <20140820150029.0BB3FC41205@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408505248-23995-1-git-send-email-zyw@rock-chips.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 63.139.182.64
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/5] MFD: Add rk808 device tree bindings documentation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 04:00:28PM +0100, Grant Likely wrote:
-> On Thu, 24 Jul 2014 21:00:12 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > @@ -345,13 +378,19 @@ int __init psci_init(void)
-> >  	const struct of_device_id *matched_np;
-> >  	psci_initcall_t init_fn;
-> >  
-> > -	np = of_find_matching_node_and_match(NULL, psci_of_match, &matched_np);
-> > +	if (acpi_disabled) {
-> > +		np = of_find_matching_node_and_match(NULL,
-> > +				psci_of_match, &matched_np);
-> >  
-> > -	if (!np)
-> > -		return -ENODEV;
-> > +		if (!np)
-> > +			return -ENODEV;
-> > +
-> > +		init_fn = (psci_initcall_t)matched_np->data;
-> > +
-> > +		return init_fn(np);
-> > +	}
-> >  
-> > -	init_fn = (psci_initcall_t)matched_np->data;
-> > -	return init_fn(np);
-> > +	return psci_0_2_init_acpi();
-> >  }
-> 
-> So, while the functionality is sound, this is kind of a stinky diff. The
-> ACPI path should not push the OF code into a sub branch. Make it look
-> like this instead (with the advantage that the diff will be simpler):
-> 
-> +	if (IS_ENABLED(CONFIG_ACPI) && !acpi_disabled)
-> +		return psci_0_2_init_acpi();
 
-Minor point: we should define acpi_disabled to 1 when !CONFIG_ACPI and
-avoid additional IS_ENABLED(CONFIG_ACPI) checks (unless already don this
-way).
+--uN3tURjgVTLfI0kr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Catalin
+On Wed, Aug 20, 2014 at 11:27:28AM +0800, Chris Zhong wrote:
+
+> +- regulators: This is the list of child nodes that specify the regulator
+> +  initialization data for defined regulators. Not all regulators for the given
+> +  device need to be present. The definition for each of these nodes is defined
+> +  using the standard binding for regulators found at
+> +  Documentation/devicetree/bindings/regulator/regulator.txt.
+
+You need to identify all the valid names for regulators on the device so
+people know which string to use for which regulator.
+
+--uN3tURjgVTLfI0kr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT9L4mAAoJELSic+t+oim9GTsP/jk9EGBnzzpqSNfJauIs4spT
+oJXe+1MF8NggWdZg0HN75RZyf9v1qsssJmc946w5yjUI4ppbdbdyUn2BPSMY6oKk
+Zdi/gXdWE5nK1XiH7TbleLq9yteVbpVDQljbQ2zhNaMfku+R950wd5KdWBtIk4zn
+S9BYWUwh2JkI9dNie7l+ao8kL8/gx9/Bcv71tA6Y87YEkDVSmHfxND48rLTU5k3v
+076ym04gyi9fzQVfMviIkn1BklLZ/xYstK0cfF7NRgdWDzrC1DKubTdGqYilaPYf
+PIc57m1kF6fuARYR7zmyOSWfD41jwCTBSFkzcU7Fu57wq+vJxGKM1vFi0xXnt1FJ
+u91NB7auha+DzVGqG0u0gxX1BagQc0r0e4AQASUvhNnOdhi+LN3NKzdtpHgK0b12
+TBY1zoFTz+j4dgyrdARUyqkH2WC8VSTZxINDSfkdbZsc/JSWCE5TePkx73ECNF6/
+iOwrHGQFyuj3snkusMPbFYkqCiPQ5je7Es1iOmpDbw0i+D4IH7quJTJwbTFcvnVe
+z8QHQVaUEdYsoWMFeOm1bXo2I6X1BnMbhUwEhMwNUSv4mCmO1Pao3mJC7lUprAuB
+5gKODGhT/w2I+ZcmB+XGPJigGSVQewegTke3q+0ZabAHG07crubuz9XD2pGw7rFG
+DblZ7zpQ9qNWc1OGVNfe
+=/UKv
+-----END PGP SIGNATURE-----
+
+--uN3tURjgVTLfI0kr--
