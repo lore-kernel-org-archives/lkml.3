@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaHTLwc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:52:32 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59013 "EHLO
+	id S1752809AbaHTLw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:52:28 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59011 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752607AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752611AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 088/104] DMA-API: net: intel/igbvf: fix 32-bit DMA mask handling
-Date: Wed, 20 Aug 2014 13:43:51 +0200
-Message-Id: <a644b85a9bbe692cac107c2f42f70e328caf6603.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Christopher Alexander Tobias Schulze 
+	<cat.schulze@alice-dsl.net>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 055/104] bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
+Date: Wed, 20 Aug 2014 13:43:18 +0200
+Message-Id: <d381977591afaa9ec6fb71a4144b470480927b9e.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,76 +25,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit c21b8ebc2f1613fd0a9d5aa0d0d1083aee8ca306 upstream.
+[ Upstream commit 5cdceab3d5e02eb69ea0f5d8fa9181800baf6f77 ]
 
-The fallback to 32-bit DMA mask is rather odd:
-	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
-	if (!err) {
-		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
-		if (!err)
-			pci_using_dac = 1;
-	} else {
-		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-		if (err) {
-			err = dma_set_coherent_mask(&pdev->dev,
-						    DMA_BIT_MASK(32));
-			if (err) {
-				dev_err(&pdev->dev, "No usable DMA "
-					"configuration, aborting\n");
-				goto err_dma;
-			}
-		}
-	}
-This means we only set the coherent DMA mask in the fallback path if
-the DMA mask set failed, which is silly.  This fixes it to set the
-coherent DMA mask only if dma_set_mask() succeeded, and to error out
-if either fails.
+Fix regression in bbc i2c temperature and fan control on some Sun systems
+that causes the driver to refuse to load due to the bbc_i2c_bussel resource not
+being present on the (second) i2c bus where the temperature sensors and fan
+control are located. (The check for the number of resources was removed when
+the driver was ported to a pure OF driver in mid 2008.)
 
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/intel/igbvf/netdev.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ drivers/sbus/char/bbc_envctrl.c |  6 ++++++
+ drivers/sbus/char/bbc_i2c.c     | 11 ++++++++---
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/igbvf/netdev.c b/drivers/net/ethernet/intel/igbvf/netdev.c
-index 93eb7ee06d3e..4e6b02fbe652 100644
---- a/drivers/net/ethernet/intel/igbvf/netdev.c
-+++ b/drivers/net/ethernet/intel/igbvf/netdev.c
-@@ -2638,21 +2638,15 @@ static int igbvf_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		return err;
+diff --git a/drivers/sbus/char/bbc_envctrl.c b/drivers/sbus/char/bbc_envctrl.c
+index 160e7510aca6..0787b9756165 100644
+--- a/drivers/sbus/char/bbc_envctrl.c
++++ b/drivers/sbus/char/bbc_envctrl.c
+@@ -452,6 +452,9 @@ static void attach_one_temp(struct bbc_i2c_bus *bp, struct platform_device *op,
+ 	if (!tp)
+ 		return;
  
- 	pci_using_dac = 0;
--	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
-+	err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
- 	if (!err) {
--		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
--		if (!err)
--			pci_using_dac = 1;
-+		pci_using_dac = 1;
- 	} else {
--		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-+		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
- 		if (err) {
--			err = dma_set_coherent_mask(&pdev->dev,
--						    DMA_BIT_MASK(32));
--			if (err) {
--				dev_err(&pdev->dev, "No usable DMA "
--				        "configuration, aborting\n");
--				goto err_dma;
--			}
-+			dev_err(&pdev->dev, "No usable DMA "
-+			        "configuration, aborting\n");
-+			goto err_dma;
- 		}
- 	}
++	INIT_LIST_HEAD(&tp->bp_list);
++	INIT_LIST_HEAD(&tp->glob_list);
++
+ 	tp->client = bbc_i2c_attach(bp, op);
+ 	if (!tp->client) {
+ 		kfree(tp);
+@@ -497,6 +500,9 @@ static void attach_one_fan(struct bbc_i2c_bus *bp, struct platform_device *op,
+ 	if (!fp)
+ 		return;
  
++	INIT_LIST_HEAD(&fp->bp_list);
++	INIT_LIST_HEAD(&fp->glob_list);
++
+ 	fp->client = bbc_i2c_attach(bp, op);
+ 	if (!fp->client) {
+ 		kfree(fp);
+diff --git a/drivers/sbus/char/bbc_i2c.c b/drivers/sbus/char/bbc_i2c.c
+index c1441ed282eb..e0e6cd605cca 100644
+--- a/drivers/sbus/char/bbc_i2c.c
++++ b/drivers/sbus/char/bbc_i2c.c
+@@ -301,13 +301,18 @@ static struct bbc_i2c_bus * attach_one_i2c(struct platform_device *op, int index
+ 	if (!bp)
+ 		return NULL;
+ 
++	INIT_LIST_HEAD(&bp->temps);
++	INIT_LIST_HEAD(&bp->fans);
++
+ 	bp->i2c_control_regs = of_ioremap(&op->resource[0], 0, 0x2, "bbc_i2c_regs");
+ 	if (!bp->i2c_control_regs)
+ 		goto fail;
+ 
+-	bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
+-	if (!bp->i2c_bussel_reg)
+-		goto fail;
++	if (op->num_resources == 2) {
++		bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
++		if (!bp->i2c_bussel_reg)
++			goto fail;
++	}
+ 
+ 	bp->waiting = 0;
+ 	init_waitqueue_head(&bp->wq);
 -- 
 2.0.4
 
