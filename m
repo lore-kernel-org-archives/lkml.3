@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaHTJfG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:35:06 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:60769 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaHTJfD (ORCPT
+	id S1752302AbaHTJfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:35:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43637 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752005AbaHTJfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:35:03 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-4e-53f46bc53c98
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <1408467177-69746-1-git-send-email-jaegeuk@kernel.org>
- <1408467177-69746-2-git-send-email-jaegeuk@kernel.org>
-In-reply-to: <1408467177-69746-2-git-send-email-jaegeuk@kernel.org>
-Subject: RE: [f2fs-dev] [PATCH 2/2] f2fs: trigger release_dirty_inode in
-	f2fs_put_super
-Date: Wed, 20 Aug 2014 17:33:58 +0800
-Message-id: <007a01cfbc5a$035849f0$0a08ddd0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIRsEQNpbtGJR6jwHxlc6l54GvPMQILZQIOm0T0gTA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAd2j2V+CDc71Gls8WT+L2eLSIneL
-	PXtPslhc3jWHzYHFY9OqTjaP3Qs+M3l83iQXwBzFZZOSmpNZllqkb5fAldHb2cZa8Iy/4s2b
-	/2wNjDN4uxg5OSQETCRmbF/JBmGLSVy4tx7MFhJYxCgx+b9BFyMXkP2DUWLurq3sIAk2ARWJ
-	5R3/mUBsEQE1id59U8BsZoFMiQn9L9ghmqslFp/aztjFyMHBKeAsceWRMEhYWCBS4sOzfmYQ
-	m0VAVWLv3cksIDavgKXEofbtULagxI/J91ggRmpJbN7WxAphy0tsXvOWGeJOBYkdZ18zQpxg
-	JTHv9CtGiBpxiY1HbrFMYBSahWTULCSjZiEZNQtJywJGllWMoqkFyQXFSem5hnrFibnFpXnp
-	esn5uZsYwWH/TGoH48oGi0OMAhyMSjy8Ctmfg4VYE8uKK3MPMUpwMCuJ8BYlfAkW4k1JrKxK
-	LcqPLyrNSS0+xCjNwaIkznug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwLjqnkBgZHasweEbKmYT
-	YzicViXML1zsYXr6Zr3R5VtRanHaRoJnPqhe1AtqZgns81xjxfuG4eu96mu1v1YZOZ94VNFw
-	pe3oob7pCxYd/qX5zecRw7bFYhfsk1+1rLggsVJ34uXdO6ZevlA76ULSaVaJ688abmRN52LR
-	UQtrv/juQ4HqpDfOgoVKLMUZiYZazEXFiQA0uwuHdwIAAA==
+	Wed, 20 Aug 2014 05:35:07 -0400
+Date: Wed, 20 Aug 2014 10:34:59 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "atull@opensource.altera.com" <atull@opensource.altera.com>
+Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "baruch@tkos.co.il" <baruch@tkos.co.il>,
+        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "skuribay@pobox.com" <skuribay@pobox.com>,
+        "Romain.Baeriswyl@abilis.com" <Romain.Baeriswyl@abilis.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH 1/2] i2c: designware: device tree bindings for i2c speed
+ mode
+Message-ID: <20140820093459.GB21174@leverpostej>
+References: <1408473276-10847-1-git-send-email-atull@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408473276-10847-1-git-send-email-atull@opensource.altera.com>
+Thread-Topic: [PATCH 1/2] i2c: designware: device tree bindings for i2c speed
+ mode
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> Sent: Wednesday, August 20, 2014 12:53 AM
-> To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Cc: Jaegeuk Kim
-> Subject: [f2fs-dev] [PATCH 2/2] f2fs: trigger release_dirty_inode in f2fs_put_super
+On Tue, Aug 19, 2014 at 07:34:35PM +0100, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
 > 
-> The generic_shutdown_super calls sync_filesystem, evict_inode, and then
-> f2fs_put_super. In f2fs_evict_inode, we remain some dirty inode information
-> so we should release them at f2fs_put_super.
+> Add "speed-mode" Device Tree property to select between
+> standard and fast i2c mode.  Previously, driver was hardwired
+> as fast mode.  Default to fast mode if property is not
+> present.
 > 
-> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-
-Looks good to me now, add this please:
-
-Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
 > ---
->  fs/f2fs/checkpoint.c | 2 +-
->  fs/f2fs/super.c      | 3 +++
->  2 files changed, 4 insertions(+), 1 deletion(-)
+>  .../devicetree/bindings/i2c/i2c-designware.txt     |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> index 7e1c13b..f14af91 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -348,7 +348,7 @@ bool exist_written_data(struct f2fs_sb_info *sbi, nid_t ino, int mode)
->  	return e ? true : false;
->  }
-> 
-> -static void release_dirty_inode(struct f2fs_sb_info *sbi)
-> +void release_dirty_inode(struct f2fs_sb_info *sbi)
->  {
->  	struct ino_entry *e, *tmp;
->  	int i;
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> index 60e3554..7a54779 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -435,6 +435,9 @@ static void f2fs_put_super(struct super_block *sb)
->  	if (sbi->s_dirty)
->  		write_checkpoint(sbi, true);
-> 
-> +	/* normally superblock is clean, so we need to release this */
-> +	release_dirty_inode(sbi);
-> +
->  	iput(sbi->node_inode);
->  	iput(sbi->meta_inode);
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+> index 5199b0c..0e4cd21 100644
+> --- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+> @@ -9,6 +9,8 @@ Required properties :
+>  Recommended properties :
+>  
+>   - clock-frequency : desired I2C bus clock frequency in Hz.
+> + - speed-mode      : 0 = standard (0 - 100Kb/s)
+> +                   : 1 = fast (<= 400Kb/s) <== default
+
+This is a bit opaque.
+
+Is this a limit on the max bit-rate the device should operate at?
+
+Why not just have an optional boolean property to limit to standard
+speed?
+
+Thanks,
+Mark.
+
+>  
+>  Optional properties :
+>   - i2c-sda-hold-time-ns : should contain the SDA hold time in nanoseconds.
+> @@ -29,6 +31,7 @@ Example :
+>  		reg = <0xf0000 0x1000>;
+>  		interrupts = <11>;
+>  		clock-frequency = <400000>;
+> +		speed-mode = <0>;
+>  	};
+>  
+>  	i2c@1120000 {
+> -- 
+> 1.7.9.5
 > 
 > --
-> 1.8.5.2 (Apple Git-48)
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> 
-> ------------------------------------------------------------------------------
-> _______________________________________________
-> Linux-f2fs-devel mailing list
-> Linux-f2fs-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-
