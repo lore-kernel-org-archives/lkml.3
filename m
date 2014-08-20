@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917AbaHTLxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:53:38 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58993 "EHLO
+	id S1753389AbaHTLxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:53:39 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58997 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752601AbaHTLoL (ORCPT
+	by vger.kernel.org with ESMTP id S1752600AbaHTLoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:11 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 082/104] DMA-API: net: intel/igb: fix 32-bit DMA mask handling
-Date: Wed, 20 Aug 2014 13:43:45 +0200
-Message-Id: <28c6b6f51a04bda3b4d8c9e144dcaf8a0275e737.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 066/104] ext4: Fix block zeroing when punching holes in indirect block files
+Date: Wed, 20 Aug 2014 13:43:29 +0200
+Message-Id: <c05e7dcf669e800e589e288cdadf331b649bdf1e.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,76 +23,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Jan Kara <jack@suse.cz>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit dc4ff9bb7534ebd153f8441ec0e9190964ad8944 upstream.
+commit 77ea2a4ba657a1ad4fb7c64bc5cdce84b8a132b6 upstream.
 
-The fallback to 32-bit DMA mask is rather odd:
-	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
-	if (!err) {
-		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
-		if (!err)
-			pci_using_dac = 1;
-	} else {
-		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-		if (err) {
-			err = dma_set_coherent_mask(&pdev->dev,
-						    DMA_BIT_MASK(32));
-			if (err) {
-				dev_err(&pdev->dev,
-					"No usable DMA configuration, aborting\n");
-				goto err_dma;
-			}
-		}
-	}
-This means we only set the coherent DMA mask in the fallback path if
-the DMA mask set failed, which is silly.  This fixes it to set the
-coherent DMA mask only if dma_set_mask() succeeded, and to error out
-if either fails.
+free_holes_block() passed local variable as a block pointer
+to ext4_clear_blocks(). Thus ext4_clear_blocks() zeroed out this local
+variable instead of proper place in inode / indirect block. We later
+zero out proper place in inode / indirect block but don't dirty the
+inode / buffer again which can lead to subtle issues (some changes e.g.
+to inode can be lost).
 
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/intel/igb/igb_main.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ fs/ext4/indirect.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 76e43c417a31..318017d7dada 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -2034,21 +2034,15 @@ static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		return err;
- 
- 	pci_using_dac = 0;
--	err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
-+	err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
- 	if (!err) {
--		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
--		if (!err)
--			pci_using_dac = 1;
-+		pci_using_dac = 1;
- 	} else {
--		err = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
-+		err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
- 		if (err) {
--			err = dma_set_coherent_mask(&pdev->dev,
--						    DMA_BIT_MASK(32));
--			if (err) {
--				dev_err(&pdev->dev,
--					"No usable DMA configuration, aborting\n");
--				goto err_dma;
--			}
-+			dev_err(&pdev->dev,
-+				"No usable DMA configuration, aborting\n");
-+			goto err_dma;
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index e6574d7b6642..c30cbe291e30 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1345,8 +1345,8 @@ static int free_hole_blocks(handle_t *handle, struct inode *inode,
+ 		if (level == 0 ||
+ 		    (bh && all_zeroes((__le32 *)bh->b_data,
+ 				      (__le32 *)bh->b_data + addr_per_block))) {
+-			ext4_free_data(handle, inode, parent_bh, &blk, &blk+1);
+-			*i_data = 0;
++			ext4_free_data(handle, inode, parent_bh,
++				       i_data, i_data + 1);
  		}
- 	}
- 
+ 		brelse(bh);
+ 		bh = NULL;
 -- 
 2.0.4
 
