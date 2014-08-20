@@ -1,95 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaHTMgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:36:37 -0400
-Received: from sauhun.de ([89.238.76.85]:46687 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731AbaHTMgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:36:35 -0400
-Date: Wed, 20 Aug 2014 07:36:18 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "atull@opensource.altera.com" <atull@opensource.altera.com>,
-        "baruch@tkos.co.il" <baruch@tkos.co.il>,
-        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "skuribay@pobox.com" <skuribay@pobox.com>,
-        "Romain.Baeriswyl@abilis.com" <Romain.Baeriswyl@abilis.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH] i2c: designware: deduce speed mode from device tree
- setting
-Message-ID: <20140820123617.GB1373@katana>
-References: <1408479529-24249-1-git-send-email-atull@opensource.altera.com>
- <20140820092257.GA21174@leverpostej>
+	id S1753652AbaHTMhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:37:19 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:53432 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251AbaHTMhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 08:37:15 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
-Content-Disposition: inline
-In-Reply-To: <20140820092257.GA21174@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140819123342.GJ23128@arm.com>
+References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+	<1407949593-16121-8-git-send-email-keescook@chromium.org>
+	<20140819123342.GJ23128@arm.com>
+Date: Wed, 20 Aug 2014 07:37:14 -0500
+X-Google-Sender-Auth: eBlVHmOnYxKb-dAK8eRmlrx5twE
+Message-ID: <CAGXu5jLnXeavr4E4YF9jtB03iA-y4vLZjf83a8ABzUC-hdkz9w@mail.gmail.com>
+Subject: Re: [PATCH v4 7/8] ARM: mm: allow non-text sections to be non-executable
+From: Kees Cook <keescook@chromium.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 19, 2014 at 7:33 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Wed, Aug 13, 2014 at 06:06:32PM +0100, Kees Cook wrote:
+>> Adds CONFIG_ARM_KERNMEM_PERMS to separate the kernel memory regions
+>> into section-sized areas that can have different permisions. Performs
+>> the NX permission changes during free_initmem, so that init memory can be
+>> reclaimed.
+>>
+>> This uses section size instead of PMD size to reduce memory lost to
+>> padding on non-LPAE systems.
+>>
+>> Based on work by Brad Spengler, Larry Bassel, and Laura Abbott.
+>
+> [...]
+>
+>> diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+>> index 6f57cb94367f..a3d07ca2bbb4 100644
+>> --- a/arch/arm/kernel/vmlinux.lds.S
+>> +++ b/arch/arm/kernel/vmlinux.lds.S
+>> @@ -8,6 +8,9 @@
+>>  #include <asm/thread_info.h>
+>>  #include <asm/memory.h>
+>>  #include <asm/page.h>
+>> +#ifdef CONFIG_ARM_KERNMEM_PERMS
+>> +#include <asm/pgtable.h>
+>> +#endif
+>>
+>>  #define PROC_INFO                                                    \
+>>       . = ALIGN(4);                                                   \
+>> @@ -90,6 +93,11 @@ SECTIONS
+>>               _text = .;
+>>               HEAD_TEXT
+>>       }
+>> +
+>> +#ifdef CONFIG_ARM_KERNMEM_PERMS
+>> +     . = ALIGN(1<<SECTION_SHIFT);
+>> +#endif
+>> +
+>>       .text : {                       /* Real text segment            */
+>>               _stext = .;             /* Text and read-only data      */
+>>                       __exception_text_start = .;
+>> @@ -145,7 +153,11 @@ SECTIONS
+>>       _etext = .;                     /* End of text and rodata section */
+>>
+>>  #ifndef CONFIG_XIP_KERNEL
+>> +# ifdef CONFIG_ARM_KERNMEM_PERMS
+>> +     . = ALIGN(1<<SECTION_SHIFT);
+>> +# else
+>>       . = ALIGN(PAGE_SIZE);
+>> +# endif
+>
+> This might be cleaner if we had a single macro (ALIGN_MIN?) that expanded to
+> ALIGN(1 << SECTION_SHIFT) #ifdef  CONFIG_ARM_KERNMEM_PERMS.
 
---hQiwHBbRI9kgIhsi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I didn't see a cleaner way to do this, since some times it's optional
+(no alignment instead of different alignment), and sometimes it's not
+controlled by _KERNMEM_PERMS (i.e. sometimes it's _DEBUG_RODATA).
 
-> > +
-> > +		ret =3D of_property_read_u32(pdev->dev.of_node,
-> > +					   "clock-frequency", &bus_rate);
-> > +		if (!ret && (bus_rate <=3D 100000))
-> > +			speed =3D DW_IC_CON_SPEED_STD;
->=20
-> This looks a bit odd.
->=20
-> If the device only supports two particular speeds why do we accept any
-> other speed in the clock-frequency property?
+>
+>> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+>> index ad82c05bfc3a..ccf392ef40d4 100644
+>> --- a/arch/arm/mm/init.c
+>> +++ b/arch/arm/mm/init.c
+>> @@ -32,6 +32,11 @@
+>>  #include <asm/tlb.h>
+>>  #include <asm/fixmap.h>
+>>
+>> +#ifdef CONFIG_ARM_KERNMEM_PERMS
+>> +#include <asm/system_info.h>
+>> +#include <asm/cp15.h>
+>> +#endif
+>
+> We already #include cp15.h in this file. If you need system_info.h, I don't
+> think you should bother making the include conditional.
 
-"clock-frequency" is the default binding for specifying i2c bus speeds
-today. Some controllers can be programmed to do various speeds, some can
-only do a set of fixed values.
+Ah, yes. I will fix this.
 
-> Surely we should at least warn that something was off?
+>
+>> +/*
+>> + * Updates section permissions only for the current mm (sections are
+>> + * copied into each mm). During startup, this is the init_mm.
+>> + */
+>> +static inline void section_update(unsigned long addr, pmdval_t mask,
+>> +                               pmdval_t prot)
+>> +{
+>> +     struct mm_struct *mm;
+>> +     pmd_t *pmd;
+>> +
+>> +     mm = current->active_mm;
+>> +     pmd = pmd_offset(pud_offset(pgd_offset(mm, addr), addr), addr);
+>> +
+>> +#ifdef CONFIG_ARM_LPAE
+>> +     pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
+>> +#else
+>> +     if (addr & SECTION_SIZE)
+>> +             pmd[1] = __pmd((pmd_val(pmd[1]) & mask) | prot);
+>> +     else
+>> +             pmd[0] = __pmd((pmd_val(pmd[0]) & mask) | prot);
+>> +#endif
+>> +     flush_pmd_entry(pmd);
+>> +     local_flush_tlb_kernel_range(addr, addr + SECTION_SIZE);
+>
+> Why only a local flush? You're changing global mappings here, right?
 
-Yes, I was going to say the same until Romain's old patch showed up
-which does that.
+Yes, but with the a15 errata, it cannot use a global flush. As a
+result, section_update can only be used by a single CPU which is how
+the usage is managed. Perhaps I should add some comments to that
+effect? (There was a thread a few months ago on this problem and this
+shook out as a solution.)
 
-Thanks,
+>
+>> +}
+>> +
+>> +/* Make sure extended page tables are in use. */
+>> +static inline bool arch_has_strict_perms(void)
+>> +{
+>> +     unsigned int cr;
+>> +
+>> +     if (cpu_architecture() < CPU_ARCH_ARMv6)
+>> +             return false;
+>> +
+>> +     cr = get_cr();
+>> +     if (!(cr & CR_XP))
+>> +             return false;
+>> +
+>> +     return true;
+>
+> return !!(get_cr() & CR_XP)?
 
-   Wolfram
+Sure, I can reduce this.
 
+>
+>> +}
+>> +
+>> +#define set_section_perms(perms, field)      {                               \
+>> +     size_t i;                                                       \
+>> +     unsigned long addr;                                             \
+>> +                                                                     \
+>> +     if (!arch_has_strict_perms())                                   \
+>> +             return;                                                 \
+>> +                                                                     \
+>> +     for (i = 0; i < ARRAY_SIZE(perms); i++) {                       \
+>> +             if (!IS_ALIGNED(perms[i].start, SECTION_SIZE) ||        \
+>> +                 !IS_ALIGNED(perms[i].end, SECTION_SIZE)) {          \
+>> +                     pr_err("BUG: section %lx-%lx not aligned to %lx\n", \
+>> +                             perms[i].start, perms[i].end,           \
+>> +                             SECTION_SIZE);                          \
+>> +                     continue;                                       \
+>> +             }                                                       \
+>> +                                                                     \
+>> +             for (addr = perms[i].start;                             \
+>> +                  addr < perms[i].end;                               \
+>> +                  addr += SECTION_SIZE)                              \
+>> +                     section_update(addr, perms[i].mask,             \
+>> +                                    perms[i].field);                 \
+>> +     }                                                               \
+>> +}
+>> +
+>> +static inline void fix_kernmem_perms(void)
+>> +{
+>> +     set_section_perms(nx_perms, prot);
+>> +}
+>> +#else
+>> +static inline void fix_kernmem_perms(void) { }
+>> +#endif /* CONFIG_ARM_KERNMEM_PERMS */
+>> +
+>>  void free_initmem(void)
+>>  {
+>>  #ifdef CONFIG_HAVE_TCM
+>>       extern char __tcm_start, __tcm_end;
+>> +#endif
+>> +
+>> +     fix_kernmem_perms();
+>>
+>> +#ifdef CONFIG_HAVE_TCM
+>
+> You could avoid the double #ifdef by moving the tcm stuff into another
+> function (free_tcmmem?)
 
---hQiwHBbRI9kgIhsi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Sure, I can do that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Thanks!
 
-iQIcBAEBAgAGBQJT9JZBAAoJEBQN5MwUoCm22TsQAISfSofiMFAxoAXGsj+R5SPI
-3NPq6TSgjwv/VrrB5PjiSE+qt3qbcaHLxAA1UU33mMA5Zj9QT+1LCFZ0v3Kv6TBl
-XIcUp7JVIQJ343V/XgLiYKPV99uRCM+BulRE5zurF+p2QRjOcV66rUAjdqCYmASW
-ItRNxxEIcvrM4vBGzhWHRDe4iPl4D6J2QNxZaUE9gmdkbUIiTYF3vasf/5+eBaNx
-3YodLSng+HSirXkVKNAi5vCYvaNu3Rc6dTsOHLlI5Bn0xtkiTVI8zvQ49tR+3uJQ
-Ad8VBZuPhzyaALwdqiqM+kDJQW3uYoQtFeQsZJVEZz9SwX/Oo8xRKdB+zP4Pgu67
-HQKo8HmwzazlnfNfQs4LxsiR12RvnmGIlmS+3S3l55dK0J1Jex1qHZH23YT5Cseo
-rO9Jc356lsZK/E2gCgAigw9CuSvuHgg1vgtqMjTBj+64LfphnWFrsUzlrAsza+35
-KfdkROGypxkCMXtjHrOsCWMZ2XY6Of/Qxa76iofV+7bTc5SD5MT56d9o1CJiSkCB
-QrDqDcDwaq0alzJWwNLIHe/OLJolSZi2jyNkYqhH1Xkf+K8JplmkxQe3bHBj++DU
-YS3hfPAe3+XZ6sNrIJaC8vQWCMNkc0rOTztJNLszVIBPoyVCqom0+VqXt4nY39D7
-Z8LLOaVtvFzCoWdSiJe3
-=iqcS
------END PGP SIGNATURE-----
+-Kees
 
---hQiwHBbRI9kgIhsi--
+-- 
+Kees Cook
+Chrome OS Security
