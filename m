@@ -1,79 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaHTPy1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:54:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57295 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaHTPyZ (ORCPT
+	id S1752203AbaHTPzO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:55:14 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:65164 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893AbaHTPzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:54:25 -0400
-Date: Wed, 20 Aug 2014 10:54:17 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Richard Leitner <richard.leitner@skidata.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] usb: gadget: serial: remove PREFIX macro
-Message-ID: <20140820155417.GD24500@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140718113946.0e70c0cb@lxbuild.skidata.net>
+	Wed, 20 Aug 2014 11:55:10 -0400
+Date: Wed, 20 Aug 2014 16:54:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
+        Max Eliaser <max.eliaser@intel.com>,
+        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-acpi@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 5/9] mfd: Add ACPI support
+Message-ID: <20140820155459.GM4266@lee--X1>
+References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408172039-32513-6-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IDYEmSnFhs3mNXr+"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140718113946.0e70c0cb@lxbuild.skidata.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408172039-32513-6-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---IDYEmSnFhs3mNXr+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 16 Aug 2014, Mika Westerberg wrote:
+> If an MFD device is backed by ACPI namespace, we should allow subdevice
+> drivers to access their corresponding ACPI companion devices through normal
+> means (e.g using ACPI_COMPANION()).
+> 
+> This patch adds such support to the MFD core. If the MFD parent device
+> doesn't specify any ACPI _HID/_CID for the child device, the child device
+> will share the parent ACPI companion device. Otherwise the child device
+> will be assigned with the corresponding ACPI companion, if found in the
+> namespace below the parent.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+> ---
+>  Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
+>  drivers/mfd/mfd-core.c             | 41 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/core.h           |  3 +++
+>  3 files changed, 71 insertions(+)
+> 
+> diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+> index e182be5e3c83..74e35c54febf 100644
+> --- a/Documentation/acpi/enumeration.txt
+> +++ b/Documentation/acpi/enumeration.txt
+> @@ -312,3 +312,30 @@ a code like this:
+>  
+>  There are also devm_* versions of these functions which release the
+>  descriptors once the device is released.
+> +
+> +MFD devices
+> +~~~~~~~~~~~
+> +The MFD devices create platform devices from their children. For the
 
-Hi,
+What does this mean?  MFD drivers register their children _as_
+platform devices.
 
-On Fri, Jul 18, 2014 at 11:39:46AM +0200, Richard Leitner wrote:
-> Remove the ttyGS PREFIX macro from u_serial.c and replace all occurences =
-with
-> the hardcoded ttyGS string.
->=20
-> This macro was mostly used in a few debug/warning messages and a lot of
-> hardcoded ttyGS existed beneath. It may have been used for renaming the
-> tty, but if done so most debug messages would have ignored this because
-> of the hardcoded strings.
->=20
-> Due to the fact the usage of this PREFIX instead of the hardcoded strings
-> in all debug calls would have resulted in a hard to read/grep code it
-> is removed completely.
->=20
-> Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+> +child devices there needs to be an ACPI handle that they can use to
+> +reference parts of the ACPI namespace that relate to them. In the Linux
+> +MFD subsystem we provide two ways:
+> +
+> +	o The children share the parent ACPI handle.
+> +	o The MFD cell can specify the ACPI id of the device.
+> +
+> +For the first case, the MFD drivers do not need to do anything. The
+> +resulting child platform device will have its ACPI_COMPANION() set to point
+> +to the parent device.
+> +
+> +If the ACPI namespace has a device that we can match using an ACPI id,
+> +the id should be set like:
+> +
+> +	static struct mfd_cell my_subdevice_cell = {
+> +		.name = "my_subdevice",
+> +		/* set the resources relative to the parent */
+> +		.acpi_pnpid = "XYZ0001",
+> +	};
+> +
+> +The ACPI id "XYZ0001" is then used to lookup an ACPI device directly under
+> +the MFD device and if found, that ACPI companion device is bound to the
+> +resulting child platform device.
+> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+> index 892d343193ad..bb466b28b3b6 100644
+> --- a/drivers/mfd/mfd-core.c
+> +++ b/drivers/mfd/mfd-core.c
+> @@ -78,6 +78,45 @@ static int mfd_platform_add_cell(struct platform_device *pdev,
+>  	return 0;
+>  }
+>  
+> +#if IS_ENABLED(CONFIG_ACPI)
+> +static void mfd_acpi_add_device(const struct mfd_cell *cell,
+> +				struct platform_device *pdev)
+> +{
+> +	struct acpi_device *parent_adev;
+> +	struct acpi_device *adev = NULL;
+> +
+> +	parent_adev = ACPI_COMPANION(pdev->dev.parent);
+> +	if (!parent_adev)
+> +		return;
+> +
+> +	/*
+> +	 * MFD child device gets its ACPI handle either from the ACPI
+> +	 * device directly under the parent that matches the acpi_pnpid or
+> +	 * it will use the parent handle if is no acpi_pnpid is given.
+> +	 */
+> +	if (cell->acpi_pnpid) {
+> +		struct acpi_device_id ids[2] = {};
+> +		struct acpi_device *child_adev;
+> +
+> +		strlcpy(ids[0].id, cell->acpi_pnpid, sizeof(ids[0].id));
+> +		list_for_each_entry(child_adev, &parent_adev->children, node)
+> +			if (acpi_match_device_ids(child_adev, ids)) {
+> +				adev = child_adev;
+> +				break;
+> +			}
+> +	} else {
+> +		adev = parent_adev;
+> +	}
+> +
+> +	ACPI_COMPANION_SET(&pdev->dev, adev);
+> +}
+> +#else
+> +static inline void mfd_acpi_add_device(const struct mfd_cell *cell,
+> +				       struct platform_device *pdev)
+> +{
+> +}
+> +#endif
+> +
 
-patch looks fine, can you resend with RFC in the subject ?
+I'm not keen on polluting the MFD core driver with #differy.  Can't you
+think of another way to do it?
 
---=20
-balbi
+>  static int mfd_add_device(struct device *parent, int id,
+>  			  const struct mfd_cell *cell, atomic_t *usage_count,
+>  			  struct resource *mem_base,
+> @@ -118,6 +157,8 @@ static int mfd_add_device(struct device *parent, int id,
+>  		}
+>  	}
+>  
+> +	mfd_acpi_add_device(cell, pdev);
+> +
+>  	if (cell->pdata_size) {
+>  		ret = platform_device_add_data(pdev,
+>  					cell->platform_data, cell->pdata_size);
+> diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+> index f543de91ce19..73e1709d4c09 100644
+> --- a/include/linux/mfd/core.h
+> +++ b/include/linux/mfd/core.h
+> @@ -44,6 +44,9 @@ struct mfd_cell {
+>  	 */
+>  	const char		*of_compatible;
+>  
+> +	/* Matches ACPI PNP id, either _HID or _CID */
+> +	const char		*acpi_pnpid;
+> +
+>  	/*
+>  	 * These resources can be specified relative to the parent device.
+>  	 * For accessing hardware you should use resources from the platform dev
 
---IDYEmSnFhs3mNXr+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT9MSpAAoJEIaOsuA1yqREL38QAJNAk4q+sZqr3dBuvvUml27e
-PW9BWURUbWDxpA/NGlEu4cqHTgg4mcPclqMs8Abve0O8hO7g3p6Q8pUT8k7hx0ZN
-oExjlhw+gzaaRJP/PeU8SnXImMdhQ0xBqg06MkOkfHBPzID5iNrHNSLo3CHkqBb5
-eAFAHI85UKdN/NlqPr6Rs7duQqpWjqMbVTZRAM6G/7ilSijQbV1Be5pJy1DWNoU9
-AknJBxld94oxKOi0S+NMTyhLhlEQ7fxaDWEtaXvQ21P2kFKShyIuQ6+iQm9NAjB8
-b2DDh33KJfsS/o++0APSAl60shXRYCp9IBTBLJJS14wzWnwL339WZ4xl5g4vPQgT
-8EunljtRkpO+XVhdT59MmafqO/vdpJrjPpXms8VYJE7KhvdJngEDTfx3lVsoMKoN
-+9kRXrZtqYzR4/YdinjrJXV04g5LXb9tt/jbDTlfNXMOLBPL79KT6t4HwCCRlK8N
-QxW89NOKQiHvBhb5zmMVIXLXBtu0ERlkzd145pyJt9zfSXbpKeyc27oVbWeE6JnF
-sfJmIC3rZF8lmshDuHcpEt2t4Xa83LKEygjaz/bgrgzh2CMTJAauwvNCcFR+AHnq
-85gxOvTmXOe4lu1VUOghcNspGvRiXxCmSQ3FV9g/zLTSeWhdj+yaOXUwYPjc1K4C
-7fKTQiL0SLCi4Sd5BmSv
-=Lp7+
------END PGP SIGNATURE-----
-
---IDYEmSnFhs3mNXr+--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
