@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769AbaHTMQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:16:30 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:59575 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753773AbaHTMQK (ORCPT
+	id S1754780AbaHTMQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:16:38 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:49436 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604AbaHTMQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:16:10 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 102/104] drivers/rtc/rtc-efi.c: avoid subtracting day twice when computing year days
-Date: Wed, 20 Aug 2014 13:44:05 +0200
-Message-Id: <44a3aa6b1f9ded206117d516d35e6ba1d5dc646f.1408535000.git.jslaby@suse.cz>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-References: <cover.1408535000.git.jslaby@suse.cz>
+	Wed, 20 Aug 2014 08:16:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140819122653.GH23128@arm.com>
+References: <1407949593-16121-1-git-send-email-keescook@chromium.org>
+	<1407949593-16121-3-git-send-email-keescook@chromium.org>
+	<20140819122653.GH23128@arm.com>
+Date: Wed, 20 Aug 2014 07:16:34 -0500
+X-Google-Sender-Auth: PU0qxHa-MCQjZWCgTSSXtQA_IlU
+Message-ID: <CAGXu5jJRx8e2_9jpMYApH8maJog_z2YAs2ihoD4SFNfvPqn2Aw@mail.gmail.com>
+Subject: Re: [PATCH v4 2/8] ARM: expand fixmap region to 3MB
+From: Kees Cook <keescook@chromium.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh@kernel.org>, Laura Abbott <lauraa@codeaurora.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Rabin Vincent <rabin@rab.in>, Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+On Tue, Aug 19, 2014 at 7:26 AM, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Kees, Rob,
+>
+> On Wed, Aug 13, 2014 at 06:06:27PM +0100, Kees Cook wrote:
+>> From: Rob Herring <robh@kernel.org>
+>>
+>> With commit a05e54c103b0 ("ARM: 8031/2: change fixmap mapping region to
+>> support 32 CPUs"), the fixmap region was expanded to 2MB, but it
+>> precluded any other uses of the fixmap region. In order to support other
+>> uses the fixmap region needs to be expanded beyond 2MB. Fortunately, the
+>> adjacent 1MB range 0xffe00000-0xfff00000 is availabe.
+>>
+>> Remove fixmap_page_table ptr and lookup the page table via the virtual
+>> address so that the fixmap region can span more that one pmd. The 2nd
+>> pmd is already created since it is shared with the vector page.
+>
+> [...]
+>
+>> diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+>> index 45aeaaca9052..81061987ac45 100644
+>> --- a/arch/arm/mm/highmem.c
+>> +++ b/arch/arm/mm/highmem.c
+>> @@ -18,19 +18,20 @@
+>>  #include <asm/tlbflush.h>
+>>  #include "mm.h"
+>>
+>> -pte_t *fixmap_page_table;
+>> -
+>>  static inline void set_fixmap_pte(int idx, pte_t pte)
+>>  {
+>>       unsigned long vaddr = __fix_to_virt(idx);
+>> -     set_pte_ext(fixmap_page_table + idx, pte, 0);
+>> +     pte_t *ptep = pte_offset_kernel(pmd_off_k(vaddr), vaddr);
+>> +
+>> +     set_pte_ext(ptep, pte, 0);
+>>       local_flush_tlb_kernel_page(vaddr);
+>>  }
+>
+> Minor comment, but we can drop the ifx parameter here now, right? It looks a
+> bit weird having a setter/getter pair of functions where the type signatures
+> aren't the inverse.
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+idx is used to get the vaddr here. I suppose the various users of
+these functions in highmem could be reworked, but that doesn't look
+sensible either. Maybe it's just the names of the functions that are
+confusing?
 
-===============
+-Kees
 
-commit 809d9627087e1db63b8672c1f264af73b13116fb upstream.
-
-Compared source code of rtc-lib.c::rtc_year_days() with
-efirtc.c::rtc_year_days(), found the code in rtc-efi decreases value of
-day twice when it computing year days.  rtc-lib.c::rtc_year_days() has
-already decrease days and return the year days from 0 to 365.
-
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/rtc/rtc-efi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
-index 797aa0252ba9..c4c38431012e 100644
---- a/drivers/rtc/rtc-efi.c
-+++ b/drivers/rtc/rtc-efi.c
-@@ -35,7 +35,7 @@ static inline int
- compute_yday(efi_time_t *eft)
- {
- 	/* efi_time_t.month is in the [1-12] so, we need -1 */
--	return rtc_year_days(eft->day - 1, eft->month - 1, eft->year);
-+	return rtc_year_days(eft->day, eft->month - 1, eft->year);
- }
- /*
-  * returns day of the week [0-6] 0=Sunday
 -- 
-2.0.4
-
+Kees Cook
+Chrome OS Security
