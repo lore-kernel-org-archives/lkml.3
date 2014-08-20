@@ -1,75 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaHTIjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 04:39:01 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:52650 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaHTIi6 (ORCPT
+	id S1751841AbaHTIlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 04:41:47 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43787 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaHTIln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 04:38:58 -0400
-Message-ID: <53F45E9C.2080904@redhat.com>
-Date: Wed, 20 Aug 2014 10:38:52 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 20 Aug 2014 04:41:43 -0400
+Message-ID: <53F45F3C.5000207@de.ibm.com>
+Date: Wed, 20 Aug 2014 10:41:32 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: David Matlack <dmatlack@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
-        mtosatti@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: fix cache stale memslot info with correct mmio
- generation number
-References: <1407999713-3726-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <53F20653.2030204@redhat.com> <9AD43423-2FF3-422D-A5AD-61CAE6339CCC@linux.vnet.ibm.com> <53F24A49.2010807@redhat.com> <A07DA8BD-8756-427D-9925-B8696E47C73A@gmail.com> <CALzav=fNoXeStA6ETDW0tNqyXBxWN0i8N5P-Ht7jtwgS_r7qmw@mail.gmail.com> <53F2C997.6070605@linux.vnet.ibm.com> <53F30AA4.4050803@redhat.com> <53F30FCD.3080109@linux.vnet.ibm.com> <53F312CE.9090004@redhat.com> <53F3EBEE.1030107@linux.vnet.ibm.com> <CALzav=c1OS+TUjr0S_4BmkPicRxgKv2QhfOB+jWPt0VNEmugHQ@mail.gmail.com>
-In-Reply-To: <CALzav=c1OS+TUjr0S_4BmkPicRxgKv2QhfOB+jWPt0VNEmugHQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Razya Ladelsky <razya@il.ibm.com>, mst@redhat.com, kvm@vger.kernel.org
+CC: GLIKSON@il.ibm.com, ERANRA@il.ibm.com, YOSSIKU@il.ibm.com,
+        JOELN@il.ibm.com, abel.gordon@gmail.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] vhost: Add polling mode
+References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com>
+In-Reply-To: <20140810083035.0CF58380729@moren.haifa.ibm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082008-1948-0000-0000-000000DCC4DC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/08/2014 03:03, David Matlack ha scritto:
-> On Tue, Aug 19, 2014 at 5:29 PM, Xiao Guangrong
-> <xiaoguangrong@linux.vnet.ibm.com> wrote:
->> On 08/19/2014 05:03 PM, Paolo Bonzini wrote:
->>> Il 19/08/2014 10:50, Xiao Guangrong ha scritto:
->>>> Okay, what confused me it that it seems that the single line patch
->>>> is ok to you. :)
->>>
->>> No, it was late and I was confused. :)
->>>
->>>> Now, do we really need to care the case 2? like David said:
->>>> "Sorry I didn't explain myself very well: Since we can get a single wrong
->>>> mmio exit no matter what, it has to be handled in userspace. So my point
->>>> was, it doesn't really help to fix that one very specific way that it can
->>>> happen, because it can just happen in other ways. (E.g. update memslots
->>>> occurs after is_noslot_pfn() and before mmio exit)."
->>>>
->>>> What's your idea?
->>>>
->>>>> I think if you always treat the low bit as zero in mmio sptes, you can
->>>>> do that without losing a bit of the generation.
->>>>
->>>> What's you did is avoiding cache a invalid generation number into spte, but
->>>> actually if we can figure it out when we check mmio access, it's ok. Like the
->>>> updated patch i posted should fix it, that way avoids doubly increase the number.
->>>
->>> Yes.
->>>
->>>> Okay, if you're interested increasing the number doubly, there is the simpler
->>>> one:
->>>
->>> This wastes a bit in the mmio spte though.  My idea is to increase the
->>> memslots generation twice, but drop the low bit in the mmio spte.
->>
->> Yeah, really smart idea. :)
->>
->> Paolo/David, would you mind making a patch for this (+ the comments in David's
->> patch)?
+On 10/08/14 10:30, Razya Ladelsky wrote:
+> From: Razya Ladelsky <razya@il.ibm.com>
+> Date: Thu, 31 Jul 2014 09:47:20 +0300
+> Subject: [PATCH] vhost: Add polling mode
 > 
-> Paolo, since it was your idea would you like to write it? I don't mind either
-> way.
+> When vhost is waiting for buffers from the guest driver (e.g., more packets to
+> send in vhost-net's transmit queue), it normally goes to sleep and waits for the
+> guest to "kick" it. This kick involves a PIO in the guest, and therefore an exit
+> (and possibly userspace involvement in translating this PIO exit into a file
+> descriptor event), all of which hurts performance.
+> 
+> If the system is under-utilized (has cpu time to spare), vhost can continuously
+> poll the virtqueues for new buffers, and avoid asking the guest to kick us.
+> This patch adds an optional polling mode to vhost, that can be enabled via a
+> kernel module parameter, "poll_start_rate".
+> 
+> When polling is active for a virtqueue, the guest is asked to disable
+> notification (kicks), and the worker thread continuously checks for new buffers.
+> When it does discover new buffers, it simulates a "kick" by invoking the
+> underlying backend driver (such as vhost-net), which thinks it got a real kick
+> from the guest, and acts accordingly. If the underlying driver asks not to be
+> kicked, we disable polling on this virtqueue.
+> 
+> We start polling on a virtqueue when we notice it has work to do. Polling on
+> this virtqueue is later disabled after 3 seconds of polling turning up no new
+> work, as in this case we are better off returning to the exit-based notification
+> mechanism. The default timeout of 3 seconds can be changed with the
+> "poll_stop_idle" kernel module parameter.
+> 
+> This polling approach makes lot of sense for new HW with posted-interrupts for
+> which we have exitless host-to-guest notifications. But even with support for
+> posted interrupts, guest-to-host communication still causes exits. Polling adds
+> the missing part.
+> 
+> When systems are overloaded, there won't be enough cpu time for the various
+> vhost threads to poll their guests' devices. For these scenarios, we plan to add
+> support for vhost threads that can be shared by multiple devices, even of
+> multiple vms.
+> Our ultimate goal is to implement the I/O acceleration features described in:
+> KVM Forum 2013: Efficient and Scalable Virtio (by Abel Gordon)
+> https://www.youtube.com/watch?v=9EyweibHfEs
+> and
+> https://www.mail-archive.com/kvm@vger.kernel.org/msg98179.html
+> 
+> I ran some experiments with TCP stream netperf and filebench (having 2 threads
+> performing random reads) benchmarks on an IBM System x3650 M4.
+> I have two machines, A and B. A hosts the vms, B runs the netserver.
+> The vms (on A) run netperf, its destination server is running on B.
+> All runs loaded the guests in a way that they were (cpu) saturated. For example,
+> I ran netperf with 64B messages, which is heavily loading the vm (which is why
+> its throughput is low).
+> The idea was to get it 100% loaded, so we can see that the polling is getting it
+> to produce higher throughput.
+> 
+> The system had two cores per guest, as to allow for both the vcpu and the vhost
+> thread to run concurrently for maximum throughput (but I didn't pin the threads
+> to specific cores).
+> My experiments were fair in a sense that for both cases, with or without
+> polling, I run both threads, vcpu and vhost, on 2 cores (set their affinity that
+> way). The only difference was whether polling was enabled/disabled.
+> 
+> Results:
+> 
+> Netperf, 1 vm:
+> The polling patch improved throughput by ~33% (1516 MB/sec -> 2046 MB/sec).
+> Number of exits/sec decreased 6x.
+> The same improvement was shown when I tested with 3 vms running netperf
+> (4086 MB/sec -> 5545 MB/sec).
+> 
+> filebench, 1 vm:
+> ops/sec improved by 13% with the polling patch. Number of exits was reduced by
+> 31%.
+> The same experiment with 3 vms running filebench showed similar numbers.
+> 
+> Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
 
-Sure, I'll post the patch for review.
+Gave it a quick try on s390/kvm. As expected it makes no difference for big streaming workload like iperf.
+uperf with a 1-1 round robin got indeed faster by about 30%.
+The high CPU consumption is something that bothers me though, as virtualized systems tend to be full.
 
-Paolo
+
+> +static int poll_start_rate = 0;
+> +module_param(poll_start_rate, int, S_IRUGO|S_IWUSR);
+> +MODULE_PARM_DESC(poll_start_rate, "Start continuous polling of virtqueue when rate of events is at least this number per jiffy. If 0, never start polling.");
+> +
+> +static int poll_stop_idle = 3*HZ; /* 3 seconds */
+> +module_param(poll_stop_idle, int, S_IRUGO|S_IWUSR);
+> +MODULE_PARM_DESC(poll_stop_idle, "Stop continuous polling of virtqueue after this many jiffies of no work.");
+
+This seems ridicoudly high. Even one jiffie is an eternity, so setting it to 1 as a default would reduce the CPU overhead for most cases.
+If we dont have a packet in one millisecond, we can surely go back to the kick approach, I think.
+
+Christian
 
