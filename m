@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaHTJnB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:43:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60159 "EHLO mga01.intel.com"
+	id S1752399AbaHTJop (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:44:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53697 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844AbaHTJm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:42:58 -0400
+	id S1751936AbaHTJm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 05:42:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
-   d="scan'208";a="579224959"
+   d="scan'208";a="561005140"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: "John W . Linville" <linville@tuxdriver.com>,
         Johannes Berg <johannes@sipsolutions.net>, devel@driverdev.osuosl.org,
@@ -17,9 +17,9 @@ To: "John W . Linville" <linville@tuxdriver.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Joe Perches <joe@perches.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 11/11] staging: rtl8192u: use %*pEn to escape buffer
-Date: Wed, 20 Aug 2014 12:42:52 +0300
-Message-Id: <1408527772-27224-12-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 01/11] lib / string_helpers: move documentation to c-file
+Date: Wed, 20 Aug 2014 12:42:42 +0300
+Message-Id: <1408527772-27224-2-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1408527772-27224-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -27,44 +27,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's use kernel's native specifier to escape a buffer.
+The documentation of API belongs to c-file. This patch moves it accordingly.
+
+There is no functional change.
 
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/staging/rtl8192u/ieee80211/ieee80211.h | 14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ include/linux/string_helpers.h | 34 ----------------------------------
+ lib/string_helpers.c           | 38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-index c118551..078333b 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
-@@ -2580,25 +2580,13 @@ static inline int ieee80211_get_scans(struct ieee80211_device *ieee)
+diff --git a/include/linux/string_helpers.h b/include/linux/string_helpers.h
+index 3eeee96..5a30f2a 100644
+--- a/include/linux/string_helpers.h
++++ b/include/linux/string_helpers.h
+@@ -20,40 +20,6 @@ int string_get_size(u64 size, enum string_size_units units,
+ #define UNESCAPE_ANY		\
+ 	(UNESCAPE_SPACE | UNESCAPE_OCTAL | UNESCAPE_HEX | UNESCAPE_SPECIAL)
  
- static inline const char *escape_essid(const char *essid, u8 essid_len) {
- 	static char escaped[IW_ESSID_MAX_SIZE * 2 + 1];
--	const char *s = essid;
--	char *d = escaped;
+-/**
+- * string_unescape - unquote characters in the given string
+- * @src:	source buffer (escaped)
+- * @dst:	destination buffer (unescaped)
+- * @size:	size of the destination buffer (0 to unlimit)
+- * @flags:	combination of the flags (bitwise OR):
+- *	%UNESCAPE_SPACE:
+- *		'\f' - form feed
+- *		'\n' - new line
+- *		'\r' - carriage return
+- *		'\t' - horizontal tab
+- *		'\v' - vertical tab
+- *	%UNESCAPE_OCTAL:
+- *		'\NNN' - byte with octal value NNN (1 to 3 digits)
+- *	%UNESCAPE_HEX:
+- *		'\xHH' - byte with hexadecimal value HH (1 to 2 digits)
+- *	%UNESCAPE_SPECIAL:
+- *		'\"' - double quote
+- *		'\\' - backslash
+- *		'\a' - alert (BEL)
+- *		'\e' - escape
+- *	%UNESCAPE_ANY:
+- *		all previous together
+- *
+- * Returns amount of characters processed to the destination buffer excluding
+- * trailing '\0'.
+- *
+- * Because the size of the output will be the same as or less than the size of
+- * the input, the transformation may be performed in place.
+- *
+- * Caller must provide valid source and destination pointers. Be aware that
+- * destination buffer will always be NULL-terminated. Source string must be
+- * NULL-terminated as well.
+- */
+ int string_unescape(char *src, char *dst, size_t size, unsigned int flags);
  
- 	if (ieee80211_is_empty_essid(essid, essid_len)) {
- 		memcpy(escaped, "<hidden>", sizeof("<hidden>"));
- 		return escaped;
- 	}
- 
--	essid_len = min(essid_len, (u8)IW_ESSID_MAX_SIZE);
--	while (essid_len--) {
--		if (*s == '\0') {
--			*d++ = '\\';
--			*d++ = '0';
--			s++;
--		} else {
--			*d++ = *s++;
--		}
--	}
--	*d = '\0';
-+	snprintf(escaped, sizeof(escaped), "%*pEn", essid_len, essid);
- 	return escaped;
+ static inline int string_unescape_inplace(char *buf, unsigned int flags)
+diff --git a/lib/string_helpers.c b/lib/string_helpers.c
+index 29033f3..74ec604 100644
+--- a/lib/string_helpers.c
++++ b/lib/string_helpers.c
+@@ -168,6 +168,44 @@ static bool unescape_special(char **src, char **dst)
+ 	return true;
  }
  
++/**
++ * string_unescape - unquote characters in the given string
++ * @src:	source buffer (escaped)
++ * @dst:	destination buffer (unescaped)
++ * @size:	size of the destination buffer (0 to unlimit)
++ * @flags:	combination of the flags (bitwise OR):
++ *	%UNESCAPE_SPACE:
++ *		'\f' - form feed
++ *		'\n' - new line
++ *		'\r' - carriage return
++ *		'\t' - horizontal tab
++ *		'\v' - vertical tab
++ *	%UNESCAPE_OCTAL:
++ *		'\NNN' - byte with octal value NNN (1 to 3 digits)
++ *	%UNESCAPE_HEX:
++ *		'\xHH' - byte with hexadecimal value HH (1 to 2 digits)
++ *	%UNESCAPE_SPECIAL:
++ *		'\"' - double quote
++ *		'\\' - backslash
++ *		'\a' - alert (BEL)
++ *		'\e' - escape
++ *	%UNESCAPE_ANY:
++ *		all previous together
++ *
++ * Description:
++ * The function unquotes characters in the given string.
++ *
++ * Because the size of the output will be the same as or less than the size of
++ * the input, the transformation may be performed in place.
++ *
++ * Caller must provide valid source and destination pointers. Be aware that
++ * destination buffer will always be NULL-terminated. Source string must be
++ * NULL-terminated as well.
++ *
++ * Return:
++ * The amount of the characters processed to the destination buffer excluding
++ * trailing '\0' is returned.
++ */
+ int string_unescape(char *src, char *dst, size_t size, unsigned int flags)
+ {
+ 	char *out = dst;
 -- 
 2.1.0
 
