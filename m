@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaHTGjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 02:39:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38551 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745AbaHTGjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 02:39:42 -0400
-Date: Wed, 20 Aug 2014 08:39:51 +0200
-From: Vojtech Pavlik <vojtech@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Andreas Mohr <andi@lisas.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH 1/2] SOUND: kill gameport bits
-Message-ID: <20140820063951.GA6791@suse.cz>
-References: <20140820024638.GA25240@rhlx01.hs-esslingen.de>
- <20140820051815.GA1109@core.coreip.homeip.net>
+	id S1751831AbaHTGkh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 02:40:37 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:54397 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaHTGke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 02:40:34 -0400
+X-ASG-Debug-ID: 1408516830-0759e7416b4aa4ac0002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Wed, 20 Aug 2014 08:40:28 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexey Pelykh <alexey.pelykh@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Frans Klaver <fransklaver@gmail.com>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+Message-ID: <20140820064028.GC9319@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [RFC PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+References: <1406645577-18620-1-git-send-email-frans.klaver@xsens.com>
+ <1408450488-4083-1-git-send-email-frans.klaver@xsens.com>
+ <1408450488-4083-4-git-send-email-frans.klaver@xsens.com>
+ <20140819185701.GC22003@saruman.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20140820051815.GA1109@core.coreip.homeip.net>
-X-Bounce-Cookie: It's a lemon tree, dear Watson!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140819185701.GC22003@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.49]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1408516830
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.8641
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 10:18:15PM -0700, Dmitry Torokhov wrote:
-
-> Are you actively testing gameport interfaces with real joysticks/gamepads on
-> these cards? And what software is still in use that runs on these old boxes
-> (with mainline kernel)?
-
-I still do have a huge box of gameport hardware in my office, it's just
-that I haven't opened it for a number of years. However, if this thread
-spurred enough interest in gameport devices, I would be willing to open
-it and do the needed fixes.
-
-If not, I think dropping makes sense. I still would shed a tear for all
-those weird devices in the box, and possibly design an ATMega-based
-USB<->Gameport adapter that actually works and supports even the digital
-joysticks.
-
-> > Also, I'm left wondering why e.g. my Athlon XP system (a very popular
-> > choice for longer times) would be affected by Cpufreq...
-> > And there are no details on how exactly cpufreq is a problem or how this
-> > timing issue could be fixed...
+On Tue, Aug 19, 2014 at 01:57:02PM -0500, Felipe Balbi wrote:
+> On Tue, Aug 19, 2014 at 02:14:47PM +0200, Frans Klaver wrote:
+> > At 3.6Mbaud, with slightly over 2Mbit/s data coming in, we see 1600 uart
+> > rx buffer overflows within 30 seconds. Threading the interrupt handling reduces
+> > this to about 170 overflows in 10 minutes.
 > 
-> If you take a look at gameport_measure_speed() in gameport.c you will see that
-> it counts cycles for timing, which obviously does not work that well when CPU
-> frequency changes.
-> 
-> The bugs have been opened in bugzilla/reported on lists ages ago but nobody
-> stepped up to fix that.
+> Can you try Sebastian Siewior's patches for 8250_omap and 8250 dma
+> support ? That should help you a lot.
 
-It wouldn't be hard to fix: That code was developed when the timing
-infrastructure in the kernel was non-existent, making use of it today
-would make things a lot easier.
+I'll have a look at that series. Thanks for pointing it out.
 
-> > The obvious workaround for such an ensuing dearth of hardware support
-> > could be USB 15-pin gameport adapters - but are they even supported on
-> > Linux? Haven't seen info on this...
-> > And even if supported, these adapters (at least the non-perfect ones, as
-> > can be seen from reviews on a well-known online shop site) are said to
-> > be hit-or-miss.
+> >  drivers/tty/serial/omap-serial.c | 31 ++++++++++++++++++++++++-------
+> >  1 file changed, 24 insertions(+), 7 deletions(-)
 > > 
-> > http://www.flightsim.com/vbfs/showthread.php?238938-joystick-GamePort-to-USB-adapter-question
-> > http://reviews.thesource.ca/9026/2600164/nexxtech-usb-gameport-adapter-reviews/reviews.htm
-> > 
+> > diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+> > index 14a0167..57664b9 100644
+> > --- a/drivers/tty/serial/omap-serial.c
+> > +++ b/drivers/tty/serial/omap-serial.c
+> > @@ -575,6 +575,21 @@ static void serial_omap_rdi(struct uart_omap_port *up, unsigned int lsr)
+> >  }
+> >  
+> >  /**
+> > + * serial_omap_fast_irq() - schedule interrupt handling
+> > + */
+> > +static irqreturn_t serial_omap_fast_irq(int irq, void *dev_id)
+> > +{
+> > +	struct uart_omap_port *up = dev_id;
+> > +	unsigned int iir = serial_in(up, UART_IIR);
+> > +
+> > +	if (iir & UART_IIR_NO_INT)
+> > +		return IRQ_NONE;
+> > +
+> > +	disable_irq_nosync(up->port.irq);
 > 
-> They have better chance of being supported ;) I had a couple a few years back
-> and they did work for me.
+> NAK. Either use IRQF_ONESHOT or actually mask the IRQs at the device's
+> registers (basically clearing IER).
 
-They do work for analog joysticks if you don't want any extended
-functionality. I have a couple in said box.
+Given the work that's been done on the 8250 based driver, what are the
+short-term chances omap-serial will be dropped? I'd be happy to improve
+here if it makes sense to do so. If the 8250 based driver is going to
+replace omap-serial anyway on the short term, I don't see the point of
+further developing this patch. The others would still make sense in my
+opinion.
 
--- 
-Vojtech Pavlik
-Director SuSE Labs
+Thanks,
+Frans
