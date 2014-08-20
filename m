@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909AbaHTTxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:53:50 -0400
-Received: from duck.fensystems.co.uk ([212.13.204.60]:44827 "EHLO
-	duck.fensystems.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaHTTxt (ORCPT
+	id S1752969AbaHTTyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:54:50 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:55400 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680AbaHTTyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:53:49 -0400
-Message-ID: <53F4FCC9.1030405@fensystems.co.uk>
-Date: Wed, 20 Aug 2014 20:53:45 +0100
-From: Michael Brown <mbrown@fensystems.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 20 Aug 2014 15:54:49 -0400
+Date: Wed, 20 Aug 2014 12:54:36 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
+Message-ID: <20140820195436.GA22902@roeck-us.net>
+References: <cover.1408535000.git.jslaby@suse.cz>
+ <20140820165459.GA21275@roeck-us.net>
 MIME-Version: 1.0
-To: =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>,
-        Matt Fleming <matt@console-pimps.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-efi@vger.kernel.org
-Subject: Re: Loading initrd above 4G causes freeze on boot
-References: <53E62EEF.9040801@gmail.com>	<CAE9FiQVXkojPnTr4EQE7h2YhWqa5VBYRSCadB0B1qDL+eGY8jg@mail.gmail.com>	<20140809192302.GJ15082@console-pimps.org>	<CAPWNY8X+pRf4GuYAzKj-co0fkLMY0KNw+wB4KA8eaJ0QbE4MnA@mail.gmail.com>	<CAE9FiQVDURMvgVd55-onMDejCZT+OZ2vrr92wx8FJMKRNSX_GA@mail.gmail.com>	<CAPWNY8WvyAt5oT3cJ53A07tbfZctE9Y-m5f2Nucgc3hVvCgdjQ@mail.gmail.com>	<20140813140219.GP15082@console-pimps.org>	<CAPWNY8WdA+Q+WjXirGOsrYjMGp+69sCqYa8ST7_owQeVhQkT0w@mail.gmail.com>	<20140813184449.GV15082@console-pimps.org>	<20140820170520.GF29733@console-pimps.org> <CAPWNY8V_gFutOcow5rBUSz2updGzf4hkQ98qBZ9WRGkb_sA2jA@mail.gmail.com>
-In-Reply-To: <CAPWNY8V_gFutOcow5rBUSz2updGzf4hkQ98qBZ9WRGkb_sA2jA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820165459.GA21275@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/08/14 20:05, Mantas Mikulėnas wrote:
-> On Wed, Aug 20, 2014 at 8:05 PM, Matt Fleming <matt@console-pimps.org> wrote:
->> On Wed, 13 Aug, at 07:44:49PM, Matt Fleming wrote:
->>>
->>> At this point, I think modifying the max address is the best way to
->>> debug this further, and figure out what address causes the hang.
->>
->> Mantas, did you manage to get to the bottom of this issue?
->
-> I experimented with some things (like setting chunk size to a few kB
-> to see if it hangs earlier or only at the very end; etc.), and finally
-> found out that it stops freezing if I pad the initrd file to a
-> multiple of 512 bytes :/ That is, 5684268 bytes will freeze, 5684736
-> bytes will not.
->
-> ...In other words, seems like it cannot read chunks that aren't
-> multiples of 512 into a location above 4 GB. Or something like that...
+On Wed, Aug 20, 2014 at 09:54:59AM -0700, Guenter Roeck wrote:
+> On Wed, Aug 20, 2014 at 01:43:51PM +0200, Jiri Slaby wrote:
+> > This is the start of the stable review cycle for the 3.12.27 release.
+> > There are 104 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
+> > Anything received after that time might be too late.
+> > 
+> Build results look good:
+> 	total: 135 pass: 135 fail: 0
+> 
+> qemu tests passed except for sparc64 which hangs during boot, both for SMP and
+> non-SMP builds. I'll try to bisect as soon as I have a somewhat stable internet
+> connection.
+> 
+Bisect result:
 
-I haven't been following this thread closely, but that immediately 
-sounds like a problem within the EFI_DISK_IO_PROTOCOL implementation 
-(which is responsible for handling smaller-than-block-sized reads). 
-Looking at the EDK2 implementation in 
-MdeModulePkg/Universal/Disk/DiskIoDxe/DiskIo.c, the memory management 
-does appear to be somewhat inventive.  In particular, there's a frequent 
-pattern in DiskIoCreateSubtaskList() equivalent to:
+# bad: [c07d9e5da83f1470ccc58d37fe222dab36dbca67] drivers/rtc/interface.c: fix infinite loop in initializing the alarm
+# good: [d83a3234d2e1e2a55e7f2430fc9ca29a9bd315e7] Linux 3.12.26
+git bisect start 'HEAD' 'v3.12.26'
+# bad: [0d543dade2be5f0ddb268c6d6ea0e86938e3bf42] sparc64: Add membar to Niagara2 memcpy code.
+git bisect bad 0d543dade2be5f0ddb268c6d6ea0e86938e3bf42
+# good: [6e1af05639abfc6f1841e6bf8b5c8492971ed1f2] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+git bisect good 6e1af05639abfc6f1841e6bf8b5c8492971ed1f2
+# good: [6a25e8f778995cabb0cfe2acb3247e3b42dec35f] macvlan: Initialize vlan_features to turn on offload support.
+git bisect good 6a25e8f778995cabb0cfe2acb3247e3b42dec35f
+# good: [bf42f839476f1f447ca696fbbab7e741861d9d7d] sparc64: Fix executable bit testing in set_pmd_at() paths.
+git bisect good bf42f839476f1f447ca696fbbab7e741861d9d7d
+# bad: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
+git bisect bad 6acda98c75b536deaba1bf21f93411fcc484fbb5
+# good: [a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6] sparc64: Fix top-level fault handling bugs.
+git bisect good a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6
+# first bad commit: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
 
-   if ( blocking_io ) {
-      buffer = some_static_buffer;
-   } else {
-      buffer = malloc ( len );
-      if ( ! buffer )
-         goto single_shared_error_label;
-   }
-   ... do not record whether or not buffer was dynamically allocated ...
-   ... use buffer as part of an asynchronous I/O operation ...
-   ... eventually choose whether or not to free buffer, and hope the 
-choice is correct ...
+Reverting the offending patch ('Add basic validations ...') fixes the problem.
 
-It's not at all obvious that memory is freed correctly, especially under 
-some of the error paths within that code.
+There is a twist: The final kernel hangs during boot. Some of the interim
+builds crash. I did not try to track down where it stops crashing and starts
+hanging.
 
-I can't immediately see anything that should fail with a pointer above 
-4G, but I wouldn't be surprised to find a path that causes a double free 
-or similar error.
+Adding Dave for additional input. I suspect there may be some missing patch,
+but no idea where to even start looking.
 
-Apologies if I've missed something critical earlier in the thread, 
-making my ramblings are totally irrelevant.
-
-Michael
+Guenter
