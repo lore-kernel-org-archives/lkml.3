@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaHTLVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:21:08 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:60951 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714AbaHTLVF (ORCPT
+	id S1752637AbaHTLVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:21:30 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:57776 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731AbaHTLV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:21:05 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: bdas@redhat.com
-Subject: [PATCH] KVM: emulate: warn on invalid or uninitialized exception numbers
-Date: Wed, 20 Aug 2014 13:20:59 +0200
-Message-Id: <1408533659-17705-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 20 Aug 2014 07:21:27 -0400
+Message-ID: <53F484B2.1090808@gmail.com>
+Date: Wed, 20 Aug 2014 19:21:22 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: gleb@kernel.org, kvm@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>
+Subject: Re: [PATCH] virt/kvm/assigned-dev.c: Set 'dev->irq_source_id' to
+ '-1' after free it
+References: <53E4EED7.6050302@gmail.com> <53F370CD.80201@gmail.com> <53F37221.5020508@redhat.com> <53F3E490.1060400@gmail.com> <53F3E55B.8010009@gmail.com>
+In-Reply-To: <53F3E55B.8010009@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These were reported when running Jailhouse on AMD processors.
+On 08/20/2014 08:01 AM, Chen Gang wrote:
+> 
+> By the way, at present, I use Qemu as user mode program, is there common
+> test with both Qemu and KVM/Xen? And is a PC enough for the common test?
+>
 
-Initialize ctxt->exception.vector with an invalid exception number,
-and warn if it remained invalid even though the emulator got
-an X86EMUL_PROPAGATE_FAULT return code.
+Oh, I find Qemu have "make check" just like gcc/binutils, so for each of
+my patch, next, shall run "./configure && make && make check" at least.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/emulate.c | 5 ++++-
- arch/x86/kvm/x86.c     | 1 +
- 2 files changed, 5 insertions(+), 1 deletion(-)
+And also welcome any additional ideas, suggestions or completions about
+test for kvm/xen/qemu.
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 4fbf4b598f92..e5bf13003cd2 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -527,6 +527,7 @@ static unsigned long seg_base(struct x86_emulate_ctxt *ctxt, int seg)
- static int emulate_exception(struct x86_emulate_ctxt *ctxt, int vec,
- 			     u32 error, bool valid)
- {
-+	WARN_ON(vec > 0x1f);
- 	ctxt->exception.vector = vec;
- 	ctxt->exception.error_code = error;
- 	ctxt->exception.error_code_valid = valid;
-@@ -4827,8 +4828,10 @@ writeback:
- 	ctxt->eip = ctxt->_eip;
+
+Thanks.
  
- done:
--	if (rc == X86EMUL_PROPAGATE_FAULT)
-+	if (rc == X86EMUL_PROPAGATE_FAULT) {
-+		WARN_ON(ctxt->exception.vector > 0x1f);
- 		ctxt->have_exception = true;
-+	}
- 	if (rc == X86EMUL_INTERCEPTED)
- 		return EMULATION_INTERCEPTED;
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 737b4bdac41c..cd718c01cdf1 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5248,6 +5248,7 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
- 
- 		ctxt->interruptibility = 0;
- 		ctxt->have_exception = false;
-+		ctxt->exception.vector = -1;
- 		ctxt->perm_ok = false;
- 
- 		ctxt->ud = emulation_type & EMULTYPE_TRAP_UD;
+> 
+> On 08/20/2014 07:58 AM, Chen Gang wrote:
+>> On 08/19/2014 11:49 PM, Paolo Bonzini wrote:
+>>> Il 19/08/2014 17:44, Chen Gang ha scritto:
+>>>>> Hello maintainers:
+>>>>>
+>>>>> Please help check this patch, when you have time.
+>>> Hi, it's already on its way to 3.17-rc2, but I first have to run a bunch
+>>> of tests.
+>>
+>> OK, thanks. Also can let me try the test, although I am not quite
+>> familiar with KVM. Since I plan to focus on KVM/Xen next, I shall
+>> construct related environments for its' common test, at least.
+>>
+>> I am just constructing the gcc common test environments under a new PC,
+>> is a PC also enough for KVM/Xen common test?
+>>
+>> Welcome any ideas, suggestions or completions about it (especially the
+>> information about KVM/Xen common test).
+>>
+>>
+>> Thanks.
+>>
+> 
+> 
+
+
 -- 
-1.8.3.1
+Chen Gang
 
+Open share and attitude like air water and life which God blessed
