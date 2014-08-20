@@ -1,112 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702AbaHTGaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 02:30:03 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:2636 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaHTGaA (ORCPT
+	id S1752009AbaHTGay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 02:30:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43561 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbaHTGaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 02:30:00 -0400
-Message-ID: <53F44022.6030706@huawei.com>
-Date: Wed, 20 Aug 2014 14:28:50 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 20 Aug 2014 02:30:52 -0400
+Message-ID: <53F44098.2050209@infradead.org>
+Date: Tue, 19 Aug 2014 23:30:48 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: "Bharat.Bhushan@freescale.com" <Bharat.Bhushan@freescale.com>,
-        "arnab.basu@freescale.com" <arnab.basu@freescale.com>
-CC: Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Paul.Mundt@huawei.com" <Paul.Mundt@huawei.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 00/11] Refactor MSI to support Non-PCI device
-References: <1406344128-27055-1-git-send-email-wangyijing@huawei.com> <c6d34fe1bbe9457ea8cff7dcd97902b8@DM2PR03MB317.namprd03.prod.outlook.com> <53DEF80C.1010608@huawei.com> <8a2b4e237f2d4c7e95ef72867658b53a@BLUPR03MB566.namprd03.prod.outlook.com>
-In-Reply-To: <8a2b4e237f2d4c7e95ef72867658b53a@BLUPR03MB566.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: harish_kandiga@mentor.com
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Kosina <trivial@kernel.org>
+Subject: Re: [PATCH] lockup-watchdogs: Fix a typo
+References: <1408515977-13263-1-git-send-email-harish_kandiga@mentor.com>
+In-Reply-To: <1408515977-13263-1-git-send-email-harish_kandiga@mentor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> The key difference between PCI device and Non-PCI MSI is the interfaces to
->> access hardware MSI registers.
->> for instance, currently, msi_chip->setup_irq() to setup MSI irq and configure
->> the MSI address/data registers, so we need to provide device specific
->> write_msi_msg() interface, then when we call msi_chip->setup_irq(), the device
->> MSI registers can be configured appropriately.
+On 08/19/14 23:26, harish_kandiga@mentor.com wrote:
+> From: Harish Jenny K N <harish_kandiga@mentor.com>
 > 
-> What if we can register/override the setup_irq() from bus-driver (not sure, but may be device-driver itself). Example PCI bus-driver will provide setup_irq() (or the part of setup_irq which set address and data in h/w) by PCI bus, which configure address/data in h/w as per PCI standard. 
+> s/BOOTPARAM_HARDLOCKUP_PANIC/BOOTPARAM_SOFTLOCKUP_PANIC
 > 
-> We in Freescale will be using MSI for the devices behind a new-bus (which is not PCI based), We have a separate bus driver for same. And this new bus driver register/provide its own address/data write function which is based on that specific bus protocol.
+> Signed-off-by: Harish Jenny K N <harish_kandiga@mentor.com>
 
-Hi Bharat, I'm glad to know your MSI device working mode.
-Provide the private MSI setup functions in bus-driver layer can't apply to all Non-PCI MSI devices,
-because we can not guarantee Non-PCI MSI devices are always on a bus. The existing HPET, DMAR device both
-have no bus bind. I'm working on a new MSI setup framework, as you mentioned before, in device-driver model.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-I abstracted a new virtual device (called struct msi_dev), this msi_dev will manage all MSI info, and a new bus
-named msi_bus, also introduced a new driver msi_driver, msi_bus is responsible for binding msi_dev and msi_driver.
-All MSI devices will be classified into different MSI device types, like MSI_TYPE_PCI, MSI_TYPE_HPET, MSI_TYPE_DMAR, etc..
+Jiri, please add to the trivial tree.
 
-Each MSI type device should provide a private struct msi_driver. msi_driver should contain the type specific
-MSI ops functions to help setup and enable MSI device, request MSI irq.
+Thanks.
 
-I almost finish the first draft, and will post out next week in plan :)
-
-
-Thanks!
-Yijing.
-
+> ---
+>  Documentation/lockup-watchdogs.txt |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Thanks
-> -Bharat
-> 
->>
->> My patchset is just a RFC draft, I will update it later, all we want to do is
->> make kernel support Non-PCI MSI devices.
->>
->> Thanks!
->> Yijing.
->>
->>
->>>
->>> Thanks
->>> Arnab
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe
->>> linux-kernel" in the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>> .
->>>
->>
->>
->> --
->> Thanks!
->> Yijing
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in the body
->> of a message to majordomo@vger.kernel.org More majordomo info at
->> http://vger.kernel.org/majordomo-info.html
-> 
-> .
+> diff --git a/Documentation/lockup-watchdogs.txt b/Documentation/lockup-watchdogs.txt
+> index d2a3660..ab0baa6 100644
+> --- a/Documentation/lockup-watchdogs.txt
+> +++ b/Documentation/lockup-watchdogs.txt
+> @@ -12,7 +12,7 @@ stack trace is displayed upon detection and, by default, the system
+>  will stay locked up. Alternatively, the kernel can be configured to
+>  panic; a sysctl, "kernel.softlockup_panic", a kernel parameter,
+>  "softlockup_panic" (see "Documentation/kernel-parameters.txt" for
+> -details), and a compile option, "BOOTPARAM_HARDLOCKUP_PANIC", are
+> +details), and a compile option, "BOOTPARAM_SOFTLOCKUP_PANIC", are
+>  provided for this.
+>  
+>  A 'hardlockup' is defined as a bug that causes the CPU to loop in
 > 
 
 
 -- 
-Thanks!
-Yijing
-
+~Randy
