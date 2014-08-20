@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802AbaHTKV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 06:21:26 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:35383 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819AbaHTKVZ (ORCPT
+	id S1751979AbaHTKWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 06:22:07 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42975 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaHTKWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 06:21:25 -0400
-Message-ID: <53F4765E.2040105@ahsoftware.de>
-Date: Wed, 20 Aug 2014 12:20:14 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 20 Aug 2014 06:22:04 -0400
+Message-ID: <53F476C6.9030809@collabora.co.uk>
+Date: Wed, 20 Aug 2014 12:21:58 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        Christian Grothoff <grothoff@in.tum.de>,
-        Jacob Appelbaum <jacob@appelbaum.net>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, knock@gnunet.org
-Subject: Re: [PATCH] TCP: add option for silent port knocking with integrity
- protection
-References: <52A75EF8.3010308@in.tum.de>	<20131211.150137.368953964178408437.davem@davemloft.net>	<52A8C8B4.4060109@in.tum.de>	<20131211122637.75b09074@nehalam.linuxnetplumber.net>	<87bo0nulkt.fsf@tassilo.jf.intel.com>	<52A8ECF5.3070604@in.tum.de>	<20131212012317.GL21717@two.firstfloor.org>	<52A98DBF.4090702@appelbaum.net>	<52A9A17F.6050505@in.tum.de>	<1386858864.19078.60.camel@edumazet-glaptop2.roam.corp.google.com>	<53F3A739.4070203@ahsoftware.de>	<CAPh34mckmKkRqG7M=37hHRJjBzZ+43BaPnjvpC5sEFnpPqj0aA@mail.gmail.com>	<53F4654C.10101@ahsoftware.de> <CAPh34mc8eGqLyGrq1AH6AP5yBGnJgePkK03Ys-Zhw9cz9h3Y2g@mail.gmail.com> <53F46EA3.60408@ahsoftware.de>
-In-Reply-To: <53F46EA3.60408@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] ARM: dts: Add vmmc and vqmmc supplies for Peach Pit
+ and Pi boards
+References: <1408460913-13863-1-git-send-email-javier.martinez@collabora.co.uk> <1408460913-13863-6-git-send-email-javier.martinez@collabora.co.uk> <53F39978.3080901@suse.de>
+In-Reply-To: <53F39978.3080901@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 20.08.2014 11:47, schrieb Alexander Holler:
-> Am 20.08.2014 11:28, schrieb Hagen Paul Pfeifer:
->> On 20 August 2014 11:07, Alexander Holler <holler@ahsoftware.de> wrote:
->>
->>> For sure it could be better, but I'm already happy with the current
->>> imperfect solution which I can use now and not some perfect solution
->>> which
->>> might be available in some years.
->>
->> Alexander, to make it clear: we cannot include mechanisms which
->> probably open other (security) issues. This is not how things work
->> out. TCP had so many issues in the past - regarding security,
->> implementation f*ups, etc. pp. It is utterly important that there is
->> no problem with an extension. Please join the discussion ob tcpm if
->> you will drive things forward. That's all what I can say - sorry!
+Hello Andreas,
+
+Thanks a lot for your feedback.
+
+On 08/19/2014 08:37 PM, Andreas Färber wrote:
+>>  &mmc_2 {
+>> +	vmmc-supply = <&tps65090_fet4>;
+>> +	vqmmc-supply = <&vqmmc_sdcard>;
+>>  	status = "okay";
+>>  	num-slots = <1>;
+>>  	supports-highspeed;
+> 
+> A convention that I picked up was to place overridden status property
+> first. Do your new properties really need to go before that?
 >
-> Maybe I first should send a million syn-packets to a box where I've
-> enabled that feature. ;)
->
-> Anyway, I still think there should be some room for experimental
-> features in the kernel. It makes them more visible to possible
-> contributors and helps to drive further development.
->
-> Not necessarily in my case (as most people, I can't and don't want to
-> participate in all parties), but ...
 
-And as I've just read the archives of tcpm, I don't think it would help. 
-Jacob Appelbaum already expressed everything I like to use this feature 
-for, so most of the time I just had to send a +1 to Jacobs comments, 
-which would be somewhat annoying. ;)
+OF doesn't care about the order of the child nodes but I do agree that
+consistency is a good thing so I'll change that on v2.
 
-Regards,
+> Also, if you look at today's for-next, then supports-highspeed should be
+> cap-{sd,mmc}-highspeed, so it may be worth to rebase.
+> 
 
-Alexander Holler
+You are right, this patch used to be part of an older series so I didn't
+realize that "[PATCHv10 3/5] ARM: dts: exynos: unuse the slot-node and
+deprecate the supports-highspeed for dw-mmc" was already merged. Thanks
+for the reminder!
 
+> Regards,
+> Andreas
+> 
 
+Best regards,
+Javier
