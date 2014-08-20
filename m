@@ -1,168 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaHTCb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 22:31:28 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:57744 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaHTCb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 22:31:26 -0400
-Date: Tue, 19 Aug 2014 19:31:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: slub/debugobjects: lockup when freeing memory
-Message-ID: <20140820023121.GS4752@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <53A2F406.4010109@oracle.com>
- <alpine.DEB.2.11.1406191001090.2785@gentwo.org>
- <20140619165247.GA4904@linux.vnet.ibm.com>
- <alpine.DEB.2.10.1406192127100.5170@nanos>
- <alpine.DEB.2.11.1406191519090.4002@gentwo.org>
- <20140818163757.GA30742@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1408182147400.28727@gentwo.org>
- <20140819035828.GI4752@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1408192057200.32428@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1408192057200.32428@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082002-1542-0000-0000-000004245647
+	id S1752101AbaHTCbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 22:31:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738AbaHTCb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 22:31:29 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: eranian@google.com, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>, Joe Mario <jmario@redhat.com>
+Subject: [PATCH] perf, map:  Don't try to find DSOs in SYSV maps
+Date: Tue, 19 Aug 2014 22:31:14 -0400
+Message-Id: <1408501874-244377-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 09:00:05PM -0500, Christoph Lameter wrote:
-> On Mon, 18 Aug 2014, Paul E. McKenney wrote:
-> 
-> > > +#ifdef CONFIG_RCU_DEBUG_XYZ
-> >
-> > If you make CONFIG_RCU_DEBUG_XYZ instead be CONFIG_DEBUG_OBJECTS_RCU_HEAD,
-> > then it will automatically show up when it needs to.
-> 
-> Ok.
-> 
-> > The rest looks plausible, for whatever that is worth.
-> 
-> We talked in the hallway about init_rcu_head not touching
-> the contents of the rcu_head. If that is the case then we can simplify
-> the patch.
+We are seeing a lot of the following with regards to SYSV memory
 
-That is correct -- the debug-objects code uses separate storage to track
-states, and does not touch the memory to which the state applies.
+Failed to open /SYSV0000279c, continuing without symbols
 
-> We could also remove the #ifdefs if init_rcu_head and destroy_rcu_head
-> are no ops if CONFIG_DEBUG_RCU_HEAD is not defined.
+We don't believe this memory will have DSO info, so treat it like the heap and
+stack for now and skip it to prevent the warning.
 
-And indeed they are, good point!  It appears to me that both sets of
-#ifdefs can go away.
+Signed-off-by: Joe Mario <jmario@redhat.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+--
+I am open to suggetions for a different fix - dcz
+---
+ tools/perf/util/map.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-							Thanx, Paul
-
-> Index: linux/mm/slub.c
-> ===================================================================
-> --- linux.orig/mm/slub.c
-> +++ linux/mm/slub.c
-> @@ -1308,6 +1308,25 @@ static inline struct page *alloc_slab_pa
->  	return page;
->  }
-> 
-> +#define need_reserve_slab_rcu						\
-> +	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
-> +
-> +static struct rcu_head *get_rcu_head(struct kmem_cache *s, struct page *page)
-> +{
-> +	if (need_reserve_slab_rcu) {
-> +		int order = compound_order(page);
-> +		int offset = (PAGE_SIZE << order) - s->reserved;
-> +
-> +		VM_BUG_ON(s->reserved != sizeof(struct rcu_head));
-> +		return page_address(page) + offset;
-> +	} else {
-> +		/*
-> +		 * RCU free overloads the RCU head over the LRU
-> +		 */
-> +		return (void *)&page->lru;
-> +	}
-> +}
-> +
->  static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  {
->  	struct page *page;
-> @@ -1357,6 +1376,22 @@ static struct page *allocate_slab(struct
->  			kmemcheck_mark_unallocated_pages(page, pages);
->  	}
-> 
-> +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU) && page)
-> +		/*
-> +		 * Initialize various things. However, this init is
-> +	 	 * not allowed to modify the contents of the rcu head.
-> +		 * Allocations are permitted. However, the use of
-> +		 * the same cache or another cache with SLAB_RCU_DESTROY
-> +		 * set may cause additional recursions.
-> +		 *
-> +		 * So in order to be safe the slab caches used
-> +		 * in init_rcu_head should be restricted to be of the
-> +		 * non rcu kind only.
-> +		 */
-> +		init_rcu_head(get_rcu_head(s, page));
-> +#endif
-> +
->  	if (flags & __GFP_WAIT)
->  		local_irq_disable();
->  	if (!page)
-> @@ -1452,13 +1487,13 @@ static void __free_slab(struct kmem_cach
->  	memcg_uncharge_slab(s, order);
->  }
-> 
-> -#define need_reserve_slab_rcu						\
-> -	(sizeof(((struct page *)NULL)->lru) < sizeof(struct rcu_head))
-> -
->  static void rcu_free_slab(struct rcu_head *h)
->  {
->  	struct page *page;
-> 
-> +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-> +	destroy_rcu_head(h);
-> +#endif
->  	if (need_reserve_slab_rcu)
->  		page = virt_to_head_page(h);
->  	else
-> @@ -1469,24 +1504,9 @@ static void rcu_free_slab(struct rcu_hea
-> 
->  static void free_slab(struct kmem_cache *s, struct page *page)
->  {
-> -	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
-> -		struct rcu_head *head;
-> -
-> -		if (need_reserve_slab_rcu) {
-> -			int order = compound_order(page);
-> -			int offset = (PAGE_SIZE << order) - s->reserved;
-> -
-> -			VM_BUG_ON(s->reserved != sizeof(*head));
-> -			head = page_address(page) + offset;
-> -		} else {
-> -			/*
-> -			 * RCU free overloads the RCU head over the LRU
-> -			 */
-> -			head = (void *)&page->lru;
-> -		}
-> -
-> -		call_rcu(head, rcu_free_slab);
-> -	} else
-> +	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU))
-> +		call_rcu(get_rcu_head(s, page), rcu_free_slab);
-> +	else
->  		__free_slab(s, page);
->  }
-> 
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 25c571f..0294f40 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -29,6 +29,7 @@ static inline int is_anon_memory(const char *filename)
+ static inline int is_no_dso_memory(const char *filename)
+ {
+ 	return !strncmp(filename, "[stack", 6) ||
++	       !strncmp(filename, "/SYSV",5)   ||
+ 	       !strcmp(filename, "[heap]");
+ }
+ 
+-- 
+1.7.1
 
