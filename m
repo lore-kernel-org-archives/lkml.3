@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994AbaHTJcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:32:05 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:39719 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819AbaHTJcC (ORCPT
+	id S1752321AbaHTJdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:33:24 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42929 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaHTJdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:32:02 -0400
-From: Zhu Yanjun <zyjzyj2000@gmail.com>
-X-Google-Original-From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-To: dborkman@redhat.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        vyasevich@gmail.com, tuexen@fh-muenster.de,
-        khandelwal.deepak.1987@gmail.com, Yue.Tao@windriver.com,
-        alexandre.dietsch@windriver.com, davem@davemloft.net,
-        zyjzyj2000@gmail.com
-Cc: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Subject: [PATCH V2] sctp: not send SCTP_PEER_ADDR_CHANGE notifications with failed probe 
-Date: Wed, 20 Aug 2014 17:31:42 +0800
-Message-Id: <1408527103-22772-1-git-send-email-Yanjun.Zhu@windriver.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 20 Aug 2014 05:33:23 -0400
+Message-ID: <53F46B5B.80400@collabora.co.uk>
+Date: Wed, 20 Aug 2014 11:33:15 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>, Mark Brown <broonie@kernel.org>
+CC: Thierry Reding <treding@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: Re: [PATCH V2] regmap: of_regmap_get_endian() cleanup
+References: <1408466947-26593-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1408466947-26593-1-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Vlad && Deepak && Michael && David && Daniel
+Hello Stephen,
 
-V2: Following the advice from Daniel Borkmann, I modified the comments and short log.
+On 08/19/2014 06:49 PM, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> Commit d647c199510c ("regmap: add DT endianness binding support") had
+> some issues. Commit ba1b53feb8ca ("regmap: Fix DT endianess parsing
+> logic") fixed the main problem. This patch fixes the other.
+> 
+> Specifically, restore the overall default of REGMAP_ENDIAN_BIG if none of
+> the config, DT, or the bus specify any endianness. Without this,
+> of_regmap_get_endian() could return REGMAP_ENDIAN_DEFAULT, which the
+> calling code can't handle. Since all busses do specify an endianness in
+> the current code, this makes no difference right now, but I saw no
+> justification in the patch description for removing this final default.
+> 
 
->From Michael && Deepak
-"
- lxr SCTP implementation, doesn't transit the path state to INACTIVE, if it was never confirmed. this leads to SCTP_PEER_ADDRESS_CHANGE notification after each failed probe from this time.
- Is there any specific reason to have same notification to SCTP User with each probe in RTO time period ?
- 806 case SCTP_TRANSPORT_DOWN:
- 807 /* If the transport was never confirmed, do not transition it
- 808 * to inactive state. Also, release the cached route since
- 809 * there may be a better route next time.
- 810 */
- 811 if (transport->state != SCTP_UNCONFIRMED)
+Yes, I also wondered about the second issue you are mentioning when I was
+fixing the main problem. But since Xiubo's patch also set
+REGMAP_ENDIAN_BIG as default for both the I2C and SPI buses (making no
+difference as you said) I assumed that the intention was to make buses to
+explicitly define their default instead of rely on a global one so I just
+kept that way.
 
- 812 transport->state = SCTP_INACTIVE;
+But I agree with you that is better to go back to the default
+REGMAP_ENDIAN_BIG as it used to be before since buses can change the
+default if needed anyways.
 
- http://lxr.free-electrons.com/source/net/sctp/associola.c#L806
+Best regards,
+Javier
 
- ......
-
- I would also only expect a  SCTP_PEER_ADDRESS_CHANGE notification when a path state changes, not on every  try.
-
-"
-
-I made a patch to disable sending SCTP_PEER_ADDRESS_CHANGE notification every try. Now the patch is in the attachment. Please check it.
-
-Zhu Yanjun
-
-
-Zhu Yanjun (1):
-  sctp: not send SCTP_PEER_ADDR_CHANGE notifications with failed probe
-
- net/sctp/associola.c | 1 +
- 1 file changed, 1 insertion(+)
-
--- 
-1.9.1
 
