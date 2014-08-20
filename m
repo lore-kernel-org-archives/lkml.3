@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843AbaHTEhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 00:37:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50905 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978AbaHTEhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 00:37:18 -0400
-Date: Wed, 20 Aug 2014 10:06:17 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: jgarzik@bitpay.com, linux-kernel@vger.kernel.org,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        hpa@linux.intel.com
-Subject: Re: [PATCH 2/2] Install udev rules in system-default directory
-Message-ID: <20140820043617.GF18175@grmbl.mre>
-References: <cover.1407416628.git.amit.shah@redhat.com>
- <3df55388b1b3acd142f391494f102c3ddb2270ed.1407416628.git.amit.shah__45224.3810439997$1407417016$gmane$org@redhat.com>
- <53F38754.2050808@redhat.com>
+	id S1752145AbaHTEji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 00:39:38 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6599 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750876AbaHTEjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 00:39:37 -0400
+Date: Tue, 19 Aug 2014 21:39:30 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+CC: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "agross@codeaurora.org" <agross@codeaurora.org>,
+        "iivanov@mm-sol.com" <iivanov@mm-sol.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v1 1/3] pinctrl: qcom: Add APQ8084 pinctrl support
+Message-ID: <20140820043929.GH7070@sonymobile.com>
+References: <1408468936-12252-1-git-send-email-gdjakov@mm-sol.com>
+ <1408468936-12252-2-git-send-email-gdjakov@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <53F38754.2050808@redhat.com>
+In-Reply-To: <1408468936-12252-2-git-send-email-gdjakov@mm-sol.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) 19 Aug 2014 [19:20:20], Paolo Bonzini wrote:
-> Il 07/08/2014 15:09, Amit Shah ha scritto:
-> > +udevrules_DATA	 = 90-virtio-rng.rules
-> 
-> If rng-tools is packaged with "make dist" you need this to be
-> 
-> dist_udevrules_DATA	 = 90-virtio-rng.rules
-> 
-> or alternatively
-> 
-> EXTRA_DIST = 90-virtio-rng.rules
-> udevrules_DATA	 = 90-virtio-rng.rules
-> 
-> > +AC_ARG_WITH([udevrulesdir],
-> > +	AS_HELP_STRING([--with-udevrulesdir=DIR], [Directory for udev rules]),
-> > +	[],
-> > +	[with_udevrulesdir=$($PKG_CONFIG --variable=udevdir udev)"/rules.d"])
-> > +AC_SUBST([udevrulesdir], [$with_udevrulesdir])
-> 
-> You can use AM_CONDITIONAL to skip the installation if
-> $with_udevrulesdir is "no" (aka --without-udevrulesdir).  Then you'd have
-> 
-> EXTRA_DIST = 90-virtio-rng.rules
-> if INSTALL_UDEV_RULES
-> udevrules_DATA	 = 90-virtio-rng.rules
-> endif
-> 
-> I don't know offhand if this works:
-> 
-> if INSTALL_UDEV_RULES
-> dist_udevrules_DATA	 = 90-virtio-rng.rules
-> endif
-> 
-> but I think so; you can check with "./configure --without-udevrulesdir
-> && make && make dist".
+On Tue 19 Aug 10:22 PDT 2014, Georgi Djakov wrote:
 
-Thanks!  Will give this a shot for curiosity's sake.  The
-khwrngd-based patch has already been merged upstream, so this is now
-obsolete.
+> This patch adds support for the TLMM (Top-Level Mode Mux) block found
+> in the APQ8084 platform.
+> 
+[...]
+> +
+> +#define NUM_GPIO_PINGROUPS 143
+> +
 
+I think this looks good overall, but in my APQ8084 documentation
+(80-NG550-2X Rev. B) there are 147 (0..146) gpio pins in the TLMM block.
 
-		Amit
+Any suggestion to why there's a discrepancy?
+
+Regards,
+Bjorn
