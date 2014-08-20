@@ -1,71 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321AbaHTPcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:32:32 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51136 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbaHTPca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:32:30 -0400
-Date: Wed, 20 Aug 2014 10:31:32 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: heiko@sntech.de, dianders@chromium.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, olof@lixom.net, hj@rock-chips.com,
-        kever.yang@rock-chips.com, xjq@rock-chips.com, huangtao@rock-chips.com,
-        zyw@rock-chips.com, yzq@rock-chips.com, zhenfu.fang@rock-chips.com,
-        cf@rock-chips.com, zhangqing@rock-chips.com, hl@rock-chips.com,
-        wei.luo@rock-chips.com
-Message-ID: <20140820153132.GY24407@sirena.org.uk>
-References: <1408506462-3686-1-git-send-email-addy.ke@rock-chips.com>
+	id S1752377AbaHTPeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:34:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316AbaHTPeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 11:34:22 -0400
+Message-ID: <53F4BFF3.3060606@redhat.com>
+Date: Wed, 20 Aug 2014 17:34:11 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6Jy4/gb9ZgnsEOX8"
-Content-Disposition: inline
-In-Reply-To: <1408506462-3686-1-git-send-email-addy.ke@rock-chips.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 63.139.182.64
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/rockchip: fixup incorrect dma direction setting
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>
+Subject: Re: [PATCH 9/9] KVM: VMX: automatic PLE window maximum
+References: <1408480536-8240-1-git-send-email-rkrcmar@redhat.com> <1408480536-8240-10-git-send-email-rkrcmar@redhat.com> <53F44B40.6060806@redhat.com> <20140820124112.GC28873@potion.brq.redhat.com> <53F49F80.1090408@redhat.com> <20140820153115.GA20453@potion.brq.redhat.com>
+In-Reply-To: <20140820153115.GA20453@potion.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 20/08/2014 17:31, Radim Krčmář ha scritto:
+> Btw. without extra code, we are still going to overflow on races when
+> changing PW_grow, should they be covered as well?
 
---6Jy4/gb9ZgnsEOX8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+You mean because there is no spinlock or similar protecting the changes?
+ I guess you could use a seqlock.
 
-On Wed, Aug 20, 2014 at 11:47:42AM +0800, Addy Ke wrote:
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-
-Applied, thanks.
-
---6Jy4/gb9ZgnsEOX8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIbBAEBAgAGBQJT9L9QAAoJELSic+t+oim9ZIIP+NzHME0U9O4Ork3bB63pU4+a
-BHIiDPeJWndMIj8JtOs+oVpp9kooZJHGW6WuiwvbbkIwh2SbKwpCfM2ERyUvANNt
-NSSIzY/wp2+PQlUkWgowm2NOjoCzNq+3q8qsQSIA/IcaqoJ4LCZyc+hFaXECO8SN
-N0wKy3ijhi5kmTDz8ZQKiDQcBNGM6OcC+QPCI3TsJV6xcgnVaa61t3D8XSK3oAvj
-3YRMwZ/JBpss1nlFBCy0sWIgoWDxi8WTuvhbzo51Yc2TCSpBCYj2hJ60BcHvLJ3C
-HDXd/uTA5MNtsBpPEwdFm1w0SnOc5lyxc+0BDLR/4H70Dc/1CgiTwN2yWL37LLcu
-qMHEFETd5X4UAcP9y9Ue95IwZvpvdt9G36u9KzSCkP7fxCSW69mc1j0+Hfdx4R9M
-YV7/zO841X5H4Sd6038DZzH/LpejDvkNzxZpQ1GIm2wXFJuNNp+U4sEXLENeV0RF
-94yiNjJk0eX6Jr9eCazsUX9ys5aROuoRcywxh33KakfIhIkXvtGvi3gklYNMjxOR
-zjJq+UtVfJpgH6ltLvHnXA/jf0aRBzxCqS7LVphOUEtemlZDBaLYzv4SsXCrSv4J
-TpyzGs0HCqhNK8HEtYPk+5kCIRjC7fHD8+Uwjj49IusMtMWczDMpW/O/7ttFxbzq
-WZk+5QsHYs8wbaWlkZ4=
-=Dua5
------END PGP SIGNATURE-----
-
---6Jy4/gb9ZgnsEOX8--
+Paolo
