@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419AbaHTEYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 00:24:41 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:26971 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaHTEYi (ORCPT
+	id S1751915AbaHTEZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 00:25:26 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:57567 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbaHTEZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 00:24:38 -0400
-X-AuditID: cbfee690-b7f526d000003627-81-53f423032638
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: rui.zhang@intel.com, eduardo.valentin@ti.com, amit.daniel@samsung.com
-Cc: kgene.kim@samsung.com, b.zolnierkie@samsung.com, t.figa@samsung.com,
-        l.majewski@samsung.com, ch.naveen@samsung.com,
-        kyungmin.park@samsung.com, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Subject: [PATCH] thermal: exynos: Remove duplicate code when reading triminfo
- register of Exynos5440
-Date: Wed, 20 Aug 2014 13:24:33 +0900
-Message-id: <1408508673-3173-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1408450078-6296-1-git-send-email-cw00.choi@samsung.com>
-References: <1408450078-6296-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsWyRsSkUJdZ+UuwQdMDCYuGqyEWG2esZ7W4
-	+/wwo8X1L89ZLeYfOcdqsWb/TyaL+VeusVr0LrjKZnG26Q27xZuHmxktNj0Gil3eNYfN4nPv
-	EUaLGef3MVk8edjHZrF+xmsWBwGPnbPusnss3vOSyWPzknqPvi2rGD2O39jO5PF5k1wAWxSX
-	TUpqTmZZapG+XQJXRt/MLqaCaZwVG2cvYGtgPMbexcjBISFgInHrYGIXIyeQKSZx4d56ti5G
-	Lg4hgaWMEkdXn2SCSJhIHDl5kxkiMZ1R4uetc4wQThOTROux2YwgVWwCWhL7X9xgA7FFBDwl
-	5kw/wQJiMwu0MUtMmpkAYgsLpEncvzqbGcRmEVCVWDz1BiPIFbwCLhLn7phALJOT+LDnETuI
-	zSngKtH+7SDYSCGgks+XFrOD7JUQuMcu8eXqDjaIOQIS3yYfYoH4RlZi0wFmiDmSEgdX3GCZ
-	wCi8gJFhFaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZgFJ3+92zCDsZ7B6wPMSYDjZvILCWa
-	nA+MwrySeENjMyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRq
-	YDSNf2bclWx84fHNyaqRYb1fv01bqhLdLLgk6uqVogD5hdxbZJlF/f4vlImbZNH37pHIx+u3
-	1yy9F/a3s9L7otesc+v9fspLXMwy+7gz7M2+7tMaye23XyxhPZ+xVcHGO6Nc72Rzf7Nx/vLQ
-	010TWZ5X+f4qCLld6F+WfviQAqOnmuPz+/0lP5VYijMSDbWYi4oTAaaZn824AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jQV1m5S/BBvuP8Vs0XA2x2DhjPavF
-	3eeHGS2uf3nOajH/yDlWizX7fzJZzL9yjdWid8FVNouzTW/YLd483MxosekxUOzyrjlsFp97
-	jzBazDi/j8niycM+Nov1M16zOAh47Jx1l91j8Z6XTB6bl9R79G1Zxehx/MZ2Jo/Pm+QC2KIa
-	GG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgO5WUihL
-	zCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGb0zexiKpjGWbFx9gK2BsZj7F2M
-	nBwSAiYSR07eZIawxSQu3FvP1sXIxSEkMJ1R4uetc4wQThOTROux2YwgVWwCWhL7X9xgA7FF
-	BDwl5kw/wQJiMwu0MUtMmpkAYgsLpEncvzobbCqLgKrE4qk3gHo5OHgFXCTO3TGBWCYn8WHP
-	I7AjOAVcJdq/HQQbKQRU8vnSYvYJjLwLGBlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH
-	6TOpHYwrGywOMQpwMCrx8Cpkfw4WYk0sK67MPcQowcGsJMIbyvElWIg3JbGyKrUoP76oNCe1
-	+BCjKdBRE5mlRJPzgQkkryTe0NjEzMjSyNzQwsjYXEmc90CrdaCQQHpiSWp2ampBahFMHxMH
-	p1QD42ZZuTLFOIk5euezwipftq2fnP+TycCwM8jxR3fntKxtwm7qXS8El2y0iDnQppTOMuPm
-	Rnl3xmKNE/8Odhy9GfH28s7Xy66nHcj/P4u9MaXj6cGFiQY/8loanQ5tizoWnWpy0flkm+o2
-	I5Wvk9UFS5ICdJbM3f3LJG2Jas8XZZu9Lnuu/jU0VmIpzkg01GIuKk4EAEN6iRroAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 20 Aug 2014 00:25:24 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Dan Aloni <dan@kernelim.com>
+References: <1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com>
+Date: Tue, 19 Aug 2014 21:20:38 -0700
+In-Reply-To: <1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com>
+	(Cong Wang's message of "Sat, 16 Aug 2014 12:36:46 -0700")
+Message-ID: <87ppfvrdux.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+LAqHQzHh7K/a94g/Pd0UC62kc0vu0smg=
+X-SA-Exim-Connect-IP: 107.0.249.3
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4504]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Cong Wang <xiyou.wangcong@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2] nfs: fix kernel warning when removing proc entry
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove simply duplicate code when reading triminfo register of Exynos5440.
+Cong Wang <xiyou.wangcong@gmail.com> writes:
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- drivers/thermal/samsung/exynos_tmu.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+> I saw the following kernel warning:
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index ed01606..13c2e01 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -181,15 +181,13 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 		 */
- 		switch (data->id) {
- 		case 0:
-+		case 2:
- 			trim_info = readl(data->base +
- 			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
- 			break;
- 		case 1:
- 			trim_info = readl(data->base + reg->triminfo_data);
- 			break;
--		case 2:
--			trim_info = readl(data->base -
--			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
- 		}
- 	} else {
- 		/* On exynos5420 the triminfo register is in the shared space */
--- 
-1.8.0
+Cong thanks for finding and tracking this.  I was clearly asleep at the
+switch when I was testing my fix to the nfs client code :(
 
+I have applied this patch and will push it to Linus after it has a
+little bit to sit in linux-next.
+
+Eric
+
+> [ 1852.321222] ------------[ cut here ]------------
+> [ 1852.326527] WARNING: CPU: 0 PID: 118 at fs/proc/generic.c:521 remove_proc_entry+0x154/0x16b()
+> [ 1852.335630] remove_proc_entry: removing non-empty directory 'fs/nfsfs', leaking at least 'volumes'
+> [ 1852.344084] CPU: 0 PID: 118 Comm: kworker/u8:2 Not tainted 3.16.0+ #540
+> [ 1852.350036] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [ 1852.354992] Workqueue: netns cleanup_net
+> [ 1852.358701]  0000000000000000 ffff880116f2fbd0 ffffffff819c03e9 ffff880116f2fc18
+> [ 1852.366474]  ffff880116f2fc08 ffffffff810744ee ffffffff811e0e6e ffff8800d4e96238
+> [ 1852.373507]  ffffffff81dbe665 ffff8800d46a5948 0000000000000005 ffff880116f2fc68
+> [ 1852.380224] Call Trace:
+> [ 1852.381976]  [<ffffffff819c03e9>] dump_stack+0x4d/0x66
+> [ 1852.385495]  [<ffffffff810744ee>] warn_slowpath_common+0x7a/0x93
+> [ 1852.389869]  [<ffffffff811e0e6e>] ? remove_proc_entry+0x154/0x16b
+> [ 1852.393987]  [<ffffffff8107457b>] warn_slowpath_fmt+0x4c/0x4e
+> [ 1852.397999]  [<ffffffff811e0e6e>] remove_proc_entry+0x154/0x16b
+> [ 1852.402034]  [<ffffffff8129c73d>] nfs_fs_proc_net_exit+0x53/0x56
+> [ 1852.406136]  [<ffffffff812a103b>] nfs_net_exit+0x12/0x1d
+> [ 1852.409774]  [<ffffffff81785bc9>] ops_exit_list+0x44/0x55
+> [ 1852.413529]  [<ffffffff81786389>] cleanup_net+0xee/0x182
+> [ 1852.417198]  [<ffffffff81088c9e>] process_one_work+0x209/0x40d
+> [ 1852.502320]  [<ffffffff81088bf7>] ? process_one_work+0x162/0x40d
+> [ 1852.587629]  [<ffffffff810890c1>] worker_thread+0x1f0/0x2c7
+> [ 1852.673291]  [<ffffffff81088ed1>] ? process_scheduled_works+0x2f/0x2f
+> [ 1852.759470]  [<ffffffff8108e079>] kthread+0xc9/0xd1
+> [ 1852.843099]  [<ffffffff8109427f>] ? finish_task_switch+0x3a/0xce
+> [ 1852.926518]  [<ffffffff8108dfb0>] ? __kthread_parkme+0x61/0x61
+> [ 1853.008565]  [<ffffffff819cbeac>] ret_from_fork+0x7c/0xb0
+> [ 1853.076477]  [<ffffffff8108dfb0>] ? __kthread_parkme+0x61/0x61
+> [ 1853.140653] ---[ end trace 69c4c6617f78e32d ]---
+>
+> It looks wrong that we add "/proc/net/nfsfs" in nfs_fs_proc_net_init()
+> while remove "/proc/fs/nfsfs" in nfs_fs_proc_net_exit().
+>
+> Fixes: commit 65b38851a17 (NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes)
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+> Cc: Dan Aloni <dan@kernelim.com>
+> Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+> ---
+> v2 - fix nfs_fs_proc_net_init() as well
+>
+>  fs/nfs/client.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> index 1c5ff6d..c117b96 100644
+> --- a/fs/nfs/client.c
+> +++ b/fs/nfs/client.c
+> @@ -1418,7 +1418,7 @@ int nfs_fs_proc_net_init(struct net *net)
+>  error_2:
+>  	remove_proc_entry("servers", nn->proc_nfsfs);
+>  error_1:
+> -	remove_proc_entry("fs/nfsfs", NULL);
+> +	remove_proc_entry("nfsfs", net->proc_net);
+>  error_0:
+>  	return -ENOMEM;
+>  }
+> @@ -1429,7 +1429,7 @@ void nfs_fs_proc_net_exit(struct net *net)
+>  
+>  	remove_proc_entry("volumes", nn->proc_nfsfs);
+>  	remove_proc_entry("servers", nn->proc_nfsfs);
+> -	remove_proc_entry("fs/nfsfs", NULL);
+> +	remove_proc_entry("nfsfs", net->proc_net);
+>  }
+>  
+>  /*
