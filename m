@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454AbaHTMJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:09:03 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58900 "EHLO
+	id S1754338AbaHTMH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:07:56 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58898 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752497AbaHTLoJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752492AbaHTLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:09 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 025/104] x86_64/entry/xen: Do not invoke espfix64 on Xen
-Date: Wed, 20 Aug 2014 13:42:48 +0200
-Message-Id: <ad878a9e0f1bb5e5c81039ab10d1b416c5fa58f1.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 024/104] x86, espfix: Make it possible to disable 16-bit support
+Date: Wed, 20 Aug 2014 13:42:47 +0200
+Message-Id: <da629b7d89012aed5da81acc405933aa5389b626.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,140 +23,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
+commit 34273f41d57ee8d854dcd2a1d754cbb546cb548f upstream.
 
-This moves the espfix64 logic into native_iret.  To make this work,
-it gets rid of the native patch for INTERRUPT_RETURN:
-INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
+Embedded systems, which may be very memory-size-sensitive, are
+extremely unlikely to ever encounter any 16-bit software, so make it
+a CONFIG_EXPERT option to turn off support for any 16-bit software
+whatsoever.
 
-This changes the 16-bit SS behavior on Xen from OOPSing to leaking
-some bits of the Xen hypervisor's RSP (I think).
-
-[ hpa: this is a nonzero cost on native, but probably not enough to
-  measure. Xen needs to fix this in their own code, probably doing
-  something equivalent to espfix64. ]
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/include/asm/irqflags.h     |  2 +-
- arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
- arch/x86/kernel/paravirt_patch_64.c |  2 --
- 3 files changed, 11 insertions(+), 21 deletions(-)
+ arch/x86/Kconfig           | 23 ++++++++++++++++++-----
+ arch/x86/kernel/entry_32.S | 12 ++++++++++++
+ arch/x86/kernel/entry_64.S |  8 ++++++++
+ arch/x86/kernel/ldt.c      |  5 +++++
+ 4 files changed, 43 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
-index bba3cf88e624..0a8b519226b8 100644
---- a/arch/x86/include/asm/irqflags.h
-+++ b/arch/x86/include/asm/irqflags.h
-@@ -129,7 +129,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b423c245595f..9b6f78f57d86 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -973,14 +973,27 @@ config VM86
+ 	default y
+ 	depends on X86_32
+ 	---help---
+-	  This option is required by programs like DOSEMU to run 16-bit legacy
+-	  code on X86 processors. It also may be needed by software like
+-	  XFree86 to initialize some video cards via BIOS. Disabling this
+-	  option saves about 6k.
++	  This option is required by programs like DOSEMU to run
++	  16-bit real mode legacy code on x86 processors. It also may
++	  be needed by software like XFree86 to initialize some video
++	  cards via BIOS. Disabling this option saves about 6K.
++
++config X86_16BIT
++	bool "Enable support for 16-bit segments" if EXPERT
++	default y
++	---help---
++	  This option is required by programs like Wine to run 16-bit
++	  protected mode legacy code on x86 processors.  Disabling
++	  this option saves about 300 bytes on i386, or around 6K text
++	  plus 16K runtime memory on x86-64,
++
++config X86_ESPFIX32
++	def_bool y
++	depends on X86_16BIT && X86_32
  
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
+ config X86_ESPFIX64
+ 	def_bool y
+-	depends on X86_64
++	depends on X86_16BIT && X86_64
  
--#define INTERRUPT_RETURN	iretq
-+#define INTERRUPT_RETURN	jmp native_iret
- #define USERGS_SYSRET64				\
- 	swapgs;					\
- 	sysretq;
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 1fc2a347c47c..1f1c33d0a13c 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -532,6 +532,7 @@ syscall_exit:
+ restore_all:
+ 	TRACE_IRQS_IRET
+ restore_all_notrace:
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS, SS and CS
+ 	# Warning: PT_OLDSS(%esp) contains the wrong/random values if we
+ 	# are returning to the kernel.
+@@ -542,6 +543,7 @@ restore_all_notrace:
+ 	cmpl $((SEGMENT_LDT << 8) | USER_RPL), %eax
+ 	CFI_REMEMBER_STATE
+ 	je ldt_ss			# returning to user-space with LDT SS
++#endif
+ restore_nocheck:
+ 	RESTORE_REGS 4			# skip orig_eax/error_code
+ irq_return:
+@@ -554,6 +556,7 @@ ENTRY(iret_exc)
+ .previous
+ 	_ASM_EXTABLE(irq_return,iret_exc)
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ 	CFI_RESTORE_STATE
+ ldt_ss:
+ #ifdef CONFIG_PARAVIRT
+@@ -597,6 +600,7 @@ ldt_ss:
+ 	lss (%esp), %esp		/* switch to espfix segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
+ 	jmp restore_nocheck
++#endif
+ 	CFI_ENDPROC
+ ENDPROC(system_call)
+ 
+@@ -709,6 +713,7 @@ END(syscall_badsys)
+  * the high word of the segment base from the GDT and swiches to the
+  * normal stack and adjusts ESP with the matching offset.
+  */
++#ifdef CONFIG_X86_ESPFIX32
+ 	/* fixup the stack */
+ 	mov GDT_ESPFIX_SS + 4, %al /* bits 16..23 */
+ 	mov GDT_ESPFIX_SS + 7, %ah /* bits 24..31 */
+@@ -718,8 +723,10 @@ END(syscall_badsys)
+ 	pushl_cfi %eax
+ 	lss (%esp), %esp		/* switch to the normal stack segment */
+ 	CFI_ADJUST_CFA_OFFSET -8
++#endif
+ .endm
+ .macro UNWIND_ESPFIX_STACK
++#ifdef CONFIG_X86_ESPFIX32
+ 	movl %ss, %eax
+ 	/* see if on espfix stack */
+ 	cmpw $__ESPFIX_SS, %ax
+@@ -730,6 +737,7 @@ END(syscall_badsys)
+ 	/* switch to normal stack */
+ 	FIXUP_ESPFIX_STACK
+ 27:
++#endif
+ .endm
+ 
+ /*
+@@ -1350,11 +1358,13 @@ END(debug)
+ ENTRY(nmi)
+ 	RING0_INT_FRAME
+ 	ASM_CLAC
++#ifdef CONFIG_X86_ESPFIX32
+ 	pushl_cfi %eax
+ 	movl %ss, %eax
+ 	cmpw $__ESPFIX_SS, %ax
+ 	popl_cfi %eax
+ 	je nmi_espfix_stack
++#endif
+ 	cmpl $ia32_sysenter_target,(%esp)
+ 	je nmi_stack_fixup
+ 	pushl_cfi %eax
+@@ -1394,6 +1404,7 @@ nmi_debug_stack_check:
+ 	FIX_STACK 24, nmi_stack_correct, 1
+ 	jmp nmi_stack_correct
+ 
++#ifdef CONFIG_X86_ESPFIX32
+ nmi_espfix_stack:
+ 	/* We have a RING0_INT_FRAME here.
+ 	 *
+@@ -1415,6 +1426,7 @@ nmi_espfix_stack:
+ 	lss 12+4(%esp), %esp		# back to espfix stack
+ 	CFI_ADJUST_CFA_OFFSET -24
+ 	jmp irq_return
++#endif
+ 	CFI_ENDPROC
+ END(nmi)
+ 
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index c4f437e20a57..207da8d92f75 100644
+index 383503cc9231..c4f437e20a57 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -1041,27 +1041,24 @@ restore_args:
- 	RESTORE_ARGS 1,8,1
- 
- irq_return:
-+	INTERRUPT_RETURN
-+
-+ENTRY(native_iret)
- 	/*
+@@ -1045,8 +1045,10 @@ irq_return:
  	 * Are we returning to a stack segment from the LDT?  Note: in
  	 * 64-bit mode SS:RSP on the exception stack is always valid.
  	 */
- #ifdef CONFIG_X86_ESPFIX64
++#ifdef CONFIG_X86_ESPFIX64
  	testb $4,(SS-RIP)(%rsp)
--	jnz irq_return_ldt
-+	jnz native_irq_return_ldt
+ 	jnz irq_return_ldt
++#endif
+ 
+ irq_return_iret:
+ 	INTERRUPT_RETURN
+@@ -1058,6 +1060,7 @@ ENTRY(native_iret)
+ 	_ASM_EXTABLE(native_iret, bad_iret)
  #endif
  
--irq_return_iret:
--	INTERRUPT_RETURN
--	_ASM_EXTABLE(irq_return_iret, bad_iret)
--
--#ifdef CONFIG_PARAVIRT
--ENTRY(native_iret)
-+native_irq_return_iret:
- 	iretq
--	_ASM_EXTABLE(native_iret, bad_iret)
--#endif
-+	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
- 
- #ifdef CONFIG_X86_ESPFIX64
--irq_return_ldt:
-+native_irq_return_ldt:
++#ifdef CONFIG_X86_ESPFIX64
+ irq_return_ldt:
  	pushq_cfi %rax
  	pushq_cfi %rdi
- 	SWAPGS
-@@ -1083,7 +1080,7 @@ irq_return_ldt:
- 	SWAPGS
+@@ -1081,6 +1084,7 @@ irq_return_ldt:
  	movq %rax,%rsp
  	popq_cfi %rax
--	jmp irq_return_iret
-+	jmp native_irq_return_iret
- #endif
+ 	jmp irq_return_iret
++#endif
  
  	.section .fixup,"ax"
-@@ -1169,13 +1166,8 @@ __do_double_fault:
- 	cmpl $__KERNEL_CS,CS(%rdi)
- 	jne do_double_fault
- 	movq RIP(%rdi),%rax
--	cmpq $irq_return_iret,%rax
--#ifdef CONFIG_PARAVIRT
--	je 1f
--	cmpq $native_iret,%rax
--#endif
-+	cmpq $native_irq_return_iret,%rax
- 	jne do_double_fault		/* This shouldn't happen... */
--1:
- 	movq PER_CPU_VAR(kernel_stack),%rax
- 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
- 	movq %rax,RSP(%rdi)
-@@ -1665,7 +1657,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return_iret(%rip),%rcx
-+	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
-diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
-index 3f08f34f93eb..a1da6737ba5b 100644
---- a/arch/x86/kernel/paravirt_patch_64.c
-+++ b/arch/x86/kernel/paravirt_patch_64.c
-@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
--DEF_NATIVE(pv_cpu_ops, iret, "iretq");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
--		PATCH_SITE(pv_cpu_ops, iret);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
+ bad_iret:
+@@ -1154,6 +1158,7 @@ END(common_interrupt)
+ 	 * modify the stack to make it look like we just entered
+ 	 * the #GP handler from user space, similar to bad_iret.
+ 	 */
++#ifdef CONFIG_X86_ESPFIX64
+ 	ALIGN
+ __do_double_fault:
+ 	XCPT_FRAME 1 RDI+8
+@@ -1179,6 +1184,9 @@ __do_double_fault:
+ 	retq
+ 	CFI_ENDPROC
+ END(__do_double_fault)
++#else
++# define __do_double_fault do_double_fault
++#endif
+ 
+ /*
+  * End of kprobes section
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index ebc987398923..c37886d759cc 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,11 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
+ 
++	if (!IS_ENABLED(CONFIG_X86_16BIT) && !ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
++	}
++
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
 -- 
 2.0.4
 
