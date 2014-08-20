@@ -1,42 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaHTFWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 01:22:24 -0400
-Received: from trent.utfs.org ([94.185.90.103]:56990 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978AbaHTFWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 01:22:23 -0400
-Date: Tue, 19 Aug 2014 22:22:11 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-cc: Jiang Liu <jiang.liu@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: WARNING: CPU: 6 PID: 79 at fs/proc/generic.c:521
- remove_proc_entry+0x170/0x180()
-In-Reply-To: <CAM_iQpWMtakj2QUEsF3NdzHyD-VULCkgMR4yf5VrPPBm03joEg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.19.4.1408192221430.2758@trent.utfs.org>
-References: <alpine.DEB.2.19.4.1408191754390.2758@trent.utfs.org> <53F40CF8.8050504@linux.intel.com> <CAM_iQpWMtakj2QUEsF3NdzHyD-VULCkgMR4yf5VrPPBm03joEg@mail.gmail.com>
-User-Agent: Alpine 2.19.4 (DEB 40 2013-11-18)
+	id S1752074AbaHTFXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 01:23:08 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:45680 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534AbaHTFXG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 01:23:06 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <cpw@sgi.com>, <robinmholt@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v2] sgi-xp: Do not use BUG_ON(!spin_is_locked())
+Date: Wed, 20 Aug 2014 11:05:47 +0530
+Message-ID: <1408512947-12916-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1 at Wed Aug 20 07:22:11 2014 +0200 (CEST))
+Content-Type: text/plain
+X-OriginalArrivalTime: 20 Aug 2014 05:23:04.0484 (UTC) FILETIME=[D16C8640:01CFBC36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Aug 2014 at 20:13, Cong Wang wrote:
-> On Tue, Aug 19, 2014 at 7:50 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> > Hi Kujau,
-> >         It seems like a different issue, something wrong with
-> > void nfs_fs_proc_net_exit(struct net *net)
-> 
-> http://marc.info/?l=linux-nfs&m=140821782107427&w=2
+on some architecture spin_is_locked() always return false in
+uniprocessor configuration and can therefore not be used
+with BUG_ON.it would be advise to replace with
+lockdep_assert_held().
 
-Thanks, that helped!
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+  - corrected the typo
 
-Christian.
+ drivers/misc/sgi-xp/xpc_channel.c | 6 +++---
+ drivers/misc/sgi-xp/xpc_sn2.c     | 2 +-
+ drivers/misc/sgi-xp/xpc_uv.c      | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/misc/sgi-xp/xpc_channel.c b/drivers/misc/sgi-xp/xpc_channel.c
+index 128d561..611d34f 100644
+--- a/drivers/misc/sgi-xp/xpc_channel.c
++++ b/drivers/misc/sgi-xp/xpc_channel.c
+@@ -28,7 +28,7 @@ xpc_process_connect(struct xpc_channel *ch, unsigned long *irq_flags)
+ {
+ 	enum xp_retval ret;
+ 
+-	DBUG_ON(!spin_is_locked(&ch->lock));
++	lockdep_assert_held(&ch->lock);
+ 
+ 	if (!(ch->flags & XPC_C_OPENREQUEST) ||
+ 	    !(ch->flags & XPC_C_ROPENREQUEST)) {
+@@ -82,7 +82,7 @@ xpc_process_disconnect(struct xpc_channel *ch, unsigned long *irq_flags)
+ 	struct xpc_partition *part = &xpc_partitions[ch->partid];
+ 	u32 channel_was_connected = (ch->flags & XPC_C_WASCONNECTED);
+ 
+-	DBUG_ON(!spin_is_locked(&ch->lock));
++	lockdep_assert_held(&ch->lock);
+ 
+ 	if (!(ch->flags & XPC_C_DISCONNECTING))
+ 		return;
+@@ -758,7 +758,7 @@ xpc_disconnect_channel(const int line, struct xpc_channel *ch,
+ {
+ 	u32 channel_was_connected = (ch->flags & XPC_C_CONNECTED);
+ 
+-	DBUG_ON(!spin_is_locked(&ch->lock));
++	lockdep_assert_held(&ch->lock);
+ 
+ 	if (ch->flags & (XPC_C_DISCONNECTING | XPC_C_DISCONNECTED))
+ 		return;
+diff --git a/drivers/misc/sgi-xp/xpc_sn2.c b/drivers/misc/sgi-xp/xpc_sn2.c
+index 7d71c04..9d3b113 100644
+--- a/drivers/misc/sgi-xp/xpc_sn2.c
++++ b/drivers/misc/sgi-xp/xpc_sn2.c
+@@ -1674,7 +1674,7 @@ xpc_teardown_msg_structures_sn2(struct xpc_channel *ch)
+ {
+ 	struct xpc_channel_sn2 *ch_sn2 = &ch->sn.sn2;
+ 
+-	DBUG_ON(!spin_is_locked(&ch->lock));
++	lockdep_assert_held(&ch->lock);
+ 
+ 	ch_sn2->remote_msgqueue_pa = 0;
+ 
+diff --git a/drivers/misc/sgi-xp/xpc_uv.c b/drivers/misc/sgi-xp/xpc_uv.c
+index 95c8944..828733c 100644
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -1183,7 +1183,7 @@ xpc_teardown_msg_structures_uv(struct xpc_channel *ch)
+ {
+ 	struct xpc_channel_uv *ch_uv = &ch->sn.uv;
+ 
+-	DBUG_ON(!spin_is_locked(&ch->lock));
++	lockdep_assert_held(&ch->lock);
+ 
+ 	kfree(ch_uv->cached_notify_gru_mq_desc);
+ 	ch_uv->cached_notify_gru_mq_desc = NULL;
 -- 
-BOFH excuse #182:
+1.7.11.7
 
-endothermal recalibration
