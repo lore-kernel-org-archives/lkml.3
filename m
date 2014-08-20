@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaHTCpC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 22:45:02 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:41334 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaHTCpA (ORCPT
+	id S1752138AbaHTCqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 22:46:45 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54932 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977AbaHTCqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 22:45:00 -0400
-X-Original-SENDERIP: 10.177.222.131
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 20 Aug 2014 11:44:58 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] PC, KVM, CMA: Fix regression caused by wrong
- get_order() use
-Message-ID: <20140820024458.GA2415@js1304-P5Q-DELUXE>
-References: <1407992587-9164-1-git-send-email-aik@ozlabs.ru>
+	Tue, 19 Aug 2014 22:46:44 -0400
+Date: Wed, 20 Aug 2014 04:46:38 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH 1/2] SOUND: kill gameport bits
+Message-ID: <20140820024638.GA25240@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1407992587-9164-1-git-send-email-aik@ozlabs.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 03:03:07PM +1000, Alexey Kardashevskiy wrote:
-> fc95ca7284bc54953165cba76c3228bd2cdb9591 claims that there is no
-> functional change but this is not true as it calls get_order() (which
-> takes bytes) where it should have called ilog2() and the kernel stops
-> on VM_BUG_ON().
-> 
-> This replaces get_order() with order_base_2() (round-up version of ilog2).
-> 
-> Suggested-by: Paul Mackerras <paulus@samba.org>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Reply-To: 
+In-Reply-To: <1408466497-25640-1-git-send-email-dmitry.torokhov@gmail.com>
+X-Priority: none
 
-Sorry for my fault. :(
+Hi,
 
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Gameport support hasn't been working well ever since cpufreq became
+> mainstream and it becomes increasingly hard to find hardware and
+> software
+> that would run on such old hardware.
 
-Thanks.
+Given that I'm puzzled why one would want to deprecate a whole subsystem
+which appears to be supported by a whole 14 different PCI sound card
+drivers (where the ones I'm owning hardware of are intended to be in
+active maintenance) and only 3 ISA-based ones, I'm missing several
+details and justifications of that decision here (perhaps there was a
+prior discussion/activity that I'm missing?).
+
+Also, I'm left wondering why e.g. my Athlon XP system (a very popular
+choice for longer times) would be affected by Cpufreq...
+And there are no details on how exactly cpufreq is a problem or how this
+timing issue could be fixed...
+The obvious workaround for such an ensuing dearth of hardware support
+could be USB 15-pin gameport adapters - but are they even supported on
+Linux? Haven't seen info on this...
+And even if supported, these adapters (at least the non-perfect ones, as
+can be seen from reviews on a well-known online shop site) are said to
+be hit-or-miss.
+
+http://www.flightsim.com/vbfs/showthread.php?238938-joystick-GamePort-to-USB-adapter-question
+http://reviews.thesource.ca/9026/2600164/nexxtech-usb-gameport-adapter-reviews/reviews.htm
+
+If we keep removing functionality like this, then why stop short of
+removing x86 32bit as a whole? By having Linux support nicely restricted
+to hardware made within the last 5 years, we would surely be doing the
+planned-obsolescence Micro$oft "ecosystem" (what was ecological about
+this again?) a huge favour...
+
+We already have an IMHO dangerous state in support of somewhat less mainstream
+hardware, so do we want to keep furthering that?
+
+Could we have more details/discussion prior to activities to remove
+whole subsystems?
+
+Thanks,
+
+Andreas Mohr
+
+-- 
+GNU/Linux. It's not the software that's free, it's you.
