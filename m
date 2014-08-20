@@ -1,153 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaHTQ5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 12:57:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58142 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637AbaHTQ4k (ORCPT
+	id S1752738AbaHTQ5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 12:57:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39615 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbaHTQ4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 12:56:40 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 140/141] mnt: Correct permission checks in do_remount
-Date: Wed, 20 Aug 2014 17:56:31 +0100
-Message-Id: <1408553792-25134-3-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
-References: <1408354398-10226-1-git-send-email-luis.henriques@canonical.com>
+	Wed, 20 Aug 2014 12:56:39 -0400
+Date: Wed, 20 Aug 2014 11:55:59 -0500
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Chen, Alvin" <alvin.chen@intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Boon Leong Ong <boon.leong.ong@intel.com>
+Subject: Re: [PATCH] USB: pch_udc: USB gadget device support for Intel Quark
+ X1000
+Message-ID: <20140820165559.GA19000@kroah.com>
+References: <1407172974-22485-1-git-send-email-alvin.chen@intel.com>
+ <20140820145446.GB24500@saruman.home>
+ <20140820161505.GB17908@kroah.com>
+ <20140820162008.GK24500@saruman.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820162008.GK24500@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+On Wed, Aug 20, 2014 at 11:20:09AM -0500, Felipe Balbi wrote:
+> On Wed, Aug 20, 2014 at 11:15:05AM -0500, Greg KH wrote:
+> > On Wed, Aug 20, 2014 at 09:54:46AM -0500, Felipe Balbi wrote:
+> > > Hi Greg,
+> > > 
+> > > On Mon, Aug 04, 2014 at 10:22:54AM -0700, Chen, Alvin wrote:
+> > > > From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> > > > 
+> > > > This patch is to enable the USB gadget device for Intel Quark X1000
+> > > > 
+> > > > Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+> > > > Signed-off-by: Bing Niu <bing.niu@intel.com>
+> > > > Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+> > > 
+> > > this patch is basically just a new device ID being added to an existing
+> > > driver, do you mind if I add it to the -rc or you prefer to wait for
+> > > v3.18 merge window ?
+> > 
+> > New ids are fine for -rc and stable kernels, don't wait for 3.18.
+> 
+> it does a little more than that as it needs to select the proper PCI
+> BAR for Quark, I guess that's still fine ?
 
-commit 9566d6742852c527bf5af38af5cbb878dad75705 upstream.
+Yes, as it's totally safe if you don't have this hardware, so all should
+be good.
 
-While invesgiating the issue where in "mount --bind -oremount,ro ..."
-would result in later "mount --bind -oremount,rw" succeeding even if
-the mount started off locked I realized that there are several
-additional mount flags that should be locked and are not.
+thanks,
 
-In particular MNT_NOSUID, MNT_NODEV, MNT_NOEXEC, and the atime
-flags in addition to MNT_READONLY should all be locked.  These
-flags are all per superblock, can all be changed with MS_BIND,
-and should not be changable if set by a more privileged user.
-
-The following additions to the current logic are added in this patch.
-- nosuid may not be clearable by a less privileged user.
-- nodev  may not be clearable by a less privielged user.
-- noexec may not be clearable by a less privileged user.
-- atime flags may not be changeable by a less privileged user.
-
-The logic with atime is that always setting atime on access is a
-global policy and backup software and auditing software could break if
-atime bits are not updated (when they are configured to be updated),
-and serious performance degradation could result (DOS attack) if atime
-updates happen when they have been explicitly disabled.  Therefore an
-unprivileged user should not be able to mess with the atime bits set
-by a more privileged user.
-
-The additional restrictions are implemented with the addition of
-MNT_LOCK_NOSUID, MNT_LOCK_NODEV, MNT_LOCK_NOEXEC, and MNT_LOCK_ATIME
-mnt flags.
-
-Taken together these changes and the fixes for MNT_LOCK_READONLY
-should make it safe for an unprivileged user to create a user
-namespace and to call "mount --bind -o remount,... ..." without
-the danger of mount flags being changed maliciously.
-
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/namespace.c        | 36 +++++++++++++++++++++++++++++++++---
- include/linux/mount.h |  5 +++++
- 2 files changed, 38 insertions(+), 3 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 343158cb021c..456c3e00cb04 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -828,8 +828,21 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 
- 	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
- 	/* Don't allow unprivileged users to change mount flags */
--	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
--		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+	if (flag & CL_UNPRIVILEGED) {
-+		mnt->mnt.mnt_flags |= MNT_LOCK_ATIME;
-+
-+		if (mnt->mnt.mnt_flags & MNT_READONLY)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NODEV)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NODEV;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOSUID)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOSUID;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOEXEC)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOEXEC;
-+	}
- 
- 	atomic_inc(&sb->s_active);
- 	mnt->mnt.mnt_sb = sb;
-@@ -1799,6 +1812,23 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 	    !(mnt_flags & MNT_READONLY)) {
- 		return -EPERM;
- 	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NODEV) &&
-+	    !(mnt_flags & MNT_NODEV)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOSUID) &&
-+	    !(mnt_flags & MNT_NOSUID)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOEXEC) &&
-+	    !(mnt_flags & MNT_NOEXEC)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_ATIME) &&
-+	    ((mnt->mnt.mnt_flags & MNT_ATIME_MASK) != (mnt_flags & MNT_ATIME_MASK))) {
-+		return -EPERM;
-+	}
-+
- 	err = security_sb_remount(sb, data);
- 	if (err)
- 		return err;
-@@ -1998,7 +2028,7 @@ static int do_new_mount(struct path *path, const char *fstype, int flags,
- 		 */
- 		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
- 			flags |= MS_NODEV;
--			mnt_flags |= MNT_NODEV;
-+			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
- 		}
- 	}
- 
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 16fc05d816d4..f058e131e6bb 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -45,10 +45,15 @@ struct mnt_namespace;
- #define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
- 				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
- 				 | MNT_READONLY)
-+#define MNT_ATIME_MASK (MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME )
- 
- 
- #define MNT_INTERNAL	0x4000
- 
-+#define MNT_LOCK_ATIME		0x040000
-+#define MNT_LOCK_NOEXEC		0x080000
-+#define MNT_LOCK_NOSUID		0x100000
-+#define MNT_LOCK_NODEV		0x200000
- #define MNT_LOCK_READONLY	0x400000
- 
- struct vfsmount {
--- 
-1.9.1
-
+greg k-h
