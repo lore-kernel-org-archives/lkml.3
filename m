@@ -1,125 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633AbaHTJRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 05:17:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:59675 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819AbaHTJR3 (ORCPT
+	id S1751800AbaHTJT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 05:19:58 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:59790 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaHTJT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 05:17:29 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-5b-53f467a8590f
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Daniel Drake <drake@endlessm.com>, Tobias Jakobi <Liquid.Acid@gmx.net>,
-        Olof Johansson <olof@lixom.net>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: Re: [PATCH] mfd: max77686: make interrupts support optional
-Date: Wed, 20 Aug 2014 11:17:24 +0200
-Message-id: <3154093.ltyAb6brb9@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <53F45C73.1030304@collabora.co.uk>
-References: <1408516009-22106-1-git-send-email-m.szyprowski@samsung.com>
- <20140820081909.GH4266@lee--X1> <53F45C73.1030304@collabora.co.uk>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=UTF-8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t9jQd0V6V+CDW6957Z4NP8xs8XR3wUW
-	r18YWtz/epTRYtPja6wWl3fNYbPo+vmTzWLtkbvsFqeuf2azON3N6sDl8ff5dRaPRd+zPBZv
-	2s/mcefaHjaPeScDPTYvqfe4cqKJ1aNvyypGj8+b5AI4o7hsUlJzMstSi/TtErgyena0MRY0
-	SlZcvvqOtYHxn3AXIyeHhICJxLpfp9ggbDGJC/fWA9lcHEIC0xkl3s89COW0MEl8/7uKCaSK
-	TcBKYmL7KkYQW0TATuLG6ofMIEXMAreZJKZfvgyWEBZwkXh/+SVQNwcHi4CqxOo+B5Awr4Cm
-	xO4LP5lBbFEBT4kd21eCbeYU0Jc4emwuK8SyXkaJhQ+XsUI0CEr8mHyPBcRmFpCX2Ld/KiuE
-	rS4xad4i5gmMArOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMEx8kxq
-	B+PKBotDjAIcjEo8vArZn4OFWBPLiitzDzFKcDArifAWJXwJFuJNSaysSi3Kjy8qzUktPsQo
-	zcGiJM57oNU6UEggPbEkNTs1tSC1CCbLxMEp1cC4dn/H6Y2L97sd4PNI2vU873Dm0pNZR4Xv
-	FopNaa5envjg+L4/3mv2nvvD4vI9gf99M8NEreKmC/znHR+GuAfybD59LCMh/8BJf4NVwY9i
-	X3LOvOfeePr2Hs7oylNrwyIOZ8z+1y4iFXaP23jqMu+5LG4sZ+arRc85tzkxhOnntZMfpgix
-	J2TMVGIpzkg01GIuKk4EAF50QBuNAgAA
+	Wed, 20 Aug 2014 05:19:56 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <jic23@kernel.org>, <kgene.kim@samsung.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-iio@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH] iio: remove .owner field for driver using module_platform_driver
+Date: Wed, 20 Aug 2014 15:02:37 +0530
+Message-ID: <1408527157-9318-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginalArrivalTime: 20 Aug 2014 09:19:54.0259 (UTC) FILETIME=[E71C1E30:01CFBC57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch removes the .owner field for drivers which use the
+platform_driver_register api because this is overriden in
+_platform_driver_register.
 
-Hi,
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+ drivers/iio/accel/hid-sensor-accel-3d.c       | 1 -
+ drivers/iio/adc/exynos_adc.c                  | 1 -
+ drivers/iio/adc/lp8788_adc.c                  | 1 -
+ drivers/iio/adc/ti_am335x_adc.c               | 1 -
+ drivers/iio/adc/twl4030-madc.c                | 1 -
+ drivers/iio/adc/twl6030-gpadc.c               | 1 -
+ drivers/iio/adc/vf610_adc.c                   | 1 -
+ drivers/iio/adc/viperboard_adc.c              | 1 -
+ drivers/iio/gyro/hid-sensor-gyro-3d.c         | 1 -
+ drivers/iio/humidity/dht11.c                  | 1 -
+ drivers/iio/light/hid-sensor-als.c            | 1 -
+ drivers/iio/light/hid-sensor-prox.c           | 1 -
+ drivers/iio/light/lm3533-als.c                | 1 -
+ drivers/iio/magnetometer/hid-sensor-magn-3d.c | 1 -
+ drivers/iio/orientation/hid-sensor-incl-3d.c  | 1 -
+ drivers/iio/orientation/hid-sensor-rotation.c | 1 -
+ drivers/iio/pressure/hid-sensor-press.c       | 1 -
+ drivers/iio/trigger/iio-trig-interrupt.c      | 1 -
+ 18 files changed, 18 deletions(-)
 
-On Wednesday, August 20, 2014 10:29:39 AM Javier Martinez Canillas wrote:
-> Hello Lee, Marek,
-> 
-> On 08/20/2014 10:19 AM, Lee Jones wrote:
-> > On Wed, 20 Aug 2014, Marek Szyprowski wrote:
-> > 
-> >> Commit 6f1c1e71d93 ("mfd: max77686: Convert to use regmap_irq") broke
-> >> support for boards, which provide no irq for MAX 77686 PMIC. In such
-> >> case, not all functions of PMIC are available, but the driver still
-> >> should at least handle voltage regulators instead of failing to init.
-> >> This patch restores previous behavior.
-> >> 
-> >> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> >> ---
-> >> Hello,
-> >> 
-> >> This patch fixes booting issues with recently merged support for
-> >> Exynos4412 based Odroid X2/U3 boards. See
-> >> http://www.spinics.net/lists/linux-samsung-soc/msg35773.html
-> >> thread for more details.
-> >> 
-> >> Best regards
-> >> Marek Szyprowski
-> >> Samsung R&D Institute Poland
-> 
-> I already gave my opinion about this patch on thread:
-> 
-> "[PATCH v2 0/4] Add Exynos4412 based Odroid X2 and U2/U3/U3+ support"
-> 
-> where the issue was reported by Olof but I'll add it here as well for
-> completeness since I don't know if the same people are cc'ed on both threads.
-> 
-> Bartlomiej Zolnierkiewicz posted a similar patch [0] before but as I said
-
-BTW my patch a bit simpler than this one.
-
-regmap_del_irq_chip() checks for second argument being NULL so it is not
-needed to explicitly check for max77686->irq not being zero on probe
-failures before calling regmap_del_irq_chip().
-
-> on that thread, I'm not sure if is correct to make that DT property
-> optional. Or rather, if we need to make it optional then we should also
-> change the Documentation/devicetree/bindings/mfd/max77686.txt that list
-> "interrupts" DT property as required.
-> 
-> It's true that before converting the max77686 to use the regmap irq API,
-> the driver was loose on that regard but max77686_irq_init() in
-> max77686-irq.c was returning -ENODEV when the IRQ was not provided and
-> that error code was not checked in max77686_i2c_probe() (which was a bug
-> IMHO).
-> 
-> More importantly I wonder if a design where a IRQ line is not connected to
-> the max77686 PMIC makes even sense. If such a design is possible then the
-> "interrupt" property should be made optional but if not then I think that
-> the driver should fail to probe in that case. Yes, it is a regression but
-> the Odroid DTS was not following the DT binding and was just lucky that
-> the driver was not checking the required DT properties.
-> 
-> Daniel Drake posted the correct fix for the Odroid DTS [1]. So I tend to
-> say that Daniel's fix should be added as a -rc fix and we should keep both
-> the max77686 driver and its DT binding as it is now but as I said, if from
-> a hardware point of view makes sense to leave that line unconnected then I
-> don't oppose to this change.
-> 
-> Best regards,
-> Javier
-> 
-> [0]: https://lkml.org/lkml/2014/8/7/374
-> [1]:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-July/272869.html
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
+index 54e464e..d5d9531 100644
+--- a/drivers/iio/accel/hid-sensor-accel-3d.c
++++ b/drivers/iio/accel/hid-sensor-accel-3d.c
+@@ -419,7 +419,6 @@ static struct platform_driver hid_accel_3d_platform_driver = {
+ 	.id_table = hid_accel_3d_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_accel_3d_probe,
+ 	.remove		= hid_accel_3d_remove,
+diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+index fc9dfc2..b4373f7 100644
+--- a/drivers/iio/adc/exynos_adc.c
++++ b/drivers/iio/adc/exynos_adc.c
+@@ -606,7 +606,6 @@ static struct platform_driver exynos_adc_driver = {
+ 	.remove		= exynos_adc_remove,
+ 	.driver		= {
+ 		.name	= "exynos-adc",
+-		.owner	= THIS_MODULE,
+ 		.of_match_table = exynos_adc_match,
+ 		.pm	= &exynos_adc_pm_ops,
+ 	},
+diff --git a/drivers/iio/adc/lp8788_adc.c b/drivers/iio/adc/lp8788_adc.c
+index 5c8c915..152cfc8 100644
+--- a/drivers/iio/adc/lp8788_adc.c
++++ b/drivers/iio/adc/lp8788_adc.c
+@@ -244,7 +244,6 @@ static struct platform_driver lp8788_adc_driver = {
+ 	.remove = lp8788_adc_remove,
+ 	.driver = {
+ 		.name = LP8788_DEV_ADC,
+-		.owner = THIS_MODULE,
+ 	},
+ };
+ module_platform_driver(lp8788_adc_driver);
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index d5dc4c6..b730864 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -545,7 +545,6 @@ MODULE_DEVICE_TABLE(of, ti_adc_dt_ids);
+ static struct platform_driver tiadc_driver = {
+ 	.driver = {
+ 		.name   = "TI-am335x-adc",
+-		.owner	= THIS_MODULE,
+ 		.pm	= TIADC_PM_OPS,
+ 		.of_match_table = ti_adc_dt_ids,
+ 	},
+diff --git a/drivers/iio/adc/twl4030-madc.c b/drivers/iio/adc/twl4030-madc.c
+index eb86786..94c5f05 100644
+--- a/drivers/iio/adc/twl4030-madc.c
++++ b/drivers/iio/adc/twl4030-madc.c
+@@ -883,7 +883,6 @@ static struct platform_driver twl4030_madc_driver = {
+ 	.remove = twl4030_madc_remove,
+ 	.driver = {
+ 		   .name = "twl4030_madc",
+-		   .owner = THIS_MODULE,
+ 		   .of_match_table = of_match_ptr(twl_madc_of_match),
+ 	},
+ };
+diff --git a/drivers/iio/adc/twl6030-gpadc.c b/drivers/iio/adc/twl6030-gpadc.c
+index 15282f1..89d8aa1 100644
+--- a/drivers/iio/adc/twl6030-gpadc.c
++++ b/drivers/iio/adc/twl6030-gpadc.c
+@@ -994,7 +994,6 @@ static struct platform_driver twl6030_gpadc_driver = {
+ 	.remove		= twl6030_gpadc_remove,
+ 	.driver		= {
+ 		.name	= DRIVER_NAME,
+-		.owner	= THIS_MODULE,
+ 		.pm	= &twl6030_gpadc_pm_ops,
+ 		.of_match_table = of_twl6030_match_tbl,
+ 	},
+diff --git a/drivers/iio/adc/vf610_adc.c b/drivers/iio/adc/vf610_adc.c
+index 44799eb5..4a10ae9 100644
+--- a/drivers/iio/adc/vf610_adc.c
++++ b/drivers/iio/adc/vf610_adc.c
+@@ -698,7 +698,6 @@ static struct platform_driver vf610_adc_driver = {
+ 	.remove         = vf610_adc_remove,
+ 	.driver         = {
+ 		.name   = DRIVER_NAME,
+-		.owner  = THIS_MODULE,
+ 		.of_match_table = vf610_adc_match,
+ 		.pm     = &vf610_adc_pm_ops,
+ 	},
+diff --git a/drivers/iio/adc/viperboard_adc.c b/drivers/iio/adc/viperboard_adc.c
+index 9acf6b6..3be2e35 100644
+--- a/drivers/iio/adc/viperboard_adc.c
++++ b/drivers/iio/adc/viperboard_adc.c
+@@ -145,7 +145,6 @@ static int vprbrd_adc_probe(struct platform_device *pdev)
+ static struct platform_driver vprbrd_adc_driver = {
+ 	.driver = {
+ 		.name	= "viperboard-adc",
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= vprbrd_adc_probe,
+ };
+diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+index fa034a3..a3ea1e8 100644
+--- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
++++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+@@ -416,7 +416,6 @@ static struct platform_driver hid_gyro_3d_platform_driver = {
+ 	.id_table = hid_gyro_3d_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_gyro_3d_probe,
+ 	.remove		= hid_gyro_3d_remove,
+diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c
+index d8771f5..623c145 100644
+--- a/drivers/iio/humidity/dht11.c
++++ b/drivers/iio/humidity/dht11.c
+@@ -281,7 +281,6 @@ static int dht11_probe(struct platform_device *pdev)
+ static struct platform_driver dht11_driver = {
+ 	.driver = {
+ 		.name	= DRIVER_NAME,
+-		.owner	= THIS_MODULE,
+ 		.of_match_table = dht11_dt_ids,
+ 	},
+ 	.probe  = dht11_probe,
+diff --git a/drivers/iio/light/hid-sensor-als.c b/drivers/iio/light/hid-sensor-als.c
+index 96e71e1..a5283d7 100644
+--- a/drivers/iio/light/hid-sensor-als.c
++++ b/drivers/iio/light/hid-sensor-als.c
+@@ -381,7 +381,6 @@ static struct platform_driver hid_als_platform_driver = {
+ 	.id_table = hid_als_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_als_probe,
+ 	.remove		= hid_als_remove,
+diff --git a/drivers/iio/light/hid-sensor-prox.c b/drivers/iio/light/hid-sensor-prox.c
+index 412bae8..f5a5146 100644
+--- a/drivers/iio/light/hid-sensor-prox.c
++++ b/drivers/iio/light/hid-sensor-prox.c
+@@ -373,7 +373,6 @@ static struct platform_driver hid_prox_platform_driver = {
+ 	.id_table = hid_prox_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_prox_probe,
+ 	.remove		= hid_prox_remove,
+diff --git a/drivers/iio/light/lm3533-als.c b/drivers/iio/light/lm3533-als.c
+index c1aadc6..ae3c71b 100644
+--- a/drivers/iio/light/lm3533-als.c
++++ b/drivers/iio/light/lm3533-als.c
+@@ -915,7 +915,6 @@ static int lm3533_als_remove(struct platform_device *pdev)
+ static struct platform_driver lm3533_als_driver = {
+ 	.driver	= {
+ 		.name	= "lm3533-als",
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= lm3533_als_probe,
+ 	.remove		= lm3533_als_remove,
+diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+index 3ec777a..03a13d4 100644
+--- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
++++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
+@@ -533,7 +533,6 @@ static struct platform_driver hid_magn_3d_platform_driver = {
+ 	.id_table = hid_magn_3d_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_magn_3d_probe,
+ 	.remove		= hid_magn_3d_remove,
+diff --git a/drivers/iio/orientation/hid-sensor-incl-3d.c b/drivers/iio/orientation/hid-sensor-incl-3d.c
+index 2478f6c..1ff181b 100644
+--- a/drivers/iio/orientation/hid-sensor-incl-3d.c
++++ b/drivers/iio/orientation/hid-sensor-incl-3d.c
+@@ -437,7 +437,6 @@ static struct platform_driver hid_incl_3d_platform_driver = {
+ 	.id_table = hid_incl_3d_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_incl_3d_probe,
+ 	.remove		= hid_incl_3d_remove,
+diff --git a/drivers/iio/orientation/hid-sensor-rotation.c b/drivers/iio/orientation/hid-sensor-rotation.c
+index dccf848..4afb6c7 100644
+--- a/drivers/iio/orientation/hid-sensor-rotation.c
++++ b/drivers/iio/orientation/hid-sensor-rotation.c
+@@ -334,7 +334,6 @@ static struct platform_driver hid_dev_rot_platform_driver = {
+ 	.id_table = hid_dev_rot_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_dev_rot_probe,
+ 	.remove		= hid_dev_rot_remove,
+diff --git a/drivers/iio/pressure/hid-sensor-press.c b/drivers/iio/pressure/hid-sensor-press.c
+index 2c0d2a4..7649286 100644
+--- a/drivers/iio/pressure/hid-sensor-press.c
++++ b/drivers/iio/pressure/hid-sensor-press.c
+@@ -382,7 +382,6 @@ static struct platform_driver hid_press_platform_driver = {
+ 	.id_table = hid_press_ids,
+ 	.driver = {
+ 		.name	= KBUILD_MODNAME,
+-		.owner	= THIS_MODULE,
+ 	},
+ 	.probe		= hid_press_probe,
+ 	.remove		= hid_press_remove,
+diff --git a/drivers/iio/trigger/iio-trig-interrupt.c b/drivers/iio/trigger/iio-trig-interrupt.c
+index 7a149a7..572bc6f 100644
+--- a/drivers/iio/trigger/iio-trig-interrupt.c
++++ b/drivers/iio/trigger/iio-trig-interrupt.c
+@@ -109,7 +109,6 @@ static struct platform_driver iio_interrupt_trigger_driver = {
+ 	.remove = iio_interrupt_trigger_remove,
+ 	.driver = {
+ 		.name = "iio_interrupt_trigger",
+-		.owner = THIS_MODULE,
+ 	},
+ };
+ 
+-- 
+1.7.11.7
 
