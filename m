@@ -1,228 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaHTG0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 02:26:52 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:64377 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaHTG0u (ORCPT
+	id S1752049AbaHTG1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 02:27:13 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:23344 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbaHTG1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 02:26:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1408434887-16387-5-git-send-email-minchan@kernel.org>
-References: <1408434887-16387-1-git-send-email-minchan@kernel.org>
-	<1408434887-16387-5-git-send-email-minchan@kernel.org>
-Date: Wed, 20 Aug 2014 02:26:50 -0400
-Message-ID: <CAFdhcLQcgME18U2NfEc6dXfvHnJWpyqcMR=Y16MyyghWiNRo1w@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] zram: report maximum used memory
-From: David Horner <ds2horner@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Aug 2014 02:27:11 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-29-53f43fbcd749
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Drake <drake@endlessm.com>, Tobias Jakobi <Liquid.Acid@gmx.net>,
+        Olof Johansson <olof@lixom.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] mfd: max77686: make interrupts support optional
+Date: Wed, 20 Aug 2014 08:26:49 +0200
+Message-id: <1408516009-22106-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkluLIzCtJLcpLzFFi42I5/e/4Fd099l+CDSZ95rXYOGM9q8Wj+Y+Z
+	LY7+LrB4/cLQ4v7Xo4wWmx5fY7W4vGsOm0XXz59sFmuP3GW3OHX9M5vF6W5WB26Pv8+vs3gs
+	+p7lsXjTfjaPO9f2sHnMOxnosXlJvceVE02sHn1bVjF6fN4kF8AZxWWTkpqTWZZapG+XwJVx
+	9txRtoLpUhWfVm5jbWA8K9rFyMkhIWAisXb5WlYIW0ziwr31bF2MXBxCAksZJX6962OCcPqY
+	JJoW32UEqWITMJToetvFBmKLCChIbO59xgpSxCywmVliWtcfFpCEsICDxOmZm8DGsgioSjzY
+	MxsszivgIfG66RkjxDo5if8vVzBNYORewMiwilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMk
+	2L7sYFx8zOoQowAHoxIPr0L252Ah1sSy4srcQ4wSHMxKIrz1Zl+ChXhTEiurUovy44tKc1KL
+	DzEycXBKNTAyRzlI7DgVInzhYJriokSZGENp/r3L7v45NTl6yXwVyfqJ/3+k5Mvw3PHp3dT6
+	T7xiww/uFKOrF0SiL1++verghX/F5k7qzP/8XNY0ilziO9XAY5C9TyLOSOBmaGJh4q1zFtpr
+	l6/oPh7mwqSuqW24le37U+nMq9cydlxkPLnyp5OUzY+n4nFKLMUZiYZazEXFiQCrYgw0FAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 3:54 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Normally, zram user could get maximum memory usage zram consumed
-> via polling mem_used_total with sysfs in userspace.
->
-> But it has a critical problem because user can miss peak memory
-> usage during update inverval of polling. For avoiding that,
-> user should poll it with shorter interval(ie, 0.0000000001s)
-> with mlocking to avoid page fault delay when memory pressure
-> is heavy. It would be troublesome.
->
-> This patch adds new knob "mem_used_max" so user could see
-> the maximum memory usage easily via reading the knob and reset
-> it via "echo 0 > /sys/block/zram0/mem_used_max".
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  Documentation/ABI/testing/sysfs-block-zram | 10 +++++
->  Documentation/blockdev/zram.txt            |  1 +
->  drivers/block/zram/zram_drv.c              | 60 +++++++++++++++++++++++++++++-
->  drivers/block/zram/zram_drv.h              |  1 +
->  4 files changed, 70 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> index 025331c19045..ffd1ea7443dd 100644
-> --- a/Documentation/ABI/testing/sysfs-block-zram
-> +++ b/Documentation/ABI/testing/sysfs-block-zram
-> @@ -120,6 +120,16 @@ Description:
->                 statistic.
->                 Unit: bytes
->
-> +What:          /sys/block/zram<id>/mem_used_max
-> +Date:          August 2014
-> +Contact:       Minchan Kim <minchan@kernel.org>
-> +Description:
-> +               The mem_used_max file is read/write and specifies the amount
-> +               of maximum memory zram have consumed to store compressed data.
-> +               For resetting the value, you should do "echo 0". Otherwise,
-> +               you could see -EINVAL.
-> +               Unit: bytes
-> +
->  What:          /sys/block/zram<id>/mem_limit
->  Date:          August 2014
->  Contact:       Minchan Kim <minchan@kernel.org>
-> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> index 9f239ff8c444..3b2247c2d4cf 100644
-> --- a/Documentation/blockdev/zram.txt
-> +++ b/Documentation/blockdev/zram.txt
-> @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
->                 orig_data_size
->                 compr_data_size
->                 mem_used_total
-> +               mem_used_max
->
->  8) Deactivate:
->         swapoff /dev/zram0
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index adc91c7ecaef..e4d44842a91d 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -149,6 +149,40 @@ static ssize_t mem_limit_store(struct device *dev,
->         return len;
->  }
->
-> +static ssize_t mem_used_max_show(struct device *dev,
-> +               struct device_attribute *attr, char *buf)
-> +{
-> +       u64 val = 0;
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       down_read(&zram->init_lock);
-> +       if (init_done(zram))
-> +               val = atomic64_read(&zram->stats.max_used_pages);
-> +       up_read(&zram->init_lock);
-> +
-> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> +}
-> +
-> +static ssize_t mem_used_max_store(struct device *dev,
-> +               struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +       u64 limit;
-> +       struct zram *zram = dev_to_zram(dev);
-> +       struct zram_meta *meta = zram->meta;
-> +
-> -       limit = memparse(buf, NULL);
-> -       if (0 != limit)
+Commit 6f1c1e71d93 ("mfd: max77686: Convert to use regmap_irq") broke
+support for boards, which provide no irq for MAX 77686 PMIC. In such
+case, not all functions of PMIC are available, but the driver still
+should at least handle voltage regulators instead of failing to init.
+This patch restores previous behavior.
 
-we wanted explicit "0" and nothing else for extensibility
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+Hello,
 
-     if (len != 1 || *buf != "0")
+This patch fixes booting issues with recently merged support for
+Exynos4412 based Odroid X2/U3 boards. See
+http://www.spinics.net/lists/linux-samsung-soc/msg35773.html
+thread for more details.
 
-> +               return -EINVAL;
-> +
-> +       down_read(&zram->init_lock);
-> +       if (init_done(zram))
-> +               atomic64_set(&zram->stats.max_used_pages,
-> +                               zs_get_total_size(meta->mem_pool));
-> +       up_read(&zram->init_lock);
-> +
-> +       return len;
-          return 1;
+Best regards
+Marek Szyprowski
+Samsung R&D Institute Poland
+---
+ drivers/mfd/max77686.c | 46 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 27 insertions(+), 19 deletions(-)
 
-the standard convention is to return used amount of buffer
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 86e552348db4..525718c448c8 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -314,22 +314,26 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 		}
+ 	}
+ 
+-	ret = regmap_add_irq_chip(max77686->regmap, max77686->irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+-				  IRQF_SHARED, 0, irq_chip,
+-				  &max77686->irq_data);
+-	if (ret) {
+-		dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n", ret);
+-		goto err_unregister_i2c;
+-	}
++	if (max77686->irq) {
++		ret = regmap_add_irq_chip(max77686->regmap, max77686->irq,
++					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
++					  IRQF_SHARED, 0, irq_chip,
++					  &max77686->irq_data);
++		if (ret) {
++			dev_err(&i2c->dev, "failed to add PMIC irq chip: %d\n",
++				 ret);
++			goto err_unregister_i2c;
++		}
+ 
+-	ret = regmap_add_irq_chip(*rtc_regmap, max77686->irq,
+-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
+-				  IRQF_SHARED, 0, rtc_irq_chip,
+-				  &max77686->rtc_irq_data);
+-	if (ret) {
+-		dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n", ret);
+-		goto err_del_irqc;
++		ret = regmap_add_irq_chip(*rtc_regmap, max77686->irq,
++					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT |
++					  IRQF_SHARED, 0, rtc_irq_chip,
++					  &max77686->rtc_irq_data);
++		if (ret) {
++			dev_err(&i2c->dev, "failed to add RTC irq chip: %d\n",
++				ret);
++			goto err_del_irqc;
++		}
+ 	}
+ 
+ 	ret = mfd_add_devices(max77686->dev, -1, cells, n_devs, NULL, 0, NULL);
+@@ -341,9 +345,11 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	return 0;
+ 
+ err_del_rtc_irqc:
+-	regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
++	if (max77686->irq)
++		regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
+ err_del_irqc:
+-	regmap_del_irq_chip(max77686->irq, max77686->irq_data);
++	if (max77686->irq)
++		regmap_del_irq_chip(max77686->irq, max77686->irq_data);
+ err_unregister_i2c:
+ 	if (max77686->type == TYPE_MAX77686)
+ 		i2c_unregister_device(max77686->rtc);
+@@ -357,8 +363,10 @@ static int max77686_i2c_remove(struct i2c_client *i2c)
+ 
+ 	mfd_remove_devices(max77686->dev);
+ 
+-	regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
+-	regmap_del_irq_chip(max77686->irq, max77686->irq_data);
++	if (max77686->irq)
++		regmap_del_irq_chip(max77686->irq, max77686->rtc_irq_data);
++	if (max77686->irq)
++		regmap_del_irq_chip(max77686->irq, max77686->irq_data);
+ 
+ 	if (max77686->type == TYPE_MAX77686)
+ 		i2c_unregister_device(max77686->rtc);
+-- 
+1.9.2
 
-
-
-> +}
-> +
->  static ssize_t max_comp_streams_store(struct device *dev,
->                 struct device_attribute *attr, const char *buf, size_t len)
->  {
-> @@ -461,6 +495,26 @@ out_cleanup:
->         return ret;
->  }
->
-> +static bool check_limit(struct zram *zram)
-> +{
-> +       unsigned long alloced_pages;
-> +       u64 old_max, cur_max;
-> +       struct zram_meta *meta = zram->meta;
-> +
-> +       do {
-> +               alloced_pages = zs_get_total_size(meta->mem_pool);
-> +               if (zram->limit_pages && alloced_pages > zram->limit_pages)
-> +                       return false;
-> +
-> +               old_max = cur_max = atomic64_read(&zram->stats.max_used_pages);
-> +               if (alloced_pages > cur_max)
-> +                       old_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
-> +                                       cur_max, alloced_pages);
-> +       } while (old_max != cur_max);
-> +
-> +       return true;
-> +}
-> +
-
-Check_limit does more than check limit - it has a substantial side
-effect of updating max used.
-
-Basically if we already allocated the buffer and our alloced_pages is
-less than the limit then we are good to go.
-
-It is the race to update that we need to have the cmpxchg.
-And maybe a helper function would aid readability - not sure, see next point.
-
-I don't believe there is need for the loop either.
-Any other updater will also be including our allocated pages
-(and at this point in the code eliminated from roll back)
- so if they beat us to it, then no problem, their max is better than ours.
-
-
-
->  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                            int offset)
->  {
-> @@ -541,8 +595,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                 goto out;
->         }
->
-> -       if (zram->limit_pages &&
-> -               zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
-> +       if (!check_limit(zram)) {
->                 zs_free(meta->mem_pool, handle);
->                 ret = -ENOMEM;
->                 goto out;
-> @@ -897,6 +950,8 @@ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
->  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
->                 mem_limit_store);
-> +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-> +               mem_used_max_store);
->  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->                 max_comp_streams_show, max_comp_streams_store);
->  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> @@ -926,6 +981,7 @@ static struct attribute *zram_disk_attrs[] = {
->         &dev_attr_compr_data_size.attr,
->         &dev_attr_mem_used_total.attr,
->         &dev_attr_mem_limit.attr,
-> +       &dev_attr_mem_used_max.attr,
->         &dev_attr_max_comp_streams.attr,
->         &dev_attr_comp_algorithm.attr,
->         NULL,
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index b7aa9c21553f..29383312d543 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -90,6 +90,7 @@ struct zram_stats {
->         atomic64_t notify_free; /* no. of swap slot free notifications */
->         atomic64_t zero_pages;          /* no. of zero filled pages */
->         atomic64_t pages_stored;        /* no. of pages currently stored */
-> +       atomic64_t max_used_pages;      /* no. of maximum pages stored */
->  };
->
->  struct zram_meta {
-> --
-> 2.0.0
->
