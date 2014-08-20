@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292AbaHTP44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:56:56 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:63645 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaHTP4y (ORCPT
+	id S1752374AbaHTP5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:57:22 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:35490 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaHTP5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:56:54 -0400
-Date: Wed, 20 Aug 2014 16:56:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Peter Tyser <ptyser@xes-inc.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] mfd: lpc_ich: Add PCI ID for Intel Braswell
-Message-ID: <20140820155646.GN4266@lee--X1>
-References: <1408462743-9462-1-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1408462743-9462-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Aug 2014 11:57:20 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH 1/3] ARM: zynq: DT: Fix Ethernet phy modes
+Date: Wed, 20 Aug 2014 08:56:57 -0700
+Message-Id: <1408550219-19825-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.0.1.1.gfbfc394
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Aug 2014, Mika Westerberg wrote:
+The used PHYs should be qualified as 'rgmii-id' instead of just 'rgmii'.
+For the Zed board this seems to make a difference between working and
+broken Ethernet.
 
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> This is the same as used in Baytrail so add the new PCI ID to the driver's
-> list of supported IDs.
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
->  drivers/mfd/lpc_ich.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-> index 7d8482ff5868..597f5f495d49 100644
-> --- a/drivers/mfd/lpc_ich.c
-> +++ b/drivers/mfd/lpc_ich.c
-> @@ -216,6 +216,7 @@ enum lpc_chipsets {
->  	LPC_BAYTRAIL,   /* Bay Trail SoC */
->  	LPC_COLETO,	/* Coleto Creek */
->  	LPC_WPT_LP,	/* Wildcat Point-LP */
-> +	LPC_BRASWELL,	/* Braswell SoC */
->  };
->  
->  static struct lpc_ich_info lpc_chipset_info[] = {
-> @@ -519,6 +520,10 @@ static struct lpc_ich_info lpc_chipset_info[] = {
->  		.name = "Wildcat Point_LP",
->  		.iTCO_version = 2,
->  	},
-> +	[LPC_BRASWELL] = {
-> +		.name = "Braswell SoC",
-> +		.iTCO_version = 3,
-> +	},
->  };
->  
->  /*
-> @@ -745,6 +750,7 @@ static const struct pci_device_id lpc_ich_ids[] = {
->  	{ PCI_VDEVICE(INTEL, 0x9cc6), LPC_WPT_LP},
->  	{ PCI_VDEVICE(INTEL, 0x9cc7), LPC_WPT_LP},
->  	{ PCI_VDEVICE(INTEL, 0x9cc9), LPC_WPT_LP},
-> +	{ PCI_VDEVICE(INTEL, 0x229C), LPC_BRASWELL},
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ arch/arm/boot/dts/zynq-zc702.dts | 2 +-
+ arch/arm/boot/dts/zynq-zc706.dts | 2 +-
+ arch/arm/boot/dts/zynq-zed.dts   | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Nit: All the other numbers are in lower case.
-
-Please fix and re-send.
-
->  	{ 0, },			/* End of list */
->  };
->  MODULE_DEVICE_TABLE(pci, lpc_ich_ids);
-
+diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
+index 835c3089c61c..30bcfe20f0bc 100644
+--- a/arch/arm/boot/dts/zynq-zc702.dts
++++ b/arch/arm/boot/dts/zynq-zc702.dts
+@@ -35,7 +35,7 @@
+ 
+ &gem0 {
+ 	status = "okay";
+-	phy-mode = "rgmii";
++	phy-mode = "rgmii-id";
+ };
+ 
+ &i2c0 {
+diff --git a/arch/arm/boot/dts/zynq-zc706.dts b/arch/arm/boot/dts/zynq-zc706.dts
+index 4cc9913078cd..3d9cb023e158 100644
+--- a/arch/arm/boot/dts/zynq-zc706.dts
++++ b/arch/arm/boot/dts/zynq-zc706.dts
+@@ -32,7 +32,7 @@
+ 
+ &gem0 {
+ 	status = "okay";
+-	phy-mode = "rgmii";
++	phy-mode = "rgmii-id";
+ };
+ 
+ &i2c0 {
+diff --git a/arch/arm/boot/dts/zynq-zed.dts b/arch/arm/boot/dts/zynq-zed.dts
+index 82d7ef1a9a9c..42deb1b7dbc8 100644
+--- a/arch/arm/boot/dts/zynq-zed.dts
++++ b/arch/arm/boot/dts/zynq-zed.dts
+@@ -32,7 +32,7 @@
+ 
+ &gem0 {
+ 	status = "okay";
+-	phy-mode = "rgmii";
++	phy-mode = "rgmii-id";
+ };
+ 
+ &sdhci0 {
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.0.1.1.gfbfc394
+
