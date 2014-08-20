@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111AbaHTMEs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:04:48 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58914 "EHLO
+	id S1754041AbaHTMDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:03:14 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58907 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752511AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752503AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 038/104] net: sctp: inherit auth_capable on INIT collisions
-Date: Wed, 20 Aug 2014 13:43:01 +0200
-Message-Id: <4a07c786e3d9fbe989d8b5bf9920a1e34afd8b91.1408535000.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, Andrew Lutomriski <amluto@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dirk Hohndel <dirk@hohndel.org>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        comex <comexk@gmail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 020/104] x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
+Date: Wed, 20 Aug 2014 13:42:43 +0200
+Message-Id: <7e329475de1f97df56e1cfa412e5b3479994c202.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -24,189 +31,603 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 1be9a950c646c9092fb3618197f7b6bfb50e82aa ]
+commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
 
-Jason reported an oops caused by SCTP on his ARM machine with
-SCTP authentication enabled:
+The IRET instruction, when returning to a 16-bit segment, only
+restores the bottom 16 bits of the user space stack pointer.  This
+causes some 16-bit software to break, but it also leaks kernel state
+to user space.  We have a software workaround for that ("espfix") for
+the 32-bit kernel, but it relies on a nonzero stack segment base which
+is not available in 64-bit mode.
 
-Internal error: Oops: 17 [#1] ARM
-CPU: 0 PID: 104 Comm: sctp-test Not tainted 3.13.0-68744-g3632f30c9b20-dirty #1
-task: c6eefa40 ti: c6f52000 task.ti: c6f52000
-PC is at sctp_auth_calculate_hmac+0xc4/0x10c
-LR is at sg_init_table+0x20/0x38
-pc : [<c024bb80>]    lr : [<c00f32dc>]    psr: 40000013
-sp : c6f538e8  ip : 00000000  fp : c6f53924
-r10: c6f50d80  r9 : 00000000  r8 : 00010000
-r7 : 00000000  r6 : c7be4000  r5 : 00000000  r4 : c6f56254
-r3 : c00c8170  r2 : 00000001  r1 : 00000008  r0 : c6f1e660
-Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 0005397f  Table: 06f28000  DAC: 00000015
-Process sctp-test (pid: 104, stack limit = 0xc6f521c0)
-Stack: (0xc6f538e8 to 0xc6f54000)
-[...]
-Backtrace:
-[<c024babc>] (sctp_auth_calculate_hmac+0x0/0x10c) from [<c0249af8>] (sctp_packet_transmit+0x33c/0x5c8)
-[<c02497bc>] (sctp_packet_transmit+0x0/0x5c8) from [<c023e96c>] (sctp_outq_flush+0x7fc/0x844)
-[<c023e170>] (sctp_outq_flush+0x0/0x844) from [<c023ef78>] (sctp_outq_uncork+0x24/0x28)
-[<c023ef54>] (sctp_outq_uncork+0x0/0x28) from [<c0234364>] (sctp_side_effects+0x1134/0x1220)
-[<c0233230>] (sctp_side_effects+0x0/0x1220) from [<c02330b0>] (sctp_do_sm+0xac/0xd4)
-[<c0233004>] (sctp_do_sm+0x0/0xd4) from [<c023675c>] (sctp_assoc_bh_rcv+0x118/0x160)
-[<c0236644>] (sctp_assoc_bh_rcv+0x0/0x160) from [<c023d5bc>] (sctp_inq_push+0x6c/0x74)
-[<c023d550>] (sctp_inq_push+0x0/0x74) from [<c024a6b0>] (sctp_rcv+0x7d8/0x888)
+In checkin:
 
-While we already had various kind of bugs in that area
-ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to verify if
-we/peer is AUTH capable") and b14878ccb7fa ("net: sctp: cache
-auth_enable per endpoint"), this one is a bit of a different
-kind.
+    b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
 
-Giving a bit more background on why SCTP authentication is
-needed can be found in RFC4895:
+we "solved" this by forbidding 16-bit segments on 64-bit kernels, with
+the logic that 16-bit support is crippled on 64-bit kernels anyway (no
+V86 support), but it turns out that people are doing stuff like
+running old Win16 binaries under Wine and expect it to work.
 
-  SCTP uses 32-bit verification tags to protect itself against
-  blind attackers. These values are not changed during the
-  lifetime of an SCTP association.
+This works around this by creating percpu "ministacks", each of which
+is mapped 2^16 times 64K apart.  When we detect that the return SS is
+on the LDT, we copy the IRET frame to the ministack and use the
+relevant alias to return to userspace.  The ministacks are mapped
+readonly, so if IRET faults we promote #GP to #DF which is an IST
+vector and thus has its own stack; we then do the fixup in the #DF
+handler.
 
-  Looking at new SCTP extensions, there is the need to have a
-  method of proving that an SCTP chunk(s) was really sent by
-  the original peer that started the association and not by a
-  malicious attacker.
+(Making #GP an IST exception would make the msr_safe functions unsafe
+in NMI/MC context, and quite possibly have other effects.)
 
-To cause this bug, we're triggering an INIT collision between
-peers; normal SCTP handshake where both sides intent to
-authenticate packets contains RANDOM; CHUNKS; HMAC-ALGO
-parameters that are being negotiated among peers:
+Special thanks to:
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
+- Andy Lutomirski, for the suggestion of using very small stack slots
+  and copy (as opposed to map) the IRET frame there, and for the
+  suggestion to mark them readonly and let the fault promote to #DF.
+- Konrad Wilk for paravirt fixup and testing.
+- Borislav Petkov for testing help and useful comments.
 
-RFC4895 says that each endpoint therefore knows its own random
-number and the peer's random number *after* the association
-has been established. The local and peer's random number along
-with the shared key are then part of the secret used for
-calculating the HMAC in the AUTH chunk.
-
-Now, in our scenario, we have 2 threads with 1 non-blocking
-SEQ_PACKET socket each, setting up common shared SCTP_AUTH_KEY
-and SCTP_AUTH_ACTIVE_KEY properly, and each of them calling
-sctp_bindx(3), listen(2) and connect(2) against each other,
-thus the handshake looks similar to this, e.g.:
-
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  <--------- INIT[RANDOM; CHUNKS; HMAC-ALGO] -----------
-  -------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] -------->
-  ...
-
-Since such collisions can also happen with verification tags,
-the RFC4895 for AUTH rather vaguely says under section 6.1:
-
-  In case of INIT collision, the rules governing the handling
-  of this Random Number follow the same pattern as those for
-  the Verification Tag, as explained in Section 5.2.4 of
-  RFC 2960 [5]. Therefore, each endpoint knows its own Random
-  Number and the peer's Random Number after the association
-  has been established.
-
-In RFC2960, section 5.2.4, we're eventually hitting Action B:
-
-  B) In this case, both sides may be attempting to start an
-     association at about the same time but the peer endpoint
-     started its INIT after responding to the local endpoint's
-     INIT. Thus it may have picked a new Verification Tag not
-     being aware of the previous Tag it had sent this endpoint.
-     The endpoint should stay in or enter the ESTABLISHED
-     state but it MUST update its peer's Verification Tag from
-     the State Cookie, stop any init or cookie timers that may
-     running and send a COOKIE ACK.
-
-In other words, the handling of the Random parameter is the
-same as behavior for the Verification Tag as described in
-Action B of section 5.2.4.
-
-Looking at the code, we exactly hit the sctp_sf_do_dupcook_b()
-case which triggers an SCTP_CMD_UPDATE_ASSOC command to the
-side effect interpreter, and in fact it properly copies over
-peer_{random, hmacs, chunks} parameters from the newly created
-association to update the existing one.
-
-Also, the old asoc_shared_key is being released and based on
-the new params, sctp_auth_asoc_init_active_key() updated.
-However, the issue observed in this case is that the previous
-asoc->peer.auth_capable was 0, and has *not* been updated, so
-that instead of creating a new secret, we're doing an early
-return from the function sctp_auth_asoc_init_active_key()
-leaving asoc->asoc_shared_key as NULL. However, we now have to
-authenticate chunks from the updated chunk list (e.g. COOKIE-ACK).
-
-That in fact causes the server side when responding with ...
-
-  <------------------ AUTH; COOKIE-ACK -----------------
-
-... to trigger a NULL pointer dereference, since in
-sctp_packet_transmit(), it discovers that an AUTH chunk is
-being queued for xmit, and thus it calls sctp_auth_calculate_hmac().
-
-Since the asoc->active_key_id is still inherited from the
-endpoint, and the same as encoded into the chunk, it uses
-asoc->asoc_shared_key, which is still NULL, as an asoc_key
-and dereferences it in ...
-
-  crypto_hash_setkey(desc.tfm, &asoc_key->data[0], asoc_key->len)
-
-... causing an oops. All this happens because sctp_make_cookie_ack()
-called with the *new* association has the peer.auth_capable=1
-and therefore marks the chunk with auth=1 after checking
-sctp_auth_send_cid(), but it is *actually* sent later on over
-the then *updated* association's transport that didn't initialize
-its shared key due to peer.auth_capable=0. Since control chunks
-in that case are not sent by the temporary association which
-are scheduled for deletion, they are issued for xmit via
-SCTP_CMD_REPLY in the interpreter with the context of the
-*updated* association. peer.auth_capable was 0 in the updated
-association (which went from COOKIE_WAIT into ESTABLISHED state),
-since all previous processing that performed sctp_process_init()
-was being done on temporary associations, that we eventually
-throw away each time.
-
-The correct fix is to update to the new peer.auth_capable
-value as well in the collision case via sctp_assoc_update(),
-so that in case the collision migrated from 0 -> 1,
-sctp_auth_asoc_init_active_key() can properly recalculate
-the secret. This therefore fixes the observed server panic.
-
-Fixes: 730fc3d05cd4 ("[SCTP]: Implete SCTP-AUTH parameter processing")
-Reported-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Brian Gerst <brgerst@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Lutomriski <amluto@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dirk Hohndel <dirk@hohndel.org>
+Cc: Arjan van de Ven <arjan.van.de.ven@intel.com>
+Cc: comex <comexk@gmail.com>
+Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: <stable@vger.kernel.org> # consider after upstream merge
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/sctp/associola.c | 1 +
- 1 file changed, 1 insertion(+)
+ Documentation/x86/x86_64/mm.txt         |   2 +
+ arch/x86/include/asm/pgtable_64_types.h |   2 +
+ arch/x86/include/asm/setup.h            |   3 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/entry_64.S              |  73 ++++++++++-
+ arch/x86/kernel/espfix_64.c             | 208 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ldt.c                   |  11 --
+ arch/x86/kernel/smpboot.c               |   7 ++
+ arch/x86/mm/dump_pagetables.c           |  31 +++--
+ init/main.c                             |   4 +
+ 10 files changed, 316 insertions(+), 26 deletions(-)
+ create mode 100644 arch/x86/kernel/espfix_64.c
 
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index f6d6dcd1f97d..ad5cd6f20e78 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1198,6 +1198,7 @@ void sctp_assoc_update(struct sctp_association *asoc,
- 	asoc->c = new->c;
- 	asoc->peer.rwnd = new->peer.rwnd;
- 	asoc->peer.sack_needed = new->peer.sack_needed;
-+	asoc->peer.auth_capable = new->peer.auth_capable;
- 	asoc->peer.i = new->peer.i;
- 	sctp_tsnmap_init(&asoc->peer.tsn_map, SCTP_TSN_MAP_INITIAL,
- 			 asoc->peer.i.initial_tsn, GFP_ATOMIC);
+diff --git a/Documentation/x86/x86_64/mm.txt b/Documentation/x86/x86_64/mm.txt
+index 881582f75c9c..bd4370487b07 100644
+--- a/Documentation/x86/x86_64/mm.txt
++++ b/Documentation/x86/x86_64/mm.txt
+@@ -12,6 +12,8 @@ ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
+ ffffe90000000000 - ffffe9ffffffffff (=40 bits) hole
+ ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+ ... unused hole ...
++ffffff0000000000 - ffffff7fffffffff (=39 bits) %esp fixup stacks
++... unused hole ...
+ ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
+ ffffffffa0000000 - ffffffffff5fffff (=1525 MB) module mapping space
+ ffffffffff600000 - ffffffffffdfffff (=8 MB) vsyscalls
+diff --git a/arch/x86/include/asm/pgtable_64_types.h b/arch/x86/include/asm/pgtable_64_types.h
+index 2d883440cb9a..b1609f2c524c 100644
+--- a/arch/x86/include/asm/pgtable_64_types.h
++++ b/arch/x86/include/asm/pgtable_64_types.h
+@@ -61,6 +61,8 @@ typedef struct { pteval_t pte; } pte_t;
+ #define MODULES_VADDR    _AC(0xffffffffa0000000, UL)
+ #define MODULES_END      _AC(0xffffffffff000000, UL)
+ #define MODULES_LEN   (MODULES_END - MODULES_VADDR)
++#define ESPFIX_PGD_ENTRY _AC(-2, UL)
++#define ESPFIX_BASE_ADDR (ESPFIX_PGD_ENTRY << PGDIR_SHIFT)
+ 
+ #define EARLY_DYNAMIC_PAGE_TABLES	64
+ 
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index 347555492dad..82bb2c8f13f1 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -62,6 +62,9 @@ extern void x86_ce4100_early_setup(void);
+ static inline void x86_ce4100_early_setup(void) { }
+ #endif
+ 
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
+ #ifndef _SETUP
+ 
+ /*
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index a5408b965c9d..d5c94c90716b 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-y			+= syscall_$(BITS).o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
++obj-$(CONFIG_X86_64)	+= espfix_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 9ce256739175..383503cc9231 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -58,6 +58,7 @@
+ #include <asm/asm.h>
+ #include <asm/context_tracking.h>
+ #include <asm/smap.h>
++#include <asm/pgtable_types.h>
+ #include <linux/err.h>
+ 
+ /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+@@ -1040,8 +1041,16 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
++	/*
++	 * Are we returning to a stack segment from the LDT?  Note: in
++	 * 64-bit mode SS:RSP on the exception stack is always valid.
++	 */
++	testb $4,(SS-RIP)(%rsp)
++	jnz irq_return_ldt
++
++irq_return_iret:
+ 	INTERRUPT_RETURN
+-	_ASM_EXTABLE(irq_return, bad_iret)
++	_ASM_EXTABLE(irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_PARAVIRT
+ ENTRY(native_iret)
+@@ -1049,6 +1058,30 @@ ENTRY(native_iret)
+ 	_ASM_EXTABLE(native_iret, bad_iret)
+ #endif
+ 
++irq_return_ldt:
++	pushq_cfi %rax
++	pushq_cfi %rdi
++	SWAPGS
++	movq PER_CPU_VAR(espfix_waddr),%rdi
++	movq %rax,(0*8)(%rdi)	/* RAX */
++	movq (2*8)(%rsp),%rax	/* RIP */
++	movq %rax,(1*8)(%rdi)
++	movq (3*8)(%rsp),%rax	/* CS */
++	movq %rax,(2*8)(%rdi)
++	movq (4*8)(%rsp),%rax	/* RFLAGS */
++	movq %rax,(3*8)(%rdi)
++	movq (6*8)(%rsp),%rax	/* SS */
++	movq %rax,(5*8)(%rdi)
++	movq (5*8)(%rsp),%rax	/* RSP */
++	movq %rax,(4*8)(%rdi)
++	andl $0xffff0000,%eax
++	popq_cfi %rdi
++	orq PER_CPU_VAR(espfix_stack),%rax
++	SWAPGS
++	movq %rax,%rsp
++	popq_cfi %rax
++	jmp irq_return_iret
++
+ 	.section .fixup,"ax"
+ bad_iret:
+ 	/*
+@@ -1112,9 +1145,41 @@ ENTRY(retint_kernel)
+ 	call preempt_schedule_irq
+ 	jmp exit_intr
+ #endif
+-
+ 	CFI_ENDPROC
+ END(common_interrupt)
++
++	/*
++	 * If IRET takes a fault on the espfix stack, then we
++	 * end up promoting it to a doublefault.  In that case,
++	 * modify the stack to make it look like we just entered
++	 * the #GP handler from user space, similar to bad_iret.
++	 */
++	ALIGN
++__do_double_fault:
++	XCPT_FRAME 1 RDI+8
++	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
++	sarq $PGDIR_SHIFT,%rax
++	cmpl $ESPFIX_PGD_ENTRY,%eax
++	jne do_double_fault		/* No, just deliver the fault */
++	cmpl $__KERNEL_CS,CS(%rdi)
++	jne do_double_fault
++	movq RIP(%rdi),%rax
++	cmpq $irq_return_iret,%rax
++#ifdef CONFIG_PARAVIRT
++	je 1f
++	cmpq $native_iret,%rax
++#endif
++	jne do_double_fault		/* This shouldn't happen... */
++1:
++	movq PER_CPU_VAR(kernel_stack),%rax
++	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
++	movq %rax,RSP(%rdi)
++	movq $0,(%rax)			/* Missing (lost) #GP error code */
++	movq $general_protection,RIP(%rdi)
++	retq
++	CFI_ENDPROC
++END(__do_double_fault)
++
+ /*
+  * End of kprobes section
+  */
+@@ -1305,7 +1370,7 @@ zeroentry overflow do_overflow
+ zeroentry bounds do_bounds
+ zeroentry invalid_op do_invalid_op
+ zeroentry device_not_available do_device_not_available
+-paranoiderrorentry double_fault do_double_fault
++paranoiderrorentry double_fault __do_double_fault
+ zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
+ errorentry invalid_TSS do_invalid_TSS
+ errorentry segment_not_present do_segment_not_present
+@@ -1592,7 +1657,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return(%rip),%rcx
++	leaq irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+new file mode 100644
+index 000000000000..8a64da36310f
+--- /dev/null
++++ b/arch/x86/kernel/espfix_64.c
+@@ -0,0 +1,208 @@
++/* ----------------------------------------------------------------------- *
++ *
++ *   Copyright 2014 Intel Corporation; author: H. Peter Anvin
++ *
++ *   This program is free software; you can redistribute it and/or modify it
++ *   under the terms and conditions of the GNU General Public License,
++ *   version 2, as published by the Free Software Foundation.
++ *
++ *   This program is distributed in the hope it will be useful, but WITHOUT
++ *   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ *   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ *   more details.
++ *
++ * ----------------------------------------------------------------------- */
++
++/*
++ * The IRET instruction, when returning to a 16-bit segment, only
++ * restores the bottom 16 bits of the user space stack pointer.  This
++ * causes some 16-bit software to break, but it also leaks kernel state
++ * to user space.
++ *
++ * This works around this by creating percpu "ministacks", each of which
++ * is mapped 2^16 times 64K apart.  When we detect that the return SS is
++ * on the LDT, we copy the IRET frame to the ministack and use the
++ * relevant alias to return to userspace.  The ministacks are mapped
++ * readonly, so if the IRET fault we promote #GP to #DF which is an IST
++ * vector and thus has its own stack; we then do the fixup in the #DF
++ * handler.
++ *
++ * This file sets up the ministacks and the related page tables.  The
++ * actual ministack invocation is in entry_64.S.
++ */
++
++#include <linux/init.h>
++#include <linux/init_task.h>
++#include <linux/kernel.h>
++#include <linux/percpu.h>
++#include <linux/gfp.h>
++#include <linux/random.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/setup.h>
++
++/*
++ * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
++ * it up to a cache line to avoid unnecessary sharing.
++ */
++#define ESPFIX_STACK_SIZE	(8*8UL)
++#define ESPFIX_STACKS_PER_PAGE	(PAGE_SIZE/ESPFIX_STACK_SIZE)
++
++/* There is address space for how many espfix pages? */
++#define ESPFIX_PAGE_SPACE	(1UL << (PGDIR_SHIFT-PAGE_SHIFT-16))
++
++#define ESPFIX_MAX_CPUS		(ESPFIX_STACKS_PER_PAGE * ESPFIX_PAGE_SPACE)
++#if CONFIG_NR_CPUS > ESPFIX_MAX_CPUS
++# error "Need more than one PGD for the ESPFIX hack"
++#endif
++
++#define PGALLOC_GFP (GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO)
++
++/* This contains the *bottom* address of the espfix stack */
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++/* Initialization mutex - should this be a spinlock? */
++static DEFINE_MUTEX(espfix_init_mutex);
++
++/* Page allocation bitmap - each page serves ESPFIX_STACKS_PER_PAGE CPUs */
++#define ESPFIX_MAX_PAGES  DIV_ROUND_UP(CONFIG_NR_CPUS, ESPFIX_STACKS_PER_PAGE)
++static void *espfix_pages[ESPFIX_MAX_PAGES];
++
++static __page_aligned_bss pud_t espfix_pud_page[PTRS_PER_PUD]
++	__aligned(PAGE_SIZE);
++
++static unsigned int page_random, slot_random;
++
++/*
++ * This returns the bottom address of the espfix stack for a specific CPU.
++ * The math allows for a non-power-of-two ESPFIX_STACK_SIZE, in which case
++ * we have to account for some amount of padding at the end of each page.
++ */
++static inline unsigned long espfix_base_addr(unsigned int cpu)
++{
++	unsigned long page, slot;
++	unsigned long addr;
++
++	page = (cpu / ESPFIX_STACKS_PER_PAGE) ^ page_random;
++	slot = (cpu + slot_random) % ESPFIX_STACKS_PER_PAGE;
++	addr = (page << PAGE_SHIFT) + (slot * ESPFIX_STACK_SIZE);
++	addr = (addr & 0xffffUL) | ((addr & ~0xffffUL) << 16);
++	addr += ESPFIX_BASE_ADDR;
++	return addr;
++}
++
++#define PTE_STRIDE        (65536/PAGE_SIZE)
++#define ESPFIX_PTE_CLONES (PTRS_PER_PTE/PTE_STRIDE)
++#define ESPFIX_PMD_CLONES PTRS_PER_PMD
++#define ESPFIX_PUD_CLONES (65536/(ESPFIX_PTE_CLONES*ESPFIX_PMD_CLONES))
++
++#define PGTABLE_PROT	  ((_KERNPG_TABLE & ~_PAGE_RW) | _PAGE_NX)
++
++static void init_espfix_random(void)
++{
++	unsigned long rand;
++
++	/*
++	 * This is run before the entropy pools are initialized,
++	 * but this is hopefully better than nothing.
++	 */
++	if (!arch_get_random_long(&rand)) {
++		/* The constant is an arbitrary large prime */
++		rdtscll(rand);
++		rand *= 0xc345c6b72fd16123UL;
++	}
++
++	slot_random = rand % ESPFIX_STACKS_PER_PAGE;
++	page_random = (rand / ESPFIX_STACKS_PER_PAGE)
++		& (ESPFIX_PAGE_SPACE - 1);
++}
++
++void __init init_espfix_bsp(void)
++{
++	pgd_t *pgd_p;
++	pteval_t ptemask;
++
++	ptemask = __supported_pte_mask;
++
++	/* Install the espfix pud into the kernel page directory */
++	pgd_p = &init_level4_pgt[pgd_index(ESPFIX_BASE_ADDR)];
++	pgd_populate(&init_mm, pgd_p, (pud_t *)espfix_pud_page);
++
++	/* Randomize the locations */
++	init_espfix_random();
++
++	/* The rest is the same as for any other processor */
++	init_espfix_ap();
++}
++
++void init_espfix_ap(void)
++{
++	unsigned int cpu, page;
++	unsigned long addr;
++	pud_t pud, *pud_p;
++	pmd_t pmd, *pmd_p;
++	pte_t pte, *pte_p;
++	int n;
++	void *stack_page;
++	pteval_t ptemask;
++
++	/* We only have to do this once... */
++	if (likely(this_cpu_read(espfix_stack)))
++		return;		/* Already initialized */
++
++	cpu = smp_processor_id();
++	addr = espfix_base_addr(cpu);
++	page = cpu/ESPFIX_STACKS_PER_PAGE;
++
++	/* Did another CPU already set this up? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (likely(stack_page))
++		goto done;
++
++	mutex_lock(&espfix_init_mutex);
++
++	/* Did we race on the lock? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (stack_page)
++		goto unlock_done;
++
++	ptemask = __supported_pte_mask;
++
++	pud_p = &espfix_pud_page[pud_index(addr)];
++	pud = *pud_p;
++	if (!pud_present(pud)) {
++		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
++		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
++			set_pud(&pud_p[n], pud);
++	}
++
++	pmd_p = pmd_offset(&pud, addr);
++	pmd = *pmd_p;
++	if (!pmd_present(pmd)) {
++		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
++		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
++			set_pmd(&pmd_p[n], pmd);
++	}
++
++	pte_p = pte_offset_kernel(&pmd, addr);
++	stack_page = (void *)__get_free_page(GFP_KERNEL);
++	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
++	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
++	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
++		set_pte(&pte_p[n*PTE_STRIDE], pte);
++
++	/* Job is done for this CPU and any CPU which shares this page */
++	ACCESS_ONCE(espfix_pages[page]) = stack_page;
++
++unlock_done:
++	mutex_unlock(&espfix_init_mutex);
++done:
++	this_cpu_write(espfix_stack, addr);
++	this_cpu_write(espfix_waddr, (unsigned long)stack_page
++		       + (addr & ~PAGE_MASK));
++}
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index af1d14a9ebda..ebc987398923 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,17 +229,6 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
+ 
+-	/*
+-	 * On x86-64 we do not support 16-bit segments due to
+-	 * IRET leaking the high bits of the kernel stack address.
+-	 */
+-#ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
+-		error = -EINVAL;
+-		goto out_unlock;
+-	}
+-#endif
+-
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 6cacab671f9b..a7340d7d6d06 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -265,6 +265,13 @@ static void notrace start_secondary(void *unused)
+ 	check_tsc_sync_target();
+ 
+ 	/*
++	 * Enable the espfix hack for this CPU
++	 */
++#ifdef CONFIG_X86_64
++	init_espfix_ap();
++#endif
++
++	/*
+ 	 * We need to hold vector_lock so there the set of online cpus
+ 	 * does not change while we are assigning vectors to cpus.  Holding
+ 	 * this lock ensures we don't half assign or remove an irq from a cpu.
+diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
+index 0002a3a33081..3620928631ce 100644
+--- a/arch/x86/mm/dump_pagetables.c
++++ b/arch/x86/mm/dump_pagetables.c
+@@ -30,11 +30,13 @@ struct pg_state {
+ 	unsigned long start_address;
+ 	unsigned long current_address;
+ 	const struct addr_marker *marker;
++	unsigned long lines;
+ };
+ 
+ struct addr_marker {
+ 	unsigned long start_address;
+ 	const char *name;
++	unsigned long max_lines;
+ };
+ 
+ /* indices for address_markers; keep sync'd w/ address_markers below */
+@@ -45,6 +47,7 @@ enum address_markers_idx {
+ 	LOW_KERNEL_NR,
+ 	VMALLOC_START_NR,
+ 	VMEMMAP_START_NR,
++	ESPFIX_START_NR,
+ 	HIGH_KERNEL_NR,
+ 	MODULES_VADDR_NR,
+ 	MODULES_END_NR,
+@@ -67,6 +70,7 @@ static struct addr_marker address_markers[] = {
+ 	{ PAGE_OFFSET,		"Low Kernel Mapping" },
+ 	{ VMALLOC_START,        "vmalloc() Area" },
+ 	{ VMEMMAP_START,        "Vmemmap" },
++	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
+ 	{ __START_KERNEL_map,   "High Kernel Mapping" },
+ 	{ MODULES_VADDR,        "Modules" },
+ 	{ MODULES_END,          "End Modules" },
+@@ -163,7 +167,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		      pgprot_t new_prot, int level)
+ {
+ 	pgprotval_t prot, cur;
+-	static const char units[] = "KMGTPE";
++	static const char units[] = "BKMGTPE";
+ 
+ 	/*
+ 	 * If we have a "break" in the series, we need to flush the state that
+@@ -178,6 +182,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		st->current_prot = new_prot;
+ 		st->level = level;
+ 		st->marker = address_markers;
++		st->lines = 0;
+ 		seq_printf(m, "---[ %s ]---\n", st->marker->name);
+ 	} else if (prot != cur || level != st->level ||
+ 		   st->current_address >= st->marker[1].start_address) {
+@@ -188,17 +193,21 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		/*
+ 		 * Now print the actual finished series
+ 		 */
+-		seq_printf(m, "0x%0*lx-0x%0*lx   ",
+-			   width, st->start_address,
+-			   width, st->current_address);
+-
+-		delta = (st->current_address - st->start_address) >> 10;
+-		while (!(delta & 1023) && unit[1]) {
+-			delta >>= 10;
+-			unit++;
++		if (!st->marker->max_lines ||
++		    st->lines < st->marker->max_lines) {
++			seq_printf(m, "0x%0*lx-0x%0*lx   ",
++				   width, st->start_address,
++				   width, st->current_address);
++
++			delta = (st->current_address - st->start_address) >> 10;
++			while (!(delta & 1023) && unit[1]) {
++				delta >>= 10;
++				unit++;
++			}
++			seq_printf(m, "%9lu%c ", delta, *unit);
++			printk_prot(m, st->current_prot, st->level);
+ 		}
+-		seq_printf(m, "%9lu%c ", delta, *unit);
+-		printk_prot(m, st->current_prot, st->level);
++		st->lines++;
+ 
+ 		/*
+ 		 * We print markers for special areas of address space,
+diff --git a/init/main.c b/init/main.c
+index 63d3e8f2970c..8e35b39b5a80 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -610,6 +610,10 @@ asmlinkage void __init start_kernel(void)
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
++#ifdef CONFIG_X86_64
++	/* Should be run before the first non-init thread is created */
++	init_espfix_bsp();
++#endif
+ 	thread_info_cache_init();
+ 	cred_init();
+ 	fork_init(totalram_pages);
 -- 
 2.0.4
 
