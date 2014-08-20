@@ -1,118 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899AbaHTT0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 15:26:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752870AbaHTT0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 15:26:33 -0400
-Date: Wed, 20 Aug 2014 21:23:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] mempolicy: change get_task_policy() to return
-	default_policy rather than NULL
-Message-ID: <20140820192309.GC8524@redhat.com>
-References: <20140805194627.GA30693@redhat.com> <20140820192207.GA8524@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140820192207.GA8524@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752950AbaHTT0s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 15:26:48 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:49641 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920AbaHTT0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 15:26:46 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org (open list:WATCHDOG DEVICE D...),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH v2] powerpc: booke_wdt: Fix build error as a module
+Date: Wed, 20 Aug 2014 15:26:46 -0400
+Message-Id: <1408562806-22950-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every caller of get_task_policy() falls back to default_policy if it
-returns NULL. Change get_task_policy() to do this.
+Building booke_wdt fails when trying to build as a module as there is no
+early_param() in module. Fix by using module_param() instead of early_param().
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+CC: Guenter Roeck <linux@roeck-us.net>
 ---
- mm/mempolicy.c |   31 +++++++++++++------------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
+ drivers/watchdog/booke_wdt.c | 28 +++++-----------------------
+ 1 file changed, 5 insertions(+), 23 deletions(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index c0c5d38..656db97 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -126,22 +126,20 @@ static struct mempolicy preferred_node_policy[MAX_NUMNODES];
- static struct mempolicy *get_task_policy(struct task_struct *p)
- {
- 	struct mempolicy *pol = p->mempolicy;
-+	int node;
+diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
+index 08a7853..e96b09b 100644
+--- a/drivers/watchdog/booke_wdt.c
++++ b/drivers/watchdog/booke_wdt.c
+@@ -30,8 +30,6 @@
+  * occur, and the final time the board will reset.
+  */
  
--	if (!pol) {
--		int node = numa_node_id();
-+	if (pol)
-+		return pol;
+-u32 booke_wdt_enabled;
+-u32 booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
  
--		if (node != NUMA_NO_NODE) {
--			pol = &preferred_node_policy[node];
--			/*
--			 * preferred_node_policy is not initialised early in
--			 * boot
--			 */
--			if (!pol->mode)
--				pol = NULL;
--		}
-+	node = numa_node_id();
-+	if (node != NUMA_NO_NODE) {
-+		pol = &preferred_node_policy[node];
-+		/* preferred_node_policy is not initialised early in boot */
-+		if (pol->mode)
-+			return pol;
- 	}
+ #ifdef	CONFIG_PPC_FSL_BOOK3E
+ #define WDTP(x)		((((x)&0x3)<<30)|(((x)&0x3c)<<15))
+@@ -41,27 +39,10 @@ u32 booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
+ #define WDTP_MASK	(TCR_WP_MASK)
+ #endif
  
--	return pol;
-+	return &default_policy;
- }
- 
- static const struct mempolicy_operations {
-@@ -1644,14 +1642,14 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 				mpol_get(pol);
- 		}
- 	}
--	if (!pol)
--		pol = &default_policy;
-+
- 	return pol;
- }
- 
- bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma)
- {
- 	struct mempolicy *pol = get_task_policy(task);
-+
- 	if (vma) {
- 		if (vma->vm_ops && vma->vm_ops->get_policy) {
- 			bool ret = false;
-@@ -1667,9 +1665,6 @@ bool vma_policy_mof(struct task_struct *task, struct vm_area_struct *vma)
- 		}
- 	}
- 
--	if (!pol)
--		return default_policy.flags & MPOL_F_MOF;
+-/* Checks wdt=x and wdt_period=xx command-line option */
+-notrace int __init early_parse_wdt(char *p)
+-{
+-	if (p && strncmp(p, "0", 1) != 0)
+-		booke_wdt_enabled = 1;
 -
- 	return pol->flags & MPOL_F_MOF;
- }
+-	return 0;
+-}
+-early_param("wdt", early_parse_wdt);
+-
+-int __init early_parse_wdt_period(char *p)
+-{
+-	unsigned long ret;
+-	if (p) {
+-		if (!kstrtol(p, 0, &ret))
+-			booke_wdt_period = ret;
+-	}
+-
+-	return 0;
+-}
+-early_param("wdt_period", early_parse_wdt_period);
++static bool booke_wdt_enabled;
++module_param(booke_wdt_enabled, bool, 0);
++static int  booke_wdt_period = CONFIG_BOOKE_WDT_DEFAULT_TIMEOUT;
++module_param(booke_wdt_period, int, 0);
  
-@@ -2077,7 +2072,7 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- 	struct page *page;
- 	unsigned int cpuset_mems_cookie;
+ #ifdef CONFIG_PPC_FSL_BOOK3E
  
--	if (!pol || in_interrupt() || (gfp & __GFP_THISNODE))
-+	if (in_interrupt() || (gfp & __GFP_THISNODE))
- 		pol = &default_policy;
+@@ -259,5 +240,6 @@ static int __init booke_wdt_init(void)
+ module_init(booke_wdt_init);
+ module_exit(booke_wdt_exit);
  
- retry_cpuset:
++MODULE_ALIAS("booke_wdt");
+ MODULE_DESCRIPTION("PowerPC Book-E watchdog driver");
+ MODULE_LICENSE("GPL");
 -- 
-1.5.5.1
-
+1.9.1
 
