@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaHTQUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 12:20:52 -0400
-Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:58238
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752061AbaHTQUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 12:20:50 -0400
-Message-ID: <53F4CAD7.5060904@freescale.com>
-Date: Wed, 20 Aug 2014 11:20:39 -0500
-From: German Rivera <German.Rivera@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752486AbaHTQVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 12:21:30 -0400
+Received: from infra.glanzmann.de ([88.198.249.254]:46362 "EHLO
+	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464AbaHTQV2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 12:21:28 -0400
+Date: Wed, 20 Aug 2014 18:21:26 +0200
+From: Thomas Glanzmann <thomas@glanzmann.de>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>, Baoquan He <bhe@redhat.com>,
+        Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        WANG Chao <chaowang@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        ubuntu@iam.tj
+Subject: Re: REGRESSION: 8fc5b4d: Unable to compile x86_64 kernel with x86_32
+ userland
+Message-ID: <20140820162126.GC25390@glanzmann.de>
+Mail-Followup-To: Thomas Glanzmann <thomas@glanzmann.de>,
+	Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andy Lutomirski <luto@amacapital.net>, Baoquan He <bhe@redhat.com>,
+	Borislav Petkov <bp@suse.de>, Dave Young <dyoung@redhat.com>,
+	Eric Biederman <ebiederm@xmission.com>,
+	Greg Kroah-Hartman <greg@kroah.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	Michael Kerrisk <mtk.manpages@gmail.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	WANG Chao <chaowang@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+	ubuntu@iam.tj
+References: <20140820060423.GA14660@glanzmann.de>
+ <20140820062408.GB14660@glanzmann.de>
+ <20140820125630.GA12786@redhat.com>
+ <30d943a9-ba4a-47ee-9333-0ffeea00c3a1@email.android.com>
+ <20140820154817.GA21518@redhat.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <stuart.yoder@freescale.com>,
-        <linuxppc-release@linux.freescale.net>
-Subject: Re: [RFC PATCH 1/4 v2] drivers/bus: Added Freescale Management Complex
- APIs
-References: <1408496070-6252-1-git-send-email-German.Rivera@freescale.com>	 <1408496070-6252-2-git-send-email-German.Rivera@freescale.com> <1408497589.23250.12.camel@joe-AO725>
-In-Reply-To: <1408497589.23250.12.camel@joe-AO725>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.88.168.50]
-X-ClientProxiedBy: BLUPR05CA0063.namprd05.prod.outlook.com (10.141.20.33) To
- DM2PR03MB335.namprd03.prod.outlook.com (10.141.54.20)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03094A4065
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6049001)(6009001)(199003)(189002)(479174003)(377454003)(24454002)(377424004)(164054003)(51704005)(65816999)(79102001)(20776003)(80316001)(46102001)(86362001)(87266999)(85852003)(21056001)(64126003)(64706001)(76482001)(54356999)(76176999)(47776003)(50986999)(77982001)(83322001)(81342001)(59896002)(42186005)(81542001)(66066001)(85306004)(80022001)(106356001)(36756003)(105586002)(95666004)(107046002)(50466002)(102836001)(65806001)(74662001)(92566001)(33656002)(87976001)(74502001)(101416001)(83506001)(83072002)(77096002)(92726001)(99396002)(31966008)(110136001)(4396001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR03MB335;H:[10.81.33.65];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820154817.GA21518@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Vivek,
 
+* Vivek Goyal <vgoyal@redhat.com> [2014-08-20 17:48]:
+> --- linux-2.6.orig/arch/x86/purgatory/Makefile	2014-08-20 11:32:21.723559119 -0400
+> +++ linux-2.6/arch/x86/purgatory/Makefile	2014-08-20 11:32:23.654570231 -0400
+> @@ -11,6 +11,7 @@ targets += purgatory.ro
+>  # sure how to relocate those. Like kexec-tools, use custom flags.
 
-On 08/19/2014 08:19 PM, Joe Perches wrote:
-> On Tue, 2014-08-19 at 19:54 -0500, J. German Rivera wrote:
->> APIs to access the Management Complex (MC) hardware
->> module of Freescale LS2 SoCs. This patch includes
->> APIs to check the MC firmware version and to manipulate
->> DPRC objects in the MC.
-> []
->>   include/linux/fsl_dpmng.h          |  120 ++++++
->>   include/linux/fsl_dprc.h           |  790 ++++++++++++++++++++++++++++++++++++
->>   include/linux/fsl_mc_cmd.h         |  182 +++++++++
->>   include/linux/fsl_mc_sys.h         |   50 +++
->
-> Why should any of these files be put in include/linux?
->
-These header files are going to be shared by more than one of our 
-drivers. Should they be in a new directory under include
-(such as include/fsl/) or under include/linux (such as include/linux/fsl/)?
+>  KBUILD_CFLAGS := -fno-strict-aliasing -Wall -Wstrict-prototypes -fno-zero-initialized-in-bss -fno-builtin -ffreestanding -c -MD -Os -mcmodel=large
+> +KBUILD_CFLAGS += -m$(BITS)
 
-Thanks,
+>  $(obj)/purgatory.ro: $(PURGATORY_OBJS) FORCE
+>  		$(call if_changed,ld)
 
-German
->
+> Can you please try attached single line patch and see if it fixes the
+> issue for you.
+
+I tested the same and it works.
+
+Tested-by: Thomas Glanzmann <thomas@glanzmann.de>
+
+...
+  CC      arch/x86/purgatory/purgatory.o
+  AS      arch/x86/purgatory/stack.o
+  AS      arch/x86/purgatory/setup-x86_64.o
+  CC      arch/x86/purgatory/sha256.o
+  AS      arch/x86/purgatory/entry64.o
+  CC      arch/x86/purgatory/string.o
+  LD      arch/x86/purgatory/purgatory.ro
+  BIN2C   arch/x86/purgatory/kexec-purgatory.c
+...
+
+I also made sure that I backed out the other patch _before_ I tried this one.
+
+Cheers,
+        Thomas
