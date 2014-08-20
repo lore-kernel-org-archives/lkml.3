@@ -1,94 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaHTXvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 19:51:09 -0400
-Received: from mta-out1.inet.fi ([62.71.2.202]:38856 "EHLO jenni1.inet.fi"
+	id S1753272AbaHTX7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 19:59:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19295 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753100AbaHTXvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 19:51:07 -0400
-Date: Thu, 21 Aug 2014 02:45:43 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Feiner <pfeiner@google.com>
+	id S1753072AbaHTX7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 19:59:22 -0400
+From: Rafael Aquini <aquini@redhat.com>
+To: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Magnus Damm <damm@opensource.se>
-Subject: Re: [PATCH] mm: softdirty: write protect PTEs created for read
- faults after VM_SOFTDIRTY cleared
-Message-ID: <20140820234543.GA7987@node.dhcp.inet.fi>
-References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408571182-28750-1-git-send-email-pfeiner@google.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Subject: Re: [PATCH 7/7] mm/balloon_compaction: general cleanup 
+Date: Wed, 20 Aug 2014 20:58:58 -0300
+Message-Id: <60e809f1c932fbbb175d59a750a329f04730717e.1408576903.git.aquini@redhat.com>
+In-Reply-To: <20140820150509.4194.24336.stgit@buzz>
+References: <20140820150509.4194.24336.stgit@buzz>
+In-Reply-To: <5ad4664811559496e563ead974f10e8ee6b4ed47.1408576903.git.aquini@redhat.com>
+References: <5ad4664811559496e563ead974f10e8ee6b4ed47.1408576903.git.aquini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 05:46:22PM -0400, Peter Feiner wrote:
-> In readable+writable+shared VMAs, PTEs created for read faults have
-> their write bit set. If the read fault happens after VM_SOFTDIRTY is
-> cleared, then the PTE's softdirty bit will remain clear after
-> subsequent writes.
+On Wed, Aug 20, 2014 at 07:05:09PM +0400, Konstantin Khlebnikov wrote:
+> * move special branch for balloon migraion into migrate_pages
+> * remove special mapping for balloon and its flag AS_BALLOON_MAP
+> * embed struct balloon_dev_info into struct virtio_balloon
+> * cleanup balloon_page_dequeue, kill balloon_page_free
 > 
-> Here's a simple code snippet to demonstrate the bug:
-> 
->   char* m = mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE,
->                  MAP_ANONYMOUS | MAP_SHARED, -1, 0);
->   system("echo 4 > /proc/$PPID/clear_refs"); /* clear VM_SOFTDIRTY */
->   assert(*m == '\0');     /* new PTE allows write access */
->   assert(!soft_dirty(x));
->   *m = 'x';               /* should dirty the page */
->   assert(soft_dirty(x));  /* fails */
-> 
-> With this patch, new PTEs created for read faults are write protected
-> if the VMA has VM_SOFTDIRTY clear.
-> 
-> Signed-off-by: Peter Feiner <pfeiner@google.com>
+> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 > ---
->  mm/memory.c | 2 ++
->  1 file changed, 2 insertions(+)
+>  drivers/virtio/virtio_balloon.c    |   77 ++++---------
+>  include/linux/balloon_compaction.h |  107 ++++++------------
+>  include/linux/migrate.h            |   11 --
+>  include/linux/pagemap.h            |   18 ---
+>  mm/balloon_compaction.c            |  214 ++++++++++++------------------------
+>  mm/migrate.c                       |   27 +----
+>  6 files changed, 130 insertions(+), 324 deletions(-)
 > 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index ab3537b..282a959 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2755,6 +2755,8 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
->  		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
->  	else if (pte_file(*pte) && pte_file_soft_dirty(*pte))
->  		entry = pte_mksoft_dirty(entry);
-> +	else if (!(vma->vm_flags & VM_SOFTDIRTY))
-> +		entry = pte_wrprotect(entry);
+Very nice clean-up, just as all other patches in this set.
+Please, just consider amending the following changes to this patch of yours
 
-It basically means VM_SOFTDIRTY require writenotify on the vma.
+Rafael
+---
 
-What about patch below? Untested. And it seems it'll introduce bug similar
-to bug fixed by c9d0bf241451, *but* IIUC we have it already in mprotect()
-code path.
-
-I'll look more careful tomorrow.
-
-Not-signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index dfc791c42d64..67d509a15969 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -851,8 +851,9 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
-                        if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
-                                continue;
-                        if (type == CLEAR_REFS_SOFT_DIRTY) {
--                               if (vma->vm_flags & VM_SOFTDIRTY)
--                                       vma->vm_flags &= ~VM_SOFTDIRTY;
-+                               vma->vm_flags &= ~VM_SOFTDIRTY;
-+                               vma->vm_page_prot = vm_get_page_prot(
-+                                               vma->vm_flags & ~VM_SHARED);
-                        }
-                        walk_page_range(vma->vm_start, vma->vm_end,
-                                        &clear_refs_walk);
+diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
+index dc7073b..569cf96 100644
+--- a/include/linux/balloon_compaction.h
++++ b/include/linux/balloon_compaction.h
+@@ -75,41 +75,6 @@ extern struct page *balloon_page_dequeue(struct balloon_dev_info *b_dev_info);
+ #ifdef CONFIG_BALLOON_COMPACTION
+ extern bool balloon_page_isolate(struct page *page);
+ extern void balloon_page_putback(struct page *page);
+-
+-/*
+- * balloon_page_insert - insert a page into the balloon's page list and make
+- *		         the page->mapping assignment accordingly.
+- * @page    : page to be assigned as a 'balloon page'
+- * @mapping : allocated special 'balloon_mapping'
+- * @head    : balloon's device page list head
+- *
+- * Caller must ensure the page is locked and the spin_lock protecting balloon
+- * pages list is held before inserting a page into the balloon device.
+- */
+-static inline void
+-balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
+-{
+-	__SetPageBalloon(page);
+-	set_page_private(page, (unsigned long)balloon);
+-	list_add(&page->lru, &balloon->pages);
+-}
+-
+-/*
+- * balloon_page_delete - delete a page from balloon's page list and clear
+- *			 the page->mapping assignement accordingly.
+- * @page    : page to be released from balloon's page list
+- *
+- * Caller must ensure the page is locked and the spin_lock protecting balloon
+- * pages list is held before deleting a page from the balloon device.
+- */
+-static inline void balloon_page_delete(struct page *page, bool isolated)
+-{
+-	__ClearPageBalloon(page);
+-	set_page_private(page, 0);
+-	if (!isolated)
+-		list_del(&page->lru);
+-}
+-
+ int balloon_page_migrate(new_page_t get_new_page, free_page_t put_new_page,
+ 		unsigned long private, struct page *page,
+ 		int force, enum migrate_mode mode);
+@@ -130,31 +95,6 @@ static inline gfp_t balloon_mapping_gfp_mask(void)
+ 
+ #else /* !CONFIG_BALLOON_COMPACTION */
+ 
+-static inline void *balloon_mapping_alloc(void *balloon_device,
+-				const struct address_space_operations *a_ops)
+-{
+-	return ERR_PTR(-EOPNOTSUPP);
+-}
+-
+-static inline void balloon_mapping_free(struct address_space *balloon_mapping)
+-{
+-	return;
+-}
+-
+-static inline void
+-balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
+-{
+-	__SetPageBalloon(page);
+-	list_add(&page->lru, head);
+-}
+-
+-static inline void balloon_page_delete(struct page *page, bool isolated)
+-{
+-	__ClearPageBalloon(page);
+-	if (!isolated)
+-		list_del(&page->lru);
+-}
+-
+ static inline int balloon_page_migrate(new_page_t get_new_page,
+ 		free_page_t put_new_page, unsigned long private,
+ 		struct page *page, int force, enum migrate_mode mode)
+@@ -176,6 +116,46 @@ static inline gfp_t balloon_mapping_gfp_mask(void)
+ {
+ 	return GFP_HIGHUSER;
+ }
+-
+ #endif /* CONFIG_BALLOON_COMPACTION */
++
++/*
++ * balloon_page_insert - insert a page into the balloon's page list and make
++ *		         the page->mapping assignment accordingly.
++ * @page    : page to be assigned as a 'balloon page'
++ * @mapping : allocated special 'balloon_mapping'
++ * @head    : balloon's device page list head
++ *
++ * Caller must ensure the page is locked and the spin_lock protecting balloon
++ * pages list is held before inserting a page into the balloon device.
++ */
++static inline void
++balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
++{
++#ifdef CONFIG_MEMORY_BALLOON
++	__SetPageBalloon(page);
++	set_page_private(page, (unsigned long)balloon);
++	list_add(&page->lru, &balloon->pages);
++	inc_zone_page_state(page, NR_BALLOON_PAGES);
++#endif
++}
++
++/*
++ * balloon_page_delete - delete a page from balloon's page list and clear
++ *			 the page->mapping assignement accordingly.
++ * @page    : page to be released from balloon's page list
++ *
++ * Caller must ensure the page is locked and the spin_lock protecting balloon
++ * pages list is held before deleting a page from the balloon device.
++ */
++static inline void balloon_page_delete(struct page *page, bool isolated)
++{
++#ifdef CONFIG_MEMORY_BALLOON
++	__ClearPageBalloon(page);
++	set_page_private(page, 0);
++	if (!isolated)
++		list_del(&page->lru);
++	dec_zone_page_state(page, NR_BALLOON_PAGES);
++#endif
++}
++
+ #endif /* _LINUX_BALLOON_COMPACTION_H */
 -- 
- Kirill A. Shutemov
+1.9.3
