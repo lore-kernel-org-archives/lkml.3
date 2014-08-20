@@ -1,124 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591AbaHTHtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 03:49:31 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:35003 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbaHTHt3 (ORCPT
+	id S1751739AbaHTHwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 03:52:45 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:60758 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676AbaHTHwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 03:49:29 -0400
+	Wed, 20 Aug 2014 03:52:43 -0400
+Date: Wed, 20 Aug 2014 09:52:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, pjt@google.com,
+        oleg@redhat.com, rostedt@goodmis.org, umgwanakikbuti@gmail.com,
+        tkhai@yandex.ru, tim.c.chen@linux.intel.com, nicolas.pitre@linaro.org
+Subject: Re: [PATCH v4 2/6] sched: Wrapper for checking task_struct::on_rq
+Message-ID: <20140820075238.GA28179@gmail.com>
+References: <20140806075138.24858.23816.stgit@tkhai>
+ <1407312372.8424.36.camel@tkhai>
 MIME-Version: 1.0
-In-Reply-To: <1408483010-32689-1-git-send-email-bobby.prani@gmail.com>
-References: <1408483010-32689-1-git-send-email-bobby.prani@gmail.com>
-Date: Wed, 20 Aug 2014 09:49:27 +0200
-X-Google-Sender-Auth: jr24UL263jzkCMOPy_C6TaaNyoA
-Message-ID: <CAMuHMdX4HXf91RcuxzdU=HRvqtikBd=7Q62msQUMGVFuHuJ4+g@mail.gmail.com>
-Subject: Re: [RFC PATCH] powerpc: Make SPU_FS depend on SPARSEMEM
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        "open list:CELL BROADBAND EN..." <linuxppc-dev@lists.ozlabs.org>,
-        "open list:CELL BROADBAND EN..." <cbe-oss-dev@lists.ozlabs.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407312372.8424.36.camel@tkhai>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pranith,
 
-On Tue, Aug 19, 2014 at 11:16 PM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> SPU_FS unconditionally enables MEMORY_HOTPLUG, which will fail to build if
-> SPARSEMEM=n.
->
-> Make SPU_FS depend on SPARSEMEM so that hotplug-memory.c does not fail to
-> compile.
->
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+* Kirill Tkhai <ktkhai@parallels.com> wrote:
+
+> 
+> Implement task_queued() and use it everywhere instead of on_rq check.
+> No functional changes.
+> 
+> The only exception is we do not use the wrapper in check_for_tasks(),
+> because it requires to export task_queued() in global header files.
+> Next patch in series would return it back, so it doesn't matter.
+> 
+> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 > ---
->  arch/powerpc/platforms/cell/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/powerpc/platforms/cell/Kconfig b/arch/powerpc/platforms/cell/Kconfig
-> index 9978f59..832872e 100644
-> --- a/arch/powerpc/platforms/cell/Kconfig
-> +++ b/arch/powerpc/platforms/cell/Kconfig
-> @@ -60,7 +60,7 @@ menu "Cell Broadband Engine options"
->  config SPU_FS
->         tristate "SPU file system"
->         default m
-> -       depends on PPC_CELL
-> +       depends on PPC_CELL && SPARSEMEM
->         select SPU_BASE
->         select MEMORY_HOTPLUG
->         help
-> --
-> 1.9.1
+>  kernel/sched/core.c      |   82 +++++++++++++++++++++++-----------------------
+>  kernel/sched/deadline.c  |   14 ++++----
+>  kernel/sched/fair.c      |   22 ++++++------
+>  kernel/sched/rt.c        |   16 ++++-----
+>  kernel/sched/sched.h     |    7 ++++
+>  kernel/sched/stop_task.c |    2 +
+>  6 files changed, 75 insertions(+), 68 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 1211575..67e8d1e 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1043,7 +1043,7 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
+>  	 * A queue event has occurred, and we're going to schedule.  In
+>  	 * this case, we can save a useless back to back clock update.
+>  	 */
+> -	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr))
+> +	if (task_queued(rq->curr) && test_tsk_need_resched(rq->curr))
+>  		rq->skip_clock_update = 1;
 
-Is this a randconfig kernel?
+> -	p->on_rq = 1;
+> +	p->on_rq = ONRQ_QUEUED;
 
-config ARCH_SPARSEMEM_DEFAULT
-       def_bool y
-       depends on (SMP && PPC_PSERIES) || PPC_PS3
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -15,6 +15,9 @@
+>  
+>  struct rq;
+>  
+> +/* task_struct::on_rq states: */
+> +#define ONRQ_QUEUED	1
+> +
+>  extern __read_mostly int scheduler_running;
+>  
+>  extern unsigned long calc_load_update;
+> @@ -942,6 +945,10 @@ static inline int task_running(struct rq *rq, struct task_struct *p)
+>  #endif
+>  }
+>  
+> +static inline int task_queued(struct task_struct *p)
+> +{
+> +	return p->on_rq == ONRQ_QUEUED;
+> +}
 
-Why is this not enabled? !SMP? !PPC_PSERIES? !PPC_PS3?
+So I agree with splitting p->on_rq into more states, but the 
+new naming used looks pretty random, we can and should do 
+better.
 
-If PPC_CELL is enabled, this issue was introduced by
+For example 'task_queued()' gives very little clue that it's 
+all about the p->on_rq state. The 'ONRQ_QUEUED' name does not 
+signal that this is a task's scheduler internal state, etc.
 
-commit 78bde53e351bc89cff85d1c2c7e6d7c2ffdf120d
-Author: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date:   Tue Feb 13 11:46:06 2007 +1100
+So I'd suggest a more structured naming scheme, something along 
+the lines of:
 
-    [POWERPC] spufs: remove need for struct page for SPEs
+	TASK_ON_RQ_QUEUED
+	TASK_ON_RQ_MIGRATING
 
-    This patch removes the need for struct page for SPE local store
-    and registers from spufs. It also makes the locking much more
-    obvious and no longer relying on the truncate logic black magic
-    for protecting against races between unmap_mapping_range() and
-    new pages faulted in. It does so by switching to a nopfn() handler
-    and using the new vm_insert_pfn() to setup the PTEs itself while
-    holding a lock on the SPE.
+	task_on_rq_queued()
+	task_on_rq_migrating()
 
-    The nice thing is that this patch actually removes a lot more code
-    than it adds :-)
+etc.
 
-    Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-    Signed-off-by: Paul Mackerras <paulus@samba.org>
+It's a bit longer, but also more logical and thus easier to 
+read and maintain.
 
+Thanks,
 
-Another question: why does SPU_FS select MEMORY_HOTPLUG?
-
-commit 4da30d15b6d5036b0d96422d6946ca758111fae3
-Author: Geoff Levand <geoffrey.levand@am.sony.com>
-Date:   Fri Jun 23 20:57:49 2006 +0200
-
-    [POWERPC] spufs: fix memory hotplug dependency
-
-    spufs_base.c calls __add_pages, which depends on CONFIG_MEMORY_HOTPLUG.
-
-    Moved the selection of CONFIG_MEMORY_HOTPLUG from CONFIG_SPUFS_MMAP
-    to CONFIG_SPU_FS.
-
-    Signed-off-by: Geoff Levand <geoffrey.levand@am.sony.com>
-    Signed-off-by: Arnd Bergmann <arnd.bergmann@de.ibm.com>
-    Signed-off-by: Paul Mackerras <paulus@samba.org>
-
-However, the call to __add_pages() has been moved a few times afterwards,
-to be finally removed in the aforementioned commit
-78bde53e351bc89cff85d1c2c7e6d7c2ffdf120d.
-
-Does it still build/work if you just drop the "select MEMORY_HOTPLUG"?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	Ingo
