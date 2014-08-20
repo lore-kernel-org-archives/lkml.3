@@ -1,167 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaHTBXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 21:23:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53837 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaHTBX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 21:23:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <53F3B89D.6070703@kernel.dk>
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
-	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
-	<20140815163111.GA16652@infradead.org>
-	<53EE370D.1060106@kernel.dk>
-	<53EE3966.60609@kernel.dk>
-	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
-	<53F0EAEC.9040505@kernel.dk>
-	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
-	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
-	<53F3B89D.6070703@kernel.dk>
-Date: Wed, 20 Aug 2014 09:23:26 +0800
-Message-ID: <CACVXFVP_q2MfZtjPAgXrjMJS2K6H2fTFtAe3ZJXBW83uEovqkQ@mail.gmail.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        "open list:AIO <linux-aio@kvack.org>, Linux FS Devel
-	<linux-fsdevel@vger.kernel.org>, Dave Chinner" <david@fromorbit.com>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752054AbaHTBvG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 21:51:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12495 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738AbaHTBvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 19 Aug 2014 21:51:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,898,1400050800"; 
+   d="scan'208";a="470579196"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH 2/2] perf/x86/uncore: register PMU only if uncore pci device exists
+Date: Wed, 20 Aug 2014 09:50:58 +0800
+Message-Id: <1408499458-6555-2-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408499458-6555-1-git-send-email-zheng.z.yan@intel.com>
+References: <1408499458-6555-1-git-send-email-zheng.z.yan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 4:50 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-08-18 06:53, Ming Lei wrote:
->>
->> On Mon, Aug 18, 2014 at 9:22 AM, Ming Lei <ming.lei@canonical.com> wrote:
->>>
->>> On Mon, Aug 18, 2014 at 1:48 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>
->>>> On 2014-08-16 02:06, Ming Lei wrote:
->>>>>
->>>>>
->>>>> On 8/16/14, Jens Axboe <axboe@kernel.dk> wrote:
->>>>>>
->>>>>>
->>>>>> On 08/15/2014 10:36 AM, Jens Axboe wrote:
->>>>>>>
->>>>>>>
->>>>>>> On 08/15/2014 10:31 AM, Christoph Hellwig wrote:
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> +static void loop_queue_work(struct work_struct *work)
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>> Offloading work straight to a workqueue dosn't make much sense
->>>>>>>> in the blk-mq model as we'll usually be called from one.  If you
->>>>>>>> need to avoid the cases where we are called directly a flag for
->>>>>>>> the blk-mq code to always schedule a workqueue sounds like a much
->>>>>>>> better plan.
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>> That's a good point - would clean up this bit, and be pretty close to
->>>>>>> a
->>>>>>> one-liner to support in blk-mq for the drivers that always need
->>>>>>> blocking
->>>>>>> context.
->>>>>>
->>>>>>
->>>>>>
->>>>>> Something like this should do the trick - totally untested. But with
->>>>>> that, loop would just need to add BLK_MQ_F_WQ_CONTEXT to it's tag set
->>>>>> flags and it could always do the work inline from ->queue_rq().
->>>>>
->>>>>
->>>>>
->>>>> I think it is a good idea.
->>>>>
->>>>> But for loop, there may be two problems:
->>>>>
->>>>> - default max_active for bound workqueue is 256, which means several
->>>>> slow
->>>>> loop devices might slow down whole block system. With kernel AIO, it
->>>>> won't
->>>>> be a big deal, but some block/fs may not support direct I/O and still
->>>>> fallback to
->>>>> workqueue
->>>>>
->>>>> - 6. Guidelines of Documentation/workqueue.txt
->>>>> If there is dependency among multiple work items used during memory
->>>>> reclaim, they should be queued to separate wq each with WQ_MEM_RECLAIM.
->>>>
->>>>
->>>>
->>>> Both are good points. But I think this mainly means that we should
->>>> support
->>>> this through a potentially per-dispatch queue workqueue, separate from
->>>> kblockd. There's no reason blk-mq can't support this with a per-hctx
->>>> workqueue, for drivers that need it.
->>>
->>>
->>> Good idea, and per-device workqueue should be enough if
->>> BLK_MQ_F_WQ_CONTEXT flag is set.
->>
->>
->> Maybe for most of cases per-device class(driver) workqueue should be
->> enough since dependency between devices driven by same driver
->> isn't common, for example, loop over loop is absolutely insane.
->
->
-> It's insane, but it can happen. And given how cheap it is to do a workqueue,
+Current code reigsters PMUs for all possible uncore pci devices.
+This is not good because, on some machines, one or more uncore pci
+devices can be missing. The missing pci device make corresponding
+PMU unusable.
 
-Workqueue with WQ_MEM_RECLAIM need to create a standalone kthread
-for the queue, so at default there will be 8 kthreads created even no one
-uses loop at all.  From current implementation the per-device thread is
-created only when one file or blk device is attached to the loop device, which
-may not be possible when blk-mq supports per-device workqueue.
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-> I don't see a reason why we should not. Loop over loop might seem nutty, but
-> it's not that far out into the realm of nutty things that people end up
-> doing.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 2485fd9..4b7b669 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -793,6 +793,7 @@ static int uncore_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id
+ 	struct intel_uncore_box *box;
+ 	struct intel_uncore_type *type;
+ 	int phys_id;
++	bool first_box = false;
+ 
+ 	phys_id = uncore_pcibus_to_physid[pdev->bus->number];
+ 	if (phys_id < 0)
+@@ -827,9 +828,13 @@ static int uncore_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id
+ 	pci_set_drvdata(pdev, box);
+ 
+ 	raw_spin_lock(&uncore_box_lock);
++	if (list_empty(&pmu->box_list))
++		first_box = true;
+ 	list_add_tail(&box->list, &pmu->box_list);
+ 	raw_spin_unlock(&uncore_box_lock);
+ 
++	if (first_box)
++		uncore_pmu_register(pmu);
+ 	return 0;
+ }
+ 
+@@ -838,6 +843,7 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 	struct intel_uncore_box *box = pci_get_drvdata(pdev);
+ 	struct intel_uncore_pmu *pmu;
+ 	int i, cpu, phys_id = uncore_pcibus_to_physid[pdev->bus->number];
++	bool last_box = false;
+ 
+ 	box = pci_get_drvdata(pdev);
+ 	if (!box) {
+@@ -859,6 +865,8 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 
+ 	raw_spin_lock(&uncore_box_lock);
+ 	list_del(&box->list);
++	if (list_empty(&pmu->box_list))
++		last_box = true;
+ 	raw_spin_unlock(&uncore_box_lock);
+ 
+ 	for_each_possible_cpu(cpu) {
+@@ -870,6 +878,9 @@ static void uncore_pci_remove(struct pci_dev *pdev)
+ 
+ 	WARN_ON_ONCE(atomic_read(&box->refcnt) != 1);
+ 	kfree(box);
++
++	if (last_box)
++		perf_pmu_unregister(&pmu->pmu);
+ }
+ 
+ static int __init uncore_pci_init(void)
+@@ -1220,14 +1231,6 @@ static int __init uncore_pmus_register(void)
+ 		}
+ 	}
+ 
+-	for (i = 0; uncore_pci_uncores[i]; i++) {
+-		type = uncore_pci_uncores[i];
+-		for (j = 0; j < type->num_boxes; j++) {
+-			pmu = &type->pmus[j];
+-			uncore_pmu_register(pmu);
+-		}
+-	}
+-
+ 	return 0;
+ }
+ 
+-- 
+1.9.3
 
-Another reason I am still not sure if workqueue is good for loop, though I
-do really like workqueue for sake of simplicity, :-)
-
-- sequential read becomes a bit slow with workqueue, especially for some
-fast block(such as null_blk)
-
-- random read becomes a bit slow too for some fast devices(such as null_blk)
-in some environment(It is reproduced in my server, but can't in my laptop) even
-it can improve throughout quite much for common devices(HDD., SSD,..)
-
->From my investigation, context switch increases almost 50% with
-workqueue compared with kthread in loop in a quad-core VM. With
-kthread, requests may be handled as batch in cases which won't be
-blocked in read()/write()(like null_blk, tmpfs, ...), but it is impossible with
-workqueue any more.  Also block plug&unplug should have been used
-with kthread to optimize the case, especially when kernel AIO is applied,
-still impossible with work queue too.
-
-So looks kthread with kernel AIO is still not bad for the blk-mq conversion,
-which can improve throughput much too.  Or other ideas?
-
-
-Thanks
-
->
->
->> I will keep the work queue in loop-mq V2, and it should be easy to switch
->> to the mechanism once it is ready.
->
->
-> Reworked a bit more:
->
-> http://git.kernel.dk/?p=linux-block.git;a=commit;h=a323185a761b9a54dc340d383695b4205ea258b6
->
-> Lets base loop-mq on the blk-mq workqueues, it would simplify it quite a bit
-> and I don't think there's much point in doing v1 and then ripping it out for
-> v2. Especially since it isn't queued up for 3.18 yet.
