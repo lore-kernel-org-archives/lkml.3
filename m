@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaHTABb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 19 Aug 2014 20:01:31 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:46668 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaHTAB3 (ORCPT
+	id S1752005AbaHTADK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 19 Aug 2014 20:03:10 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:41488 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751647AbaHTADI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 19 Aug 2014 20:01:29 -0400
-Message-ID: <53F3E55B.8010009@gmail.com>
-Date: Wed, 20 Aug 2014 08:01:31 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: gleb@kernel.org, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [PATCH] virt/kvm/assigned-dev.c: Set 'dev->irq_source_id' to
- '-1' after free it
-References: <53E4EED7.6050302@gmail.com> <53F370CD.80201@gmail.com> <53F37221.5020508@redhat.com> <53F3E490.1060400@gmail.com>
-In-Reply-To: <53F3E490.1060400@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 19 Aug 2014 20:03:08 -0400
+Date: Tue, 19 Aug 2014 19:03:03 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Laura Abbott <lauraa@codeaurora.org>
+cc: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
+        dave.hansen@linux.intel.com, peterz@infradead.org, mingo@redhat.com,
+        ak@linux.intel.com, tim.c.chen@linux.intel.com,
+        akpm@linux-foundation.org, penberg@kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] [RFC] TAINT_PERFORMANCE
+In-Reply-To: <53F3E1FE.1000508@codeaurora.org>
+Message-ID: <alpine.DEB.2.11.1408191901370.21171@gentwo.org>
+References: <20140819212604.6C94DF09@viggo.jf.intel.com> <53F3E1FE.1000508@codeaurora.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 19 Aug 2014, Laura Abbott wrote:
 
-By the way, at present, I use Qemu as user mode program, is there common
-test with both Qemu and KVM/Xen? And is a PC enough for the common test?
+> I nominate CONFIG_DEBUG_PAGEALLOC, CONFIG_SLUB_DEBUG,
+> CONFIG_SLUB_DEBUG_ON as well since I've wasted days debugging
+> supposed performance issues where those were on.
 
-Thanks.
+CONFIG_SLUB_DEBUG is not enabling debugging. It just includes the code to
+do so at kernel bootup. Not a performance problem. CONFIG_SLUB_DEBUG_ON is
+a performance issue since debugging will be on by default.
 
-On 08/20/2014 07:58 AM, Chen Gang wrote:
-> On 08/19/2014 11:49 PM, Paolo Bonzini wrote:
->> Il 19/08/2014 17:44, Chen Gang ha scritto:
->>>> Hello maintainers:
->>>>
->>>> Please help check this patch, when you have time.
->> Hi, it's already on its way to 3.17-rc2, but I first have to run a bunch
->> of tests.
-> 
-> OK, thanks. Also can let me try the test, although I am not quite
-> familiar with KVM. Since I plan to focus on KVM/Xen next, I shall
-> construct related environments for its' common test, at least.
-> 
-> I am just constructing the gcc common test environments under a new PC,
-> is a PC also enough for KVM/Xen common test?
-> 
-> Welcome any ideas, suggestions or completions about it (especially the
-> information about KVM/Xen common test).
-> 
-> 
-> Thanks.
-> 
+CONFIG_SLAB_DEBUG is also a performance issue since this option makes slab
+run with debugging.
 
-
--- 
-Chen Gang
-
-Open share and attitude like air water and life which God blessed
