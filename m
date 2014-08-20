@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019AbaHTMBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:01:52 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58937 "EHLO
+	id S1753821AbaHTL7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:59:39 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58974 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752537AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752570AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+Cc: linux-kernel@vger.kernel.org, David Ertman <davidx.m.ertman@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 047/104] sparc64: Fix top-level fault handling bugs.
-Date: Wed, 20 Aug 2014 13:43:10 +0200
-Message-Id: <a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6.1408535000.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 071/104] e1000e: Fix a compile flag mis-match for suspend/resume
+Date: Wed, 20 Aug 2014 13:43:34 +0200
+Message-Id: <fd1a37d68313776ef0ff5d2e8aa74fb9d568eafd.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,157 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David S. Miller" <davem@davemloft.net>
+From: David Ertman <davidx.m.ertman@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 70ffc6ebaead783ac8dafb1e87df0039bb043596 ]
+commit 7509963c703b71eebccc421585e7f48ebbbd3f38 upstream.
 
-Make get_user_insn() able to cope with huge PMDs.
+This patch addresses a mis-match between the declaration and usage of
+the e1000_suspend and e1000_resume functions.  Previously, these
+functions were declared in a CONFIG_PM_SLEEP wrapper, and then utilized
+within a CONFIG_PM wrapper.  Both the declaration and usage will now be
+contained within CONFIG_PM wrappers.
 
-Next, make do_fault_siginfo() more robust when get_user_insn() can't
-actually fetch the instruction.  In particular, use the MMU announced
-fault address when that happens, instead of calling
-compute_effective_address() and computing garbage.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dave Ertman <davidx.m.ertman@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/sparc/mm/fault_64.c | 82 ++++++++++++++++++++++++++++++------------------
- 1 file changed, 52 insertions(+), 30 deletions(-)
+ drivers/net/ethernet/intel/e1000e/netdev.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
-index 2ebec263d685..a99d0da04850 100644
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -95,38 +95,51 @@ static unsigned int get_user_insn(unsigned long tpc)
- 	pte_t *ptep, pte;
- 	unsigned long pa;
- 	u32 insn = 0;
--	unsigned long pstate;
- 
--	if (pgd_none(*pgdp))
--		goto outret;
-+	if (pgd_none(*pgdp) || unlikely(pgd_bad(*pgdp)))
-+		goto out;
- 	pudp = pud_offset(pgdp, tpc);
--	if (pud_none(*pudp))
--		goto outret;
--	pmdp = pmd_offset(pudp, tpc);
--	if (pmd_none(*pmdp))
--		goto outret;
-+	if (pud_none(*pudp) || unlikely(pud_bad(*pudp)))
-+		goto out;
- 
- 	/* This disables preemption for us as well. */
--	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
--	__asm__ __volatile__("wrpr %0, %1, %%pstate"
--				: : "r" (pstate), "i" (PSTATE_IE));
--	ptep = pte_offset_map(pmdp, tpc);
--	pte = *ptep;
--	if (!pte_present(pte))
--		goto out;
-+	local_irq_disable();
- 
--	pa  = (pte_pfn(pte) << PAGE_SHIFT);
--	pa += (tpc & ~PAGE_MASK);
-+	pmdp = pmd_offset(pudp, tpc);
-+	if (pmd_none(*pmdp) || unlikely(pmd_bad(*pmdp)))
-+		goto out_irq_enable;
-+
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	if (pmd_trans_huge(*pmdp)) {
-+		if (pmd_trans_splitting(*pmdp))
-+			goto out_irq_enable;
- 
--	/* Use phys bypass so we don't pollute dtlb/dcache. */
--	__asm__ __volatile__("lduwa [%1] %2, %0"
--			     : "=r" (insn)
--			     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+		pa  = pmd_pfn(*pmdp) << PAGE_SHIFT;
-+		pa += tpc & ~HPAGE_MASK;
- 
-+		/* Use phys bypass so we don't pollute dtlb/dcache. */
-+		__asm__ __volatile__("lduwa [%1] %2, %0"
-+				     : "=r" (insn)
-+				     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+	} else
-+#endif
-+	{
-+		ptep = pte_offset_map(pmdp, tpc);
-+		pte = *ptep;
-+		if (pte_present(pte)) {
-+			pa  = (pte_pfn(pte) << PAGE_SHIFT);
-+			pa += (tpc & ~PAGE_MASK);
-+
-+			/* Use phys bypass so we don't pollute dtlb/dcache. */
-+			__asm__ __volatile__("lduwa [%1] %2, %0"
-+					     : "=r" (insn)
-+					     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+		}
-+		pte_unmap(ptep);
-+	}
-+out_irq_enable:
-+	local_irq_enable();
- out:
--	pte_unmap(ptep);
--	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
--outret:
- 	return insn;
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index 959bdd630809..2778858957f6 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -6186,7 +6186,7 @@ static int __e1000_resume(struct pci_dev *pdev)
+ 	return 0;
  }
  
-@@ -152,7 +165,8 @@ show_signal_msg(struct pt_regs *regs, int sig, int code,
- }
- 
- static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
--			     unsigned int insn, int fault_code)
-+			     unsigned long fault_addr, unsigned int insn,
-+			     int fault_code)
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ static int e1000_suspend(struct device *dev)
  {
- 	unsigned long addr;
- 	siginfo_t info;
-@@ -160,10 +174,18 @@ static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
- 	info.si_code = code;
- 	info.si_signo = sig;
- 	info.si_errno = 0;
--	if (fault_code & FAULT_CODE_ITLB)
-+	if (fault_code & FAULT_CODE_ITLB) {
- 		addr = regs->tpc;
--	else
--		addr = compute_effective_address(regs, insn, 0);
-+	} else {
-+		/* If we were able to probe the faulting instruction, use it
-+		 * to compute a precise fault address.  Otherwise use the fault
-+		 * time provided address which may only have page granularity.
-+		 */
-+		if (insn)
-+			addr = compute_effective_address(regs, insn, 0);
-+		else
-+			addr = fault_addr;
-+	}
- 	info.si_addr = (void __user *) addr;
- 	info.si_trapno = 0;
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -6205,7 +6205,7 @@ static int e1000_resume(struct device *dev)
  
-@@ -238,7 +260,7 @@ static void __kprobes do_kernel_fault(struct pt_regs *regs, int si_code,
- 		/* The si_code was set to make clear whether
- 		 * this was a SEGV_MAPERR or SEGV_ACCERR fault.
- 		 */
--		do_fault_siginfo(si_code, SIGSEGV, regs, insn, fault_code);
-+		do_fault_siginfo(si_code, SIGSEGV, regs, address, insn, fault_code);
- 		return;
- 	}
+ 	return __e1000_resume(pdev);
+ }
+-#endif /* CONFIG_PM_SLEEP */
++#endif /* CONFIG_PM */
  
-@@ -521,7 +543,7 @@ do_sigbus:
- 	 * Send a sigbus, regardless of whether we were in kernel
- 	 * or user mode.
- 	 */
--	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, insn, fault_code);
-+	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, address, insn, fault_code);
- 
- 	/* Kernel mode? Handle exceptions or die */
- 	if (regs->tstate & TSTATE_PRIV)
+ #ifdef CONFIG_PM_RUNTIME
+ static int e1000_runtime_suspend(struct device *dev)
 -- 
 2.0.4
 
