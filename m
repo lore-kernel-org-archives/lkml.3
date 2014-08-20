@@ -1,49 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994AbaHTNDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 09:03:09 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:43715 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751976AbaHTNDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 09:03:08 -0400
-Message-ID: <1408539787.21533.79.camel@hornet>
-Subject: Re: [PATCH v2] video: ARM CLCD: Fix calculation of bits-per-pixel
-From: Pawel Moll <pawel.moll@arm.com>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 20 Aug 2014 14:03:07 +0100
-In-Reply-To: <1408538464.3858.43.camel@linaro1.home>
-References: <1408538464.3858.43.camel@linaro1.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753330AbaHTND0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 09:03:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46109 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821AbaHTNDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 09:03:24 -0400
+From: =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomasz Figa <t.figa@samsung.com>,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v7] ARM: dts: Prepare node labels for exynos5250
+Date: Wed, 20 Aug 2014 15:02:44 +0200
+Message-Id: <1408539764-5835-1-git-send-email-afaerber@suse.de>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <53DCD74B.8090400@gmail.com>
+References: <53DCD74B.8090400@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-08-20 at 13:41 +0100, Jon Medhurst (Tixy) wrote:
-> If the device-tree specifies a max-memory-bandwidth property then the
-> CLCD driver uses that to calculate the bits-per-pixel supported,
-> however, this calculation is faulty for two reasons.
-> 
-> 1. It doesn't ensure that the result is a sane value, i.e. a power of 2
->    and <= 32 as the rest of the code assumes.
-> 
-> 2. It uses the displayed resolution and calculates the average bandwidth
->    across the whole frame. It should instead calculate the peak
->    bandwidth based on the pixel clock.
-> 
-> This patch fixes both the above.
-> 
-> Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Allows them to be extended by reference.
 
-Acked-by: Pawel Moll <pawel.moll@arm.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Andreas Färber <afaerber@suse.de>
+---
+ v6 -> v7:
+ * Dropped uart* labels (Tomasz Figa)
+ 
+ v6: Split off from Snow/SMDK cleanups (Doug Anderson)
+ 
+ arch/arm/boot/dts/exynos5250.dtsi | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index 492e1eff37bd..42eafd19cfb2 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -218,7 +218,7 @@
+ 		clock-names = "fimg2d";
+ 	};
+ 
+-	codec@11000000 {
++	mfc: codec@11000000 {
+ 		compatible = "samsung,mfc-v6";
+ 		reg = <0x11000000 0x10000>;
+ 		interrupts = <0 96 0>;
+@@ -227,7 +227,7 @@
+ 		clock-names = "mfc";
+ 	};
+ 
+-	rtc@101E0000 {
++	rtc: rtc@101E0000 {
+ 		clocks = <&clock CLK_RTC>;
+ 		clock-names = "rtc";
+ 		status = "disabled";
+@@ -261,7 +261,7 @@
+ 		clock-names = "uart", "clk_uart_baud0";
+ 	};
+ 
+-	sata@122F0000 {
++	sata: sata@122F0000 {
+ 		compatible = "snps,dwc-ahci";
+ 		samsung,sata-freq = <66>;
+ 		reg = <0x122F0000 0x1ff>;
+@@ -573,7 +573,7 @@
+ 		#phy-cells = <1>;
+ 	};
+ 
+-	usb@12110000 {
++	ehci: usb@12110000 {
+ 		compatible = "samsung,exynos4210-ehci";
+ 		reg = <0x12110000 0x100>;
+ 		interrupts = <0 71 0>;
+@@ -588,7 +588,7 @@
+ 		};
+ 	};
+ 
+-	usb@12120000 {
++	ohci: usb@12120000 {
+ 		compatible = "samsung,exynos4210-ohci";
+ 		reg = <0x12120000 0x100>;
+ 		interrupts = <0 71 0>;
+@@ -725,7 +725,7 @@
+ 		clock-names = "gscl";
+ 	};
+ 
+-	hdmi {
++	hdmi: hdmi {
+ 		compatible = "samsung,exynos4212-hdmi";
+ 		reg = <0x14530000 0x70000>;
+ 		interrupts = <0 95 0>;
+@@ -751,14 +751,14 @@
+ 		#phy-cells = <0>;
+ 	};
+ 
+-	dp-controller@145B0000 {
++	dp: dp-controller@145B0000 {
+ 		clocks = <&clock CLK_DP>;
+ 		clock-names = "dp";
+ 		phys = <&dp_phy>;
+ 		phy-names = "dp";
+ 	};
+ 
+-	fimd@14400000 {
++	fimd: fimd@14400000 {
+ 		clocks = <&clock CLK_SCLK_FIMD1>, <&clock CLK_FIMD1>;
+ 		clock-names = "sclk_fimd", "fimd";
+ 	};
+-- 
+2.0.4
 
