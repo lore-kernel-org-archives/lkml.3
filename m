@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaHTOtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 10:49:40 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:47678 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096AbaHTOtg (ORCPT
+	id S1752177AbaHTOuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 10:50:05 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:50389 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148AbaHTOuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 10:49:36 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] irqchip: renesas-intc-irqpin: Add suspend-to-RAM wake up support
-Date: Wed, 20 Aug 2014 16:49:32 +0200
-Message-Id: <1408546172-22484-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 20 Aug 2014 10:50:02 -0400
+Date: Wed, 20 Aug 2014 07:49:54 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Andreas Mohr <andi@lisas.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 1/2] SOUND: kill gameport bits
+Message-ID: <20140820144952.GB18099@core.coreip.homeip.net>
+References: <20140820024638.GA25240@rhlx01.hs-esslingen.de>
+ <20140820051815.GA1109@core.coreip.homeip.net>
+ <s5hwqa3hetu.wl-tiwai@suse.de>
+ <20140820063130.GA11226@core.coreip.homeip.net>
+ <s5htx57hc89.wl-tiwai@suse.de>
+ <s5hfvgrwe59.wl-tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hfvgrwe59.wl-tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the ->irq_enable() and ->irq_disable() methods to NULL to enable
-lazy disable of interrupts, and set IRQCHIP_MASK_ON_SUSPEND to tell the
-core that only IRQs marked as wake-ups need to stay enabled during
-suspend-to-RAM.
+On Wed, Aug 20, 2014 at 02:15:30PM +0200, Takashi Iwai wrote:
+> At Wed, 20 Aug 2014 09:05:58 +0200,
+> Takashi Iwai wrote:
+> > Well, it worked on my test machine a year ago or so.  Maybe I had a
+> > good luck.
+> 
+> FYI, now I tested again an analog joystick on SB Live put on a Dell
+> IvyBridge desktop with 3.17-rc1 x86-64 kernel, and it worked fine as
+> is.
+> 
+> So it's not that broken.
 
-This makes wake-up by gpio-keys from suspend-to-RAM work on
-r8a7740/Armadillo.
+That's probably because in your system TSCs are stable when switching CPU
+frequency. Earlier systems had bunch of issues there IIRC.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
-Not tested on sh73a0/kzm9g, r8a7778/bock-w, r8a7779/marzen
+Thanks.
 
-Similar changes for gpio-rcar and renesas-irqc went in before, but
-split in two parts:
-  - commit 272012d0f748de2e ("irqchip: renesas-irqc: Use lazy disable")
-  - commit 6a7e3b3007b5396a ("irqchip: renesas-irqc: Enable mask on suspend")
-  - commit fba968a1e6b84be0 ("gpio: rcar: Use lazy disable")
-  - commit 403961120667bed7 ("gpio: rcar: Enable mask on suspend")
-
-However, I believe it doesn't make much sense to split this:
-  - Enabling lazy disable on its own introduces a regression, as it
-    causes the system to wake-up on IRQs not marked as wake-ups,
-  - Adding IRQCHIP_MASK_ON_SUSPEND on its own doesn't have any impact.
----
- drivers/irqchip/irq-renesas-intc-irqpin.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/irqchip/irq-renesas-intc-irqpin.c b/drivers/irqchip/irq-renesas-intc-irqpin.c
-index 3ee78f02e5d7..a9efceb0c4a0 100644
---- a/drivers/irqchip/irq-renesas-intc-irqpin.c
-+++ b/drivers/irqchip/irq-renesas-intc-irqpin.c
-@@ -454,10 +454,8 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- 	irq_chip->name = name;
- 	irq_chip->irq_mask = disable_fn;
- 	irq_chip->irq_unmask = enable_fn;
--	irq_chip->irq_enable = enable_fn;
--	irq_chip->irq_disable = disable_fn;
- 	irq_chip->irq_set_type = intc_irqpin_irq_set_type;
--	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE;
-+	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_MASK_ON_SUSPEND;
- 
- 	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
- 					      p->number_of_irqs,
 -- 
-1.9.1
-
+Dmitry
