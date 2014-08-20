@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500AbaHTLUf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 07:20:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9046 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472AbaHTLUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 07:20:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="374704749"
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org, wsa@the-dreams.de,
-        linux-i2c@vger.kernel.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        linux-gpio@vger.kernel.org
-Cc: pratyush.anand@st.com, pebolle@tiscali.nl, stern@rowland.harvard.edu,
-        octavian.purdila@intel.com, matthew@mjdsystems.ca,
-        linux-kernel@vger.kernel.org, laurentiu.palcu@intel.com,
-        daniel.baluta@intel.com, jdelvare@suse.de, arnd@arndb.de,
-        sjg@chromium.org
-Subject: [PATCH 0/3] dln-2: Add support for Diolan DLN-2 devices
-Date: Wed, 20 Aug 2014 14:24:44 +0300
-Message-Id: <1408533887-22727-1-git-send-email-daniel.baluta@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752451AbaHTLUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 07:20:20 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:43070 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392AbaHTLUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 07:20:17 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        =?UTF-8?q?Andreas=20F=C3=A4rber?= <afaerber@suse.de>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH v2 3/5] ARM: dts: add hdmi regulators for exynos5420 based peach-pit board
+Date: Wed, 20 Aug 2014 13:19:51 +0200
+Message-Id: <1408533593-32346-4-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1408533593-32346-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1408533593-32346-1-git-send-email-javier.martinez@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds support for Diolan USB-I2C/GPIO Master Adapter DLN-2.
-Details about device can be found here:
+From: Rahul Sharma <rahul.sharma@samsung.com>
 
-https://www.diolan.com/i2c/i2c_interface.html.
+Adding regulators for hdmi for peach-pit board.
 
-There is no support for SPI part yet.
+Signed-off-by: Rahul Sharma <rahul.sharma@samsung.com>
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+ arch/arm/boot/dts/exynos5420-peach-pit.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Daniel Baluta (1):
-  gpio: add support for the Diolan DLN-2 USB-GPIO driver
-
-Laurentiu Palcu (1):
-  i2c: add support for Diolan DLN-2 USB-I2C adapter
-
-Octavian Purdila (1):
-  usb: add support for Diolan DLN-2 devices
-
- drivers/gpio/Kconfig          |  13 +
- drivers/gpio/Makefile         |   1 +
- drivers/gpio/gpio-dln2.c      | 571 +++++++++++++++++++++++++++++++++
- drivers/i2c/busses/Kconfig    |  11 +
- drivers/i2c/busses/Makefile   |   1 +
- drivers/i2c/busses/i2c-dln2.c | 328 +++++++++++++++++++
- drivers/usb/misc/Kconfig      |   6 +
- drivers/usb/misc/Makefile     |   1 +
- drivers/usb/misc/dln2.c       | 719 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/usb/dln2.h      | 146 +++++++++
- 10 files changed, 1797 insertions(+)
- create mode 100644 drivers/gpio/gpio-dln2.c
- create mode 100644 drivers/i2c/busses/i2c-dln2.c
- create mode 100644 drivers/usb/misc/dln2.c
- create mode 100644 include/linux/usb/dln2.h
-
+diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+index 78cea4c..7c5957b 100644
+--- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
++++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+@@ -143,6 +143,11 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&hdmi_hpd_irq>;
+ 	ddc = <&i2c_2>;
++
++	hdmi-en-supply = <&tps65090_fet7>;
++	vdd-supply = <&ldo8_reg>;
++	vdd_osc-supply = <&ldo10_reg>;
++	vdd_pll-supply = <&ldo8_reg>;
+ };
+ 
+ &hsi2c_4 {
 -- 
-1.9.1
+2.0.1
 
