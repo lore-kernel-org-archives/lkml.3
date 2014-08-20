@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaHTMHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:07:03 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:50862 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174AbaHTMGJ (ORCPT
+	id S1754511AbaHTMJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:09:48 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58897 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752491AbaHTLoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 08:06:09 -0400
-Date: Wed, 20 Aug 2014 13:05:11 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: jgross@suse.com
-Cc: stefan.bader@canonical.com, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
-        x86@kernel.org
-Subject: Re: [PATCH RFC 0/3] x86: Full support of PAT
-Message-ID: <20140820130511.771aeafa@alan.etchedpixels.co.uk>
-In-Reply-To: <1408454745-32358-1-git-send-email-jgross@suse.com>
-References: <1408454745-32358-1-git-send-email-jgross@suse.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Aug 2014 07:44:09 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Richard Weinberger <richard@nod.at>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 023/104] x86, espfix: Make espfix64 a Kconfig option, fix UML
+Date: Wed, 20 Aug 2014 13:42:46 +0200
+Message-Id: <9217746a13b46bf0da738c0bacdb77b0db288137.1408535000.git.jslaby@suse.cz>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+References: <cover.1408535000.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The Linux kernel currently supports only 4 different cache modes. The PAT MSR
-> is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
-> top 4 entries in the PAT MSR are the same as the 4 lower entries.
-> 
-> This results in the kernel not supporting e.g. write-through mode. Especially
-> this cache mode would speed up drivers of video cards which now have to use
-> uncached accesses.
+From: "H. Peter Anvin" <hpa@zytor.com>
 
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Pentium II erratum A52 (and similar on quite a few other processors)
+===============
 
-Problem: The Page Attribute Table (PAT) contains eight entries, which
-must all be initialized and considered when setting up memory types for
-the Pentium II processor. However, in Mode B or Mode C paging, the upper
-four entries do not function correctly for 4-Kbyte pages. Specifically,
-bit seven of page table entries that translate addresses to 4-Kbyte pages
-should be used as the upper bit of a three-bit index to determine the PAT
-entry that specifies the memory type for the page. When Mode B (CR4.PSE =
-1) and/or Mode C (CR4.PAE) are enabled, the processor forces this bit to
-zero when determining the memory type regardless of the value in the page
-table entry. The upper four entries of the PAT function correctly for
-2-Mbyte and 4-Mbyte large pages (specified by bit 12 of the page
-directory entry for those translations). Implication: Only the lower four
-PAT entries are useful for 4 KB translations when Mode B or C paging is
-used. In Mode A paging (4-Kbyte pages only), all eight entries may be
-used. All eight entries may be used for large pages in Mode B or C paging.
+commit 197725de65477bc8509b41388157c1a2283542bb upstream.
 
+Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
+build which had broken due to the non-existence of init_espfix_bsp()
+in UML: since UML uses its own Kconfig, this option does not appear in
+the UML build.
 
+This also makes it possible to make support for 16-bit segments a
+configuration option, for the people who want to minimize the size of
+the kernel.
 
-Doing this stuff for Xen also IMHO makes no sense at all. We shouldn't
-have a kernel full of crap to deal with Xen-isms. IFF it means the
-changes can also implement a mix of four PAT entries on Pentium-M or
-earlier CPUs with PAT errata, and the full PAT on processors without
-errata then IMHO it becomes a whole world more interesting.
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Richard Weinberger <richard@nod.at>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/x86/Kconfig          | 4 ++++
+ arch/x86/kernel/Makefile  | 2 +-
+ arch/x86/kernel/smpboot.c | 2 +-
+ init/main.c               | 2 +-
+ 4 files changed, 7 insertions(+), 3 deletions(-)
 
-Alan
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 9dc1a24d41b8..b423c245595f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -978,6 +978,10 @@ config VM86
+ 	  XFree86 to initialize some video cards via BIOS. Disabling this
+ 	  option saves about 6k.
+ 
++config X86_ESPFIX64
++	def_bool y
++	depends on X86_64
++
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+ 	depends on X86_32
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index d5c94c90716b..32f114091e97 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -29,7 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-y			+= syscall_$(BITS).o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+-obj-$(CONFIG_X86_64)	+= espfix_64.o
++obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a7340d7d6d06..42c26a485533 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -267,7 +267,7 @@ static void notrace start_secondary(void *unused)
+ 	/*
+ 	 * Enable the espfix hack for this CPU
+ 	 */
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	init_espfix_ap();
+ #endif
+ 
+diff --git a/init/main.c b/init/main.c
+index 8e35b39b5a80..181221865266 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -610,7 +610,7 @@ asmlinkage void __init start_kernel(void)
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	/* Should be run before the first non-init thread is created */
+ 	init_espfix_bsp();
+ #endif
+-- 
+2.0.4
+
