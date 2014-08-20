@@ -1,19 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaHTMDx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 08:03:53 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58928 "EHLO
+	id S1754089AbaHTMEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 08:04:47 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:58932 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752530AbaHTLoK (ORCPT
+	by vger.kernel.org with ESMTP id S1752528AbaHTLoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 20 Aug 2014 07:44:10 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Bob Liu <lliubbo@gmail.com>, Dave Hansen <dave.hansen@linux.intel.com>,
+        Hedi Berriche <hedi@sgi.com>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 046/104] sparc64: Handle 32-bit tasks properly in compute_effective_address().
-Date: Wed, 20 Aug 2014 13:43:09 +0200
-Message-Id: <8f4cc46e28a981cc366800527ba35dd8c20bd505.1408535000.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 009/104] mm, thp: do not allow thp faults to avoid cpuset restrictions
+Date: Wed, 20 Aug 2014 13:42:32 +0200
+Message-Id: <06c188135130cd30aade48dfaa3beac58c08f074.1408535000.git.jslaby@suse.cz>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
 References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz>
@@ -23,54 +31,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "David S. Miller" <davem@davemloft.net>
+From: David Rientjes <rientjes@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit d037d16372bbe4d580342bebbb8826821ad9edf0 ]
+commit b104a35d32025ca740539db2808aa3385d0f30eb upstream.
 
-If we have a 32-bit task we must chop off the top 32-bits of the
-64-bit value just as the cpu would.
+The page allocator relies on __GFP_WAIT to determine if ALLOC_CPUSET
+should be set in allocflags.  ALLOC_CPUSET controls if a page allocation
+should be restricted only to the set of allowed cpuset mems.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Transparent hugepages clears __GFP_WAIT when defrag is disabled to prevent
+the fault path from using memory compaction or direct reclaim.  Thus, it
+is unfairly able to allocate outside of its cpuset mems restriction as a
+side-effect.
+
+This patch ensures that ALLOC_CPUSET is only cleared when the gfp mask is
+truly GFP_ATOMIC by verifying it is also not a thp allocation.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Alex Thorlton <athorlton@sgi.com>
+Tested-by: Alex Thorlton <athorlton@sgi.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Hedi Berriche <hedi@sgi.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/sparc/kernel/unaligned_64.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ mm/page_alloc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/sparc/kernel/unaligned_64.c b/arch/sparc/kernel/unaligned_64.c
-index 8201c25e7669..4db8898199f7 100644
---- a/arch/sparc/kernel/unaligned_64.c
-+++ b/arch/sparc/kernel/unaligned_64.c
-@@ -163,17 +163,23 @@ static unsigned long *fetch_reg_addr(unsigned int reg, struct pt_regs *regs)
- unsigned long compute_effective_address(struct pt_regs *regs,
- 					unsigned int insn, unsigned int rd)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6e0a9cf8d02a..a280f772bc66 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2425,7 +2425,7 @@ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
  {
-+	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
- 	unsigned int rs1 = (insn >> 14) & 0x1f;
- 	unsigned int rs2 = insn & 0x1f;
--	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
-+	unsigned long addr;
+ 	int alloc_flags = ALLOC_WMARK_MIN | ALLOC_CPUSET;
+-	const gfp_t wait = gfp_mask & __GFP_WAIT;
++	const bool atomic = !(gfp_mask & (__GFP_WAIT | __GFP_NO_KSWAPD));
  
- 	if (insn & 0x2000) {
- 		maybe_flush_windows(rs1, 0, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
-+		addr = (fetch_reg(rs1, regs) + sign_extend_imm13(insn));
- 	} else {
- 		maybe_flush_windows(rs1, rs2, rd, from_kernel);
--		return (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
-+		addr = (fetch_reg(rs1, regs) + fetch_reg(rs2, regs));
- 	}
-+
-+	if (!from_kernel && test_thread_flag(TIF_32BIT))
-+		addr &= 0xffffffff;
-+
-+	return addr;
- }
+ 	/* __GFP_HIGH is assumed to be the same as ALLOC_HIGH to save a branch. */
+ 	BUILD_BUG_ON(__GFP_HIGH != (__force gfp_t) ALLOC_HIGH);
+@@ -2434,20 +2434,20 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+ 	 * The caller may dip into page reserves a bit more if the caller
+ 	 * cannot run direct reclaim, or if the caller has realtime scheduling
+ 	 * policy or is asking for __GFP_HIGH memory.  GFP_ATOMIC requests will
+-	 * set both ALLOC_HARDER (!wait) and ALLOC_HIGH (__GFP_HIGH).
++	 * set both ALLOC_HARDER (atomic == true) and ALLOC_HIGH (__GFP_HIGH).
+ 	 */
+ 	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
  
- /* This is just to make gcc think die_if_kernel does return... */
+-	if (!wait) {
++	if (atomic) {
+ 		/*
+-		 * Not worth trying to allocate harder for
+-		 * __GFP_NOMEMALLOC even if it can't schedule.
++		 * Not worth trying to allocate harder for __GFP_NOMEMALLOC even
++		 * if it can't schedule.
+ 		 */
+-		if  (!(gfp_mask & __GFP_NOMEMALLOC))
++		if (!(gfp_mask & __GFP_NOMEMALLOC))
+ 			alloc_flags |= ALLOC_HARDER;
+ 		/*
+-		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
+-		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
++		 * Ignore cpuset mems for GFP_ATOMIC rather than fail, see the
++		 * comment for __cpuset_node_allowed_softwall().
+ 		 */
+ 		alloc_flags &= ~ALLOC_CPUSET;
+ 	} else if (unlikely(rt_task(current)) && !in_interrupt())
 -- 
 2.0.4
 
