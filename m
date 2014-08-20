@@ -1,73 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaHTPEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 11:04:47 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:29720 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686AbaHTPEp (ORCPT
+	id S1752253AbaHTPE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 11:04:59 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:54272 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226AbaHTPE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 11:04:45 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-f3-53f4b90ab1e9
-Subject: [PATCH 2/7] mm/balloon_compaction: keep ballooned pages away from
- normal migration path
+	Wed, 20 Aug 2014 11:04:57 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-d9-53f4b916235a
+Subject: [PATCH 4/7] selftests/vm/transhuge-stress: stress test for memory
+ compaction
 From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         Rafael Aquini <aquini@redhat.com>
 Cc: Sasha Levin <sasha.levin@oracle.com>,
         Andrey Ryabinin <ryabinin.a.a@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 20 Aug 2014 19:04:40 +0400
-Message-id: <20140820150440.4194.70267.stgit@buzz>
+Date: Wed, 20 Aug 2014 19:04:52 +0400
+Message-id: <20140820150452.4194.85926.stgit@buzz>
 In-reply-to: <20140820150435.4194.28003.stgit@buzz>
 References: <20140820150435.4194.28003.stgit@buzz>
 User-Agent: StGit/0.17.1-dirty
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xy7pcO78EGzybb2oxZ/0aNosZD3+x
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xK7piO78EG8z8L2YxZ/0aNosZD3+x
 	WPzY2ctqcXnXHDaLe2v+s1oc37qF2WLxkdvMDuweO2fdZffY9GkSu8eJGb9ZPD4+vcXi8X7f
-	VTaPvi2rGD0+b5ILYI/isklJzcksSy3St0vgyjh03qngMFfF0XtH2RsYH3J0MXJySAiYSExa
-	OosZwhaTuHBvPVsXIxeHkMBSRom5N/axQDiNTBKH3nYxdTFycAgLJEl8PO8D0sAmYCaxbd9t
-	RhBbRCBN4uuzLWwgNrNAkcSLm7PAbBYBVYmFezqYQGxeASOJK0++gNmcAsYSa46/BOsVAopf
-	6/kNdoSogJzEysstrBD1ghI/Jt9jAVnLLKAuMWVKLsR4eYnNa94yT2AUmIWkahZC1SwkVQsY
-	mVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihIT8lx2Mi49ZHWIU4GBU4uG9sehLsBBrYllx
-	Ze4hRgkOZiUR3hMbgEK8KYmVValF+fFFpTmpxYcYmTg4pRoYZ6ff42U0fvPRKvXFo6IpfKKr
-	87Tyzij6vznfsOJGXfsuuWPxP3bsqeH28GzOt1L0ZfX6n7owzn2+w81NwQ+uvtyfr+xQ/VrM
-	qP2Mc1/9+RIl08Zo3g1Wq6d9ZN2Udz/4i89Dt+gV33Stnps12++tO+jZ2ZLxa36exdbdXyIa
-	51maHWdd0SKmxFKckWioxVxUnAgAvKglxFcCAAA=
+	VTaPvi2rGD0+b5ILYI/isklJzcksSy3St0vgynj44w1jQZN6xdr5N5kaGF/KdTFyckgImEjc
+	2ruXBcIWk7hwbz0biC0ksJRR4uOqwi5GLiC7kUni+bHPYAlhgXCJd62T2EFsNgEziW37bjOC
+	2CICaRJfn20Bq2EWKJJ4cXMWmM0ioCpxfvkJZhCbV8BIYvu2P6wgNqeAscSa4y8ZIZYZSVzr
+	+Q1WIyogJ7HycgsrRL2gxI/J94CO4wCaqS4xZUouxHh5ic1r3jJPYBSYhaRqFkLVLCRVCxiZ
+	VzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBP3XHYxLj1kdYhTgYFTi4b256EuwEGtiWXFl
+	7iFGCQ5mJRHeExuAQrwpiZVVqUX58UWlOanFhxiZODilGhgtXNNzy6/XTnsqInK1i73M+lhg
+	QBbTtBPpegzhFn2FLV3vH337+tOywNPB34MnbvmURxsXeK659jDw2VSdjtlvBFfy7tnFwqj5
+	+pTW737b0kX53LYLHF7b/0rXNyiyMH3J0nU69qTLi4YXzZzmn67dMrlUeOzd2oQ662Czi8xl
+	ko7MfI9f71BiKc5INNRiLipOBABCJWLIWAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Proper testing shows yet another problem in balloon migration: it works only
-once for each page. balloon_page_movable() check page flags and page_count.
-In __unmap_and_move page is locked, reference counter is elevated, so
-balloon_page_movable() _always_ fails here. As result in __unmap_and_move()
-migration goes to the normal migration path.
+From: Konstantin Khlebnikov <koct9i@gmail.com>
 
-Balloon ->migratepage() is so special, it returns MIGRATEPAGE_BALLOON_SUCCESS
-instead of MIGRATEPAGE_SUCCESS. After that in move_to_new_page() successfully
-migrated page got NULL into its mapping pointer and loses connectivity with
-balloon and ability for further migration.
+This tool induces memory fragmentation via sequential allocation of transparent
+huge pages and splitting off everything except their last sub-pages.
 
-It's safe to use __is_movable_balloon_page here: page is isolated and pinned.
-
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Cc: stable <stable@vger.kernel.org> # v3.8
+Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
 ---
- mm/migrate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/testing/selftests/vm/Makefile           |    1 
+ tools/testing/selftests/vm/transhuge-stress.c |  144 +++++++++++++++++++++++++
+ 2 files changed, 145 insertions(+)
+ create mode 100644 tools/testing/selftests/vm/transhuge-stress.c
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index f78ec9b..161d044 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -873,7 +873,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 		}
- 	}
+diff --git a/tools/testing/selftests/vm/Makefile b/tools/testing/selftests/vm/Makefile
+index 3f94e1a..4c4b1f6 100644
+--- a/tools/testing/selftests/vm/Makefile
++++ b/tools/testing/selftests/vm/Makefile
+@@ -3,6 +3,7 @@
+ CC = $(CROSS_COMPILE)gcc
+ CFLAGS = -Wall
+ BINARIES = hugepage-mmap hugepage-shm map_hugetlb thuge-gen hugetlbfstest
++BINARIES += transhuge-stress
  
--	if (unlikely(balloon_page_movable(page))) {
-+	if (unlikely(__is_movable_balloon_page(page))) {
- 		/*
- 		 * A ballooned page does not need any special attention from
- 		 * physical to virtual reverse mapping procedures.
+ all: $(BINARIES)
+ %: %.c
+diff --git a/tools/testing/selftests/vm/transhuge-stress.c b/tools/testing/selftests/vm/transhuge-stress.c
+new file mode 100644
+index 0000000..fd7f1b4
+--- /dev/null
++++ b/tools/testing/selftests/vm/transhuge-stress.c
+@@ -0,0 +1,144 @@
++/*
++ * Stress test for transparent huge pages, memory compaction and migration.
++ *
++ * Authors: Konstantin Khlebnikov <koct9i@gmail.com>
++ *
++ * This is free and unencumbered software released into the public domain.
++ */
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <stdint.h>
++#include <err.h>
++#include <time.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <string.h>
++#include <sys/mman.h>
++
++#define PAGE_SHIFT 12
++#define HPAGE_SHIFT 21
++
++#define PAGE_SIZE (1 << PAGE_SHIFT)
++#define HPAGE_SIZE (1 << HPAGE_SHIFT)
++
++#define PAGEMAP_PRESENT(ent)	(((ent) & (1ull << 63)) != 0)
++#define PAGEMAP_PFN(ent)	((ent) & ((1ull << 55) - 1))
++
++int pagemap_fd;
++
++int64_t allocate_transhuge(void *ptr)
++{
++	uint64_t ent[2];
++
++	/* drop pmd */
++	if (mmap(ptr, HPAGE_SIZE, PROT_READ | PROT_WRITE,
++				MAP_FIXED | MAP_ANONYMOUS |
++				MAP_NORESERVE | MAP_PRIVATE, -1, 0) != ptr)
++		errx(2, "mmap transhuge");
++
++	if (madvise(ptr, HPAGE_SIZE, MADV_HUGEPAGE))
++		err(2, "MADV_HUGEPAGE");
++
++	/* allocate transparent huge page */
++	*(volatile void **)ptr = ptr;
++
++	if (pread(pagemap_fd, ent, sizeof(ent),
++			(uintptr_t)ptr >> (PAGE_SHIFT - 3)) != sizeof(ent))
++		err(2, "read pagemap");
++
++	if (PAGEMAP_PRESENT(ent[0]) && PAGEMAP_PRESENT(ent[1]) &&
++	    PAGEMAP_PFN(ent[0]) + 1 == PAGEMAP_PFN(ent[1]) &&
++	    !(PAGEMAP_PFN(ent[0]) & ((1 << (HPAGE_SHIFT - PAGE_SHIFT)) - 1)))
++		return PAGEMAP_PFN(ent[0]);
++
++	return -1;
++}
++
++int main(int argc, char **argv)
++{
++	size_t ram, len;
++	void *ptr, *p;
++	struct timespec a, b;
++	double s;
++	uint8_t *map;
++	size_t map_len;
++
++	ram = sysconf(_SC_PHYS_PAGES);
++	if (ram > SIZE_MAX / sysconf(_SC_PAGESIZE) / 4)
++		ram = SIZE_MAX / 4;
++	else
++		ram *= sysconf(_SC_PAGESIZE);
++
++	if (argc == 1)
++		len = ram;
++	else if (!strcmp(argv[1], "-h"))
++		errx(1, "usage: %s [size in MiB]", argv[0]);
++	else
++		len = atoll(argv[1]) << 20;
++
++	warnx("allocate %zd transhuge pages, using %zd MiB virtual memory"
++	      " and %zd MiB of ram", len >> HPAGE_SHIFT, len >> 20,
++	      len >> (20 + HPAGE_SHIFT - PAGE_SHIFT - 1));
++
++	pagemap_fd = open("/proc/self/pagemap", O_RDONLY);
++	if (pagemap_fd < 0)
++		err(2, "open pagemap");
++
++	len -= len % HPAGE_SIZE;
++	ptr = mmap(NULL, len + HPAGE_SIZE, PROT_READ | PROT_WRITE,
++			MAP_ANONYMOUS | MAP_NORESERVE | MAP_PRIVATE, -1, 0);
++	if (ptr == MAP_FAILED)
++		err(2, "initial mmap");
++	ptr += HPAGE_SIZE - (uintptr_t)ptr % HPAGE_SIZE;
++
++	if (madvise(ptr, len, MADV_HUGEPAGE))
++		err(2, "MADV_HUGEPAGE");
++
++	map_len = ram >> (HPAGE_SHIFT - 1);
++	map = malloc(map_len);
++	if (!map)
++		errx(2, "map malloc");
++
++	while (1) {
++		int nr_succeed = 0, nr_failed = 0, nr_pages = 0;
++
++		memset(map, 0, map_len);
++
++		clock_gettime(CLOCK_MONOTONIC, &a);
++		for (p = ptr; p < ptr + len; p += HPAGE_SIZE) {
++			int64_t pfn;
++
++			pfn = allocate_transhuge(p);
++
++			if (pfn < 0) {
++				nr_failed++;
++			} else {
++				size_t idx = pfn >> (HPAGE_SHIFT - PAGE_SHIFT);
++
++				nr_succeed++;
++				if (idx >= map_len) {
++					map = realloc(map, idx + 1);
++					if (!map)
++						errx(2, "map realloc");
++					memset(map + map_len, 0, idx + 1 - map_len);
++					map_len = idx + 1;
++				}
++				if (!map[idx])
++					nr_pages++;
++				map[idx] = 1;
++			}
++
++			/* split transhuge page, keep last page */
++			if (madvise(p, HPAGE_SIZE - PAGE_SIZE, MADV_DONTNEED))
++				err(2, "MADV_DONTNEED");
++		}
++		clock_gettime(CLOCK_MONOTONIC, &b);
++		s = b.tv_sec - a.tv_sec + (b.tv_nsec - a.tv_nsec) / 1000000000.;
++
++		warnx("%.3f s/loop, %.3f ms/page, %10.3f MiB/s\t"
++		      "%4d succeed, %4d failed, %4d different pages",
++		      s, s * 1000 / (len >> HPAGE_SHIFT), len / s / (1 << 20),
++		      nr_succeed, nr_failed, nr_pages);
++	}
++}
 
