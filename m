@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaHTK5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 06:57:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42251 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936AbaHTK5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 06:57:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,901,1400050800"; 
-   d="scan'208";a="470717253"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] spi/pxa2xx: Add ACPI ID for Intel Braswell
-Date: Wed, 20 Aug 2014 13:57:26 +0300
-Message-Id: <1408532246-10988-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1752192AbaHTK6W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 06:58:22 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:55559 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaHTK6V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 06:58:21 -0400
+Date: Wed, 20 Aug 2014 12:58:17 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: Pankaj Gupta <pagupta@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        jasowang@redhat.com, mst@redhat.com, dgibson@redhat.com,
+        vfalico@gmail.com, edumazet@google.com, vyasevic@redhat.com,
+        hkchu@google.com, wuzhy@linux.vnet.ibm.com, xemul@parallels.com,
+        therbert@google.com, bhutchings@solarflare.com, xii@google.com,
+        stephen@networkplumber.org
+Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
+ module_param
+Message-ID: <20140820105817.GB1916@nanopsycho.orion>
+References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
+ <1408369040-1216-3-git-send-email-pagupta@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408369040-1216-3-git-send-email-pagupta@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
+> This patch publishes maximum number of tun/tap queues allocated as a
+> read_only module parameter which a user space application like libvirt
+> can make use of to limit maximum number of queues. Value of read_only
+> module parameter can be writable only at module load time. If no value is set
+> at module load time a default value 256 is used which is equal to maximum number
+> of vCPUS allowed by KVM.
+>
+> Administrator can specify maximum number of queues only at the driver
+> module load time.
+>
+>Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+>---
+> drivers/net/tun.c |   13 +++++++++++--
+> 1 files changed, 11 insertions(+), 2 deletions(-)
+>
+>diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+>index acaaf67..1f518e2 100644
+>--- a/drivers/net/tun.c
+>+++ b/drivers/net/tun.c
+>@@ -119,6 +119,9 @@ struct tap_filter {
+> 
+> #define TUN_FLOW_EXPIRE (3 * HZ)
+> 
+>+static int max_tap_queues = MAX_TAP_QUEUES;
+>+module_param(max_tap_queues, int, S_IRUGO);
 
-The SPI host controller is the same as used in Baytrail, only the ACPI ID
-is different so add this new ID to the list.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/spi/spi-pxa2xx.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index fe792106bdc5..46f45ca2c694 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -1074,6 +1074,7 @@ static struct acpi_device_id pxa2xx_spi_acpi_match[] = {
- 	{ "INT3430", 0 },
- 	{ "INT3431", 0 },
- 	{ "80860F0E", 0 },
-+	{ "8086228E", 0 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(acpi, pxa2xx_spi_acpi_match);
--- 
-2.1.0
-
+Please do not introduce new module paramaters. Please other ways to
+interchange values with userspace.
