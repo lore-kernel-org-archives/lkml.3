@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356AbaHUWci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 18:32:38 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:60671 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754890AbaHUWch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 18:32:37 -0400
-X-IronPort-AV: E=Sophos;i="5.04,376,1406617200"; 
-   d="scan'208";a="43522497"
-Subject: Re: [PATCH 1/3] tg3: Limit minimum tx queue wakeup threshold
-From: Michael Chan <mchan@broadcom.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-CC: Prashant Sreedharan <prashant@broadcom.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <20140821220424.GB7117@f1.synalogic.ca>
-References: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
-	 <1408485647.7404.3.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <20140821220424.GB7117@f1.synalogic.ca>
-Content-Type: text/plain; charset="cp1252"
-Date: Thu, 21 Aug 2014 15:32:35 -0700
-Message-ID: <1408660355.7644.50.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	id S1755527AbaHUWdC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 18:33:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755458AbaHUWdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 18:33:00 -0400
+Date: Thu, 21 Aug 2014 18:32:52 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Aristeu Rozanski <arozansk@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-api@vger.kernel.org,
+        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com,
+        serge@hallyn.com
+Subject: Re: [PATCH V4 0/8] namespaces: log namespaces per task
+Message-ID: <20140821223252.GF20529@madcap2.tricolour.ca>
+References: <cover.1408581429.git.rgb@redhat.com>
+ <20140821200555.GK5620@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140821200555.GK5620@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-21 at 15:04 -0700, Benjamin Poirier wrote: 
-> On 2014/08/19 15:00, Michael Chan wrote:
-> > On Tue, 2014-08-19 at 11:52 -0700, Benjamin Poirier wrote: 
-> > > diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-> > > index 3ac5d23..b11c0fd 100644
-> > > --- a/drivers/net/ethernet/broadcom/tg3.c
-> > > +++ b/drivers/net/ethernet/broadcom/tg3.c
-> > > @@ -202,7 +202,8 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
-> > >  #endif
-> > >  
-> > >  /* minimum number of free TX descriptors required to wake up TX process */
-> > > -#define TG3_TX_WAKEUP_THRESH(tnapi)            ((tnapi)->tx_pending / 4)
-> > > +#define TG3_TX_WAKEUP_THRESH(tnapi)    max_t(u32, (tnapi)->tx_pending / 4, \
-> > > +                                             MAX_SKB_FRAGS + 1)
-> > 
-> > I think we should precompute this and store it in something like
-> > tp->tx_wake_thresh.
+On 14/08/21, Aristeu Rozanski wrote:
+> Hi Richard,
+
+Hi Aris,
+
+> On Wed, Aug 20, 2014 at 09:09:33PM -0400, Richard Guy Briggs wrote:
+> > Is there a way to link serial numbers of namespaces involved in migration of a
+> > container to another kernel?  It sounds like what is needed is a part of a
+> > mangement application that is able to pull the audit records from constituent
+> > hosts to build an audit trail of a container.
 > 
-> I've tried this by adding the following patch at the end of the v2
-> series but I did not measure a significant latency improvement. Was
-> there another reason for the change? 
+> since you're introducing a brand new serial number to make it unique
+> across different procfs mounts, why not instead of a simple counter,
+> use the hash output of say, $hostname-$creation_time-$random?
 
-Just performance.  The wake up threshold is checked in the tx fast path
-in both start_xmit() and tg3_tx().  I would optimize such code for speed
-as much as possible.  In the current code, it was just a right shift
-operation.  Now, with max_t() added, I think I prefer having it
-pre-computed.  The performance difference may not be measurable, but I
-think the compiled code size may be smaller too.
+I had thought of this earlier on, but I could see many VMs started up
+from an identical image, making the resulting hash possibly identical.
 
+Besides, hostname isn't known yet when we are creating initial
+namespaces.
+
+> Or perhaps
+> get a short hash of the hostname (generated once whenever hostname is
+> set) and append the serial number you're implementing? It'd be way less human
+> readable than your current proposal but it'd be unique "globally" (as long you
+> don't have machines with the same hostname migrating containers between them),
+> allowing the migrated namespaces to retain their unique identification across
+> audit logs. It'd of course be way more costly than just using an atomic counter,
+> but could be useful to anything that needs to refer to a namespace and could be
+> migrated to another machine.
+
+This also means that any namespace that is migrated would have to be
+recreated on another host and inject an existing ID into it rather than
+have the host creating it generate that ID.  Some namespaces are peers
+that take the kernel default, while others are hierarchical and inherit
+from their creating namespaces.
+
+It was much easier at my layer to punt that management to a higher
+layer that already knew about the other hosts in play and to manage that
+information as it saw fit.
+
+> What you think? Sounds too crazy? :)
+
+Yup.  I was hoping there would be some kind of unique identifier per
+running kernel, including CPU_ID (which may not exist or may be shut
+off), RTC boot value (which may be identical for VMs), or initial random
+state (which could be identical for VMs).
+
+> Aristeu
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
