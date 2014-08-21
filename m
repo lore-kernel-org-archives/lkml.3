@@ -1,105 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaHUBxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:53:31 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:54721 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaHUBx3 (ORCPT
+	id S1753169AbaHUByW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:54:22 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:49096 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaHUByV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:53:29 -0400
-X-Original-SENDERIP: 10.178.36.63
-X-Original-MAILFROM: chanho.min@lge.com
-From: Chanho Min <chanho.min@lge.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanho Min <chanho.min@lge.com>, Hankyung Yu <hankyung.yu@lge.com>
-Subject: [PATCH] mmc:sdhci: handle busy-end interrupt during command
-Date: Thu, 21 Aug 2014 10:53:09 +0900
-Message-Id: <1408585989-1084-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 20 Aug 2014 21:54:21 -0400
+Message-ID: <53F5514A.5050007@linaro.org>
+Date: Thu, 21 Aug 2014 03:54:18 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Chuansheng Liu <chuansheng.liu@intel.com>, luto@amacapital.net,
+        peterz@infradead.org, rjw@rjwysocki.net, mingo@redhat.com
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        changcheng.liu@intel.com, xiaoming.wang@intel.com,
+        souvik.k.chakravarty@intel.com
+Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
+ idle cpu
+References: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
+In-Reply-To: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is fully legal for a controller to start handling busy-end interrupt
-before it has signaled that the command has completed. So make sure
-we do things in the proper order, Or it results that command interrupt
-is ignored so it can cause unexpected operations. This is founded at some
-toshiba emmc with the bellow warning.
+On 08/18/2014 10:37 AM, Chuansheng Liu wrote:
+> Implementing one new API wake_up_if_idle(), which is used to
+> wake up the idle CPU.
 
-"mmc0: Got command interrupt 0x00000001 even though
-no command operation was in progress."
+Is this patchset tested ? Did you check it solves the issue you were 
+facing ?
 
-This issue has been also reported by Youssef TRIKI:
-It is not specific to Toshiba devices, and happens with eMMC devices
-as well as SD card which support Auto-CMD12 rather than CMD23.
+> Suggested-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> ---
+>   include/linux/sched.h |    1 +
+>   kernel/sched/core.c   |   16 ++++++++++++++++
+>   2 files changed, 17 insertions(+)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 857ba40..3f89ac1 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
+>   extern struct sched_domain_topology_level *sched_domain_topology;
+>
+>   extern void set_sched_topology(struct sched_domain_topology_level *tl);
+> +extern void wake_up_if_idle(int cpu);
+>
+>   #ifdef CONFIG_SCHED_DEBUG
+>   # define SD_INIT_NAME(type)		.name = #type
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 1211575..adf104f 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1620,6 +1620,22 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+>   	}
+>   }
+>
+> +void wake_up_if_idle(int cpu)
+> +{
+> +	struct rq *rq = cpu_rq(cpu);
+> +	unsigned long flags;
+> +
+> +	if (set_nr_if_polling(rq->idle)) {
+> +		trace_sched_wake_idle_without_ipi(cpu);
+> +	} else {
+> +		raw_spin_lock_irqsave(&rq->lock, flags);
+> +		if (rq->curr == rq->idle)
+> +			smp_send_reschedule(cpu);
+> +		/* Else cpu is not in idle, do nothing here */
+> +		raw_spin_unlock_irqrestore(&rq->lock, flags);
+> +	}
+> +}
+> +
+>   bool cpus_share_cache(int this_cpu, int that_cpu)
+>   {
+>   	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
+>
 
-Also, similar patch is submitted by:
-Gwendal Grignou <gwendal@chromium.org>
 
-Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
-Signed-off-by: Chanho Min <chanho.min@lge.com>
-Tested-by: Youssef TRIKI <youssef.triki@st.com>
----
- drivers/mmc/host/sdhci.c  |   17 +++++++++++++++--
- include/linux/mmc/sdhci.h |    1 +
- 2 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 47055f3..2383be0 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1007,6 +1007,7 @@ void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 	mod_timer(&host->timer, timeout);
- 
- 	host->cmd = cmd;
-+	host->busy_handle = 0;
- 
- 	sdhci_prepare_data(host, cmd);
- 
-@@ -2238,8 +2239,12 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
- 		if (host->cmd->data)
- 			DBG("Cannot wait for busy signal when also "
- 				"doing a data transfer");
--		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ))
-+		else if (!(host->quirks & SDHCI_QUIRK_NO_BUSY_IRQ)
-+				&& !host->busy_handle) {
-+			/* Mark that command complete before busy is ended */
-+			host->busy_handle = 1;
- 			return;
-+		}
- 
- 		/* The controller does not support the end-of-busy IRQ,
- 		 * fall through and take the SDHCI_INT_RESPONSE */
-@@ -2302,7 +2307,15 @@ static void sdhci_data_irq(struct sdhci_host *host, u32 intmask)
- 		 */
- 		if (host->cmd && (host->cmd->flags & MMC_RSP_BUSY)) {
- 			if (intmask & SDHCI_INT_DATA_END) {
--				sdhci_finish_command(host);
-+				/*
-+				 * Some cards handle busy-end interrupt
-+				 * before the command completed, so make
-+				 * sure we do things in the proper order.
-+				 */
-+				if (host->busy_handle)
-+					sdhci_finish_command(host);
-+				else
-+					host->busy_handle = 1;
- 				return;
- 			}
- 		}
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index 08abe99..f91085b 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -149,6 +149,7 @@ struct sdhci_host {
- 	struct mmc_command *cmd;	/* Current command */
- 	struct mmc_data *data;	/* Current data request */
- 	unsigned int data_early:1;	/* Data finished before cmd */
-+	unsigned int busy_handle:1;	/* Handling the order of Busy-end */
- 
- 	struct sg_mapping_iter sg_miter;	/* SG state for PIO */
- 	unsigned int blocks;	/* remaining PIO blocks */
 -- 
-1.7.9.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
