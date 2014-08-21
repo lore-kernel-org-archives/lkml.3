@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877AbaHUUvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:51:19 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:46138 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658AbaHUUvS (ORCPT
+	id S1754488AbaHUU5q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:57:46 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37009 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571AbaHUU5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:51:18 -0400
-Date: Fri, 22 Aug 2014 00:51:15 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Peter Feiner <pfeiner@google.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Jamie Liu <jamieliu@google.com>, Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Magnus Damm <damm@opensource.se>
-Subject: Re: [PATCH] mm: softdirty: write protect PTEs created for read
- faults after VM_SOFTDIRTY cleared
-Message-ID: <20140821205115.GH14072@moon>
-References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
- <20140820234543.GA7987@node.dhcp.inet.fi>
- <20140821193737.GC16042@google.com>
+	Thu, 21 Aug 2014 16:57:45 -0400
+Date: Thu, 21 Aug 2014 21:52:24 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: lv.zheng@intel.com, matt.fleming@intel.com, linux-efi@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@acpica.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
+        robert.moore@intel.com
+Subject: Re: kernel boot fail with efi earlyprintk (bisected)
+Message-ID: <20140821205224.GJ29733@console-pimps.org>
+References: <20140819081658.GA1795@darkstar.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140821193737.GC16042@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140819081658.GA1795@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 03:37:37PM -0400, Peter Feiner wrote:
->
-> Thanks Kirill, I prefer your approach. I'll send a v2.
+On Tue, 19 Aug, at 04:16:58PM, Dave Young wrote:
+> Hi,
 > 
-> I believe you're right about c9d0bf241451. It seems like passing the old & new
-> pgprot through pgprot_modify would handle the problem. Furthermore, as you
-> suggest, mprotect_fixup should use pgprot_modify when it turns write
-> notification on.  I think a patch like this is in order:
+> 3.16 kernel boot fail with earlyprintk=efi on my laptop.
+> It keeps scrolling at the bottom line of screen.
 > 
-> Not-signed-off-by: Peter Feiner <pfeiner@google.com>
+> Bisected, the first bad commit is below:
+> commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
+> Author: Lv Zheng <lv.zheng@intel.com>
+> Date:   Fri Apr 4 12:38:57 2014 +0800
 > 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index c1f2ea4..86f89a1 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1611,18 +1611,15 @@ munmap_back:
->  	}
->  
->  	if (vma_wants_writenotify(vma)) {
-> -		pgprot_t pprot = vma->vm_page_prot;
-> -
->  		/* Can vma->vm_page_prot have changed??
->  		 *
->  		 * Answer: Yes, drivers may have changed it in their
->  		 *         f_op->mmap method.
->  		 *
-> -		 * Ensures that vmas marked as uncached stay that way.
-> +		 * Ensures that vmas marked with special bits stay that way.
->  		 */
-> -		vma->vm_page_prot = vm_get_page_prot(vm_flags & ~VM_SHARED);
-> -		if (pgprot_val(pprot) == pgprot_val(pgprot_noncached(pprot)))
-> -			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-> +		vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
-> +		                        vm_get_page_prot(vm_flags & ~VM_SHARED);
->  	}
->  
->  	vma_link(mm, vma, prev, rb_link, rb_parent);
-> diff --git a/mm/mprotect.c b/mm/mprotect.c
-> index c43d557..6826313 100644
-> --- a/mm/mprotect.c
-> +++ b/mm/mprotect.c
-> @@ -324,7 +324,8 @@ success:
->  					  vm_get_page_prot(newflags));
->  
->  	if (vma_wants_writenotify(vma)) {
-> -		vma->vm_page_prot = vm_get_page_prot(newflags & ~VM_SHARED);
-> +		vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
-> +		                       vm_get_page_prot(newflags & ~VM_SHARED));
->  		dirty_accountable = 1;
->  	}
+>     ACPICA: Tables: Fix table checksums verification before installation.
+> 
+> 
+> I did some debugging by enabling both serial and efi earlyprintk, below is
+> some debug dmesg, seems early_ioremap fails in scroll up function due to
+> no free slot, but I'm still not sure if the debug info is right or not.
 
-Thanks a lot Peter and Kirill for catching it and providing the prelim. fixup. (Initial
-patch doesn't look that right for me because vm-softdirty should involve into
-account for newly created/expaned vmas only but not into some deep code such
-as fault handlings). Peter does the patch above helps? (out of testing machine
-at the moment so cant test myself).
+Thanks Dave, your callstack seems to make sense.
+
+Can you also enable early_ioremap_debug so that we can figure out where
+all the FIXMAP slots are going?
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
