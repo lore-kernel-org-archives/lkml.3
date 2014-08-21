@@ -1,290 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaHUK0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 06:26:16 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:43627 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbaHUK0O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 06:26:14 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 8/8 v2] staging: et131x: Implement NAPI support
-Date: Thu, 21 Aug 2014 11:26:09 +0100
-Message-Id: <1408616769-5717-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408572883-9235-1-git-send-email-mark.einon@gmail.com>
+	id S1754366AbaHUKdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 06:33:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35972 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753820AbaHUKcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 06:32:52 -0400
+Message-ID: <53F5CACF.4050600@suse.de>
+Date: Thu, 21 Aug 2014 12:32:47 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>,
+        "edubezval@gmail.com" <edubezval@gmail.com>
+CC: Zhang Rui <rui.zhang@intel.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
+        Amit Kachhap <amit.daniel@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, l.majewski@samsung.com,
+        naveen krishna <ch.naveen@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3] thermal: exynos: Add support for TRIM_RELOAD feature
+ at Exynos3250
+References: <1408450078-6296-1-git-send-email-cw00.choi@samsung.com> <1408492364-8012-1-git-send-email-cw00.choi@samsung.com> <CAC-25o9LjKwjBwwxcOvV75bXEHGdUh2vU=ae1STsXxD6q4YsiA@mail.gmail.com> <53F54D86.9070601@samsung.com>
+In-Reply-To: <53F54D86.9070601@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implements NAPI support for et131x by:
+Hello,
 
--adding a napi_struct to the private adapter struct
--changing netfif_rx_skb() call to netif_receive_skb()
--changing et131x_handle_recv_interrupt() to et131x_handle_recv_pkts()
- and taking a budget allocation.
--changing et131x_handle_send_interrupt() to et131x_handle_send_pkts()
--replacing bottom half workqueue with poll function which handles
- send & receive of skbs.
--adding various other necessary standard napi calls.
+Am 21.08.2014 03:38, schrieb Chanwoo Choi:
+> On 08/20/2014 10:38 PM, edubezval@gmail.com wrote:
+>> On Tue, Aug 19, 2014 at 7:52 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+>>> index aa8e0de..8cd609c 100644
+>>> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+>>> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+>>> @@ -95,6 +95,8 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
+>>>         .triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+>>>         .triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+>>>         .triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+>>> +       .triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON1,
+>>> +       .triminfo_ctrl[1] = EXYNOS_TMU_TRIMINFO_CON2,
+>>>         .tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+>>>         .test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+>>>         .buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+>>> @@ -160,8 +162,11 @@ static const struct exynos_tmu_registers exynos3250_tmu_registers = {
+>>>                 .temp_level = 95, \
+>>>         }, \
+>>>         .freq_tab_count = 2, \
+>>> +       .triminfo_reload[0] = 0x1, \
+>>> +       .triminfo_reload[1] = 0x11, \
+>>
+>> What does 0x1 mean? How about 0x11?
+> 
+> The bit of 'RELOAD' field in TRIMINFO_CONTROL register is [0].
+> and The bit of 'AC Time' field in TRIMINFO_CONTROL register is [5:4].
+> 
+> 0x1 means that set RELOAD field.
+> 0x11 means that set RELOAD field and ACTIME field.
 
-Also remove this item from the README TODO list.
+Might be a good idea to use #defines for 0x1 and 0x10 then?
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
+Regards,
+Andreas
 
-Updated after Stephen Hemminger commented that using a negative variable
-isn't such a good idea (bool not_done -> bool done).
-
- drivers/staging/et131x/README   |   1 -
- drivers/staging/et131x/et131x.c | 112 ++++++++++++++++++----------------------
- 2 files changed, 50 insertions(+), 63 deletions(-)
-
-diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
-index 3befc45..05555a3 100644
---- a/drivers/staging/et131x/README
-+++ b/drivers/staging/et131x/README
-@@ -10,7 +10,6 @@ driver as they did not build properly at the time.
- TODO:
- 	- Look at reducing the number of spinlocks
- 	- Simplify code in nic_rx_pkts(), when determining multicast_pkts_rcvd
--	- Implement NAPI support
- 	- In et131x_tx(), don't return NETDEV_TX_BUSY, just drop the packet with kfree_skb().
- 	- Reduce the number of split lines by careful consideration of variable names etc.
- 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index bf9ac15..18c355d 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -470,7 +470,7 @@ struct et131x_adapter {
- 	struct pci_dev *pdev;
- 	struct mii_bus *mii_bus;
- 	struct phy_device *phydev;
--	struct work_struct task;
-+	struct napi_struct napi;
- 
- 	/* Flags that indicate current state of the adapter */
- 	u32 flags;
-@@ -2538,26 +2538,30 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
- 
- 	skb->protocol = eth_type_trans(skb, adapter->netdev);
- 	skb->ip_summed = CHECKSUM_NONE;
--	netif_rx_ni(skb);
-+	netif_receive_skb(skb);
- 
- out:
- 	nic_return_rfd(adapter, rfd);
- 	return rfd;
- }
- 
--/* et131x_handle_recv_interrupt - Interrupt handler for receive processing
-+/* et131x_handle_recv_pkts - Interrupt handler for receive processing
-  *
-  * Assumption, Rcv spinlock has been acquired.
-  */
--static void et131x_handle_recv_interrupt(struct et131x_adapter *adapter)
-+static int et131x_handle_recv_pkts(struct et131x_adapter *adapter, int budget)
- {
- 	struct rfd *rfd = NULL;
--	u32 count = 0;
-+	int count = 0;
-+	int limit = budget;
- 	bool done = true;
- 	struct rx_ring *rx_ring = &adapter->rx_ring;
- 
-+	if (budget > MAX_PACKETS_HANDLED)
-+		limit = MAX_PACKETS_HANDLED;
-+
- 	/* Process up to available RFD's */
--	while (count < MAX_PACKETS_HANDLED) {
-+	while (count < limit) {
- 		if (list_empty(&rx_ring->recv_list)) {
- 			WARN_ON(rx_ring->num_ready_recv != 0);
- 			done = false;
-@@ -2589,13 +2593,15 @@ static void et131x_handle_recv_interrupt(struct et131x_adapter *adapter)
- 		count++;
- 	}
- 
--	if (count == MAX_PACKETS_HANDLED || !done) {
-+	if (count == limit || !done) {
- 		rx_ring->unfinished_receives = true;
- 		writel(PARM_TX_TIME_INT_DEF * NANO_IN_A_MICRO,
- 		       &adapter->regs->global.watchdog_timer);
- 	} else
- 		/* Watchdog timer will disable itself if appropriate. */
- 		rx_ring->unfinished_receives = false;
-+
-+	return count;
- }
- 
- /* et131x_tx_dma_memory_alloc
-@@ -3081,14 +3087,14 @@ static void et131x_free_busy_send_packets(struct et131x_adapter *adapter)
- 	tx_ring->used = 0;
- }
- 
--/* et131x_handle_send_interrupt - Interrupt handler for sending processing
-+/* et131x_handle_send_pkts - Interrupt handler for sending processing
-  *
-  * Re-claim the send resources, complete sends and get more to send from
-  * the send wait queue.
-  *
-  * Assumption - Send spinlock has been acquired
-  */
--static void et131x_handle_send_interrupt(struct et131x_adapter *adapter)
-+static void et131x_handle_send_pkts(struct et131x_adapter *adapter)
- {
- 	unsigned long flags;
- 	u32 serviced;
-@@ -3708,9 +3714,9 @@ static void et131x_pci_remove(struct pci_dev *pdev)
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
- 
- 	unregister_netdev(netdev);
-+	netif_napi_del(&adapter->napi);
- 	phy_disconnect(adapter->phydev);
- 	mdiobus_unregister(adapter->mii_bus);
--	cancel_work_sync(&adapter->task);
- 	kfree(adapter->mii_bus->irq);
- 	mdiobus_free(adapter->mii_bus);
- 
-@@ -3790,6 +3796,7 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
- 	bool handled = true;
- 	struct net_device *netdev = (struct net_device *)dev_id;
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
-+	struct address_map __iomem *iomem = adapter->regs;
- 	struct rx_ring *rx_ring = &adapter->rx_ring;
- 	struct tx_ring *tx_ring = &adapter->tx_ring;
- 	u32 status;
-@@ -3826,7 +3833,6 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
- 	}
- 
- 	/* This is our interrupt, so process accordingly */
--
- 	if (status & ET_INTR_WATCHDOG) {
- 		struct tcb *tcb = tx_ring->send_head;
- 
-@@ -3842,54 +3848,8 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
- 		status &= ~ET_INTR_WATCHDOG;
- 	}
- 
--	if (!status) {
--		/* This interrupt has in some way been "handled" by
--		 * the ISR. Either it was a spurious Rx interrupt, or
--		 * it was a Tx interrupt that has been filtered by
--		 * the ISR.
--		 */
--		et131x_enable_interrupts(adapter);
--		goto out;
--	}
--
--	/* We need to save the interrupt status value for use in our
--	 * DPC. We will clear the software copy of that in that
--	 * routine.
--	 */
--	adapter->stats.interrupt_status = status;
--
--	/* Schedule the ISR handler as a bottom-half task in the
--	 * kernel's tq_immediate queue, and mark the queue for
--	 * execution
--	 */
--	schedule_work(&adapter->task);
--out:
--	return IRQ_RETVAL(handled);
--}
--
--/* et131x_isr_handler - The ISR handler
-- *
-- * scheduled to run in a deferred context by the ISR. This is where the ISR's
-- * work actually gets done.
-- */
--static void et131x_isr_handler(struct work_struct *work)
--{
--	struct et131x_adapter *adapter =
--		container_of(work, struct et131x_adapter, task);
--	u32 status = adapter->stats.interrupt_status;
--	struct address_map __iomem *iomem = adapter->regs;
--
--	/* These first two are by far the most common.  Once handled, we clear
--	 * their two bits in the status word.  If the word is now zero, we
--	 * exit.
--	 */
--	/* Handle all the completed Transmit interrupts */
--	if (status & ET_INTR_TXDMA_ISR)
--		et131x_handle_send_interrupt(adapter);
--
--	/* Handle all the completed Receives interrupts */
--	if (status & ET_INTR_RXDMA_XFR_DONE)
--		et131x_handle_recv_interrupt(adapter);
-+	if (status & (ET_INTR_RXDMA_XFR_DONE | ET_INTR_TXDMA_ISR))
-+		napi_schedule(&adapter->napi);
- 
- 	status &= ~(ET_INTR_TXDMA_ISR | ET_INTR_RXDMA_XFR_DONE);
- 
-@@ -4041,8 +4001,34 @@ static void et131x_isr_handler(struct work_struct *work)
- 		 * addressed module is in a power-down state and can't respond.
- 		 */
- 	}
-+
-+	if (!status) {
-+		/* This interrupt has in some way been "handled" by
-+		 * the ISR. Either it was a spurious Rx interrupt, or
-+		 * it was a Tx interrupt that has been filtered by
-+		 * the ISR.
-+		 */
-+		et131x_enable_interrupts(adapter);
-+	}
-+
- out:
--	et131x_enable_interrupts(adapter);
-+	return IRQ_RETVAL(handled);
-+}
-+
-+static int et131x_poll(struct napi_struct *napi, int budget)
-+{
-+	struct et131x_adapter *adapter =
-+		container_of(napi, struct et131x_adapter, napi);
-+	int work_done = et131x_handle_recv_pkts(adapter, budget);
-+
-+	et131x_handle_send_pkts(adapter);
-+
-+	if (work_done < budget) {
-+		napi_complete(&adapter->napi);
-+		et131x_enable_interrupts(adapter);
-+	}
-+
-+	return work_done;
- }
- 
- /* et131x_stats - Return the current device statistics  */
-@@ -4111,6 +4097,8 @@ static int et131x_open(struct net_device *netdev)
- 
- 	adapter->flags |= FMP_ADAPTER_INTERRUPT_IN_USE;
- 
-+	napi_enable(&adapter->napi);
-+
- 	et131x_up(netdev);
- 
- 	return result;
-@@ -4122,6 +4110,7 @@ static int et131x_close(struct net_device *netdev)
- 	struct et131x_adapter *adapter = netdev_priv(netdev);
- 
- 	et131x_down(netdev);
-+	napi_disable(&adapter->napi);
- 
- 	adapter->flags &= ~FMP_ADAPTER_INTERRUPT_IN_USE;
- 	free_irq(adapter->pdev->irq, netdev);
-@@ -4502,8 +4491,7 @@ static int et131x_pci_setup(struct pci_dev *pdev,
- 	/* Init send data structures */
- 	et131x_init_send(adapter);
- 
--	/* Set up the task structure for the ISR's deferred handler */
--	INIT_WORK(&adapter->task, et131x_isr_handler);
-+	netif_napi_add(netdev, &adapter->napi, et131x_poll, 64);
- 
- 	/* Copy address into the net_device struct */
- 	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
 -- 
-2.1.0
-
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
