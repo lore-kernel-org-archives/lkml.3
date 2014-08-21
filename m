@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619AbaHUFUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 01:20:30 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:35472 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746AbaHUFU2 (ORCPT
+	id S1751477AbaHUF2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 01:28:22 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:12131 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaHUF2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 01:20:28 -0400
-X-AuditID: cbfee68d-b7f2f6d0000062f0-ef-53f581936492
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Bartlomiej Zolnierkiewicz'" <b.zolnierkie@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>, "'Felipe Balbi'" <balbi@ti.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Kamil Debski'" <k.debski@samsung.com>,
-        "'Mark Brown'" <broonie@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Linux USB Mailing List'" <linux-usb@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1408026327-31437-1-git-send-email-b.zolnierkie@samsung.com>
- <CAFp+6iG+BoE5O=EBxNOGPGU3Wws26xtQzzVx1HBhQ3R0SafiMw@mail.gmail.com>
-In-reply-to: <CAFp+6iG+BoE5O=EBxNOGPGU3Wws26xtQzzVx1HBhQ3R0SafiMw@mail.gmail.com>
-Subject: Re: [PATCH 0/5] usb: phy: samsung: remove old USB PHY code
-Date: Thu, 21 Aug 2014 14:20:19 +0900
-Message-id: <008a01cfbcff$994c98d0$cbe5ca70$%han@samsung.com>
+	Thu, 21 Aug 2014 01:28:20 -0400
+X-AuditID: cbfee690-b7f526d000003627-f5-53f5836ccc98
+Date: Thu, 21 Aug 2014 05:27:50 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: Re: [PATCH 2/2] extcon: sm5502: EXTCON_SM5502 should depend on I2C
+To: =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
 MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+8+Ro7TJupWllkTm+0KKxTf2kIxwABlibQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t8zfd3JjV+DDdbukrDYOGM9q8XB+/UW
-	m65fZ7Vou3KQ3eLywkusFj9eX2Cz6F1wlc3iwtMeNouzTW+AErvmsFnMOL+PyWLRslZmBx6P
-	O9f2sHn0bVnF6HH8xnYmj8+b5AJYorhsUlJzMstSi/TtErgylh1czFRwnL3iaPsB9gbGd6xd
-	jJwcEgImEpe//mGEsMUkLtxbzwZiCwksY5TofykKUzPnWh9QPRdQfDqjxP3HK9ghnN+MEuu2
-	9LKDVLEJqEl8+XIYzBYRSJdoXtvCBFLELNDPLNE/6wkjREc/o8SU24uZQao4BYIlbt8/wgRi
-	Cws4S/TsegHWzSKgKrH9xhowm1fAVuL976usELagxI/J91hAbGYBdYlJ8xYxQ9jyEpvXvAWy
-	OYBuVZd49FcX4ggjiWdvu9ghSkQk9r14B3aDhEArh8Slzf/YIHYJSHybfIgFoldWYtMBZoiX
-	JSUOrrjBMoFRYhaSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAiJ
-	894djLcPWB9iTAZaP5FZSjQ5H5gm8kriDY3NjCxMTUyNjcwtzUgTVhLnTXqYFCQkkJ5Ykpqd
-	mlqQWhRfVJqTWnyIkYmDU6oB6ChFx9V8y4/9PsizQvLcl3fyBg+/ix1J98uY/61B0/R8klue
-	3Pe4/1ybdk3U7+L+4fK4Z+ZFo8zo6K2iVUfLxOOWVDDmX8kvvlj+ZPMCvimeQjf5Pp5azPBC
-	cG7B29YS7n0nhPeJVcw5XLbo2ddA3XVH5seJx3w+kyoftzRomyfL9D+rNzd1K7EUZyQaajEX
-	FScCANo4J0UJAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jQd3JjV+DDd41iFhsnLGe1eLg/XqL
-	Tdevs1q0XTnIbnF54SVWix+vL7BZ9C64ymZx4WkPm8XZpjdAiV1z2CxmnN/HZLFoWSuzA4/H
-	nWt72Dz6tqxi9Dh+YzuTx+dNcgEsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaW
-	FuZKCnmJuam2Si4+AbpumTlApykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkAD
-	CesYM5YdXMxUcJy94mj7AfYGxnesXYycHBICJhJzrvVB2WISF+6tZ+ti5OIQEpjOKHH/8Qp2
-	COc3o8S6Lb3sIFVsAmoSX74cBrNFBNIlmte2MIEUMQv0M0v0z3rCCNHRzygx5fZiZpAqToFg
-	idv3jzCB2MICzhI9u16AdbMIqEpsv7EGzOYVsJV4//sqK4QtKPFj8j0WEJtZQF1i0rxFzBC2
-	vMTmNW+BbA6gW9UlHv3VhTjCSOLZ2y52iBIRiX0v3jFOYBSahWTSLCSTZiGZNAtJywJGllWM
-	oqkFyQXFSem5RnrFibnFpXnpesn5uZsYwWnkmfQOxlUNFocYBTgYlXh4JdS+BguxJpYVV+Ye
-	YpTgYFYS4XX99SVYiDclsbIqtSg/vqg0J7X4EKMp0KMTmaVEk/OBKS6vJN7Q2MTMyNLIzMLI
-	xNxcSZz3YKt1oJBAemJJanZqakFqEUwfEwenVAMjo12hwf5r01WdjCcx/XLaEb/+13Hhh10p
-	0wUOsf3SdP3w/Lr0vS8XFPVdC5s3FMme2PBgW0r4Y7Vz7jlbZ4StujfbIu9x0lHlyGi3GIYi
-	efPKuE0Runt4Vd494nEV2PyHN/pjbY5Hz5/J+/cyVJybMWV/sVdLxIJ7p98s/Jpwfi/fovyC
-	KUe2KbEUZyQaajEXFScCAG8m7q05AwAA
+X-MTR: 20140821052404959@myungjoo.ham
+Msgkey: 20140821052404959@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140821052404959@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <2048653519.580921408598869113.JavaMail.weblogic@epmlwas01c>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplleLIzCtJLcpLzFFi42JZI2JSqFvY/DXYYOcLcYvLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJWx6P5N1oIuqYqGlc2MDYwbJLsYOTmEBNQlFi05yQZiSwiYSDx9
+	c5EVwhaTuHBvPVCcC6hmKaPE7rX9zF2MHGBF34/lQsTnMEosvXqfEaSBRUBV4uPJiWA1bAJ6
+	EjM/J4OYwgL+EjP+SYNUiAjkSLxceJgZpJVZYCKTxJ3ze9khblCSWLPvFQuIzSsgKHFy5hMW
+	iBtUJQ7d2MAKEVeTuNr1Eeo2CYlZ0y9A2bwSM9qfQtXLSUz7uoYZwpaWOD9rAyPML4u/P4aK
+	80scu72DCeIVXokn94Nhxuze/AUaDAISU88chGrVkvg74xrUKj6JNQvfssCM2XVqOTNM7/0t
+	c5lAbGYBRYkp3Q/ZIWwtiS8/9rGhe4tXwEPi9+7djBMYlWchSc1C0j4LSTuymgWMLKsYRVML
+	kguKk9KLTPSKE3OLS/PS9ZLzczcxApPC6X/PJuxgvHfA+hBjMjBGJjJLiSbnA5NKXkm8obGZ
+	kYWpiamxkbmlGWnCSuK8ao+SgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwNkx4223HF3b+
+	V0norJ1rdh34sfPN5h0afJV3LescRT9aXOxs8LaJK39wmr/fouAc67/FatZeTh+31ib/EnHQ
+	VZ0YnKc4afk2m5od2x83LWD99ChMXP1jYMHqFJ6iHyZVv5wPGv09+aX1/vW3n6xWyEuIvjBv
+	SL+WK1Cle3PP8inzzX5vmnVKS4mlOCPRUIu5qDgRAO1nOCAgAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/tft2w5q/BBm8ua1tc3jWHzYHR4/Mm
+	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIxF
+	92+yFnRJVTSsbGZsYNwg2cXIySEkoC6xaMlJti5GDg4JAROJ78dyQcISAmISF+6tBwpzAZXM
+	YZRYevU+I0iCRUBV4uPJicwg9WwCehIzPyeDmMIC/hIz/kmDVIgI5Ei8XHiYGaSVWWAik8Sd
+	83vZIVYpSazZ94oFxOYVEJQ4OfMJC8QuVYlDNzawQsTVJK52fWSFiEtIzJp+AcrmlZjR/hSq
+	Xk5i2tc1zBC2tMT5WRsYYW5e/P0xVJxf4tjtHUwQb/FKPLkfDDNm9+YvbBC2gMTUMwehWrUk
+	/s64BrWKT2LNwrcsMGN2nVrODNN7f8tcJhCbWUBRYkr3Q3YIW0viy499bOje4hXwkPi9ezfj
+	BEa5WUhSs5C0z0LSjqxmASPLKkbR1ILkguKk9ApjveLE3OLSvHS95PzcTYzg1PRs8Q7G/+et
+	DzEKcDAq8fDeWPQlWIg1say4MvcQowQHs5IIr+svoBBvSmJlVWpRfnxRaU5q8SHGZGD8TWSW
+	Ek3OB6bNvJJ4Q2NjEzMTU0sTCwNTc9KElcR5428lBQkJpCeWpGanphakFsFsYeLglGpgLBLs
+	qVFufWD+T5jPMnd7zzKG9E8rpZKErRl1NtzYdd77wZyZ3+W//ecpW7ewWSJl7iftTe0cBUnv
+	ihxrDDnuvdon8S/r1jk7U/nzi7i6Vkx7vjtLN8qnZsVtTjmbX6ce8SozHoxefbWjzKxJlCWa
+	J+Gr+MoMMZXDlTMS705d4phyd8Z2ri8HlFiKMxINtZiLihMBFQwUkJEDAAA=
 DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7L5Sgrb003558
 
-On Thursday, August 21, 2014 1:34 PM, Vivek Gautam wrote:
-> On Thu, Aug 14, 2014 at 7:55 PM, Bartlomiej Zolnierkiewicz
-> <b.zolnierkie@samsung.com> wrote:
-> > Hi,
-> >
-> > This patch series removes the old Samsung USB PHY drivers that
-> > got replaced by the new ones using the generic PHY layer.
-> >
-> > Depends on:
-> > - next-20140813 branch of linux-next kernel
-> >
-> > Best regards,
-> > --
-> > Bartlomiej Zolnierkiewicz
-> > Samsung R&D Institute Poland
-> > Samsung Electronics
-> >
-> >
-> > Bartlomiej Zolnierkiewicz (5):
-> >   ARM: dts: remove old USB2 PHY node hook for Arndale
-> >   ARM: dts: remove old USB2 PHY node for Exynos5250
-> >   usb: phy: samsung: remove old USB 2.0 PHY driver
-> >   usb: phy: samsung: remove old USB 3.0 PHY driver
-> >   usb: phy: samsung: remove old common USB PHY code
+> Hi Geert
 > 
-> Reviewed-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Thanks for your report. I already sent a patch[1] to fix this build break
+> and I'll send pull request to includec this patch in 3.17-rc2.
+> 
+> [1] https://lkml.org/lkml/2014/8/13/761
+> 
+> Best Regards,
+> Chanwoo Choi
 
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+I do not object to this patch or your patch[1].
 
-Best regards,
-Jingoo Han
+However, wouldn't it be better to add depends on I2C at REGMAP_I2C?
+When you use REGMAP_I2C, you assume that I2C is already there, don't you?
 
+
+Cheers,
+MyungJoo
+
+> 
+> 
+> On 08/17/2014 07:08 PM, Geert Uytterhoeven wrote:
+> > EXTCON_SM5502 selects REGMAP_I2C, but if I2C=n:
+> > 
+> > drivers/base/regmap/regmap-i2c.c: In function °Æregmap_smbus_byte_reg_read°Ø:
+> > drivers/base/regmap/regmap-i2c.c:28: error: implicit declaration of function °Æi2c_smbus_read_byte_data°Ø
+> > drivers/base/regmap/regmap-i2c.c: In function °Æregmap_smbus_byte_reg_write°Ø:
+> > drivers/base/regmap/regmap-i2c.c:46: error: implicit declaration of function °Æi2c_smbus_write_byte_data°Ø
+> > drivers/base/regmap/regmap-i2c.c: In function °Æregmap_smbus_word_reg_read°Ø:
+> > drivers/base/regmap/regmap-i2c.c:64: error: implicit declaration of function °Æi2c_smbus_read_word_data°Ø
+> > drivers/base/regmap/regmap-i2c.c: In function °Æregmap_smbus_word_reg_write°Ø:
+> > drivers/base/regmap/regmap-i2c.c:82: error: implicit declaration of function °Æi2c_smbus_write_word_data°Ø
+> > drivers/base/regmap/regmap-i2c.c: In function °Æregmap_i2c_write°Ø:
+> > drivers/base/regmap/regmap-i2c.c:96: error: implicit declaration of function °Æi2c_master_send°Ø
+> > drivers/base/regmap/regmap-i2c.c: In function °Æregmap_i2c_gather_write°Ø:
+> > drivers/base/regmap/regmap-i2c.c:117: error: implicit declaration of function °Æi2c_check_functionality°Ø
+> > drivers/base/regmap/regmap-i2c.c:130: error: implicit declaration of function °Æi2c_transfer°Ø
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> > ---
+> >  drivers/extcon/Kconfig | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+> > index 6f2f4727de2c..764f3a113e0a 100644
+> > --- a/drivers/extcon/Kconfig
+> > +++ b/drivers/extcon/Kconfig
+> > @@ -72,6 +72,7 @@ config EXTCON_PALMAS
+> >  
+> >  config EXTCON_SM5502
+> >  	tristate "SM5502 EXTCON support"
+> > +	depends on I2C
+> >  	select IRQ_DOMAIN
+> >  	select REGMAP_I2C
+> >  	select REGMAP_IRQ
+> > 
+> 
+> 
+> 
+> 
+>        
+>   
+>          
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
