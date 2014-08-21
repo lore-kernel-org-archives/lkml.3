@@ -1,94 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaHUWMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 18:12:19 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:52423 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754825AbaHUWMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 18:12:16 -0400
-X-Sasl-enc: f1NuVJ+CxuZSdpCyGmFz2A1c97ZJ1kUnr9SNIZ4c+SSg 1408659135
-Message-ID: <1408659134.14700.1.camel@localhost>
-Subject: Re: [PATCH v2] net: ipv6: fib: don't sleep inside atomic lock
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Benjamin Block <bebl@mageta.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 22 Aug 2014 00:12:14 +0200
-In-Reply-To: <1408642668-5808-1-git-send-email-bebl@mageta.org>
-References: <20140821143103.GA25021@kalium.Speedport_W723_V_Typ_A_1_01_001>
-	 <1408642668-5808-1-git-send-email-bebl@mageta.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755481AbaHUWMu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 18:12:50 -0400
+Received: from mail-bl2lp0211.outbound.protection.outlook.com ([207.46.163.211]:1477
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755438AbaHUWMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 18:12:48 -0400
+X-WSS-ID: 0NAOGCT-08-GMM-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
+        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        "Aravind Gopalakrishnan" <Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH] edac, amd64_edac: Modify usage of amd64_read_dct_pci_cfg()
+Date: Thu, 21 Aug 2014 17:19:46 -0500
+Message-ID: <1408659586-4736-1-git-send-email-aravind.gopalakrishnan@amd.com>
+X-Mailer: git-send-email 2.0.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(428002)(189002)(199003)(33646002)(81342001)(77982001)(79102001)(47776003)(106466001)(36756003)(95666004)(77156001)(101416001)(76482001)(68736004)(4396001)(46102001)(105586002)(31966008)(20776003)(64706001)(87936001)(74502001)(104166001)(50466002)(92566001)(92726001)(74662001)(81542001)(77096002)(85306004)(88136002)(93916002)(102836001)(85852003)(80022001)(575784001)(50986999)(48376002)(50226001)(84676001)(97736001)(44976005)(107046002)(19580405001)(19580395003)(86362001)(83072002)(99396002)(62966002)(53416004)(229853001)(2201001)(89996001)(83322001)(90102001)(21056001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR02MB044;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0310C78181
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Do, 2014-08-21 at 19:37 +0200, Benjamin Block wrote:
-> The function fib6_commit_metrics() allocates a piece of memory in mode
-> GFP_KERNEL while holding an atomic lock from higher up in the stack, in
-> the function __ip6_ins_rt(). This produces the following BUG:
-> 
-> > BUG: sleeping function called from invalid context at mm/slub.c:1250
-> > in_atomic(): 1, irqs_disabled(): 0, pid: 2909, name: dhcpcd
-> > 2 locks held by dhcpcd/2909:
-> >  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81978e67>] rtnl_lock+0x17/0x20
-> >  #1:  (&tb->tb6_lock){++--+.}, at: [<ffffffff81a6951a>] ip6_route_add+0x65a/0x800
-> > CPU: 1 PID: 2909 Comm: dhcpcd Not tainted 3.17.0-rc1 #1
-> > Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
-> >  0000000000000008 ffff8800c8f13858 ffffffff81af135a 0000000000000000
-> >  ffff880212202430 ffff8800c8f13878 ffffffff810f8d3a ffff880212202c98
-> >  0000000000000010 ffff8800c8f138c8 ffffffff8121ad0e 0000000000000001
-> > Call Trace:
-> >  [<ffffffff81af135a>] dump_stack+0x4e/0x68
-> >  [<ffffffff810f8d3a>] __might_sleep+0x10a/0x120
-> >  [<ffffffff8121ad0e>] kmem_cache_alloc_trace+0x4e/0x190
-> >  [<ffffffff81a6bcd6>] ? fib6_commit_metrics+0x66/0x110
-> >  [<ffffffff81a6bcd6>] fib6_commit_metrics+0x66/0x110
-> >  [<ffffffff81a6cbf3>] fib6_add+0x883/0xa80
-> >  [<ffffffff81a6951a>] ? ip6_route_add+0x65a/0x800
-> >  [<ffffffff81a69535>] ip6_route_add+0x675/0x800
-> >  [<ffffffff81a68f2a>] ? ip6_route_add+0x6a/0x800
-> >  [<ffffffff81a6990c>] inet6_rtm_newroute+0x5c/0x80
-> >  [<ffffffff8197cf01>] rtnetlink_rcv_msg+0x211/0x260
-> >  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
-> >  [<ffffffff81119708>] ? lock_release_holdtime+0x28/0x180
-> >  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
-> >  [<ffffffff8197ccf0>] ? __rtnl_unlock+0x20/0x20
-> >  [<ffffffff819a989e>] netlink_rcv_skb+0x6e/0xd0
-> >  [<ffffffff81978ee5>] rtnetlink_rcv+0x25/0x40
-> >  [<ffffffff819a8e59>] netlink_unicast+0xd9/0x180
-> >  [<ffffffff819a9600>] netlink_sendmsg+0x700/0x770
-> >  [<ffffffff81103735>] ? local_clock+0x25/0x30
-> >  [<ffffffff8194e83c>] sock_sendmsg+0x6c/0x90
-> >  [<ffffffff811f98e3>] ? might_fault+0xa3/0xb0
-> >  [<ffffffff8195ca6d>] ? verify_iovec+0x7d/0xf0
-> >  [<ffffffff8194ec3e>] ___sys_sendmsg+0x37e/0x3b0
-> >  [<ffffffff8111ef15>] ? trace_hardirqs_on_caller+0x185/0x220
-> >  [<ffffffff81af979e>] ? mutex_unlock+0xe/0x10
-> >  [<ffffffff819a55ec>] ? netlink_insert+0xbc/0xe0
-> >  [<ffffffff819a65e5>] ? netlink_autobind.isra.30+0x125/0x150
-> >  [<ffffffff819a6520>] ? netlink_autobind.isra.30+0x60/0x150
-> >  [<ffffffff819a84f9>] ? netlink_bind+0x159/0x230
-> >  [<ffffffff811f989a>] ? might_fault+0x5a/0xb0
-> >  [<ffffffff8194f25e>] ? SYSC_bind+0x7e/0xd0
-> >  [<ffffffff8194f8cd>] __sys_sendmsg+0x4d/0x80
-> >  [<ffffffff8194f912>] SyS_sendmsg+0x12/0x20
-> >  [<ffffffff81afc692>] system_call_fastpath+0x16/0x1b
-> 
-> Fixing this by replacing the mode GFP_KERNEL with GFP_ATOMIC.
-> 
-> Signed-off-by: Benjamin Block <bebl@mageta.org>
+Rationale behind this change:
+ - F2x1xx addresses were stopped from being mapped explicitly to DCT1
+   from F15h (OR) onwards. They use _dct[0:1] mechanism to access the
+   registers. So we should move away from using address ranges to select
+   DCT for these families.
+ - On newer processors, the address ranges used to indicate DCT1 (0x140,
+   0x1a0) have different meanings than what is assumed currently.
 
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Changes introduced:
+ - amd64_read_dct_pci_cfg() now takes in dct value and uses it for
+   'selecting the dct'
+ - Update usage of the function
+ - Remove [k8|f10]_read_dct_pci_cfg() as they don't do much different
+   from amd64_read_pci_cfg().
+   - Move the k8 specific check to amd64_read_pci_cfg
+ - Remove now needless .read_dct_pci_cfg
 
-Thanks,
-Hannes
+Testing:
+ - Tested on Fam 10h; Fam15h Models: 00h, 30h; Fam16h using 'EDAC_DEBUG'
+   and mce_amd_inj
+ - driver obtains info from F2x registers and caches it in pvt
+   structures correctly
+ - ECC decoding works fine
 
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+---
+ drivers/edac/amd64_edac.c | 156 ++++++++++++++++++++++++----------------------
+ drivers/edac/amd64_edac.h |  16 +++--
+ 2 files changed, 95 insertions(+), 77 deletions(-)
+
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index f8bf000..6d2b649 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -60,11 +60,28 @@ static const struct scrubrate {
+ 	{ 0x00, 0UL},        /* scrubbing off */
+ };
+ 
++/*
++ * Depending on the family, F2 DCT reads need special handling:
++ *
++ * K8: has a single DCT only and no address offsets >= 0x100
++ *
++ * F10h: each DCT has its own set of regs
++ *	DCT0 -> F2x040..
++ *	DCT1 -> F2x140..
++ *
++ * F16h: has only 1 DCT
++ *
++ * For all above families, we should use the 'raw' version
++ * i.e, amd64_read_pci_cfg() function
++ */
+ int __amd64_read_pci_cfg_dword(struct pci_dev *pdev, int offset,
+ 			       u32 *val, const char *func)
+ {
+ 	int err = 0;
+ 
++	if (boot_cpu_data.x86 == 0xf && offset >= 0x100)
++		return -EINVAL;
++
+ 	err = pci_read_config_dword(pdev, offset, val);
+ 	if (err)
+ 		amd64_warn("%s: error reading F%dx%03x.\n",
+@@ -87,35 +104,6 @@ int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
+ }
+ 
+ /*
+- *
+- * Depending on the family, F2 DCT reads need special handling:
+- *
+- * K8: has a single DCT only
+- *
+- * F10h: each DCT has its own set of regs
+- *	DCT0 -> F2x040..
+- *	DCT1 -> F2x140..
+- *
+- * F15h: we select which DCT we access using F1x10C[DctCfgSel]
+- *
+- * F16h: has only 1 DCT
+- */
+-static int k8_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
+-			       const char *func)
+-{
+-	if (addr >= 0x100)
+-		return -EINVAL;
+-
+-	return __amd64_read_pci_cfg_dword(pvt->F2, addr, val, func);
+-}
+-
+-static int f10_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
+-				 const char *func)
+-{
+-	return __amd64_read_pci_cfg_dword(pvt->F2, addr, val, func);
+-}
+-
+-/*
+  * Select DCT to which PCI cfg accesses are routed
+  */
+ static void f15h_select_dct(struct amd64_pvt *pvt, u8 dct)
+@@ -128,19 +116,14 @@ static void f15h_select_dct(struct amd64_pvt *pvt, u8 dct)
+ 	amd64_write_pci_cfg(pvt->F1, DCT_CFG_SEL, reg);
+ }
+ 
+-static int f15_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
+-				 const char *func)
++/*
++ * F15h: F2x1xx addresses do not map explicitly to DCT1.
++ * We should select which DCT we access using F1x10C[DctCfgSel]
++ */
++int f15_read_dct_pci_cfg(struct amd64_pvt *pvt, u8 dct, int addr, u32 *val,
++			 const char *func)
+ {
+-	u8 dct  = 0;
+-
+-	/* For F15 M30h, the second dct is DCT 3, refer to BKDG Section 2.10 */
+-	if (addr >= 0x140 && addr <= 0x1a0) {
+-		dct   = (pvt->model >= 0x30) ? 3 : 1;
+-		addr -= 0x100;
+-	}
+-
+ 	f15h_select_dct(pvt, dct);
+-
+ 	return __amd64_read_pci_cfg_dword(pvt->F2, addr, val, func);
+ }
+ 
+@@ -767,17 +750,25 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
+ 		int reg1   = DCSB1 + (cs * 4);
+ 		u32 *base0 = &pvt->csels[0].csbases[cs];
+ 		u32 *base1 = &pvt->csels[1].csbases[cs];
++		u8 dct = 0;
+ 
+-		if (!amd64_read_dct_pci_cfg(pvt, reg0, base0))
++		if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, base0))
+ 			edac_dbg(0, "  DCSB0[%d]=0x%08x reg: F2x%x\n",
+ 				 cs, *base0, reg0);
+ 
+-		if (pvt->fam == 0xf || dct_ganging_enabled(pvt))
++		if (pvt->fam == 0xf) {
+ 			continue;
+-
+-		if (!amd64_read_dct_pci_cfg(pvt, reg1, base1))
+-			edac_dbg(0, "  DCSB1[%d]=0x%08x reg: F2x%x\n",
+-				 cs, *base1, reg1);
++		} else if (pvt->fam == 0x10 && !dct_ganging_enabled(pvt)) {
++			if (!amd64_read_pci_cfg(pvt->F2, reg1, base1))
++				edac_dbg(0, "  DCSB1[%d]=0x%08x reg: F2x%x\n",
++					 cs, *base1, reg1);
++		} else {
++			dct = ((pvt->fam == 0x15)
++				&& (pvt->model == 0x30)) ? 3 : 1;
++			if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, base1))
++				edac_dbg(0, "  DCSB1[%d]=0x%08x reg: F2x%x\n",
++					 cs, *base1, reg0);
++		}
+ 	}
+ 
+ 	for_each_chip_select_mask(cs, 0, pvt) {
+@@ -785,17 +776,25 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
+ 		int reg1   = DCSM1 + (cs * 4);
+ 		u32 *mask0 = &pvt->csels[0].csmasks[cs];
+ 		u32 *mask1 = &pvt->csels[1].csmasks[cs];
++		u8 dct = 0;
+ 
+-		if (!amd64_read_dct_pci_cfg(pvt, reg0, mask0))
++		if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, mask0))
+ 			edac_dbg(0, "    DCSM0[%d]=0x%08x reg: F2x%x\n",
+ 				 cs, *mask0, reg0);
+ 
+-		if (pvt->fam == 0xf || dct_ganging_enabled(pvt))
++		if (pvt->fam == 0xf) {
+ 			continue;
+-
+-		if (!amd64_read_dct_pci_cfg(pvt, reg1, mask1))
+-			edac_dbg(0, "    DCSM1[%d]=0x%08x reg: F2x%x\n",
+-				 cs, *mask1, reg1);
++		} else if (pvt->fam == 0x10 && !dct_ganging_enabled(pvt)) {
++			if (!amd64_read_pci_cfg(pvt->F2, reg1, mask1))
++				edac_dbg(0, "    DCSM1[%d]=0x%08x reg: F2x%x\n",
++					 cs, *mask1, reg1);
++		} else {
++			dct = ((pvt->fam == 0x15)
++				&& (pvt->model == 0x30)) ? 3 : 1;
++			if (!amd64_read_dct_pci_cfg(pvt, dct, reg0, mask1))
++				edac_dbg(0, "    DCSM1[%d]=0x%08x reg: F2x%x\n",
++					 cs, *mask1, reg0);
++		}
+ 	}
+ }
+ 
+@@ -1198,7 +1197,7 @@ static void read_dram_ctl_register(struct amd64_pvt *pvt)
+ 	if (pvt->fam == 0xf)
+ 		return;
+ 
+-	if (!amd64_read_dct_pci_cfg(pvt, DCT_SEL_LO, &pvt->dct_sel_lo)) {
++	if (!amd64_read_pci_cfg(pvt->F2, DCT_SEL_LO, &pvt->dct_sel_lo)) {
+ 		edac_dbg(0, "F2x110 (DCTSelLow): 0x%08x, High range addrs at: 0x%x\n",
+ 			 pvt->dct_sel_lo, dct_sel_baseaddr(pvt));
+ 
+@@ -1219,7 +1218,7 @@ static void read_dram_ctl_register(struct amd64_pvt *pvt)
+ 			 dct_sel_interleave_addr(pvt));
+ 	}
+ 
+-	amd64_read_dct_pci_cfg(pvt, DCT_SEL_HI, &pvt->dct_sel_hi);
++	amd64_read_pci_cfg(pvt->F2, DCT_SEL_HI, &pvt->dct_sel_hi);
+ }
+ 
+ /*
+@@ -1430,7 +1429,7 @@ static u64 f1x_swap_interleaved_region(struct amd64_pvt *pvt, u64 sys_addr)
+ 			return sys_addr;
+ 	}
+ 
+-	amd64_read_dct_pci_cfg(pvt, SWAP_INTLV_REG, &swap_reg);
++	amd64_read_pci_cfg(pvt->F2, SWAP_INTLV_REG, &swap_reg);
+ 
+ 	if (!(swap_reg & 0x1))
+ 		return sys_addr;
+@@ -1723,9 +1722,16 @@ static void debug_display_dimm_sizes(struct amd64_pvt *pvt, u8 ctrl)
+ 		       WARN_ON(ctrl != 0);
+ 	}
+ 
+-	dbam = (ctrl && !dct_ganging_enabled(pvt)) ? pvt->dbam1 : pvt->dbam0;
+-	dcsb = (ctrl && !dct_ganging_enabled(pvt)) ? pvt->csels[1].csbases
+-						   : pvt->csels[0].csbases;
++	if (pvt->fam == 0x10) {
++		dbam = (ctrl && !dct_ganging_enabled(pvt)) ? pvt->dbam1
++							   : pvt->dbam0;
++		dcsb = (ctrl && !dct_ganging_enabled(pvt)) ?
++				 pvt->csels[1].csbases :
++				 pvt->csels[0].csbases;
++	} else if (ctrl) {
++		dbam = pvt->dbam0;
++		dcsb = pvt->csels[1].csbases;
++	}
+ 
+ 	edac_dbg(1, "F2x%d80 (DRAM Bank Address Mapping): 0x%08x\n",
+ 		 ctrl, dbam);
+@@ -1760,7 +1766,6 @@ static struct amd64_family_type family_types[] = {
+ 			.early_channel_count	= k8_early_channel_count,
+ 			.map_sysaddr_to_csrow	= k8_map_sysaddr_to_csrow,
+ 			.dbam_to_cs		= k8_dbam_to_chip_select,
+-			.read_dct_pci_cfg	= k8_read_dct_pci_cfg,
+ 		}
+ 	},
+ 	[F10_CPUS] = {
+@@ -1771,7 +1776,6 @@ static struct amd64_family_type family_types[] = {
+ 			.early_channel_count	= f1x_early_channel_count,
+ 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
+ 			.dbam_to_cs		= f10_dbam_to_chip_select,
+-			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
+ 		}
+ 	},
+ 	[F15_CPUS] = {
+@@ -1782,7 +1786,6 @@ static struct amd64_family_type family_types[] = {
+ 			.early_channel_count	= f1x_early_channel_count,
+ 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
+ 			.dbam_to_cs		= f15_dbam_to_chip_select,
+-			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
+ 		}
+ 	},
+ 	[F15_M30H_CPUS] = {
+@@ -1793,7 +1796,6 @@ static struct amd64_family_type family_types[] = {
+ 			.early_channel_count	= f1x_early_channel_count,
+ 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
+ 			.dbam_to_cs		= f16_dbam_to_chip_select,
+-			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
+ 		}
+ 	},
+ 	[F16_CPUS] = {
+@@ -1804,7 +1806,6 @@ static struct amd64_family_type family_types[] = {
+ 			.early_channel_count	= f1x_early_channel_count,
+ 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
+ 			.dbam_to_cs		= f16_dbam_to_chip_select,
+-			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
+ 		}
+ 	},
+ 	[F16_M30H_CPUS] = {
+@@ -1815,7 +1816,6 @@ static struct amd64_family_type family_types[] = {
+ 			.early_channel_count	= f1x_early_channel_count,
+ 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
+ 			.dbam_to_cs		= f16_dbam_to_chip_select,
+-			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
+ 		}
+ 	},
+ };
+@@ -2102,6 +2102,7 @@ static void read_mc_regs(struct amd64_pvt *pvt)
+ 	unsigned range;
+ 	u64 msr_val;
+ 	u32 tmp;
++	u8 dct = 0;
+ 
+ 	/*
+ 	 * Retrieve TOP_MEM and TOP_MEM2; no masking off of reserved bits since
+@@ -2148,25 +2149,34 @@ static void read_mc_regs(struct amd64_pvt *pvt)
+ 	read_dct_base_mask(pvt);
+ 
+ 	amd64_read_pci_cfg(pvt->F1, DHAR, &pvt->dhar);
+-	amd64_read_dct_pci_cfg(pvt, DBAM0, &pvt->dbam0);
++	amd64_read_dct_pci_cfg(pvt, dct, DBAM0, &pvt->dbam0);
+ 
+ 	amd64_read_pci_cfg(pvt->F3, F10_ONLINE_SPARE, &pvt->online_spare);
+ 
+-	amd64_read_dct_pci_cfg(pvt, DCLR0, &pvt->dclr0);
+-	amd64_read_dct_pci_cfg(pvt, DCHR0, &pvt->dchr0);
++	amd64_read_dct_pci_cfg(pvt, dct, DCLR0, &pvt->dclr0);
++	amd64_read_dct_pci_cfg(pvt, dct, DCHR0, &pvt->dchr0);
+ 
+-	if (!dct_ganging_enabled(pvt)) {
+-		amd64_read_dct_pci_cfg(pvt, DCLR1, &pvt->dclr1);
+-		amd64_read_dct_pci_cfg(pvt, DCHR1, &pvt->dchr1);
++	if (pvt->fam == 0x10 && !dct_ganging_enabled(pvt)) {
++		amd64_read_pci_cfg(pvt->F2, DCLR1, &pvt->dclr1);
++		amd64_read_pci_cfg(pvt->F2, DCHR1, &pvt->dchr1);
++	} else {
++		dct = ((pvt->fam == 0x15)
++			&& (pvt->model == 0x30)) ? 3 : 1;
++		amd64_read_dct_pci_cfg(pvt, dct, DCLR0, &pvt->dclr1);
++		amd64_read_dct_pci_cfg(pvt, dct, DCHR0, &pvt->dchr1);
+ 	}
+ 
+ 	pvt->ecc_sym_sz = 4;
+ 
+ 	if (pvt->fam >= 0x10) {
+ 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
+-		if (pvt->fam != 0x16)
+-			/* F16h has only DCT0 */
+-			amd64_read_dct_pci_cfg(pvt, DBAM1, &pvt->dbam1);
++		if (pvt->fam == 0x10)
++			amd64_read_pci_cfg(pvt->F2, DBAM1, &pvt->dbam1);
++		/* F16h has only DCT0, so no need to read dbam1 */
++		else if (pvt->fam == 0x15) {
++			dct = (pvt->model == 0x30) ? 3 : 1;
++			amd64_read_dct_pci_cfg(pvt, dct, DBAM0, &pvt->dbam1);
++		}
+ 
+ 		/* F10h, revD and later can do x8 ECC too */
+ 		if ((pvt->fam > 0x10 || pvt->model > 7) && tmp & BIT(25))
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index d903e0c..8a9718b 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -481,8 +481,6 @@ struct low_ops {
+ 	void (*map_sysaddr_to_csrow)	(struct mem_ctl_info *mci, u64 sys_addr,
+ 					 struct err_info *);
+ 	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct, unsigned cs_mode);
+-	int (*read_dct_pci_cfg)		(struct amd64_pvt *pvt, int offset,
+-					 u32 *val, const char *func);
+ };
+ 
+ struct amd64_family_type {
+@@ -495,6 +493,8 @@ int __amd64_read_pci_cfg_dword(struct pci_dev *pdev, int offset,
+ 			       u32 *val, const char *func);
+ int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
+ 				u32 val, const char *func);
++int f15_read_dct_pci_cfg(struct amd64_pvt *pvt, u8 dct, int addr,
++			 u32 *val, const char *func);
+ 
+ #define amd64_read_pci_cfg(pdev, offset, val)	\
+ 	__amd64_read_pci_cfg_dword(pdev, offset, val, __func__)
+@@ -502,8 +502,16 @@ int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
+ #define amd64_write_pci_cfg(pdev, offset, val)	\
+ 	__amd64_write_pci_cfg_dword(pdev, offset, val, __func__)
+ 
+-#define amd64_read_dct_pci_cfg(pvt, offset, val) \
+-	pvt->ops->read_dct_pci_cfg(pvt, offset, val, __func__)
++
++static inline int amd64_read_dct_pci_cfg(struct amd64_pvt *pvt, u8 dct,
++					 int offset, u32 *val)
++{
++	if (pvt->fam < 0x15)
++		/* No need to 'select dct' for these */
++		return amd64_read_pci_cfg(pvt->F2, offset, val);
++
++	return f15_read_dct_pci_cfg(pvt, dct, offset, val, __func__);
++}
+ 
+ int amd64_get_dram_hole_info(struct mem_ctl_info *mci, u64 *hole_base,
+ 			     u64 *hole_offset, u64 *hole_size);
+-- 
+2.0.3
 
