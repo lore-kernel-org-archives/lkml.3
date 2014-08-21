@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaHUULT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:11:19 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:41080 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665AbaHUULQ (ORCPT
+	id S1754648AbaHUUL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:11:58 -0400
+Received: from mail-qg0-f74.google.com ([209.85.192.74]:59548 "EHLO
+	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577AbaHUUL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:11:16 -0400
-Date: Thu, 21 Aug 2014 13:11:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 02/11] power/restart: Call machine_restart instead of
- arm_pm_restart
-Message-ID: <20140821201110.GA11382@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
- <1408495538-27480-3-git-send-email-linux@roeck-us.net>
- <CAD=FV=Va8UrpDCLjFQJ6j-K0C3v7NPfifaJGtReCkUEu3x0mLg@mail.gmail.com>
- <20140821044230.GA14609@roeck-us.net>
- <CAD=FV=XMBegDcPWM+sG4S64ZC6KEzKA-ykpEJrcGo2db+P0VLg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=XMBegDcPWM+sG4S64ZC6KEzKA-ykpEJrcGo2db+P0VLg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Aug 2014 16:11:56 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
+        David Daney <david.daney@cavium.com>,
+        John Crispin <blogic@openwrt.org>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 2/7] MIPS: Add support for building device-tree binaries
+Date: Thu, 21 Aug 2014 13:04:21 -0700
+Message-Id: <1408651466-8334-3-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 12:30:44PM -0700, Doug Anderson wrote:
-> Guenter,
-> 
-> On Wed, Aug 20, 2014 at 9:42 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On Wed, Aug 20, 2014 at 09:10:31PM -0700, Doug Anderson wrote:
-> >> Guenter,
-> >>
-> >> On Tue, Aug 19, 2014 at 5:45 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> > machine_restart is supported on non-ARM platforms, and and ultimately calls
-> >> > arm_pm_restart, so dont call arm_pm_restart directly but use the more
-> >> > generic function.
-> >> >
-> >> > Cc: Russell King <linux@arm.linux.org.uk>
-> >>
-> >> Do you need to submit this to his patch tracker to get him to pick it
-> >> up?  How are you envisioning that this series land?  It crosses a lot
-> >> of boundaries so I guess will need a reasonable amount of coordination
-> >> between maintainers...
-> >>
-> >>
-> > If I get an Acked-by: from all maintainers, I could send a pull request
-> > to Linus directly. How do I send a patch to Russell's patch tracker ?
-> > I thought I copied all mailing lists suggested by get_maintainer.pl,
-> > but maybe I missed one.
-> 
-> Ah, OK.  Perhaps it's best to ignore me, then.  ;)  FYI: Russell's
+Add a 'dtbs' Makefile target that just builds the device-tree binaries
+enabled by the configuration.
 
-No, I appreciate the information.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ arch/mips/Makefile          | 5 +++++
+ arch/mips/boot/.gitignore   | 1 +
+ arch/mips/boot/dts/Makefile | 7 ++++++-
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
-> Patch System is at <http://www.arm.linux.org.uk/developer/patches/>
-> and is used for getting individual patches into branches maintained by
-> Russel.  If you're just going to send a pull request for the series
-> then I don't think you need it.
-> 
-I copied both linux-arm-kernel and Russell himself, so hopefully he is aware
-of the series and can let me know if he wants me to make any further changes
-to it, if it is ready to go, or if I need to do anything else.
+diff --git a/arch/mips/Makefile b/arch/mips/Makefile
+index 72cdd6a..26672e1 100644
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -330,6 +330,10 @@ core-$(CONFIG_BUILTIN_DTB) += arch/mips/boot/dts/
+ %.dtb %.dtb.S %.dtb.o: | scripts
+ 	$(Q)$(MAKE) $(build)=arch/mips/boot/dts arch/mips/boot/dts/$@
+ 
++PHONY += dtbs
++dtbs: scripts
++	$(Q)$(MAKE) $(build)=arch/mips/boot/dts dtbs
++
+ archprepare:
+ ifdef CONFIG_MIPS32_N32
+ 	@echo '  Checking missing-syscalls for N32'
+@@ -364,6 +368,7 @@ define archhelp
+ 	echo '  vmlinuz.srec         - SREC zboot image'
+ 	echo '  uImage               - U-Boot image'
+ 	echo '  uImage.gz            - U-Boot image (gzip)'
++	echo '  dtbs                 - Device-tree blobs for enabled boards'
+ 	echo
+ 	echo '  These will be default as appropriate for a configured platform.'
+ endef
+diff --git a/arch/mips/boot/.gitignore b/arch/mips/boot/.gitignore
+index a73d6e2..d3962cd 100644
+--- a/arch/mips/boot/.gitignore
++++ b/arch/mips/boot/.gitignore
+@@ -5,3 +5,4 @@ zImage
+ zImage.tmp
+ calc_vmlinuz_load_addr
+ uImage
++*.dtb
+diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
+index 6bb41df..9b3da1f 100644
+--- a/arch/mips/boot/dts/Makefile
++++ b/arch/mips/boot/dts/Makefile
+@@ -1,3 +1,8 @@
+ obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
+ 
+-clean-files	+= *.dtb.S
++targets		+= dtbs
++targets		+= $(dtb-y)
++
++dtbs: $(addprefix $(obj)/, $(dtb-y))
++
++clean-files	+= *.dtb *.dtb.S
+-- 
+2.1.0.rc2.206.gedb03e5
 
-Thanks,
-Guenter
