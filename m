@@ -1,208 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaHUA1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 20:27:41 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60792 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843AbaHUA0u (ORCPT
+	id S1751313AbaHUAiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 20:38:18 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:38407 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834AbaHUAiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 20:26:50 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v3 4/4] zram: report maximum used memory
-Date: Thu, 21 Aug 2014 09:27:18 +0900
-Message-Id: <1408580838-29236-5-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1408580838-29236-1-git-send-email-minchan@kernel.org>
-References: <1408580838-29236-1-git-send-email-minchan@kernel.org>
+	Wed, 20 Aug 2014 20:38:16 -0400
+X-Original-SENDERIP: 10.178.33.69
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <53F53F72.9050305@lge.com>
+Date: Thu, 21 Aug 2014 09:38:10 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
+        =?UTF-8?B?7J206rG07Zi4?= <gunho.lee@lge.com>
+Subject: Re: [PATCHv2 1/3] fs/buffer.c: allocate buffer cache with user specific
+ flag
+References: <53F2F3E6.1030901@lge.com> <53F2F436.4070307@lge.com> <20140819130324.GB27553@quack.suse.cz> <53F3DFA3.6040303@lge.com> <20140820021623.GB3271@quack.suse.cz> <53F40A12.6040506@lge.com> <20140820220224.GA5752@quack.suse.cz>
+In-Reply-To: <20140820220224.GA5752@quack.suse.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Normally, zram user could get maximum memory usage zram consumed
-via polling mem_used_total with sysfs in userspace.
 
-But it has a critical problem because user can miss peak memory
-usage during update inverval of polling. For avoiding that,
-user should poll it with shorter interval(ie, 0.0000000001s)
-with mlocking to avoid page fault delay when memory pressure
-is heavy. It would be troublesome.
 
-This patch adds new knob "mem_used_max" so user could see
-the maximum memory usage easily via reading the knob and reset
-it via "echo 0 > /sys/block/zram0/mem_used_max".
+2014-08-21 오전 7:02, Jan Kara 쓴 글:
+> On Wed 20-08-14 11:38:10, Gioh Kim wrote:
+>>
+>>>>>> @@ -1381,12 +1383,7 @@ EXPORT_SYMBOL(__find_get_block);
+>>>>>>   struct buffer_head *
+>>>>>>   __getblk(struct block_device *bdev, sector_t block, unsigned size)
+>>>>>>   {
+>>>>>> -       struct buffer_head *bh = __find_get_block(bdev, block, size);
+>>>>>> -
+>>>>>> -       might_sleep();
+>>>>>> -       if (bh == NULL)
+>>>>>> -               bh = __getblk_slow(bdev, block, size);
+>>>>>> -       return bh;
+>>>>>> +       return __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
+>>>>>>   }
+>>>>>>   EXPORT_SYMBOL(__getblk);
+>>>>>    Why did you remove the __find_get_block() call? That looks like a bug.
+>>>    I'm not sure if you didn't miss this comment....
+>>
+>> I'm sorry I missed it.
+>> I think calling __find_get_block() in __getblk_gfp() can replace it.
+>> I'm not sure about it.
+>>
+>> If anybody disagree with it, I'll change it as the original code.
+>    OK, I see. Thanks for explanation. I agree we can remove
+> __find_get_block() from __getblk() but please make this change a separate
+> patch and also please put the might_sleep() check __getblk_gfp().
+>
+> 								Honza
+>
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/ABI/testing/sysfs-block-zram | 10 ++++++
- Documentation/blockdev/zram.txt            |  1 +
- drivers/block/zram/zram_drv.c              | 57 ++++++++++++++++++++++++++++--
- drivers/block/zram/zram_drv.h              |  1 +
- 4 files changed, 67 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-index 025331c19045..ffd1ea7443dd 100644
---- a/Documentation/ABI/testing/sysfs-block-zram
-+++ b/Documentation/ABI/testing/sysfs-block-zram
-@@ -120,6 +120,16 @@ Description:
- 		statistic.
- 		Unit: bytes
- 
-+What:		/sys/block/zram<id>/mem_used_max
-+Date:		August 2014
-+Contact:	Minchan Kim <minchan@kernel.org>
-+Description:
-+		The mem_used_max file is read/write and specifies the amount
-+		of maximum memory zram have consumed to store compressed data.
-+		For resetting the value, you should do "echo 0". Otherwise,
-+		you could see -EINVAL.
-+		Unit: bytes
-+
- What:		/sys/block/zram<id>/mem_limit
- Date:		August 2014
- Contact:	Minchan Kim <minchan@kernel.org>
-diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-index 9f239ff8c444..3b2247c2d4cf 100644
---- a/Documentation/blockdev/zram.txt
-+++ b/Documentation/blockdev/zram.txt
-@@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
- 		orig_data_size
- 		compr_data_size
- 		mem_used_total
-+		mem_used_max
- 
- 8) Deactivate:
- 	swapoff /dev/zram0
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index adc91c7ecaef..138787579478 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -149,6 +149,41 @@ static ssize_t mem_limit_store(struct device *dev,
- 	return len;
- }
- 
-+static ssize_t mem_used_max_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	u64 val = 0;
-+	struct zram *zram = dev_to_zram(dev);
-+
-+	down_read(&zram->init_lock);
-+	if (init_done(zram))
-+		val = atomic64_read(&zram->stats.max_used_pages);
-+	up_read(&zram->init_lock);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-+}
-+
-+static ssize_t mem_used_max_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t len)
-+{
-+	int err;
-+	unsigned long val;
-+	struct zram *zram = dev_to_zram(dev);
-+	struct zram_meta *meta = zram->meta;
-+
-+	err = kstrtoul(buf, 10, &val);
-+	if (err || val != 0)
-+		return -EINVAL;
-+
-+	down_read(&zram->init_lock);
-+	if (init_done(zram))
-+		atomic64_set(&zram->stats.max_used_pages,
-+				zs_get_total_size(meta->mem_pool));
-+	up_read(&zram->init_lock);
-+
-+	return len;
-+}
-+
- static ssize_t max_comp_streams_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t len)
- {
-@@ -461,6 +496,18 @@ out_cleanup:
- 	return ret;
- }
- 
-+static inline void update_used_max(struct zram *zram, const unsigned long pages)
-+{
-+	u64 old_max, cur_max;
-+
-+	do {
-+		old_max = cur_max = atomic64_read(&zram->stats.max_used_pages);
-+		if (pages > cur_max)
-+			old_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
-+					cur_max, pages);
-+	} while (old_max != cur_max);
-+}
-+
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
- {
-@@ -472,6 +519,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	struct zram_meta *meta = zram->meta;
- 	struct zcomp_strm *zstrm;
- 	bool locked = false;
-+	unsigned long alloced_pages;
- 
- 	page = bvec->bv_page;
- 	if (is_partial_io(bvec)) {
-@@ -541,13 +589,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		goto out;
- 	}
- 
--	if (zram->limit_pages &&
--		zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
-+	alloced_pages = zs_get_total_size(meta->mem_pool);
-+	if (zram->limit_pages && alloced_pages > zram->limit_pages) {
- 		zs_free(meta->mem_pool, handle);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
- 
-+	update_used_max(zram, alloced_pages);
-+
- 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
- 
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-@@ -897,6 +947,8 @@ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
- static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
- static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
- 		mem_limit_store);
-+static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-+		mem_used_max_store);
- static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
- 		max_comp_streams_show, max_comp_streams_store);
- static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-@@ -926,6 +978,7 @@ static struct attribute *zram_disk_attrs[] = {
- 	&dev_attr_compr_data_size.attr,
- 	&dev_attr_mem_used_total.attr,
- 	&dev_attr_mem_limit.attr,
-+	&dev_attr_mem_used_max.attr,
- 	&dev_attr_max_comp_streams.attr,
- 	&dev_attr_comp_algorithm.attr,
- 	NULL,
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index b7aa9c21553f..29383312d543 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -90,6 +90,7 @@ struct zram_stats {
- 	atomic64_t notify_free;	/* no. of swap slot free notifications */
- 	atomic64_t zero_pages;		/* no. of zero filled pages */
- 	atomic64_t pages_stored;	/* no. of pages currently stored */
-+	atomic64_t max_used_pages;	/* no. of maximum pages stored */
- };
- 
- struct zram_meta {
--- 
-2.0.0
+I got it.
+I'm going to report v3 patch that reverts __getblk() and adds sb_bread_unmovable(),
+if Andrew give me a feedback about the other codes.
+I can wait ;-)
 
