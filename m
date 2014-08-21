@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480AbaHUOYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:24:05 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:51070 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285AbaHUOYC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:24:02 -0400
-In-Reply-To: <20140820105710.GC17371@redhat.com>
-References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com> <20140820105710.GC17371@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: abel.gordon@gmail.com, Alex Glikson <GLIKSON@il.ibm.com>,
-        Eran Raichstein <ERANRA@il.ibm.com>, Joel Nider <JOELN@il.ibm.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
+	id S1755253AbaHUO36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:29:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39621 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755018AbaHUO35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 10:29:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,909,1400050800"; 
+   d="scan'208";a="579904626"
+Date: Thu, 21 Aug 2014 22:30:06 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: ext4@mail.home.local, LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: [ext4] 71d4f7d0321: -49.6% xfstests.generic.274.seconds
+Message-ID: <20140821143006.GA19943@localhost>
 MIME-Version: 1.0
-Subject: Re: [PATCH] vhost: Add polling mode
-X-KeepSent: BE98487F:0F49BDD7-C2257D3B:004C908C;
- type=4; name=$KeepSent
-X-Mailer: IBM Notes Release 9.0.1SHF211 December 19, 2013
-From: Razya Ladelsky <RAZYA@il.ibm.com>
-Message-ID: <OFBE98487F.0F49BDD7-ONC2257D3B.004C908C-C2257D3B.004F09FD@il.ibm.com>
-Date: Thu, 21 Aug 2014 17:23:55 +0300
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5IF1HF3|November 07, 2013) at
- 21/08/2014 17:23:55,
-	Serialize complete at 21/08/2014 17:23:55
-Content-Type: text/plain; charset="US-ASCII"
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082114-0542-0000-0000-00000060F544
+Content-Type: multipart/mixed; boundary="xHFwDpU9dbj6ez1V"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> wrote on 20/08/2014 01:57:10 PM:
 
-> > Results:
-> > 
-> > Netperf, 1 vm:
-> > The polling patch improved throughput by ~33% (1516 MB/sec -> 2046 
-MB/sec).
-> > Number of exits/sec decreased 6x.
-> > The same improvement was shown when I tested with 3 vms running 
-netperf
-> > (4086 MB/sec -> 5545 MB/sec).
-> > 
-> > filebench, 1 vm:
-> > ops/sec improved by 13% with the polling patch. Number of exits 
-> was reduced by
-> > 31%.
-> > The same experiment with 3 vms running filebench showed similar 
-numbers.
-> > 
-> > Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
-> 
-> This really needs more thourough benchmarking report, including
-> system data.  One good example for a related patch:
-> http://lwn.net/Articles/551179/
-> though for virtualization, we need data about host as well, and if you
-> want to look at streaming benchmarks, you need to test different message
-> sizes and measure packet size.
->
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 
-Hi Michael,
-I have already tried running netperf with several message sizes: 
-64,128,256,512,600,800...
-But the results are inconsistent even in the baseline/unpatched 
-configuration.
-For smaller msg sizes, I get consistent numbers. However, at some point, 
-when I increase the msg size
-I get unstable results. For example, for a 512B msg, I get two scenarios:
-vm utilization 100%, vhost utilization 75%, throughput ~6300 
-vm utilization 80%, vhost utilization 13%, throughput ~9400 (line rate)
+Hi Ted,
 
-I don't know why vhost is behaving that way for certain message sizes.
-Do you have any insight to why this is happening?
-Thank you,
-Razya
- 
+We noticed increased xfstests 274's test speed and the first good
+commit is 71d4f7d032149b935a26eb3ff85c6c837f3714e1 ("ext4: remove
+metadata reservation checks").
 
+test case: snb-drag/xfstests/4HDD-ext4-generic-slow2
+snb-drag is a Sandy Bridge PC with 6G memory.
+
+d5e03cbb0c88cd1  71d4f7d032149b935a26eb3ff 
+---------------  ------------------------- 
+        51 ± 2%     -49.6%         25 ± 1%  TOTAL xfstests.generic.274.seconds
+       817 ± 1%      -3.0%        792 ± 1%  TOTAL time.elapsed_time
+
+                          xfstests.generic.274.seconds
+
+  60 ++---------------------------------------------------------------------+
+     |                                                                      |
+  55 ++         .*..*..             *..               *..                   |
+     |       .*.       .          ..                ..                      |
+  50 *+.*..*.           *..*..*..*     *..*..*..*..*     *                  |
+     |                                                                      |
+  45 ++                                                                     |
+     |                                                                      |
+  40 ++                                                                     |
+     |                                                                      |
+  35 ++                                                                     |
+     |                                                                      |
+  30 ++                                                                     |
+     |                                                                      |
+  25 O+-O--O--O--O--O---O--O--O--O--O--O--O--O--O--O--O--O---O--O--O--O--O--O
+
+
+	[*] bisect-good sample
+	[O] bisect-bad  sample
+
+
+Disclaimer:
+Results have been estimated based on internal Intel analysis and are provided
+for informational purposes only. Any difference in system hardware or software
+design or configuration may affect actual performance.
+
+Thanks,
+Fengguang
+
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=reproduce
+
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
+mkfs -t ext4 -q /dev/sda7
+mkfs -t ext4 -q /dev/sda10
+mkfs -t ext4 -q /dev/sda6
+mkfs -t ext4 -q /dev/sda5
+mount -t ext4 /dev/sda10 /fs/sda10
+mount -t ext4 /dev/sda5 /fs/sda5
+mount -t ext4 /dev/sda6 /fs/sda6
+mount -t ext4 /dev/sda7 /fs/sda7
+export TEST_DIR=/fs/sda10
+export TEST_DEV=/dev/sda10
+export SCRATCH_MNT=/fs/scratch
+mkdir /fs/scratch -p
+export SCRATCH_DEV=/dev/sda7
+./check generic/224 generic/231 generic/274 generic/299 generic/300
+
+--xHFwDpU9dbj6ez1V--
