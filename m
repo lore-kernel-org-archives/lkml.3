@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbaHUUbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:31:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753383AbaHUUbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:31:24 -0400
-Date: Thu, 21 Aug 2014 22:31:10 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
+	id S1754577AbaHUUcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:32:00 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:53189 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015AbaHUUb6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 16:31:58 -0400
+Message-ID: <53F65738.10000@redhat.com>
+Date: Thu, 21 Aug 2014 22:31:52 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        =?UTF-8?B?UmFkaW0=?= =?UTF-8?B?IEtyxI1tw6HFmQ==?= 
+	<rkrcmar@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>, Vinod Chegu <chegu_vinod@hp.com>,
+        Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         Lisa Mitchell <lisa.mitchell@hp.com>
-Subject: Re: [PATCH v3 1/7] KVM: add kvm_arch_sched_in
-Message-ID: <20140821203110.GA30423@potion.brq.redhat.com>
-References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
- <1408637291-18533-2-git-send-email-rkrcmar@redhat.com>
- <53F63F36.9080704@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F63F36.9080704@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3 4/7] KVM: VMX: dynamise PLE window
+References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com> <1408637291-18533-5-git-send-email-rkrcmar@redhat.com> <53F6440B.8010709@linux.vnet.ibm.com>
+In-Reply-To: <53F6440B.8010709@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-22 00:19+0530, Raghavendra K T:
-> On 08/21/2014 09:38 PM, Radim Krčmář wrote:
-> >Introduce preempt notifiers for architecture specific code.
-> >Advantage over creating a new notifier in every arch is slightly simpler
-> >code and guaranteed call order with respect to kvm_sched_in.
-> >
-> >Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
-> >---
-> 
-> Reviewed-by: Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> No surprise that ia64 doesn't show here :).
+Il 21/08/2014 21:10, Raghavendra K T ha scritto:
+> 2. can we consider min_ple_window value of 2k. tracing showed that in
+> overcommit there were several occations of 4k <- 4k situations.
 
-Oh, totally forgot about its predicted comeback ...
-Paolo, do you want to fixup this?  (It removes double newline.)
+Yes, that could be good now that we have adaptive exits.  Perhaps even 1k.
 
-diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-index 0729ba6..1630624 100644
---- a/arch/ia64/kvm/kvm-ia64.c
-+++ b/arch/ia64/kvm/kvm-ia64.c
-@@ -1468,6 +1468,9 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
- 	kfree(vcpu->arch.apic);
- }
- 
-+void kvm_arch_sched_in(struct kvm_vcpu *vcpu)
-+{
-+}
- 
- long kvm_arch_vcpu_ioctl(struct file *filp,
- 			 unsigned int ioctl, unsigned long arg)
+> 3. Do you think using ( << and >> ) instead of (*, /) saves some cycles
+> considering we could have potentially have grow,shrink numbers != power
+> of 2
 
->                                             and I also would have liked
-> static inlines (as indicated by Paolo).
+* is very fast. / a bit less so but it never occurs with the defaults.
+So I think it's okay.  I'm not sure why one would use a multiplier
+bigger than 2.
 
-I'll send a patch that converts empty functions into static inlines,
-maybe return-0s too, soon(ish).
+Paolo
