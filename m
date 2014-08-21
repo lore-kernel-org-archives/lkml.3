@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaHUHe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 03:34:57 -0400
-Received: from ozlabs.org ([103.22.144.67]:44541 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753476AbaHUHe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 03:34:56 -0400
-Message-ID: <1408606493.9307.7.camel@concordia>
-Subject: Re: [PATCH 1/1] powerpc/jump_label: use HAVE_JUMP_LABEL?
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Zhouyi Zhou <zhouzhouyi@gmail.com>
-Cc: benh@kernel.crashing.org, paulus@samba.org, paulmck@linux.vnet.ibm.com,
-        anton@samba.org, aneesh.kumar@linux.vnet.ibm.com, jk@ozlabs.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        jbaron@akamai.com, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Date: Thu, 21 Aug 2014 17:34:53 +1000
-In-Reply-To: <1408588883-26783-1-git-send-email-yizhouzhou@ict.ac.cn>
-References: <1408588883-26783-1-git-send-email-yizhouzhou@ict.ac.cn>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1753885AbaHUHhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 03:37:51 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5825 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443AbaHUHhu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 03:37:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 21 Aug 2014 00:28:07 -0700
+Message-ID: <53F5A1CA.1010601@nvidia.com>
+Date: Thu, 21 Aug 2014 10:37:46 +0300
+From: Mikko Perttunen <mperttunen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>, <rui.zhang@intel.com>,
+        <edubezval@gmail.com>, <thierry.reding@gmail.com>
+CC: <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 3/4] ARM: tegra: Add thermal trip points for Jetson
+ TK1
+References: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com> <1407320706-17440-4-git-send-email-mperttunen@nvidia.com> <53F4FA80.9050103@wwwdotorg.org>
+In-Reply-To: <53F4FA80.9050103@wwwdotorg.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-21 at 10:41 +0800, Zhouyi Zhou wrote:
-> CONFIG_JUMP_LABEL doesn't ensure HAVE_JUMP_LABEL, if it
-> is not the case use maintainers's own mutex to guard
-> the modification of global values.
- 
-OK, so CONFIG_JUMP_LABEL says the user wants to use jump labels. But we also
-need the toolchain to support it.
+On 20/08/14 22:44, Stephen Warren wrote:
+> On 08/06/2014 04:25 AM, Mikko Perttunen wrote:
+>> This adds critical trip points to the Jetson TK1 device tree.
+>> The device will do a controlled shutdown when either the CPU, GPU
+>> or MEM thermal zone reaches 101 degrees Celsius.
+>
+>> diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>> b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+>
+>> +    thermal-zones {
+>> +        cpu {
+>> +            trips {
+> ...
+>> +            };
+>> +        };
+>
+> thermal.txt states that a cooling-maps sub-node is mandatory. However,
+> it seems to be missing here. Is the DT binding documentation overly
+> strict, or do we need to add such a node here?
 
-That is reflected in CC_HAVE_ASM_GOTO=y, and if both are set then
-HAVE_JUMP_LABEL is set to true.
+Debatable. I can add an empty one, that's probably the easiest solution.
 
-So this looks right to me.
+Mikko
 
-cheers
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
