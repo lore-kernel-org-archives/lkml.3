@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266AbaHUTDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 15:03:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23772 "EHLO mx1.redhat.com"
+	id S1754370AbaHUTDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 15:03:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7974 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909AbaHUTDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 15:03:21 -0400
-Date: Thu, 21 Aug 2014 21:00:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] mempolicy: fix show_numa_map() vs exec() +
-	do_set_mempolicy() race
-Message-ID: <20140821190020.GA8703@redhat.com>
-References: <20140805194627.GA30693@redhat.com> <20140820192207.GA8524@redhat.com>
+	id S1753138AbaHUTDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 15:03:40 -0400
+Date: Fri, 22 Aug 2014 03:03:36 +0800
+From: Amos Kong <akong@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
+ runnable
+Message-ID: <20140821190336.GB20066@z.redhat.com>
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
+ <1408608310-13579-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140820192207.GA8524@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20, Oleg Nesterov wrote:
->
-> I belive that 9e7814404b77c3e8 "hold task->mempolicy while numa_maps scans"
-> was wrong and it doesn't fix the problem.
+On Thu, Aug 21, 2014 at 04:05:10PM +0800, Jason Wang wrote:
+> Rx busy loop does not scale well in the case when several parallel
+> sessions is active. This is because we keep looping even if there's
+> another process is runnable. For example, if that process is about to
+> send packet, keep busy polling in current process will brings extra
+> delay and damage the performance.
+> 
+> This patch solves this issue by exiting the busy loop when there's
+> another process is runnable in current cpu. Simple test that pin two
+> netperf sessions in the same cpu in receiving side shows obvious
+> improvement:
+> 
+> Before:
+> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+> 16384  87380  1        1       10.00    15513.74
+> 16384  87380
+> 16384  87380  1        1       10.00    15092.78
+> 16384  87380
+> 
+> After:
+> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+> 16384  87380  1        1       10.00    23334.53
+> 16384  87380
+> 16384  87380  1        1       10.00    23327.58
+> 16384  87380
+> 
+> Benchmark was done through two 8 cores Xeon machine back to back connected
+> with mlx4 through netperf TCP_RR test (busy_read were set to 50):
+> 
+> sessions/bytes/before/after/+improvement%/busy_read=0/
+> 1/1/30062.10/30034.72/+0%/20228.96/
+> 16/1/214719.83/307669.01/+43%/268997.71/
+> 32/1/231252.81/345845.16/+49%/336157.442/
+> 64/512/212467.39/373464.93/+75%/397449.375/
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  include/net/busy_poll.h | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+> index 1d67fb6..8a33fb2 100644
+> --- a/include/net/busy_poll.h
+> +++ b/include/net/busy_poll.h
+> @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+>  		cpu_relax();
+>  
+>  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+> -		 !need_resched() && !busy_loop_timeout(end_time));
+> +		 !need_resched() && !busy_loop_timeout(end_time) &&
+> +		 nr_running_this_cpu() < 2);
 
-See 2/4.
 
-> I'll try to send the fix tomorrow, could you review the initial preparations?
-> To me, these changes make sense as cleanups in any case, but I don't really
-> understand this code and this was only compile tested.
+Reviewed-by: Amos Kong <akong@redhat.com>
+  
+>  	rc = !skb_queue_empty(&sk->sk_receive_queue);
+>  out:
+> -- 
+> 1.8.3.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Untested again because I do not know how, please review ;) On top of
-"mempolicy: get_task_policy() cleanups/preparations" series.
-
-I'll send the final cleanups later.
-
-Oleg.
-
- fs/proc/task_mmu.c        |   33 ++++++-----------------
- include/linux/mempolicy.h |    5 ++-
- mm/mempolicy.c            |   64 +++++++++++++++++++-------------------------
- 3 files changed, 40 insertions(+), 62 deletions(-)
-
+-- 
+			Amos.
