@@ -1,103 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350AbaHUNx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:53:57 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:37494 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035AbaHUNxz (ORCPT
+	id S1755254AbaHUN4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:56:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56724 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551AbaHUN4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:53:55 -0400
-In-Reply-To: <53F45F3C.5000207@de.ibm.com>
-References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com> <53F45F3C.5000207@de.ibm.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: abel.gordon@gmail.com, Alex Glikson <GLIKSON@il.ibm.com>,
-        Eran Raichstein <ERANRA@il.ibm.com>, Joel Nider <JOELN@il.ibm.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
+	Thu, 21 Aug 2014 09:56:53 -0400
+Date: Thu, 21 Aug 2014 08:56:21 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Griffin <peter.griffin@linaro.org>
+CC: Felipe Balbi <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <maxime.coquelin@st.com>,
+        <patrice.chotard@st.com>, <srinivas.kandagatla@gmail.com>,
+        <devicetree@vger.kernel.org>, <lee.jones@linaro.org>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <peppe.cavallaro@st.com>
+Subject: Re: [PATCH v4 2/3] usb: dwc3: dwc3-st: Add st-dwc3 devicetree
+ bindings documentation
+Message-ID: <20140821135620.GD9608@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1406734091-16202-1-git-send-email-peter.griffin@linaro.org>
+ <1406734091-16202-3-git-send-email-peter.griffin@linaro.org>
+ <20140820180005.GU24500@saruman.home>
+ <20140821133340.GC17487@griffinp-ThinkPad-X1-Carbon-2nd>
 MIME-Version: 1.0
-Subject: Re: [PATCH] vhost: Add polling mode
-X-KeepSent: 9D20825B:8FFA2829-C2257D3B:004A777F;
- type=4; name=$KeepSent
-X-Mailer: IBM Notes Release 9.0.1SHF211 December 19, 2013
-From: Razya Ladelsky <RAZYA@il.ibm.com>
-Message-ID: <OF9D20825B.8FFA2829-ONC2257D3B.004A777F-C2257D3B.004C47BC@il.ibm.com>
-Date: Thu, 21 Aug 2014 16:53:47 +0300
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5IF1HF3|November 07, 2013) at
- 21/08/2014 16:53:48,
-	Serialize complete at 21/08/2014 16:53:48
-Content-Type: text/plain; charset="US-ASCII"
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082113-2966-0000-0000-000000E37453
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jCrbxBqMcLqd4mOl"
+Content-Disposition: inline
+In-Reply-To: <20140821133340.GC17487@griffinp-ThinkPad-X1-Carbon-2nd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Borntraeger <borntraeger@de.ibm.com> wrote on 20/08/2014 
-11:41:32 AM:
+--jCrbxBqMcLqd4mOl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, Aug 21, 2014 at 02:33:40PM +0100, Peter Griffin wrote:
+> Hi Felipe,
+>=20
+> Thanks for reviewing, see my comments below: -
+>=20
+> On Wed, 20 Aug 2014, Felipe Balbi wrote:
+>=20
+> > > +	dwc3: dwc3@9900000 {
+> > > +		compatible	=3D "snps,dwc3";
+> > > +		reg		=3D <0x09900000 0x100000>;
+> > > +		interrupts	=3D <GIC_SPI 155 IRQ_TYPE_NONE>;
+> > > +		dr_mode		=3D "host"
+> > > +		usb-phy		=3D <&usb3_phy>;
+> > > +		phy-names	=3D "usb2-phy";
+> > > +		phys		=3D <&usb2_picophy2>;
+> >=20
+> > why are you using different binding for usb2 and usb3 phys ? Why can't
+> > you just:
+> >=20
+> > 	phys-names	=3D "usb2-phy", "usb3-phy";
+> > 	phys		=3D <&usb2_picophy2>, <&usb3_phy>;
+> >=20
+> > ??
+>=20
+> Currently (in the vendor tree) one of the phys lives in
+> drivers/usb/phy and the other in drivers/phy.
+> I believe that is because one is only a usb phy and the other is a
+> multi function phy which can drive PCI-E or USB3.
 
-> > 
-> > Results:
-> > 
-> > Netperf, 1 vm:
-> > The polling patch improved throughput by ~33% (1516 MB/sec -> 2046 
-MB/sec).
-> > Number of exits/sec decreased 6x.
-> > The same improvement was shown when I tested with 3 vms running 
-netperf
-> > (4086 MB/sec -> 5545 MB/sec).
-> > 
-> > filebench, 1 vm:
-> > ops/sec improved by 13% with the polling patch. Number of exits 
-> was reduced by
-> > 31%.
-> > The same experiment with 3 vms running filebench showed similar 
-numbers.
-> > 
-> > Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
-> 
-> Gave it a quick try on s390/kvm. As expected it makes no difference 
-> for big streaming workload like iperf.
-> uperf with a 1-1 round robin got indeed faster by about 30%.
-> The high CPU consumption is something that bothers me though, as 
-> virtualized systems tend to be full.
-> 
-> 
+right, but for mainline, we can have both PHYs in drivers/phy only.
 
-Thanks for confirming the results!
-The best way to use this patch would be along with a shared vhost thread 
-for multiple
-devices/vms, as described in:
-http://domino.research.ibm.com/library/cyberdig.nsf/1e4115aea78b6e7c85256b360066f0d4/479e3578ed05bfac85257b4200427735!OpenDocument
-This work assumes having a dedicated I/O core where the vhost thread 
-serves multiple vms, which 
-makes the high cpu utilization less of a concern. 
+> So to make that work, when dwc3/core.c gets the PHYS in
+> dwc3_core_get_phy() we need to use the different bindings.
+>=20
+> I think we are the only platform using "one of each", but luckily
+> dwc3_core_get_phy() has been written generically enough that it "just
+> works" :-).
 
+true, but I want to drop support for the legacy drivers/usb/phy layer
+=66rom dwc3. I'll try to move all PHYs to drivers/phy for v3.18.
 
+cheers
 
-> > +static int poll_start_rate = 0;
-> > +module_param(poll_start_rate, int, S_IRUGO|S_IWUSR);
-> > +MODULE_PARM_DESC(poll_start_rate, "Start continuous polling of 
-> virtqueue when rate of events is at least this number per jiffy. If 
-> 0, never start polling.");
-> > +
-> > +static int poll_stop_idle = 3*HZ; /* 3 seconds */
-> > +module_param(poll_stop_idle, int, S_IRUGO|S_IWUSR);
-> > +MODULE_PARM_DESC(poll_stop_idle, "Stop continuous polling of 
-> virtqueue after this many jiffies of no work.");
-> 
-> This seems ridicoudly high. Even one jiffie is an eternity, so 
-> setting it to 1 as a default would reduce the CPU overhead for most 
-cases.
-> If we dont have a packet in one millisecond, we can surely go back 
-> to the kick approach, I think.
-> 
-> Christian
-> 
+--=20
+balbi
 
-Good point, will reduce it and recheck.
-Thank you,
-Razya
+--jCrbxBqMcLqd4mOl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT9fqEAAoJEIaOsuA1yqREOKQP/0KFTFCvTtlcv5iiMGx5d+Wz
+LK4xUha5vJ1khKD7OYkHj3IvNsllwwBUp8zU+Qek25V+3CCrMn9kYJFTsaYDInrm
+/6PxMhy9iXmIUW5pk4gIUGmBc+kLKZeqZxuYr2u/uSC2OQ+ANpI/fA865kFr6o6k
+Rl0sWvEV78xC1e1uWvh7nPSKWIxGDwIQfqjji5BbnvCXuih9MER8MiUaVKVJO8J9
+voj1xGsxRbKAil6AnbUAGzVOgoYJwCztLEonNLc5cwsm+WcoNgnSqNI2sZGJJxUV
+w922WkTn3Da/ZU9b/BXNm33SaXRISYrZtLHQGO7tAlIP/Bax00EF79MOpb8aEFQ3
+iS06mwWDLEWRrh/9Jthay1lxSNauTDy3Lc04AFv/oPILyfX9qdsCcpeXVoE3UbiT
+7vfAmfAY2NfRJ84W27R5DERa93inzrTCzWP+BzNQZiCWgA74vHvYhEMLGYZThLTY
+1CmN30grdJNTk8qTWrv4Q5AsXs+52kBTO407Liy3vMtn2eKryULghSx9ttiHn4VR
+dOWFSGEclrsBOhbKNgSXP1vpM6ZyJZ0e3b8NTbFiZcySsjH2vWo0acPRAYvkrbK6
+kyE1+vjNtETeVvbIIOmAc5NMqISXyEgBibyrg8fHIJLwsJmEucBANjZNAsmW92EA
+OHl0lAflys3AAS/AYDb3
+=QkHf
+-----END PGP SIGNATURE-----
+
+--jCrbxBqMcLqd4mOl--
