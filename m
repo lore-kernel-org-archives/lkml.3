@@ -1,243 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203AbaHUNjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:39:43 -0400
-Received: from regular1.263xmail.com ([211.150.99.134]:60133 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500AbaHUNjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:39:41 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: zyw@rock-chips.com
-X-FST-TO: robh+dt@kernel.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: zyw@rock-chips.com
-X-UNIQUE-TAG: <1dfcfca942deef6de131f5d27cea78f4>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Chris Zhong <zyw@rock-chips.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
-        Chris Zhong <zyw@rock-chips.com>
-Subject: [PATCH v3 5/5] Clk: RK808: Add clkout driver for RK808
-Date: Thu, 21 Aug 2014 21:37:31 +0800
-Message-Id: <1408628251-18399-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755027AbaHUNo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:44:26 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:37094 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754291AbaHUNoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 09:44:24 -0400
+Date: Thu, 21 Aug 2014 15:38:25 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Rabin Vincent <rabin@rab.in>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 3/8] cpufreq: kirkwood: Remove use of the clk provider
+ API
+Message-ID: <20140821133825.GH8608@lunn.ch>
+References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1408375833-10703-4-git-send-email-tomeu.vizoso@collabora.com>
+ <20140820225513.5251.284@quantum>
+ <53F5A587.9030200@collabora.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F5A587.9030200@collabora.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+On Thu, Aug 21, 2014 at 09:53:43AM +0200, Tomeu Vizoso wrote:
+> On 08/21/2014 12:55 AM, Mike Turquette wrote:
+> >Quoting Tomeu Vizoso (2014-08-18 08:30:29)
+> >>Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> >>---
+> >>  drivers/cpufreq/kirkwood-cpufreq.c | 3 +--
+> >>  1 file changed, 1 insertion(+), 2 deletions(-)
+> >>
+> >>diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+> >>index 37a4806..f3d087f 100644
+> >>--- a/drivers/cpufreq/kirkwood-cpufreq.c
+> >>+++ b/drivers/cpufreq/kirkwood-cpufreq.c
+> >>@@ -12,7 +12,6 @@
+> >>  #include <linux/kernel.h>
+> >>  #include <linux/module.h>
+> >>  #include <linux/clk.h>
+> >>-#include <linux/clk-provider.h>
+> >>  #include <linux/cpufreq.h>
+> >>  #include <linux/of_device.h>
+> >>  #include <linux/platform_device.h>
+> >>@@ -50,7 +49,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
+> >>
+> >>  static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
+> >>  {
+> >>-       if (__clk_is_enabled(priv.powersave_clk))
+> >>+       if (clk_is_enabled(priv.powersave_clk))
+> >>                 return kirkwood_freq_table[1].frequency;
+> >>         return kirkwood_freq_table[0].frequency;
+> >>  }
+> >>--
+> >>1.9.3
+> >>
+> >
+> >Tomeu,
+> >
+> >After taking a second look at clk_is_enabled and the Kirkwood driver, I
+> >would prefer to not implement clk_is_enabled. The main reason is that it
+> >is racey, since the clock's status could of course change as soon as as
+> >that call completes. Furthermore I am worried that drivers might do
+> >something like:
+> >
+> >if (!clk_is_enabled(clk))
+> >	clk_enable(clk);
+> >
+> >Which is crap and the driver should just call clk_enable any time it
+> >needs the clock. To that end I propose to drop "clk: provide public
+> >clk_is_enabled function" and replace your update to kirkwood-cpufreq.c
+> >with the following patch. Let me know what you think.
 
----
+Hi Mike, Tomeu
 
-Changes in v3: None
-Changes in v2: None
-
- drivers/clk/Kconfig     |    9 +++
- drivers/clk/Makefile    |    1 +
- drivers/clk/clk-rk808.c |  147 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 157 insertions(+)
- create mode 100644 drivers/clk/clk-rk808.c
-
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index cfd3af7..84e0590 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -38,6 +38,15 @@ config COMMON_CLK_MAX77686
- 	---help---
- 	  This driver supports Maxim 77686 crystal oscillator clock. 
- 
-+config COMMON_CLK_RK808
-+	tristate "Clock driver for RK808"
-+	depends on MFD_RK808
-+	---help---
-+	  This driver supports RK808 crystal oscillator clock. These
-+	  multi-function devices have two fixed-rate oscillators,
-+	  clocked at 32KHz each. Clkout1 is always on, Clkout2 can off
-+	  by control register.
-+
- config COMMON_CLK_SI5351
- 	tristate "Clock driver for SiLabs 5351A/B/C"
- 	depends on I2C
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index f537a0b..99f53d5 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
- obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
- obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
- obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
-+obj-$(CONFIG_COMMON_CLK_RK808)		+= clk-rk808.o
- obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
- obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
- obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
-diff --git a/drivers/clk/clk-rk808.c b/drivers/clk/clk-rk808.c
-new file mode 100644
-index 0000000..14176bc
---- /dev/null
-+++ b/drivers/clk/clk-rk808.c
-@@ -0,0 +1,147 @@
-+/*
-+ * Clkout driver for Rockchip RK808
-+ *
-+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-+ *
-+ * Author: Chris Zhong <zyw@rock-chips.com>
-+ * Author: Zhang Qing <zhangqing@rock-chips.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/rk808.h>
-+#include <linux/i2c.h>
-+
-+struct rk808_clk {
-+	struct rk808 *rk808;
-+	struct clk_onecell_data clk_data;
-+	struct clk_hw		clkout1_hw;
-+	struct clk_hw		clkout2_hw;
-+};
-+
-+static unsigned long rk808_clkout_recalc_rate(struct clk_hw *hw,
-+					      unsigned long parent_rate)
-+{
-+	return 32768;
-+}
-+
-+static int rk808_clkout1_is_prepared(struct clk_hw *hw)
-+{
-+	return 1;
-+}
-+
-+static int rk808_clkout2_control(struct clk_hw *hw, bool enable)
-+{
-+	struct rk808_clk *rk808_clk = container_of(hw, struct rk808_clk,
-+						   clkout2_hw);
-+	struct rk808 *rk808 = rk808_clk->rk808;
-+
-+	return regmap_update_bits(rk808->regmap, RK808_CLK32OUT_REG,
-+				  CLK32KOUT2_EN, enable ? CLK32KOUT2_EN : 0);
-+}
-+
-+static int rk808_clkout2_prepare(struct clk_hw *hw)
-+{
-+	return rk808_clkout2_control(hw, 1);
-+}
-+
-+static void rk808_clkout2_unprepare(struct clk_hw *hw)
-+{
-+	rk808_clkout2_control(hw, 0);
-+}
-+
-+static int rk808_clkout2_is_prepared(struct clk_hw *hw)
-+{
-+	struct rk808_clk *rk808_clk = container_of(hw, struct rk808_clk,
-+						   clkout2_hw);
-+	struct rk808 *rk808 = rk808_clk->rk808;
-+	uint32_t val;
-+
-+	int ret = regmap_read(rk808->regmap, RK808_CLK32OUT_REG, &val);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	return (val & CLK32KOUT2_EN) ? 1 : 0;
-+}
-+
-+static const struct clk_ops rk808_clkout1_ops = {
-+	.is_prepared = rk808_clkout1_is_prepared,
-+	.recalc_rate = rk808_clkout_recalc_rate,
-+};
-+
-+static const struct clk_ops rk808_clkout2_ops = {
-+	.prepare = rk808_clkout2_prepare,
-+	.unprepare = rk808_clkout2_unprepare,
-+	.is_prepared = rk808_clkout2_is_prepared,
-+	.recalc_rate = rk808_clkout_recalc_rate,
-+};
-+
-+static int rk808_clk_probe(struct platform_device *pdev)
-+{
-+	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
-+	struct i2c_client *client = rk808->i2c;
-+	struct device_node *node = client->dev.of_node;
-+	struct clk_init_data init;
-+	struct clk **clk_table;
-+	struct rk808_clk *rk808_clk;
-+
-+	rk808_clk = devm_kzalloc(&pdev->dev, sizeof(*rk808_clk), GFP_KERNEL);
-+	if (!rk808_clk)
-+		return -ENOMEM;
-+
-+	rk808_clk->rk808 = rk808;
-+
-+	clk_table = devm_kzalloc(&client->dev,
-+				 2*sizeof(struct clk *), GFP_KERNEL);
-+	if (!clk_table)
-+		return -ENOMEM;
-+
-+	init.flags = CLK_IS_ROOT;
-+	init.parent_names = NULL;
-+	init.num_parents = 0;
-+	init.name = "rk808-clkout1";
-+	init.ops = &rk808_clkout1_ops;
-+	rk808_clk->clkout1_hw.init = &init;
-+	clk_table[0] = devm_clk_register(&pdev->dev, &rk808_clk->clkout1_hw);
-+
-+	init.name = "rk808-clkout2";
-+	init.ops = &rk808_clkout2_ops;
-+	rk808_clk->clkout2_hw.init = &init;
-+	clk_table[1] = devm_clk_register(&pdev->dev, &rk808_clk->clkout2_hw);
-+
-+	rk808_clk->clk_data.clks = clk_table;
-+	rk808_clk->clk_data.clk_num = 2;
-+	of_clk_add_provider(node, of_clk_src_onecell_get, clk_table);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver rk808_clk_driver = {
-+	.probe = rk808_clk_probe,
-+	.driver		= {
-+		.name	= "rk808-clkout",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+module_platform_driver(rk808_clk_driver);
-+
-+MODULE_DESCRIPTION("Clkout driver for the rk808 series PMICs");
-+MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
-+MODULE_AUTHOR("Zhang Qing <zhanqging@rock-chips.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:rk808-clk");
--- 
-1.7.9.5
+> >+static unsigned long cpu_frequency = 0;
 
 
+This has a problem. You are making an assumption about the initial
+state. The way the hardware works, is you change the state of the
+clock and then perform a Wait For Interrupt. Once the hardware has
+finished adjusting its PLL, it raises an interrupt and things
+continue.
+
+However, if you don't cause an actual state change, the WFI never
+returns. If this assumption is wrong, your box is dead the first time
+it tries to change cpu frequency.
+
+This is why the code reads the hardware register to find the real
+current state, rather than assume it.
+
+	Andrew
+
+> >+
+> >  /*
+> >   * Kirkwood can swap the clock to the CPU between two clocks:
+> >   *
+> >@@ -50,9 +51,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
+> >
+> >  static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
+> >  {
+> >-	if (__clk_is_enabled(priv.powersave_clk))
+> >-		return kirkwood_freq_table[1].frequency;
+> >-	return kirkwood_freq_table[0].frequency;
+> >+	return cpu_frequency;
+> >  }
+> >
+> >  static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
+> >@@ -71,9 +70,11 @@ static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
+> >  	switch (state) {
+> >  	case STATE_CPU_FREQ:
+> >  		clk_disable(priv.powersave_clk);
+> >+		cpu_frequency = kirkwood_freq_table[0].frequency;
+> >  		break;
+> >  	case STATE_DDR_FREQ:
+> >  		clk_enable(priv.powersave_clk);
+> >+		cpu_frequency = kirkwood_freq_table[1].frequency;
+> >  		break;
+> >  	}
+> >
+> >@@ -133,6 +134,7 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
+> >
+> >  	clk_prepare_enable(priv.cpu_clk);
+> >  	kirkwood_freq_table[0].frequency = clk_get_rate(priv.cpu_clk) / 1000;
+> >+	cpu_frequency = kirkwood_freq_table[0].frequency;
+> >
+> >  	priv.ddr_clk = of_clk_get_by_name(np, "ddrclk");
+> >  	if (IS_ERR(priv.ddr_clk)) {
+> >
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
