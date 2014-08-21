@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784AbaHUMmi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:42:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15320 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679AbaHUMmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:42:36 -0400
-Date: Thu, 21 Aug 2014 14:42:24 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH v2 4/6] KVM: VMX: dynamise PLE window
-Message-ID: <20140821124223.GD20453@potion.brq.redhat.com>
-References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
- <1408567997-21222-5-git-send-email-rkrcmar@redhat.com>
- <53F5AD3E.3050800@redhat.com>
- <20140821115405.GD20546@potion.brq.redhat.com>
- <53F5E623.5090906@redhat.com>
+	id S1754679AbaHUMqH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:46:07 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45089 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754291AbaHUMqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 08:46:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19xjwuTiLyFLEm0YH1zv8d95jaLv/aUS7M=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 439B35CB856
+Date: Thu, 21 Aug 2014 08:45:50 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: Add suspend-to-RAM wake
+ up support
+Message-ID: <20140821124550.GX12769@titan.lakedaemon.net>
+References: <1408546172-22484-1-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F5E623.5090906@redhat.com>
+In-Reply-To: <1408546172-22484-1-git-send-email-geert+renesas@glider.be>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-21 14:29+0200, Paolo Bonzini:
-> Il 21/08/2014 13:54, Radim Krčmář ha scritto:
-> > Guity as charged.
-> > Using 0/1 or true/false in this context directly would be pretty bad ...
-> > Is enum fine? (SHIRINK_PLE_WINDOW, GROW_PLE_WINDOW?)
+Geert,
+
+On Wed, Aug 20, 2014 at 04:49:32PM +0200, Geert Uytterhoeven wrote:
+> Set the ->irq_enable() and ->irq_disable() methods to NULL to enable
+> lazy disable of interrupts, and set IRQCHIP_MASK_ON_SUSPEND to tell the
+> core that only IRQs marked as wake-ups need to stay enabled during
+> suspend-to-RAM.
 > 
-> I prefer good old Ctrl-C Ctrl-V (adjusted for your favorite editor). :)
+> This makes wake-up by gpio-keys from suspend-to-RAM work on
+> r8a7740/Armadillo.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+> Not tested on sh73a0/kzm9g, r8a7778/bock-w, r8a7779/marzen
+> 
+> Similar changes for gpio-rcar and renesas-irqc went in before, but
+> split in two parts:
+>   - commit 272012d0f748de2e ("irqchip: renesas-irqc: Use lazy disable")
+>   - commit 6a7e3b3007b5396a ("irqchip: renesas-irqc: Enable mask on suspend")
+>   - commit fba968a1e6b84be0 ("gpio: rcar: Use lazy disable")
+>   - commit 403961120667bed7 ("gpio: rcar: Enable mask on suspend")
+> 
+> However, I believe it doesn't make much sense to split this:
+>   - Enabling lazy disable on its own introduces a regression, as it
+>     causes the system to wake-up on IRQs not marked as wake-ups,
+>   - Adding IRQCHIP_MASK_ON_SUSPEND on its own doesn't have any impact.
+> ---
+>  drivers/irqchip/irq-renesas-intc-irqpin.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 
-I, I should be able to do it, but nightmares are going to last a while.
+Applied to irqchip/core
 
-(And to lower chances of v4: are tracepoint macros, like for kvm_apic,
- frowned upon now?)
+thx,
+
+Jason.
