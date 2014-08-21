@@ -1,149 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbaHUQNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:13:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36471 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaHUQNO (ORCPT
+	id S1752415AbaHUQRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:17:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64573 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750858AbaHUQR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:13:14 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Alessandro Zummo <a.zummo@towertech.it>
-CC: <rtc-linux@googlegroups.com>, Tony Lindgren <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH] drivers/rtc/rtc-ds1307.c: Support optional wakeup interrupt source
-Date: Thu, 21 Aug 2014 11:12:01 -0500
-Message-ID: <1408637521-6764-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 21 Aug 2014 12:17:29 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
+Date: Thu, 21 Aug 2014 18:36:26 +0200
+Message-ID: <2344364.bO1d4HtJcY@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1408622934.3315.8.camel@rzhang1-toshiba>
+References: <5487060.QsgluucUH4@vostro.rjw.lan> <1408622934.3315.8.camel@rzhang1-toshiba>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the recent pinctrl-single changes, SoCs such as Texas
-Instrument's OMAP processors can treat wake-up events from deeper idle
-states as interrupts.
+On Thursday, August 21, 2014 08:08:54 PM Zhang Rui wrote:
+> Hi, Rafael,
+> 
+> On Thu, 2014-08-21 at 06:04 +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > We generally don't allow ACPI drivers to bind to ACPI device objects
+> > that companion "physical" device objects are created for to avoid
+> > situations in which two different drivers may attempt to handle one
+> > device at the same time.
+> 
+> Yes, and I think we should not break this rule.
 
-Let's add support for the optional second interrupt for wake-up
-events. And then SoC can wakeup and handle the event using it's
-regular handler.
+No, we broke the way the code worked previously.  We need to restore it first
+and *then* try to fix it up, not the other way around.
 
-Finally, to pass the wake-up interrupt in the dts file,
-interrupts-extended property needs to be passed.
+> >   Recent ACPI device enumeration rework
+> > extended that approach to ACPI PNP devices by starting to use a scan
+> > handler for enumerating them.  However, we previously allowed ACPI
+> > drivers to bind to ACPI device objects with existing PNP device
+> > companions and changing that led to functional regressions on some
+> > systems.
+> > 
+> Question: except the PNP0C01/PNP0C02 case, if we have an device have two
+> ids that matches two different drivers, should we allow both drivers
+> probe successfully?
 
-This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
-support for optional wake-up")
+No, we shouldn't, but in the cases in question we have only one driver (an
+ACPI one).
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/rtc/rtc-ds1307.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
+> I think the answer is no.
+> In the PNP0C01/PNP0C02 case, I think we can fix the issue by the
+> following patch instead.
 
-diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
-index f03d5ba..5feedfc 100644
---- a/drivers/rtc/rtc-ds1307.c
-+++ b/drivers/rtc/rtc-ds1307.c
-@@ -15,6 +15,8 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/i2c.h>
-+#include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/string.h>
- #include <linux/rtc.h>
- #include <linux/bcd.h>
-@@ -115,6 +117,7 @@ struct ds1307 {
- 	struct i2c_client	*client;
- 	struct rtc_device	*rtc;
- 	struct work_struct	work;
-+	int			wakeirq;
- 	s32 (*read_block_data)(const struct i2c_client *client, u8 command,
- 			       u8 length, u8 *values);
- 	s32 (*write_block_data)(const struct i2c_client *client, u8 command,
-@@ -835,6 +838,34 @@ ds1307_nvram_write(struct file *filp, struct kobject *kobj,
- 
- /*----------------------------------------------------------------------*/
- 
-+static int ds1307_i2c_suspend(struct i2c_client *client,  pm_message_t mesg)
-+{
-+	struct ds1307 *ds1307 = i2c_get_clientdata(client);
-+	struct device *dev = &client->dev;
-+
-+	if (!ds1307->wakeirq)
-+		return 0;
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq(ds1307->wakeirq);
-+
-+	return 0;
-+}
-+
-+static int ds1307_i2c_resume(struct i2c_client *client)
-+{
-+	struct ds1307 *ds1307 = i2c_get_clientdata(client);
-+	struct device *dev = &client->dev;
-+
-+	if (!ds1307->wakeirq)
-+		return 0;
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_nosync(ds1307->wakeirq);
-+
-+	return 0;
-+}
-+
- static int ds1307_probe(struct i2c_client *client,
- 			const struct i2c_device_id *id)
- {
-@@ -1116,6 +1147,8 @@ read_rtc:
- 	}
- 
- 	if (want_irq) {
-+		struct device_node *node = client->dev.of_node;
-+
- 		err = request_irq(client->irq, ds1307_irq, IRQF_SHARED,
- 			  ds1307->rtc->name, client);
- 		if (err) {
-@@ -1125,6 +1158,28 @@ read_rtc:
- 
- 			set_bit(HAS_ALARM, &ds1307->flags);
- 			dev_dbg(&client->dev, "got IRQ %d\n", client->irq);
-+			if (node)
-+				ds1307->wakeirq = irq_of_parse_and_map(node, 1);
-+
-+			if (ds1307->wakeirq <= 0)
-+				ds1307->wakeirq = 0;
-+			else
-+				err = devm_request_irq(&client->dev,
-+						       ds1307->wakeirq,
-+						       ds1307_irq,
-+						       IRQF_ONESHOT,
-+						       ds1307->rtc->name,
-+						       client);
-+			if (err) {
-+				dev_err(&client->dev, "unable to get wakeIRQ %d\n",
-+					err);
-+				free_irq(client->irq, client);
-+				goto exit;
-+			}
-+
-+			/* We enable the interrupt only during suspend path */
-+			if (ds1307->wakeirq)
-+				disable_irq_nosync(ds1307->wakeirq);
- 		}
- 	}
- 
-@@ -1189,6 +1244,8 @@ static struct i2c_driver ds1307_driver = {
- 	},
- 	.probe		= ds1307_probe,
- 	.remove		= ds1307_remove,
-+	.suspend	= ds1307_i2c_suspend,
-+	.resume		= ds1307_i2c_resume,
- 	.id_table	= ds1307_id,
- };
- 
--- 
-1.7.9.5
+The right answer to me is to get rid of ACPI drviers entirely.
+
+The thing below adds complexity to the resources management which I'm not
+sure is necessary.
+
+In any case, please let's do that on top of the $subject patch not
+instead of it, because there are more cases we need to cover.  And we
+need a fix for -stable.
+
+Rafael
 
