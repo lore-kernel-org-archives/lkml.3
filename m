@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541AbaHUXgC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 19:36:02 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14944 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752449AbaHUXgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 19:36:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,376,1406617200"; 
-   d="scan'208";a="561883074"
-Date: Fri, 22 Aug 2014 07:37:29 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink
- supporting
-Message-ID: <20140821233729.GB2420@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20130411232907.GC29398@hacker.(null)>
- <20130412152237.GM16732@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130412152237.GM16732@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755637AbaHUXgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 19:36:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44062 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaHUXgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 19:36:13 -0400
+Date: Thu, 21 Aug 2014 16:36:12 -0700 (PDT)
+Message-Id: <20140821.163612.282672926741753926.davem@davemloft.net>
+To: santosh.shilimkar@ti.com
+Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
+        grant.likely@linaro.org, devicetree@vger.kernel.org, sandeep_n@ti.com
+Subject: Re: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 21 Aug 2014 16:36:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
-On Fri, Apr 12, 2013 at 05:22:37PM +0200, Andi Kleen wrote:
->On Fri, Apr 12, 2013 at 07:29:07AM +0800, Wanpeng Li wrote:
->> Ping Andi,
->> On Thu, Apr 04, 2013 at 05:09:08PM +0800, Wanpeng Li wrote:
->> >order >= MAX_ORDER pages are only allocated at boot stage using the 
->> >bootmem allocator with the "hugepages=xxx" option. These pages are never 
->> >free after boot by default since it would be a one-way street(>= MAX_ORDER
->> >pages cannot be allocated later), but if administrator confirm not to 
->> >use these gigantic pages any more, these pinned pages will waste memory
->> >since other users can't grab free pages from gigantic hugetlb pool even
->> >if OOM, it's not flexible.  The patchset add hugetlb gigantic page pools
->> >shrink supporting. Administrator can enable knob exported in sysctl to
->> >permit to shrink gigantic hugetlb pool.
->
->
->I originally didn't allow this because it's only one way and it seemed
->dubious.  I've been recently working on a new patchkit to allocate
->GB pages from CMA. With that freeing actually makes sense, as 
->the pages can be reallocated.
->
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Fri, 15 Aug 2014 11:12:39 -0400
 
-More than one year past, If your allocate GB pages from CMA merged? 
+> Update version after incorporating David Miller's comment from earlier
+> posting [1]. I would like to get these merged for upcoming 3.18 merge
+> window if there are no concerns on this version.
+> 
+> The network coprocessor (NetCP) is a hardware accelerator that processes
+> Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
+> switch sub-module to send and receive packets. NetCP also includes a packet
+> accelerator (PA) module to perform packet classification operations such as
+> header matching, and packet modification operations such as checksum
+> generation. NetCP can also optionally include a Security Accelerator(SA)
+> capable of performing IPSec operations on ingress/egress packets.
+>     
+> Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
+> includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
+> 1Gb/s rates per Ethernet port.
+>     
+> NetCP driver has a plug-in module architecture where each of the NetCP
+> sub-modules exist as a loadable kernel module which plug in to the netcp
+> core. These sub-modules are represented as "netcp-devices" in the dts
+> bindings. It is mandatory to have the ethernet switch sub-module for
+> the ethernet interface to be operational. Any other sub-module like the
+> PA is optional.
+> 
+> Both GBE and XGBE network processors supported using common driver. It
+> is also designed to handle future variants of NetCP.
 
-Regards,
-Wanpeng Li 
+I don't want to see an offload driver that doesn't plug into the existing
+generic frameworks for configuration et al.
 
->-Andi
->
->--
->To unsubscribe, send a message with 'unsubscribe linux-mm' in
->the body to majordomo@kvack.org.  For more info on Linux MM,
->see: http://www.linux-mm.org/ .
->Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+If no existing facility exists to support what you need, you must work
+with the upstream maintainers to design and create one.
+
+It is absolutely no reasonable for every "switch on a chip" driver to
+export it's own configuration knob, we need a standard interface all
+such drivers will plug into and provide.
