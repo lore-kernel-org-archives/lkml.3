@@ -1,129 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722AbaHUBmA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:42:00 -0400
-Received: from relay-s04-hub006.domainlocalhost.com ([74.115.207.217]:5034
-	"EHLO relay-S04-HUB006.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750834AbaHUBl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:41:58 -0400
-X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Aug 2014 21:41:58 EDT
-From: Dudley Du <dudl@cypress.com>
-To: Dudley Du <dudley.dulixin@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Benson Leung <bleung@google.com>, Patrik Fimml <patrikf@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 0/14] input: cyapa: re-architecture driver to support
- multi-trackpads in one driver
-Thread-Topic: [PATCH v4 0/14] input: cyapa: re-architecture driver to
- support multi-trackpads in one driver
-Thread-Index: Ac+hiqcggqGLJSASR1uLi5h07B+kvgbVUMzA
-Date: Thu, 21 Aug 2014 01:36:24 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F4C940AAC@S04-MBX01-01.s04.local>
-References: <53c77101.0374440a.664d.46e2@mx.google.com>
-In-Reply-To: <53c77101.0374440a.664d.46e2@mx.google.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.30.12.149]
-Content-Type: text/plain; charset="utf-8"
+	id S1751804AbaHUBxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:53:06 -0400
+Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:8853
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750844AbaHUBxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 21:53:04 -0400
+Message-ID: <1408585972.4058.95.camel@snotra.buserror.net>
+Subject: Re: [PATCH] mtd: fsl_ifc_nand: Recover corrupted empty page for
+ preventing read-only mount in UBIFS
+From: Scott Wood <scottwood@freescale.com>
+To: <eunb.song@samsung.com>
+CC: <computersforpeace@gmail.com>, <artem.bityutskiy@linux.intel.com>,
+        <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Date: Wed, 20 Aug 2014 20:52:52 -0500
+In-Reply-To: <26017351.61791396316965998.JavaMail.weblogic@epv6ml06>
+References: <26017351.61791396316965998.JavaMail.weblogic@epv6ml06>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:800:984d:d5d4:4421]
+X-ClientProxiedBy: BLUPR08CA0058.namprd08.prod.outlook.com (10.141.200.38) To
+ DM2PR0301MB0734.namprd03.prod.outlook.com (25.160.97.142)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0310C78181
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(199003)(24454002)(377424004)(189002)(51704005)(85306004)(77096002)(88136002)(103116003)(64706001)(23676002)(102836001)(99396002)(47776003)(104166001)(20776003)(105586002)(95666004)(50466002)(106356001)(21056001)(42186005)(87286001)(87976001)(50226001)(80022001)(77156001)(4396001)(86362001)(46102001)(81542001)(83072002)(89996001)(2351001)(19580395003)(81342001)(83322001)(19580405001)(110136001)(77982001)(107046002)(76176999)(79102001)(92566001)(74502001)(92726001)(50986999)(76482001)(101416001)(93916002)(62966002)(33646002)(31966008)(74662001)(99106002);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR0301MB0734;H:[IPv6:2601:2:5800:3f7:800:984d:d5d4:4421];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7L1g5UR002539
 
-Hi Dmitry, Patrik,
+On Tue, 2014-04-01 at 01:49 +0000, Eunbong Song wrote:
+> Even if the meaning of EUCLEAN was changed by commit edbc4540.
+> There is still possibility of read-only mount in UBIFS with ubifs_scan() "corrupt empty space at LEB".
+> So i made this patch for fix that problem.
 
-Is there any update or feedback on the re-submitted v4 cyapa driver patches?
+Please elaborate on the nature of the problem.
 
-Thanks,
-Dudley
+> This patch do as follow.
+>  - If there are ecc errors which is equal to or less than chip->ecc.strength in page.
+>  - Check that page has how many zero bits, and if zero bits are equal to or less than
+>    chip->ecc.strength then overwrite 1 to zero bits in buf.
 
-> -----Original Message-----
-> From: linux-input-owner@vger.kernel.org [mailto:linux-input-
-> owner@vger.kernel.org] On Behalf Of Dudley Du
-> Sent: Thursday, July 17, 2014 2:45 PM
-> To: Dmitry Torokhov; Rafael J. Wysocki
-> Cc: Benson Leung; Patrik Fimml; linux-input@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH v4 0/14] input: cyapa: re-architecture driver to support
-> multi-trackpads in one driver
->
-> This patch set is made based on kernel 3.16.0-rc5.
-> It's aimed to re-architecture the cyapa driver to support
-> old gen3 trackpad device and new gen5 trackpad device in one
-> cyapa driver for easily productions support based on
-> customers' requirements, and add sysfs functions and interfaces
-> supported that required by users and customers.
-> Because the earlier gen3 and the latest gen5 trackpad devies using
-> two different chipsets, and have different protocol and interfaces.
-> If supported these two trackpad devices in two different drivers, then
-> it will be difficult to manage productions and later firmware updates.
-> it will cause customer don't know which one to use and update
-> because these two trackpad devices have been used and integrated
-> in same one productions at a time, so must to support these two trackpad
-> devices in same on driver.
->
-> Compare to v3, it has below changes:
-> 1) Eliminate irq-state-remembering logic, remove irq help functions;
-> 2) Remove state sync help functions instead of mutex_lock/mutex_unlock;
-> 3) Fix comments and charaters errors and not consistent issues.
-> 4) Fix other issues that pointed out in the review.
->
->
-> The new architecture is made of:
-> cyapa.c - the core of the architecture, supply interfaces and
-> functions to system and read trackpad devices.
-> cyapa_gen3.c - functions support for gen3 trackpad devices,
-> cyapa_gen5.c - functions support for gen5 trackpad devices.
->
-> Beside this introduction patch, it has 14 patches listed as below.
-> For these patches each one is patched based on previous one.
->
-> patch 1/14: re-architecture cyapa driver with core functions,
-> and applying the device detecting function in async thread to speed
-> up system boot time.
->
-> patch 2/14: add cyapa driver power management interfaces support.
->
-> patch 3/14: add cyapa driver runtime power management interfaces support.
->
-> patch 4/14: add cyapa key function interfaces in sysfs system.
-> Including read firmware version, get production ID, read baseline,
-> re-calibrate trackpad baselines and do trackpad firmware update.
->
-> patch 5/14: add read firmware image and read raw trackpad device'
-> sensors' raw data interface in debugfs system.
->
-> patch 6/14: add gen3 trackpad device basic functions support.
->
-> patch 7/14: add gen3 trackpad device firmware update function support.
->
-> patch 8/14: add gen3 trackpad device report baseline and do force
-> re-calibrate functions support.
->
-> patch 9/14: add gen3 trackpad device read firmware image function support.
->
-> patch 10/14: add gen5 trackpad device basic functions support.
->
-> patch 11/14: add gen5 trackpad device firmware update function support.
->
-> patch 12/14: add gen5 trackpad device report baseline and do force
-> re-calibrate functions support.
->
-> patch 13/14: add gen5 trackpad device read firmware image and report
-> sensors' raw data values functions support.
->
-> patch 14/14: add function to monitor LID close event to off trackpad device.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This is difficult to parse, with no mention in this sentence that you're
+talking about corrupted empty pages.
+
+> ubifs_scan() cannot detect corrupted empty space because buf is recovered by this patch.
+> And this is safe because ecc controller can correct up to chip->ecc.strength bits.
+
+So the concern is that is_blank is failing to report a page that has not
+been written to but has errors that would have been correctable if the
+page had been written?
+
+Do most drivers handle this?
+
+> Signed-off-by: Eunbong Song <eunb.song@samsung.com>
+> ---
+>  drivers/mtd/nand/fsl_ifc_nand.c |   41 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 41 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/fsl_ifc_nand.c b/drivers/mtd/nand/fsl_ifc_nand.c
+> index 90ca7e7..2129c39 100644
+> --- a/drivers/mtd/nand/fsl_ifc_nand.c
+> +++ b/drivers/mtd/nand/fsl_ifc_nand.c
+> @@ -277,6 +277,42 @@ static int is_blank(struct mtd_info *mtd, unsigned int bufnum)
+>  	return 1;
+>  }
+>  
+> +static int num_zero_bits(uint8_t val)
+> +{
+> +	int i, ret=0;
+> +
+> +	for(i=7; i>=0 ; i--)
+> +		if(!(0x1 & (val >> i)))
+> +			ret++;
+
+Whitespace (here and elsewhere)
+
+Also, use hweight8(~val) instead of reimplementing it.  Or better, use
+hweight64() and process the data in larger chunks.
+
+> +	return ret;
+> +}
+> +
+> +static int is_corrupted_blank(struct mtd_info *mtd, uint8_t * buf)
+> +{
+> +	struct nand_chip *chip = mtd->priv;
+> +	int i;
+> +	int zero_bits = 0;
+> +
+> +	for (i = 0; i < mtd->writesize ; i++) {
+> +		if(buf[i] != 0xff) {
+> +			zero_bits += num_zero_bits(buf[i]);	
+> +		}
+> +	}
+> +
+> +	if(zero_bits && (zero_bits <= chip->ecc.strength)){
+> +		return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+
+What if it's a page that legitimately has only a handful of zero bits?
+You need to count zero bits in the ECC as well.
+
+Also, this could be combined with is_blank().
+
+> +static void recover_corrupted_blank(struct mtd_info *mtd, uint8_t * buf)
+> +{
+> +	memset(buf, 0xff, mtd->writesize);
+> +	return;
+> +}
+> +
+>  /* returns nonzero if entire page is blank */
+>  static int check_read_ecc(struct mtd_info *mtd, struct fsl_ifc_ctrl *ctrl,
+>  			  u32 *eccstat, unsigned int bufnum)
+> @@ -760,6 +796,11 @@ static int fsl_ifc_read_page(struct mtd_info *mtd, struct nand_chip *chip,
+>  	if (ctrl->nand_stat != IFC_NAND_EVTER_STAT_OPC)
+>  		mtd->ecc_stats.failed++;
+>  
+> +	if(nctrl->max_bitflips && (nctrl->max_bitflips <= chip->ecc.strength)){
+> +		if(is_corrupted_blank(mtd, buf))
+> +			recover_corrupted_blank(mtd, buf);
+> +	}
+
+If the page is blank except for errors, most likely max_bitflips will be
+zero because fsl_ifc_run_command() already considered it an
+uncorrectable error and set ECCER instead.  Moving corrupted blank page
+detection into is_blank() wouldn't have this problem.
+
+How did you test this patch?
+
+-Scott
+
+
