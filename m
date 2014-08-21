@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524AbaHUV6V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 17:58:21 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:56525 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340AbaHUV5f (ORCPT
+	id S1755542AbaHUV6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 17:58:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54836 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754975AbaHUV6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 17:57:35 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: Prashant Sreedharan <prashant@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] tg3: Fix tx_pending check for MAX_SKB_FRAGS
-Date: Thu, 21 Aug 2014 14:57:19 -0700
-Message-Id: <1408658240-6811-2-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1408658240-6811-1-git-send-email-bpoirier@suse.de>
-References: <1408658240-6811-1-git-send-email-bpoirier@suse.de>
+	Thu, 21 Aug 2014 17:58:45 -0400
+Date: Thu, 21 Aug 2014 14:58:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+        julia.lawall@lip6.fr
+Subject: Re: [Ocfs2-devel] [PATCH] ocfs2: delete double assignment
+Message-Id: <20140821145844.a661662c0823ec930ae39a6f@linux-foundation.org>
+In-Reply-To: <20140728152632.GA2926@himangi-Dell>
+References: <20140728152632.GA2926@himangi-Dell>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rest of the driver assumes at least one free descriptor in the tx ring.
-Therefore, since an skb with max frags takes up (MAX_SKB_FRAGS + 1)
-descriptors, tx_pending must be > (MAX_SKB_FRAGS + 1).
+On Mon, 28 Jul 2014 20:56:32 +0530 Himangi Saraogi <himangi774@gmail.com> wrote:
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+> Delete successive assignments to the same location. The two assignments are
+> simply identical.
+> 
+> A simplified version of Coccinelle semantic match that finds this problem is as
+> follows:
+> 
+> // <smpl>
+> @@
+> expression i;
+> @@
+> 
+> *i = ...;
+>  i = ...;
+> // </smpl>
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> ---
+> Should the fist assignment be initializing the pv_minor field?
+
+I'd say so, yes.
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: fs/ocfs2/stack_user.c: fix typo in ocfs2_control_release()
+
+It is supposed to zero pv_minor.
+
+Reported-by: Himangi Saraogi <himangi774@gmail.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
-Changes v1->v2
-Moved ahead in the series from 3/3 to 2/3, no functionnal change
 
-I reproduced this bug using the same approach explained in patch 1.
-The bug reproduces with tx_pending = 18
-
----
- drivers/net/ethernet/broadcom/tg3.c | 2 +-
+ fs/ocfs2/stack_user.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index b11c0fd..0cecd6d 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -12319,7 +12319,7 @@ static int tg3_set_ringparam(struct net_device *dev, struct ethtool_ringparam *e
- 	if ((ering->rx_pending > tp->rx_std_ring_mask) ||
- 	    (ering->rx_jumbo_pending > tp->rx_jmb_ring_mask) ||
- 	    (ering->tx_pending > TG3_TX_RING_SIZE - 1) ||
--	    (ering->tx_pending <= MAX_SKB_FRAGS) ||
-+	    (ering->tx_pending <= MAX_SKB_FRAGS + 1) ||
- 	    (tg3_flag(tp, TSO_BUG) &&
- 	     (ering->tx_pending <= (MAX_SKB_FRAGS * 3))))
- 		return -EINVAL;
--- 
-1.8.4.5
+diff -puN fs/ocfs2/stack_user.c~fs-ocfs2-stack_userc-fix-typo-in-ocfs2_control_release fs/ocfs2/stack_user.c
+--- a/fs/ocfs2/stack_user.c~fs-ocfs2-stack_userc-fix-typo-in-ocfs2_control_release
++++ a/fs/ocfs2/stack_user.c
+@@ -591,7 +591,7 @@ static int ocfs2_control_release(struct
+ 		 */
+ 		ocfs2_control_this_node = -1;
+ 		running_proto.pv_major = 0;
+-		running_proto.pv_major = 0;
++		running_proto.pv_minor = 0;
+ 	}
+ 
+ out:
+_
 
