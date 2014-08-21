@@ -1,138 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672AbaHUHuw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 03:50:52 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:35807 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750844AbaHUHuu (ORCPT
+	id S1753839AbaHUHxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 03:53:50 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:43679 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaHUHxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 03:50:50 -0400
-From: Leo Yan <leoy@marvell.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Leo Yan <leoy@marvell.com>
-Subject: [RFC PATCH] clockevents: re-calculate event when cpu enter idle
-Date: Thu, 21 Aug 2014 15:46:51 +0800
-Message-ID: <1408607211-13027-1-git-send-email-leoy@marvell.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 21 Aug 2014 03:53:49 -0400
+Message-ID: <53F5A587.9030200@collabora.com>
+Date: Thu, 21 Aug 2014 09:53:43 +0200
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
- definitions=2014-08-21_03:2014-08-20,2014-08-21,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1408210103
+To: Mike Turquette <mturquette@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rabin Vincent <rabin@rab.in>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Subject: Re: [PATCH v7 3/8] cpufreq: kirkwood: Remove use of the clk provider
+ API
+References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com> <1408375833-10703-4-git-send-email-tomeu.vizoso@collabora.com> <20140820225513.5251.284@quantum>
+In-Reply-To: <20140820225513.5251.284@quantum>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We observed the redundant interrupts for broadcast timer, pls see
-below flow:
+On 08/21/2014 12:55 AM, Mike Turquette wrote:
+> Quoting Tomeu Vizoso (2014-08-18 08:30:29)
+>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>> ---
+>>   drivers/cpufreq/kirkwood-cpufreq.c | 3 +--
+>>   1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+>> index 37a4806..f3d087f 100644
+>> --- a/drivers/cpufreq/kirkwood-cpufreq.c
+>> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
+>> @@ -12,7 +12,6 @@
+>>   #include <linux/kernel.h>
+>>   #include <linux/module.h>
+>>   #include <linux/clk.h>
+>> -#include <linux/clk-provider.h>
+>>   #include <linux/cpufreq.h>
+>>   #include <linux/of_device.h>
+>>   #include <linux/platform_device.h>
+>> @@ -50,7 +49,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
+>>
+>>   static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
+>>   {
+>> -       if (__clk_is_enabled(priv.powersave_clk))
+>> +       if (clk_is_enabled(priv.powersave_clk))
+>>                  return kirkwood_freq_table[1].frequency;
+>>          return kirkwood_freq_table[0].frequency;
+>>   }
+>> --
+>> 1.9.3
+>>
+>
+> Tomeu,
+>
+> After taking a second look at clk_is_enabled and the Kirkwood driver, I
+> would prefer to not implement clk_is_enabled. The main reason is that it
+> is racey, since the clock's status could of course change as soon as as
+> that call completes. Furthermore I am worried that drivers might do
+> something like:
+>
+> if (!clk_is_enabled(clk))
+> 	clk_enable(clk);
+>
+> Which is crap and the driver should just call clk_enable any time it
+> needs the clock. To that end I propose to drop "clk: provide public
+> clk_is_enabled function" and replace your update to kirkwood-cpufreq.c
+> with the following patch. Let me know what you think.
 
-1. Process A starts a hrtimer with 100ms timeout, then Process A will
-   wait on the waitqueue to sleep;
-2. The CPU which Process A runs on will enter idle and call notify
-   CLOCK_EVT_NOTIFY_BROADCAST_ENTER, so the CPU will shutdown its local
-   and set broadcast timer's next event with delta for 100ms timeout;
-3. After 70ms later, the CPU is waken up by other peripheral's interrupt
-   and Process A will be waken up as well; Process A will cancel the hrtimer
-   at this point, kernel will remove the timer event from the event queue
-   but it will not really disable broadcast timer;
-4. So after 30ms later, the broadcast timer interrupt will be triggered
-   even though the timer has been cancelled by s/w in step 3.
+Yep, this looks much better to me. I will replace 2/8 and 3/8 with this 
+one for v8.
 
-To fix this issue, this patch will check the situation when the cpu
-enter and exit idle. So every time iterate the related cpus to calculate
-the correct broadcast event value.
+Reviewed-By: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-Signed-off-by: Leo Yan <leoy@marvell.com>
----
- kernel/time/tick-broadcast.c | 56 +++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 48 insertions(+), 8 deletions(-)
+Thanks!
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 64c5990..1dfe08e 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -679,6 +679,30 @@ static void broadcast_move_bc(int deadcpu)
- 	clockevents_program_event(bc, bc->next_event, 1);
- }
- 
-+static void tick_broadcast_oneshot_get_earlier_event(void)
-+{
-+	struct clock_event_device *bc;
-+	struct tick_device *td;
-+	ktime_t now, next_event;
-+	int cpu, next_cpu = 0;
-+
-+	next_event.tv64 = KTIME_MAX;
-+
-+	/* iterate all expired events */
-+	for_each_cpu(cpu, tick_broadcast_oneshot_mask) {
-+
-+		td = &per_cpu(tick_cpu_device, cpu);
-+		if (td->evtdev->next_event.tv64 < next_event.tv64) {
-+			next_event.tv64 = td->evtdev->next_event.tv64;
-+			next_cpu = cpu;
-+		}
-+	}
-+
-+	bc = tick_broadcast_device.evtdev;
-+	if (next_event.tv64 != KTIME_MAX)
-+		tick_broadcast_set_event(bc, next_cpu, next_event, 0);
-+}
-+
- /*
-  * Powerstate information: The system enters/leaves a state, where
-  * affected devices might stop
-@@ -717,17 +741,32 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_oneshot_mask)) {
- 			WARN_ON_ONCE(cpumask_test_cpu(cpu, tick_broadcast_pending_mask));
- 			broadcast_shutdown_local(bc, dev);
-+
-+			/*
-+			 * We only reprogram the broadcast timer if we did not
-+			 * mark ourself in the force mask; If the current CPU
-+			 * is in the force mask, then we are going to be woken
-+			 * by the IPI right away.
-+			 */
-+			if (cpumask_test_cpu(cpu, tick_broadcast_force_mask))
-+				goto out;
-+
- 			/*
--			 * We only reprogram the broadcast timer if we
--			 * did not mark ourself in the force mask and
--			 * if the cpu local event is earlier than the
--			 * broadcast event. If the current CPU is in
--			 * the force mask, then we are going to be
--			 * woken by the IPI right away.
-+			 * Reprogram the broadcast timer if the cpu local event
-+			 * is earlier than the broadcast event;
- 			 */
--			if (!cpumask_test_cpu(cpu, tick_broadcast_force_mask) &&
--			    dev->next_event.tv64 < bc->next_event.tv64)
-+			if (dev->next_event.tv64 < bc->next_event.tv64) {
- 				tick_broadcast_set_event(bc, cpu, dev->next_event, 1);
-+				goto out;
-+			}
-+
-+			/*
-+			 * It's possible the cpu has cancelled the timer which
-+			 * has set the broadcast event at last time, so
-+			 * re-calculate the broadcast timer according to all
-+			 * related cpus' expire events.
-+			 */
-+			tick_broadcast_oneshot_get_earlier_event();
- 		}
- 		/*
- 		 * If the current CPU owns the hrtimer broadcast
-@@ -802,6 +841,7 @@ int tick_broadcast_oneshot_control(unsigned long reason)
- 			 * the cpu local timer device.
- 			 */
- 			tick_program_event(dev->next_event, 1);
-+			tick_broadcast_oneshot_get_earlier_event();
- 		}
- 	}
- out:
--- 
-1.9.1
+Tomeu
+
+> Regards,
+> Mike
+>
+>
+>
+>  From 713b46fd66abd26a4e4d584a0b8a2a28c0459a60 Mon Sep 17 00:00:00 2001
+> From: Mike Turquette <mturquette@linaro.org>
+> Date: Mon, 18 Aug 2014 17:30:29 +0200
+> Subject: [PATCH] cpufreq: kirkwood: Remove use of the clk provider API
+>
+> Instead of checking the clock framework to see if the clock is enabled,
+> track the cpu frequency within the driver as the powersave_clk is
+> enabled and disabled.
+>
+> Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> ---
+>   drivers/cpufreq/kirkwood-cpufreq.c | 10 ++++++----
+>   1 file changed, 6 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+> index 37a4806..88f4641 100644
+> --- a/drivers/cpufreq/kirkwood-cpufreq.c
+> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
+> @@ -12,7 +12,6 @@
+>   #include <linux/kernel.h>
+>   #include <linux/module.h>
+>   #include <linux/clk.h>
+> -#include <linux/clk-provider.h>
+>   #include <linux/cpufreq.h>
+>   #include <linux/of_device.h>
+>   #include <linux/platform_device.h>
+> @@ -33,6 +32,8 @@ static struct priv
+>   #define STATE_CPU_FREQ 0x01
+>   #define STATE_DDR_FREQ 0x02
+>
+> +static unsigned long cpu_frequency = 0;
+> +
+>   /*
+>    * Kirkwood can swap the clock to the CPU between two clocks:
+>    *
+> @@ -50,9 +51,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
+>
+>   static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
+>   {
+> -	if (__clk_is_enabled(priv.powersave_clk))
+> -		return kirkwood_freq_table[1].frequency;
+> -	return kirkwood_freq_table[0].frequency;
+> +	return cpu_frequency;
+>   }
+>
+>   static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
+> @@ -71,9 +70,11 @@ static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
+>   	switch (state) {
+>   	case STATE_CPU_FREQ:
+>   		clk_disable(priv.powersave_clk);
+> +		cpu_frequency = kirkwood_freq_table[0].frequency;
+>   		break;
+>   	case STATE_DDR_FREQ:
+>   		clk_enable(priv.powersave_clk);
+> +		cpu_frequency = kirkwood_freq_table[1].frequency;
+>   		break;
+>   	}
+>
+> @@ -133,6 +134,7 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
+>
+>   	clk_prepare_enable(priv.cpu_clk);
+>   	kirkwood_freq_table[0].frequency = clk_get_rate(priv.cpu_clk) / 1000;
+> +	cpu_frequency = kirkwood_freq_table[0].frequency;
+>
+>   	priv.ddr_clk = of_clk_get_by_name(np, "ddrclk");
+>   	if (IS_ERR(priv.ddr_clk)) {
+>
 
