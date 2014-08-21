@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaHUDdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:33:46 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:56205 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaHUDdp (ORCPT
+	id S1753692AbaHUDeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:34:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60829 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664AbaHUDeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:33:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: =?utf-8?q?Ga=C3=ABl_PORTAY?= <gael.portay@gmail.com>
-Subject: Re: [PATCH 3/3] ARM: at91/tclib: mask interruptions at shutdown and probe
-Date: Thu, 21 Aug 2014 05:32:59 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-References: <1408486072-19268-1-git-send-email-gael.portay@gmail.com> <1408486072-19268-4-git-send-email-gael.portay@gmail.com>
-In-Reply-To: <1408486072-19268-4-git-send-email-gael.portay@gmail.com>
+	Wed, 20 Aug 2014 23:34:10 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201408210533.00196.arnd@arndb.de>
-X-Provags-ID: V02:K0:wLxcYkTwgYu/SRJhI7qRmodtSE9pG1GCbZLSJzl1XR+
- UkPRuDvGSMB6E/jEPaUVA/FUJktN6HzNVTdSqBmT9Ti2lhSk8X
- F/lC7/WxVqt+MnCtw2+b0mk5u6GGLUO8shybKRCQwiSzRKDOx9
- a5hutaOCjN2jsDAbvlXYm0iRpNcm5ZSuDfhduY+7SKlV8sqTTs
- DaMItEvZGDd11M26JkfkskyuvVJTkWbZ1gtB+624rzFlG2AVbb
- 0b1XY+wYVvnNPtltZ7GXc65xhcgBWTywrrNGZOuuYP3XTJHKz+
- qo1JPveN2uyzqPE0e9GE1fyXvbPLxboBFslyNZjhpJzaGihoad
- DzVNwOELHfFc3gKxq9ko=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <53F5605C.2010304@kernel.dk>
+References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
+	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
+	<20140815163111.GA16652@infradead.org>
+	<53EE370D.1060106@kernel.dk>
+	<53EE3966.60609@kernel.dk>
+	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
+	<53F0EAEC.9040505@kernel.dk>
+	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
+	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
+	<53F3B89D.6070703@kernel.dk>
+	<CACVXFVP_q2MfZtjPAgXrjMJS2K6H2fTFtAe3ZJXBW83uEovqkQ@mail.gmail.com>
+	<53F4C835.7030407@kernel.dk>
+	<CACVXFVPxXrYi+m0bC7tEcfvDzhQ=Xnapkd+yGRXbKCktgi3Ofw@mail.gmail.com>
+	<53F5605C.2010304@kernel.dk>
+Date: Thu, 21 Aug 2014 11:34:08 +0800
+Message-ID: <CACVXFVNHKyUKR0tn2y0h=uTQRPkarfHNULdBcr8Thtqs+EVYWw@mail.gmail.com>
+Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        "open list:AIO <linux-aio@kvack.org>, Linux FS Devel
+	<linux-fsdevel@vger.kernel.org>, Dave Chinner <david@fromorbit.com>,
+	Tejun Heo" <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 20 August 2014, Gaël PORTAY wrote:
-> +static void tc_shutdown (struct platform_device *pdev)
-> +{
-> +       int i;
-> +       struct atmel_tc *tc = platform_get_drvdata(pdev);
-> +
-> +       for (i = 0; i < 3; i++)
-> +               __raw_writel(0xff, tc->regs + ATMEL_TC_REG(i, IDR));
-> +}
+On Thu, Aug 21, 2014 at 10:58 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2014-08-20 21:54, Ming Lei wrote:
+>>>>
+>>>>   From my investigation, context switch increases almost 50% with
+>>>> workqueue compared with kthread in loop in a quad-core VM. With
+>>>> kthread, requests may be handled as batch in cases which won't be
+>>>> blocked in read()/write()(like null_blk, tmpfs, ...), but it is
+>>>> impossible
+>>>> with
+>>>> workqueue any more.  Also block plug&unplug should have been used
+>>>> with kthread to optimize the case, especially when kernel AIO is
+>>>> applied,
+>>>> still impossible with work queue too.
+>>>
+>>>
+>>>
+>>> OK, that one is actually a good point, since one need not do per-item
+>>> queueing. We could handle different units, though. And we should have
+>>> proper
+>>> marking of the last item in a chain of stuff, so we might even be able to
+>>> offload based on that instead of doing single items. It wont help the
+>>> sync
+>>> case, but for that, workqueue and kthread would be identical.
+>>
+>>
+>> We may do that by introducing callback of queue_rq_list in blk_mq_ops,
+>> and I will figure out one patch today to see if it can help the case.
+>
+>
+> I don't think we should add to the interface, I prefer keeping it clean like
+> it is right now. At least not if we can get around it. My point is that the
+> driver already knows when the chain is complete, when REQ_LAST is set. So
+> before that event triggers, it need not kick off IO, or at least i could do
+> it in batches before that. That may not be fully reliable in case of
+> queueing errors, but if REQ_LAST or 'error return' is used as the way to
+> kick off pending IO, then that should be good enough. Haven't audited this
+> in a while, but at least that is the intent of REQ_LAST.
 
-In general, __raw_readl/__raw_writel are not meant to be called by device drivers.
+Another point is that running N queue_work(rq) may cost more
+than running one time queue_work(N rqs) since context still may
+switch back and forth when executing queue_work().
 
-Just use readl/writel by default, or readl_relaxed/writel_relaxed if the code is
-performance critical and you are sure it is safe to use them.
+Anyway I need to run test first to see if it can bring back throughout
+on sequential read by handling them as batch.
 
-	Arnd
+
+Thanks,
