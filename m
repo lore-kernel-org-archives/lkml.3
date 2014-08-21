@@ -1,129 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaHUSyU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 14:54:20 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:35648 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaHUSyT (ORCPT
+	id S1754180AbaHUSyt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 14:54:49 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:61047 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008AbaHUSyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 14:54:19 -0400
+	Thu, 21 Aug 2014 14:54:47 -0400
+From: Max Schwarz <max.schwarz@online.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Addy Ke <addy.ke@rock-chips.com>, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org, huangtao@rock-chips.com, hl@rock-chips.com,
+        yzq@rock-chips.com, zyw@rock-chips.com, linux-kernel@vger.kernel.org,
+        kever.yang@rock-chips.com, linux-rockchip@lists.infradead.org,
+        xjq@rock-chips.com, linux-i2c@vger.kernel.org,
+        caesar.wang@rock-chips.com, cf@rock-chips.com, hj@rock-chips.com,
+        zhengsq@rock-chips.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] i2c: rk3x: fix bug that cause transfer fails in master receive mode
+Date: Thu, 21 Aug 2014 20:54:06 +0200
+Message-ID: <5150326.5TB64kCfF4@typ>
+User-Agent: KMail/4.13.2 (Linux/3.15.7-031507-generic; KDE/4.13.2; x86_64; ; )
+In-Reply-To: <20140821181738.GA1443@katana>
+References: <1408643457-7126-1-git-send-email-addy.ke@rock-chips.com> <53F634AF.1010303@cogentembedded.com> <20140821181738.GA1443@katana>
 MIME-Version: 1.0
-In-Reply-To: <1408580838-29236-3-git-send-email-minchan@kernel.org>
-References: <1408580838-29236-1-git-send-email-minchan@kernel.org> <1408580838-29236-3-git-send-email-minchan@kernel.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 21 Aug 2014 14:53:57 -0400
-X-Google-Sender-Auth: Yx9SY3LTqWPlhi0oC3NSgyVt67g
-Message-ID: <CALZtONBuZOORHAF0UHEZM7Aybuoesg3fyjnu9ACj_F7O5G35Og@mail.gmail.com>
-Subject: Re: [PATCH v3 2/4] zsmalloc: change return value unit of zs_get_total_size_bytes
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        David Horner <ds2horner@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8jh68E9bvlo6t8qxldcRy1x1duRwEP013lnfo+mlgtX
+ nLTug68P2mSVRimFlBEpeqHAMXrH/CwObI/j9kSx/WVgqPy3Hx
+ 3LkQ8zdBYvWSie7wlSSssCkc753cI3jEzunFtVLjewvoqnK/0p
+ j3+HUfHsMWhYWRR5UdyqDJVfZk4V6GgmT8ujfASl4nG0XHM83E
+ Hl2ri3+w3C7fpJa1HJ2cZjFWawjuI78LnvHgDgg2Pa8ec5/EmN
+ jTagabYBfdlfySmG8h8YpfMRAYDXpgjIhkxgAG5MtxlIxBmoc9
+ mrzqsnSIZifDsHqAVqu8qWIngvlWx5iyuKFrohCaymg+r0FpA=
+ =
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
-> zs_get_total_size_bytes returns a amount of memory zsmalloc
-> consumed with *byte unit* but zsmalloc operates *page unit*
-> rather than byte unit so let's change the API so benefit
-> we could get is that reduce unnecessary overhead
-> (ie, change page unit with byte unit) in zsmalloc.
->
-> Now, zswap can rollback to zswap_pool_pages.
-> Over to zswap guys ;-)
+Hi,
 
-We could change zpool/zswap over to total pages instead of total
-bytes, since both zbud and zsmalloc now report size in pages.  The
-only downside would be if either changed later to not use only whole
-pages (or if they start using huge pages for storage...), but for what
-they do that seems unlikely.  After this patch is finalized I can
-write up a quick patch unless Seth disagrees (or already has a patch
-:)
+On Thursday 21 August 2014 at 13:17:38, Wolfram Sang wrote:
+> On Thu, Aug 21, 2014 at 10:04:31PM +0400, Sergei Shtylyov wrote:
+> > Hello.
+> > 
+> > On 08/21/2014 09:50 PM, Addy Ke wrote:
+> > >In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
+> > >in one transaction, so the size of data to be write/read to/from
+> > >TXDATAx/RXDATAx must be less than or equal 32 bytes at a time.
+> > >
+> > >Test on pinky board, elan receive 158 bytes data.
+> > >
+> > >Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> > >---
+> > >
+> > >  drivers/i2c/busses/i2c-rk3x.c | 3 +++
+> > >  1 file changed, 3 insertions(+)
+> > >
+> > >diff --git a/drivers/i2c/busses/i2c-rk3x.c
+> > >b/drivers/i2c/busses/i2c-rk3x.c
+> > >index 69e1185..dc0aa64 100644
+> > >--- a/drivers/i2c/busses/i2c-rk3x.c
+> > >+++ b/drivers/i2c/busses/i2c-rk3x.c
+> > >@@ -323,6 +323,9 @@ static void rk3x_i2c_handle_read(struct rk3x_i2c
+> > >*i2c, unsigned int ipd)> >
+> > >  	/* ack interrupt */
+> > >  	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
+> > >
+> > >+	/* Can only handle a maximum of 32 bytes at a time */
+> > >+	len = (len > 32) ? 32 : len;
+> > >
+> >    Why not min(len, 32)? Or even:
+> > 	if (len > 32)
+> > 	
+> > 		len = 32;
+> 
+> No silent trimming, please. The message should be rejected when the transfer
+> is set up. We could assign -EOVERFLOW to that type of failures, so users
+> will know. Sadly, I have seen other controllers having such limits :(
 
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/block/zram/zram_drv.c |  4 ++--
->  include/linux/zsmalloc.h      |  2 +-
->  mm/zsmalloc.c                 | 10 +++++-----
->  3 files changed, 8 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index d00831c3d731..302dd37bcea3 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
->
->         down_read(&zram->init_lock);
->         if (init_done(zram))
-> -               val = zs_get_total_size_bytes(meta->mem_pool);
-> +               val = zs_get_total_size(meta->mem_pool);
->         up_read(&zram->init_lock);
->
-> -       return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
->  }
->
->  static ssize_t max_comp_streams_show(struct device *dev,
-> diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-> index e44d634e7fb7..105b56e45d23 100644
-> --- a/include/linux/zsmalloc.h
-> +++ b/include/linux/zsmalloc.h
-> @@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
->                         enum zs_mapmode mm);
->  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
->
-> -u64 zs_get_total_size_bytes(struct zs_pool *pool);
-> +unsigned long zs_get_total_size(struct zs_pool *pool);
+Actually, reads with >32 bytes of data are possible with the controller. The 
+hw returns the data in 32 byte chunks. Our chunk handling code is just buggy. 
+We always read the number of missing bytes from the current chunk, instead of 
+truncating that to 32.
+The fix is correct. The following lines in the rk3x_i2c_handle_read() function 
+already check if we got everything and trigger an additional chunk read if 
+necessary:
 
-minor naming suggestion, but since the name is changing anyway,
-"zs_get_total_size" implies to me the units are bytes, would
-"zs_get_total_pages" be clearer that it's returning size in # of
-pages, not bytes?
+	/* are we finished? */
+	if (i2c->processed == i2c->msg->len)
+		rk3x_i2c_stop(i2c, i2c->error);
+	else
+		rk3x_i2c_prepare_read(i2c);
 
->
->  #endif
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index a65924255763..80408a1da03a 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
->
->  static u64 zs_zpool_total_size(void *pool)
->  {
-> -       return zs_get_total_size_bytes(pool);
-> +       return zs_get_total_size(pool) << PAGE_SHIFT;
->  }
->
->  static struct zpool_driver zs_zpool_driver = {
-> @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
->  }
->  EXPORT_SYMBOL_GPL(zs_unmap_object);
->
-> -u64 zs_get_total_size_bytes(struct zs_pool *pool)
-> +unsigned long zs_get_total_size(struct zs_pool *pool)
->  {
-> -       u64 npages;
-> +       unsigned long npages;
->
->         spin_lock(&pool->stat_lock);
->         npages = pool->pages_allocated;
->         spin_unlock(&pool->stat_lock);
-> -       return npages << PAGE_SHIFT;
-> +       return npages;
->  }
-> -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> +EXPORT_SYMBOL_GPL(zs_get_total_size);
->
->  module_init(zs_init);
->  module_exit(zs_exit);
-> --
-> 2.0.0
->
+I'd like a clearer syntax as suggested by Sergei, though.
+
+Apart from that,
+Acked-By: Max Schwarz <max.schwarz@online.de>
+
+Cheers,
+  Max
