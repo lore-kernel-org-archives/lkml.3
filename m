@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324AbaHUONg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:13:36 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:40928 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843AbaHUONe (ORCPT
+	id S1755376AbaHUOO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:14:28 -0400
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:39686
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754884AbaHUOO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:13:34 -0400
-Date: Thu, 21 Aug 2014 09:13:30 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Li Zefan <lizefan@huawei.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Heaton <matt@betterlinux.com>
-Subject: Re: [PATCH] cgroup: add tracepoints to track cgroup events
-Message-ID: <20140821141330.GA1766@mtj.dyndns.org>
-References: <1408592785-6700-1-git-send-email-andrea@betterlinux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408592785-6700-1-git-send-email-andrea@betterlinux.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 21 Aug 2014 10:14:26 -0400
+Date: Thu, 21 Aug 2014 09:14:24 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] mm/slab_common: move kmem_cache definition to internal
+ header
+In-Reply-To: <1408608562-20339-1-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <alpine.DEB.2.11.1408210913370.32524@gentwo.org>
+References: <1408608562-20339-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 21 Aug 2014, Joonsoo Kim wrote:
 
-On Wed, Aug 20, 2014 at 09:46:25PM -0600, Andrea Righi wrote:
-> This patch adds the following tracepoints:
->  o trace_cgroup_create       when a new cgroup is created
->  o trace_cgroup_destroy      when a cgroup is removed
->  o trace_cgroup_task_migrate when a task/thread is moved from a cgroup to another
-> 
-> The purpose of these tracepoints is to identify and help cgroup "managers" to
-> diagnose problems and detect when they are doing an excessive amount of work.
+> We don't need to keep kmem_cache definition in include/linux/slab.h
+> if we don't need to inline kmem_cache_size(). According to my
+> code inspection, this function is only called at lc_create() in
+> lib/lru_cache.c which may be called at initialization phase of something,
+> so we don't need to inline it. Therfore, move it to slab_common.c and
+> move kmem_cache definition to internal header.
+>
+> After this change, we can change kmem_cache definition easily without
+> full kernel build. For instance, we can turn on/off CONFIG_SLUB_STATS
+> without full kernel build.
 
-Using TPs for this looks like a really roundabout way of doing this
-when the whole interface is based on filesystem.  Extending
-kernfs_notity to support directory events seems like a better way to
-do this.
+Wow. I did not realize that we were already at that point.
 
-Thanks.
-
--- 
-tejun
+Acked-by: Christoph Lameter <cl@linux.com>
