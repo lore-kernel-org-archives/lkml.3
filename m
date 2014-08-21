@@ -1,91 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaHUQLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:11:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753462AbaHUQKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:10:53 -0400
-From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Lisa Mitchell <lisa.mitchell@hp.com>
-Subject: [PATCH v3 7/7] KVM: VMX: optimize ple_window updates to VMCS
-Date: Thu, 21 Aug 2014 18:08:11 +0200
-Message-Id: <1408637291-18533-8-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
-References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
+	id S1752870AbaHUQNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:13:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36471 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbaHUQNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 12:13:14 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Alessandro Zummo <a.zummo@towertech.it>
+CC: <rtc-linux@googlegroups.com>, Tony Lindgren <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] drivers/rtc/rtc-ds1307.c: Support optional wakeup interrupt source
+Date: Thu, 21 Aug 2014 11:12:01 -0500
+Message-ID: <1408637521-6764-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ple_window is preserved in VMCS, so can write it only after a change.
-Do this by keeping a dirty bit.
+With the recent pinctrl-single changes, SoCs such as Texas
+Instrument's OMAP processors can treat wake-up events from deeper idle
+states as interrupts.
 
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+Let's add support for the optional second interrupt for wake-up
+events. And then SoC can wakeup and handle the event using it's
+regular handler.
+
+Finally, to pass the wake-up interrupt in the dts file,
+interrupts-extended property needs to be passed.
+
+This is similar in approach to commit 2a0b965cfb6e ("serial: omap: Add
+support for optional wake-up")
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/x86/kvm/vmx.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/rtc/rtc-ds1307.c |   57 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 1318232..f32415b 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -510,6 +510,7 @@ struct vcpu_vmx {
+diff --git a/drivers/rtc/rtc-ds1307.c b/drivers/rtc/rtc-ds1307.c
+index f03d5ba..5feedfc 100644
+--- a/drivers/rtc/rtc-ds1307.c
++++ b/drivers/rtc/rtc-ds1307.c
+@@ -15,6 +15,8 @@
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
++#include <linux/of_device.h>
++#include <linux/of_irq.h>
+ #include <linux/string.h>
+ #include <linux/rtc.h>
+ #include <linux/bcd.h>
+@@ -115,6 +117,7 @@ struct ds1307 {
+ 	struct i2c_client	*client;
+ 	struct rtc_device	*rtc;
+ 	struct work_struct	work;
++	int			wakeirq;
+ 	s32 (*read_block_data)(const struct i2c_client *client, u8 command,
+ 			       u8 length, u8 *values);
+ 	s32 (*write_block_data)(const struct i2c_client *client, u8 command,
+@@ -835,6 +838,34 @@ ds1307_nvram_write(struct file *filp, struct kobject *kobj,
  
- 	/* Dynamic PLE window. */
- 	int ple_window;
-+	bool ple_window_dirty;
- };
+ /*----------------------------------------------------------------------*/
  
- enum segment_cache_field {
-@@ -4426,6 +4427,7 @@ static int vmx_vcpu_setup(struct vcpu_vmx *vmx)
- 		vmcs_write64(POSTED_INTR_DESC_ADDR, __pa((&vmx->pi_desc)));
++static int ds1307_i2c_suspend(struct i2c_client *client,  pm_message_t mesg)
++{
++	struct ds1307 *ds1307 = i2c_get_clientdata(client);
++	struct device *dev = &client->dev;
++
++	if (!ds1307->wakeirq)
++		return 0;
++
++	if (device_may_wakeup(dev))
++		enable_irq(ds1307->wakeirq);
++
++	return 0;
++}
++
++static int ds1307_i2c_resume(struct i2c_client *client)
++{
++	struct ds1307 *ds1307 = i2c_get_clientdata(client);
++	struct device *dev = &client->dev;
++
++	if (!ds1307->wakeirq)
++		return 0;
++
++	if (device_may_wakeup(dev))
++		disable_irq_nosync(ds1307->wakeirq);
++
++	return 0;
++}
++
+ static int ds1307_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
+ {
+@@ -1116,6 +1147,8 @@ read_rtc:
  	}
  
-+	vmx->ple_window_dirty = ple_gap;
- 	if (ple_gap) {
- 		vmcs_write32(PLE_GAP, ple_gap);
- 		vmx->ple_window = ple_window;
-@@ -5741,6 +5743,9 @@ static void grow_ple_window(struct kvm_vcpu *vcpu)
- 		vmx->ple_window = __grow_ple_window(old);
- 	} while (read_seqretry(&ple_window_seqlock, seq));
- 
-+	if (vmx->ple_window != old)
-+		vmx->ple_window_dirty = true;
+ 	if (want_irq) {
++		struct device_node *node = client->dev.of_node;
 +
- 	trace_kvm_ple_window_grow(vcpu->vcpu_id, vmx->ple_window, old);
- }
+ 		err = request_irq(client->irq, ds1307_irq, IRQF_SHARED,
+ 			  ds1307->rtc->name, client);
+ 		if (err) {
+@@ -1125,6 +1158,28 @@ read_rtc:
  
-@@ -5756,6 +5761,9 @@ static void shrink_ple_window(struct kvm_vcpu *vcpu)
- 		                                      ple_window);
- 	} while (read_seqretry(&ple_window_seqlock, seq));
- 
-+	if (vmx->ple_window != old)
-+		vmx->ple_window_dirty = true;
+ 			set_bit(HAS_ALARM, &ds1307->flags);
+ 			dev_dbg(&client->dev, "got IRQ %d\n", client->irq);
++			if (node)
++				ds1307->wakeirq = irq_of_parse_and_map(node, 1);
 +
- 	trace_kvm_ple_window_shrink(vcpu->vcpu_id, vmx->ple_window, old);
- }
++			if (ds1307->wakeirq <= 0)
++				ds1307->wakeirq = 0;
++			else
++				err = devm_request_irq(&client->dev,
++						       ds1307->wakeirq,
++						       ds1307_irq,
++						       IRQF_ONESHOT,
++						       ds1307->rtc->name,
++						       client);
++			if (err) {
++				dev_err(&client->dev, "unable to get wakeIRQ %d\n",
++					err);
++				free_irq(client->irq, client);
++				goto exit;
++			}
++
++			/* We enable the interrupt only during suspend path */
++			if (ds1307->wakeirq)
++				disable_irq_nosync(ds1307->wakeirq);
+ 		}
+ 	}
  
-@@ -7505,8 +7513,10 @@ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
- 	if (vmx->emulation_required)
- 		return;
+@@ -1189,6 +1244,8 @@ static struct i2c_driver ds1307_driver = {
+ 	},
+ 	.probe		= ds1307_probe,
+ 	.remove		= ds1307_remove,
++	.suspend	= ds1307_i2c_suspend,
++	.resume		= ds1307_i2c_resume,
+ 	.id_table	= ds1307_id,
+ };
  
--	if (ple_gap)
-+	if (vmx->ple_window_dirty) {
-+		vmx->ple_window_dirty = false;
- 		vmcs_write32(PLE_WINDOW, vmx->ple_window);
-+	}
- 
- 	if (vmx->nested.sync_shadow_vmcs) {
- 		copy_vmcs12_to_shadow(vmx);
 -- 
-2.1.0
+1.7.9.5
 
