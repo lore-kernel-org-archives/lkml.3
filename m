@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaHUAGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 20:06:37 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33026 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119AbaHUAGf (ORCPT
+	id S1751666AbaHUA0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 20:26:53 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60753 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809AbaHUA0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 20:06:35 -0400
-Date: Wed, 20 Aug 2014 19:06:29 -0500
-From: rkuo <rkuo@codeaurora.org>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Noam Camus <noamc@ezchip.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tony Lu <zlu@tilera.com>, Kirill Tkhai <tkhai@yandex.ru>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:QUALCOMM HEXAGON..." <linux-hexagon@vger.kernel.org>,
-        "open list:SUPERH" <linux-sh@vger.kernel.org>,
-        "open list:TENSILICA XTENSA..." <linux-xtensa@linux-xtensa.org>
-Subject: Re: [PATCH v2] flush_icache_range: Export symbol to fix build errors
-Message-ID: <20140821000629.GB6040@codeaurora.org>
-References: <1408377559-30775-1-git-send-email-bobby.prani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408377559-30775-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 20 Aug 2014 20:26:50 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v3 2/4] zsmalloc: change return value unit of zs_get_total_size_bytes
+Date: Thu, 21 Aug 2014 09:27:16 +0900
+Message-Id: <1408580838-29236-3-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1408580838-29236-1-git-send-email-minchan@kernel.org>
+References: <1408580838-29236-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 11:59:13AM -0400, Pranith Kumar wrote:
-> Fix building errors occuring due to a missing export of flush_icache_range() in
-> 
-> kisskb.ellerman.id.au/kisskb/buildresult/11677809/
-> 
-> ERROR: "flush_icache_range" [drivers/misc/lkdtm.ko] undefined!
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  arch/arc/mm/cache_arc700.c | 1 +
->  arch/hexagon/mm/cache.c    | 1 +
->  arch/sh/mm/cache.c         | 1 +
->  arch/tile/kernel/smp.c     | 1 +
->  arch/xtensa/kernel/smp.c   | 1 +
->  5 files changed, 5 insertions(+)
-> 
+zs_get_total_size_bytes returns a amount of memory zsmalloc
+consumed with *byte unit* but zsmalloc operates *page unit*
+rather than byte unit so let's change the API so benefit
+we could get is that reduce unnecessary overhead
+(ie, change page unit with byte unit) in zsmalloc.
 
-For Hexagon,
+Now, zswap can rollback to zswap_pool_pages.
+Over to zswap guys ;-)
 
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/block/zram/zram_drv.c |  4 ++--
+ include/linux/zsmalloc.h      |  2 +-
+ mm/zsmalloc.c                 | 10 +++++-----
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index d00831c3d731..302dd37bcea3 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 
+ 	down_read(&zram->init_lock);
+ 	if (init_done(zram))
+-		val = zs_get_total_size_bytes(meta->mem_pool);
++		val = zs_get_total_size(meta->mem_pool);
+ 	up_read(&zram->init_lock);
+ 
+-	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
++	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
+ }
+ 
+ static ssize_t max_comp_streams_show(struct device *dev,
+diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+index e44d634e7fb7..105b56e45d23 100644
+--- a/include/linux/zsmalloc.h
++++ b/include/linux/zsmalloc.h
+@@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 			enum zs_mapmode mm);
+ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+ 
+-u64 zs_get_total_size_bytes(struct zs_pool *pool);
++unsigned long zs_get_total_size(struct zs_pool *pool);
+ 
+ #endif
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index a65924255763..80408a1da03a 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
+ 
+ static u64 zs_zpool_total_size(void *pool)
+ {
+-	return zs_get_total_size_bytes(pool);
++	return zs_get_total_size(pool) << PAGE_SHIFT;
+ }
+ 
+ static struct zpool_driver zs_zpool_driver = {
+@@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+ }
+ EXPORT_SYMBOL_GPL(zs_unmap_object);
+ 
+-u64 zs_get_total_size_bytes(struct zs_pool *pool)
++unsigned long zs_get_total_size(struct zs_pool *pool)
+ {
+-	u64 npages;
++	unsigned long npages;
+ 
+ 	spin_lock(&pool->stat_lock);
+ 	npages = pool->pages_allocated;
+ 	spin_unlock(&pool->stat_lock);
+-	return npages << PAGE_SHIFT;
++	return npages;
+ }
+-EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
++EXPORT_SYMBOL_GPL(zs_get_total_size);
+ 
+ module_init(zs_init);
+ module_exit(zs_exit);
 -- 
+2.0.0
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
