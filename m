@@ -1,345 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaHUBQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:16:11 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:55968 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551AbaHUBQG (ORCPT
+	id S1752571AbaHUBSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:18:21 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:40213 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaHUBSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:16:06 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH v2 2/2] perf hists browser: Consolidate callchain print functions in TUI
-Date: Thu, 21 Aug 2014 10:15:46 +0900
-Message-Id: <1408583746-5540-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1408583746-5540-1-git-send-email-namhyung@kernel.org>
-References: <1408583746-5540-1-git-send-email-namhyung@kernel.org>
+	Wed, 20 Aug 2014 21:18:20 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 21 Aug 2014 10:18:54 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
+Message-ID: <20140821011854.GE17372@bbox>
+References: <001201cfb838$fb0ac4a0$f1204de0$@samsung.com>
+ <20140815061138.GA940@swordfish>
+ <002d01cfbb70$ea7410c0$bf5c3240$@samsung.com>
+ <20140819112500.GA2484@swordfish>
+ <20140820020924.GD32620@bbox>
+ <006701cfbc4f$c9d2fe00$5d78fa00$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <006701cfbc4f$c9d2fe00$5d78fa00$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there're two callchain print functions in TUI - one for the
-hists browser and another for file dump.  They do almost same job so
-it'd be better consolidate the codes.
+Hi Chao,
 
-To do that, move row calculation code into a print callback so that
-the dump code cannot be limited by the current screen size.
+On Wed, Aug 20, 2014 at 04:20:48PM +0800, Chao Yu wrote:
+> Hi Minchan,
+> 
+> > -----Original Message-----
+> > From: Minchan Kim [mailto:minchan@kernel.org]
+> > Sent: Wednesday, August 20, 2014 10:09 AM
+> > To: Sergey Senozhatsky
+> > Cc: Chao Yu; linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; 'Jerome
+> > Marchand'; 'Andrew Morton'
+> > Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
+> > 
+> > Hi Sergey,
+> > 
+> > On Tue, Aug 19, 2014 at 08:25:00PM +0900, Sergey Senozhatsky wrote:
+> > > Hello,
+> > >
+> > > On (08/19/14 13:45), Chao Yu wrote:
+> > > > > On (08/15/14 11:27), Chao Yu wrote:
+> > > > > > Now we have supported handling discard request which is sended by filesystem,
+> > > > > > but no interface could be used to show information of discard.
+> > > > > > This patch adds num_discards to stat discarded pages, then export it to sysfs
+> > > > > > for displaying.
+> > > > > >
+> > > > >
+> > > > > a side question: we account discarded pages via slot free notify in
+> > > > > notify_free and via req_discard in num_discards. how about accounting
+> > > > > both of them in num_discards? because, after all, they account a number
+> > > > > of discarded pages (zram_free_page()). or there any particular reason we
+> > > > > want to distinguish.
+> > > >
+> > > > Yeah, I agree with you as I have no such reason unless there are our users'
+> > > > explicitly requirement for showing notify_free/num_discards separately later.
+> > > >
+> > > > How do you think of sending another patch to merge these two counts?
+> > > >
+> > >
+> > > Minchan, what do you think? let's account discarded pages in one place.
+> > 
+> > First of all, I'd like to know why we need num_discards.
+> > It should be in description and depends on it whether we should merge both
+> > counts or separate.
+> 
+> Oh, it's my mistaken.
+> 
+> When commit 	9b9913d80b2896ecd9e0a1a8f167ccad66fac79c (Staging: zram: Update
+> zram documentation) and commit e98419c23b1a189c932775f7833e94cb5230a16b (Staging:
+> zram: Document sysfs entries) description related to 'discard' stat was designed
+> and added to zram.txt and sysfs-block-zram, but without implementation of function
+> for handling discard request, description in documents were removed in commit
+> 8dd1d3247e6c00b50ef83934ea8b22a1590015de (zram: document failed_reads,
+> failed_writes stats)
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 210 +++++++++++++++--------------------------
- 1 file changed, 76 insertions(+), 134 deletions(-)
+Thanks for letting me know the history.
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 519353d9f5fb..48d8c8eee6c2 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -477,20 +477,32 @@ static char *callchain_list__sym_name(struct callchain_list *cl,
- 	return bf;
- }
- 
-+struct callchain_print_arg {
-+	/* for hists browser */
-+	unsigned short row;
-+	off_t row_offset;
-+	bool is_current_entry;
-+
-+	/* for file dump */
-+	FILE *fp;
-+	int printed;
-+};
-+
- static void hist_browser__show_callchain_entry(struct hist_browser *browser,
- 					       struct callchain_list *chain,
--					       unsigned short row, int offset,
--					       char folded_sign, const char *str,
--					       bool *is_current_entry)
-+					       const char *str, int offset,
-+					       struct callchain_print_arg *arg)
- {
- 	int color, width;
-+	unsigned short row = arg->row;
-+	char folded_sign = callchain_list__folded(chain);
- 
- 	color = HE_COLORSET_NORMAL;
- 	width = browser->b.width - (offset + 2);
- 	if (ui_browser__is_current_entry(&browser->b, row)) {
- 		browser->selection = &chain->ms;
- 		color = HE_COLORSET_SELECTED;
--		*is_current_entry = true;
-+		arg->is_current_entry = true;
- 	}
- 
- 	ui_browser__set_color(&browser->b, color);
-@@ -498,17 +510,40 @@ static void hist_browser__show_callchain_entry(struct hist_browser *browser,
- 	slsmg_write_nstring(" ", offset);
- 	slsmg_printf("%c ", folded_sign);
- 	slsmg_write_nstring(str, width);
-+
-+	/*
-+	 * increase row here so that we can reuse the
-+	 * hist_browser__show_callchain() for dumping the whole
-+	 * callchain to a file.
-+	 */
-+	arg->row++;
-+}
-+
-+static void hist_browser__fprintf_callchain_entry(struct hist_browser *b __maybe_unused,
-+						  struct callchain_list *chain,
-+						  const char *str, int offset,
-+						  struct callchain_print_arg *arg)
-+{
-+	char folded_sign = callchain_list__folded(chain);
-+
-+	arg->printed += fprintf(arg->fp, "%*s%c %s\n", offset, " ",
-+				folded_sign, str);
- }
- 
-+typedef void (*print_callchain_entry_fn)(struct hist_browser *browser,
-+					 struct callchain_list *chain,
-+					 const char *str, int offset,
-+					 struct callchain_print_arg *arg);
-+
- #define LEVEL_OFFSET_STEP 3
- 
- static int hist_browser__show_callchain(struct hist_browser *browser,
--					struct rb_root *root, int level,
--					unsigned short row, off_t *row_offset,
--					u64 total, bool *is_current_entry)
-+					struct rb_root *root, int level, u64 total,
-+					print_callchain_entry_fn print,
-+					struct callchain_print_arg *arg)
- {
- 	struct rb_node *node;
--	int first_row = row, offset = level * LEVEL_OFFSET_STEP;
-+	int first_row = arg->row, offset = level * LEVEL_OFFSET_STEP;
- 	u64 new_total;
- 
- 	node = rb_first(root);
-@@ -532,8 +567,8 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 				extra_offset = LEVEL_OFFSET_STEP;
- 
- 			folded_sign = callchain_list__folded(chain);
--			if (*row_offset != 0) {
--				--*row_offset;
-+			if (arg->row_offset != 0) {
-+				arg->row_offset--;
- 				goto do_next;
- 			}
- 
-@@ -550,13 +585,11 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 					str = alloc_str;
- 			}
- 
--			hist_browser__show_callchain_entry(browser, chain, row,
--							   offset + extra_offset,
--							   folded_sign, str,
--							   is_current_entry);
-+			print(browser, chain, str, offset + extra_offset, arg);
-+
- 			free(alloc_str);
- 
--			if (++row == browser->b.rows)
-+			if (arg->row == browser->b.rows)
- 				goto out;
- do_next:
- 			if (folded_sign == '+')
-@@ -571,18 +604,16 @@ do_next:
- 			else
- 				new_total = total;
- 
--			row += hist_browser__show_callchain(browser, &child->rb_root,
--							    new_level,
--							    row, row_offset,
--							    new_total,
--							    is_current_entry);
-+			hist_browser__show_callchain(browser, &child->rb_root,
-+						     new_level, new_total,
-+						     print, arg);
- 		}
--		if (row == browser->b.rows)
-+		if (arg->row == browser->b.rows)
- 			break;
- 		node = next;
- 	}
- out:
--	return row - first_row;
-+	return arg->row - first_row;
- }
- 
- struct hpp_arg {
-@@ -757,16 +788,21 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 
- 	if (folded_sign == '-' && row != browser->b.rows) {
- 		u64 total = hists__total_period(entry->hists);
-+		struct callchain_print_arg arg = {
-+			.row = row,
-+			.row_offset = row_offset,
-+			.is_current_entry = current_entry,
-+		};
- 
- 		if (symbol_conf.cumulate_callchain)
- 			total = entry->stat_acc->period;
- 
- 		printed += hist_browser__show_callchain(browser,
--							&entry->sorted_chain,
--							1, row, &row_offset,
--							total, &current_entry);
-+					&entry->sorted_chain, 1, total,
-+					hist_browser__show_callchain_entry,
-+					&arg);
- 
--		if (current_entry)
-+		if (arg.is_current_entry)
- 			browser->he_selection = entry;
- 	}
- 
-@@ -1022,112 +1058,6 @@ do_offset:
- 	}
- }
- 
--static int hist_browser__fprintf_callchain_node_rb_tree(struct hist_browser *browser,
--							struct callchain_node *chain_node,
--							u64 total, int level,
--							FILE *fp)
--{
--	struct rb_node *node;
--	int offset = level * LEVEL_OFFSET_STEP;
--	u64 new_total;
--	int printed = 0;
--
--	if (callchain_param.mode == CHAIN_GRAPH_REL)
--		new_total = chain_node->children_hit;
--	else
--		new_total = total;
--
--	node = rb_first(&chain_node->rb_root);
--	while (node) {
--		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
--		struct rb_node *next = rb_next(node);
--		u64 cumul = callchain_cumul_hits(child);
--		struct callchain_list *chain;
--		char folded_sign = ' ';
--		int first = true;
--		int extra_offset = 0;
--
--		list_for_each_entry(chain, &child->val, list) {
--			char bf[1024], *alloc_str;
--			const char *str;
--			bool was_first = first;
--
--			if (first)
--				first = false;
--			else
--				extra_offset = LEVEL_OFFSET_STEP;
--
--			folded_sign = callchain_list__folded(chain);
--
--			alloc_str = NULL;
--			str = callchain_list__sym_name(chain, bf, sizeof(bf),
--						       browser->show_dso);
--			if (was_first) {
--				double percent = cumul * 100.0 / new_total;
--
--				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
--					str = "Not enough memory!";
--				else
--					str = alloc_str;
--			}
--
--			printed += fprintf(fp, "%*s%c %s\n", offset + extra_offset, " ", folded_sign, str);
--			free(alloc_str);
--			if (folded_sign == '+')
--				break;
--		}
--
--		if (folded_sign == '-') {
--			const int new_level = level + (extra_offset ? 2 : 1);
--			printed += hist_browser__fprintf_callchain_node_rb_tree(browser, child, new_total,
--										new_level, fp);
--		}
--
--		node = next;
--	}
--
--	return printed;
--}
--
--static int hist_browser__fprintf_callchain_node(struct hist_browser *browser,
--						struct callchain_node *node,
--						int level, FILE *fp)
--{
--	struct callchain_list *chain;
--	int offset = level * LEVEL_OFFSET_STEP;
--	char folded_sign = ' ';
--	int printed = 0;
--
--	list_for_each_entry(chain, &node->val, list) {
--		char bf[1024], *s;
--
--		folded_sign = callchain_list__folded(chain);
--		s = callchain_list__sym_name(chain, bf, sizeof(bf), browser->show_dso);
--		printed += fprintf(fp, "%*s%c %s\n", offset, " ", folded_sign, s);
--	}
--
--	if (folded_sign == '-')
--		printed += hist_browser__fprintf_callchain_node_rb_tree(browser, node,
--									browser->hists->stats.total_period,
--									level + 1,  fp);
--	return printed;
--}
--
--static int hist_browser__fprintf_callchain(struct hist_browser *browser,
--					   struct rb_root *chain, int level, FILE *fp)
--{
--	struct rb_node *nd;
--	int printed = 0;
--
--	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
--		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
--
--		printed += hist_browser__fprintf_callchain_node(browser, node, level, fp);
--	}
--
--	return printed;
--}
--
- static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 				       struct hist_entry *he, FILE *fp)
- {
-@@ -1163,8 +1093,20 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 	}
- 	printed += fprintf(fp, "%s\n", rtrim(s));
- 
--	if (folded_sign == '-')
--		printed += hist_browser__fprintf_callchain(browser, &he->sorted_chain, 1, fp);
-+	if (folded_sign == '-') {
-+		u64 total = hists__total_period(he->hists);
-+		struct callchain_print_arg arg  = {
-+			.fp = fp,
-+		};
-+
-+		if (symbol_conf.cumulate_callchain)
-+			total = he->stat_acc->period;
-+
-+		hist_browser__show_callchain(browser, &he->sorted_chain, 1, total,
-+					     hist_browser__fprintf_callchain_entry,
-+					     &arg);
-+		printed += arg.printed;
-+	}
- 
- 	return printed;
- }
+> 
+> For now, we have already supported discard handling, so it's better to resume
+> the stat of discard number, this discard stat supports user one more kind of runtime
+> information of zram as other stats supported.
+> 
+> How do you think?
+
+I'm not strong against the idea but just "resume is better" and
+"one more is problem as other stats supported" is not logical
+to me.
+
+You should explain why we need such new stat so that user can take
+what kinds of benefit from that. Otherwise, we couldn't know the stat
+is best or not for the goal.
+
+
+I might be paranoid about small stuff and I admit I'm not good for it,
+too but pz, understand that adding the new feature requires a
+good description which should include clear goal.
+
+I hope I'm not discouraging. :)
+
+> 
+> > 
+> > Thanks.
+> > 
+> > 
+> > 
+> > >
+> > > > One more thing is that I am missing to update document of zram, sorry about
+> > > > that, let me update it in v2.
+> > >
+> > > thanks.
+> > >
+> > > 	-ss
+> > >
+> > > > Thanks,
+> > > > Yu
+> > > >
+> > > > >
+> > > > > 	-ss
+> > > > >
+> > > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > > > > ---
+> > > > > >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
+> > > > > >  drivers/block/zram/zram_drv.c              |  3 +++
+> > > > > >  drivers/block/zram/zram_drv.h              |  1 +
+> > > > > >  3 files changed, 14 insertions(+)
+> > > > > >
+> > > > > > diff --git a/Documentation/ABI/testing/sysfs-block-zram
+> > > > > b/Documentation/ABI/testing/sysfs-block-zram
+> > > > > > index 70ec992..fa8936e 100644
+> > > > > > --- a/Documentation/ABI/testing/sysfs-block-zram
+> > > > > > +++ b/Documentation/ABI/testing/sysfs-block-zram
+> > > > > > @@ -57,6 +57,16 @@ Description:
+> > > > > >  		The failed_writes file is read-only and specifies the number of
+> > > > > >  		failed writes happened on this device.
+> > > > > >
+> > > > > > +
+> > > > > > +What:		/sys/block/zram<id>/num_discards
+> > > > > > +Date:		August 2014
+> > > > > > +Contact:	Chao Yu <chao2.yu@samsung.com>
+> > > > > > +Description:
+> > > > > > +		The num_discards file is read-only and specifies the number of
+> > > > > > +		physical blocks which are discarded by this device. These blocks
+> > > > > > +		are included in discard request which is sended by filesystem as
+> > > > > > +		the blocks are no longer used.
+> > > > > > +
+> > > > > >  What:		/sys/block/zram<id>/max_comp_streams
+> > > > > >  Date:		February 2014
+> > > > > >  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > > > > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > > > > index d00831c..904e7a5 100644
+> > > > > > --- a/drivers/block/zram/zram_drv.c
+> > > > > > +++ b/drivers/block/zram/zram_drv.c
+> > > > > > @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> > > > > >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+> > > > > >  		zram_free_page(zram, index);
+> > > > > >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+> > > > > > +		atomic64_inc(&zram->stats.num_discards);
+> > > > > >  		index++;
+> > > > > >  		n -= PAGE_SIZE;
+> > > > > >  	}
+> > > > > > @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
+> > > > > >  ZRAM_ATTR_RO(num_writes);
+> > > > > >  ZRAM_ATTR_RO(failed_reads);
+> > > > > >  ZRAM_ATTR_RO(failed_writes);
+> > > > > > +ZRAM_ATTR_RO(num_discards);
+> > > > > >  ZRAM_ATTR_RO(invalid_io);
+> > > > > >  ZRAM_ATTR_RO(notify_free);
+> > > > > >  ZRAM_ATTR_RO(zero_pages);
+> > > > > > @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
+> > > > > >  	&dev_attr_num_writes.attr,
+> > > > > >  	&dev_attr_failed_reads.attr,
+> > > > > >  	&dev_attr_failed_writes.attr,
+> > > > > > +	&dev_attr_num_discards.attr,
+> > > > > >  	&dev_attr_invalid_io.attr,
+> > > > > >  	&dev_attr_notify_free.attr,
+> > > > > >  	&dev_attr_zero_pages.attr,
+> > > > > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > > > > > index e0f725c..2994aaf 100644
+> > > > > > --- a/drivers/block/zram/zram_drv.h
+> > > > > > +++ b/drivers/block/zram/zram_drv.h
+> > > > > > @@ -86,6 +86,7 @@ struct zram_stats {
+> > > > > >  	atomic64_t num_writes;	/* --do-- */
+> > > > > >  	atomic64_t failed_reads;	/* can happen when memory is too low */
+> > > > > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> > > > > > +	atomic64_t num_discards;	/* no. of discarded pages */
+> > > > > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> > > > > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> > > > > >  	atomic64_t zero_pages;		/* no. of zero filled pages */
+> > > > > > --
+> > > > > > 2.0.1.474.g72c7794
+> > > > > >
+> > > > > >
+> > > > >
+> > > > > --
+> > > > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > > > see: http://www.linux-mm.org/ .
+> > > > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > > >
+> > >
+> > > --
+> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > see: http://www.linux-mm.org/ .
+> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> > --
+> > Kind regards,
+> > Minchan Kim
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-2.0.0
-
+Kind regards,
+Minchan Kim
