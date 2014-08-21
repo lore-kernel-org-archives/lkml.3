@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaHUMmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:42:20 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:33553 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493AbaHUMmT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:42:19 -0400
+	id S1754784AbaHUMmi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:42:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15320 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754679AbaHUMmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 08:42:36 -0400
+Date: Thu, 21 Aug 2014 14:42:24 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: Re: [PATCH v2 4/6] KVM: VMX: dynamise PLE window
+Message-ID: <20140821124223.GD20453@potion.brq.redhat.com>
+References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
+ <1408567997-21222-5-git-send-email-rkrcmar@redhat.com>
+ <53F5AD3E.3050800@redhat.com>
+ <20140821115405.GD20546@potion.brq.redhat.com>
+ <53F5E623.5090906@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1408446001-4998-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1408446001-4998-1-git-send-email-mathias.nyman@linux.intel.com>
-Date: Thu, 21 Aug 2014 07:42:18 -0500
-Message-ID: <CACRpkdbkwfeyRmHrLojdqdK-ygvSn=OkBrdJ+R-oye-DO3kxpQ@mail.gmail.com>
-Subject: Re: [PATCHv2] gpio-lynxpoint: enable input sensing in resume
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53F5E623.5090906@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 6:00 AM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
+2014-08-21 14:29+0200, Paolo Bonzini:
+> Il 21/08/2014 13:54, Radim Krčmář ha scritto:
+> > Guity as charged.
+> > Using 0/1 or true/false in this context directly would be pretty bad ...
+> > Is enum fine? (SHIRINK_PLE_WINDOW, GROW_PLE_WINDOW?)
+> 
+> I prefer good old Ctrl-C Ctrl-V (adjusted for your favorite editor). :)
 
-> It appears that input sensing bit might be reset during
-> suspend/resume. Set input sensing again for all requested gpios
-> in resume
->
-> Tested-by: Jerome Blin <jerome.blin@intel.com>
-> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+I, I should be able to do it, but nightmares are going to last a while.
 
-This version applied with Mika's ACK.
-
-Yours,
-Linus Walleij
+(And to lower chances of v4: are tracepoint macros, like for kvm_apic,
+ frowned upon now?)
