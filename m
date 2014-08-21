@@ -1,199 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaHUBKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:10:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349AbaHUBKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:10:24 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-api@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com,
-        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com,
-        serge@hallyn.com
-Subject: [PATCH V4 2/8] namespaces: expose namespace instance serial number in proc_ns_operations
-Date: Wed, 20 Aug 2014 21:09:35 -0400
-Message-Id: <7efab83c498dd5835c65b4445771f23fadc60d9e.1408581429.git.rgb@redhat.com>
-In-Reply-To: <cover.1408581429.git.rgb@redhat.com>
-References: <cover.1408581429.git.rgb@redhat.com>
-In-Reply-To: <cover.1408581429.git.rgb@redhat.com>
-References: <cover.1408581429.git.rgb@redhat.com>
+	id S1751613AbaHUBP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:15:58 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:55912 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894AbaHUBP5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 21:15:57 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCHSET 0/2] perf hists browser: Cleanup callchain routines (v2)
+Date: Thu, 21 Aug 2014 10:15:44 +0900
+Message-Id: <1408583746-5540-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose the namespace instance serial number for each namespace type in the proc
-namespace operations structure to make it available for the proc filesystem.
+Hello,
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- fs/namespace.c           |    7 +++++++
- include/linux/proc_ns.h  |    1 +
- ipc/namespace.c          |    8 ++++++++
- kernel/pid_namespace.c   |    7 +++++++
- kernel/user_namespace.c  |    7 +++++++
- kernel/utsname.c         |    8 ++++++++
- net/core/net_namespace.c |    7 +++++++
- 7 files changed, 45 insertions(+), 0 deletions(-)
+This patch fixes and cleans up TUI callchain routines.  I tried to
+consolidate similar functions but not to break the current output with
+this change.  Hope that it makes code more readable and maintainable.
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 9af49ff..f433f21 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -3028,6 +3028,12 @@ static unsigned int mntns_inum(void *ns)
- 	return mnt_ns->proc_inum;
- }
- 
-+static long long mntns_snum(void *ns)
-+{
-+	struct mnt_namespace *mnt_ns = ns;
-+	return mnt_ns->serial_num;
-+}
-+
- const struct proc_ns_operations mntns_operations = {
- 	.name		= "mnt",
- 	.type		= CLONE_NEWNS,
-@@ -3035,4 +3041,5 @@ const struct proc_ns_operations mntns_operations = {
- 	.put		= mntns_put,
- 	.install	= mntns_install,
- 	.inum		= mntns_inum,
-+	.snum		= mntns_snum,
- };
-diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
-index 34a1e10..aaafe3e 100644
---- a/include/linux/proc_ns.h
-+++ b/include/linux/proc_ns.h
-@@ -14,6 +14,7 @@ struct proc_ns_operations {
- 	void (*put)(void *ns);
- 	int (*install)(struct nsproxy *nsproxy, void *ns);
- 	unsigned int (*inum)(void *ns);
-+	long long (*snum)(void *ns);
- };
- 
- struct proc_ns {
-diff --git a/ipc/namespace.c b/ipc/namespace.c
-index 76dac5c..36ce7ff 100644
---- a/ipc/namespace.c
-+++ b/ipc/namespace.c
-@@ -191,6 +191,13 @@ static unsigned int ipcns_inum(void *vp)
- 	return ns->proc_inum;
- }
- 
-+static long long ipcns_snum(void *vp)
-+{
-+	struct ipc_namespace *ns = vp;
-+
-+	return ns->serial_num;
-+}
-+
- const struct proc_ns_operations ipcns_operations = {
- 	.name		= "ipc",
- 	.type		= CLONE_NEWIPC,
-@@ -198,4 +205,5 @@ const struct proc_ns_operations ipcns_operations = {
- 	.put		= ipcns_put,
- 	.install	= ipcns_install,
- 	.inum		= ipcns_inum,
-+	.snum		= ipcns_snum,
- };
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index 40a8b36..059b330 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -370,6 +370,12 @@ static unsigned int pidns_inum(void *ns)
- 	return pid_ns->proc_inum;
- }
- 
-+static long long pidns_snum(void *ns)
-+{
-+	struct pid_namespace *pid_ns = ns;
-+	return pid_ns->serial_num;
-+}
-+
- const struct proc_ns_operations pidns_operations = {
- 	.name		= "pid",
- 	.type		= CLONE_NEWPID,
-@@ -377,6 +383,7 @@ const struct proc_ns_operations pidns_operations = {
- 	.put		= pidns_put,
- 	.install	= pidns_install,
- 	.inum		= pidns_inum,
-+	.snum		= pidns_snum,
- };
- 
- static __init int pid_namespaces_init(void)
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 5c5c399..3f04df5 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -896,6 +896,12 @@ static unsigned int userns_inum(void *ns)
- 	return user_ns->proc_inum;
- }
- 
-+static long long userns_snum(void *ns)
-+{
-+	struct user_namespace *user_ns = ns;
-+	return user_ns->serial_num;
-+}
-+
- const struct proc_ns_operations userns_operations = {
- 	.name		= "user",
- 	.type		= CLONE_NEWUSER,
-@@ -903,6 +909,7 @@ const struct proc_ns_operations userns_operations = {
- 	.put		= userns_put,
- 	.install	= userns_install,
- 	.inum		= userns_inum,
-+	.snum		= userns_snum,
- };
- 
- static __init int user_namespaces_init(void)
-diff --git a/kernel/utsname.c b/kernel/utsname.c
-index d0cf7b5..ffeac1b 100644
---- a/kernel/utsname.c
-+++ b/kernel/utsname.c
-@@ -132,6 +132,13 @@ static unsigned int utsns_inum(void *vp)
- 	return ns->proc_inum;
- }
- 
-+static long long utsns_snum(void *vp)
-+{
-+	struct uts_namespace *ns = vp;
-+
-+	return ns->serial_num;
-+}
-+
- const struct proc_ns_operations utsns_operations = {
- 	.name		= "uts",
- 	.type		= CLONE_NEWUTS,
-@@ -139,4 +146,5 @@ const struct proc_ns_operations utsns_operations = {
- 	.put		= utsns_put,
- 	.install	= utsns_install,
- 	.inum		= utsns_inum,
-+	.snum		= utsns_snum,
- };
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 3b5cfdb..c402eea 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -671,6 +671,12 @@ static unsigned int netns_inum(void *ns)
- 	return net->proc_inum;
- }
- 
-+static long long netns_snum(void *ns)
-+{
-+	struct net *net = ns;
-+	return net->serial_num;
-+}
-+
- const struct proc_ns_operations netns_operations = {
- 	.name		= "net",
- 	.type		= CLONE_NEWNET,
-@@ -678,5 +684,6 @@ const struct proc_ns_operations netns_operations = {
- 	.put		= netns_put,
- 	.install	= netns_install,
- 	.inum		= netns_inum,
-+	.snum		= netns_snum,
- };
- #endif
+It should not change any behavior and outputs.  I verified it with
+expanding by 'E' key + dumping by 'P' key on TUI and then running
+"diff -u" results before and after the patchset.
+
+Actually I have more changes that would change (or improve) some
+behavior and output.  I'll post them after this patchset is merged.
+
+
+ * changes in v2)
+  - drop patch 1-3 in v1 since it's already merged
+  - update description  (Arnaldo)
+  - remove stylish changes  (Arnaldo)
+  - remove unnecessary 'has_single_node' check
+
+
+You can get this from 'perf/callchain-fix-v2' branch on my tree:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+Any comments are welcome, thanks
+Namhyung
+
+
+Namhyung Kim (2):
+  perf hists browser: Cleanup callchain print functions
+  perf hists browser: Consolidate callchain print functions in TUI
+
+ tools/perf/ui/browsers/hists.c | 302 +++++++++++++----------------------------
+ 1 file changed, 95 insertions(+), 207 deletions(-)
+
 -- 
-1.7.1
+2.0.0
 
