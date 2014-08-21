@@ -1,99 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214AbaHUBkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:40:43 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:37054 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750894AbaHUBkl (ORCPT
+	id S1752722AbaHUBmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:42:00 -0400
+Received: from relay-s04-hub006.domainlocalhost.com ([74.115.207.217]:5034
+	"EHLO relay-S04-HUB006.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750834AbaHUBl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:40:41 -0400
-X-IronPort-AV: E=Sophos;i="5.04,370,1406563200"; 
-   d="scan'208";a="34871589"
-Message-ID: <53F54D40.5090707@cn.fujitsu.com>
-Date: Thu, 21 Aug 2014 09:37:04 +0800
-From: Chai Wen <chaiw.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Wed, 20 Aug 2014 21:41:58 -0400
+X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Aug 2014 21:41:58 EDT
+From: Dudley Du <dudl@cypress.com>
+To: Dudley Du <dudley.dulixin@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Benson Leung <bleung@google.com>, Patrik Fimml <patrikf@google.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v4 0/14] input: cyapa: re-architecture driver to support
+ multi-trackpads in one driver
+Thread-Topic: [PATCH v4 0/14] input: cyapa: re-architecture driver to
+ support multi-trackpads in one driver
+Thread-Index: Ac+hiqcggqGLJSASR1uLi5h07B+kvgbVUMzA
+Date: Thu, 21 Aug 2014 01:36:24 +0000
+Message-ID: <77BC725C9062764F874D79F51E1F1A8F4C940AAC@S04-MBX01-01.s04.local>
+References: <53c77101.0374440a.664d.46e2@mx.google.com>
+In-Reply-To: <53c77101.0374440a.664d.46e2@mx.google.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.30.12.149]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@kernel.org>
-CC: <akpm@linux-foundation.org>, <kvm@vger.kernel.org>, <pbonzini@redhat.com>,
-        <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] softlockup: make detector be aware of task switch
- of processes hogging cpu
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com> <1407768567-171794-3-git-send-email-dzickus@redhat.com> <20140818090319.GA25495@gmail.com> <20140818150658.GQ49576@redhat.com> <20140818180158.GA4540@gmail.com> <20140818184339.GB49576@redhat.com> <20140818190200.GB5074@gmail.com> <20140818203801.GE49576@redhat.com> <53F2AA05.1020509@cn.fujitsu.com>
-In-Reply-To: <53F2AA05.1020509@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.161]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7L1g5UR002539
 
-On 08/19/2014 09:36 AM, Chai Wen wrote:
+Hi Dmitry, Patrik,
 
-> On 08/19/2014 04:38 AM, Don Zickus wrote:
-> 
->> On Mon, Aug 18, 2014 at 09:02:00PM +0200, Ingo Molnar wrote:
->>>
->>> * Don Zickus <dzickus@redhat.com> wrote:
->>>
->>>>>>> So I agree with the motivation of this improvement, but 
->>>>>>> is this implementation namespace-safe?
->>>>>>
->>>>>> What namespace are you worried about colliding with?  I 
->>>>>> thought softlockup_ would provide the safety??  Maybe I 
->>>>>> am missing something obvious. :-(
->>>>>
->>>>> I meant PID namespaces - a PID in itself isn't guaranteed 
->>>>> to be unique across the system.
->>>>
->>>> Ah, I don't think we thought about that.  Is there a better 
->>>> way to do this?  Is there a domain id or something that can 
->>>> be OR'd with the pid?
->>>
->>> What is always unique is the task pointer itself. We use pids 
->>> when we interface with user-space - but we don't really do that 
->>> here, right?
->>
->> No, I don't believe so.  Ok, so saving 'current' and comparing that should
->> be enough, correct?
->>
-> 
-> 
-> I am not sure of the safety about using pid here with namespace.
-> But as to the pointer of process, is there a chance that we got a 'historical'
-> address saved in the 'softlockup_warn_pid(or address)_saved' and the current
-> hogging process happened to get the same task pointer address?
-> If it never happens, I think the comparing of address is ok.
-> 
+Is there any update or feedback on the re-submitted v4 cyapa driver patches?
 
+Thanks,
+Dudley
 
-Hi Ingo
-
-what do you think of Don's solution- 'comparing of task pointer' ?
-Anyway this is just an additional check about some very special cases,
-so I think the issue that I am concerned above is not a problem at all.
-And after learning some concepts about PID namespace, I think comparing
-of task pointer is reliable dealing with PID namespace here.
-
-And Don, If you want me to re-post this patch, please let me know that.
-
-thanks
-chai wen
-
-> thanks
-> chai wen
-> 
->> Cheers,
->> Don
->> .
->>
-> 
-> 
-> 
-
-
-
--- 
-Regards
-
-Chai Wen
+> -----Original Message-----
+> From: linux-input-owner@vger.kernel.org [mailto:linux-input-
+> owner@vger.kernel.org] On Behalf Of Dudley Du
+> Sent: Thursday, July 17, 2014 2:45 PM
+> To: Dmitry Torokhov; Rafael J. Wysocki
+> Cc: Benson Leung; Patrik Fimml; linux-input@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH v4 0/14] input: cyapa: re-architecture driver to support
+> multi-trackpads in one driver
+>
+> This patch set is made based on kernel 3.16.0-rc5.
+> It's aimed to re-architecture the cyapa driver to support
+> old gen3 trackpad device and new gen5 trackpad device in one
+> cyapa driver for easily productions support based on
+> customers' requirements, and add sysfs functions and interfaces
+> supported that required by users and customers.
+> Because the earlier gen3 and the latest gen5 trackpad devies using
+> two different chipsets, and have different protocol and interfaces.
+> If supported these two trackpad devices in two different drivers, then
+> it will be difficult to manage productions and later firmware updates.
+> it will cause customer don't know which one to use and update
+> because these two trackpad devices have been used and integrated
+> in same one productions at a time, so must to support these two trackpad
+> devices in same on driver.
+>
+> Compare to v3, it has below changes:
+> 1) Eliminate irq-state-remembering logic, remove irq help functions;
+> 2) Remove state sync help functions instead of mutex_lock/mutex_unlock;
+> 3) Fix comments and charaters errors and not consistent issues.
+> 4) Fix other issues that pointed out in the review.
+>
+>
+> The new architecture is made of:
+> cyapa.c - the core of the architecture, supply interfaces and
+> functions to system and read trackpad devices.
+> cyapa_gen3.c - functions support for gen3 trackpad devices,
+> cyapa_gen5.c - functions support for gen5 trackpad devices.
+>
+> Beside this introduction patch, it has 14 patches listed as below.
+> For these patches each one is patched based on previous one.
+>
+> patch 1/14: re-architecture cyapa driver with core functions,
+> and applying the device detecting function in async thread to speed
+> up system boot time.
+>
+> patch 2/14: add cyapa driver power management interfaces support.
+>
+> patch 3/14: add cyapa driver runtime power management interfaces support.
+>
+> patch 4/14: add cyapa key function interfaces in sysfs system.
+> Including read firmware version, get production ID, read baseline,
+> re-calibrate trackpad baselines and do trackpad firmware update.
+>
+> patch 5/14: add read firmware image and read raw trackpad device'
+> sensors' raw data interface in debugfs system.
+>
+> patch 6/14: add gen3 trackpad device basic functions support.
+>
+> patch 7/14: add gen3 trackpad device firmware update function support.
+>
+> patch 8/14: add gen3 trackpad device report baseline and do force
+> re-calibrate functions support.
+>
+> patch 9/14: add gen3 trackpad device read firmware image function support.
+>
+> patch 10/14: add gen5 trackpad device basic functions support.
+>
+> patch 11/14: add gen5 trackpad device firmware update function support.
+>
+> patch 12/14: add gen5 trackpad device report baseline and do force
+> re-calibrate functions support.
+>
+> patch 13/14: add gen5 trackpad device read firmware image and report
+> sensors' raw data values functions support.
+>
+> patch 14/14: add function to monitor LID close event to off trackpad device.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
