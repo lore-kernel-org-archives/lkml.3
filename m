@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277AbaHUNXC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:23:02 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	id S1755301AbaHUNXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:23:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6495 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797AbaHUNXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:23:00 -0400
-Message-ID: <53F5F2AD.5010607@nod.at>
-Date: Thu, 21 Aug 2014 15:22:53 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755044AbaHUNXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 09:23:04 -0400
+Message-ID: <53F5F2AA.7060600@redhat.com>
+Date: Thu, 21 Aug 2014 15:22:50 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "libvir-list@redhat.com" <libvir-list@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>
-Subject: Re: [GIT PULL] namespace updates for v3.17-rc1
-References: <87fvhav3ic.fsf@x220.int.ebiederm.org> <CAFLxGvwi-iJRyfwv8v9fcRkiSu2d-az8W55xMPbp_d8wQKmwjg@mail.gmail.com> <87vbpm4f4y.fsf@x220.int.ebiederm.org> <20140821131257.GA4264@infradead.org>
-In-Reply-To: <20140821131257.GA4264@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gleb Natapov <gleb@kernel.org>,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: Re: [PATCH v2 5/6] KVM: trace kvm_ple_window
+References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com> <1408567997-21222-6-git-send-email-rkrcmar@redhat.com> <53F5ADE6.30106@redhat.com> <20140821115637.GE20546@potion.brq.redhat.com>
+In-Reply-To: <20140821115637.GE20546@potion.brq.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.08.2014 15:12, schrieb Christoph Hellwig:
-> On Wed, Aug 20, 2014 at 09:53:49PM -0700, Eric W. Biederman wrote:
->> Richard Weinberger <richard.weinberger@gmail.com> writes:
->>
->>> On Wed, Aug 6, 2014 at 2:57 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+Il 21/08/2014 13:56, Radim Krčmář ha scritto:
+> 2014-08-21 10:29+0200, Paolo Bonzini:
+>> Il 20/08/2014 22:53, Radim Krčmář ha scritto:
+>>> Tracepoint for dynamic PLE window, fired on every potential change.
 >>>
->>> This commit breaks libvirt-lxc.
->>> libvirt does in lxcContainerMountBasicFS():
+>>> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+>>> ---
+>>>  arch/x86/kvm/trace.h | 25 +++++++++++++++++++++++++
+>>>  arch/x86/kvm/vmx.c   |  8 +++++---
+>>>  arch/x86/kvm/x86.c   |  1 +
+>>>  3 files changed, 31 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+>>> index e850a7d..4b8e6cb 100644
+>>> --- a/arch/x86/kvm/trace.h
+>>> +++ b/arch/x86/kvm/trace.h
+>>> @@ -848,6 +848,31 @@ TRACE_EVENT(kvm_track_tsc,
+>>>  		  __print_symbolic(__entry->host_clock, host_clocks))
+>>>  );
+>>>  
+>>> +TRACE_EVENT(kvm_ple_window,
+>>> +	TP_PROTO(int grow, unsigned int vcpu_id, int new, int old),
 >>
->> The bugs fixed are security issues, so if we have to break a small
->> number of userspace applications we will.  Anything that we can
->> reasonably do to avoid regressions will be done.
+>> s/int grow/bool grow/ (and similarly in TP_STRUCT__entry).
 > 
-> Can you explain the security issues in detail?  Breaking common
-> userspace like libvirt-lxc with just a little bit of handwaiving is
-> entirely unacceptable.
+> Ok.
+> (We are using 'int' for this in other tracepoints, so I guessed there is
+>  some hate agains bool.)
 
-It looks like commit 87b47932f40a11280584bce260cbdb3b5f9e8b7d in
-git.kernel.org/cgit/linux/kernel/git/ebiederm/user-namespace.git for-next
-unbreaks libvirt-lxc.
-I hope it hits Linus tree and -stable before the offending commit hits users.
+Yeah, there are many ints, but there are also some bools. :)
 
-Thanks,
-//richard
+Of course "bool" is only a no-brainer if there is a clear direction to
+use (e.g. "bool has_error"), and indeed this case is less obvious.  But
+there are some like this one (e.g. bool gpa_match).
+
+Keep the int if you prefer it that way.
+
+Paolo
+
+>>> +	TP_ARGS(grow, vcpu_id, new, old),
+>>> +
+>>> +	TP_STRUCT__entry(
+>>> +		__field(                 int,      grow         )
+>>> +		__field(        unsigned int,   vcpu_id         )
+>>> +		__field(                 int,       new         )
+>>> +		__field(                 int,       old         )
+>>> +	),
+>>> +
+>>> +	TP_fast_assign(
+>>> +		__entry->grow           = grow;
+>>> +		__entry->vcpu_id        = vcpu_id;
+>>> +		__entry->new            = new;
+>>> +		__entry->old            = old;
+>>> +	),
+>>> +
+>>> +	TP_printk("vcpu %u: ple_window %d %s %d",
+>>> +	          __entry->vcpu_id,
+>>> +	          __entry->new,
+>>> +	          __entry->grow ? "<+" : "<-",
+>>
+>> ? "grow" : "shrink"
+> 
+> Can't say I haven't expected comment about that :)
+> 
+
