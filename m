@@ -1,133 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071AbaHUNUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:20:07 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58785 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817AbaHUNUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:20:05 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Javier Martinez Canillas <javier@dowhile0.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-CC: <linux-omap@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH] gpio: omap: Fix interrupt names
-Date: Thu, 21 Aug 2014 08:19:55 -0500
-Message-ID: <1408627195-18421-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755143AbaHUNVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:21:35 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:47043 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291AbaHUNVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 09:21:33 -0400
+Date: Thu, 21 Aug 2014 15:21:25 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Mark Rutland <mark.rutland@arm.com>, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
+        devicetree@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, Rob Herring <robh+dt@kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
+ Controller
+Message-ID: <20140821132124.GB19293@ulmo.nvidia.com>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+ <20140821081619.GZ2452@ldesroches-Latitude-E6320>
+ <20140821103706.2349915d@bbrezillon>
+ <20140821090406.GA13733@ulmo>
+ <20140821114159.319e741b@bbrezillon>
+ <20140821095202.GA21848@ulmo>
+ <53F5CACB.5010706@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1LKvkjL3sHcu1TtY"
+Content-Disposition: inline
+In-Reply-To: <53F5CACB.5010706@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When viewing the /proc/interrupts, there is no information about which
-GPIO bank a specific gpio interrupt is hooked on to. This is more than a
-bit irritating as such information can esily be provided back to the
-user and at times, can be crucial for debug.
 
-So, instead of displaying something like:
-31:	0	0  GPIO   0  palmas
-32:	0	0  GPIO  27  mmc0
+--1LKvkjL3sHcu1TtY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Display the following with appropriate device name:
-31:	0	0  4ae10000.gpio   0  palmas
-32:	0	0  4805d000.gpio  27  mmc0
+On Thu, Aug 21, 2014 at 12:32:43PM +0200, Andrzej Hajda wrote:
+> On 08/21/2014 11:52 AM, Thierry Reding wrote:
+> > On Thu, Aug 21, 2014 at 11:41:59AM +0200, Boris BREZILLON wrote:
+> >> On Thu, 21 Aug 2014 11:04:07 +0200
+> >> Thierry Reding <thierry.reding@gmail.com> wrote:
+> >>
+> >>> On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
+> >>>> Hi Ludovic,
+> >>>>
+> >>>> On Thu, 21 Aug 2014 10:16:19 +0200
+> >>>> Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
+> >>>>
+> >>>>> Hi Boris,
+> >>>>>
+> >>>>> You can add
+> >>>>>
+> >>>>> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> >>>>
+> >>>> Thanks for testing this driver.
+> >>>>
+> >>>>>
+> >>>>> Only one issue but not related to your patches, you can't display
+> >>>>> quickly the bootup logo since the panel detection takes too much
+> >>>>> time.
+> >>>>
+> >>>> Yes, actually this is related to the device probe order: the
+> >>>> hlcdc-display-controller device is probed before the simple-panel, t=
+hus
+> >>>> nothing is detected on the RGB connector (I use of_drm_find_panel to
+> >>>> check for panel availability) when the display controller is
+> >>>> instantiated. I rely on the default polling infrastructure provided =
+by
+> >>>> the DRM/KMS framework which polls for a new connector every 10s, and
+> >>>> this is far more than you kernel boot time.
+> >>>>
+> >>>> Do anyone see a solution to reduce this delay (without changing the
+> >>>> polling interval). I thought we could add a notifier infrastructure =
+to
+> >>>> the DRM panel framework, but I'm not sure this is how you want things
+> >>>> done...
+> >>>
+> >>> Other drivers return -EPROBE_DEFER when a panel hasn't been registered
+> >>> yet. This will automatically take care of ordering things in a way th=
+at
+> >>> DRM/KMS will only be initialized after the panel has been probed.
+> >>
+> >> Actually I'd like to avoid doing this with a deferred probe, because,
+> >> AFAIU, the remote endpoint is not tightly linked with the display
+> >> controller driver (I mean the display controller can still be
+> >> initialized without having a display connected on it).
+> >> Moreover the atmel dev kit I'm using has an HDMI bridge connected on
+> >> the same RGB connector and I'd like to use it in a near future.
+> >> Returning -EPROBE_DEFER in case of several devices connected on the
+> >> same connector implies that I'll have to wait for all the remote
+> >> end-points to be available before my display controller could be
+> >> instantiated.
+> >>
+> >> While this could be acceptable when all drivers are statically linked
+> >> in the kernel, it might be problematic when you're using modules,
+> >> meaning that you won't be able to display anything on your LCD panel
+> >> until your HDMI bridge module has been loaded.
+> >=20
+> > No. HDMI should be using proper hotplugging anyway, hence it should be
+> > always be loaded anyway. You're in for a world of pain if you think you
+> > can run DRM with a driver that's composed of separate kernel modules.
+> >=20
+> > Also if you don't want to use deferred probe, then you're in for the
+> > full hotplugging panel dance and that implies that you need to fix a
+> > bunch of things in DRM (one being the framebuffer console instantiation
+> > that I referred to in the other thread). You also can't be using the
+> > current device tree bindings because they all assume a dependency from
+> > the display controller/output to the panel. For hotplugging you'd need
+> > the dependency the other way around (the panel needs to refer to the
+> > output by phandle).
+>=20
+> I have tested panel as a module in exynos-dsi + panel-s6e8aa0
+> configuration, everything works. There is a workaround for fb console
+> not being reconfigurable, but it does not make thing worse than before.
+> And I do not see a problem with phandles, ie in DT they point both ways,
+> according to binding advices at the time, but in the code it is display
+> controller/encoder which is looking for the panel.
 
-This requires that we create irq_chip instance specific for each GPIO
-bank which is trivial to achieve.
+That works because it's DSI. And we have attach/detach callbacks for
+DSI. We don't have those for regular panels, so we'd need to find a way
+to add that.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-based on v3.17-rc1
- drivers/gpio/gpio-omap.c |   31 +++++++++++++++++--------------
- 1 file changed, 17 insertions(+), 14 deletions(-)
+The way that this currently works is that an encoder/connector driver
+looks up the panel and attaches it to itself. If you allow panels to be
+hotpluggable, then they have no knowledge about what they are connected
+to, so there needs to be a way to inject that knowledge so that they can
+attach to a connector.
 
-diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index 1749321..aee25fa 100644
---- a/drivers/gpio/gpio-omap.c
-+++ b/drivers/gpio/gpio-omap.c
-@@ -857,16 +857,6 @@ static void omap_gpio_unmask_irq(struct irq_data *d)
- 	spin_unlock_irqrestore(&bank->lock, flags);
- }
- 
--static struct irq_chip gpio_irq_chip = {
--	.name		= "GPIO",
--	.irq_shutdown	= omap_gpio_irq_shutdown,
--	.irq_ack	= omap_gpio_ack_irq,
--	.irq_mask	= omap_gpio_mask_irq,
--	.irq_unmask	= omap_gpio_unmask_irq,
--	.irq_set_type	= omap_gpio_irq_type,
--	.irq_set_wake	= omap_gpio_wake_enable,
--};
--
- /*---------------------------------------------------------------------*/
- 
- static int omap_mpuio_suspend_noirq(struct device *dev)
-@@ -1088,7 +1078,7 @@ omap_mpuio_alloc_gc(struct gpio_bank *bank, unsigned int irq_start,
- 			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
- }
- 
--static int omap_gpio_chip_init(struct gpio_bank *bank)
-+static int omap_gpio_chip_init(struct gpio_bank *bank, struct irq_chip *irqc)
- {
- 	int j;
- 	static int gpio;
-@@ -1137,7 +1127,7 @@ static int omap_gpio_chip_init(struct gpio_bank *bank)
- 	}
- #endif
- 
--	ret = gpiochip_irqchip_add(&bank->chip, &gpio_irq_chip,
-+	ret = gpiochip_irqchip_add(&bank->chip, irqc,
- 				   irq_base, omap_gpio_irq_handler,
- 				   IRQ_TYPE_NONE);
- 
-@@ -1147,7 +1137,7 @@ static int omap_gpio_chip_init(struct gpio_bank *bank)
- 		return -ENODEV;
- 	}
- 
--	gpiochip_set_chained_irqchip(&bank->chip, &gpio_irq_chip,
-+	gpiochip_set_chained_irqchip(&bank->chip, irqc,
- 				     bank->irq, omap_gpio_irq_handler);
- 
- 	for (j = 0; j < bank->width; j++) {
-@@ -1172,6 +1162,7 @@ static int omap_gpio_probe(struct platform_device *pdev)
- 	const struct omap_gpio_platform_data *pdata;
- 	struct resource *res;
- 	struct gpio_bank *bank;
-+	struct irq_chip *irqc;
- 	int ret;
- 
- 	match = of_match_device(of_match_ptr(omap_gpio_match), dev);
-@@ -1186,6 +1177,18 @@ static int omap_gpio_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	irqc = devm_kzalloc(dev, sizeof(*irqc), GFP_KERNEL);
-+	if (!irqc)
-+		return -ENOMEM;
-+
-+	irqc->irq_shutdown = omap_gpio_irq_shutdown,
-+	irqc->irq_ack = omap_gpio_ack_irq,
-+	irqc->irq_mask = omap_gpio_mask_irq,
-+	irqc->irq_unmask = omap_gpio_unmask_irq,
-+	irqc->irq_set_type = omap_gpio_irq_type,
-+	irqc->irq_set_wake = omap_gpio_wake_enable,
-+	irqc->name = dev_name(&pdev->dev);
-+
- 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
- 	if (unlikely(!res)) {
- 		dev_err(dev, "Invalid IRQ resource\n");
-@@ -1241,7 +1244,7 @@ static int omap_gpio_probe(struct platform_device *pdev)
- 
- 	omap_gpio_mod_init(bank);
- 
--	ret = omap_gpio_chip_init(bank);
-+	ret = omap_gpio_chip_init(bank, irqc);
- 	if (ret)
- 		return ret;
- 
--- 
-1.7.9.5
+Thierry
 
+--1LKvkjL3sHcu1TtY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT9fJUAAoJEN0jrNd/PrOhF/0P/juJ+JoRu5a2baSD+CT4IGgf
+Hxm9y5mYHImYXTXKcAecP8glRMDLXcQBlHsJskN0uXwm7ITd7HTr+QOA3akPJMv6
+fe/PaujCB5q8pv+b/wKCe1aPxMqAnjfg8IRcI//TH4qYg2UxrN+s5Oeg97gPQtpE
+FF0BAT7tLFY3OeqU2tVE5SRrOKMpkFn2ggmRboXkxWRTdMiDetzWpe+0H7Dxbl6h
+3XjGcobLzrI2vC828XdXzq0MCZ2eRvbEK5lyNukjUJZzuACFH86adOEM4b1d/J+K
+jFQnbygLlvGqPrZkSJ6essG90ymM/4uyyifWAFCIbISqd7WxbX4oRC7IK8WehTuo
+jO94a/RzxTdK07SVim5YXLK2LklSynSebrGQraXW+mtrZ0TJEF+F5ILRLVNSDMvz
+ozhY1a3eH+FerMw3m1GnipK+UspdwjNMYtjKmwvczxCeqtGIQD0OEDiz3xKfJl89
+0C9htIdB5GPK97lPS2lZ0t8kbpKpjbmK0ViAIU7xFK/plN3psF3khpt0NG3krIs3
+MkkxOnAQ876yXuaEiIlwxUXgq6QayhhYzRXXsXUZSlPF/JZ2nEUYc0gVCRVuwdjZ
+Iv+2lWdLme60N4pAnTRlidjALbQ2lhCZaZzLmP0F6VVy0geMy2EctkEbMAj+W3je
+LFgqnDdWUPmcyRmnH8rS
+=lFUl
+-----END PGP SIGNATURE-----
+
+--1LKvkjL3sHcu1TtY--
