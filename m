@@ -1,91 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaHUCa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 22:30:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774AbaHUCa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 22:30:58 -0400
-Date: Wed, 20 Aug 2014 22:30:51 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Chai Wen <chaiw.fnst@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
-        kvm@vger.kernel.org, pbonzini@redhat.com, mingo@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] softlockup: make detector be aware of task switch of
- processes hogging cpu
-Message-ID: <20140821023051.GO49576@redhat.com>
-References: <1407768567-171794-1-git-send-email-dzickus@redhat.com>
- <1407768567-171794-3-git-send-email-dzickus@redhat.com>
- <20140818090319.GA25495@gmail.com>
- <20140818150658.GQ49576@redhat.com>
- <20140818180158.GA4540@gmail.com>
- <20140818184339.GB49576@redhat.com>
- <20140818190200.GB5074@gmail.com>
- <20140818203801.GE49576@redhat.com>
- <53F2AA05.1020509@cn.fujitsu.com>
- <53F54D40.5090707@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F54D40.5090707@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753459AbaHUCbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 22:31:40 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:63085 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaHUCbi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 22:31:38 -0400
+Message-ID: <1408588293.10818.3.camel@phoenix>
+Subject: [PATCH] regulator: hi6421: Remove unused fields from struct
+ hi6421_regulator_info
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: Guodong Xu <guodong.xu@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Aug 2014 10:31:33 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 09:37:04AM +0800, Chai Wen wrote:
-> On 08/19/2014 09:36 AM, Chai Wen wrote:
-> 
-> > On 08/19/2014 04:38 AM, Don Zickus wrote:
-> > 
-> >> On Mon, Aug 18, 2014 at 09:02:00PM +0200, Ingo Molnar wrote:
-> >>>
-> >>> * Don Zickus <dzickus@redhat.com> wrote:
-> >>>
-> >>>>>>> So I agree with the motivation of this improvement, but 
-> >>>>>>> is this implementation namespace-safe?
-> >>>>>>
-> >>>>>> What namespace are you worried about colliding with?  I 
-> >>>>>> thought softlockup_ would provide the safety??  Maybe I 
-> >>>>>> am missing something obvious. :-(
-> >>>>>
-> >>>>> I meant PID namespaces - a PID in itself isn't guaranteed 
-> >>>>> to be unique across the system.
-> >>>>
-> >>>> Ah, I don't think we thought about that.  Is there a better 
-> >>>> way to do this?  Is there a domain id or something that can 
-> >>>> be OR'd with the pid?
-> >>>
-> >>> What is always unique is the task pointer itself. We use pids 
-> >>> when we interface with user-space - but we don't really do that 
-> >>> here, right?
-> >>
-> >> No, I don't believe so.  Ok, so saving 'current' and comparing that should
-> >> be enough, correct?
-> >>
-> > 
-> > 
-> > I am not sure of the safety about using pid here with namespace.
-> > But as to the pointer of process, is there a chance that we got a 'historical'
-> > address saved in the 'softlockup_warn_pid(or address)_saved' and the current
-> > hogging process happened to get the same task pointer address?
-> > If it never happens, I think the comparing of address is ok.
-> > 
-> 
-> 
-> Hi Ingo
-> 
-> what do you think of Don's solution- 'comparing of task pointer' ?
-> Anyway this is just an additional check about some very special cases,
-> so I think the issue that I am concerned above is not a problem at all.
-> And after learning some concepts about PID namespace, I think comparing
-> of task pointer is reliable dealing with PID namespace here.
-> 
-> And Don, If you want me to re-post this patch, please let me know that.
+The valid_modes_mask and *dev are not used in this driver, remove them.
+Current code uses devm_regulator_register, so we don't need *regulator in
+hi6421_regulator_info. Use a local variable instead.
 
-Sure, just quickly test with the task pointer to make sure it still works
-and then re-post.
+Also removes a few unnecessary inclusion of header files.
 
-Cheers,
-Don
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/hi6421-regulator.c | 31 ++++---------------------------
+ 1 file changed, 4 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/regulator/hi6421-regulator.c b/drivers/regulator/hi6421-regulator.c
+index b0de92b..e389920 100644
+--- a/drivers/regulator/hi6421-regulator.c
++++ b/drivers/regulator/hi6421-regulator.c
+@@ -17,19 +17,13 @@
+ #include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/err.h>
+-#include <linux/io.h>
+-#include <linux/jiffies.h>
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+-#include <linux/of_device.h>
+-#include <linux/of_address.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/of_regulator.h>
+ #include <linux/mfd/hi6421-pmic.h>
+-#include <linux/delay.h>
+-#include <linux/time.h>
+ 
+ /*
+  * struct hi6421_regulator_pdata - Hi6421 regulator data of platform device
+@@ -41,20 +35,14 @@ struct hi6421_regulator_pdata {
+ 
+ /*
+  * struct hi6421_regulator_info - hi6421 regulator information
+- * @dev: device pointer
+  * @desc: regulator description
+- * @regulator: regulator device
+  * @mode_mask: ECO mode bitmask of LDOs; for BUCKs, this masks sleep
+  * @eco_microamp: eco mode load upper limit (in mA), valid for LDOs only
+- * @valid_modes_mask: valid operating modes
+  */
+ struct hi6421_regulator_info {
+-	struct device		*dev;
+ 	struct regulator_desc	desc;
+-	struct regulator_dev	*regulator;
+ 	u8		mode_mask;
+ 	u32		eco_microamp;
+-	unsigned int	valid_modes_mask;
+ };
+ 
+ /* HI6421 regulators */
+@@ -198,8 +186,6 @@ static const struct regulator_ops hi6421_buck345_ops;
+ 		},							\
+ 		.mode_mask		= ecomask,			\
+ 		.eco_microamp		= ecoamp,			\
+-		.valid_modes_mask	= (REGULATOR_MODE_NORMAL	\
+-					   | REGULATOR_MODE_IDLE),	\
+ 	}
+ 
+ /* HI6421 LDO1~3 are linear voltage regulators at fixed uV_step
+@@ -237,8 +223,6 @@ static const struct regulator_ops hi6421_buck345_ops;
+ 		},							\
+ 		.mode_mask		= ecomask,			\
+ 		.eco_microamp		= ecoamp,			\
+-		.valid_modes_mask	= (REGULATOR_MODE_NORMAL	\
+-					   | REGULATOR_MODE_IDLE),	\
+ 	}
+ 
+ /* HI6421 LDOAUDIO is a linear voltage regulator with two 4-step ranges
+@@ -276,8 +260,6 @@ static const struct regulator_ops hi6421_buck345_ops;
+ 		},							\
+ 		.mode_mask		= ecomask,			\
+ 		.eco_microamp		= ecoamp,			\
+-		.valid_modes_mask	= (REGULATOR_MODE_NORMAL	\
+-					   | REGULATOR_MODE_IDLE),	\
+ 	}
+ 
+ /* HI6421 BUCK0/1/2 are linear voltage regulators at fixed uV_step
+@@ -311,8 +293,6 @@ static const struct regulator_ops hi6421_buck345_ops;
+ 			.off_on_delay	= odelay,			\
+ 		},							\
+ 		.mode_mask		= sleepmask,			\
+-		.valid_modes_mask	= (REGULATOR_MODE_NORMAL	\
+-					   | REGULATOR_MODE_STANDBY),	\
+ 	}
+ 
+ /* HI6421 BUCK3/4/5 share similar configurations as LDOs, with exception
+@@ -346,8 +326,6 @@ static const struct regulator_ops hi6421_buck345_ops;
+ 			.off_on_delay	= odelay,			\
+ 		},							\
+ 		.mode_mask		= sleepmask,			\
+-		.valid_modes_mask	= (REGULATOR_MODE_NORMAL	\
+-					   | REGULATOR_MODE_STANDBY),	\
+ 	}
+ 
+ /* HI6421 regulator information */
+@@ -580,10 +558,10 @@ static int hi6421_regulator_register(struct platform_device *pdev,
+ {
+ 	struct hi6421_regulator_info *info = NULL;
+ 	struct regulator_config config = { };
++	struct regulator_dev *rdev;
+ 
+ 	/* assign per-regulator data */
+ 	info = &hi6421_regulator_info[id];
+-	info->dev = &pdev->dev;
+ 
+ 	config.dev = &pdev->dev;
+ 	config.init_data = init_data;
+@@ -592,12 +570,11 @@ static int hi6421_regulator_register(struct platform_device *pdev,
+ 	config.of_node = np;
+ 
+ 	/* register regulator with framework */
+-	info->regulator = devm_regulator_register(&pdev->dev, &info->desc,
+-						&config);
+-	if (IS_ERR(info->regulator)) {
++	rdev = devm_regulator_register(&pdev->dev, &info->desc, &config);
++	if (IS_ERR(rdev)) {
+ 		dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 			info->desc.name);
+-		return PTR_ERR(info->regulator);
++		return PTR_ERR(rdev);
+ 	}
+ 
+ 	return 0;
+-- 
+1.9.1
+
+
+
