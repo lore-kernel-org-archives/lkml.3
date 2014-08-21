@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaHUMqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:46:07 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45089 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754291AbaHUMqF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:46:05 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19xjwuTiLyFLEm0YH1zv8d95jaLv/aUS7M=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 439B35CB856
-Date: Thu, 21 Aug 2014 08:45:50 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: Add suspend-to-RAM wake
- up support
-Message-ID: <20140821124550.GX12769@titan.lakedaemon.net>
-References: <1408546172-22484-1-git-send-email-geert+renesas@glider.be>
+	id S1754772AbaHUMsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:48:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30683 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752817AbaHUMsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 08:48:38 -0400
+Subject: [PATCH] Fix ELF e_flags propagation through built-in.o construction
+From: David Howells <dhowells@redhat.com>
+To: mmarek@suse.cz
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Date: Thu, 21 Aug 2014 13:48:32 +0100
+Message-ID: <20140821124832.22445.27923.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408546172-22484-1-git-send-email-geert+renesas@glider.be>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert,
+The built-in.o files are constructed in one of two ways:
 
-On Wed, Aug 20, 2014 at 04:49:32PM +0200, Geert Uytterhoeven wrote:
-> Set the ->irq_enable() and ->irq_disable() methods to NULL to enable
-> lazy disable of interrupts, and set IRQCHIP_MASK_ON_SUSPEND to tell the
-> core that only IRQs marked as wake-ups need to stay enabled during
-> suspend-to-RAM.
-> 
-> This makes wake-up by gpio-keys from suspend-to-RAM work on
-> r8a7740/Armadillo.
-> 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
-> Not tested on sh73a0/kzm9g, r8a7778/bock-w, r8a7779/marzen
-> 
-> Similar changes for gpio-rcar and renesas-irqc went in before, but
-> split in two parts:
->   - commit 272012d0f748de2e ("irqchip: renesas-irqc: Use lazy disable")
->   - commit 6a7e3b3007b5396a ("irqchip: renesas-irqc: Enable mask on suspend")
->   - commit fba968a1e6b84be0 ("gpio: rcar: Use lazy disable")
->   - commit 403961120667bed7 ("gpio: rcar: Enable mask on suspend")
-> 
-> However, I believe it doesn't make much sense to split this:
->   - Enabling lazy disable on its own introduces a regression, as it
->     causes the system to wake-up on IRQs not marked as wake-ups,
->   - Adding IRQCHIP_MASK_ON_SUSPEND on its own doesn't have any impact.
-> ---
->  drivers/irqchip/irq-renesas-intc-irqpin.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+ (1) If there are contributory .o files, an incremental link (ld -r) is
+     performed to generate built-in.o.
 
-Applied to irqchip/core
+ (2) If there are _no_ contributory .o files, an empty archive file (ar) is
+     generated as built-in.o.
 
-thx,
+Unfortunately, with (2), if this is then incrementally linked into another
+built-in.o file, the e_flags field in the ELF header may not have been set.
+For instance, compare:
 
-Jason.
+	>sh64-linux-gnu-ar rcsD a.o
+	>sh64-linux-gnu-ld -r -EL -mshlelf64 -belf64-sh64l -o b.o a.o
+	>sh64-linux-gnu-readelf -h b.o | grep Flags
+	Flags:                             0x0
+
+to:
+
+	>sh64-linux-gnu-gcc -x c -c - -o zero.o </dev/null
+	>sh64-linux-gnu-readelf -h zero.o | grep Flags
+	Flags:                             0xa, sh5
+
+Attempting to further incrementally link b.o generated above gets an error
+because e_flags is not set.
+
+	>sh64-linux-gnu-ld -r -EL -mshlelf64 -belf64-sh64l -o c.o b.o
+	sh64-linux-gnu-ld: unknown architecture of input file `b.o' is incompatible with sh5 output
+
+Further, but probably not relevant to the kernel, if an archive file is
+constructed that has some constituent object files in it, passing that to an
+incremental link, eg:
+
+	#!/bin/sh -x
+	CROSS=sh64-linux-gnu-
+	LDFLAGS="-EL -mshlelf64 -belf64-sh64l"
+	#LDARFLAGS=--whole-archive
+	CFLAGS="-m5-64media-nofpu -ml"
+	rm -f hello.o wibble.o foo.o bar.o
+	echo 'int hello(int i) {return i + 42;}' |
+	    ${CROSS}gcc $CFLAGS -x c -c - -o hello.o || exit $?
+	${CROSS}readelf -h hello.o | grep Flags
+	${CROSS}ar rcsD wibble.o hello.o || exit $?
+	${CROSS}ld $LDFLAGS $LDARFLAGS -r -o foo.o wibble.o || exit $?
+	${CROSS}readelf -h foo.o | grep Flags
+	${CROSS}ld $LDFLAGS -r -o bar.o foo.o || exit $?
+	${CROSS}readelf -h bar.o | grep Flags
+
+won't propagate e_flags _unless_ --whole-archive is also passed to the linker.
+
+	+ CROSS=sh64-linux-gnu-
+	+ LDFLAGS='-EL -mshlelf64'
+	+ CFLAGS='-m5-64media-nofpu -ml'
+	+ rm -f hello.o wibble.o foo.o bar.o
+	+ echo 'int hello(int i) {return i + 42;}'
+	+ sh64-linux-gnu-gcc -m5-64media-nofpu -ml -x c -c - -o hello.o
+	+ sh64-linux-gnu-readelf -h hello.o
+	+ grep Flags
+	  Flags:                             0xa, sh5
+	+ sh64-linux-gnu-ar rcsD wibble.o hello.o
+	+ sh64-linux-gnu-ld -EL -mshlelf64 -r -o foo.o wibble.o
+	+ sh64-linux-gnu-readelf -h foo.o
+	+ grep Flags
+	  Flags:                             0x0
+	+ sh64-linux-gnu-ld -EL -mshlelf64 -r -o bar.o foo.o
+	sh64-linux-gnu-ld: unknown architecture of input file `foo.o' is incompatible with sh5 output
+
+To this end, change the construction of empty built-in.o files (case (2)
+above) to use gcc on an empty file.
+
+There is a binutils bug logged for this:
+
+	https://sourceware.org/bugzilla/show_bug.cgi?id=17288
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+ 0 files changed
+
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index bf3e6778cd71..5bd80ef22866 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -330,7 +330,7 @@ quiet_cmd_link_o_target = LD      $@
+ cmd_link_o_target = $(if $(strip $(obj-y)),\
+ 		      $(LD) $(ld_flags) -r -o $@ $(filter $(obj-y), $^) \
+ 		      $(cmd_secanalysis),\
+-		      rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS) $@)
++		      $(CC) $(c_flags) -x c -c - -o $@ </dev/null)
+ 
+ $(builtin-target): $(obj-y) FORCE
+ 	$(call if_changed,link_o_target)
+
