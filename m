@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaHUDeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:34:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60829 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664AbaHUDeK (ORCPT
+	id S1753488AbaHUDpy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:45:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52873 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750809AbaHUDpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:34:10 -0400
+	Wed, 20 Aug 2014 23:45:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
+Date: Thu, 21 Aug 2014 06:04:51 +0200
+Message-ID: <5487060.QsgluucUH4@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <53F5605C.2010304@kernel.dk>
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
-	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
-	<20140815163111.GA16652@infradead.org>
-	<53EE370D.1060106@kernel.dk>
-	<53EE3966.60609@kernel.dk>
-	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
-	<53F0EAEC.9040505@kernel.dk>
-	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
-	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
-	<53F3B89D.6070703@kernel.dk>
-	<CACVXFVP_q2MfZtjPAgXrjMJS2K6H2fTFtAe3ZJXBW83uEovqkQ@mail.gmail.com>
-	<53F4C835.7030407@kernel.dk>
-	<CACVXFVPxXrYi+m0bC7tEcfvDzhQ=Xnapkd+yGRXbKCktgi3Ofw@mail.gmail.com>
-	<53F5605C.2010304@kernel.dk>
-Date: Thu, 21 Aug 2014 11:34:08 +0800
-Message-ID: <CACVXFVNHKyUKR0tn2y0h=uTQRPkarfHNULdBcr8Thtqs+EVYWw@mail.gmail.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        "open list:AIO <linux-aio@kvack.org>, Linux FS Devel
-	<linux-fsdevel@vger.kernel.org>, Dave Chinner <david@fromorbit.com>,
-	Tejun Heo" <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 10:58 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-08-20 21:54, Ming Lei wrote:
->>>>
->>>>   From my investigation, context switch increases almost 50% with
->>>> workqueue compared with kthread in loop in a quad-core VM. With
->>>> kthread, requests may be handled as batch in cases which won't be
->>>> blocked in read()/write()(like null_blk, tmpfs, ...), but it is
->>>> impossible
->>>> with
->>>> workqueue any more.  Also block plug&unplug should have been used
->>>> with kthread to optimize the case, especially when kernel AIO is
->>>> applied,
->>>> still impossible with work queue too.
->>>
->>>
->>>
->>> OK, that one is actually a good point, since one need not do per-item
->>> queueing. We could handle different units, though. And we should have
->>> proper
->>> marking of the last item in a chain of stuff, so we might even be able to
->>> offload based on that instead of doing single items. It wont help the
->>> sync
->>> case, but for that, workqueue and kthread would be identical.
->>
->>
->> We may do that by introducing callback of queue_rq_list in blk_mq_ops,
->> and I will figure out one patch today to see if it can help the case.
->
->
-> I don't think we should add to the interface, I prefer keeping it clean like
-> it is right now. At least not if we can get around it. My point is that the
-> driver already knows when the chain is complete, when REQ_LAST is set. So
-> before that event triggers, it need not kick off IO, or at least i could do
-> it in batches before that. That may not be fully reliable in case of
-> queueing errors, but if REQ_LAST or 'error return' is used as the way to
-> kick off pending IO, then that should be good enough. Haven't audited this
-> in a while, but at least that is the intent of REQ_LAST.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Another point is that running N queue_work(rq) may cost more
-than running one time queue_work(N rqs) since context still may
-switch back and forth when executing queue_work().
+We generally don't allow ACPI drivers to bind to ACPI device objects
+that companion "physical" device objects are created for to avoid
+situations in which two different drivers may attempt to handle one
+device at the same time.  Recent ACPI device enumeration rework
+extended that approach to ACPI PNP devices by starting to use a scan
+handler for enumerating them.  However, we previously allowed ACPI
+drivers to bind to ACPI device objects with existing PNP device
+companions and changing that led to functional regressions on some
+systems.
 
-Anyway I need to run test first to see if it can bring back throughout
-on sequential read by handling them as batch.
+For this reason, add a special check for PNP devices in
+acpi_device_probe() so that ACPI drivers can bind to ACPI device
+objects having existing PNP device companions as before.
 
+Fixes: eec15edbb0e1 (ACPI / PNP: use device ID list for PNPACPI device enumeration)
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=81511
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=81971
+Reported-and-tested-by: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Reported-and-tested-by: Dirk Griesbach <spamthis@freenet.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/acpi_pnp.c |    5 +++++
+ drivers/acpi/internal.h |    1 +
+ drivers/acpi/scan.c     |    2 +-
+ 3 files changed, 7 insertions(+), 1 deletion(-)
 
-Thanks,
+Index: linux-pm/drivers/acpi/acpi_pnp.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/acpi_pnp.c
++++ linux-pm/drivers/acpi/acpi_pnp.c
+@@ -396,3 +396,8 @@ void __init acpi_pnp_init(void)
+ {
+ 	acpi_scan_add_handler(&acpi_pnp_handler);
+ }
++
++bool is_acpi_pnp_device(struct acpi_device *adev)
++{
++	return adev->handler == &acpi_pnp_handler;
++}
+Index: linux-pm/drivers/acpi/internal.h
+===================================================================
+--- linux-pm.orig/drivers/acpi/internal.h
++++ linux-pm/drivers/acpi/internal.h
+@@ -86,6 +86,7 @@ void acpi_device_add_finalize(struct acp
+ void acpi_free_pnp_ids(struct acpi_device_pnp *pnp);
+ bool acpi_device_is_present(struct acpi_device *adev);
+ bool acpi_device_is_battery(struct acpi_device *adev);
++bool is_acpi_pnp_device(struct acpi_device *adev);
+ 
+ /* --------------------------------------------------------------------------
+                                   Power Resource
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -975,7 +975,7 @@ static int acpi_device_probe(struct devi
+ 	struct acpi_driver *acpi_drv = to_acpi_driver(dev->driver);
+ 	int ret;
+ 
+-	if (acpi_dev->handler)
++	if (acpi_dev->handler && !is_acpi_pnp_device(acpi_dev))
+ 		return -EINVAL;
+ 
+ 	if (!acpi_drv->ops.add)
