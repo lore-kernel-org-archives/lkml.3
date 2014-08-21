@@ -1,222 +1,414 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbaHUQva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:51:30 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44868 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860AbaHUQv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:51:28 -0400
-Date: Thu, 21 Aug 2014 09:45:06 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
-Message-ID: <20140821164506.GA83828@jaegeuk-mac02>
-References: <1408140229-54949-1-git-send-email-jaegeuk@kernel.org>
- <1408140229-54949-3-git-send-email-jaegeuk@kernel.org>
- <003401cfbb84$441c5b60$cc551220$@samsung.com>
- <20140819165808.GA69881@jaegeuk-mac02>
- <005e01cfbc1b$8be08600$a3a19200$@samsung.com>
+	id S1753187AbaHUQwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:52:22 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60405 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752170AbaHUQwU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 12:52:20 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
+Date: Thu, 21 Aug 2014 19:10:55 +0200
+Message-ID: <2188871.Tr0Kbz91aK@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1408622934.3315.8.camel@rzhang1-toshiba>
+References: <5487060.QsgluucUH4@vostro.rjw.lan> <1408622934.3315.8.camel@rzhang1-toshiba>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <005e01cfbc1b$8be08600$a3a19200$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 10:07:04AM +0800, Chao Yu wrote:
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Wednesday, August 20, 2014 12:58 AM
-> > To: Chao Yu
-> > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Subject: Re: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
-> > 
-> > On Tue, Aug 19, 2014 at 04:04:11PM +0800, Chao Yu wrote:
-> > > Hi Jaegeuk,
-> > >
-> > > > -----Original Message-----
-> > > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > > Sent: Saturday, August 16, 2014 6:04 AM
-> > > > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> > > > linux-f2fs-devel@lists.sourceforge.net
-> > > > Cc: Jaegeuk Kim
-> > > > Subject: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
-> > > >
-> > > > The init_inode_metadata calls truncate_blocks when error is occurred.
-> > > > The callers holds f2fs_lock_op, so we should not call it again in
-> > > > truncate_blocks.
-> > >
-> > > Nice catch! Your solution is a good way to fix this issue.
-> > >
-> > > Previously, in create inode path, I found there are some redundant codes between
-> > > init_inode_metadata and evict_inode, including:
-> > > 	truncate_inode_pages(&inode->i_data, 0);
-> > > 	truncate_blocks(inode, 0);
-> > > 	remove_dirty_dir_inode(inode);
-> > > 	remove_inode_page(inode);
-> > >
-> > > So I think there is another way to fix this issue by removing error path handling
-> > > codes in init_inode_metadata, not making the inode bad to left garbage clean work in
-> > > evict_inode. In this way we can avoid adding additional argument for all different
-> > > callers.
-> > 
-> > Well, possible.
-> > But we need to take a closer look at the race condition on the inode cache.
-> > What can happen if this bad inode is reassigned to the other thread?
+On Thursday, August 21, 2014 08:08:54 PM Zhang Rui wrote:
+> Hi, Rafael,
 > 
-> I don't get it. As I know, in evict(), we call ->evict_inode before
-> remove_inode_hash(), so before all clean work was done we will not reassign
-> this hashed uncleaned inode to other thread.
-> 
-> Am I missing anything?
+> On Thu, 2014-08-21 at 06:04 +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-What I meant was it may happen between init_inode_metadata and iput.
+[cut]
 
-Thanks,
+> Note that I've just tested on my machine and it works well.
+> I still need the bug reporter to check if the patch fixes bug 81511 or not.
 
+The FUJ02B1 and FUJ02E3 devices in bug 81971 have the same problem and
+they aren't motherboard devices.  Yes, we need to convert that driver
+to use a PNP driver structure or a platform device, but (1) we need a
+-stable fix *first* and (2) the cases we already know about may not be
+the only broken ones.
+
+> From c6c388728d08a6368f21dab61d6f0a940e0ea13a Mon Sep 17 00:00:00 2001
+> From: Zhang Rui <rui.zhang@intel.com>
+> Date: Thu, 21 Aug 2014 13:39:47 +0800
+> Subject: [RFC PATCH] ACPI: introduce motherboard resource management
 > 
-> Regards,
-> Yu
+> ACPI Devices with _HID/_CID PNP0C01/PNP0C02 represents that
+> they have some motherboard resources that needs to be reserved.
 > 
-> > 
-> > >
-> > > How do you think?
-> > >
-> > > Thanks,
-> > > Yu
-> > >
-> > > >
-> > > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > > ---
-> > > >  fs/f2fs/data.c   |  2 +-
-> > > >  fs/f2fs/dir.c    |  2 +-
-> > > >  fs/f2fs/f2fs.h   |  2 +-
-> > > >  fs/f2fs/file.c   | 13 ++++++++-----
-> > > >  fs/f2fs/inline.c |  2 +-
-> > > >  5 files changed, 12 insertions(+), 9 deletions(-)
-> > > >
-> > > > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> > > > index 68834e2..14cc3e8 100644
-> > > > --- a/fs/f2fs/data.c
-> > > > +++ b/fs/f2fs/data.c
-> > > > @@ -935,7 +935,7 @@ static void f2fs_write_failed(struct address_space *mapping, loff_t
-> > to)
-> > > >
-> > > >  	if (to > inode->i_size) {
-> > > >  		truncate_pagecache(inode, inode->i_size);
-> > > > -		truncate_blocks(inode, inode->i_size);
-> > > > +		truncate_blocks(inode, inode->i_size, true);
-> > > >  	}
-> > > >  }
-> > > >
-> > > > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > > > index a69bbfa..155fb05 100644
-> > > > --- a/fs/f2fs/dir.c
-> > > > +++ b/fs/f2fs/dir.c
-> > > > @@ -391,7 +391,7 @@ put_error:
-> > > >  error:
-> > > >  	/* once the failed inode becomes a bad inode, i_mode is S_IFREG */
-> > > >  	truncate_inode_pages(&inode->i_data, 0);
-> > > > -	truncate_blocks(inode, 0);
-> > > > +	truncate_blocks(inode, 0, false);
-> > > >  	remove_dirty_dir_inode(inode);
-> > > >  	remove_inode_page(inode);
-> > > >  	return ERR_PTR(err);
-> > > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> > > > index 2723b2d..7f976c1 100644
-> > > > --- a/fs/f2fs/f2fs.h
-> > > > +++ b/fs/f2fs/f2fs.h
-> > > > @@ -1122,7 +1122,7 @@ static inline void f2fs_stop_checkpoint(struct f2fs_sb_info *sbi)
-> > > >   */
-> > > >  int f2fs_sync_file(struct file *, loff_t, loff_t, int);
-> > > >  void truncate_data_blocks(struct dnode_of_data *);
-> > > > -int truncate_blocks(struct inode *, u64);
-> > > > +int truncate_blocks(struct inode *, u64, bool);
-> > > >  void f2fs_truncate(struct inode *);
-> > > >  int f2fs_getattr(struct vfsmount *, struct dentry *, struct kstat *);
-> > > >  int f2fs_setattr(struct dentry *, struct iattr *);
-> > > > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> > > > index ecbdf6a..a8e97f8 100644
-> > > > --- a/fs/f2fs/file.c
-> > > > +++ b/fs/f2fs/file.c
-> > > > @@ -422,7 +422,7 @@ out:
-> > > >  	f2fs_put_page(page, 1);
-> > > >  }
-> > > >
-> > > > -int truncate_blocks(struct inode *inode, u64 from)
-> > > > +int truncate_blocks(struct inode *inode, u64 from, bool lock)
-> > > >  {
-> > > >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> > > >  	unsigned int blocksize = inode->i_sb->s_blocksize;
-> > > > @@ -438,14 +438,16 @@ int truncate_blocks(struct inode *inode, u64 from)
-> > > >  	free_from = (pgoff_t)
-> > > >  			((from + blocksize - 1) >> (sbi->log_blocksize));
-> > > >
-> > > > -	f2fs_lock_op(sbi);
-> > > > +	if (lock)
-> > > > +		f2fs_lock_op(sbi);
-> > > >
-> > > >  	set_new_dnode(&dn, inode, NULL, NULL, 0);
-> > > >  	err = get_dnode_of_data(&dn, free_from, LOOKUP_NODE);
-> > > >  	if (err) {
-> > > >  		if (err == -ENOENT)
-> > > >  			goto free_next;
-> > > > -		f2fs_unlock_op(sbi);
-> > > > +		if (lock)
-> > > > +			f2fs_unlock_op(sbi);
-> > > >  		trace_f2fs_truncate_blocks_exit(inode, err);
-> > > >  		return err;
-> > > >  	}
-> > > > @@ -463,7 +465,8 @@ int truncate_blocks(struct inode *inode, u64 from)
-> > > >  	f2fs_put_dnode(&dn);
-> > > >  free_next:
-> > > >  	err = truncate_inode_blocks(inode, free_from);
-> > > > -	f2fs_unlock_op(sbi);
-> > > > +	if (lock)
-> > > > +		f2fs_unlock_op(sbi);
-> > > >  done:
-> > > >  	/* lastly zero out the first data page */
-> > > >  	truncate_partial_data_page(inode, from);
-> > > > @@ -480,7 +483,7 @@ void f2fs_truncate(struct inode *inode)
-> > > >
-> > > >  	trace_f2fs_truncate(inode);
-> > > >
-> > > > -	if (!truncate_blocks(inode, i_size_read(inode))) {
-> > > > +	if (!truncate_blocks(inode, i_size_read(inode), true)) {
-> > > >  		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-> > > >  		mark_inode_dirty(inode);
-> > > >  	}
-> > > > diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-> > > > index 520758b..4d1f39f 100644
-> > > > --- a/fs/f2fs/inline.c
-> > > > +++ b/fs/f2fs/inline.c
-> > > > @@ -247,7 +247,7 @@ process_inline:
-> > > >  		update_inode(inode, ipage);
-> > > >  		f2fs_put_page(ipage, 1);
-> > > >  	} else if (ri && (ri->i_inline & F2FS_INLINE_DATA)) {
-> > > > -		truncate_blocks(inode, 0);
-> > > > +		truncate_blocks(inode, 0, false);
-> > > >  		set_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
-> > > >  		goto process_inline;
-> > > >  	}
-> > > > --
-> > > > 1.8.5.2 (Apple Git-48)
-> > > >
-> > > >
-> > > > ------------------------------------------------------------------------------
-> > > > _______________________________________________
-> > > > Linux-f2fs-devel mailing list
-> > > > Linux-f2fs-devel@lists.sourceforge.net
-> > > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-> > >
-> > >
-> > > ------------------------------------------------------------------------------
-> > > _______________________________________________
-> > > Linux-f2fs-devel mailing list
-> > > Linux-f2fs-devel@lists.sourceforge.net
-> > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+> We used to enumerated those devices to PNP bus and rely on
+> PNP system driver to do resource reservation.
+> But this mechanism does not work well nowadays as many devices
+> not only represent motherboard resources, but also represent
+> physical devices that need native drivers other than PNP system
+> driver for the device to work. For example,
+> 1) https://bugzilla.kernel.org/show_bug.cgi?id=46741,
+>     Device (NIPM)
+>     {
+>         Name (_HID, EisaId ("IPI0001"))  // _HID: Hardware ID
+>         Name (_CID, EisaId ("PNP0C01"))  // _CID: Compatible ID
+>    the NIPM device has _CID PNP0C01 but it is an IPMI device.
+>    PNP system driver blocks the PNP IPMI driver to probe.
+
+That is a good reason for PNP0C01 to be dropped from acpi_pnp_device_ids[].
+
+> 2) https://bugzilla.kernel.org/show_bug.cgi?id=81511
+>         Device (IFFS)
+>         {
+>             Name (_HID, EisaId ("INT3392"))  // _HID: Hardware ID
+>             Name (_CID, EisaId ("PNP0C02"))  // _CID: Compatible ID
+>    the IFFS device has _CID PNP0C02, but it is an intel rapid start
+>    device, which already has an ACPI driver at
+>    drivers/platform/x86/intel-rst.c
+
+And which should be a platform driver really.
+
+> 3) a couple of machines, including the on in
+>    https://bugzilla.kernel.org/show_bug.cgi?id=81511, has the AML code
+>    like following
+>         Device (PTID)
+>         {
+>             Name (_HID, EisaId ("INT340E"))  // _HID: Hardware ID
+>             Name (_CID, EisaId ("PNP0C02"))  // _CID: Compatible ID
+>    the PTID device has _CID PNP0C02, but it is also represents an
+>    INT340E device, there is a platform bus driver for this device
+>    which will be introduced by myself soon.
+
+Again, that's a good reason for dropping PNP0C02 from acpi_pnp_device_ids[].
+
+> In any of the above cases, the current code for managing PNP0C01/PNP0C02
+> resources in Linux kernel is broken, because it either blocks the physical
+> device driver on the same bus, or results in multiple drivers loaded for
+> the same ACPI device node, which may also has some potential risks.
+> 
+> Thus, IMO, we need a clean way to handle those motherboard resources.
+> Given that PNP0C01/PNP0C02 is more like an indicator for reserving the
+> resources, this patch
+> 1. does the resource reservation in ACPI code directly, with the same logic
+>    and time point in drivers/pnp/quirks.c and drivers/pnp/system.c.
+> 2. makes PNP0C01/PNP0C02 PNP id transparent to Linux devices and drivers,
+>    thus PNP system driver becomes a no-op for ACPI enumerated devices.
+> 
+> This is just a draft patch, and I'd like to see if this is
+> the right direction to go. Any comments are welcome.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> ---
+>  drivers/acpi/acpi_pnp.c |   3 -
+>  drivers/acpi/scan.c     | 208 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 204 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+> index 1f8b204..a7deae5 100644
+> --- a/drivers/acpi/acpi_pnp.c
+> +++ b/drivers/acpi/acpi_pnp.c
+> @@ -134,9 +134,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+>  	{"FUJ02bf"},
+>  	{"FUJ02B1"},
+>  	{"FUJ02E3"},
+> -	/* system */
+> -	{"PNP0c02"},		/* General ID for reserving resources */
+> -	{"PNP0c01"},		/* memory controller */
+>  	/* rtc_cmos */
+>  	{"PNP0b00"},
+>  	{"PNP0b01"},
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 0a817ad..674518b 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/dmi.h>
+>  #include <linux/nls.h>
+> +#include <linux/pci.h>
+>  
+>  #include <asm/pgtable.h>
+>  
+> @@ -1781,12 +1782,201 @@ static bool acpi_object_is_system_bus(acpi_handle handle)
+>  	return false;
+>  }
+>  
+> +static bool acpi_is_motherboard_resource(char *id)
+> +{
+> +	return !(strncmp(id, "PNP0C01", sizeof("PNP0C01")) &&
+> +		 strncmp(id, "PNP0C02", sizeof("PNP0C02")));
+> +}
+
+Can we use __acpi_match_device() for that?
+
+> +
+> +static LIST_HEAD(acpi_motherboard_resource_list);
+> +
+> +struct acpi_motherboard_resource {
+> +	acpi_handle handle;
+> +	struct list_head node;
+> +};
+> +
+> +static void acpi_record_motherboard_resource(acpi_handle handle)
+> +{
+> +	struct acpi_motherboard_resource *res;
+> +
+> +	res = kzalloc(sizeof(struct acpi_motherboard_resource), GFP_KERNEL);
+> +	if (!res)
+> +		return;
+> +	res->handle = handle;
+> +	list_add(&res->node, &acpi_motherboard_resource_list);
+> +}
+> +
+> +static void reserve_range(struct acpi_device *device, struct resource *r, int port)
+> +{
+> +	char *regionid;
+> +	resource_size_t start = r->start, end = r->end;
+> +	struct resource *res;
+> +	int result;
+> +
+> +	regionid = kmalloc(20, GFP_KERNEL);
+> +	if (!regionid)
+> +		return;
+> +
+> +	snprintf(regionid, 20, "ACPI %s", dev_name(&device->dev));
+> +		
+> +	if (port)
+> +		res = request_region(start, end - start + 1, regionid);
+> +	else
+> +		res = request_mem_region(start, end - start + 1, regionid);
+> +	if (res)
+> +		res->flags &= ~IORESOURCE_BUSY;
+> +	else
+> +		kfree(regionid);
+> +
+> +	dev_info(&device->dev, "%pR %s reserved\n", r,
+> +			res ? "has been" : "could not be");
+> +}
+> +
+
+The routine below should go into the PCI core.
+
+> +static int is_pci_reserved(struct resource *res)
+> +{
+> +	struct pci_dev *pdev = NULL;
+> +	resource_size_t acpi_start, acpi_end, pci_start, pci_end;
+> +	int i;
+> +
+> +	/*
+> +	 * Some BIOSes have motherboard devices with resources that
+> +	 * partially overlap PCI BARs.
+> +	 * Those resources should not be reserved, or else, it will
+> +	 * prevent the normal PCI driver from requesting them later.
+> +	 */
+> +	for_each_pci_dev(pdev) {
+> +		for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+> +			unsigned long type;
+> +
+> +			type = pci_resource_flags(pdev, i) & res->flags
+> +			       & (IORESOURCE_IO | IORESOURCE_MEM);
+> +			if (!type || pci_resource_len(pdev, i) == 0)
+> +				continue;
+> +
+> +			pci_start = pci_resource_start(pdev, i);
+> +			pci_end = pci_resource_end(pdev, i);
+> +
+> +			if (res->start == 0 && res->end == 0)
+> +				continue;
+> +
+> +			acpi_start = res->start;
+> +			acpi_end = res->end;
+> +
+> +			/*
+> +			 * If the ACPI region doesn't overlap the PCI
+> +			 * region at all, there's no problem.
+> +			 */
+> +			if (acpi_end < pci_start || acpi_start > pci_end)
+> +				continue;
+> +
+> +			/*
+> +			 * If the PNP region completely encloses (or is
+> +			 * at least as large as) the PCI region, that's
+> +			 * also OK.  For example, this happens when the
+> +			 * PNP device describes a bridge with PCI
+> +			 * behind it.
+> +			 */
+> +			if (acpi_start <= pci_start && acpi_end >= pci_end)
+> +				continue;
+> +
+> +			/*
+> +			 * Otherwise, the ACPI region overlaps *part* of
+> +			 * the PCI region, and that might prevent a PCI
+> +			 * driver from requesting its resources.
+> +			 */
+> +			return true;
+> +		}
+> +	}
+> +	return false;
+> +}
+> +
+
+The routine below should go into resource.c.
+
+> +static acpi_status __init __acpi_reserve_motherboard_resource(struct acpi_resource *res,
+> +							void *data)
+> +{
+> +	struct resource r = {0};
+> +	acpi_handle handle = data;
+> +	struct acpi_device *device;
+> +	int result;
+> +
+> +	result = acpi_bus_get_device(handle, &device);
+> +	if (result)
+> +		return AE_OK;
+> +
+> +	if (!device->status.present)
+> +		return AE_OK;
+> +
+> +	switch (res->type) {
+> +	case ACPI_RESOURCE_TYPE_MEMORY24:
+> +	case ACPI_RESOURCE_TYPE_MEMORY32:
+> +	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+> +		if (!acpi_dev_resource_memory(res, &r))
+> +			return AE_OK;
+> +		break;
+> +	case ACPI_RESOURCE_TYPE_IO:
+> +	case ACPI_RESOURCE_TYPE_FIXED_IO:
+> +		if (!acpi_dev_resource_io(res, &r))
+> +			return AE_OK;
+> +		break;
+> +	case ACPI_RESOURCE_TYPE_ADDRESS16:
+> +	case ACPI_RESOURCE_TYPE_ADDRESS32:
+> +	case ACPI_RESOURCE_TYPE_ADDRESS64:
+> +		if (!acpi_dev_resource_address_space(res, &r))
+> +			return AE_OK;
+> +		break;
+> +	case ACPI_RESOURCE_TYPE_EXTENDED_ADDRESS64:
+> +		if (!acpi_dev_resource_ext_address_space(res, &r))
+> +			return AE_OK;
+> +		break;
+> +	default:
+> +		return AE_OK;
+> +	}
+> +
+> +	if (r.flags & IORESOURCE_DISABLED)
+> +		return AE_OK;
+> +
+> +	if (is_pci_reserved(&r))
+> +		return AE_OK;
+> +
+> +	if (r.flags & IORESOURCE_IO) {
+> +		if (r.start < 0x100)
+> +		/*
+> +		 * Below 0x100 is only standard PC hardware
+> +		 * (pics, kbd, timer, dma, ...)
+> +		 * We should not get resource conflicts there,
+> +		 * and the kernel reserves these anyway
+> +		 * (see arch/i386/kernel/setup.c).
+> +		 * So, do nothing
+> +		 */
+> +			return AE_OK;
+> +		if (r.end < r.start)
+> +			return AE_OK;       /* invalid */
+> +                reserve_range(device, &r, 1);
+> +        } else if (r.flags & IORESOURCE_MEM) {
+> +                reserve_range(device, &r, 0);
+> +        }
+> +
+> +	return AE_OK;
+> +}
+> +
+> +static int __init acpi_reserve_motherboard_resource(void)
+> +{
+> +	struct acpi_motherboard_resource *res;
+> +
+> +	list_for_each_entry(res, &acpi_motherboard_resource_list, node)
+> +		acpi_walk_resources(res->handle, METHOD_NAME__CRS,
+> +			__acpi_reserve_motherboard_resource, res->handle);
+> +
+> +	return 0;
+> +}
+> +fs_initcall(acpi_reserve_motherboard_resource);
+
+Why don't we call that directly from acpi_scan_init() and do we need the
+acpi_motherboard_resource_list list to be present any more after calling
+this function?
+
+> +
+>  static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+>  				int device_type)
+>  {
+>  	acpi_status status;
+>  	struct acpi_device_info *info;
+>  	struct acpi_pnp_device_id_list *cid_list;
+> +	int is_mb_resource = 0;
+>  	int i;
+>  
+>  	switch (device_type) {
+> @@ -1804,13 +1994,20 @@ static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+>  		}
+>  
+>  		if (info->valid & ACPI_VALID_HID) {
+> -			acpi_add_id(pnp, info->hardware_id.string);
+> -			pnp->type.platform_id = 1;
+> +			if (!acpi_is_motherboard_resource(info->hardware_id.string)) {
+
+I would reverse the check.  That is, do
+
+			if (!acpi_is_motherboard_resource(info->hardware_id.string)) {
+				is_mb_resource = 1;
+			} else { ...
+
+Also, don't we really want to create platform devices for the ACPI device objects
+in question?
+
+> +				acpi_add_id(pnp, info->hardware_id.string);
+> +				pnp->type.platform_id = 1;
+> +			} else
+> +				is_mb_resource = 1;
+>  		}
+>  		if (info->valid & ACPI_VALID_CID) {
+>  			cid_list = &info->compatible_id_list;
+> -			for (i = 0; i < cid_list->count; i++)
+> -				acpi_add_id(pnp, cid_list->ids[i].string);
+> +			for (i = 0; i < cid_list->count; i++) {
+> +				if (!acpi_is_motherboard_resource(cid_list->ids[i].string))
+> +					acpi_add_id(pnp, cid_list->ids[i].string);
+> +				else
+> +					is_mb_resource = 1;
+> +			}
+>  		}
+>  		if (info->valid & ACPI_VALID_ADR) {
+>  			pnp->bus_address = info->address;
+> @@ -1822,6 +2019,9 @@ static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+>  
+>  		kfree(info);
+>  
+> +		if (is_mb_resource)
+> +			acpi_record_motherboard_resource(handle);
+> +
+>  		/*
+>  		 * Some devices don't reliably have _HIDs & _CIDs, so add
+>  		 * synthetic HIDs to make sure drivers can find them.
+> 
+
+Overall, it looks reasonable, but it can't be a replacement for the $subject
+patch.
+
+I also should mention that I don't want the special case for PNP devices to
+stay there forever, but in my opinion we do need it at the moment for a couple
+of reasons.
+
+Rafael
+
