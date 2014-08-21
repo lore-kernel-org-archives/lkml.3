@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaHUMaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:30:12 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52088 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaHUMaK convert rfc822-to-8bit (ORCPT
+	id S1755033AbaHUMbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:31:04 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:56036 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754476AbaHUMbC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:30:10 -0400
-Message-ID: <53F5E652.6050408@arm.com>
-Date: Thu, 21 Aug 2014 13:30:10 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v3 03/11] drivers: base: add new class "cpu" to group
- cpu devices
-References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>	<1408618794-28497-1-git-send-email-sudeep.holla@arm.com>	<1408618794-28497-4-git-send-email-sudeep.holla@arm.com> <CANq1E4Q4GRYUxrysUyTD5bO3di9M17i0H5V0fXb5+HrTrYY5aQ@mail.gmail.com>
-In-Reply-To: <CANq1E4Q4GRYUxrysUyTD5bO3di9M17i0H5V0fXb5+HrTrYY5aQ@mail.gmail.com>
-X-OriginalArrivalTime: 21 Aug 2014 12:30:04.0204 (UTC) FILETIME=[A2614EC0:01CFBD3B]
-X-MC-Unique: 114082113300501701
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Aug 2014 08:31:02 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: inki.dae@samsung.com, jy0922.shim@samsung.com, w0312.kim@samsung.com,
+        kyungmin.park@samsung.com, airlied@linux.ie, kgene.kim@samsung.com
+Cc: dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH] drm: exynos: Make of_device_id array const
+Date: Thu, 21 Aug 2014 17:58:07 +0530
+Message-Id: <1408624087-30083-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Make of_device_id array const, because all OF functions handle it as const.
 
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c |    2 +-
+ drivers/gpu/drm/exynos/exynos_hdmi.c    |    2 +-
+ drivers/gpu/drm/exynos/exynos_mixer.c   |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-On 21/08/14 12:20, David Herrmann wrote:
-> Hi
->
-> On Thu, Aug 21, 2014 at 12:59 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
->> From: Sudeep Holla <sudeep.holla@arm.com>
->>
->> This patch creates a new class called "cpu" and assigns it to all the
->> cpu devices. This helps in grouping all the cpu devices and associated
->> child devices under the same class.
->>
->> This patch also:
->> 1. modifies the get_parent_device to return the legacy path
->>     (/sys/devices/system/cpu/..) for the cpu class devices to support
->>     existing sysfs ABI
->> 2. avoids creating link in the class directory pointing to the device as
->>     there would be per-cpu instance of these devices with the same name
->> 3. makes sure subsystem symlink continues pointing to cpu bus instead of
->>     cpu class for cpu devices
->
-> This patch lacks any explanation _why_ you add a class for CPUs. With
-> this patch applied, these directories are effectively the same:
->    /sys/bus/cpu/devices/
->    /sys/class/cpu/
->
-
-Yes that's the intention, so that we don't break any existing sysfs/ABI
-
-> Why do we need a cpu-class if the same set of information is already
-> available on the cpu-bus? Furthermore, classes are deprecated anyway.
-> Everything you can do with a class can be solved with a bus. And we
-> already have a bus for cpus.
->
-
-This was suggested[1] by GregKH. The main reason it was added is to
-reuse the device attributes rather than creating the raw kobjects.
-
-It helps to move few other cpu related subsystems using raw kobjects to
-the device attribute groups.
-
-Regards,
-Sudeep
-
-[1] https://lkml.org/lkml/2014/2/10/766
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+index 442aa2d..2f96fb7 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+@@ -310,7 +310,7 @@ static struct exynos_dsi_driver_data exynos5_dsi_driver_data = {
+ 	.plltmr_reg = 0x58,
+ };
+ 
+-static struct of_device_id exynos_dsi_of_match[] = {
++static const struct of_device_id exynos_dsi_of_match[] = {
+ 	{ .compatible = "samsung,exynos4210-mipi-dsi",
+ 	  .data = &exynos4_dsi_driver_data },
+ 	{ .compatible = "samsung,exynos5410-mipi-dsi",
+diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
+index 562966d..fc44a91 100644
+--- a/drivers/gpu/drm/exynos/exynos_hdmi.c
++++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
+@@ -2278,7 +2278,7 @@ err_data:
+ 	return NULL;
+ }
+ 
+-static struct of_device_id hdmi_match_types[] = {
++static const struct of_device_id hdmi_match_types[] = {
+ 	{
+ 		.compatible = "samsung,exynos5-hdmi",
+ 		.data = &exynos5_hdmi_driver_data,
+diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
+index e8b4ec8..637aa8f 100644
+--- a/drivers/gpu/drm/exynos/exynos_mixer.c
++++ b/drivers/gpu/drm/exynos/exynos_mixer.c
+@@ -1225,7 +1225,7 @@ static struct platform_device_id mixer_driver_types[] = {
+ 	}
+ };
+ 
+-static struct of_device_id mixer_match_types[] = {
++static const struct of_device_id mixer_match_types[] = {
+ 	{
+ 		.compatible = "samsung,exynos4210-mixer",
+ 		.data	= &exynos4210_mxr_drv_data,
+-- 
+1.7.9.5
 
