@@ -1,233 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaHUBSV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:18:21 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:40213 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaHUBSU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:18:20 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Thu, 21 Aug 2014 10:18:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
-        "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
-Message-ID: <20140821011854.GE17372@bbox>
-References: <001201cfb838$fb0ac4a0$f1204de0$@samsung.com>
- <20140815061138.GA940@swordfish>
- <002d01cfbb70$ea7410c0$bf5c3240$@samsung.com>
- <20140819112500.GA2484@swordfish>
- <20140820020924.GD32620@bbox>
- <006701cfbc4f$c9d2fe00$5d78fa00$@samsung.com>
+	id S1751655AbaHUBXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:23:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58352 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774AbaHUBXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 21:23:12 -0400
+Date: Wed, 20 Aug 2014 18:23:03 -0700
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Michael Chan <mchan@broadcom.com>
+Cc: Prashant Sreedharan <prashant@broadcom.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] tg3: Fix tx_pending checks for tg3_tso_bug
+Message-ID: <20140821012303.GA15440@f1.synalogic.ca>
+References: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
+ <1408474371-19509-2-git-send-email-bpoirier@suse.de>
+ <1408489852.7404.60.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <006701cfbc4f$c9d2fe00$5d78fa00$@samsung.com>
+In-Reply-To: <1408489852.7404.60.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
-
-On Wed, Aug 20, 2014 at 04:20:48PM +0800, Chao Yu wrote:
-> Hi Minchan,
+On 2014/08/19 16:10, Michael Chan wrote:
+> On Tue, 2014-08-19 at 11:52 -0700, Benjamin Poirier wrote: 
+> > @@ -7838,11 +7838,14 @@ static int tg3_tso_bug(struct tg3 *tp, struct tg3_napi *tnapi,
+> >                        struct netdev_queue *txq, struct sk_buff *skb)
+> >  {
+> >         struct sk_buff *segs, *nskb;
+> > -       u32 frag_cnt_est = skb_shinfo(skb)->gso_segs * 3;
+> >  
+> > -       /* Estimate the number of fragments in the worst case */
+> > -       if (unlikely(tg3_tx_avail(tnapi) <= frag_cnt_est)) {
+> > +       if (unlikely(tg3_tx_avail(tnapi) <= skb_shinfo(skb)->gso_segs)) {
+> > +               trace_printk("stopping queue, %d <= %d\n",
+> > +                            tg3_tx_avail(tnapi), skb_shinfo(skb)->gso_segs);
+> >                 netif_tx_stop_queue(txq);
+> > +               trace_printk("stopped queue\n");
+> > +               tnapi->wakeup_thresh = skb_shinfo(skb)->gso_segs;
+> > +               BUG_ON(tnapi->wakeup_thresh >= tnapi->tx_pending);
+> >  
+> >                 /* netif_tx_stop_queue() must be done before checking
+> >                  * checking tx index in tg3_tx_avail() below, because in 
 > 
-> > -----Original Message-----
-> > From: Minchan Kim [mailto:minchan@kernel.org]
-> > Sent: Wednesday, August 20, 2014 10:09 AM
-> > To: Sergey Senozhatsky
-> > Cc: Chao Yu; linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; 'Jerome
-> > Marchand'; 'Andrew Morton'
-> > Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
-> > 
-> > Hi Sergey,
-> > 
-> > On Tue, Aug 19, 2014 at 08:25:00PM +0900, Sergey Senozhatsky wrote:
-> > > Hello,
-> > >
-> > > On (08/19/14 13:45), Chao Yu wrote:
-> > > > > On (08/15/14 11:27), Chao Yu wrote:
-> > > > > > Now we have supported handling discard request which is sended by filesystem,
-> > > > > > but no interface could be used to show information of discard.
-> > > > > > This patch adds num_discards to stat discarded pages, then export it to sysfs
-> > > > > > for displaying.
-> > > > > >
-> > > > >
-> > > > > a side question: we account discarded pages via slot free notify in
-> > > > > notify_free and via req_discard in num_discards. how about accounting
-> > > > > both of them in num_discards? because, after all, they account a number
-> > > > > of discarded pages (zram_free_page()). or there any particular reason we
-> > > > > want to distinguish.
-> > > >
-> > > > Yeah, I agree with you as I have no such reason unless there are our users'
-> > > > explicitly requirement for showing notify_free/num_discards separately later.
-> > > >
-> > > > How do you think of sending another patch to merge these two counts?
-> > > >
-> > >
-> > > Minchan, what do you think? let's account discarded pages in one place.
-> > 
-> > First of all, I'd like to know why we need num_discards.
-> > It should be in description and depends on it whether we should merge both
-> > counts or separate.
-> 
-> Oh, it's my mistaken.
-> 
-> When commit 	9b9913d80b2896ecd9e0a1a8f167ccad66fac79c (Staging: zram: Update
-> zram documentation) and commit e98419c23b1a189c932775f7833e94cb5230a16b (Staging:
-> zram: Document sysfs entries) description related to 'discard' stat was designed
-> and added to zram.txt and sysfs-block-zram, but without implementation of function
-> for handling discard request, description in documents were removed in commit
-> 8dd1d3247e6c00b50ef83934ea8b22a1590015de (zram: document failed_reads,
-> failed_writes stats)
+> I don't quite understand this logic and I must be missing something.
+> gso_segs is the number of TCP segments the large packet will be broken
+> up into.  If it exceeds dev->gso_max_segs, it means it exceeds
+> hardware's capabilty and it will do GSO instead of TSO.  But in this
+> case in tg3_tso_bug(), we are doing GSO and we may not have enough DMA
+> descriptors to do GSO.  Each gso_seg typically requires 2 DMA
+> descriptors.
 
-Thanks for letting me know the history.
+You're right, I had wrongly assumed that the skbs coming out of
+skb_gso_segment() were linear. I'll address that in v2 of the patch by masking
+out NETIF_F_SG in tg3_tso_bug().
 
-> 
-> For now, we have already supported discard handling, so it's better to resume
-> the stat of discard number, this discard stat supports user one more kind of runtime
-> information of zram as other stats supported.
-> 
-> How do you think?
-
-I'm not strong against the idea but just "resume is better" and
-"one more is problem as other stats supported" is not logical
-to me.
-
-You should explain why we need such new stat so that user can take
-what kinds of benefit from that. Otherwise, we couldn't know the stat
-is best or not for the goal.
-
-
-I might be paranoid about small stuff and I admit I'm not good for it,
-too but pz, understand that adding the new feature requires a
-good description which should include clear goal.
-
-I hope I'm not discouraging. :)
-
-> 
-> > 
-> > Thanks.
-> > 
-> > 
-> > 
-> > >
-> > > > One more thing is that I am missing to update document of zram, sorry about
-> > > > that, let me update it in v2.
-> > >
-> > > thanks.
-> > >
-> > > 	-ss
-> > >
-> > > > Thanks,
-> > > > Yu
-> > > >
-> > > > >
-> > > > > 	-ss
-> > > > >
-> > > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > > > > > ---
-> > > > > >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
-> > > > > >  drivers/block/zram/zram_drv.c              |  3 +++
-> > > > > >  drivers/block/zram/zram_drv.h              |  1 +
-> > > > > >  3 files changed, 14 insertions(+)
-> > > > > >
-> > > > > > diff --git a/Documentation/ABI/testing/sysfs-block-zram
-> > > > > b/Documentation/ABI/testing/sysfs-block-zram
-> > > > > > index 70ec992..fa8936e 100644
-> > > > > > --- a/Documentation/ABI/testing/sysfs-block-zram
-> > > > > > +++ b/Documentation/ABI/testing/sysfs-block-zram
-> > > > > > @@ -57,6 +57,16 @@ Description:
-> > > > > >  		The failed_writes file is read-only and specifies the number of
-> > > > > >  		failed writes happened on this device.
-> > > > > >
-> > > > > > +
-> > > > > > +What:		/sys/block/zram<id>/num_discards
-> > > > > > +Date:		August 2014
-> > > > > > +Contact:	Chao Yu <chao2.yu@samsung.com>
-> > > > > > +Description:
-> > > > > > +		The num_discards file is read-only and specifies the number of
-> > > > > > +		physical blocks which are discarded by this device. These blocks
-> > > > > > +		are included in discard request which is sended by filesystem as
-> > > > > > +		the blocks are no longer used.
-> > > > > > +
-> > > > > >  What:		/sys/block/zram<id>/max_comp_streams
-> > > > > >  Date:		February 2014
-> > > > > >  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > > > > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > > > > > index d00831c..904e7a5 100644
-> > > > > > --- a/drivers/block/zram/zram_drv.c
-> > > > > > +++ b/drivers/block/zram/zram_drv.c
-> > > > > > @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
-> > > > > >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
-> > > > > >  		zram_free_page(zram, index);
-> > > > > >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
-> > > > > > +		atomic64_inc(&zram->stats.num_discards);
-> > > > > >  		index++;
-> > > > > >  		n -= PAGE_SIZE;
-> > > > > >  	}
-> > > > > > @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
-> > > > > >  ZRAM_ATTR_RO(num_writes);
-> > > > > >  ZRAM_ATTR_RO(failed_reads);
-> > > > > >  ZRAM_ATTR_RO(failed_writes);
-> > > > > > +ZRAM_ATTR_RO(num_discards);
-> > > > > >  ZRAM_ATTR_RO(invalid_io);
-> > > > > >  ZRAM_ATTR_RO(notify_free);
-> > > > > >  ZRAM_ATTR_RO(zero_pages);
-> > > > > > @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
-> > > > > >  	&dev_attr_num_writes.attr,
-> > > > > >  	&dev_attr_failed_reads.attr,
-> > > > > >  	&dev_attr_failed_writes.attr,
-> > > > > > +	&dev_attr_num_discards.attr,
-> > > > > >  	&dev_attr_invalid_io.attr,
-> > > > > >  	&dev_attr_notify_free.attr,
-> > > > > >  	&dev_attr_zero_pages.attr,
-> > > > > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> > > > > > index e0f725c..2994aaf 100644
-> > > > > > --- a/drivers/block/zram/zram_drv.h
-> > > > > > +++ b/drivers/block/zram/zram_drv.h
-> > > > > > @@ -86,6 +86,7 @@ struct zram_stats {
-> > > > > >  	atomic64_t num_writes;	/* --do-- */
-> > > > > >  	atomic64_t failed_reads;	/* can happen when memory is too low */
-> > > > > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
-> > > > > > +	atomic64_t num_discards;	/* no. of discarded pages */
-> > > > > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
-> > > > > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
-> > > > > >  	atomic64_t zero_pages;		/* no. of zero filled pages */
-> > > > > > --
-> > > > > > 2.0.1.474.g72c7794
-> > > > > >
-> > > > > >
-> > > > >
-> > > > > --
-> > > > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > > > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > > > see: http://www.linux-mm.org/ .
-> > > > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > > >
-> > >
-> > > --
-> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > > see: http://www.linux-mm.org/ .
-> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
-> > --
-> > Kind regards,
-> > Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+I noticed another issue that had not occurred to me: when tg3_tso_bug is
+submitting a full gso segs sequence to tg3_start_xmit, the code at the end of
+that function stops the queue before the end of the sequence because tx_avail
+becomes smaller than (MAX_SKB_FRAGS + 1). The transmission actually proceeds
+because tg3_tso_bug() does not honour the queue state but it seems rather
+unsightly to me. I'm trying different solutions to this and will resubmit.
