@@ -1,413 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbaHULAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:00:53 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54120 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754495AbaHULAt (ORCPT
+	id S1754645AbaHULB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:01:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57193 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371AbaHULB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:00:49 -0400
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: sudeep.holla@arm.com, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 10/11] ARM: kernel: add support for cpu cache information
-Date: Thu, 21 Aug 2014 11:59:53 +0100
-Message-Id: <1408618794-28497-11-git-send-email-sudeep.holla@arm.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
-References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
- <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
+	Thu, 21 Aug 2014 07:01:27 -0400
+Message-ID: <53F5D16B.4030007@linutronix.de>
+Date: Thu, 21 Aug 2014 13:00:59 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, Vinod Koul <vinod.koul@intel.com>
+Subject: Re: [PATCH 05/15] tty: serial: Add 8250-core based omap driver
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-6-git-send-email-bigeasy@linutronix.de> <20140815210716.GE9239@atomide.com>
+In-Reply-To: <20140815210716.GE9239@atomide.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudeep Holla <sudeep.holla@arm.com>
+On 08/15/2014 11:07 PM, Tony Lindgren wrote:
+> Nice, now it mostly works for me with off-idle too :) That is as long
+> as I have the DMA channels commented out in the .dts file.
+> 
+> And I'm still seeing an occasional hang with pstore console just
+> showing:
+> 
+> [  289.076538] In-band Error seen by MPU  at address 0
+> [  289.076538] ------------[ cut here ]------------
+> [  289.076568] WARNING: CPU: 0 PID: 99 at drivers/bus/omap_l3_smx.c:162 omap3_l3_app_irq+0xdc/0x134()
+> [  289.076599] Modules linked in:
+> [  289.076599] CPU: 0 PID: 99 Comm: test-idle-off-8 Tainted: G        W      3.16.0+ #510
+> [  289.076629] [<c0016c44>] (unwind_backtrace) from [<c00129c8>] (show_stack+0x20/0x24)
+> [  289.076660] [<c00129c8>] (show_stack) from [<c0714cd4>] (dump_stack+0x88/0xa4)
 
-This patch adds support for cacheinfo on ARM platforms.
+Okay. So this backtrace does not show more like from where the access
+is happening?
 
-On ARMv7, the cache hierarchy can be identified through Cache Level ID
-register(CLIDR) while the cache geometry is provided by Cache Size ID
-register(CCSIDR).
+> Which most likely means there's still some glitch with the
+> runtime PM somewhere and registers are being accessed when
+> not clocked. I _think_ I did not see it when I did not have
+> console=ttyS2,115200 in my cmdline but was using just pstore
+> console.
+> 
+>> The device name is ttyS based instead of ttyO. If a ttyO based node name
+>> is required please ask udev for it. If both driver are activated (this
+>> and omap-serial) then this serial driver will take control over the
+>> device due to the link order
+> 
+> That's still not going to help with the existing kernel cmdlines
+> and existing installs.. I wonder if we can just do a minimal
+> dummy serial-omap.c that just proxies all the ttyO read/write
+> access to ttyS?
 
-On architecture versions before ARMv7, CLIDR and CCSIDR is not
-implemented. The cache type register(CTR) provides both cache hierarchy
-and geometry if implemented. For implementations that doesn't support
-CTR, we need to list the probable value of CTR if it was implemented
-along with the cpuid for the sake of simplicity to handle them.
+Hmm. So you are not a friend of the udev solution?. For now the driver
+is "default n" and you have to explicit enable it and _then_ you should
+be able to update your command line, etc.
+If I introduce a kernel proxy for compatibility I assume that people
+will wake up once that compatibility piece is gone.
 
-Since the architecture doesn't provide any way of detecting the cpus
-sharing particular cache, device tree is used fo the same purpose.
-On non-DT platforms, first level caches are per-cpu while higher level
-caches are assumed system-wide.
+However, if you insist… I tried to make a symlink but nobody does this
+in kernel. The "rtc -> rtc0" and friends seem to come from udev _or_
+distro. So I sff could a second device node with the same major/minor.
+That would work for userland but not for the kernel console… So we need
+a proxy-console for this.
 
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
----
- arch/arm/kernel/Makefile    |   1 +
- arch/arm/kernel/cacheinfo.c | 275 ++++++++++++++++++++++++++++++++++++++++++++
- arch/arm/mm/Kconfig         |  13 +++
- 3 files changed, 289 insertions(+)
- create mode 100644 arch/arm/kernel/cacheinfo.c
+Before I spent time on this proxy-console I would like to hear from Greg
+that he is okay with this.
 
-diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 38ddd9f83d0e..2c5ff0efb670 100644
---- a/arch/arm/kernel/Makefile
-+++ b/arch/arm/kernel/Makefile
-@@ -29,6 +29,7 @@ obj-y		+= entry-v7m.o v7m.o
- else
- obj-y		+= entry-armv.o
- endif
-+obj-$(CONFIG_CPU_HAS_CACHE) += cacheinfo.o
- 
- obj-$(CONFIG_OC_ETM)		+= etm.o
- obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
-diff --git a/arch/arm/kernel/cacheinfo.c b/arch/arm/kernel/cacheinfo.c
-new file mode 100644
-index 000000000000..d2659563de31
---- /dev/null
-+++ b/arch/arm/kernel/cacheinfo.c
-@@ -0,0 +1,275 @@
-+/*
-+ *  ARM cacheinfo support
-+ *
-+ *  Copyright (C) 2014 ARM Ltd.
-+ *  All Rights Reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/cacheinfo.h>
-+#include <linux/cpu.h>
-+#include <linux/compiler.h>
-+#include <linux/of.h>
-+
-+#include <asm/cputype.h>
-+#include <asm/processor.h>
-+#include <asm/system_info.h>
-+
-+#define cache_is_armv7() \
-+	(cpu_architecture() >= CPU_ARCH_ARMv7 && !armv6_extended())
-+#define MAX_CACHE_LEVEL		(cache_is_armv7() ? 7 : 1)
-+
-+#define CTR_CTYPE_SHIFT		24
-+#define CTR_CTYPE_MASK		(1 << CTR_CTYPE_SHIFT)
-+
-+struct ctr_info {
-+	unsigned int cpuid_part;
-+	unsigned int ctr;
-+};
-+
-+/*
-+ *  Cache Type Register
-+ *  +---------------------------------+
-+ *  | 31 29 | 28 25 |24| 23 12 | 11 0 |
-+ *  +---------------------------------+
-+ *  | 0 0 0 | Ctype | S| Dsize | Isize|
-+ *  +---------------------------------+
-+ * The table below encodes only Dsize and Isize
-+ */
-+static struct ctr_info cache_ctr_list[] = {
-+	{0x4400a100, 0x0016A16A }, /* SA-110:  32kB D$, 32kB I$ */
-+	{0x4400a110, 0x0012A16A }, /* SA-1100: 16kB D$, 32kB I$ */
-+	{0x6900b110, 0x0012A16A }, /* SA-1110: 16kB D$, 32kB I$ */
-+};
-+
-+/*
-+ * List of CPUs reported as ARMv7 but don't implement CLIDR,
-+ * CSSELR and CCSIDR. Cache information is still available from CTR
-+ */
-+static int armv6_ext_cpuid_part[] = {
-+	0x4100b020, /* ARM11MP */
-+	0x4100b760, /* ARM1176 */
-+};
-+
-+static bool armv6_extended(void)
-+{
-+	int i, cpuid_part = read_cpuid_part();
-+
-+	for (i = 0; i < ARRAY_SIZE(armv6_ext_cpuid_part); i++)
-+		if (armv6_ext_cpuid_part[i] == cpuid_part)
-+			return true;
-+	return false;
-+}
-+
-+static int get_unimplemented_ctr(unsigned int *ctr)
-+{
-+	int i, cpuid_part = read_cpuid_part();
-+
-+	for (i = 0; i < ARRAY_SIZE(cache_ctr_list); i++)
-+		if (cache_ctr_list[i].cpuid_part == cpuid_part) {
-+			*ctr = cache_ctr_list[i].ctr;
-+			return 0;
-+		}
-+	return -ENOENT;
-+}
-+
-+static unsigned int get_ctr(void)
-+{
-+	unsigned int ctr;
-+
-+	if (get_unimplemented_ctr(&ctr))
-+		ctr = read_cpuid_cachetype();
-+	return ctr;
-+}
-+
-+static enum cache_type __get_cache_type(int level)
-+{
-+	if (level > MAX_CACHE_LEVEL)
-+		return CACHE_TYPE_NOCACHE;
-+	return get_ctr() & CTR_CTYPE_MASK ?
-+		CACHE_TYPE_SEPARATE : CACHE_TYPE_UNIFIED;
-+}
-+
-+/*
-+ *  +---------------------------------+
-+ *  | 9  8  7  6 | 5  4  3 | 2 | 1  0 |
-+ *  +---------------------------------+
-+ *  |    size    |  assoc  | m |  len |
-+ *  +---------------------------------+
-+ * linelen        = 1 << (len + 3)
-+ * multiplier     = 2 + m
-+ * nsets          = 1 << (size + 6 - assoc - len)
-+ * associativity  = multiplier << (assoc - 1)
-+ * cache_size     = multiplier << (size + 8)
-+ */
-+#define CTR_LINESIZE_MASK	0x3
-+#define CTR_MULTIPLIER_SHIFT	2
-+#define CTR_MULTIPLIER_MASK	0x1
-+#define CTR_ASSOCIAT_SHIFT	3
-+#define CTR_ASSOCIAT_MASK	0x7
-+#define CTR_SIZE_SHIFT		6
-+#define CTR_SIZE_MASK		0xF
-+#define CTR_DCACHE_SHIFT	12
-+
-+static void __ci_leaf_init(enum cache_type type, struct cacheinfo *this_leaf)
-+{
-+	unsigned int size, multiplier, assoc, len, tmp = get_ctr();
-+
-+	if (type == CACHE_TYPE_DATA)
-+		tmp >>= CTR_DCACHE_SHIFT;
-+
-+	len = tmp & CTR_LINESIZE_MASK;
-+	size = (tmp >> CTR_SIZE_SHIFT) & CTR_SIZE_MASK;
-+	assoc = (tmp >> CTR_ASSOCIAT_SHIFT) & CTR_ASSOCIAT_MASK;
-+	multiplier = ((tmp >> CTR_MULTIPLIER_SHIFT) & CTR_MULTIPLIER_MASK) + 2;
-+
-+	this_leaf->type = type;
-+	this_leaf->coherency_line_size = 1 << (len + 3);
-+	this_leaf->number_of_sets = 1 << (size + 6 - assoc - len);
-+	this_leaf->ways_of_associativity = multiplier << (assoc - 1);
-+	this_leaf->size = multiplier << (size + 8);
-+}
-+
-+/* Ctypen, bits[3(n - 1) + 2 : 3(n - 1)], for n = 1 to 7 */
-+#define CLIDR_CTYPE_SHIFT(level)	(3 * (level - 1))
-+#define CLIDR_CTYPE_MASK(level)		(7 << CLIDR_CTYPE_SHIFT(level))
-+#define CLIDR_CTYPE(clidr, level)	\
-+	(((clidr) & CLIDR_CTYPE_MASK(level)) >> CLIDR_CTYPE_SHIFT(level))
-+
-+static inline enum cache_type __armv7_get_cache_type(int level)
-+{
-+	unsigned int clidr;
-+
-+	if (level > MAX_CACHE_LEVEL)
-+		return CACHE_TYPE_NOCACHE;
-+	asm volatile ("mrc p15, 1, %0, c0, c0, 1" : "=r" (clidr));
-+	return CLIDR_CTYPE(clidr, level);
-+}
-+
-+/*
-+ * NumSets, bits[27:13] - (Number of sets in cache) - 1
-+ * Associativity, bits[12:3] - (Associativity of cache) - 1
-+ * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
-+ */
-+#define CCSIDR_WRITE_THROUGH		BIT(31)
-+#define CCSIDR_WRITE_BACK		BIT(30)
-+#define CCSIDR_READ_ALLOCATE		BIT(29)
-+#define CCSIDR_WRITE_ALLOCATE		BIT(28)
-+#define CCSIDR_LINESIZE_MASK		0x7
-+#define CCSIDR_ASSOCIATIVITY_SHIFT	3
-+#define CCSIDR_ASSOCIATIVITY_MASK	0x3FF
-+#define CCSIDR_NUMSETS_SHIFT		13
-+#define CCSIDR_NUMSETS_MASK		0x7FF
-+
-+/*
-+ * Which cache CCSIDR represents depends on CSSELR value
-+ * Make sure no one else changes CSSELR during this
-+ * smp_call_function_single prevents preemption for us
-+ */
-+static inline u32 get_ccsidr(u32 csselr)
-+{
-+	u32 ccsidr;
-+
-+	/* Put value into CSSELR */
-+	asm volatile ("mcr p15, 2, %0, c0, c0, 0" : : "r" (csselr));
-+	isb();
-+	/* Read result out of CCSIDR */
-+	asm volatile ("mrc p15, 1, %0, c0, c0, 0" : "=r" (ccsidr));
-+
-+	return ccsidr;
-+}
-+
-+static void __armv7_ci_leaf_init(enum cache_type type,
-+				 struct cacheinfo *this_leaf)
-+{
-+	bool is_instr_cache = type & CACHE_TYPE_INST;
-+	u32 tmp = get_ccsidr((this_leaf->level - 1) << 1 | is_instr_cache);
-+
-+	this_leaf->type = type;
-+	this_leaf->coherency_line_size =
-+	    (1 << ((tmp & CCSIDR_LINESIZE_MASK) + 2)) * 4;
-+	this_leaf->number_of_sets =
-+	    ((tmp >> CCSIDR_NUMSETS_SHIFT) & CCSIDR_NUMSETS_MASK) + 1;
-+	this_leaf->ways_of_associativity = ((tmp >> CCSIDR_ASSOCIATIVITY_SHIFT)
-+					    & CCSIDR_ASSOCIATIVITY_MASK) + 1;
-+	this_leaf->size = this_leaf->number_of_sets *
-+	    this_leaf->coherency_line_size * this_leaf->ways_of_associativity;
-+	this_leaf->attributes =
-+		((tmp & CCSIDR_WRITE_THROUGH) ? CACHE_WRITE_THROUGH : 0) |
-+		((tmp & CCSIDR_WRITE_BACK) ? CACHE_WRITE_BACK : 0) |
-+		((tmp & CCSIDR_READ_ALLOCATE) ? CACHE_READ_ALLOCATE : 0) |
-+		((tmp & CCSIDR_WRITE_ALLOCATE) ? CACHE_WRITE_ALLOCATE : 0);
-+}
-+
-+static inline enum cache_type get_cache_type(int level)
-+{
-+	if (cache_is_armv7())
-+		return __armv7_get_cache_type(level);
-+	return __get_cache_type(level);
-+}
-+
-+static void ci_leaf_init(struct cacheinfo *this_leaf,
-+			 enum cache_type type, unsigned int level)
-+{
-+	this_leaf->level = level;
-+	if (cache_is_armv7())
-+		__armv7_ci_leaf_init(type, this_leaf);
-+	else
-+		__ci_leaf_init(type, this_leaf);
-+}
-+
-+static int __init_cache_level(unsigned int cpu)
-+{
-+	unsigned int ctype, level, leaves;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+
-+	for (level = 1, leaves = 0; level <= MAX_CACHE_LEVEL; level++) {
-+		ctype = get_cache_type(level);
-+		if (ctype == CACHE_TYPE_NOCACHE) {
-+			level--;
-+			break;
-+		}
-+		/* Separate instruction and data caches */
-+		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
-+	}
-+
-+	this_cpu_ci->num_levels = level;
-+	this_cpu_ci->num_leaves = leaves;
-+
-+	return 0;
-+}
-+
-+static int __populate_cache_leaves(unsigned int cpu)
-+{
-+	unsigned int level, idx;
-+	enum cache_type type;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
-+
-+	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
-+	     idx < this_cpu_ci->num_leaves; idx++, level++) {
-+		type = get_cache_type(level);
-+		if (type == CACHE_TYPE_SEPARATE) {
-+			ci_leaf_init(this_leaf++, CACHE_TYPE_DATA, level);
-+			ci_leaf_init(this_leaf++, CACHE_TYPE_INST, level);
-+		} else {
-+			ci_leaf_init(this_leaf++, type, level);
-+		}
-+	}
-+	return 0;
-+}
-+
-+DEFINE_SMP_CALL_CACHE_FUNCTION(init_cache_level)
-+DEFINE_SMP_CALL_CACHE_FUNCTION(populate_cache_leaves)
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index ae69809a9e47..9cfbf2fa8bc4 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -494,30 +494,42 @@ config CPU_PABRT_V7
- # The cache model
- config CPU_CACHE_V4
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V4WT
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V4WB
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V6
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_V7
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_NOP
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_VIVT
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_VIPT
- 	bool
-+	select CPU_HAS_CACHE
- 
- config CPU_CACHE_FA
- 	bool
-+	select CPU_HAS_CACHE
-+
-+config CPU_HAS_CACHE
-+	bool
- 
- if MMU
- # The copy-page model
-@@ -845,6 +857,7 @@ config DMA_CACHE_RWFO
- 
- config OUTER_CACHE
- 	bool
-+	select CPU_HAS_CACHE
- 
- config OUTER_CACHE_SYNC
- 	bool
--- 
-1.8.3.2
+> 
+> Regards,
+> 
+> Tony
 
+Sebastian
