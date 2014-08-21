@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520AbaHUX0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 19:26:45 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:37337 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161AbaHUX0n (ORCPT
+	id S1755546AbaHUX1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 19:27:44 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54638 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342AbaHUX1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 19:26:43 -0400
-X-IronPort-AV: E=Sophos;i="5.04,376,1406617200"; 
-   d="scan'208";a="43063763"
-Subject: Re: [PATCH 1/3] tg3: Limit minimum tx queue wakeup threshold
-From: Michael Chan <mchan@broadcom.com>
-To: Benjamin Poirier <bpoirier@suse.de>
-CC: Prashant Sreedharan <prashant@broadcom.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <20140821230607.GB7724@f1.synalogic.ca>
-References: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
-	 <1408485647.7404.3.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <20140821220424.GB7117@f1.synalogic.ca>
-	 <1408660355.7644.50.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	 <20140821230607.GB7724@f1.synalogic.ca>
-Content-Type: text/plain; charset="cp1252"
-Date: Thu, 21 Aug 2014 16:26:42 -0700
-Message-ID: <1408663602.7644.63.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	Thu, 21 Aug 2014 19:27:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140821070021.GA25888@gmail.com>
+References: <1358804360-29639-1-git-send-email-yinghai@kernel.org>
+	<CAE9FiQX0bUdWz6bmqLKDHpY5mvjEYdobseroCRnu0-Ju0qmsPw@mail.gmail.com>
+	<1f7d783e-5b26-495d-83d5-5d522eb3941e@email.android.com>
+	<CAE9FiQWPiVb_hySAADQypuZtcTN+iEQb4hoO=-+iurdsmKqKrg@mail.gmail.com>
+	<CAE9FiQUcq05K1mR5E7K-MT3+Z4xxckxO+o9RJ6QDwiGG1T_3aQ@mail.gmail.com>
+	<CAE9FiQVHcPH3aOU3uD=PsWay1w+csSDzZk62tpMXVgsFVMW1wg@mail.gmail.com>
+	<CAE9FiQVGZf_cRMK0spp9=YhG8SsrK+FY6fi00pCxZcEL1Ne-kg@mail.gmail.com>
+	<CAE9FiQW6q860P4+qQWTwt0k0vjOJ-S6FdyZHv06=0qv1Z97C=g@mail.gmail.com>
+	<20140821070021.GA25888@gmail.com>
+Date: Thu, 21 Aug 2014 16:27:42 -0700
+X-Google-Sender-Auth: K6tdPKn-AsB-sswj9JKBR8CWgfY
+Message-ID: <CAE9FiQUXO_K1y2=L+neyjxDsoEXGQuTj0hdsR7T+KumqaaN3+w@mail.gmail.com>
+Subject: Re: [PATCH -v2] x86, acpi: Handle xapic/x2apic entries in MADT at
+ same time
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-21 at 16:06 -0700, Benjamin Poirier wrote: 
-> On 2014/08/21 15:32, Michael Chan wrote:
-> > On Thu, 2014-08-21 at 15:04 -0700, Benjamin Poirier wrote: 
-> > > On 2014/08/19 15:00, Michael Chan wrote:
-> > > > On Tue, 2014-08-19 at 11:52 -0700, Benjamin Poirier wrote: 
-> > > > > diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-> > > > > index 3ac5d23..b11c0fd 100644
-> > > > > --- a/drivers/net/ethernet/broadcom/tg3.c
-> > > > > +++ b/drivers/net/ethernet/broadcom/tg3.c
-> > > > > @@ -202,7 +202,8 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
-> > > > >  #endif
-> > > > >  
-> > > > >  /* minimum number of free TX descriptors required to wake up TX process */
-> > > > > -#define TG3_TX_WAKEUP_THRESH(tnapi)            ((tnapi)->tx_pending / 4)
-> > > > > +#define TG3_TX_WAKEUP_THRESH(tnapi)    max_t(u32, (tnapi)->tx_pending / 4, \
-> > > > > +                                             MAX_SKB_FRAGS + 1)
-> > > > 
-> > > > I think we should precompute this and store it in something like
-> > > > tp->tx_wake_thresh.
-> > > 
-> > > I've tried this by adding the following patch at the end of the v2
-> > > series but I did not measure a significant latency improvement. Was
-> > > there another reason for the change? 
-> > 
-> > Just performance.  The wake up threshold is checked in the tx fast path
-> > in both start_xmit() and tg3_tx().  I would optimize such code for speed
-> 
-> I don't see what you mean. The code in those two functions that used to
-> invoke TG3_TX_WAKEUP_THRESH is wrapped in unlikely() conditions. You
-> can't tell me that's the fast path ;) It's only checked when the queue
-> is stopped.
+On Thu, Aug 21, 2014 at 12:00 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> (lkml Cc:-ed, in case someone wants to help out.)
+>
+> The changelog quality and organization of your submitted
+> patches is still poor, they are hard to read and review. This
+> is a repeat complaint against your patches, yet not much has
+> happened over the last few years. Please improve them before
+> resending your patches.
+>
+> As a positive example, here's a couple of x86 architecture
+> commits with good changelogs:
+>
+> 95d76acc7518 ("x86, irq: Count legacy IRQs by legacy_pic->nr_legacy_irqs instead of NR_IRQS_LEGACY")
+> 6b9fb7082409 ("x86, ACPI, irq: Consolidate algorithm of mapping (ioapic, pin) to IRQ number")
+> 2e0ad0e2c135 ("x86, ACPI, irq: Fix possible error in GSI to IRQ mapping for legacy IRQ")
+> 44a69f619562 ("acpi, apei, ghes: Make NMI error notification to be GHES architecture extension")
+>
+> Please match or exceed the changelog quality of these commits.
 
-I missed the unlikely().  So you're right.  It's not really in the fast
-path.
+How about this version ?
 
-> 
-> Moreover, the patches I've sent already add tg3_napi.wakeup_thresh. It
-> is over those patches that I've made the measurements.
+Subject: [PATCH -v3] x86, acpi: Make cpu sequence to be consistent with MADT
+From: Yinghai Lu <yinghai@kernel.org>
 
-Right.  But my original comment was over your original patch #1 which
-was adding max_t() to the macro TG3_TX_WAKE_THRESH without adding
-wakeup_thresh field.  All my comments (performance and smaller code)
-were based on your original patch #1.  Later I did see that your patch 3
-converted TG3_TX_WAKEUP_THRESH to a structure field so it's no longer an
-issue.
+On 8 socket system that x2apic is pre-enabled, get following sequence:
+CPU0: socket0, core0, thread0.
+CPU1 - CPU 40: socket 4 - socket 7, thread 0
+CPU41 - CPU 80: socket 4 - socket 7, thread 1
+CPU81 - CPU 119: socket 0 - socket 3, thread 0
+CPU120 - CPU 159: socket 0 - socket 3, thread 1
 
-> 
-> > as much as possible.  In the current code, it was just a right shift
-> > operation.  Now, with max_t() added, I think I prefer having it
-> > pre-computed.  The performance difference may not be measurable, but I
-> > think the compiled code size may be smaller too.
-> 
-> Maybe in certain areas, but not overall:
-> 
-> with v2 patches 1-3
->    text    data     bss     dec     hex filename
->  149495    1247       0  150742   24cd6 drivers/net/ethernet/broadcom/tg3.o
-> with v2 patches 1-3 + tx_wake_thresh_def
->    text    data     bss     dec     hex filename
->  149524    1247       0  150771   24cf3 drivers/net/ethernet/broadcom/tg3.o
-> 
-> I really don't see a gain.
-> 
+The system has mixing xapic and x2apic entries in MADT and SRAT.
+Current kernel parse all x2apic entries before all xapic entries, and
+the same reserve CPU0 slot for boot cpu, so we get out of order
+cpu sqeuence.
 
-Agreed.  Once you have converted the TG3_TX_WAKEUP_THRESH to a structure
-field, that's sufficient.  No need to have multiple fields.  Thanks.
+Some users have scripts that just assume that that cpu sequence is same
+as socket0, and then next sockets. According to socket number/core number
+in the system, they have simple mapping from kernel cpu index to socket
+index.
 
+BIOS guys insist that ACPI 4.0 SPEC says if apic id < 255, even
+the cpus are with x2apic mode pre-enabled, still need to use xapic entries
+instead of x2apic entries.
+
+We could check every entry in MADT with xapic and x2apic instead of
+checking all entries with x2apic then check all entries with xapic.
+
+After patch we have:
+CPU0 - CPU 79: socket 0 - socket 7, thread 0
+CPU80 - CPU 159: socket 0 - socket 7, thread 1
+and we have same cpu sequence as that in MADT.
+
+-v2: update some comments, and change to pass array pointer.
+-v3: update changelog.
