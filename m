@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaHUUGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:06:48 -0400
-Received: from mail-ig0-f202.google.com ([209.85.213.202]:45687 "EHLO
-	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961AbaHUUEr (ORCPT
+	id S1754315AbaHUUKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:10:40 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:48495 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753351AbaHUUKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:04:47 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
-        David Daney <david.daney@cavium.com>,
-        John Crispin <blogic@openwrt.org>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 1/7] MIPS: Create common infrastructure for building built-in device-trees
-Date: Thu, 21 Aug 2014 13:04:20 -0700
-Message-Id: <1408651466-8334-2-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
-References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+	Thu, 21 Aug 2014 16:10:37 -0400
+Date: Thu, 21 Aug 2014 23:10:26 +0300
+From: Andreea Bernat <bernat.ada@gmail.com>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] carl9170: Replace rcu_dereference() with
+ rcu_access_pointer()
+Message-ID: <20140821201026.GA26428@ada>
+References: <20140817104806.GA14533@ada>
+ <3029076.uaUkTd8nru@debian64>
+ <20140820173210.GA18892@ada>
+ <3042528.E5hT1D5bWz@debian64>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3042528.E5hT1D5bWz@debian64>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for moving the device-trees to a common location,
-introduce the config option BUILTIN_DTB, which can be selected by
-platforms that use a device-tree built into the kernel image, and
-create a Makefile to build the device-trees in arch/mips/boot/dts/.
+On Wed, Aug 20, 2014 at 01:20:02PM -0700, Christian Lamparter wrote:
+> On Wednesday, August 20, 2014 08:32:11 PM Andreea Bernat wrote:
+> > On Mon, Aug 18, 2014 at 09:29:36PM +0200, Christian Lamparter wrote:
+> > > On Sunday, August 17, 2014 01:48:07 PM Andreea-Cristina Bernat wrote:
+> > > > The rcu_dereference() call is used directly in a condition.
+> > > > Since its return value is never dereferenced it is recommended to use
+> > > > "rcu_access_pointer()" instead of "rcu_dereference()".
+> > > > Therefore, this patch makes the replacement.
+> > > > [...]
+> > > > Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> > > > ---
+> > > >  drivers/net/wireless/ath/carl9170/main.c | 2 +-
+> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > > 
+> > > > diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
+> > > > index f8ded84..12018ff 100644
+> > > > --- a/drivers/net/wireless/ath/carl9170/main.c
+> > > > +++ b/drivers/net/wireless/ath/carl9170/main.c
+> > > > @@ -1431,7 +1431,7 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+> > > >  			return -EOPNOTSUPP;
+> > > >  
+> > > >  		rcu_read_lock();
+> > > > -		if (rcu_dereference(sta_info->agg[tid])) {
+> > > > +		if (rcu_access_pointer(sta_info->agg[tid])) {
+> > > >  			rcu_read_unlock();
+> > > >  			return -EBUSY;
+> > > >  		}
+> > > 
+> > > There's more. The check does not do a whole lot. I think *it* [the check] and the
+> > > rcu_read_[un]lock [and the return -EBUSY] can be removed completely from the
+> > > IEEE80211_AMPDU_TX_START code-path in carl9170_op_ampdu_action.
+> > > 
+> > > It would be awesome, if you could you make a patch which removes this 
+> > > unneeded cosmic-ray-protection check :-) .
+> > 
+> > Could you tell me why you think that those lines have to be removed?
+> The carl9170_op_ampdu_action callback is used exclusively by the mac80211
+> framework to notify the driver about setup and tear down of TX and RX 
+> aggregation sessions. Hence, mac80211 takes great care of performing
+> sanity checks and properly serializing calls to the driver's ampdu_action
+> callback.
+> 
+> Specifically mac80211 already prevents the START of an TX aggregation session,
+> if the aggregation session is already active [0]. Therefore the driver doesn't
+> need to perform a similar check as well. This is why:
+>  - the expression (rcu_dereference(sta_info->agg[tid])) never evaluates to true
+>  -> the -EBUSY exit path is "dead code"
+> 
+> And without the rcu_dereference(...) the rcu_read protection is not needed
+> either. So it can be removed for this case as well.
+> 
+> > I would like to fully understand this before I remove them.
+> Let me know if the explanation above answers sufficient :).
+> If not, I need some *pointers* to what needs further 
+> explanation.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- arch/mips/Kconfig           | 3 +++
- arch/mips/Makefile          | 6 ++++++
- arch/mips/boot/dts/Makefile | 3 +++
- 3 files changed, 12 insertions(+)
- create mode 100644 arch/mips/boot/dts/Makefile
+Your explanation is clear. I will send a version two of the patch with
+those lines removed.
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index df51e78..19b8aac 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -2481,6 +2481,9 @@ config USE_OF
- 	select OF_EARLY_FLATTREE
- 	select IRQ_DOMAIN
- 
-+config BUILTIN_DTB
-+	bool
-+
- endmenu
- 
- config LOCKDEP_SUPPORT
-diff --git a/arch/mips/Makefile b/arch/mips/Makefile
-index 9336509..72cdd6a 100644
---- a/arch/mips/Makefile
-+++ b/arch/mips/Makefile
-@@ -324,6 +324,12 @@ endif
- 
- CLEAN_FILES += vmlinux.32 vmlinux.64
- 
-+# device-trees
-+core-$(CONFIG_BUILTIN_DTB) += arch/mips/boot/dts/
-+
-+%.dtb %.dtb.S %.dtb.o: | scripts
-+	$(Q)$(MAKE) $(build)=arch/mips/boot/dts arch/mips/boot/dts/$@
-+
- archprepare:
- ifdef CONFIG_MIPS32_N32
- 	@echo '  Checking missing-syscalls for N32'
-diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
-new file mode 100644
-index 0000000..6bb41df
---- /dev/null
-+++ b/arch/mips/boot/dts/Makefile
-@@ -0,0 +1,3 @@
-+obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
-+
-+clean-files	+= *.dtb.S
--- 
-2.1.0.rc2.206.gedb03e5
+Thank you,
+Andreea
 
+> 
+> Regards
+> Christian
+> 
+> [0] <http://lxr.free-electrons.com/source/net/mac80211/agg-tx.c#L583>
+> 
