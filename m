@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaHUUEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:04:55 -0400
-Received: from mail-vc0-f201.google.com ([209.85.220.201]:65138 "EHLO
-	mail-vc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224AbaHUUEw (ORCPT
+	id S1754560AbaHUUE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:04:58 -0400
+Received: from mail-vc0-f202.google.com ([209.85.220.202]:48123 "EHLO
+	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392AbaHUUEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:04:52 -0400
+	Thu, 21 Aug 2014 16:04:55 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -19,9 +19,9 @@ Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
         Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 5/7] MIPS: sead3: Move device-trees to arch/mips/boot/dts/
-Date: Thu, 21 Aug 2014 13:04:24 -0700
-Message-Id: <1408651466-8334-6-git-send-email-abrestic@chromium.org>
+Subject: [PATCH 7/7] MIPS: ralink: Move device-trees to arch/mips/boot/dts/
+Date: Thu, 21 Aug 2014 13:04:26 -0700
+Message-Id: <1408651466-8334-8-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
 References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
@@ -29,60 +29,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the SEAD-3 device-tree to arch/mips/boot/dts/ and update the
-Makefiles accordingly.  Since SEAD-3 requires the device-tree to be
-built into the kernel, select BUILTIN_DTB when building for SEAD-3.
+Move the Ralink device-trees to arch/mips/boot/dts/ and update the
+Makefiles accordingly.  A built-in device-tree is optional, so select
+BUILTIN_DTB when it is requested.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
- arch/mips/Kconfig                           | 1 +
- arch/mips/boot/dts/Makefile                 | 1 +
- arch/mips/{mti-sead3 => boot/dts}/sead3.dts | 0
- arch/mips/mti-sead3/Makefile                | 4 ----
- 4 files changed, 2 insertions(+), 4 deletions(-)
- rename arch/mips/{mti-sead3 => boot/dts}/sead3.dts (100%)
+ arch/mips/boot/dts/Makefile                     | 4 ++++
+ arch/mips/{ralink => boot}/dts/mt7620a.dtsi     | 0
+ arch/mips/{ralink => boot}/dts/mt7620a_eval.dts | 0
+ arch/mips/{ralink => boot}/dts/rt2880.dtsi      | 0
+ arch/mips/{ralink => boot}/dts/rt2880_eval.dts  | 0
+ arch/mips/{ralink => boot}/dts/rt3050.dtsi      | 0
+ arch/mips/{ralink => boot}/dts/rt3052_eval.dts  | 0
+ arch/mips/{ralink => boot}/dts/rt3883.dtsi      | 0
+ arch/mips/{ralink => boot}/dts/rt3883_eval.dts  | 0
+ arch/mips/ralink/Kconfig                        | 4 ++++
+ arch/mips/ralink/Makefile                       | 2 --
+ arch/mips/ralink/dts/Makefile                   | 4 ----
+ 12 files changed, 8 insertions(+), 6 deletions(-)
+ rename arch/mips/{ralink => boot}/dts/mt7620a.dtsi (100%)
+ rename arch/mips/{ralink => boot}/dts/mt7620a_eval.dts (100%)
+ rename arch/mips/{ralink => boot}/dts/rt2880.dtsi (100%)
+ rename arch/mips/{ralink => boot}/dts/rt2880_eval.dts (100%)
+ rename arch/mips/{ralink => boot}/dts/rt3050.dtsi (100%)
+ rename arch/mips/{ralink => boot}/dts/rt3052_eval.dts (100%)
+ rename arch/mips/{ralink => boot}/dts/rt3883.dtsi (100%)
+ rename arch/mips/{ralink => boot}/dts/rt3883_eval.dts (100%)
+ delete mode 100644 arch/mips/ralink/dts/Makefile
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index dbfcf35..a72c7c9 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -353,6 +353,7 @@ config MIPS_SEAD3
- 	bool "MIPS SEAD3 board"
- 	select BOOT_ELF32
- 	select BOOT_RAW
-+	select BUILTIN_DTB
- 	select CEVT_R4K
- 	select CSRC_R4K
- 	select CSRC_GIC
 diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
-index 4f265ec..8df3d3e 100644
+index 1638a38..ca9c90e 100644
 --- a/arch/mips/boot/dts/Makefile
 +++ b/arch/mips/boot/dts/Makefile
-@@ -1,5 +1,6 @@
- dtb-$(CONFIG_CAVIUM_OCTEON_SOC)		+= octeon_3xxx.dtb octeon_68xx.dtb
- dtb-$(CONFIG_DT_EASY50712)		+= easy50712.dtb
-+dtb-$(CONFIG_MIPS_SEAD3)		+= sead3.dtb
+@@ -4,6 +4,10 @@ dtb-$(CONFIG_DT_XLP_EVP)		+= xlp_evp.dtb
+ dtb-$(CONFIG_DT_XLP_SVP)		+= xlp_svp.dtb
+ dtb-$(CONFIG_DT_XLP_FVP)		+= xlp_fvp.dtb
+ dtb-$(CONFIG_DT_XLP_GVP)		+= xlp_gvp.dtb
++dtb-$(CONFIG_DTB_RT2880_EVAL)		+= rt2880_eval.dtb
++dtb-$(CONFIG_DTB_RT305X_EVAL)		+= rt3052_eval.dtb
++dtb-$(CONFIG_DTB_RT3883_EVAL)		+= rt3883_eval.dtb
++dtb-$(CONFIG_DTB_MT7620A_EVAL)		+= mt7620a_eval.dtb
+ dtb-$(CONFIG_MIPS_SEAD3)		+= sead3.dtb
  
  obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
- 
-diff --git a/arch/mips/mti-sead3/sead3.dts b/arch/mips/boot/dts/sead3.dts
+diff --git a/arch/mips/ralink/dts/mt7620a.dtsi b/arch/mips/boot/dts/mt7620a.dtsi
 similarity index 100%
-rename from arch/mips/mti-sead3/sead3.dts
-rename to arch/mips/boot/dts/sead3.dts
-diff --git a/arch/mips/mti-sead3/Makefile b/arch/mips/mti-sead3/Makefile
-index 071786f..febf433 100644
---- a/arch/mips/mti-sead3/Makefile
-+++ b/arch/mips/mti-sead3/Makefile
-@@ -19,9 +19,5 @@ obj-y				+= sead3-i2c-dev.o sead3-i2c.o \
+rename from arch/mips/ralink/dts/mt7620a.dtsi
+rename to arch/mips/boot/dts/mt7620a.dtsi
+diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/boot/dts/mt7620a_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/mt7620a_eval.dts
+rename to arch/mips/boot/dts/mt7620a_eval.dts
+diff --git a/arch/mips/ralink/dts/rt2880.dtsi b/arch/mips/boot/dts/rt2880.dtsi
+similarity index 100%
+rename from arch/mips/ralink/dts/rt2880.dtsi
+rename to arch/mips/boot/dts/rt2880.dtsi
+diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/boot/dts/rt2880_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/rt2880_eval.dts
+rename to arch/mips/boot/dts/rt2880_eval.dts
+diff --git a/arch/mips/ralink/dts/rt3050.dtsi b/arch/mips/boot/dts/rt3050.dtsi
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3050.dtsi
+rename to arch/mips/boot/dts/rt3050.dtsi
+diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/boot/dts/rt3052_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3052_eval.dts
+rename to arch/mips/boot/dts/rt3052_eval.dts
+diff --git a/arch/mips/ralink/dts/rt3883.dtsi b/arch/mips/boot/dts/rt3883.dtsi
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3883.dtsi
+rename to arch/mips/boot/dts/rt3883.dtsi
+diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/boot/dts/rt3883_eval.dts
+similarity index 100%
+rename from arch/mips/ralink/dts/rt3883_eval.dts
+rename to arch/mips/boot/dts/rt3883_eval.dts
+diff --git a/arch/mips/ralink/Kconfig b/arch/mips/ralink/Kconfig
+index 4a29665..77e8a96 100644
+--- a/arch/mips/ralink/Kconfig
++++ b/arch/mips/ralink/Kconfig
+@@ -42,18 +42,22 @@ choice
+ 	config DTB_RT2880_EVAL
+ 		bool "RT2880 eval kit"
+ 		depends on SOC_RT288X
++		select BUILTIN_DTB
  
- obj-$(CONFIG_EARLY_PRINTK)	+= sead3-console.o
- obj-$(CONFIG_USB_EHCI_HCD)	+= sead3-ehci.o
--obj-$(CONFIG_OF)		+= sead3.dtb.o
+ 	config DTB_RT305X_EVAL
+ 		bool "RT305x eval kit"
+ 		depends on SOC_RT305X
++		select BUILTIN_DTB
  
- CFLAGS_sead3-setup.o = -I$(src)/../../../scripts/dtc/libfdt
+ 	config DTB_RT3883_EVAL
+ 		bool "RT3883 eval kit"
+ 		depends on SOC_RT3883
++		select BUILTIN_DTB
+ 
+ 	config DTB_MT7620A_EVAL
+ 		bool "MT7620A eval kit"
+ 		depends on SOC_MT7620
++		select BUILTIN_DTB
+ 
+ endchoice
+ 
+diff --git a/arch/mips/ralink/Makefile b/arch/mips/ralink/Makefile
+index 98ae349..2c09c8a 100644
+--- a/arch/mips/ralink/Makefile
++++ b/arch/mips/ralink/Makefile
+@@ -16,5 +16,3 @@ obj-$(CONFIG_SOC_RT3883) += rt3883.o
+ obj-$(CONFIG_SOC_MT7620) += mt7620.o
+ 
+ obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
 -
--$(obj)/%.dtb: $(obj)/%.dts
--	$(call if_changed,dtc)
+-obj-y += dts/
+diff --git a/arch/mips/ralink/dts/Makefile b/arch/mips/ralink/dts/Makefile
+deleted file mode 100644
+index 18194fa..0000000
+--- a/arch/mips/ralink/dts/Makefile
++++ /dev/null
+@@ -1,4 +0,0 @@
+-obj-$(CONFIG_DTB_RT2880_EVAL) := rt2880_eval.dtb.o
+-obj-$(CONFIG_DTB_RT305X_EVAL) := rt3052_eval.dtb.o
+-obj-$(CONFIG_DTB_RT3883_EVAL) := rt3883_eval.dtb.o
+-obj-$(CONFIG_DTB_MT7620A_EVAL) := mt7620a_eval.dtb.o
 -- 
 2.1.0.rc2.206.gedb03e5
 
