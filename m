@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648AbaHUUL6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:11:58 -0400
-Received: from mail-qg0-f74.google.com ([209.85.192.74]:59548 "EHLO
-	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577AbaHUUL4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:11:56 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
-        David Daney <david.daney@cavium.com>,
-        John Crispin <blogic@openwrt.org>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 2/7] MIPS: Add support for building device-tree binaries
-Date: Thu, 21 Aug 2014 13:04:21 -0700
-Message-Id: <1408651466-8334-3-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
-References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+	id S1754704AbaHUUNE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:13:04 -0400
+Received: from sauhun.de ([89.238.76.85]:59371 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753571AbaHUUND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 16:13:03 -0400
+Date: Thu, 21 Aug 2014 15:12:46 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Max Schwarz <max.schwarz@online.de>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Addy Ke <addy.ke@rock-chips.com>, heiko@sntech.de, olof@lixom.net,
+        dianders@chromium.org, huangtao@rock-chips.com, hl@rock-chips.com,
+        yzq@rock-chips.com, zyw@rock-chips.com, linux-kernel@vger.kernel.org,
+        kever.yang@rock-chips.com, linux-rockchip@lists.infradead.org,
+        xjq@rock-chips.com, linux-i2c@vger.kernel.org,
+        caesar.wang@rock-chips.com, cf@rock-chips.com, hj@rock-chips.com,
+        zhengsq@rock-chips.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] i2c: rk3x: fix bug that cause transfer fails in master
+ receive mode
+Message-ID: <20140821201246.GB1443@katana>
+References: <1408643457-7126-1-git-send-email-addy.ke@rock-chips.com>
+ <53F634AF.1010303@cogentembedded.com>
+ <20140821181738.GA1443@katana>
+ <5150326.5TB64kCfF4@typ>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eJnRUKwClWJh1Khz"
+Content-Disposition: inline
+In-Reply-To: <5150326.5TB64kCfF4@typ>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a 'dtbs' Makefile target that just builds the device-tree binaries
-enabled by the configuration.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- arch/mips/Makefile          | 5 +++++
- arch/mips/boot/.gitignore   | 1 +
- arch/mips/boot/dts/Makefile | 7 ++++++-
- 3 files changed, 12 insertions(+), 1 deletion(-)
+--eJnRUKwClWJh1Khz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/mips/Makefile b/arch/mips/Makefile
-index 72cdd6a..26672e1 100644
---- a/arch/mips/Makefile
-+++ b/arch/mips/Makefile
-@@ -330,6 +330,10 @@ core-$(CONFIG_BUILTIN_DTB) += arch/mips/boot/dts/
- %.dtb %.dtb.S %.dtb.o: | scripts
- 	$(Q)$(MAKE) $(build)=arch/mips/boot/dts arch/mips/boot/dts/$@
- 
-+PHONY += dtbs
-+dtbs: scripts
-+	$(Q)$(MAKE) $(build)=arch/mips/boot/dts dtbs
-+
- archprepare:
- ifdef CONFIG_MIPS32_N32
- 	@echo '  Checking missing-syscalls for N32'
-@@ -364,6 +368,7 @@ define archhelp
- 	echo '  vmlinuz.srec         - SREC zboot image'
- 	echo '  uImage               - U-Boot image'
- 	echo '  uImage.gz            - U-Boot image (gzip)'
-+	echo '  dtbs                 - Device-tree blobs for enabled boards'
- 	echo
- 	echo '  These will be default as appropriate for a configured platform.'
- endef
-diff --git a/arch/mips/boot/.gitignore b/arch/mips/boot/.gitignore
-index a73d6e2..d3962cd 100644
---- a/arch/mips/boot/.gitignore
-+++ b/arch/mips/boot/.gitignore
-@@ -5,3 +5,4 @@ zImage
- zImage.tmp
- calc_vmlinuz_load_addr
- uImage
-+*.dtb
-diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
-index 6bb41df..9b3da1f 100644
---- a/arch/mips/boot/dts/Makefile
-+++ b/arch/mips/boot/dts/Makefile
-@@ -1,3 +1,8 @@
- obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
- 
--clean-files	+= *.dtb.S
-+targets		+= dtbs
-+targets		+= $(dtb-y)
-+
-+dtbs: $(addprefix $(obj)/, $(dtb-y))
-+
-+clean-files	+= *.dtb *.dtb.S
--- 
-2.1.0.rc2.206.gedb03e5
 
+> Actually, reads with >32 bytes of data are possible with the controller. =
+The=20
+> hw returns the data in 32 byte chunks. Our chunk handling code is just bu=
+ggy.=20
+
+Understood. Then, I'd prefer 'chunk' in the commit message instead of
+'transaction'.
+
+
+--eJnRUKwClWJh1Khz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT9lK9AAoJEBQN5MwUoCm2kKMP/iFe9IoYBubgYLiwvIsXFwDX
+isEjEACKJgZZyDXtDXIXa/4augAAWf/KmVWc7GRnsakWmUK1dDaPEeBnkfm6Jrzi
+Knx6s0kh7Zw94HmE3lcecxjH4hIf7yNr5uih1o4XL5XoQzwXE92HEXYjNrC1+1Rs
+ebOMM2F2N6mhi+zLhbsgcGO5HKEcJ9OTTOCDuGbewrmbQ8FI2vuHcBt0g+ehh4Qc
+ojH1xQC3Xe8cdlB+4xMth0xesygMihQPq//teDaRoxpB1c2YkcC+zpKG0IcpPCxy
+wNTZgLqwiyYruyffnZxXDx5+fHqSnKFiFhjZ9j39H4ATC2k3FH8Hy8UP2feHQDud
+pL7x1tJOtc0n8F5Mm6dvBGf8iOVbN34QTME1/LO5ALJHeECU7Tm8vSUWQ+49h3FD
+xX8Ep/uTAQT8VdiiZSECjctgKffhNd00PU8hUFUuAOn4o8QYDU+5cedbCFtBzYZm
+pwyRXamKL4ZOgo50W8s6EASKJbUU0zD3rbjQr2KVjUkLfMR49XpuTf5PZyEKMSHO
+8idUYTEaq70BEfpw/hbg/ph7sSSAGU1+5zgYPmq+2dc9RPsSrlgroOdWZjZVso+I
+nOQN9hP7skwXKlkyU+p3faAoVkd/4RTdzN7pYZis4+Fzu97wNQSVSScSfmBS3KEK
+XAJVHX3zKE7Nqet9hnJc
+=2+8X
+-----END PGP SIGNATURE-----
+
+--eJnRUKwClWJh1Khz--
