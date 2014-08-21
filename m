@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaHUKSd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 06:18:33 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:26456 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754189AbaHUKS1 (ORCPT
+	id S1754470AbaHUKS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 06:18:56 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:9055 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353AbaHUKSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 06:18:27 -0400
-X-IronPort-AV: E=Sophos;i="5.01,908,1400018400"; 
-   d="scan'208";a="90240673"
-Date: Thu, 21 Aug 2014 05:18:21 -0500 (CDT)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Lee Jones <lee.jones@linaro.org>
-cc: Samuel Ortiz <sameo@linux.intel.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] mfd: menelaus: fix error return code
-In-Reply-To: <20140821082605.GS4266@lee--X1>
-Message-ID: <alpine.DEB.2.10.1408210517570.2534@hadrien>
-References: <1407355938-10932-2-git-send-email-Julia.Lawall@lip6.fr> <20140821082605.GS4266@lee--X1>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 21 Aug 2014 06:18:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 21 Aug 2014 03:04:41 -0700
+From: Mikko Perttunen <mperttunen@nvidia.com>
+To: <edubezval@gmail.com>, <rui.zhang@intel.com>, <swarren@wwwdotorg.org>,
+        <thierry.reding@gmail.com>
+CC: <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <juha-matti.tilli@iki.fi>, Mikko Perttunen <mperttunen@nvidia.com>
+Subject: [PATCH v5 3/4] ARM: tegra: Add thermal trip points for Jetson TK1
+Date: Thu, 21 Aug 2014 13:17:21 +0300
+Message-ID: <1408616242-21009-4-git-send-email-mperttunen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
+References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds critical trip points to the Jetson TK1 device tree.
+The device will do a controlled shutdown when either the CPU, GPU
+or MEM thermal zone reaches 101 degrees Celsius.
 
+Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+---
+v5: added cooling-maps nodes
 
-On Thu, 21 Aug 2014, Lee Jones wrote:
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts | 41 +++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-> On Wed, 06 Aug 2014, Julia Lawall wrote:
->
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > Convert a zero return value on error to a negative one, as returned
-> > elsewhere in the function.
-> >
-> > A simplified version of the semantic match that finds this problem is as
-> > follows: (http://coccinelle.lip6.fr/)
-> >
-> > // <smpl>
-> > (
-> > if@p1 (\(ret < 0\|ret != 0\))
-> >  { ... return ret; }
-> > |
-> > ret@p1 = 0
-> > )
-> > ... when != ret = e1
-> >     when != &ret
-> > *if(...)
-> > {
-> >   ... when != ret = e2
-> >       when forall
-> >  return ret;
-> > }
-> >
-> > // </smpl>
-> >
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > ---
-> >  drivers/mfd/menelaus.c |    4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-> > index 5e2667a..16070d8 100644
-> > --- a/drivers/mfd/menelaus.c
-> > +++ b/drivers/mfd/menelaus.c
-> > @@ -1240,8 +1240,10 @@ static int menelaus_probe(struct i2c_client *client,
-> >  	pr_info("Menelaus rev %d.%d\n", rev >> 4, rev & 0x0f);
-> >
-> >  	val = menelaus_read_reg(MENELAUS_VCORE_CTRL1);
-> > -	if (val < 0)
-> > +	if (val < 0) {
-> > +		err = val;
-> >  		goto fail;
-> > +	}
->
-> I'd prefer it if you could s/val/err and remove val altogether.  While
-> you're there, if you can s/(1 << 7)/BIT(7), that would be great
-> too.  If you don't have time, or just don't want to do it, I will be
-> happy to submit a patch instead with your Reported-by.  Your call.
->
-> >  	if (val & (1 << 7))
-> >  		menelaus->vcore_hw_mode = 1;
-> >  	else
-> >
+diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+index 0cdb5cf..bcdab7f 100644
+--- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
++++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+@@ -1876,4 +1876,45 @@
+ 			 <&tegra_car TEGRA124_CLK_EXTERN1>;
+ 		clock-names = "pll_a", "pll_a_out0", "mclk";
+ 	};
++
++	thermal-zones {
++		cpu {
++			trips {
++				trip@0 {
++					temperature = <101000>;
++					hysteresis = <0>;
++					type = "critical";
++				};
++			};
++
++			cooling-maps {
++			};
++		};
++
++		mem {
++			trips {
++				trip@0 {
++					temperature = <101000>;
++					hysteresis = <0>;
++					type = "critical";
++				};
++			};
++
++			cooling-maps {
++			};
++		};
++
++		gpu {
++			trips {
++				trip@0 {
++					temperature = <101000>;
++					hysteresis = <0>;
++					type = "critical";
++				};
++			};
++
++			cooling-maps {
++			};
++		};
++	};
+ };
+-- 
+1.8.1.5
 
-I will look into it.  Thanks for the feedback.
-
-julia
