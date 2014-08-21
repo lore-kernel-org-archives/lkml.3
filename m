@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180AbaHUSyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 14:54:49 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:61047 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008AbaHUSyr (ORCPT
+	id S1753885AbaHUS4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 14:56:43 -0400
+Received: from dehamd003.servertools24.de ([31.47.254.18]:49209 "EHLO
+	dehamd003.servertools24.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752192AbaHUS4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 14:54:47 -0400
-From: Max Schwarz <max.schwarz@online.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Addy Ke <addy.ke@rock-chips.com>, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org, huangtao@rock-chips.com, hl@rock-chips.com,
-        yzq@rock-chips.com, zyw@rock-chips.com, linux-kernel@vger.kernel.org,
-        kever.yang@rock-chips.com, linux-rockchip@lists.infradead.org,
-        xjq@rock-chips.com, linux-i2c@vger.kernel.org,
-        caesar.wang@rock-chips.com, cf@rock-chips.com, hj@rock-chips.com,
-        zhengsq@rock-chips.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] i2c: rk3x: fix bug that cause transfer fails in master receive mode
-Date: Thu, 21 Aug 2014 20:54:06 +0200
-Message-ID: <5150326.5TB64kCfF4@typ>
-User-Agent: KMail/4.13.2 (Linux/3.15.7-031507-generic; KDE/4.13.2; x86_64; ; )
-In-Reply-To: <20140821181738.GA1443@katana>
-References: <1408643457-7126-1-git-send-email-addy.ke@rock-chips.com> <53F634AF.1010303@cogentembedded.com> <20140821181738.GA1443@katana>
+	Thu, 21 Aug 2014 14:56:42 -0400
+Message-ID: <53F64099.8000601@ladisch.de>
+Date: Thu, 21 Aug 2014 20:55:21 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64;
+	rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8jh68E9bvlo6t8qxldcRy1x1duRwEP013lnfo+mlgtX
- nLTug68P2mSVRimFlBEpeqHAMXrH/CwObI/j9kSx/WVgqPy3Hx
- 3LkQ8zdBYvWSie7wlSSssCkc753cI3jEzunFtVLjewvoqnK/0p
- j3+HUfHsMWhYWRR5UdyqDJVfZk4V6GgmT8ujfASl4nG0XHM83E
- Hl2ri3+w3C7fpJa1HJ2cZjFWawjuI78LnvHgDgg2Pa8ec5/EmN
- jTagabYBfdlfySmG8h8YpfMRAYDXpgjIhkxgAG5MtxlIxBmoc9
- mrzqsnSIZifDsHqAVqu8qWIngvlWx5iyuKFrohCaymg+r0FpA=
- =
-X-UI-Out-Filterresults: notjunk:1;
+To: Tommi Rantala <tt.rantala@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>
+CC: Dave Jones <davej@redhat.com>, alsa-devel@alsa-project.org,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+Subject: Re: [alsa-devel] /proc/asound/card0/oss_mixer stack corruption
+References: <CA+ydwtr+e0Sr4y+VRu-3JkF0Lbf+KJqjO9LZq6JPOgbHuyfAwA@mail.gmail.com>
+In-Reply-To: <CA+ydwtr+e0Sr4y+VRu-3JkF0Lbf+KJqjO9LZq6JPOgbHuyfAwA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-PPP-Message-ID: <20140821185625.936109.29856@dehamd003.servertools24.de>
+X-PPP-Vhost: ladisch.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Tommi Rantala wrote:
+> Trinity discovered that writing 128 bytes to
+> /proc/asound/card0/oss_mixer triggers a stack corruption.
+>
+> Call Trace:
+>  [<ffffffff8113c716>] __stack_chk_fail+0x16/0x20
+>  [<ffffffff81e193ba>] snd_mixer_oss_proc_write+0x24a/0x270
 
-On Thursday 21 August 2014 at 13:17:38, Wolfram Sang wrote:
-> On Thu, Aug 21, 2014 at 10:04:31PM +0400, Sergei Shtylyov wrote:
-> > Hello.
-> > 
-> > On 08/21/2014 09:50 PM, Addy Ke wrote:
-> > >In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
-> > >in one transaction, so the size of data to be write/read to/from
-> > >TXDATAx/RXDATAx must be less than or equal 32 bytes at a time.
-> > >
-> > >Test on pinky board, elan receive 158 bytes data.
-> > >
-> > >Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> > >---
-> > >
-> > >  drivers/i2c/busses/i2c-rk3x.c | 3 +++
-> > >  1 file changed, 3 insertions(+)
-> > >
-> > >diff --git a/drivers/i2c/busses/i2c-rk3x.c
-> > >b/drivers/i2c/busses/i2c-rk3x.c
-> > >index 69e1185..dc0aa64 100644
-> > >--- a/drivers/i2c/busses/i2c-rk3x.c
-> > >+++ b/drivers/i2c/busses/i2c-rk3x.c
-> > >@@ -323,6 +323,9 @@ static void rk3x_i2c_handle_read(struct rk3x_i2c
-> > >*i2c, unsigned int ipd)> >
-> > >  	/* ack interrupt */
-> > >  	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
-> > >
-> > >+	/* Can only handle a maximum of 32 bytes at a time */
-> > >+	len = (len > 32) ? 32 : len;
-> > >
-> >    Why not min(len, 32)? Or even:
-> > 	if (len > 32)
-> > 	
-> > 		len = 32;
-> 
-> No silent trimming, please. The message should be rejected when the transfer
-> is set up. We could assign -EOVERFLOW to that type of failures, so users
-> will know. Sadly, I have seen other controllers having such limits :(
+snd_info_get_line() wants the len parameter to be one less than the
+buffer size, but it isn't:
 
-Actually, reads with >32 bytes of data are possible with the controller. The 
-hw returns the data in 32 byte chunks. Our chunk handling code is just buggy. 
-We always read the number of missing bytes from the current chunk, instead of 
-truncating that to 32.
-The fix is correct. The following lines in the rk3x_i2c_handle_read() function 
-already check if we got everything and trigger an additional chunk read if 
-necessary:
+	while (!snd_info_get_line(buffer, line, sizeof(line))) {
 
-	/* are we finished? */
-	if (i2c->processed == i2c->msg->len)
-		rk3x_i2c_stop(i2c, i2c->error);
-	else
-		rk3x_i2c_prepare_read(i2c);
+Not that *any* other caller got it correct either:
 
-I'd like a clearer syntax as suggested by Sergei, though.
+sound/core/oss/pcm_oss.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/core/pcm.c:	if (!snd_info_get_line(buffer, line, sizeof(line)))
+sound/core/pcm_memory.c:	if (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/drivers/dummy.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/ac97/ac97_proc.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/ca0106/ca0106_proc.c:        while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/ca0106/ca0106_proc.c:        while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/ca0106/ca0106_proc.c:        while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/emu10k1/emu10k1x.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/emu10k1/emuproc.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/emu10k1/emuproc.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/hda/hda_eld.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/ice1712/pontis.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/ice1712/prodigy_hifi.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/lola/lola_proc.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
+sound/pci/pcxhr/pcxhr.c:	while (!snd_info_get_line(buffer, line, sizeof(line))) {
 
-Apart from that,
-Acked-By: Max Schwarz <max.schwarz@online.de>
+Oh well.  At least these proc files are writable only by root, and the
+fix is easy:
 
-Cheers,
-  Max
+--8<---------------------------------------------------------------->8--
+ALSA: core: fix buffer overflow in snd_info_get_line()
+
+snd_info_get_line() documents that its last parameter must be one
+less than the buffer size, but this API design guarantees that
+(literally) every caller gets it wrong.
+
+Just change this parameter to have its obvious meaning.
+
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Cc: <stable@vger.kernel.org> # v2.2.26+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ sound/core/info.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/core/info.c
++++ b/sound/core/info.c
+@@ -684,7 +684,7 @@ int snd_info_card_free(struct snd_card *card)
+  * snd_info_get_line - read one line from the procfs buffer
+  * @buffer: the procfs buffer
+  * @line: the buffer to store
+- * @len: the max. buffer size - 1
++ * @len: the max. buffer size
+  *
+  * Reads one line from the buffer and stores the string.
+  *
+@@ -704,7 +704,7 @@ int snd_info_get_line(struct snd_info_buffer *buffer, char *line, int len)
+ 			buffer->stop = 1;
+ 		if (c == '\n')
+ 			break;
+-		if (len) {
++		if (len > 1) {
+ 			len--;
+ 			*line++ = c;
+ 		}
