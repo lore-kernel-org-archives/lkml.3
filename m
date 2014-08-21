@@ -1,35 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaHUOWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:22:39 -0400
-Received: from qmta08.emeryville.ca.mail.comcast.net ([76.96.30.80]:54507 "EHLO
-	qmta08.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751476AbaHUOWi (ORCPT
+	id S1755480AbaHUOYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:24:05 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:51070 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755285AbaHUOYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:22:38 -0400
-Date: Thu, 21 Aug 2014 09:22:35 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm/slab_common: commonize slab merge logic
-In-Reply-To: <1408608675-20420-2-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.11.1408210922020.32524@gentwo.org>
-References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com> <1408608675-20420-2-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 21 Aug 2014 10:24:02 -0400
+In-Reply-To: <20140820105710.GC17371@redhat.com>
+References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com> <20140820105710.GC17371@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: abel.gordon@gmail.com, Alex Glikson <GLIKSON@il.ibm.com>,
+        Eran Raichstein <ERANRA@il.ibm.com>, Joel Nider <JOELN@il.ibm.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
+MIME-Version: 1.0
+Subject: Re: [PATCH] vhost: Add polling mode
+X-KeepSent: BE98487F:0F49BDD7-C2257D3B:004C908C;
+ type=4; name=$KeepSent
+X-Mailer: IBM Notes Release 9.0.1SHF211 December 19, 2013
+From: Razya Ladelsky <RAZYA@il.ibm.com>
+Message-ID: <OFBE98487F.0F49BDD7-ONC2257D3B.004C908C-C2257D3B.004F09FD@il.ibm.com>
+Date: Thu, 21 Aug 2014 17:23:55 +0300
+X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5IF1HF3|November 07, 2013) at
+ 21/08/2014 17:23:55,
+	Serialize complete at 21/08/2014 17:23:55
+Content-Type: text/plain; charset="US-ASCII"
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082114-0542-0000-0000-00000060F544
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Aug 2014, Joonsoo Kim wrote:
+"Michael S. Tsirkin" <mst@redhat.com> wrote on 20/08/2014 01:57:10 PM:
 
-> Slab merge is good feature to reduce fragmentation. Now, it is only
-> applied to SLUB, but, it would be good to apply it to SLAB. This patch
-> is preparation step to apply slab merge to SLAB by commonizing slab
-> merge logic.
+> > Results:
+> > 
+> > Netperf, 1 vm:
+> > The polling patch improved throughput by ~33% (1516 MB/sec -> 2046 
+MB/sec).
+> > Number of exits/sec decreased 6x.
+> > The same improvement was shown when I tested with 3 vms running 
+netperf
+> > (4086 MB/sec -> 5545 MB/sec).
+> > 
+> > filebench, 1 vm:
+> > ops/sec improved by 13% with the polling patch. Number of exits 
+> was reduced by
+> > 31%.
+> > The same experiment with 3 vms running filebench showed similar 
+numbers.
+> > 
+> > Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
+> 
+> This really needs more thourough benchmarking report, including
+> system data.  One good example for a related patch:
+> http://lwn.net/Articles/551179/
+> though for virtualization, we need data about host as well, and if you
+> want to look at streaming benchmarks, you need to test different message
+> sizes and measure packet size.
+>
 
-Oh. Wow. Never thought that would be possible. Need to have some more time
-to review this though.
+Hi Michael,
+I have already tried running netperf with several message sizes: 
+64,128,256,512,600,800...
+But the results are inconsistent even in the baseline/unpatched 
+configuration.
+For smaller msg sizes, I get consistent numbers. However, at some point, 
+when I increase the msg size
+I get unstable results. For example, for a 512B msg, I get two scenarios:
+vm utilization 100%, vhost utilization 75%, throughput ~6300 
+vm utilization 80%, vhost utilization 13%, throughput ~9400 (line rate)
+
+I don't know why vhost is behaving that way for certain message sizes.
+Do you have any insight to why this is happening?
+Thank you,
+Razya
+ 
+
