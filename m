@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaHUEKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 00:10:35 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:39785 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbaHUEKc (ORCPT
+	id S1753660AbaHUELZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 00:11:25 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:58234 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374AbaHUELV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 00:10:32 -0400
+	Thu, 21 Aug 2014 00:11:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <1408495538-27480-3-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1408495538-27480-5-git-send-email-linux@roeck-us.net>
 References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
-	<1408495538-27480-3-git-send-email-linux@roeck-us.net>
-Date: Wed, 20 Aug 2014 21:10:31 -0700
-X-Google-Sender-Auth: 7G16U-ZhcMrf5MVrRlQCHV5uQPg
-Message-ID: <CAD=FV=Va8UrpDCLjFQJ6j-K0C3v7NPfifaJGtReCkUEu3x0mLg@mail.gmail.com>
-Subject: Re: [PATCH v7 02/11] power/restart: Call machine_restart instead of arm_pm_restart
+	<1408495538-27480-5-git-send-email-linux@roeck-us.net>
+Date: Wed, 20 Aug 2014 21:11:21 -0700
+X-Google-Sender-Auth: UZ6gFSt8ESi7mfA-pT1Zko2RHDc
+Message-ID: <CAD=FV=VNLCc5VVxQspZrZPrZ_JZQO+SJtkA61CAYj-f5fnA2LQ@mail.gmail.com>
+Subject: Re: [PATCH v7 04/11] arm: Support restart through restart handler
+ call chain
 From: Doug Anderson <dianders@chromium.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
@@ -44,31 +45,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Guenter,
 
 On Tue, Aug 19, 2014 at 5:45 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> machine_restart is supported on non-ARM platforms, and and ultimately calls
-> arm_pm_restart, so dont call arm_pm_restart directly but use the more
-> generic function.
+> The kernel core now supports a restart handler call chain for system
+> restart functions.
 >
-> Cc: Russell King <linux@arm.linux.org.uk>
-
-Do you need to submit this to his patch tracker to get him to pick it
-up?  How are you envisioning that this series land?  It crosses a lot
-of boundaries so I guess will need a reasonable amount of coordination
-between maintainers...
-
-
+> With this change, the arm_pm_restart callback is now optional, so
+> drop its initialization and check if it is set before calling it.
+> Only call the kernel restart handler if arm_pm_restart is not set.
+>
 > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 > Acked-by: Heiko Stuebner <heiko@sntech.de>
 > ---
-> v7: No change.
+> v7: Dropped null_restart and made arm_pm_restart truly optional.
 > v6: No change.
-> v5: No change.
+> v5: Renamed restart function to do_kernel_restart
 > v4: No change.
-> v3: No change.
-> v2: Added patch.
+> v3: Use wrapper function to execute notifier call chain.
+> v2: Only call notifier call chain if arm_pm_restart is not set.
+>     Do not include linux/watchdog.h.
 >
->  drivers/power/reset/restart-poweroff.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  arch/arm/kernel/process.c | 11 +++++------
+>  1 file changed, 5 insertions(+), 6 deletions(-)
 
 Reviewed-by: Doug Anderson <dianders@chromium.org>
 Tested-by: Doug Anderson <dianders@chromium.org>
