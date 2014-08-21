@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbaHUCRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 22:17:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44519 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaHUCQ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 22:16:59 -0400
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: boris.ostrovsky@oracle.com, david.vrabel@citrix.com
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: [V0 PATCH 1/2] AMD-PVH: set EFER.NX and EFER.SCE for the boot vcpu
-Date: Wed, 20 Aug 2014 19:16:39 -0700
-Message-Id: <1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1753519AbaHUCSD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 22:18:03 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:36829 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752121AbaHUCSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 22:18:01 -0400
+Date: Thu, 21 Aug 2014 04:12:00 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        rabin@rab.in, Thierry Reding <thierry.reding@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 0/8] Per-user clock constraints
+Message-ID: <20140821021200.GB11103@lunn.ch>
+References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On AMD, NX feature must be enabled in the efer for NX to be honored in
-the pte entries, otherwise protection fault. We also set SC for
-system calls to be enabled.
+On Mon, Aug 18, 2014 at 05:30:26PM +0200, Tomeu Vizoso wrote:
+> Hi,
+> 
+> in this v7 of the patchset I have only rebased on top of 3.17rc1, with no other
+> changes. I have had to do a fair amount of fixing due to the rebase, more
+> details below. Follows the original cover letter blurb:
 
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
----
- arch/x86/xen/enlighten.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Hi Tomeu
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c0cb11f..4af512d 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1499,6 +1499,17 @@ void __ref xen_pvh_secondary_vcpu_init(int cpu)
- 	xen_pvh_set_cr_flags(cpu);
- }
- 
-+/* This is done in secondary_startup_64 for hvm guests. */
-+static void __init xen_configure_efer(void)
-+{
-+	u64 efer;
-+
-+	rdmsrl(MSR_EFER, efer);
-+	efer |= EFER_SCE;
-+	efer |= (cpuid_edx(0x80000001) & (1 << 20)) ? EFER_NX : 0;
-+	wrmsrl(MSR_EFER, efer);
-+}
-+
- static void __init xen_pvh_early_guest_init(void)
- {
- 	if (!xen_feature(XENFEAT_auto_translated_physmap))
-@@ -1508,6 +1519,7 @@ static void __init xen_pvh_early_guest_init(void)
- 		return;
- 
- 	xen_have_vector_callback = 1;
-+	xen_configure_efer();
- 	xen_pvh_set_cr_flags(0);
- 
- #ifdef CONFIG_X86_32
--- 
-1.8.3.1
+I would like to test this patchset, but patch 5 never made it to the
+list. Do you have a git tree i can clone?
 
+Thanks
+	Andrew
