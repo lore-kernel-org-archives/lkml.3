@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaHUIhZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 04:37:25 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:52813 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786AbaHUIhV (ORCPT
+	id S1754059AbaHUIip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 04:38:45 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:43861 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753468AbaHUIim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 04:37:21 -0400
-Date: Thu, 21 Aug 2014 09:37:16 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Himangi Saraogi <himangi774@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] mfd: menelaus: remove null pointer dereference
-Message-ID: <20140821083716.GU4266@lee--X1>
-References: <20140809164027.GA20561@himangi-Dell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140809164027.GA20561@himangi-Dell>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Aug 2014 04:38:42 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-b3-53f5b00fd2a5
+Message-id: <53F5B00A.8020909@samsung.com>
+Date: Thu, 21 Aug 2014 10:38:34 +0200
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH/RFC v4 15/21] media: Add registration helpers for V4L2 flash
+References: <1405087464-13762-1-git-send-email-j.anaszewski@samsung.com>
+ <1405087464-13762-16-git-send-email-j.anaszewski@samsung.com>
+ <53CCF59E.3070200@iki.fi> <53DF9C2A.8060403@samsung.com>
+ <20140811122628.GG16460@valkosipuli.retiisi.org.uk>
+ <53E8C4BA.6050805@samsung.com>
+ <20140814043436.GM16460@valkosipuli.retiisi.org.uk>
+ <53EC7278.6040101@samsung.com>
+ <20140820144110.GT16460@valkosipuli.retiisi.org.uk>
+In-reply-to: <20140820144110.GT16460@valkosipuli.retiisi.org.uk>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xq7r8G74GG+yayGKxccZ6Vov5R86x
+	Wiz5uYvJ4mzTG3aLy7vmsFlsfbOO0aJnw1ZWizP7V7I5cHhM+b2R1ePw14UsHn1bVjF6fN4k
+	F8ASxWWTkpqTWZZapG+XwJWxeMUSpoILXBW/v59gbGA8x9HFyMEhIWAi8fWFZxcjJ5ApJnHh
+	3nq2LkYuDiGBpYwSE3tXMkI4Hxkl1h0+yApSxSugJfHiz3EWEJtFQFXi+Z1ONhCbTcBQ4ueL
+	10wgtqhAhMSf0/ug6gUlfky+B1YvIqAm8XTTQxaQocwC1xklVrx7yA6SEBYIkFhweSYrxLbl
+	zBLvu06BdXAKOEjsXnwJbBKzgLXEyknbGCFseYnNa94yT2AUmIVkySwkZbOQlC1gZF7FKJpa
+	mlxQnJSea6RXnJhbXJqXrpecn7uJERLoX3cwLj1mdYhRgINRiYf35qIvwUKsiWXFlbmHGCU4
+	mJVEeG36vgYL8aYkVlalFuXHF5XmpBYfYmTi4JRqYEy+1sf1SPnGhmWPnO58V3khv2rCh9vi
+	/RPl64xamYJ/13PfviSwWin09NpLk17pWibpvSlRjrV653aEyWLhgTOtDpqppzZV70xlSV7w
+	McjWc6qsYqt/pcyD94H1q8oW9i1Yp2gc27ecb/K8yS9F607/MUmVXaG6Jv9nYpVwns9zD4YS
+	n/Wul5RYijMSDbWYi4oTARBE3wRSAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 09 Aug 2014, Himangi Saraogi wrote:
+Hi Sakari,
 
-> If vtg is NULL, it is not possible to access its mode_reg field. At all
-> sites where the static function menelaus_set_voltage is called, the first
-> argument is the address of a structure defined in the file. So, the null
-> test is unnecessary and is removed. Also, a label is done away with.
-> 
-> This problem was found using the following Coccinelle semantic match:
-> 
-> // <smpl>
-> @@
-> expression E, E1;
-> identifier f;
-> statement S1,S2,S3;
-> @@
-> 
-> * if (E == NULL)
-> {
->   ... when != if (E == NULL) S1 else S2
->       when != E = E1
-> * E->f
->   ... when any
->   return ...;
-> }
-> else S3
-> // </smpl>
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
-> ---
-> Not compile tested.
->  drivers/mfd/menelaus.c | 3 ---
->  1 file changed, 3 deletions(-)
+On 08/20/2014 04:41 PM, Sakari Ailus wrote:
+> Hi Jacek,
 
-Applied, thanks.
+[...]
+>>>>
+>>>> LED Class Flash driver gains V4L2 Flash API when
+>>>> CONFIG_V4L2_FLASH_LED_CLASS is defined. This is accomplished in
+>>>> the probe function by either calling v4l2_flash_init function
+>>>> or the macro of this name, when the CONFIG_V4L2_FLASH_LED_CLASS
+>>>> macro isn't defined.
+>>>>
+>>>> If the v4l2-flash.c was to call the LED API directly, then the
+>>>> led-class-flash module symbols would have to be available at
+>>>> v4l2-flash.o linking time.
+>>>
+>>> Is this an issue? EXPORT_SYMBOL_GPL() for the relevant symbols should be
+>>> enough.
+>>
+>> It isn't enough. If I call e.g. led_set_flash_brightness
+>> directly from v4l2-flash.c and configure led-class-flash to be built as
+>> a module then I am getting "undefined reference to
+>> led_set_flash_brightness" error during linking phase.
+>
+> You should not. You also should change the check as (unless you've changed
+> it already):
+>
+> #if IS_ENABLED(CONFIG_V4L2_FLASH_LED_CLASS)
+>
+> This will evaluate to non-zero if the macro arguent or the argument
+> postfixed with "_MODULE" is defined.
 
-> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
-> index 5e2667a..18ff56f 100644
-> --- a/drivers/mfd/menelaus.c
-> +++ b/drivers/mfd/menelaus.c
-> @@ -466,8 +466,6 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
->  	struct i2c_client *c = the_menelaus->client;
->  
->  	mutex_lock(&the_menelaus->lock);
-> -	if (!vtg)
-> -		goto set_voltage;
->  
->  	ret = menelaus_read_reg(vtg->vtg_reg);
->  	if (ret < 0)
-> @@ -482,7 +480,6 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
->  	ret = menelaus_write_reg(vtg->vtg_reg, val);
->  	if (ret < 0)
->  		goto out;
-> -set_voltage:
->  	ret = menelaus_write_reg(vtg->mode_reg, mode);
->  out:
->  	mutex_unlock(&the_menelaus->lock);
+I've missed this macro. Indeed, it is possible to avoid the need
+for ops with it. I will fix it in the next version of the patch set.
+Thanks for the hint.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Best Regards,
+Jacek Anaszewski
+
