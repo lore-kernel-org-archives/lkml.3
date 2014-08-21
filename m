@@ -1,213 +1,524 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184AbaHUMcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:32:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754992AbaHUMcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:32:21 -0400
-Date: Thu, 21 Aug 2014 09:31:58 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrey Ryabinin <ryabinin.a.a@gmail.com>
-Subject: Re: [PATCH 7/7] mm/balloon_compaction: general cleanup
-Message-ID: <20140821123157.GA19986@optiplex.redhat.com>
-References: <5ad4664811559496e563ead974f10e8ee6b4ed47.1408576903.git.aquini@redhat.com>
- <20140820150509.4194.24336.stgit@buzz>
- <60e809f1c932fbbb175d59a750a329f04730717e.1408576903.git.aquini@redhat.com>
- <CALYGNiN+MZO42FLhpeyGXhs6a8MRPDDgKfngusWdfNV3r_C0dw@mail.gmail.com>
+	id S1755248AbaHUMcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:32:55 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:52339 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784AbaHUMcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 08:32:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALYGNiN+MZO42FLhpeyGXhs6a8MRPDDgKfngusWdfNV3r_C0dw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1408620563-25834-3-git-send-email-tomas.winkler@intel.com>
+References: <1408620563-25834-1-git-send-email-tomas.winkler@intel.com>
+	<1408620563-25834-3-git-send-email-tomas.winkler@intel.com>
+Date: Thu, 21 Aug 2014 08:32:52 -0400
+X-Google-Sender-Auth: fSXxe_obdWHGTnjry33ZPMOTzXM
+Message-ID: <CA+5PVA71dg5-2Vb=YaxAfon3Qo1m4uivqmsRQbN0x+OztrX=9Q@mail.gmail.com>
+Subject: Re: [char-misc-next 03/14] mei: me_client lookup function to return
+ me_client object
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 11:30:59AM +0400, Konstantin Khlebnikov wrote:
-> On Thu, Aug 21, 2014 at 3:58 AM, Rafael Aquini <aquini@redhat.com> wrote:
-> > On Wed, Aug 20, 2014 at 07:05:09PM +0400, Konstantin Khlebnikov wrote:
-> >> * move special branch for balloon migraion into migrate_pages
-> >> * remove special mapping for balloon and its flag AS_BALLOON_MAP
-> >> * embed struct balloon_dev_info into struct virtio_balloon
-> >> * cleanup balloon_page_dequeue, kill balloon_page_free
-> >>
-> >> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-> >> ---
-> >>  drivers/virtio/virtio_balloon.c    |   77 ++++---------
-> >>  include/linux/balloon_compaction.h |  107 ++++++------------
-> >>  include/linux/migrate.h            |   11 --
-> >>  include/linux/pagemap.h            |   18 ---
-> >>  mm/balloon_compaction.c            |  214 ++++++++++++------------------------
-> >>  mm/migrate.c                       |   27 +----
-> >>  6 files changed, 130 insertions(+), 324 deletions(-)
-> >>
-> > Very nice clean-up, just as all other patches in this set.
-> > Please, just consider amending the following changes to this patch of yours
-> 
-> Well. Probably it's better to hide __Set/Clear inside mm/balloon_compaction.c
-> it very unlikely that they might  be used by somebody else.
-> mm.h contains too many obscure static inlines and other barely used stuff.
+On Thu, Aug 21, 2014 at 7:29 AM, Tomas Winkler <tomas.winkler@intel.com> wrote:
+> In order to support dynamic addition/removal of me clients we cannot
+
+cannot what?
+
+> It is incontinent to use static array and we can use list.
+> As the first step we change the lookup function to return
+> me client address instead of the index.
+
+This changelog seems to have some missing parts to it.
+
+josh
 >
-Although I agree that very few codesites will actually resort to them,
-I believe there's no argument to hide __Set/Clear if PageBalloon() itself is there.
-Take a look into how many codesites __{Set,Clear}PageBuddy are being
-called -- (as in their Balloon counterpart, just 1 codesite each).
-
-For the sake of consistency and ease of maintainability, either leave all
-BalloonPage() and friends at mm.h or move them all out, 
-hiding them in balloon_compaction.h.
-
-> And it's worth to rename balloon_compaction.c/h into just balloon.c or
-> memory_balloon because
-> it provides generic balloon wtihout compaction too. Any objections?
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
+>  drivers/misc/mei/amthif.c | 29 +++++++++++------------------
+>  drivers/misc/mei/bus.c    | 10 +++++-----
+>  drivers/misc/mei/client.c | 43 ++++++++++++++++++++-----------------------
+>  drivers/misc/mei/client.h |  5 +++--
+>  drivers/misc/mei/hbm.c    | 23 +++++++++--------------
+>  drivers/misc/mei/main.c   | 30 ++++++++++++++----------------
+>  drivers/misc/mei/nfc.c    | 15 ++++++++-------
+>  drivers/misc/mei/wd.c     |  8 ++++----
+>  8 files changed, 74 insertions(+), 89 deletions(-)
 >
-No objections here, I was actually thinking about renaming them too.
-
---
-Rafael
- 
-> >
-> > Rafael
-> > ---
-> >
-> > diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
-> > index dc7073b..569cf96 100644
-> > --- a/include/linux/balloon_compaction.h
-> > +++ b/include/linux/balloon_compaction.h
-> > @@ -75,41 +75,6 @@ extern struct page *balloon_page_dequeue(struct balloon_dev_info *b_dev_info);
-> >  #ifdef CONFIG_BALLOON_COMPACTION
-> >  extern bool balloon_page_isolate(struct page *page);
-> >  extern void balloon_page_putback(struct page *page);
-> > -
-> > -/*
-> > - * balloon_page_insert - insert a page into the balloon's page list and make
-> > - *                      the page->mapping assignment accordingly.
-> > - * @page    : page to be assigned as a 'balloon page'
-> > - * @mapping : allocated special 'balloon_mapping'
-> > - * @head    : balloon's device page list head
-> > - *
-> > - * Caller must ensure the page is locked and the spin_lock protecting balloon
-> > - * pages list is held before inserting a page into the balloon device.
-> > - */
-> > -static inline void
-> > -balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
-> > -{
-> > -       __SetPageBalloon(page);
-> > -       set_page_private(page, (unsigned long)balloon);
-> > -       list_add(&page->lru, &balloon->pages);
-> > -}
-> > -
-> > -/*
-> > - * balloon_page_delete - delete a page from balloon's page list and clear
-> > - *                      the page->mapping assignement accordingly.
-> > - * @page    : page to be released from balloon's page list
-> > - *
-> > - * Caller must ensure the page is locked and the spin_lock protecting balloon
-> > - * pages list is held before deleting a page from the balloon device.
-> > - */
-> > -static inline void balloon_page_delete(struct page *page, bool isolated)
-> > -{
-> > -       __ClearPageBalloon(page);
-> > -       set_page_private(page, 0);
-> > -       if (!isolated)
-> > -               list_del(&page->lru);
-> > -}
-> > -
-> >  int balloon_page_migrate(new_page_t get_new_page, free_page_t put_new_page,
-> >                 unsigned long private, struct page *page,
-> >                 int force, enum migrate_mode mode);
-> > @@ -130,31 +95,6 @@ static inline gfp_t balloon_mapping_gfp_mask(void)
-> >
-> >  #else /* !CONFIG_BALLOON_COMPACTION */
-> >
-> > -static inline void *balloon_mapping_alloc(void *balloon_device,
-> > -                               const struct address_space_operations *a_ops)
-> > -{
-> > -       return ERR_PTR(-EOPNOTSUPP);
-> > -}
-> > -
-> > -static inline void balloon_mapping_free(struct address_space *balloon_mapping)
-> > -{
-> > -       return;
-> > -}
-> > -
-> > -static inline void
-> > -balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
-> > -{
-> > -       __SetPageBalloon(page);
-> > -       list_add(&page->lru, head);
-> > -}
-> > -
-> > -static inline void balloon_page_delete(struct page *page, bool isolated)
-> > -{
-> > -       __ClearPageBalloon(page);
-> > -       if (!isolated)
-> > -               list_del(&page->lru);
-> > -}
-> > -
-> >  static inline int balloon_page_migrate(new_page_t get_new_page,
-> >                 free_page_t put_new_page, unsigned long private,
-> >                 struct page *page, int force, enum migrate_mode mode)
-> > @@ -176,6 +116,46 @@ static inline gfp_t balloon_mapping_gfp_mask(void)
-> >  {
-> >         return GFP_HIGHUSER;
-> >  }
-> > -
-> >  #endif /* CONFIG_BALLOON_COMPACTION */
-> > +
-> > +/*
-> > + * balloon_page_insert - insert a page into the balloon's page list and make
-> > + *                      the page->mapping assignment accordingly.
-> > + * @page    : page to be assigned as a 'balloon page'
-> > + * @mapping : allocated special 'balloon_mapping'
-> > + * @head    : balloon's device page list head
-> > + *
-> > + * Caller must ensure the page is locked and the spin_lock protecting balloon
-> > + * pages list is held before inserting a page into the balloon device.
-> > + */
-> > +static inline void
-> > +balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
-> > +{
-> > +#ifdef CONFIG_MEMORY_BALLOON
-> > +       __SetPageBalloon(page);
-> > +       set_page_private(page, (unsigned long)balloon);
-> > +       list_add(&page->lru, &balloon->pages);
-> > +       inc_zone_page_state(page, NR_BALLOON_PAGES);
-> > +#endif
-> > +}
-> > +
-> > +/*
-> > + * balloon_page_delete - delete a page from balloon's page list and clear
-> > + *                      the page->mapping assignement accordingly.
-> > + * @page    : page to be released from balloon's page list
-> > + *
-> > + * Caller must ensure the page is locked and the spin_lock protecting balloon
-> > + * pages list is held before deleting a page from the balloon device.
-> > + */
-> > +static inline void balloon_page_delete(struct page *page, bool isolated)
-> > +{
-> > +#ifdef CONFIG_MEMORY_BALLOON
-> > +       __ClearPageBalloon(page);
-> > +       set_page_private(page, 0);
-> > +       if (!isolated)
-> > +               list_del(&page->lru);
-> > +       dec_zone_page_state(page, NR_BALLOON_PAGES);
-> > +#endif
-> > +}
-> > +
-> >  #endif /* _LINUX_BALLOON_COMPACTION_H */
-> > --
-> > 1.9.3
-> >
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+> index ab60959..c1fc6dd 100644
+> --- a/drivers/misc/mei/amthif.c
+> +++ b/drivers/misc/mei/amthif.c
+> @@ -68,27 +68,26 @@ void mei_amthif_reset_params(struct mei_device *dev)
+>  int mei_amthif_host_init(struct mei_device *dev)
+>  {
+>         struct mei_cl *cl = &dev->iamthif_cl;
+> +       struct mei_me_client *me_cl;
+>         unsigned char *msg_buf;
+> -       int ret, i;
+> +       int ret;
+>
+>         dev->iamthif_state = MEI_IAMTHIF_IDLE;
+>
+>         mei_cl_init(cl, dev);
+>
+> -       i = mei_me_cl_by_uuid(dev, &mei_amthif_guid);
+> -       if (i < 0) {
+> -               dev_info(&dev->pdev->dev,
+> -                       "amthif: failed to find the client %d\n", i);
+> +       me_cl = mei_me_cl_by_uuid(dev, &mei_amthif_guid);
+> +       if (!me_cl) {
+> +               dev_info(&dev->pdev->dev, "amthif: failed to find the client");
+>                 return -ENOTTY;
+>         }
+>
+> -       cl->me_client_id = dev->me_clients[i].client_id;
+> +       cl->me_client_id = me_cl->client_id;
+>
+>         /* Assign iamthif_mtu to the value received from ME  */
+>
+> -       dev->iamthif_mtu = dev->me_clients[i].props.max_msg_length;
+> -       dev_dbg(&dev->pdev->dev, "IAMTHIF_MTU = %d\n",
+> -                       dev->me_clients[i].props.max_msg_length);
+> +       dev->iamthif_mtu = me_cl->props.max_msg_length;
+> +       dev_dbg(&dev->pdev->dev, "IAMTHIF_MTU = %d\n", dev->iamthif_mtu);
+>
+>         kfree(dev->iamthif_msg_buf);
+>         dev->iamthif_msg_buf = NULL;
+> @@ -157,12 +156,11 @@ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
+>  int mei_amthif_read(struct mei_device *dev, struct file *file,
+>                char __user *ubuf, size_t length, loff_t *offset)
+>  {
+> -       int rets;
+> -       int wait_ret;
+> -       struct mei_cl_cb *cb = NULL;
+>         struct mei_cl *cl = file->private_data;
+> +       struct mei_cl_cb *cb;
+>         unsigned long timeout;
+> -       int i;
+> +       int rets;
+> +       int wait_ret;
+>
+>         /* Only possible if we are in timeout */
+>         if (!cl) {
+> @@ -170,11 +168,6 @@ int mei_amthif_read(struct mei_device *dev, struct file *file,
+>                 return -ETIME;
+>         }
+>
+> -       i = mei_me_cl_by_id(dev, dev->iamthif_cl.me_client_id);
+> -       if (i < 0) {
+> -               dev_dbg(&dev->pdev->dev, "amthif client not found.\n");
+> -               return -ENOTTY;
+> -       }
+>         dev_dbg(&dev->pdev->dev, "checking amthif data\n");
+>         cb = mei_amthif_find_read_list_entry(dev, file);
+>
+> diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+> index 0e993ef..c829676 100644
+> --- a/drivers/misc/mei/bus.c
+> +++ b/drivers/misc/mei/bus.c
+> @@ -229,8 +229,8 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
+>                         bool blocking)
+>  {
+>         struct mei_device *dev;
+> +       struct mei_me_client *me_cl;
+>         struct mei_cl_cb *cb;
+> -       int id;
+>         int rets;
+>
+>         if (WARN_ON(!cl || !cl->dev))
+> @@ -242,11 +242,11 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
+>                 return -ENODEV;
+>
+>         /* Check if we have an ME client device */
+> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
+> -       if (id < 0)
+> -               return id;
+> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
+> +       if (!me_cl)
+> +               return -ENOTTY;
+>
+> -       if (length > dev->me_clients[id].props.max_msg_length)
+> +       if (length > me_cl->props.max_msg_length)
+>                 return -EFBIG;
+>
+>         cb = mei_io_cb_init(cl, NULL);
+> diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+> index a90052e..2d5f305 100644
+> --- a/drivers/misc/mei/client.c
+> +++ b/drivers/misc/mei/client.c
+> @@ -33,18 +33,19 @@
+>   *
+>   * Locking: called under "dev->device_lock" lock
+>   *
+> - * returns me client index or -ENOENT if not found
+> + * returns me client or NULL if not found
+>   */
+> -int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *uuid)
+> +struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
+> +                                       const uuid_le *uuid)
+>  {
+>         int i;
+>
+>         for (i = 0; i < dev->me_clients_num; ++i)
+>                 if (uuid_le_cmp(*uuid,
+>                                 dev->me_clients[i].props.protocol_name) == 0)
+> -                       return i;
+> +                       return &dev->me_clients[i];
+>
+> -       return -ENOENT;
+> +       return NULL;
+>  }
+>
+>
+> @@ -56,18 +57,18 @@ int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *uuid)
+>   *
+>   * Locking: called under "dev->device_lock" lock
+>   *
+> - * returns index on success, -ENOENT on failure.
+> + * returns me client or NULL if not found
+>   */
+>
+> -int mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
+> +struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
+>  {
+>         int i;
+>
+>         for (i = 0; i < dev->me_clients_num; i++)
+>                 if (dev->me_clients[i].client_id == client_id)
+> -                       return i;
+> +                       return &dev->me_clients[i];
+>
+> -       return -ENOENT;
+> +       return NULL;
+>  }
+>
+>
+> @@ -646,7 +647,6 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
+>  {
+>         struct mei_device *dev;
+>         struct mei_me_client *me_cl;
+> -       int id;
+>
+>         if (WARN_ON(!cl || !cl->dev))
+>                 return -EINVAL;
+> @@ -659,13 +659,12 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
+>         if (cl->mei_flow_ctrl_creds > 0)
+>                 return 1;
+>
+> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
+> -       if (id < 0) {
+> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
+> +       if (!me_cl) {
+>                 cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
+> -               return id;
+> +               return -ENOENT;
+>         }
+>
+> -       me_cl = &dev->me_clients[id];
+>         if (me_cl->mei_flow_ctrl_creds) {
+>                 if (WARN_ON(me_cl->props.single_recv_buf == 0))
+>                         return -EINVAL;
+> @@ -688,21 +687,19 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
+>  {
+>         struct mei_device *dev;
+>         struct mei_me_client *me_cl;
+> -       int id;
+>
+>         if (WARN_ON(!cl || !cl->dev))
+>                 return -EINVAL;
+>
+>         dev = cl->dev;
+>
+> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
+> -       if (id < 0) {
+> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
+> +       if (!me_cl) {
+>                 cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
+> -               return id;
+> +               return -ENOENT;
+>         }
+>
+> -       me_cl = &dev->me_clients[id];
+> -       if (me_cl->props.single_recv_buf != 0) {
+> +       if (me_cl->props.single_recv_buf) {
+>                 if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0))
+>                         return -EINVAL;
+>                 me_cl->mei_flow_ctrl_creds--;
+> @@ -725,8 +722,8 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+>  {
+>         struct mei_device *dev;
+>         struct mei_cl_cb *cb;
+> +       struct mei_me_client *me_cl;
+>         int rets;
+> -       int i;
+>
+>         if (WARN_ON(!cl || !cl->dev))
+>                 return -ENODEV;
+> @@ -740,8 +737,8 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+>                 cl_dbg(dev, cl, "read is pending.\n");
+>                 return -EBUSY;
+>         }
+> -       i = mei_me_cl_by_id(dev, cl->me_client_id);
+> -       if (i < 0) {
+> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
+> +       if (!me_cl) {
+>                 cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
+>                 return  -ENOTTY;
+>         }
+> @@ -760,7 +757,7 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+>         }
+>
+>         /* always allocate at least client max message */
+> -       length = max_t(size_t, length, dev->me_clients[i].props.max_msg_length);
+> +       length = max_t(size_t, length, me_cl->props.max_msg_length);
+>         rets = mei_io_cb_alloc_resp_buf(cb, length);
+>         if (rets)
+>                 goto out;
+> diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+> index bf2b0b1..ddb95b2 100644
+> --- a/drivers/misc/mei/client.h
+> +++ b/drivers/misc/mei/client.h
+> @@ -24,8 +24,9 @@
+>
+>  #include "mei_dev.h"
+>
+> -int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *cuuid);
+> -int mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
+> +struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
+> +                                       const uuid_le *cuuid);
+> +struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
+>
+>  /*
+>   * MEI IO Functions
+> diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+> index 2b4ea16..0b21675 100644
+> --- a/drivers/misc/mei/hbm.c
+> +++ b/drivers/misc/mei/hbm.c
+> @@ -402,25 +402,20 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
+>                                   struct hbm_flow_control *flow)
+>  {
+>         struct mei_me_client *me_cl;
+> -       int id;
+>
+> -       id = mei_me_cl_by_id(dev, flow->me_addr);
+> -       if (id < 0) {
+> +       me_cl = mei_me_cl_by_id(dev, flow->me_addr);
+> +       if (!me_cl) {
+>                 dev_err(&dev->pdev->dev, "no such me client %d\n",
+>                         flow->me_addr);
+> -               return id;
+> +               return -ENOENT;
+>         }
+>
+> -       me_cl = &dev->me_clients[id];
+> -       if (me_cl->props.single_recv_buf) {
+> -               me_cl->mei_flow_ctrl_creds++;
+> -               dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single).\n",
+> -                   flow->me_addr);
+> -               dev_dbg(&dev->pdev->dev, "flow control credentials =%d.\n",
+> -                   me_cl->mei_flow_ctrl_creds);
+> -       } else {
+> -               BUG();  /* error in flow control */
+> -       }
+> +       if (WARN_ON(me_cl->props.single_recv_buf == 0))
+> +               return -EINVAL;
+> +
+> +       me_cl->mei_flow_ctrl_creds++;
+> +       dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single) creds = %d.\n",
+> +           flow->me_addr, me_cl->mei_flow_ctrl_creds);
+>
+>         return 0;
+>  }
+> diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+> index 401a3d5..a65b7cc 100644
+> --- a/drivers/misc/mei/main.c
+> +++ b/drivers/misc/mei/main.c
+> @@ -303,11 +303,11 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+>                          size_t length, loff_t *offset)
+>  {
+>         struct mei_cl *cl = file->private_data;
+> +       struct mei_me_client *me_cl;
+>         struct mei_cl_cb *write_cb = NULL;
+>         struct mei_device *dev;
+>         unsigned long timeout = 0;
+>         int rets;
+> -       int id;
+>
+>         if (WARN_ON(!cl || !cl->dev))
+>                 return -ENODEV;
+> @@ -321,8 +321,8 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+>                 goto out;
+>         }
+>
+> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
+> -       if (id < 0) {
+> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
+> +       if (!me_cl) {
+>                 rets = -ENOTTY;
+>                 goto out;
+>         }
+> @@ -332,7 +332,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+>                 goto out;
+>         }
+>
+> -       if (length > dev->me_clients[id].props.max_msg_length) {
+> +       if (length > me_cl->props.max_msg_length) {
+>                 rets = -EFBIG;
+>                 goto out;
+>         }
+> @@ -428,8 +428,8 @@ static int mei_ioctl_connect_client(struct file *file,
+>  {
+>         struct mei_device *dev;
+>         struct mei_client *client;
+> +       struct mei_me_client *me_cl;
+>         struct mei_cl *cl;
+> -       int i;
+>         int rets;
+>
+>         cl = file->private_data;
+> @@ -450,22 +450,22 @@ static int mei_ioctl_connect_client(struct file *file,
+>         }
+>
+>         /* find ME client we're trying to connect to */
+> -       i = mei_me_cl_by_uuid(dev, &data->in_client_uuid);
+> -       if (i < 0 || dev->me_clients[i].props.fixed_address) {
+> +       me_cl = mei_me_cl_by_uuid(dev, &data->in_client_uuid);
+> +       if (!me_cl || me_cl->props.fixed_address) {
+>                 dev_dbg(&dev->pdev->dev, "Cannot connect to FW Client UUID = %pUl\n",
+>                                 &data->in_client_uuid);
+>                 rets = -ENOTTY;
+>                 goto end;
+>         }
+>
+> -       cl->me_client_id = dev->me_clients[i].client_id;
+> +       cl->me_client_id = me_cl->client_id;
+>
+>         dev_dbg(&dev->pdev->dev, "Connect to FW Client ID = %d\n",
+>                         cl->me_client_id);
+>         dev_dbg(&dev->pdev->dev, "FW Client - Protocol Version = %d\n",
+> -                       dev->me_clients[i].props.protocol_version);
+> +                       me_cl->props.protocol_version);
+>         dev_dbg(&dev->pdev->dev, "FW Client - Max Msg Len = %d\n",
+> -                       dev->me_clients[i].props.max_msg_length);
+> +                       me_cl->props.max_msg_length);
+>
+>         /* if we're connecting to amthif client then we will use the
+>          * existing connection
+> @@ -484,10 +484,8 @@ static int mei_ioctl_connect_client(struct file *file,
+>                 file->private_data = &dev->iamthif_cl;
+>
+>                 client = &data->out_client_properties;
+> -               client->max_msg_length =
+> -                       dev->me_clients[i].props.max_msg_length;
+> -               client->protocol_version =
+> -                       dev->me_clients[i].props.protocol_version;
+> +               client->max_msg_length = me_cl->props.max_msg_length;
+> +               client->protocol_version = me_cl->props.protocol_version;
+>                 rets = dev->iamthif_cl.status;
+>
+>                 goto end;
+> @@ -496,8 +494,8 @@ static int mei_ioctl_connect_client(struct file *file,
+>
+>         /* prepare the output buffer */
+>         client = &data->out_client_properties;
+> -       client->max_msg_length = dev->me_clients[i].props.max_msg_length;
+> -       client->protocol_version = dev->me_clients[i].props.protocol_version;
+> +       client->max_msg_length = me_cl->props.max_msg_length;
+> +       client->protocol_version = me_cl->props.protocol_version;
+>         dev_dbg(&dev->pdev->dev, "Can connect?\n");
+>
+>
+> diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
+> index 5ccc23b..964b4c6 100644
+> --- a/drivers/misc/mei/nfc.c
+> +++ b/drivers/misc/mei/nfc.c
+> @@ -480,7 +480,8 @@ int mei_nfc_host_init(struct mei_device *dev)
+>  {
+>         struct mei_nfc_dev *ndev = &nfc_dev;
+>         struct mei_cl *cl_info, *cl = NULL;
+> -       int i, ret;
+> +       struct mei_me_client *me_cl;
+> +       int ret;
+>
+>         /* already initialized */
+>         if (ndev->cl_info)
+> @@ -498,14 +499,14 @@ int mei_nfc_host_init(struct mei_device *dev)
+>         }
+>
+>         /* check for valid client id */
+> -       i = mei_me_cl_by_uuid(dev, &mei_nfc_info_guid);
+> -       if (i < 0) {
+> +       me_cl = mei_me_cl_by_uuid(dev, &mei_nfc_info_guid);
+> +       if (!me_cl) {
+>                 dev_info(&dev->pdev->dev, "nfc: failed to find the client\n");
+>                 ret = -ENOTTY;
+>                 goto err;
+>         }
+>
+> -       cl_info->me_client_id = dev->me_clients[i].client_id;
+> +       cl_info->me_client_id = me_cl->client_id;
+>
+>         ret = mei_cl_link(cl_info, MEI_HOST_CLIENT_ID_ANY);
+>         if (ret)
+> @@ -516,14 +517,14 @@ int mei_nfc_host_init(struct mei_device *dev)
+>         list_add_tail(&cl_info->device_link, &dev->device_list);
+>
+>         /* check for valid client id */
+> -       i = mei_me_cl_by_uuid(dev, &mei_nfc_guid);
+> -       if (i < 0) {
+> +       me_cl = mei_me_cl_by_uuid(dev, &mei_nfc_guid);
+> +       if (!me_cl) {
+>                 dev_info(&dev->pdev->dev, "nfc: failed to find the client\n");
+>                 ret = -ENOTTY;
+>                 goto err;
+>         }
+>
+> -       cl->me_client_id = dev->me_clients[i].client_id;
+> +       cl->me_client_id = me_cl->client_id;
+>
+>         ret = mei_cl_link(cl, MEI_HOST_CLIENT_ID_ANY);
+>         if (ret)
+> diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+> index a84a664..8b241ee 100644
+> --- a/drivers/misc/mei/wd.c
+> +++ b/drivers/misc/mei/wd.c
+> @@ -59,7 +59,7 @@ static void mei_wd_set_start_timeout(struct mei_device *dev, u16 timeout)
+>  int mei_wd_host_init(struct mei_device *dev)
+>  {
+>         struct mei_cl *cl = &dev->wd_cl;
+> -       int id;
+> +       struct mei_me_client *me_cl;
+>         int ret;
+>
+>         mei_cl_init(cl, dev);
+> @@ -69,13 +69,13 @@ int mei_wd_host_init(struct mei_device *dev)
+>
+>
+>         /* check for valid client id */
+> -       id = mei_me_cl_by_uuid(dev, &mei_wd_guid);
+> -       if (id < 0) {
+> +       me_cl = mei_me_cl_by_uuid(dev, &mei_wd_guid);
+> +       if (!me_cl) {
+>                 dev_info(&dev->pdev->dev, "wd: failed to find the client\n");
+>                 return -ENOTTY;
+>         }
+>
+> -       cl->me_client_id = dev->me_clients[id].client_id;
+> +       cl->me_client_id = me_cl->client_id;
+>
+>         ret = mei_cl_link(cl, MEI_WD_HOST_CLIENT_ID);
+>
+> --
+> 1.9.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
