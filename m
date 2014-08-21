@@ -1,126 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaHUTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 15:04:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752743AbaHUTE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 15:04:58 -0400
-Date: Thu, 21 Aug 2014 21:01:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] mempolicy: unexport get_vma_policy() and remove its
-	"task" arg
-Message-ID: <20140821190158.GE8703@redhat.com>
-References: <20140805194627.GA30693@redhat.com> <20140820192207.GA8524@redhat.com> <20140821190020.GA8703@redhat.com>
+	id S1753973AbaHUTIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 15:08:37 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:40573 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138AbaHUTIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 15:08:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140821190020.GA8703@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1408580838-29236-4-git-send-email-minchan@kernel.org>
+References: <1408580838-29236-1-git-send-email-minchan@kernel.org> <1408580838-29236-4-git-send-email-minchan@kernel.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 21 Aug 2014 15:08:12 -0400
+X-Google-Sender-Auth: MfqZ5j39iNtW7uiFlmW_LR3OA60
+Message-ID: <CALZtONAPtGRrkyjhcR75KDGp_8Rr_zy6Zov74AB4E1LZ6exPLA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/4] zram: zram memory size limitation
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        David Horner <ds2horner@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- get_vma_policy(task) is not safe if task != current, remove this
-  argument.
+On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Since zram has no control feature to limit memory usage,
+> it makes hard to manage system memrory.
+>
+> This patch adds new knob "mem_limit" via sysfs to set up the
+> a limit so that zram could fail allocation once it reaches
+> the limit.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  Documentation/ABI/testing/sysfs-block-zram |  9 +++++++
+>  Documentation/blockdev/zram.txt            | 20 ++++++++++++---
+>  drivers/block/zram/zram_drv.c              | 41 ++++++++++++++++++++++++++++++
+>  drivers/block/zram/zram_drv.h              |  5 ++++
+>  4 files changed, 71 insertions(+), 4 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+> index 70ec992514d0..025331c19045 100644
+> --- a/Documentation/ABI/testing/sysfs-block-zram
+> +++ b/Documentation/ABI/testing/sysfs-block-zram
+> @@ -119,3 +119,12 @@ Description:
+>                 efficiency can be calculated using compr_data_size and this
+>                 statistic.
+>                 Unit: bytes
+> +
+> +What:          /sys/block/zram<id>/mem_limit
+> +Date:          August 2014
+> +Contact:       Minchan Kim <minchan@kernel.org>
+> +Description:
+> +               The mem_limit file is read/write and specifies the amount
+> +               of memory to be able to consume memory to store store
+> +               compressed data.
 
-- get_vma_policy() no longer has callers outside of mempolicy.c,
-  make it static.
+might want to clarify here that the value "0", which is the default,
+disables the limit.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/mempolicy.h |    2 --
- mm/mempolicy.c            |   19 ++++++++-----------
- 2 files changed, 8 insertions(+), 13 deletions(-)
+> +               Unit: bytes
+> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+> index 0595c3f56ccf..9f239ff8c444 100644
+> --- a/Documentation/blockdev/zram.txt
+> +++ b/Documentation/blockdev/zram.txt
+> @@ -74,14 +74,26 @@ There is little point creating a zram of greater than twice the size of memory
+>  since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
+>  size of the disk when not in use so a huge zram is wasteful.
+>
+> -5) Activate:
+> +5) Set memory limit: Optional
+> +       Set memory limit by writing the value to sysfs node 'mem_limit'.
+> +       The value can be either in bytes or you can use mem suffixes.
+> +       Examples:
+> +           # limit /dev/zram0 with 50MB memory
+> +           echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
+> +
+> +           # Using mem suffixes
+> +           echo 256K > /sys/block/zram0/mem_limit
+> +           echo 512M > /sys/block/zram0/mem_limit
+> +           echo 1G > /sys/block/zram0/mem_limit
 
-diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
-index e1abe24..3d385c8 100644
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -137,8 +137,6 @@ struct mempolicy *mpol_shared_policy_lookup(struct shared_policy *sp,
- struct mempolicy *get_task_policy(struct task_struct *p);
- struct mempolicy *__get_vma_policy(struct vm_area_struct *vma,
- 		unsigned long addr);
--struct mempolicy *get_vma_policy(struct task_struct *tsk,
--		struct vm_area_struct *vma, unsigned long addr);
- bool vma_policy_mof(struct vm_area_struct *vma);
- 
- extern void numa_default_policy(void);
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 9695a9a..008fb32 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -1616,27 +1616,24 @@ struct mempolicy *__get_vma_policy(struct vm_area_struct *vma,
- }
- 
- /*
-- * get_vma_policy(@task, @vma, @addr)
-- * @task: task for fallback if vma policy == default
-+ * get_vma_policy(@vma, @addr)
-  * @vma: virtual memory area whose policy is sought
-  * @addr: address in @vma for shared policy lookup
-  *
-  * Returns effective policy for a VMA at specified address.
-- * Falls back to @task or system default policy, as necessary.
-- * Current or other task's task mempolicy and non-shared vma policies must be
-- * protected by task_lock(task) by the caller.
-+ * Falls back to current->mempolicy or system default policy, as necessary.
-  * Shared policies [those marked as MPOL_F_SHARED] require an extra reference
-  * count--added by the get_policy() vm_op, as appropriate--to protect against
-  * freeing by another task.  It is the caller's responsibility to free the
-  * extra reference for shared policies.
-  */
--struct mempolicy *get_vma_policy(struct task_struct *task,
--		struct vm_area_struct *vma, unsigned long addr)
-+static struct mempolicy *get_vma_policy(struct vm_area_struct *vma,
-+						unsigned long addr)
- {
- 	struct mempolicy *pol = __get_vma_policy(vma, addr);
- 
- 	if (!pol)
--		pol = get_task_policy(task);
-+		pol = get_task_policy(current);
- 
- 	return pol;
- }
-@@ -1864,7 +1861,7 @@ struct zonelist *huge_zonelist(struct vm_area_struct *vma, unsigned long addr,
- {
- 	struct zonelist *zl;
- 
--	*mpol = get_vma_policy(current, vma, addr);
-+	*mpol = get_vma_policy(vma, addr);
- 	*nodemask = NULL;	/* assume !MPOL_BIND */
- 
- 	if (unlikely((*mpol)->mode == MPOL_INTERLEAVE)) {
-@@ -2019,7 +2016,7 @@ alloc_pages_vma(gfp_t gfp, int order, struct vm_area_struct *vma,
- 	unsigned int cpuset_mems_cookie;
- 
- retry_cpuset:
--	pol = get_vma_policy(current, vma, addr);
-+	pol = get_vma_policy(vma, addr);
- 	cpuset_mems_cookie = read_mems_allowed_begin();
- 
- 	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
-@@ -2285,7 +2282,7 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 
- 	BUG_ON(!vma);
- 
--	pol = get_vma_policy(current, vma, addr);
-+	pol = get_vma_policy(vma, addr);
- 	if (!(pol->flags & MPOL_F_MOF))
- 		goto out;
- 
--- 
-1.5.5.1
+# To disable memory limit
+echo 0 > /sys/block/zram0/mem_limit
 
-
+> +
+> +6) Activate:
+>         mkswap /dev/zram0
+>         swapon /dev/zram0
+>
+>         mkfs.ext4 /dev/zram1
+>         mount /dev/zram1 /tmp
+>
+> -6) Stats:
+> +7) Stats:
+>         Per-device statistics are exported as various nodes under
+>         /sys/block/zram<id>/
+>                 disksize
+> @@ -96,11 +108,11 @@ size of the disk when not in use so a huge zram is wasteful.
+>                 compr_data_size
+>                 mem_used_total
+>
+> -7) Deactivate:
+> +8) Deactivate:
+>         swapoff /dev/zram0
+>         umount /dev/zram1
+>
+> -8) Reset:
+> +9) Reset:
+>         Write any positive value to 'reset' sysfs node
+>         echo 1 > /sys/block/zram0/reset
+>         echo 1 > /sys/block/zram1/reset
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 302dd37bcea3..adc91c7ecaef 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -122,6 +122,33 @@ static ssize_t max_comp_streams_show(struct device *dev,
+>         return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+>  }
+>
+> +static ssize_t mem_limit_show(struct device *dev,
+> +               struct device_attribute *attr, char *buf)
+> +{
+> +       u64 val;
+> +       struct zram *zram = dev_to_zram(dev);
+> +
+> +       down_read(&zram->init_lock);
+> +       val = zram->limit_pages;
+> +       up_read(&zram->init_lock);
+> +
+> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
+> +}
+> +
+> +static ssize_t mem_limit_store(struct device *dev,
+> +               struct device_attribute *attr, const char *buf, size_t len)
+> +{
+> +       u64 limit;
+> +       struct zram *zram = dev_to_zram(dev);
+> +
+> +       limit = memparse(buf, NULL);
+> +       down_write(&zram->init_lock);
+> +       zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
+> +       up_write(&zram->init_lock);
+> +
+> +       return len;
+> +}
+> +
+>  static ssize_t max_comp_streams_store(struct device *dev,
+>                 struct device_attribute *attr, const char *buf, size_t len)
+>  {
+> @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>                 ret = -ENOMEM;
+>                 goto out;
+>         }
+> +
+> +       if (zram->limit_pages &&
+> +               zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
+> +               zs_free(meta->mem_pool, handle);
+> +               ret = -ENOMEM;
+> +               goto out;
+> +       }
+> +
+>         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+>
+>         if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
+> @@ -617,6 +652,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>         struct zram_meta *meta;
+>
+>         down_write(&zram->init_lock);
+> +
+> +       zram->limit_pages = 0;
+> +
+>         if (!init_done(zram)) {
+>                 up_write(&zram->init_lock);
+>                 return;
+> @@ -857,6 +895,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+>  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+>  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+>  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+> +static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
+> +               mem_limit_store);
+>  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+>                 max_comp_streams_show, max_comp_streams_store);
+>  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+> @@ -885,6 +925,7 @@ static struct attribute *zram_disk_attrs[] = {
+>         &dev_attr_orig_data_size.attr,
+>         &dev_attr_compr_data_size.attr,
+>         &dev_attr_mem_used_total.attr,
+> +       &dev_attr_mem_limit.attr,
+>         &dev_attr_max_comp_streams.attr,
+>         &dev_attr_comp_algorithm.attr,
+>         NULL,
+> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> index e0f725c87cc6..b7aa9c21553f 100644
+> --- a/drivers/block/zram/zram_drv.h
+> +++ b/drivers/block/zram/zram_drv.h
+> @@ -112,6 +112,11 @@ struct zram {
+>         u64 disksize;   /* bytes */
+>         int max_comp_streams;
+>         struct zram_stats stats;
+> +       /*
+> +        * the number of pages zram can consume for storing compressed data
+> +        */
+> +       unsigned long limit_pages;
+> +
+>         char compressor[10];
+>  };
+>  #endif
+> --
+> 2.0.0
+>
