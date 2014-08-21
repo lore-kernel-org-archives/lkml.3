@@ -1,58 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaHUJSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 05:18:52 -0400
-Received: from 80-229-23-162.plus.com ([80.229.23.162]:48415 "EHLO
-	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaHUJSv (ORCPT
+	id S1754080AbaHUJWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 05:22:09 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:65134 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752988AbaHUJWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 05:18:51 -0400
-Date: Thu, 21 Aug 2014 10:18:19 +0100
-From: Mark Einon <mark.einon@gmail.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] staging: et131x: Remove unnecessary i2c_wack variable
-Message-ID: <20140821091819.GA2230@msilap.einon.net>
-References: <1408573078-9320-1-git-send-email-mark.einon@gmail.com>
- <1408573078-9320-6-git-send-email-mark.einon@gmail.com>
- <CAOMZO5Du34=jpr5B_fHGZ+D_jNR0VSDy2BiO6jj8QByh7V40RQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5Du34=jpr5B_fHGZ+D_jNR0VSDy2BiO6jj8QByh7V40RQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 21 Aug 2014 05:22:07 -0400
+From: Zhu Yanjun <zyjzyj2000@gmail.com>
+X-Google-Original-From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
+To: linux-kernel@vger.kernel.org, davem@davemloft.net, netdev@vger.kernel.org,
+        zyjzyj2000@gmail.com
+Cc: Zhu Yanjun <Yanjun.Zhu@windriver.com>
+Subject: [PATCH 0/1] net:fec: buffer descriptor member variable order in IMX6 
+Date: Thu, 21 Aug 2014 17:21:54 +0800
+Message-Id: <1408612915-8657-1-git-send-email-Yanjun.Zhu@windriver.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 07:22:54PM -0300, Fabio Estevam wrote:
-> On Wed, Aug 20, 2014 at 7:17 PM, Mark Einon <mark.einon@gmail.com> wrote:
-> 
-> >                         do {
-> >                                 pci_read_config_dword(pdev,
-> > -                                       LBCIF_DATA_REGISTER, &val);
-> > +                                                     LBCIF_DATA_REGISTER,
-> > +                                                     &val);
-> 
-> This seems to be an unrelated change.
+>From Reference Manual, freescale IMX6 is little endian 
+mode. Therefore the member variables in buffer 
+descriptor should be length, status and so on.
 
-Hi Fabio, thanks for the review.
+Zhu Yanjun (1):
+  net:fec: buffer descriptor member variable order in IMX6
 
-It's a space alignment of parameters to go with the previous change, to
-keep wrapping consistent in the file:
+ drivers/net/ethernet/freescale/fec.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
--       while (i2c_wack) {
-+       while (1) {
-                if (pci_write_config_byte(pdev, LBCIF_CONTROL_REGISTER,
--                       LBCIF_CONTROL_LBCIF_ENABLE))
-+                                         LBCIF_CONTROL_LBCIF_ENABLE))
+-- 
+1.9.1
 
-So what are you saying - are you just commenting, document it, put it
-in a seperate patch?
-
-Cheers,
-
-Mark
