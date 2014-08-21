@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaHUHZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 03:25:00 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006AbaHUHZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 03:25:00 -0400
-Message-ID: <53F59EC7.6060107@nod.at>
-Date: Thu, 21 Aug 2014 09:24:55 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753851AbaHUH05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 03:26:57 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:60615 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672AbaHUH0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 03:26:55 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "libvir-list@redhat.com" <libvir-list@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>
-Subject: Re: [GIT PULL] namespace updates for v3.17-rc1
-References: <87fvhav3ic.fsf@x220.int.ebiederm.org>	<CAFLxGvwi-iJRyfwv8v9fcRkiSu2d-az8W55xMPbp_d8wQKmwjg@mail.gmail.com> <87vbpm4f4y.fsf@x220.int.ebiederm.org> <53F591E7.3010509@nod.at>
-In-Reply-To: <53F591E7.3010509@nod.at>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1408585989-1084-1-git-send-email-chanho.min@lge.com>
+References: <1408585989-1084-1-git-send-email-chanho.min@lge.com>
+Date: Thu, 21 Aug 2014 09:26:54 +0200
+Message-ID: <CAPDyKFoeONs8OXZ3=2ZT54Nfdq_dLqgatMcq2DyZ=rs1r0x+dg@mail.gmail.com>
+Subject: Re: [PATCH] mmc:sdhci: handle busy-end interrupt during command
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Chanho Min <chanho.min@lge.com>
+Cc: linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hankyung Yu <hankyung.yu@lge.com>,
+        Gwendal Grignou <gwendal@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.08.2014 08:29, schrieb Richard Weinberger:
-> Am 21.08.2014 06:53, schrieb Eric W. Biederman:
->> The bugs fixed are security issues, so if we have to break a small
->> number of userspace applications we will.  Anything that we can
->> reasonably do to avoid regressions will be done.
->>
->> Could you please look at my user-namespace.git#for-next branch I have a
->> fix for at least one regresion causing issue in there.  I think it may
->> fix your issues but I am not fully certain more comments below.
-> 
-> I'll run this on my LXC testbed today.
+On 21 August 2014 03:53, Chanho Min <chanho.min@lge.com> wrote:
+> It is fully legal for a controller to start handling busy-end interrupt
+> before it has signaled that the command has completed. So make sure
+> we do things in the proper order, Or it results that command interrupt
+> is ignored so it can cause unexpected operations. This is founded at some
+> toshiba emmc with the bellow warning.
+>
+> "mmc0: Got command interrupt 0x00000001 even though
+> no command operation was in progress."
+>
+> This issue has been also reported by Youssef TRIKI:
+> It is not specific to Toshiba devices, and happens with eMMC devices
+> as well as SD card which support Auto-CMD12 rather than CMD23.
+>
+> Also, similar patch is submitted by:
+> Gwendal Grignou <gwendal@chromium.org>
+>
+> Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
+> Tested-by: Youssef TRIKI <youssef.triki@st.com>
 
-Looks good. With these patches applied libvirt works again. :)
+Hi Chanho,
 
-Thanks,
-//richard
+This patch has been around for quite some time, sorry for lack of
+response. Appreciate if we could get this tested on a few more
+variants of sdhci, I am not able to test myself.
+
+I plan to queue this for 3.18, unless someone objects soon.
+
+Kind regards
+Uffe
