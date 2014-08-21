@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaHUMhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:37:23 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:49818 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817AbaHUMhW (ORCPT
+	id S1754675AbaHUMmU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:42:20 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:33553 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbaHUMmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:37:22 -0400
+	Thu, 21 Aug 2014 08:42:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <53F5E652.6050408@arm.com>
-References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
-	<1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
-	<1408618794-28497-4-git-send-email-sudeep.holla@arm.com>
-	<CANq1E4Q4GRYUxrysUyTD5bO3di9M17i0H5V0fXb5+HrTrYY5aQ@mail.gmail.com>
-	<53F5E652.6050408@arm.com>
-Date: Thu, 21 Aug 2014 14:37:21 +0200
-Message-ID: <CANq1E4S-PJvJeORnf-GZxHQZxPLOZ-R+hv9mu0w2g2O6zdfuVw@mail.gmail.com>
-Subject: Re: [PATCH v3 03/11] drivers: base: add new class "cpu" to group cpu devices
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
+In-Reply-To: <1408446001-4998-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1408446001-4998-1-git-send-email-mathias.nyman@linux.intel.com>
+Date: Thu, 21 Aug 2014 07:42:18 -0500
+Message-ID: <CACRpkdbkwfeyRmHrLojdqdK-ygvSn=OkBrdJ+R-oye-DO3kxpQ@mail.gmail.com>
+Subject: Re: [PATCHv2] gpio-lynxpoint: enable input sensing in resume
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Aug 19, 2014 at 6:00 AM, Mathias Nyman
+<mathias.nyman@linux.intel.com> wrote:
 
-On Thu, Aug 21, 2014 at 2:30 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
-> On 21/08/14 12:20, David Herrmann wrote:
->> Why do we need a cpu-class if the same set of information is already
->> available on the cpu-bus? Furthermore, classes are deprecated anyway.
->> Everything you can do with a class can be solved with a bus. And we
->> already have a bus for cpus.
->>
+> It appears that input sensing bit might be reset during
+> suspend/resume. Set input sensing again for all requested gpios
+> in resume
 >
-> This was suggested[1] by GregKH. The main reason it was added is to
-> reuse the device attributes rather than creating the raw kobjects.
->
-> It helps to move few other cpu related subsystems using raw kobjects to
-> the device attribute groups.
+> Tested-by: Jerome Blin <jerome.blin@intel.com>
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-So the only reason to add a class is to get attributes registered
-properly with the device? Just set dev->groups before calling
-device_add()? This works just fine on buses, too.
+This version applied with Mika's ACK.
 
-Thanks
-David
+Yours,
+Linus Walleij
