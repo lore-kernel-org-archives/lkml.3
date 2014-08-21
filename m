@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaHUILI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 04:11:08 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:43378 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaHUILG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 04:11:06 -0400
-Date: Thu, 21 Aug 2014 09:11:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] mfd: wm8994: Allow modular build
-Message-ID: <20140821081100.GP4266@lee--X1>
-References: <1406817690-5922-1-git-send-email-broonie@kernel.org>
+	id S1754181AbaHUILd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 04:11:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34443 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752988AbaHUILH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 04:11:07 -0400
+Date: Thu, 21 Aug 2014 10:11:40 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
+ runnable
+Message-ID: <20140821081140.GA29116@redhat.com>
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
+ <1408608310-13579-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1406817690-5922-1-git-send-email-broonie@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408608310-13579-2-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 Jul 2014, Mark Brown wrote:
-
-> From: Mark Brown <broonie@linaro.org>
+On Thu, Aug 21, 2014 at 04:05:10PM +0800, Jason Wang wrote:
+> Rx busy loop does not scale well in the case when several parallel
+> sessions is active. This is because we keep looping even if there's
+> another process is runnable. For example, if that process is about to
+> send packet, keep busy polling in current process will brings extra
+> delay and damage the performance.
 > 
-> The interfaces that used to be built in only (interrupts IIRC) no longer
-> are so allow the driver to be built as a module fixing arm64 allmodconfig
-> builds.
+> This patch solves this issue by exiting the busy loop when there's
+> another process is runnable in current cpu. Simple test that pin two
+> netperf sessions in the same cpu in receiving side shows obvious
+> improvement:
 > 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> Before:
+> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+> 16384  87380  1        1       10.00    15513.74
+> 16384  87380
+> 16384  87380  1        1       10.00    15092.78
+> 16384  87380
+> 
+> After:
+> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+> 16384  87380  1        1       10.00    23334.53
+> 16384  87380
+> 16384  87380  1        1       10.00    23327.58
+> 16384  87380
+> 
+> Benchmark was done through two 8 cores Xeon machine back to back connected
+> with mlx4 through netperf TCP_RR test (busy_read were set to 50):
+> 
+> sessions/bytes/before/after/+improvement%/busy_read=0/
+> 1/1/30062.10/30034.72/+0%/20228.96/
+> 16/1/214719.83/307669.01/+43%/268997.71/
+> 32/1/231252.81/345845.16/+49%/336157.442/
+> 64/512/212467.39/373464.93/+75%/397449.375/
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 > ---
->  drivers/mfd/Kconfig | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  include/net/busy_poll.h | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+> index 1d67fb6..8a33fb2 100644
+> --- a/include/net/busy_poll.h
+> +++ b/include/net/busy_poll.h
+> @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+>  		cpu_relax();
+>  
+>  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+> -		 !need_resched() && !busy_loop_timeout(end_time));
+> +		 !need_resched() && !busy_loop_timeout(end_time) &&
+> +		 nr_running_this_cpu() < 2);
 
-Applied, thanks.
+<= 1 would be a bit clearer? We want at most one process here.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+>  
+>  	rc = !skb_queue_empty(&sk->sk_receive_queue);
+>  out:
+> -- 
+> 1.8.3.1
