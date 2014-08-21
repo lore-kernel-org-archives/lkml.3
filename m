@@ -1,87 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346AbaHURI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:08:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39235 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284AbaHURI0 (ORCPT
+	id S1753389AbaHURIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:08:50 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:48954 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaHURIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:08:26 -0400
-Date: Thu, 21 Aug 2014 12:08:19 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Grazvydas Ignotas <notasas@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] usb: phy: twl4030-usb: Fix lost interrupts after ID pin
- goes down
-Message-ID: <20140821170819.GH11146@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140821164803.GB10066@atomide.com>
+	Thu, 21 Aug 2014 13:08:48 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="54u2kuW9sGWg/X+X"
-Content-Disposition: inline
-In-Reply-To: <20140821164803.GB10066@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org>
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>
+	<1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org>
+Date: Thu, 21 Aug 2014 12:08:47 -0500
+X-Google-Sender-Auth: lba_Rmrgd1wMzq_NU99OQHtacIE
+Message-ID: <CAGXu5jJCyqpXkdvNDCu+eMr0qnqwbqUUo4u+2p_7DvFMzfKoEw@mail.gmail.com>
+Subject: Re: [PATCH v6 2/6] arm64: ptrace: allow tracer to skip a system call
+From: Kees Cook <keescook@chromium.org>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
+        arndb@arndb.de,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---54u2kuW9sGWg/X+X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
+<takahiro.akashi@linaro.org> wrote:
+> If tracer specifies -1 as a syscall number, this traced system call should
+> be skipped with a value in x0 used as a return value.
+> This patch enables this semantics, but there is a restriction here:
+>
+>    when syscall(-1) is issued by user, tracer cannot skip this system call
+>    and modify a return value at syscall entry.
+>
+> In order to ease this flavor, we need to treat whatever value in x0 as
+> a return value, but this might result in a bogus value being returned,
+> especially when tracer doesn't do anything at this syscall.
+> So we always return ENOSYS instead, while we have another chance to change
+> a return value at syscall exit.
+>
+> Please also note:
+> * syscall entry tracing and syscall exit tracing (ftrace tracepoint and
+>   audit) are always executed, if enabled, even when skipping a system call
+>   (that is, -1).
+>   In this way, we can avoid a potential bug where audit_syscall_entry()
+>   might be called without audit_syscall_exit() at the previous system call
+>   being called, that would cause OOPs in audit_syscall_entry().
+>
+> * syscallno may also be set to -1 if a fatal signal (SIGKILL) is detected
+>   in tracehook_report_syscall_entry(), but since a value set to x0 (ENOSYS)
+>   is not used in this case, we may neglect the case.
+>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/include/asm/ptrace.h |    8 ++++++++
+>  arch/arm64/kernel/entry.S       |    4 ++++
+>  arch/arm64/kernel/ptrace.c      |   20 ++++++++++++++++++++
+>  3 files changed, 32 insertions(+)
+>
+> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+> index 501000f..a58cf62 100644
+> --- a/arch/arm64/include/asm/ptrace.h
+> +++ b/arch/arm64/include/asm/ptrace.h
+> @@ -65,6 +65,14 @@
+>  #define COMPAT_PT_TEXT_ADDR            0x10000
+>  #define COMPAT_PT_DATA_ADDR            0x10004
+>  #define COMPAT_PT_TEXT_END_ADDR                0x10008
+> +
+> +/*
+> + * used to skip a system call when tracer changes its number to -1
+> + * with ptrace(PTRACE_SET_SYSCALL)
+> + */
+> +#define RET_SKIP_SYSCALL       -1
+> +#define IS_SKIP_SYSCALL(no)    ((int)(no & 0xffffffff) == -1)
+> +
+>  #ifndef __ASSEMBLY__
+>
+>  /* sizeof(struct user) for AArch32 */
+> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
+> index f0b5e51..fdd6eae 100644
+> --- a/arch/arm64/kernel/entry.S
+> +++ b/arch/arm64/kernel/entry.S
+> @@ -25,6 +25,7 @@
+>  #include <asm/asm-offsets.h>
+>  #include <asm/errno.h>
+>  #include <asm/esr.h>
+> +#include <asm/ptrace.h>
+>  #include <asm/thread_info.h>
+>  #include <asm/unistd.h>
+>
+> @@ -671,6 +672,8 @@ ENDPROC(el0_svc)
+>  __sys_trace:
+>         mov     x0, sp
+>         bl      syscall_trace_enter
+> +       cmp     w0, #RET_SKIP_SYSCALL           // skip syscall?
+> +       b.eq    __sys_trace_return_skipped
+>         adr     lr, __sys_trace_return          // return address
+>         uxtw    scno, w0                        // syscall number (possibly new)
+>         mov     x1, sp                          // pointer to regs
+> @@ -685,6 +688,7 @@ __sys_trace:
+>
+>  __sys_trace_return:
+>         str     x0, [sp]                        // save returned x0
+> +__sys_trace_return_skipped:                    // x0 already in regs[0]
+>         mov     x0, sp
+>         bl      syscall_trace_exit
+>         b       ret_to_user
+> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+> index 8876049..c54dbcc 100644
+> --- a/arch/arm64/kernel/ptrace.c
+> +++ b/arch/arm64/kernel/ptrace.c
+> @@ -1121,9 +1121,29 @@ static void tracehook_report_syscall(struct pt_regs *regs,
+>
+>  asmlinkage int syscall_trace_enter(struct pt_regs *regs)
+>  {
+> +       unsigned int saved_syscallno = regs->syscallno;
+> +
+>         if (test_thread_flag(TIF_SYSCALL_TRACE))
+>                 tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
+>
+> +       if (IS_SKIP_SYSCALL(regs->syscallno)) {
+> +               /*
+> +                * RESTRICTION: we can't modify a return value of user
+> +                * issued syscall(-1) here. In order to ease this flavor,
+> +                * we need to treat whatever value in x0 as a return value,
+> +                * but this might result in a bogus value being returned.
+> +                */
+> +               /*
+> +                * NOTE: syscallno may also be set to -1 if fatal signal is
+> +                * detected in tracehook_report_syscall_entry(), but since
+> +                * a value set to x0 here is not used in this case, we may
+> +                * neglect the case.
+> +                */
+> +               if (!test_thread_flag(TIF_SYSCALL_TRACE) ||
+> +                               (IS_SKIP_SYSCALL(saved_syscallno)))
+> +                       regs->regs[0] = -ENOSYS;
+> +       }
+> +
 
-On Thu, Aug 21, 2014 at 09:48:04AM -0700, Tony Lindgren wrote:
-> Commit 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
-> added twl4030_id_workaround_work() to deal with lost interrupts
-> after ID pin goes down. However, this currently only works for the
-> insertion. The PHY interrupts are not working after disconnecting
-> an USB-A device from the board, and the deeper idle states for
-> omap are blocked as the USB controller stays busy.
->=20
-> The issue can be solved by calling delayed work from twl4030_usb_irq()
-> when ID pin is down and the PHY is not asleep like we already do
-> in twl4030_id_workaround_work().
->=20
-> But as both twl4030_usb_irq() and twl4030_id_workaround_work()
-> already do pretty much the same thing, let's call twl4030_usb_irq()
-> from twl4030_id_workaround_work() instead of adding some more
-> duplicate code.
->=20
-> Fixes: 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
-> Cc: stable@vger.kernel.org # v3.12+
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
+I don't have a runtime environment yet for arm64, so I can't test this
+directly myself, so I'm just trying to eyeball this. :)
 
-looks ok to me:
+Once the seccomp logic is added here, I don't think using -2 as a
+special value will work. Doesn't this mean the Oops is possible by the
+user issuing a "-2" syscall? As in, if TIF_SYSCALL_WORK is set, and
+the user passed -2 as the syscall, audit will be called only on entry,
+and then skipped on exit?
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+-Kees
 
---=20
-balbi
+>         if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+>                 trace_sys_enter(regs, regs->syscallno);
+>
+> --
+> 1.7.9.5
+>
 
---54u2kuW9sGWg/X+X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJT9ieDAAoJEIaOsuA1yqREolIP/jwEmWIVb5Euzt4yO/bUGS3R
-ax8zjj3I34i/HsgAojAnRABvG0GshmwP1nuIrgOSkVu7XVqOUJ/gN78URhZ3Dgl9
-o8aPqRbz2GCPBdunHzqNHb1PuAP1LuICDOwnR45YrkpYqI5FlL/062sywZKDVN7c
-xvWkfgEosg0mZQLG4+jxsQCOuGH21xvdHffp543xDMoUuqiMA1IcruTheImY49I8
-9TnF0zQzr5nZPeQVdySKCbEQcune0ngrS4bzwwCFJD5XPa6w/5hs95dtixzF0T7E
-XHjo2atsuXW41RtVwtbukIXZr6rRVR/bja4cSaygFeDNbSAP0JUhTVXzLBcP70TE
-hVfKJV+zuWvUspYavAr0ypIixHSg69kT2WYtDTpCelU2EpHptUyHofd99HL7Bl7l
-Qp7I2C1DqPcd+5cV6hzUQSg11Tn0Camw5vyu067Qcu5SvpJmiKgFEVUKwm/QNCwB
-OX6b3lPy5GZa+XTnJBGYy43+GJITjfx4Uh9IZrQ0UPZU56R6kOIX5KG92wlFNqfO
-vi/sq2ptjfRvzWTHOsSYdy2W0DQcQWylg5TOOA+aDKVV3dzhGDg55WoXimlnkX1x
-+4WoMPkkhUM3w2GB2eAWVVUdcq56xdX9PwIfMp3/ofo6Wmo9XW7eeoyaJwT7qZdE
-p/UXtTAJdvuf/FASssfJ
-=3L/c
------END PGP SIGNATURE-----
-
---54u2kuW9sGWg/X+X--
+-- 
+Kees Cook
+Chrome OS Security
