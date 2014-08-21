@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaHUUGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:06:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713AbaHUUGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:06:00 -0400
-Date: Thu, 21 Aug 2014 16:05:55 -0400
-From: Aristeu Rozanski <arozansk@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-api@vger.kernel.org,
-        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com,
-        serge@hallyn.com
-Subject: Re: [PATCH V4 0/8] namespaces: log namespaces per task
-Message-ID: <20140821200555.GK5620@redhat.com>
-References: <cover.1408581429.git.rgb@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1408581429.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754913AbaHUUGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:06:48 -0400
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:45687 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961AbaHUUEr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 16:04:47 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
+        David Daney <david.daney@cavium.com>,
+        John Crispin <blogic@openwrt.org>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 1/7] MIPS: Create common infrastructure for building built-in device-trees
+Date: Thu, 21 Aug 2014 13:04:20 -0700
+Message-Id: <1408651466-8334-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
-On Wed, Aug 20, 2014 at 09:09:33PM -0400, Richard Guy Briggs wrote:
-> Is there a way to link serial numbers of namespaces involved in migration of a
-> container to another kernel?  It sounds like what is needed is a part of a
-> mangement application that is able to pull the audit records from constituent
-> hosts to build an audit trail of a container.
+In preparation for moving the device-trees to a common location,
+introduce the config option BUILTIN_DTB, which can be selected by
+platforms that use a device-tree built into the kernel image, and
+create a Makefile to build the device-trees in arch/mips/boot/dts/.
 
-since you're introducing a brand new serial number to make it unique
-across different procfs mounts, why not instead of a simple counter,
-use the hash output of say, $hostname-$creation_time-$random? Or perhaps
-get a short hash of the hostname (generated once whenever hostname is
-set) and append the serial number you're implementing? It'd be way less human
-readable than your current proposal but it'd be unique "globally" (as long you
-don't have machines with the same hostname migrating containers between them),
-allowing the migrated namespaces to retain their unique identification across
-audit logs. It'd of course be way more costly than just using an atomic counter,
-but could be useful to anything that needs to refer to a namespace and could be
-migrated to another machine.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ arch/mips/Kconfig           | 3 +++
+ arch/mips/Makefile          | 6 ++++++
+ arch/mips/boot/dts/Makefile | 3 +++
+ 3 files changed, 12 insertions(+)
+ create mode 100644 arch/mips/boot/dts/Makefile
 
-What you think? Sounds too crazy? :)
-
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index df51e78..19b8aac 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2481,6 +2481,9 @@ config USE_OF
+ 	select OF_EARLY_FLATTREE
+ 	select IRQ_DOMAIN
+ 
++config BUILTIN_DTB
++	bool
++
+ endmenu
+ 
+ config LOCKDEP_SUPPORT
+diff --git a/arch/mips/Makefile b/arch/mips/Makefile
+index 9336509..72cdd6a 100644
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -324,6 +324,12 @@ endif
+ 
+ CLEAN_FILES += vmlinux.32 vmlinux.64
+ 
++# device-trees
++core-$(CONFIG_BUILTIN_DTB) += arch/mips/boot/dts/
++
++%.dtb %.dtb.S %.dtb.o: | scripts
++	$(Q)$(MAKE) $(build)=arch/mips/boot/dts arch/mips/boot/dts/$@
++
+ archprepare:
+ ifdef CONFIG_MIPS32_N32
+ 	@echo '  Checking missing-syscalls for N32'
+diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
+new file mode 100644
+index 0000000..6bb41df
+--- /dev/null
++++ b/arch/mips/boot/dts/Makefile
+@@ -0,0 +1,3 @@
++obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
++
++clean-files	+= *.dtb.S
 -- 
-Aristeu
+2.1.0.rc2.206.gedb03e5
 
