@@ -1,116 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523AbaHUKT3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 06:19:29 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:9047 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293AbaHUKS3 (ORCPT
+	id S1754293AbaHUK0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 06:26:16 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:43627 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257AbaHUK0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 06:18:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 21 Aug 2014 03:08:47 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <edubezval@gmail.com>, <rui.zhang@intel.com>, <swarren@wwwdotorg.org>,
-        <thierry.reding@gmail.com>
-CC: <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <juha-matti.tilli@iki.fi>, Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH v5 2/4] ARM: tegra: Add soctherm and thermal zones to Tegra124 device tree
-Date: Thu, 21 Aug 2014 13:17:20 +0300
-Message-ID: <1408616242-21009-3-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
-References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 21 Aug 2014 06:26:14 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 8/8 v2] staging: et131x: Implement NAPI support
+Date: Thu, 21 Aug 2014 11:26:09 +0100
+Message-Id: <1408616769-5717-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1408572883-9235-1-git-send-email-mark.einon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the soctherm thermal sensing and management unit to the
-Tegra124 device tree along with the four thermal zones corresponding
-to the four thermal sensors provided by soctherm.
+This implements NAPI support for et131x by:
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
+-adding a napi_struct to the private adapter struct
+-changing netfif_rx_skb() call to netif_receive_skb()
+-changing et131x_handle_recv_interrupt() to et131x_handle_recv_pkts()
+ and taking a budget allocation.
+-changing et131x_handle_send_interrupt() to et131x_handle_send_pkts()
+-replacing bottom half workqueue with poll function which handles
+ send & receive of skbs.
+-adding various other necessary standard napi calls.
+
+Also remove this item from the README TODO list.
+
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
 ---
-v5: reordered nodes
 
- arch/arm/boot/dts/tegra124.dtsi | 47 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
+Updated after Stephen Hemminger commented that using a negative variable
+isn't such a good idea (bool not_done -> bool done).
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index 3cb1548..a7608a4 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -3,6 +3,7 @@
- #include <dt-bindings/pinctrl/pinctrl-tegra.h>
- #include <dt-bindings/pinctrl/pinctrl-tegra-xusb.h>
- #include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/thermal/tegra124-soctherm.h>
+ drivers/staging/et131x/README   |   1 -
+ drivers/staging/et131x/et131x.c | 112 ++++++++++++++++++----------------------
+ 2 files changed, 50 insertions(+), 63 deletions(-)
+
+diff --git a/drivers/staging/et131x/README b/drivers/staging/et131x/README
+index 3befc45..05555a3 100644
+--- a/drivers/staging/et131x/README
++++ b/drivers/staging/et131x/README
+@@ -10,7 +10,6 @@ driver as they did not build properly at the time.
+ TODO:
+ 	- Look at reducing the number of spinlocks
+ 	- Simplify code in nic_rx_pkts(), when determining multicast_pkts_rcvd
+-	- Implement NAPI support
+ 	- In et131x_tx(), don't return NETDEV_TX_BUSY, just drop the packet with kfree_skb().
+ 	- Reduce the number of split lines by careful consideration of variable names etc.
  
- #include "skeleton.dtsi"
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index bf9ac15..18c355d 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -470,7 +470,7 @@ struct et131x_adapter {
+ 	struct pci_dev *pdev;
+ 	struct mii_bus *mii_bus;
+ 	struct phy_device *phydev;
+-	struct work_struct task;
++	struct napi_struct napi;
  
-@@ -610,6 +611,18 @@
- 		status = "disabled";
- 	};
+ 	/* Flags that indicate current state of the adapter */
+ 	u32 flags;
+@@ -2538,26 +2538,30 @@ static struct rfd *nic_rx_pkts(struct et131x_adapter *adapter)
  
-+	soctherm: thermal-sensor@0,700e2000 {
-+		compatible = "nvidia,tegra124-soctherm";
-+		reg = <0x0 0x700e2000 0x0 0x1000>;
-+		interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_TSENSOR>,
-+			<&tegra_car TEGRA124_CLK_SOC_THERM>;
-+		clock-names = "tsensor", "soctherm";
-+		resets = <&tegra_car 78>;
-+		reset-names = "soctherm";
-+		#thermal-sensor-cells = <1>;
-+	};
-+
- 	ahub@0,70300000 {
- 		compatible = "nvidia,tegra124-ahub";
- 		reg = <0x0 0x70300000 0x0 0x200>,
-@@ -851,6 +864,40 @@
- 		};
- 	};
+ 	skb->protocol = eth_type_trans(skb, adapter->netdev);
+ 	skb->ip_summed = CHECKSUM_NONE;
+-	netif_rx_ni(skb);
++	netif_receive_skb(skb);
  
-+	thermal-zones {
-+		cpu {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
+ out:
+ 	nic_return_rfd(adapter, rfd);
+ 	return rfd;
+ }
+ 
+-/* et131x_handle_recv_interrupt - Interrupt handler for receive processing
++/* et131x_handle_recv_pkts - Interrupt handler for receive processing
+  *
+  * Assumption, Rcv spinlock has been acquired.
+  */
+-static void et131x_handle_recv_interrupt(struct et131x_adapter *adapter)
++static int et131x_handle_recv_pkts(struct et131x_adapter *adapter, int budget)
+ {
+ 	struct rfd *rfd = NULL;
+-	u32 count = 0;
++	int count = 0;
++	int limit = budget;
+ 	bool done = true;
+ 	struct rx_ring *rx_ring = &adapter->rx_ring;
+ 
++	if (budget > MAX_PACKETS_HANDLED)
++		limit = MAX_PACKETS_HANDLED;
 +
-+			thermal-sensors =
-+				<&soctherm TEGRA124_SOCTHERM_SENSOR_CPU>;
-+		};
+ 	/* Process up to available RFD's */
+-	while (count < MAX_PACKETS_HANDLED) {
++	while (count < limit) {
+ 		if (list_empty(&rx_ring->recv_list)) {
+ 			WARN_ON(rx_ring->num_ready_recv != 0);
+ 			done = false;
+@@ -2589,13 +2593,15 @@ static void et131x_handle_recv_interrupt(struct et131x_adapter *adapter)
+ 		count++;
+ 	}
+ 
+-	if (count == MAX_PACKETS_HANDLED || !done) {
++	if (count == limit || !done) {
+ 		rx_ring->unfinished_receives = true;
+ 		writel(PARM_TX_TIME_INT_DEF * NANO_IN_A_MICRO,
+ 		       &adapter->regs->global.watchdog_timer);
+ 	} else
+ 		/* Watchdog timer will disable itself if appropriate. */
+ 		rx_ring->unfinished_receives = false;
 +
-+		mem {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
++	return count;
+ }
+ 
+ /* et131x_tx_dma_memory_alloc
+@@ -3081,14 +3087,14 @@ static void et131x_free_busy_send_packets(struct et131x_adapter *adapter)
+ 	tx_ring->used = 0;
+ }
+ 
+-/* et131x_handle_send_interrupt - Interrupt handler for sending processing
++/* et131x_handle_send_pkts - Interrupt handler for sending processing
+  *
+  * Re-claim the send resources, complete sends and get more to send from
+  * the send wait queue.
+  *
+  * Assumption - Send spinlock has been acquired
+  */
+-static void et131x_handle_send_interrupt(struct et131x_adapter *adapter)
++static void et131x_handle_send_pkts(struct et131x_adapter *adapter)
+ {
+ 	unsigned long flags;
+ 	u32 serviced;
+@@ -3708,9 +3714,9 @@ static void et131x_pci_remove(struct pci_dev *pdev)
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 
+ 	unregister_netdev(netdev);
++	netif_napi_del(&adapter->napi);
+ 	phy_disconnect(adapter->phydev);
+ 	mdiobus_unregister(adapter->mii_bus);
+-	cancel_work_sync(&adapter->task);
+ 	kfree(adapter->mii_bus->irq);
+ 	mdiobus_free(adapter->mii_bus);
+ 
+@@ -3790,6 +3796,7 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 	bool handled = true;
+ 	struct net_device *netdev = (struct net_device *)dev_id;
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
++	struct address_map __iomem *iomem = adapter->regs;
+ 	struct rx_ring *rx_ring = &adapter->rx_ring;
+ 	struct tx_ring *tx_ring = &adapter->tx_ring;
+ 	u32 status;
+@@ -3826,7 +3833,6 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 	}
+ 
+ 	/* This is our interrupt, so process accordingly */
+-
+ 	if (status & ET_INTR_WATCHDOG) {
+ 		struct tcb *tcb = tx_ring->send_head;
+ 
+@@ -3842,54 +3848,8 @@ static irqreturn_t et131x_isr(int irq, void *dev_id)
+ 		status &= ~ET_INTR_WATCHDOG;
+ 	}
+ 
+-	if (!status) {
+-		/* This interrupt has in some way been "handled" by
+-		 * the ISR. Either it was a spurious Rx interrupt, or
+-		 * it was a Tx interrupt that has been filtered by
+-		 * the ISR.
+-		 */
+-		et131x_enable_interrupts(adapter);
+-		goto out;
+-	}
+-
+-	/* We need to save the interrupt status value for use in our
+-	 * DPC. We will clear the software copy of that in that
+-	 * routine.
+-	 */
+-	adapter->stats.interrupt_status = status;
+-
+-	/* Schedule the ISR handler as a bottom-half task in the
+-	 * kernel's tq_immediate queue, and mark the queue for
+-	 * execution
+-	 */
+-	schedule_work(&adapter->task);
+-out:
+-	return IRQ_RETVAL(handled);
+-}
+-
+-/* et131x_isr_handler - The ISR handler
+- *
+- * scheduled to run in a deferred context by the ISR. This is where the ISR's
+- * work actually gets done.
+- */
+-static void et131x_isr_handler(struct work_struct *work)
+-{
+-	struct et131x_adapter *adapter =
+-		container_of(work, struct et131x_adapter, task);
+-	u32 status = adapter->stats.interrupt_status;
+-	struct address_map __iomem *iomem = adapter->regs;
+-
+-	/* These first two are by far the most common.  Once handled, we clear
+-	 * their two bits in the status word.  If the word is now zero, we
+-	 * exit.
+-	 */
+-	/* Handle all the completed Transmit interrupts */
+-	if (status & ET_INTR_TXDMA_ISR)
+-		et131x_handle_send_interrupt(adapter);
+-
+-	/* Handle all the completed Receives interrupts */
+-	if (status & ET_INTR_RXDMA_XFR_DONE)
+-		et131x_handle_recv_interrupt(adapter);
++	if (status & (ET_INTR_RXDMA_XFR_DONE | ET_INTR_TXDMA_ISR))
++		napi_schedule(&adapter->napi);
+ 
+ 	status &= ~(ET_INTR_TXDMA_ISR | ET_INTR_RXDMA_XFR_DONE);
+ 
+@@ -4041,8 +4001,34 @@ static void et131x_isr_handler(struct work_struct *work)
+ 		 * addressed module is in a power-down state and can't respond.
+ 		 */
+ 	}
 +
-+			thermal-sensors =
-+				<&soctherm TEGRA124_SOCTHERM_SENSOR_MEM>;
-+		};
++	if (!status) {
++		/* This interrupt has in some way been "handled" by
++		 * the ISR. Either it was a spurious Rx interrupt, or
++		 * it was a Tx interrupt that has been filtered by
++		 * the ISR.
++		 */
++		et131x_enable_interrupts(adapter);
++	}
 +
-+		gpu {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
+ out:
+-	et131x_enable_interrupts(adapter);
++	return IRQ_RETVAL(handled);
++}
 +
-+			thermal-sensors =
-+				<&soctherm TEGRA124_SOCTHERM_SENSOR_GPU>;
-+		};
++static int et131x_poll(struct napi_struct *napi, int budget)
++{
++	struct et131x_adapter *adapter =
++		container_of(napi, struct et131x_adapter, napi);
++	int work_done = et131x_handle_recv_pkts(adapter, budget);
 +
-+		pllx {
-+			polling-delay-passive = <1000>;
-+			polling-delay = <1000>;
++	et131x_handle_send_pkts(adapter);
 +
-+			thermal-sensors =
-+				<&soctherm TEGRA124_SOCTHERM_SENSOR_PLLX>;
-+		};
-+	};
++	if (work_done < budget) {
++		napi_complete(&adapter->napi);
++		et131x_enable_interrupts(adapter);
++	}
 +
- 	timer {
- 		compatible = "arm,armv7-timer";
- 		interrupts = <GIC_PPI 13
++	return work_done;
+ }
+ 
+ /* et131x_stats - Return the current device statistics  */
+@@ -4111,6 +4097,8 @@ static int et131x_open(struct net_device *netdev)
+ 
+ 	adapter->flags |= FMP_ADAPTER_INTERRUPT_IN_USE;
+ 
++	napi_enable(&adapter->napi);
++
+ 	et131x_up(netdev);
+ 
+ 	return result;
+@@ -4122,6 +4110,7 @@ static int et131x_close(struct net_device *netdev)
+ 	struct et131x_adapter *adapter = netdev_priv(netdev);
+ 
+ 	et131x_down(netdev);
++	napi_disable(&adapter->napi);
+ 
+ 	adapter->flags &= ~FMP_ADAPTER_INTERRUPT_IN_USE;
+ 	free_irq(adapter->pdev->irq, netdev);
+@@ -4502,8 +4491,7 @@ static int et131x_pci_setup(struct pci_dev *pdev,
+ 	/* Init send data structures */
+ 	et131x_init_send(adapter);
+ 
+-	/* Set up the task structure for the ISR's deferred handler */
+-	INIT_WORK(&adapter->task, et131x_isr_handler);
++	netif_napi_add(netdev, &adapter->napi, et131x_poll, 64);
+ 
+ 	/* Copy address into the net_device struct */
+ 	memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
 -- 
-1.8.1.5
+2.1.0
 
