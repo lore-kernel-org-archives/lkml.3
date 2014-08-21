@@ -1,102 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaHUGud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 02:50:33 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:57655 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaHUGua (ORCPT
+	id S1753948AbaHUGuz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 02:50:55 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:36623 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaHUGuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 02:50:30 -0400
-From: "Zhao, Hui-Zhi (Steven, HPservers-Core-OE-PSC)" <hui-zhi.zhao@hp.com>
-To: =?utf-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paolo Bonzini" <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        "Raghavendra KT" <raghavendra.kt@linux.vnet.ibm.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: RE: [PATCH v2 0/6] Dynamic Pause Loop Exiting window.
-Thread-Topic: [PATCH v2 0/6] Dynamic Pause Loop Exiting window.
-Thread-Index: AQHPvLjban0sWhIckkuvxGqFxJK+4Jvagw6A
-Date: Thu, 21 Aug 2014 06:49:18 +0000
-Message-ID: <DB5C686A0A7EE44A895494A4E25D21FC1C91EB8A@G5W2731.americas.hpqcorp.net>
-References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.201.12.22]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 21 Aug 2014 02:50:54 -0400
 MIME-Version: 1.0
+In-Reply-To: <1408573066.9484.11.camel@intel.com>
+References: <1408564816-1778-1-git-send-email-arjun024@gmail.com>
+ <87mwayj39c.fsf@rustcorp.com.au> <CAJFMrCG1OXrdRoUNqtZYdBqE_0dj+a3yAfFhuyFvTte7Ozbo0w@mail.gmail.com>
+ <87ha16izpu.fsf@rustcorp.com.au> <1408573066.9484.11.camel@intel.com>
+From: Arjun Sreedharan <arjun024@gmail.com>
+Date: Thu, 21 Aug 2014 12:20:32 +0530
+Message-ID: <CAJFMrCEiop68C1ksqmbYznMJbLROEKWqXLF1VP8kJUXkbCEHnA@mail.gmail.com>
+Subject: Re: [PATCH] params: fix potential memory leak in add_sysfs_param()
+To: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7L6ocsM003872
 
-This patch have been tested by Lisa and me and it's success.
+On 21 August 2014 03:47, Woodhouse, David <david.woodhouse@intel.com> wrote:
+> On Thu, 2014-08-21 at 07:35 +0930, Rusty Russell wrote:
+>>
+>> Above this:
+>>         if (!mk->mp) {
+>>                 num = 0;
+>>                 attrs = NULL;
+>>         } else {
+>>                 num = mk->mp->num;
+>>                 attrs = mk->mp->grp.attrs;
+>>         }
+>>
+>> So, attrs is just a temporary: either NULL (doesn't need freeing), or
+>> is the old mk->mp->grp.attrs ptr.
+>
+> Except that in the failure case we *free* the old mk->mp and never free
+> mk->mp->grp.attrs so it *is* indeed lost.
+>
+> A simpler version of Arjun's patch might look like this:
+>
+> diff --git a/kernel/params.c b/kernel/params.c
+> index 34f5270..f9459bc 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -613,7 +613,6 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+>                        sizeof(*mk->mp) + sizeof(mk->mp->attrs[0]) * (num+1),
+>                        GFP_KERNEL);
+>         if (!new) {
+> -               kfree(attrs);
+>                 err = -ENOMEM;
+>                 goto fail;
+>         }
+> @@ -653,7 +652,10 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+>  fail_free_new:
+>         kfree(new);
+>  fail:
+> -       mk->mp = NULL;
+> +       if (mk->mp) {
+> +               kfree(mk->mp->grp.attrs);
+> +               mk->mp = NULL;
+> +       }
+>         return err;
+>  }
+>
+>
+>
+> But as I suggested in my previous response, a *better* fix might look
+> like this:
+>
+> diff --git a/kernel/params.c b/kernel/params.c
+> index 34f5270..cdab9d4 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -595,7 +595,7 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+>  {
+>         struct module_param_attrs *new;
+>         struct attribute **attrs;
+> -       int err, num;
+> +       int num;
+>
+>         /* We don't bother calling this with invisible parameters. */
+>         BUG_ON(!kp->perm);
+> @@ -612,18 +612,19 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+>         new = krealloc(mk->mp,
+>                        sizeof(*mk->mp) + sizeof(mk->mp->attrs[0]) * (num+1),
+>                        GFP_KERNEL);
+> -       if (!new) {
+> -               kfree(attrs);
+> -               err = -ENOMEM;
+> -               goto fail;
+> -       }
+> +       if (!new)
+> +               return -ENOMEM;
+> +
+>         /* Despite looking like the typical realloc() bug, this is safe.
+> -        * We *want* the old 'attrs' to be freed either way, and we'll store
+> -        * the new one in the success case. */
+> +        * In the failure case, the old 'attrs' is still in new->grp.attrs
+> +        * and will live on there. */
+>         attrs = krealloc(attrs, sizeof(new->grp.attrs[0])*(num+2), GFP_KERNEL);
+>         if (!attrs) {
+> -               err = -ENOMEM;
+> -               goto fail_free_new;
+> +               /* This is in a larger kmalloc allocation than before but
+> +                * otherwise entirely unchanged. We've failed to add the
+> +                * new param but the existing ones are still there. */
+> +               mk->mp = new;
+> +               return -ENOMEM;
+>         }
+>
+>         /* Sysfs wants everything zeroed. */
+> @@ -649,12 +650,6 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+>
+>         mk->mp = new;
+>         return 0;
+> -
+> -fail_free_new:
+> -       kfree(new);
+> -fail:
+> -       mk->mp = NULL;
+> -       return err;
+>  }
+>
+>  #ifdef CONFIG_MODULES
+>
 
-We created 4 VM guests and reboot them every 10 minutes for 12 hours around, and this issue is gone with the patch.
+Ok, what's the harm in releasing {new,mk->mp}->grp.attrs and
+new/mk->mp on realloc failure ?
+@David, @Rusty Am i right thinking they are not used after the
+function returns error ?
 
+See module_param_sysfs_setup() : when the function in question returns error,
+free_module_param_attrs() is *not* called to release memory.
 
-Please add Lisa and me to the "tested by:" list.
-Tested-by: Mitchell, Lisa <lisa.mitchell@hp.com>
-Tested-by: Zhao, Hui Zhi <hui-zhi.zhao@hp.com>
+For cleaner code, we do *not* release memory in the said function as
+David suggests and then call
+free_module_param_attrs() on returning err. What say?
 
+Arjun
 
-Regards,
-Steven Zhao
-
------Original Message-----
-From: Radim KrÄmÃ¡Å™ [mailto:rkrcmar@redhat.com] 
-Sent: Thursday, August 21, 2014 4:53 AM
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org; Paolo Bonzini; Gleb Natapov; Raghavendra KT; Vinod, Chegu; Zhao, Hui-Zhi (Steven, HPservers-Core-OE-PSC); Christian Borntraeger
-Subject: [PATCH v2 0/6] Dynamic Pause Loop Exiting window.
-
-v1 -> v2:
- * squashed [v1 4/9] and [v1 5/9] (clamping)
- * dropped [v1 7/9] (CPP abstractions)
- * merged core of [v1 9/9] into [v1 4/9] (automatic maximum)
- * reworked kernel_param_ops: closer to pure int [v2 6/6]
- * introduced ple_window_actual_max & reworked clamping [v2 4/6]
- * added seqlock for parameter modifications [v2 6/6]
-
----
-PLE does not scale in its current form.  When increasing VCPU count above 150, one can hit soft lockups because of runqueue lock contention.
-(Which says a lot about performance.)
-
-The main reason is that kvm_ple_loop cycles through all VCPUs.
-Replacing it with a scalable solution would be ideal, but it has already been well optimized for various workloads, so this series tries to alleviate one different major problem while minimizing a chance of
-regressions: we have too many useless PLE exits.
-
-Just increasing PLE window would help some cases, but it still spirals out of control.  By increasing the window after every PLE exit, we can limit the amount of useless ones, so we don't reach the state where CPUs spend 99% of the time waiting for a lock.
-
-HP confirmed that this series prevents soft lockups and TSC sync errors on large guests.
-
-Radim KrÄmÃ¡Å™ (6):
-  KVM: add kvm_arch_sched_in
-  KVM: x86: introduce sched_in to kvm_x86_ops
-  KVM: VMX: make PLE window per-VCPU
-  KVM: VMX: dynamise PLE window
-  KVM: trace kvm_ple_window
-  KVM: VMX: runtime knobs for dynamic PLE window
-
- arch/arm/kvm/arm.c              |   4 ++
- arch/mips/kvm/mips.c            |   4 ++
- arch/powerpc/kvm/powerpc.c      |   4 ++
- arch/s390/kvm/kvm-s390.c        |   4 ++
- arch/x86/include/asm/kvm_host.h |   2 +
- arch/x86/kvm/svm.c              |   6 ++
- arch/x86/kvm/trace.h            |  25 ++++++++
- arch/x86/kvm/vmx.c              | 124 ++++++++++++++++++++++++++++++++++++++--
- arch/x86/kvm/x86.c              |   6 ++
- include/linux/kvm_host.h        |   2 +
- virt/kvm/kvm_main.c             |   2 +
- 11 files changed, 179 insertions(+), 4 deletions(-)
-
---
-2.0.4
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+> --
+> David Woodhouse                            Open Source Technology Centre
+> David.Woodhouse@intel.com                              Intel Corporation
