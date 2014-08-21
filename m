@@ -1,198 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985AbaHUJGc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 05:06:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61570 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791AbaHUJG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 05:06:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,907,1400050800"; 
-   d="scan'208";a="579779687"
-Date: Thu, 21 Aug 2014 12:05:31 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Darren Hart <dvhart@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael@kernel.org>,
-        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
-        Max Eliaser <max.eliaser@intel.com>,
-        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-acpi@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 5/9] mfd: Add ACPI support
-Message-ID: <20140821090508.GK1660@lahna.fi.intel.com>
-References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
- <1408172039-32513-6-git-send-email-mika.westerberg@linux.intel.com>
- <20140820155459.GM4266@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140820155459.GM4266@lee--X1>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753984AbaHUJKY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 05:10:24 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:35850 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257AbaHUJKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 05:10:20 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-1b-53f5b7791acc
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Minchan Kim'" <minchan@kernel.org>
+Cc: "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+References: <001201cfb838$fb0ac4a0$f1204de0$@samsung.com>
+ <20140815061138.GA940@swordfish> <002d01cfbb70$ea7410c0$bf5c3240$@samsung.com>
+ <20140819112500.GA2484@swordfish> <20140820020924.GD32620@bbox>
+ <006701cfbc4f$c9d2fe00$5d78fa00$@samsung.com> <20140821011854.GE17372@bbox>
+In-reply-to: <20140821011854.GE17372@bbox>
+Subject: RE: [PATCH] zram: add num_discards for discarded pages stat
+Date: Thu, 21 Aug 2014 17:09:19 +0800
+Message-id: <001601cfbd1f$b9f068d0$2dd13a70$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQLPTAw4onMCo+gZju9DfYrrOaResgJq92h2AoAbnpACr8Gx1gD+LFnWAcLEllkBgb8xrZl8QaeQ
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+xoG7V9q/BBhvnM1vMWb+GzeLUn+tM
+	Fpd3zWGzuLfmP6vFsq/v2S02tMxit1j7+TG7A7vHzll32T02repk89j0aRK7x4kZv1k83u+7
+	yuax89NmVo/Pm+QC2KO4bFJSczLLUov07RK4Mg5eOcJc0OJT0bHoNEsD4yyrLkZODgkBE4nO
+	Yy2MELaYxIV769lAbCGB6YwSj5aUdDFyAdk/GCX2LJwGlmATUJFY3vGfCcQWEVCTWHfwBQtI
+	EbPADUaJV8s6GCE6ZjFJnPhymhmkilNAS+LZxQZWEFtYwEXi2f277F2MHBwsAqoSZ1fXgYR5
+	BSwl+pvvsUPYghI/Jt9jASlhFlCXmDIlFyTMLCAvsXnNW2aIQxUkdpx9zQhxQ4zE/ed3mSBq
+	xCU2HrnFMoFRaBaSSbMQJs1CMmkWko4FjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYLj
+	55nUDsaVDRaHGAU4GJV4eBsWfAkWYk0sK67MPcQowcGsJMKbu+1rsBBvSmJlVWpRfnxRaU5q
+	8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQZGy8cP+y4y7zZOv7RHK/xCmn+Kt0tA
+	x46c8J+a4X6bea4vstCrd4n9uXejzrK9p+osb6VOVTCW3zDxgv3XSQe3pdzk05u4SeZt2Xvx
+	G15nW6Pu8q27x1B+TIS5t3XlNsYF8xasVTlt2HNVu3fTTtmeLl1d6eefHgeuVjJRfLU3etfC
+	zXOVpYQalFiKMxINtZiLihMBpEFTZpsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 04:54:59PM +0100, Lee Jones wrote:
-> On Sat, 16 Aug 2014, Mika Westerberg wrote:
-> > If an MFD device is backed by ACPI namespace, we should allow subdevice
-> > drivers to access their corresponding ACPI companion devices through normal
-> > means (e.g using ACPI_COMPANION()).
-> > 
-> > This patch adds such support to the MFD core. If the MFD parent device
-> > doesn't specify any ACPI _HID/_CID for the child device, the child device
-> > will share the parent ACPI companion device. Otherwise the child device
-> > will be assigned with the corresponding ACPI companion, if found in the
-> > namespace below the parent.
-> > 
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-> > ---
-> >  Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
-> >  drivers/mfd/mfd-core.c             | 41 ++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/core.h           |  3 +++
-> >  3 files changed, 71 insertions(+)
-> > 
-> > diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-> > index e182be5e3c83..74e35c54febf 100644
-> > --- a/Documentation/acpi/enumeration.txt
-> > +++ b/Documentation/acpi/enumeration.txt
-> > @@ -312,3 +312,30 @@ a code like this:
-> >  
-> >  There are also devm_* versions of these functions which release the
-> >  descriptors once the device is released.
-> > +
-> > +MFD devices
-> > +~~~~~~~~~~~
-> > +The MFD devices create platform devices from their children. For the
+Hi Minchan,
+
+> -----Original Message-----
+> From: Minchan Kim [mailto:minchan@kernel.org]
+> Sent: Thursday, August 21, 2014 9:19 AM
+> To: Chao Yu
+> Cc: 'Sergey Senozhatsky'; linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org;
+> 'Jerome Marchand'; 'Andrew Morton'
+> Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
 > 
-> What does this mean?  MFD drivers register their children _as_
-> platform devices.
-
-Right, will fix.
-
-> > +child devices there needs to be an ACPI handle that they can use to
-> > +reference parts of the ACPI namespace that relate to them. In the Linux
-> > +MFD subsystem we provide two ways:
-> > +
-> > +	o The children share the parent ACPI handle.
-> > +	o The MFD cell can specify the ACPI id of the device.
-> > +
-> > +For the first case, the MFD drivers do not need to do anything. The
-> > +resulting child platform device will have its ACPI_COMPANION() set to point
-> > +to the parent device.
-> > +
-> > +If the ACPI namespace has a device that we can match using an ACPI id,
-> > +the id should be set like:
-> > +
-> > +	static struct mfd_cell my_subdevice_cell = {
-> > +		.name = "my_subdevice",
-> > +		/* set the resources relative to the parent */
-> > +		.acpi_pnpid = "XYZ0001",
-> > +	};
-> > +
-> > +The ACPI id "XYZ0001" is then used to lookup an ACPI device directly under
-> > +the MFD device and if found, that ACPI companion device is bound to the
-> > +resulting child platform device.
-> > diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-> > index 892d343193ad..bb466b28b3b6 100644
-> > --- a/drivers/mfd/mfd-core.c
-> > +++ b/drivers/mfd/mfd-core.c
-> > @@ -78,6 +78,45 @@ static int mfd_platform_add_cell(struct platform_device *pdev,
-> >  	return 0;
-> >  }
-> >  
-> > +#if IS_ENABLED(CONFIG_ACPI)
-> > +static void mfd_acpi_add_device(const struct mfd_cell *cell,
-> > +				struct platform_device *pdev)
-> > +{
-> > +	struct acpi_device *parent_adev;
-> > +	struct acpi_device *adev = NULL;
-> > +
-> > +	parent_adev = ACPI_COMPANION(pdev->dev.parent);
-> > +	if (!parent_adev)
-> > +		return;
-> > +
-> > +	/*
-> > +	 * MFD child device gets its ACPI handle either from the ACPI
-> > +	 * device directly under the parent that matches the acpi_pnpid or
-> > +	 * it will use the parent handle if is no acpi_pnpid is given.
-> > +	 */
-> > +	if (cell->acpi_pnpid) {
-> > +		struct acpi_device_id ids[2] = {};
-> > +		struct acpi_device *child_adev;
-> > +
-> > +		strlcpy(ids[0].id, cell->acpi_pnpid, sizeof(ids[0].id));
-> > +		list_for_each_entry(child_adev, &parent_adev->children, node)
-> > +			if (acpi_match_device_ids(child_adev, ids)) {
-> > +				adev = child_adev;
-> > +				break;
-> > +			}
-> > +	} else {
-> > +		adev = parent_adev;
-> > +	}
-> > +
-> > +	ACPI_COMPANION_SET(&pdev->dev, adev);
-> > +}
-> > +#else
-> > +static inline void mfd_acpi_add_device(const struct mfd_cell *cell,
-> > +				       struct platform_device *pdev)
-> > +{
-> > +}
-> > +#endif
-> > +
+> Hi Chao,
 > 
-> I'm not keen on polluting the MFD core driver with #differy.  Can't you
-> think of another way to do it?
+> On Wed, Aug 20, 2014 at 04:20:48PM +0800, Chao Yu wrote:
+> > Hi Minchan,
+> >
+> > > -----Original Message-----
+> > > From: Minchan Kim [mailto:minchan@kernel.org]
+> > > Sent: Wednesday, August 20, 2014 10:09 AM
+> > > To: Sergey Senozhatsky
+> > > Cc: Chao Yu; linux-kernel@vger.kernel.org; linux-mm@kvack.org; ngupta@vflare.org; 'Jerome
+> > > Marchand'; 'Andrew Morton'
+> > > Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
+> > >
+> > > Hi Sergey,
+> > >
+> > > On Tue, Aug 19, 2014 at 08:25:00PM +0900, Sergey Senozhatsky wrote:
+> > > > Hello,
+> > > >
+> > > > On (08/19/14 13:45), Chao Yu wrote:
+> > > > > > On (08/15/14 11:27), Chao Yu wrote:
+> > > > > > > Now we have supported handling discard request which is sended by filesystem,
+> > > > > > > but no interface could be used to show information of discard.
+> > > > > > > This patch adds num_discards to stat discarded pages, then export it to sysfs
+> > > > > > > for displaying.
+> > > > > > >
+> > > > > >
+> > > > > > a side question: we account discarded pages via slot free notify in
+> > > > > > notify_free and via req_discard in num_discards. how about accounting
+> > > > > > both of them in num_discards? because, after all, they account a number
+> > > > > > of discarded pages (zram_free_page()). or there any particular reason we
+> > > > > > want to distinguish.
+> > > > >
+> > > > > Yeah, I agree with you as I have no such reason unless there are our users'
+> > > > > explicitly requirement for showing notify_free/num_discards separately later.
+> > > > >
+> > > > > How do you think of sending another patch to merge these two counts?
+> > > > >
+> > > >
+> > > > Minchan, what do you think? let's account discarded pages in one place.
+> > >
+> > > First of all, I'd like to know why we need num_discards.
+> > > It should be in description and depends on it whether we should merge both
+> > > counts or separate.
+> >
+> > Oh, it's my mistaken.
+> >
+> > When commit 	9b9913d80b2896ecd9e0a1a8f167ccad66fac79c (Staging: zram: Update
+> > zram documentation) and commit e98419c23b1a189c932775f7833e94cb5230a16b (Staging:
+> > zram: Document sysfs entries) description related to 'discard' stat was designed
+> > and added to zram.txt and sysfs-block-zram, but without implementation of function
+> > for handling discard request, description in documents were removed in commit
+> > 8dd1d3247e6c00b50ef83934ea8b22a1590015de (zram: document failed_reads,
+> > failed_writes stats)
+> 
+> Thanks for letting me know the history.
+> 
+> >
+> > For now, we have already supported discard handling, so it's better to resume
+> > the stat of discard number, this discard stat supports user one more kind of runtime
+> > information of zram as other stats supported.
+> >
+> > How do you think?
+> 
+> I'm not strong against the idea but just "resume is better" and
+> "one more is problem as other stats supported" is not logical
+> to me.
 
-It may be possible to do that since we only use few ACPI functions that
-have dummy stubs already.
+OK, I assume maybe to match the principle for adopting and discarding
+those stats in original version of zram will do some help, actually I'm wrong.
 
 > 
-> >  static int mfd_add_device(struct device *parent, int id,
-> >  			  const struct mfd_cell *cell, atomic_t *usage_count,
-> >  			  struct resource *mem_base,
-> > @@ -118,6 +157,8 @@ static int mfd_add_device(struct device *parent, int id,
-> >  		}
-> >  	}
-> >  
-> > +	mfd_acpi_add_device(cell, pdev);
-> > +
-> >  	if (cell->pdata_size) {
-> >  		ret = platform_device_add_data(pdev,
-> >  					cell->platform_data, cell->pdata_size);
-> > diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
-> > index f543de91ce19..73e1709d4c09 100644
-> > --- a/include/linux/mfd/core.h
-> > +++ b/include/linux/mfd/core.h
-> > @@ -44,6 +44,9 @@ struct mfd_cell {
-> >  	 */
-> >  	const char		*of_compatible;
-> >  
-> > +	/* Matches ACPI PNP id, either _HID or _CID */
-> > +	const char		*acpi_pnpid;
-> > +
-> >  	/*
-> >  	 * These resources can be specified relative to the parent device.
-> >  	 * For accessing hardware you should use resources from the platform dev
+> You should explain why we need such new stat so that user can take
+> what kinds of benefit from that. Otherwise, we couldn't know the stat
+> is best or not for the goal.
+
+Alright, it's reasonable from this perspective.
+
 > 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+> 
+> I might be paranoid about small stuff and I admit I'm not good for it,
+> too but pz, understand that adding the new feature requires a
+> good description which should include clear goal.
+
+Well, I can understand and accept that.
+
+> 
+> I hope I'm not discouraging. :)
+
+Nope, please let me try again, :)
+
+Since we have supported handling discard request in this commit
+f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
+one more chance to free unused memory whenever received discard request. But
+without stating for discard request, there is no method for user to know whether
+discard request has been handled by zram or how many blocks were discarded by
+zram when user wants to know the effect of discard.
+
+In this patch, we add num_discards to stat discarded pages, and export it to
+sysfs for users.
+
+
+Regards,
+Yu
+
+> 
+> >
+> > >
+> > > Thanks.
+> > >
+> > >
+> > >
+> > > >
+> > > > > One more thing is that I am missing to update document of zram, sorry about
+> > > > > that, let me update it in v2.
+> > > >
+> > > > thanks.
+> > > >
+> > > > 	-ss
+> > > >
+> > > > > Thanks,
+> > > > > Yu
+> > > > >
+> > > > > >
+> > > > > > 	-ss
+> > > > > >
+> > > > > > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > > > > > ---
+> > > > > > >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
+> > > > > > >  drivers/block/zram/zram_drv.c              |  3 +++
+> > > > > > >  drivers/block/zram/zram_drv.h              |  1 +
+> > > > > > >  3 files changed, 14 insertions(+)
+> > > > > > >
+> > > > > > > diff --git a/Documentation/ABI/testing/sysfs-block-zram
+> > > > > > b/Documentation/ABI/testing/sysfs-block-zram
+> > > > > > > index 70ec992..fa8936e 100644
+> > > > > > > --- a/Documentation/ABI/testing/sysfs-block-zram
+> > > > > > > +++ b/Documentation/ABI/testing/sysfs-block-zram
+> > > > > > > @@ -57,6 +57,16 @@ Description:
+> > > > > > >  		The failed_writes file is read-only and specifies the number of
+> > > > > > >  		failed writes happened on this device.
+> > > > > > >
+> > > > > > > +
+> > > > > > > +What:		/sys/block/zram<id>/num_discards
+> > > > > > > +Date:		August 2014
+> > > > > > > +Contact:	Chao Yu <chao2.yu@samsung.com>
+> > > > > > > +Description:
+> > > > > > > +		The num_discards file is read-only and specifies the number of
+> > > > > > > +		physical blocks which are discarded by this device. These blocks
+> > > > > > > +		are included in discard request which is sended by filesystem as
+> > > > > > > +		the blocks are no longer used.
+> > > > > > > +
+> > > > > > >  What:		/sys/block/zram<id>/max_comp_streams
+> > > > > > >  Date:		February 2014
+> > > > > > >  Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > > > > > > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > > > > > > index d00831c..904e7a5 100644
+> > > > > > > --- a/drivers/block/zram/zram_drv.c
+> > > > > > > +++ b/drivers/block/zram/zram_drv.c
+> > > > > > > @@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> > > > > > >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+> > > > > > >  		zram_free_page(zram, index);
+> > > > > > >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+> > > > > > > +		atomic64_inc(&zram->stats.num_discards);
+> > > > > > >  		index++;
+> > > > > > >  		n -= PAGE_SIZE;
+> > > > > > >  	}
+> > > > > > > @@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
+> > > > > > >  ZRAM_ATTR_RO(num_writes);
+> > > > > > >  ZRAM_ATTR_RO(failed_reads);
+> > > > > > >  ZRAM_ATTR_RO(failed_writes);
+> > > > > > > +ZRAM_ATTR_RO(num_discards);
+> > > > > > >  ZRAM_ATTR_RO(invalid_io);
+> > > > > > >  ZRAM_ATTR_RO(notify_free);
+> > > > > > >  ZRAM_ATTR_RO(zero_pages);
+> > > > > > > @@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
+> > > > > > >  	&dev_attr_num_writes.attr,
+> > > > > > >  	&dev_attr_failed_reads.attr,
+> > > > > > >  	&dev_attr_failed_writes.attr,
+> > > > > > > +	&dev_attr_num_discards.attr,
+> > > > > > >  	&dev_attr_invalid_io.attr,
+> > > > > > >  	&dev_attr_notify_free.attr,
+> > > > > > >  	&dev_attr_zero_pages.attr,
+> > > > > > > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+> > > > > > > index e0f725c..2994aaf 100644
+> > > > > > > --- a/drivers/block/zram/zram_drv.h
+> > > > > > > +++ b/drivers/block/zram/zram_drv.h
+> > > > > > > @@ -86,6 +86,7 @@ struct zram_stats {
+> > > > > > >  	atomic64_t num_writes;	/* --do-- */
+> > > > > > >  	atomic64_t failed_reads;	/* can happen when memory is too low */
+> > > > > > >  	atomic64_t failed_writes;	/* can happen when memory is too low */
+> > > > > > > +	atomic64_t num_discards;	/* no. of discarded pages */
+> > > > > > >  	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+> > > > > > >  	atomic64_t notify_free;	/* no. of swap slot free notifications */
+> > > > > > >  	atomic64_t zero_pages;		/* no. of zero filled pages */
+> > > > > > > --
+> > > > > > > 2.0.1.474.g72c7794
+> > > > > > >
+> > > > > > >
+> > > > > >
+> > > > > > --
+> > > > > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > > > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > > > > see: http://www.linux-mm.org/ .
+> > > > > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > > > >
+> > > >
+> > > > --
+> > > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > > see: http://www.linux-mm.org/ .
+> > > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > >
+> > > --
+> > > Kind regards,
+> > > Minchan Kim
+> >
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> --
+> Kind regards,
+> Minchan Kim
+
