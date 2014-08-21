@@ -1,107 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaHURvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:51:54 -0400
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:50875 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaHURvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:51:52 -0400
+	id S1753499AbaHURwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:52:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752833AbaHURwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 13:52:31 -0400
+Date: Thu, 21 Aug 2014 18:58:41 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+Cc: linux-kernel@vger.kernel.org,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: FW: [RFC 0/5] perf tools: Add perf data CTF conversion
+Message-ID: <20140821165841.GA32088@krava.brq.redhat.com>
+References: <53F38C74.4030300@voxpopuli.im>
+ <20140820092858.GA1203@krava.brq.redhat.com>
+ <53F4F38C.4080407@voxpopuli.im>
 MIME-Version: 1.0
-In-Reply-To: <1408611405-8943-4-git-send-email-takahiro.akashi@linaro.org>
-References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>
-	<1408611405-8943-4-git-send-email-takahiro.akashi@linaro.org>
-Date: Thu, 21 Aug 2014 12:51:51 -0500
-X-Google-Sender-Auth: bmW9XwpOXnApkO1dW1OKaC6UkGU
-Message-ID: <CAGXu5j+6kyiZqXF0pScqsCzqDonCthKSvYDVT5+vEd3+iY72vg@mail.gmail.com>
-Subject: Re: [PATCH v6 3/6] asm-generic: add generic seccomp.h for secure
- computing mode 1
-From: Kees Cook <keescook@chromium.org>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
-        arndb@arndb.de,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F4F38C.4080407@voxpopuli.im>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
-<takahiro.akashi@linaro.org> wrote:
-> Those values (__NR_seccomp_*) are used solely in secure_computing()
-> to identify mode 1 system calls. If compat system calls have different
-> syscall numbers, asm/seccomp.h may override them.
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+On Wed, Aug 20, 2014 at 03:14:20PM -0400, Alexandre Montplaisir wrote:
+> On 08/20/2014 05:28 AM, Jiri Olsa wrote:
+> >
+> >ok, easy enough ;-) so I'm guessing this governs the expected
+> >CTF layout for event/stream headers/contexts, right?
+> 
+> Correct, if the domain is "kernel" we then assume that the rest of the trace
+> contains the expected elements of a kernel trace.
+> 
+> Of course, one could craft a CTF trace to advertize itself as "kernel" or
+> "ust", and not actually have the layout of that trace type, in which case it
+> would fail parsing later on.
+> 
+> >Also judging from the trace display, you have hardcoded specific
+> >displays/actions for specific events? That's all connected/specific
+> >under trace type?
+> 
+> Yes the trace type is the main "provider" of functionality. I could go into
+> more details, but we use Eclipse extension points to define which columns to
+> put in the event table, which views are available, etc. for each supported
+> trace type.
+> 
+> >>Once we have some views or analysis specific to perf CTF traces, we could
+> >>definitely add a separate trace type for those too.
+> >I guess tracepoints and breakpoints should display something like
+> >the standard kernel trace. As for HW events it's usual to display
+> >profile infomation as the perf report does:
+> >   https://perf.wiki.kernel.org/index.php/Tutorial#Sampling_with_perf_record
+> 
+> Interesting, I haven't tried the perf CTF output yet, but I could see it
+> using the Statistics view (which by default just prints the % of events, per
+> event type) to print the results of the different "perf reports", calculated
+> from the CTF events. Eventually with pie charts!
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
+Basically, perf monitors single HW event and reports its hits/samples
+distribution across the workload processes.
 
-> ---
->  include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
->  create mode 100644 include/asm-generic/seccomp.h
->
-> diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
-> new file mode 100644
-> index 0000000..5e97022
-> --- /dev/null
-> +++ b/include/asm-generic/seccomp.h
-> @@ -0,0 +1,28 @@
-> +/*
-> + * include/asm-generic/seccomp.h
-> + *
-> + * Copyright (C) 2014 Linaro Limited
-> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef _ASM_GENERIC_SECCOMP_H
-> +#define _ASM_GENERIC_SECCOMP_H
-> +
-> +#include <asm-generic/unistd.h>
+Just by running:
+  $ perf record ls ; perf report
 
-While this isn't a problem for ARM, this should be linux/unistd.h for
-other architectures to get the right stuff.
+you'll get report of HW event 'cycles' distribution over/during the
+ls process life:
 
-> +
-> +#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
-> +#define __NR_seccomp_read_32           __NR_read
-> +#define __NR_seccomp_write_32          __NR_write
-> +#define __NR_seccomp_exit_32           __NR_exit
-> +#define __NR_seccomp_sigreturn_32      __NR_rt_sigreturn
-> +#endif /* CONFIG_COMPAT && ! already defined */
-> +
-> +#define __NR_seccomp_read              __NR_read
-> +#define __NR_seccomp_write             __NR_write
-> +#define __NR_seccomp_exit              __NR_exit
-> +#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
+Samples: 29  of event 'cycles', Event count (approx.): 3763985
+   9.65%  ls  [kernel.kallsyms]  [k] find_get_page
+   5.09%  ls  [kernel.kallsyms]  [k] perf_event_context_sched_in
+   5.09%  ls  ls                 [.] calculate_columns
+   5.08%  ls  [kernel.kallsyms]  [k] tty_insert_flip_string_fixed_flag
+   5.07%  ls  libc-2.17.so       [.] get_next_seq
+   5.06%  ls  [kernel.kallsyms]  [k] down_read_trylock
+   5.04%  ls  ls                 [.] xstrcoll_name
+   5.03%  ls  libc-2.17.so       [.] __memmove_sse2
+   5.03%  ls  libc-2.17.so       [.] _dl_addr
+   5.00%  ls  [kernel.kallsyms]  [k] ext4_release_file
+   4.99%  ls  [kernel.kallsyms]  [k] filemap_fault
+   4.88%  ls  ld-2.17.so         [.] _dl_map_object_from_fd
 
-Some architectures use __NR_sigreturn, so this will need to be
-adjusted in the future into:
+> 
+> >I tried to record/display lttng event perf:cpu:cycles, but got nothing
+> >displayed in eclipse. Looks like this data provides only summary count
+> >of the event for the workload?
+> 
+> Just to be sure I understand, you recorded an LTTng kernel trace, in which
+> you enabled the "perf:cpu:cycles" context? Did this trace display anything
+> in Babeltrace?
+> It should display the same in the Eclipse viewer, the value of the context
+> will be visible in the "Contents" column in the the table (and in the
+> Properties view), although for now we don't make any use of it.
 
-#ifdef __NR_seccomp_sigreturn
-#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
-#endif
+hum, I've got nothing from babeltrace:
 
-After these changes, I was able to port x86 to using this
-asm-generic/seccomp.h too.
+[jolsa@krava ~]$ su
+Password: 
+[root@krava jolsa]# lttng create perf
+Spawning a session daemon
+Session perf created.
+Traces will be written in /root/lttng-traces/perf-20140821-184956
+[root@krava jolsa]# lttng add-context -k -t prio -t perf:cpu:cycles
+kernel context prio added to all channels
+kernel context perf:cpu:cycles added to all channels
+[root@krava jolsa]# lttng start
+Tracing started for session perf
+[root@krava jolsa]# lttng stop
+Waiting for data availability.
+Tracing stopped for session perf
+[root@krava jolsa]# lttng destroy
+Session perf destroyed
+[root@krava jolsa]# babeltrace ~/lttng-traces/perf-20140821-184956/
+[root@krava jolsa]# babeltrace ~/lttng-traces/perf-20140821-184956/kernel/
+[root@krava jolsa]#
 
--Kees
+and empty view in eclipse
 
-> +
-> +#endif /* _ASM_GENERIC_SECCOMP_H */
-> --
-> 1.7.9.5
->
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+thanks,
+jirka
