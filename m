@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430AbaHUWUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 18:20:13 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:38700 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754769AbaHUWUL (ORCPT
+	id S1755521AbaHUWWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 18:22:20 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:51775 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755473AbaHUWWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 18:20:11 -0400
-Message-ID: <1408658961.28990.74.camel@misato.fc.hp.com>
-Subject: Re: [PATCH RFC 1/3] x86: Make page cache mode a real type
-From: Toshi Kani <toshi.kani@hp.com>
-To: jgross@suse.com
-Cc: stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        ville.syrjala@linux.intel.com, hpa@zytor.com, x86@kernel.org
-Date: Thu, 21 Aug 2014 16:09:21 -0600
-In-Reply-To: <1408454745-32358-2-git-send-email-jgross@suse.com>
-References: <1408454745-32358-1-git-send-email-jgross@suse.com>
-	 <1408454745-32358-2-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Aug 2014 18:22:19 -0400
+Date: Thu, 21 Aug 2014 17:22:12 -0500
+From: Tejun Heo <htejun@gmail.com>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: percpu: Define this_cpu_cpumask_var_t_ptr
+Message-ID: <20140821222212.GA7996@mtj.dyndns.org>
+References: <alpine.DEB.2.11.1408070959250.28468@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1408070959250.28468@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-08-19 at 15:25 +0200, jgross@suse.com wrote:
-> From: Juergen Gross <jgross@suse.com>
+Hello, Christoph.
+
+On Thu, Aug 07, 2014 at 10:05:45AM -0500, Christoph Lameter wrote:
+> @@ -666,10 +666,19 @@
+>   *
+>   * This code makes NR_CPUS length memcopy and brings to a memory corruption.
+>   * cpumask_copy() provide safe copy functionality.
+> + *
+> + * Note that there is another evil here: If you define a cpumask_var_t
+> + * as a percpu variable then the way to obtain the address of the cpumask
+> + * structure differently influences what this_cpu_* operation needs to be
+> + * used. Please use this_cpu_cpumask_var_t in those cases. The direct use
+> + * of this_cpu_ptr() or this_cpu_read() will lead to failures when the
+> + * other type of cpumask_var_t implementation is configured.
+>   */
+>  #ifdef CONFIG_CPUMASK_OFFSTACK
+>  typedef struct cpumask *cpumask_var_t;
 > 
-> At the moment there are a lot of places that handle setting or getting
-> the page cache mode by treating the pgprot bits equal to the cache mode.
-> This is only true because there are a lot of assumptions about the setup
-> of the PAT MSR. Otherwise the cache type needs to get translated into
-> pgprot bits and vice versa.
+> +#define this_cpu_cpumask_var_t_ptr(x) this_cpu_read(x)
+> +
+>  bool alloc_cpumask_var_node(cpumask_var_t *mask, gfp_t flags, int node);
+>  bool alloc_cpumask_var(cpumask_var_t *mask, gfp_t flags);
+>  bool zalloc_cpumask_var_node(cpumask_var_t *mask, gfp_t flags, int node);
+> @@ -681,6 +690,8 @@
+>  #else
+>  typedef struct cpumask cpumask_var_t[1];
 > 
-> This patch tries to prepare for that by introducing a seperate type
-> for the cache mode and adding functions to translate between those and pgprot
-> values.
-> 
-> To avoid too much performance penalty the translation between cache mode
-> and pgprot values is done via tables which contain the relevant information.
-> Write-back cache mode is hard-wired to be 0, all other modes are configurable
-> via those tables. For large pages there are translation functions as the
-> PAT bit is located at different positions in the ptes of 4k and large pages.
+> +#define this_cpu_cpumask_var_t_ptr(x) this_cpu_ptr(&x)
 
-One more comment below..
+Urgh, this is nasty but yeah I can't think of any other way around it
+either. :(
 
-> diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
- :
-> -static inline void set_page_memtype(struct page *pg, unsigned long memtype)
-> +static inline void set_page_memtype(struct page *pg,
-> +				    enum page_cache_mode memtype)
->  {
->  	unsigned long memtype_flags = _PGMT_DEFAULT;
->  	unsigned long old_flags;
->  	unsigned long new_flags;
->  
->  	switch (memtype) {
-> -	case _PAGE_CACHE_WC:
-> +	case _PAGE_CACHE_MODE_WC:
->  		memtype_flags = _PGMT_WC;
->  		break;
-> -	case _PAGE_CACHE_UC_MINUS:
-> +	case _PAGE_CACHE_MODE_UC_MINUS:
->  		memtype_flags = _PGMT_UC_MINUS;
->  		break;
-> -	case _PAGE_CACHE_WB:
-> +	case _PAGE_CACHE_MODE_WB:
-> +	default:
->  		memtype_flags = _PGMT_WB;
->  		break;
->  	}
+Do we need the "_t" in the name tho?  Maybe we can shorten the name to
+this_cpumask_var_ptr(x)?  Also, wouldn't it be better to define it as
+a static inline function so that the input type is explicit?
 
-Adding the "default" case handled as _PGMT_WB is not correct here.
-free_ram_pages_type() calls set_page_memtype() with -1, which needs to
-be set to _PGMT_DEFAULT.
+Thanks.
 
-Thanks,
--Toshi
-
-
-
-
+-- 
+tejun
