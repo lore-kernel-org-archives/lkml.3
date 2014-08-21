@@ -1,101 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305AbaHUK4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 06:56:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61417 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753627AbaHUK4S (ORCPT
+	id S1754473AbaHULAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:00:22 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53551 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753849AbaHULAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 06:56:18 -0400
-Date: Thu, 21 Aug 2014 11:56:08 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "olof@lixom.net" <olof@lixom.net>, "arnd@arndb.de" <arnd@arndb.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "stefan@agner.ch" <stefan@agner.ch>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "anders.berg@lsi.com" <anders.berg@lsi.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "srv_yingjoe.chen@mediatek.com" <srv_yingjoe.chen@mediatek.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 6/9] arm: mediatek: enable gpt6 on boot up to make
- arch timer working
-Message-ID: <20140821105608.GK21734@leverpostej>
-References: <1408373917-10002-1-git-send-email-matthias.bgg@gmail.com>
- <1408373917-10002-7-git-send-email-matthias.bgg@gmail.com>
- <20140818154548.GA3302@leverpostej>
- <CABuKBe+oVzQ9_Q__sULLQt8OvJ1Za_uA5x2aXSSQ6r8myvFqnA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABuKBe+oVzQ9_Q__sULLQt8OvJ1Za_uA5x2aXSSQ6r8myvFqnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 21 Aug 2014 07:00:18 -0400
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: sudeep.holla@arm.com, Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v3 02/11] topology: replace custom attribute macros with standard DEVICE_ATTR*
+Date: Thu, 21 Aug 2014 11:59:45 +0100
+Message-Id: <1408618794-28497-3-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
+References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
+ <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 11:38:20AM +0100, Matthias Brugger wrote:
-> 2014-08-18 17:45 GMT+02:00 Mark Rutland <mark.rutland@arm.com>:
-> > Hi Matthias,
-> >
-> > On Mon, Aug 18, 2014 at 03:58:34PM +0100, Matthias Brugger wrote:
-> >> We enable GTP6 which ungates the arch timer clock. Apart we write the
-> >> frequency with which the timer is running in the CNTFREQ register.
-> >
-> > We don't seem to set CNTFRQ below. Does it happen to have a consistent
-> > value on current versions of the bootloader?
-> 
-> Oh sorry, my fault. In v2 I moved the frequency to the dts, as this
-> will make the driver write CNTFRQ.
-> I forgot to update the commit message.
+From: Sudeep Holla <sudeep.holla@arm.com>
 
-The arch timer driver does not write CNTFRQ as this can only be done
-from the secure side. It simply uses the value provided internally. This
-isn't sufficient for virtualization guests (which need to have CNTFRQ
-programmed correctly).
+Currently couple of custom macros are defined to declare the
+device attributes. However there are already standard macros
+defined in device.h that suffice the need and these custom
+macros can be removed.
 
-For the moment as we're not booting at Hyp that's not necessarily a big
-problem, but it is a shame.
+This patch replaces custom attribute macros with standard
+DEVICE_ATTR_RO attribute
 
-> >> In the future this should be done in the bootloader.
-> >
-> > Do we know how far in the future that's likely to be?
-> 
-> AFAIK no one right now is working on an open source bootloader for the
-> mediatek devices.
-> So I think we won't see an open source bootloader in a reasonable time.
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/topology.c | 53 ++++++++++++++++++++++---------------------------
+ 1 file changed, 24 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/base/topology.c b/drivers/base/topology.c
+index 39b294bd769b..71251ef96e0a 100644
+--- a/drivers/base/topology.c
++++ b/drivers/base/topology.c
+@@ -29,57 +29,52 @@
+ #include <linux/hardirq.h>
+ #include <linux/topology.h>
  
-Ok. :(
+-#define define_one_ro_named(_name, _func)				\
+-	static DEVICE_ATTR(_name, 0444, _func, NULL)
+-
+-#define define_one_ro(_name)				\
+-	static DEVICE_ATTR(_name, 0444, show_##_name, NULL)
+-
+ #define define_id_show_func(name)				\
+-static ssize_t show_##name(struct device *dev,			\
++static ssize_t name##_show(struct device *dev,			\
+ 		struct device_attribute *attr, char *buf)	\
+ {								\
+ 	return sprintf(buf, "%d\n", topology_##name(dev->id));	\
+ }
+ 
+-#define define_siblings_show_map(name)					\
+-static ssize_t show_##name(struct device *dev,				\
++#define define_siblings_show_map(name, mask)				\
++static ssize_t name##_show(struct device *dev,				\
+ 			   struct device_attribute *attr, char *buf)	\
+ {									\
+-	return cpumap_copy_to_buf(false, topology_##name(dev->id), buf);\
++	return cpumap_copy_to_buf(false, topology_##mask(dev->id), buf);\
+ }
+ 
+-#define define_siblings_show_list(name)					\
+-static ssize_t show_##name##_list(struct device *dev,			\
+-				  struct device_attribute *attr,	\
+-				  char *buf)				\
++#define define_siblings_show_list(name, mask)				\
++static ssize_t name##_list_show(struct device *dev,			\
++				struct device_attribute *attr,		\
++				char *buf)				\
+ {									\
+-	return cpumap_copy_to_buf(true, topology_##name(dev->id), buf);	\
++	return cpumap_copy_to_buf(true, topology_##mask(dev->id), buf);	\
+ }
+ 
+-#define define_siblings_show_func(name)		\
+-	define_siblings_show_map(name); define_siblings_show_list(name)
++#define define_siblings_show_func(name, mask)	\
++	define_siblings_show_map(name, mask);	\
++	define_siblings_show_list(name, mask)
+ 
+ define_id_show_func(physical_package_id);
+-define_one_ro(physical_package_id);
++static DEVICE_ATTR_RO(physical_package_id);
+ 
+ define_id_show_func(core_id);
+-define_one_ro(core_id);
++static DEVICE_ATTR_RO(core_id);
+ 
+-define_siblings_show_func(thread_cpumask);
+-define_one_ro_named(thread_siblings, show_thread_cpumask);
+-define_one_ro_named(thread_siblings_list, show_thread_cpumask_list);
++define_siblings_show_func(thread_siblings, thread_cpumask);
++static DEVICE_ATTR_RO(thread_siblings);
++static DEVICE_ATTR_RO(thread_siblings_list);
+ 
+-define_siblings_show_func(core_cpumask);
+-define_one_ro_named(core_siblings, show_core_cpumask);
+-define_one_ro_named(core_siblings_list, show_core_cpumask_list);
++define_siblings_show_func(core_siblings, core_cpumask);
++static DEVICE_ATTR_RO(core_siblings);
++static DEVICE_ATTR_RO(core_siblings_list);
+ 
+ #ifdef CONFIG_SCHED_BOOK
+ define_id_show_func(book_id);
+-define_one_ro(book_id);
+-define_siblings_show_func(book_cpumask);
+-define_one_ro_named(book_siblings, show_book_cpumask);
+-define_one_ro_named(book_siblings_list, show_book_cpumask_list);
++static DEVICE_ATTR_RO(book_id);
++define_siblings_show_func(book_siblings, book_cpumask);
++static DEVICE_ATTR_RO(book_siblings);
++static DEVICE_ATTR_RO(book_siblings_list);
+ #endif
+ 
+ static struct attribute *default_attrs[] = {
+-- 
+1.8.3.2
 
-> > What's the plan for this code when such a bootloader becomes available?
-> 
-> I think when a bootloader becomes available, this code should be
-> removed. I know that this will lead to a not working ARM arch timer in
-> devices which don't migrate to the new bootloader, but I think it's
-> not too critical. Apart from the ARM arch timer, the devices have the
-> mediatek global porpose timer (drivers/clocksource/mtk_timer.c), which
-> implement a clock source and a clock event timer. So the system won't
-> hang.
-
-I fear that's never going to happen, either because such a bootloader
-never becomes available or because there will be hold-outs sticking to
-the old loader.
-
-If that's not critical, why not for the moment use the global timer?
-
-Thanks,
-Mark.
