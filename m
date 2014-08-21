@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384AbaHUOx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:53:58 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47587 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317AbaHUOx4 convert rfc822-to-8bit (ORCPT
+	id S1752196AbaHUOxl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:53:41 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:45144 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaHUOxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:53:56 -0400
-Message-ID: <53F60808.10707@arm.com>
-Date: Thu, 21 Aug 2014 15:54:00 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v3 03/11] drivers: base: add new class "cpu" to group
- cpu devices
-References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>	<1408618794-28497-1-git-send-email-sudeep.holla@arm.com>	<1408618794-28497-4-git-send-email-sudeep.holla@arm.com>	<CANq1E4Q4GRYUxrysUyTD5bO3di9M17i0H5V0fXb5+HrTrYY5aQ@mail.gmail.com>	<53F5E652.6050408@arm.com> <CANq1E4S-PJvJeORnf-GZxHQZxPLOZ-R+hv9mu0w2g2O6zdfuVw@mail.gmail.com>
-In-Reply-To: <CANq1E4S-PJvJeORnf-GZxHQZxPLOZ-R+hv9mu0w2g2O6zdfuVw@mail.gmail.com>
-X-OriginalArrivalTime: 21 Aug 2014 14:53:53.0493 (UTC) FILETIME=[B9D65050:01CFBD4F]
-X-MC-Unique: 114082115535416701
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+	Thu, 21 Aug 2014 10:53:39 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Catalin Iacob <iacobcatalin@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Jones <davej@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Larry Bassel <larry.bassel@linaro.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC PATCH 7/9] arm64: Tell irq work about self IPI support
+Date: Thu, 21 Aug 2014 16:52:55 +0200
+Message-Id: <1408632777-3348-8-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1408632777-3348-1-git-send-email-fweisbec@gmail.com>
+References: <1408632777-3348-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ARM64 irq work support depends on __smp_cross_call to point to some
+relevant IRQ controller operations. This information should be available
+after the call to init_IRQ().
 
+Lets implement arch_irq_work_has_own_interrupt() accordingly.
 
-On 21/08/14 13:37, David Herrmann wrote:
-> Hi
->
-> On Thu, Aug 21, 2014 at 2:30 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
->> On 21/08/14 12:20, David Herrmann wrote:
->>> Why do we need a cpu-class if the same set of information is already
->>> available on the cpu-bus? Furthermore, classes are deprecated anyway.
->>> Everything you can do with a class can be solved with a bus. And we
->>> already have a bus for cpus.
->>>
+Cc: Catalin Iacob <iacobcatalin@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Larry Bassel <larry.bassel@linaro.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/arm64/kernel/smp.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Sorry I wasn't aware that classes are deprecated. IIUC its class_device
-struct and related APIs that are deprecated not struct class. I may be
-wrong but Greg would not have suggested to use class if it was deprecated.
-
->>
->> This was suggested[1] by GregKH. The main reason it was added is to
->> reuse the device attributes rather than creating the raw kobjects.
->>
->> It helps to move few other cpu related subsystems using raw kobjects to
->> the device attribute groups.
->
-> So the only reason to add a class is to get attributes registered
-> properly with the device? Just set dev->groups before calling
-> device_add()? This works just fine on buses, too.
->
-
-Do you mean to say create bus for each cpu and add cpu devices like
-cache under that ? We can't reuse the cpu bus i.e cpu_subsys as we can't
-add per-cpu devices with same name under /sys/bus/cpu/devices/
-
-Also adding bus for each cpu device might be more complex than creating
-cpu class.
-
-That's the reason why I added checks to avoid creating link in the class
-directory pointing to the device. It would be difficult to do
-that with bus as it can't be unconditional.
-
-Regards,
-Sudeep
-
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index 4743397..b3e8b9e 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -534,6 +534,11 @@ void arch_irq_work_raise(void)
+ 	if (__smp_cross_call)
+ 		smp_cross_call(cpumask_of(smp_processor_id()), IPI_IRQ_WORK);
+ }
++
++int __init arch_irq_work_has_own_interrupt(void)
++{
++	return !!__smp_cross_call;
++}
+ #endif
+ 
+ static DEFINE_RAW_SPINLOCK(stop_lock);
+-- 
+1.8.3.1
 
