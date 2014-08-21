@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441AbaHUXS0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 19:18:26 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:35088 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089AbaHUXSY (ORCPT
+	id S1755106AbaHUXWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 19:22:36 -0400
+Received: from relay.variantweb.net ([104.131.199.242]:53495 "EHLO
+	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752342AbaHUXWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 19:18:24 -0400
-Date: Thu, 21 Aug 2014 23:23:19 +0000
-From: Minchan Kim <minchan@kernel.org>
+	Thu, 21 Aug 2014 19:22:35 -0400
+Date: Thu, 21 Aug 2014 18:22:31 -0500
+From: Seth Jennings <sjennings@variantweb.net>
 To: Dan Streetman <ddstreet@ieee.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
         seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        David Horner <ds2horner@gmail.com>
+        Nitin Gupta <ngupta@vflare.org>, David Horner <ds2horner@gmail.com>
 Subject: Re: [PATCH v3 2/4] zsmalloc: change return value unit of
  zs_get_total_size_bytes
-Message-ID: <20140821232319.GG10703@gmail.com>
+Message-ID: <20140821232231.GA18894@cerebellum.variantweb.net>
 References: <1408580838-29236-1-git-send-email-minchan@kernel.org>
  <1408580838-29236-3-git-send-email-minchan@kernel.org>
  <CALZtONBuZOORHAF0UHEZM7Aybuoesg3fyjnu9ACj_F7O5G35Og@mail.gmail.com>
@@ -28,7 +28,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <CALZtONBuZOORHAF0UHEZM7Aybuoesg3fyjnu9ACj_F7O5G35Og@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -51,6 +51,15 @@ On Thu, Aug 21, 2014 at 02:53:57PM -0400, Dan Streetman wrote:
 > they do that seems unlikely.  After this patch is finalized I can
 > write up a quick patch unless Seth disagrees (or already has a patch
 > :)
+
+I agree that we should move everything (back) to pages.
+
+I can write the patch or you can; doesn't matter to me.  I might have
+one started on the previous version of this patchset where I erroneously
+determined that Minchan had broken stuff :-/
+
+Seth
+
 > 
 > >
 > > Signed-off-by: Minchan Kim <minchan@kernel.org>
@@ -92,6 +101,43 @@ On Thu, Aug 21, 2014 at 02:53:57PM -0400, Dan Streetman wrote:
 > "zs_get_total_size" implies to me the units are bytes, would
 > "zs_get_total_pages" be clearer that it's returning size in # of
 > pages, not bytes?
-
-It's better. Will change.
-Thanks!
+> 
+> >
+> >  #endif
+> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> > index a65924255763..80408a1da03a 100644
+> > --- a/mm/zsmalloc.c
+> > +++ b/mm/zsmalloc.c
+> > @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
+> >
+> >  static u64 zs_zpool_total_size(void *pool)
+> >  {
+> > -       return zs_get_total_size_bytes(pool);
+> > +       return zs_get_total_size(pool) << PAGE_SHIFT;
+> >  }
+> >
+> >  static struct zpool_driver zs_zpool_driver = {
+> > @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+> >  }
+> >  EXPORT_SYMBOL_GPL(zs_unmap_object);
+> >
+> > -u64 zs_get_total_size_bytes(struct zs_pool *pool)
+> > +unsigned long zs_get_total_size(struct zs_pool *pool)
+> >  {
+> > -       u64 npages;
+> > +       unsigned long npages;
+> >
+> >         spin_lock(&pool->stat_lock);
+> >         npages = pool->pages_allocated;
+> >         spin_unlock(&pool->stat_lock);
+> > -       return npages << PAGE_SHIFT;
+> > +       return npages;
+> >  }
+> > -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+> > +EXPORT_SYMBOL_GPL(zs_get_total_size);
+> >
+> >  module_init(zs_init);
+> >  module_exit(zs_exit);
+> > --
+> > 2.0.0
+> >
