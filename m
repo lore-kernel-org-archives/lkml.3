@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170AbaHUKEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 06:04:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:23744 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750989AbaHUKEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 06:04:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="375203443"
-Message-ID: <53F5C40C.8040100@linux.intel.com>
-Date: Thu, 21 Aug 2014 13:03:56 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754236AbaHUKFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 06:05:20 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:48427 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaHUKFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 06:05:18 -0400
+Date: Thu, 21 Aug 2014 11:05:14 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 4/8] staging: et131x: Use for loop to initialise
+ contiguous macstat registers to zero
+Message-ID: <20140821100514.GD2230@msilap.einon.net>
+References: <1408573078-9320-1-git-send-email-mark.einon@gmail.com>
+ <1408573078-9320-5-git-send-email-mark.einon@gmail.com>
+ <063D6719AE5E284EB5DD2968C1650D6D1747D483@AcuExch.aculab.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, Jacob Keller <jacob.e.keller@intel.com>,
-        Alexander Duyck <alexander.duyck@intel.com>,
-        Hyong-Youb Kim <hykim@myri.com>, Amir Vadai <amirv@mellanox.com>,
-        Dmitry Kravkov <dmitry@broadcom.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [PATCH 3.12 078/104] ixgbe: fix qv_lock_napi call in ixgbe_napi_disable_all
-References: <cbcbb4c4826ff594b091e143b0f049f13ab7a64e.1408535000.git.jslaby@suse.cz> <0977e9849d561464d21afb92b9f3746588a19c4f.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <0977e9849d561464d21afb92b9f3746588a19c4f.1408535000.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1747D483@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/08/2014 14:43, Jiri Slaby wrote:
-> From: Jacob Keller <jacob.e.keller@intel.com>
+On Thu, Aug 21, 2014 at 08:40:20AM +0000, David Laight wrote:
+> From: Mark Einon
+> > Replace a long list of contiguous writel() calls with a for loop iterating
+> > over the same address values.
+> > 
+> > Also remove redundant comments on the macstat registers, the variable names
+> > are good enough.
+> ...
+> > -	writel(0, &macstat->txrx_0_64_byte_frames);
+> ...
+> > -	writel(0, &macstat->carry_reg2);
+> > +	/* initialize all the macstat registers to zero on the device  */
+> > +	for (reg = &macstat->txrx_0_64_byte_frames;
+> > +	     reg <= &macstat->carry_reg2; reg++)
+> > +		writel(0, reg);
+> ...
+> >  struct macstat_regs {			/* Location: */
+> >  	u32 pad[32];			/*  0x6000 - 607C */
+> > 
+> > -	/* Tx/Rx 0-64 Byte Frame Counter */
+> > +	/* counters */
+> >  	u32 txrx_0_64_byte_frames;	/*  0x6080 */
+> > -
+> > -	/* Tx/Rx 65-127 Byte Frame Counter */
+> >  	u32 txrx_65_127_byte_frames;	/*  0x6084 */
 > 
-> 3.12-stable review patch.  If anyone has any objections, please let me know.
+> I think it would be best to also convert the stats counters to an array.
 
-No objection, I am however unable to test this myself at the moment.
+Hi David, thanks for the review.
 
-I would suggest that someone takes a look at other drivers that support
-busypoll, to make sure that they don't have a similar issue.
+There's other code that accesses these registers individually, taking into
+account carries - so I don't think using an array would change much, as
+we'd still need a way of identifying individual indices.
 
--Eliezer
+Cheers,
+
+Mark
