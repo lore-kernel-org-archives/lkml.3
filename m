@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbaHUQBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:01:40 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:43208 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaHUQBi (ORCPT
+	id S1752350AbaHUQCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:02:41 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:63777 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656AbaHUQCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:01:38 -0400
-Date: Thu, 21 Aug 2014 12:01:29 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Juha-Matti Tilli <juha-matti.tilli@iki.fi>
-Cc: Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
-        swarren@wwwdotorg.org, thierry.reding@gmail.com,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 0/4] Tegra124 soctherm driver
-Message-ID: <20140821160127.GA17621@developer>
-References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
- <20140821122011.GA99564@sandfort.unics.fi>
+	Thu, 21 Aug 2014 12:02:39 -0400
+Date: Thu, 21 Aug 2014 17:02:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
+        SangYoung Son <hello.son@smasung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH/RFC v5 1/3] mfd: max77693: Fix register enum name
+Message-ID: <20140821160232.GR4266@lee--X1>
+References: <1408542221-375-1-git-send-email-j.anaszewski@samsung.com>
+ <1408542221-375-2-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140821122011.GA99564@sandfort.unics.fi>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1408542221-375-2-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Juha-Matti,
-
-On Thu, Aug 21, 2014 at 03:20:11PM +0300, Juha-Matti Tilli wrote:
-> On Thu, Aug 21, 2014 at 01:17:18PM +0300, Mikko Perttunen wrote:
-> > this series adds support for the thermal monitoring features of the
-> > soctherm unit on the Tegra124 SoC. 
+On Wed, 20 Aug 2014, Jacek Anaszewski wrote:
+> According to the MAX77693 documentation the name of
+> the register is FLASH_STATUS.
 > 
-> For all patches in this series:
-> 
-> Reviewed-by: Juha-Matti Tilli <jtilli@nvidia.com>
-> Tested-by: Juha-Matti Tilli <jtilli@nvidia.com>
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: SangYoung Son <hello.son@smasung.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> ---
+>  include/linux/mfd/max77693-private.h |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-I suppose the 4 C to 5 C difference is not seen anymore in this version,
-right?
+Applied, thanks.
 
-Cheers,
+> diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+> index c466ff3..615f121 100644
+> --- a/include/linux/mfd/max77693-private.h
+> +++ b/include/linux/mfd/max77693-private.h
+> @@ -46,7 +46,7 @@ enum max77693_pmic_reg {
+>  	MAX77693_LED_REG_VOUT_FLASH2			= 0x0C,
+>  	MAX77693_LED_REG_FLASH_INT			= 0x0E,
+>  	MAX77693_LED_REG_FLASH_INT_MASK			= 0x0F,
+> -	MAX77693_LED_REG_FLASH_INT_STATUS		= 0x10,
+> +	MAX77693_LED_REG_FLASH_STATUS			= 0x10,
+>  
+>  	MAX77693_PMIC_REG_PMIC_ID1			= 0x20,
+>  	MAX77693_PMIC_REG_PMIC_ID2			= 0x21,
 
-Eduardo
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
