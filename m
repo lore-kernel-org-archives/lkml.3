@@ -1,144 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333AbaHUKiY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 06:38:24 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:37089 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753820AbaHUKiW (ORCPT
+	id S1754509AbaHUKiy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 06:38:54 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:51387 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329AbaHUKiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 06:38:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140818154548.GA3302@leverpostej>
-References: <1408373917-10002-1-git-send-email-matthias.bgg@gmail.com>
-	<1408373917-10002-7-git-send-email-matthias.bgg@gmail.com>
-	<20140818154548.GA3302@leverpostej>
-Date: Thu, 21 Aug 2014 12:38:20 +0200
-Message-ID: <CABuKBe+oVzQ9_Q__sULLQt8OvJ1Za_uA5x2aXSSQ6r8myvFqnA@mail.gmail.com>
-Subject: Re: [PATCH v2 6/9] arm: mediatek: enable gpt6 on boot up to make arch
- timer working
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "olof@lixom.net" <olof@lixom.net>, "arnd@arndb.de" <arnd@arndb.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "stefan@agner.ch" <stefan@agner.ch>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "anders.berg@lsi.com" <anders.berg@lsi.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "srv_yingjoe.chen@mediatek.com" <srv_yingjoe.chen@mediatek.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 21 Aug 2014 06:38:52 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-80-53f5cc397cc2
+Message-id: <53F5CC38.7060902@samsung.com>
+Date: Thu, 21 Aug 2014 12:38:48 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] dma-mapping: Provide write-combine allocations
+References: <1403863018-20033-1-git-send-email-thierry.reding@gmail.com>
+ <20140801124057.GA19889@ulmo> <20140801151917.GS30282@n2100.arm.linux.org.uk>
+In-reply-to: <20140801151917.GS30282@n2100.arm.linux.org.uk>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xa7qWZ74GG5w8Y27xd9IxdosvVx4y
+	WXTs+spisenxNVaLy7vmsFncvsxr8XPXPBYHdo+W5h42j9+/JjF67Jx1l91j85J6j9v/HjN7
+	fN4kF8AWxWWTkpqTWZZapG+XwJUxec9lxoKLXBUT2ieyNjAe4+hi5OSQEDCRODvrDCOELSZx
+	4d56ti5GLg4hgaWMEn9evWGEcD4xSvRNuMEKUsUroCWxpOEFE4jNIqAqsX9zMzOIzSZgKNH1
+	tguom4NDVCBK4tjXPIhyQYkfk++xgNgiAkkSP5e+ZAeZyQyyYOLjk8wg9cICbhL/9nNB7JrB
+	KLG9dT07SAOngI3E+vk3wHYxC5hJfHl5mBXClpfYvOYt8wRGgVlIdsxCUjYLSdkCRuZVjKKp
+	pckFxUnpuYZ6xYm5xaV56XrJ+bmbGCHB/mUH4+JjVocYBTgYlXh4byz6EizEmlhWXJl7iFGC
+	g1lJhDdz99dgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyThJ2jOBgXRYZwl/1stO2I31kesMBW
+	9tvZv5fvLs3mKrJISvgSf+/iphsPRXMcXA+xV7gyfT+q9XBDbeZV0b5sf+OaP/LmTCv2iK0Q
+	Zqtl2n9kymnLPRGuzZdimmp5fr/Ztc7pxWQZpZBagZRojz/9ThO/LVLs/Pb9weKj03eoc2p2
+	dX56uViJpTgj0VCLuag4EQAetpcQVAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-18 17:45 GMT+02:00 Mark Rutland <mark.rutland@arm.com>:
-> Hi Matthias,
+Hello,
+
+On 2014-08-01 17:19, Russell King - ARM Linux wrote:
+> On Fri, Aug 01, 2014 at 02:40:59PM +0200, Thierry Reding wrote:
+>> On Fri, Jun 27, 2014 at 11:56:58AM +0200, Thierry Reding wrote:
+>>> From: Thierry Reding <treding@nvidia.com>
+>>>
+>>> Provide an implementation for dma_{alloc,free,mmap}_writecombine() when
+>>> the architecture supports DMA attributes.
+>>>
+>>> Signed-off-by: Thierry Reding <treding@nvidia.com>
+>>> ---
+>>> Changes in v2:
+>>> - Add a generic dma_mmap_writecombine() function
+>>>
+>>>   arch/arm/include/asm/dma-mapping.h       | 16 ----------------
+>>>   include/asm-generic/dma-mapping-common.h |  8 --------
+>>>   include/linux/dma-mapping.h              | 26 ++++++++++++++++++++++++++
+>>>   3 files changed, 26 insertions(+), 24 deletions(-)
+>> Ping?
+> I have no problem with this, but I don't think I can say yes to it; that
+> depends whether other people are happy for this to live in
+> include/linux/dma-mapping.h.
 >
-> On Mon, Aug 18, 2014 at 03:58:34PM +0100, Matthias Brugger wrote:
->> We enable GTP6 which ungates the arch timer clock. Apart we write the
->> frequency with which the timer is running in the CNTFREQ register.
->
-> We don't seem to set CNTFRQ below. Does it happen to have a consistent
-> value on current versions of the bootloader?
+> I guess consent for this change can only come by no one objecting to it
+> after several postings.
 
-Oh sorry, my fault. In v2 I moved the frequency to the dts, as this
-will make the driver write CNTFRQ.
-I forgot to update the commit message.
+I will take this patch my dma-mapping-next tree and later send pull request
+to Linus, so it will be handled in a similar way as all other changes to
+generic dma-mapping subsystem done in last 2 years.
 
->
->> In the future this should be done in the bootloader.
->
-> Do we know how far in the future that's likely to be?
-
-AFAIK no one right now is working on an open source bootloader for the
-mediatek devices.
-So I think we won't see an open source bootloader in a reasonable time.
-
->
-> What's the plan for this code when such a bootloader becomes available?
-
-I think when a bootloader becomes available, this code should be
-removed. I know that this will lead to a not working ARM arch timer in
-devices which don't migrate to the new bootloader, but I think it's
-not too critical. Apart from the ARM arch timer, the devices have the
-mediatek global porpose timer (drivers/clocksource/mtk_timer.c), which
-implement a clock source and a clock event timer. So the system won't
-hang.
-
-Cheers,
-Matthias
-
->
-> Thanks,
-> Mark.
->
->> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->> ---
->>  arch/arm/mach-mediatek/mediatek.c |   26 ++++++++++++++++++++++++++
->>  1 file changed, 26 insertions(+)
->>
->> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
->> index f2acf07..2989f18 100644
->> --- a/arch/arm/mach-mediatek/mediatek.c
->> +++ b/arch/arm/mach-mediatek/mediatek.c
->> @@ -16,6 +16,31 @@
->>   */
->>  #include <linux/init.h>
->>  #include <asm/mach/arch.h>
->> +#include <linux/of.h>
->> +#include <linux/clk-provider.h>
->> +#include <linux/clocksource.h>
->> +
->> +#define TIMER_CTRL_OP_FREERUN        0x30
->> +#define TIMER_CTRL_ENABLE    0x01
->> +
->> +#define GPT6_CON_MT65xx 0x10008060
->> +
->> +static void __init mediatek_timer_init(void)
->> +{
->> +     static void __iomem *gpt_base;
->> +
->> +     if (of_machine_is_compatible("mediatek,mt6589")) {
->> +             /* turn on GPT6 which ungates arch timer clocks */
->> +             gpt_base = ioremap(GPT6_CON_MT65xx, 0x04);
->> +     }
->> +
->> +     /* enabel clock and set to free-run */
->> +     if (gpt_base)
->> +             writel(TIMER_CTRL_OP_FREERUN | TIMER_CTRL_ENABLE, gpt_base);
->> +
->> +     of_clk_init(NULL);
->> +     clocksource_of_init();
->> +};
->>
->>  static const char * const mediatek_board_dt_compat[] = {
->>       "mediatek,mt6589",
->> @@ -24,4 +49,5 @@ static const char * const mediatek_board_dt_compat[] = {
->>
->>  DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
->>       .dt_compat      = mediatek_board_dt_compat,
->> +     .init_time      = mediatek_timer_init,
->>  MACHINE_END
->> --
->> 1.7.9.5
->>
->>
-
-
-
+Best regards
 -- 
-motzblog.wordpress.com
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
+
