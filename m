@@ -1,305 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaHUDDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:03:09 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41047 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaHUDDH (ORCPT
+	id S1753569AbaHUDFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:05:20 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:51627 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaHUDFS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:03:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140821024110.GF17372@bbox>
-References: <1408580838-29236-1-git-send-email-minchan@kernel.org>
-	<1408580838-29236-5-git-send-email-minchan@kernel.org>
-	<CAFdhcLR2mUEavxhc6=BpEic4yekpNuOi7JpfOiL9syUJhRojrw@mail.gmail.com>
-	<20140821024110.GF17372@bbox>
-Date: Wed, 20 Aug 2014 23:03:06 -0400
-Message-ID: <CAFdhcLRTBrKkjyycXurYXOKU-kdza8UkWDVFjUsWmCbzCifD9w@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] zram: report maximum used memory
-From: David Horner <ds2horner@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 20 Aug 2014 23:05:18 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: Revert "platform/x86/toshiba-apci.c possible bad if test?"
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <20140820235354.67516660E82@gitolite.kernel.org>
+Date: Thu, 21 Aug 2014 04:05:14 +0100
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <979CCE59-6BA9-4319-8F7C-4818FD2DB8F2@cam.ac.uk>
+References: <20140820235354.67516660E82@gitolite.kernel.org>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 10:41 PM, Minchan Kim <minchan@kernel.org> wrote:
-> On Wed, Aug 20, 2014 at 10:20:07PM -0400, David Horner wrote:
->> On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
->> > Normally, zram user could get maximum memory usage zram consumed
->> > via polling mem_used_total with sysfs in userspace.
->> >
->> > But it has a critical problem because user can miss peak memory
->> > usage during update inverval of polling. For avoiding that,
->> > user should poll it with shorter interval(ie, 0.0000000001s)
->> > with mlocking to avoid page fault delay when memory pressure
->> > is heavy. It would be troublesome.
->> >
->> > This patch adds new knob "mem_used_max" so user could see
->> > the maximum memory usage easily via reading the knob and reset
->> > it via "echo 0 > /sys/block/zram0/mem_used_max".
->> >
->> > Signed-off-by: Minchan Kim <minchan@kernel.org>
->> > ---
->> >  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++
->> >  Documentation/blockdev/zram.txt            |  1 +
->> >  drivers/block/zram/zram_drv.c              | 57 ++++++++++++++++++++++++++++--
->> >  drivers/block/zram/zram_drv.h              |  1 +
->> >  4 files changed, 67 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
->> > index 025331c19045..ffd1ea7443dd 100644
->> > --- a/Documentation/ABI/testing/sysfs-block-zram
->> > +++ b/Documentation/ABI/testing/sysfs-block-zram
->> > @@ -120,6 +120,16 @@ Description:
->> >                 statistic.
->> >                 Unit: bytes
->> >
->> > +What:          /sys/block/zram<id>/mem_used_max
->> > +Date:          August 2014
->> > +Contact:       Minchan Kim <minchan@kernel.org>
->> > +Description:
->> > +               The mem_used_max file is read/write and specifies the amount
->> > +               of maximum memory zram have consumed to store compressed data.
->> > +               For resetting the value, you should do "echo 0". Otherwise,
->> > +               you could see -EINVAL.
->> > +               Unit: bytes
->> > +
->> >  What:          /sys/block/zram<id>/mem_limit
->> >  Date:          August 2014
->> >  Contact:       Minchan Kim <minchan@kernel.org>
->> > diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
->> > index 9f239ff8c444..3b2247c2d4cf 100644
->> > --- a/Documentation/blockdev/zram.txt
->> > +++ b/Documentation/blockdev/zram.txt
->> > @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
->> >                 orig_data_size
->> >                 compr_data_size
->> >                 mem_used_total
->> > +               mem_used_max
->> >
->> >  8) Deactivate:
->> >         swapoff /dev/zram0
->> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
->> > index adc91c7ecaef..138787579478 100644
->> > --- a/drivers/block/zram/zram_drv.c
->> > +++ b/drivers/block/zram/zram_drv.c
->> > @@ -149,6 +149,41 @@ static ssize_t mem_limit_store(struct device *dev,
->> >         return len;
->> >  }
->> >
->> > +static ssize_t mem_used_max_show(struct device *dev,
->> > +               struct device_attribute *attr, char *buf)
->> > +{
->> > +       u64 val = 0;
->> > +       struct zram *zram = dev_to_zram(dev);
->> > +
->> > +       down_read(&zram->init_lock);
->> > +       if (init_done(zram))
->> > +               val = atomic64_read(&zram->stats.max_used_pages);
->> > +       up_read(&zram->init_lock);
->> > +
->> > +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
->> > +}
->> > +
->> > +static ssize_t mem_used_max_store(struct device *dev,
->> > +               struct device_attribute *attr, const char *buf, size_t len)
->> > +{
->> > +       int err;
->> > +       unsigned long val;
->> > +       struct zram *zram = dev_to_zram(dev);
->> > +       struct zram_meta *meta = zram->meta;
->> > +
->> > +       err = kstrtoul(buf, 10, &val);
->> > +       if (err || val != 0)
->> > +               return -EINVAL;
->> > +
->>
->> Yes - this works better for the user than explicit single "0" check
->> Thanks for testing.
->>
->> > +       down_read(&zram->init_lock);
->> > +       if (init_done(zram))
->> > +               atomic64_set(&zram->stats.max_used_pages,
->> > +                               zs_get_total_size(meta->mem_pool));
->> > +       up_read(&zram->init_lock);
->> > +
->> > +       return len;
->> > +}
->> > +
->> >  static ssize_t max_comp_streams_store(struct device *dev,
->> >                 struct device_attribute *attr, const char *buf, size_t len)
->> >  {
->> > @@ -461,6 +496,18 @@ out_cleanup:
->> >         return ret;
->> >  }
->> >
->> > +static inline void update_used_max(struct zram *zram, const unsigned long pages)
->> > +{
->> > +       u64 old_max, cur_max;
->> > +
->> > +       do {
->> > +               old_max = cur_max = atomic64_read(&zram->stats.max_used_pages);
->> > +               if (pages > cur_max)
->> > +                       old_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
->> > +                                       cur_max, pages);
->> > +       } while (old_max != cur_max);
->> > +}
->> > +
->>
->> This can be tightened up some:
->
-> How many does it make tight?
-> If it's not a big, I'd like to stick my version.
+Hi Matthew,
 
-It is another atomic (memory barrier) read each time through the loop.
+There is no doubt that the revert was needed but I think the original check which is now reinstated is also wrong.
 
-But the expect usual case will be the uncontested case - a drop through.
+I do not know what the intention actually is so cannot say what the correct check is but just logically speaking the check makes no sense:
 
-It would only show up in heavily contested situations -
+	if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
 
-this is another variation that removes the unnecessary read
- but retains the programming structure:and naming:
+The condition "(mode != 2 || mode != 1)" will always be true given that mode can only have a single value: if mode == 1 then mode != 2 is true and thus the condition is true and vice versa if mode == 2 then mode != 1 is true and thus the condition is true, too.  And if mode is neither 1 nor 2 then both mode != 2 and mode != 1 are true and thus the condition is true, too.  Thus no matter what value "mode" has, the condition is true thus there is no point in it being there thus the if clause is exactly the same as:
 
-+static inline void update_used_max(struct zram *zram, const unsigned
-long pages)
- +{
- +       u64 old_max, cur_max;
- +
- +       old_max = atomic64_read(&zram->stats.max_used_pages);
- +       do {
- +               cur_max = old_max;
- +               if (pages > cur_max)
- +                       old_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
- +                                       cur_max, pages);
- +       } while (old_max != cur_max);
- +}
- +
+	if (sscanf(buf, "%i", &mode) != 1)
 
+Presumably that was not the original intention...
 
->
->>
->> +static inline void update_used_max(struct zram *zram, const unsigned
->> long pages)
->> +{
->> +       u64 prev_max, old_max = 0;
->> +
->> +       prev_max = atomic64_read(&zram->stats.max_used_pages);
->> +       do while (pages > prev_max && prev_max != old_max) {
->> +               old_max = prev_max;
->> +               prev_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
->> +                                       old_max, pages);
->> +       };
->> +}
->> +
->>
->> And then can be generalized to:
->
-> At the moment, we don't need it but it would be good if we need another
-> max in future so I will keep in mind. Thanks for the suggestion!
->
->>
->>
->> +static inline void update_max(uint64_t *addr, const uint64_t newvalue)
->> +{
->> +       uint64_t prev_max, old_max = 0;
->> +
->> +       prev_max = atomic64_read(addr);
->> +       do while (pages > prev_max && prev_max != old_max) {
->> +               old_max = prev_max;
->> +               prev_max = atomic64_cmpxchg(addr,
->> +                                       old_max, newvalue);
->> +       };
->> +}
->> +
->>
->>
->> Called with : update_max(&zram->stats.max_used_pages,  alloced_pages).
->>
->> (I hope I got all the datatypes (I understand there are some implicit
->> casts) and modes correct).
->>
->> The idea should be clear.
->>
->> >  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->> >                            int offset)
->> >  {
->> > @@ -472,6 +519,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->> >         struct zram_meta *meta = zram->meta;
->> >         struct zcomp_strm *zstrm;
->> >         bool locked = false;
->> > +       unsigned long alloced_pages;
->> >
->> >         page = bvec->bv_page;
->> >         if (is_partial_io(bvec)) {
->> > @@ -541,13 +589,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->> >                 goto out;
->> >         }
->> >
->> > -       if (zram->limit_pages &&
->> > -               zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
->> > +       alloced_pages = zs_get_total_size(meta->mem_pool);
->> > +       if (zram->limit_pages && alloced_pages > zram->limit_pages) {
->> >                 zs_free(meta->mem_pool, handle);
->> >                 ret = -ENOMEM;
->> >                 goto out;
->> >         }
->> >
->> > +       update_used_max(zram, alloced_pages);
->> > +
->>
->> or generalized with update_max
->>
->> >         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
->> >
->> >         if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
->> > @@ -897,6 +947,8 @@ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->> >  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
->> >  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
->> >                 mem_limit_store);
->> > +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
->> > +               mem_used_max_store);
->> >  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->> >                 max_comp_streams_show, max_comp_streams_store);
->> >  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
->> > @@ -926,6 +978,7 @@ static struct attribute *zram_disk_attrs[] = {
->> >         &dev_attr_compr_data_size.attr,
->> >         &dev_attr_mem_used_total.attr,
->> >         &dev_attr_mem_limit.attr,
->> > +       &dev_attr_mem_used_max.attr,
->> >         &dev_attr_max_comp_streams.attr,
->> >         &dev_attr_comp_algorithm.attr,
->> >         NULL,
->> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
->> > index b7aa9c21553f..29383312d543 100644
->> > --- a/drivers/block/zram/zram_drv.h
->> > +++ b/drivers/block/zram/zram_drv.h
->> > @@ -90,6 +90,7 @@ struct zram_stats {
->> >         atomic64_t notify_free; /* no. of swap slot free notifications */
->> >         atomic64_t zero_pages;          /* no. of zero filled pages */
->> >         atomic64_t pages_stored;        /* no. of pages currently stored */
->> > +       atomic64_t max_used_pages;      /* no. of maximum pages stored */
->> >  };
->> >
->> >  struct zram_meta {
->> > --
->> > 2.0.0
->> >
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+Perhaps the intention was to check that mode is either 1 or 2 and other values are not allowed?  If so the correct statement would be:
+
+	if (sscanf(buf, "%i", &mode) != 1 || (mode != 2 && mode != 1))
+
+But as I said above I do not know if that was the original intention but it looks like that this may have been the intention...
+
+Best regards,
+
+	Anton
+
+On 21 Aug 2014, at 00:53, Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
+
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=8039aabb6c9f802bca04cc77ca210060a5b53916
+> Commit:     8039aabb6c9f802bca04cc77ca210060a5b53916
+> Parent:     186e4e89a0922d75fba476f15b723e541cc34bea
+> Refname:    refs/heads/master
+> Author:     Matthew Garrett <matthew.garrett@nebula.com>
+> AuthorDate: Wed Aug 20 08:18:18 2014 -0700
+> Committer:  Matthew Garrett <matthew.garrett@nebula.com>
+> CommitDate: Wed Aug 20 08:18:18 2014 -0700
+> 
+>    Revert "platform/x86/toshiba-apci.c possible bad if test?"
+> 
+>    This reverts commit bdc3ae7221213963f438faeaa69c8b4a2195f491.
+> 
+>    Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> ---
+> drivers/platform/x86/toshiba_acpi.c | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+> index e4da61b..b062d3d 100644
+> --- a/drivers/platform/x86/toshiba_acpi.c
+> +++ b/drivers/platform/x86/toshiba_acpi.c
+> @@ -1258,7 +1258,7 @@ static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
+> 	int mode = -1;
+> 	int time = -1;
+> 
+> -	if (sscanf(buf, "%i", &mode) != 1  || (mode != 2 || mode != 1))
+> +	if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
+> 		return -EINVAL;
+> 
+> 	/* Set the Keyboard Backlight Mode where:
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+University of Cambridge Information Services, Roger Needham Building
+7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+
