@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaHUPl0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 11:41:26 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:40186 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaHUPlY (ORCPT
+	id S1752717AbaHUPli (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 11:41:38 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54073 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870AbaHUPlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 11:41:24 -0400
+	Thu, 21 Aug 2014 11:41:36 -0400
+Message-ID: <53F61345.2080803@wwwdotorg.org>
+Date: Thu, 21 Aug 2014 09:41:57 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140821153836.GO4266@lee--X1>
-References: <1408627817-16171-1-git-send-email-zyw@rock-chips.com>
-	<20140821153836.GO4266@lee--X1>
-Date: Thu, 21 Aug 2014 08:41:23 -0700
-X-Google-Sender-Auth: DoXxe2zuPfleLun8KCF2NP6wc2E
-Message-ID: <CAD=FV=VYy5sgLmjUfUGe0ai=wMBFHROLK6yKvMzfmundWSMiCA@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] MFD: RK808: Add new mfd driver for RK808
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Chris Zhong <zyw@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
-        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
-        xxx <xxx@rock-chips.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Dmitry Torokhov <dtor@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Kever Yang <kever.yang@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: Mikko Perttunen <mperttunen@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        wni@nvidia.com
+Subject: Re: [PATCH v2 2/5] of: Add nvidia,controller-id property to Tegra
+ I2C bindings
+References: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com> <1407933685-12404-3-git-send-email-mperttunen@nvidia.com> <53F502D7.9030403@wwwdotorg.org> <20140821070511.GF4486@ulmo>
+In-Reply-To: <20140821070511.GF4486@ulmo>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee,
-
-On Thu, Aug 21, 2014 at 8:38 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Thu, 21 Aug 2014, Chris Zhong wrote:
->> The RK808 chip is a power management IC for multimedia and handheld
->> devices. It contains the following components:
+On 08/21/2014 01:05 AM, Thierry Reding wrote:
+> On Wed, Aug 20, 2014 at 02:19:35PM -0600, Stephen Warren wrote:
+>> On 08/13/2014 06:41 AM, Mikko Perttunen wrote:
+>>> Sometimes, hardware blocks want to issue requests to devices
+>>> connected to I2C buses by itself. In such case, the bus the
+>>> target device resides on must be configured into a register.
+>>> For this purpose, each I2C controller has a defined ID known
+>>> by the hardware. Add a property for these IDs to the device tree
+>>> bindings, so that drivers can know what ID to write to a hardware
+>>> register when configuring a block that sends I2C messages autonomously.
 >>
->> - Regulators
->> - RTC
+>>> diff --git a/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt b/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt
 >>
->> The rk808 core driver is registered as a platform driver and provides
->> communication through I2C with the host device for the different
->> components.
+>>> +Optional properties:
+>>> +- nvidia,controller-id: ID of controller when referred to in
+>>> +                        hardware registers.
 >>
->> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>> I'd prefer to put this information into the thermal trip node, since this
+>> represents what ID the PMC uses to communicate with the I2C controller, and
+>> there's no absolute guarantee that multiple clients that communicate
+>> directly with an I2C controller would use the same numbering scheme.
 >>
->> ---
->>
->> Changes in v3: None
+>> If that doesn't work, can be at least name this nvidia,pmc-controller-id or
+>> nvidia,id-in-pmc so that if there are different numbering schemes, there's a
+>> clear path to represent this in different properties without conflicting
+>> names?
 >
-> Why haven't you fixed up my review comments?
+> This is the ID of the controller used internally by the documentation.
+> And as far as I can tell every aspect of the documentation refers to the
+> controllers by the same ID (clocks, interrupts, ...). The PMC uses this
+> same numbering scheme. That makes the ID about as canonical as it gets,
+> so the extra prefix isn't warranted in my opinion.
+>
+> I'd argue that if ever there was a case where something was referring to
+> the controller using a different ID then that should be considered the
+> oddball and get special treatment.
 
-I saw in a private message from Chris that his v2 was actually the
-wrong version (an old branch from his tree) by mistake.  His v3 is
-what v2 was supposed to be.  He didn't have time to fixup review
-comments yet (he just wanted to send the correct v2), so expect a v4.
+This is certainly true in practice in current SoCs, but in general, 
+there's no reason why every HW module that talks to I2C HW modules needs 
+to be hooked up to all of them in the same order, especially if SoCs 
+start getting put together by mixing/matching components from all kinds 
+of vendors etc.
 
-Chris: you probably should have included that somewhere in your email
-on the lists so people weren't confused.
-
--Doug
+Still, since they are today, I suppose that binding is fine; we can 
+always modify the binding for any new SoC (and associated compatible 
+value) in the future if the current rule ever gets broken. The code will 
+be a little annoying though.
