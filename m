@@ -1,91 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaHUTIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 15:08:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44907 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752284AbaHUTId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 15:08:33 -0400
-Date: Thu, 21 Aug 2014 14:08:24 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <tj@kernel.org>, <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
-CC: <linux-ide@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ata: ahci: tegra: fix build error
-Message-ID: <20140821190824.GM11146@saruman.home>
-Reply-To: <balbi@ti.com>
+	id S1754128AbaHUTJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 15:09:15 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49511 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbaHUTJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 15:09:13 -0400
+Message-ID: <53F6440B.8010709@linux.vnet.ibm.com>
+Date: Fri, 22 Aug 2014 00:40:03 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hNG1vEeyG8BCaHbQ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Lisa Mitchell <lisa.mitchell@hp.com>
+Subject: Re: [PATCH v3 4/7] KVM: VMX: dynamise PLE window
+References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com> <1408637291-18533-5-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1408637291-18533-5-git-send-email-rkrcmar@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082119-0005-0000-0000-0000009E0BCF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---hNG1vEeyG8BCaHbQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/21/2014 09:38 PM, Radim Krčmář wrote:
+> Window is increased on every PLE exit and decreased on every sched_in.
+> The idea is that we don't want to PLE exit if there is no preemption
+> going on.
+> We do this with sched_in() because it does not hold rq lock.
+>
+> There are two new kernel parameters for changing the window:
+>   ple_window_grow and ple_window_shrink
+> ple_window_grow affects the window on PLE exit and ple_window_shrink
+> does it on sched_in;  depending on their value, the window is modifier
+> like this: (ple_window is kvm_intel's global)
+>
+>    ple_window_shrink/ |
+>    ple_window_grow    | PLE exit           | sched_in
+>    -------------------+--------------------+---------------------
+>    < 1                |  = ple_window      |  = ple_window
+>    < ple_window       | *= ple_window_grow | /= ple_window_shrink
+>    otherwise          | += ple_window_grow | -= ple_window_shrink
+>
+> A third new parameter, ple_window_max, controls the maximal ple_window;
+> it is internally rounded down to a closest multiple of ple_window_grow.
+>
+> VCPU's PLE window is never allowed below ple_window.
+>
+> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+> ---
+>   arch/x86/kvm/vmx.c | 87 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>   1 file changed, 85 insertions(+), 2 deletions(-)
+>
 
-Currently, ahci_tegra doesn't build because it includes a file that
-doesn't exist.
+Thanks for the nice patch.
+default of grow = 2 and shrink = 0 is very good, which aids fast
+clamping in overcommit and less ple_exits in undercommit.
+with a small concern over modifier (shrinker) value in patch 6,
 
-The problem is that first commit 306a7f9 (ARM: tegra: Move includes to
-include/soc/tegra) renamed include/linux/tegra-powergate.h to
-include/soc/tegra/powergate.h.
+Reviewed-by: Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
 
-Later commit 7232398 (ARM: tegra: Convert PMC to a driver) renamed
-include/soc/tegra/powergate.h to include/soc/tegra/pmc.h and neither
-commits fixed drivers/ata/ahci_tegra.c.
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 18e0e52..a2fa6ba 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -125,14 +125,32 @@ module_param(nested, bool, S_IRUGO);
+>    * Time is measured based on a counter that runs at the same rate as the TSC,
+>    * refer SDM volume 3b section 21.6.13 & 22.1.3.
+>    */
+> -#define KVM_VMX_DEFAULT_PLE_GAP    128
+> -#define KVM_VMX_DEFAULT_PLE_WINDOW 4096
+> +#define KVM_VMX_DEFAULT_PLE_GAP           128
+> +#define KVM_VMX_DEFAULT_PLE_WINDOW        4096
+> +#define KVM_VMX_DEFAULT_PLE_WINDOW_GROW   2
+> +#define KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK 0
+> +#define KVM_VMX_DEFAULT_PLE_WINDOW_MAX    \
+> +		INT_MAX / KVM_VMX_DEFAULT_PLE_WINDOW_GROW
+> +
+>   static int ple_gap = KVM_VMX_DEFAULT_PLE_GAP;
+>   module_param(ple_gap, int, S_IRUGO);
+>
+>   static int ple_window = KVM_VMX_DEFAULT_PLE_WINDOW;
+>   module_param(ple_window, int, S_IRUGO);
+>
+> +/* Default doubles per-vcpu window every exit. */
+> +static int ple_window_grow = KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
+> +module_param(ple_window_grow, int, S_IRUGO);
+> +
+> +/* Default resets per-vcpu window every exit to ple_window. */
+> +static int ple_window_shrink = KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK;
+> +module_param(ple_window_shrink, int, S_IRUGO);
+> +
+> +/* Default is to compute the maximum so we can never overflow. */
+> +static int ple_window_actual_max = KVM_VMX_DEFAULT_PLE_WINDOW_MAX;
+> +static int ple_window_max        = KVM_VMX_DEFAULT_PLE_WINDOW_MAX;
+> +module_param(ple_window_max, int, S_IRUGO);
 
-Fix that so the driver has a chance of building. With current kernels.
+Some observations:
 
-Cc: <stable@vger.kernel.org> # v3.16
-Signed-of-by: Felipe Balbi <balbi@ti.com>
----
- drivers/ata/ahci_tegra.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+1. I think a large ple_window for e.g.,  16MB itself
+would be very large value after which the ple_window change would not
+have much effect.
 
-diff --git a/drivers/ata/ahci_tegra.c b/drivers/ata/ahci_tegra.c
-index fc3df47..7194835 100644
---- a/drivers/ata/ahci_tegra.c
-+++ b/drivers/ata/ahci_tegra.c
-@@ -24,7 +24,7 @@
- #include <linux/module.h>
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
--#include <linux/tegra-powergate.h>
-+#include <soc/tegra/pmc.h>
- #include <linux/regulator/consumer.h>
- #include "ahci.h"
-=20
---
-2.0.1.563.g66f467c
+So could KVM_VMX_DEFAULT_PLE_WINDOW_MAX be just
+KVM_VMX_DEFAULT_PLE_WINDOW^2 or something ? or otherwise..
 
---=20
-balbi
+How about ..
+define KVM_VMX_DEFAULT_PLE_WINDOW_MAX  = INT_MAX 
+/KVM_VMX_DEFAULT_PLE_WINDOW.
 
---hNG1vEeyG8BCaHbQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+(considering we don't allow default grow to be greater than default ple
+window).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+2. can we consider min_ple_window value of 2k. tracing showed that in
+overcommit there were several occations of 4k <- 4k situations.
 
-iQIcBAEBAgAGBQJT9kOoAAoJEIaOsuA1yqREY2QP+gM4lEUl2NR+MlMhdak9rem0
-ibFSJYKkdMZXJJt2XTgBnUzMmuoiBwAXAWN7LFFHq+dQwmHd0upZUDwEkyJS5I7Z
-p7oIs7hH4VOWbCWdPQJtRy42nwAFGJqBiB00JniIsmyqtM/gwnTwpJfWouO0SBvY
-e2xPdQspPbE4ruK1OXKAFbaVHTRVm11rhtfLxE5Ow6CfsSWemRgf5v2FnD1vdnZ1
-p6wVwj4vyE1Ia8UyUSYH4+TA9T3kXeIPHZR9kqWE4jiW9JMYnyIUgzZAGvdqPyL2
-Tz4Oe7cYehZVCnstbhCCsPWBUy6qSbDrMi0WYKlDVGDH9+R37tmoT8IGJ4RXXcmP
-dgE5Zcb2ernEQiD6ZxGLCUxfltLnZG3bPiCWPMtwI5VXLINPRAafMf2iYGEtM0zL
-DS9EUE0jk0FD4+2dkx0nYk5A6Ag2IhJAQSn76Jz0IdQrxNb+K9zqHA2dN0PSd9z9
-PPlCzDjrpwxRQgcoP9D3plLo32ybwy/jO4sygq907KV69aZFGG7XyWh7/9bmBfB0
-5XV0YhZ1tmiLH2TBQ/DEitUiN/CLJrNeuCgmM/6qhKoGefyopBMqxlF78UBlDGQB
-N6d6DaTAmCVO1sddEvVOd0D32fe86ugnLcxdu3/8mbG8pPrv3RGsFsh+RMBMNqWc
-g8xd0db96ITxPVj8W+Fy
-=jOn+
------END PGP SIGNATURE-----
+3. Do you think using ( << and >> ) instead of (*, /) saves some cycles
+considering we could have potentially have grow,shrink numbers != power of 2
 
---hNG1vEeyG8BCaHbQ--
+> +
+>   extern const ulong vmx_return;
+>
+>   #define NR_AUTOLOAD_MSRS 8
+> @@ -5679,12 +5697,73 @@ out:
+>   	return ret;
+>   }
+>
+> +static int __grow_ple_window(int val)
+> +{
+> +	if (ple_window_grow < 1)
+
+why not ple_window_grow <= 1 ?
+
+
+> +		return ple_window;
+> +
+> +	val = min(val, ple_window_actual_max);
+> +
+> +	if (ple_window_grow < ple_window)
+> +		val *= ple_window_grow;
+> +	else
+> +		val += ple_window_grow;
+> +
+> +	return val;
+> +}
+> +
+> +static int __shrink_ple_window(int val, int modifier, int minimum)
+> +{
+> +	if (modifier < 1)
+
+why not modifier < 1. May be this would address a concern in patch 6.
+
+> +		return ple_window;
+> +
+> +	if (modifier < ple_window)
+> +		val /= modifier;
+> +	else
+> +		val -= modifier;
+> +
+> +	return max(val, minimum);
+> +}
+> +
+> +static void grow_ple_window(struct kvm_vcpu *vcpu)
+> +{
+> +	struct vcpu_vmx *vmx = to_vmx(vcpu);
+> +
+> +	vmx->ple_window = __grow_ple_window(vmx->ple_window);
+> +}
+> +
+> +static void shrink_ple_window(struct kvm_vcpu *vcpu)
+> +{
+> +	struct vcpu_vmx *vmx = to_vmx(vcpu);
+> +
+> +	vmx->ple_window = __shrink_ple_window(vmx->ple_window,
+> +	                                      ple_window_shrink, ple_window);
+> +}
+> +
+> +/*
+> + * ple_window_actual_max is computed to be one grow_ple_window() below
+> + * ple_window_max. (See __grow_ple_window for the reason.)
+> + * This prevents overflows, because ple_window_max is int.
+> + * ple_window_max effectively rounded down to a multiple of ple_window_grow in
+> + * this process.
+> + * ple_window_max is also prevented from setting vmx->ple_window < ple_window.
+> + */
+> +static void update_ple_window_actual_max(void)
+> +{
+> +	ple_window_actual_max =
+> +			__shrink_ple_window(max(ple_window_max, ple_window),
+> +			                    ple_window_grow, INT_MIN);
+> +}
+> +
+>   /*
+>    * Indicate a busy-waiting vcpu in spinlock. We do not enable the PAUSE
+>    * exiting, so only get here on cpu with PAUSE-Loop-Exiting.
+>    */
+>   static int handle_pause(struct kvm_vcpu *vcpu)
+>   {
+> +	if (ple_gap)
+> +		grow_ple_window(vcpu);
+> +
+>   	skip_emulated_instruction(vcpu);
+>   	kvm_vcpu_on_spin(vcpu);
+>
+> @@ -8854,6 +8933,8 @@ static int vmx_check_intercept(struct kvm_vcpu *vcpu,
+>
+>   void vmx_sched_in(struct kvm_vcpu *vcpu, int cpu)
+>   {
+> +	if (ple_gap)
+> +		shrink_ple_window(vcpu);
+>   }
+>
+>   static struct kvm_x86_ops vmx_x86_ops = {
+> @@ -9077,6 +9158,8 @@ static int __init vmx_init(void)
+>   	} else
+>   		kvm_disable_tdp();
+>
+> +	update_ple_window_actual_max();
+> +
+>   	return 0;
+>
+>   out7:
+>
+
