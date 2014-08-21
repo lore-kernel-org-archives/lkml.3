@@ -1,473 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaHUSxL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 14:53:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59327 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571AbaHUSxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 14:53:08 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Dmitry Torokhov <dtor@mail.ru>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Dan Murphy <dmurphy@ti.com>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH V3 2/2] Input: misc: introduce palmas-pwrbutton
-Date: Thu, 21 Aug 2014 13:52:38 -0500
-Message-ID: <1408647158-24723-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408392810-16011-1-git-send-email-nm@ti.com>
-References: <1408392810-16011-1-git-send-email-nm@ti.com>
+	id S1753870AbaHUSyU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 14:54:20 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:35648 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaHUSyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 14:54:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1408580838-29236-3-git-send-email-minchan@kernel.org>
+References: <1408580838-29236-1-git-send-email-minchan@kernel.org> <1408580838-29236-3-git-send-email-minchan@kernel.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Thu, 21 Aug 2014 14:53:57 -0400
+X-Google-Sender-Auth: Yx9SY3LTqWPlhi0oC3NSgyVt67g
+Message-ID: <CALZtONBuZOORHAF0UHEZM7Aybuoesg3fyjnu9ACj_F7O5G35Og@mail.gmail.com>
+Subject: Re: [PATCH v3 2/4] zsmalloc: change return value unit of zs_get_total_size_bytes
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        David Horner <ds2horner@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many palmas family of PMICs have support for interrupt based power
-button. This allows the device to notify the processor of external
-push button events over the shared palmas interrupt. However, this
-event is generated only during a "press" operation. Software is
-supposed to poll(sigh!) for detecting a release event.
+On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
+> zs_get_total_size_bytes returns a amount of memory zsmalloc
+> consumed with *byte unit* but zsmalloc operates *page unit*
+> rather than byte unit so let's change the API so benefit
+> we could get is that reduce unnecessary overhead
+> (ie, change page unit with byte unit) in zsmalloc.
+>
+> Now, zswap can rollback to zswap_pool_pages.
+> Over to zswap guys ;-)
 
-The PMIC also supports ability to power off independent of the
-software decisions when the button is pressed for a long duration if
-the PMIC is appropriately configured on the platform.
+We could change zpool/zswap over to total pages instead of total
+bytes, since both zbud and zsmalloc now report size in pages.  The
+only downside would be if either changed later to not use only whole
+pages (or if they start using huge pages for storage...), but for what
+they do that seems unlikely.  After this patch is finalized I can
+write up a quick patch unless Seth disagrees (or already has a patch
+:)
 
-Even though the function is similar to twl4030_pwrbutton, it is
-substantially different in operation to belong to a new driver of it's
-own.
+>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/block/zram/zram_drv.c |  4 ++--
+>  include/linux/zsmalloc.h      |  2 +-
+>  mm/zsmalloc.c                 | 10 +++++-----
+>  3 files changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index d00831c3d731..302dd37bcea3 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
+>
+>         down_read(&zram->init_lock);
+>         if (init_done(zram))
+> -               val = zs_get_total_size_bytes(meta->mem_pool);
+> +               val = zs_get_total_size(meta->mem_pool);
+>         up_read(&zram->init_lock);
+>
+> -       return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
+> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
+>  }
+>
+>  static ssize_t max_comp_streams_show(struct device *dev,
+> diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+> index e44d634e7fb7..105b56e45d23 100644
+> --- a/include/linux/zsmalloc.h
+> +++ b/include/linux/zsmalloc.h
+> @@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+>                         enum zs_mapmode mm);
+>  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+>
+> -u64 zs_get_total_size_bytes(struct zs_pool *pool);
+> +unsigned long zs_get_total_size(struct zs_pool *pool);
 
-Based on original work done by Girish S Ghongdemath <girishsg@ti.com>
+minor naming suggestion, but since the name is changing anyway,
+"zs_get_total_size" implies to me the units are bytes, would
+"zs_get_total_pages" be clearer that it's returning size in # of
+pages, not bytes?
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-
-I am not re-posting patch #1/2 as it is already available in
-https://patchwork.kernel.org/patch/4758681/ without any comments. Do
-let me know if we want it reposted.
-
-Changes since V2:
- - Integrated review comments of v2 (improvement in dt parse, header
-   cleanups, no more managed resource usage)
-
-V2: https://patchwork.kernel.org/patch/4758711/
-V1: https://patchwork.kernel.org/patch/4739041/
-
- drivers/input/misc/Kconfig            |   10 +
- drivers/input/misc/Makefile           |    1 +
- drivers/input/misc/palmas-pwrbutton.c |  368 +++++++++++++++++++++++++++++++++
- 3 files changed, 379 insertions(+)
- create mode 100644 drivers/input/misc/palmas-pwrbutton.c
-
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 2ff4425..0224dcf 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -451,6 +451,16 @@ config HP_SDC_RTC
- 	  Say Y here if you want to support the built-in real time clock
- 	  of the HP SDC controller.
- 
-+config INPUT_PALMAS_PWRBUTTON
-+	tristate "Palmas Power button Driver"
-+	depends on MFD_PALMAS
-+	help
-+	  Say Y here if you want to enable power key reporting via the
-+	  Palmas family of PMICs.
-+
-+	  To compile this driver as a module, choose M here. The module will
-+	  be called palmas_pwrbutton.
-+
- config INPUT_PCF50633_PMU
- 	tristate "PCF50633 PMU events"
- 	depends on MFD_PCF50633
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 4955ad3..e3d5efb 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_INPUT_MAX8997_HAPTIC)	+= max8997_haptic.o
- obj-$(CONFIG_INPUT_MC13783_PWRBUTTON)	+= mc13783-pwrbutton.o
- obj-$(CONFIG_INPUT_MMA8450)		+= mma8450.o
- obj-$(CONFIG_INPUT_MPU3050)		+= mpu3050.o
-+obj-$(CONFIG_INPUT_PALMAS_PWRBUTTON)	+= palmas-pwrbutton.o
- obj-$(CONFIG_INPUT_PCAP)		+= pcap_keys.o
- obj-$(CONFIG_INPUT_PCF50633_PMU)	+= pcf50633-input.o
- obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
-diff --git a/drivers/input/misc/palmas-pwrbutton.c b/drivers/input/misc/palmas-pwrbutton.c
-new file mode 100644
-index 0000000..4d48108
---- /dev/null
-+++ b/drivers/input/misc/palmas-pwrbutton.c
-@@ -0,0 +1,368 @@
-+/*
-+ * Texas Instruments' Palmas Power Button Input Driver
-+ *
-+ * Copyright (C) 2012-2014 Texas Instruments Incorporated - http://www.ti.com/
-+ *	Girish S Ghongdemath
-+ *	Nishanth Menon
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+#include <linux/init.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/mfd/palmas.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+#define PALMAS_LPK_TIME_MASK		0x0c
-+#define PALMAS_PWRON_DEBOUNCE_MASK	0x03
-+#define PALMAS_PWR_KEY_PRESS		0x01
-+#define PALMAS_PWR_KEY_Q_TIME_MS	20
-+
-+/**
-+ * struct palmas_pwron - Palmas power on data
-+ * @palmas:		pointer to palmas device
-+ * @input_dev:		pointer to input device
-+ * @irq:		irq that we are hooked on to
-+ * @input_work:		work for detecting release of key
-+ * @current_state:	key current state
-+ * @key_recheck_ms:	duration for recheck of key (in milli-seconds)
-+ */
-+struct palmas_pwron {
-+	struct palmas *palmas;
-+	struct input_dev *input_dev;
-+	int irq;
-+	struct delayed_work input_work;
-+	int current_state;
-+	u32 key_recheck_ms;
-+};
-+
-+/**
-+ * struct palmas_pwron_config - configuration of palmas power on
-+ * @long_press_time_val:	value for long press h/w shutdown event
-+ * @pwron_debounce_val:		value for debounce of power button
-+ */
-+struct palmas_pwron_config {
-+	u8 long_press_time_val;
-+	u8 pwron_debounce_val;
-+};
-+
-+/**
-+ * palmas_get_pwr_state() - read button state
-+ * @pwron: pointer to pwron struct
-+ *
-+ * Return: 0 for no press, PALMAS_PWR_KEY_PRESS for keypress
-+ * and on error, appropriate error value.
-+ */
-+static int palmas_get_pwr_state(struct palmas_pwron *pwron)
-+{
-+	struct input_dev *input_dev = pwron->input_dev;
-+	struct device *dev = input_dev->dev.parent;
-+	unsigned int reg = 0;
-+	int ret;
-+
-+	ret = palmas_read(pwron->palmas, PALMAS_INTERRUPT_BASE,
-+			  PALMAS_INT1_LINE_STATE, &reg);
-+	if (ret) {
-+		dev_err(dev, "%s:Cannot read palmas PWRON status(%d)\n",
-+			__func__, ret);
-+		return ret;
-+	}
-+
-+	/* PWRON line state is BIT(1) of the register */
-+	return reg & BIT(1) ? 0 : PALMAS_PWR_KEY_PRESS;
-+}
-+
-+/**
-+ * palmas_power_button_work() - Detects the button release event
-+ * @work:	work item to detect button release
-+ */
-+static void palmas_power_button_work(struct work_struct *work)
-+{
-+	struct palmas_pwron *pwron = container_of((struct delayed_work *)work,
-+						  struct palmas_pwron,
-+						  input_work);
-+	struct input_dev *input_dev = pwron->input_dev;
-+	int next_state;
-+
-+	next_state = palmas_get_pwr_state(pwron);
-+	if (next_state < 0)
-+		return;
-+
-+	/*
-+	 * If the state did not change then schedule a work item to check the
-+	 * status of the power button line
-+	 */
-+	if (next_state == pwron->current_state) {
-+		schedule_delayed_work(&pwron->input_work,
-+				      msecs_to_jiffies(pwron->key_recheck_ms));
-+		return;
-+	}
-+
-+	pwron->current_state = next_state;
-+	input_report_key(input_dev, KEY_POWER, pwron->current_state);
-+	input_sync(input_dev);
-+}
-+
-+/**
-+ * pwron_irq() - button press isr
-+ * @irq:		irq
-+ * @palmas_pwron:	pwron struct
-+ *
-+ * Return: IRQ_HANDLED
-+ */
-+static irqreturn_t pwron_irq(int irq, void *palmas_pwron)
-+{
-+	struct palmas_pwron *pwron = palmas_pwron;
-+	struct input_dev *input_dev = pwron->input_dev;
-+
-+	pwron->current_state = PALMAS_PWR_KEY_PRESS;
-+
-+	input_report_key(input_dev, KEY_POWER, pwron->current_state);
-+	pm_wakeup_event(input_dev->dev.parent, 0);
-+	input_sync(input_dev);
-+
-+	mod_delayed_work(system_wq, &pwron->input_work,
-+			 msecs_to_jiffies(pwron->key_recheck_ms));
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * palmas_pwron_params_ofinit() - device tree parameter parser
-+ * @dev:	palmas button device
-+ * @config:	configuration params that this fills up
-+ */
-+static void palmas_pwron_params_ofinit(struct device *dev,
-+				       struct palmas_pwron_config *config)
-+{
-+	struct device_node *np;
-+	u32 val;
-+	int i, ret;
-+	u8 lpk_times[] = { 6, 8, 10, 12 };
-+	int pwr_on_deb_ms[] = { 15, 100, 500, 1000 };
-+
-+	/* Default config parameters */
-+	config->long_press_time_val = ARRAY_SIZE(lpk_times) - 1;
-+
-+	/* Handle cases where device node based configuration is not present */
-+	if (!of_have_populated_dt())
-+		return;
-+	np = of_node_get(dev->of_node);
-+	if (!np)
-+		return;
-+
-+	ret = of_property_read_u32(np, "ti,palmas-long-press-seconds", &val);
-+	if (!ret) {
-+		for (i = 0; i < ARRAY_SIZE(lpk_times); i++) {
-+			if (val <= lpk_times[i]) {
-+				config->long_press_time_val = i;
-+				break;
-+			}
-+		}
-+	}
-+
-+	ret = of_property_read_u32(np, "ti,palmas-pwron-debounce-milli-seconds",
-+				   &val);
-+	if (!ret) {
-+		for (i = 0; i < ARRAY_SIZE(pwr_on_deb_ms); i++) {
-+			if (val <= pwr_on_deb_ms[i]) {
-+				config->pwron_debounce_val = i;
-+				break;
-+			}
-+		}
-+	}
-+
-+	dev_info(dev, "h/w controlled shutdown duration=%d seconds\n",
-+		 lpk_times[config->long_press_time_val]);
-+
-+	of_node_put(np);
-+}
-+
-+/**
-+ * palmas_pwron_probe() - probe
-+ * @pdev:	platform device for the button
-+ *
-+ * Return: 0 for successful probe else appropriate error
-+ */
-+static int palmas_pwron_probe(struct platform_device *pdev)
-+{
-+	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
-+	struct device *dev = &pdev->dev;
-+	struct input_dev *input_dev;
-+	struct palmas_pwron *pwron;
-+	int irq, ret, val;
-+	struct palmas_pwron_config config = { 0 };
-+
-+	palmas_pwron_params_ofinit(dev, &config);
-+
-+	pwron = kzalloc(sizeof(*pwron), GFP_KERNEL);
-+	if (!pwron)
-+		return -ENOMEM;
-+
-+	input_dev = input_allocate_device();
-+	if (!input_dev) {
-+		dev_err(dev, "Can't allocate power button\n");
-+		ret = -ENOMEM;
-+		goto exit_pwron;
-+	}
-+
-+	/*
-+	 * Setup default hardware shutdown option (long key press)
-+	 * and debounce.
-+	 */
-+	val = config.long_press_time_val << __ffs(PALMAS_LPK_TIME_MASK);
-+	val |= config.pwron_debounce_val << __ffs(PALMAS_PWRON_DEBOUNCE_MASK);
-+	ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
-+				 PALMAS_LONG_PRESS_KEY,
-+				 PALMAS_LPK_TIME_MASK |
-+				 PALMAS_PWRON_DEBOUNCE_MASK, val);
-+	if (ret < 0) {
-+		dev_err(dev, "LONG_PRESS_KEY_UPDATE failed!\n");
-+		goto exit_input_dev;
-+	}
-+
-+	input_dev->evbit[0] = BIT_MASK(EV_KEY);
-+	input_dev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
-+	input_dev->name = "palmas_pwron";
-+	input_dev->phys = "palmas_pwron/input0";
-+	input_dev->dev.parent = dev;
-+
-+	pwron->palmas = palmas;
-+	pwron->input_dev = input_dev;
-+
-+	INIT_DELAYED_WORK(&pwron->input_work, palmas_power_button_work);
-+
-+	irq = platform_get_irq(pdev, 0);
-+	ret = request_threaded_irq(irq, NULL, pwron_irq,
-+				   IRQF_TRIGGER_HIGH |
-+				   IRQF_TRIGGER_LOW, dev_name(dev), pwron);
-+	if (ret < 0) {
-+		dev_err(dev, "Can't get IRQ for pwron: %d\n", ret);
-+		goto exit_input_dev;
-+	}
-+
-+	device_init_wakeup(dev, true);
-+
-+	ret = input_register_device(input_dev);
-+	if (ret) {
-+		free_irq(irq, pwron);
-+		cancel_delayed_work_sync(&pwron->input_work);
-+		dev_dbg(dev, "Can't register power button: %d\n", ret);
-+		goto exit_free_irq;
-+	}
-+	pwron->irq = irq;
-+
-+	pwron->key_recheck_ms = PALMAS_PWR_KEY_Q_TIME_MS;
-+
-+	platform_set_drvdata(pdev, pwron);
-+
-+	return 0;
-+
-+exit_free_irq:
-+	free_irq(irq, pwron);
-+exit_input_dev:
-+	input_free_device(input_dev);
-+exit_pwron:
-+	kfree(pwron);
-+
-+	return ret;
-+}
-+
-+/**
-+ * palmas_pwron_remove() - Cleanup on removal
-+ * @pdev:	platform device for the button
-+ *
-+ * Return: 0
-+ */
-+static int palmas_pwron_remove(struct platform_device *pdev)
-+{
-+	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
-+
-+	free_irq(pwron->irq, pwron);
-+	cancel_delayed_work_sync(&pwron->input_work);
-+	input_unregister_device(pwron->input_dev);
-+	input_free_device(pwron->input_dev);
-+	kfree(pwron);
-+
-+	return 0;
-+}
-+
-+/**
-+ * palmas_pwron_suspend() - suspend handler
-+ * @dev:	power button device
-+ *
-+ * Cancel all pending work items for the power button, setup irq for wakeup
-+ *
-+ * Return: 0
-+ */
-+static int palmas_pwron_suspend(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
-+
-+	cancel_delayed_work_sync(&pwron->input_work);
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(pwron->irq);
-+
-+	return 0;
-+}
-+
-+/**
-+ * palmas_pwron_resume() - resume handler
-+ * @dev:	power button device
-+ *
-+ * Just disable the wakeup capability of irq here.
-+ *
-+ * Return: 0
-+ */
-+static int palmas_pwron_resume(struct device *dev)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(pwron->irq);
-+
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(palmas_pwron_pm,
-+			 palmas_pwron_suspend, palmas_pwron_resume);
-+
-+#ifdef CONFIG_OF
-+static struct of_device_id of_palmas_pwr_match[] = {
-+	{.compatible = "ti,palmas-pwrbutton"},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(of, of_palmas_pwr_match);
-+#endif
-+
-+static struct platform_driver palmas_pwron_driver = {
-+	.probe = palmas_pwron_probe,
-+	.remove = palmas_pwron_remove,
-+	.driver = {
-+		   .name = "palmas_pwrbutton",
-+		   .owner = THIS_MODULE,
-+		   .of_match_table = of_match_ptr(of_palmas_pwr_match),
-+		   .pm = &palmas_pwron_pm,
-+	},
-+};
-+module_platform_driver(palmas_pwron_driver);
-+
-+MODULE_ALIAS("platform:palmas-pwrbutton");
-+MODULE_DESCRIPTION("Palmas Power Button");
-+MODULE_LICENSE("GPL V2");
-+MODULE_AUTHOR("Texas Instruments Inc.");
--- 
-1.7.9.5
-
+>
+>  #endif
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index a65924255763..80408a1da03a 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
+>
+>  static u64 zs_zpool_total_size(void *pool)
+>  {
+> -       return zs_get_total_size_bytes(pool);
+> +       return zs_get_total_size(pool) << PAGE_SHIFT;
+>  }
+>
+>  static struct zpool_driver zs_zpool_driver = {
+> @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>  }
+>  EXPORT_SYMBOL_GPL(zs_unmap_object);
+>
+> -u64 zs_get_total_size_bytes(struct zs_pool *pool)
+> +unsigned long zs_get_total_size(struct zs_pool *pool)
+>  {
+> -       u64 npages;
+> +       unsigned long npages;
+>
+>         spin_lock(&pool->stat_lock);
+>         npages = pool->pages_allocated;
+>         spin_unlock(&pool->stat_lock);
+> -       return npages << PAGE_SHIFT;
+> +       return npages;
+>  }
+> -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
+> +EXPORT_SYMBOL_GPL(zs_get_total_size);
+>
+>  module_init(zs_init);
+>  module_exit(zs_exit);
+> --
+> 2.0.0
+>
