@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaHUCGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 22:06:33 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:58416 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaHUCGc (ORCPT
+	id S1751349AbaHUCLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 22:11:40 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:59089 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaHUCLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 22:06:32 -0400
-Message-ID: <53F55423.7030902@gmail.com>
-Date: Wed, 20 Aug 2014 22:06:27 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Zhu Yanjun <zyjzyj2000@gmail.com>, dborkman@redhat.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        tuexen@fh-muenster.de, khandelwal.deepak.1987@gmail.com,
-        Yue.Tao@windriver.com, alexandre.dietsch@windriver.com,
-        davem@davemloft.net
-CC: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Subject: Re: [PATCH 1/1] sctp: not send SCTP_PEER_ADDR_CHANGE notifications
- with failed probe
-References: <1408527103-22772-1-git-send-email-Yanjun.Zhu@windriver.com> <1408527103-22772-2-git-send-email-Yanjun.Zhu@windriver.com>
-In-Reply-To: <1408527103-22772-2-git-send-email-Yanjun.Zhu@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 20 Aug 2014 22:11:39 -0400
+Message-ID: <1408587094.10818.1.camel@phoenix>
+Subject: [PATCH] regulator: core: Add back the const qualifier for ops of
+ struct regulator_desc
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 21 Aug 2014 10:11:34 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2014 05:31 AM, Zhu Yanjun wrote:
-> Since the transport has always been in state SCTP_UNCONFIRMED, it
-> therefore wasn't active before and hasn't been used before, and it
-> always has been, so it is unnecessary to bug the user with a 
-> notification.
-> 
-> Reported-by: Deepak Khandelwal <khandelwal.deepak.1987@gmail.com>  
-> Suggested-by: Vlad Yasevich <vyasevich@gmail.com> 
-> Suggested-by: Michael Tuexen <tuexen@fh-muenster.de>
-> Suggested-by: Daniel Borkmann <dborkman@redhat.com>
-> Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
+Fix below build warning:
+CC [M]  drivers/regulator/hi6421-regulator.o
+drivers/regulator/hi6421-regulator.c:356:2: warning: initialization discards 'const' qualifier from pointer target type [enabled by default]
 
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+This is a revert of commit 716845ebeb50 ("regulator: core: Fix build error due
+to const qualifier for ops"). The build error was fixed by commit 39f5460d7f9c
+("regulator: core: add const to regulator_ops and fix build error in mc13892").
 
-Thanks
--vlad
-> ---
->  net/sctp/associola.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-> index 9de23a2..2e23f6b 100644
-> --- a/net/sctp/associola.c
-> +++ b/net/sctp/associola.c
-> @@ -813,6 +813,7 @@ void sctp_assoc_control_transport(struct sctp_association *asoc,
->  		else {
->  			dst_release(transport->dst);
->  			transport->dst = NULL;
-> +			ulp_notify = false;
->  		}
->  
->  		spc_state = SCTP_ADDR_UNREACHABLE;
-> 
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ include/linux/regulator/driver.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
+index 3abda75..efe058f 100644
+--- a/include/linux/regulator/driver.h
++++ b/include/linux/regulator/driver.h
+@@ -246,7 +246,7 @@ struct regulator_desc {
+ 	int id;
+ 	bool continuous_voltage_range;
+ 	unsigned n_voltages;
+-	struct regulator_ops *ops;
++	const struct regulator_ops *ops;
+ 	int irq;
+ 	enum regulator_type type;
+ 	struct module *owner;
+-- 
+1.9.1
+
+
 
