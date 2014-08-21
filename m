@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaHUCkm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 22:40:42 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:60120 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaHUCki convert rfc822-to-8bit (ORCPT
+	id S1753483AbaHUClr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 22:41:47 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:35921 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351AbaHUClp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 22:40:38 -0400
-X-CheckPoint: {53F55C1B-0-2100090A-C0000000}
-From: Tony Lu <zlu@tilera.com>
-To: Pranith Kumar <bobby.prani@gmail.com>, Vineet Gupta <vgupta@synopsys.com>,
-        Richard Kuo <rkuo@codeaurora.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        "Chris Zankel" <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Noam Camus <noamc@ezchip.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Kirill Tkhai <tkhai@yandex.ru>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:QUALCOMM HEXAGON..." <linux-hexagon@vger.kernel.org>,
-        "open list:SUPERH" <linux-sh@vger.kernel.org>,
-        "open list:TENSILICA XTENSA..." <linux-xtensa@linux-xtensa.org>
-Subject: RE: [PATCH v2] flush_icache_range: Export symbol to fix build errors
-Thread-Topic: [PATCH v2] flush_icache_range: Export symbol to fix build
- errors
-Thread-Index: AQHPuv10MipVopSHEU+4WB2NEqTpJpvaWuJA
-Date: Thu, 21 Aug 2014 02:40:26 +0000
-Message-ID: <BAB94DBB0E89D8409949BC28AC95914C5D78D05E@USMAExch1.tad.internal.tilera.com>
-References: <1408377559-30775-1-git-send-email-bobby.prani@gmail.com>
-In-Reply-To: <1408377559-30775-1-git-send-email-bobby.prani@gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.200.0.90]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 20 Aug 2014 22:41:45 -0400
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+X-Google-Original-From: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+To: <benh@kernel.crashing.org>, <paulus@samba.org>, <mpe@ellerman.id.au>,
+        <paulmck@linux.vnet.ibm.com>, <anton@samba.org>,
+        <aneesh.kumar@linux.vnet.ibm.com>, <jk@ozlabs.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <jbaron@akamai.com>
+Cc: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: [PATCH 1/1] powerpc/jump_label: use HAVE_JUMP_LABEL?  
+Date: Thu, 21 Aug 2014 10:41:23 +0800
+Message-Id: <1408588883-26783-1-git-send-email-yizhouzhou@ict.ac.cn>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->Fix building errors occuring due to a missing export of flush_icache_range()
->in
->
->kisskb.ellerman.id.au/kisskb/buildresult/11677809/
->
->ERROR: "flush_icache_range" [drivers/misc/lkdtm.ko] undefined!
->
->Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
->CC: Andrew Morton <akpm@linux-foundation.org>
->---
-> arch/arc/mm/cache_arc700.c | 1 +
-> arch/hexagon/mm/cache.c    | 1 +
-> arch/sh/mm/cache.c         | 1 +
-> arch/tile/kernel/smp.c     | 1 +
-> arch/xtensa/kernel/smp.c   | 1 +
-> 5 files changed, 5 insertions(+)
->
+CONFIG_JUMP_LABEL doesn't ensure HAVE_JUMP_LABEL, if it
+is not the case use maintainers's own mutex to guard
+the modification of global values.
 
-For Tile,
 
-Acked-by: Zhigang Lu <zlu@tilera.com>
+Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+---
+ arch/powerpc/platforms/powernv/opal-tracepoints.c |    2 +-
+ arch/powerpc/platforms/pseries/lpar.c             |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/powerpc/platforms/powernv/opal-tracepoints.c b/arch/powerpc/platforms/powernv/opal-tracepoints.c
+index d8a000a..ae14c40 100644
+--- a/arch/powerpc/platforms/powernv/opal-tracepoints.c
++++ b/arch/powerpc/platforms/powernv/opal-tracepoints.c
+@@ -2,7 +2,7 @@
+ #include <linux/jump_label.h>
+ #include <asm/trace.h>
+ 
+-#ifdef CONFIG_JUMP_LABEL
++#ifdef HAVE_JUMP_LABEL
+ struct static_key opal_tracepoint_key = STATIC_KEY_INIT;
+ 
+ void opal_tracepoint_regfunc(void)
+diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
+index 34e6423..059cfe0 100644
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -642,7 +642,7 @@ EXPORT_SYMBOL(arch_free_page);
+ #endif
+ 
+ #ifdef CONFIG_TRACEPOINTS
+-#ifdef CONFIG_JUMP_LABEL
++#ifdef HAVE_JUMP_LABEL
+ struct static_key hcall_tracepoint_key = STATIC_KEY_INIT;
+ 
+ void hcall_tracepoint_regfunc(void)
+-- 
+1.7.10.4
+
