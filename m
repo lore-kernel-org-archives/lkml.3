@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaHUPpa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 11:45:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43669 "EHLO mx2.suse.de"
+	id S1752266AbaHUPqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 11:46:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43725 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477AbaHUPp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 11:45:28 -0400
-Date: Thu, 21 Aug 2014 10:45:26 -0500 (CDT)
+	id S1751656AbaHUPqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 11:46:15 -0400
+Date: Thu, 21 Aug 2014 10:46:12 -0500 (CDT)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Ben Hawkes <hawkes@google.com>,
         Benjamin Tissoires <benjamin.tissoires@redhat.com>
 cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] HID: logitech: perform bounds checking on device_id early
- enough
-Message-ID: <alpine.LNX.2.00.1408211044300.23162@pobox.suse.cz>
+Subject: [PATCH] HID: fix a couple of off-by-ones
+Message-ID: <alpine.LNX.2.00.1408211045280.23162@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -21,59 +20,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-device_index is a char type and the size of paired_dj_deivces is 7 
-elements, therefore proper bounds checking has to be applied to 
-device_index before it is used.
-
-We are currently performing the bounds checking in
-logi_dj_recv_add_djhid_device(), which is too late, as malicious device
-could send REPORT_TYPE_NOTIF_DEVICE_UNPAIRED early enough and trigger the
-problem in one of the report forwarding functions called from
-logi_dj_raw_event().
-
-Fix this by performing the check at the earliest possible ocasion in
-logi_dj_raw_event().
+There are a few very theoretical off-by-one bugs in report descriptor size 
+checking when performing a pre-parsing fixup. Fix those.
 
 Cc: stable@vger.kernel.org
 Reported-by: Ben Hawkes <hawkes@google.com>
 Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- drivers/hid/hid-logitech-dj.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/hid/hid-cherry.c   | 2 +-
+ drivers/hid/hid-kye.c      | 2 +-
+ drivers/hid/hid-lg.c       | 4 ++--
+ drivers/hid/hid-monterey.c | 2 +-
+ drivers/hid/hid-petalynx.c | 2 +-
+ drivers/hid/hid-sunplus.c  | 2 +-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index ca0ab51..b7ba829 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -238,13 +238,6 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
- 		return;
+diff --git a/drivers/hid/hid-cherry.c b/drivers/hid/hid-cherry.c
+index 1bdcccc..f745d2c 100644
+--- a/drivers/hid/hid-cherry.c
++++ b/drivers/hid/hid-cherry.c
+@@ -28,7 +28,7 @@
+ static __u8 *ch_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 17 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
++	if (*rsize >= 18 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
+ 		hid_info(hdev, "fixing up Cherry Cymotion report descriptor\n");
+ 		rdesc[11] = rdesc[16] = 0xff;
+ 		rdesc[12] = rdesc[17] = 0x03;
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index e776963..b92bf01 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -300,7 +300,7 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		 *   - change the button usage range to 4-7 for the extra
+ 		 *     buttons
+ 		 */
+-		if (*rsize >= 74 &&
++		if (*rsize >= 75 &&
+ 			rdesc[61] == 0x05 && rdesc[62] == 0x08 &&
+ 			rdesc[63] == 0x19 && rdesc[64] == 0x08 &&
+ 			rdesc[65] == 0x29 && rdesc[66] == 0x0f &&
+diff --git a/drivers/hid/hid-lg.c b/drivers/hid/hid-lg.c
+index a976f48..f91ff14 100644
+--- a/drivers/hid/hid-lg.c
++++ b/drivers/hid/hid-lg.c
+@@ -345,14 +345,14 @@ static __u8 *lg_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 	struct usb_device_descriptor *udesc;
+ 	__u16 bcdDevice, rev_maj, rev_min;
+ 
+-	if ((drv_data->quirks & LG_RDESC) && *rsize >= 90 && rdesc[83] == 0x26 &&
++	if ((drv_data->quirks & LG_RDESC) && *rsize >= 91 && rdesc[83] == 0x26 &&
+ 			rdesc[84] == 0x8c && rdesc[85] == 0x02) {
+ 		hid_info(hdev,
+ 			 "fixing up Logitech keyboard report descriptor\n");
+ 		rdesc[84] = rdesc[89] = 0x4d;
+ 		rdesc[85] = rdesc[90] = 0x10;
  	}
- 
--	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
--	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&djrcv_hdev->dev, "%s: invalid device index:%d\n",
--			__func__, dj_report->device_index);
--		return;
--	}
--
- 	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
- 		/* The device is already known. No need to reallocate it. */
- 		dbg_hid("%s: device is already known\n", __func__);
-@@ -690,6 +683,12 @@ static int logi_dj_raw_event(struct hid_device *hdev,
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
-+	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
-+		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+				__func__, dj_report->device_index);
-+		return false;
-+	}
- 
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
- 	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
-
+-	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 50 &&
++	if ((drv_data->quirks & LG_RDESC_REL_ABS) && *rsize >= 51 &&
+ 			rdesc[32] == 0x81 && rdesc[33] == 0x06 &&
+ 			rdesc[49] == 0x81 && rdesc[50] == 0x06) {
+ 		hid_info(hdev,
+diff --git a/drivers/hid/hid-monterey.c b/drivers/hid/hid-monterey.c
+index 9e14c00..25daf28 100644
+--- a/drivers/hid/hid-monterey.c
++++ b/drivers/hid/hid-monterey.c
+@@ -24,7 +24,7 @@
+ static __u8 *mr_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 30 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
++	if (*rsize >= 31 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
+ 		hid_info(hdev, "fixing up button/consumer in HID report descriptor\n");
+ 		rdesc[30] = 0x0c;
+ 	}
+diff --git a/drivers/hid/hid-petalynx.c b/drivers/hid/hid-petalynx.c
+index 736b250..6aca4f2 100644
+--- a/drivers/hid/hid-petalynx.c
++++ b/drivers/hid/hid-petalynx.c
+@@ -25,7 +25,7 @@
+ static __u8 *pl_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 60 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
++	if (*rsize >= 62 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
+ 			rdesc[41] == 0x00 && rdesc[59] == 0x26 &&
+ 			rdesc[60] == 0xf9 && rdesc[61] == 0x00) {
+ 		hid_info(hdev, "fixing up Petalynx Maxter Remote report descriptor\n");
+diff --git a/drivers/hid/hid-sunplus.c b/drivers/hid/hid-sunplus.c
+index 87fc91e..91072fa 100644
+--- a/drivers/hid/hid-sunplus.c
++++ b/drivers/hid/hid-sunplus.c
+@@ -24,7 +24,7 @@
+ static __u8 *sp_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+-	if (*rsize >= 107 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
++	if (*rsize >= 112 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
+ 			rdesc[106] == 0x03) {
+ 		hid_info(hdev, "fixing up Sunplus Wireless Desktop report descriptor\n");
+ 		rdesc[105] = rdesc[110] = 0x03;
 -- 
 Jiri Kosina
 SUSE Labs
