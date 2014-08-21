@@ -1,113 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324AbaHUJEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 05:04:14 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:51723 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918AbaHUJEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 05:04:11 -0400
-Date: Thu, 21 Aug 2014 11:04:07 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
- Controller
-Message-ID: <20140821090406.GA13733@ulmo>
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
- <20140821081619.GZ2452@ldesroches-Latitude-E6320>
- <20140821103706.2349915d@bbrezillon>
+	id S1753985AbaHUJGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 05:06:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61570 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791AbaHUJG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 05:06:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,907,1400050800"; 
+   d="scan'208";a="579779687"
+Date: Thu, 21 Aug 2014 12:05:31 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael@kernel.org>,
+        Al Stone <al.stone@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Josh Triplett <josh@joshtriplett.org>, Aaron Lu <aaron.lu@intel.com>,
+        Max Eliaser <max.eliaser@intel.com>,
+        Robert Moore <robert.moore@intel.com>, Len Brown <lenb@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Mark Brown <broonie@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-acpi@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 5/9] mfd: Add ACPI support
+Message-ID: <20140821090508.GK1660@lahna.fi.intel.com>
+References: <1408172039-32513-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1408172039-32513-6-git-send-email-mika.westerberg@linux.intel.com>
+ <20140820155459.GM4266@lee--X1>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140821103706.2349915d@bbrezillon>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140820155459.GM4266@lee--X1>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 20, 2014 at 04:54:59PM +0100, Lee Jones wrote:
+> On Sat, 16 Aug 2014, Mika Westerberg wrote:
+> > If an MFD device is backed by ACPI namespace, we should allow subdevice
+> > drivers to access their corresponding ACPI companion devices through normal
+> > means (e.g using ACPI_COMPANION()).
+> > 
+> > This patch adds such support to the MFD core. If the MFD parent device
+> > doesn't specify any ACPI _HID/_CID for the child device, the child device
+> > will share the parent ACPI companion device. Otherwise the child device
+> > will be assigned with the corresponding ACPI companion, if found in the
+> > namespace below the parent.
+> > 
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+> > ---
+> >  Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
+> >  drivers/mfd/mfd-core.c             | 41 ++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/core.h           |  3 +++
+> >  3 files changed, 71 insertions(+)
+> > 
+> > diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+> > index e182be5e3c83..74e35c54febf 100644
+> > --- a/Documentation/acpi/enumeration.txt
+> > +++ b/Documentation/acpi/enumeration.txt
+> > @@ -312,3 +312,30 @@ a code like this:
+> >  
+> >  There are also devm_* versions of these functions which release the
+> >  descriptors once the device is released.
+> > +
+> > +MFD devices
+> > +~~~~~~~~~~~
+> > +The MFD devices create platform devices from their children. For the
+> 
+> What does this mean?  MFD drivers register their children _as_
+> platform devices.
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Right, will fix.
 
-On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
-> Hi Ludovic,
->=20
-> On Thu, 21 Aug 2014 10:16:19 +0200
-> Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
->=20
-> > Hi Boris,
-> >=20
-> > You can add
-> >=20
-> > Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
->=20
-> Thanks for testing this driver.
->=20
-> >=20
-> > Only one issue but not related to your patches, you can't display
-> > quickly the bootup logo since the panel detection takes too much
-> > time.
->=20
-> Yes, actually this is related to the device probe order: the
-> hlcdc-display-controller device is probed before the simple-panel, thus
-> nothing is detected on the RGB connector (I use of_drm_find_panel to
-> check for panel availability) when the display controller is
-> instantiated. I rely on the default polling infrastructure provided by
-> the DRM/KMS framework which polls for a new connector every 10s, and
-> this is far more than you kernel boot time.
->=20
-> Do anyone see a solution to reduce this delay (without changing the
-> polling interval). I thought we could add a notifier infrastructure to
-> the DRM panel framework, but I'm not sure this is how you want things
-> done...
+> > +child devices there needs to be an ACPI handle that they can use to
+> > +reference parts of the ACPI namespace that relate to them. In the Linux
+> > +MFD subsystem we provide two ways:
+> > +
+> > +	o The children share the parent ACPI handle.
+> > +	o The MFD cell can specify the ACPI id of the device.
+> > +
+> > +For the first case, the MFD drivers do not need to do anything. The
+> > +resulting child platform device will have its ACPI_COMPANION() set to point
+> > +to the parent device.
+> > +
+> > +If the ACPI namespace has a device that we can match using an ACPI id,
+> > +the id should be set like:
+> > +
+> > +	static struct mfd_cell my_subdevice_cell = {
+> > +		.name = "my_subdevice",
+> > +		/* set the resources relative to the parent */
+> > +		.acpi_pnpid = "XYZ0001",
+> > +	};
+> > +
+> > +The ACPI id "XYZ0001" is then used to lookup an ACPI device directly under
+> > +the MFD device and if found, that ACPI companion device is bound to the
+> > +resulting child platform device.
+> > diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+> > index 892d343193ad..bb466b28b3b6 100644
+> > --- a/drivers/mfd/mfd-core.c
+> > +++ b/drivers/mfd/mfd-core.c
+> > @@ -78,6 +78,45 @@ static int mfd_platform_add_cell(struct platform_device *pdev,
+> >  	return 0;
+> >  }
+> >  
+> > +#if IS_ENABLED(CONFIG_ACPI)
+> > +static void mfd_acpi_add_device(const struct mfd_cell *cell,
+> > +				struct platform_device *pdev)
+> > +{
+> > +	struct acpi_device *parent_adev;
+> > +	struct acpi_device *adev = NULL;
+> > +
+> > +	parent_adev = ACPI_COMPANION(pdev->dev.parent);
+> > +	if (!parent_adev)
+> > +		return;
+> > +
+> > +	/*
+> > +	 * MFD child device gets its ACPI handle either from the ACPI
+> > +	 * device directly under the parent that matches the acpi_pnpid or
+> > +	 * it will use the parent handle if is no acpi_pnpid is given.
+> > +	 */
+> > +	if (cell->acpi_pnpid) {
+> > +		struct acpi_device_id ids[2] = {};
+> > +		struct acpi_device *child_adev;
+> > +
+> > +		strlcpy(ids[0].id, cell->acpi_pnpid, sizeof(ids[0].id));
+> > +		list_for_each_entry(child_adev, &parent_adev->children, node)
+> > +			if (acpi_match_device_ids(child_adev, ids)) {
+> > +				adev = child_adev;
+> > +				break;
+> > +			}
+> > +	} else {
+> > +		adev = parent_adev;
+> > +	}
+> > +
+> > +	ACPI_COMPANION_SET(&pdev->dev, adev);
+> > +}
+> > +#else
+> > +static inline void mfd_acpi_add_device(const struct mfd_cell *cell,
+> > +				       struct platform_device *pdev)
+> > +{
+> > +}
+> > +#endif
+> > +
+> 
+> I'm not keen on polluting the MFD core driver with #differy.  Can't you
+> think of another way to do it?
 
-Other drivers return -EPROBE_DEFER when a panel hasn't been registered
-yet. This will automatically take care of ordering things in a way that
-DRM/KMS will only be initialized after the panel has been probed. That
-will still cause some delay before everything gets set up, but hopefully
-less than what you're seeing now. There's also another thread where this
-is being discussed because deferred probing is causing "unacceptable"
-delays as well.
+It may be possible to do that since we only use few ACPI functions that
+have dummy stubs already.
 
-Thierry
-
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT9bYGAAoJEN0jrNd/PrOhiR0QAKPqY/pw7SOzbqhNaRLUXpyC
-v45fgFc1yf/hBavH74nxqXDiYMXU2qHCp69zimUGfOpJn7JbwlvqT2LaeOd2yV5X
-0PNVMpVaTqylfH9vfajwRE3NIWf/4qIHcGLyREKo4X/ancs8x4uOcNpH2/+J5YP0
-+I7/sncqt/W1LimMBtjtLoSBB70iEMS/BAOpEauRwzwfHyyRj+BJ/pP6HCLNurOU
-hL38P6ah3MJssunOoRJ0jwJGdJIHkratB27jgcV5HolnZyPHe5eUsS1vxTuPlrd4
-oVrLbjYbWk2HOvhTsf/YC8FrfQ6wKmhxSDg6frUsZIpdU531/mujmjVLabQn1RMd
-1hybaoI+sNhAqXd2e33V/ip/Pcp5/MOe6+PNPmVBuaxC9z9xbL4Z2ijVSmL1A7Hq
-a/MS1fyhAA7Td9gPS00L5jRm9cqpSumyK8B3E53pRBWnczVe4YZ+puD5rxVpHDoq
-b6bKvzpi6I2cQALYiHYWK2zRRs9p9CCvIKXUMdvvebYarbS98mSqw3FsWWq1F2ch
-A4kV+I2WL5xwzEPr/bCbnEqHdPrWS67qVf3ft23yNdJNxDghd6oNgQzOvqPxb/wY
-ZwcjSXDIycle6a/kIFBiddt/ka1QB8shCt7YSnLT7D2jPAqil7vFedccxywZeCQz
-0GQbn5GBwABzigZ4bjVF
-=r62m
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
+> 
+> >  static int mfd_add_device(struct device *parent, int id,
+> >  			  const struct mfd_cell *cell, atomic_t *usage_count,
+> >  			  struct resource *mem_base,
+> > @@ -118,6 +157,8 @@ static int mfd_add_device(struct device *parent, int id,
+> >  		}
+> >  	}
+> >  
+> > +	mfd_acpi_add_device(cell, pdev);
+> > +
+> >  	if (cell->pdata_size) {
+> >  		ret = platform_device_add_data(pdev,
+> >  					cell->platform_data, cell->pdata_size);
+> > diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+> > index f543de91ce19..73e1709d4c09 100644
+> > --- a/include/linux/mfd/core.h
+> > +++ b/include/linux/mfd/core.h
+> > @@ -44,6 +44,9 @@ struct mfd_cell {
+> >  	 */
+> >  	const char		*of_compatible;
+> >  
+> > +	/* Matches ACPI PNP id, either _HID or _CID */
+> > +	const char		*acpi_pnpid;
+> > +
+> >  	/*
+> >  	 * These resources can be specified relative to the parent device.
+> >  	 * For accessing hardware you should use resources from the platform dev
+> 
+> -- 
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
