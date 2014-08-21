@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaHUMze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:55:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64102 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754720AbaHUMzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:55:33 -0400
-Message-ID: <1408625680.5817.9.camel@localhost>
-Subject: Re: [PATCH] net: ipv6: fib: don't sleep inside atomic lock
-From: Hannes Frederic Sowa <hannes@redhat.com>
-To: Benjamin Block <bebl@mageta.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Aug 2014 14:54:40 +0200
-In-Reply-To: <1408551366-24237-1-git-send-email-bebl@mageta.org>
-References: <1408551366-24237-1-git-send-email-bebl@mageta.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754987AbaHUM5Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:57:24 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:39875 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753475AbaHUM5W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 08:57:22 -0400
+Date: Thu, 21 Aug 2014 14:57:17 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCHv3 0/9] Mark literal strings in __init / __exit code
+Message-ID: <20140821125717.GA28987@gmail.com>
+References: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mi, 2014-08-20 at 18:16 +0200, Benjamin Block wrote:
-> The function fib6_commit_metrics() allocates a piece of memory in mode
-> GFP_KERNEL while holding an atomic lock from higher up in the stack, in
-> the function __ip6_ins_rt(). This produces the following BUG:
-> 
-> > BUG: sleeping function called from invalid context at mm/slub.c:1250
-> > in_atomic(): 1, irqs_disabled(): 0, pid: 2909, name: dhcpcd
-> > 2 locks held by dhcpcd/2909:
-> >  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81978e67>] rtnl_lock+0x17/0x20
-> >  #1:  (&tb->tb6_lock){++--+.}, at: [<ffffffff81a6951a>] ip6_route_add+0x65a/0x800
-> > CPU: 1 PID: 2909 Comm: dhcpcd Not tainted 3.17.0-rc1 #1
-> > Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
-> >  0000000000000008 ffff8800c8f13858 ffffffff81af135a 0000000000000000
-> >  ffff880212202430 ffff8800c8f13878 ffffffff810f8d3a ffff880212202c98
-> >  0000000000000010 ffff8800c8f138c8 ffffffff8121ad0e 0000000000000001
-> > Call Trace:
-> >  [<ffffffff81af135a>] dump_stack+0x4e/0x68
-> >  [<ffffffff810f8d3a>] __might_sleep+0x10a/0x120
-> >  [<ffffffff8121ad0e>] kmem_cache_alloc_trace+0x4e/0x190
-> >  [<ffffffff81a6bcd6>] ? fib6_commit_metrics+0x66/0x110
-> >  [<ffffffff81a6bcd6>] fib6_commit_metrics+0x66/0x110
-> >  [<ffffffff81a6cbf3>] fib6_add+0x883/0xa80
-> >  [<ffffffff81a6951a>] ? ip6_route_add+0x65a/0x800
-> >  [<ffffffff81a69535>] ip6_route_add+0x675/0x800
-> >  [<ffffffff81a68f2a>] ? ip6_route_add+0x6a/0x800
-> >  [<ffffffff81a6990c>] inet6_rtm_newroute+0x5c/0x80
-> >  [<ffffffff8197cf01>] rtnetlink_rcv_msg+0x211/0x260
-> >  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
-> >  [<ffffffff81119708>] ? lock_release_holdtime+0x28/0x180
-> >  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
-> >  [<ffffffff8197ccf0>] ? __rtnl_unlock+0x20/0x20
-> >  [<ffffffff819a989e>] netlink_rcv_skb+0x6e/0xd0
-> >  [<ffffffff81978ee5>] rtnetlink_rcv+0x25/0x40
-> >  [<ffffffff819a8e59>] netlink_unicast+0xd9/0x180
-> >  [<ffffffff819a9600>] netlink_sendmsg+0x700/0x770
-> >  [<ffffffff81103735>] ? local_clock+0x25/0x30
-> >  [<ffffffff8194e83c>] sock_sendmsg+0x6c/0x90
-> >  [<ffffffff811f98e3>] ? might_fault+0xa3/0xb0
-> >  [<ffffffff8195ca6d>] ? verify_iovec+0x7d/0xf0
-> >  [<ffffffff8194ec3e>] ___sys_sendmsg+0x37e/0x3b0
-> >  [<ffffffff8111ef15>] ? trace_hardirqs_on_caller+0x185/0x220
-> >  [<ffffffff81af979e>] ? mutex_unlock+0xe/0x10
-> >  [<ffffffff819a55ec>] ? netlink_insert+0xbc/0xe0
-> >  [<ffffffff819a65e5>] ? netlink_autobind.isra.30+0x125/0x150
-> >  [<ffffffff819a6520>] ? netlink_autobind.isra.30+0x60/0x150
-> >  [<ffffffff819a84f9>] ? netlink_bind+0x159/0x230
-> >  [<ffffffff811f989a>] ? might_fault+0x5a/0xb0
-> >  [<ffffffff8194f25e>] ? SYSC_bind+0x7e/0xd0
-> >  [<ffffffff8194f8cd>] __sys_sendmsg+0x4d/0x80
-> >  [<ffffffff8194f912>] SyS_sendmsg+0x12/0x20
-> >  [<ffffffff81afc692>] system_call_fastpath+0x16/0x1b
-> 
-> Fixing this by replacing the mode GFP_KERNEL with GFP_NOWAIT.
-> 
-> Signed-off-by: Benjamin Block <bebl@mageta.org>
-> ---
->  net/ipv6/ip6_fib.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-> index cb4459b..7eef9fc 100644
-> --- a/net/ipv6/ip6_fib.c
-> +++ b/net/ipv6/ip6_fib.c
-> @@ -643,7 +643,7 @@ static int fib6_commit_metrics(struct dst_entry *dst,
->  	if (dst->flags & DST_HOST) {
->  		mp = dst_metrics_write_ptr(dst);
->  	} else {
-> -		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
-> +		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_NOWAIT);
->  		if (!mp)
->  			return -ENOMEM;
->  		dst_init_metrics(dst, mp, 0);
 
-I actually think we should go with GFP_ATOMIC like the rest of the
-stack. The code path we are talking about here mostly uses GFP_ATOMIC,
-so in case this one GFP_NOWAITit bails out via error path, all those
-GFP_ATOMIC allocations before were useless.
+* Mathias Krause <minipli@googlemail.com> wrote:
 
-Bye,
-Hannes
+> This is v3 of the patch series initially posted here:
+> 
+>   https://lkml.org/lkml/2014/6/22/149
+> 
+> This series tries to address the problem of dangling strings of __init
+> functions after initialization, as well as __exit strings for code not
+> even included in the final kernel image. The code might get freed, but
+> the format strings are not, as they're in the wrong section.
+> 
+> One solution to the problem might be to declare variables in the code
+> and mark those variables as __initconst. That, though, makes the code
+> ugly, as can be seen, e.g., in drivers/hwmon/w83627ehf.c -- a pile of
+> 'static const char[] __initconst' lines just for the pr_info() call.
+> 
+> To be able to mark strings easily patch 1 adds macros to init.h to do so
+> without the need to explicitly define variables in the code. (Internally
+> it'll declare ones nonetheless, as this seem to be the only way to
+> attach an __attribute__() to a verbatim string.) That's already enough to
+> solve the problem -- mark the corresponding stings by using these
+> macros. But patch 2 adds some syntactical sugar for the most popular use
+> case, by providing pr_<level> alike macros, namely pi_<level> for __init
+> code and pe_<level> for __exit code. This hides the use of the marker
+> macros behind the commonly known printing functions -- with just a
+> single character changed. For code that cannot be changed to use the
+> pi_<level>() / pe_<level>() helpers printk_init() and printk_exit()
+> macros are provided, too.
+> 
+> The (hidden) variables used in the macros of patch 1 will pollute the
+> kernel's symbol table with unneeded entries. It'll be a problem in the
+> KALLSYMS_ALL case only, however, patch 3 takes care of filtering the
+> pseudo symbols. They have no value for us beside being the only way to
+> attach an __attribute__ to a string literal.
+> 
+> If users of the new macros get it wrong, e.g. use printk_init() /
+> pi_<level>() in non-init code or vice versa printk_exit() / pe_<level>()
+> in non-exit code, modpost will detect the error as a section mismatch
+> and report it accordingly. Still, the message printed by modpost with
+> CONFIG_DEBUG_SECTION_MISMATCH=y is rather confusing as the __initconst /
+> __exitdata annotation is hidden behind the macros. That's what patch 4
+> takes care of -- detecting such cases and providing better modpost
+> messages, guiding the user on how to fix the error.
+> 
+> The remaining patches (5 to 9) exemplarily change strings and format
+> strings in a selection of files under arch/x86/ to use the new macros.
+> They also address a few styling issues, e.g., patches 4 and 5 are
+> cleanup patches I stumbled across while changing the corresponding code
+> to make use of the new pi_*() helpers. The changes to arch/x86/ already
+> lead to moving ~3kb of memory from .rodata to .init.rodata. This should
+> free up a page after init on almost any x86 system.
+> 
+> To show that there's actual more value to it: A hacked up script, dully
+> changing pr_<level> to pi_<level> for __init functions under arch/x86/
+> is able to move ~8kB of r/o data into the .init section (partly already
+> covered by the patches of this series). The script, though, is dump. It
+> does not handle any of the printk() calls, nor does it handle panic()
+> calls or other strings used only in initialization code. So there's more
+> to squeeze out.
 
+It feels like a burdensome hack that kernel developers are 
+forced to use different printing facilities, depending on the 
+life cycle of a method. We want to simplify init annotations, 
+we don't want to complicate them!
 
+Why isn't this problem solved transparently at build time, via 
+tooling, instead of burdening developers? If a particular 
+string is only used by an init (or exit) function, it can be 
+moved to an init section without forcing the developer to 
+declare it as such.
+
+And if tooling isn't ready for this, then wouldn't the right 
+solution be to improve tooling - instead of complicating the 
+kernel?
+
+Thanks,
+
+	Ingo
