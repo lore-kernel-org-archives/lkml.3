@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaHUQre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:47:34 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:49349 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbaHUQrd (ORCPT
+	id S1752771AbaHUQsK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:48:10 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61053 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751991AbaHUQsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:47:33 -0400
+	Thu, 21 Aug 2014 12:48:09 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19JCwi/xqYBUx5mEVnvqxje
+Date: Thu, 21 Aug 2014 09:48:04 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Grazvydas Ignotas <notasas@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: [PATCH] usb: phy: twl4030-usb: Fix lost interrupts after ID pin goes
+ down
+Message-ID: <20140821164803.GB10066@atomide.com>
 MIME-Version: 1.0
-In-Reply-To: <1408611405-8943-2-git-send-email-takahiro.akashi@linaro.org>
-References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>
-	<1408611405-8943-2-git-send-email-takahiro.akashi@linaro.org>
-Date: Thu, 21 Aug 2014 11:47:32 -0500
-X-Google-Sender-Auth: 9wx2mIW6pcG4IhqymgGWDYjUu7g
-Message-ID: <CAGXu5jJrTEhdDZ8fipNeaVm1_wto7u2f=uq_KzyMcVHJMT57vw@mail.gmail.com>
-Subject: Re: [PATCH v6 1/6] arm64: ptrace: add PTRACE_SET_SYSCALL
-From: Kees Cook <keescook@chromium.org>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
-        arndb@arndb.de,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
-<takahiro.akashi@linaro.org> wrote:
-> To allow tracer to be able to change/skip a system call by re-writing
-> a syscall number, there are several approaches:
->
-> (1) modify x8 register with ptrace(PTRACE_SETREGSET), and handle this case
->     later on in syscall_trace_enter(), or
-> (2) support ptrace(PTRACE_SET_SYSCALL) as on arm
->
-> Thinking of the fact that user_pt_regs doesn't expose 'syscallno' to
-> tracer as well as that secure_computing() expects a changed syscall number
-> to be visible, especially case of -1, before this function returns in
-> syscall_trace_enter(), we'd better take (2).
->
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Commit 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
+added twl4030_id_workaround_work() to deal with lost interrupts
+after ID pin goes down. However, this currently only works for the
+insertion. The PHY interrupts are not working after disconnecting
+an USB-A device from the board, and the deeper idle states for
+omap are blocked as the USB controller stays busy.
 
-Thanks, I like having this on both arm and arm64. I wonder if other
-archs should add this option too.
+The issue can be solved by calling delayed work from twl4030_usb_irq()
+when ID pin is down and the PHY is not asleep like we already do
+in twl4030_id_workaround_work().
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
+But as both twl4030_usb_irq() and twl4030_id_workaround_work()
+already do pretty much the same thing, let's call twl4030_usb_irq()
+from twl4030_id_workaround_work() instead of adding some more
+duplicate code.
 
-> ---
->  arch/arm64/include/uapi/asm/ptrace.h |    1 +
->  arch/arm64/kernel/ptrace.c           |   14 +++++++++++++-
->  2 files changed, 14 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm64/include/uapi/asm/ptrace.h b/arch/arm64/include/uapi/asm/ptrace.h
-> index 6913643..49c6174 100644
-> --- a/arch/arm64/include/uapi/asm/ptrace.h
-> +++ b/arch/arm64/include/uapi/asm/ptrace.h
-> @@ -23,6 +23,7 @@
->
->  #include <asm/hwcap.h>
->
-> +#define PTRACE_SET_SYSCALL     23
->
->  /*
->   * PSR bits
-> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-> index 0310811..8876049 100644
-> --- a/arch/arm64/kernel/ptrace.c
-> +++ b/arch/arm64/kernel/ptrace.c
-> @@ -1077,7 +1077,19 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
->  long arch_ptrace(struct task_struct *child, long request,
->                  unsigned long addr, unsigned long data)
->  {
-> -       return ptrace_request(child, request, addr, data);
-> +       int ret;
-> +
-> +       switch (request) {
-> +               case PTRACE_SET_SYSCALL:
-> +                       task_pt_regs(child)->syscallno = data;
-> +                       ret = 0;
-> +                       break;
-> +               default:
-> +                       ret = ptrace_request(child, request, addr, data);
-> +                       break;
-> +       }
-> +
-> +       return ret;
->  }
->
->  enum ptrace_syscall_dir {
-> --
-> 1.7.9.5
->
+Fixes: 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
+Cc: stable@vger.kernel.org # v3.12+
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 
+---
 
+This too is intended for the v3.17-rc cycle if no objections.
 
--- 
-Kees Cook
-Chrome OS Security
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -589,6 +589,13 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
+ 		}
+ 		omap_musb_mailbox(status);
+ 	}
++
++	/* don't schedule during sleep - irq works right then */
++	if (status == OMAP_MUSB_ID_GROUND && !twl->asleep) {
++		cancel_delayed_work(&twl->id_workaround_work);
++		schedule_delayed_work(&twl->id_workaround_work, HZ);
++	}
++
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+ 
+ 	return IRQ_HANDLED;
+@@ -598,29 +605,8 @@ static void twl4030_id_workaround_work(struct work_struct *work)
+ {
+ 	struct twl4030_usb *twl = container_of(work, struct twl4030_usb,
+ 		id_workaround_work.work);
+-	enum omap_musb_vbus_id_status status;
+-	bool status_changed = false;
+-
+-	status = twl4030_usb_linkstat(twl);
+ 
+-	spin_lock_irq(&twl->lock);
+-	if (status >= 0 && status != twl->linkstat) {
+-		twl->linkstat = status;
+-		status_changed = true;
+-	}
+-	spin_unlock_irq(&twl->lock);
+-
+-	if (status_changed) {
+-		dev_dbg(twl->dev, "handle missing status change to %d\n",
+-				status);
+-		omap_musb_mailbox(status);
+-	}
+-
+-	/* don't schedule during sleep - irq works right then */
+-	if (status == OMAP_MUSB_ID_GROUND && !twl->asleep) {
+-		cancel_delayed_work(&twl->id_workaround_work);
+-		schedule_delayed_work(&twl->id_workaround_work, HZ);
+-	}
++	twl4030_usb_irq(0, twl);
+ }
+ 
+ static int twl4030_phy_init(struct phy *phy)
