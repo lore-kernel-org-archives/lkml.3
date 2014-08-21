@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaHUJjc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 05:39:32 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:54477 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468AbaHUJjb (ORCPT
+	id S1754044AbaHUJmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 05:42:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42169 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750989AbaHUJmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 05:39:31 -0400
-Message-ID: <53F5BE3D.5070209@gmail.com>
-Date: Thu, 21 Aug 2014 10:39:09 +0100
-From: Iain Paton <ipaton0@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 21 Aug 2014 05:42:04 -0400
+Date: Thu, 21 Aug 2014 11:41:59 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
+ Controller
+Message-ID: <20140821114159.319e741b@bbrezillon>
+In-Reply-To: <20140821090406.GA13733@ulmo>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140821081619.GZ2452@ldesroches-Latitude-E6320>
+	<20140821103706.2349915d@bbrezillon>
+	<20140821090406.GA13733@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: Mattis Lorentzon <Mattis.Lorentzon@autoliv.com>,
-        Fredrik Noring <fredrik.noring@autoliv.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Oops: 17 SMP ARM (v3.16-rc2)
-References: <20140626151424.GT32514@n2100.arm.linux.org.uk> <20140627163108.GP32514@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575072@ALVA-EXMB04.alv.autoliv.int> <20140806095012.GN30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043575172@ALVA-EXMB04.alv.autoliv.int> <20140806125550.GO30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB804357526C@ALVA-EXMB04.alv.autoliv.int> <20140807121248.GY30282@n2100.arm.linux.org.uk> <20140808180900.GG30282@n2100.arm.linux.org.uk> <C4A61A5CA4AD2246942F4BA6F20ACB8043576356@ALVA-EXMB04.alv.autoliv.int> <CAOMZO5B8GR+ABBoJ=dJcFqw3Wagfaip7HM+C1FTz+aE4CmqiPw@mail.gmail.com> <C4A61A5CA4AD2246942F4BA6F20ACB80435776D3@ALVA-EXMB04.alv.autoliv.int> <CAOMZO5B7FgzB7ThVyV2Vk7wTwYgjRWjEnkkAN5uwwKMaBKq1yg@mail.gmail.com> <C4A61A5CA4AD2246942F4BA6F20ACB8043577770@ALVA-EXMB04.alv.autoliv.int> <53F11FF6.8030303@gmail.com> <CAOMZO5CDvQDD7gVLFStwv4MPrUyqZE3sEDZwb0gukkXujYG-6Q@mail.gmail.com> <53F2E89B.80009@gmail.com>
-In-Reply-To: <53F2E89B.80009@gmail.com>
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/08/14 07:03, Iain Paton wrote:
-> On 17/08/14 22:46, Fabio Estevam wrote:
->> Iain,
->>
->> On Sun, Aug 17, 2014 at 6:34 PM, Iain Paton <ipaton0@gmail.com> wrote:
->>> On 15/08/14 06:42, Mattis Lorentzon wrote:
->>>
->>>> We mostly run SSH with benchmarks using NFS, it can probably be
->>>> triggered by using only SSH with the following loop:
->>>>
->>>> # while : ; do ssh arm-card date; done
->>>
->>> Mattis,
->>>
->>> What sort of time does it take for you to see a problem?
->>>
->>> I've been running the above for nearly two days on 3.16.0 on a board
->>> with fec interrupts routed through gpio_6 and haven't seen a hint of
->>> a problem.
->>
->> Thanks for testing.
->>
->> Which mx6 board have you used on this test?
+On Thu, 21 Aug 2014 11:04:07 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
+
+> On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
+> > Hi Ludovic,
+> > 
+> > On Thu, 21 Aug 2014 10:16:19 +0200
+> > Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
+> > 
+> > > Hi Boris,
+> > > 
+> > > You can add
+> > > 
+> > > Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> > 
+> > Thanks for testing this driver.
+> > 
+> > > 
+> > > Only one issue but not related to your patches, you can't display
+> > > quickly the bootup logo since the panel detection takes too much
+> > > time.
+> > 
+> > Yes, actually this is related to the device probe order: the
+> > hlcdc-display-controller device is probed before the simple-panel, thus
+> > nothing is detected on the RGB connector (I use of_drm_find_panel to
+> > check for panel availability) when the display controller is
+> > instantiated. I rely on the default polling infrastructure provided by
+> > the DRM/KMS framework which polls for a new connector every 10s, and
+> > this is far more than you kernel boot time.
+> > 
+> > Do anyone see a solution to reduce this delay (without changing the
+> > polling interval). I thought we could add a notifier infrastructure to
+> > the DRM panel framework, but I'm not sure this is how you want things
+> > done...
 > 
-> It's currently pointed at a RIoTboard (atheros phy) but I'm happy to 
-> try it against both a Sabre-Lite and a Wandboard B1, all running the 
-> same kernel binary, as well. 
-> 
-> I'm interested enough in why different people get different results 
-> with this that I'll put some time towards testing to try to help 
-> narrow down the cause.
-> 
+> Other drivers return -EPROBE_DEFER when a panel hasn't been registered
+> yet. This will automatically take care of ordering things in a way that
+> DRM/KMS will only be initialized after the panel has been probed.
 
-two and a half days of running this against both a sabre-lite and a 
-wandboard quad B1 and I still have no reason to think there's any 
-sort of a problem.
+Actually I'd like to avoid doing this with a deferred probe, because,
+AFAIU, the remote endpoint is not tightly linked with the display
+controller driver (I mean the display controller can still be
+initialized without having a display connected on it).
+Moreover the atmel dev kit I'm using has an HDMI bridge connected on
+the same RGB connector and I'd like to use it in a near future.
+Returning -EPROBE_DEFER in case of several devices connected on the
+same connector implies that I'll have to wait for all the remote
+end-points to be available before my display controller could be
+instantiated.
 
-Up to now, my testing has been done with my own config, I'll now
-repeat the whole thing using the config Mattis posted to see if 
-I can reproduce it that way.
+While this could be acceptable when all drivers are statically linked
+in the kernel, it might be problematic when you're using modules,
+meaning that you won't be able to display anything on your LCD panel
+until your HDMI bridge module has been loaded.
 
-Suggestions on a better / easier / quicker way to reproduce it are 
-welcome.
+> That
+> will still cause some delay before everything gets set up, but hopefully
+> less than what you're seeing now. There's also another thread where this
+> is being discussed because deferred probing is causing "unacceptable"
+> delays as well.
 
+Could you point this thread out to me please ?
+
+Best Regards,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
