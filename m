@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaHUNtw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:49:52 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:36538 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754551AbaHUNtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:49:49 -0400
+	id S1755427AbaHUNvA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:51:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57100 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754838AbaHUNu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 09:50:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,909,1400050800"; 
+   d="scan'208";a="579887767"
+Date: Thu, 21 Aug 2014 21:50:35 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Dave Hansen <dave.hansen@intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: [rcu] 0eb885afb20: -25.8% softirqs.RCU
+Message-ID: <20140821135035.GA19246@localhost>
 MIME-Version: 1.0
-In-Reply-To: <53F5F7BF.6040809@ti.com>
-References: <1408381015-16042-1-git-send-email-nm@ti.com>
-	<53F5F7BF.6040809@ti.com>
-Date: Thu, 21 Aug 2014 08:49:49 -0500
-X-Google-Sender-Auth: hYUnwcBvNQZI039TwnAVOORHGtE
-Message-ID: <CAGo_u6onBbuNC9sLvBE5nFA7wMLkrsmbS3k2rgR1o6f1bYWvdg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] clk: ti: Fix up error checks in set_rate (and div 0 error)
-From: Nishanth Menon <nm@ti.com>
-To: Tero Kristo <t-kristo@ti.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 8:44 AM, Tero Kristo <t-kristo@ti.com> wrote:
-> On 08/18/2014 07:56 PM, Nishanth Menon wrote:
->>
->> Hi,
->> The following patches are based on v3.17-rc1
->> Prior to this series: http://slexy.org/view/s20QH6PW4x (notice the /0 div
->> error spam at initial boot log)
->> After this series: http://slexy.org/view/s20tPNXPf4
->
->
-> Yeah, valid findings. However, you did not root-cause the problem, just
-> added a bandaid for the most obvious errors.
+Hi Pranith,
 
-Yep, it does seem that omap3_noncore_dpll_set_rate had the same
-bandaid as well :).. but checks did make sense..
+FYI, these changes look nice:
 
-> I will queue these patches for 3.17-rc fixes anyway, but will post an actual fix in a bit.
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/dev
+commit 0eb885afb20317016670c1c5dd3a436c91e1e910 ("rcu: Use rcu_gp_kthread_wake() to wake up grace period kthreads")
 
-Thanks for rootcausing.
+test case: lkp-a04/aim7/400-disk_rr
 
----
-Regards,
-Nishanth Menon
+It's an in-memory aim7/disk_rr test.
+lkp-a04 is an Atom micro server with 8G Memory.
+
+5db6a289a3a0a69  0eb885afb20317016670c1c5d 
+---------------  ------------------------- 
+    150860 ± 1%     -25.8%     111937 ± 1%  TOTAL softirqs.RCU
+      2809 ± 1%     -12.5%       2457 ± 1%  TOTAL vmstat.system.cs
+      4202 ± 1%      -6.9%       3911 ± 1%  TOTAL vmstat.system.in
+    212421 ± 2%      -7.7%     196035 ± 3%  TOTAL time.involuntary_context_switches
+
+                                 vmstat.system.in
+
+  4300 ++-------------------------------------------------------------------+
+       | .*..                  *..        .*..                     *        |
+  4250 *+            .*..     +        .*.    *              *.. .. :       |
+  4200 ++    *..*..*.    *.. +    *..*.        :           ..   *    :      |
+       |                    *                   :        .*          :  .*  |
+  4150 ++                                       :  .*..*.             *.    |
+  4100 ++                                        *.                         |
+       |                                                                    |
+  4050 ++                                                                   |
+  4000 ++                                                                   |
+       |  O  O              O              O                             O  |
+  3950 O+       O  O     O     O     O  O        O     O  O     O           |
+  3900 ++             O                       O     O              O        |
+       |                                                     O              |
+  3850 ++-------------------------O-----------------------------------O-----O
+
+
+                                 vmstat.system.cs
+
+  3000 ++-------------------------------------------------------------------+
+       |                                                                    |
+  2900 ++                      *..                                          |
+       *..*..*..*..*..*..*.. ..   *..*..*..*..*..           .*..  .*..      |
+  2800 ++                   *                            .*.    *.      .*  |
+       |                                         *..*..*.             *.    |
+  2700 ++                                                                   |
+       |                                                                    |
+  2600 ++                                                                   |
+       |              O                 O                                   |
+  2500 O+ O  O     O        O  O     O     O              O     O  O     O  |
+       |        O        O        O              O     O                    |
+  2400 ++                                     O     O                 O     O
+       |                                                     O              |
+  2300 ++-------------------------------------------------------------------+
+
+
+	[*] bisect-good sample
+	[O] bisect-bad  sample
+
+
+Disclaimer:
+Results have been estimated based on internal Intel analysis and are provided
+for informational purposes only. Any difference in system hardware or software
+design or configuration may affect actual performance.
+
+Thanks,
+Fengguang
