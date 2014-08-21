@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbaHUDZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:25:53 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:38135 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753780AbaHUDZv (ORCPT
+	id S1753597AbaHUDZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:25:09 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:65333 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362AbaHUDZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:25:51 -0400
-Date: Wed, 20 Aug 2014 20:25:45 -0700
+	Wed, 20 Aug 2014 23:25:07 -0400
+Date: Wed, 20 Aug 2014 20:25:01 -0700
 From: Stephen Hemminger <stephen@networkplumber.org>
 To: Mark Einon <mark.einon@gmail.com>
 Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Subject: Re: [PATCH 8/8] staging: et131x: Implement NAPI support
-Message-ID: <20140820202545.3a8bafd0@uryu.home.lan>
+Message-ID: <20140820202501.558fdb3f@uryu.home.lan>
 In-Reply-To: <1408573078-9320-9-git-send-email-mark.einon@gmail.com>
 References: <1408573078-9320-1-git-send-email-mark.einon@gmail.com>
 	<1408573078-9320-9-git-send-email-mark.einon@gmail.com>
@@ -28,9 +28,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Wed, 20 Aug 2014 23:17:58 +0100
 Mark Einon <mark.einon@gmail.com> wrote:
 
-> -	bool done = true;
-> +	int count = 0;
-> +	int limit = budget;
-> +	bool not_done = false;
+>  
+> +	if (budget > MAX_PACKETS_HANDLED)
+> +		limit = MAX_PACKETS_HANDLED;
 
-Don't use negative variables. Better to keep the original done variable.
+Why this artificial restriction?
