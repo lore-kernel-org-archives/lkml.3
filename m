@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973AbaHUIU2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 04:20:28 -0400
-Received: from exprod7og116.obsmtp.com ([64.18.2.219]:51620 "EHLO
-	exprod7og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaHUIUY (ORCPT
+	id S1754027AbaHUIU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 04:20:57 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:57965 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943AbaHUIUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 04:20:24 -0400
+	Thu, 21 Aug 2014 04:20:54 -0400
+Date: Thu, 21 Aug 2014 09:20:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] mfd: twl6040: fix error return code
+Message-ID: <20140821082049.GR4266@lee--X1>
+References: <1407355938-10932-1-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-In-Reply-To: <20140820222922.GA7387@laptop.dumpdata.com>
-References: <CAK=zhgpH2tG-EG4QP1SE46e+uHXA+GJGOPA1vi8UqAfRZ-EFTA@mail.gmail.com>
-	<20140820222922.GA7387@laptop.dumpdata.com>
-Date: Thu, 21 Aug 2014 13:50:22 +0530
-Message-ID: <CAK=zhgoU0EywreqEWo+sG8Qy60V4a8fBb4i7Uh30NEj0w+v7bA@mail.gmail.com>
-Subject: Re: How to get the number of VFs assigned to the guests in XEN
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Sathya Prakash <sathya.prakash@avagotech.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        boris.ostrovsky@oracle.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1407355938-10932-1-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, devices are binded to pci-back.
+On Wed, 06 Aug 2014, Julia Lawall wrote:
 
-On Thu, Aug 21, 2014 at 3:59 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Wed, Aug 20, 2014 at 04:33:29PM +0530, Sreekanth Reddy wrote:
->> HI,
->>
->>
->>
->> For SRIOV support, currently in the KVM environment, mpt3sas driver can use
->> the API pci_vfs_assigned() to know the number of VFs that are currently
->> assigned to the running VMs. So that during the PF driver unload time, if
->> the return value of this API is greater than zero the our driver won't call
->> the pci_disable_sriov() to disable the VFs.
->>
->>
->>
->> Now for the same purpose in XEN environment, is there any API similar to
->> pci_vfs_assigned() which the low lever device driver can use to know 'the
->> number of VFs that are currently assigned to the running VMs'. In XEN
->> environment this API pci_vfs_assigned() will return always zero even though
->> VFs are assigned to the running VMs.
->
-> Odd. It should return the same value. Are the devices binded to pci-back?
->
->>
->>
->>
->> Regards,
->>
->> Sreekanth
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Convert a zero return value on error to a negative one, as returned
+> elsewhere in the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> (
+> if@p1 (\(ret < 0\|ret != 0\))
+>  { ... return ret; }
+> |
+> ret@p1 = 0
+> )
+> ... when != ret = e1
+>     when != &ret
+> *if(...)
+> {
+>   ... when != ret = e2
+>       when forall
+>  return ret;
+> }
+> 
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  drivers/mfd/twl6040.c |    1 +
+>  1 file changed, 1 insertion(+)
+
+Applied, thanks.
+
+> diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
+> index f9c06c5..9687645 100644
+> --- a/drivers/mfd/twl6040.c
+> +++ b/drivers/mfd/twl6040.c
+> @@ -679,6 +679,7 @@ static int twl6040_probe(struct i2c_client *client,
+>  	if (twl6040->rev < 0) {
+>  		dev_err(&client->dev, "Failed to read revision register: %d\n",
+>  			twl6040->rev);
+> +		ret = twl6040->rev;
+>  		goto gpio_err;
+>  	}
+>  
+> 
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
