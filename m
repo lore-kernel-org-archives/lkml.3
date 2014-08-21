@@ -1,87 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaHULay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:30:54 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:57288 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222AbaHULaw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:30:52 -0400
-Date: Thu, 21 Aug 2014 12:30:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, cooloney@gmail.com, rpurdie@rpsys.net,
-        linux-leds@vger.kernel.org, jdelvare@suse.de, linux@roeck-us.net,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH v4 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
- BMC MFD Core driver
-Message-ID: <20140821113046.GZ4266@lee--X1>
-References: <cover.1407918792.git.andreas.werner@men.de>
- <ddd9430eafd8f633a586f9a3cc02ade69ed35817.1407918792.git.andreas.werner@men.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <ddd9430eafd8f633a586f9a3cc02ade69ed35817.1407918792.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754658AbaHULa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:30:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4826 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754395AbaHULa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:30:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,908,1400050800"; 
+   d="scan'208";a="587969450"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [char-misc-next 01/14] mei: use consistently me_addr in the hbm structures
+Date: Thu, 21 Aug 2014 14:29:10 +0300
+Message-Id: <1408620563-25834-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Aug 2014, Andreas Werner wrote:
-> The MEN 14F021P00 Board Management Controller provides an
-> I2C interface to the host to access the feature implemented in the BMC.
-> The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
-> and on a few Box/Display Computer.
-> 
-> Added MFD Core driver, supporting the I2C communication to the device.
-> 
-> The MFD driver currently supports the following features:
->  	- Watchdog
->  	- LEDs
-> 	- Hwmon (voltage monitoring)
-> 
-> Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> ---
->  drivers/mfd/Kconfig     |  12 +++++
->  drivers/mfd/Makefile    |   1 +
->  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 145 insertions(+)
->  create mode 100644 drivers/mfd/menf21bmc.c
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index b8d9ca0..bf155b9 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -453,6 +453,18 @@ config MFD_MAX8998
->  	  additional drivers must be enabled in order to use the functionality
->  	  of the device.
->  
-> +config MFD_MENF21BMC
-> +	tristate "MEN 14F021P00 Board Management Controller Support"
-> +	depends on I2C=y
+Use consistently me_addr name in hbm protocol structures
+to represent in firmware client address
 
-Why must I2C be built-in?
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+---
+ drivers/misc/mei/hbm.c | 6 +++---
+ drivers/misc/mei/hw.h  | 5 ++---
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-> +	select MFD_CORE
-> +	help
-> +	  Say yes here to add support for the MEN 14F021P00 BMC
-> +	  which is a Board Management Controller connected to the I2C bus.
-> +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
-> +	  This driver provides common support for accessing the devices;
-> +	  additional drivers must be enabled in order to use the
-> +	  functionality of the BMC device.
-> +
-
-Apart from that the patch looks good to me.
-
-I'm assuming this can go in via the MFD tree by itself?
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index 8041062..68a1cba 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -288,7 +288,7 @@ static int mei_hbm_prop_req(struct mei_device *dev)
+ 
+ 
+ 	prop_req->hbm_cmd = HOST_CLIENT_PROPERTIES_REQ_CMD;
+-	prop_req->address = next_client_index;
++	prop_req->me_addr = next_client_index;
+ 
+ 	ret = mei_write_message(dev, mei_hdr, dev->wr_msg.data);
+ 	if (ret) {
+@@ -783,9 +783,9 @@ int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
+ 			return -EPROTO;
+ 		}
+ 
+-		if (me_client->client_id != props_res->address) {
++		if (me_client->client_id != props_res->me_addr) {
+ 			dev_err(&dev->pdev->dev, "hbm: properties response: address mismatch %d ?= %d\n",
+-				me_client->client_id, props_res->address);
++				me_client->client_id, props_res->me_addr);
+ 			return -EPROTO;
+ 		}
+ 
+diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
+index dd448e5..50526f9 100644
+--- a/drivers/misc/mei/hw.h
++++ b/drivers/misc/mei/hw.h
+@@ -206,14 +206,13 @@ struct mei_client_properties {
+ 
+ struct hbm_props_request {
+ 	u8 hbm_cmd;
+-	u8 address;
++	u8 me_addr;
+ 	u8 reserved[2];
+ } __packed;
+ 
+-
+ struct hbm_props_response {
+ 	u8 hbm_cmd;
+-	u8 address;
++	u8 me_addr;
+ 	u8 status;
+ 	u8 reserved[1];
+ 	struct mei_client_properties client_properties;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.3
+
