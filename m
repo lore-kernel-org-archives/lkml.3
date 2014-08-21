@@ -1,252 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833AbaHULcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:32:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16496 "EHLO mga11.intel.com"
+	id S1754850AbaHULcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:32:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37031 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754692AbaHULbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:31:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,908,1400050800"; 
-   d="scan'208";a="587969519"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 09/14] mei: revamp connect and disconnect response handling
-Date: Thu, 21 Aug 2014 14:29:18 +0300
-Message-Id: <1408620563-25834-9-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408620563-25834-1-git-send-email-tomas.winkler@intel.com>
-References: <1408620563-25834-1-git-send-email-tomas.winkler@intel.com>
+	id S1754552AbaHULcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:32:50 -0400
+Message-ID: <53F5D8D9.7040604@suse.de>
+Date: Thu, 21 Aug 2014 13:32:41 +0200
+From: =?ISO-8859-1?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Michal Simek <michal.simek@xilinx.com>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] ARM: zynq: DT: Add Ethernet phys
+References: <1408550219-19825-1-git-send-email-soren.brinkmann@xilinx.com> <1408550219-19825-3-git-send-email-soren.brinkmann@xilinx.com> <5a7b6f57-b6c0-4fb3-af0d-d403277c0207@BN1AFFO11FD045.protection.gbl>
+In-Reply-To: <5a7b6f57-b6c0-4fb3-af0d-d403277c0207@BN1AFFO11FD045.protection.gbl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="9L4BX1wv9299NkAcIqCCEtLo4B9b36p8A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both responses have same flow only the client status
-update is different. We introduce handler mei_hbm_cl_res()
-that handles both responses
-Also we use per client wait queue  (cl->wait) rather then
-global dev->wait_recvd_msg
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--9L4BX1wv9299NkAcIqCCEtLo4B9b36p8A
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/client.c |   4 +-
- drivers/misc/mei/hbm.c    | 118 +++++++++++++++++++++++++---------------------
- 2 files changed, 65 insertions(+), 57 deletions(-)
+Am 21.08.2014 10:41, schrieb Michal Simek:
+> On 08/20/2014 05:56 PM, Soren Brinkmann wrote:
+>> Add missing Ethernet phys to Zynq DTs.
+>>
+>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> ---
+>>  arch/arm/boot/dts/zynq-zc702.dts | 6 ++++++
+>>  arch/arm/boot/dts/zynq-zc706.dts | 6 ++++++
+>>  arch/arm/boot/dts/zynq-zed.dts   | 6 ++++++
+>>  3 files changed, 18 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq=
+-zc702.dts
+>> index 30bcfe20f0bc..fa810505ab8f 100644
+>> --- a/arch/arm/boot/dts/zynq-zc702.dts
+>> +++ b/arch/arm/boot/dts/zynq-zc702.dts
+>> @@ -36,6 +36,12 @@
+>>  &gem0 {
+>>  	status =3D "okay";
+>>  	phy-mode =3D "rgmii-id";
+>> +	phy-handle =3D <&ethernet_phy>;
+>> +
+>> +	ethernet_phy: ethernet-phy@7 {
+>> +		compatible =3D "marvell,88e1116r", "ethernet-phy-ieee802.3-c22";
+>=20
+> c22 is completely unused by the kernel and also c22 is default option a=
+nyway.
+> Any advantage to have c22 specified here?
 
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 3d4f311..4ec4e51 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -534,7 +534,7 @@ int mei_cl_disconnect(struct mei_cl *cl)
- 	}
- 	mutex_unlock(&dev->device_lock);
- 
--	wait_event_timeout(dev->wait_recvd_msg,
-+	wait_event_timeout(cl->wait,
- 			MEI_FILE_DISCONNECTED == cl->state,
- 			mei_secs_to_jiffies(MEI_CL_CONNECT_TIMEOUT));
- 
-@@ -639,7 +639,7 @@ int mei_cl_connect(struct mei_cl *cl, struct file *file)
- 	}
- 
- 	mutex_unlock(&dev->device_lock);
--	wait_event_timeout(dev->wait_recvd_msg,
-+	wait_event_timeout(cl->wait,
- 			(cl->state == MEI_FILE_CONNECTED ||
- 			 cl->state == MEI_FILE_DISCONNECTED),
- 			mei_secs_to_jiffies(MEI_CL_CONNECT_TIMEOUT));
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index d50c8d1..cda9141 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -495,39 +495,24 @@ int mei_hbm_cl_disconnect_rsp(struct mei_device *dev, struct mei_cl *cl)
- }
- 
- /**
-- * mei_hbm_cl_disconnect_res - disconnect response from ME
-+ * mei_hbm_cl_disconnect_res - update the client state according
-+ *       disconnect response
-  *
-- * @dev: the device structure
-- * @rs: disconnect response bus message
-+ * @cl: mei host client
-+ * @cmd: disconnect client response host bus message
-  */
--static void mei_hbm_cl_disconnect_res(struct mei_device *dev,
--		struct hbm_client_connect_response *rs)
-+static void mei_hbm_cl_disconnect_res(struct mei_cl *cl,
-+				      struct mei_hbm_cl_cmd *cmd)
- {
--	struct mei_cl *cl;
--	struct mei_cl_cb *cb, *next;
-+	struct hbm_client_connect_response *rs =
-+		(struct hbm_client_connect_response *)cmd;
- 
--	dev_dbg(&dev->pdev->dev, "hbm: disconnect response cl:host=%02d me=%02d status=%d\n",
-+	dev_dbg(&cl->dev->pdev->dev, "hbm: disconnect response cl:host=%02d me=%02d status=%d\n",
- 			rs->me_addr, rs->host_addr, rs->status);
- 
--	list_for_each_entry_safe(cb, next, &dev->ctrl_rd_list.list, list) {
--		cl = cb->cl;
--
--		/* this should not happen */
--		if (WARN_ON(!cl)) {
--			list_del(&cb->list);
--			return;
--		}
--
--		if (mei_hbm_cl_addr_equal(cl, rs)) {
--			list_del(&cb->list);
--			if (rs->status == MEI_CL_DISCONN_SUCCESS)
--				cl->state = MEI_FILE_DISCONNECTED;
--
--			cl->status = 0;
--			cl->timer_count = 0;
--			break;
--		}
--	}
-+	if (rs->status == MEI_CL_DISCONN_SUCCESS)
-+		cl->state = MEI_FILE_DISCONNECTED;
-+	cl->status = 0;
- }
- 
- /**
-@@ -545,24 +530,45 @@ int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl)
- }
- 
- /**
-- * mei_hbm_cl_connect_res - connect response from the ME
-+ * mei_hbm_cl_connect_res - update the client state according
-+ *        connection response
-  *
-- * @dev: the device structure
-- * @rs: connect response bus message
-+ * @cl: mei host client
-+ * @cmd: connect client response host bus message
-  */
--static void mei_hbm_cl_connect_res(struct mei_device *dev,
--		struct hbm_client_connect_response *rs)
-+static void mei_hbm_cl_connect_res(struct mei_cl *cl,
-+				   struct mei_hbm_cl_cmd *cmd)
- {
-+	struct hbm_client_connect_response *rs =
-+		(struct hbm_client_connect_response *)cmd;
- 
--	struct mei_cl *cl;
--	struct mei_cl_cb *cb, *next;
--
--	dev_dbg(&dev->pdev->dev, "hbm: connect response cl:host=%02d me=%02d status=%s\n",
-+	dev_dbg(&cl->dev->pdev->dev, "hbm: connect response cl:host=%02d me=%02d status=%s\n",
- 			rs->me_addr, rs->host_addr,
- 			mei_cl_conn_status_str(rs->status));
- 
--	cl = NULL;
-+	if (rs->status == MEI_CL_CONN_SUCCESS)
-+		cl->state = MEI_FILE_CONNECTED;
-+	else
-+		cl->state = MEI_FILE_DISCONNECTED;
-+	cl->status = mei_cl_conn_status_to_errno(rs->status);
-+}
-+
-+/**
-+ * mei_hbm_cl_res - process hbm response received on behalf
-+ *         an client
-+ *
-+ * @dev: the device structure
-+ * @rs:  hbm client message
-+ * @fop_type: file operation type
-+ */
-+static void mei_hbm_cl_res(struct mei_device *dev,
-+			   struct mei_hbm_cl_cmd *rs,
-+			   enum mei_cb_file_ops fop_type)
-+{
-+	struct mei_cl *cl;
-+	struct mei_cl_cb *cb, *next;
- 
-+	cl = NULL;
- 	list_for_each_entry_safe(cb, next, &dev->ctrl_rd_list.list, list) {
- 
- 		cl = cb->cl;
-@@ -572,7 +578,7 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
- 			continue;
- 		}
- 
--		if (cb->fop_type !=  MEI_FOP_CONNECT)
-+		if (cb->fop_type != fop_type)
- 			continue;
- 
- 		if (mei_hbm_cl_addr_equal(cl, rs)) {
-@@ -584,12 +590,19 @@ static void mei_hbm_cl_connect_res(struct mei_device *dev,
- 	if (!cl)
- 		return;
- 
-+	switch (fop_type) {
-+	case MEI_FOP_CONNECT:
-+		mei_hbm_cl_connect_res(cl, rs);
-+		break;
-+	case MEI_FOP_DISCONNECT:
-+		mei_hbm_cl_disconnect_res(cl, rs);
-+		break;
-+	default:
-+		return;
-+	}
-+
- 	cl->timer_count = 0;
--	if (rs->status == MEI_CL_CONN_SUCCESS)
--		cl->state = MEI_FILE_CONNECTED;
--	else
--		cl->state = MEI_FILE_DISCONNECTED;
--	cl->status = mei_cl_conn_status_to_errno(rs->status);
-+	wake_up(&cl->wait);
- }
- 
- 
-@@ -657,17 +670,18 @@ int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
- {
- 	struct mei_bus_message *mei_msg;
- 	struct hbm_host_version_response *version_res;
--	struct hbm_client_connect_response *connect_res;
--	struct hbm_client_connect_response *disconnect_res;
--	struct hbm_client_connect_request *disconnect_req;
--	struct hbm_flow_control *flow_control;
- 	struct hbm_props_response *props_res;
- 	struct hbm_host_enum_response *enum_res;
- 
-+	struct mei_hbm_cl_cmd *cl_cmd;
-+	struct hbm_client_connect_request *disconnect_req;
-+	struct hbm_flow_control *flow_control;
-+
- 	/* read the message to our buffer */
- 	BUG_ON(hdr->length >= sizeof(dev->rd_msg_buf));
- 	mei_read_slots(dev, dev->rd_msg_buf, hdr->length);
- 	mei_msg = (struct mei_bus_message *)dev->rd_msg_buf;
-+	cl_cmd  = (struct mei_hbm_cl_cmd *)mei_msg;
- 
- 	/* ignore spurious message and prevent reset nesting
- 	 * hbm is put to idle during system reset
-@@ -730,18 +744,12 @@ int mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
- 
- 	case CLIENT_CONNECT_RES_CMD:
- 		dev_dbg(&dev->pdev->dev, "hbm: client connect response: message received.\n");
--
--		connect_res = (struct hbm_client_connect_response *) mei_msg;
--		mei_hbm_cl_connect_res(dev, connect_res);
--		wake_up(&dev->wait_recvd_msg);
-+		mei_hbm_cl_res(dev, cl_cmd, MEI_FOP_CONNECT);
- 		break;
- 
- 	case CLIENT_DISCONNECT_RES_CMD:
- 		dev_dbg(&dev->pdev->dev, "hbm: client disconnect response: message received.\n");
--
--		disconnect_res = (struct hbm_client_connect_response *) mei_msg;
--		mei_hbm_cl_disconnect_res(dev, disconnect_res);
--		wake_up(&dev->wait_recvd_msg);
-+		mei_hbm_cl_res(dev, cl_cmd, MEI_FOP_DISCONNECT);
- 		break;
- 
- 	case MEI_FLOW_CONTROL_CMD:
--- 
-1.9.3
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Docum=
+entation/devicetree/bindings/net/phy.txt
 
+S=F6ren's marvell,* entries do not seem documented, therefore I used the
+documented "ethernet-phy-idAAAA.BBBB" based syntax. The documented
+example specifically uses -c22, too.
+
+Either it's okay to prepend unrecognized model strings, then you should
+update zynq-parallella.dts as well (I put the model in a comment there)
+or use the official strings like I used and keep the readable models as
+comments. Documenting all those "marvell,88e1116r", "marvell,88e1518",
+"marvell,88e1318" PHY bindings and possibly prepending them to the ID
+based strings would be another option, of course.
+
+Regards,
+Andreas
+
+--=20
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 N=FCrnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imend=F6rffer; HRB 16746 AG N=FCrnbe=
+rg
+
+
+--9L4BX1wv9299NkAcIqCCEtLo4B9b36p8A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJT9djeAAoJEPou0S0+fgE/oPgP+gKuEs4L/+0fPvg1CLi0Jsde
+rzU48qAHU7/sohFePKyITvpV601dapl7Lc0TtMek8dvC6kjUvtFzHnZEEX+5r4yh
+ERW0xqPFQ+SJJyAAGg/0+olpjEx4ARazly49bazll//4iOOuhPCW3Pd0okBtbP32
+KN9ynzSHEbXSUwUKQyx15alPAa6CF8C9Du4FXaF0mVGE3Ys4Rucoe15y+EWbPtb8
+r3PIwccste+A1vFpUOWljfczJnfhW4wfdTidLUw2+mXAl3GH3yu9fo/jdEI1o00W
+gUD+0xnBygLP187ryqXGCvpmGgJPDcnd4h06LMJL3EylLeka2A/nIentdVXTXssl
+aEOkbIsSm1mdkY2k3JEaBlUgYxG4K/WxZ1VxIjFFFpFAArr+BNCilRV+kWUMHPbB
+9a291A1WBazhnOMf4Yv+DTQ1qb7O0QdSBaHxnyTpvNXzFJJKwQDQ9WgQdx6hds23
+mxjXbynfuCp5+DW2ljmnYzhd4mozLiHddcIh0qD4Bs1R5ErJ48GTCzDM3lvhRf9v
+nQMzcoNMQmtE135LBSwXOXA2JdVW3gb0d7nMiv0Gk13n7kkhZsJBWPYWtPvGTHgR
+Vii+OkehQtQZdMNDJqGs/EWP32oSsxUk666I+4kjv+RLYzfAVHdlDWr5kGKB8rSX
+UdNbh3VbvTdBxpdH17E4
+=2rWN
+-----END PGP SIGNATURE-----
+
+--9L4BX1wv9299NkAcIqCCEtLo4B9b36p8A--
