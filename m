@@ -1,146 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101AbaHUNGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:06:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43115 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754547AbaHUNGG (ORCPT
+	id S1755228AbaHUNIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:08:49 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.177]:27038 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754229AbaHUNIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:06:06 -0400
-Date: Thu, 21 Aug 2014 15:06:00 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
- Controller
-Message-ID: <20140821150600.37788d82@bbrezillon>
-In-Reply-To: <20140821095202.GA21848@ulmo>
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140821081619.GZ2452@ldesroches-Latitude-E6320>
-	<20140821103706.2349915d@bbrezillon>
-	<20140821090406.GA13733@ulmo>
-	<20140821114159.319e741b@bbrezillon>
-	<20140821095202.GA21848@ulmo>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 21 Aug 2014 09:08:47 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-2.tower-38.messagelabs.com!1408626275!27367732!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 21 Aug 2014 15:04:37 +0200
+Date: Thu, 21 Aug 2014 15:57:08 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
+        <sameo@linux.intel.com>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
+        <linux@roeck-us.net>, <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH v4 1/4] drivers/mfd/menf21bmc: introduce MEN 14F021P00
+ BMC MFD Core driver
+Message-ID: <20140821135707.GA16867@awelinux>
+References: <cover.1407918792.git.andreas.werner@men.de>
+ <ddd9430eafd8f633a586f9a3cc02ade69ed35817.1407918792.git.andreas.werner@men.de>
+ <20140821113046.GZ4266@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140821113046.GZ4266@lee--X1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Aug 2014 11:52:03 +0200
-Thierry Reding <thierry.reding@gmail.com> wrote:
-
-> On Thu, Aug 21, 2014 at 11:41:59AM +0200, Boris BREZILLON wrote:
-> > On Thu, 21 Aug 2014 11:04:07 +0200
-> > Thierry Reding <thierry.reding@gmail.com> wrote:
+On Thu, Aug 21, 2014 at 12:30:46PM +0100, Lee Jones wrote:
+> On Wed, 13 Aug 2014, Andreas Werner wrote:
+> > The MEN 14F021P00 Board Management Controller provides an
+> > I2C interface to the host to access the feature implemented in the BMC.
+> > The BMC is a PIC Microntroller assembled on CPCI Card from MEN Mikroelektronik
+> > and on a few Box/Display Computer.
 > > 
-> > > On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
-> > > > Hi Ludovic,
-> > > > 
-> > > > On Thu, 21 Aug 2014 10:16:19 +0200
-> > > > Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
-> > > > 
-> > > > > Hi Boris,
-> > > > > 
-> > > > > You can add
-> > > > > 
-> > > > > Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> > > > 
-> > > > Thanks for testing this driver.
-> > > > 
-> > > > > 
-> > > > > Only one issue but not related to your patches, you can't display
-> > > > > quickly the bootup logo since the panel detection takes too much
-> > > > > time.
-> > > > 
-> > > > Yes, actually this is related to the device probe order: the
-> > > > hlcdc-display-controller device is probed before the simple-panel, thus
-> > > > nothing is detected on the RGB connector (I use of_drm_find_panel to
-> > > > check for panel availability) when the display controller is
-> > > > instantiated. I rely on the default polling infrastructure provided by
-> > > > the DRM/KMS framework which polls for a new connector every 10s, and
-> > > > this is far more than you kernel boot time.
-> > > > 
-> > > > Do anyone see a solution to reduce this delay (without changing the
-> > > > polling interval). I thought we could add a notifier infrastructure to
-> > > > the DRM panel framework, but I'm not sure this is how you want things
-> > > > done...
-> > > 
-> > > Other drivers return -EPROBE_DEFER when a panel hasn't been registered
-> > > yet. This will automatically take care of ordering things in a way that
-> > > DRM/KMS will only be initialized after the panel has been probed.
+> > Added MFD Core driver, supporting the I2C communication to the device.
 > > 
-> > Actually I'd like to avoid doing this with a deferred probe, because,
-> > AFAIU, the remote endpoint is not tightly linked with the display
-> > controller driver (I mean the display controller can still be
-> > initialized without having a display connected on it).
-> > Moreover the atmel dev kit I'm using has an HDMI bridge connected on
-> > the same RGB connector and I'd like to use it in a near future.
-> > Returning -EPROBE_DEFER in case of several devices connected on the
-> > same connector implies that I'll have to wait for all the remote
-> > end-points to be available before my display controller could be
-> > instantiated.
+> > The MFD driver currently supports the following features:
+> >  	- Watchdog
+> >  	- LEDs
+> > 	- Hwmon (voltage monitoring)
 > > 
-> > While this could be acceptable when all drivers are statically linked
-> > in the kernel, it might be problematic when you're using modules,
-> > meaning that you won't be able to display anything on your LCD panel
-> > until your HDMI bridge module has been loaded.
+> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > ---
+> >  drivers/mfd/Kconfig     |  12 +++++
+> >  drivers/mfd/Makefile    |   1 +
+> >  drivers/mfd/menf21bmc.c | 132 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 145 insertions(+)
+> >  create mode 100644 drivers/mfd/menf21bmc.c
+> > 
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index b8d9ca0..bf155b9 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -453,6 +453,18 @@ config MFD_MAX8998
+> >  	  additional drivers must be enabled in order to use the functionality
+> >  	  of the device.
+> >  
+> > +config MFD_MENF21BMC
+> > +	tristate "MEN 14F021P00 Board Management Controller Support"
+> > +	depends on I2C=y
 > 
-> No. HDMI should be using proper hotplugging anyway, hence it should be
-> always be loaded anyway. You're in for a world of pain if you think you
-> can run DRM with a driver that's composed of separate kernel modules.
+> Why must I2C be built-in?
 
-I was talking about the external RGB to HDMI encoder, should the driver
-for this encoder (which is not on On Chip block) be compiled
-statically too ?
+Sorry my mistake, I2C must not be built in.
 
 > 
-> Also if you don't want to use deferred probe, then you're in for the
-> full hotplugging panel dance and that implies that you need to fix a
-> bunch of things in DRM (one being the framebuffer console instantiation
-> that I referred to in the other thread).
+> > +	select MFD_CORE
+> > +	help
+> > +	  Say yes here to add support for the MEN 14F021P00 BMC
+> > +	  which is a Board Management Controller connected to the I2C bus.
+> > +	  The device supports multiple sub-devices like LED, HWMON  and WDT.
+> > +	  This driver provides common support for accessing the devices;
+> > +	  additional drivers must be enabled in order to use the
+> > +	  functionality of the BMC device.
+> > +
+> 
+> Apart from that the patch looks good to me.
+> 
+> I'm assuming this can go in via the MFD tree by itself?
 
-For now, I wait until there is a device connected on the RGB connector
-(connector status set to connector_status_connected) before creating an
-fbdev. It might not be the cleanest way to solve this issue, but it
-works :-).
+Yes why not.
+Do you want to have a single patch for the MFD or
+is it better to wait for the other Subsystem maintainer that I 
+can resend a patch v5?
 
-> You also can't be using the
-> current device tree bindings because they all assume a dependency from
-> the display controller/output to the panel. For hotplugging you'd need
-> the dependency the other way around (the panel needs to refer to the
-> output by phandle).
 
-Here [1] is a proposal for notification support in the drm_panel
-infrastructure (which is not that complicated), and here [2] is how
-I use it in my atmel-hlcdc driver to generate hotplug events.
+Regards
+Andy
 
-Let me know if you want me to submit a proper patch series...
-
-Best Regards,
-
-Boris
-
-[1]http://code.bulix.org/scq4g3-86804
-[2]http://code.bulix.org/7dg501-86805
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+> 
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> 
+> -- 
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
