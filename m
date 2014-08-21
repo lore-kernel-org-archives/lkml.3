@@ -1,215 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398AbaHUJxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 05:53:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59935 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908AbaHUJxu (ORCPT
+	id S1754089AbaHUJ7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 05:59:42 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40032 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaHUJ7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 05:53:50 -0400
-Message-ID: <026bb3e4ba9969dcfb0eca516f811e68.squirrel@www.codeaurora.org>
-In-Reply-To: <F891F359-FFF1-4F72-ADEF-B023F1D50A0F@codeaurora.org>
-References: <1408026157-26972-1-git-send-email-ygardi@codeaurora.org>
-    <F891F359-FFF1-4F72-ADEF-B023F1D50A0F@codeaurora.org>
-Date: Thu, 21 Aug 2014 09:53:48 -0000
-Subject: Re: [PATCH v3] scsi: ufs-msm: add UFS controller support for
- Qualcomm MSM chips
-From: ygardi@codeaurora.org
-To: "Kumar Gala" <galak@codeaurora.org>
-Cc: "Yaniv Gardi" <ygardi@codeaurora.org>,
-        james.bottomley@hansenpartnership.com, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
-        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
-        noag@codeaurora.org, draviv@codeaurora.org,
-        "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Vinayak Holikatti" <vinholikatti@gmail.com>,
-        "James E.J. Bottomley" <jbottomley@parallels.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        "Sujit Reddy Thumma" <sthumma@codeaurora.org>,
-        "Sahitya Tummala" <stummala@codeaurora.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22-4.el6
+	Thu, 21 Aug 2014 05:59:41 -0400
+Date: Thu, 21 Aug 2014 11:59:36 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Gyungoh Yoo <gyungoh@gmail.com>, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, grant.likely@linaro.org, sameo@linux.intel.com,
+        jack.yoo@skyworksinc.com, jason@lakedaemon.net,
+        heiko.stuebner@bqreaders.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        silvio.fricke@gmail.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] Adding Skyworks SKY81452 MFD driver
+Message-ID: <20140821095935.GB21848@ulmo>
+References: <1407488899-31065-1-git-send-email-jack.yoo@skyworksinc.com>
+ <20140821094502.GV4266@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i0/AhcQY5QxfSsSZ"
+Content-Disposition: inline
+In-Reply-To: <20140821094502.GV4266@lee--X1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> On Aug 14, 2014, at 9:22 AM, Yaniv Gardi <ygardi@codeaurora.org> wrote:
->
->> The files in this change implement the UFS HW (controller & PHY)
->> specific
->> behavior in Qualcomm MSM chips.
->>
->> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
->> ---
->> Documentation/devicetree/bindings/ufs/ufs-msm.txt  |   37 +
->> .../devicetree/bindings/ufs/ufshcd-pltfrm.txt      |    4 +
->> drivers/scsi/ufs/Kconfig                           |   12 +
->> drivers/scsi/ufs/Makefile                          |    4 +
->> drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.c            |  254 +++++
->> drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.h            |  216 ++++
->> drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.c            |  368 +++++++
->> drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.h            |  735 +++++++++++++
->> drivers/scsi/ufs/ufs-msm-phy.c                     |  646 ++++++++++++
->> drivers/scsi/ufs/ufs-msm-phy.h                     |  193 ++++
->
-> Any reason not to put the phy driver in drivers/phy ?
-Yes. Phy driver introduces a generic phy framework.
-And as a framework it provides with API's, callbacks,
-And data structures.
-I think the right place to have the >implementation< of the ufs-msm-phy code
-Is under drivers/scsi/ufs as it's more related to ufs than it's related to
-the framework itself.
 
+--i0/AhcQY5QxfSsSZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->
->> drivers/scsi/ufs/ufs-msm.c                         | 1105
->> ++++++++++++++++++++
->> drivers/scsi/ufs/ufs-msm.h                         |  158 +++
->> 12 files changed, 3732 insertions(+)
->> create mode 100644 Documentation/devicetree/bindings/ufs/ufs-msm.txt
->> create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.c
->> create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.h
->> create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.c
->> create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.h
->> create mode 100644 drivers/scsi/ufs/ufs-msm-phy.c
->> create mode 100644 drivers/scsi/ufs/ufs-msm-phy.h
->> create mode 100644 drivers/scsi/ufs/ufs-msm.c
->> create mode 100644 drivers/scsi/ufs/ufs-msm.h
->
-> Seems like we should spit this into two patches, one for the phy and one
-> for the UFS driver itself.  Maybe even three, one for the 20nm phy, one
-> for the 28nm phy, and one for ufs-msm.c,h.
-we could try to split it, but since we didn't split this change into
-functional sub-changes, we decided to upload this change as a whole,
-as one change without the other wouldn't work anyhow, and they are both
-needed for proper functionality.
+On Thu, Aug 21, 2014 at 10:45:02AM +0100, Lee Jones wrote:
+[...]
+> > diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
+[...]
+> > + * This program is free software; you can redistribute it and/or modif=
+y it
+> > + * under the terms of the GNU General Public License as published by t=
+he
+> > + * Free Software Foundation; either version 2, or (at your option) any
+> > + * later version.
+[...]
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, sky81452_ids);
+> > +
+> > +#ifdef CONFIG_OF
+> > +static const struct of_device_id sky81452_of_match[] =3D {
+> > +	{ .compatible =3D "skyworks,sky81452", },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(of, sky81452_of_match);
+> > +#endif
+>=20
+> You can drop the #differy the compiler should sort that out on the
+> back of of_match_ptr().
 
->
->>
->> diff --git a/Documentation/devicetree/bindings/ufs/ufs-msm.txt
->> b/Documentation/devicetree/bindings/ufs/ufs-msm.txt
->> new file mode 100644
->> index 0000000..b5caace
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/ufs/ufs-msm.txt
->
-> This should probably be bindings/phy/qcom-ufs-phy.txt
->
->> @@ -0,0 +1,37 @@
->> +* MSM Universal Flash Storage (UFS) PHY
->> +
->> +UFSPHY nodes are defined to describe on-chip UFS PHY hardware macro.
->> +Each UFS PHY node should have its own node.
->> +
->> +To bind UFS PHY with UFS host controller, the controller node should
->> +contain a phandle reference to UFS PHY node.
->> +
->> +Required properties:
->> +- compatible        : compatible list, contains
->> "qcom,ufs-msm-phy-qmp-28nm"
->> +                      or "qcom,ufs-msm-phy-qmp-20nm" according to the
->> relevant
->> +                      phy in use
->
-> Do we really need ‘-msm’ in the compat name?
->
->> +- reg               : <registers mapping>
->> +- #phy-cells         : This property shall be set to 0
->> +- vdda-phy-supply   : phandle to main PHY supply for analog domain
->> +- vdda-pll-supply   : phandle to PHY PLL and Power-Gen block power
->> supply
->> +
->> +Optional properties:
->> +- vdda-phy-max-microamp : specifies max. load that can be drawn from
->> phy supply
->> +- vdda-pll-max-microamp : specifies max. load that can be drawn from
->> pll supply
->> +
->> +Example:
->> +
->> +	ufsphy1: ufsphy@0xfc597000 {
->> +		compatible = "qcom,ufs-msm-phy-qmp-28nm";
->> +		reg = <0xfc597000 0x800>;
->> +		#phy-cells = <0>;
->> +		vdda-phy-supply = <&pma8084_l4>;
->> +		vdda-pll-supply = <&pma8084_l12>;
->> +		vdda-phy-max-microamp = <50000>;
->> +		vdda-pll-max-microamp = <1000>;
->> +	};
->> +
->> +	ufshc@0xfc598000 {
->> +		...
->> +		phys = <&ufsphy1>;
->> +	};
->> diff --git a/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
->> b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
->> index e73a619..378585c 100644
->> --- a/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
->> +++ b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
->> @@ -9,6 +9,9 @@ Required properties:
->> - reg               : <registers mapping>
->>
->> Optional properties:
->> +- phys			: phandle to UFS PHY node
->> +- phy-names		: the string "ufs_msm_phy" when is found in a node, along
->> +			  with "phys" attribute, provides phandle to UFS PHY node
->
-> seems like the phy-names should be more generic like “ufsphy"
->
->> - vcc-supply            : phandle to VCC supply regulator node
->> - vccq-supply           : phandle to VCCQ supply regulator node
->> - vccq2-supply          : phandle to VCCQ2 supply regulator node
->> @@ -39,6 +42,7 @@ Example:
->> 		reg = <0xfc598000 0x800>;
->> 		interrupts = <0 28 0>;
->>
->> +		ufs-phy = <&ufsphy>;
->> 		vcc-supply = <&xxx_reg1>;
->> 		vcc-supply-1p8;
->> 		vccq-supply = <&xxx_reg2>;
->
->
->> diff --git a/drivers/scsi/ufs/Kconfig b/drivers/scsi/ufs/Kconfig
->> index 6e07b2a..a8259e0 100644
->> --- a/drivers/scsi/ufs/Kconfig
->> +++ b/drivers/scsi/ufs/Kconfig
->> @@ -70,3 +70,15 @@ config SCSI_UFSHCD_PLATFORM
->> 	If you have a controller with this interface, say Y or M here.
->>
->> 	  If unsure, say N.
->> +
->> +config SCSI_UFS_MSM
->> +	bool "MSM specific hooks to UFS controller platform driver"
->> +	depends on SCSI_UFSHCD_PLATFORM && ARCH_MSM
->
-> This should probably be ARCH_QCOM instead of ARCH_MSM
->
->> +	help
->> +	  This selects the MSM specific additions to UFSHCD platform driver.
->> +	  UFS host on MSM needs some vendor specific configuration before
->> +	  accessing the hardware which includes PHY configuration and vendor
->> +	  specific registers.
->> +
->> +	  Select this if you have UFS controller on MSM chipset.
->> +	  If unsure, say N.
->
-> [ snip ]
->
-> - k
-> --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted
-> by The Linux Foundation
->
->
+It won't, unfortunately. If !OF, then of_match_ptr(x) will evaluate to
+NULL, therefore sky81452_of_match will become unreferenced and cause the
+compiler to output a warning. I guess it could be made __maybe_unused,
+but I don't see that as much of an advantage over the #ifdef.
 
+> > +static struct i2c_driver sky81452_driver =3D {
+> > +	.driver =3D {
+> > +		.name =3D "sky81452",
+> > +		.of_match_table =3D of_match_ptr(sky81452_of_match),
+> > +	},
+> > +	.probe =3D sky81452_probe,
+> > +	.remove =3D sky81452_remove,
+> > +	.id_table =3D sky81452_ids,
+> > +};
+> > +
+> > +module_i2c_driver(sky81452_driver);
+> > +
+> > +MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
+> > +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
+> > +MODULE_LICENSE("GPL");
+>=20
+> I think you want v2.
 
+The header comment says "... version 2, or (at your option) any later
+version.", so I think "GPL" is the right one here.
+
+Thierry
+
+--i0/AhcQY5QxfSsSZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT9cMHAAoJEN0jrNd/PrOh1nAP/ibwCyZ6zwTGfsPiSfM0gcLu
+SL/6aOX8o87x+KWy/Vu46IszjbYNVQMfcgqe2kIoFF9Wp9K49Q3dYex+RcRDIvKp
+XKNZl6BCeh9Rrn3pWp1lH3uL6MOI03uQr53El34ugH2tScTheMgc/kFGvqWz34Wz
+IBtMq7LIF66pEJXGq5oi77rA/n45Im8LPSmb/PbXGAUh4J9Pk0fvDGrApRqXLaIo
+Vwmw4S8CH8MtxuC4fzaPbxHAjh/xVPyDsUVRevAOxHyeoKA5189zv+hG45Aq1Mp8
+TyIUyNkOAPIOXANmtFWc7TbVHBRoOJ5ISjFLzVNWxO4WuoCozYhrXC6//1p7ZS3k
+UBgK0YEOgs3RPBEraoHmTosHcdFrIoo0ofTfefx+nR4UxS8k4zXTehGz1vzKCKYQ
+LIkcrx5o7+zVz1/ESKe939UGgftPturQQ7tBjZGw6aBd8Q2IMI97xNLhqc4RX3xx
+xw7OhvHlCmTSqw6jvZch/kZvc9Og8us+kZBcUEKYlTpOLkFB90yPQmRa94q3S0P4
+Lx8CVUiy9nGjsWQQE38RF095ngGmDpICVCmF/Zw/vm9Fhj3YhxWpnquK/dJDw6sZ
+2A4RWuFyEf5d9M71YniEAMuf78lJQpuTpizHiESUqqR2JVuI29azz7FUnKl7ik/C
+ChFWSn7eMxD1wajAyzuz
+=szSf
+-----END PGP SIGNATURE-----
+
+--i0/AhcQY5QxfSsSZ--
