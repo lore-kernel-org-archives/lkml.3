@@ -1,103 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaHUSRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 14:17:49 -0400
-Received: from sauhun.de ([89.238.76.85]:58596 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905AbaHUSRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 14:17:48 -0400
-Date: Thu, 21 Aug 2014 13:17:38 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Addy Ke <addy.ke@rock-chips.com>, max.schwarz@online.de, heiko@sntech.de,
-        olof@lixom.net, dianders@chromium.org, huangtao@rock-chips.com,
-        hl@rock-chips.com, yzq@rock-chips.com, zyw@rock-chips.com,
-        linux-kernel@vger.kernel.org, kever.yang@rock-chips.com,
-        linux-rockchip@lists.infradead.org, xjq@rock-chips.com,
-        linux-i2c@vger.kernel.org, caesar.wang@rock-chips.com,
-        cf@rock-chips.com, hj@rock-chips.com, zhengsq@rock-chips.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] i2c: rk3x: fix bug that cause transfer fails in master
- receive mode
-Message-ID: <20140821181738.GA1443@katana>
-References: <1408643457-7126-1-git-send-email-addy.ke@rock-chips.com>
- <53F634AF.1010303@cogentembedded.com>
+	id S1753459AbaHUSSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 14:18:32 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:45424 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872AbaHUSSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 14:18:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
-Content-Disposition: inline
-In-Reply-To: <53F634AF.1010303@cogentembedded.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Thu, 21 Aug 2014 21:18:29 +0300
+Message-ID: <CA+ydwtoGKP622R5XSSSvibd_5PtsQxtsijrdD23c-7waQvjC=g@mail.gmail.com>
+Subject: drm_mode_create_dumb_ioctl: divide error
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>, David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        trinity@vger.kernel.org, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---opJtzjQTFsWo+cga
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Triggered this while fuzzing v3.17-rc1-51-g372b1db with Trinity.
 
-On Thu, Aug 21, 2014 at 10:04:31PM +0400, Sergei Shtylyov wrote:
-> Hello.
->=20
-> On 08/21/2014 09:50 PM, Addy Ke wrote:
->=20
-> >In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
-> >in one transaction, so the size of data to be write/read to/from
-> >TXDATAx/RXDATAx must be less than or equal 32 bytes at a time.
->=20
-> >Test on pinky board, elan receive 158 bytes data.
->=20
-> >Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> >---
-> >  drivers/i2c/busses/i2c-rk3x.c | 3 +++
-> >  1 file changed, 3 insertions(+)
->=20
-> >diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x=
-=2Ec
-> >index 69e1185..dc0aa64 100644
-> >--- a/drivers/i2c/busses/i2c-rk3x.c
-> >+++ b/drivers/i2c/busses/i2c-rk3x.c
-> >@@ -323,6 +323,9 @@ static void rk3x_i2c_handle_read(struct rk3x_i2c *i2=
-c, unsigned int ipd)
-> >  	/* ack interrupt */
-> >  	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
-> >
-> >+	/* Can only handle a maximum of 32 bytes at a time */
-> >+	len =3D (len > 32) ? 32 : len;
->=20
->    Why not min(len, 32)? Or even:
->=20
-> 	if (len > 32)
-> 		len =3D 32;
-
-No silent trimming, please. The message should be rejected when the transfe=
-r is
-set up. We could assign -EOVERFLOW to that type of failures, so users
-will know. Sadly, I have seen other controllers having such limits :(
+Tommi
 
 
---opJtzjQTFsWo+cga
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[drm:drm_mode_legacy_fb_format] *ERROR* bad bpp, assuming x8r8g8b8 pixel format
+divide error: 0000 [#1] SMP DEBUG_PAGEALLOC
+CPU: 0 PID: 2854 Comm: trinity-c7 Not tainted 3.17.0-rc1+ #14
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+task: ffff88003926cac0 ti: ffff8800356b4000 task.ti: ffff8800356b4000
+RIP: 0010:[<ffffffff816688e3>]  [<ffffffff816688e3>]
+drm_mode_create_dumb_ioctl+0x53/0xa0
+RSP: 0018:ffff8800356b7dc0  EFLAGS: 00010246
+RAX: 00000000ffffffff RBX: ffff88003545da68 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffff8800356b7e18 RDI: ffff88003d5c67b0
+RBP: ffff8800356b7dc8 R08: 0000000000000000 R09: 00000000ffffffff
+R10: 00000000ffffffff R11: ffffffff817f6d30 R12: 00000000000000b2
+R13: fffffffffffffff2 R14: ffff88003d5c67b0 R15: ffff88003545da68
+FS:  00007f06208fa700(0000) GS:ffff88003fa00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000001903108 CR3: 0000000036efa000 CR4: 00000000000006f0
+Stack:
+ ffff8800356b7e18 ffff8800356b7ec8 ffffffff8165ac60 ffff8800356b7df8
+ ffff8800356b7e18 ffff8800356b7e18 ffffffff824e1440 0000000000d52000
+ 0000000000000020 00000000c02064b2 00000000fffffff2 ffffffffffffffff
+Call Trace:
+ [<ffffffff8165ac60>] drm_ioctl+0x3b0/0x640
+ [<ffffffff814b81b8>] ? avc_has_perm+0x218/0x2f0
+ [<ffffffff814b7fc0>] ? avc_has_perm+0x20/0x2f0
+ [<ffffffff81170bb8>] ? sched_clock_cpu+0xa8/0xf0
+ [<ffffffff812922a0>] do_vfs_ioctl+0x4d0/0x510
+ [<ffffffff814ba745>] ? selinux_file_ioctl+0xf5/0x100
+ [<ffffffff8129232e>] SyS_ioctl+0x4e/0x80
+ [<ffffffff822b10e9>] system_call_fastpath+0x16/0x1b
+Code: 55 41 b9 ff ff ff ff 41 83 c0 07 44 89 c8 41 c1 e8 03 48 89 e5
+53 48 89 d3 31 d2 f7 f1 41 39 c0 77 46 41 0f af c8 31 d2 44 89 c8 <f7>
+f1 41 39 c2 77 36 41 0f af ca b8 ea ff ff ff 81 c1 ff 0f 00
+RIP  [<ffffffff816688e3>] drm_mode_create_dumb_ioctl+0x53/0xa0
+ RSP <ffff8800356b7dc0>
+---[ end trace 6919129b71d9bf98 ]---
+[drm:drm_mode_legacy_fb_format] *ERROR* bad bpp, assuming x8r8g8b8 pixel format
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJT9jfCAAoJEBQN5MwUoCm2KDAP/REu6M3f6+x1V5F0pQNMXhzD
-63qBo54wVv7adKVr6QwwrYMP8BBGbtjVV3jm5J+GfRrbsex8of2iYITivL67rFw/
-tdZimlsP9cLgofmsd547TS54ohkKP2u5iTkxRTwn70L0a4YP3UrCZbhfjCT6QFwS
-pmUAoil47knaMLSKAs7mxNHzo78f9lWp3Y8HhvN8x0XReuiX0Vo/l93TW3bDgUv4
-mCeP8hTKZY07Qm7sIjUquv9XGs6/68EEXnRvPqboTroArQSp/A0mQwlzlgRgO5JU
-GnoHaDAi88JdO4cVUQsCAasNKIj8uwbUXfwcuvZCXkyWYrVNUCySMfcyy56xuFkW
-AL82PyazdAjweq2PWz+K1wfs0tnQMvfQUgeR0ZEJbr2U26x5aBWzrp/vkT4KMm5E
-TxJwVBwvEoCkSQTDKKUoueNoMedL2zfJ30sXmedAGx75cIGZSOaaomJcpXWJfccF
-Sfn9jjUJu9oHx5PVqKrVxfWhxsw1ZET597tRVMhmruUjOAdlCRTTWEl6ypn2pCxx
-nvnc/coOhRzxchsub2EDHmWDaaBIAqA/8/Lwl7dng4OWQGYDtd9Be6haYbTlGn+v
-iF4kgE4UyhBYNBe/ra7EdX85RirwNv6r0F3TUtu0dOzctKrAD3+LrKvF+dMqvbcg
-es4ZOO2p2w/7PSIhwdCK
-=atpD
------END PGP SIGNATURE-----
 
---opJtzjQTFsWo+cga--
+(gdb) list *0xffffffff816688e3
+0xffffffff816688e3 is in drm_mode_create_dumb_ioctl
+(drivers/gpu/drm/drm_crtc.c:4703).
+4698            /* overflow checks for 32bit size calculations */
+4699            cpp = DIV_ROUND_UP(args->bpp, 8);
+4700            if (cpp > 0xffffffffU / args->width)
+4701                    return -EINVAL;
+4702            stride = cpp * args->width;
+4703            if (args->height > 0xffffffffU / stride)
+4704                    return -EINVAL;
+4705
+4706            /* test for wrap-around */
+4707            size = args->height * stride;
+(gdb) disassemble drm_mode_create_dumb_ioctl
+Dump of assembler code for function drm_mode_create_dumb_ioctl:
+   0xffffffff81668890 <+0>:     mov    0x20(%rdi),%rax
+   0xffffffff81668894 <+4>:     mov    0x160(%rax),%r11
+   0xffffffff8166889b <+11>:    test   %r11,%r11
+   0xffffffff8166889e <+14>:    je     0xffffffff8166890f
+<drm_mode_create_dumb_ioctl+127>
+   0xffffffff816688a0 <+16>:    mov    0x4(%rsi),%ecx
+   0xffffffff816688a3 <+19>:    test   %ecx,%ecx
+   0xffffffff816688a5 <+21>:    je     0xffffffff81668918
+<drm_mode_create_dumb_ioctl+136>
+   0xffffffff816688a7 <+23>:    mov    (%rsi),%r10d
+   0xffffffff816688aa <+26>:    test   %r10d,%r10d
+   0xffffffff816688ad <+29>:    je     0xffffffff81668918
+<drm_mode_create_dumb_ioctl+136>
+   0xffffffff816688af <+31>:    mov    0x8(%rsi),%r8d
+   0xffffffff816688b3 <+35>:    test   %r8d,%r8d
+   0xffffffff816688b6 <+38>:    je     0xffffffff81668918
+<drm_mode_create_dumb_ioctl+136>
+   0xffffffff816688b8 <+40>:    push   %rbp
+   0xffffffff816688b9 <+41>:    mov    $0xffffffff,%r9d
+   0xffffffff816688bf <+47>:    add    $0x7,%r8d
+   0xffffffff816688c3 <+51>:    mov    %r9d,%eax
+   0xffffffff816688c6 <+54>:    shr    $0x3,%r8d
+   0xffffffff816688ca <+58>:    mov    %rsp,%rbp
+   0xffffffff816688cd <+61>:    push   %rbx
+   0xffffffff816688ce <+62>:    mov    %rdx,%rbx
+   0xffffffff816688d1 <+65>:    xor    %edx,%edx
+   0xffffffff816688d3 <+67>:    div    %ecx
+   0xffffffff816688d5 <+69>:    cmp    %eax,%r8d
+   0xffffffff816688d8 <+72>:    ja     0xffffffff81668920
+<drm_mode_create_dumb_ioctl+144>
+   0xffffffff816688da <+74>:    imul   %r8d,%ecx
+   0xffffffff816688de <+78>:    xor    %edx,%edx
+   0xffffffff816688e0 <+80>:    mov    %r9d,%eax
+   0xffffffff816688e3 <+83>:    div    %ecx
+   0xffffffff816688e5 <+85>:    cmp    %eax,%r10d
+   0xffffffff816688e8 <+88>:    ja     0xffffffff81668920
+<drm_mode_create_dumb_ioctl+144>
+   0xffffffff816688ea <+90>:    imul   %r10d,%ecx
+   0xffffffff816688ee <+94>:    mov    $0xffffffea,%eax
+   0xffffffff816688f3 <+99>:    add    $0xfff,%ecx
+   0xffffffff816688f9 <+105>:   and    $0xfffff000,%ecx
+   0xffffffff816688ff <+111>:   je     0xffffffff81668928
+<drm_mode_create_dumb_ioctl+152>
+   0xffffffff81668901 <+113>:   mov    %rsi,%rdx
+   0xffffffff81668904 <+116>:   mov    %rdi,%rsi
+   0xffffffff81668907 <+119>:   mov    %rbx,%rdi
+   0xffffffff8166890a <+122>:   callq  *%r11
+   0xffffffff8166890d <+125>:   jmp    0xffffffff81668928
+<drm_mode_create_dumb_ioctl+152>
+   0xffffffff8166890f <+127>:   mov    $0xffffffda,%eax
+   0xffffffff81668914 <+132>:   retq
+   0xffffffff81668915 <+133>:   nopl   (%rax)
+   0xffffffff81668918 <+136>:   mov    $0xffffffea,%eax
+   0xffffffff8166891d <+141>:   retq
+   0xffffffff8166891e <+142>:   xchg   %ax,%ax
+   0xffffffff81668920 <+144>:   mov    $0xffffffea,%eax
+   0xffffffff81668925 <+149>:   nopl   (%rax)
+   0xffffffff81668928 <+152>:   pop    %rbx
+   0xffffffff81668929 <+153>:   pop    %rbp
+   0xffffffff8166892a <+154>:   retq
+End of assembler dump.
+(gdb)
