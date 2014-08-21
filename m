@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404AbaHUNtm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:49:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755195AbaHUNtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:49:39 -0400
-Date: Thu, 21 Aug 2014 15:49:17 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH v2 5/6] KVM: trace kvm_ple_window
-Message-ID: <20140821134916.GF20453@potion.brq.redhat.com>
-References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
- <1408567997-21222-6-git-send-email-rkrcmar@redhat.com>
- <53F5ADE6.30106@redhat.com>
- <20140821115637.GE20546@potion.brq.redhat.com>
- <53F5F2AA.7060600@redhat.com>
+	id S1755417AbaHUNtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:49:52 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:36538 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551AbaHUNtt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 09:49:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F5F2AA.7060600@redhat.com>
+In-Reply-To: <53F5F7BF.6040809@ti.com>
+References: <1408381015-16042-1-git-send-email-nm@ti.com>
+	<53F5F7BF.6040809@ti.com>
+Date: Thu, 21 Aug 2014 08:49:49 -0500
+X-Google-Sender-Auth: hYUnwcBvNQZI039TwnAVOORHGtE
+Message-ID: <CAGo_u6onBbuNC9sLvBE5nFA7wMLkrsmbS3k2rgR1o6f1bYWvdg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] clk: ti: Fix up error checks in set_rate (and div 0 error)
+From: Nishanth Menon <nm@ti.com>
+To: Tero Kristo <t-kristo@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-21 15:22+0200, Paolo Bonzini:
-> Il 21/08/2014 13:56, Radim Krčmář ha scritto:
-> > 2014-08-21 10:29+0200, Paolo Bonzini:
-> >> Il 20/08/2014 22:53, Radim Krčmář ha scritto:
-> >>> +	TP_PROTO(int grow, unsigned int vcpu_id, int new, int old),
-> >>
-> >> s/int grow/bool grow/ (and similarly in TP_STRUCT__entry).
-> > 
-> > Ok.
-> > (We are using 'int' for this in other tracepoints, so I guessed there is
-> >  some hate agains bool.)
-> 
-> Yeah, there are many ints, but there are also some bools. :)
-> 
-> Of course "bool" is only a no-brainer if there is a clear direction to
-> use (e.g. "bool has_error"), and indeed this case is less obvious.  But
-> there are some like this one (e.g. bool gpa_match).
-> 
-> Keep the int if you prefer it that way.
+On Thu, Aug 21, 2014 at 8:44 AM, Tero Kristo <t-kristo@ti.com> wrote:
+> On 08/18/2014 07:56 PM, Nishanth Menon wrote:
+>>
+>> Hi,
+>> The following patches are based on v3.17-rc1
+>> Prior to this series: http://slexy.org/view/s20QH6PW4x (notice the /0 div
+>> error spam at initial boot log)
+>> After this series: http://slexy.org/view/s20tPNXPf4
+>
+>
+> Yeah, valid findings. However, you did not root-cause the problem, just
+> added a bandaid for the most obvious errors.
 
-I actually like bool much better, but first few were only int and then I
-stopped looking ...
+Yep, it does seem that omap3_noncore_dpll_set_rate had the same
+bandaid as well :).. but checks did make sense..
+
+> I will queue these patches for 3.17-rc fixes anyway, but will post an actual fix in a bit.
+
+Thanks for rootcausing.
+
+---
+Regards,
+Nishanth Menon
