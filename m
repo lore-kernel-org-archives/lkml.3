@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033AbaHUMbE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:31:04 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:56036 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754476AbaHUMbC (ORCPT
+	id S1754980AbaHUMbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:31:48 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:60914 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754685AbaHUMbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:31:02 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: inki.dae@samsung.com, jy0922.shim@samsung.com, w0312.kim@samsung.com,
-        kyungmin.park@samsung.com, airlied@linux.ie, kgene.kim@samsung.com
-Cc: dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Subject: [PATCH] drm: exynos: Make of_device_id array const
-Date: Thu, 21 Aug 2014 17:58:07 +0530
-Message-Id: <1408624087-30083-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 21 Aug 2014 08:31:46 -0400
+X-Sasl-enc: 86ZWeV2GzWfnkwBzl5QgE2yQ9UfdnQ29RJY7c9puuUhq 1408624305
+Date: Thu, 21 Aug 2014 09:31:33 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-firmware@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firmware: Automatically pull missing FW files
+Message-ID: <20140821123133.GB14973@khazad-dum.debian.net>
+References: <20140820182145.15596.86122.stgit@tstruk-mobl1>
+ <1408559681.11365.1.camel@shinybook.infradead.org>
+ <53F4F533.5010308@intel.com>
+ <1408567140.9484.0.camel@infradead.org>
+ <53F509AF.9010707@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F509AF.9010707@intel.com>
+X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
+ 39CB 4807
+X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make of_device_id array const, because all OF functions handle it as const.
+On Wed, 20 Aug 2014, Tadeusz Struk wrote:
+> What for? The point is that you don't have the FW binary file and you
+> have to download it, which can happen automatically and this is what
+> this patch does. The director where it will be stored doesn't really
+> matter here.
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
----
- drivers/gpu/drm/exynos/exynos_drm_dsi.c |    2 +-
- drivers/gpu/drm/exynos/exynos_hdmi.c    |    2 +-
- drivers/gpu/drm/exynos/exynos_mixer.c   |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+"git pull" will at least tell you something is seriously wrong (if you know
+the firmware tree should never require a forced update, that is).
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-index 442aa2d..2f96fb7 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-@@ -310,7 +310,7 @@ static struct exynos_dsi_driver_data exynos5_dsi_driver_data = {
- 	.plltmr_reg = 0x58,
- };
- 
--static struct of_device_id exynos_dsi_of_match[] = {
-+static const struct of_device_id exynos_dsi_of_match[] = {
- 	{ .compatible = "samsung,exynos4210-mipi-dsi",
- 	  .data = &exynos4_dsi_driver_data },
- 	{ .compatible = "samsung,exynos5410-mipi-dsi",
-diff --git a/drivers/gpu/drm/exynos/exynos_hdmi.c b/drivers/gpu/drm/exynos/exynos_hdmi.c
-index 562966d..fc44a91 100644
---- a/drivers/gpu/drm/exynos/exynos_hdmi.c
-+++ b/drivers/gpu/drm/exynos/exynos_hdmi.c
-@@ -2278,7 +2278,7 @@ err_data:
- 	return NULL;
- }
- 
--static struct of_device_id hdmi_match_types[] = {
-+static const struct of_device_id hdmi_match_types[] = {
- 	{
- 		.compatible = "samsung,exynos5-hdmi",
- 		.data = &exynos5_hdmi_driver_data,
-diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
-index e8b4ec8..637aa8f 100644
---- a/drivers/gpu/drm/exynos/exynos_mixer.c
-+++ b/drivers/gpu/drm/exynos/exynos_mixer.c
-@@ -1225,7 +1225,7 @@ static struct platform_device_id mixer_driver_types[] = {
- 	}
- };
- 
--static struct of_device_id mixer_match_types[] = {
-+static const struct of_device_id mixer_match_types[] = {
- 	{
- 		.compatible = "samsung,exynos4210-mixer",
- 		.data	= &exynos4210_mxr_drv_data,
+I'd really appreciate if the firmware tree had signed tags or signed
+commits, though.  Those at least provide decent end-to-end security (both at
+rest, and while in transit) for data once it has been "git push"'d.
+
 -- 
-1.7.9.5
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
