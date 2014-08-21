@@ -1,143 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106AbaHUXWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 19:22:36 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53495 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752342AbaHUXWf (ORCPT
+	id S1755520AbaHUX0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 19:26:45 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:37337 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161AbaHUX0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 19:22:35 -0400
-Date: Thu, 21 Aug 2014 18:22:31 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>, David Horner <ds2horner@gmail.com>
-Subject: Re: [PATCH v3 2/4] zsmalloc: change return value unit of
- zs_get_total_size_bytes
-Message-ID: <20140821232231.GA18894@cerebellum.variantweb.net>
-References: <1408580838-29236-1-git-send-email-minchan@kernel.org>
- <1408580838-29236-3-git-send-email-minchan@kernel.org>
- <CALZtONBuZOORHAF0UHEZM7Aybuoesg3fyjnu9ACj_F7O5G35Og@mail.gmail.com>
+	Thu, 21 Aug 2014 19:26:43 -0400
+X-IronPort-AV: E=Sophos;i="5.04,376,1406617200"; 
+   d="scan'208";a="43063763"
+Subject: Re: [PATCH 1/3] tg3: Limit minimum tx queue wakeup threshold
+From: Michael Chan <mchan@broadcom.com>
+To: Benjamin Poirier <bpoirier@suse.de>
+CC: Prashant Sreedharan <prashant@broadcom.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140821230607.GB7724@f1.synalogic.ca>
+References: <1408474371-19509-1-git-send-email-bpoirier@suse.de>
+	 <1408485647.7404.3.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <20140821220424.GB7117@f1.synalogic.ca>
+	 <1408660355.7644.50.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
+	 <20140821230607.GB7724@f1.synalogic.ca>
+Content-Type: text/plain; charset="cp1252"
+Date: Thu, 21 Aug 2014 16:26:42 -0700
+Message-ID: <1408663602.7644.63.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZtONBuZOORHAF0UHEZM7Aybuoesg3fyjnu9ACj_F7O5G35Og@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 02:53:57PM -0400, Dan Streetman wrote:
-> On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > zs_get_total_size_bytes returns a amount of memory zsmalloc
-> > consumed with *byte unit* but zsmalloc operates *page unit*
-> > rather than byte unit so let's change the API so benefit
-> > we could get is that reduce unnecessary overhead
-> > (ie, change page unit with byte unit) in zsmalloc.
-> >
-> > Now, zswap can rollback to zswap_pool_pages.
-> > Over to zswap guys ;-)
+On Thu, 2014-08-21 at 16:06 -0700, Benjamin Poirier wrote: 
+> On 2014/08/21 15:32, Michael Chan wrote:
+> > On Thu, 2014-08-21 at 15:04 -0700, Benjamin Poirier wrote: 
+> > > On 2014/08/19 15:00, Michael Chan wrote:
+> > > > On Tue, 2014-08-19 at 11:52 -0700, Benjamin Poirier wrote: 
+> > > > > diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+> > > > > index 3ac5d23..b11c0fd 100644
+> > > > > --- a/drivers/net/ethernet/broadcom/tg3.c
+> > > > > +++ b/drivers/net/ethernet/broadcom/tg3.c
+> > > > > @@ -202,7 +202,8 @@ static inline void _tg3_flag_clear(enum TG3_FLAGS flag, unsigned long *bits)
+> > > > >  #endif
+> > > > >  
+> > > > >  /* minimum number of free TX descriptors required to wake up TX process */
+> > > > > -#define TG3_TX_WAKEUP_THRESH(tnapi)            ((tnapi)->tx_pending / 4)
+> > > > > +#define TG3_TX_WAKEUP_THRESH(tnapi)    max_t(u32, (tnapi)->tx_pending / 4, \
+> > > > > +                                             MAX_SKB_FRAGS + 1)
+> > > > 
+> > > > I think we should precompute this and store it in something like
+> > > > tp->tx_wake_thresh.
+> > > 
+> > > I've tried this by adding the following patch at the end of the v2
+> > > series but I did not measure a significant latency improvement. Was
+> > > there another reason for the change? 
+> > 
+> > Just performance.  The wake up threshold is checked in the tx fast path
+> > in both start_xmit() and tg3_tx().  I would optimize such code for speed
 > 
-> We could change zpool/zswap over to total pages instead of total
-> bytes, since both zbud and zsmalloc now report size in pages.  The
-> only downside would be if either changed later to not use only whole
-> pages (or if they start using huge pages for storage...), but for what
-> they do that seems unlikely.  After this patch is finalized I can
-> write up a quick patch unless Seth disagrees (or already has a patch
-> :)
+> I don't see what you mean. The code in those two functions that used to
+> invoke TG3_TX_WAKEUP_THRESH is wrapped in unlikely() conditions. You
+> can't tell me that's the fast path ;) It's only checked when the queue
+> is stopped.
 
-I agree that we should move everything (back) to pages.
-
-I can write the patch or you can; doesn't matter to me.  I might have
-one started on the previous version of this patchset where I erroneously
-determined that Minchan had broken stuff :-/
-
-Seth
+I missed the unlikely().  So you're right.  It's not really in the fast
+path.
 
 > 
-> >
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  drivers/block/zram/zram_drv.c |  4 ++--
-> >  include/linux/zsmalloc.h      |  2 +-
-> >  mm/zsmalloc.c                 | 10 +++++-----
-> >  3 files changed, 8 insertions(+), 8 deletions(-)
-> >
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index d00831c3d731..302dd37bcea3 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
-> >
-> >         down_read(&zram->init_lock);
-> >         if (init_done(zram))
-> > -               val = zs_get_total_size_bytes(meta->mem_pool);
-> > +               val = zs_get_total_size(meta->mem_pool);
-> >         up_read(&zram->init_lock);
-> >
-> > -       return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
-> > +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> >  }
-> >
-> >  static ssize_t max_comp_streams_show(struct device *dev,
-> > diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-> > index e44d634e7fb7..105b56e45d23 100644
-> > --- a/include/linux/zsmalloc.h
-> > +++ b/include/linux/zsmalloc.h
-> > @@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
-> >                         enum zs_mapmode mm);
-> >  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
-> >
-> > -u64 zs_get_total_size_bytes(struct zs_pool *pool);
-> > +unsigned long zs_get_total_size(struct zs_pool *pool);
+> Moreover, the patches I've sent already add tg3_napi.wakeup_thresh. It
+> is over those patches that I've made the measurements.
+
+Right.  But my original comment was over your original patch #1 which
+was adding max_t() to the macro TG3_TX_WAKE_THRESH without adding
+wakeup_thresh field.  All my comments (performance and smaller code)
+were based on your original patch #1.  Later I did see that your patch 3
+converted TG3_TX_WAKEUP_THRESH to a structure field so it's no longer an
+issue.
+
 > 
-> minor naming suggestion, but since the name is changing anyway,
-> "zs_get_total_size" implies to me the units are bytes, would
-> "zs_get_total_pages" be clearer that it's returning size in # of
-> pages, not bytes?
+> > as much as possible.  In the current code, it was just a right shift
+> > operation.  Now, with max_t() added, I think I prefer having it
+> > pre-computed.  The performance difference may not be measurable, but I
+> > think the compiled code size may be smaller too.
 > 
-> >
-> >  #endif
-> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> > index a65924255763..80408a1da03a 100644
-> > --- a/mm/zsmalloc.c
-> > +++ b/mm/zsmalloc.c
-> > @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
-> >
-> >  static u64 zs_zpool_total_size(void *pool)
-> >  {
-> > -       return zs_get_total_size_bytes(pool);
-> > +       return zs_get_total_size(pool) << PAGE_SHIFT;
-> >  }
-> >
-> >  static struct zpool_driver zs_zpool_driver = {
-> > @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
-> >  }
-> >  EXPORT_SYMBOL_GPL(zs_unmap_object);
-> >
-> > -u64 zs_get_total_size_bytes(struct zs_pool *pool)
-> > +unsigned long zs_get_total_size(struct zs_pool *pool)
-> >  {
-> > -       u64 npages;
-> > +       unsigned long npages;
-> >
-> >         spin_lock(&pool->stat_lock);
-> >         npages = pool->pages_allocated;
-> >         spin_unlock(&pool->stat_lock);
-> > -       return npages << PAGE_SHIFT;
-> > +       return npages;
-> >  }
-> > -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> > +EXPORT_SYMBOL_GPL(zs_get_total_size);
-> >
-> >  module_init(zs_init);
-> >  module_exit(zs_exit);
-> > --
-> > 2.0.0
-> >
+> Maybe in certain areas, but not overall:
+> 
+> with v2 patches 1-3
+>    text    data     bss     dec     hex filename
+>  149495    1247       0  150742   24cd6 drivers/net/ethernet/broadcom/tg3.o
+> with v2 patches 1-3 + tx_wake_thresh_def
+>    text    data     bss     dec     hex filename
+>  149524    1247       0  150771   24cf3 drivers/net/ethernet/broadcom/tg3.o
+> 
+> I really don't see a gain.
+> 
+
+Agreed.  Once you have converted the TG3_TX_WAKEUP_THRESH to a structure
+field, that's sufficient.  No need to have multiple fields.  Thanks.
+
