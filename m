@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaHUDNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:13:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60736 "EHLO
+	id S1753612AbaHUDPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:15:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60750 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779AbaHUDNl (ORCPT
+	with ESMTP id S1751779AbaHUDPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:13:41 -0400
+	Wed, 20 Aug 2014 23:15:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <53F5605C.2010304@kernel.dk>
+In-Reply-To: <CACVXFVNEuEOXphJK5XGbAGRC9tL7iTv=PE_v+Dnw3CReAEkonw@mail.gmail.com>
 References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
 	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
 	<20140815163111.GA16652@infradead.org>
@@ -23,8 +23,9 @@ References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
 	<53F4C835.7030407@kernel.dk>
 	<CACVXFVPxXrYi+m0bC7tEcfvDzhQ=Xnapkd+yGRXbKCktgi3Ofw@mail.gmail.com>
 	<53F5605C.2010304@kernel.dk>
-Date: Thu, 21 Aug 2014 11:13:39 +0800
-Message-ID: <CACVXFVNEuEOXphJK5XGbAGRC9tL7iTv=PE_v+Dnw3CReAEkonw@mail.gmail.com>
+	<CACVXFVNEuEOXphJK5XGbAGRC9tL7iTv=PE_v+Dnw3CReAEkonw@mail.gmail.com>
+Date: Thu, 21 Aug 2014 11:15:12 +0800
+Message-ID: <CACVXFVPBLvSbDRPtAYAq_+bR-hfxFL_WPgxWZrywr2wQMD=rjA@mail.gmail.com>
 Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
 From: Ming Lei <ming.lei@canonical.com>
 To: Jens Axboe <axboe@kernel.dk>
@@ -41,46 +42,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 10:58 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 2014-08-20 21:54, Ming Lei wrote:
+On Thu, Aug 21, 2014 at 11:13 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Thu, Aug 21, 2014 at 10:58 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 2014-08-20 21:54, Ming Lei wrote:
+>>>>>
+>>>>>   From my investigation, context switch increases almost 50% with
+>>>>> workqueue compared with kthread in loop in a quad-core VM. With
+>>>>> kthread, requests may be handled as batch in cases which won't be
+>>>>> blocked in read()/write()(like null_blk, tmpfs, ...), but it is
+>>>>> impossible
+>>>>> with
+>>>>> workqueue any more.  Also block plug&unplug should have been used
+>>>>> with kthread to optimize the case, especially when kernel AIO is
+>>>>> applied,
+>>>>> still impossible with work queue too.
 >>>>
->>>>   From my investigation, context switch increases almost 50% with
->>>> workqueue compared with kthread in loop in a quad-core VM. With
->>>> kthread, requests may be handled as batch in cases which won't be
->>>> blocked in read()/write()(like null_blk, tmpfs, ...), but it is
->>>> impossible
->>>> with
->>>> workqueue any more.  Also block plug&unplug should have been used
->>>> with kthread to optimize the case, especially when kernel AIO is
->>>> applied,
->>>> still impossible with work queue too.
+>>>>
+>>>>
+>>>> OK, that one is actually a good point, since one need not do per-item
+>>>> queueing. We could handle different units, though. And we should have
+>>>> proper
+>>>> marking of the last item in a chain of stuff, so we might even be able to
+>>>> offload based on that instead of doing single items. It wont help the
+>>>> sync
+>>>> case, but for that, workqueue and kthread would be identical.
 >>>
 >>>
->>>
->>> OK, that one is actually a good point, since one need not do per-item
->>> queueing. We could handle different units, though. And we should have
->>> proper
->>> marking of the last item in a chain of stuff, so we might even be able to
->>> offload based on that instead of doing single items. It wont help the
->>> sync
->>> case, but for that, workqueue and kthread would be identical.
+>>> We may do that by introducing callback of queue_rq_list in blk_mq_ops,
+>>> and I will figure out one patch today to see if it can help the case.
 >>
 >>
->> We may do that by introducing callback of queue_rq_list in blk_mq_ops,
->> and I will figure out one patch today to see if it can help the case.
+>> I don't think we should add to the interface, I prefer keeping it clean like
+>> it is right now. At least not if we can get around it. My point is that the
+>> driver already knows when the chain is complete, when REQ_LAST is set. So
+>> before that event triggers, it need not kick off IO, or at least i could do
+>> it in batches before that. That may not be fully reliable in case of
+>> queueing errors, but if REQ_LAST or 'error return' is used as the way to
+>> kick off pending IO, then that should be good enough. Haven't audited this
+>> in a while, but at least that is the intent of REQ_LAST.
 >
->
-> I don't think we should add to the interface, I prefer keeping it clean like
-> it is right now. At least not if we can get around it. My point is that the
-> driver already knows when the chain is complete, when REQ_LAST is set. So
-> before that event triggers, it need not kick off IO, or at least i could do
-> it in batches before that. That may not be fully reliable in case of
-> queueing errors, but if REQ_LAST or 'error return' is used as the way to
-> kick off pending IO, then that should be good enough. Haven't audited this
-> in a while, but at least that is the intent of REQ_LAST.
+> Yes, I thought of too, but driver need another context for handling that,
+> either workqueue or kthread, which may cause the introduced per-device
+> workqueue useless.
 
-Yes, I thought of too, but driver need another context for handling that,
-either workqueue or kthread, which may cause the introduced per-device
-workqueue useless.
+Hmmm, a list should be enough, will do that.
 
-thanks,
+Thanks,
