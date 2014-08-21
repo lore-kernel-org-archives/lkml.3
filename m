@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaHUMXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:23:42 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:34982 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaHUMXh (ORCPT
+	id S1754921AbaHUMXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:23:49 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61748 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754853AbaHUMXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:23:37 -0400
+	Thu, 21 Aug 2014 08:23:43 -0400
 From: Mathias Krause <minipli@googlemail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: Joe Perches <joe@perches.com>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
         linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCHv3 2/9] printk: Provide pi_<level> / pe_<level> macros for __init / __exit code
-Date: Thu, 21 Aug 2014 14:23:05 +0200
-Message-Id: <1408623792-7973-3-git-send-email-minipli@googlemail.com>
+Subject: [PATCHv3 6/9] x86, mm: Make x86_init.memory_setup() return a const char *
+Date: Thu, 21 Aug 2014 14:23:09 +0200
+Message-Id: <1408623792-7973-7-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
 References: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
@@ -23,169 +23,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memory used for functions marked with __init will be released after
-initialization, albeit static data referenced by such code will not, if
-not explicitly marked this way, too. This is especially true for format
-strings used in messages printed by such code. Those are not marked and
-therefore will survive the __init cleanup -- dangling in memory without
-ever being referenced again.
+All implementations of x86_init.memory_setup() actually return a const
+char *.  Adjust the prototypes to reflect reality.
 
-Ideally we would like the compiler to automatically recognise such
-constructs but it does not and it's not as simple as it might sound, as
-strings used in initialization code might latter still be used, e.g. as
-a slab cache name. Therefore we need to explicitly mark the strings we
-want to release together with the function itself.
-
-For a seamless integration of the necessary __init_str() / __exit_str()
-macros to mark the format strings, this patch provides new variants of
-the well known pr_<level>() macros as pi_<level>() for __init code and
-pe_<level>() for __exit code. Changing existing code should thereby be
-as simple as changing a single letter.
-
-For code that cannot be changed to use the pi_<level>() / pe_<level>()
-helpers printk_init() and printk_exit() macros are provided, too.
-
-If users get it wrong, e.g. use printk_init() / pi_<level>() in non-init
-code or printk_exit() / pe_<level>() in non-exit code, modpost will
-detect the error as a section mismatch and report it accordingly.
-
-One remark, though: We cannot provide appropriate p[ie]_debug() macros
-for the CONFIG_DYNAMIC_DEBUG case as there is (currently) no way to
-remove entries from dyndbg after initialization. But supporting that
-scenario would require more work (and code), therefore not necessarily
-justifying the memory savings.
+Also add the missing __init annotation to xen_auto_xlated_memory_setup().
 
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
-
 ---
-v3: change description to mention modpost error catching
-v2: introduce printk_init / printk_exit macros (suggested by Joe)
----
- include/linux/init.h   |    7 ++++--
- include/linux/printk.h |   59 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 64 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/e820.h     |    4 ++--
+ arch/x86/include/asm/x86_init.h |    2 +-
+ arch/x86/kernel/e820.c          |    8 ++++----
+ arch/x86/lguest/boot.c          |    2 +-
+ arch/x86/xen/setup.c            |    4 ++--
+ arch/x86/xen/xen-ops.h          |    4 ++--
+ 6 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index 2c1cf10bb7..dc5691b2f3 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -39,14 +39,17 @@
-  * For strings used in __init / __exit functions the __init_str() /
-  * __exit_str() macros will take care of marking the strings accordingly so
-  * they can be freed, too. Otherwise the strings would resist in memory, even
-- * though they are no longer referenced.
-+ * though they are no longer referenced. They're also used to implement the
-+ * printk_init() / printk_exit() macros.
-  *
-  * Use them like this:
-  *
-  * static int __init my_setup(char *arg)
-  * {
-- *    if (!strcmp(arg, __init_str("disable")))
-+ *    if (!strcmp(arg, __init_str("disable"))) {
-+ *       printk_init("Disabled by commandline\n");
-  *       enabled = false;
-+ *   }
-  * }
-  * __setup("mydev=", my_setup);
-  */
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index d78125f73a..3be8e228db 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -229,6 +229,10 @@ extern asmlinkage void dump_stack(void) __cold;
-  * All of these will print unconditionally, although note that pr_debug()
-  * and other debug macros are compiled out unless either DEBUG is defined
-  * or CONFIG_DYNAMIC_DEBUG is set.
-+ *
-+ * The printk_init() and pi_<level>() macros shall be used in __init code in
-+ * favour of printk() / pr_<level>(). The printk_exit() and pe_<level>()
-+ * variants shall be used in __exit code.
-  */
- #define pr_emerg(fmt, ...) \
- 	printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-@@ -248,13 +252,60 @@ extern asmlinkage void dump_stack(void) __cold;
- #define pr_cont(fmt, ...) \
- 	printk(KERN_CONT fmt, ##__VA_ARGS__)
- 
-+#define printk_init(fmt, ...) \
-+	printk(__init_str(fmt), ##__VA_ARGS__)
-+#define printk_exit(fmt, ...) \
-+	printk(__exit_str(fmt), ##__VA_ARGS__)
-+
-+#define pi_emerg(fmt, ...) \
-+	printk_init(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_alert(fmt, ...) \
-+	printk_init(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_crit(fmt, ...) \
-+	printk_init(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_err(fmt, ...) \
-+	printk_init(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_warning(fmt, ...) \
-+	printk_init(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_warn pi_warning
-+#define pi_notice(fmt, ...) \
-+	printk_init(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_info(fmt, ...) \
-+	printk_init(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_cont(fmt, ...) \
-+	printk_init(KERN_CONT fmt, ##__VA_ARGS__)
-+
-+#define pe_emerg(fmt, ...) \
-+	printk_exit(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_alert(fmt, ...) \
-+	printk_exit(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_crit(fmt, ...) \
-+	printk_exit(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_err(fmt, ...) \
-+	printk_exit(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_warning(fmt, ...) \
-+	printk_exit(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_warn pe_warning
-+#define pe_notice(fmt, ...) \
-+	printk_exit(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_info(fmt, ...) \
-+	printk_exit(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_cont(fmt, ...) \
-+	printk_exit(KERN_CONT fmt, ##__VA_ARGS__)
-+
- /* pr_devel() should produce zero code unless DEBUG is defined */
- #ifdef DEBUG
- #define pr_devel(fmt, ...) \
- 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_devel(fmt, ...) \
-+	printk_init(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_devel(fmt, ...) \
-+	printk_exit(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
- #define pr_devel(fmt, ...) \
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_devel pr_devel
-+#define pe_devel pr_devel
- #endif
- 
- #include <linux/dynamic_debug.h>
-@@ -264,12 +315,20 @@ extern asmlinkage void dump_stack(void) __cold;
- /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
- #define pr_debug(fmt, ...) \
- 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
-+#define pi_debug pr_debug
-+#define pe_debug pr_debug
- #elif defined(DEBUG)
- #define pr_debug(fmt, ...) \
- 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_debug(fmt, ...) \
-+	printk_init(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pe_debug(fmt, ...) \
-+	printk_exit(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
- #define pr_debug(fmt, ...) \
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
-+#define pi_debug pr_debug
-+#define pe_debug pr_debug
- #endif
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 779c2efe2e..7d17fb2b16 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -17,7 +17,7 @@ extern unsigned long pci_mem_start;
+ extern int e820_any_mapped(u64 start, u64 end, unsigned type);
+ extern int e820_all_mapped(u64 start, u64 end, unsigned type);
+ extern void e820_add_region(u64 start, u64 size, int type);
+-extern void e820_print_map(char *who);
++extern void e820_print_map(const char *who);
+ extern int
+ sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
+ extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
+@@ -59,7 +59,7 @@ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+ extern void setup_memory_map(void);
+-extern char *default_machine_specific_memory_setup(void);
++extern const char *default_machine_specific_memory_setup(void);
  
  /*
+  * Returns true iff the specified range [s,e) is completely contained inside
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index e45e4da96b..64e80c9815 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -42,7 +42,7 @@ struct x86_init_mpparse {
+ struct x86_init_resources {
+ 	void (*probe_roms)(void);
+ 	void (*reserve_resources)(void);
+-	char *(*memory_setup)(void);
++	const char *(*memory_setup)(void);
+ };
+ 
+ /**
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 988c00a1f6..14323a7c66 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -155,7 +155,7 @@ static void __init e820_print_type(u32 type)
+ 	}
+ }
+ 
+-void __init e820_print_map(char *who)
++void __init e820_print_map(const char *who)
+ {
+ 	int i;
+ 
+@@ -1021,9 +1021,9 @@ void __init e820_reserve_resources_late(void)
+ 	}
+ }
+ 
+-char *__init default_machine_specific_memory_setup(void)
++const char *__init default_machine_specific_memory_setup(void)
+ {
+-	char *who = "BIOS-e820";
++	const char *who = "BIOS-e820";
+ 	u32 new_nr;
+ 	/*
+ 	 * Try to copy the BIOS-supplied E820-map.
+@@ -1061,7 +1061,7 @@ char *__init default_machine_specific_memory_setup(void)
+ 
+ void __init setup_memory_map(void)
+ {
+-	char *who;
++	const char *who;
+ 
+ 	who = x86_init.resources.memory_setup();
+ 	memcpy(&e820_saved, &e820, sizeof(struct e820map));
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index aae94132bc..28457edc2f 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1167,7 +1167,7 @@ static struct notifier_block paniced = {
+ };
+ 
+ /* Setting up memory is fairly easy. */
+-static __init char *lguest_memory_setup(void)
++static __init const char *lguest_memory_setup(void)
+ {
+ 	/*
+ 	 * The Linux bootloader header contains an "e820" memory map: the
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 2e555163c2..fabe61f6f3 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -336,7 +336,7 @@ void xen_ignore_unusable(struct e820entry *list, size_t map_size)
+ /**
+  * machine_specific_memory_setup - Hook for machine specific memory setup.
+  **/
+-char * __init xen_memory_setup(void)
++const char * __init xen_memory_setup(void)
+ {
+ 	static struct e820entry map[E820MAX] __initdata;
+ 
+@@ -502,7 +502,7 @@ char * __init xen_memory_setup(void)
+ /*
+  * Machine specific memory setup for auto-translated guests.
+  */
+-char * __init xen_auto_xlated_memory_setup(void)
++const char * __init xen_auto_xlated_memory_setup(void)
+ {
+ 	static struct e820entry map[E820MAX] __initdata;
+ 
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 28c7e0be56..da12e3413c 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -35,8 +35,8 @@ void xen_mm_pin_all(void);
+ void xen_mm_unpin_all(void);
+ void xen_set_pat(u64);
+ 
+-char * __init xen_memory_setup(void);
+-char * xen_auto_xlated_memory_setup(void);
++const char * __init xen_memory_setup(void);
++const char * __init xen_auto_xlated_memory_setup(void);
+ void __init xen_arch_setup(void);
+ void xen_enable_sysenter(void);
+ void xen_enable_syscall(void);
 -- 
 1.7.10.4
 
