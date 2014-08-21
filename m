@@ -1,118 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaHUR0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:26:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44927 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751905AbaHUR0j (ORCPT
+	id S1753170AbaHUR3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:29:34 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:57901 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063AbaHUR3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:26:39 -0400
-Date: Thu, 21 Aug 2014 19:26:33 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
- Controller
-Message-ID: <20140821192633.69f6b21b@bbrezillon>
-In-Reply-To: <2138720.5GSxsvjVxS@avalon>
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140821095202.GA21848@ulmo>
-	<20140821150600.37788d82@bbrezillon>
-	<2138720.5GSxsvjVxS@avalon>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 21 Aug 2014 13:29:32 -0400
+Message-ID: <53F62C78.8040404@cogentembedded.com>
+Date: Thu, 21 Aug 2014 21:29:28 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Hayes Wang <hayeswang@realtek.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH net-next 3/4] r8152: remove clear_bp function
+References: <1394712342-15778-16-Taiwan-albertk@realtek.com> <1394712342-15778-19-Taiwan-albertk@realtek.com> <201408210131.s7L1VuAJ031162@rtits1.realtek.com> <0835B3720019904CB8F7AA43166CEEB2515BB5@RTITMBSV03.realtek.com.tw>
+In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2515BB5@RTITMBSV03.realtek.com.tw>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On 08/21/2014 06:12 AM, Hayes Wang wrote:
 
-On Thu, 21 Aug 2014 19:08:53 +0200
-Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> [...]
+>>>    	r8152b_disable_aldps(tp);
+>>>
+>>> -	rtl_clear_bp(tp);
+>>>
 
-[...]
+>>      Why leave 2 empty lines? One is enough.
 
-> > >> 
-> > >> While this could be acceptable when all drivers are statically linked
-> > >> in the kernel, it might be problematic when you're using modules,
-> > >> meaning that you won't be able to display anything on your LCD panel
-> > >> until your HDMI bridge module has been loaded.
-> > > 
-> > > No. HDMI should be using proper hotplugging anyway, hence it should be
-> > > always be loaded anyway. You're in for a world of pain if you think you
-> > > can run DRM with a driver that's composed of separate kernel modules.
-> > 
-> > I was talking about the external RGB to HDMI encoder, should the driver
-> > for this encoder (which is not on On Chip block) be compiled
-> > statically too ?
-> 
-> Given the move to multiplatform kernels we need to aim for as few modules 
-> compiled in as possible. I'd say this includes HDMI encoders, panels and 
-> display controllers.
-> 
-> > > Also if you don't want to use deferred probe, then you're in for the
-> > > full hotplugging panel dance and that implies that you need to fix a
-> > > bunch of things in DRM (one being the framebuffer console instantiation
-> > > that I referred to in the other thread).
-> > 
-> > For now, I wait until there is a device connected on the RGB connector
-> > (connector status set to connector_status_connected) before creating an
-> > fbdev. It might not be the cleanest way to solve this issue, but it
-> > works :-).
-> 
-> Do you create a new drm_encoder at runtime for the HDMI encoder when it 
-> appears ? I thought the DRM core and API were not able to correctly cope with 
-> that.
+> The next patch would use another fucntion at the
+> same location. I skip removing the empty line and
+> re-adding it again. Is that better to do so? I would
+> resend the patches if the answer is yes.
 
-I haven't started to work on the HDMI encoder yet, and ATM I only have
-a single connector (which is true from an HW POV), which is then bound
-to an LCD panel (the only type of remote endpoint I currently support).
+    Sorry, I haven't looked at your next patch, too big for me. :-)
 
-BTW, I wonder how my use case should be represented in the DRM
-subsystem. As I said, from an HW POV I only have one RGB (or whatever
-name you choose for it) connector. But on such kind of connectors you
-can connect several output devices (panels, encoders, ...).
-And in my case I have 2 devices on the same RGB connector: a panel and
-an RGB to HDMI converter.
+> Best Regards,
+> Hayes
 
-> 
-> > > You also can't be using the current device tree bindings because they all
-> > > assume a dependency from the display controller/output to the panel. For
-> > > hotplugging you'd need the dependency the other way around (the panel
-> > > needs to refer to the output by phandle).
-> > 
-> > Here [1] is a proposal for notification support in the drm_panel
-> > infrastructure (which is not that complicated), and here [2] is how
-> > I use it in my atmel-hlcdc driver to generate hotplug events.
-> 
-> Is there a way we could use the component framework for that ? I know that 
-> partial notification isn't supported at the moment, but Russell agreed it was 
-> a real use case that should be implemented at some point.
+WBR, Sergei
 
-I'll give it a try.
-
-Best Regards,
-
-Boris
-
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
