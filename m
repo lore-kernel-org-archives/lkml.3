@@ -1,43 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaHUILs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 04:11:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12804 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752988AbaHUILq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 04:11:46 -0400
-Date: Thu, 21 Aug 2014 10:11:17 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET 0/2] perf hists browser: Cleanup callchain routines
- (v2)
-Message-ID: <20140821081117.GA4777@krava.brq.redhat.com>
-References: <1408583746-5540-1-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408583746-5540-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754158AbaHUILb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 04:11:31 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:50686 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaHUIL2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 04:11:28 -0400
+X-Original-SENDERIP: 10.177.222.131
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH 3/3] mm/slab: support slab merge
+Date: Thu, 21 Aug 2014 17:11:15 +0900
+Message-Id: <1408608675-20420-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 10:15:44AM +0900, Namhyung Kim wrote:
-> Hello,
-> 
-> This patch fixes and cleans up TUI callchain routines.  I tried to
-> consolidate similar functions but not to break the current output with
-> this change.  Hope that it makes code more readable and maintainable.
+Slab merge is good feature to reduce fragmentation. If new creating slab
+have similar size and property with exsitent slab, this feature reuse
+it rather than creating new one. As a result, objects are packed into
+fewer slabs so that fragmentation is reduced.
 
-76 insertions(+), 134 deletions(-) ... nice! ;-)
+Below is result of my testing.
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
+* After boot, sleep 20; cat /proc/meminfo | grep Slab
 
-jirka
+<Before>
+Slab: 25136 kB
+
+<After>
+Slab: 24364 kB
+
+We can save 3% memory used by slab.
+
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/slab.c |   20 ++++++++++++++++++++
+ mm/slab.h |    2 +-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 09b060e..a1cc1c9 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2052,6 +2052,26 @@ static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
+ 	return 0;
+ }
+ 
++unsigned long kmem_cache_flags(unsigned long object_size,
++	unsigned long flags, const char *name,
++	void (*ctor)(void *))
++{
++	return flags;
++}
++
++struct kmem_cache *
++__kmem_cache_alias(const char *name, size_t size, size_t align,
++		   unsigned long flags, void (*ctor)(void *))
++{
++	struct kmem_cache *cachep;
++
++	cachep = find_mergeable(size, align, flags, name, ctor);
++	if (cachep)
++		cachep->refcount++;
++
++	return cachep;
++}
++
+ /**
+  * __kmem_cache_create - Create a cache.
+  * @cachep: cache management descriptor
+diff --git a/mm/slab.h b/mm/slab.h
+index 7c6e1ed..13845d0 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -89,7 +89,7 @@ struct mem_cgroup;
+ int slab_unmergeable(struct kmem_cache *s);
+ struct kmem_cache *find_mergeable(size_t size, size_t align,
+ 		unsigned long flags, const char *name, void (*ctor)(void *));
+-#ifdef CONFIG_SLUB
++#ifndef CONFIG_SLOB
+ struct kmem_cache *
+ __kmem_cache_alias(const char *name, size_t size, size_t align,
+ 		   unsigned long flags, void (*ctor)(void *));
+-- 
+1.7.9.5
+
