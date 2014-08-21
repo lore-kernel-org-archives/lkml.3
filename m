@@ -1,57 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253AbaHUCNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 22:13:05 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:39396 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaHUCNC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 22:13:02 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7L2CnLg001702, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: nic_swsd <nic_swsd@realtek.com>,
+	id S1753408AbaHUCNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 22:13:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48411 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751199AbaHUCNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 22:13:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,906,1400050800"; 
+   d="scan'208";a="587790419"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "luto@amacapital.net" <luto@amacapital.net>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "mingo@redhat.com" <mingo@redhat.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH net-next 3/4] r8152: remove clear_bp function
-Thread-Topic: [PATCH net-next 3/4] r8152: remove clear_bp function
-Thread-Index: AQHPvFUIMC0XCO2SIU2CCT2BnisNvpvY3f+AgAFyBiA=
-Date: Thu, 21 Aug 2014 02:12:48 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2515BB5@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-16-Taiwan-albertk@realtek.com>
- <1394712342-15778-19-Taiwan-albertk@realtek.com>
- <201408210131.s7L1VuAJ031162@rtits1.realtek.com>
-In-Reply-To: <201408210131.s7L1VuAJ031162@rtits1.realtek.com>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
+        "Liu, Changcheng" <changcheng.liu@intel.com>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>
+Subject: RE: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
+ idle cpu
+Thread-Topic: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up
+ the idle cpu
+Thread-Index: AQHPvOLRmd9q8ZSNyk6REpYBhefA1ZvaT36w
+Date: Thu, 21 Aug 2014 02:12:49 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01E5F7BC@SHSMSX101.ccr.corp.intel.com>
+References: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
+ <53F5514A.5050007@linaro.org>
+In-Reply-To: <53F5514A.5050007@linaro.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7L2DLsT002675
 
-: Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com] 
-> Sent: Wednesday, August 20, 2014 8:01 PM
-> To: Hayes Wang; netdev@vger.kernel.org
-> Cc: nic_swsd; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
-> Subject: Re: [PATCH net-next 3/4] r8152: remove clear_bp function
-[...]
-> >   	r8152b_disable_aldps(tp);
+Hello Daniel,
+
+> -----Original Message-----
+> From: Daniel Lezcano [mailto:daniel.lezcano@linaro.org]
+> Sent: Thursday, August 21, 2014 9:54 AM
+> To: Liu, Chuansheng; luto@amacapital.net; peterz@infradead.org;
+> rjw@rjwysocki.net; mingo@redhat.com
+> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Liu, Changcheng;
+> Wang, Xiaoming; Chakravarty, Souvik K
+> Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
+> idle cpu
+> 
+> On 08/18/2014 10:37 AM, Chuansheng Liu wrote:
+> > Implementing one new API wake_up_if_idle(), which is used to
+> > wake up the idle CPU.
+> 
+> Is this patchset tested ? Did you check it solves the issue you were
+> facing ?
+We have done the basic test, and found the cores can exit C0 quickly with this patchset.
+Basically once the _TIF_NEED_RESCHED is set, then the poll_idle() can be broken.
+
+Please correct me if something is wrong, thanks.
+
+> 
+> > Suggested-by: Andy Lutomirski <luto@amacapital.net>
+> > Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+> > ---
+> >   include/linux/sched.h |    1 +
+> >   kernel/sched/core.c   |   16 ++++++++++++++++
+> >   2 files changed, 17 insertions(+)
 > >
-> > -	rtl_clear_bp(tp);
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index 857ba40..3f89ac1 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
+> >   extern struct sched_domain_topology_level *sched_domain_topology;
+> >
+> >   extern void set_sched_topology(struct sched_domain_topology_level *tl);
+> > +extern void wake_up_if_idle(int cpu);
+> >
+> >   #ifdef CONFIG_SCHED_DEBUG
+> >   # define SD_INIT_NAME(type)		.name = #type
+> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > index 1211575..adf104f 100644
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -1620,6 +1620,22 @@ static void ttwu_queue_remote(struct
+> task_struct *p, int cpu)
+> >   	}
+> >   }
+> >
+> > +void wake_up_if_idle(int cpu)
+> > +{
+> > +	struct rq *rq = cpu_rq(cpu);
+> > +	unsigned long flags;
+> > +
+> > +	if (set_nr_if_polling(rq->idle)) {
+> > +		trace_sched_wake_idle_without_ipi(cpu);
+> > +	} else {
+> > +		raw_spin_lock_irqsave(&rq->lock, flags);
+> > +		if (rq->curr == rq->idle)
+> > +			smp_send_reschedule(cpu);
+> > +		/* Else cpu is not in idle, do nothing here */
+> > +		raw_spin_unlock_irqrestore(&rq->lock, flags);
+> > +	}
+> > +}
+> > +
+> >   bool cpus_share_cache(int this_cpu, int that_cpu)
+> >   {
+> >   	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
 > >
 > 
->     Why leave 2 empty lines? One is enough.
+> 
+> --
+>   <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM
+> SoCs
+> 
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
 
-The next patch would use another fucntion at the
-same location. I skip removing the empty line and
-re-adding it again. Is that better to do so? I would
-resend the patches if the answer is yes.
- 
-Best Regards,
-Hayes
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
