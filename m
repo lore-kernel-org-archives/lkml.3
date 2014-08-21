@@ -1,234 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372AbaHUOCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:02:21 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:36453 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754875AbaHUOCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:02:19 -0400
-Date: Thu, 21 Aug 2014 16:02:13 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Jon Loeliger <jdl@jdl.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
- initialization order based on the DT)
-Message-ID: <20140821140211.GD19293@ulmo.nvidia.com>
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
- <20140514141914.446F7C4153D@trevor.secretlab.ca>
+	id S1755456AbaHUOCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:02:34 -0400
+Received: from mga14.intel.com ([192.55.52.115]:20109 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755375AbaHUOCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 10:02:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,909,1400050800"; 
+   d="scan'208";a="579892299"
+Date: Thu, 21 Aug 2014 22:01:34 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, Ingo Molnar <mingo@elte.hu>
+Subject: [sched/fair] caeb178c60f: +252.0% cpuidle.C1-SNB.time, +3.1%
+ turbostat.Pkg_W
+Message-ID: <20140821140134.GB19246@localhost>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NtwzykIc2mflq5ck"
+Content-Type: multipart/mixed; boundary="n8g4imXOkfNTN/H1"
 Content-Disposition: inline
-In-Reply-To: <20140514141914.446F7C4153D@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---NtwzykIc2mflq5ck
-Content-Type: text/plain; charset=us-ascii
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Content-Transfer-Encoding: 8bit
 
-On Wed, May 14, 2014 at 03:19:14PM +0100, Grant Likely wrote:
-> On Mon, 12 May 2014 18:47:51 +0200, Alexander Holler <holler@ahsoftware.d=
-e> wrote:
-> >=20
-> > Hello,
-> >=20
-> > if I would have to describe the Linux kernels init system (before users=
-pace
-> > starts), it would be like:
-> > Unknown functions with almost unknown functionality are called in an al=
-most
-> > random order.
-> >=20
-> > That reminded me that a kernel-maintainer once said to me:
-> > "We should aim to make things synchronous, deterministic and
-> > stuff-happens-in-the-correct-order."
-> >=20
-> > Looks like either the target moved or no Wilhelm Tell was around. ;)
-> >=20
-> > This is an attempt to reach the target for the case of (platform-)drive=
-rs.
-> > It is a mere starting point to reach the final target but it works on t=
-wo
-> > DT enabled ARM devices I have and it hasn't any implications on other
-> > architectures, platforms or whatever. If the new configuration option,
-> > which is only available if DT is enabled, isn't turned on, there is no
-> > increase of code size or similiar.
-> >=20
-> > So what are these patches I'm posting here?
-> > They offer an imho solid base to fix the 3. problem. they build a deter=
-ministic
-> > order in which (platform-)drivers should be initialized, based on datas
-> > (dependencies) found in the device tree. They also offer a starting poi=
-nt to fix
-> > the other 2 problems (unknown functions and unknown functionality) by s=
-howing a
-> > way how the long range target of known functions with known functionali=
-ty could
-> > be reached.
-> >=20
-> > Unfortunately work still isn't done. As written above, this is just a s=
-tarting
-> > point, neiter complete nor perfect. It is what I could do behind closed=
- doors,
-> > by spending a limited amount of time and resources (I've started to loo=
-k at
-> > that stuff 3-4 weeks ago, sometimes after 3.14 appeared), so it can be =
-blamed
-> > quick & dirty. But it should be already enough to explain and test the =
-concepts.
-> >=20
-> > Enough forewords.
-> >=20
-> > This is a small patch series to use a deterministic dependency based de=
-vice
-> > and driver initialization order on machines which are using device tree.
-> > The dependency graph will not only be build based on the device tree it=
-self,
-> > but will use dependencies based on phandle references in the .dts,
-> > automatically added by dtc through a new property.
-> > Manualy adding dependencies to the .dts is possible too.
-> >=20
-> > Advantages:
-> >=20
-> > - Correct order of initialization without any "dirty tricks" in drivers=
- or the
-> >   machine init code. The order in which devices/drivers will be initial=
-ized
-> >   depends only on the DT and the topological sort algorithm used by the
-> >   kernel, not some code elsewhere. That means less code and more homoge=
-neity
-> >   across different SOCs.
-> > - Might be(come) a little faster because the number of deferred probes =
-should
-> >   be minimized (they might not even be necessary anymore at all).
-> > - Using a modified algorithm, it's possible to build a list of drivers =
-which
-> >   can be initialized in parallel, e.g. using n threads, where n equals =
-the
-> >   number of cores. I have not tested nor implemented it, because I don'=
-t have
-> >   any multicore DT based board with which I easily can use a (patched) =
-mainline
-> >   kernel, just locked down multicore things I don't want to go through =
-the
-> >   pain of unlocking them.
-> > - Funny dependency graphs when using Graphviz.
-> >=20
-> > Disadvantages:
-> >=20
-> > - To use this feature correctly, binary blobs must be regenerated by
-> >   recompiling them to include properties with dependencies. Without
-> >   recompiling them there will be no advantage.
->=20
-> Rather than a dtb schema change, for the most common properties (irqs,
-> clocks, gpios), we could extract dependencies at boot time. I don't like
-> the idea of adding a separate depends-on property because it is very
-> easy to get it out of sync with the actual binding data (dtc is not the
-> only tool that manipulates .dtbs. Firmware will fiddle with it too).
+Hi Rik,
 
-Sorry for reviving this old thread, but this issue keeps popping up time
-and time again and people are starting to think about ways to workaround
-deferred probe being slow.
+FYI, we noticed the below changes on
 
-I'd very much prefer to avoid that and just keep using deferred probing
-as the one means to resolve dependencies at boot time, but at the same
-time I can't ignore when several people start complaining about the same
-thing.
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched/core
+commit caeb178c60f4f93f1b45c0bc056b5cf6d217b67f ("sched/fair: Make update_sd_pick_busiest() return 'true' on a busier sd")
 
-This very recently popped up again in the context of DRM and panels. One
-user complaints that in some cases, deferred probe increases boot time
-by 1.5 seconds (best case) and 5-6 seconds (worst case). That doesn't
-sound all that much, objectively, but if the boot time of the device is
-on the order of 6 seconds or so, then it's quite a lot.
+testbox/testcase/testparams: lkp-sb03/nepim/300s-100%-tcp6
 
-The reason why this happens is that the DRM driver looks up a panel
-connected to it and return -EPROBE_DEFER if the panel hasn't registered
-yet. Typically the panel would be probed after the DRM driver, therefore
-causing the DRM driver to defer probing. But it can also happen that the
-panel driver defers probing because it needs a regulator that hasn't
-been probed yet.
+743cb1ff191f00f  caeb178c60f4f93f1b45c0bc0
+---------------  -------------------------
+  29718911 ±45%    +329.5%  1.277e+08 ±10%  cpuidle.C1E-SNB.time
+       861 ±34%   +1590.4%      14564 ±31%  cpuidle.C3-SNB.usage
+  1.65e+08 ±20%    +175.4%  4.544e+08 ±15%  cpuidle.C1-SNB.time
+        24 ±41%    +247.6%         86 ±23%  numa-numastat.node1.other_node
+     27717 ±11%     +98.7%      55085 ± 6%  softirqs.RCU
+    180767 ±11%     +86.7%     337416 ±10%  cpuidle.C7-SNB.usage
+    104591 ±14%     +77.4%     185581 ±10%  cpuidle.C1E-SNB.usage
+       384 ±10%     +33.3%        512 ±11%  slabinfo.kmem_cache.num_objs
+       384 ±10%     +33.3%        512 ±11%  slabinfo.kmem_cache.active_objs
+       494 ± 8%     +25.9%        622 ± 9%  slabinfo.kmem_cache_node.active_objs
+       512 ± 7%     +25.0%        640 ± 8%  slabinfo.kmem_cache_node.num_objs
+     83427 ± 6%     +10.3%      92028 ± 5%  meminfo.DirectMap4k
+      9508 ± 1%     +21.3%      11534 ± 7%  slabinfo.kmalloc-512.active_objs
+      9838 ± 1%     +20.5%      11852 ± 6%  slabinfo.kmalloc-512.num_objs
+     53997 ± 6%     +11.1%      59981 ± 4%  numa-meminfo.node1.Slab
+      2662 ± 3%      -9.0%       2424 ± 3%  slabinfo.kmalloc-96.active_objs
+      2710 ± 3%      -8.6%       2478 ± 3%  slabinfo.kmalloc-96.num_objs
+       921 ±41%   +3577.7%      33901 ±14%  time.involuntary_context_switches
+      2371 ± 2%     +15.5%       2739 ± 2%  vmstat.system.in
 
-Anyway, those are all fairly standard reasons for where deferred probe
-triggers, and since I do like deferred probe for it's simplicity and
-reliability I'd rather not try to work around it if boot time is all
-that people are concerned about.
+testbox/testcase/testparams: lkp-sb03/nepim/300s-100%-tcp
 
-In order to solve the above problem I started investigating a bit what
-it would take to parse dependency information from a device tree at boot
-time. As it happens this can easily be done for things like clocks and
-interrupts properties, because they have very well-defined generic
-bindings. Unfortunately they are also the two types of resources where
-deferred probing matters the least because they are so special that they
-often get probed earlier than normal drivers (and in some cases even way
-before initcalls).
+743cb1ff191f00f  caeb178c60f4f93f1b45c0bc0
+---------------  -------------------------
+  20657207 ±31%    +358.2%   94650352 ±18%  cpuidle.C1E-SNB.time
+  29718911 ±45%    +329.5%  1.277e+08 ±10%  cpuidle.C1E-SNB.time
+       861 ±34%   +1590.4%      14564 ±31%  cpuidle.C3-SNB.usage
+      0.05 ±46%    +812.5%       0.44 ±34%  turbostat.%c3
+  1.12e+08 ±25%    +364.8%  5.207e+08 ±15%  cpuidle.C1-SNB.time
+  1.65e+08 ±20%    +175.4%  4.544e+08 ±15%  cpuidle.C1-SNB.time
+        35 ±19%    +105.6%         72 ±28%  numa-numastat.node1.other_node
+        24 ±41%    +247.6%         86 ±23%  numa-numastat.node1.other_node
+        43 ±22%     +86.2%         80 ±26%  numa-vmstat.node0.nr_dirtied
+     24576 ± 6%    +113.9%      52574 ± 1%  softirqs.RCU
+     27717 ±11%     +98.7%      55085 ± 6%  softirqs.RCU
+    211533 ± 6%     +58.4%     334990 ± 8%  cpuidle.C7-SNB.usage
+    180767 ±11%     +86.7%     337416 ±10%  cpuidle.C7-SNB.usage
+     77739 ±13%     +52.9%     118876 ±18%  cpuidle.C1E-SNB.usage
+    104591 ±14%     +77.4%     185581 ±10%  cpuidle.C1E-SNB.usage
+     32.09 ±14%     -24.8%      24.12 ±18%  turbostat.%pc2
+      9.04 ± 6%     +41.6%      12.80 ± 6%  turbostat.%c1
+       384 ±10%     +33.3%        512 ±11%  slabinfo.kmem_cache.num_objs
+       384 ±10%     +33.3%        512 ±11%  slabinfo.kmem_cache.active_objs
+       494 ± 8%     +25.9%        622 ± 9%  slabinfo.kmem_cache_node.active_objs
+       512 ± 7%     +25.0%        640 ± 8%  slabinfo.kmem_cache_node.num_objs
+       379 ± 9%     +16.7%        443 ± 7%  numa-vmstat.node0.nr_page_table_pages
+     83427 ± 6%     +10.3%      92028 ± 5%  meminfo.DirectMap4k
+      1579 ± 6%     -15.3%       1338 ± 7%  numa-meminfo.node1.PageTables
+       394 ± 6%     -15.1%        334 ± 7%  numa-vmstat.node1.nr_page_table_pages
+      1509 ± 7%     +16.6%       1760 ± 7%  numa-meminfo.node0.PageTables
+     12681 ± 1%     -17.3%      10482 ±14%  numa-meminfo.node1.AnonPages
+      3169 ± 1%     -17.3%       2620 ±14%  numa-vmstat.node1.nr_anon_pages
+     10171 ± 3%     +10.9%      11283 ± 3%  slabinfo.kmalloc-512.active_objs
+      9508 ± 1%     +21.3%      11534 ± 7%  slabinfo.kmalloc-512.active_objs
+     10481 ± 3%     +10.9%      11620 ± 3%  slabinfo.kmalloc-512.num_objs
+      9838 ± 1%     +20.5%      11852 ± 6%  slabinfo.kmalloc-512.num_objs
+     53997 ± 6%     +11.1%      59981 ± 4%  numa-meminfo.node1.Slab
+      5072 ± 1%     +11.6%       5662 ± 3%  slabinfo.kmalloc-2048.num_objs
+      4974 ± 1%     +11.6%       5551 ± 3%  slabinfo.kmalloc-2048.active_objs
+     12824 ± 2%     -16.1%      10754 ±14%  numa-meminfo.node1.Active(anon)
+      3205 ± 2%     -16.2%       2687 ±14%  numa-vmstat.node1.nr_active_anon
+      2662 ± 3%      -9.0%       2424 ± 3%  slabinfo.kmalloc-96.active_objs
+      2710 ± 3%      -8.6%       2478 ± 3%  slabinfo.kmalloc-96.num_objs
+     15791 ± 1%     +15.2%      18192 ± 9%  numa-meminfo.node0.AnonPages
+      3949 ± 1%     +15.2%       4549 ± 9%  numa-vmstat.node0.nr_anon_pages
+     13669 ± 1%      -7.5%      12645 ± 2%  slabinfo.kmalloc-16.num_objs
+       662 ±23%   +4718.6%      31918 ±12%  time.involuntary_context_switches
+       921 ±41%   +3577.7%      33901 ±14%  time.involuntary_context_switches
+      2463 ± 1%     +13.1%       2786 ± 3%  vmstat.system.in
+      2371 ± 2%     +15.5%       2739 ± 2%  vmstat.system.in
+     49.40 ± 2%      +4.8%      51.79 ± 2%  turbostat.Cor_W
+     77.48 ± 1%      +3.1%      79.91 ± 1%  turbostat.Pkg_W
 
-Unfortunately for other bindings it's not that easy. Take GPIOs for
-example. GPIOs can be specified in fairly arbitrary properties. There's
-a concensus on using a -gpio or -gpios suffix, but I don't think there
-are any guarantees. It could also technically be that a -gpio or -gpios
-property doesn't in fact contain a phandle at all.
+testbox/testcase/testparams: lkp-st02/dd-write/5m-11HDD-RAID5-cfq-xfs-1dd
 
-The same is true for regulators (*-supply) and likely a couple other
-bindings. So one of the hurdles to take trying to obtain the dependency
-information from existing DTBs is that there may be false positives (and
-the code could therefore try to resolve non-phandles as phandles and
-even succeed) and the code resolving the dependencies would need to know
-a whole lot about bindings.
+743cb1ff191f00f  caeb178c60f4f93f1b45c0bc0
+---------------  -------------------------
+     18571 ± 7%     +31.4%      24396 ± 4%  proc-vmstat.pgscan_direct_normal
+     39983 ± 2%     +38.3%      55286 ± 0%  perf-stat.cpu-migrations
+   4193962 ± 2%     +20.9%    5072009 ± 3%  perf-stat.iTLB-load-misses
+ 4.568e+09 ± 2%     -17.2%  3.781e+09 ± 1%  perf-stat.L1-icache-load-misses
+ 1.762e+10 ± 0%      -7.8%  1.625e+10 ± 1%  perf-stat.cache-references
+ 1.408e+09 ± 1%      -6.6%  1.315e+09 ± 1%  perf-stat.branch-load-misses
+ 1.407e+09 ± 1%      -6.5%  1.316e+09 ± 1%  perf-stat.branch-misses
+ 6.839e+09 ± 1%      +5.0%  7.185e+09 ± 2%  perf-stat.LLC-loads
+ 1.558e+10 ± 0%      +3.5%  1.612e+10 ± 1%  perf-stat.L1-dcache-load-misses
+ 1.318e+12 ± 0%      +3.4%  1.363e+12 ± 0%  perf-stat.L1-icache-loads
+ 2.979e+10 ± 1%      +2.4%  3.051e+10 ± 0%  perf-stat.L1-dcache-store-misses
+ 1.893e+11 ± 0%      +2.5%   1.94e+11 ± 0%  perf-stat.branch-instructions
+ 2.298e+11 ± 0%      +2.7%  2.361e+11 ± 0%  perf-stat.L1-dcache-stores
+ 1.016e+12 ± 0%      +2.6%  1.042e+12 ± 0%  perf-stat.instructions
+ 1.892e+11 ± 0%      +2.5%   1.94e+11 ± 0%  perf-stat.branch-loads
+  3.71e+11 ± 0%      +2.4%  3.799e+11 ± 0%  perf-stat.dTLB-loads
+ 3.711e+11 ± 0%      +2.3%  3.798e+11 ± 0%  perf-stat.L1-dcache-loads
+    325768 ± 0%      +2.7%     334461 ± 0%  vmstat.io.bo
+      8083 ± 0%      +2.4%       8278 ± 0%  iostat.sdf.wrqm/s
+      8083 ± 0%      +2.4%       8278 ± 0%  iostat.sdk.wrqm/s
+      8082 ± 0%      +2.4%       8276 ± 0%  iostat.sdg.wrqm/s
+     32615 ± 0%      +2.4%      33398 ± 0%  iostat.sdf.wkB/s
+     32617 ± 0%      +2.4%      33401 ± 0%  iostat.sdk.wkB/s
+     32612 ± 0%      +2.4%      33393 ± 0%  iostat.sdg.wkB/s
+      8083 ± 0%      +2.4%       8277 ± 0%  iostat.sdl.wrqm/s
+      8083 ± 0%      +2.4%       8276 ± 0%  iostat.sdi.wrqm/s
+      8082 ± 0%      +2.4%       8277 ± 0%  iostat.sdc.wrqm/s
+     32614 ± 0%      +2.4%      33396 ± 0%  iostat.sdl.wkB/s
+      8083 ± 0%      +2.4%       8278 ± 0%  iostat.sde.wrqm/s
+      8082 ± 0%      +2.4%       8277 ± 0%  iostat.sdh.wrqm/s
+      8083 ± 0%      +2.4%       8277 ± 0%  iostat.sdd.wrqm/s
+     32614 ± 0%      +2.4%      33393 ± 0%  iostat.sdi.wkB/s
+     32611 ± 0%      +2.4%      33395 ± 0%  iostat.sdc.wkB/s
+    325759 ± 0%      +2.4%     333577 ± 0%  iostat.md0.wkB/s
+      1274 ± 0%      +2.4%       1305 ± 0%  iostat.md0.w/s
+      8082 ± 0%      +2.4%       8277 ± 0%  iostat.sdb.wrqm/s
+     32618 ± 0%      +2.4%      33398 ± 0%  iostat.sde.wkB/s
+     32612 ± 0%      +2.4%      33395 ± 0%  iostat.sdh.wkB/s
+     32618 ± 0%      +2.4%      33397 ± 0%  iostat.sdd.wkB/s
+      8084 ± 0%      +2.4%       8278 ± 0%  iostat.sdj.wrqm/s
+     32611 ± 0%      +2.4%      33396 ± 0%  iostat.sdb.wkB/s
+     32618 ± 0%      +2.4%      33400 ± 0%  iostat.sdj.wkB/s
+   2.3e+11 ± 0%      +2.5%  2.357e+11 ± 0%  perf-stat.dTLB-stores
+      4898 ± 0%      +2.1%       5003 ± 0%  vmstat.system.cs
+ 1.017e+12 ± 0%      +2.4%  1.042e+12 ± 0%  perf-stat.iTLB-loads
+   1518279 ± 0%      +2.1%    1549457 ± 0%  perf-stat.context-switches
+ 1.456e+12 ± 0%      +1.4%  1.476e+12 ± 0%  perf-stat.cpu-cycles
+ 1.456e+12 ± 0%      +1.3%  1.475e+12 ± 0%  perf-stat.ref-cycles
+ 1.819e+11 ± 0%      +1.3%  1.843e+11 ± 0%  perf-stat.bus-cycles
 
-I suppose the latter problem could be solved by adding a way for
-subsystems to register a "dependency resolver" that would implement the
-knowledge about existing generic bindings of the subsystems. Another way
-to push that even further down into drivers would be to make drivers
-list the types of resources that they need in some structure. Arnd
-(Cc'ed) proposed something akin to that a while ago with the goal of
-removing a lot of boilerplate from device drivers. Such a list would
-automatically "implement" the driver binding and could be used to
-resolve dependencies when the driver is registered.
+lkp-sb03 is a Sandy Bridge-EP server.
+Memory: 64G
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                32
+On-line CPU(s) list:   0-31
+Thread(s) per core:    2
+Core(s) per socket:    8
+Socket(s):             2
+NUMA node(s):          2
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 45
+Stepping:              6
+CPU MHz:               3500.613
+BogoMIPS:              5391.16
+Virtualization:        VT-x
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              256K
+L3 cache:              20480K
+NUMA node0 CPU(s):     0-7,16-23
+NUMA node1 CPU(s):     8-15,24-31
 
-On the other hand, some of the solutions that workaround the problems
-caused by deferred probing may actually be worthwhile to have in any
-case. One such solution for the above-mentioned example of panels is to
-make the DRM subsystem deal better with hotplugging panels. This is in a
-way counterintuitive because those panels are not really hotpluggable
-(you'd have to disassemble the device at runtime and remove or unsolder
-some connector and even then there's no GPIO detecting their presence or
-absence). However I can imagine that it would round things off nicely if
-a panel driver could simply be unloaded and the result being that the OS
-simply registers this as a display going away, much like with external
-monitors.
+lkp-st02 is Core2
+Memory: 8G
 
-Thierry
 
---NtwzykIc2mflq5ck
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT9fvjAAoJEN0jrNd/PrOhLnkP/0pCqR1rSLKRMDPFsMdNQvWt
-CDd5Dn9QI2bvA6sU7pzbPBzW5hRKnAUKxMfy03sza0OTIUONV6jKWbnjwUCaONCV
-TcE/12FDV0GnGOMyZYvoHTxgSCWzjKvb8mOMbw3qKKYDXZ6lWU4Th8ChHR01AOiM
-mKsOg6odHUty6pRkGxQ/tvfJlVjssKF9jgZPKkDqBr9HtZodnR9N9z45wcHAikuC
-+fotEYUWRV3H2rtxjrIAoAvPfV9Fo0i1l9oWgn2w0EiULlFDkvvFMUo4cigHesYX
-Bhaj4CJSSojquqwJ8XUtduo4RuZZbOR3qkapB39A5Sii+XVrrecRtfnr8YxaJcdE
-mfpKYF+OfqfDt3URtIPl7AXCbkS7OOXKF/ddWa1HMzbzoNFd6/apUqom7OOoSWGs
-pJU9OxBsgfhpi2UgwK86hbXx3v994GBKi/hY2Se2Lmny6eJVS3QEvK3zrDjyyVm/
-hhsPG0Vp3QwxyTp0YNH1JZWVBY4rWdjri1vWgefHddJqdwbY1OGhv81DkcJyNmlj
-tFugFAKnfFTUi7oBJy8+UYp/xlKeuETTfJEbjvTzwK0VP66UwNHudFM3y1cTSlYR
-re/8OX875Naq5uFsb95Qic8+vjbtmPDvzq+Q1jP/XFahmwWWqephGEVMSbVS8kzv
-YbLSXMhxhw7Ji4xV5wYa
-=qy8Z
------END PGP SIGNATURE-----
+                          time.involuntary_context_switches
 
---NtwzykIc2mflq5ck--
+  40000 O+------------------------------------------------------------------+
+        |        O               O          O                               |
+  35000 ++O  O O        O   O             O                                 |
+  30000 ++         O                 O         O                            |
+        |                 O    O   O                                        |
+  25000 ++            O                 O                                   |
+        |                                                                   |
+  20000 ++                                                                  |
+        |                                                                   |
+  15000 ++                                                                  |
+  10000 ++                                                                  |
+        |                                                                   |
+   5000 ++                                                                  |
+        |                                                .*.                |
+      0 *+*--*-*-*-*--*-*-*-*--*-*-*-*--*-*-*--*-*-*-*--*---*-*--*-*-*-*--*-*
+
+
+	[*] bisect-good sample
+	[O] bisect-bad  sample
+
+
+Disclaimer:
+Results have been estimated based on internal Intel analysis and are provided
+for informational purposes only. Any difference in system hardware or software
+design or configuration may affect actual performance.
+
+Thanks,
+Fengguang
+
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=reproduce
+
+echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu10/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu11/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu12/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu13/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu14/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu15/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu16/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu17/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu18/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu19/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu20/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu21/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu22/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu23/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu24/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu25/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu26/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu27/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu28/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu29/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu30/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu31/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu6/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu7/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu8/cpufreq/scaling_governor
+echo performance > /sys/devices/system/cpu/cpu9/cpufreq/scaling_governor
+./nepim
+./nepim -c 127.0.0.1 -d -a 300 -n 32
+
+--n8g4imXOkfNTN/H1--
