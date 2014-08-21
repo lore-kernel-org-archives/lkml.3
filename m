@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbaHUIhP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 04:37:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41791 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752846AbaHUIhL (ORCPT
+	id S1754033AbaHUIhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 04:37:25 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:52813 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786AbaHUIhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 04:37:11 -0400
-Date: Thu, 21 Aug 2014 10:37:06 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        <dri-devel@lists.freedesktop.org>, <linux-pwm@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
- Controller
-Message-ID: <20140821103706.2349915d@bbrezillon>
-In-Reply-To: <20140821081619.GZ2452@ldesroches-Latitude-E6320>
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140821081619.GZ2452@ldesroches-Latitude-E6320>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 21 Aug 2014 04:37:21 -0400
+Date: Thu, 21 Aug 2014 09:37:16 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Himangi Saraogi <himangi774@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] mfd: menelaus: remove null pointer dereference
+Message-ID: <20140821083716.GU4266@lee--X1>
+References: <20140809164027.GA20561@himangi-Dell>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140809164027.GA20561@himangi-Dell>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ludovic,
+On Sat, 09 Aug 2014, Himangi Saraogi wrote:
 
-On Thu, 21 Aug 2014 10:16:19 +0200
-Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
-
-> Hi Boris,
+> If vtg is NULL, it is not possible to access its mode_reg field. At all
+> sites where the static function menelaus_set_voltage is called, the first
+> argument is the address of a structure defined in the file. So, the null
+> test is unnecessary and is removed. Also, a label is done away with.
 > 
-> You can add
+> This problem was found using the following Coccinelle semantic match:
 > 
-> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-
-Thanks for testing this driver.
-
+> // <smpl>
+> @@
+> expression E, E1;
+> identifier f;
+> statement S1,S2,S3;
+> @@
 > 
-> Only one issue but not related to your patches, you can't display
-> quickly the bootup logo since the panel detection takes too much
-> time.
+> * if (E == NULL)
+> {
+>   ... when != if (E == NULL) S1 else S2
+>       when != E = E1
+> * E->f
+>   ... when any
+>   return ...;
+> }
+> else S3
+> // </smpl>
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> ---
+> Not compile tested.
+>  drivers/mfd/menelaus.c | 3 ---
+>  1 file changed, 3 deletions(-)
 
-Yes, actually this is related to the device probe order: the
-hlcdc-display-controller device is probed before the simple-panel, thus
-nothing is detected on the RGB connector (I use of_drm_find_panel to
-check for panel availability) when the display controller is
-instantiated. I rely on the default polling infrastructure provided by
-the DRM/KMS framework which polls for a new connector every 10s, and
-this is far more than you kernel boot time.
+Applied, thanks.
 
-Do anyone see a solution to reduce this delay (without changing the
-polling interval). I thought we could add a notifier infrastructure to
-the DRM panel framework, but I'm not sure this is how you want things
-done...
-
-Best Regards,
-
-Boris
+> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+> index 5e2667a..18ff56f 100644
+> --- a/drivers/mfd/menelaus.c
+> +++ b/drivers/mfd/menelaus.c
+> @@ -466,8 +466,6 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
+>  	struct i2c_client *c = the_menelaus->client;
+>  
+>  	mutex_lock(&the_menelaus->lock);
+> -	if (!vtg)
+> -		goto set_voltage;
+>  
+>  	ret = menelaus_read_reg(vtg->vtg_reg);
+>  	if (ret < 0)
+> @@ -482,7 +480,6 @@ static int menelaus_set_voltage(const struct menelaus_vtg *vtg, int mV,
+>  	ret = menelaus_write_reg(vtg->vtg_reg, val);
+>  	if (ret < 0)
+>  		goto out;
+> -set_voltage:
+>  	ret = menelaus_write_reg(vtg->mode_reg, mode);
+>  out:
+>  	mutex_unlock(&the_menelaus->lock);
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
