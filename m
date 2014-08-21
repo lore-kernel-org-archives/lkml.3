@@ -1,145 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaHURIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:08:16 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:46580 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaHURIO (ORCPT
+	id S1753346AbaHURI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:08:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39235 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284AbaHURI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:08:14 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display Controller
-Date: Thu, 21 Aug 2014 19:08:53 +0200
-Message-ID: <2138720.5GSxsvjVxS@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20140821150600.37788d82@bbrezillon>
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com> <20140821095202.GA21848@ulmo> <20140821150600.37788d82@bbrezillon>
+	Thu, 21 Aug 2014 13:08:26 -0400
+Date: Thu, 21 Aug 2014 12:08:19 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Grazvydas Ignotas <notasas@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] usb: phy: twl4030-usb: Fix lost interrupts after ID pin
+ goes down
+Message-ID: <20140821170819.GH11146@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140821164803.GB10066@atomide.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="54u2kuW9sGWg/X+X"
+Content-Disposition: inline
+In-Reply-To: <20140821164803.GB10066@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+--54u2kuW9sGWg/X+X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thursday 21 August 2014 15:06:00 Boris BREZILLON wrote:
-> On Thu, 21 Aug 2014 11:52:03 +0200 Thierry Reding wrote:
-> > On Thu, Aug 21, 2014 at 11:41:59AM +0200, Boris BREZILLON wrote:
-> >> On Thu, 21 Aug 2014 11:04:07 +0200 Thierry Reding wrote:
-> >>> On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
-> >>>> On Thu, 21 Aug 2014 10:16:19 +0200 Ludovic Desroches wrote:
-> >>>>> Hi Boris,
-> >>>>> 
-> >>>>> You can add
-> >>>>> 
-> >>>>> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> >>>> 
-> >>>> Thanks for testing this driver.
-> >>>> 
-> >>>>> Only one issue but not related to your patches, you can't display
-> >>>>> quickly the bootup logo since the panel detection takes too much
-> >>>>> time.
-> >>>> 
-> >>>> Yes, actually this is related to the device probe order: the
-> >>>> hlcdc-display-controller device is probed before the simple-panel,
-> >>>> thus nothing is detected on the RGB connector (I use
-> >>>> of_drm_find_panel to check for panel availability) when the display
-> >>>> controller is instantiated. I rely on the default polling
-> >>>> infrastructure provided by the DRM/KMS framework which polls for a
-> >>>> new connector every 10s, and this is far more than you kernel boot
-> >>>> time.
-> >>>> 
-> >>>> Do anyone see a solution to reduce this delay (without changing the
-> >>>> polling interval). I thought we could add a notifier infrastructure
-> >>>> to the DRM panel framework, but I'm not sure this is how you want
-> >>>> things done...
-> >>> 
-> >>> Other drivers return -EPROBE_DEFER when a panel hasn't been registered
-> >>> yet. This will automatically take care of ordering things in a way
-> >>> that DRM/KMS will only be initialized after the panel has been probed.
-> >> 
-> >> Actually I'd like to avoid doing this with a deferred probe, because,
-> >> AFAIU, the remote endpoint is not tightly linked with the display
-> >> controller driver (I mean the display controller can still be
-> >> initialized without having a display connected on it).
-> >> Moreover the atmel dev kit I'm using has an HDMI bridge connected on
-> >> the same RGB connector and I'd like to use it in a near future.
-> >> Returning -EPROBE_DEFER in case of several devices connected on the
-> >> same connector implies that I'll have to wait for all the remote
-> >> end-points to be available before my display controller could be
-> >> instantiated.
-> >> 
-> >> While this could be acceptable when all drivers are statically linked
-> >> in the kernel, it might be problematic when you're using modules,
-> >> meaning that you won't be able to display anything on your LCD panel
-> >> until your HDMI bridge module has been loaded.
-> > 
-> > No. HDMI should be using proper hotplugging anyway, hence it should be
-> > always be loaded anyway. You're in for a world of pain if you think you
-> > can run DRM with a driver that's composed of separate kernel modules.
-> 
-> I was talking about the external RGB to HDMI encoder, should the driver
-> for this encoder (which is not on On Chip block) be compiled
-> statically too ?
+On Thu, Aug 21, 2014 at 09:48:04AM -0700, Tony Lindgren wrote:
+> Commit 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
+> added twl4030_id_workaround_work() to deal with lost interrupts
+> after ID pin goes down. However, this currently only works for the
+> insertion. The PHY interrupts are not working after disconnecting
+> an USB-A device from the board, and the deeper idle states for
+> omap are blocked as the USB controller stays busy.
+>=20
+> The issue can be solved by calling delayed work from twl4030_usb_irq()
+> when ID pin is down and the PHY is not asleep like we already do
+> in twl4030_id_workaround_work().
+>=20
+> But as both twl4030_usb_irq() and twl4030_id_workaround_work()
+> already do pretty much the same thing, let's call twl4030_usb_irq()
+> from twl4030_id_workaround_work() instead of adding some more
+> duplicate code.
+>=20
+> Fixes: 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
+> Cc: stable@vger.kernel.org # v3.12+
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
 
-Given the move to multiplatform kernels we need to aim for as few modules 
-compiled in as possible. I'd say this includes HDMI encoders, panels and 
-display controllers.
+looks ok to me:
 
-> > Also if you don't want to use deferred probe, then you're in for the
-> > full hotplugging panel dance and that implies that you need to fix a
-> > bunch of things in DRM (one being the framebuffer console instantiation
-> > that I referred to in the other thread).
-> 
-> For now, I wait until there is a device connected on the RGB connector
-> (connector status set to connector_status_connected) before creating an
-> fbdev. It might not be the cleanest way to solve this issue, but it
-> works :-).
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-Do you create a new drm_encoder at runtime for the HDMI encoder when it 
-appears ? I thought the DRM core and API were not able to correctly cope with 
-that.
+--=20
+balbi
 
-> > You also can't be using the current device tree bindings because they all
-> > assume a dependency from the display controller/output to the panel. For
-> > hotplugging you'd need the dependency the other way around (the panel
-> > needs to refer to the output by phandle).
-> 
-> Here [1] is a proposal for notification support in the drm_panel
-> infrastructure (which is not that complicated), and here [2] is how
-> I use it in my atmel-hlcdc driver to generate hotplug events.
+--54u2kuW9sGWg/X+X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Is there a way we could use the component framework for that ? I know that 
-partial notification isn't supported at the moment, but Russell agreed it was 
-a real use case that should be implemented at some point.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> Let me know if you want me to submit a proper patch series...
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> [1]http://code.bulix.org/scq4g3-86804
-> [2]http://code.bulix.org/7dg501-86805
+iQIcBAEBAgAGBQJT9ieDAAoJEIaOsuA1yqREolIP/jwEmWIVb5Euzt4yO/bUGS3R
+ax8zjj3I34i/HsgAojAnRABvG0GshmwP1nuIrgOSkVu7XVqOUJ/gN78URhZ3Dgl9
+o8aPqRbz2GCPBdunHzqNHb1PuAP1LuICDOwnR45YrkpYqI5FlL/062sywZKDVN7c
+xvWkfgEosg0mZQLG4+jxsQCOuGH21xvdHffp543xDMoUuqiMA1IcruTheImY49I8
+9TnF0zQzr5nZPeQVdySKCbEQcune0ngrS4bzwwCFJD5XPa6w/5hs95dtixzF0T7E
+XHjo2atsuXW41RtVwtbukIXZr6rRVR/bja4cSaygFeDNbSAP0JUhTVXzLBcP70TE
+hVfKJV+zuWvUspYavAr0ypIixHSg69kT2WYtDTpCelU2EpHptUyHofd99HL7Bl7l
+Qp7I2C1DqPcd+5cV6hzUQSg11Tn0Camw5vyu067Qcu5SvpJmiKgFEVUKwm/QNCwB
+OX6b3lPy5GZa+XTnJBGYy43+GJITjfx4Uh9IZrQ0UPZU56R6kOIX5KG92wlFNqfO
+vi/sq2ptjfRvzWTHOsSYdy2W0DQcQWylg5TOOA+aDKVV3dzhGDg55WoXimlnkX1x
++4WoMPkkhUM3w2GB2eAWVVUdcq56xdX9PwIfMp3/ofo6Wmo9XW7eeoyaJwT7qZdE
+p/UXtTAJdvuf/FASssfJ
+=3L/c
+-----END PGP SIGNATURE-----
 
--- 
-Regards,
-
-Laurent Pinchart
-
+--54u2kuW9sGWg/X+X--
