@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaHUWtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 18:49:25 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:49268 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985AbaHUWtY (ORCPT
+	id S1755452AbaHUWug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 18:50:36 -0400
+Received: from mail-yk0-f201.google.com ([209.85.160.201]:41805 "EHLO
+	mail-yk0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933AbaHUWuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 18:49:24 -0400
+	Thu, 21 Aug 2014 18:50:35 -0400
+Date: Thu, 21 Aug 2014 18:50:33 -0400
+From: Peter Feiner <pfeiner@google.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Jamie Liu <jamieliu@google.com>, Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH] mm: softdirty: write protect PTEs created for read
+ faults after VM_SOFTDIRTY cleared
+Message-ID: <20140821225033.GE16042@google.com>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
+ <20140820234543.GA7987@node.dhcp.inet.fi>
+ <20140821193737.GC16042@google.com>
+ <20140821205115.GH14072@moon>
+ <20140821213942.GA15218@node.dhcp.inet.fi>
+ <20140821214601.GD16042@google.com>
+ <20140821215147.GA15482@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Date: Thu, 21 Aug 2014 16:49:22 -0600
-Message-ID: <CAEEmuwRetasGa99PuXAjX5kf1YfJuX442vecyPyH8oU0E_-6iQ@mail.gmail.com>
-Subject: question about skb headers repeat changes when receiving a package in linux
-From: Tony Sok <suokunjinxing@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140821215147.GA15482@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Aug 22, 2014 at 12:51:47AM +0300, Kirill A. Shutemov wrote:
+> > > One thing: there could be (I haven't checked) complications on
+> > > vma_merge(): since vm_flags are identical it assumes that it can reuse
+> > > vma->vm_page_prot of expanded vma. But VM_SOFTDIRTY is excluded from
+> > > vm_flags compatibility check. What should we do with vm_page_prot there?
+> > 
+> > Since the merged VMA will have VM_SOFTDIRTY set, it's OK that it's vm_page_prot
+> > won't be setup for write notifications. For the purpose of process migration,
+> > you'll just get some false positives, which is tolerable.
+> 
+> Right. But should we disable writenotify back to avoid exessive wp-faults
+> if it was enabled due to soft-dirty (the case when expanded vma is
+> soft-dirty)?
 
-Right now I am researching on linux protocol stack:
-
-Before a skb is transferring from L2(ethernet layer) to L3(IP layer),
-function __netif_receive_skb_core will be called and skb->data pointer
-will point to L3 header in this function like below:
-
-static int __netif_receive_skb_core(struct sk_buff *skb, bool pfmemalloc)
-{
-    ...
-    //modify the L2 header, skb->data pointer will point to L3 header
-    skb_reset_network_header(skb);
-    if (!skb_transport_header_was_set(skb))
-        skb_reset_transport_header(skb);
-    skb_reset_mac_len(skb);
-
-    ...
-    //VLan related code
-    //Bridge related code
-    //IP protocol related code
-    ...
-}
-
-
-When the network device is a network bridge, bridge related code will
-be executed. And function call relationship will be like this:
-br_handle_frame --> br_handle_frame_finish --> br_forward -->
-__br_forward --> br_forward_finish --> br_dev_queue_push_xmit
-
-In br_dev_queue_push_xmit, the skb->data pointer will be restored to
-L2 header by skb_push(skb, ETH_HLEN) like the code below:
-
-int br_dev_queue_push_xmit(struct sk_buff *skb)
-{
-    /* drop mtu oversized packets except gso */
-    if (packet_length(skb) > skb->dev->mtu && !skb_is_gso(skb))
-        kfree_skb(skb);
-    else {
-         /* ip_fragment doesn't copy the MAC header */
-         if (nf_bridge_maybe_copy_header(skb))
-             kfree_skb(skb);
-         else {
-             skb_push(skb, ETH_HLEN);
-             dev_queue_xmit(skb);
-         }
-    }
-
-    return 0;
-}
-
-
-After another network device received this skb and transferred it into
-L3 layer, the skb->data will be adjusted once again and pointed to IP
-header.
-
-My question is, why the skb header need to be adjusted so repeatedly?
-Can the bridge send modified skb(e.g. skb->data pointed to IP layer,
-not the original one) to another network device so they did not need
-to do the repeated work?
-
-Thank you very much for answering my question.
+Ah, I understand now. I've got a patch in the works that disables the write
+faults when a VMA is merged. I'll send a series with all of the changes
+tomorrow.
