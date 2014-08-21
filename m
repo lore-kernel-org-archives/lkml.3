@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020AbaHUO6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:58:37 -0400
-Received: from mail3.unitn.it ([193.205.206.24]:54545 "EHLO mail3.unitn.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552AbaHUO6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:58:35 -0400
-X-Greylist: delayed 623 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Aug 2014 10:58:34 EDT
-Date: Thu, 21 Aug 2014 16:47:58 +0200
-From: Luca Abeni <luca.abeni@unitn.it>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Juri Lelli <juri.lelli@arm.com>, peterz@infradead.org,
-        rdunlap@infradead.org, mingo@redhat.com, henrik@austad.us,
-        raistlin@linux.it, juri.lelli@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] Documentation/scheduler/sched-deadline.txt:
- improve and clarify AC bits
-Message-ID: <20140821164758.334a1cf7@luca-1225C>
-In-Reply-To: <20140821133836.GA29495@gmail.com>
-References: <1408611700-9420-1-git-send-email-juri.lelli@arm.com>
-	<1408611700-9420-4-git-send-email-juri.lelli@arm.com>
-	<20140821133836.GA29495@gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752438AbaHUO73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:59:29 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:48432 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaHUO71 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 10:59:27 -0400
+Date: Thu, 21 Aug 2014 15:59:23 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] staging: et131x: Remove unnecessary i2c_wack variable
+Message-ID: <20140821145923.GA23151@msilap.einon.net>
+References: <1408573078-9320-1-git-send-email-mark.einon@gmail.com>
+ <1408573078-9320-6-git-send-email-mark.einon@gmail.com>
+ <CAOMZO5Du34=jpr5B_fHGZ+D_jNR0VSDy2BiO6jj8QByh7V40RQ@mail.gmail.com>
+ <20140821091819.GA2230@msilap.einon.net>
+ <CAOMZO5DYppH8kURS-eGk9sTD-CfBYt4hWQehKE01Hj=1JXMAdg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5DYppH8kURS-eGk9sTD-CfBYt4hWQehKE01Hj=1JXMAdg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
-
-On Thu, 21 Aug 2014 15:38:37 +0200
-Ingo Molnar <mingo@kernel.org> wrote:
-[...]
-> > + If the total utilisation sum_i(WCET_i/P_i) (sum of the
-> > utilisations
-> > + WCET_i/P_i of all the tasks in the system - notice that when
-> > considering
-> > + multiple tasks, the parameters of the i-th one are indicated with
-> > the "_i"
-> > + suffix) is larger than M (with M equal to the number of CPUs),
-> > then the
-> > + system will surely not be able to respect all of the deadlines,
-> > and no
-> > + execution time is guaranteed for non real-time tasks, which risk
-> > to be
-> > + starved by real-time tasks.
+On Thu, Aug 21, 2014 at 09:06:40AM -0300, Fabio Estevam wrote:
+> Hi Mark,
 > 
-> The last part doesn't really parse as correct English for me - 
-> maybe also split this overly long sentence into two or three 
-> sentences, to make it easier to understand?
-Sorry about this; after re-reading the sentence, I agree it looks
-confusing. What about:
-"
-If the total utilisation sum_i(WCET_i/P_i) is larger than M (with M
-equal to the number of CPUs), then the scheduler can not be able to
-respect all of the deadlines.
-Note that the total utilisation is defined as the sum of the
-utilisations WCET_i/P_i of all the real-time tasks in the system (when
-considering multiple real-time tasks, the parameters of the i-th one are
-indicated with the "_i" suffix).
-Moreover, if the total utilisation is larger than M, then non real-time
-tasks risk to be starved by real-time tasks.
-"
-Does this look more clear / acceptable?
+> On Thu, Aug 21, 2014 at 6:18 AM, Mark Einon <mark.einon@gmail.com> wrote:
+> 
+> >
+> > Hi Fabio, thanks for the review.
+> >
+> > It's a space alignment of parameters to go with the previous change, to
+> > keep wrapping consistent in the file:
+> >
+> > -       while (i2c_wack) {
+> > +       while (1) {
+> >                 if (pci_write_config_byte(pdev, LBCIF_CONTROL_REGISTER,
+> > -                       LBCIF_CONTROL_LBCIF_ENABLE))
+> > +                                         LBCIF_CONTROL_LBCIF_ENABLE))
+> >
+> > So what are you saying - are you just commenting, document it, put it
+> > in a seperate patch?
+> 
+> Yes, it would be better if this part was part of a separate patch.
 
+Ok, I'll remove the indenting changes and sned them in a future patch.
+I'll submit a revised v2 of this one.
 
-				Thanks,
-					Luca
+Cheers,
+
+Mark
