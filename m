@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaHUUE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:04:58 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:48123 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392AbaHUUEz (ORCPT
+	id S1754680AbaHUUFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:05:39 -0400
+Received: from mail-qg0-f74.google.com ([209.85.192.74]:35615 "EHLO
+	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754336AbaHUUEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:04:55 -0400
+	Thu, 21 Aug 2014 16:04:54 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -19,9 +19,9 @@ Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
         Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 7/7] MIPS: ralink: Move device-trees to arch/mips/boot/dts/
-Date: Thu, 21 Aug 2014 13:04:26 -0700
-Message-Id: <1408651466-8334-8-git-send-email-abrestic@chromium.org>
+Subject: [PATCH 6/7] MIPS: Netlogic: Move device-trees to arch/mips/boot/dts/
+Date: Thu, 21 Aug 2014 13:04:25 -0700
+Message-Id: <1408651466-8334-7-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
 References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
@@ -29,129 +29,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the Ralink device-trees to arch/mips/boot/dts/ and update the
+Move the Netlogic XLP device-trees to arch/mips/boot/dts/ and update the
 Makefiles accordingly.  A built-in device-tree is optional, so select
 BUILTIN_DTB when it is requested.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 ---
- arch/mips/boot/dts/Makefile                     | 4 ++++
- arch/mips/{ralink => boot}/dts/mt7620a.dtsi     | 0
- arch/mips/{ralink => boot}/dts/mt7620a_eval.dts | 0
- arch/mips/{ralink => boot}/dts/rt2880.dtsi      | 0
- arch/mips/{ralink => boot}/dts/rt2880_eval.dts  | 0
- arch/mips/{ralink => boot}/dts/rt3050.dtsi      | 0
- arch/mips/{ralink => boot}/dts/rt3052_eval.dts  | 0
- arch/mips/{ralink => boot}/dts/rt3883.dtsi      | 0
- arch/mips/{ralink => boot}/dts/rt3883_eval.dts  | 0
- arch/mips/ralink/Kconfig                        | 4 ++++
- arch/mips/ralink/Makefile                       | 2 --
- arch/mips/ralink/dts/Makefile                   | 4 ----
- 12 files changed, 8 insertions(+), 6 deletions(-)
- rename arch/mips/{ralink => boot}/dts/mt7620a.dtsi (100%)
- rename arch/mips/{ralink => boot}/dts/mt7620a_eval.dts (100%)
- rename arch/mips/{ralink => boot}/dts/rt2880.dtsi (100%)
- rename arch/mips/{ralink => boot}/dts/rt2880_eval.dts (100%)
- rename arch/mips/{ralink => boot}/dts/rt3050.dtsi (100%)
- rename arch/mips/{ralink => boot}/dts/rt3052_eval.dts (100%)
- rename arch/mips/{ralink => boot}/dts/rt3883.dtsi (100%)
- rename arch/mips/{ralink => boot}/dts/rt3883_eval.dts (100%)
- delete mode 100644 arch/mips/ralink/dts/Makefile
+ arch/mips/boot/dts/Makefile                  | 4 ++++
+ arch/mips/{netlogic => boot}/dts/xlp_evp.dts | 0
+ arch/mips/{netlogic => boot}/dts/xlp_fvp.dts | 0
+ arch/mips/{netlogic => boot}/dts/xlp_gvp.dts | 0
+ arch/mips/{netlogic => boot}/dts/xlp_svp.dts | 0
+ arch/mips/netlogic/Kconfig                   | 4 ++++
+ arch/mips/netlogic/Makefile                  | 1 -
+ arch/mips/netlogic/dts/Makefile              | 4 ----
+ 8 files changed, 8 insertions(+), 5 deletions(-)
+ rename arch/mips/{netlogic => boot}/dts/xlp_evp.dts (100%)
+ rename arch/mips/{netlogic => boot}/dts/xlp_fvp.dts (100%)
+ rename arch/mips/{netlogic => boot}/dts/xlp_gvp.dts (100%)
+ rename arch/mips/{netlogic => boot}/dts/xlp_svp.dts (100%)
+ delete mode 100644 arch/mips/netlogic/dts/Makefile
 
 diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
-index 1638a38..ca9c90e 100644
+index 8df3d3e..1638a38 100644
 --- a/arch/mips/boot/dts/Makefile
 +++ b/arch/mips/boot/dts/Makefile
-@@ -4,6 +4,10 @@ dtb-$(CONFIG_DT_XLP_EVP)		+= xlp_evp.dtb
- dtb-$(CONFIG_DT_XLP_SVP)		+= xlp_svp.dtb
- dtb-$(CONFIG_DT_XLP_FVP)		+= xlp_fvp.dtb
- dtb-$(CONFIG_DT_XLP_GVP)		+= xlp_gvp.dtb
-+dtb-$(CONFIG_DTB_RT2880_EVAL)		+= rt2880_eval.dtb
-+dtb-$(CONFIG_DTB_RT305X_EVAL)		+= rt3052_eval.dtb
-+dtb-$(CONFIG_DTB_RT3883_EVAL)		+= rt3883_eval.dtb
-+dtb-$(CONFIG_DTB_MT7620A_EVAL)		+= mt7620a_eval.dtb
+@@ -1,5 +1,9 @@
+ dtb-$(CONFIG_CAVIUM_OCTEON_SOC)		+= octeon_3xxx.dtb octeon_68xx.dtb
+ dtb-$(CONFIG_DT_EASY50712)		+= easy50712.dtb
++dtb-$(CONFIG_DT_XLP_EVP)		+= xlp_evp.dtb
++dtb-$(CONFIG_DT_XLP_SVP)		+= xlp_svp.dtb
++dtb-$(CONFIG_DT_XLP_FVP)		+= xlp_fvp.dtb
++dtb-$(CONFIG_DT_XLP_GVP)		+= xlp_gvp.dtb
  dtb-$(CONFIG_MIPS_SEAD3)		+= sead3.dtb
  
  obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
-diff --git a/arch/mips/ralink/dts/mt7620a.dtsi b/arch/mips/boot/dts/mt7620a.dtsi
+diff --git a/arch/mips/netlogic/dts/xlp_evp.dts b/arch/mips/boot/dts/xlp_evp.dts
 similarity index 100%
-rename from arch/mips/ralink/dts/mt7620a.dtsi
-rename to arch/mips/boot/dts/mt7620a.dtsi
-diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/boot/dts/mt7620a_eval.dts
+rename from arch/mips/netlogic/dts/xlp_evp.dts
+rename to arch/mips/boot/dts/xlp_evp.dts
+diff --git a/arch/mips/netlogic/dts/xlp_fvp.dts b/arch/mips/boot/dts/xlp_fvp.dts
 similarity index 100%
-rename from arch/mips/ralink/dts/mt7620a_eval.dts
-rename to arch/mips/boot/dts/mt7620a_eval.dts
-diff --git a/arch/mips/ralink/dts/rt2880.dtsi b/arch/mips/boot/dts/rt2880.dtsi
+rename from arch/mips/netlogic/dts/xlp_fvp.dts
+rename to arch/mips/boot/dts/xlp_fvp.dts
+diff --git a/arch/mips/netlogic/dts/xlp_gvp.dts b/arch/mips/boot/dts/xlp_gvp.dts
 similarity index 100%
-rename from arch/mips/ralink/dts/rt2880.dtsi
-rename to arch/mips/boot/dts/rt2880.dtsi
-diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/boot/dts/rt2880_eval.dts
+rename from arch/mips/netlogic/dts/xlp_gvp.dts
+rename to arch/mips/boot/dts/xlp_gvp.dts
+diff --git a/arch/mips/netlogic/dts/xlp_svp.dts b/arch/mips/boot/dts/xlp_svp.dts
 similarity index 100%
-rename from arch/mips/ralink/dts/rt2880_eval.dts
-rename to arch/mips/boot/dts/rt2880_eval.dts
-diff --git a/arch/mips/ralink/dts/rt3050.dtsi b/arch/mips/boot/dts/rt3050.dtsi
-similarity index 100%
-rename from arch/mips/ralink/dts/rt3050.dtsi
-rename to arch/mips/boot/dts/rt3050.dtsi
-diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/boot/dts/rt3052_eval.dts
-similarity index 100%
-rename from arch/mips/ralink/dts/rt3052_eval.dts
-rename to arch/mips/boot/dts/rt3052_eval.dts
-diff --git a/arch/mips/ralink/dts/rt3883.dtsi b/arch/mips/boot/dts/rt3883.dtsi
-similarity index 100%
-rename from arch/mips/ralink/dts/rt3883.dtsi
-rename to arch/mips/boot/dts/rt3883.dtsi
-diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/boot/dts/rt3883_eval.dts
-similarity index 100%
-rename from arch/mips/ralink/dts/rt3883_eval.dts
-rename to arch/mips/boot/dts/rt3883_eval.dts
-diff --git a/arch/mips/ralink/Kconfig b/arch/mips/ralink/Kconfig
-index 4a29665..77e8a96 100644
---- a/arch/mips/ralink/Kconfig
-+++ b/arch/mips/ralink/Kconfig
-@@ -42,18 +42,22 @@ choice
- 	config DTB_RT2880_EVAL
- 		bool "RT2880 eval kit"
- 		depends on SOC_RT288X
-+		select BUILTIN_DTB
- 
- 	config DTB_RT305X_EVAL
- 		bool "RT305x eval kit"
- 		depends on SOC_RT305X
-+		select BUILTIN_DTB
- 
- 	config DTB_RT3883_EVAL
- 		bool "RT3883 eval kit"
- 		depends on SOC_RT3883
-+		select BUILTIN_DTB
- 
- 	config DTB_MT7620A_EVAL
- 		bool "MT7620A eval kit"
- 		depends on SOC_MT7620
-+		select BUILTIN_DTB
- 
- endchoice
- 
-diff --git a/arch/mips/ralink/Makefile b/arch/mips/ralink/Makefile
-index 98ae349..2c09c8a 100644
---- a/arch/mips/ralink/Makefile
-+++ b/arch/mips/ralink/Makefile
-@@ -16,5 +16,3 @@ obj-$(CONFIG_SOC_RT3883) += rt3883.o
- obj-$(CONFIG_SOC_MT7620) += mt7620.o
- 
- obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
--
--obj-y += dts/
-diff --git a/arch/mips/ralink/dts/Makefile b/arch/mips/ralink/dts/Makefile
+rename from arch/mips/netlogic/dts/xlp_svp.dts
+rename to arch/mips/boot/dts/xlp_svp.dts
+diff --git a/arch/mips/netlogic/Kconfig b/arch/mips/netlogic/Kconfig
+index 4eb683a..0823321 100644
+--- a/arch/mips/netlogic/Kconfig
++++ b/arch/mips/netlogic/Kconfig
+@@ -4,6 +4,7 @@ if NLM_XLP_BOARD
+ config DT_XLP_EVP
+ 	bool "Built-in device tree for XLP EVP boards"
+ 	default y
++	select BUILTIN_DTB
+ 	help
+ 	  Add an FDT blob for XLP EVP boards into the kernel.
+ 	  This DTB will be used if the firmware does not pass in a DTB
+@@ -13,6 +14,7 @@ config DT_XLP_EVP
+ config DT_XLP_SVP
+ 	bool "Built-in device tree for XLP SVP boards"
+ 	default y
++	select BUILTIN_DTB
+ 	help
+ 	  Add an FDT blob for XLP VP boards into the kernel.
+ 	  This DTB will be used if the firmware does not pass in a DTB
+@@ -22,6 +24,7 @@ config DT_XLP_SVP
+ config DT_XLP_FVP
+ 	bool "Built-in device tree for XLP FVP boards"
+ 	default y
++	select BUILTIN_DTB
+ 	help
+ 	  Add an FDT blob for XLP FVP board into the kernel.
+ 	  This DTB will be used if the firmware does not pass in a DTB
+@@ -31,6 +34,7 @@ config DT_XLP_FVP
+ config DT_XLP_GVP
+ 	bool "Built-in device tree for XLP GVP boards"
+ 	default y
++	select BUILTIN_DTB
+ 	help
+ 	  Add an FDT blob for XLP GVP board into the kernel.
+ 	  This DTB will be used if the firmware does not pass in a DTB
+diff --git a/arch/mips/netlogic/Makefile b/arch/mips/netlogic/Makefile
+index 7602d13..36d169b 100644
+--- a/arch/mips/netlogic/Makefile
++++ b/arch/mips/netlogic/Makefile
+@@ -1,4 +1,3 @@
+ obj-$(CONFIG_NLM_COMMON)	+=	common/
+ obj-$(CONFIG_CPU_XLR)		+=	xlr/
+ obj-$(CONFIG_CPU_XLP)		+=	xlp/
+-obj-$(CONFIG_CPU_XLP)		+=	dts/
+diff --git a/arch/mips/netlogic/dts/Makefile b/arch/mips/netlogic/dts/Makefile
 deleted file mode 100644
-index 18194fa..0000000
---- a/arch/mips/ralink/dts/Makefile
+index 25c8e87..0000000
+--- a/arch/mips/netlogic/dts/Makefile
 +++ /dev/null
 @@ -1,4 +0,0 @@
--obj-$(CONFIG_DTB_RT2880_EVAL) := rt2880_eval.dtb.o
--obj-$(CONFIG_DTB_RT305X_EVAL) := rt3052_eval.dtb.o
--obj-$(CONFIG_DTB_RT3883_EVAL) := rt3883_eval.dtb.o
--obj-$(CONFIG_DTB_MT7620A_EVAL) := mt7620a_eval.dtb.o
+-obj-$(CONFIG_DT_XLP_EVP) := xlp_evp.dtb.o
+-obj-$(CONFIG_DT_XLP_SVP) += xlp_svp.dtb.o
+-obj-$(CONFIG_DT_XLP_FVP) += xlp_fvp.dtb.o
+-obj-$(CONFIG_DT_XLP_GVP) += xlp_gvp.dtb.o
 -- 
 2.1.0.rc2.206.gedb03e5
 
