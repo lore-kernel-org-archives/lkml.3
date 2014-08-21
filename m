@@ -1,163 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512AbaHUOct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:32:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43954 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751476AbaHUOcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:32:46 -0400
-Date: Thu, 21 Aug 2014 16:32:32 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
- Controller
-Message-ID: <20140821163232.475c0ed8@bbrezillon>
-In-Reply-To: <20140821131552.GA19293@ulmo.nvidia.com>
-References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140821081619.GZ2452@ldesroches-Latitude-E6320>
-	<20140821103706.2349915d@bbrezillon>
-	<20140821090406.GA13733@ulmo>
-	<20140821114159.319e741b@bbrezillon>
-	<20140821095202.GA21848@ulmo>
-	<20140821150600.37788d82@bbrezillon>
-	<20140821131552.GA19293@ulmo.nvidia.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754727AbaHUOez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:34:55 -0400
+Received: from ozlabs.org ([103.22.144.67]:53088 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729AbaHUOey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 10:34:54 -0400
+Date: Fri, 22 Aug 2014 00:34:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 20
+Message-ID: <20140822003440.3ffc15c4@canb.auug.org.au>
+In-Reply-To: <5248cecd-03f6-407b-a4a7-1d2989ee0469@email.android.com>
+References: <20140820061703.6128f99c@canb.auug.org.au>
+	<20140820155222.GA24407@sirena.org.uk>
+	<5248cecd-03f6-407b-a4a7-1d2989ee0469@email.android.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_//DV0sjgtgZ_yO/WorxD6JRr"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Aug 2014 15:16:08 +0200
-Thierry Reding <thierry.reding@gmail.com> wrote:
+--Sig_//DV0sjgtgZ_yO/WorxD6JRr
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Aug 21, 2014 at 03:06:00PM +0200, Boris BREZILLON wrote:
-> > On Thu, 21 Aug 2014 11:52:03 +0200
-> > Thierry Reding <thierry.reding@gmail.com> wrote:
-> > 
-> > > On Thu, Aug 21, 2014 at 11:41:59AM +0200, Boris BREZILLON wrote:
-> > > > On Thu, 21 Aug 2014 11:04:07 +0200
-> > > > Thierry Reding <thierry.reding@gmail.com> wrote:
-> > > > 
-> > > > > On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
-> > > > > > Hi Ludovic,
-> > > > > > 
-> > > > > > On Thu, 21 Aug 2014 10:16:19 +0200
-> > > > > > Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
-> > > > > > 
-> > > > > > > Hi Boris,
-> > > > > > > 
-> > > > > > > You can add
-> > > > > > > 
-> > > > > > > Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-> > > > > > 
-> > > > > > Thanks for testing this driver.
-> > > > > > 
-> > > > > > > 
-> > > > > > > Only one issue but not related to your patches, you can't display
-> > > > > > > quickly the bootup logo since the panel detection takes too much
-> > > > > > > time.
-> > > > > > 
-> > > > > > Yes, actually this is related to the device probe order: the
-> > > > > > hlcdc-display-controller device is probed before the simple-panel, thus
-> > > > > > nothing is detected on the RGB connector (I use of_drm_find_panel to
-> > > > > > check for panel availability) when the display controller is
-> > > > > > instantiated. I rely on the default polling infrastructure provided by
-> > > > > > the DRM/KMS framework which polls for a new connector every 10s, and
-> > > > > > this is far more than you kernel boot time.
-> > > > > > 
-> > > > > > Do anyone see a solution to reduce this delay (without changing the
-> > > > > > polling interval). I thought we could add a notifier infrastructure to
-> > > > > > the DRM panel framework, but I'm not sure this is how you want things
-> > > > > > done...
-> > > > > 
-> > > > > Other drivers return -EPROBE_DEFER when a panel hasn't been registered
-> > > > > yet. This will automatically take care of ordering things in a way that
-> > > > > DRM/KMS will only be initialized after the panel has been probed.
-> > > > 
-> > > > Actually I'd like to avoid doing this with a deferred probe, because,
-> > > > AFAIU, the remote endpoint is not tightly linked with the display
-> > > > controller driver (I mean the display controller can still be
-> > > > initialized without having a display connected on it).
-> > > > Moreover the atmel dev kit I'm using has an HDMI bridge connected on
-> > > > the same RGB connector and I'd like to use it in a near future.
-> > > > Returning -EPROBE_DEFER in case of several devices connected on the
-> > > > same connector implies that I'll have to wait for all the remote
-> > > > end-points to be available before my display controller could be
-> > > > instantiated.
-> > > > 
-> > > > While this could be acceptable when all drivers are statically linked
-> > > > in the kernel, it might be problematic when you're using modules,
-> > > > meaning that you won't be able to display anything on your LCD panel
-> > > > until your HDMI bridge module has been loaded.
-> > > 
-> > > No. HDMI should be using proper hotplugging anyway, hence it should be
-> > > always be loaded anyway. You're in for a world of pain if you think you
-> > > can run DRM with a driver that's composed of separate kernel modules.
-> > 
-> > I was talking about the external RGB to HDMI encoder, should the driver
-> > for this encoder (which is not on On Chip block) be compiled
-> > statically too ?
-> > 
-> > > 
-> > > Also if you don't want to use deferred probe, then you're in for the
-> > > full hotplugging panel dance and that implies that you need to fix a
-> > > bunch of things in DRM (one being the framebuffer console instantiation
-> > > that I referred to in the other thread).
-> > 
-> > For now, I wait until there is a device connected on the RGB connector
-> > (connector status set to connector_status_connected) before creating an
-> > fbdev. It might not be the cleanest way to solve this issue, but it
-> > works :-).
-> 
-> Yeah, I guess that's one way to do it. But it's tricky to get right when
-> you have several outputs. Which one should be considered the primary and
-> trigger fbdev creation?
-> 
-> > > You also can't be using the
-> > > current device tree bindings because they all assume a dependency from
-> > > the display controller/output to the panel. For hotplugging you'd need
-> > > the dependency the other way around (the panel needs to refer to the
-> > > output by phandle).
-> > 
-> > Here [1] is a proposal for notification support in the drm_panel
-> > infrastructure (which is not that complicated), and here [2] is how
-> > I use it in my atmel-hlcdc driver to generate hotplug events.
-> > 
-> > Let me know if you want me to submit a proper patch series...
-> > 
-> > Best Regards,
-> > 
-> > Boris
-> > 
-> > [1]http://code.bulix.org/scq4g3-86804
-> > [2]http://code.bulix.org/7dg501-86805
-> 
-> Those look interesting. Any chance you could look into how to do the
-> same without resorting to notifiers?
+Hi Mark,
 
-A new version without notifiers usage:
-http://code.bulix.org/7urh8v-86806
+On Wed, 20 Aug 2014 13:53:56 -0500 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> On August 20, 2014 10:52:22 AM CDT, Mark Brown <broonie@kernel.org> wrote:
+> >On Wed, Aug 20, 2014 at 06:17:03AM +1000, Stephen Rothwell wrote:
+> >
+> >> The sound-asoc tree still had its build failure for which I reverted
+> >> a commit.
+> >
+> >Are you sure about this?  There's a bunch of updates to the tree
+> >including one that's supposed to have fixed the build failure on
+> >PowerPC
+> >which haven't made it into the tree, was there a problem with the fetch
+> >perhaps?  I just checked and cgit says I pushed 23 hours ago so it
+> >doesn't look like a problem with the push.
+>=20
+> I thought I checked, but I may have missed it, sorry.  I will check again=
+ before the next linux-next.
 
+The fix appears to be there today, but I dont; think it was for the
+previous linux-next.  Does it matter that I am currently in Chicago
+(despite what the date on this email says :-))?  I guess I must have
+fetched your tree earlier than you may have expected.
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_//DV0sjgtgZ_yO/WorxD6JRr
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT9gOJAAoJEMDTa8Ir7ZwV754P/2JWu0tPnDrgzm15djkNcjqt
+ruRk9ZCz//8sJ/s+uUYDePLnZapnQnwcOW5LktmdYd01gW2iokDoG7yo9m+HYQ9d
+sLYNc0Hlkf8fcc0pi8k9KcNLun001EE+EXuMAE4/Eu6kE6mt7Q5JOFSwCR4j4orb
+pitTm74K+hqWePZkMeAaGT3D8FowwZcXvHE+HCtyZF5wYLATvWPSym9KvpdpeAZa
+pwVojVGdT9uUXA3PapWbjEMHl0t2ioP/SXT34ywyiAWHhgJUNZ7cnuwQg0lB3W70
+iGlM2Or+pKcv9eK1TJXTbLwBZMroe5/eJLK8Q2ypfCYhzYVN2RWpkz5a1XNaYY+t
+T9fKo3yKy79tnB2CWGqEkcNWpeN0+hqbDTl0Uud5n+bIanhy6zy2v4c4FVb+LA8Y
+DBoQdTQI4ig+8aLXQI7tDlQk3fyjSk+AH9ovEugbTxEgPUTvBEBv30US912ixqFK
+x7nyXlsmmZyBquYNCFeqogpjdjg8kPSMrMqGdrBqR+nM5kv4LX3Ao0Dp2DTSmbud
+UWK4z/AM3fABqsMGuqeUecYPB1mUt01c37pNRS6HkqvxYFMN1905XIkyGJ4NQHTO
+DJLcSqoSHQdzqpet2Xk4SQCe9Q8YrFneEfrmnqgKGd+4bcRAE+SWaMndBPIAjn2q
+yuF443FFWBXLa8Hp5qnA
+=/N6o
+-----END PGP SIGNATURE-----
+
+--Sig_//DV0sjgtgZ_yO/WorxD6JRr--
