@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaHUThk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 15:37:40 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:35585 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaHUThj (ORCPT
+	id S1753950AbaHUTon (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 15:44:43 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:58979 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383AbaHUTom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 15:37:39 -0400
-Date: Thu, 21 Aug 2014 15:37:37 -0400
-From: Peter Feiner <pfeiner@google.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Magnus Damm <damm@opensource.se>
-Subject: Re: [PATCH] mm: softdirty: write protect PTEs created for read
- faults after VM_SOFTDIRTY cleared
-Message-ID: <20140821193737.GC16042@google.com>
-References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
- <20140820234543.GA7987@node.dhcp.inet.fi>
+	Thu, 21 Aug 2014 15:44:42 -0400
+Date: Thu, 21 Aug 2014 14:44:29 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: [GIT PULL] libata fixes for v3.17-rc1
+Message-ID: <20140821194429.GC6168@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140820234543.GA7987@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 02:45:43AM +0300, Kirill A. Shutemov wrote:
-> On Wed, Aug 20, 2014 at 05:46:22PM -0400, Peter Feiner wrote:
-> It basically means VM_SOFTDIRTY require writenotify on the vma.
-> 
-> What about patch below? Untested. And it seems it'll introduce bug similar
-> to bug fixed by c9d0bf241451, *but* IIUC we have it already in mprotect()
-> code path.
-> 
-> I'll look more careful tomorrow.
-> 
-> Not-signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> 
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index dfc791c42d64..67d509a15969 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -851,8 +851,9 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
->                         if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
->                                 continue;
->                         if (type == CLEAR_REFS_SOFT_DIRTY) {
-> -                               if (vma->vm_flags & VM_SOFTDIRTY)
-> -                                       vma->vm_flags &= ~VM_SOFTDIRTY;
-> +                               vma->vm_flags &= ~VM_SOFTDIRTY;
-> +                               vma->vm_page_prot = vm_get_page_prot(
-> +                                               vma->vm_flags & ~VM_SHARED);
->                         }
->                         walk_page_range(vma->vm_start, vma->vm_end,
->                                         &clear_refs_walk);
-> -- 
->  Kirill A. Shutemov
+Hello, Linus.
 
-Thanks Kirill, I prefer your approach. I'll send a v2.
+Nothing drastic but pushing out early due to build breakage in the new
+tegra platform.
 
-I believe you're right about c9d0bf241451. It seems like passing the old & new
-pgprot through pgprot_modify would handle the problem. Furthermore, as you
-suggest, mprotect_fixup should use pgprot_modify when it turns write
-notification on.  I think a patch like this is in order:
+* M550 tagged trim blacklist pattern is widened so that it matches the
+  new 1TB model.
 
-Not-signed-off-by: Peter Feiner <pfeiner@google.com>
+* The other three are controller specific fixes.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index c1f2ea4..86f89a1 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1611,18 +1611,15 @@ munmap_back:
- 	}
- 
- 	if (vma_wants_writenotify(vma)) {
--		pgprot_t pprot = vma->vm_page_prot;
--
- 		/* Can vma->vm_page_prot have changed??
- 		 *
- 		 * Answer: Yes, drivers may have changed it in their
- 		 *         f_op->mmap method.
- 		 *
--		 * Ensures that vmas marked as uncached stay that way.
-+		 * Ensures that vmas marked with special bits stay that way.
- 		 */
--		vma->vm_page_prot = vm_get_page_prot(vm_flags & ~VM_SHARED);
--		if (pgprot_val(pprot) == pgprot_val(pgprot_noncached(pprot)))
--			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-+		vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
-+		                        vm_get_page_prot(vm_flags & ~VM_SHARED);
- 	}
- 
- 	vma_link(mm, vma, prev, rb_link, rb_parent);
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index c43d557..6826313 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -324,7 +324,8 @@ success:
- 					  vm_get_page_prot(newflags));
- 
- 	if (vma_wants_writenotify(vma)) {
--		vma->vm_page_prot = vm_get_page_prot(newflags & ~VM_SHARED);
-+		vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
-+		                       vm_get_page_prot(newflags & ~VM_SHARED));
- 		dirty_accountable = 1;
- 	}
- 
+Thanks.
+
+The following changes since commit 88ec63d6f85ccf40988ddae8b430dcb07355b29b:
+
+  Merge tag 'scsi-misc' of git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi (2014-08-15 18:28:58 -0600)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.17-fixes
+
+for you to fetch changes up to 2a13772a144d2956a7fedd18685921d0a9b8b783:
+
+  libata: widen Crucial M550 blacklist matching (2014-08-18 17:40:09 -0400)
+
+----------------------------------------------------------------
+Arjun Sreedharan (2):
+      pata_samsung_cf: change ret type to signed
+      pata_scc: propagate return value of scc_wait_after_reset
+
+Mikko Perttunen (1):
+      ata: ahci_tegra: Change include to fix compilation
+
+Suman Tripathi (1):
+      ahci_xgene: Removing NCQ support from the APM X-Gene SoC AHCI SATA Host Controller driver.
+
+Tejun Heo (1):
+      libata: widen Crucial M550 blacklist matching
+
+ drivers/ata/ahci_tegra.c      |  2 +-
+ drivers/ata/ahci_xgene.c      |  4 ++--
+ drivers/ata/libata-core.c     |  2 +-
+ drivers/ata/pata_samsung_cf.c |  2 +-
+ drivers/ata/pata_scc.c        | 15 +++++++--------
+ 5 files changed, 12 insertions(+), 13 deletions(-)
+
+-- 
+tejun
