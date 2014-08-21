@@ -1,194 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936AbaHULkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:40:18 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:59539 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929AbaHULkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:40:15 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        kgene.kim@samsung.com, jg1.han@samsung.com, sachin.kamat@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v2 2/2] usb: host: ohci-exynos: Remove unnecessary usb-phy support
-Date: Thu, 21 Aug 2014 17:09:58 +0530
-Message-Id: <1408621198-14984-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1408621198-14984-1-git-send-email-gautam.vivek@samsung.com>
-References: <1408621198-14984-1-git-send-email-gautam.vivek@samsung.com>
+	id S1754606AbaHULog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:44:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61221 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754136AbaHULof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:44:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,908,1400050800"; 
+   d="scan'208";a="591294447"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH v6 1/2] KVM: nVMX: introduce nested_get_vmcs12_pages
+Date: Thu, 21 Aug 2014 19:46:49 +0800
+Message-Id: <1408621610-9665-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have completely moved from older USB-PHY drivers
-to newer GENERIC-PHY drivers for PHYs available with USB controllers
-on Exynos series of SoCs, we can remove the support for the same
-in our host drivers too.
-This should fix the issue on ohci-exynos, wherein in the absence of
-SAMSUNG_USB2PHY config symbol, we ended up getting the NOP_USB_XCEIV phy
-when the same is enabled. And thus the PHYs are not configured properly.
+Introduce function nested_get_vmcs12_pages() to check the valid
+of nested apic access page and virtual apic page earlier.
 
-Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 ---
+v5 -> v6:
+ * replace the name apic_access_and_virtual_page_valid by nested_get_vmcs12_pages
 
- - This patch was part of the series "[PATCH 0/7] usb-phy: samsung: Cleanup the unused drivers"
-   https://lkml.org/lkml/2014/8/14/235. I have dropped the phy cleanup patches from that series-
-   Patches 1-5.
- - Rebased this patch on top of 3.17-rc1.
+ arch/x86/kvm/vmx.c | 37 +++++++++++++++++++++++++------------
+ 1 file changed, 25 insertions(+), 12 deletions(-)
 
- drivers/usb/host/ohci-exynos.c |   64 ++++++----------------------------------
- 1 file changed, 9 insertions(+), 55 deletions(-)
-
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index a72ab8f..0199a8b 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -19,11 +19,8 @@
- #include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/phy/phy.h>
--#include <linux/usb/phy.h>
--#include <linux/usb/samsung_usb_phy.h>
- #include <linux/usb.h>
- #include <linux/usb/hcd.h>
--#include <linux/usb/otg.h>
- 
- #include "ohci.h"
- 
-@@ -38,9 +35,7 @@ static struct hc_driver __read_mostly exynos_ohci_hc_driver;
- 
- struct exynos_ohci_hcd {
- 	struct clk *clk;
--	struct usb_phy *phy;
--	struct usb_otg *otg;
--	struct phy *phy_g[PHY_NUMBER];
-+	struct phy *phy[PHY_NUMBER];
- };
- 
- static int exynos_ohci_get_phy(struct device *dev,
-@@ -51,28 +46,7 @@ static int exynos_ohci_get_phy(struct device *dev,
- 	int phy_number;
- 	int ret = 0;
- 
--	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--	if (IS_ERR(exynos_ohci->phy)) {
--		ret = PTR_ERR(exynos_ohci->phy);
--		if (ret != -ENXIO && ret != -ENODEV) {
--			dev_err(dev, "no usb2 phy configured\n");
--			return ret;
--		}
--		dev_dbg(dev, "Failed to get usb2 phy\n");
--	} else {
--		exynos_ohci->otg = exynos_ohci->phy->otg;
--	}
--
--	/*
--	 * Getting generic phy:
--	 * We are keeping both types of phys as a part of transiting OHCI
--	 * to generic phy framework, so as to maintain backward compatibilty
--	 * with old DTB.
--	 * If there are existing devices using DTB files built from them,
--	 * to remove the support for old bindings in this driver,
--	 * we need to make sure that such devices have their DTBs
--	 * updated to ones built from new DTS.
--	 */
-+	/* Get the generic phys */
- 	for_each_available_child_of_node(dev->of_node, child) {
- 		ret = of_property_read_u32(child, "reg", &phy_number);
- 		if (ret) {
-@@ -97,7 +71,7 @@ static int exynos_ohci_get_phy(struct device *dev,
- 			}
- 			dev_dbg(dev, "Failed to get usb2 phy\n");
- 		}
--		exynos_ohci->phy_g[phy_number] = phy;
-+		exynos_ohci->phy[phy_number] = phy;
- 	}
- 
- 	return ret;
-@@ -110,16 +84,13 @@ static int exynos_ohci_phy_enable(struct device *dev)
- 	int i;
- 	int ret = 0;
- 
--	if (!IS_ERR(exynos_ohci->phy))
--		return usb_phy_init(exynos_ohci->phy);
--
- 	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
--		if (!IS_ERR(exynos_ohci->phy_g[i]))
--			ret = phy_power_on(exynos_ohci->phy_g[i]);
-+		if (!IS_ERR(exynos_ohci->phy[i]))
-+			ret = phy_power_on(exynos_ohci->phy[i]);
- 	if (ret)
- 		for (i--; i >= 0; i--)
--			if (!IS_ERR(exynos_ohci->phy_g[i]))
--				phy_power_off(exynos_ohci->phy_g[i]);
-+			if (!IS_ERR(exynos_ohci->phy[i]))
-+				phy_power_off(exynos_ohci->phy[i]);
- 
- 	return ret;
- }
-@@ -130,14 +101,9 @@ static void exynos_ohci_phy_disable(struct device *dev)
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 	int i;
- 
--	if (!IS_ERR(exynos_ohci->phy)) {
--		usb_phy_shutdown(exynos_ohci->phy);
--		return;
--	}
--
- 	for (i = 0; i < PHY_NUMBER; i++)
--		if (!IS_ERR(exynos_ohci->phy_g[i]))
--			phy_power_off(exynos_ohci->phy_g[i]);
-+		if (!IS_ERR(exynos_ohci->phy[i]))
-+			phy_power_off(exynos_ohci->phy[i]);
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 286c283..24380a9 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -7826,6 +7826,30 @@ static void vmx_inject_page_fault_nested(struct kvm_vcpu *vcpu,
+ 		kvm_inject_page_fault(vcpu, fault);
  }
  
- static int exynos_ohci_probe(struct platform_device *pdev)
-@@ -209,9 +175,6 @@ skip_phy:
- 		goto fail_io;
++static bool nested_get_vmcs12_pages(struct kvm_vcpu *vcpu,
++					struct vmcs12 *vmcs12)
++{
++	struct vcpu_vmx *vmx = to_vmx(vcpu);
++
++	if (nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES)) {
++		if (!PAGE_ALIGNED(vmcs12->apic_access_addr))
++			/*TODO: Also verify bits beyond physical address width are 0*/
++			return false;
++
++		/*
++		 * Translate L1 physical address to host physical
++		 * address for vmcs02. Keep the page pinned, so this
++		 * physical address remains valid. We keep a reference
++		 * to it so we can release it later.
++		 */
++		if (vmx->nested.apic_access_page) /* shouldn't happen */
++			nested_release_page(vmx->nested.apic_access_page);
++		vmx->nested.apic_access_page =
++			nested_get_page(vcpu, vmcs12->apic_access_addr);
++	}
++	return true;
++}
++
+ static void vmx_start_preemption_timer(struct kvm_vcpu *vcpu)
+ {
+ 	u64 preemption_timeout = get_vmcs12(vcpu)->vmx_preemption_timer_value;
+@@ -7972,16 +7996,6 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+ 
+ 		if (exec_control & SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) {
+ 			/*
+-			 * Translate L1 physical address to host physical
+-			 * address for vmcs02. Keep the page pinned, so this
+-			 * physical address remains valid. We keep a reference
+-			 * to it so we can release it later.
+-			 */
+-			if (vmx->nested.apic_access_page) /* shouldn't happen */
+-				nested_release_page(vmx->nested.apic_access_page);
+-			vmx->nested.apic_access_page =
+-				nested_get_page(vcpu, vmcs12->apic_access_addr);
+-			/*
+ 			 * If translation failed, no matter: This feature asks
+ 			 * to exit when accessing the given address, and if it
+ 			 * can never be accessed, this feature won't do
+@@ -8187,8 +8201,7 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu, bool launch)
+ 		return 1;
  	}
  
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	platform_set_drvdata(pdev, hcd);
- 
- 	err = exynos_ohci_phy_enable(&pdev->dev);
-@@ -244,9 +207,6 @@ static int exynos_ohci_remove(struct platform_device *pdev)
- 
- 	usb_remove_hcd(hcd);
- 
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	exynos_ohci_phy_disable(&pdev->dev);
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
-@@ -275,9 +235,6 @@ static int exynos_ohci_suspend(struct device *dev)
- 	if (rc)
- 		return rc;
- 
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	exynos_ohci_phy_disable(dev);
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
-@@ -293,9 +250,6 @@ static int exynos_ohci_resume(struct device *dev)
- 
- 	clk_prepare_enable(exynos_ohci->clk);
- 
--	if (exynos_ohci->otg)
--		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
--
- 	ret = exynos_ohci_phy_enable(dev);
- 	if (ret) {
- 		dev_err(dev, "Failed to enable USB phy\n");
+-	if (nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) &&
+-			!PAGE_ALIGNED(vmcs12->apic_access_addr)) {
++	if (!nested_get_vmcs12_pages(vcpu, vmcs12)) {
+ 		/*TODO: Also verify bits beyond physical address width are 0*/
+ 		nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+ 		return 1;
 -- 
-1.7.10.4
+1.9.1
 
