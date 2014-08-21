@@ -1,176 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaHULom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:44:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61221 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754609AbaHULoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:44:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,908,1400050800"; 
-   d="scan'208";a="591294480"
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: [PATCH v6 2/2] KVM: nVMX: nested TPR shadow/threshold emulation
-Date: Thu, 21 Aug 2014 19:46:50 +0800
-Message-Id: <1408621610-9665-2-git-send-email-wanpeng.li@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1408621610-9665-1-git-send-email-wanpeng.li@linux.intel.com>
-References: <1408621610-9665-1-git-send-email-wanpeng.li@linux.intel.com>
+	id S1754734AbaHULqN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:46:13 -0400
+Received: from icp-osb-irony-out1.external.iinet.net.au ([203.59.1.210]:11347
+	"EHLO icp-osb-irony-out1.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754019AbaHULqM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:46:12 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: As8BANja9VM6B/Tj/2dsb2JhbAANTYQ3ryUBAQEGpHkBgSaEewEBBDhAARALDQsJFg8JAwIBAgFFBgEMAQUCAQG0VJYmF4V8iVAHhEwBBJB9hwuMFYQ4jGxagk8BAQE
+X-IronPort-AV: E=Sophos;i="5.01,908,1399996800"; 
+   d="scan'208";a="242869097"
+Message-ID: <53F5DBFD.2020502@uclinux.org>
+Date: Thu, 21 Aug 2014 21:46:05 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Daniel Thompson <daniel.thompson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [PATCH v9 4/9] arm: ks8695: Migrate debug_ll macros to shared
+ directory
+References: <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org> <1408461407-10429-1-git-send-email-daniel.thompson@linaro.org> <1408461407-10429-5-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1408461407-10429-5-git-send-email-daniel.thompson@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
+Hi Daniel,
 
-TPR shadow/threshold feature is important to speed up the Windows guest.
-Besides, it is a must feature for certain VMM.
+On 20/08/14 01:16, Daniel Thompson wrote:
+> As part of the migration a couple of uart definitions have been copied
+> from of the platform specific header files.
+>
+> Note that, in order to keep oldconfig working nicely we must defer the
+> removal of arch/arm/mach-ks8695/include/mach/debug-macro.S until
+> DEBUG_LL_UART_NONE has been removed.
+>
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Greg Ungerer <gerg@uclinux.org>
+> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+> ---
+>   arch/arm/Kconfig.debug                                         |  8 ++++++++
+>   .../include/mach/debug-macro.S => include/debug/ks8695.S}      | 10 +++++++---
+>   2 files changed, 15 insertions(+), 3 deletions(-)
+>   rename arch/arm/{mach-ks8695/include/mach/debug-macro.S => include/debug/ks8695.S} (80%)
+>
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index 9c46729..97c3058 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -348,6 +348,13 @@ choice
+>   		  Say Y here if you want the debug print routines to direct
+>   		  their output to UART1 serial port on KEYSTONE2 devices.
+>   
+> +	config DEBUG_KS8695_UART
+> +		bool "KS8695 Debug UART"
+> +		depends on ARCH_KS8695
+> +		help
+> +		  Say Y here if you want kernel low-level debugging support
+> +		  on KS8695.
+> +
+>   	config DEBUG_MMP_UART2
+>   		bool "Kernel low-level debugging message via MMP UART2"
+>   		depends on ARCH_MMP
+> @@ -1017,6 +1024,7 @@ config DEBUG_LL_INCLUDE
+>   				 DEBUG_IMX6Q_UART || \
+>   				 DEBUG_IMX6SL_UART || \
+>   				 DEBUG_IMX6SX_UART
+> +	default "debug/ks8695.S" if DEBUG_KS8695_UART
+>   	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
+>   	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
+>   	default "debug/s3c24xx.S" if DEBUG_S3C24XX_UART
+> diff --git a/arch/arm/mach-ks8695/include/mach/debug-macro.S b/arch/arm/include/debug/ks8695.S
+> similarity index 80%
+> rename from arch/arm/mach-ks8695/include/mach/debug-macro.S
+> rename to arch/arm/include/debug/ks8695.S
+> index a79e489..961da1f 100644
+> --- a/arch/arm/mach-ks8695/include/mach/debug-macro.S
+> +++ b/arch/arm/include/debug/ks8695.S
+> @@ -1,5 +1,5 @@
+>   /*
+> - * arch/arm/mach-ks8695/include/mach/debug-macro.S
+> + * arch/arm/include/debug/ks8695.S
+>    *
+>    * Copyright (C) 2006 Ben Dooks <ben@simtec.co.uk>
+>    * Copyright (C) 2006 Simtec Electronics
+> @@ -11,8 +11,12 @@
+>    * published by the Free Software Foundation.
+>    */
+>   
+> -#include <mach/hardware.h>
+> -#include <mach/regs-uart.h>
+> +#define KS8695_UART_PA	0x03ffe000
+> +#define KS8695_UART_VA	0xf00fe000
+> +#define KS8695_URTH	(0x04)
+> +#define KS8695_URLS	(0x14)
+> +#define URLS_URTE	(1 << 6)
+> +#define URLS_URTHRE	(1 << 5)
 
-We map virtual APIC page address and TPR threshold from L1 VMCS. If
-TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
-in, we inject it into L1 VMM for handling.
+Whats the thinking behind moving these definitions here?
+Is there a plan to move/change regs-uart.h?
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
----
-v5 -> v6:
- * fix bisect issue 
-v4 -> v5:
- * moving the nested_vmx_failValid call inside the "if (!vmx->nested.virtual_apic_page)"
-v3 -> v4:
- * add Paolo's Reviewed-by
- * unconditionally fail the vmentry, with a comment
- * setup the TPR_SHADOW/virtual_apic_page of vmcs02 based on vmcs01 if L2 owns the APIC
-v2 -> v3:
- * nested vm entry failure if both tpr shadow and cr8 exiting bits are not set
-v1 -> v2:
- * don't take L0's "virtualize APIC accesses" setting into account
- * virtual_apic_page do exactly the same thing that is done for apic_access_page
- * add the tpr threshold field to the read-write fields for shadow VMCS
+Regards
+Greg
 
- arch/x86/kvm/vmx.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 48 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 24380a9..0eea49c 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -379,6 +379,7 @@ struct nested_vmx {
- 	 * we must keep them pinned while L2 runs.
- 	 */
- 	struct page *apic_access_page;
-+	struct page *virtual_apic_page;
- 	u64 msr_ia32_feature_control;
- 
- 	struct hrtimer preemption_timer;
-@@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
- 	ARRAY_SIZE(shadow_read_only_fields);
- 
- static unsigned long shadow_read_write_fields[] = {
-+	TPR_THRESHOLD,
- 	GUEST_RIP,
- 	GUEST_RSP,
- 	GUEST_CR0,
-@@ -2330,7 +2332,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
- 		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
- 		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
- 		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
--		CPU_BASED_PAUSE_EXITING |
-+		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
- 		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
- 	/*
- 	 * We can allow some features even when not supported by the
-@@ -6150,6 +6152,10 @@ static void free_nested(struct vcpu_vmx *vmx)
- 		nested_release_page(vmx->nested.apic_access_page);
- 		vmx->nested.apic_access_page = 0;
- 	}
-+	if (vmx->nested.virtual_apic_page) {
-+		nested_release_page(vmx->nested.virtual_apic_page);
-+		vmx->nested.virtual_apic_page = 0;
-+	}
- 
- 	nested_free_all_saved_vmcss(vmx);
- }
-@@ -6938,7 +6944,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
- 	case EXIT_REASON_MCE_DURING_VMENTRY:
- 		return 0;
- 	case EXIT_REASON_TPR_BELOW_THRESHOLD:
--		return 1;
-+		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
- 	case EXIT_REASON_APIC_ACCESS:
- 		return nested_cpu_has2(vmcs12,
- 			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
-@@ -7059,6 +7065,12 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
- 
- static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
- {
-+	struct vmcs12 *vmcs12 = get_vmcs12(vcpu);
-+
-+	if (is_guest_mode(vcpu) &&
-+		nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
-+		return;
-+
- 	if (irr == -1 || tpr < irr) {
- 		vmcs_write32(TPR_THRESHOLD, 0);
- 		return;
-@@ -7847,6 +7859,27 @@ static bool nested_get_vmcs12_pages(struct kvm_vcpu *vcpu,
- 		vmx->nested.apic_access_page =
- 			nested_get_page(vcpu, vmcs12->apic_access_addr);
- 	}
-+
-+	if (nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW)) {
-+		if (vmx->nested.virtual_apic_page) /* shouldn't happen */
-+			nested_release_page(vmx->nested.virtual_apic_page);
-+		vmx->nested.virtual_apic_page =
-+			nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
-+
-+		/*
-+		 * Failing the vm entry is _not_ what the processor does
-+		 * but it's basically the only possibility we have.
-+		 * We could still enter the guest if CR8 load exits are
-+		 * enabled, CR8 store exits are enabled, and virtualize APIC
-+		 * access is disabled; in this case the processor would never
-+		 * use the TPR shadow and we could simply clear the bit from
-+		 * the execution control.  But such a configuration is useless,
-+		 * so let's keep the code simple.
-+		 */
-+		if (!vmx->nested.virtual_apic_page)
-+			return false;
-+	}
-+
- 	return true;
- }
- 
-@@ -8040,6 +8073,15 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
- 	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
- 	exec_control &= ~CPU_BASED_TPR_SHADOW;
- 	exec_control |= vmcs12->cpu_based_vm_exec_control;
-+
-+	if (exec_control & CPU_BASED_TPR_SHADOW) {
-+		vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
-+				page_to_phys(vmx->nested.virtual_apic_page));
-+		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
-+	} else if (vm_need_tpr_shadow(vmx->vcpu.kvm))
-+		vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
-+				__pa(vmx->vcpu.arch.apic->regs));
-+
- 	/*
- 	 * Merging of IO and MSR bitmaps not currently supported.
- 	 * Rather, exit every time.
-@@ -8807,6 +8849,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
- 		nested_release_page(vmx->nested.apic_access_page);
- 		vmx->nested.apic_access_page = 0;
- 	}
-+	if (vmx->nested.virtual_apic_page) {
-+		nested_release_page(vmx->nested.virtual_apic_page);
-+		vmx->nested.virtual_apic_page = 0;
-+	}
- 
- 	/*
- 	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
--- 
-1.9.1
 
