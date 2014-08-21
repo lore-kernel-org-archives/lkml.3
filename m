@@ -1,150 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137AbaHUMcT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:32:19 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:53671 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754768AbaHUMcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:32:16 -0400
-Message-ID: <53F5E6C9.1020207@dev.mellanox.co.il>
-Date: Thu, 21 Aug 2014 15:32:09 +0300
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755184AbaHUMcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:32:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754992AbaHUMcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 08:32:21 -0400
+Date: Thu, 21 Aug 2014 09:31:58 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Subject: Re: [PATCH 7/7] mm/balloon_compaction: general cleanup
+Message-ID: <20140821123157.GA19986@optiplex.redhat.com>
+References: <5ad4664811559496e563ead974f10e8ee6b4ed47.1408576903.git.aquini@redhat.com>
+ <20140820150509.4194.24336.stgit@buzz>
+ <60e809f1c932fbbb175d59a750a329f04730717e.1408576903.git.aquini@redhat.com>
+ <CALYGNiN+MZO42FLhpeyGXhs6a8MRPDDgKfngusWdfNV3r_C0dw@mail.gmail.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
-CC: Or Gerlitz <ogerlitz@mellanox.com>, Oren Duer <oren@mellanox.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Max Gurtovoy <maxg@mellanox.com>
-Subject: Performance degradation in IO writes vs. reads (was scsi-mq V2)
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53C39F36.9010003@dev.mellanox.co.il>
-In-Reply-To: <53C39F36.9010003@dev.mellanox.co.il>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALYGNiN+MZO42FLhpeyGXhs6a8MRPDDgKfngusWdfNV3r_C0dw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/14/2014 12:13 PM, Sagi Grimberg wrote:
-
-<SNIP>
-
-> I'd like to share some benchmarks I took on this patch set using iSER
-> initiator (+2 pre-submitted performance improvements) vs LIO iSER target.
-> I ran workloads I think are interesting use-cases (single LUN with 1,2,4
-> IO threads up to a fully occupied system doing IO to multiple LUNs).
-> Overall (except 2 strange anomalies) seems that scsi-mq patches
-> (use_blk_mq=N) roughly sustains traditional scsi performance.
-> On the other hand scsi-mq code path (use_blk_mq=Y) on its own clearly
-> shows better performance (tables below).
+On Thu, Aug 21, 2014 at 11:30:59AM +0400, Konstantin Khlebnikov wrote:
+> On Thu, Aug 21, 2014 at 3:58 AM, Rafael Aquini <aquini@redhat.com> wrote:
+> > On Wed, Aug 20, 2014 at 07:05:09PM +0400, Konstantin Khlebnikov wrote:
+> >> * move special branch for balloon migraion into migrate_pages
+> >> * remove special mapping for balloon and its flag AS_BALLOON_MAP
+> >> * embed struct balloon_dev_info into struct virtio_balloon
+> >> * cleanup balloon_page_dequeue, kill balloon_page_free
+> >>
+> >> Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+> >> ---
+> >>  drivers/virtio/virtio_balloon.c    |   77 ++++---------
+> >>  include/linux/balloon_compaction.h |  107 ++++++------------
+> >>  include/linux/migrate.h            |   11 --
+> >>  include/linux/pagemap.h            |   18 ---
+> >>  mm/balloon_compaction.c            |  214 ++++++++++++------------------------
+> >>  mm/migrate.c                       |   27 +----
+> >>  6 files changed, 130 insertions(+), 324 deletions(-)
+> >>
+> > Very nice clean-up, just as all other patches in this set.
+> > Please, just consider amending the following changes to this patch of yours
+> 
+> Well. Probably it's better to hide __Set/Clear inside mm/balloon_compaction.c
+> it very unlikely that they might  be used by somebody else.
+> mm.h contains too many obscure static inlines and other barely used stuff.
 >
-> At first I too hit the aio issues discussed in this thread and converted
-> to scsi-mq.3-no-rebase for testing (thanks Doug & Rob for raising it).
-> I must say that for some reason I get very low numbers for writes vs.
-> reads (writes perf stuck at ~20K IOPs per thread), this happens
-> on 3.16-rc2 even before scsi-mq patches. Did anyone step on this as well
-> or is it just a weird problem I'm having in my setup?
-> Anyway this is why my benchmarks shows only randread IO pattern (getting
-> familiar numbers). I need to figure out whats wrong
-> with IO writes - I'll start bisecting on this.
+Although I agree that very few codesites will actually resort to them,
+I believe there's no argument to hide __Set/Clear if PageBalloon() itself is there.
+Take a look into how many codesites __{Set,Clear}PageBuddy are being
+called -- (as in their Balloon counterpart, just 1 codesite each).
+
+For the sake of consistency and ease of maintainability, either leave all
+BalloonPage() and friends at mm.h or move them all out, 
+hiding them in balloon_compaction.h.
+
+> And it's worth to rename balloon_compaction.c/h into just balloon.c or
+> memory_balloon because
+> it provides generic balloon wtihout compaction too. Any objections?
 >
+No objections here, I was actually thinking about renaming them too.
 
-Hi,
-
-So I just got back to checking this issue of *extremely low* IO write
-performance I got in 3.16-rc2.
-
-Reminder:
-I used iSER to benchmark Christoph's scsi-mq patches performance and
-noticed that direct-IO writes are stuck at 20-50K IOPs instead of 350K
-IOPs I was used to see for a single device. This issue existed also when
-I removed the scsi-mq patches, so I started bisecting to see what broke
-stuff.
-
-Finally I got to the completely unbisectable bulk that seems to yield
-the issue:
-
-/* IO write poor performance*/
-2b777c9 ceph_sync_read: stop poking into iov_iter guts
-f0d1bec new helper: copy_page_from_iter()
-84c3d55 fuse: switch to ->write_iter()
-b30ac0f btrfs: switch to ->write_iter()
-3ef045c ocfs2: switch to ->write_iter()
-bf97f3b xfs: switch to ->write_iter()
-50b5551 afs: switch to ->write_iter()
-da56e45 gfs2: switch to ->write_iter()
-edaf436 nfs: switch to ->write_iter()
-f5674c3 ubifs: switch to ->write_iter()
-a8f3550 bury __generic_file_aio_write()
-3dae875 cifs: switch to ->write_iter()
-d4637bc udf: switch to ->write_iter()
-9b88416 convert ext4 to ->write_iter()
-a832475 Merge ext4 changes in ext4_file_write() into for-next
-1456c0a blkdev_aio_write() - turn into blkdev_write_iter()
-8174202 write_iter variants of {__,}generic_file_aio_write()
-3644424 ceph: switch to ->read_iter()
-3aa2d19 nfs: switch to ->read_iter()
-a886038 fs/block_dev.c: switch to ->read_iter()
-2ba5bbe shmem: switch to ->read_iter()
-fb9096a pipe: switch to ->read_iter()
-e6a7bcb cifs: switch to ->read_iter()
-37c20f1 fuse_file_aio_read(): convert to ->read_iter()
-3cd9ad5 ocfs2: switch to ->read_iter()
-0279782 ecryptfs: switch to ->read_iter()
-b4f5d2c xfs: switch to ->read_iter()
-aad4f8b switch simple generic_file_aio_read() users to ->read_iter()
-293bc98 new methods: ->read_iter() and ->write_iter()
-7f7f25e replace checking for ->read/->aio_read presence with check in 
-->f_mode
-b318891 xfs: trim the argument lists of xfs_file_{dio,buffered}_aio_write()
-37938463 blkdev_aio_read(): switch to generic_file_read_iter(), get rid 
-of iov_shorten()
-0c94933 iov_iter_truncate()
-28060d5 btrfs: switch check_direct_IO() to iov_iter
-91f79c4 new helper: iov_iter_get_pages_alloc()
-f67da30 new helper: iov_iter_npages()
-5b46f25 f2fs: switch to iov_iter_alignment()
-c9c37e2 fuse: switch to iov_iter_get_pages()
-d22a943 fuse: pull iov_iter initializations up
-7b2c99d new helper: iov_iter_get_pages()
-3320c60 dio: take updating ->result into do_direct_IO(
-71d8e53 start adding the tag to iov_iter
-ed978a8 new helper: generic_file_read_iter()
-23faa7b fuse_file_aio_write(): merge initializations of iov_iter
-05bb2e0 ceph_aio_read(): keep iov_iter across retries
-886a391 new primitive: iov_iter_alignment()
-26978b8 give ->direct_IO() a copy of iov_iter
-31b1403 switch {__,}blockdev_direct_IO() to iov_iter
-a6cbcd4 get rid of pointless iov_length() in ->direct_IO()
-16b1f05 ext4: switch the guts of ->direct_IO() to iov_iter
-619d30b convert the guts of nfs_direct_IO() to iov_iter
-d8d3d94 pass iov_iter to ->direct_IO()
-cb66a7a kill generic_segment_checks()
-0ae5e4d __btrfs_direct_write(): switch to iov_iter
-f8579f8 generic_file_direct_write(): switch to iov_iter
-e7c2460 kill iov_iter_copy_from_user()
-f6c0a19 fs/file.c: don't open-code kvfree()
-/* IO write performance is OK*/
-
-I tried to isolate the issue by running fio on a null_blk
-device and also got performance degradation although it wasn't
-as severe as with iSER/iSCSI. IO write performance decreased
-from 360K IOPs to 280 KIOPs.
-
-So at the moment I can't pin point the problem, but I figured
-I'd raise the issue in case anyone else had stepped on this one
-(hard to imagine that no one saw this...)
-
-I'll run perf comparison to see if I get anything interesting.
-
-CC'ing Al Viro, the author of all the above commits.
-
-Cheers,
-Sagi.
+--
+Rafael
+ 
+> >
+> > Rafael
+> > ---
+> >
+> > diff --git a/include/linux/balloon_compaction.h b/include/linux/balloon_compaction.h
+> > index dc7073b..569cf96 100644
+> > --- a/include/linux/balloon_compaction.h
+> > +++ b/include/linux/balloon_compaction.h
+> > @@ -75,41 +75,6 @@ extern struct page *balloon_page_dequeue(struct balloon_dev_info *b_dev_info);
+> >  #ifdef CONFIG_BALLOON_COMPACTION
+> >  extern bool balloon_page_isolate(struct page *page);
+> >  extern void balloon_page_putback(struct page *page);
+> > -
+> > -/*
+> > - * balloon_page_insert - insert a page into the balloon's page list and make
+> > - *                      the page->mapping assignment accordingly.
+> > - * @page    : page to be assigned as a 'balloon page'
+> > - * @mapping : allocated special 'balloon_mapping'
+> > - * @head    : balloon's device page list head
+> > - *
+> > - * Caller must ensure the page is locked and the spin_lock protecting balloon
+> > - * pages list is held before inserting a page into the balloon device.
+> > - */
+> > -static inline void
+> > -balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
+> > -{
+> > -       __SetPageBalloon(page);
+> > -       set_page_private(page, (unsigned long)balloon);
+> > -       list_add(&page->lru, &balloon->pages);
+> > -}
+> > -
+> > -/*
+> > - * balloon_page_delete - delete a page from balloon's page list and clear
+> > - *                      the page->mapping assignement accordingly.
+> > - * @page    : page to be released from balloon's page list
+> > - *
+> > - * Caller must ensure the page is locked and the spin_lock protecting balloon
+> > - * pages list is held before deleting a page from the balloon device.
+> > - */
+> > -static inline void balloon_page_delete(struct page *page, bool isolated)
+> > -{
+> > -       __ClearPageBalloon(page);
+> > -       set_page_private(page, 0);
+> > -       if (!isolated)
+> > -               list_del(&page->lru);
+> > -}
+> > -
+> >  int balloon_page_migrate(new_page_t get_new_page, free_page_t put_new_page,
+> >                 unsigned long private, struct page *page,
+> >                 int force, enum migrate_mode mode);
+> > @@ -130,31 +95,6 @@ static inline gfp_t balloon_mapping_gfp_mask(void)
+> >
+> >  #else /* !CONFIG_BALLOON_COMPACTION */
+> >
+> > -static inline void *balloon_mapping_alloc(void *balloon_device,
+> > -                               const struct address_space_operations *a_ops)
+> > -{
+> > -       return ERR_PTR(-EOPNOTSUPP);
+> > -}
+> > -
+> > -static inline void balloon_mapping_free(struct address_space *balloon_mapping)
+> > -{
+> > -       return;
+> > -}
+> > -
+> > -static inline void
+> > -balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
+> > -{
+> > -       __SetPageBalloon(page);
+> > -       list_add(&page->lru, head);
+> > -}
+> > -
+> > -static inline void balloon_page_delete(struct page *page, bool isolated)
+> > -{
+> > -       __ClearPageBalloon(page);
+> > -       if (!isolated)
+> > -               list_del(&page->lru);
+> > -}
+> > -
+> >  static inline int balloon_page_migrate(new_page_t get_new_page,
+> >                 free_page_t put_new_page, unsigned long private,
+> >                 struct page *page, int force, enum migrate_mode mode)
+> > @@ -176,6 +116,46 @@ static inline gfp_t balloon_mapping_gfp_mask(void)
+> >  {
+> >         return GFP_HIGHUSER;
+> >  }
+> > -
+> >  #endif /* CONFIG_BALLOON_COMPACTION */
+> > +
+> > +/*
+> > + * balloon_page_insert - insert a page into the balloon's page list and make
+> > + *                      the page->mapping assignment accordingly.
+> > + * @page    : page to be assigned as a 'balloon page'
+> > + * @mapping : allocated special 'balloon_mapping'
+> > + * @head    : balloon's device page list head
+> > + *
+> > + * Caller must ensure the page is locked and the spin_lock protecting balloon
+> > + * pages list is held before inserting a page into the balloon device.
+> > + */
+> > +static inline void
+> > +balloon_page_insert(struct balloon_dev_info *balloon, struct page *page)
+> > +{
+> > +#ifdef CONFIG_MEMORY_BALLOON
+> > +       __SetPageBalloon(page);
+> > +       set_page_private(page, (unsigned long)balloon);
+> > +       list_add(&page->lru, &balloon->pages);
+> > +       inc_zone_page_state(page, NR_BALLOON_PAGES);
+> > +#endif
+> > +}
+> > +
+> > +/*
+> > + * balloon_page_delete - delete a page from balloon's page list and clear
+> > + *                      the page->mapping assignement accordingly.
+> > + * @page    : page to be released from balloon's page list
+> > + *
+> > + * Caller must ensure the page is locked and the spin_lock protecting balloon
+> > + * pages list is held before deleting a page from the balloon device.
+> > + */
+> > +static inline void balloon_page_delete(struct page *page, bool isolated)
+> > +{
+> > +#ifdef CONFIG_MEMORY_BALLOON
+> > +       __ClearPageBalloon(page);
+> > +       set_page_private(page, 0);
+> > +       if (!isolated)
+> > +               list_del(&page->lru);
+> > +       dec_zone_page_state(page, NR_BALLOON_PAGES);
+> > +#endif
+> > +}
+> > +
+> >  #endif /* _LINUX_BALLOON_COMPACTION_H */
+> > --
+> > 1.9.3
+> >
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
