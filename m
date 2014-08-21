@@ -1,44 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108AbaHUSvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 14:51:20 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:48738 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308AbaHUSvS (ORCPT
+	id S1754141AbaHUSwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 14:52:14 -0400
+Received: from server102.greatnet.de ([83.133.97.2]:60427 "EHLO
+	server102.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489AbaHUSwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 14:51:18 -0400
-Message-ID: <53F63FD5.5040305@linux.vnet.ibm.com>
-Date: Fri, 22 Aug 2014 00:22:05 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 21 Aug 2014 14:52:12 -0400
+Date: Thu, 21 Aug 2014 20:52:09 +0200
+From: Benjamin Block <bebl@mageta.org>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: BUG: lockdep (inconsistent usage) in netlink
+Message-ID: <20140821185209.GC25021@kalium.Speedport_W723_V_Typ_A_1_01_001>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Lisa Mitchell <lisa.mitchell@hp.com>
-Subject: Re: [PATCH v3 3/7] KVM: VMX: make PLE window per-VCPU
-References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com> <1408637291-18533-4-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1408637291-18533-4-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082118-0005-0000-0000-0000009986D8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZwgA9U+XZDXt4+m+"
+Content-Disposition: inline
+X-PGP-Key: http://www.mageta.org/pgp/bblock.private.asc
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 09:38 PM, Radim Krčmář wrote:
-> Change PLE window into per-VCPU variable, seeded from module parameter,
-> to allow greater flexibility.
->
-> Brings in a small overhead on every vmentry.
->
-> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 
-with intelligent update in patch 7
-Reviewed-by: Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
+--ZwgA9U+XZDXt4+m+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hello,
+
+while rebooting one of my dev-machines I stumbled over this
+lockdep-mess-up:
+
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> [ INFO: inconsistent lock state ]
+> 3.17.0-rc1-00001-gb83ca8c #2 Tainted: G           O =20
+> ---------------------------------
+> inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+> swapper/0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
+>  (&(&list->lock)->rlock#3){?.-...}, at: [<ffffffff819580db>] skb_queue_ta=
+il+0x2b/0x60
+> {HARDIRQ-ON-W} state was registered at:
+>   [<ffffffff8111c9f7>] __lock_acquire+0x877/0x1c90
+>   [<ffffffff8111e45a>] lock_acquire+0xca/0x120
+>   [<ffffffff81afc744>] _raw_spin_lock_bh+0x44/0x80
+>   [<ffffffff819a8918>] netlink_poll+0xf8/0x1c0
+>   [<ffffffff8194e031>] sock_poll+0x161/0x190
+>   [<ffffffff81271ffb>] SyS_epoll_ctl+0x51b/0xd10
+>   [<ffffffff81afd452>] system_call_fastpath+0x16/0x1b
+> irq event stamp: 1699744
+> hardirqs last  enabled at (1699741): [<ffffffff8189b1d4>] cpuidle_enter_s=
+tate+0xc4/0x190
+> hardirqs last disabled at (1699742): [<ffffffff81afdfaa>] common_interrup=
+t+0x6a/0x6f
+> softirqs last  enabled at (1699744): [<ffffffff810d7fda>] _local_bh_enabl=
+e+0x4a/0x50
+> softirqs last disabled at (1699743): [<ffffffff810d88f0>] irq_enter+0x30/=
+0x70
+>=20
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+>
+>        CPU0
+>        ----
+>   lock(&(&list->lock)->rlock#3);
+>   <Interrupt>
+>     lock(&(&list->lock)->rlock#3);
+>
+>  *** DEADLOCK ***
+>
+> no locks held by swapper/0/0.
+>
+> stack backtrace:
+> CPU: 0 PID: 0 Comm: swapper/0 Tainted: G           O   3.17.0-rc1-00001-g=
+b83ca8c #2
+> Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
+>  ffffffff8295a5b0 ffff8802158039a8 ffffffff81af20fa 0000000000000000
+>  ffffffff822164e0 ffff880215803a08 ffffffff81aee400 0000000000000000
+>  ffffffff00000000 ffff880200000001 ffffffff8105ac0f ffffffff82d2abe0
+> Call Trace:
+>  <IRQ>  [<ffffffff81af20fa>] dump_stack+0x4e/0x68
+>  [<ffffffff81aee400>] print_usage_bug+0x1ec/0x1fd
+>  [<ffffffff8105ac0f>] ? save_stack_trace+0x2f/0x50
+>  [<ffffffff8111b600>] ? print_irq_inversion_bug+0x200/0x200
+>  [<ffffffff8111c061>] mark_lock+0x191/0x2b0
+>  [<ffffffff8111c96a>] __lock_acquire+0x7ea/0x1c90
+>  [<ffffffff8111ca94>] ? __lock_acquire+0x914/0x1c90
+>  [<ffffffff8111b600>] ? print_irq_inversion_bug+0x200/0x200
+>  [<ffffffff8111ca94>] ? __lock_acquire+0x914/0x1c90
+>  [<ffffffff8111e45a>] lock_acquire+0xca/0x120
+>  [<ffffffff819580db>] ? skb_queue_tail+0x2b/0x60
+>  [<ffffffff81afc590>] _raw_spin_lock_irqsave+0x50/0x90
+>  [<ffffffff819580db>] ? skb_queue_tail+0x2b/0x60
+>  [<ffffffff819580db>] skb_queue_tail+0x2b/0x60
+>  [<ffffffff819a774f>] __netlink_sendskb+0x21f/0x250
+>  [<ffffffff819a7d63>] netlink_broadcast_filtered+0x273/0x3b0
+>  [<ffffffff819a7ebd>] netlink_broadcast+0x1d/0x20
+>  [<ffffffff8152fb8a>] ? nla_reserve+0x2a/0x40
+>  [<ffffffff81589728>] acpi_bus_generate_netlink_event+0x160/0x178
+>  [<ffffffff815a8db9>] acpi_button_notify+0xe1/0xec
+>  [<ffffffff81580648>] acpi_device_notify+0x19/0x1b
+>  [<ffffffff81580662>] acpi_device_notify_fixed+0x18/0x1c
+>  [<ffffffff8158f039>] acpi_ev_fixed_event_detect+0xe6/0x10d
+>  [<ffffffff8159157a>] acpi_ev_sci_xrupt_handler+0x19/0x3f
+>  [<ffffffff8157c1a9>] acpi_irq+0x16/0x31
+>  [<ffffffff81131e2a>] handle_irq_event_percpu+0x6a/0x1d0
+>  [<ffffffff81131fd8>] handle_irq_event+0x48/0x70
+>  [<ffffffff8113534f>] ? handle_fasteoi_irq+0x2f/0x160
+>  [<ffffffff811353e7>] handle_fasteoi_irq+0xc7/0x160
+>  [<ffffffff8104cd94>] handle_irq+0x134/0x150
+>  [<ffffffff810f4876>] ? atomic_notifier_call_chain+0x16/0x20
+>  [<ffffffff81054dec>] ? __exit_idle+0x2c/0x30
+>  [<ffffffff81affe7e>] do_IRQ+0x5e/0x100
+>  [<ffffffff81afdfaf>] common_interrupt+0x6f/0x6f
+>  <EOI>  [<ffffffff8189b1df>] ? cpuidle_enter_state+0xcf/0x190
+>  [<ffffffff8189b1d4>] ? cpuidle_enter_state+0xc4/0x190
+>  [<ffffffff8189b387>] cpuidle_enter+0x17/0x20
+>  [<ffffffff81111ae1>] cpu_startup_entry+0x3a1/0x3c0
+>  [<ffffffff81ae92a4>] rest_init+0xc4/0xd0
+>  [<ffffffff81ae91e5>] ? rest_init+0x5/0xd0
+>  [<ffffffff825718a1>] ? ftrace_init+0xa8/0x13b
+>  [<ffffffff8255103a>] start_kernel+0x461/0x46e
+>  [<ffffffff82550939>] ? set_init_arg+0x57/0x57
+>  [<ffffffff825505af>] x86_64_start_reservations+0x2a/0x2c
+>  [<ffffffff825506ae>] x86_64_start_kernel+0xfd/0x101
+
+Sadly I couldn't reproduce it. This looks all to be very general
+functions and my best guess is, netlink_poll() needs to be irq-save.
+Thing is, the corresponding code is quite old and I can't really bisec
+it, because the none-reproducibility.
+
+There is only the small ipv6-fib patch applied, I send in earlier today
+(https://lkml.org/lkml/2014/8/21/506). This should have nothing to do
+with this here.
+
+--=20
+If a listener nods his head when you're explaining your program, wake him u=
+p.
+--
+                                                          best regards,
+                                                            - Benjamin Block
+
+--ZwgA9U+XZDXt4+m+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQGcBAEBAgAGBQJT9j/ZAAoJEEbgTgVnoy6ewfML/10lUndF5uRRWAwjNOkgWsO5
++p3YK7fpKK/cnM1xrTSETJRaFUd3wl0tbodZuiQNvMTOccxNMl6V19QWcC6zQJjf
+CLtYsDoJ/EONLYgXR+Zk256ISlA8TlAwTJWgA+fJUDN2qGeY4ZAGqNuQXtm88qee
+APiR11G8lT7Oqgp6gZGFlYCe4p9K/h6J/oAaDR8VKKJz7VEPxmL93T3u/LyZfyTe
+K7mf3li862Pfd28aB4t24EhYvXbCAiTmE0R6hI6KpzS2NL73praOEu/6IxNY+PCL
+IaFgai682K5kXwBI4SOTog0UAUbARP8ZJNfXIzjz8NMbaNhHzefbNhwnS+rD6QIH
+zcgYESdbeYK0OF5cbnXapGrYQvZhQuIvHd4HtiYZHtQJbZwdOcO+UmbyPqjqqjPe
+HAo9WOhXyb248GVD+2s+TBAnptGHcJ8w7bvTQAZfCxkHv1hOZkP17XJGHrnenjN+
+nb+DdsfFZGSSekiD6yb1gH4LUHJQpWFwuDAOizN7ag==
+=PD9b
+-----END PGP SIGNATURE-----
+
+--ZwgA9U+XZDXt4+m+--
