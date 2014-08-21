@@ -1,279 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaHUMWC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:22:02 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:52525 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058AbaHUMV7 convert rfc822-to-8bit (ORCPT
+	id S1754733AbaHUMXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:23:36 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:44042 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaHUMXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:21:59 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: RE: [PATCH] iio: remove .owner field for driver using
- module_platform_driver
-Thread-Topic: [PATCH] iio: remove .owner field for driver using
- module_platform_driver
-Thread-Index: AQHPvFfmvUZzgRGgoE29gIhuweqTwJva/CsQ
-Date: Thu, 21 Aug 2014 12:21:56 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF3137C@EU-MBX-02.mgc.mentorg.com>
-References: <1408527157-9318-1-git-send-email-sanjeev_sharma@mentor.com>
-In-Reply-To: <1408527157-9318-1-git-send-email-sanjeev_sharma@mentor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 21 Aug 2014 12:21:57.0747 (UTC) FILETIME=[806DDC30:01CFBD3A]
+	Thu, 21 Aug 2014 08:23:34 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Joe Perches <joe@perches.com>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
+Subject: [PATCHv3 0/9] Mark literal strings in __init / __exit code
+Date: Thu, 21 Aug 2014 14:23:03 +0200
+Message-Id: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Greg into CC list.
+This is v3 of the patch series initially posted here:
 
-Sanjeev Sharma
+  https://lkml.org/lkml/2014/6/22/149
 
------Original Message-----
-From: Sanjeev Sharma [mailto:sanjeev_sharma@mentor.com] 
-Sent: Wednesday, August 20, 2014 3:03 PM
-To: jic23@kernel.org; kgene.kim@samsung.com
-Cc: linux-kernel@vger.kernel.org; linux-iio@vger.kernel.org; devel@driverdev.osuosl.org; Sharma, Sanjeev; Sharma, Sanjeev
-Subject: [PATCH] iio: remove .owner field for driver using module_platform_driver
+This series tries to address the problem of dangling strings of __init
+functions after initialization, as well as __exit strings for code not
+even included in the final kernel image. The code might get freed, but
+the format strings are not, as they're in the wrong section.
 
-This patch removes the .owner field for drivers which use the platform_driver_register api because this is overriden in _platform_driver_register.
+One solution to the problem might be to declare variables in the code
+and mark those variables as __initconst. That, though, makes the code
+ugly, as can be seen, e.g., in drivers/hwmon/w83627ehf.c -- a pile of
+'static const char[] __initconst' lines just for the pr_info() call.
 
-Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
----
- drivers/iio/accel/hid-sensor-accel-3d.c       | 1 -
- drivers/iio/adc/exynos_adc.c                  | 1 -
- drivers/iio/adc/lp8788_adc.c                  | 1 -
- drivers/iio/adc/ti_am335x_adc.c               | 1 -
- drivers/iio/adc/twl4030-madc.c                | 1 -
- drivers/iio/adc/twl6030-gpadc.c               | 1 -
- drivers/iio/adc/vf610_adc.c                   | 1 -
- drivers/iio/adc/viperboard_adc.c              | 1 -
- drivers/iio/gyro/hid-sensor-gyro-3d.c         | 1 -
- drivers/iio/humidity/dht11.c                  | 1 -
- drivers/iio/light/hid-sensor-als.c            | 1 -
- drivers/iio/light/hid-sensor-prox.c           | 1 -
- drivers/iio/light/lm3533-als.c                | 1 -
- drivers/iio/magnetometer/hid-sensor-magn-3d.c | 1 -  drivers/iio/orientation/hid-sensor-incl-3d.c  | 1 -  drivers/iio/orientation/hid-sensor-rotation.c | 1 -
- drivers/iio/pressure/hid-sensor-press.c       | 1 -
- drivers/iio/trigger/iio-trig-interrupt.c      | 1 -
- 18 files changed, 18 deletions(-)
+To be able to mark strings easily patch 1 adds macros to init.h to do so
+without the need to explicitly define variables in the code. (Internally
+it'll declare ones nonetheless, as this seem to be the only way to
+attach an __attribute__() to a verbatim string.) That's already enough to
+solve the problem -- mark the corresponding stings by using these
+macros. But patch 2 adds some syntactical sugar for the most popular use
+case, by providing pr_<level> alike macros, namely pi_<level> for __init
+code and pe_<level> for __exit code. This hides the use of the marker
+macros behind the commonly known printing functions -- with just a
+single character changed. For code that cannot be changed to use the
+pi_<level>() / pe_<level>() helpers printk_init() and printk_exit()
+macros are provided, too.
 
-diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
-index 54e464e..d5d9531 100644
---- a/drivers/iio/accel/hid-sensor-accel-3d.c
-+++ b/drivers/iio/accel/hid-sensor-accel-3d.c
-@@ -419,7 +419,6 @@ static struct platform_driver hid_accel_3d_platform_driver = {
- 	.id_table = hid_accel_3d_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_accel_3d_probe,
- 	.remove		= hid_accel_3d_remove,
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c index fc9dfc2..b4373f7 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -606,7 +606,6 @@ static struct platform_driver exynos_adc_driver = {
- 	.remove		= exynos_adc_remove,
- 	.driver		= {
- 		.name	= "exynos-adc",
--		.owner	= THIS_MODULE,
- 		.of_match_table = exynos_adc_match,
- 		.pm	= &exynos_adc_pm_ops,
- 	},
-diff --git a/drivers/iio/adc/lp8788_adc.c b/drivers/iio/adc/lp8788_adc.c index 5c8c915..152cfc8 100644
---- a/drivers/iio/adc/lp8788_adc.c
-+++ b/drivers/iio/adc/lp8788_adc.c
-@@ -244,7 +244,6 @@ static struct platform_driver lp8788_adc_driver = {
- 	.remove = lp8788_adc_remove,
- 	.driver = {
- 		.name = LP8788_DEV_ADC,
--		.owner = THIS_MODULE,
- 	},
- };
- module_platform_driver(lp8788_adc_driver);
-diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c index d5dc4c6..b730864 100644
---- a/drivers/iio/adc/ti_am335x_adc.c
-+++ b/drivers/iio/adc/ti_am335x_adc.c
-@@ -545,7 +545,6 @@ MODULE_DEVICE_TABLE(of, ti_adc_dt_ids);  static struct platform_driver tiadc_driver = {
- 	.driver = {
- 		.name   = "TI-am335x-adc",
--		.owner	= THIS_MODULE,
- 		.pm	= TIADC_PM_OPS,
- 		.of_match_table = ti_adc_dt_ids,
- 	},
-diff --git a/drivers/iio/adc/twl4030-madc.c b/drivers/iio/adc/twl4030-madc.c index eb86786..94c5f05 100644
---- a/drivers/iio/adc/twl4030-madc.c
-+++ b/drivers/iio/adc/twl4030-madc.c
-@@ -883,7 +883,6 @@ static struct platform_driver twl4030_madc_driver = {
- 	.remove = twl4030_madc_remove,
- 	.driver = {
- 		   .name = "twl4030_madc",
--		   .owner = THIS_MODULE,
- 		   .of_match_table = of_match_ptr(twl_madc_of_match),
- 	},
- };
-diff --git a/drivers/iio/adc/twl6030-gpadc.c b/drivers/iio/adc/twl6030-gpadc.c index 15282f1..89d8aa1 100644
---- a/drivers/iio/adc/twl6030-gpadc.c
-+++ b/drivers/iio/adc/twl6030-gpadc.c
-@@ -994,7 +994,6 @@ static struct platform_driver twl6030_gpadc_driver = {
- 	.remove		= twl6030_gpadc_remove,
- 	.driver		= {
- 		.name	= DRIVER_NAME,
--		.owner	= THIS_MODULE,
- 		.pm	= &twl6030_gpadc_pm_ops,
- 		.of_match_table = of_twl6030_match_tbl,
- 	},
-diff --git a/drivers/iio/adc/vf610_adc.c b/drivers/iio/adc/vf610_adc.c index 44799eb5..4a10ae9 100644
---- a/drivers/iio/adc/vf610_adc.c
-+++ b/drivers/iio/adc/vf610_adc.c
-@@ -698,7 +698,6 @@ static struct platform_driver vf610_adc_driver = {
- 	.remove         = vf610_adc_remove,
- 	.driver         = {
- 		.name   = DRIVER_NAME,
--		.owner  = THIS_MODULE,
- 		.of_match_table = vf610_adc_match,
- 		.pm     = &vf610_adc_pm_ops,
- 	},
-diff --git a/drivers/iio/adc/viperboard_adc.c b/drivers/iio/adc/viperboard_adc.c
-index 9acf6b6..3be2e35 100644
---- a/drivers/iio/adc/viperboard_adc.c
-+++ b/drivers/iio/adc/viperboard_adc.c
-@@ -145,7 +145,6 @@ static int vprbrd_adc_probe(struct platform_device *pdev)  static struct platform_driver vprbrd_adc_driver = {
- 	.driver = {
- 		.name	= "viperboard-adc",
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= vprbrd_adc_probe,
- };
-diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-index fa034a3..a3ea1e8 100644
---- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
-+++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-@@ -416,7 +416,6 @@ static struct platform_driver hid_gyro_3d_platform_driver = {
- 	.id_table = hid_gyro_3d_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_gyro_3d_probe,
- 	.remove		= hid_gyro_3d_remove,
-diff --git a/drivers/iio/humidity/dht11.c b/drivers/iio/humidity/dht11.c index d8771f5..623c145 100644
---- a/drivers/iio/humidity/dht11.c
-+++ b/drivers/iio/humidity/dht11.c
-@@ -281,7 +281,6 @@ static int dht11_probe(struct platform_device *pdev)  static struct platform_driver dht11_driver = {
- 	.driver = {
- 		.name	= DRIVER_NAME,
--		.owner	= THIS_MODULE,
- 		.of_match_table = dht11_dt_ids,
- 	},
- 	.probe  = dht11_probe,
-diff --git a/drivers/iio/light/hid-sensor-als.c b/drivers/iio/light/hid-sensor-als.c
-index 96e71e1..a5283d7 100644
---- a/drivers/iio/light/hid-sensor-als.c
-+++ b/drivers/iio/light/hid-sensor-als.c
-@@ -381,7 +381,6 @@ static struct platform_driver hid_als_platform_driver = {
- 	.id_table = hid_als_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_als_probe,
- 	.remove		= hid_als_remove,
-diff --git a/drivers/iio/light/hid-sensor-prox.c b/drivers/iio/light/hid-sensor-prox.c
-index 412bae8..f5a5146 100644
---- a/drivers/iio/light/hid-sensor-prox.c
-+++ b/drivers/iio/light/hid-sensor-prox.c
-@@ -373,7 +373,6 @@ static struct platform_driver hid_prox_platform_driver = {
- 	.id_table = hid_prox_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_prox_probe,
- 	.remove		= hid_prox_remove,
-diff --git a/drivers/iio/light/lm3533-als.c b/drivers/iio/light/lm3533-als.c index c1aadc6..ae3c71b 100644
---- a/drivers/iio/light/lm3533-als.c
-+++ b/drivers/iio/light/lm3533-als.c
-@@ -915,7 +915,6 @@ static int lm3533_als_remove(struct platform_device *pdev)  static struct platform_driver lm3533_als_driver = {
- 	.driver	= {
- 		.name	= "lm3533-als",
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= lm3533_als_probe,
- 	.remove		= lm3533_als_remove,
-diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-index 3ec777a..03a13d4 100644
---- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-+++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-@@ -533,7 +533,6 @@ static struct platform_driver hid_magn_3d_platform_driver = {
- 	.id_table = hid_magn_3d_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_magn_3d_probe,
- 	.remove		= hid_magn_3d_remove,
-diff --git a/drivers/iio/orientation/hid-sensor-incl-3d.c b/drivers/iio/orientation/hid-sensor-incl-3d.c
-index 2478f6c..1ff181b 100644
---- a/drivers/iio/orientation/hid-sensor-incl-3d.c
-+++ b/drivers/iio/orientation/hid-sensor-incl-3d.c
-@@ -437,7 +437,6 @@ static struct platform_driver hid_incl_3d_platform_driver = {
- 	.id_table = hid_incl_3d_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_incl_3d_probe,
- 	.remove		= hid_incl_3d_remove,
-diff --git a/drivers/iio/orientation/hid-sensor-rotation.c b/drivers/iio/orientation/hid-sensor-rotation.c
-index dccf848..4afb6c7 100644
---- a/drivers/iio/orientation/hid-sensor-rotation.c
-+++ b/drivers/iio/orientation/hid-sensor-rotation.c
-@@ -334,7 +334,6 @@ static struct platform_driver hid_dev_rot_platform_driver = {
- 	.id_table = hid_dev_rot_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_dev_rot_probe,
- 	.remove		= hid_dev_rot_remove,
-diff --git a/drivers/iio/pressure/hid-sensor-press.c b/drivers/iio/pressure/hid-sensor-press.c
-index 2c0d2a4..7649286 100644
---- a/drivers/iio/pressure/hid-sensor-press.c
-+++ b/drivers/iio/pressure/hid-sensor-press.c
-@@ -382,7 +382,6 @@ static struct platform_driver hid_press_platform_driver = {
- 	.id_table = hid_press_ids,
- 	.driver = {
- 		.name	= KBUILD_MODNAME,
--		.owner	= THIS_MODULE,
- 	},
- 	.probe		= hid_press_probe,
- 	.remove		= hid_press_remove,
-diff --git a/drivers/iio/trigger/iio-trig-interrupt.c b/drivers/iio/trigger/iio-trig-interrupt.c
-index 7a149a7..572bc6f 100644
---- a/drivers/iio/trigger/iio-trig-interrupt.c
-+++ b/drivers/iio/trigger/iio-trig-interrupt.c
-@@ -109,7 +109,6 @@ static struct platform_driver iio_interrupt_trigger_driver = {
- 	.remove = iio_interrupt_trigger_remove,
- 	.driver = {
- 		.name = "iio_interrupt_trigger",
--		.owner = THIS_MODULE,
- 	},
- };
- 
---
-1.7.11.7
+The (hidden) variables used in the macros of patch 1 will pollute the
+kernel's symbol table with unneeded entries. It'll be a problem in the
+KALLSYMS_ALL case only, however, patch 3 takes care of filtering the
+pseudo symbols. They have no value for us beside being the only way to
+attach an __attribute__ to a string literal.
+
+If users of the new macros get it wrong, e.g. use printk_init() /
+pi_<level>() in non-init code or vice versa printk_exit() / pe_<level>()
+in non-exit code, modpost will detect the error as a section mismatch
+and report it accordingly. Still, the message printed by modpost with
+CONFIG_DEBUG_SECTION_MISMATCH=y is rather confusing as the __initconst /
+__exitdata annotation is hidden behind the macros. That's what patch 4
+takes care of -- detecting such cases and providing better modpost
+messages, guiding the user on how to fix the error.
+
+The remaining patches (5 to 9) exemplarily change strings and format
+strings in a selection of files under arch/x86/ to use the new macros.
+They also address a few styling issues, e.g., patches 4 and 5 are
+cleanup patches I stumbled across while changing the corresponding code
+to make use of the new pi_*() helpers. The changes to arch/x86/ already
+lead to moving ~3kb of memory from .rodata to .init.rodata. This should
+free up a page after init on almost any x86 system.
+
+To show that there's actual more value to it: A hacked up script, dully
+changing pr_<level> to pi_<level> for __init functions under arch/x86/
+is able to move ~8kB of r/o data into the .init section (partly already
+covered by the patches of this series). The script, though, is dump. It
+does not handle any of the printk() calls, nor does it handle panic()
+calls or other strings used only in initialization code. So there's more
+to squeeze out.
+
+
+Open issues:
+
+1/ When CONFIG_DYNAMIC_DEBUG is enabled, pi_debug() and pe_debug()
+fall-back to pr_debug() as there is currently no way of removing the
+dynamic entries from the dynamic debug code after init.
+
+2/ It only seamlessly integrates for the pr_<level>() / printk() kind of
+use cases. For other literal strings it gets slightly less readable,
+e.g. this:
+
+   strncmp(str, "s4_nohwsig", 10)
+
+becomes that:
+
+   strncmp(str, __init_str("s4_nohwsig"), 10)
+
+That might be okay, though, as it marks the string clearly as an init
+string, so might actually increase the understanding of the life time of
+the string literal.
+
+3/ Documentation: Should the new helpers be documented any further than
+already done with the patches themselves, e.g. through a new entry to
+Documentation/DocBook/kernel-hacking.tmpl? I'm uncertain as there is no
+entry for the pr_<level>() helpers but for the __init / __exit markers.
+
+
+If this series looks good to you as is, I think patches 1 to 4 should be
+merged through Andrew, patches 5 to 9 through the x86 maintainers tree.
+Would that work?
+
+
+Regards,
+Mathias
+
+v3: 
+- mention modpost error catching on wrong usage in patch 2 (Andrew)
+- handle __init / __exit strings in modpost for better diagnostics
+- reordered patches: 1-4: arch agnostic, 5-9: x86 specific
+- rebased to v3.17-rc1
+
+v2:
+- introduce printk_init / printk_exit macros (suggested by Joe)
+- filter __init / __exit string pseudo symols in kallsyms
+- more x86 related patches making use of the new helpers
+
+
+Mathias Krause (9):
+  init.h: Add __init_str / __exit_str macros
+  printk: Provide pi_<level> / pe_<level> macros for __init / __exit
+    code
+  kallsyms: exclude pseudo symbols for __init / __exit strings
+  modpost: provide better diagnostics for __init / __exit strings
+  x86, acpi: Mark __init strings as such
+  x86, mm: Make x86_init.memory_setup() return a const char *
+  x86, mm: early_panic() - pass on the message as string
+  x86, mm: e820 - mark __init strings as such
+  x86: setup - mark __init strings as such
+
+ arch/x86/include/asm/e820.h     |    4 +-
+ arch/x86/include/asm/x86_init.h |    2 +-
+ arch/x86/kernel/acpi/boot.c     |  155 ++++++++++++++++++---------------------
+ arch/x86/kernel/acpi/sleep.c    |   17 ++---
+ arch/x86/kernel/e820.c          |   95 ++++++++++++------------
+ arch/x86/kernel/setup.c         |   70 +++++++++---------
+ arch/x86/lguest/boot.c          |    2 +-
+ arch/x86/xen/setup.c            |    4 +-
+ arch/x86/xen/xen-ops.h          |    4 +-
+ include/linux/init.h            |   23 ++++++
+ include/linux/printk.h          |   59 +++++++++++++++
+ scripts/kallsyms.c              |   13 ++++
+ scripts/mod/modpost.c           |   94 +++++++++++++++++++-----
+ 13 files changed, 339 insertions(+), 203 deletions(-)
+
+-- 
+1.7.10.4
 
