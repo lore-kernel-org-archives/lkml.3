@@ -1,39 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828AbaHULjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:39:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52545 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530AbaHULjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:39:06 -0400
-Date: Thu, 21 Aug 2014 13:38:54 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH v2 3/6] KVM: VMX: make PLE window per-VCPU
-Message-ID: <20140821113853.GB20546@potion.brq.redhat.com>
-References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com>
- <1408567997-21222-4-git-send-email-rkrcmar@redhat.com>
- <53F5AD14.9050405@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F5AD14.9050405@redhat.com>
+	id S1754858AbaHULkP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:40:15 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50438 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478AbaHULkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:40:12 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        kgene.kim@samsung.com, jg1.han@samsung.com, sachin.kamat@samsung.com,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH v2 1/2] usb: host: ehci-exynos: Remove unnecessary usb-phy support
+Date: Thu, 21 Aug 2014 17:09:57 +0530
+Message-Id: <1408621198-14984-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-08-21 10:25+0200, Paolo Bonzini:
-> Il 20/08/2014 22:53, Radim Krčmář ha scritto:
-> > +	if (ple_gap)
-> > +		vmcs_write32(PLE_WINDOW, vmx->ple_window);
-> 
-> Maybe we can add a ple_window_dirty field?  It can be tested instead of
-> ple_gap to avoid the vmwrite in the common case?
+Now that we have completely moved from older USB-PHY drivers
+to newer GENERIC-PHY drivers for PHYs available with USB controllers
+on Exynos series of SoCs, we can remove the support for the same
+in our host drivers too.
+This should fix the issue on ehci-exynos, wherein in the absence of
+SAMSUNG_USB2PHY config symbol, we ended up getting the NOP_USB_XCEIV phy
+when the same is enabled. And thus the PHYs are not configured properly.
 
-Sure, v3!
+Reported-by: Sachin Kamat <sachin.kamat@samsung.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+---
+
+ - This patch was part of the series "[PATCH 0/7] usb-phy: samsung: Cleanup the unused drivers"
+   https://lkml.org/lkml/2014/8/14/235. I have dropped the phy cleanup patches from that series-
+   Patches 1-5.
+ - Rebased this patch on top of 3.17-rc1.
+
+ drivers/usb/host/ehci-exynos.c |   53 ++++++----------------------------------
+ 1 file changed, 8 insertions(+), 45 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+index cda0a2f..54944cc 100644
+--- a/drivers/usb/host/ehci-exynos.c
++++ b/drivers/usb/host/ehci-exynos.c
+@@ -21,11 +21,8 @@
+ #include <linux/of_gpio.h>
+ #include <linux/phy/phy.h>
+ #include <linux/platform_device.h>
+-#include <linux/usb/phy.h>
+-#include <linux/usb/samsung_usb_phy.h>
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
+-#include <linux/usb/otg.h>
+ 
+ #include "ehci.h"
+ 
+@@ -47,9 +44,7 @@ static struct hc_driver __read_mostly exynos_ehci_hc_driver;
+ 
+ struct exynos_ehci_hcd {
+ 	struct clk *clk;
+-	struct usb_phy *phy;
+-	struct usb_otg *otg;
+-	struct phy *phy_g[PHY_NUMBER];
++	struct phy *phy[PHY_NUMBER];
+ };
+ 
+ #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
+@@ -62,18 +57,6 @@ static int exynos_ehci_get_phy(struct device *dev,
+ 	int phy_number;
+ 	int ret = 0;
+ 
+-	exynos_ehci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+-	if (IS_ERR(exynos_ehci->phy)) {
+-		ret = PTR_ERR(exynos_ehci->phy);
+-		if (ret != -ENXIO && ret != -ENODEV) {
+-			dev_err(dev, "no usb2 phy configured\n");
+-			return ret;
+-		}
+-		dev_dbg(dev, "Failed to get usb2 phy\n");
+-	} else {
+-		exynos_ehci->otg = exynos_ehci->phy->otg;
+-	}
+-
+ 	for_each_available_child_of_node(dev->of_node, child) {
+ 		ret = of_property_read_u32(child, "reg", &phy_number);
+ 		if (ret) {
+@@ -98,7 +81,7 @@ static int exynos_ehci_get_phy(struct device *dev,
+ 			}
+ 			dev_dbg(dev, "Failed to get usb2 phy\n");
+ 		}
+-		exynos_ehci->phy_g[phy_number] = phy;
++		exynos_ehci->phy[phy_number] = phy;
+ 	}
+ 
+ 	return ret;
+@@ -111,16 +94,13 @@ static int exynos_ehci_phy_enable(struct device *dev)
+ 	int i;
+ 	int ret = 0;
+ 
+-	if (!IS_ERR(exynos_ehci->phy))
+-		return usb_phy_init(exynos_ehci->phy);
+-
+ 	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
+-		if (!IS_ERR(exynos_ehci->phy_g[i]))
+-			ret = phy_power_on(exynos_ehci->phy_g[i]);
++		if (!IS_ERR(exynos_ehci->phy[i]))
++			ret = phy_power_on(exynos_ehci->phy[i]);
+ 	if (ret)
+ 		for (i--; i >= 0; i--)
+-			if (!IS_ERR(exynos_ehci->phy_g[i]))
+-				phy_power_off(exynos_ehci->phy_g[i]);
++			if (!IS_ERR(exynos_ehci->phy[i]))
++				phy_power_off(exynos_ehci->phy[i]);
+ 
+ 	return ret;
+ }
+@@ -131,14 +111,9 @@ static void exynos_ehci_phy_disable(struct device *dev)
+ 	struct exynos_ehci_hcd *exynos_ehci = to_exynos_ehci(hcd);
+ 	int i;
+ 
+-	if (!IS_ERR(exynos_ehci->phy)) {
+-		usb_phy_shutdown(exynos_ehci->phy);
+-		return;
+-	}
+-
+ 	for (i = 0; i < PHY_NUMBER; i++)
+-		if (!IS_ERR(exynos_ehci->phy_g[i]))
+-			phy_power_off(exynos_ehci->phy_g[i]);
++		if (!IS_ERR(exynos_ehci->phy[i]))
++			phy_power_off(exynos_ehci->phy[i]);
+ }
+ 
+ static void exynos_setup_vbus_gpio(struct device *dev)
+@@ -231,9 +206,6 @@ skip_phy:
+ 		goto fail_io;
+ 	}
+ 
+-	if (exynos_ehci->otg)
+-		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+-
+ 	err = exynos_ehci_phy_enable(&pdev->dev);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Failed to enable USB phy\n");
+@@ -273,9 +245,6 @@ static int exynos_ehci_remove(struct platform_device *pdev)
+ 
+ 	usb_remove_hcd(hcd);
+ 
+-	if (exynos_ehci->otg)
+-		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+-
+ 	exynos_ehci_phy_disable(&pdev->dev);
+ 
+ 	clk_disable_unprepare(exynos_ehci->clk);
+@@ -298,9 +267,6 @@ static int exynos_ehci_suspend(struct device *dev)
+ 	if (rc)
+ 		return rc;
+ 
+-	if (exynos_ehci->otg)
+-		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+-
+ 	exynos_ehci_phy_disable(dev);
+ 
+ 	clk_disable_unprepare(exynos_ehci->clk);
+@@ -316,9 +282,6 @@ static int exynos_ehci_resume(struct device *dev)
+ 
+ 	clk_prepare_enable(exynos_ehci->clk);
+ 
+-	if (exynos_ehci->otg)
+-		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+-
+ 	ret = exynos_ehci_phy_enable(dev);
+ 	if (ret) {
+ 		dev_err(dev, "Failed to enable USB phy\n");
+-- 
+1.7.10.4
+
