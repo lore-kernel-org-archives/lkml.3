@@ -1,129 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864AbaHULdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:33:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58048 "EHLO mx1.redhat.com"
+	id S1754689AbaHULbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:31:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16491 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754527AbaHULcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:32:52 -0400
-Message-ID: <53F5D8DF.4060705@redhat.com>
-Date: Thu, 21 Aug 2014 13:32:47 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 11/13] lpfc: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-References: <cover.1408335523.git.agordeev@redhat.com> <e7470e484083c9eeb6b4f34f3e69e332ad5998c2.1408335523.git.agordeev@redhat.com>
-In-Reply-To: <e7470e484083c9eeb6b4f34f3e69e332ad5998c2.1408335523.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754395AbaHULbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:31:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,908,1400050800"; 
+   d="scan'208";a="587969485"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 05/14] mei: add me client remove functions
+Date: Thu, 21 Aug 2014 14:29:14 +0300
+Message-Id: <1408620563-25834-5-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1408620563-25834-1-git-send-email-tomas.winkler@intel.com>
+References: <1408620563-25834-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 08:01 AM, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
->
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: James Smart <james.smart@emulex.com>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/lpfc/lpfc_init.c | 39 +++++++++++++++++----------------------
->  1 file changed, 17 insertions(+), 22 deletions(-)
->
-> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-> index a5769a9..37f2a20 100644
-> --- a/drivers/scsi/lpfc/lpfc_init.c
-> +++ b/drivers/scsi/lpfc/lpfc_init.c
-> @@ -8211,9 +8211,9 @@ lpfc_sli4_pci_mem_unset(struct lpfc_hba *phba)
->   * @phba: pointer to lpfc hba data structure.
->   *
->   * This routine is invoked to enable the MSI-X interrupt vectors to device
-> - * with SLI-3 interface specs. The kernel function pci_enable_msix() is
-> - * called to enable the MSI-X vectors. Note that pci_enable_msix(), once
-> - * invoked, enables either all or nothing, depending on the current
-> + * with SLI-3 interface specs. The kernel function pci_enable_msix_exact()
-> + * is called to enable the MSI-X vectors. Note that pci_enable_msix_exact(),
-> + * once invoked, enables either all or nothing, depending on the current
->   * availability of PCI vector resources. The device driver is responsible
->   * for calling the individual request_irq() to register each MSI-X vector
->   * with a interrupt handler, which is done in this function. Note that
-> @@ -8237,8 +8237,8 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
->  		phba->msix_entries[i].entry = i;
->  
->  	/* Configure MSI-X capability structure */
-> -	rc = pci_enable_msix(phba->pcidev, phba->msix_entries,
-> -				ARRAY_SIZE(phba->msix_entries));
-> +	rc = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
-> +				   LPFC_MSIX_VECTORS);
->  	if (rc) {
->  		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
->  				"0420 PCI enable MSI-X failed (%d)\n", rc);
+To support dynamic addition/remove we add wrappers
+for removal of me clients
 
-Hi Alexander 
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/client.c | 22 +++++++++++++++++++++-
+ drivers/misc/mei/client.h |  2 ++
+ drivers/misc/mei/hbm.c    | 21 +++++++++++++++------
+ 3 files changed, 38 insertions(+), 7 deletions(-)
 
-the code continues with:
-goto ->  pci_disable_msix(phba->pcidev);
-that call to disable_msix is also superfluous I think
-shouldn't that be fixed too?
-the same is also in lpfc_sli4_enable_msix
-
-Tomas
-
-> @@ -8775,16 +8775,14 @@ out:
->   * @phba: pointer to lpfc hba data structure.
->   *
->   * This routine is invoked to enable the MSI-X interrupt vectors to device
-> - * with SLI-4 interface spec. The kernel function pci_enable_msix() is called
-> - * to enable the MSI-X vectors. Note that pci_enable_msix(), once invoked,
-> - * enables either all or nothing, depending on the current availability of
-> - * PCI vector resources. The device driver is responsible for calling the
-> - * individual request_irq() to register each MSI-X vector with a interrupt
-> - * handler, which is done in this function. Note that later when device is
-> - * unloading, the driver should always call free_irq() on all MSI-X vectors
-> - * it has done request_irq() on before calling pci_disable_msix(). Failure
-> - * to do so results in a BUG_ON() and a device will be left with MSI-X
-> - * enabled and leaks its vectors.
-> + * with SLI-4 interface spec. The kernel function pci_enable_msix_range()
-> + * is called to enable the MSI-X vectors. The device driver is responsible
-> + * for calling the individual request_irq() to register each MSI-X vector
-> + * with a interrupt handler, which is done in this function. Note that
-> + * later when device is unloading, the driver should always call free_irq()
-> + * on all MSI-X vectors it has done request_irq() on before calling
-> + * pci_disable_msix(). Failure to do so results in a BUG_ON() and a device
-> + * will be left with MSI-X enabled and leaks its vectors.
->   *
->   * Return codes
->   * 0 - successful
-> @@ -8805,17 +8803,14 @@ lpfc_sli4_enable_msix(struct lpfc_hba *phba)
->  		phba->sli4_hba.msix_entries[index].entry = index;
->  		vectors++;
->  	}
-> -enable_msix_vectors:
-> -	rc = pci_enable_msix(phba->pcidev, phba->sli4_hba.msix_entries,
-> -			     vectors);
-> -	if (rc > 1) {
-> -		vectors = rc;
-> -		goto enable_msix_vectors;
-> -	} else if (rc) {
-> +	rc = pci_enable_msix_range(phba->pcidev, phba->sli4_hba.msix_entries,
-> +				   2, vectors);
-> +	if (rc < 0) {
->  		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
->  				"0484 PCI enable MSI-X failed (%d)\n", rc);
->  		goto vec_fail_out;
->  	}
-> +	vectors = rc;
->  
->  	/* Log MSI-X vector assignment */
->  	for (index = 0; index < vectors; index++)
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index b1d72e6..4dbcd92 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -47,7 +47,6 @@ struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
+ 	return NULL;
+ }
+ 
+-
+ /**
+  * mei_me_cl_by_id return index to me_clients for client_id
+  *
+@@ -70,6 +69,27 @@ struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
+ 	return NULL;
+ }
+ 
++/**
++ * mei_me_cl_remove - remove me client matching uuid and client_id
++ *
++ * @dev: the device structure
++ * @uuid: me client uuid
++ * @client_id: me client address
++ */
++void mei_me_cl_remove(struct mei_device *dev, const uuid_le *uuid, u8 client_id)
++{
++	struct mei_me_client *me_cl, *next;
++
++	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
++		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0 &&
++		    me_cl->client_id == client_id) {
++			list_del(&me_cl->list);
++			kfree(me_cl);
++			break;
++		}
++	}
++}
++
+ 
+ /**
+  * mei_cl_cmp_id - tells if the clients are the same
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index ddb95b2..8871a85 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -27,6 +27,8 @@
+ struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
+ 					const uuid_le *cuuid);
+ struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
++void mei_me_cl_remove(struct mei_device *dev,
++		      const uuid_le *uuid, u8 client_id);
+ 
+ /*
+  * MEI IO Functions
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index 45659de..5fb177b 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -71,21 +71,30 @@ void mei_hbm_idle(struct mei_device *dev)
+ }
+ 
+ /**
+- * mei_hbm_reset - reset hbm counters and book keeping data structurs
++ * mei_me_cl_remove_all - remove all me clients
+  *
+  * @dev: the device structure
+  */
+-void mei_hbm_reset(struct mei_device *dev)
++static void mei_me_cl_remove_all(struct mei_device *dev)
+ {
+ 	struct mei_me_client *me_cl, *next;
++	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
++			list_del(&me_cl->list);
++			kfree(me_cl);
++	}
++}
+ 
++/**
++ * mei_hbm_reset - reset hbm counters and book keeping data structurs
++ *
++ * @dev: the device structure
++ */
++void mei_hbm_reset(struct mei_device *dev)
++{
+ 	dev->me_client_presentation_num = 0;
+ 	dev->me_client_index = 0;
+ 
+-	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
+-		list_del(&me_cl->list);
+-		kfree(me_cl);
+-	}
++	mei_me_cl_remove_all(dev);
+ 
+ 	mei_hbm_idle(dev);
+ }
+-- 
+1.9.3
 
