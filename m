@@ -1,133 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaHUDsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:48:15 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:48141 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372AbaHUDsN (ORCPT
+	id S1753345AbaHUDyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:54:44 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:38860 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548AbaHUDym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:48:13 -0400
-Message-ID: <53F56BFB.7080602@linaro.org>
-Date: Thu, 21 Aug 2014 05:48:11 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "luto@amacapital.net" <luto@amacapital.net>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "mingo@redhat.com" <mingo@redhat.com>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Liu, Changcheng" <changcheng.liu@intel.com>,
-        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
-        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>
-Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
- idle cpu
-References: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com> <53F5514A.5050007@linaro.org> <27240C0AC20F114CBF8149A2696CBE4A01E5F7BC@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A01E5F7BC@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 20 Aug 2014 23:54:42 -0400
+X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Wed, 20 Aug 2014 23:54:42 EDT
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com DA18382182
+From: Andrea Righi <andrea@betterlinux.com>
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrea Righi <andrea@betterlinux.com>,
+        Matt Heaton <matt@betterlinux.com>
+Subject: [PATCH] cgroup: add tracepoints to track cgroup events
+Date: Wed, 20 Aug 2014 21:46:25 -0600
+Message-Id: <1408592785-6700-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 04:12 AM, Liu, Chuansheng wrote:
-> Hello Daniel,
->
->> -----Original Message-----
->> From: Daniel Lezcano [mailto:daniel.lezcano@linaro.org]
->> Sent: Thursday, August 21, 2014 9:54 AM
->> To: Liu, Chuansheng; luto@amacapital.net; peterz@infradead.org;
->> rjw@rjwysocki.net; mingo@redhat.com
->> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Liu, Changcheng;
->> Wang, Xiaoming; Chakravarty, Souvik K
->> Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
->> idle cpu
->>
->> On 08/18/2014 10:37 AM, Chuansheng Liu wrote:
->>> Implementing one new API wake_up_if_idle(), which is used to
->>> wake up the idle CPU.
->>
->> Is this patchset tested ? Did you check it solves the issue you were
->> facing ?
-> We have done the basic test, and found the cores can exit C0 quickly with this patchset.
-> Basically once the _TIF_NEED_RESCHED is set, then the poll_idle() can be broken.
->
-> Please correct me if something is wrong, thanks.
+This patch adds the following tracepoints:
+ o trace_cgroup_create       when a new cgroup is created
+ o trace_cgroup_destroy      when a cgroup is removed
+ o trace_cgroup_task_migrate when a task/thread is moved from a cgroup to another
 
-Actually, it was not clear for me if this patch was a proposal or not.
+The purpose of these tracepoints is to identify and help cgroup "managers" to
+diagnose problems and detect when they are doing an excessive amount of work.
 
-I will review it.
+Signed-off-by: Matt Heaton <matt@betterlinux.com>
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ include/trace/events/cgroup.h | 95 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/cgroup.c               | 14 ++++++-
+ 2 files changed, 108 insertions(+), 1 deletion(-)
+ create mode 100644 include/trace/events/cgroup.h
 
-Thanks
-
-   -- Daniel
-
->>> Suggested-by: Andy Lutomirski <luto@amacapital.net>
->>> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
->>> ---
->>>    include/linux/sched.h |    1 +
->>>    kernel/sched/core.c   |   16 ++++++++++++++++
->>>    2 files changed, 17 insertions(+)
->>>
->>> diff --git a/include/linux/sched.h b/include/linux/sched.h
->>> index 857ba40..3f89ac1 100644
->>> --- a/include/linux/sched.h
->>> +++ b/include/linux/sched.h
->>> @@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
->>>    extern struct sched_domain_topology_level *sched_domain_topology;
->>>
->>>    extern void set_sched_topology(struct sched_domain_topology_level *tl);
->>> +extern void wake_up_if_idle(int cpu);
->>>
->>>    #ifdef CONFIG_SCHED_DEBUG
->>>    # define SD_INIT_NAME(type)		.name = #type
->>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>> index 1211575..adf104f 100644
->>> --- a/kernel/sched/core.c
->>> +++ b/kernel/sched/core.c
->>> @@ -1620,6 +1620,22 @@ static void ttwu_queue_remote(struct
->> task_struct *p, int cpu)
->>>    	}
->>>    }
->>>
->>> +void wake_up_if_idle(int cpu)
->>> +{
->>> +	struct rq *rq = cpu_rq(cpu);
->>> +	unsigned long flags;
->>> +
->>> +	if (set_nr_if_polling(rq->idle)) {
->>> +		trace_sched_wake_idle_without_ipi(cpu);
->>> +	} else {
->>> +		raw_spin_lock_irqsave(&rq->lock, flags);
->>> +		if (rq->curr == rq->idle)
->>> +			smp_send_reschedule(cpu);
->>> +		/* Else cpu is not in idle, do nothing here */
->>> +		raw_spin_unlock_irqrestore(&rq->lock, flags);
->>> +	}
->>> +}
->>> +
->>>    bool cpus_share_cache(int this_cpu, int that_cpu)
->>>    {
->>>    	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
->>>
->>
->>
->> --
->>    <http://www.linaro.org/> Linaro.org │ Open source software for ARM
->> SoCs
->>
->> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
->> <http://twitter.com/#!/linaroorg> Twitter |
->> <http://www.linaro.org/linaro-blog/> Blog
->
-
-
+diff --git a/include/trace/events/cgroup.h b/include/trace/events/cgroup.h
+new file mode 100644
+index 0000000..937b41e
+--- /dev/null
++++ b/include/trace/events/cgroup.h
+@@ -0,0 +1,95 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM cgroup
++
++#if !defined(_TRACE_CGROUP_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_CGROUP_H
++
++#include <linux/cgroup.h>
++#include <linux/tracepoint.h>
++
++#define TRACE_CGROUP_PATH_MAX	256
++
++#ifdef CREATE_TRACE_POINTS
++static inline void cgroup_safe_path(struct cgroup *cgrp, char *buf,
++				    size_t buflen)
++{
++	char *path = cgroup_path(cgrp, buf, buflen);
++	size_t len;
++
++	if (likely(path)) {
++		/* NOTE: path is always NULL terminated */
++		len = strlen(path);
++		memmove(buf, path, len);
++		buf[len] = '\0';
++	} else {
++		strncpy(buf, "(NULL)", buflen);
++	}
++}
++#endif
++
++TRACE_EVENT(cgroup_create,
++
++	TP_PROTO(struct cgroup *cgrp),
++
++	TP_ARGS(cgrp),
++
++	TP_STRUCT__entry(
++		__array(char, name, TRACE_CGROUP_PATH_MAX)
++	),
++
++	TP_fast_assign(
++		cgroup_safe_path(cgrp, __entry->name, TRACE_CGROUP_PATH_MAX);
++	),
++
++	TP_printk("%s", __entry->name)
++);
++
++TRACE_EVENT(cgroup_destroy,
++
++	TP_PROTO(struct cgroup *cgrp),
++
++	TP_ARGS(cgrp),
++
++	TP_STRUCT__entry(
++		__array(char, name, TRACE_CGROUP_PATH_MAX)
++	),
++
++	TP_fast_assign(
++		cgroup_safe_path(cgrp, __entry->name, TRACE_CGROUP_PATH_MAX);
++	),
++
++	TP_printk("%s", __entry->name)
++);
++
++TRACE_EVENT(cgroup_task_migrate,
++
++	TP_PROTO(struct cgroup *old_cgrp, struct cgroup *new_cgrp,
++		 const struct task_struct *p),
++
++	TP_ARGS(old_cgrp, new_cgrp, p),
++
++	TP_STRUCT__entry(
++		__field(pid_t, pid)
++		__array(char, old_name, TRACE_CGROUP_PATH_MAX)
++		__array(char, new_name, TRACE_CGROUP_PATH_MAX)
++		__array(char, comm, TASK_COMM_LEN)
++	),
++
++	TP_fast_assign(
++		__entry->pid = p->pid;
++		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
++		cgroup_safe_path(old_cgrp, __entry->old_name,
++				 TRACE_CGROUP_PATH_MAX);
++		cgroup_safe_path(new_cgrp, __entry->new_name,
++				 TRACE_CGROUP_PATH_MAX);
++	),
++
++	TP_printk("pid=%d comm=%s from=%s to=%s",
++		  __entry->pid, __entry->comm,
++		  __entry->old_name, __entry->new_name)
++);
++
++#endif /* _TRACE_CGROUP_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 7dc8788..00a50b9 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -60,6 +60,9 @@
+ 
+ #include <linux/atomic.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/cgroup.h>
++
+ /*
+  * pidlists linger the following amount before being destroyed.  The goal
+  * is avoiding frequent destruction in the middle of consecutive read calls
+@@ -2014,6 +2017,7 @@ struct task_struct *cgroup_taskset_next(struct cgroup_taskset *tset)
+  * Must be called with cgroup_mutex, threadgroup and css_set_rwsem locked.
+  */
+ static void cgroup_task_migrate(struct cgroup *old_cgrp,
++				struct cgroup *new_cgrp,
+ 				struct task_struct *tsk,
+ 				struct css_set *new_cset)
+ {
+@@ -2022,6 +2026,8 @@ static void cgroup_task_migrate(struct cgroup *old_cgrp,
+ 	lockdep_assert_held(&cgroup_mutex);
+ 	lockdep_assert_held(&css_set_rwsem);
+ 
++	trace_cgroup_task_migrate(old_cgrp, new_cgrp, tsk);
++
+ 	/*
+ 	 * We are synchronized through threadgroup_lock() against PF_EXITING
+ 	 * setting such that we can't race against cgroup_exit() changing the
+@@ -2274,7 +2280,7 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
+ 	down_write(&css_set_rwsem);
+ 	list_for_each_entry(cset, &tset.src_csets, mg_node) {
+ 		list_for_each_entry_safe(task, tmp_task, &cset->mg_tasks, cg_list)
+-			cgroup_task_migrate(cset->mg_src_cgrp, task,
++			cgroup_task_migrate(cset->mg_src_cgrp, cgrp, task,
+ 					    cset->mg_dst_cset);
+ 	}
+ 	up_write(&css_set_rwsem);
+@@ -2988,6 +2994,7 @@ static int cgroup_rename(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 	if (cgroup_on_dfl(cgrp))
+ 		return -EPERM;
+ 
++	trace_cgroup_destroy(cgrp);
+ 	/*
+ 	 * We're gonna grab cgroup_mutex which nests outside kernfs
+ 	 * active_ref.  kernfs_rename() doesn't require active_ref
+@@ -3004,6 +3011,9 @@ static int cgroup_rename(struct kernfs_node *kn, struct kernfs_node *new_parent,
+ 
+ 	kernfs_unbreak_active_protection(kn);
+ 	kernfs_unbreak_active_protection(new_parent);
++
++	trace_cgroup_create(cgrp);
++
+ 	return ret;
+ }
+ 
+@@ -4587,6 +4597,7 @@ static int cgroup_mkdir(struct kernfs_node *parent_kn, const char *name,
+ 		goto out_free_id;
+ 	}
+ 	cgrp->kn = kn;
++	trace_cgroup_create(cgrp);
+ 
+ 	/*
+ 	 * This extra ref will be put in cgroup_free_fn() and guarantees
+@@ -4791,6 +4802,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+ 		list_del_init(&cgrp->release_list);
+ 	raw_spin_unlock(&release_list_lock);
+ 
++	trace_cgroup_destroy(cgrp);
+ 	/*
+ 	 * Remove @cgrp directory along with the base files.  @cgrp has an
+ 	 * extra ref on its kn.
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.9.1
 
