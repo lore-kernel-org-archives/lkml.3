@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821AbaHUEdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 00:33:49 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:46763 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795AbaHUEdr (ORCPT
+	id S1751758AbaHUEhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 00:37:33 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:52789 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746AbaHUEhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 00:33:47 -0400
+	Thu, 21 Aug 2014 00:37:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1408026327-31437-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1408026327-31437-1-git-send-email-b.zolnierkie@samsung.com>
-Date: Thu, 21 Aug 2014 10:03:46 +0530
-X-Google-Sender-Auth: aRqUJTAIgaFPabh2UI-YTVoYKZc
-Message-ID: <CAFp+6iG+BoE5O=EBxNOGPGU3Wws26xtQzzVx1HBhQ3R0SafiMw@mail.gmail.com>
-Subject: Re: [PATCH 0/5] usb: phy: samsung: remove old USB PHY code
+In-Reply-To: <20140820181406.GA6023@saruman.home>
+References: <1408026240-28365-1-git-send-email-gautam.vivek@samsung.com>
+	<20140820181406.GA6023@saruman.home>
+Date: Thu, 21 Aug 2014 10:07:30 +0530
+X-Google-Sender-Auth: -3F-J1JmSkHoPBVAHGS7hIq2C9M
+Message-ID: <CAFp+6iHJeZsOY-FuamUacrM4yX47LRO8EwiZcUz_ojSmx2kAxg@mail.gmail.com>
+Subject: Re: [PATCH 0/7] usb-phy: samsung: Cleanup the unused drivers
 From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kamil Debski <k.debski@samsung.com>, Mark Brown <broonie@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 14, 2014 at 7:55 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
+Hi Felipe,
+
+
+On Wed, Aug 20, 2014 at 11:44 PM, Felipe Balbi <balbi@ti.com> wrote:
 > Hi,
 >
-> This patch series removes the old Samsung USB PHY drivers that
-> got replaced by the new ones using the generic PHY layer.
+> On Thu, Aug 14, 2014 at 07:53:53PM +0530, Vivek Gautam wrote:
+>> - This series is based on 'usb-next' branch.
+>>
+>> Now that we have support for USB PHY controllers for Exynos SoC series,
+>> we are free to remove the older usb-phy support.
+>> In the process, we are removing the entire phy-samsung-usb3 driver, and
+>> besides that all support for Exynos4x and Exynos5 from phy-samsung-usb2
+>> driver.
+>>
+>> We have also removed the older USB-PHY support from ehci-exynos and ohci-exynos
+>> since those drivers now can use newer GENERIC-PHYs, and don't need the older
+>> USB-PHYs and related code anymore. These patches for ohci-exynos and ehci-exynos
+>> now replaces the older sent patch for phy sequence cleanup for them.[1]
+>>
+>> I have build-tested this series for exynos_defconfig and s3c64xx_defconfig,
+>> and have tested the EHCI and OHCI operations on smdk5250 board, but
+>> have not tested the actual working due to unavailability of S3C64XX
+>> board. So can someone please help me testing this series.
+>>
+>> [1] https://lkml.org/lkml/2014/8/5/142
+>>
+>> Vivek Gautam (7):
+>>   usb-phy: samsung-usb3: Remove older phy-samsung-usb3 driver
+>>   usb-phy: samsung-usb2: Remove support for Exynos5250
+>>   usb-phy: samsung-usb2: Remove support for Exynos4X12
+>>   usb-phy: samsung-usb2: Remove support for Exynos4210
+>>   usb-phy: samsung-usb2: Clean up to leave only S3C64XX support
+>>   usb: host: ehci-exynos: Remove unnecessary usb-phy support
+>>   usb: host: ohci-exynos: Remove unnecessary usb-phy support
 >
-> Depends on:
-> - next-20140813 branch of linux-next kernel
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
->
-> Bartlomiej Zolnierkiewicz (5):
->   ARM: dts: remove old USB2 PHY node hook for Arndale
->   ARM: dts: remove old USB2 PHY node for Exynos5250
->   usb: phy: samsung: remove old USB 2.0 PHY driver
->   usb: phy: samsung: remove old USB 3.0 PHY driver
->   usb: phy: samsung: remove old common USB PHY code
+> some of these patches are still RFC, can you resend without RFC and all
+> proper Acks in place ? Also rebased on top of v3.17-rc1.
 
-Reviewed-by: Vivek Gautam <gautam.vivek@samsung.com>
+As per the discussion in thread [1], i am dropping the [Patch 1/7]
+till [Patch 5/7] since
+these are part of the cleanup series by Bart: [PATCH 0/5] usb: phy:
+samsung: remove old USB PHY code;
+and will send out the rebased remaining two patches with Alan's Ack.
+
+
+[1] https://lkml.org/lkml/2014/8/21/11
 
 
 
