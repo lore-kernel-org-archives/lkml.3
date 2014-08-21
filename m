@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794AbaHUL6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:58:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30536 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481AbaHUL6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:58:45 -0400
-Message-ID: <53F5DEEF.4070406@redhat.com>
-Date: Thu, 21 Aug 2014 13:58:39 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1754758AbaHUL7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:59:51 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:41141 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404AbaHUL7u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:59:50 -0400
+Date: Thu, 21 Aug 2014 12:59:45 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] mfd: arizona: Avoid use of legacy IRQ mapping
+Message-ID: <20140821115945.GC4266@lee--X1>
+References: <1407851483-19207-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1407851483-19207-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 11/13] lpfc: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-References: <cover.1408335523.git.agordeev@redhat.com> <e7470e484083c9eeb6b4f34f3e69e332ad5998c2.1408335523.git.agordeev@redhat.com> <53F5D8DF.4060705@redhat.com>
-In-Reply-To: <53F5D8DF.4060705@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1407851483-19207-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 01:32 PM, Tomas Henzl wrote:
-> On 08/18/2014 08:01 AM, Alexander Gordeev wrote:
->> As result of deprecation of MSI-X/MSI enablement functions
->> pci_enable_msix() and pci_enable_msi_block() all drivers
->> using these two interfaces need to be updated to use the
->> new pci_enable_msi_range()  or pci_enable_msi_exact()
->> and pci_enable_msix_range() or pci_enable_msix_exact()
->> interfaces.
->>
->> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
->> Cc: James Smart <james.smart@emulex.com>
->> Cc: linux-scsi@vger.kernel.org
->> Cc: linux-pci@vger.kernel.org
->> ---
->>  drivers/scsi/lpfc/lpfc_init.c | 39 +++++++++++++++++----------------------
->>  1 file changed, 17 insertions(+), 22 deletions(-)
->>
->> diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
->> index a5769a9..37f2a20 100644
->> --- a/drivers/scsi/lpfc/lpfc_init.c
->> +++ b/drivers/scsi/lpfc/lpfc_init.c
->> @@ -8211,9 +8211,9 @@ lpfc_sli4_pci_mem_unset(struct lpfc_hba *phba)
->>   * @phba: pointer to lpfc hba data structure.
->>   *
->>   * This routine is invoked to enable the MSI-X interrupt vectors to device
->> - * with SLI-3 interface specs. The kernel function pci_enable_msix() is
->> - * called to enable the MSI-X vectors. Note that pci_enable_msix(), once
->> - * invoked, enables either all or nothing, depending on the current
->> + * with SLI-3 interface specs. The kernel function pci_enable_msix_exact()
->> + * is called to enable the MSI-X vectors. Note that pci_enable_msix_exact(),
->> + * once invoked, enables either all or nothing, depending on the current
->>   * availability of PCI vector resources. The device driver is responsible
->>   * for calling the individual request_irq() to register each MSI-X vector
->>   * with a interrupt handler, which is done in this function. Note that
->> @@ -8237,8 +8237,8 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
->>  		phba->msix_entries[i].entry = i;
->>  
->>  	/* Configure MSI-X capability structure */
->> -	rc = pci_enable_msix(phba->pcidev, phba->msix_entries,
->> -				ARRAY_SIZE(phba->msix_entries));
->> +	rc = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
->> +				   LPFC_MSIX_VECTORS);
->>  	if (rc) {
->>  		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
->>  				"0420 PCI enable MSI-X failed (%d)\n", rc);
-> Hi Alexander 
->
-> the code continues with:
-> goto ->  pci_disable_msix(phba->pcidev);
-> that call to disable_msix is also superfluous I think
-> shouldn't that be fixed too?
-> the same is also in lpfc_sli4_enable_msix
->
-> Tomas
+On Tue, 12 Aug 2014, Charles Keepax wrote:
 
-my bad, this was already fixed in
-commit 029165acfa611a3a8838723f6978586ae35ff53d lpfc: Remove superfluous call to pci_disable_msix()
+> regmap_add_irq_chip is called from arizona_irq_init with the irq_base
+> specified as -1 and regmap_add_irq_chip uses if (irq_base) to check if
+> it should use legacy IRQ mapping. As such the irq mappings are currently
+> added with irq_domain_add_legacy, rather than irq_domain_add_linear.
+> This is clearly a typo as there is no reason why this driver can't use
+> irq_domain_add_linear.
+> 
+> This patch corrects this by passing the irq_base as zero to
+> regmap_add_irq_chip.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-irq.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-so patch looks good to me now
+Applied, thanks.
 
-Reviewed-by: Tomas Henzl
+> diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+> index fac00b2..b235e59 100644
+> --- a/drivers/mfd/arizona-irq.c
+> +++ b/drivers/mfd/arizona-irq.c
+> @@ -289,7 +289,7 @@ int arizona_irq_init(struct arizona *arizona)
+>  
+>  	ret = regmap_add_irq_chip(arizona->regmap,
+>  				  irq_create_mapping(arizona->virq, 0),
+> -				  IRQF_ONESHOT, -1, aod,
+> +				  IRQF_ONESHOT, 0, aod,
+>  				  &arizona->aod_irq_chip);
+>  	if (ret != 0) {
+>  		dev_err(arizona->dev, "Failed to add AOD IRQs: %d\n", ret);
+> @@ -298,7 +298,7 @@ int arizona_irq_init(struct arizona *arizona)
+>  
+>  	ret = regmap_add_irq_chip(arizona->regmap,
+>  				  irq_create_mapping(arizona->virq, 1),
+> -				  IRQF_ONESHOT, -1, irq,
+> +				  IRQF_ONESHOT, 0, irq,
+>  				  &arizona->irq_chip);
+>  	if (ret != 0) {
+>  		dev_err(arizona->dev, "Failed to add main IRQs: %d\n", ret);
 
->
->> @@ -8775,16 +8775,14 @@ out:
->>   * @phba: pointer to lpfc hba data structure.
->>   *
->>   * This routine is invoked to enable the MSI-X interrupt vectors to device
->> - * with SLI-4 interface spec. The kernel function pci_enable_msix() is called
->> - * to enable the MSI-X vectors. Note that pci_enable_msix(), once invoked,
->> - * enables either all or nothing, depending on the current availability of
->> - * PCI vector resources. The device driver is responsible for calling the
->> - * individual request_irq() to register each MSI-X vector with a interrupt
->> - * handler, which is done in this function. Note that later when device is
->> - * unloading, the driver should always call free_irq() on all MSI-X vectors
->> - * it has done request_irq() on before calling pci_disable_msix(). Failure
->> - * to do so results in a BUG_ON() and a device will be left with MSI-X
->> - * enabled and leaks its vectors.
->> + * with SLI-4 interface spec. The kernel function pci_enable_msix_range()
->> + * is called to enable the MSI-X vectors. The device driver is responsible
->> + * for calling the individual request_irq() to register each MSI-X vector
->> + * with a interrupt handler, which is done in this function. Note that
->> + * later when device is unloading, the driver should always call free_irq()
->> + * on all MSI-X vectors it has done request_irq() on before calling
->> + * pci_disable_msix(). Failure to do so results in a BUG_ON() and a device
->> + * will be left with MSI-X enabled and leaks its vectors.
->>   *
->>   * Return codes
->>   * 0 - successful
->> @@ -8805,17 +8803,14 @@ lpfc_sli4_enable_msix(struct lpfc_hba *phba)
->>  		phba->sli4_hba.msix_entries[index].entry = index;
->>  		vectors++;
->>  	}
->> -enable_msix_vectors:
->> -	rc = pci_enable_msix(phba->pcidev, phba->sli4_hba.msix_entries,
->> -			     vectors);
->> -	if (rc > 1) {
->> -		vectors = rc;
->> -		goto enable_msix_vectors;
->> -	} else if (rc) {
->> +	rc = pci_enable_msix_range(phba->pcidev, phba->sli4_hba.msix_entries,
->> +				   2, vectors);
->> +	if (rc < 0) {
->>  		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
->>  				"0484 PCI enable MSI-X failed (%d)\n", rc);
->>  		goto vec_fail_out;
->>  	}
->> +	vectors = rc;
->>  
->>  	/* Log MSI-X vector assignment */
->>  	for (index = 0; index < vectors; index++)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
