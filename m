@@ -1,68 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaHURvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:51:19 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:59910 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaHURvS (ORCPT
+	id S1753330AbaHURvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:51:54 -0400
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:50875 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095AbaHURvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:51:18 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: wsa@the-dreams.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <6276e0e58bddf277ef22ec885fe287e0>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH] i2c: rk3x: fix bug that cause transfer fails in master receive mode
-Date: Fri, 22 Aug 2014 01:50:57 +0800
-Message-Id: <1408643457-7126-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 21 Aug 2014 13:51:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408611405-8943-4-git-send-email-takahiro.akashi@linaro.org>
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>
+	<1408611405-8943-4-git-send-email-takahiro.akashi@linaro.org>
+Date: Thu, 21 Aug 2014 12:51:51 -0500
+X-Google-Sender-Auth: bmW9XwpOXnApkO1dW1OKaC6UkGU
+Message-ID: <CAGXu5j+6kyiZqXF0pScqsCzqDonCthKSvYDVT5+vEd3+iY72vg@mail.gmail.com>
+Subject: Re: [PATCH v6 3/6] asm-generic: add generic seccomp.h for secure
+ computing mode 1
+From: Kees Cook <keescook@chromium.org>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
+        arndb@arndb.de,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
-in one transaction, so the size of data to be write/read to/from
-TXDATAx/RXDATAx must be less than or equal 32 bytes at a time.
+On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
+<takahiro.akashi@linaro.org> wrote:
+> Those values (__NR_seccomp_*) are used solely in secure_computing()
+> to identify mode 1 system calls. If compat system calls have different
+> syscall numbers, asm/seccomp.h may override them.
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-Test on pinky board, elan receive 158 bytes data.
+Reviewed-by: Kees Cook <keescook@chromium.org>
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
- drivers/i2c/busses/i2c-rk3x.c | 3 +++
- 1 file changed, 3 insertions(+)
+> ---
+>  include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
+>  create mode 100644 include/asm-generic/seccomp.h
+>
+> diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
+> new file mode 100644
+> index 0000000..5e97022
+> --- /dev/null
+> +++ b/include/asm-generic/seccomp.h
+> @@ -0,0 +1,28 @@
+> +/*
+> + * include/asm-generic/seccomp.h
+> + *
+> + * Copyright (C) 2014 Linaro Limited
+> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#ifndef _ASM_GENERIC_SECCOMP_H
+> +#define _ASM_GENERIC_SECCOMP_H
+> +
+> +#include <asm-generic/unistd.h>
 
-diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-index 69e1185..dc0aa64 100644
---- a/drivers/i2c/busses/i2c-rk3x.c
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -323,6 +323,9 @@ static void rk3x_i2c_handle_read(struct rk3x_i2c *i2c, unsigned int ipd)
- 	/* ack interrupt */
- 	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
- 
-+	/* Can only handle a maximum of 32 bytes at a time */
-+	len = (len > 32) ? 32 : len;
-+
- 	/* read the data from receive buffer */
- 	for (i = 0; i < len; ++i) {
- 		if (i % 4 == 0)
+While this isn't a problem for ARM, this should be linux/unistd.h for
+other architectures to get the right stuff.
+
+> +
+> +#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
+> +#define __NR_seccomp_read_32           __NR_read
+> +#define __NR_seccomp_write_32          __NR_write
+> +#define __NR_seccomp_exit_32           __NR_exit
+> +#define __NR_seccomp_sigreturn_32      __NR_rt_sigreturn
+> +#endif /* CONFIG_COMPAT && ! already defined */
+> +
+> +#define __NR_seccomp_read              __NR_read
+> +#define __NR_seccomp_write             __NR_write
+> +#define __NR_seccomp_exit              __NR_exit
+> +#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
+
+Some architectures use __NR_sigreturn, so this will need to be
+adjusted in the future into:
+
+#ifdef __NR_seccomp_sigreturn
+#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
+#endif
+
+After these changes, I was able to port x86 to using this
+asm-generic/seccomp.h too.
+
+-Kees
+
+> +
+> +#endif /* _ASM_GENERIC_SECCOMP_H */
+> --
+> 1.7.9.5
+>
+
+
+
 -- 
-1.8.3.2
-
-
+Kees Cook
+Chrome OS Security
