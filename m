@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaHUQKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:10:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63938 "EHLO mx1.redhat.com"
+	id S1753524AbaHUQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:10:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43213 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400AbaHUQKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:10:50 -0400
+	id S1753400AbaHUQKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 12:10:54 -0400
 From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
         Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>,
         Lisa Mitchell <lisa.mitchell@hp.com>
-Subject: [PATCH v3 5/7] KVM: trace kvm_ple_window grow/shrink
-Date: Thu, 21 Aug 2014 18:08:09 +0200
-Message-Id: <1408637291-18533-6-git-send-email-rkrcmar@redhat.com>
+Subject: [PATCH v3 6/7] KVM: VMX: runtime knobs for dynamic PLE window
+Date: Thu, 21 Aug 2014 18:08:10 +0200
+Message-Id: <1408637291-18533-7-git-send-email-rkrcmar@redhat.com>
 In-Reply-To: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
 References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
@@ -26,94 +26,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tracepoint for dynamic PLE window, fired on every potential change.
+ple_window is updated on every vmentry, so there is no reason to have it
+read-only anymore.
+ple_window* weren't writable to prevent runtime overflow races;
+they are prevented by a seqlock.
 
 Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
 ---
- arch/x86/kvm/trace.h | 30 ++++++++++++++++++++++++++++++
- arch/x86/kvm/vmx.c   | 10 ++++++++--
- arch/x86/kvm/x86.c   |  1 +
- 3 files changed, 39 insertions(+), 2 deletions(-)
+ arch/x86/kvm/vmx.c | 46 +++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 37 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index e850a7d..1742dfb 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -848,6 +848,36 @@ TRACE_EVENT(kvm_track_tsc,
- 		  __print_symbolic(__entry->host_clock, host_clocks))
- );
- 
-+TRACE_EVENT(kvm_ple_window,
-+	TP_PROTO(bool grow, unsigned int vcpu_id, int new, int old),
-+	TP_ARGS(grow, vcpu_id, new, old),
-+
-+	TP_STRUCT__entry(
-+		__field(                bool,      grow         )
-+		__field(        unsigned int,   vcpu_id         )
-+		__field(                 int,       new         )
-+		__field(                 int,       old         )
-+	),
-+
-+	TP_fast_assign(
-+		__entry->grow           = grow;
-+		__entry->vcpu_id        = vcpu_id;
-+		__entry->new            = new;
-+		__entry->old            = old;
-+	),
-+
-+	TP_printk("vcpu %u: ple_window %d (%s %d)",
-+	          __entry->vcpu_id,
-+	          __entry->new,
-+	          __entry->grow ? "grow" : "shrink",
-+	          __entry->old)
-+);
-+
-+#define trace_kvm_ple_window_grow(vcpu_id, new, old) \
-+	trace_kvm_ple_window(true, vcpu_id, new, old)
-+#define trace_kvm_ple_window_shrink(vcpu_id, new, old) \
-+	trace_kvm_ple_window(false, vcpu_id, new, old)
-+
- #endif /* CONFIG_X86_64 */
- 
- #endif /* _TRACE_KVM_H */
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index a2fa6ba..273cbd5 100644
+index 273cbd5..1318232 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -5728,16 +5728,22 @@ static int __shrink_ple_window(int val, int modifier, int minimum)
- static void grow_ple_window(struct kvm_vcpu *vcpu)
+@@ -132,24 +132,29 @@ module_param(nested, bool, S_IRUGO);
+ #define KVM_VMX_DEFAULT_PLE_WINDOW_MAX    \
+ 		INT_MAX / KVM_VMX_DEFAULT_PLE_WINDOW_GROW
+ 
++static struct kernel_param_ops param_ops_ple_int;
++#define param_check_ple_int(name, p) __param_check(name, p, int)
++
++static DEFINE_SEQLOCK(ple_window_seqlock);
++
+ static int ple_gap = KVM_VMX_DEFAULT_PLE_GAP;
+ module_param(ple_gap, int, S_IRUGO);
+ 
+ static int ple_window = KVM_VMX_DEFAULT_PLE_WINDOW;
+-module_param(ple_window, int, S_IRUGO);
++module_param(ple_window, ple_int, S_IRUGO | S_IWUSR);
+ 
+ /* Default doubles per-vcpu window every exit. */
+ static int ple_window_grow = KVM_VMX_DEFAULT_PLE_WINDOW_GROW;
+-module_param(ple_window_grow, int, S_IRUGO);
++module_param(ple_window_grow, ple_int, S_IRUGO | S_IWUSR);
+ 
+ /* Default resets per-vcpu window every exit to ple_window. */
+ static int ple_window_shrink = KVM_VMX_DEFAULT_PLE_WINDOW_SHRINK;
+-module_param(ple_window_shrink, int, S_IRUGO);
++module_param(ple_window_shrink, int, S_IRUGO | S_IWUSR);
+ 
+ /* Default is to compute the maximum so we can never overflow. */
+ static int ple_window_actual_max = KVM_VMX_DEFAULT_PLE_WINDOW_MAX;
+ static int ple_window_max        = KVM_VMX_DEFAULT_PLE_WINDOW_MAX;
+-module_param(ple_window_max, int, S_IRUGO);
++module_param(ple_window_max, ple_int, S_IRUGO | S_IWUSR);
+ 
+ extern const ulong vmx_return;
+ 
+@@ -5729,8 +5734,12 @@ static void grow_ple_window(struct kvm_vcpu *vcpu)
  {
  	struct vcpu_vmx *vmx = to_vmx(vcpu);
-+	int old = vmx->ple_window;
+ 	int old = vmx->ple_window;
++	unsigned seq;
  
--	vmx->ple_window = __grow_ple_window(vmx->ple_window);
-+	vmx->ple_window = __grow_ple_window(old);
-+
-+	trace_kvm_ple_window_grow(vcpu->vcpu_id, vmx->ple_window, old);
+-	vmx->ple_window = __grow_ple_window(old);
++	do {
++		seq = read_seqbegin(&ple_window_seqlock);
++		vmx->ple_window = __grow_ple_window(old);
++	} while (read_seqretry(&ple_window_seqlock, seq));
+ 
+ 	trace_kvm_ple_window_grow(vcpu->vcpu_id, vmx->ple_window, old);
  }
- 
- static void shrink_ple_window(struct kvm_vcpu *vcpu)
+@@ -5739,9 +5748,13 @@ static void shrink_ple_window(struct kvm_vcpu *vcpu)
  {
  	struct vcpu_vmx *vmx = to_vmx(vcpu);
-+	int old = vmx->ple_window;
+ 	int old = vmx->ple_window;
++	unsigned seq;
  
--	vmx->ple_window = __shrink_ple_window(vmx->ple_window,
-+	vmx->ple_window = __shrink_ple_window(old,
- 	                                      ple_window_shrink, ple_window);
-+
-+	trace_kvm_ple_window_shrink(vcpu->vcpu_id, vmx->ple_window, old);
+-	vmx->ple_window = __shrink_ple_window(old,
+-	                                      ple_window_shrink, ple_window);
++	do {
++		seq = read_seqbegin(&ple_window_seqlock);
++		vmx->ple_window = __shrink_ple_window(old, ple_window_shrink,
++		                                      ple_window);
++	} while (read_seqretry(&ple_window_seqlock, seq));
+ 
+ 	trace_kvm_ple_window_shrink(vcpu->vcpu_id, vmx->ple_window, old);
+ }
+@@ -5761,6 +5774,23 @@ static void update_ple_window_actual_max(void)
+ 			                    ple_window_grow, INT_MIN);
  }
  
++static int param_set_ple_int(const char *arg, const struct kernel_param *kp)
++{
++	int ret;
++
++	write_seqlock(&ple_window_seqlock);
++	ret = param_set_int(arg, kp);
++	update_ple_window_actual_max();
++	write_sequnlock(&ple_window_seqlock);
++
++	return ret;
++}
++
++static struct kernel_param_ops param_ops_ple_int = {
++	.set = param_set_ple_int,
++	.get = param_get_int,
++};
++
  /*
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 5696ee7..814b20c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -7648,3 +7648,4 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_invlpga);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_skinit);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_nested_intercepts);
- EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_write_tsc_offset);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(kvm_ple_window);
+  * Indicate a busy-waiting vcpu in spinlock. We do not enable the PAUSE
+  * exiting, so only get here on cpu with PAUSE-Loop-Exiting.
+@@ -9164,8 +9194,6 @@ static int __init vmx_init(void)
+ 	} else
+ 		kvm_disable_tdp();
+ 
+-	update_ple_window_actual_max();
+-
+ 	return 0;
+ 
+ out7:
 -- 
 2.1.0
 
