@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbaHUXRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 19:17:22 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:37077 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaHUXRU (ORCPT
+	id S1755441AbaHUXS0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 19:18:26 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:35088 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755089AbaHUXSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 19:17:20 -0400
-Date: Thu, 21 Aug 2014 23:22:15 +0000
+	Thu, 21 Aug 2014 19:18:24 -0400
+Date: Thu, 21 Aug 2014 23:23:19 +0000
 From: Minchan Kim <minchan@kernel.org>
 To: Dan Streetman <ddstreet@ieee.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
@@ -20,7 +20,7 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
         David Horner <ds2horner@gmail.com>
 Subject: Re: [PATCH v3 2/4] zsmalloc: change return value unit of
  zs_get_total_size_bytes
-Message-ID: <20140821232215.GF10703@gmail.com>
+Message-ID: <20140821232319.GG10703@gmail.com>
 References: <1408580838-29236-1-git-send-email-minchan@kernel.org>
  <1408580838-29236-3-git-send-email-minchan@kernel.org>
  <CALZtONBuZOORHAF0UHEZM7Aybuoesg3fyjnu9ACj_F7O5G35Og@mail.gmail.com>
@@ -32,8 +32,6 @@ User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-Hi Dan,
 
 On Thu, Aug 21, 2014 at 02:53:57PM -0400, Dan Streetman wrote:
 > On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
@@ -53,13 +51,6 @@ On Thu, Aug 21, 2014 at 02:53:57PM -0400, Dan Streetman wrote:
 > they do that seems unlikely.  After this patch is finalized I can
 > write up a quick patch unless Seth disagrees (or already has a patch
 > :)
-
-That's extactly what I mentioned zswap in this patch.
-Now that you guys notice my intention, I will remove zswap part in
-description in next revision.
-
-Thanks.
-
 > 
 > >
 > > Signed-off-by: Minchan Kim <minchan@kernel.org>
@@ -101,43 +92,6 @@ Thanks.
 > "zs_get_total_size" implies to me the units are bytes, would
 > "zs_get_total_pages" be clearer that it's returning size in # of
 > pages, not bytes?
-> 
-> >
-> >  #endif
-> > diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> > index a65924255763..80408a1da03a 100644
-> > --- a/mm/zsmalloc.c
-> > +++ b/mm/zsmalloc.c
-> > @@ -299,7 +299,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
-> >
-> >  static u64 zs_zpool_total_size(void *pool)
-> >  {
-> > -       return zs_get_total_size_bytes(pool);
-> > +       return zs_get_total_size(pool) << PAGE_SHIFT;
-> >  }
-> >
-> >  static struct zpool_driver zs_zpool_driver = {
-> > @@ -1186,16 +1186,16 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
-> >  }
-> >  EXPORT_SYMBOL_GPL(zs_unmap_object);
-> >
-> > -u64 zs_get_total_size_bytes(struct zs_pool *pool)
-> > +unsigned long zs_get_total_size(struct zs_pool *pool)
-> >  {
-> > -       u64 npages;
-> > +       unsigned long npages;
-> >
-> >         spin_lock(&pool->stat_lock);
-> >         npages = pool->pages_allocated;
-> >         spin_unlock(&pool->stat_lock);
-> > -       return npages << PAGE_SHIFT;
-> > +       return npages;
-> >  }
-> > -EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
-> > +EXPORT_SYMBOL_GPL(zs_get_total_size);
-> >
-> >  module_init(zs_init);
-> >  module_exit(zs_exit);
-> > --
-> > 2.0.0
-> >
+
+It's better. Will change.
+Thanks!
