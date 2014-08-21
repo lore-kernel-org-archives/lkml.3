@@ -1,257 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaHUCUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 22:20:10 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:39062 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119AbaHUCUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 22:20:08 -0400
+	id S1752801AbaHUC3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 22:29:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50613 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750897AbaHUC3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 22:29:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.01,906,1400050800"; 
+   d="scan'208";a="587795509"
+Message-ID: <53F5596C.6040106@linux.intel.com>
+Date: Thu, 21 Aug 2014 10:29:00 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <1408580838-29236-5-git-send-email-minchan@kernel.org>
-References: <1408580838-29236-1-git-send-email-minchan@kernel.org>
-	<1408580838-29236-5-git-send-email-minchan@kernel.org>
-Date: Wed, 20 Aug 2014 22:20:07 -0400
-Message-ID: <CAFdhcLR2mUEavxhc6=BpEic4yekpNuOi7JpfOiL9syUJhRojrw@mail.gmail.com>
-Subject: Re: [PATCH v3 4/4] zram: report maximum used memory
-From: David Horner <ds2horner@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>
+CC: iommu@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Arnd Bergmann <arnd@arndb.de>,
+        Olav Haugan <ohaugan@codeaurora.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        ddutile <ddutile@redhat.com>, Jerome Glisse <j.glisse@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: LPC IOMMU and VFIO MicroConference - Call for Participation
+References: <20140812092019.GY9809@8bytes.org> <1408554623.11383.63.camel@ul30vt.home>
+In-Reply-To: <1408554623.11383.63.camel@ul30vt.home>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Normally, zram user could get maximum memory usage zram consumed
-> via polling mem_used_total with sysfs in userspace.
->
-> But it has a critical problem because user can miss peak memory
-> usage during update inverval of polling. For avoiding that,
-> user should poll it with shorter interval(ie, 0.0000000001s)
-> with mlocking to avoid page fault delay when memory pressure
-> is heavy. It would be troublesome.
->
-> This patch adds new knob "mem_used_max" so user could see
-> the maximum memory usage easily via reading the knob and reset
-> it via "echo 0 > /sys/block/zram0/mem_used_max".
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++
->  Documentation/blockdev/zram.txt            |  1 +
->  drivers/block/zram/zram_drv.c              | 57 ++++++++++++++++++++++++++++--
->  drivers/block/zram/zram_drv.h              |  1 +
->  4 files changed, 67 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> index 025331c19045..ffd1ea7443dd 100644
-> --- a/Documentation/ABI/testing/sysfs-block-zram
-> +++ b/Documentation/ABI/testing/sysfs-block-zram
-> @@ -120,6 +120,16 @@ Description:
->                 statistic.
->                 Unit: bytes
->
-> +What:          /sys/block/zram<id>/mem_used_max
-> +Date:          August 2014
-> +Contact:       Minchan Kim <minchan@kernel.org>
-> +Description:
-> +               The mem_used_max file is read/write and specifies the amount
-> +               of maximum memory zram have consumed to store compressed data.
-> +               For resetting the value, you should do "echo 0". Otherwise,
-> +               you could see -EINVAL.
-> +               Unit: bytes
-> +
->  What:          /sys/block/zram<id>/mem_limit
->  Date:          August 2014
->  Contact:       Minchan Kim <minchan@kernel.org>
-> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> index 9f239ff8c444..3b2247c2d4cf 100644
-> --- a/Documentation/blockdev/zram.txt
-> +++ b/Documentation/blockdev/zram.txt
-> @@ -107,6 +107,7 @@ size of the disk when not in use so a huge zram is wasteful.
->                 orig_data_size
->                 compr_data_size
->                 mem_used_total
-> +               mem_used_max
->
->  8) Deactivate:
->         swapoff /dev/zram0
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index adc91c7ecaef..138787579478 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -149,6 +149,41 @@ static ssize_t mem_limit_store(struct device *dev,
->         return len;
->  }
->
-> +static ssize_t mem_used_max_show(struct device *dev,
-> +               struct device_attribute *attr, char *buf)
-> +{
-> +       u64 val = 0;
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       down_read(&zram->init_lock);
-> +       if (init_done(zram))
-> +               val = atomic64_read(&zram->stats.max_used_pages);
-> +       up_read(&zram->init_lock);
-> +
-> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> +}
-> +
-> +static ssize_t mem_used_max_store(struct device *dev,
-> +               struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +       int err;
-> +       unsigned long val;
-> +       struct zram *zram = dev_to_zram(dev);
-> +       struct zram_meta *meta = zram->meta;
-> +
-> +       err = kstrtoul(buf, 10, &val);
-> +       if (err || val != 0)
-> +               return -EINVAL;
-> +
+Hi Alex and Joerg,
+	I have my travel request approved but missed the registration window.
+Hope I will be lucky:)
+Regards!
+Gerry
 
-Yes - this works better for the user than explicit single "0" check
-Thanks for testing.
-
-> +       down_read(&zram->init_lock);
-> +       if (init_done(zram))
-> +               atomic64_set(&zram->stats.max_used_pages,
-> +                               zs_get_total_size(meta->mem_pool));
-> +       up_read(&zram->init_lock);
-> +
-> +       return len;
-> +}
-> +
->  static ssize_t max_comp_streams_store(struct device *dev,
->                 struct device_attribute *attr, const char *buf, size_t len)
->  {
-> @@ -461,6 +496,18 @@ out_cleanup:
->         return ret;
->  }
->
-> +static inline void update_used_max(struct zram *zram, const unsigned long pages)
-> +{
-> +       u64 old_max, cur_max;
-> +
-> +       do {
-> +               old_max = cur_max = atomic64_read(&zram->stats.max_used_pages);
-> +               if (pages > cur_max)
-> +                       old_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
-> +                                       cur_max, pages);
-> +       } while (old_max != cur_max);
-> +}
-> +
-
-This can be tightened up some:
-
-+static inline void update_used_max(struct zram *zram, const unsigned
-long pages)
-+{
-+       u64 prev_max, old_max = 0;
-+
-+       prev_max = atomic64_read(&zram->stats.max_used_pages);
-+       do while (pages > prev_max && prev_max != old_max) {
-+               old_max = prev_max;
-+               prev_max = atomic64_cmpxchg(&zram->stats.max_used_pages,
-+                                       old_max, pages);
-+       };
-+}
-+
-
-And then can be generalized to:
-
-
-+static inline void update_max(uint64_t *addr, const uint64_t newvalue)
-+{
-+       uint64_t prev_max, old_max = 0;
-+
-+       prev_max = atomic64_read(addr);
-+       do while (pages > prev_max && prev_max != old_max) {
-+               old_max = prev_max;
-+               prev_max = atomic64_cmpxchg(addr,
-+                                       old_max, newvalue);
-+       };
-+}
-+
-
-
-Called with : update_max(&zram->stats.max_used_pages,  alloced_pages).
-
-(I hope I got all the datatypes (I understand there are some implicit
-casts) and modes correct).
-
-The idea should be clear.
-
->  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                            int offset)
->  {
-> @@ -472,6 +519,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->         struct zram_meta *meta = zram->meta;
->         struct zcomp_strm *zstrm;
->         bool locked = false;
-> +       unsigned long alloced_pages;
->
->         page = bvec->bv_page;
->         if (is_partial_io(bvec)) {
-> @@ -541,13 +589,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                 goto out;
->         }
->
-> -       if (zram->limit_pages &&
-> -               zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
-> +       alloced_pages = zs_get_total_size(meta->mem_pool);
-> +       if (zram->limit_pages && alloced_pages > zram->limit_pages) {
->                 zs_free(meta->mem_pool, handle);
->                 ret = -ENOMEM;
->                 goto out;
->         }
->
-> +       update_used_max(zram, alloced_pages);
-> +
-
-or generalized with update_max
-
->         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
->
->         if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-> @@ -897,6 +947,8 @@ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
->  static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
->                 mem_limit_store);
-> +static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-> +               mem_used_max_store);
->  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->                 max_comp_streams_show, max_comp_streams_store);
->  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> @@ -926,6 +978,7 @@ static struct attribute *zram_disk_attrs[] = {
->         &dev_attr_compr_data_size.attr,
->         &dev_attr_mem_used_total.attr,
->         &dev_attr_mem_limit.attr,
-> +       &dev_attr_mem_used_max.attr,
->         &dev_attr_max_comp_streams.attr,
->         &dev_attr_comp_algorithm.attr,
->         NULL,
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index b7aa9c21553f..29383312d543 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -90,6 +90,7 @@ struct zram_stats {
->         atomic64_t notify_free; /* no. of swap slot free notifications */
->         atomic64_t zero_pages;          /* no. of zero filled pages */
->         atomic64_t pages_stored;        /* no. of pages currently stored */
-> +       atomic64_t max_used_pages;      /* no. of maximum pages stored */
->  };
->
->  struct zram_meta {
-> --
-> 2.0.0
->
+On 2014/8/21 1:10, Alex Williamson wrote:
+> 
+> Ok folks, it's time to submit your discussion proposals for the LPC
+> IOMMU and VFIO uconf.  If you added an idea to the wiki, now is the time
+> to formally propose it as a discussion topic.  If you have ideas how to
+> make the IOMMU or VFIO subsystems better, now is the time to propose it.
+> If you can't figure out how to make something work in the current
+> infrastructure, now is the time to propose a discussion.  If you're
+> adding new features and want to make sure we can support them, now is
+> the time to propose a discussion.
+> 
+> I don't think we've seen a formal schedule yet, but many of us have
+> conflicts with KVM Forum this year and I expect the LPC planning
+> committee to take that into account, so please submit your proposals
+> anyway and feel free to note your availability/conflicts in the "Note to
+> organizers" section.
+> 
+> LPC is full, but there is a waiting list and the sooner you can get on
+> it, the more likely you are to be registered.  I expect uconf discussion
+> leads to have an advantage in moving through the queue and we may be
+> able to provide discounted registration for discussion leads.  Thanks,
+> 
+> Alex
+> 
+> On Tue, 2014-08-12 at 11:20 +0200, Joerg Roedel wrote:
+>> LPC IOMMU and VFIO MicroConference - Call for Participation
+>> ===========================================================
+>>
+>> We are pleased to announce that this year there will be the first IOMMU
+>> and VFIO MicroConference held at Linux Plumbers Conference in
+>> Düsseldorf. An initial request for support of this micro conference
+>> generated, among others, the following possible topic ideas:
+>>
+>> 	* Improving generic IOMMU code and move code out of drivers
+>> 	* IOMMU device error handling
+>> 	* IOMMU Power Management
+>> 	* Virtualizing IOMMUs
+>> 	* Interface between IOMMUs an memory management
+>>
+>> More suggested topics can be found at the wiki page of the micro
+>> conference:
+>>
+>> 	http://wiki.linuxplumbersconf.org/2014:iommu_microconference
+>>
+>> We now ask for formal proposals for these discussions along with any
+>> other topics or problems that need to be discussed in this area.
+>>
+>> The format of the micro conference will be roughly half-hour slots for
+>> each topic, where the discussion lead gives a short introduction to the
+>> problem and maybe sketches possible solutions. The rest of the slot is
+>> open for discussions so that we come to an agreement how to move
+>> forward.
+>>
+>> Please submit your formal proposal on the Linux Plumbers website (OpenID
+>> login required) until August 31st at:
+>>
+>> 	http://www.linuxplumbersconf.org/2014/how-to-submit-microconference-discussions-topics/
+>>
+>> Hope to see you in Düsseldorf!
+>>
+>>
+>> 	Joerg Roedel and Alex Williamson
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
