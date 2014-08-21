@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbaHUCLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 22:11:40 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:59089 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaHUCLj (ORCPT
+	id S1753253AbaHUCNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 22:13:05 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:39396 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaHUCNC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 22:11:39 -0400
-Message-ID: <1408587094.10818.1.camel@phoenix>
-Subject: [PATCH] regulator: core: Add back the const qualifier for ops of
- struct regulator_desc
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 21 Aug 2014 10:11:34 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 20 Aug 2014 22:13:02 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7L2CnLg001702, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 3/4] r8152: remove clear_bp function
+Thread-Topic: [PATCH net-next 3/4] r8152: remove clear_bp function
+Thread-Index: AQHPvFUIMC0XCO2SIU2CCT2BnisNvpvY3f+AgAFyBiA=
+Date: Thu, 21 Aug 2014 02:12:48 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2515BB5@RTITMBSV03.realtek.com.tw>
+References: <1394712342-15778-16-Taiwan-albertk@realtek.com>
+ <1394712342-15778-19-Taiwan-albertk@realtek.com>
+ <201408210131.s7L1VuAJ031162@rtits1.realtek.com>
+In-Reply-To: <201408210131.s7L1VuAJ031162@rtits1.realtek.com>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below build warning:
-CC [M]  drivers/regulator/hi6421-regulator.o
-drivers/regulator/hi6421-regulator.c:356:2: warning: initialization discards 'const' qualifier from pointer target type [enabled by default]
+: Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com] 
+> Sent: Wednesday, August 20, 2014 8:01 PM
+> To: Hayes Wang; netdev@vger.kernel.org
+> Cc: nic_swsd; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
+> Subject: Re: [PATCH net-next 3/4] r8152: remove clear_bp function
+[...]
+> >   	r8152b_disable_aldps(tp);
+> >
+> > -	rtl_clear_bp(tp);
+> >
+> 
+>     Why leave 2 empty lines? One is enough.
 
-This is a revert of commit 716845ebeb50 ("regulator: core: Fix build error due
-to const qualifier for ops"). The build error was fixed by commit 39f5460d7f9c
-("regulator: core: add const to regulator_ops and fix build error in mc13892").
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- include/linux/regulator/driver.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 3abda75..efe058f 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -246,7 +246,7 @@ struct regulator_desc {
- 	int id;
- 	bool continuous_voltage_range;
- 	unsigned n_voltages;
--	struct regulator_ops *ops;
-+	const struct regulator_ops *ops;
- 	int irq;
- 	enum regulator_type type;
- 	struct module *owner;
--- 
-1.9.1
-
-
-
+The next patch would use another fucntion at the
+same location. I skip removing the empty line and
+re-adding it again. Is that better to do so? I would
+resend the patches if the answer is yes.
+ 
+Best Regards,
+Hayes
