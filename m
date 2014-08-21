@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbaHUJL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 05:11:26 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:57147 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071AbaHUJLY (ORCPT
+	id S1753922AbaHUJSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 05:18:52 -0400
+Received: from 80-229-23-162.plus.com ([80.229.23.162]:48415 "EHLO
+	mail.einon.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaHUJSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 05:11:24 -0400
-Message-ID: <53F5B7B8.3050402@monstr.eu>
-Date: Thu, 21 Aug 2014 11:11:20 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 21 Aug 2014 05:18:51 -0400
+Date: Thu, 21 Aug 2014 10:18:19 +0100
+From: Mark Einon <mark.einon@gmail.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] staging: et131x: Remove unnecessary i2c_wack variable
+Message-ID: <20140821091819.GA2230@msilap.einon.net>
+References: <1408573078-9320-1-git-send-email-mark.einon@gmail.com>
+ <1408573078-9320-6-git-send-email-mark.einon@gmail.com>
+ <CAOMZO5Du34=jpr5B_fHGZ+D_jNR0VSDy2BiO6jj8QByh7V40RQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze fixes for 3.17-rc2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="Olsk31JelnP6xwGkcUoiBdp8bER819r2o"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5Du34=jpr5B_fHGZ+D_jNR0VSDy2BiO6jj8QByh7V40RQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Olsk31JelnP6xwGkcUoiBdp8bER819r2o
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 20, 2014 at 07:22:54PM -0300, Fabio Estevam wrote:
+> On Wed, Aug 20, 2014 at 7:17 PM, Mark Einon <mark.einon@gmail.com> wrote:
+> 
+> >                         do {
+> >                                 pci_read_config_dword(pdev,
+> > -                                       LBCIF_DATA_REGISTER, &val);
+> > +                                                     LBCIF_DATA_REGISTER,
+> > +                                                     &val);
+> 
+> This seems to be an unrelated change.
 
-Hi Linus,
+Hi Fabio, thanks for the review.
 
-please pull these 3 commits to your tree. It is just about adding new
-syscalls to 3.17.
+It's a space alignment of parameters to go with the previous change, to
+keep wrapping consistent in the file:
 
-Thanks,
-Michal
+-       while (i2c_wack) {
++       while (1) {
+                if (pci_write_config_byte(pdev, LBCIF_CONTROL_REGISTER,
+-                       LBCIF_CONTROL_LBCIF_ENABLE))
++                                         LBCIF_CONTROL_LBCIF_ENABLE))
 
+So what are you saying - are you just commenting, document it, put it
+in a seperate patch?
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2=
-b9:
+Cheers,
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-
-are available in the git repository at:
-
-  git://git.monstr.eu/linux-2.6-microblaze.git tags/microblaze-3.17-rc2
-
-for you to fetch changes up to 83c43c498a0a269e8334e53994c75dad8824cca2:
-
-  microblaze: Wire-up memfd_create syscall (2014-08-21 10:19:28 +0200)
-
-----------------------------------------------------------------
-Microblaze patches for 3.17-rc2
-
-- Wire-up seccomp/getrandom/memfd_create syscalls
-
-----------------------------------------------------------------
-Michal Simek (3):
-      microblaze: Wire-up seccomp syscall
-      microblaze: Wire-up getrandom syscall
-      microblaze: Wire-up memfd_create syscall
-
- arch/microblaze/include/uapi/asm/unistd.h | 3 +++
- arch/microblaze/kernel/syscall_table.S    | 3 +++
- 2 files changed, 6 insertions(+)
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---Olsk31JelnP6xwGkcUoiBdp8bER819r2o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlP1t7gACgkQykllyylKDCFFowCdENx9RjeeQweK6PfxON/R6uxk
-LDEAnRUDsLaYTDBOVuD88OuH32TP/8A3
-=hyEZ
------END PGP SIGNATURE-----
-
---Olsk31JelnP6xwGkcUoiBdp8bER819r2o--
+Mark
