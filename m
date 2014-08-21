@@ -1,218 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973AbaHUTIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 15:08:37 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:40573 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaHUTIe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 15:08:34 -0400
+	id S1753832AbaHUTIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 15:08:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44907 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752284AbaHUTId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 15:08:33 -0400
+Date: Thu, 21 Aug 2014 14:08:24 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: <tj@kernel.org>, <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
+CC: <linux-ide@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ata: ahci: tegra: fix build error
+Message-ID: <20140821190824.GM11146@saruman.home>
+Reply-To: <balbi@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1408580838-29236-4-git-send-email-minchan@kernel.org>
-References: <1408580838-29236-1-git-send-email-minchan@kernel.org> <1408580838-29236-4-git-send-email-minchan@kernel.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 21 Aug 2014 15:08:12 -0400
-X-Google-Sender-Auth: MfqZ5j39iNtW7uiFlmW_LR3OA60
-Message-ID: <CALZtONAPtGRrkyjhcR75KDGp_8Rr_zy6Zov74AB4E1LZ6exPLA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/4] zram: zram memory size limitation
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        David Horner <ds2horner@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hNG1vEeyG8BCaHbQ"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Since zram has no control feature to limit memory usage,
-> it makes hard to manage system memrory.
->
-> This patch adds new knob "mem_limit" via sysfs to set up the
-> a limit so that zram could fail allocation once it reaches
-> the limit.
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  Documentation/ABI/testing/sysfs-block-zram |  9 +++++++
->  Documentation/blockdev/zram.txt            | 20 ++++++++++++---
->  drivers/block/zram/zram_drv.c              | 41 ++++++++++++++++++++++++++++++
->  drivers/block/zram/zram_drv.h              |  5 ++++
->  4 files changed, 71 insertions(+), 4 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> index 70ec992514d0..025331c19045 100644
-> --- a/Documentation/ABI/testing/sysfs-block-zram
-> +++ b/Documentation/ABI/testing/sysfs-block-zram
-> @@ -119,3 +119,12 @@ Description:
->                 efficiency can be calculated using compr_data_size and this
->                 statistic.
->                 Unit: bytes
-> +
-> +What:          /sys/block/zram<id>/mem_limit
-> +Date:          August 2014
-> +Contact:       Minchan Kim <minchan@kernel.org>
-> +Description:
-> +               The mem_limit file is read/write and specifies the amount
-> +               of memory to be able to consume memory to store store
-> +               compressed data.
+--hNG1vEeyG8BCaHbQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-might want to clarify here that the value "0", which is the default,
-disables the limit.
+Currently, ahci_tegra doesn't build because it includes a file that
+doesn't exist.
 
-> +               Unit: bytes
-> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-> index 0595c3f56ccf..9f239ff8c444 100644
-> --- a/Documentation/blockdev/zram.txt
-> +++ b/Documentation/blockdev/zram.txt
-> @@ -74,14 +74,26 @@ There is little point creating a zram of greater than twice the size of memory
->  since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
->  size of the disk when not in use so a huge zram is wasteful.
->
-> -5) Activate:
-> +5) Set memory limit: Optional
-> +       Set memory limit by writing the value to sysfs node 'mem_limit'.
-> +       The value can be either in bytes or you can use mem suffixes.
-> +       Examples:
-> +           # limit /dev/zram0 with 50MB memory
-> +           echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
-> +
-> +           # Using mem suffixes
-> +           echo 256K > /sys/block/zram0/mem_limit
-> +           echo 512M > /sys/block/zram0/mem_limit
-> +           echo 1G > /sys/block/zram0/mem_limit
+The problem is that first commit 306a7f9 (ARM: tegra: Move includes to
+include/soc/tegra) renamed include/linux/tegra-powergate.h to
+include/soc/tegra/powergate.h.
 
-# To disable memory limit
-echo 0 > /sys/block/zram0/mem_limit
+Later commit 7232398 (ARM: tegra: Convert PMC to a driver) renamed
+include/soc/tegra/powergate.h to include/soc/tegra/pmc.h and neither
+commits fixed drivers/ata/ahci_tegra.c.
 
-> +
-> +6) Activate:
->         mkswap /dev/zram0
->         swapon /dev/zram0
->
->         mkfs.ext4 /dev/zram1
->         mount /dev/zram1 /tmp
->
-> -6) Stats:
-> +7) Stats:
->         Per-device statistics are exported as various nodes under
->         /sys/block/zram<id>/
->                 disksize
-> @@ -96,11 +108,11 @@ size of the disk when not in use so a huge zram is wasteful.
->                 compr_data_size
->                 mem_used_total
->
-> -7) Deactivate:
-> +8) Deactivate:
->         swapoff /dev/zram0
->         umount /dev/zram1
->
-> -8) Reset:
-> +9) Reset:
->         Write any positive value to 'reset' sysfs node
->         echo 1 > /sys/block/zram0/reset
->         echo 1 > /sys/block/zram1/reset
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 302dd37bcea3..adc91c7ecaef 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -122,6 +122,33 @@ static ssize_t max_comp_streams_show(struct device *dev,
->         return scnprintf(buf, PAGE_SIZE, "%d\n", val);
->  }
->
-> +static ssize_t mem_limit_show(struct device *dev,
-> +               struct device_attribute *attr, char *buf)
-> +{
-> +       u64 val;
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       down_read(&zram->init_lock);
-> +       val = zram->limit_pages;
-> +       up_read(&zram->init_lock);
-> +
-> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> +}
-> +
-> +static ssize_t mem_limit_store(struct device *dev,
-> +               struct device_attribute *attr, const char *buf, size_t len)
-> +{
-> +       u64 limit;
-> +       struct zram *zram = dev_to_zram(dev);
-> +
-> +       limit = memparse(buf, NULL);
-> +       down_write(&zram->init_lock);
-> +       zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
-> +       up_write(&zram->init_lock);
-> +
-> +       return len;
-> +}
-> +
->  static ssize_t max_comp_streams_store(struct device *dev,
->                 struct device_attribute *attr, const char *buf, size_t len)
->  {
-> @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->                 ret = -ENOMEM;
->                 goto out;
->         }
-> +
-> +       if (zram->limit_pages &&
-> +               zs_get_total_size(meta->mem_pool) > zram->limit_pages) {
-> +               zs_free(meta->mem_pool, handle);
-> +               ret = -ENOMEM;
-> +               goto out;
-> +       }
-> +
->         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
->
->         if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-> @@ -617,6 +652,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->         struct zram_meta *meta;
->
->         down_write(&zram->init_lock);
-> +
-> +       zram->limit_pages = 0;
-> +
->         if (!init_done(zram)) {
->                 up_write(&zram->init_lock);
->                 return;
-> @@ -857,6 +895,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
->  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
->  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
->  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
-> +static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
-> +               mem_limit_store);
->  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
->                 max_comp_streams_show, max_comp_streams_store);
->  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-> @@ -885,6 +925,7 @@ static struct attribute *zram_disk_attrs[] = {
->         &dev_attr_orig_data_size.attr,
->         &dev_attr_compr_data_size.attr,
->         &dev_attr_mem_used_total.attr,
-> +       &dev_attr_mem_limit.attr,
->         &dev_attr_max_comp_streams.attr,
->         &dev_attr_comp_algorithm.attr,
->         NULL,
-> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> index e0f725c87cc6..b7aa9c21553f 100644
-> --- a/drivers/block/zram/zram_drv.h
-> +++ b/drivers/block/zram/zram_drv.h
-> @@ -112,6 +112,11 @@ struct zram {
->         u64 disksize;   /* bytes */
->         int max_comp_streams;
->         struct zram_stats stats;
-> +       /*
-> +        * the number of pages zram can consume for storing compressed data
-> +        */
-> +       unsigned long limit_pages;
-> +
->         char compressor[10];
->  };
->  #endif
-> --
-> 2.0.0
->
+Fix that so the driver has a chance of building. With current kernels.
+
+Cc: <stable@vger.kernel.org> # v3.16
+Signed-of-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/ata/ahci_tegra.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/ata/ahci_tegra.c b/drivers/ata/ahci_tegra.c
+index fc3df47..7194835 100644
+--- a/drivers/ata/ahci_tegra.c
++++ b/drivers/ata/ahci_tegra.c
+@@ -24,7 +24,7 @@
+ #include <linux/module.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+-#include <linux/tegra-powergate.h>
++#include <soc/tegra/pmc.h>
+ #include <linux/regulator/consumer.h>
+ #include "ahci.h"
+=20
+--
+2.0.1.563.g66f467c
+
+--=20
+balbi
+
+--hNG1vEeyG8BCaHbQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT9kOoAAoJEIaOsuA1yqREY2QP+gM4lEUl2NR+MlMhdak9rem0
+ibFSJYKkdMZXJJt2XTgBnUzMmuoiBwAXAWN7LFFHq+dQwmHd0upZUDwEkyJS5I7Z
+p7oIs7hH4VOWbCWdPQJtRy42nwAFGJqBiB00JniIsmyqtM/gwnTwpJfWouO0SBvY
+e2xPdQspPbE4ruK1OXKAFbaVHTRVm11rhtfLxE5Ow6CfsSWemRgf5v2FnD1vdnZ1
+p6wVwj4vyE1Ia8UyUSYH4+TA9T3kXeIPHZR9kqWE4jiW9JMYnyIUgzZAGvdqPyL2
+Tz4Oe7cYehZVCnstbhCCsPWBUy6qSbDrMi0WYKlDVGDH9+R37tmoT8IGJ4RXXcmP
+dgE5Zcb2ernEQiD6ZxGLCUxfltLnZG3bPiCWPMtwI5VXLINPRAafMf2iYGEtM0zL
+DS9EUE0jk0FD4+2dkx0nYk5A6Ag2IhJAQSn76Jz0IdQrxNb+K9zqHA2dN0PSd9z9
+PPlCzDjrpwxRQgcoP9D3plLo32ybwy/jO4sygq907KV69aZFGG7XyWh7/9bmBfB0
+5XV0YhZ1tmiLH2TBQ/DEitUiN/CLJrNeuCgmM/6qhKoGefyopBMqxlF78UBlDGQB
+N6d6DaTAmCVO1sddEvVOd0D32fe86ugnLcxdu3/8mbG8pPrv3RGsFsh+RMBMNqWc
+g8xd0db96ITxPVj8W+Fy
+=jOn+
+-----END PGP SIGNATURE-----
+
+--hNG1vEeyG8BCaHbQ--
