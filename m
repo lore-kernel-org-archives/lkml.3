@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaHUEmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 00:42:39 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:45620 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaHUEmg (ORCPT
+	id S1751654AbaHUEzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 00:55:13 -0400
+Received: from host171.canaca.com ([67.55.55.225]:33836 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaHUEzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 00:42:36 -0400
-Date: Wed, 20 Aug 2014 21:42:30 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 02/11] power/restart: Call machine_restart instead of
- arm_pm_restart
-Message-ID: <20140821044230.GA14609@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
- <1408495538-27480-3-git-send-email-linux@roeck-us.net>
- <CAD=FV=Va8UrpDCLjFQJ6j-K0C3v7NPfifaJGtReCkUEu3x0mLg@mail.gmail.com>
+	Thu, 21 Aug 2014 00:55:12 -0400
+Message-ID: <b2822a046c296f8886a7bd22307184f7.squirrel@mungewell.org>
+In-Reply-To: <629e44bcbdb7061b2f004cf9125fed9b.squirrel@mungewell.org>
+References: <3335238.KGDcEM6DjH@sigyn>
+    <f86b6b4fbf48ce4cbeb9b537794a4eb8.squirrel@mungewell.org>
+    <alpine.LNX.2.00.1408121509550.15220@pobox.suse.cz>
+    <4338127.9nsJWYLUyM@sigyn>
+    <629e44bcbdb7061b2f004cf9125fed9b.squirrel@mungewell.org>
+Date: Thu, 21 Aug 2014 00:55:06 -0400
+Subject: Re: PATCH hid: Implement mode switching on Logitech gaming wheels
+ accordingly to the documentation
+From: simon@mungewell.org
+To: simon@mungewell.org
+Cc: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
+	<madcatxster@devoid-pointer.net>,
+        "Jiri Kosina" <jkosina@suse.cz>,
+        "simon@mungewell.org" <simon@mungewell.org>,
+        "linux-input" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        edwin@velds.nl, "elias.vds@gmail.com" <elias.vds@gmail.com>,
+        "Roland Bosa" <rbosa@logitech.com>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=Va8UrpDCLjFQJ6j-K0C3v7NPfifaJGtReCkUEu3x0mLg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 09:10:31PM -0700, Doug Anderson wrote:
-> Guenter,
-> 
-> On Tue, Aug 19, 2014 at 5:45 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > machine_restart is supported on non-ARM platforms, and and ultimately calls
-> > arm_pm_restart, so dont call arm_pm_restart directly but use the more
-> > generic function.
-> >
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> 
-> Do you need to submit this to his patch tracker to get him to pick it
-> up?  How are you envisioning that this series land?  It crosses a lot
-> of boundaries so I guess will need a reasonable amount of coordination
-> between maintainers...
-> 
-> 
-If I get an Acked-by: from all maintainers, I could send a pull request
-to Linus directly. How do I send a patch to Russell's patch tracker ?
-I thought I copied all mailing lists suggested by get_maintainer.pl,
-but maybe I missed one.
 
-Thanks,
-Guenter
+> Whilst it is my intention to submit them, I might not achieve the 'very
+> soon' part.... earliest I think would be mid next week as they still need
+> a little tweaking.
+
+I've sent in patches as 'RFC' as I think they still need a little more
+testing and I'm tied up with work stuff for the next week or so (and won't
+have access to the hardware).
+
+If people can test/comment that would be great,
+Simon
+
