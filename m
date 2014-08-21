@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaHUVDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 17:03:50 -0400
-Received: from www.sr71.net ([198.145.64.142]:48427 "EHLO blackbird.sr71.net"
+	id S1754876AbaHUVEv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 17:04:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47233 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571AbaHUVDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 17:03:49 -0400
-Message-ID: <53F65EB3.5060209@sr71.net>
-Date: Thu, 21 Aug 2014 14:03:47 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754201AbaHUVEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 17:04:50 -0400
+Date: Thu, 21 Aug 2014 23:03:37 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Lisa Mitchell <lisa.mitchell@hp.com>
+Subject: Re: [PATCH v3 6/7] KVM: VMX: runtime knobs for dynamic PLE window
+Message-ID: <20140821210337.GB30423@potion.brq.redhat.com>
+References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
+ <1408637291-18533-7-git-send-email-rkrcmar@redhat.com>
+ <53F645DF.4080101@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        dave.hansen@linux.intel.com, peterz@infradead.org, mingo@redhat.com,
-        ak@linux.intel.com, tim.c.chen@linux.intel.com,
-        akpm@linux-foundation.org, cl@linux.com, penberg@kernel.org,
-        linux-mm@kvack.org, kirill@shutemov.name, lauraa@codeaurora.org
-Subject: Re: [PATCH] [v3] warn on performance-impacting configs aka. TAINT_PERFORMANCE
-References: <20140821202424.7ED66A50@viggo.jf.intel.com> <20140821205727.GA7200@redhat.com>
-In-Reply-To: <20140821205727.GA7200@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F645DF.4080101@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 01:57 PM, Dave Jones wrote:
->  > diff -puN kernel/panic.c~taint-performance kernel/panic.c
->  > --- a/kernel/panic.c~taint-performance	2014-08-19 11:38:28.928975233 -0700
->  > +++ b/kernel/panic.c	2014-08-20 09:56:29.528471033 -0700
->  > @@ -225,6 +225,7 @@ static const struct tnt tnts[] = {
->  >  	{ TAINT_OOT_MODULE,		'O', ' ' },
->  >  	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
->  >  	{ TAINT_SOFTLOCKUP,		'L', ' ' },
->  > +	{ TAINT_PERFORMANCE,		'Q', ' ' },
+2014-08-22 00:47+0530, Raghavendra K T:
+> Positive thing about able to change default grow/shrink value is the
+> flexibility of tuning ple window to different workloads and different
+> number of cpus.
 > 
-> You don't need these any more.
+> But is it that a value of shrink = 1 and grow > 1 is problematic ?
+> (running a undercommit workload and then overcommit workload)
 
-Bah, thanks for catching that.  I'll wait a bit for any other comments
-and send out a fixed version.
-
+Yeah, could have mentioned it in commit message, but I hope that my
+previous email explained it.  (1 = don't shrink, design decision :)
