@@ -1,524 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaHUMcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:32:55 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:52339 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784AbaHUMcx (ORCPT
+	id S1754995AbaHUMdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:33:43 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:52841 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaHUMdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:32:53 -0400
+	Thu, 21 Aug 2014 08:33:42 -0400
+Message-ID: <53F5E720.9000308@redhat.com>
+Date: Thu, 21 Aug 2014 14:33:36 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1408620563-25834-3-git-send-email-tomas.winkler@intel.com>
-References: <1408620563-25834-1-git-send-email-tomas.winkler@intel.com>
-	<1408620563-25834-3-git-send-email-tomas.winkler@intel.com>
-Date: Thu, 21 Aug 2014 08:32:52 -0400
-X-Google-Sender-Auth: fSXxe_obdWHGTnjry33ZPMOTzXM
-Message-ID: <CA+5PVA71dg5-2Vb=YaxAfon3Qo1m4uivqmsRQbN0x+OztrX=9Q@mail.gmail.com>
-Subject: Re: [char-misc-next 03/14] mei: me_client lookup function to return
- me_client object
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+To: Wanpeng Li <wanpeng.li@linux.intel.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Zhang Yang <yang.z.zhang@intel.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/2] KVM: nVMX: nested TPR shadow/threshold emulation
+References: <1408621610-9665-1-git-send-email-wanpeng.li@linux.intel.com> <1408621610-9665-2-git-send-email-wanpeng.li@linux.intel.com>
+In-Reply-To: <1408621610-9665-2-git-send-email-wanpeng.li@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 7:29 AM, Tomas Winkler <tomas.winkler@intel.com> wrote:
-> In order to support dynamic addition/removal of me clients we cannot
-
-cannot what?
-
-> It is incontinent to use static array and we can use list.
-> As the first step we change the lookup function to return
-> me client address instead of the index.
-
-This changelog seems to have some missing parts to it.
-
-josh
->
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Il 21/08/2014 13:46, Wanpeng Li ha scritto:
+> This patch fix bug https://bugzilla.kernel.org/show_bug.cgi?id=61411
+> 
+> TPR shadow/threshold feature is important to speed up the Windows guest.
+> Besides, it is a must feature for certain VMM.
+> 
+> We map virtual APIC page address and TPR threshold from L1 VMCS. If
+> TPR_BELOW_THRESHOLD VM exit is triggered by L2 guest and L1 interested
+> in, we inject it into L1 VMM for handling.
+> 
+> Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 > ---
->  drivers/misc/mei/amthif.c | 29 +++++++++++------------------
->  drivers/misc/mei/bus.c    | 10 +++++-----
->  drivers/misc/mei/client.c | 43 ++++++++++++++++++++-----------------------
->  drivers/misc/mei/client.h |  5 +++--
->  drivers/misc/mei/hbm.c    | 23 +++++++++--------------
->  drivers/misc/mei/main.c   | 30 ++++++++++++++----------------
->  drivers/misc/mei/nfc.c    | 15 ++++++++-------
->  drivers/misc/mei/wd.c     |  8 ++++----
->  8 files changed, 74 insertions(+), 89 deletions(-)
->
-> diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-> index ab60959..c1fc6dd 100644
-> --- a/drivers/misc/mei/amthif.c
-> +++ b/drivers/misc/mei/amthif.c
-> @@ -68,27 +68,26 @@ void mei_amthif_reset_params(struct mei_device *dev)
->  int mei_amthif_host_init(struct mei_device *dev)
->  {
->         struct mei_cl *cl = &dev->iamthif_cl;
-> +       struct mei_me_client *me_cl;
->         unsigned char *msg_buf;
-> -       int ret, i;
-> +       int ret;
->
->         dev->iamthif_state = MEI_IAMTHIF_IDLE;
->
->         mei_cl_init(cl, dev);
->
-> -       i = mei_me_cl_by_uuid(dev, &mei_amthif_guid);
-> -       if (i < 0) {
-> -               dev_info(&dev->pdev->dev,
-> -                       "amthif: failed to find the client %d\n", i);
-> +       me_cl = mei_me_cl_by_uuid(dev, &mei_amthif_guid);
-> +       if (!me_cl) {
-> +               dev_info(&dev->pdev->dev, "amthif: failed to find the client");
->                 return -ENOTTY;
->         }
->
-> -       cl->me_client_id = dev->me_clients[i].client_id;
-> +       cl->me_client_id = me_cl->client_id;
->
->         /* Assign iamthif_mtu to the value received from ME  */
->
-> -       dev->iamthif_mtu = dev->me_clients[i].props.max_msg_length;
-> -       dev_dbg(&dev->pdev->dev, "IAMTHIF_MTU = %d\n",
-> -                       dev->me_clients[i].props.max_msg_length);
-> +       dev->iamthif_mtu = me_cl->props.max_msg_length;
-> +       dev_dbg(&dev->pdev->dev, "IAMTHIF_MTU = %d\n", dev->iamthif_mtu);
->
->         kfree(dev->iamthif_msg_buf);
->         dev->iamthif_msg_buf = NULL;
-> @@ -157,12 +156,11 @@ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
->  int mei_amthif_read(struct mei_device *dev, struct file *file,
->                char __user *ubuf, size_t length, loff_t *offset)
->  {
-> -       int rets;
-> -       int wait_ret;
-> -       struct mei_cl_cb *cb = NULL;
->         struct mei_cl *cl = file->private_data;
-> +       struct mei_cl_cb *cb;
->         unsigned long timeout;
-> -       int i;
-> +       int rets;
-> +       int wait_ret;
->
->         /* Only possible if we are in timeout */
->         if (!cl) {
-> @@ -170,11 +168,6 @@ int mei_amthif_read(struct mei_device *dev, struct file *file,
->                 return -ETIME;
->         }
->
-> -       i = mei_me_cl_by_id(dev, dev->iamthif_cl.me_client_id);
-> -       if (i < 0) {
-> -               dev_dbg(&dev->pdev->dev, "amthif client not found.\n");
-> -               return -ENOTTY;
-> -       }
->         dev_dbg(&dev->pdev->dev, "checking amthif data\n");
->         cb = mei_amthif_find_read_list_entry(dev, file);
->
-> diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-> index 0e993ef..c829676 100644
-> --- a/drivers/misc/mei/bus.c
-> +++ b/drivers/misc/mei/bus.c
-> @@ -229,8 +229,8 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
->                         bool blocking)
->  {
->         struct mei_device *dev;
-> +       struct mei_me_client *me_cl;
->         struct mei_cl_cb *cb;
-> -       int id;
->         int rets;
->
->         if (WARN_ON(!cl || !cl->dev))
-> @@ -242,11 +242,11 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
->                 return -ENODEV;
->
->         /* Check if we have an ME client device */
-> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
-> -       if (id < 0)
-> -               return id;
-> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
-> +       if (!me_cl)
-> +               return -ENOTTY;
->
-> -       if (length > dev->me_clients[id].props.max_msg_length)
-> +       if (length > me_cl->props.max_msg_length)
->                 return -EFBIG;
->
->         cb = mei_io_cb_init(cl, NULL);
-> diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-> index a90052e..2d5f305 100644
-> --- a/drivers/misc/mei/client.c
-> +++ b/drivers/misc/mei/client.c
-> @@ -33,18 +33,19 @@
->   *
->   * Locking: called under "dev->device_lock" lock
->   *
-> - * returns me client index or -ENOENT if not found
-> + * returns me client or NULL if not found
->   */
-> -int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *uuid)
-> +struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
-> +                                       const uuid_le *uuid)
->  {
->         int i;
->
->         for (i = 0; i < dev->me_clients_num; ++i)
->                 if (uuid_le_cmp(*uuid,
->                                 dev->me_clients[i].props.protocol_name) == 0)
-> -                       return i;
-> +                       return &dev->me_clients[i];
->
-> -       return -ENOENT;
-> +       return NULL;
+> v5 -> v6:
+>  * fix bisect issue 
+> v4 -> v5:
+>  * moving the nested_vmx_failValid call inside the "if (!vmx->nested.virtual_apic_page)"
+> v3 -> v4:
+>  * add Paolo's Reviewed-by
+>  * unconditionally fail the vmentry, with a comment
+>  * setup the TPR_SHADOW/virtual_apic_page of vmcs02 based on vmcs01 if L2 owns the APIC
+> v2 -> v3:
+>  * nested vm entry failure if both tpr shadow and cr8 exiting bits are not set
+> v1 -> v2:
+>  * don't take L0's "virtualize APIC accesses" setting into account
+>  * virtual_apic_page do exactly the same thing that is done for apic_access_page
+>  * add the tpr threshold field to the read-write fields for shadow VMCS
+> 
+>  arch/x86/kvm/vmx.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 48 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 24380a9..0eea49c 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -379,6 +379,7 @@ struct nested_vmx {
+>  	 * we must keep them pinned while L2 runs.
+>  	 */
+>  	struct page *apic_access_page;
+> +	struct page *virtual_apic_page;
+>  	u64 msr_ia32_feature_control;
+>  
+>  	struct hrtimer preemption_timer;
+> @@ -533,6 +534,7 @@ static int max_shadow_read_only_fields =
+>  	ARRAY_SIZE(shadow_read_only_fields);
+>  
+>  static unsigned long shadow_read_write_fields[] = {
+> +	TPR_THRESHOLD,
+>  	GUEST_RIP,
+>  	GUEST_RSP,
+>  	GUEST_CR0,
+> @@ -2330,7 +2332,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+>  		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
+>  		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
+>  		CPU_BASED_RDPMC_EXITING | CPU_BASED_RDTSC_EXITING |
+> -		CPU_BASED_PAUSE_EXITING |
+> +		CPU_BASED_PAUSE_EXITING | CPU_BASED_TPR_SHADOW |
+>  		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+>  	/*
+>  	 * We can allow some features even when not supported by the
+> @@ -6150,6 +6152,10 @@ static void free_nested(struct vcpu_vmx *vmx)
+>  		nested_release_page(vmx->nested.apic_access_page);
+>  		vmx->nested.apic_access_page = 0;
+>  	}
+> +	if (vmx->nested.virtual_apic_page) {
+> +		nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page = 0;
+> +	}
+>  
+>  	nested_free_all_saved_vmcss(vmx);
 >  }
->
->
-> @@ -56,18 +57,18 @@ int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *uuid)
->   *
->   * Locking: called under "dev->device_lock" lock
->   *
-> - * returns index on success, -ENOENT on failure.
-> + * returns me client or NULL if not found
->   */
->
-> -int mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
-> +struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
+> @@ -6938,7 +6944,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
+>  	case EXIT_REASON_MCE_DURING_VMENTRY:
+>  		return 0;
+>  	case EXIT_REASON_TPR_BELOW_THRESHOLD:
+> -		return 1;
+> +		return nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW);
+>  	case EXIT_REASON_APIC_ACCESS:
+>  		return nested_cpu_has2(vmcs12,
+>  			SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES);
+> @@ -7059,6 +7065,12 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+>  
+>  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
 >  {
->         int i;
->
->         for (i = 0; i < dev->me_clients_num; i++)
->                 if (dev->me_clients[i].client_id == client_id)
-> -                       return i;
-> +                       return &dev->me_clients[i];
->
-> -       return -ENOENT;
-> +       return NULL;
->  }
->
->
-> @@ -646,7 +647,6 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
->  {
->         struct mei_device *dev;
->         struct mei_me_client *me_cl;
-> -       int id;
->
->         if (WARN_ON(!cl || !cl->dev))
->                 return -EINVAL;
-> @@ -659,13 +659,12 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
->         if (cl->mei_flow_ctrl_creds > 0)
->                 return 1;
->
-> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
-> -       if (id < 0) {
-> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
-> +       if (!me_cl) {
->                 cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
-> -               return id;
-> +               return -ENOENT;
->         }
->
-> -       me_cl = &dev->me_clients[id];
->         if (me_cl->mei_flow_ctrl_creds) {
->                 if (WARN_ON(me_cl->props.single_recv_buf == 0))
->                         return -EINVAL;
-> @@ -688,21 +687,19 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
->  {
->         struct mei_device *dev;
->         struct mei_me_client *me_cl;
-> -       int id;
->
->         if (WARN_ON(!cl || !cl->dev))
->                 return -EINVAL;
->
->         dev = cl->dev;
->
-> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
-> -       if (id < 0) {
-> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
-> +       if (!me_cl) {
->                 cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
-> -               return id;
-> +               return -ENOENT;
->         }
->
-> -       me_cl = &dev->me_clients[id];
-> -       if (me_cl->props.single_recv_buf != 0) {
-> +       if (me_cl->props.single_recv_buf) {
->                 if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0))
->                         return -EINVAL;
->                 me_cl->mei_flow_ctrl_creds--;
-> @@ -725,8 +722,8 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
->  {
->         struct mei_device *dev;
->         struct mei_cl_cb *cb;
-> +       struct mei_me_client *me_cl;
->         int rets;
-> -       int i;
->
->         if (WARN_ON(!cl || !cl->dev))
->                 return -ENODEV;
-> @@ -740,8 +737,8 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
->                 cl_dbg(dev, cl, "read is pending.\n");
->                 return -EBUSY;
->         }
-> -       i = mei_me_cl_by_id(dev, cl->me_client_id);
-> -       if (i < 0) {
-> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
-> +       if (!me_cl) {
->                 cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
->                 return  -ENOTTY;
->         }
-> @@ -760,7 +757,7 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
->         }
->
->         /* always allocate at least client max message */
-> -       length = max_t(size_t, length, dev->me_clients[i].props.max_msg_length);
-> +       length = max_t(size_t, length, me_cl->props.max_msg_length);
->         rets = mei_io_cb_alloc_resp_buf(cb, length);
->         if (rets)
->                 goto out;
-> diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
-> index bf2b0b1..ddb95b2 100644
-> --- a/drivers/misc/mei/client.h
-> +++ b/drivers/misc/mei/client.h
-> @@ -24,8 +24,9 @@
->
->  #include "mei_dev.h"
->
-> -int mei_me_cl_by_uuid(const struct mei_device *dev, const uuid_le *cuuid);
-> -int mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
-> +struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
-> +                                       const uuid_le *cuuid);
-> +struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id);
->
->  /*
->   * MEI IO Functions
-> diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-> index 2b4ea16..0b21675 100644
-> --- a/drivers/misc/mei/hbm.c
-> +++ b/drivers/misc/mei/hbm.c
-> @@ -402,25 +402,20 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
->                                   struct hbm_flow_control *flow)
->  {
->         struct mei_me_client *me_cl;
-> -       int id;
->
-> -       id = mei_me_cl_by_id(dev, flow->me_addr);
-> -       if (id < 0) {
-> +       me_cl = mei_me_cl_by_id(dev, flow->me_addr);
-> +       if (!me_cl) {
->                 dev_err(&dev->pdev->dev, "no such me client %d\n",
->                         flow->me_addr);
-> -               return id;
-> +               return -ENOENT;
->         }
->
-> -       me_cl = &dev->me_clients[id];
-> -       if (me_cl->props.single_recv_buf) {
-> -               me_cl->mei_flow_ctrl_creds++;
-> -               dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single).\n",
-> -                   flow->me_addr);
-> -               dev_dbg(&dev->pdev->dev, "flow control credentials =%d.\n",
-> -                   me_cl->mei_flow_ctrl_creds);
-> -       } else {
-> -               BUG();  /* error in flow control */
-> -       }
-> +       if (WARN_ON(me_cl->props.single_recv_buf == 0))
-> +               return -EINVAL;
+> +	struct vmcs12 *vmcs12 = get_vmcs12(vcpu);
 > +
-> +       me_cl->mei_flow_ctrl_creds++;
-> +       dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single) creds = %d.\n",
-> +           flow->me_addr, me_cl->mei_flow_ctrl_creds);
->
->         return 0;
+> +	if (is_guest_mode(vcpu) &&
+> +		nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW))
+> +		return;
+> +
+>  	if (irr == -1 || tpr < irr) {
+>  		vmcs_write32(TPR_THRESHOLD, 0);
+>  		return;
+> @@ -7847,6 +7859,27 @@ static bool nested_get_vmcs12_pages(struct kvm_vcpu *vcpu,
+>  		vmx->nested.apic_access_page =
+>  			nested_get_page(vcpu, vmcs12->apic_access_addr);
+>  	}
+> +
+> +	if (nested_cpu_has(vmcs12, CPU_BASED_TPR_SHADOW)) {
+
+Missing PAGE_ALIGNED check.  I should have spotted this before, so I
+just fixed it and will commit the patch soon.
+
+Thanks for your persistence!
+
+Paolo
+
+> +		if (vmx->nested.virtual_apic_page) /* shouldn't happen */
+> +			nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page =
+> +			nested_get_page(vcpu, vmcs12->virtual_apic_page_addr);
+> +
+> +		/*
+> +		 * Failing the vm entry is _not_ what the processor does
+> +		 * but it's basically the only possibility we have.
+> +		 * We could still enter the guest if CR8 load exits are
+> +		 * enabled, CR8 store exits are enabled, and virtualize APIC
+> +		 * access is disabled; in this case the processor would never
+> +		 * use the TPR shadow and we could simply clear the bit from
+> +		 * the execution control.  But such a configuration is useless,
+> +		 * so let's keep the code simple.
+> +		 */
+> +		if (!vmx->nested.virtual_apic_page)
+> +			return false;
+> +	}
+> +
+>  	return true;
 >  }
-> diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-> index 401a3d5..a65b7cc 100644
-> --- a/drivers/misc/mei/main.c
-> +++ b/drivers/misc/mei/main.c
-> @@ -303,11 +303,11 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
->                          size_t length, loff_t *offset)
->  {
->         struct mei_cl *cl = file->private_data;
-> +       struct mei_me_client *me_cl;
->         struct mei_cl_cb *write_cb = NULL;
->         struct mei_device *dev;
->         unsigned long timeout = 0;
->         int rets;
-> -       int id;
->
->         if (WARN_ON(!cl || !cl->dev))
->                 return -ENODEV;
-> @@ -321,8 +321,8 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
->                 goto out;
->         }
->
-> -       id = mei_me_cl_by_id(dev, cl->me_client_id);
-> -       if (id < 0) {
-> +       me_cl = mei_me_cl_by_id(dev, cl->me_client_id);
-> +       if (!me_cl) {
->                 rets = -ENOTTY;
->                 goto out;
->         }
-> @@ -332,7 +332,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
->                 goto out;
->         }
->
-> -       if (length > dev->me_clients[id].props.max_msg_length) {
-> +       if (length > me_cl->props.max_msg_length) {
->                 rets = -EFBIG;
->                 goto out;
->         }
-> @@ -428,8 +428,8 @@ static int mei_ioctl_connect_client(struct file *file,
->  {
->         struct mei_device *dev;
->         struct mei_client *client;
-> +       struct mei_me_client *me_cl;
->         struct mei_cl *cl;
-> -       int i;
->         int rets;
->
->         cl = file->private_data;
-> @@ -450,22 +450,22 @@ static int mei_ioctl_connect_client(struct file *file,
->         }
->
->         /* find ME client we're trying to connect to */
-> -       i = mei_me_cl_by_uuid(dev, &data->in_client_uuid);
-> -       if (i < 0 || dev->me_clients[i].props.fixed_address) {
-> +       me_cl = mei_me_cl_by_uuid(dev, &data->in_client_uuid);
-> +       if (!me_cl || me_cl->props.fixed_address) {
->                 dev_dbg(&dev->pdev->dev, "Cannot connect to FW Client UUID = %pUl\n",
->                                 &data->in_client_uuid);
->                 rets = -ENOTTY;
->                 goto end;
->         }
->
-> -       cl->me_client_id = dev->me_clients[i].client_id;
-> +       cl->me_client_id = me_cl->client_id;
->
->         dev_dbg(&dev->pdev->dev, "Connect to FW Client ID = %d\n",
->                         cl->me_client_id);
->         dev_dbg(&dev->pdev->dev, "FW Client - Protocol Version = %d\n",
-> -                       dev->me_clients[i].props.protocol_version);
-> +                       me_cl->props.protocol_version);
->         dev_dbg(&dev->pdev->dev, "FW Client - Max Msg Len = %d\n",
-> -                       dev->me_clients[i].props.max_msg_length);
-> +                       me_cl->props.max_msg_length);
->
->         /* if we're connecting to amthif client then we will use the
->          * existing connection
-> @@ -484,10 +484,8 @@ static int mei_ioctl_connect_client(struct file *file,
->                 file->private_data = &dev->iamthif_cl;
->
->                 client = &data->out_client_properties;
-> -               client->max_msg_length =
-> -                       dev->me_clients[i].props.max_msg_length;
-> -               client->protocol_version =
-> -                       dev->me_clients[i].props.protocol_version;
-> +               client->max_msg_length = me_cl->props.max_msg_length;
-> +               client->protocol_version = me_cl->props.protocol_version;
->                 rets = dev->iamthif_cl.status;
->
->                 goto end;
-> @@ -496,8 +494,8 @@ static int mei_ioctl_connect_client(struct file *file,
->
->         /* prepare the output buffer */
->         client = &data->out_client_properties;
-> -       client->max_msg_length = dev->me_clients[i].props.max_msg_length;
-> -       client->protocol_version = dev->me_clients[i].props.protocol_version;
-> +       client->max_msg_length = me_cl->props.max_msg_length;
-> +       client->protocol_version = me_cl->props.protocol_version;
->         dev_dbg(&dev->pdev->dev, "Can connect?\n");
->
->
-> diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-> index 5ccc23b..964b4c6 100644
-> --- a/drivers/misc/mei/nfc.c
-> +++ b/drivers/misc/mei/nfc.c
-> @@ -480,7 +480,8 @@ int mei_nfc_host_init(struct mei_device *dev)
->  {
->         struct mei_nfc_dev *ndev = &nfc_dev;
->         struct mei_cl *cl_info, *cl = NULL;
-> -       int i, ret;
-> +       struct mei_me_client *me_cl;
-> +       int ret;
->
->         /* already initialized */
->         if (ndev->cl_info)
-> @@ -498,14 +499,14 @@ int mei_nfc_host_init(struct mei_device *dev)
->         }
->
->         /* check for valid client id */
-> -       i = mei_me_cl_by_uuid(dev, &mei_nfc_info_guid);
-> -       if (i < 0) {
-> +       me_cl = mei_me_cl_by_uuid(dev, &mei_nfc_info_guid);
-> +       if (!me_cl) {
->                 dev_info(&dev->pdev->dev, "nfc: failed to find the client\n");
->                 ret = -ENOTTY;
->                 goto err;
->         }
->
-> -       cl_info->me_client_id = dev->me_clients[i].client_id;
-> +       cl_info->me_client_id = me_cl->client_id;
->
->         ret = mei_cl_link(cl_info, MEI_HOST_CLIENT_ID_ANY);
->         if (ret)
-> @@ -516,14 +517,14 @@ int mei_nfc_host_init(struct mei_device *dev)
->         list_add_tail(&cl_info->device_link, &dev->device_list);
->
->         /* check for valid client id */
-> -       i = mei_me_cl_by_uuid(dev, &mei_nfc_guid);
-> -       if (i < 0) {
-> +       me_cl = mei_me_cl_by_uuid(dev, &mei_nfc_guid);
-> +       if (!me_cl) {
->                 dev_info(&dev->pdev->dev, "nfc: failed to find the client\n");
->                 ret = -ENOTTY;
->                 goto err;
->         }
->
-> -       cl->me_client_id = dev->me_clients[i].client_id;
-> +       cl->me_client_id = me_cl->client_id;
->
->         ret = mei_cl_link(cl, MEI_HOST_CLIENT_ID_ANY);
->         if (ret)
-> diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-> index a84a664..8b241ee 100644
-> --- a/drivers/misc/mei/wd.c
-> +++ b/drivers/misc/mei/wd.c
-> @@ -59,7 +59,7 @@ static void mei_wd_set_start_timeout(struct mei_device *dev, u16 timeout)
->  int mei_wd_host_init(struct mei_device *dev)
->  {
->         struct mei_cl *cl = &dev->wd_cl;
-> -       int id;
-> +       struct mei_me_client *me_cl;
->         int ret;
->
->         mei_cl_init(cl, dev);
-> @@ -69,13 +69,13 @@ int mei_wd_host_init(struct mei_device *dev)
->
->
->         /* check for valid client id */
-> -       id = mei_me_cl_by_uuid(dev, &mei_wd_guid);
-> -       if (id < 0) {
-> +       me_cl = mei_me_cl_by_uuid(dev, &mei_wd_guid);
-> +       if (!me_cl) {
->                 dev_info(&dev->pdev->dev, "wd: failed to find the client\n");
->                 return -ENOTTY;
->         }
->
-> -       cl->me_client_id = dev->me_clients[id].client_id;
-> +       cl->me_client_id = me_cl->client_id;
->
->         ret = mei_cl_link(cl, MEI_WD_HOST_CLIENT_ID);
->
-> --
-> 1.9.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  
+> @@ -8040,6 +8073,15 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>  	exec_control &= ~CPU_BASED_VIRTUAL_NMI_PENDING;
+>  	exec_control &= ~CPU_BASED_TPR_SHADOW;
+>  	exec_control |= vmcs12->cpu_based_vm_exec_control;
+> +
+> +	if (exec_control & CPU_BASED_TPR_SHADOW) {
+> +		vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+> +				page_to_phys(vmx->nested.virtual_apic_page));
+> +		vmcs_write32(TPR_THRESHOLD, vmcs12->tpr_threshold);
+> +	} else if (vm_need_tpr_shadow(vmx->vcpu.kvm))
+> +		vmcs_write64(VIRTUAL_APIC_PAGE_ADDR,
+> +				__pa(vmx->vcpu.arch.apic->regs));
+> +
+>  	/*
+>  	 * Merging of IO and MSR bitmaps not currently supported.
+>  	 * Rather, exit every time.
+> @@ -8807,6 +8849,10 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+>  		nested_release_page(vmx->nested.apic_access_page);
+>  		vmx->nested.apic_access_page = 0;
+>  	}
+> +	if (vmx->nested.virtual_apic_page) {
+> +		nested_release_page(vmx->nested.virtual_apic_page);
+> +		vmx->nested.virtual_apic_page = 0;
+> +	}
+>  
+>  	/*
+>  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
+> 
+
