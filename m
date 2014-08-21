@@ -1,93 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115AbaHUTVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 15:21:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45483 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475AbaHUTVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 15:21:42 -0400
-Date: Thu, 21 Aug 2014 14:21:34 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <balbi@ti.com>, <tj@kernel.org>, <thierry.reding@gmail.com>,
-        <linux-ide@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ata: ahci: tegra: fix build error
-Message-ID: <20140821192134.GO11146@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140821190824.GM11146@saruman.home>
- <53F645BA.4000402@wwwdotorg.org>
+	id S1754169AbaHUTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 15:22:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62090 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743AbaHUTWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 15:22:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="375424754"
+Subject: [PATCH] dmaengine maintainer update
+From: Dan Williams <dan.j.williams@intel.com>
+To: dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jiang <dave.jiang@intel.com>, linux-kernel@vger.kernel.org
+Date: Thu, 21 Aug 2014 12:22:06 -0700
+Message-ID: <20140821192035.27601.50486.stgit@viggo.jf.intel.com>
+User-Agent: StGit/0.17.1-5-g6888
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nLMor0SRtNCuLS/8"
-Content-Disposition: inline
-In-Reply-To: <53F645BA.4000402@wwwdotorg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nLMor0SRtNCuLS/8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am stepping down as dmaengine maintainer as the bulk of the activity
+in the subsystem is primarily targeted at the slave-dma case handled by
+Vinod, and I have recently been unable to give the few patches I do
+receive timely review.  There is still an item in my backlog to
+eliminate the async_tx api and the constraints it poses on dmaengine
+drivers, but I need not hold on to the maintainer role in the meantime.
+I will still be subscribed to dmaengine@vger.kernel.org to answer
+questions, but all patches should be routed through Vinod unless/until a
+maintainer for the non-slave-dma use case arrives.  It is non-entirely
+clear at this point that there is enough work going forward for a
+separate maintainer of the pure-offload case.
 
-On Thu, Aug 21, 2014 at 01:17:14PM -0600, Stephen Warren wrote:
-> On 08/21/2014 01:08 PM, Felipe Balbi wrote:
-> >Currently, ahci_tegra doesn't build because it includes a file that
-> >doesn't exist.
-> >
-> >The problem is that first commit 306a7f9 (ARM: tegra: Move includes to
-> >include/soc/tegra) renamed include/linux/tegra-powergate.h to
-> >include/soc/tegra/powergate.h.
-> >
-> >Later commit 7232398 (ARM: tegra: Convert PMC to a driver) renamed
-> >include/soc/tegra/powergate.h to include/soc/tegra/pmc.h and neither
-> >commits fixed drivers/ata/ahci_tegra.c.
-> >
-> >Fix that so the driver has a chance of building. With current kernels.
-> >
-> >Cc: <stable@vger.kernel.org> # v3.16
->=20
-> This driver first appeared in v3.17-rc1.
+Ongoing development of the ioatdma driver is handled by Dave.  I'm still
+interested in reviewing ioatdma patches, but he is the primary
+maintainer/developer going forward.
 
-hmm... weird, git describe told v3.16-rc1 :-s
+IOP platforms are not generating any traffic in my inbox, but if a patch
+did arrive I've long since lost access to hardware.
 
-> This patch has already been sent, and apparently applied:
->=20
-> https://lkml.org/lkml/2014/8/16/36
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+I'll add this to final pull request for the contents of dmaengine.git
+and priority fixes from patchwork that have been stalled.
+ 
+ MAINTAINERS |   15 ++++-----------
+ 1 files changed, 4 insertions(+), 11 deletions(-)
 
-aha, thanks.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b3fdb0f004ba..848ff1281b67 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -970,24 +970,20 @@ F:	arch/arm/mach-pxa/colibri-pxa270-income.c
+ 
+ ARM/INTEL IOP32X ARM ARCHITECTURE
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+-M:	Dan Williams <dan.j.williams@intel.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ 
+ ARM/INTEL IOP33X ARM ARCHITECTURE
+-M:	Dan Williams <dan.j.williams@intel.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-S:	Maintained
++S:	Orphan
+ 
+ ARM/INTEL IOP13XX ARM ARCHITECTURE
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+-M:	Dan Williams <dan.j.williams@intel.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ 
+ ARM/INTEL IQ81342EX MACHINE SUPPORT
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+-M:	Dan Williams <dan.j.williams@intel.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ 
+@@ -1012,7 +1008,6 @@ F:	drivers/pcmcia/pxa2xx_stargate2.c
+ 
+ ARM/INTEL XSC3 (MANZANO) ARM CORE
+ M:	Lennert Buytenhek <kernel@wantstofly.org>
+-M:	Dan Williams <dan.j.williams@intel.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ S:	Maintained
+ 
+@@ -1446,7 +1441,7 @@ F:	drivers/platform/x86/eeepc*.c
+ ASYNCHRONOUS TRANSFERS/TRANSFORMS (IOAT) API
+ M:	Dan Williams <dan.j.williams@intel.com>
+ W:	http://sourceforge.net/projects/xscaleiop
+-S:	Maintained
++S:	Odd fixes
+ F:	Documentation/crypto/async-tx-api.txt
+ F:	crypto/async_tx/
+ F:	drivers/dma/
+@@ -2778,13 +2773,11 @@ T:	git git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git
+ 
+ DMA GENERIC OFFLOAD ENGINE SUBSYSTEM
+ M:	Vinod Koul <vinod.koul@intel.com>
+-M:	Dan Williams <dan.j.williams@intel.com>
+ L:	dmaengine@vger.kernel.org
+ Q:	https://patchwork.kernel.org/project/linux-dmaengine/list/
+-S:	Supported
++S:	Maintained
+ F:	drivers/dma/
+ F:	include/linux/dma*
+-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx.git
+ T:	git git://git.infradead.org/users/vkoul/slave-dma.git (slave-dma)
+ 
+ DME1737 HARDWARE MONITOR DRIVER
+@@ -4500,8 +4493,8 @@ F:	arch/x86/kernel/microcode_core.c
+ F:	arch/x86/kernel/microcode_intel.c
+ 
+ INTEL I/OAT DMA DRIVER
+-M:	Dan Williams <dan.j.williams@intel.com>
+ M:	Dave Jiang <dave.jiang@intel.com>
++M:	Dan Williams <dan.j.williams@intel.com>
+ L:	dmaengine@vger.kernel.org
+ Q:	https://patchwork.kernel.org/project/linux-dmaengine/list/
+ S:	Supported
 
-> I wonder if libata/for-3.17-fixes isn't in linux-next?
-
-it is, it's just that I was build testing my branch which is based off
-of v3.17-rc1 as of now.
-
---=20
-balbi
-
---nLMor0SRtNCuLS/8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT9ka+AAoJEIaOsuA1yqREQBAP/jQXcse3UFDEv0rNPXj8Ly+u
-wwWKgy7ULlslpnLRVgUieKE2BZjn0zj5wy5CYksE8rRocgdfy6nmdvPOjkhD4zlm
-dFJ1Phwc1/btCWMIYDTmkvO03HKIxeM4S7PQ+qblYGVuwgR4/gpwMKPj/jx3XRvF
-pKfXA7pkhsxQPNdC1/TtPrSfVQYDJdQVmbBZMAohcFxj1zC/Tu1rKB78DYgvJrhb
-FBREv1lPH8SCGxOzRGfBfM2ZgNBMa+mDflCMbhDxpkTIbJk9a12lXqa+6LFtPO5o
-thIEqyVw1uMhlPBb97oKqATfwUGpqqCkjbRtBfPQ5Kl9BHMtHyChYWJt8eKoTeST
-FNMImlC27e69Se5K5kRIdnR4SfqKK94ChN6t3ZdHqeriR0nweYVI2nmhQWGdW25K
-apmcMUWZnda1sAj2XCFI6C70EdyMjN0kBhXlsFgZdRemEmc5eaYvGOUkwm4uDpi/
-q7Xmr4PSAiBQWeq/mtMFhVI1owXp1kUt26M4zuwZR6SGc7ri3MDWpDFnYPAhljj/
-+AC+6pQrb5hrIGZXCKZqkhod/mJt1yyll1SpchyaN1YasX7kUN5iXGO8JiVadg5D
-4PamhaaQrUtPrR0odM4Ug+/izG9uZx4o9JL4LNhJ+On/gOT3TWj9xEWadwqiqjkg
-8rYV4sZdD9ZytgVOhOYT
-=V1g7
------END PGP SIGNATURE-----
-
---nLMor0SRtNCuLS/8--
