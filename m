@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615AbaHUDIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:08:30 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57803 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbaHUDI1 (ORCPT
+	id S1753527AbaHUDNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:13:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60736 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779AbaHUDNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:08:27 -0400
-Message-ID: <53F5624E.3010102@linaro.org>
-Date: Thu, 21 Aug 2014 11:06:54 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 20 Aug 2014 23:13:41 -0400
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v2 08/18] ARM64 / ACPI: Get the enable method for SMP
- initialization in ACPI way
-References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-9-git-send-email-hanjun.guo@linaro.org> <20140818142733.GT20043@localhost> <53F30B99.4000704@linaro.org> <20140820145219.GO24600@localhost>
-In-Reply-To: <20140820145219.GO24600@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53F5605C.2010304@kernel.dk>
+References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
+	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
+	<20140815163111.GA16652@infradead.org>
+	<53EE370D.1060106@kernel.dk>
+	<53EE3966.60609@kernel.dk>
+	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
+	<53F0EAEC.9040505@kernel.dk>
+	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
+	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
+	<53F3B89D.6070703@kernel.dk>
+	<CACVXFVP_q2MfZtjPAgXrjMJS2K6H2fTFtAe3ZJXBW83uEovqkQ@mail.gmail.com>
+	<53F4C835.7030407@kernel.dk>
+	<CACVXFVPxXrYi+m0bC7tEcfvDzhQ=Xnapkd+yGRXbKCktgi3Ofw@mail.gmail.com>
+	<53F5605C.2010304@kernel.dk>
+Date: Thu, 21 Aug 2014 11:13:39 +0800
+Message-ID: <CACVXFVNEuEOXphJK5XGbAGRC9tL7iTv=PE_v+Dnw3CReAEkonw@mail.gmail.com>
+Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
+        "open list:AIO <linux-aio@kvack.org>, Linux FS Devel
+	<linux-fsdevel@vger.kernel.org>, Dave Chinner <david@fromorbit.com>,
+	Tejun Heo" <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-8-20 22:52, Catalin Marinas wrote:
-> On Tue, Aug 19, 2014 at 09:32:25AM +0100, Hanjun Guo wrote:
->> On 2014-8-18 22:27, Catalin Marinas wrote:
->>> On Mon, Aug 04, 2014 at 04:28:15PM +0100, Hanjun Guo wrote:
->>>> +#ifdef CONFIG_ACPI
->>>> +/*
->>>> + * Get a cpu's boot method in the ACPI way.
->>>> + */
->>>> +static char * __init acpi_get_cpu_boot_method(void)
->>>> +{
->>>> +	/*
->>>> +	 * For ACPI 5.1, only two kind of methods are provided,
->>>> +	 * Parking protocol and PSCI, but Parking protocol is
->>>> +	 * specified for ARMv7 only, so make PSCI as the only method
->>>> +	 * for SMP initialization before the ACPI spec or Parking
->>>> +	 * protocol spec is updated.
->>>> +	 */
->>>> +	switch (smp_boot_protocol()) {
->>>> +	case ACPI_SMP_BOOT_PSCI:
->>>> +		return "psci";
->>>> +	case ACPI_SMP_BOOT_PARKING_PROTOCOL:
->>>> +	default:
->>>> +		return NULL;
->>>> +	}
->>>> +}
+On Thu, Aug 21, 2014 at 10:58 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2014-08-20 21:54, Ming Lei wrote:
+>>>>
+>>>>   From my investigation, context switch increases almost 50% with
+>>>> workqueue compared with kthread in loop in a quad-core VM. With
+>>>> kthread, requests may be handled as batch in cases which won't be
+>>>> blocked in read()/write()(like null_blk, tmpfs, ...), but it is
+>>>> impossible
+>>>> with
+>>>> workqueue any more.  Also block plug&unplug should have been used
+>>>> with kthread to optimize the case, especially when kernel AIO is
+>>>> applied,
+>>>> still impossible with work queue too.
 >>>
->>> Actually, do we even need to define smp_boot_protocol()? Is it used
->>> anywhere else apart from this patch (I still haven't gone through all
->>> patches)?
+>>>
+>>>
+>>> OK, that one is actually a good point, since one need not do per-item
+>>> queueing. We could handle different units, though. And we should have
+>>> proper
+>>> marking of the last item in a chain of stuff, so we might even be able to
+>>> offload based on that instead of doing single items. It wont help the
+>>> sync
+>>> case, but for that, workqueue and kthread would be identical.
 >>
->> It is just used in this patch. I think we can make the ACPI boot protocol
->> scalable in this way, if we support another boot protocol in ACPI in the
->> future, we can easily update the function to support it, does it make sense?
-> 
-> Not really. You just add additional code, enums, functions when all you
-> do is check for acpi_psci_present() (or whatever new protocol you would
-> get). If the enum is never going to be used outside this file, don't
-> bother with additional functions.
-> 
-> BTW, it would be nicer if the acpi related functions are contained in as
-> fewer files as possible. So here you could keep
-> acpi_get_cpu_boot_method() in the acpi.c file. It only returns a string.
+>>
+>> We may do that by introducing callback of queue_rq_list in blk_mq_ops,
+>> and I will figure out one patch today to see if it can help the case.
+>
+>
+> I don't think we should add to the interface, I prefer keeping it clean like
+> it is right now. At least not if we can get around it. My point is that the
+> driver already knows when the chain is complete, when REQ_LAST is set. So
+> before that event triggers, it need not kick off IO, or at least i could do
+> it in batches before that. That may not be fully reliable in case of
+> queueing errors, but if REQ_LAST or 'error return' is used as the way to
+> kick off pending IO, then that should be good enough. Haven't audited this
+> in a while, but at least that is the intent of REQ_LAST.
 
-ok, I will update them.
+Yes, I thought of too, but driver need another context for handling that,
+either workqueue or kthread, which may cause the introduced per-device
+workqueue useless.
 
-Thanks
-Hanjun
-
-
+thanks,
