@@ -1,62 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535AbaHULKj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:10:39 -0400
-Received: from mail.cs.hut.fi ([130.233.192.7]:42598 "EHLO mail.cs.hut.fi"
+	id S1754515AbaHULPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:15:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36816 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086AbaHULKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:10:38 -0400
-Date: Thu, 21 Aug 2014 14:10:34 +0300 (EEST)
-From: Ari Sundholm <asundhol@cs.hut.fi>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] toshiba_acpi.c - fix busted keyboard backlight logic
-In-Reply-To: <17794.1408561003@turing-police.cc.vt.edu>
-Message-ID: <alpine.GSO.2.03.1408211406540.23797@mannerheim.cs.hut.fi>
-References: <17794.1408561003@turing-police.cc.vt.edu>
-User-Agent: Alpine 2.03 (GSO 1266 2009-07-14)
+	id S1754131AbaHULPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:15:09 -0400
+Message-ID: <53F5D4B9.5060305@suse.de>
+Date: Thu, 21 Aug 2014 13:15:05 +0200
+From: =?ISO-8859-1?Q?Andreas_F=E4rber?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: mathieu.poirier@linaro.org
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] coresight: bindings for coresight drivers
+References: <1408554698-24459-1-git-send-email-mathieu.poirier@linaro.org>
+In-Reply-To: <1408554698-24459-1-git-send-email-mathieu.poirier@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-On Wed, 20 Aug 2014, Valdis Kletnieks wrote:
-
-> Both the original and the first attempted patch managed to get the logic wrong.
-> So we fix it so we only continue if sscanf returns exactly one value, and it
-> has to be either 1 or 2.  Apparently, programmers are getting out and hacking
-> code without remembering de Morgan's Laws...
+Am 20.08.2014 19:11, schrieb mathieu.poirier@linaro.org:
+> From: Pratik Patel <pratikp@codeaurora.org>
 > 
-> Patch is against the file that results from Ari's revert of the previous
-> patch.
+> Coresight IP blocks allow for the support of HW assisted tracing
+> on ARM SoCs.  Bindings for the currently available blocks are
+> presented herein.
 > 
-> Signed-Off-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+> Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+>  .../devicetree/bindings/arm/coresight.txt          | 205 +++++++++++++++++++++
+>  1 file changed, 205 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
 > 
-> --
-> --- drivers/platform/x86/toshiba_acpi.c.orig	2014-08-20 14:45:52.159898938 -0400
-> +++ drivers/platform/x86/toshiba_acpi.c	2014-08-20 14:47:55.102444985 -0400
-> @@ -1258,7 +1258,7 @@ static ssize_t toshiba_kbd_bl_mode_store
->  	int mode = -1;
->  	int time = -1;
->  
-> -	if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
-> +	if (sscanf(buf, "%i", &mode) != 1 || !(mode == 2 || mode == 1))
->  		return -EINVAL;
->  
->  	/* Set the Keyboard Backlight Mode where:
+> diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
+> new file mode 100644
+> index 0000000..2ee594d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/coresight.txt
+> @@ -0,0 +1,205 @@
+> +* CoreSight Components
+> +
+> +CoreSight components are compliant with the ARM CoreSight architecture
+> +specification and can be connected in various topologies to suit a particular
+> +SoCs tracing needs. These trace components can generally be classified as sinks,
+> +links and sources. Trace data produced by one or more sources flows through the
+> +intermediate links connecting the source to the currently selected sink. Each
+> +CoreSight component device should use these properties to describe its hardware
+> +characteristcs.
+> +
+> +Required properties for all components *except* non-configurable replicators:
+> +
+> +- compatible : name of the component used for driver matching.  Possible values
+> +include: "arm,coresight-etb10", "arm,coresight-tpiu", "arm,coresight-tmc",
+> +"arm,coresight-funnel", and "arm,coresight-etm3x".  All of these have to
+> +be supplemented with "arm,primecell" as drivers are using the AMBA bus
+> +interface.  Since non-configurable replicators don't show up on the AMBA
+> +bus they don't need to be post-fixed with "arm,primecell".
 
-Looks good to me.
+I think this document would be much easier to read if you indented these
+paragraphs below "name" here. That way the actual property names would
+stand out more when looking up a particular property.
 
-It seems Matthew already reverted the bad commit in mainline commit 
-8039aabb6c9f802bca04cc77ca210060a5b53916, but didn't fix the original 
-logic yet.
+> +
+> +- reg : physical base address and length of the register set(s) of the component.
+> +
+> +- clocks : the clock associated to this component.
+> +
+> +- clock-names: the name of the clock as referenced by the code.  Since we are
+> +using the AMBA framework, the name should be "apb_pclk".
+> +
+> +- ports or port: The representation of the component's port layout using the
+> +generic DT graph presentation found in "bindings/graph.txt".
+> +
+> +Non-configurable replicators:
+> +
+> +- compatible: currently supported value is "arm-replicator".  Since non-configurable
+> +replicators don't show up on the AMBA hey don't need to be post-fixed with
+> +"arm,primecell".
+> +
+> +- id: a unique number that will identify this replicator.
+> +
+> +- ports or port: same as above.
+> +
+> +Optional properties for Sinks:
+> +
+> +- coresight-default-sink: must be specified for one of the sink devices that is
+> +intended to be made the default sink. Other sink devices must not have this
+> +specified. Not specifying this property on any of the sinks is invalid.
+> +
+> +Optional properties for ETM/PTMs:
+> +
+> +- arm,cp14: must be present if the system accesses ETM/PTM management registers
+> +via co-processor 14.
+> +
+> +- arm,cp14: access to ETM/PTM management registers is made via cp14.
+> +
+> +- cpu: the cpu phandle this ETM/PTM is affined to. When omitted the source is
+> +considered to belong to CPU0.
+> +
+> +Optional property for TMC:
+> +
+> +- arm,buffer-size: size of contiguous buffer space for TMC ETR (embedded trace router)
+> +
+> +
+> +Example:
+> +
+> +1. Sinks
+> +	etb: etb@20010000 {
+> +		compatible = "arm,coresight-etb10", "arm,primecell";
+> +		reg = <0 0x20010000 0 0x1000>;
 
-Matthew, could you apply Valdis' patch so this gets fixed once and for 
-all?
+You seem to be using two address cells (and two size cells). In that
+case, I believe I read it were convention to use etb@0,20010000?
 
-Best regards,
-Ari Sundholm
-asundhol@cs.hut.fi
+Regards,
+Andreas
+
+> +
+> +		coresight-default-sink;
+> +		clocks = <&oscclk6a>;
+> +		clock-names = "apb_pclk";
+> +		port {
+> +			etb_in_port: endpoint@0 {
+> +				slave-mode;
+> +				remote-endpoint = <&replicator_out_port0>;
+> +			};
+> +		};
+> +	};
+[snip]
+
+
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
