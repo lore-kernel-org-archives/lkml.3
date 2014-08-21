@@ -1,260 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493AbaHUWvS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 18:51:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55549 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277AbaHUWvR (ORCPT
+	id S1753312AbaHUXBM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 19:01:12 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:47317 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277AbaHUXBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 18:51:17 -0400
-Date: Thu, 21 Aug 2014 15:51:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
-        avagin@openvz.org, ebiederm@xmission.com, hpa@zytor.com,
-        serge.hallyn@canonical.com, xemul@parallels.com, segoon@openwall.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 4/4] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP
- operation, v3
-Message-Id: <20140821155115.8433bb37bf631b8ae8340f84@linux-foundation.org>
-In-Reply-To: <20140804172610.965949916@openvz.org>
-References: <20140804172255.109539743@openvz.org>
-	<20140804172610.965949916@openvz.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Aug 2014 19:01:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408641520.23250.71.camel@joe-AO725>
+References: <20140821162050.GA1323@www.outflux.net>
+	<1408641520.23250.71.camel@joe-AO725>
+Date: Thu, 21 Aug 2014 18:01:08 -0500
+X-Google-Sender-Auth: NHmCq8rEZr1ZMf8yRAqgX1iwq20
+Message-ID: <CAGXu5jJmp4-sposMxjTobEj0xzueQY54OzvdDQg-GC-HhJuBwQ@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: look for common misspellings
+From: Kees Cook <keescook@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 04 Aug 2014 21:22:59 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+On Thu, Aug 21, 2014 at 12:18 PM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2014-08-21 at 09:20 -0700, Kees Cook wrote:
+>> Check for misspellings, based on Debian's lintian list. Several false
+>> positives were removed, and several additional words added that were
+>> common in the kernel:
+> []
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+> []
+>> @@ -2311,6 +2311,7 @@ M:      Andy Whitcroft <apw@canonical.com>
+>>  M:   Joe Perches <joe@perches.com>
+>>  S:   Maintained
+>>  F:   scripts/checkpatch.pl
+>> +F:   scripts/spelling.txt
+>
+> I don't want to be responsible for misspellings.
+>
+> Maybe this should be moved to another section
+> and you could be added as a maintainer for that.
 
-> During development of c/r we've noticed that in case if we need to
-> support user namespaces we face a problem with capabilities in
-> prctl(PR_SET_MM, ...) call, in particular once new user namespace
-> is created capable(CAP_SYS_RESOURCE) no longer passes.
-> 
-> A approach is to eliminate CAP_SYS_RESOURCE check but pass all
-> new values in one bundle, which would allow the kernel to make
-> more intensive test for sanity of values and same time allow us to
-> support checkpoint/restore of user namespaces.
-> 
-> Thus a new command PR_SET_MM_MAP introduced. It takes a pointer of
-> prctl_mm_map structure which carries all the members to be updated.
-> 
-> 	prctl(PR_SET_MM, PR_SET_MM_MAP, struct prctl_mm_map *, size)
-> 
-> 	struct prctl_mm_map {
-> 		__u64	start_code;
-> 		__u64	end_code;
-> 		__u64	start_data;
-> 		__u64	end_data;
-> 		__u64	start_brk;
-> 		__u64	brk;
-> 		__u64	start_stack;
-> 		__u64	arg_start;
-> 		__u64	arg_end;
-> 		__u64	env_start;
-> 		__u64	env_end;
-> 		__u64	*auxv;
-> 		__u32	auxv_size;
-> 		__u32	exe_fd;
-> 	};
-> 
-> All members except @exe_fd correspond ones of struct mm_struct.
-> To figure out which available values these members may take here
-> are meanings of the members.
-> 
->  - start_code, end_code: represent bounds of executable code area
->  - start_data, end_data: represent bounds of data area
->  - start_brk, brk: used to calculate bounds for brk() syscall
->  - start_stack: used when accounting space needed for command
->    line arguments, environment and shmat() syscall
->  - arg_start, arg_end, env_start, env_end: represent memory area
->    supplied for command line arguments and environment variables
->  - auxv, auxv_size: carries auxiliary vector, Elf format specifics
->  - exe_fd: file descriptor number for executable link (/proc/self/exe)
-> 
-> Thus we apply the following requirements to the values
-> 
-> 1) Any member except @auxv, @auxv_size, @exe_fd is rather an address
->    in user space thus it must be laying inside [mmap_min_addr, mmap_max_addr)
->    interval.
-> 
-> 2) While @[start|end]_code and @[start|end]_data may point to an nonexisting
->    VMAs (say a program maps own new .text and .data segments during execution)
->    the rest of members should belong to VMA which must exist.
-> 
-> 3) Addresses must be ordered, ie @start_ member must not be greater or
->    equal to appropriate @end_ member.
-> 
-> 4) As in regular Elf loading procedure we require that @start_brk and
->    @brk be greater than @end_data.
-> 
-> 5) If RLIMIT_DATA rlimit is set to non-infinity new values should not
->    exceed existing limit. Same applies to RLIMIT_STACK.
-> 
-> 6) Auxiliary vector size must not exceed existing one (which is
->    predefined as AT_VECTOR_SIZE and depends on architecture).
-> 
-> 7) File descriptor passed in @exe_file should be pointing
->    to executable file (because we use existing prctl_set_mm_exe_file_locked
->    helper it ensures that the file we are going to use as exe link has all
->    required permission granted).
-> 
-> Now about where these members are involved inside kernel code:
-> 
->  - @start_code and @end_code are used in /proc/$pid/[stat|statm] output;
-> 
->  - @start_data and @end_data are used in /proc/$pid/[stat|statm] output,
->    also they are considered if there enough space for brk() syscall
->    result if RLIMIT_DATA is set;
-> 
->  - @start_brk shown in /proc/$pid/stat output and accounted in brk()
->    syscall if RLIMIT_DATA is set; also this member is tested to
->    find a symbolic name of mmap event for perf system (we choose
->    if event is generated for "heap" area); one more aplication is
->    selinux -- we test if a process has PROCESS__EXECHEAP permission
->    if trying to make heap area being executable with mprotect() syscall;
-> 
->  - @brk is a current value for brk() syscall which lays inside heap
->    area, it's shown in /proc/$pid/stat. When syscall brk() succesfully
->    provides new memory area to a user space upon brk() completion the
->    mm::brk is updated to carry new value;
-> 
->    Both @start_brk and @brk are actively used in /proc/$pid/maps
->    and /proc/$pid/smaps output to find a symbolic name "heap" for
->    VMA being scanned;
-> 
->  - @start_stack is printed out in /proc/$pid/stat and used to
->    find a symbolic name "stack" for task and threads in
->    /proc/$pid/maps and /proc/$pid/smaps output, and as the same
->    as with @start_brk -- perf system uses it for event naming.
->    Also kernel treat this member as a start address of where
->    to map vDSO pages and to check if there is enough space
->    for shmat() syscall;
-> 
->  - @arg_start, @arg_end, @env_start and @env_end are printed out
->    in /proc/$pid/stat. Another access to the data these members
->    represent is to read /proc/$pid/environ or /proc/$pid/cmdline.
->    Any attempt to read these areas kernel tests with access_process_vm
->    helper so a user must have enough rights for this action;
-> 
->  - @auxv and @auxv_size may be read from /proc/$pid/auxv. Strictly
->    speaking kernel doesn't care much about which exactly data is
->    sitting there because it is solely for userspace;
-> 
->  - @exe_fd is referred from /proc/$pid/exe and when generating
->    coredump. We uses prctl_set_mm_exe_file_locked helper to update
->    this member, so exe-file link modification remains one-shot
->    action.
-> 
-> Still note that updating exe-file link now doesn't require sys-resource
-> capability anymore, after all there is no much profit in preventing setup
-> own file link (there are a number of ways to execute own code -- ptrace,
-> ld-preload, so that the only reliable way to find which exactly code
-> is executed is to inspect running program memory). Still we require
-> the caller to be at least user-namespace root user.
-> 
-> I believe the old interface should be deprecated and ripped off
-> in a couple of kernel releases if no one against.
-> 
-> To test if new interface is implemented in the kernel one
-> can pass PR_SET_MM_MAP_SIZE opcode and the kernel returns
-> the size of currently supported struct prctl_mm_map.
+Okay, sure. Happy to do so. Or maybe some -docs folks want to join me? :)
 
-Please convince me that we're not adding any security holes.
+>
+>> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> []
+>> +# Check for several spelling mistakes.
+>> +             if ($rawline =~ $spelling_re) {
+>
+> $spelling_re has a rather hidden ( ... ) use so I think
+> it'd be better to not use spelling_re at all and have a
+> variable like:
+> our $misspellings = join('|', @spelling_list);
+>
+> and also use while so all misspellings are found so this
+> could be:
+>
+>                 while ($rawline =~ /(?:^|$edge)($misspellings)(?:\$|$edge)/g) {
+>
+>> +                     my $typo = "The word '$1' may be misspelled";
+>> +                     $typo .= " (perhaps you want '$spelling_fix{$1}'?)\n";
+>> +                     WARN("TYPO_SPELLING", $typo . $herecurr);
+>> +             }
+>>       }
+>
+> Seems sensible, but this checks only .c and .h files.
+> Any of the Kconfig/.txt files are skipped.
 
+Oh, hm. Yes, seems like this should be relocated then.
 
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +/*
-> + * WARNING: we don't require any capability here so be very careful
-> + * in what is allowed for modification from userspace.
-> + */
-> +static int validate_prctl_map_locked(struct prctl_mm_map *prctl_map)
-> +{
-> +	unsigned long mmap_max_addr = TASK_SIZE;
-> +	struct mm_struct *mm = current->mm;
-> +	struct vm_area_struct *stack_vma;
-> +	int error = 0;
-> +
-> +	/*
-> +	 * Make sure the members are not somewhere outside
-> +	 * of allowed address space.
-> +	 */
-> +#define __prctl_check_addr_space(__member)					\
-> +	({									\
-> +		int __rc;							\
-> +		if ((unsigned long)prctl_map->__member < mmap_max_addr &&	\
-> +		    (unsigned long)prctl_map->__member >= mmap_min_addr)	\
-> +			__rc = 0;						\
-> +		else								\
-> +			__rc = -EINVAL;						\
-> +		__rc;								\
-> +	})
-> +	error |= __prctl_check_addr_space(start_code);
-> +	error |= __prctl_check_addr_space(end_code);
-> +	error |= __prctl_check_addr_space(start_data);
-> +	error |= __prctl_check_addr_space(end_data);
-> +	error |= __prctl_check_addr_space(start_stack);
-> +	error |= __prctl_check_addr_space(start_brk);
-> +	error |= __prctl_check_addr_space(brk);
-> +	error |= __prctl_check_addr_space(arg_start);
-> +	error |= __prctl_check_addr_space(arg_end);
-> +	error |= __prctl_check_addr_space(env_start);
-> +	error |= __prctl_check_addr_space(env_end);
+> I'd probably leave out "The word "
 
-Boy this is verbose.  I had a little fiddle and came up with
+Fair enough.
 
---- a/kernel/sys.c~a
-+++ a/kernel/sys.c
-@@ -1713,19 +1713,32 @@ static int validate_prctl_map_locked(str
- 			__rc = -EINVAL;					\
- 		__rc;							\
- 	})
--	error |= __prctl_check_addr_space(start_code);
--	error |= __prctl_check_addr_space(end_code);
--	error |= __prctl_check_addr_space(start_data);
--	error |= __prctl_check_addr_space(end_data);
--	error |= __prctl_check_addr_space(start_stack);
--	error |= __prctl_check_addr_space(start_brk);
--	error |= __prctl_check_addr_space(brk);
--	error |= __prctl_check_addr_space(arg_start);
--	error |= __prctl_check_addr_space(arg_end);
--	error |= __prctl_check_addr_space(env_start);
--	error |= __prctl_check_addr_space(env_end);
--	if (error)
--		goto out;
-+	{
-+		static const unsigned short offsets[] = {
-+			offsetof(struct prctl_mm_map, start_code),
-+			offsetof(struct prctl_mm_map, start_code),
-+			offsetof(struct prctl_mm_map, end_code),
-+			offsetof(struct prctl_mm_map, start_data),
-+			offsetof(struct prctl_mm_map, end_data),
-+			offsetof(struct prctl_mm_map, start_stack),
-+			offsetof(struct prctl_mm_map, start_brk),
-+			offsetof(struct prctl_mm_map, brk),
-+			offsetof(struct prctl_mm_map, arg_start),
-+			offsetof(struct prctl_mm_map, arg_end),
-+			offsetof(struct prctl_mm_map, env_start),
-+			offsetof(struct prctl_mm_map, env_end),
-+		};
-+		int i;
-+
-+		for (i = 0; i < ARRAY_SIZE(offsets); i++) {
-+			u64 val = ((u64 *)prctl_map)[offsets[i]];
-+
-+			if (val < mmap_min_addr || val >= mmap_max_addr) {
-+				error = -EINVAL;
-+				goto out;
-+			}
-+		}
-+	}
+> Maybe add a $fix too?
+>
+> Maybe:
+>
+>                 while ($rawline =~ /(?:^|$edge)($misspellings)(?:\$|$edge)/g) {
+>                         my $typo = $1;
+>                         if (WARN("TYPO_SPELLING",
+>                                  "$typo may be misspelled - Use '$spelling_fix($typo)'?\n" . $herecurr) &&
+>                             $fix) {
+>                                 $fixed[$fixlinenr] =~ s/(?:^|$edge)($typo)(?:\$|$edge)/$spelling_fix($typo)/;
+>                         }
+>                 }
+>
+>
 
-and it saved 400 bytes of text.
+Cool, let me grok your suggested patch and reply. Thanks for looking this over!
 
-But it's a bit hacky.  Can anyone think of anything smarter?
+-Kees
 
-
+-- 
+Kees Cook
+Chrome OS Security
