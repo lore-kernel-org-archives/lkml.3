@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaHUEIm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 00:08:42 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:63928 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaHUEIi (ORCPT
+	id S1752785AbaHUEKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 00:10:35 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:39785 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbaHUEKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 00:08:38 -0400
+	Thu, 21 Aug 2014 00:10:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <1408495538-27480-2-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1408495538-27480-3-git-send-email-linux@roeck-us.net>
 References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
-	<1408495538-27480-2-git-send-email-linux@roeck-us.net>
-Date: Wed, 20 Aug 2014 21:08:37 -0700
-X-Google-Sender-Auth: oKlrNSHLK2Om9_CdWOtje-wNidk
-Message-ID: <CAD=FV=UEyCgA+v6JK20Oos=SF4YEEMARB4JEvGJZwL25WaX6kg@mail.gmail.com>
-Subject: Re: [PATCH v7 01/11] kernel: Add support for kernel restart handler
- call chain
+	<1408495538-27480-3-git-send-email-linux@roeck-us.net>
+Date: Wed, 20 Aug 2014 21:10:31 -0700
+X-Google-Sender-Auth: 7G16U-ZhcMrf5MVrRlQCHV5uQPg
+Message-ID: <CAD=FV=Va8UrpDCLjFQJ6j-K0C3v7NPfifaJGtReCkUEu3x0mLg@mail.gmail.com>
+Subject: Re: [PATCH v7 02/11] power/restart: Call machine_restart instead of arm_pm_restart
 From: Doug Anderson <dianders@chromium.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: Russell King <linux@arm.linux.org.uk>, Wim Van Sebroeck <wim@iguana.be>,
@@ -45,55 +44,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Guenter,
 
 On Tue, Aug 19, 2014 at 5:45 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> Various drivers implement architecture and/or device specific means
-> to restart (reset) the system. Various mechanisms have been implemented
-> to support those schemes. The best known mechanism is arm_pm_restart,
-> which is a function pointer to be set either from platform specific code
-> or from drivers. Another mechanism is to use hardware watchdogs to issue
-> a reset; this mechanism is used if there is no other method available
-> to reset a board or system. Two examples are alim7101_wdt, which currently
-> uses the reboot notifier to trigger a reset, and moxart_wdt, which registers
-> the arm_pm_restart function.
+> machine_restart is supported on non-ARM platforms, and and ultimately calls
+> arm_pm_restart, so dont call arm_pm_restart directly but use the more
+> generic function.
 >
-> The existing mechanisms have a number of drawbacks. Typically only one scheme
-> to restart the system is supported (at least if arm_pm_restart is used).
-> At least in theory there can be multiple means to restart the system, some of
-> which may be less desirable (for example one mechanism may only reset the CPU,
-> while another may reset the entire system). Using arm_pm_restart can also be
-> racy if the function pointer is set from a driver, as the driver may be in
-> the process of being unloaded when arm_pm_restart is called.
-> Using the reboot notifier is always racy, as it is unknown if and when
-> other functions using the reboot notifier have completed execution
-> by the time the watchdog fires.
->
-> Introduce a system restart handler call chain to solve the described problems.
-> This call chain is expected to be executed from the architecture specific
-> machine_restart() function. Drivers providing system restart functionality
-> (such as the watchdog drivers mentioned above) are expected to register
-> with this call chain. By using the priority field in the notifier block,
-> callers can control restart handler execution sequence and thus ensure that
-> the restart handler with the optimal restart capabilities for a given system
-> is called first.
->
+> Cc: Russell King <linux@arm.linux.org.uk>
+
+Do you need to submit this to his patch tracker to get him to pick it
+up?  How are you envisioning that this series land?  It crosses a lot
+of boundaries so I guess will need a reasonable amount of coordination
+between maintainers...
+
+
 > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 > Acked-by: Heiko Stuebner <heiko@sntech.de>
 > ---
-> v7: Rebased to v3.17-rc1
-> v6: Use atomic notifier call chain
-> v5: Function renames:
->     register_restart_notifier -> register_restart_handler
->     unregister_restart_notifier -> unregister_restart_handler
->     kernel_restart_notify -> do_kernel_restart
-> v4: Document and suggest values for notifier priorities
-> v3: Add kernel_restart_notify wrapper function to execute notifier.
->     Improve documentation.
->     Move restart_notifier_list into kernel/reboot.c and make it static.
-> v2: No change.
+> v7: No change.
+> v6: No change.
+> v5: No change.
+> v4: No change.
+> v3: No change.
+> v2: Added patch.
 >
->  include/linux/reboot.h |  3 ++
->  kernel/reboot.c        | 81 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 84 insertions(+)
+>  drivers/power/reset/restart-poweroff.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 
 Reviewed-by: Doug Anderson <dianders@chromium.org>
 Tested-by: Doug Anderson <dianders@chromium.org>
