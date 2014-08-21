@@ -1,216 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562AbaHULAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:00:47 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54022 "EHLO
+	id S1754604AbaHULA5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:00:57 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54171 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754495AbaHULAo (ORCPT
+	by vger.kernel.org with ESMTP id S1754572AbaHULAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:00:44 -0400
+	Thu, 21 Aug 2014 07:00:53 -0400
 From: Sudeep Holla <sudeep.holla@arm.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: sudeep.holla@arm.com, Heiko Carstens <heiko.carstens@de.ibm.com>,
         Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
         Stephen Boyd <sboyd@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v3 09/11] ARM64: kernel: add support for cpu cache information
-Date: Thu, 21 Aug 2014 11:59:52 +0100
-Message-Id: <1408618794-28497-10-git-send-email-sudeep.holla@arm.com>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-ia64@vger.kernel.org, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, x86@kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 00/11] drivers: cacheinfo support
+Date: Thu, 21 Aug 2014 11:59:43 +0100
+Message-Id: <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
+In-Reply-To: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
 References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
- <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sudeep Holla <sudeep.holla@arm.com>
 
-This patch adds support for cacheinfo on ARM64.
+This series adds a generic cacheinfo support similar to topology. The
+implementation is based on x86 cacheinfo support. Currently x86, powerpc,
+ia64 and s390 have their own implementations. While adding similar support
+to ARM and ARM64, here is the attempt to make it generic quite similar to
+topology info support. It also adds the missing ABI documentation for
+the cacheinfo sysfs which is already being used.
 
-On ARMv8, the cache hierarchy can be identified through Cache Level ID
-(CLIDR) register while the cache geometry is provided by Cache Size ID
-(CCSIDR) register.
+It moves all the existing different implementations on x86, ia64, powerpc
+and s390 to use the generic cacheinfo infrastructure introduced here.
+These changes on non-ARM platforms are only compile tested and tested on x86.
 
-Since the architecture doesn't provide any way of detecting the cpus
-sharing particular cache, device tree is used for the same purpose.
+This series also adds support for ARM and ARM64 architectures based on
+the generic support.
 
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+The code can be fetched from:
+ git://linux-arm.org/linux-skn cacheinfo
+
+Changes v2->v3:
+	- Added {allocation,write}_policy instead of single attributes sysfs
+	  (attributes retained on ia64 privately as it was used only on that)
+	- factored out show_cpumap into separate helper in cpumask.h
+	- populate cpu_{map,list} for non-DT system if they are not populated
+	  by arch specific callbacks
+	- removed use of sysfs *_show callback in cache_attrs_is_visible
+	- all the review comments from Stephen Boyd implemented
+
+Changes v1->v2:
+	- removed custom device_{add,remove}_attrs, using is_visible callback
+	  instead(suggested by GregKH)
+	- arm64: changes as per MarkR review comments
+	- Moved smp_call_function_single to architectures using it(arm, arm64,
+	  x86) (suggested by Stephen Boyd)
+	- arm (mostly changes as per RMK's review comments)
+		- fixed to allow v7 + v6 build
+		- l2 cache changes to remove extra structure
+		- populated CTR for few StrongARM CPU's not implementing CTR
+
+[v1] https://lkml.org/lkml/2014/6/25/603
+[v2] https://lkml.org/lkml/2014/7/25/467
+
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux390@de.ibm.com
+Cc: linux-s390@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-arm-kernel@lists.infradead.org
----
- arch/arm64/kernel/Makefile    |   2 +-
- arch/arm64/kernel/cacheinfo.c | 142 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 143 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm64/kernel/cacheinfo.c
 
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index df7ef8768fc2..285cd88c1e37 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -15,7 +15,7 @@ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
- 			   entry-fpsimd.o process.o ptrace.o setup.o signal.o	\
- 			   sys.o stacktrace.o time.o traps.o io.o vdso.o	\
- 			   hyp-stub.o psci.o cpu_ops.o insn.o return_address.o	\
--			   cpuinfo.o
-+			   cpuinfo.o cacheinfo.o
- 
- arm64-obj-$(CONFIG_COMPAT)		+= sys32.o kuser32.o signal32.o 	\
- 					   sys_compat.o
-diff --git a/arch/arm64/kernel/cacheinfo.c b/arch/arm64/kernel/cacheinfo.c
-new file mode 100644
-index 000000000000..a9cbf3b40a1f
---- /dev/null
-+++ b/arch/arm64/kernel/cacheinfo.c
-@@ -0,0 +1,142 @@
-+/*
-+ *  ARM64 cacheinfo support
-+ *
-+ *  Copyright (C) 2014 ARM Ltd.
-+ *  All Rights Reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/cacheinfo.h>
-+#include <linux/cpu.h>
-+#include <linux/compiler.h>
-+#include <linux/of.h>
-+
-+#include <asm/processor.h>
-+
-+#define MAX_CACHE_LEVEL			7	/* Max 7 level supported */
-+/* Ctypen, bits[3(n - 1) + 2 : 3(n - 1)], for n = 1 to 7 */
-+#define CLIDR_CTYPE_SHIFT(level)	(3 * (level - 1))
-+#define CLIDR_CTYPE_MASK(level)		(7 << CLIDR_CTYPE_SHIFT(level))
-+#define CLIDR_CTYPE(clidr, level)	\
-+	(((clidr) & CLIDR_CTYPE_MASK(level)) >> CLIDR_CTYPE_SHIFT(level))
-+
-+static inline enum cache_type get_cache_type(int level)
-+{
-+	u64 clidr;
-+
-+	if (level > MAX_CACHE_LEVEL)
-+		return CACHE_TYPE_NOCACHE;
-+	asm volatile ("mrs     %x0, clidr_el1" : "=r" (clidr));
-+	return CLIDR_CTYPE(clidr, level);
-+}
-+
-+/*
-+ * NumSets, bits[27:13] - (Number of sets in cache) - 1
-+ * Associativity, bits[12:3] - (Associativity of cache) - 1
-+ * LineSize, bits[2:0] - (Log2(Number of words in cache line)) - 2
-+ */
-+#define CCSIDR_WRITE_THROUGH		BIT(31)
-+#define CCSIDR_WRITE_BACK		BIT(30)
-+#define CCSIDR_READ_ALLOCATE		BIT(29)
-+#define CCSIDR_WRITE_ALLOCATE		BIT(28)
-+#define CCSIDR_LINESIZE_MASK		0x7
-+#define CCSIDR_ASSOCIATIVITY_SHIFT	3
-+#define CCSIDR_ASSOCIATIVITY_MASK	0x3FF
-+#define CCSIDR_NUMSETS_SHIFT		13
-+#define CCSIDR_NUMSETS_MASK		0x7FF
-+
-+/*
-+ * Which cache CCSIDR represents depends on CSSELR value
-+ * Make sure no one else changes CSSELR during this
-+ * smp_call_function_single prevents preemption for us
-+ */
-+static inline u32 get_ccsidr(u64 csselr)
-+{
-+	u64 ccsidr;
-+
-+	/* Put value into CSSELR */
-+	asm volatile("msr csselr_el1, %x0" : : "r" (csselr));
-+	isb();
-+	/* Read result out of CCSIDR */
-+	asm volatile("mrs %x0, ccsidr_el1" : "=r" (ccsidr));
-+
-+	return (u32)ccsidr;
-+}
-+
-+static void ci_leaf_init(struct cacheinfo *this_leaf,
-+			 enum cache_type type, unsigned int level)
-+{
-+	bool is_instr_cache = type & CACHE_TYPE_INST;
-+	u32 tmp = get_ccsidr((level - 1) << 1 | is_instr_cache);
-+
-+	this_leaf->level = level;
-+	this_leaf->type = type;
-+	this_leaf->coherency_line_size =
-+	    (1 << ((tmp & CCSIDR_LINESIZE_MASK) + 2)) * 4;
-+	this_leaf->number_of_sets =
-+	    ((tmp >> CCSIDR_NUMSETS_SHIFT) & CCSIDR_NUMSETS_MASK) + 1;
-+	this_leaf->ways_of_associativity = ((tmp >> CCSIDR_ASSOCIATIVITY_SHIFT)
-+					    & CCSIDR_ASSOCIATIVITY_MASK) + 1;
-+	this_leaf->size = this_leaf->number_of_sets *
-+	    this_leaf->coherency_line_size * this_leaf->ways_of_associativity;
-+	this_leaf->attributes =
-+		((tmp & CCSIDR_WRITE_THROUGH) ? CACHE_WRITE_THROUGH : 0) |
-+		((tmp & CCSIDR_WRITE_BACK) ? CACHE_WRITE_BACK : 0) |
-+		((tmp & CCSIDR_READ_ALLOCATE) ? CACHE_READ_ALLOCATE : 0) |
-+		((tmp & CCSIDR_WRITE_ALLOCATE) ? CACHE_WRITE_ALLOCATE : 0);
-+}
-+
-+static int __init_cache_level(unsigned int cpu)
-+{
-+	unsigned int ctype, level, leaves;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+
-+	for (level = 1, leaves = 0; level <= MAX_CACHE_LEVEL; level++) {
-+		ctype = get_cache_type(level);
-+		if (ctype == CACHE_TYPE_NOCACHE) {
-+			level--;
-+			break;
-+		}
-+		/* Separate instruction and data caches */
-+		leaves += (ctype == CACHE_TYPE_SEPARATE) ? 2 : 1;
-+	}
-+
-+	this_cpu_ci->num_levels = level;
-+	this_cpu_ci->num_leaves = leaves;
-+	return 0;
-+}
-+
-+static int __populate_cache_leaves(unsigned int cpu)
-+{
-+	unsigned int level, idx;
-+	enum cache_type type;
-+	struct cpu_cacheinfo *this_cpu_ci = get_cpu_cacheinfo(cpu);
-+	struct cacheinfo *this_leaf = this_cpu_ci->info_list;
-+
-+	for (idx = 0, level = 1; level <= this_cpu_ci->num_levels &&
-+	     idx < this_cpu_ci->num_leaves; idx++, level++) {
-+		type = get_cache_type(level);
-+		if (type == CACHE_TYPE_SEPARATE) {
-+			ci_leaf_init(this_leaf++, CACHE_TYPE_DATA, level);
-+			ci_leaf_init(this_leaf++, CACHE_TYPE_INST, level);
-+		} else {
-+			ci_leaf_init(this_leaf++, type, level);
-+		}
-+	}
-+	return 0;
-+}
-+
-+DEFINE_SMP_CALL_CACHE_FUNCTION(init_cache_level)
-+DEFINE_SMP_CALL_CACHE_FUNCTION(populate_cache_leaves)
+Sudeep Holla (11):
+  cpumask: factor out show_cpumap into separate helper function
+  topology: replace custom attribute macros with standard DEVICE_ATTR*
+  drivers: base: add new class "cpu" to group cpu devices
+  drivers: base: support cpu cache information interface to userspace
+    via sysfs
+  ia64: move cacheinfo sysfs to generic cacheinfo infrastructure
+  s390: move cacheinfo sysfs to generic cacheinfo infrastructure
+  x86: move cacheinfo sysfs to generic cacheinfo infrastructure
+  powerpc: move cacheinfo sysfs to generic cacheinfo infrastructure
+  ARM64: kernel: add support for cpu cache information
+  ARM: kernel: add support for cpu cache information
+  ARM: kernel: add outer cache support for cacheinfo implementation
+
+ Documentation/ABI/testing/sysfs-devices-system-cpu |  47 ++
+ arch/arm/include/asm/outercache.h                  |   9 +
+ arch/arm/kernel/Makefile                           |   1 +
+ arch/arm/kernel/cacheinfo.c                        | 287 ++++++++
+ arch/arm/mm/Kconfig                                |  13 +
+ arch/arm/mm/cache-l2x0.c                           |  35 +-
+ arch/arm/mm/cache-tauros2.c                        |  36 +
+ arch/arm/mm/cache-xsc3l2.c                         |  17 +
+ arch/arm64/kernel/Makefile                         |   2 +-
+ arch/arm64/kernel/cacheinfo.c                      | 142 ++++
+ arch/ia64/kernel/topology.c                        | 421 +++--------
+ arch/powerpc/kernel/cacheinfo.c                    | 812 +++------------------
+ arch/powerpc/kernel/cacheinfo.h                    |   8 -
+ arch/powerpc/kernel/sysfs.c                        |  12 +-
+ arch/s390/kernel/cache.c                           | 388 +++-------
+ arch/x86/kernel/cpu/intel_cacheinfo.c              | 709 +++++-------------
+ arch/x86/kernel/cpu/perf_event_amd_iommu.c         |   5 +-
+ arch/x86/kernel/cpu/perf_event_amd_uncore.c        |   6 +-
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c        |   6 +-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c      |   6 +-
+ drivers/acpi/acpi_pad.c                            |   6 +-
+ drivers/base/Makefile                              |   2 +-
+ drivers/base/cacheinfo.c                           | 543 ++++++++++++++
+ drivers/base/core.c                                |  39 +-
+ drivers/base/cpu.c                                 |  12 +-
+ drivers/base/node.c                                |  14 +-
+ drivers/base/topology.c                            |  71 +-
+ drivers/pci/pci-sysfs.c                            |  39 +-
+ include/linux/cacheinfo.h                          | 100 +++
+ include/linux/cpu.h                                |   2 +
+ include/linux/cpumask.h                            |  27 +
+ 31 files changed, 1826 insertions(+), 1991 deletions(-)
+ create mode 100644 arch/arm/kernel/cacheinfo.c
+ create mode 100644 arch/arm64/kernel/cacheinfo.c
+ delete mode 100644 arch/powerpc/kernel/cacheinfo.h
+ create mode 100644 drivers/base/cacheinfo.c
+ create mode 100644 include/linux/cacheinfo.h
+
 -- 
 1.8.3.2
 
