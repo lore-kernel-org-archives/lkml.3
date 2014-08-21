@@ -1,158 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733AbaHUMXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 08:23:36 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:44042 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaHUMXe (ORCPT
+	id S1754847AbaHUMXm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 08:23:42 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:34982 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430AbaHUMXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 08:23:34 -0400
+	Thu, 21 Aug 2014 08:23:37 -0400
 From: Mathias Krause <minipli@googlemail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: Joe Perches <joe@perches.com>, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
         linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCHv3 0/9] Mark literal strings in __init / __exit code
-Date: Thu, 21 Aug 2014 14:23:03 +0200
-Message-Id: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
+Subject: [PATCHv3 2/9] printk: Provide pi_<level> / pe_<level> macros for __init / __exit code
+Date: Thu, 21 Aug 2014 14:23:05 +0200
+Message-Id: <1408623792-7973-3-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
+References: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v3 of the patch series initially posted here:
+The memory used for functions marked with __init will be released after
+initialization, albeit static data referenced by such code will not, if
+not explicitly marked this way, too. This is especially true for format
+strings used in messages printed by such code. Those are not marked and
+therefore will survive the __init cleanup -- dangling in memory without
+ever being referenced again.
 
-  https://lkml.org/lkml/2014/6/22/149
+Ideally we would like the compiler to automatically recognise such
+constructs but it does not and it's not as simple as it might sound, as
+strings used in initialization code might latter still be used, e.g. as
+a slab cache name. Therefore we need to explicitly mark the strings we
+want to release together with the function itself.
 
-This series tries to address the problem of dangling strings of __init
-functions after initialization, as well as __exit strings for code not
-even included in the final kernel image. The code might get freed, but
-the format strings are not, as they're in the wrong section.
+For a seamless integration of the necessary __init_str() / __exit_str()
+macros to mark the format strings, this patch provides new variants of
+the well known pr_<level>() macros as pi_<level>() for __init code and
+pe_<level>() for __exit code. Changing existing code should thereby be
+as simple as changing a single letter.
 
-One solution to the problem might be to declare variables in the code
-and mark those variables as __initconst. That, though, makes the code
-ugly, as can be seen, e.g., in drivers/hwmon/w83627ehf.c -- a pile of
-'static const char[] __initconst' lines just for the pr_info() call.
+For code that cannot be changed to use the pi_<level>() / pe_<level>()
+helpers printk_init() and printk_exit() macros are provided, too.
 
-To be able to mark strings easily patch 1 adds macros to init.h to do so
-without the need to explicitly define variables in the code. (Internally
-it'll declare ones nonetheless, as this seem to be the only way to
-attach an __attribute__() to a verbatim string.) That's already enough to
-solve the problem -- mark the corresponding stings by using these
-macros. But patch 2 adds some syntactical sugar for the most popular use
-case, by providing pr_<level> alike macros, namely pi_<level> for __init
-code and pe_<level> for __exit code. This hides the use of the marker
-macros behind the commonly known printing functions -- with just a
-single character changed. For code that cannot be changed to use the
-pi_<level>() / pe_<level>() helpers printk_init() and printk_exit()
-macros are provided, too.
+If users get it wrong, e.g. use printk_init() / pi_<level>() in non-init
+code or printk_exit() / pe_<level>() in non-exit code, modpost will
+detect the error as a section mismatch and report it accordingly.
 
-The (hidden) variables used in the macros of patch 1 will pollute the
-kernel's symbol table with unneeded entries. It'll be a problem in the
-KALLSYMS_ALL case only, however, patch 3 takes care of filtering the
-pseudo symbols. They have no value for us beside being the only way to
-attach an __attribute__ to a string literal.
+One remark, though: We cannot provide appropriate p[ie]_debug() macros
+for the CONFIG_DYNAMIC_DEBUG case as there is (currently) no way to
+remove entries from dyndbg after initialization. But supporting that
+scenario would require more work (and code), therefore not necessarily
+justifying the memory savings.
 
-If users of the new macros get it wrong, e.g. use printk_init() /
-pi_<level>() in non-init code or vice versa printk_exit() / pe_<level>()
-in non-exit code, modpost will detect the error as a section mismatch
-and report it accordingly. Still, the message printed by modpost with
-CONFIG_DEBUG_SECTION_MISMATCH=y is rather confusing as the __initconst /
-__exitdata annotation is hidden behind the macros. That's what patch 4
-takes care of -- detecting such cases and providing better modpost
-messages, guiding the user on how to fix the error.
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
 
-The remaining patches (5 to 9) exemplarily change strings and format
-strings in a selection of files under arch/x86/ to use the new macros.
-They also address a few styling issues, e.g., patches 4 and 5 are
-cleanup patches I stumbled across while changing the corresponding code
-to make use of the new pi_*() helpers. The changes to arch/x86/ already
-lead to moving ~3kb of memory from .rodata to .init.rodata. This should
-free up a page after init on almost any x86 system.
+---
+v3: change description to mention modpost error catching
+v2: introduce printk_init / printk_exit macros (suggested by Joe)
+---
+ include/linux/init.h   |    7 ++++--
+ include/linux/printk.h |   59 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 64 insertions(+), 2 deletions(-)
 
-To show that there's actual more value to it: A hacked up script, dully
-changing pr_<level> to pi_<level> for __init functions under arch/x86/
-is able to move ~8kB of r/o data into the .init section (partly already
-covered by the patches of this series). The script, though, is dump. It
-does not handle any of the printk() calls, nor does it handle panic()
-calls or other strings used only in initialization code. So there's more
-to squeeze out.
-
-
-Open issues:
-
-1/ When CONFIG_DYNAMIC_DEBUG is enabled, pi_debug() and pe_debug()
-fall-back to pr_debug() as there is currently no way of removing the
-dynamic entries from the dynamic debug code after init.
-
-2/ It only seamlessly integrates for the pr_<level>() / printk() kind of
-use cases. For other literal strings it gets slightly less readable,
-e.g. this:
-
-   strncmp(str, "s4_nohwsig", 10)
-
-becomes that:
-
-   strncmp(str, __init_str("s4_nohwsig"), 10)
-
-That might be okay, though, as it marks the string clearly as an init
-string, so might actually increase the understanding of the life time of
-the string literal.
-
-3/ Documentation: Should the new helpers be documented any further than
-already done with the patches themselves, e.g. through a new entry to
-Documentation/DocBook/kernel-hacking.tmpl? I'm uncertain as there is no
-entry for the pr_<level>() helpers but for the __init / __exit markers.
-
-
-If this series looks good to you as is, I think patches 1 to 4 should be
-merged through Andrew, patches 5 to 9 through the x86 maintainers tree.
-Would that work?
-
-
-Regards,
-Mathias
-
-v3: 
-- mention modpost error catching on wrong usage in patch 2 (Andrew)
-- handle __init / __exit strings in modpost for better diagnostics
-- reordered patches: 1-4: arch agnostic, 5-9: x86 specific
-- rebased to v3.17-rc1
-
-v2:
-- introduce printk_init / printk_exit macros (suggested by Joe)
-- filter __init / __exit string pseudo symols in kallsyms
-- more x86 related patches making use of the new helpers
-
-
-Mathias Krause (9):
-  init.h: Add __init_str / __exit_str macros
-  printk: Provide pi_<level> / pe_<level> macros for __init / __exit
-    code
-  kallsyms: exclude pseudo symbols for __init / __exit strings
-  modpost: provide better diagnostics for __init / __exit strings
-  x86, acpi: Mark __init strings as such
-  x86, mm: Make x86_init.memory_setup() return a const char *
-  x86, mm: early_panic() - pass on the message as string
-  x86, mm: e820 - mark __init strings as such
-  x86: setup - mark __init strings as such
-
- arch/x86/include/asm/e820.h     |    4 +-
- arch/x86/include/asm/x86_init.h |    2 +-
- arch/x86/kernel/acpi/boot.c     |  155 ++++++++++++++++++---------------------
- arch/x86/kernel/acpi/sleep.c    |   17 ++---
- arch/x86/kernel/e820.c          |   95 ++++++++++++------------
- arch/x86/kernel/setup.c         |   70 +++++++++---------
- arch/x86/lguest/boot.c          |    2 +-
- arch/x86/xen/setup.c            |    4 +-
- arch/x86/xen/xen-ops.h          |    4 +-
- include/linux/init.h            |   23 ++++++
- include/linux/printk.h          |   59 +++++++++++++++
- scripts/kallsyms.c              |   13 ++++
- scripts/mod/modpost.c           |   94 +++++++++++++++++++-----
- 13 files changed, 339 insertions(+), 203 deletions(-)
-
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 2c1cf10bb7..dc5691b2f3 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -39,14 +39,17 @@
+  * For strings used in __init / __exit functions the __init_str() /
+  * __exit_str() macros will take care of marking the strings accordingly so
+  * they can be freed, too. Otherwise the strings would resist in memory, even
+- * though they are no longer referenced.
++ * though they are no longer referenced. They're also used to implement the
++ * printk_init() / printk_exit() macros.
+  *
+  * Use them like this:
+  *
+  * static int __init my_setup(char *arg)
+  * {
+- *    if (!strcmp(arg, __init_str("disable")))
++ *    if (!strcmp(arg, __init_str("disable"))) {
++ *       printk_init("Disabled by commandline\n");
+  *       enabled = false;
++ *   }
+  * }
+  * __setup("mydev=", my_setup);
+  */
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index d78125f73a..3be8e228db 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -229,6 +229,10 @@ extern asmlinkage void dump_stack(void) __cold;
+  * All of these will print unconditionally, although note that pr_debug()
+  * and other debug macros are compiled out unless either DEBUG is defined
+  * or CONFIG_DYNAMIC_DEBUG is set.
++ *
++ * The printk_init() and pi_<level>() macros shall be used in __init code in
++ * favour of printk() / pr_<level>(). The printk_exit() and pe_<level>()
++ * variants shall be used in __exit code.
+  */
+ #define pr_emerg(fmt, ...) \
+ 	printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
+@@ -248,13 +252,60 @@ extern asmlinkage void dump_stack(void) __cold;
+ #define pr_cont(fmt, ...) \
+ 	printk(KERN_CONT fmt, ##__VA_ARGS__)
+ 
++#define printk_init(fmt, ...) \
++	printk(__init_str(fmt), ##__VA_ARGS__)
++#define printk_exit(fmt, ...) \
++	printk(__exit_str(fmt), ##__VA_ARGS__)
++
++#define pi_emerg(fmt, ...) \
++	printk_init(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_alert(fmt, ...) \
++	printk_init(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_crit(fmt, ...) \
++	printk_init(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_err(fmt, ...) \
++	printk_init(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_warning(fmt, ...) \
++	printk_init(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_warn pi_warning
++#define pi_notice(fmt, ...) \
++	printk_init(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_info(fmt, ...) \
++	printk_init(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_cont(fmt, ...) \
++	printk_init(KERN_CONT fmt, ##__VA_ARGS__)
++
++#define pe_emerg(fmt, ...) \
++	printk_exit(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_alert(fmt, ...) \
++	printk_exit(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_crit(fmt, ...) \
++	printk_exit(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_err(fmt, ...) \
++	printk_exit(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_warning(fmt, ...) \
++	printk_exit(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_warn pe_warning
++#define pe_notice(fmt, ...) \
++	printk_exit(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_info(fmt, ...) \
++	printk_exit(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_cont(fmt, ...) \
++	printk_exit(KERN_CONT fmt, ##__VA_ARGS__)
++
+ /* pr_devel() should produce zero code unless DEBUG is defined */
+ #ifdef DEBUG
+ #define pr_devel(fmt, ...) \
+ 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_devel(fmt, ...) \
++	printk_init(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_devel(fmt, ...) \
++	printk_exit(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+ #else
+ #define pr_devel(fmt, ...) \
+ 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_devel pr_devel
++#define pe_devel pr_devel
+ #endif
+ 
+ #include <linux/dynamic_debug.h>
+@@ -264,12 +315,20 @@ extern asmlinkage void dump_stack(void) __cold;
+ /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
+ #define pr_debug(fmt, ...) \
+ 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
++#define pi_debug pr_debug
++#define pe_debug pr_debug
+ #elif defined(DEBUG)
+ #define pr_debug(fmt, ...) \
+ 	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_debug(fmt, ...) \
++	printk_init(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#define pe_debug(fmt, ...) \
++	printk_exit(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+ #else
+ #define pr_debug(fmt, ...) \
+ 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
++#define pi_debug pr_debug
++#define pe_debug pr_debug
+ #endif
+ 
+ /*
 -- 
 1.7.10.4
 
