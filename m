@@ -1,271 +1,504 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaHUQ7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:59:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56252 "EHLO mga11.intel.com"
+	id S1752989AbaHUQ76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:59:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54443 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865AbaHUQ7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:59:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,909,1406617200"; 
-   d="scan'208";a="579982075"
-Date: Thu, 21 Aug 2014 19:57:28 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Patch V4 29/42] x86, irq: introduce two helper functions to
- support irqdomain map operation
-Message-ID: <20140821165728.GV1660@lahna.fi.intel.com>
-References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
- <1402302011-23642-30-git-send-email-jiang.liu@linux.intel.com>
- <20140821141729.GT1660@lahna.fi.intel.com>
+	id S1752899AbaHUQ7z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 12:59:55 -0400
+From: "Murphy, Dan" <dmurphy@ti.com>
+To: "Menon, Nishanth" <nm@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 2/2] Input: misc: introduce palmas-pwrbutton
+Thread-Topic: [PATCH V2 2/2] Input: misc: introduce palmas-pwrbutton
+Thread-Index: AQHPvVmPSBoHiwpjW0OMgiSDUUUlVQ==
+Date: Thu, 21 Aug 2014 16:59:21 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DF0662@DFLE09.ent.ti.com>
+References: <1408392810-16011-1-git-send-email-nm@ti.com>
+ <1408636935-29515-1-git-send-email-nm@ti.com>
+ <1408636935-29515-3-git-send-email-nm@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140821141729.GT1660@lahna.fi.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 05:17:29PM +0300, Mika Westerberg wrote:
-> On Mon, Jun 09, 2014 at 04:19:58PM +0800, Jiang Liu wrote:
-> > Currently there are multiple entries to program IOAPIC pins, such as
-> > io_apic_setup_irq_pin_once(), io_apic_set_pci_routing() and
-> > setup_IO_APIC_irq_extra() etc.
-> > 
-> > This patch introduces two functions to help consolidate the code to
-> > program IOAPIC pins. Function mp_set_pin_attr() is used to optionally
-> > set trigger, polarity and NUMA node property for an IOAPIC pin.
-> > If mp_set_pin_attr() is not invoked for a pin, the default configuration
-> > from BIOS will be used.
-> > 
-> > Function mp_irqdomain_map() is an common implementation of irqdomain map()
-> > operation. It figures out attribures for pin and then actually programs
-> > the IOAPIC pin. We hope this will be the only entrance for programming
-> > IOAPIC pin.
-> > 
-> > And the flow will:
-> > 1) caller such as xxx_pci_irq_enable figures out pin attributes.
-> > 2) Invoke mp_set_pin_attr() to set attributes for a pin. If the pin has
-> >    already bin programmed,  mp_set_pin_attr() will aslo detects attribute
-> >    confictions.
-> > 3) Invoke mp_map_pin_to_irq()
-> > 3.1) If IRQ has already been assigned, return irq_find_mapping()
-> > 3.2) Else irq_create_mapping()
-> > 		->irq_domain_associate()
-> > 			->mp_irqdomain_map()
-> > 				->io_apic_setup_irq_pin()
-> > 
-> > So every pin will only programmed once by mp_irqdomain_map(), so we
-> > could kill io_apic_setup_irq_pin_once(), io_apic_set_pci_routing() and
-> > setup_IO_APIC_irq_extra() etc.
-> > 
-> > Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> > ---
-> >  arch/x86/include/asm/io_apic.h |    5 ++
-> >  arch/x86/kernel/apic/io_apic.c |   99 +++++++++++++++++++++++++++++++++++++++-
-> >  2 files changed, 103 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-> > index 3e4bea3a52b1..c53587868590 100644
-> > --- a/arch/x86/include/asm/io_apic.h
-> > +++ b/arch/x86/include/asm/io_apic.h
-> > @@ -173,7 +173,9 @@ enum ioapic_domain_type {
-> >  };
-> >  
-> >  struct device_node;
-> > +struct irq_domain;
-> >  struct irq_domain_ops;
-> > +
-> >  struct ioapic_domain_cfg {
-> >  	enum ioapic_domain_type		type;
-> >  	const struct irq_domain_ops	*ops;
-> > @@ -192,6 +194,9 @@ extern u32 mp_pin_to_gsi(int ioapic, int pin);
-> >  extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
-> >  extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
-> >  				      struct ioapic_domain_cfg *cfg);
-> > +extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
-> > +			    irq_hw_number_t hwirq);
-> > +extern int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node);
-> >  extern void __init pre_init_apic_IRQ0(void);
-> >  
-> >  extern void mp_save_irq(struct mpc_intsrc *m);
-> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> > index 9c5f70699a80..61aae90f7e23 100644
-> > --- a/arch/x86/kernel/apic/io_apic.c
-> > +++ b/arch/x86/kernel/apic/io_apic.c
-> > @@ -87,6 +87,14 @@ static DEFINE_RAW_SPINLOCK(vector_lock);
-> >  static DEFINE_MUTEX(ioapic_mutex);
-> >  static unsigned int ioapic_dynirq_base;
-> >  
-> > +struct mp_pin_info {
-> > +	int trigger;
-> > +	int polarity;
-> > +	int node;
-> > +	int set;
-> > +	u32 count;
-> > +};
-> > +
-> >  static struct ioapic {
-> >  	/*
-> >  	 * # of IRQ routing registers
-> > @@ -102,6 +110,7 @@ static struct ioapic {
-> >  	struct mp_ioapic_gsi  gsi_config;
-> >  	struct ioapic_domain_cfg irqdomain_cfg;
-> >  	struct irq_domain *irqdomain;
-> > +	struct mp_pin_info *pin_info;
-> >  	DECLARE_BITMAP(pin_programmed, MP_MAX_IOAPIC_PIN + 1);
-> >  } ioapics[MAX_IO_APICS];
-> >  
-> > @@ -147,6 +156,11 @@ static inline int mp_init_irq_at_boot(int ioapic, int irq)
-> >  	return ioapic == 0 || (irq >= 0 && irq < nr_legacy_irqs());
-> >  }
-> >  
-> > +static inline struct mp_pin_info *mp_pin_info(int ioapic_idx, int pin)
-> > +{
-> > +	return ioapics[ioapic_idx].pin_info + pin;
-> > +}
-> > +
-> >  static inline struct irq_domain *mp_ioapic_irqdomain(int ioapic)
-> >  {
-> >  	return ioapics[ioapic].irqdomain;
-> > @@ -1006,6 +1020,7 @@ static int mp_map_pin_to_irq(u32 gsi, int idx, int ioapic, int pin,
-> >  {
-> >  	int irq;
-> >  	struct irq_domain *domain = mp_ioapic_irqdomain(ioapic);
-> > +	struct mp_pin_info *info = mp_pin_info(ioapic, pin);
-> >  
-> >  	/*
-> >  	 * Don't use irqdomain to manage ISA IRQs because there may be
-> > @@ -1034,6 +1049,13 @@ static int mp_map_pin_to_irq(u32 gsi, int idx, int ioapic, int pin,
-> >  	irq = irq_find_mapping(domain, pin);
-> >  	if (irq <= 0 && (flags & IOAPIC_MAP_ALLOC))
-> >  		irq = alloc_irq_from_domain(domain, gsi, pin);
-> > +
-> > +	if (flags & IOAPIC_MAP_ALLOC) {
-> > +		if (irq > 0)
-> > +			info->count++;
-> > +		else if (info->count == 0)
-> > +			info->set = 0;
-> > +	}
-> >  	mutex_unlock(&ioapic_mutex);
-> >  
-> >  	return irq > 0 ? irq : -1;
-> > @@ -2923,18 +2945,27 @@ out:
-> >  
-> >  static int mp_irqdomain_create(int ioapic)
-> >  {
-> > +	size_t size;
-> >  	int hwirqs = mp_ioapic_pin_count(ioapic);
-> >  	struct ioapic *ip = &ioapics[ioapic];
-> >  	struct ioapic_domain_cfg *cfg = &ip->irqdomain_cfg;
-> >  	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(ioapic);
-> >  
-> > +	size = sizeof(struct mp_pin_info) * mp_ioapic_pin_count(ioapic);
-> > +	ip->pin_info = kzalloc(size, GFP_KERNEL);
-> > +	if (!ip->pin_info)
-> > +		return -ENOMEM;
-> > +
-> >  	if (cfg->type == IOAPIC_DOMAIN_INVALID)
-> >  		return 0;
-> >  
-> >  	ip->irqdomain = irq_domain_add_linear(cfg->dev, hwirqs, cfg->ops,
-> >  					      (void *)(long)ioapic);
-> > -	if(!ip->irqdomain)
-> > +	if(!ip->irqdomain) {
-> > +		kfree(ip->pin_info);
-> > +		ip->pin_info = NULL;
-> >  		return -ENOMEM;
-> > +	}
-> >  
-> >  	if (cfg->type == IOAPIC_DOMAIN_LEGACY ||
-> >  	    cfg->type == IOAPIC_DOMAIN_STRICT)
-> > @@ -3898,6 +3929,72 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
-> >  	nr_ioapics++;
-> >  }
-> >  
-> > +int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
-> > +		     irq_hw_number_t hwirq)
-> > +{
-> > +	int ioapic = (int)(long)domain->host_data;
-> > +	struct mp_pin_info *info = mp_pin_info(ioapic, hwirq);
-> > +	struct io_apic_irq_attr attr;
-> > +
-> > +	/*
-> > +	 * Skip the timer IRQ if there's a quirk handler installed and if it
-> > +	 * returns 1:
-> > +	 */
-> > +	if (apic->multi_timer_check &&
-> > +	    apic->multi_timer_check(ioapic, virq))
-> > +		return 0;
-> > +
-> > +	/* Get default attribute if not set by caller yet */
-> > +	if (!info->set) {
-> > +		u32 gsi = mp_pin_to_gsi(ioapic, hwirq);
-> > +
-> > +		if (acpi_get_override_irq(gsi, &info->trigger,
-> > +					  &info->polarity) < 0) {
+On 08/21/2014 11:04 AM, Menon, Nishanth wrote:
+> Many palmas family of PMICs have support for interrupt based power
+> button. This allows the device to notify the processor of external
+> push button events over the shared palmas interrupt. However, this
+> event is generated only during a "press" operation. Software is
+> supposed to poll(sigh!) for detecting a release event.
 > 
-> Sadly this seems to break LPSS ACPI enumerated devices.
+> The PMIC also supports ability to power off independent of the
+> software decisions when the button is pressed for a long duration if
+> the PMIC is appropriately configured on the platform.
 > 
-> Before this change /proc/interrupts say:
+> Even though the function is similar to twl4030_pwrbutton, it is
+> substantially different in operation to belong to a new driver of it's
+> own.
 > 
->    0:         14          0          0          0   IO-APIC-edge      timer
->    1:         10          0          0          0   IO-APIC-edge      i8042
->    4:         79          0          0          0   IO-APIC-edge      serial
->    5:         52          0          0          0   IO-APIC-fasteoi   mmc0
->    6:          0          0          0          0   IO-APIC-fasteoi   dw_dmac
->    7:          0          0          0          0   IO-APIC-fasteoi   INT3432:00, INT3433:00
->    8:          1          0          0          0   IO-APIC-edge      rtc0
->    9:        174          0          0          0   IO-APIC-fasteoi   acpi
->   57:        476          0          0          0   PCI-MSI-edge      xhci_hcd
->   58:         17          0          0          0   PCI-MSI-edge      snd_hda_intel
+> Based on original work done by Girish S Ghongdemath <girishsg@ti.com>
 > 
-> After the change it looks like this:
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+> Changes in v2:
+>  - review comments incorporated
+>  - debounce programming for TWL variants that actually support it.
+> V1: https://patchwork.kernel.org/patch/4739041/
 > 
->   0:         14          0          0          0   IO-APIC-edge      timer
->   1:         10          0          0          0   IO-APIC-edge      i8042
->   4:         64          0          0          0   IO-APIC-edge      serial
->   5:          0          0          0          0   IO-APIC-edge      mmc0
->   6:          0          0          0          0   IO-APIC-edge      dw_dmac
->   7:          0          0          0          0   IO-APIC-edge      INT3432:00, INT3433:00
->   8:          1          0          0          0   IO-APIC-edge      rtc0
->   9:        173          0          0          0   IO-APIC-fasteoi   acpi
->  41:        471          0          0          0   PCI-MSI-edge      xhci_hcd
->  42:         17          0          0          0   PCI-MSI-edge      snd_hda_intel
+>  drivers/input/misc/Kconfig            |   10 +
+>  drivers/input/misc/Makefile           |    1 +
+>  drivers/input/misc/palmas-pwrbutton.c |  356 +++++++++++++++++++++++++++++++++
+>  3 files changed, 367 insertions(+)
+>  create mode 100644 drivers/input/misc/palmas-pwrbutton.c
 > 
-> Notice the interrupt triggering of IRQs 5, 6, and 7 has changed from level to
-> edge. I also see this printed on the console:
-> 
-> [    1.676685] Failed to set pin attr for GSI6
-> [    1.691708] Failed to set pin attr for GSI7
-> [    1.706750] Failed to set pin attr for GSI7
-> [    1.721768] Failed to set pin attr for GSI13
-> [    1.736765] Failed to set pin attr for GSI5
-> [    1.838342] Failed to set pin attr for GSI6
-> 
-> Any ideas how to get that fixed?
-> 
-> We used to handle this in drivers/acpi/resource.c:acpi_dev_get_irqresource() so
-> that only IRQ() and IRQNoFlags() ACPI resources resort calling
-> acpi_get_override_irq(). Now that doesn't help anymore.
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index 2ff4425..0224dcf 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -451,6 +451,16 @@ config HP_SDC_RTC
+>  	  Say Y here if you want to support the built-in real time clock
+>  	  of the HP SDC controller.
+>  
+> +config INPUT_PALMAS_PWRBUTTON
+> +	tristate "Palmas Power button Driver"
+> +	depends on MFD_PALMAS
+> +	help
+> +	  Say Y here if you want to enable power key reporting via the
+> +	  Palmas family of PMICs.
+> +
+> +	  To compile this driver as a module, choose M here. The module will
+> +	  be called palmas_pwrbutton.
+> +
+>  config INPUT_PCF50633_PMU
+>  	tristate "PCF50633 PMU events"
+>  	depends on MFD_PCF50633
+> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+> index 4955ad3..e3d5efb 100644
+> --- a/drivers/input/misc/Makefile
+> +++ b/drivers/input/misc/Makefile
+> @@ -40,6 +40,7 @@ obj-$(CONFIG_INPUT_MAX8997_HAPTIC)	+= max8997_haptic.o
+>  obj-$(CONFIG_INPUT_MC13783_PWRBUTTON)	+= mc13783-pwrbutton.o
+>  obj-$(CONFIG_INPUT_MMA8450)		+= mma8450.o
+>  obj-$(CONFIG_INPUT_MPU3050)		+= mpu3050.o
+> +obj-$(CONFIG_INPUT_PALMAS_PWRBUTTON)	+= palmas-pwrbutton.o
+>  obj-$(CONFIG_INPUT_PCAP)		+= pcap_keys.o
+>  obj-$(CONFIG_INPUT_PCF50633_PMU)	+= pcf50633-input.o
+>  obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
+> diff --git a/drivers/input/misc/palmas-pwrbutton.c b/drivers/input/misc/palmas-pwrbutton.c
+> new file mode 100644
+> index 0000000..fb8bfc5
+> --- /dev/null
+> +++ b/drivers/input/misc/palmas-pwrbutton.c
+> @@ -0,0 +1,356 @@
+> +/*
+> + * Texas Instruments' Palmas Power Button Input Driver
+> + *
+> + * Copyright (C) 2012-2014 Texas Instruments Incorporated - http://www.ti.com/
+> + *	Girish S Ghongdemath
+> + *	Nishanth Menon
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +#include <linux/init.h>
+> +#include <linux/input.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/kernel.h>
+> +#include <linux/mfd/palmas.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/reboot.h>
 
-There's also a bugzilla bug filed about this here where touchpad stopped
-working:
+I don't see any reboot calls made do we need this?
 
-https://bugzilla.kernel.org/show_bug.cgi?id=82601
+> +#include <linux/slab.h>
+> +
+> +#define PALMAS_LPK_TIME_MASK		0x0c
+> +#define PALMAS_PWRON_DEBOUNCE_MASK	0x03
+> +#define PALMAS_PWR_KEY_PRESS		0x01
+> +#define PALMAS_PWR_KEY_Q_TIME_MS	20
+> +
+> +/**
+> + * struct palmas_pwron - Palmas power on data
+> + * @palmas:		pointer to palmas device
+> + * @input_dev:		pointer to input device
+> + * @irq:		irq that we are hooked on to
+> + * @input_work:		work for detecting release of key
+> + * @current_state:	key current state
+> + * @key_recheck_ms:	duration for recheck of key (in milli-seconds)
+> + */
+> +struct palmas_pwron {
+> +	struct palmas *palmas;
+> +	struct input_dev *input_dev;
+> +	int irq;
+> +	struct delayed_work input_work;
+> +	int current_state;
+> +	u32 key_recheck_ms;
+> +};
+> +
+> +/**
+> + * struct palmas_pwron_config - configuration of palmas power on
+> + * @long_press_time_val:	value for long press h/w shutdown event
+> + * @pwron_debounce_val:		value for debounce of power button
+> + */
+> +struct palmas_pwron_config {
+> +	u8 long_press_time_val;
+> +	u8 pwron_debounce_val;
+> +};
+> +
+> +/**
+> + * palmas_get_pwr_state() - read button state
+> + * @pwron: pointer to pwron struct
+> + *
+> + * Return: 0 for no press, PALMAS_PWR_KEY_PRESS for keypress
+> + * and on error, appropriate error value.
+> + */
+> +static int palmas_get_pwr_state(struct palmas_pwron *pwron)
+> +{
+> +	struct input_dev *input_dev = pwron->input_dev;
+> +	struct device *dev = input_dev->dev.parent;
+> +	unsigned int reg = 0;
+> +	int ret;
+> +
+> +	ret = palmas_read(pwron->palmas, PALMAS_INTERRUPT_BASE,
+> +			  PALMAS_INT1_LINE_STATE, &reg);
+> +	if (ret) {
+> +		dev_err(dev, "%s:Cannot read palmas PWRON status(%d)\n",
+> +			__func__, ret);
+> +		return ret;
+> +	}
+> +
+> +	/* PWRON line state is BIT(1) of the register */
+> +	return reg & BIT(1) ? 0 : PALMAS_PWR_KEY_PRESS;
+> +}
+> +
+> +/**
+> + * palmas_power_button_work() - Detects the button release event
+> + * @work:	work item to detect button release
+> + */
+> +static void palmas_power_button_work(struct work_struct *work)
+> +{
+> +	struct palmas_pwron *pwron = container_of((struct delayed_work *)work,
+> +						  struct palmas_pwron,
+> +						  input_work);
+> +	struct input_dev *input_dev = pwron->input_dev;
+> +	int next_state;
+> +
+> +	next_state = palmas_get_pwr_state(pwron);
+> +	if (next_state < 0)
+> +		return;
+> +
+> +	/*
+> +	 * If the state did not change then schedule a work item to check the
+> +	 * status of the power button line
+> +	 */
+> +	if (next_state == pwron->current_state) {
+> +		schedule_delayed_work(&pwron->input_work,
+> +				      msecs_to_jiffies(pwron->key_recheck_ms));
+> +		return;
+> +	}
+> +
+> +	pwron->current_state = next_state;
+> +	input_report_key(input_dev, KEY_POWER, pwron->current_state);
+> +	input_sync(input_dev);
+> +}
+> +
+> +/**
+> + * pwron_irq() - button press isr
+> + * @irq:		irq
+> + * @palmas_pwron:	pwron struct
+> + *
+> + * Return: IRQ_HANDLED
+> + */
+> +static irqreturn_t pwron_irq(int irq, void *palmas_pwron)
+> +{
+> +	struct palmas_pwron *pwron = palmas_pwron;
+> +	struct input_dev *input_dev = pwron->input_dev;
+> +
+> +	pwron->current_state = PALMAS_PWR_KEY_PRESS;
+> +
+> +	input_report_key(input_dev, KEY_POWER, pwron->current_state);
+> +	pm_wakeup_event(input_dev->dev.parent, 0);
+> +	input_sync(input_dev);
+> +
+> +	mod_delayed_work(system_wq, &pwron->input_work,
+> +			 msecs_to_jiffies(pwron->key_recheck_ms));
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +/**
+> + * palmas_pwron_params_ofinit() - device tree parameter parser
+> + * @dev:	palmas button device
+> + * @config:	configuration params that this fills up
+> + */
+> +static void palmas_pwron_params_ofinit(struct device *dev,
+> +				       struct palmas_pwron_config *config)
+
+Maybe we should change this to return an int so that if the DT is not populated
+then the LPK and debounce is not set but we continue anyway.
+
+Is there support for platform data itself?
+
+> +{
+> +	struct device_node *np;
+> +	u32 val;
+> +	int i;
+> +	u8 lpk_times[] = { 6, 8, 10, 12 };
+> +	int pwr_on_deb_ms[] = { 15, 100, 500, 1000 };
+> +
+> +	/* Legacy boot? */
+> +	if (!of_have_populated_dt())
+> +		return;
+> +
+> +	np = of_node_get(dev->of_node);
+> +	/* Mixed boot? */
+
+Can we expand a little on Mixed boot vs legacy boot?
+
+> +	if (!np)
+> +		return;
+> +
+> +	val = 0;
+
+Is this necessary?
+
+> +	of_property_read_u32(np, "ti,palmas-long-press-seconds", &val);
+
+Probably should check the return to make sure the value exists and that is is
+within an expected range.  Since this is an optional parameter it may not be
+populated.  And below it sets a preliminary value to the max as the default.
+
+Maybe the default setting should be set at the beginning of this function so
+that if there is no dt data then at least the values will be defaulted.
+
+> +	config->long_press_time_val = ARRAY_SIZE(lpk_times) - 1;
+> +	for (i = 0; i < ARRAY_SIZE(lpk_times); i++) {
+> +		if (val <= lpk_times[i]) {
+> +			config->long_press_time_val = i;
+> +			break;
+> +		}
+> +	}
+> +
+> +	val = 0;
+
+Don't think we need this either if we check the return on the call
+below.
+
+> +	of_property_read_u32(np, "ti,palmas-pwron-debounce-milli-seconds",
+> +			     &val);
+
+
+Probably should check the return to make sure the value exists and that is is
+within an expected range.
+
+> +	config->pwron_debounce_val = 0;
+
+Should this not have been 0 anyway?
+
+> +	for (i = 0; i < ARRAY_SIZE(pwr_on_deb_ms); i++) {
+> +		if (val <= pwr_on_deb_ms[i]) {
+> +			config->pwron_debounce_val = i;
+> +			break;
+> +		}
+> +	}
+> +
+> +	dev_info(dev, "h/w controlled shutdown duration=%d seconds\n",
+> +		 lpk_times[config->long_press_time_val]);
+> +
+> +	of_node_put(np);
+> +}
+> +
+> +/**
+> + * palmas_pwron_probe() - probe
+> + * @pdev:	platform device for the button
+> + *
+> + * Return: 0 for successful probe else appropriate error
+> + */
+> +static int palmas_pwron_probe(struct platform_device *pdev)
+> +{
+> +	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
+> +	struct device *dev = &pdev->dev;
+> +	struct input_dev *input_dev;
+> +	struct palmas_pwron *pwron;
+> +	int irq, ret, val;
+> +	struct palmas_pwron_config config = { 0 };
+> +
+> +	palmas_pwron_params_ofinit(dev, &config);
+> +
+> +	pwron = devm_kzalloc(dev, sizeof(*pwron), GFP_KERNEL);
+> +	if (!pwron)
+> +		return -ENOMEM;
+> +
+> +	input_dev = devm_input_allocate_device(dev);
+> +	if (!input_dev) {
+> +		dev_err(dev, "Can't allocate power button\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	/*
+> +	 * Setup default hardware shutdown option (long key press)
+> +	 * and debounce.
+> +	 */
+> +	val = config.long_press_time_val << __ffs(PALMAS_LPK_TIME_MASK);
+> +	val |= config.pwron_debounce_val << __ffs(PALMAS_PWRON_DEBOUNCE_MASK);
+> +	ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
+> +				 PALMAS_LONG_PRESS_KEY,
+> +				 PALMAS_LPK_TIME_MASK |
+> +				 PALMAS_PWRON_DEBOUNCE_MASK, val);
+> +	if (ret < 0) {
+> +		dev_err(dev, "LONG_PRESS_KEY_UPDATE failed!\n");
+> +		return ret;
+> +	}
+> +
+> +	input_dev->evbit[0] = BIT_MASK(EV_KEY);
+> +	input_dev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+> +	input_dev->name = "palmas_pwron";
+> +	input_dev->phys = "palmas_pwron/input0";
+> +	input_dev->dev.parent = dev;
+> +
+> +	pwron->palmas = palmas;
+> +	pwron->input_dev = input_dev;
+> +
+> +	INIT_DELAYED_WORK(&pwron->input_work, palmas_power_button_work);
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	ret = request_threaded_irq(irq, NULL, pwron_irq,
+> +				   IRQF_TRIGGER_HIGH |
+> +				   IRQF_TRIGGER_LOW, dev_name(dev), pwron);
+> +	if (ret < 0) {
+> +		dev_err(dev, "Can't get IRQ for pwron: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	device_init_wakeup(dev, true);
+> +
+> +	ret = input_register_device(input_dev);
+> +	if (ret) {
+> +		free_irq(irq, pwron);
+> +		cancel_delayed_work_sync(&pwron->input_work);
+> +		dev_dbg(dev, "Can't register power button: %d\n", ret);
+> +		return ret;
+> +	}
+> +	pwron->irq = irq;
+> +
+> +	pwron->key_recheck_ms = PALMAS_PWR_KEY_Q_TIME_MS;
+> +
+> +	platform_set_drvdata(pdev, pwron);
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * palmas_pwron_remove() - Cleanup on removal
+> + * @pdev:	platform device for the button
+> + *
+> + * Return: 0
+> + */
+> +static int palmas_pwron_remove(struct platform_device *pdev)
+> +{
+> +	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
+> +
+> +	free_irq(pwron->irq, pwron);
+> +	cancel_delayed_work_sync(&pwron->input_work);
+> +	input_unregister_device(pwron->input_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * palmas_pwron_suspend() - suspend handler
+> + * @dev:	power button device
+> + *
+> + * Cancel all pending work items for the power button, setup irq for wakeup
+> + *
+> + * Return: 0
+> + */
+> +static int palmas_pwron_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
+> +
+> +	cancel_delayed_work_sync(&pwron->input_work);
+> +
+> +	if (device_may_wakeup(dev))
+> +		enable_irq_wake(pwron->irq);
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * palmas_pwron_resume() - resume handler
+> + * @dev:	power button device
+> + *
+> + * Just disable the wakeup capability of irq here.
+> + *
+> + * Return: 0
+> + */
+> +static int palmas_pwron_resume(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct palmas_pwron *pwron = platform_get_drvdata(pdev);
+> +
+> +	if (device_may_wakeup(dev))
+> +		disable_irq_wake(pwron->irq);
+> +
+> +	return 0;
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(palmas_pwron_pm,
+> +			 palmas_pwron_suspend, palmas_pwron_resume);
+> +
+> +#ifdef CONFIG_OF
+> +static struct of_device_id of_palmas_pwr_match[] = {
+> +	{.compatible = "ti,palmas-pwrbutton"},
+> +	{},
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, of_palmas_pwr_match);
+> +#endif
+> +
+> +static struct platform_driver palmas_pwron_driver = {
+> +	.probe = palmas_pwron_probe,
+> +	.remove = palmas_pwron_remove,
+> +	.driver = {
+> +		   .name = "palmas_pwrbutton",
+> +		   .owner = THIS_MODULE,
+> +		   .of_match_table = of_match_ptr(of_palmas_pwr_match),
+> +		   .pm = &palmas_pwron_pm,
+> +	},
+> +};
+> +module_platform_driver(palmas_pwron_driver);
+> +
+> +MODULE_ALIAS("platform:palmas-pwrbutton");
+> +MODULE_DESCRIPTION("Palmas Power Button");
+> +MODULE_LICENSE("GPL V2");
+> +MODULE_AUTHOR("Texas Instruments Inc.");
+> 
+
+
+-- 
+------------------
+Dan Murphy
