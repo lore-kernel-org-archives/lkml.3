@@ -1,141 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaHUVNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 17:13:52 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:36258 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849AbaHUVNu (ORCPT
+	id S1754826AbaHUVWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 17:22:14 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:34581 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508AbaHUVWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 17:13:50 -0400
+	Thu, 21 Aug 2014 17:22:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
-References: <cover.1408581429.git.rgb@redhat.com> <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
+In-Reply-To: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
+References: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 21 Aug 2014 14:13:28 -0700
-Message-ID: <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
-Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in proc
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
-        arozansk@redhat.com, linux-audit@redhat.com,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
+Date: Thu, 21 Aug 2014 14:21:51 -0700
+Message-ID: <CALCETrWns2cPzS+goDmXjhVuxzD2OczxTF9UtARBFnw3hibjZg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
+ idle cpu
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Wang, Xiaoming" <xiaoming.wang@intel.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Chakravarty, Souvik K" <souvik.k.chakravarty@intel.com>,
+        "Liu, Changcheng" <changcheng.liu@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 20, 2014 8:12 PM, "Richard Guy Briggs" <rgb@redhat.com> wrote:
+On Aug 18, 2014 3:52 AM, "Chuansheng Liu" <chuansheng.liu@intel.com> wrote:
 >
-> Expose the namespace instace serial numbers in the proc filesystem at
-> /proc/<pid>/ns/<ns>_snum.  The link text gives the serial number in hex.
-
-What's the use case?
-
-I understand the utility of giving unique numbers to the audit code,
-but I don't think this part is necessary for that, and I'd like to
-understand what else will use this before committing to a duplicative
-API like this.
-
-Note that this API is thoroughly incompatible with CRIU.  If we do
-this, someone will ask for a namespace number namespace, and that way
-lies madness.
-
---Andy
-
+> Implementing one new API wake_up_if_idle(), which is used to
+> wake up the idle CPU.
 >
-> "snum" was chosen instead of "seq" for consistency with inum and there are a
-> number of other uses of "seq" in the namespace code.
->
-> Suggested-by: Serge E. Hallyn <serge@hallyn.com>
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> Suggested-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
 > ---
->  fs/proc/namespaces.c |   33 +++++++++++++++++++++++++--------
->  1 files changed, 25 insertions(+), 8 deletions(-)
+>  include/linux/sched.h |    1 +
+>  kernel/sched/core.c   |   16 ++++++++++++++++
+>  2 files changed, 17 insertions(+)
 >
-> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-> index 8902609..e953e0a 100644
-> --- a/fs/proc/namespaces.c
-> +++ b/fs/proc/namespaces.c
-> @@ -47,12 +47,15 @@ static char *ns_dname(struct dentry *dentry, char *buffer, int buflen)
->         struct inode *inode = dentry->d_inode;
->         const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns.ns_ops;
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 857ba40..3f89ac1 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
+>  extern struct sched_domain_topology_level *sched_domain_topology;
 >
-> -       return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
-> -               ns_ops->name, inode->i_ino);
-> +       if (strstr(dentry->d_iname, "_snum"))
-> +               return dynamic_dname(dentry, buffer, buflen, "%s_snum:[%llx]",
-> +                       ns_ops->name, ns_ops->snum(PROC_I(inode)->ns.ns));
-> +       else
-> +               return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
-> +                       ns_ops->name, inode->i_ino);
+>  extern void set_sched_topology(struct sched_domain_topology_level *tl);
+> +extern void wake_up_if_idle(int cpu);
+>
+>  #ifdef CONFIG_SCHED_DEBUG
+>  # define SD_INIT_NAME(type)            .name = #type
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 1211575..adf104f 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1620,6 +1620,22 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+>         }
 >  }
 >
-> -const struct dentry_operations ns_dentry_operations =
-> -{
-> +const struct dentry_operations ns_dentry_operations = {
->         .d_delete       = always_delete_dentry,
->         .d_dname        = ns_dname,
->  };
-> @@ -160,7 +163,10 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
->         if (!ns)
->                 goto out_put_task;
->
-> -       snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
-> +       if (strstr(dentry->d_iname, "_snum"))
-> +               snprintf(name, sizeof(name), "%s_snum:[%llx]", ns_ops->name, ns_ops->snum(ns));
-> +       else
-> +               snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
->         res = readlink_copy(buffer, buflen, name);
->         ns_ops->put(ns);
->  out_put_task:
-> @@ -210,16 +216,23 @@ static int proc_ns_dir_readdir(struct file *file, struct dir_context *ctx)
->
->         if (!dir_emit_dots(file, ctx))
->                 goto out;
-> -       if (ctx->pos >= 2 + ARRAY_SIZE(ns_entries))
-> +       if (ctx->pos >= 2 + 2 * ARRAY_SIZE(ns_entries))
->                 goto out;
->         entry = ns_entries + (ctx->pos - 2);
->         last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
->         while (entry <= last) {
->                 const struct proc_ns_operations *ops = *entry;
-> +               char name[50];
+> +void wake_up_if_idle(int cpu)
+> +{
+> +       struct rq *rq = cpu_rq(cpu);
+> +       unsigned long flags;
 > +
->                 if (!proc_fill_cache(file, ctx, ops->name, strlen(ops->name),
->                                      proc_ns_instantiate, task, ops))
->                         break;
->                 ctx->pos++;
-> +               snprintf(name, sizeof(name), "%s_snum", ops->name);
-> +               if (!proc_fill_cache(file, ctx, name, strlen(name),
-> +                                    proc_ns_instantiate, task, ops))
-> +                       break;
-> +               ctx->pos++;
->                 entry++;
->         }
->  out:
-> @@ -247,9 +260,13 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
->
->         last = &ns_entries[ARRAY_SIZE(ns_entries)];
->         for (entry = ns_entries; entry < last; entry++) {
-> -               if (strlen((*entry)->name) != len)
-> +               char name[50];
+> +       if (set_nr_if_polling(rq->idle)) {
+> +               trace_sched_wake_idle_without_ipi(cpu);
+> +       } else {
 > +
-> +               snprintf(name, sizeof(name), "%s_snum", (*entry)->name);
-> +               if (strlen((*entry)->name) != len && strlen(name) != len)
->                         continue;
-> -               if (!memcmp(dentry->d_name.name, (*entry)->name, len))
-> +               if (!memcmp(dentry->d_name.name, (*entry)->name, len)
-> +                   || !memcmp(dentry->d_name.name, name, len))
->                         break;
->         }
->         if (entry == last)
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+FWIW, adding:
+
+if (rq->curr != rq->idle)
+    return;
+
+Right here could improve performance on large, mostly non-idle
+systems.  It would skip the spinlock in most cases.
+
+I don't know whether this code is relevant on systems like that, though.
+
+ raw_spin_lock_irqsave(&rq->lock, flags);
+> +               if (rq->curr == rq->idle)
+> +                       smp_send_reschedule(cpu);
+> +               /* Else cpu is not in idle, do nothing here */
+> +               raw_spin_unlock_irqrestore(&rq->lock, flags);
+> +       }
+> +
+
+--Andy
