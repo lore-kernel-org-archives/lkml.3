@@ -1,178 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaHULDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:03:08 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53552 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754019AbaHULAS (ORCPT
+	id S1754708AbaHULDG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:03:06 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:25826 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754687AbaHULDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:00:18 -0400
-From: Sudeep Holla <sudeep.holla@arm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: sudeep.holla@arm.com, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v3 03/11] drivers: base: add new class "cpu" to group cpu devices
-Date: Thu, 21 Aug 2014 11:59:46 +0100
-Message-Id: <1408618794-28497-4-git-send-email-sudeep.holla@arm.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
-References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
- <1408618794-28497-1-git-send-email-sudeep.holla@arm.com>
+	Thu, 21 Aug 2014 07:03:03 -0400
+From: Xiang Wang <wangxfdu@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <cxie4@marvell.com>, <wangxfdu@gmail.com>
+CC: Xiang Wang <wangx@marvell.com>
+Subject: [PATCH] dmaengine: increase privatecnt in dma_get_any_slave_channel
+Date: Thu, 21 Aug 2014 19:01:21 +0800
+Message-ID: <1408618881-30279-1-git-send-email-wangxfdu@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-21_04:2014-08-21,2014-08-21,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408210131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudeep Holla <sudeep.holla@arm.com>
+From: Xiang Wang <wangx@marvell.com>
 
-This patch creates a new class called "cpu" and assigns it to all the
-cpu devices. This helps in grouping all the cpu devices and associated
-child devices under the same class.
+There might be such calling sequence for dma channel:
+1. register dma device
+dma_async_device_register
+  -> if (dma_has_cap(DMA_PRIVATE, device->cap_mask))
+  	device->privatecnt++;
 
-This patch also:
-1. modifies the get_parent_device to return the legacy path
-   (/sys/devices/system/cpu/..) for the cpu class devices to support
-   existing sysfs ABI
-2. avoids creating link in the class directory pointing to the device as
-   there would be per-cpu instance of these devices with the same name
-3. makes sure subsystem symlink continues pointing to cpu bus instead of
-   cpu class for cpu devices
+2. request channel
+dma_request_slave_channel
+  -> of_dma_request_slave_channel
+    -> of_dma_xlate
+      -> dma_get_any_slave_channel in dma drivers
+note that device->privatecnt is not changed during this.
 
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+3. release channel
+dma_release_channel
+  -> if (--chan->device->privatecnt == 0)
+		dma_cap_clear(DMA_PRIVATE,
+		chan->device->cap_mask);
+
+So if we request a channel then release it, DMA_PRIVATE will
+be cleared unexpectedly. In this patch, we increase privatecnt
+in step 2 just like what __dma_request_channel does.
+
+Signed-off-by: Xiang Wang <wangx@marvell.com>
 ---
- drivers/base/core.c | 39 +++++++++++++++++++++++++++++++++------
- drivers/base/cpu.c  |  7 +++++++
- include/linux/cpu.h |  2 ++
- 3 files changed, 42 insertions(+), 6 deletions(-)
+ drivers/dma/dmaengine.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 20da3ad1696b..fe622e2a48d0 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -10,6 +10,7 @@
-  *
-  */
- 
-+#include <linux/cpu.h>
- #include <linux/device.h>
- #include <linux/err.h>
- #include <linux/init.h>
-@@ -742,6 +743,12 @@ static struct kobject *get_device_parent(struct device *dev,
- 			return &block_class.p->subsys.kobj;
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index ed610b4..01bb372 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -557,6 +557,9 @@ struct dma_chan *dma_get_any_slave_channel(struct dma_device *device)
  		}
- #endif
-+		/*
-+		 * if the device is in cpu class, then use the default/legacy
-+		 * /sys/devices/system/cpu/.. path
-+		 */
-+		if (dev->class == cpu_class)
-+			return &parent->kobj;
+ 	}
  
- 		/*
- 		 * If we have no parent, we live in "virtual".
-@@ -808,11 +815,17 @@ static int device_add_class_symlinks(struct device *dev)
- 	if (!dev->class)
- 		return 0;
- 
--	error = sysfs_create_link(&dev->kobj,
--				  &dev->class->p->subsys.kobj,
--				  "subsystem");
--	if (error)
--		goto out;
-+	/*
-+	 * the subsystem symlink in each cpu device needs to continue
-+	 * pointing to cpu bus
-+	 */
-+	if (dev->bus != &cpu_subsys) {
-+		error = sysfs_create_link(&dev->kobj,
-+					  &dev->class->p->subsys.kobj,
-+					  "subsystem");
-+		if (error)
-+			goto out;
-+	}
- 
- 	if (dev->parent && device_is_not_partition(dev)) {
- 		error = sysfs_create_link(&dev->kobj, &dev->parent->kobj,
-@@ -826,6 +839,13 @@ static int device_add_class_symlinks(struct device *dev)
- 	if (sysfs_deprecated && dev->class == &block_class)
- 		return 0;
- #endif
-+	/*
-+	 * don't create a link in the cpu class directory pointing to the
-+	 * device as there would be per-cpu instance of these devices with
-+	 * the same name
-+	 */
-+	if (dev->class == cpu_class)
-+		return 0;
- 
- 	/* link in the class directory pointing to the device */
- 	error = sysfs_create_link(&dev->class->p->subsys.kobj,
-@@ -851,11 +871,18 @@ static void device_remove_class_symlinks(struct device *dev)
- 
- 	if (dev->parent && device_is_not_partition(dev))
- 		sysfs_remove_link(&dev->kobj, "device");
--	sysfs_remove_link(&dev->kobj, "subsystem");
++	if (chan && dma_has_cap(DMA_PRIVATE, device->cap_mask))
++		device->privatecnt++;
 +
-+	/* if subsystem points to cpu bus, bus_remove_device will remove it */
-+	if (dev->bus != &cpu_subsys)
-+		sysfs_remove_link(&dev->kobj, "subsystem");
- #ifdef CONFIG_BLOCK
- 	if (sysfs_deprecated && dev->class == &block_class)
- 		return;
- #endif
-+	/* symlinks are not created for cpu class devices, nothing to remove */
-+	if (dev->class == cpu_class)
-+		return;
-+
- 	sysfs_delete_link(&dev->class->p->subsys.kobj, &dev->kobj, dev_name(dev));
- }
+ 	mutex_unlock(&dma_list_mutex);
  
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 277a9cfa9040..8e380214625d 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -319,6 +319,7 @@ static int cpu_uevent(struct device *dev, struct kobj_uevent_env *env)
- }
- #endif
- 
-+struct class *cpu_class;
- /*
-  * register_cpu - Setup a sysfs device for a CPU.
-  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
-@@ -335,6 +336,8 @@ int register_cpu(struct cpu *cpu, int num)
- 	memset(&cpu->dev, 0x00, sizeof(struct device));
- 	cpu->dev.id = num;
- 	cpu->dev.bus = &cpu_subsys;
-+	cpu->dev.parent = cpu_subsys.dev_root;
-+	cpu->dev.class = cpu_class;
- 	cpu->dev.release = cpu_device_release;
- 	cpu->dev.offline_disabled = !cpu->hotpluggable;
- 	cpu->dev.offline = !cpu_online(num);
-@@ -420,5 +423,9 @@ void __init cpu_dev_init(void)
- 	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
- 		panic("Failed to register CPU subsystem");
- 
-+	cpu_class = class_create(THIS_MODULE, "cpu");
-+	if (IS_ERR(cpu_class))
-+		panic("Failed to register CPU class");
-+
- 	cpu_dev_register_generic();
- }
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 95978ad7fcdd..8c0fc9b0acad 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -39,6 +39,8 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
- extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
- extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
- 
-+extern struct class *cpu_class;
-+
- #ifdef CONFIG_HOTPLUG_CPU
- extern void unregister_cpu(struct cpu *cpu);
- extern ssize_t arch_cpu_probe(const char *, size_t);
+ 	return chan;
 -- 
-1.8.3.2
+1.7.5.4
 
