@@ -1,38 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955AbaHUVMx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 17:12:53 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:47435 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123AbaHUVMw (ORCPT
+	id S1755044AbaHUVNw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 17:13:52 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:36258 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849AbaHUVNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 17:12:52 -0400
-Message-ID: <53F660CE.7020405@redhat.com>
-Date: Thu, 21 Aug 2014 23:12:46 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 21 Aug 2014 17:13:50 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>, Vinod Chegu <chegu_vinod@hp.com>,
-        Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Lisa Mitchell <lisa.mitchell@hp.com>
-Subject: Re: [PATCH v3 1/7] KVM: add kvm_arch_sched_in
-References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com> <1408637291-18533-2-git-send-email-rkrcmar@redhat.com> <53F63F36.9080704@linux.vnet.ibm.com> <20140821203110.GA30423@potion.brq.redhat.com>
-In-Reply-To: <20140821203110.GA30423@potion.brq.redhat.com>
+In-Reply-To: <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
+References: <cover.1408581429.git.rgb@redhat.com> <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 21 Aug 2014 14:13:28 -0700
+Message-ID: <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
+Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in proc
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
+        arozansk@redhat.com, linux-audit@redhat.com,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/08/2014 22:31, Radim Krčmář ha scritto:
->> > No surprise that ia64 doesn't show here :).
-> Oh, totally forgot about its predicted comeback ...
-> Paolo, do you want to fixup this?  (It removes double newline.)
+On Aug 20, 2014 8:12 PM, "Richard Guy Briggs" <rgb@redhat.com> wrote:
+>
+> Expose the namespace instace serial numbers in the proc filesystem at
+> /proc/<pid>/ns/<ns>_snum.  The link text gives the serial number in hex.
 
-Bah, me too.  I'll get to killing ia64 one of these days.
+What's the use case?
 
-Paolo
+I understand the utility of giving unique numbers to the audit code,
+but I don't think this part is necessary for that, and I'd like to
+understand what else will use this before committing to a duplicative
+API like this.
+
+Note that this API is thoroughly incompatible with CRIU.  If we do
+this, someone will ask for a namespace number namespace, and that way
+lies madness.
+
+--Andy
+
+>
+> "snum" was chosen instead of "seq" for consistency with inum and there are a
+> number of other uses of "seq" in the namespace code.
+>
+> Suggested-by: Serge E. Hallyn <serge@hallyn.com>
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  fs/proc/namespaces.c |   33 +++++++++++++++++++++++++--------
+>  1 files changed, 25 insertions(+), 8 deletions(-)
+>
+> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+> index 8902609..e953e0a 100644
+> --- a/fs/proc/namespaces.c
+> +++ b/fs/proc/namespaces.c
+> @@ -47,12 +47,15 @@ static char *ns_dname(struct dentry *dentry, char *buffer, int buflen)
+>         struct inode *inode = dentry->d_inode;
+>         const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns.ns_ops;
+>
+> -       return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
+> -               ns_ops->name, inode->i_ino);
+> +       if (strstr(dentry->d_iname, "_snum"))
+> +               return dynamic_dname(dentry, buffer, buflen, "%s_snum:[%llx]",
+> +                       ns_ops->name, ns_ops->snum(PROC_I(inode)->ns.ns));
+> +       else
+> +               return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
+> +                       ns_ops->name, inode->i_ino);
+>  }
+>
+> -const struct dentry_operations ns_dentry_operations =
+> -{
+> +const struct dentry_operations ns_dentry_operations = {
+>         .d_delete       = always_delete_dentry,
+>         .d_dname        = ns_dname,
+>  };
+> @@ -160,7 +163,10 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
+>         if (!ns)
+>                 goto out_put_task;
+>
+> -       snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
+> +       if (strstr(dentry->d_iname, "_snum"))
+> +               snprintf(name, sizeof(name), "%s_snum:[%llx]", ns_ops->name, ns_ops->snum(ns));
+> +       else
+> +               snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
+>         res = readlink_copy(buffer, buflen, name);
+>         ns_ops->put(ns);
+>  out_put_task:
+> @@ -210,16 +216,23 @@ static int proc_ns_dir_readdir(struct file *file, struct dir_context *ctx)
+>
+>         if (!dir_emit_dots(file, ctx))
+>                 goto out;
+> -       if (ctx->pos >= 2 + ARRAY_SIZE(ns_entries))
+> +       if (ctx->pos >= 2 + 2 * ARRAY_SIZE(ns_entries))
+>                 goto out;
+>         entry = ns_entries + (ctx->pos - 2);
+>         last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
+>         while (entry <= last) {
+>                 const struct proc_ns_operations *ops = *entry;
+> +               char name[50];
+> +
+>                 if (!proc_fill_cache(file, ctx, ops->name, strlen(ops->name),
+>                                      proc_ns_instantiate, task, ops))
+>                         break;
+>                 ctx->pos++;
+> +               snprintf(name, sizeof(name), "%s_snum", ops->name);
+> +               if (!proc_fill_cache(file, ctx, name, strlen(name),
+> +                                    proc_ns_instantiate, task, ops))
+> +                       break;
+> +               ctx->pos++;
+>                 entry++;
+>         }
+>  out:
+> @@ -247,9 +260,13 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
+>
+>         last = &ns_entries[ARRAY_SIZE(ns_entries)];
+>         for (entry = ns_entries; entry < last; entry++) {
+> -               if (strlen((*entry)->name) != len)
+> +               char name[50];
+> +
+> +               snprintf(name, sizeof(name), "%s_snum", (*entry)->name);
+> +               if (strlen((*entry)->name) != len && strlen(name) != len)
+>                         continue;
+> -               if (!memcmp(dentry->d_name.name, (*entry)->name, len))
+> +               if (!memcmp(dentry->d_name.name, (*entry)->name, len)
+> +                   || !memcmp(dentry->d_name.name, name, len))
+>                         break;
+>         }
+>         if (entry == last)
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-api" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
