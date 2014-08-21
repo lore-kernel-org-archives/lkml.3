@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaHUPId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 11:08:33 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37018 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaHUPIb (ORCPT
+	id S1751843AbaHUPK2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 11:10:28 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:48632 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaHUPK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 11:08:31 -0400
-Date: Thu, 21 Aug 2014 08:08:27 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
-Message-ID: <20140821150827.GA32211@roeck-us.net>
-References: <cover.1408535000.git.jslaby@suse.cz>
- <20140820165459.GA21275@roeck-us.net>
- <20140820195436.GA22902@roeck-us.net>
- <53F5A864.5040206@suse.cz>
+	Thu, 21 Aug 2014 11:10:27 -0400
+Message-ID: <53F60BE0.5050509@gmail.com>
+Date: Thu, 21 Aug 2014 09:10:24 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F5A864.5040206@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthieu CASTET <matthieu.castet@parrot.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: perf on biarch
+References: <20140808184049.65e7d32b@parrot.com>	<53E52A1C.8010504@gmail.com> <20140818111656.40ff6ae7@parrot.com>
+In-Reply-To: <20140818111656.40ff6ae7@parrot.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 10:05:56AM +0200, Jiri Slaby wrote:
-> On 08/20/2014, 09:54 PM, Guenter Roeck wrote:
-> > On Wed, Aug 20, 2014 at 09:54:59AM -0700, Guenter Roeck wrote:
-> >> On Wed, Aug 20, 2014 at 01:43:51PM +0200, Jiri Slaby wrote:
-> >>> This is the start of the stable review cycle for the 3.12.27 release.
-> >>> There are 104 patches in this series, all will be posted as a response
-> >>> to this one.  If anyone has any issues with these being applied, please
-> >>> let me know.
-> >>>
-> >>> Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
-> >>> Anything received after that time might be too late.
-> >>>
-> >> Build results look good:
-> >> 	total: 135 pass: 135 fail: 0
-> >>
-> >> qemu tests passed except for sparc64 which hangs during boot, both for SMP and
-> >> non-SMP builds. I'll try to bisect as soon as I have a somewhat stable internet
-> >> connection.
-> >>
-> > Bisect result:
-> > 
-> > # bad: [c07d9e5da83f1470ccc58d37fe222dab36dbca67] drivers/rtc/interface.c: fix infinite loop in initializing the alarm
-> > # good: [d83a3234d2e1e2a55e7f2430fc9ca29a9bd315e7] Linux 3.12.26
-> > git bisect start 'HEAD' 'v3.12.26'
-> > # bad: [0d543dade2be5f0ddb268c6d6ea0e86938e3bf42] sparc64: Add membar to Niagara2 memcpy code.
-> > git bisect bad 0d543dade2be5f0ddb268c6d6ea0e86938e3bf42
-> > # good: [6e1af05639abfc6f1841e6bf8b5c8492971ed1f2] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
-> > git bisect good 6e1af05639abfc6f1841e6bf8b5c8492971ed1f2
-> > # good: [6a25e8f778995cabb0cfe2acb3247e3b42dec35f] macvlan: Initialize vlan_features to turn on offload support.
-> > git bisect good 6a25e8f778995cabb0cfe2acb3247e3b42dec35f
-> > # good: [bf42f839476f1f447ca696fbbab7e741861d9d7d] sparc64: Fix executable bit testing in set_pmd_at() paths.
-> > git bisect good bf42f839476f1f447ca696fbbab7e741861d9d7d
-> > # bad: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
-> > git bisect bad 6acda98c75b536deaba1bf21f93411fcc484fbb5
-> > # good: [a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6] sparc64: Fix top-level fault handling bugs.
-> > git bisect good a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6
-> > # first bad commit: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
-> > 
-> > Reverting the offending patch ('Add basic validations ...') fixes the problem.
-> 
-> Hi,
-> 
-> thanks for the work!
-> 
-> Just note on patches, in 3.12, there are all 3.10 patches plus these three:
-> +sparc64-add-basic-validations-to-pud-pmd-_bad.patch
-> +sparc64-fix-executable-bit-testing-in-set_pmd_at-paths.patch
-> +sparc64-give-more-detailed-information-in-pgd-pmd-_error-and-kill-pte_error.patch
-> 
-The above is the patch causing the hangup. It may be caused by its use of
-__builtin_return_address; I recall I had trouble with that function before.
+On 8/18/14, 3:16 AM, Matthieu CASTET wrote:
+> Le Fri, 8 Aug 2014 13:50:52 -0600,
+> David Ahern <dsahern@gmail.com> a écrit :
+>
+>> On 8/8/14, 10:40 AM, Matthieu CASTET wrote:
+>>> Hi,
+>>>
+>>> I have a 64 bits kernel running with 32 bits binaries.
+>>> If I run 32 bits perf on this 64 bits kernel 3.14, I got weird result :
+>>>
+>>> - perf trace doesn't work [1]
+>>
+>> I have patches that fix that:
+>>       git clone https://github.com/dsahern/linux.git
+>>       git checkout perf-full-monty
+>>
+>> And if autodetection fails you can manually force it with -M x86.
+>>
+> Thanks david.
+> It is better, but it seems there are problem with argument parsing.
+>
+> For example for
+> "mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1,
+> 0) = 0xf77e2000"
+> I got :
+> - 2.847 ( 0.004 ms): mmap2(arg0: 0, arg1: 0, arg2: 4096, arg3: 0, arg4:
+> 3, arg5: 0         ) = -143273984
+>
+>
+> Note the 4096 position. Running perf trace on a 32 bits kernel give
+> 4096 at arg1.
 
-> where the third adds only printouts.
-> 
-> These 3.14 patches are not applied to 3.12:
-> +sparc64-don-t-use-_page_present-in-pte_modify-mask.patch
-> +sparc64-fix-bugs-in-get_user_pages_fast-wrt.-thp.patch
-> +sparc64-fix-huge-pmd-invalidation.patch
-> +sparc64-fix-hex-values-in-comment-above-pte_modify.patch
-> +sparc64-fix-range-check-in-kern_addr_valid.patch
-> +sparc64-use-ilog2_4mb-instead-of-constant-22.patch
-> 
-I'll check if any of those fixes the hangup/crash and let you know.
+What kernel version? And are you running my perf command or did you 
+extract the relevant patches?
 
-Guenter
+Using a mixed system here:
+
+# uname -a
+Linux switch 3.4.10 #1 SMP Wed Jul 30 13:10:46 PDT 2014 x86_64 GNU/Linux
+
+# file /bin/ls
+/bin/ls: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), 
+dynamically linked (uses shared libs), for GNU/Linux 2.6.34, stripped
+
+And comparing 'strace ls':
+
+mmap2(0x41217000, 33356, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 
+3, 0) = 0x41217000
+
+to 'perf trace ls':
+
+1.239 ( 0.015 ms): mmap2(arg0: 1092710400, arg1: 33356, arg2: 5, arg3: 
+2050, arg4: 3, arg5: 0) = 1092710400
+
+I am seeing a consistent output between strace and perf-trace for 32-bit 
+app on 64-bit kernel -- though perf-trace does need the pretty print for 
+mmap2.
+
+David
