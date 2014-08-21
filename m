@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847AbaHUOzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:55:52 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41743 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999AbaHUOzs (ORCPT
+	id S1752785AbaHUOzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:55:47 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:56324 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999AbaHUOzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:55:48 -0400
+	Thu, 21 Aug 2014 10:55:44 -0400
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         mathias.nyman@intel.com, stern@rowland.harvard.edu,
         sergei.shtylyov@cogentembedded.com, heikki.krogerus@linux.intel.com,
         balbi@ti.com, Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v5 3/4] usb: hcd: Caibrate PHY post hcd reset
-Date: Thu, 21 Aug 2014 20:25:22 +0530
-Message-Id: <1408632923-19591-4-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v5 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
+Date: Thu, 21 Aug 2014 20:25:21 +0530
+Message-Id: <1408632923-19591-3-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1408632923-19591-1-git-send-email-gautam.vivek@samsung.com>
 References: <1408632923-19591-1-git-send-email-gautam.vivek@samsung.com>
@@ -24,66 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some quirky PHYs may require to be calibrated post the
-hcd initialization.
-The USB 3.0 DRD PHY on Exynos5420/5800 systems, coming along
-with Synopsys's DWC3 controller, is one such PHY which needs
-to be calibrated post xhci's reset at initialization time and
-at resume time, to get the controller work at SuperSpeed.
-So facilitating the HCDs to calibrate the PHY.
+The host controller by itself may sometimes need to handle PHY
+and/or calibrate some of the PHY settings to get full support out
+of the PHY controller. The PHY core provides a calibration
+funtionality now to do so.
+Therefore, facilitate getting the two possible PHYs, viz.
+USB 2.0 type (UTMI+) and USB 3.0 type (PIPE3).
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
- drivers/usb/core/hcd.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/usb/host/xhci-plat.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index c4ed66c..a42b448 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2202,6 +2202,7 @@ int hcd_bus_resume(struct usb_device *rhdev, pm_message_t msg)
- 	struct usb_hcd	*hcd = container_of(rhdev->bus, struct usb_hcd, self);
- 	int		status;
- 	int		old_state = hcd->state;
-+	int		ret;
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 1a0cf9f..56ef9cf 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/phy/phy.h>
+ #include <linux/slab.h>
+ #include <linux/usb/xhci_pdriver.h>
  
- 	dev_dbg(&rhdev->dev, "usb %sresume\n",
- 			(PMSG_IS_AUTO(msg) ? "auto-" : ""));
-@@ -2216,6 +2217,17 @@ int hcd_bus_resume(struct usb_device *rhdev, pm_message_t msg)
- 
- 	hcd->state = HC_STATE_RESUMING;
- 	status = hcd->driver->bus_resume(hcd);
-+
-+	/* calibrate the phy here */
-+	if (!IS_ERR(hcd->gen_phy)) {
-+		ret = phy_calibrate(hcd->gen_phy);
-+		if (ret < 0 && ret != -ENOTSUPP) {
-+			dev_err(hcd->self.controller,
-+				"failed to calibrate USB PHY\n");
-+			return ret;
-+		}
-+	}
-+
- 	clear_bit(HCD_FLAG_WAKEUP_PENDING, &hcd->flags);
- 	if (status == 0) {
- 		struct usb_device *udev;
-@@ -2738,6 +2750,16 @@ int usb_add_hcd(struct usb_hcd *hcd,
+@@ -180,6 +181,17 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 			goto put_hcd;
  	}
- 	hcd->rh_pollable = 1;
  
-+	/* calibrate the phy here */
-+	if (!IS_ERR(hcd->gen_phy)) {
-+		retval = phy_calibrate(hcd->gen_phy);
-+		if (retval < 0 && retval != -ENOTSUPP) {
-+			dev_err(hcd->self.controller,
-+				"failed to calibrate USB PHY\n");
-+			return retval;
-+		}
++	/* Get possile USB 2.0 type PHY (UTMI+) available with xhci */
++	hcd->gen_phy = devm_phy_get(&pdev->dev, "usb2-phy");
++	if (IS_ERR(hcd->gen_phy)) {
++		ret = PTR_ERR(hcd->gen_phy);
++		if (ret == -EPROBE_DEFER)
++			return ret;
++		else if (ret != -ENOSYS && ret != -ENODEV)
++			dev_warn(&pdev->dev,
++				 "Error retrieving usb2 phy: %d\n", ret);
 +	}
 +
- 	/* NOTE: root hub and controller capabilities may not be the same */
- 	if (device_can_wakeup(hcd->self.controller)
- 			&& device_can_wakeup(&hcd->self.root_hub->dev))
+ 	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (ret)
+ 		goto disable_clk;
+@@ -209,6 +221,17 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	if (HCC_MAX_PSA(xhci->hcc_params) >= 4)
+ 		xhci->shared_hcd->can_do_streams = 1;
+ 
++	/* Get possile USB 3.0 type PHY (PIPE3) available with xhci */
++	xhci->shared_hcd->gen_phy = devm_phy_get(&pdev->dev, "usb3-phy");
++	if (IS_ERR(xhci->shared_hcd->gen_phy)) {
++		ret = PTR_ERR(xhci->shared_hcd->gen_phy);
++		if (ret == -EPROBE_DEFER)
++			return ret;
++		else if (ret != -ENOSYS && ret != -ENODEV)
++			dev_warn(&pdev->dev,
++				 "Error retrieving usb3 phy: %d\n", ret);
++	}
++
+ 	ret = usb_add_hcd(xhci->shared_hcd, irq, IRQF_SHARED);
+ 	if (ret)
+ 		goto put_usb3_hcd;
 -- 
 1.7.10.4
 
