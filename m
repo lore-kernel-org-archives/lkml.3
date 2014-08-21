@@ -1,343 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408AbaHUKpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 06:45:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10603 "EHLO mga11.intel.com"
+	id S1754312AbaHUKuE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 06:50:04 -0400
+Received: from submit1.sa.ew.hu ([212.108.200.71]:55775 "EHLO submit1.sa.ew.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752257AbaHUKpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 06:45:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,908,1400050800"; 
-   d="scan'208";a="587953177"
-Date: Thu, 21 Aug 2014 13:45:33 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Cc: rjw@rjwysocki.net, linus.walleij@linaro.org, gnurou@gmail.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH] ACPI: Add GPIO-signaled event emulator.
-Message-ID: <20140821104533.GM1660@lahna.fi.intel.com>
-References: <1408546700-19309-1-git-send-email-tomasz.nowicki@linaro.org>
+	id S1753849AbaHUKuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 06:50:01 -0400
+Message-ID: <53F5CED3.2040107@denx.de>
+Date: Thu, 21 Aug 2014 12:49:55 +0200
+From: Heiko Schocher <hs@denx.de>
+Reply-To: hs@denx.de
+Organization: DENX Software Engineering
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408546700-19309-1-git-send-email-tomasz.nowicki@linaro.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Javier Martinez Canillas <javier@dowhile0.org>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>, Vince Hsu <vinceh@nvidia.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Paul Walmsley <pwalmsley@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Handling commit change logs
+References: <1408419205-10048-1-git-send-email-tuomas.tynkkynen@iki.fi> <1408419205-10048-14-git-send-email-tuomas.tynkkynen@iki.fi> <CAKohpokQOALPH13Ykz4nTBOby8J1X6_F30LNKz=gsC4wN3=3vg@mail.gmail.com> <53F3A900.8010805@nvidia.com> <CAKohponcZv9-MFNUQFxC_49-+P6QOhdjxsnYAyL3i4sXdCBYrw@mail.gmail.com> <CABxcv=ncm3Y7Ecfymro6TOuP=d10OV5--8n=dYmHyj6zi8hwEw@mail.gmail.com> <53F4FED4.7060408@suse.de> <53F50554.3050505@wwwdotorg.org> <CAOh2x=mO1r76fkvruvBLaL144G8fHgDPMwhKVCxv4HW8FRUE_Q@mail.gmail.com> <53F58DFD.900@denx.de> <CABxcv=kJixq0WW5YEX-LvBfU-e9_0pkPw5JeHFOWz8h-_eSjyg@mail.gmail.com>
+In-Reply-To: <CABxcv=kJixq0WW5YEX-LvBfU-e9_0pkPw5JeHFOWz8h-_eSjyg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-PMX-Spam: Gauge=XXIIIIIIII, Probability=28%, Report='
+ SXL_IP_DYNAMIC 3, MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1100_1199 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, RDNS_GENERIC_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CP_URI_IN_BODY 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FORWARDED_MSG 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_REPLYTO 0, __IN_REP_TO 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __REPLYTO_SAMEAS_FROM_ACC 0, __REPLYTO_SAMEAS_FROM_ADDY 0, __REPLYTO_SAMEAS_FROM_DOMAIN 0, __SANE_MSGID 0, __SUBJ_ALPHA_END 0, __SUBJ_ALPHA_NEGATE 0, __TO_MALFORMED_2 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 04:58:20PM +0200, Tomasz Nowicki wrote:
-> GPIO-signaled events is quite new thing in Linux kernel.
-> There are not many board which can take advantage of it.
-> However, GPIO events are very useful feature during work on ACPI
-> subsystems.
-> 
-> This commit emulates GPIO h/w behaviour and consists on write
-> operation to debugfs file. GPIO device instance is still required in DSDT
-> table along with _AEI resources and event methods.
-> 
-> Please, see Kconfig help and driver head section for more details
-> regarding tool usage.
-> 
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> ---
->  drivers/acpi/Kconfig             |  10 ++
->  drivers/acpi/Makefile            |   1 +
->  drivers/acpi/gpio-acpi-evt-emu.c | 195 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 206 insertions(+)
->  create mode 100644 drivers/acpi/gpio-acpi-evt-emu.c
-> 
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index fd54a74..8b9b74d 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -122,6 +122,16 @@ config ACPI_BUTTON
->  	  To compile this driver as a module, choose M here:
->  	  the module will be called button.
->  
-> +config ACPI_GPIO_EVT_EMULATE
-> +        bool "ACPI GPIO-signaled Events Emulation Support"
+Hello Javier,
 
-Is there anything preventing building this as a module?
+Am 21.08.2014 12:35, schrieb Javier Martinez Canillas:
+> Hello Heiko,
+>
+> On Thu, Aug 21, 2014 at 8:13 AM, Heiko Schocher<hs@denx.de>  wrote:
+>> Hello Viresh,
+>>
+>> Am 21.08.2014 06:26, schrieb Viresh Kumar:
+>>
+>>> On Thu, Aug 21, 2014 at 2:00 AM, Stephen Warren<swarren@wwwdotorg.org>
+>>> wrote:
+>>>>
+>>>> On 08/20/2014 02:02 PM, Andreas Färber wrote:
+>>>>>
+>>>>> Am 20.08.2014 17:39, schrieb Javier Martinez Canillas:
+>>>>>>
+>>>>>> If this not the correct workflow and you have a better way to manage
+>>>>>> this, I would love to know about it.
+>>>
+>>>
+>>> Oh yes, this was certainly useful. I was missing this (mis)feature :)
+>>
+>>
+>> maybe patman from u-boot is also interesting for you, see:
+>>
+>> http://git.denx.de/?p=u-boot.git;a=blob;f=tools/patman/README;h=5fb508b80df10d3b11d95eea95a141ce3d0ef578;hb=67ee22b0681305ba1099c508eecade996abc1c65
+>>
+>
+> Very interesting and seems to match my workflow as well so I'll take a
+> look, thanks for sharing!
 
-> +        depends on DEBUG_FS
+You are welcome!
 
-Spaces -> Tab
-
-> +	default n
-
-n is the default already, no need to specify it here.
-
-> +	help
-> +	  This will enable your system to emulate GPIO-signaled event through
-> +	  proc file system. User needs to trigger event method by
-> +	  echo 1 >  /sys/kernel/debug/acpi/events/<GPIO DEVICE>/<PIN>
-> +	  (where, GPIO DEVICE is a GPIO device name and PIN is a pin number).
-
-We should probably mention that this is dangerous and should be used for
-debugging purposes only.
-
-> +
->  config ACPI_VIDEO
->  	tristate "Video"
->  	depends on X86 && BACKLIGHT_CLASS_DEVICE
-> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index 9fa20ff..24f9d8f 100644
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -55,6 +55,7 @@ acpi-$(CONFIG_ACPI_PROCFS_POWER) += cm_sbs.o
->  ifdef CONFIG_ACPI_VIDEO
->  acpi-y				+= video_detect.o
->  endif
-> +acpi-$(CONFIG_ACPI_GPIO_EVT_EMULATE)	+= gpio-acpi-evt-emu.o
->  
->  # These are (potentially) separate modules
->  
-> diff --git a/drivers/acpi/gpio-acpi-evt-emu.c b/drivers/acpi/gpio-acpi-evt-emu.c
-> new file mode 100644
-> index 0000000..c39f501
-> --- /dev/null
-> +++ b/drivers/acpi/gpio-acpi-evt-emu.c
-> @@ -0,0 +1,195 @@
-> +/*
-> + * Code to emulate GPIO-signaled events.
-> + *
-> + * The sole purpose of this module is to help with GPIO event triggering.
-> + * Usage:
-> + * 1. See the list of available GPIO devices and associated pins under:
-> + *    /sys/kernel/debug/acpi/events/<GPIO DEVICE>/<PIN>. Only pins which are to
-> + *    be used as GPIO-signaled events will be listed (_AEI resources).
-> + *
-> + * 2. Trigger method corresponding to device pin number:
-> + *    $ echo 1 > /sys/kernel/debug/acpi/events/<GPIO DEVICE>/<PIN>
-> + */
-> +
-> +/*
-> + * Copyright (C) 2014, Linaro Ltd.
-> + * Author: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-You don't need to specify the FSF address here.
-
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/debugfs.h>
-> +#include <linux/acpi.h>
-> +
-> +#include "acpica/accommon.h"
-> +#include "acpica/acnamesp.h"
-
-Are these actually needed?
-
-> +
-> +#include "internal.h"
-> +
-> +#define _COMPONENT		ACPI_SYSTEM_COMPONENT
-> +ACPI_MODULE_NAME("gpio_acpi_evt_emu");
-> +
-> +struct gpio_pin_parent_data {
-> +	acpi_handle handle;
-> +	struct dentry *debugfs_dir;
-> +	char *name;
-> +	unsigned int evt_count;
-> +};
-> +
-> +struct gpio_pin_data {
-> +	struct list_head list;
-> +	acpi_handle handle;
-> +	unsigned int pin;
-> +};
-> +
-> +static struct dentry *acpi_evt_debugfs_dir;
-> +static LIST_HEAD(pin_data_list);
-> +
-> +static int gpio_evt_trigger(void *data, u64 val)
-> +{
-> +	struct gpio_pin_data *pin_data = (struct gpio_pin_data *)data;
-> +	int pin = pin_data->pin;
-> +
-> +	if (ACPI_FAILURE(acpi_execute_simple_method(pin_data->handle, NULL,
-> +						    pin <= 255 ? 0 : pin)))
-> +		pr_err(PREFIX "evaluating event method failed\n");
-
-acpi_execute_simple_method() passes one argument to the method. You
-can't use it with _Lxx or _Exx which don't expect any arguments.
-Otherwise you get this:
-
-[  122.258191] ACPI: \_SB_.GPO2._E12: Excess arguments - Caller passed 1, method requires 0 (20140724/nsarguments-263)
-
-Also where does "PREFIX" come from?
-
-> +
-> +	return 0;
-> +}
-> +
-> +DEFINE_SIMPLE_ATTRIBUTE(gpio_evt_emu_fops, NULL, gpio_evt_trigger, "%llu\n");
-> +
-> +static acpi_status gpio_list_resource(struct acpi_resource *ares, void *context)
-> +{
-> +	struct acpi_resource_gpio *agpio = &ares->data.gpio;
-> +	struct gpio_pin_parent_data *parent_data = context;
-> +	struct dentry *pin_debugfs_dir;
-> +	struct gpio_pin_data *pin_data;
-> +	acpi_handle evt_handle;
-> +	acpi_status status;
-> +	char str_pin[5];
-> +	char ev_name[5];
-> +	int pin;
-> +
-> +	if (ares->type != ACPI_RESOURCE_TYPE_GPIO)
-> +		return AE_OK;
-> +
-> +	if (agpio->connection_type != ACPI_RESOURCE_GPIO_TYPE_INT)
-> +		return AE_OK;
-> +
-> +	pin_data = kmalloc(sizeof(*pin_data), GFP_KERNEL);
-> +	if (!pin_data)
-> +		return AE_NO_MEMORY;
-> +
-> +	pin = agpio->pin_table[0];
-> +	snprintf(str_pin, 5, "%d", pin);
-> +	pin_debugfs_dir = debugfs_create_file(str_pin, S_IWUSR,
-> +					      parent_data->debugfs_dir,
-> +					      pin_data,
-> +					      &gpio_evt_emu_fops);
-> +	if (!pin_debugfs_dir) {
-> +		status = AE_NULL_ENTRY;
-> +		goto fail;
-> +	}
-> +
-> +	if (pin <= 255)
-> +		sprintf(ev_name, "_%c%02X",
-> +			agpio->triggering == ACPI_EDGE_SENSITIVE ? 'E' : 'L',
-> +			pin);
-> +	else
-> +		sprintf(ev_name, "_EVT");
-> +
-> +	status = acpi_get_handle(parent_data->handle, ev_name, &evt_handle);
-> +	if (ACPI_FAILURE(status)) {
-> +		pr_err(PREFIX "getting handle to <%s> of <%s> failed, there is no method related to 0x%02X pin\n",
-> +		       ev_name, parent_data->name, pin);
-> +		goto fail;
-> +	}
-> +
-> +	pin_data->handle = evt_handle;
-> +	pin_data->pin = pin;
-> +        list_add_tail(&pin_data->list, &pin_data_list);
-
-Spaces -> tab
-
-> +
-> +	parent_data->evt_count++;
-> +
-> +	return AE_OK;
-> +fail:
-> +	kfree(pin_data);
-> +	return status;
-> +}
-> +
-> +static acpi_status gpio_find_resource(acpi_handle handle, u32 lvl,
-> +					  void *context, void **rv)
-> +{
-> +	struct acpi_namespace_node *node;
-> +	struct dentry *gpio_debugfs_dir;
-> +	struct gpio_pin_parent_data parent_data;
-> +	char gpio_name[5];
-> +
-> +	node = acpi_ns_validate_handle(handle);
-
-Hmm, why is this needed? Is uppose acpi_get_devices() or already makes
-sure you have a valid handle, no?
-
-> +	if (!node) {
-> +		pr_err(PREFIX "Mapping GPIO handle to node failed\n");
-> +		return AE_BAD_PARAMETER;
-> +	}
-> +
-> +	snprintf(gpio_name, 5, "%s", node->name.ascii);
-> +	gpio_debugfs_dir = debugfs_create_dir(gpio_name, acpi_evt_debugfs_dir);
-> +	if (gpio_debugfs_dir == NULL)
-> +		return AE_OK;
-> +
-> +	parent_data.debugfs_dir = gpio_debugfs_dir;
-> +	parent_data.handle = handle;
-> +	parent_data.name = gpio_name;
-> +	parent_data.evt_count = 0;
-> +
-> +	acpi_walk_resources(handle, METHOD_NAME__AEI, gpio_list_resource,
-> +			    &parent_data);
-> +
-> +	if (!parent_data.evt_count)
-> +		debugfs_remove(gpio_debugfs_dir);
-> +
-> +	return AE_OK;
-> +}
-> +
-> +static int __init gpio_evt_emu_init(void)
-> +{
-> +	if (acpi_debugfs_dir == NULL)
-> +		return -ENOENT;
-> +
-> +	acpi_evt_debugfs_dir = debugfs_create_dir("events", acpi_debugfs_dir);
-> +	if (acpi_evt_debugfs_dir == NULL)
-> +		return -ENOENT;
-> +
-> +	acpi_get_devices(NULL, gpio_find_resource, NULL, NULL);
-> +
-> +	return 0;
-> +}
-> +
-> +static void __exit gpio_evt_emu_deinit(void)
-
-call it gpio_evt_emu_exit() instead.
-
-> +{
-> +	struct gpio_pin_data *pin_data, *temp;
-> +
-> +	list_for_each_entry_safe(pin_data, temp, &pin_data_list, list)
-> +		kfree(pin_data);
-
-I suppose you want to first remove the directory entries and then the
-pin data. Otherwise if you get pre-empted at this point and someone
-tries to use your debugfs files, bad things might happen.
-
-> +
-> +	debugfs_remove_recursive(acpi_evt_debugfs_dir);
-
-Since this already removes everything below this dentry, why do you need
-to store the pointer in gpio_pin_parent_data?
-
-> +}
-> +
-> +module_init(gpio_evt_emu_init);
-> +module_exit(gpio_evt_emu_deinit);
-
-These should follow their respective functions. E.g
-
-static int __init gpio_evt_emu_init(void)
-{
-	...
-}
-module_init(gpio_evt_emu_init);
-
-> +
-> +MODULE_DESCRIPTION("GPIO-signaled events emulator");
-> +MODULE_LICENSE("GPL");
-
-GPL v2
+bye,
+Heiko
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
