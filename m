@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbaHUQaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:30:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61758 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810AbaHUQau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:30:50 -0400
-Message-ID: <53F61EAC.2000004@redhat.com>
-Date: Thu, 21 Aug 2014 18:30:36 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752551AbaHUQbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:31:38 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:36437 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848AbaHUQbg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 12:31:36 -0400
+Date: Thu, 21 Aug 2014 09:31:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
+Message-ID: <20140821163130.GA13364@roeck-us.net>
+References: <cover.1408535000.git.jslaby@suse.cz>
+ <20140820165459.GA21275@roeck-us.net>
+ <20140820195436.GA22902@roeck-us.net>
+ <53F5A864.5040206@suse.cz>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>, kvm@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Lisa Mitchell <lisa.mitchell@hp.com>
-Subject: Re: [PATCH v3 0/7] Dynamic Pause Loop Exiting window.
-References: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
-In-Reply-To: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F5A864.5040206@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/08/2014 18:08, Radim Krčmář ha scritto:
-> v2 -> v3:
->  * copy&paste frenzy [v3 4/7] (split modify_ple_window)
->  * commented update_ple_window_actual_max [v3 4/7]
->  * renamed shrinker to modifier [v3 4/7]
->  * removed an extraneous max(new, ple_window) [v3 4/7] (should have been in v2)
->  * changed tracepoint argument type, printing and macro abstractions [v3 5/7]
->  * renamed ple_t to ple_int [v3 6/7] (visible in modinfo)
->  * intelligent updates of ple_window [v3 7/7]
+On Thu, Aug 21, 2014 at 10:05:56AM +0200, Jiri Slaby wrote:
+> On 08/20/2014, 09:54 PM, Guenter Roeck wrote:
+> > On Wed, Aug 20, 2014 at 09:54:59AM -0700, Guenter Roeck wrote:
+> >> On Wed, Aug 20, 2014 at 01:43:51PM +0200, Jiri Slaby wrote:
+> >>> This is the start of the stable review cycle for the 3.12.27 release.
+> >>> There are 104 patches in this series, all will be posted as a response
+> >>> to this one.  If anyone has any issues with these being applied, please
+> >>> let me know.
+> >>>
+> >>> Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
+> >>> Anything received after that time might be too late.
+> >>>
+> >> Build results look good:
+> >> 	total: 135 pass: 135 fail: 0
+> >>
+> >> qemu tests passed except for sparc64 which hangs during boot, both for SMP and
+> >> non-SMP builds. I'll try to bisect as soon as I have a somewhat stable internet
+> >> connection.
+> >>
+> > Bisect result:
+> > 
+> > # bad: [c07d9e5da83f1470ccc58d37fe222dab36dbca67] drivers/rtc/interface.c: fix infinite loop in initializing the alarm
+> > # good: [d83a3234d2e1e2a55e7f2430fc9ca29a9bd315e7] Linux 3.12.26
+> > git bisect start 'HEAD' 'v3.12.26'
+> > # bad: [0d543dade2be5f0ddb268c6d6ea0e86938e3bf42] sparc64: Add membar to Niagara2 memcpy code.
+> > git bisect bad 0d543dade2be5f0ddb268c6d6ea0e86938e3bf42
+> > # good: [6e1af05639abfc6f1841e6bf8b5c8492971ed1f2] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+> > git bisect good 6e1af05639abfc6f1841e6bf8b5c8492971ed1f2
+> > # good: [6a25e8f778995cabb0cfe2acb3247e3b42dec35f] macvlan: Initialize vlan_features to turn on offload support.
+> > git bisect good 6a25e8f778995cabb0cfe2acb3247e3b42dec35f
+> > # good: [bf42f839476f1f447ca696fbbab7e741861d9d7d] sparc64: Fix executable bit testing in set_pmd_at() paths.
+> > git bisect good bf42f839476f1f447ca696fbbab7e741861d9d7d
+> > # bad: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
+> > git bisect bad 6acda98c75b536deaba1bf21f93411fcc484fbb5
+> > # good: [a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6] sparc64: Fix top-level fault handling bugs.
+> > git bisect good a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6
+> > # first bad commit: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
+> > 
+> > Reverting the offending patch ('Add basic validations ...') fixes the problem.
 > 
-> ---
-> v1 -> v2:
->  * squashed [v1 4/9] and [v1 5/9] (clamping)
->  * dropped [v1 7/9] (CPP abstractions)
->  * merged core of [v1 9/9] into [v1 4/9] (automatic maximum)
->  * reworked kernel_param_ops: closer to pure int [v2 6/6]
->  * introduced ple_window_actual_max & reworked clamping [v2 4/6]
->  * added seqlock for parameter modifications [v2 6/6]
+> Hi,
 > 
-> ---
-> PLE does not scale in its current form.  When increasing VCPU count
-> above 150, one can hit soft lockups because of runqueue lock contention.
-> (Which says a lot about performance.)
+> thanks for the work!
 > 
-> The main reason is that kvm_ple_loop cycles through all VCPUs.
-> Replacing it with a scalable solution would be ideal, but it has already
-> been well optimized for various workloads, so this series tries to
-> alleviate one different major problem while minimizing a chance of
-> regressions: we have too many useless PLE exits.
+> Just note on patches, in 3.12, there are all 3.10 patches plus these three:
+> +sparc64-add-basic-validations-to-pud-pmd-_bad.patch
+> +sparc64-fix-executable-bit-testing-in-set_pmd_at-paths.patch
+> +sparc64-give-more-detailed-information-in-pgd-pmd-_error-and-kill-pte_error.patch
 > 
-> Just increasing PLE window would help some cases, but it still spirals
-> out of control.  By increasing the window after every PLE exit, we can
-> limit the amount of useless ones, so we don't reach the state where CPUs
-> spend 99% of the time waiting for a lock.
+> where the third adds only printouts.
 > 
-> HP confirmed that this series prevents soft lockups and TSC sync errors
-> on large guests.
+> These 3.14 patches are not applied to 3.12:
+> +sparc64-don-t-use-_page_present-in-pte_modify-mask.patch
+> +sparc64-fix-bugs-in-get_user_pages_fast-wrt.-thp.patch
+> +sparc64-fix-huge-pmd-invalidation.patch
+> +sparc64-fix-hex-values-in-comment-above-pte_modify.patch
+> +sparc64-fix-range-check-in-kern_addr_valid.patch
+> +sparc64-use-ilog2_4mb-instead-of-constant-22.patch
+> 
+I tried to apply a couple of those, but they don't apply cleanly.
 
-Hi,
+> The last three are just cosmetical in 3.12. And I do not immediately see
+> in the rest, how they could improve the state. So I am going to remove
+> the add-basic-validations patch from 3.12.
+> 
+... so that seems to be the best available solution, at least for now.
 
-I'm not sure of the usefulness of patch 6, so I'm going to drop it.
-I'll keep it in my local junkyard branch in case it's going to be useful
-in some scenario I didn't think of.
-
-Patch 7 can be easily rebased, so no need to repost (and I might even
-squash it into patch 3, what do you think?).
-
-Paolo
+Guenter
