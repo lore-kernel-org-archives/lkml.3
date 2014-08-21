@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710AbaHUDZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:25:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12564 "EHLO mx1.redhat.com"
+	id S1753744AbaHUDZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:25:34 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:53217 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676AbaHUDZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:25:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, eranian@google.com, jmario@redhat.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH] perf: Fallback to MAP__FUNCTION if daddr maps are NULL
-Date: Wed, 20 Aug 2014 23:25:11 -0400
-Message-Id: <1408591511-57884-1-git-send-email-dzickus@redhat.com>
+	id S1753717AbaHUDZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 23:25:32 -0400
+Date: Thu, 21 Aug 2014 12:25:21 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] kbuild: Make scripts executable
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1408543848-24977-1-git-send-email-mmarek@suse.cz>
+References: <1408543848-24977-1-git-send-email-mmarek@suse.cz>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20140821122521.2D67.AA925319@jp.panasonic.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As we run "perf c2c" on more applications, we noticed we're missing significant
-samples from a common customer's application.  Looking at the
-/proc/<pid>/maps file for the app, we see "rwxs" and "rwxp" permissions on many
-of the shared memory & heap regions, and on all the thread stacks.
+Hi Michal,
 
-Because those regions have the "x" bit set, perf marks them with a MAP_FUNCTION
-type.  Hence ip_resolve_data() never finds load or store events coming from
-them.
 
-We fixed this by re-calling thread__find_addr_location with MAP__FUNCTION in
-the case where map is NULL as a last ditch effort to map the sample before
-giving up and dropping it.
+On Wed, 20 Aug 2014 16:10:48 +0200
+Michal Marek <mmarek@suse.cz> wrote:
 
-Reported-by: Joe Mario <jmario@redhat.com>
-Tested-by: Joe Mario <jmario@redhat.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/util/machine.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+> The Makefiles call the respective interpreter explicitly, but this makes
+> it easier to use the scripts manually.
+> 
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 0e5fea9..e62bd87 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1241,6 +1241,16 @@ static void ip__resolve_data(struct machine *machine, struct thread *thread,
- 
- 	thread__find_addr_location(thread, machine, m, MAP__VARIABLE, addr,
- 				   &al);
-+	if (al.map == NULL) {
-+		/*
-+		 * some shared data regions have execute bit set which puts
-+		 * their mapping in the MAP__FUNCTION type array.
-+		 * Check there as a fallback option before dropping the sample.
-+		 */
-+		thread__find_addr_location(thread, machine, m, MAP__FUNCTION, addr,
-+					   &al);
-+	}
-+
- 	ams->addr = addr;
- 	ams->al_addr = al.addr;
- 	ams->sym = al.sym;
--- 
-1.7.1
 
+I am not sure at all, but
+it seems scripts/checkpatch.pl has a rule
+to ban execute permissions.
+
+
+# Check for incorrect file permissions
+                if ($line =~ /^new (file )?mode.*[7531]\d{0,2}$/) {
+                        my $permhere = $here . "FILE: $realfile\n";
+                        if ($realfile !~ m@scripts/@ &&
+                            $realfile !~ /\.(py|pl|awk|sh)$/) {
+                                ERROR("EXECUTE_PERMISSIONS",
+                                      "do not set execute permissions for source files\n" . $permhere);
+                        }
+                }
+
+
+
+Best Regards
+Masahiro Yamada
