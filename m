@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaHUIcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 04:32:10 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:34697 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813AbaHUIcI (ORCPT
+	id S1754001AbaHUIeb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 04:34:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56474 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753468AbaHUIe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 04:32:08 -0400
-Date: Thu, 21 Aug 2014 09:31:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: microcai <microcaicai@gmail.com>
-Cc: Peter Tyser <ptyser@xes-inc.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: lpc_ich: add support for Intel Z97 chipset
-Message-ID: <20140821083158.GT4266@lee--X1>
-References: <1407520519-1755-1-git-send-email-microcaicai@gmail.com>
+	Thu, 21 Aug 2014 04:34:28 -0400
+Message-ID: <53F5AF0D.5060409@linutronix.de>
+Date: Thu, 21 Aug 2014 10:34:21 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1407520519-1755-1-git-send-email-microcaicai@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tony Lindgren <tony@atomide.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, Vinod Koul <vinod.koul@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 15/15] tty: serial: 8250: omap: add dma support
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de> <1408124563-31541-16-git-send-email-bigeasy@linutronix.de> <20140815210211.GD9239@atomide.com>
+In-Reply-To: <20140815210211.GD9239@atomide.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 09 Aug 2014, microcai wrote:
-
-> From: Wanzhao Cai <microcaicai@gmail.com>
+On 08/15/2014 11:02 PM, Tony Lindgren wrote:
+> * Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140815 11:13]:
+>> +#ifdef CONFIG_SERIAL_8250_DMA
+>> +	if (pdev->dev.of_node) {
+>> +		/*
+>> +		 * Oh DMA support. If there are no DMA properties in the DT then
+>> +		 * we will fall back to a generic DMA channel which does not
+>> +		 * really work here. To ensure that we do not get a generic DMA
+>> +		 * channel assigned, we have the the_no_dma_filter_fn() here.
+>> +		 * To avoid "failed to request DMA" messages we check for DMA
+>> +		 * properties in DT.
+>> +		 */
+>> +		ret = of_property_count_strings(pdev->dev.of_node, "dma-names");
+>> +		if (ret == 2) {
+>> +			up.dma = &priv->omap8250_dma;
+>> +			priv->omap8250_dma.fn = the_no_dma_filter_fn;
+>> +			priv->omap8250_dma.rx_size = RX_TRIGGER;
+>> +			priv->omap8250_dma.rxconf.src_maxburst = RX_TRIGGER;
+>> +			priv->omap8250_dma.txconf.dst_maxburst = TX_TRIGGER;
+>> +
+>> +			if (of_machine_is_compatible("ti,am33xx"))
+>> +				up.bugs |= UART_BUG_DMATX;
+>> +		}
+>> +	}
+>> +#endif
 > 
-> This patch adds the LPC Controller Device IDs found on ASUS Z97-A mother broad.
-> 
-> lspci output for this mother broad:
-> 
-> 00:1f.0 ISA bridge [0601]: Intel Corporation 9 Series Chipset Family Z97 LPC Controller [8086:8cc4]
-> 	Subsystem: ASUSTeK Computer Inc. Device [1043:8534]
-> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> 	Status: Cap+ 66MHz- UDF- FastB2B- ParErr-
-> 	DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR-
-> 	<PERR- INTx-
-> 	Latency: 0
-> 	Capabilities: [e0] Vendor
-> 	Specific Information: Len=0c <?>
-> 	Kernel driver in use: lpc_ich
-> 	Kernel modules: lpc_ich
-> 
-> Signed-off-by: microcai <microcaicai@gmail.com>
+> Hmm I wonder if there's a more generic solution to this?
 
-Full names only please.
+To what exactly? The trigger level, the TX-bug or using DMA in the
+first place?
 
-Patch looks okay though.
+> It would be also nice to be able to specify the use of DMA from
+> the board specific .dts file.
 
-> ---
->  drivers/mfd/lpc_ich.c | 1 +
->  1 file changed, 1 insertion(+)
+Really? I don't see this requirement for MMC for instance. However you
+still could provide an empty "dma-names" property in your board .dts
+file if you do not want use DMA. Would this work?
+
+> Also, with DMA enabled, looks like omap deeper idle states are
+> blocked as the DMA stays reserved. After I commented out the
+> DMA info for my console UART, PM started working.
+
+Hmm. This would explain something. This would mean that I should cancel
+the RX DMA transfer in the PM-suspend routine. Let me see how that
+works.
+
+> Regards,
 > 
-> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-> index 7d8482f..e4b37c0 100644
-> --- a/drivers/mfd/lpc_ich.c
-> +++ b/drivers/mfd/lpc_ich.c
-> @@ -738,6 +738,7 @@ static const struct pci_device_id lpc_ich_ids[] = {
->  	{ PCI_VDEVICE(INTEL, 0x1f3b), LPC_AVN},
->  	{ PCI_VDEVICE(INTEL, 0x0f1c), LPC_BAYTRAIL},
->  	{ PCI_VDEVICE(INTEL, 0x2390), LPC_COLETO},
-> +	{ PCI_VDEVICE(INTEL, 0x8cc4), LPC_WPT_LP},
->  	{ PCI_VDEVICE(INTEL, 0x9cc1), LPC_WPT_LP},
->  	{ PCI_VDEVICE(INTEL, 0x9cc2), LPC_WPT_LP},
->  	{ PCI_VDEVICE(INTEL, 0x9cc3), LPC_WPT_LP},
+> Tony
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Sebastian
