@@ -1,166 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaHUHxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 03:53:50 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:43679 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaHUHxt (ORCPT
+	id S1753850AbaHUH5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 03:57:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33901 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaHUH5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 03:53:49 -0400
-Message-ID: <53F5A587.9030200@collabora.com>
-Date: Thu, 21 Aug 2014 09:53:43 +0200
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 21 Aug 2014 03:57:08 -0400
+Message-ID: <53F5A648.6060904@canonical.com>
+Date: Thu, 21 Aug 2014 09:56:56 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Rabin Vincent <rabin@rab.in>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Subject: Re: [PATCH v7 3/8] cpufreq: kirkwood: Remove use of the clk provider
- API
-References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com> <1408375833-10703-4-git-send-email-tomeu.vizoso@collabora.com> <20140820225513.5251.284@quantum>
-In-Reply-To: <20140820225513.5251.284@quantum>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Slava Pestov <sp@datera.io>
+CC: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        Kent Overstreet <kmo@daterainc.com>
+Subject: Re: [PATCH] bcache: prevent crash on changing writeback_running
+References: <1408453293-17917-1-git-send-email-stefan.bader@canonical.com> <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
+In-Reply-To: <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="Gt1dHuxcd41p5h4tfoN4VresMqljECsjO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 12:55 AM, Mike Turquette wrote:
-> Quoting Tomeu Vizoso (2014-08-18 08:30:29)
->> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Gt1dHuxcd41p5h4tfoN4VresMqljECsjO
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+On 19.08.2014 20:03, Slava Pestov wrote:
+> Thanks, this is now in our development branch.
+
+Thanks. :) This kind of brings up another question: how are stable patche=
+s
+handled for bcache. Someone handling them centrally like for the network =
+stack
+or tagging for stable and if that missed, individual proposals?
+
+I am asking because it looks like for all kernels between 3.13..3.16 (inc=
+lusive)
+the set of
+
+a664d0f05a2ec02c8f042db536d84d15d6e19e81
+  bcache: fix crash on shutdown in passthrough mode
+9e5c353510b26500bd6b8309823ac9ef2837b761
+  bcache: fix uninterruptible sleep in writeback thread
+
+plus the one I did would be useful. Right now I only tested with 3.13 wit=
+h those
+and at least avoid the lockdep warnings and crashes I saw before. I only =
+see an
+unexplainable load of 1 when idle but having one bcache device configured=
+ in a
+VM (Xen or KVM). Since writeback should be fixed, maybe gc...
+
+-Stefan
+>=20
+> On Tue, Aug 19, 2014 at 6:01 AM, Stefan Bader
+> <stefan.bader@canonical.com> wrote:
+>> commit a664d0f05a2ec02c8f042db536d84d15d6e19e81
+>>     bcache: fix crash on shutdown in passthrough mode
+>>
+>> added a safeguard in the shutdown case. At least while not being
+>> attached it is also possible to trigger a kernel bug by writing into
+>> writeback_running. This change  adds the same check before trying to
+>> wake up the thread for that case.
+>>
+>> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 >> ---
->>   drivers/cpufreq/kirkwood-cpufreq.c | 3 +--
->>   1 file changed, 1 insertion(+), 2 deletions(-)
+>>  drivers/md/bcache/writeback.h | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
 >>
->> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
->> index 37a4806..f3d087f 100644
->> --- a/drivers/cpufreq/kirkwood-cpufreq.c
->> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
->> @@ -12,7 +12,6 @@
->>   #include <linux/kernel.h>
->>   #include <linux/module.h>
->>   #include <linux/clk.h>
->> -#include <linux/clk-provider.h>
->>   #include <linux/cpufreq.h>
->>   #include <linux/of_device.h>
->>   #include <linux/platform_device.h>
->> @@ -50,7 +49,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
+>> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeba=
+ck.h
+>> index 0a9dab1..073a042 100644
+>> --- a/drivers/md/bcache/writeback.h
+>> +++ b/drivers/md/bcache/writeback.h
+>> @@ -63,7 +63,8 @@ static inline bool should_writeback(struct cached_de=
+v *dc, struct bio *bio,
 >>
->>   static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
->>   {
->> -       if (__clk_is_enabled(priv.powersave_clk))
->> +       if (clk_is_enabled(priv.powersave_clk))
->>                  return kirkwood_freq_table[1].frequency;
->>          return kirkwood_freq_table[0].frequency;
->>   }
+>>  static inline void bch_writeback_queue(struct cached_dev *dc)
+>>  {
+>> -       wake_up_process(dc->writeback_thread);
+>> +       if (!IS_ERR_OR_NULL(dc->writeback_thread))
+>> +               wake_up_process(dc->writeback_thread);
+>>  }
+>>
+>>  static inline void bch_writeback_add(struct cached_dev *dc)
 >> --
->> 1.9.3
+>> 1.9.1
 >>
->
-> Tomeu,
->
-> After taking a second look at clk_is_enabled and the Kirkwood driver, I
-> would prefer to not implement clk_is_enabled. The main reason is that it
-> is racey, since the clock's status could of course change as soon as as
-> that call completes. Furthermore I am worried that drivers might do
-> something like:
->
-> if (!clk_is_enabled(clk))
-> 	clk_enable(clk);
->
-> Which is crap and the driver should just call clk_enable any time it
-> needs the clock. To that end I propose to drop "clk: provide public
-> clk_is_enabled function" and replace your update to kirkwood-cpufreq.c
-> with the following patch. Let me know what you think.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache=
+" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Yep, this looks much better to me. I will replace 2/8 and 3/8 with this 
-one for v8.
 
-Reviewed-By: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-Thanks!
+--Gt1dHuxcd41p5h4tfoN4VresMqljECsjO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Tomeu
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> Regards,
-> Mike
->
->
->
->  From 713b46fd66abd26a4e4d584a0b8a2a28c0459a60 Mon Sep 17 00:00:00 2001
-> From: Mike Turquette <mturquette@linaro.org>
-> Date: Mon, 18 Aug 2014 17:30:29 +0200
-> Subject: [PATCH] cpufreq: kirkwood: Remove use of the clk provider API
->
-> Instead of checking the clock framework to see if the clock is enabled,
-> track the cpu frequency within the driver as the powersave_clk is
-> enabled and disabled.
->
-> Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Mike Turquette <mturquette@linaro.org>
-> ---
->   drivers/cpufreq/kirkwood-cpufreq.c | 10 ++++++----
->   1 file changed, 6 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-> index 37a4806..88f4641 100644
-> --- a/drivers/cpufreq/kirkwood-cpufreq.c
-> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
-> @@ -12,7 +12,6 @@
->   #include <linux/kernel.h>
->   #include <linux/module.h>
->   #include <linux/clk.h>
-> -#include <linux/clk-provider.h>
->   #include <linux/cpufreq.h>
->   #include <linux/of_device.h>
->   #include <linux/platform_device.h>
-> @@ -33,6 +32,8 @@ static struct priv
->   #define STATE_CPU_FREQ 0x01
->   #define STATE_DDR_FREQ 0x02
->
-> +static unsigned long cpu_frequency = 0;
-> +
->   /*
->    * Kirkwood can swap the clock to the CPU between two clocks:
->    *
-> @@ -50,9 +51,7 @@ static struct cpufreq_frequency_table kirkwood_freq_table[] = {
->
->   static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
->   {
-> -	if (__clk_is_enabled(priv.powersave_clk))
-> -		return kirkwood_freq_table[1].frequency;
-> -	return kirkwood_freq_table[0].frequency;
-> +	return cpu_frequency;
->   }
->
->   static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
-> @@ -71,9 +70,11 @@ static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
->   	switch (state) {
->   	case STATE_CPU_FREQ:
->   		clk_disable(priv.powersave_clk);
-> +		cpu_frequency = kirkwood_freq_table[0].frequency;
->   		break;
->   	case STATE_DDR_FREQ:
->   		clk_enable(priv.powersave_clk);
-> +		cpu_frequency = kirkwood_freq_table[1].frequency;
->   		break;
->   	}
->
-> @@ -133,6 +134,7 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
->
->   	clk_prepare_enable(priv.cpu_clk);
->   	kirkwood_freq_table[0].frequency = clk_get_rate(priv.cpu_clk) / 1000;
-> +	cpu_frequency = kirkwood_freq_table[0].frequency;
->
->   	priv.ddr_clk = of_clk_get_by_name(np, "ddrclk");
->   	if (IS_ERR(priv.ddr_clk)) {
->
+iQIcBAEBCgAGBQJT9aZRAAoJEOhnXe7L7s6jn3gP/1LEAcf81q6w1/3Uz0noWiSw
+8yEhKclYc3ZbkIPb1dhVAASA0FpqQMSXWc3uKZNQnI3zjlnQyVwdICHPgVtkY7uT
+WkYV4X3fYzvnKDvEKVENxBJitk8NG5XKcvdmuxKy16NV8X0vJk9LukNzDPvIE2hT
+eoXyXA9JwFPY65oXJiX7Q8s7yjHs7Ja7+iHmWQiaeyF9XKGHg4Ad+GHBA7EGtIGf
+xivLn/jYCJcPu+A0CmvSD084k54BDviFbsGGiLbSbkhLFrubA2jM0tH2FdoxJzTf
+wOBUcY3Lvk0oHgffq8e+gV3zz92rpFcLUMDVLoCE1MoyBfTZJenyXv9WBKKwcPzE
+lDmIqDMG9sbKGMvCgqIgBuL/Lbq8Cn4wAv4677uDZG0w6eLDzRSF3g/Z13mZCjyh
+qXFTMhH6AKhYKwwaoaNP3kQiXdPlVWfLgLxKngvihj5q9pPIO9woJ5hUbWqNLKq+
+6J0BIMkj7UZBnrUsD80+eXTA7XzboG72hMg6iniJydZYt6l+a9z6QehqbEKkOUKR
+F+DU27+zVRr4VmqggLAXW5t9CkIKzR0LcQyg2aqprGuwLnP1nrC1BNtx5D+s+wtI
+SUbADRLfBE7KjbdPSGOevM9BLttMMy4++j+zJP9hUZCrheV9Lv10sMcNTzScoXlQ
+HbU7gaQ+40zoDx1QpOdB
+=bTwn
+-----END PGP SIGNATURE-----
 
+--Gt1dHuxcd41p5h4tfoN4VresMqljECsjO--
