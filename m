@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301AbaHUNXK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:23:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6495 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044AbaHUNXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:23:04 -0400
-Message-ID: <53F5F2AA.7060600@redhat.com>
-Date: Thu, 21 Aug 2014 15:22:50 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1755319AbaHUNYl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:24:41 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:41750 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778AbaHUNYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 09:24:39 -0400
+Date: Thu, 21 Aug 2014 15:24:35 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] dma-mapping: Provide write-combine allocations
+Message-ID: <20140821132433.GC19293@ulmo.nvidia.com>
+References: <1403863018-20033-1-git-send-email-thierry.reding@gmail.com>
+ <20140801124057.GA19889@ulmo>
+ <20140801151917.GS30282@n2100.arm.linux.org.uk>
+ <53F5CC38.7060902@samsung.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH v2 5/6] KVM: trace kvm_ple_window
-References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com> <1408567997-21222-6-git-send-email-rkrcmar@redhat.com> <53F5ADE6.30106@redhat.com> <20140821115637.GE20546@potion.brq.redhat.com>
-In-Reply-To: <20140821115637.GE20546@potion.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tqI+Z3u+9OQ7kwn0"
+Content-Disposition: inline
+In-Reply-To: <53F5CC38.7060902@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/08/2014 13:56, Radim Krčmář ha scritto:
-> 2014-08-21 10:29+0200, Paolo Bonzini:
->> Il 20/08/2014 22:53, Radim Krčmář ha scritto:
->>> Tracepoint for dynamic PLE window, fired on every potential change.
->>>
->>> Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
->>> ---
->>>  arch/x86/kvm/trace.h | 25 +++++++++++++++++++++++++
->>>  arch/x86/kvm/vmx.c   |  8 +++++---
->>>  arch/x86/kvm/x86.c   |  1 +
->>>  3 files changed, 31 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
->>> index e850a7d..4b8e6cb 100644
->>> --- a/arch/x86/kvm/trace.h
->>> +++ b/arch/x86/kvm/trace.h
->>> @@ -848,6 +848,31 @@ TRACE_EVENT(kvm_track_tsc,
->>>  		  __print_symbolic(__entry->host_clock, host_clocks))
->>>  );
->>>  
->>> +TRACE_EVENT(kvm_ple_window,
->>> +	TP_PROTO(int grow, unsigned int vcpu_id, int new, int old),
->>
->> s/int grow/bool grow/ (and similarly in TP_STRUCT__entry).
-> 
-> Ok.
-> (We are using 'int' for this in other tracepoints, so I guessed there is
->  some hate agains bool.)
 
-Yeah, there are many ints, but there are also some bools. :)
+--tqI+Z3u+9OQ7kwn0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Of course "bool" is only a no-brainer if there is a clear direction to
-use (e.g. "bool has_error"), and indeed this case is less obvious.  But
-there are some like this one (e.g. bool gpa_match).
+On Thu, Aug 21, 2014 at 12:38:48PM +0200, Marek Szyprowski wrote:
+> Hello,
+>=20
+> On 2014-08-01 17:19, Russell King - ARM Linux wrote:
+> >On Fri, Aug 01, 2014 at 02:40:59PM +0200, Thierry Reding wrote:
+> >>On Fri, Jun 27, 2014 at 11:56:58AM +0200, Thierry Reding wrote:
+> >>>From: Thierry Reding <treding@nvidia.com>
+> >>>
+> >>>Provide an implementation for dma_{alloc,free,mmap}_writecombine() when
+> >>>the architecture supports DMA attributes.
+> >>>
+> >>>Signed-off-by: Thierry Reding <treding@nvidia.com>
+> >>>---
+> >>>Changes in v2:
+> >>>- Add a generic dma_mmap_writecombine() function
+> >>>
+> >>>  arch/arm/include/asm/dma-mapping.h       | 16 ----------------
+> >>>  include/asm-generic/dma-mapping-common.h |  8 --------
+> >>>  include/linux/dma-mapping.h              | 26 ++++++++++++++++++++++=
+++++
+> >>>  3 files changed, 26 insertions(+), 24 deletions(-)
+> >>Ping?
+> >I have no problem with this, but I don't think I can say yes to it; that
+> >depends whether other people are happy for this to live in
+> >include/linux/dma-mapping.h.
+> >
+> >I guess consent for this change can only come by no one objecting to it
+> >after several postings.
+>=20
+> I will take this patch my dma-mapping-next tree and later send pull reque=
+st
+> to Linus, so it will be handled in a similar way as all other changes to
+> generic dma-mapping subsystem done in last 2 years.
 
-Keep the int if you prefer it that way.
+Okay, thanks.
 
-Paolo
+Thierry
 
->>> +	TP_ARGS(grow, vcpu_id, new, old),
->>> +
->>> +	TP_STRUCT__entry(
->>> +		__field(                 int,      grow         )
->>> +		__field(        unsigned int,   vcpu_id         )
->>> +		__field(                 int,       new         )
->>> +		__field(                 int,       old         )
->>> +	),
->>> +
->>> +	TP_fast_assign(
->>> +		__entry->grow           = grow;
->>> +		__entry->vcpu_id        = vcpu_id;
->>> +		__entry->new            = new;
->>> +		__entry->old            = old;
->>> +	),
->>> +
->>> +	TP_printk("vcpu %u: ple_window %d %s %d",
->>> +	          __entry->vcpu_id,
->>> +	          __entry->new,
->>> +	          __entry->grow ? "<+" : "<-",
->>
->> ? "grow" : "shrink"
-> 
-> Can't say I haven't expected comment about that :)
-> 
+--tqI+Z3u+9OQ7kwn0
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT9fMRAAoJEN0jrNd/PrOhdw8P/3Ty6XtYDNhTMBTbiAgm+WIs
+tbBnctP2qSv33Za8kg7XONTC69XrAn82zpyM3izInq6w4ZtmOG6WxiVPxTlVZ5aA
+7hWRHbtuncrm5ru99P0uiX7x8g5L18PkTaWH2ScxGUvcXuFRWBw/0vU8j2MLsKtE
+F01BLLcBO8Sz7X2hKp658diNA3jairkRTIXF30Nx9DslOIArk8/PLqRvAN5cALtU
+kFFY38Vexv7vdmU6VdUmqpM7GVsfxejrkTL1Omc6ET/JkOvf1cY/hstdKRBIpf0f
+gVt90PfgvRR58R4MoL75J/vGSIX0ZDRr/QL93jbhu3Oom50AVkazJnG2L+9CUB1g
+6lzboO5TLx7vdMEqpQyJfqXKu1zv3H7jednfDIDKrXxUx31LZaA36PKwOCg3pvc/
+s34ImRFnnLo/sWNZYDpkh3eES7cNr4gpgWsIX9CXRJNCgezA7VuXRW/yz7oQ7veD
+Z5qVOEQmoMhDHpnN2UbZzh3xkJf7xFE+FCgqqN4t5dUXsMfMs66BKUdsGt4mfLxd
+z2cyeK92Oaa+VtjHJrmfj9nVAGa7vMb0bEyyGXxca+EBMjsMplwvuhswBJrGJw6H
+on7+WtLKC8x094IUy2k4Fb05SO2O7nlbal2ocovOrE6AMHzgiWu4VGKDF6v5YOft
+RQh0orI+bErkHbKglQOT
+=nQhz
+-----END PGP SIGNATURE-----
+
+--tqI+Z3u+9OQ7kwn0--
