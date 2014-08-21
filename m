@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaHUQEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:04:53 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:35913 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654AbaHUQEv (ORCPT
+	id S1752492AbaHUQHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:07:52 -0400
+Received: from relay.parallels.com ([195.214.232.42]:58708 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317AbaHUQHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:04:51 -0400
-Date: Thu, 21 Aug 2014 12:04:43 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
-        thierry.reding@gmail.com, linux-pm@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 3/4] ARM: tegra: Add thermal trip points for Jetson TK1
-Message-ID: <20140821160442.GB17621@developer>
-References: <1407320706-17440-1-git-send-email-mperttunen@nvidia.com>
- <1407320706-17440-4-git-send-email-mperttunen@nvidia.com>
- <53F4FA80.9050103@wwwdotorg.org>
+	Thu, 21 Aug 2014 12:07:50 -0400
+Subject: [PATCH 0/6] fuse: handle release synchronously (v3)
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, avati@gluster.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 21 Aug 2014 20:07:46 +0400
+Message-ID: <20140821160304.11005.15166.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F4FA80.9050103@wwwdotorg.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
+Hi,
 
-On Wed, Aug 20, 2014 at 01:44:00PM -0600, Stephen Warren wrote:
-> On 08/06/2014 04:25 AM, Mikko Perttunen wrote:
-> > This adds critical trip points to the Jetson TK1 device tree.
-> > The device will do a controlled shutdown when either the CPU, GPU
-> > or MEM thermal zone reaches 101 degrees Celsius.
-> 
-> > diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-> 
-> > +	thermal-zones {
-> > +		cpu {
-> > +			trips {
-> ...
-> > +			};
-> > +		};
-> 
-> thermal.txt states that a cooling-maps sub-node is mandatory. However, 
-> it seems to be missing here. Is the DT binding documentation overly 
-> strict, or do we need to add such a node here?
+There is a long-standing demand for synchronous behaviour of fuse_release:
 
-I believe the binding documentation is correct. I believe this driver
-should still evolve a little bit to accomplish full thermal DT
-description and include the cooling devices mapping.
+http://sourceforge.net/mailarchive/message.php?msg_id=19343889
+http://sourceforge.net/mailarchive/message.php?msg_id=29814693
 
-All the best,
+A year ago Avati and me explained why such a feature would be useful:
+
+http://sourceforge.net/mailarchive/message.php?msg_id=29889055
+http://sourceforge.net/mailarchive/message.php?msg_id=29867423
+
+In short, the problem is that fuse_release (that's usually called on last
+user close(2)) sends FUSE_RELEASE to userspace and returns without waiting
+for ACK from userspace. Consequently, there is a gap when user regards the
+file released while userspace fuse is still working on it. An attempt to
+access the file from another node leads to complicated synchronization
+problems because the first node still "holds" the file.
+
+The patch-set resolves the problem by making fuse_release synchronous:
+wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
+
+It must be emphasized that even if the feature is enabled (i.e. fuse_release
+is synchronous), nothing guarantees that fuse_release() will be called
+in the context of close(2). In fact, it may happen later, on last fput().
+However, there are still a lot of use cases when close(2) is synchronous,
+so the feature must be regarded as an optimization maximizing chances of
+synchronous behaviour of close(2).
+
+To keep single-threaded userspace implementations happy the patch-set
+ensures that by the time fuse_release_common calls fuse_file_put, no
+more in-flight I/O exists. Asynchronous fuse callbacks (like
+fuse_readpages_end) cannot trigger FUSE_RELEASE anymore. Hence, we'll
+never block in contexts other than close().
+
+Changed in v2:
+ - improved comments, commented spin_unlock_wait out according to Brian'
+suggestions.
+ - rebased on v3.15-rc8 tag of Linus' tree.
+Changed in v3:
+ - changed patch-set title from "close file synchronously" to "handle
+   release synchronously"
+ - renamed CLOSE_WAIT to SYNC_RELEASE to convey the essence of the feature
+   ("synchronous release" instead of "wait on close")
+ - enabled feature on per file basis (instead of global fuse_conn parameter)
+ - added "disable_sync_release" mount option
+ - rebased on v3.17-rc1 tag of Linus' tree.
+
+Thanks,
+Maxim
+
+---
+
+Maxim Patlasov (6):
+      fuse: add FOPEN_SYNC_RELEASE flag to ff->open_flags
+      fuse: cosmetic rework of fuse_send_readpages
+      fuse: wait for end of IO on release
+      fuse: enable close_wait synchronous release
+      fuse: fix synchronous case of fuse_file_put()
+      fuse: add mount option to disable synchronous release
+
+
+ fs/fuse/file.c            |  106 ++++++++++++++++++++++++++++++++++++++-------
+ fs/fuse/fuse_i.h          |    3 +
+ fs/fuse/inode.c           |    8 +++
+ include/uapi/linux/fuse.h |    3 +
+ 4 files changed, 104 insertions(+), 16 deletions(-)
+
+-- 
+Signature
