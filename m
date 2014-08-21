@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaHUR3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:29:34 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:57901 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbaHUR3c (ORCPT
+	id S1753415AbaHURcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:32:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55923 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905AbaHURca convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:29:32 -0400
-Message-ID: <53F62C78.8040404@cogentembedded.com>
-Date: Thu, 21 Aug 2014 21:29:28 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Hayes Wang <hayeswang@realtek.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: nic_swsd <nic_swsd@realtek.com>,
+	Thu, 21 Aug 2014 13:32:30 -0400
+From: "Murphy, Dan" <dmurphy@ti.com>
+To: "Menon, Nishanth" <nm@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH net-next 3/4] r8152: remove clear_bp function
-References: <1394712342-15778-16-Taiwan-albertk@realtek.com> <1394712342-15778-19-Taiwan-albertk@realtek.com> <201408210131.s7L1VuAJ031162@rtits1.realtek.com> <0835B3720019904CB8F7AA43166CEEB2515BB5@RTITMBSV03.realtek.com.tw>
-In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2515BB5@RTITMBSV03.realtek.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 2/2] Input: misc: introduce palmas-pwrbutton
+Thread-Topic: [PATCH V2 2/2] Input: misc: introduce palmas-pwrbutton
+Thread-Index: AQHPvVmPSBoHiwpjW0OMgiSDUUUlVQ==
+Date: Thu, 21 Aug 2014 17:32:00 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DF07A2@DFLE09.ent.ti.com>
+References: <1408392810-16011-1-git-send-email-nm@ti.com>
+ <1408636935-29515-1-git-send-email-nm@ti.com>
+ <1408636935-29515-3-git-send-email-nm@ti.com>
+ <00FC9A978A94B7418C33AFAE8A35ED49DF0662@DFLE09.ent.ti.com>
+ <53F62A2B.6010208@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 06:12 AM, Hayes Wang wrote:
-
+On 08/21/2014 12:19 PM, Menon, Nishanth wrote:
+> On 08/21/2014 11:59 AM, Murphy, Dan wrote:
 > [...]
->>>    	r8152b_disable_aldps(tp);
->>>
->>> -	rtl_clear_bp(tp);
->>>
+> Ooops.. missed answering one addition statement:
+> 
+>>> +	of_property_read_u32(np, "ti,palmas-long-press-seconds", &val);
+>>
+>> Probably should check the return to make sure the value exists and that is is
+>> within an expected range.
+> It is an optional parameter and may not exist in dt. when it does
+> exist, the logic tries to do a best match (this is the for loop in the
+> logic just below).
+> 
 
->>      Why leave 2 empty lines? One is enough.
+The issue is val might be returned as a negative which will then proceed to
+set the config->long_press_time_val to the lowest time value which then overrides
+your initial setting of config->long_press_time_val = ARRAY_SIZE(lpk_times) - 1;
 
-> The next patch would use another fucntion at the
-> same location. I skip removing the empty line and
-> re-adding it again. Is that better to do so? I would
-> resend the patches if the answer is yes.
+Dan
 
-    Sorry, I haven't looked at your next patch, too big for me. :-)
-
-> Best Regards,
-> Hayes
-
-WBR, Sergei
-
+-- 
+------------------
+Dan Murphy
