@@ -1,114 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaHURht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:37:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40824 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982AbaHURhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:37:47 -0400
-Date: Thu, 21 Aug 2014 12:37:15 -0500
-From: Nishanth Menon <nm@ti.com>
-To: "Murphy, Dan" <dmurphy@ti.com>
-CC: Dmitry Torokhov <dtor@mail.ru>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2 2/2] Input: misc: introduce palmas-pwrbutton
-Message-ID: <20140821173715.GA23419@kahuna>
-References: <1408392810-16011-1-git-send-email-nm@ti.com>
- <1408636935-29515-1-git-send-email-nm@ti.com>
- <1408636935-29515-3-git-send-email-nm@ti.com>
- <00FC9A978A94B7418C33AFAE8A35ED49DF0662@DFLE09.ent.ti.com>
- <53F62A2B.6010208@ti.com>
- <00FC9A978A94B7418C33AFAE8A35ED49DF07A2@DFLE09.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <00FC9A978A94B7418C33AFAE8A35ED49DF07A2@DFLE09.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753507AbaHURh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:37:56 -0400
+Received: from server102.greatnet.de ([83.133.97.2]:58810 "EHLO
+	server102.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330AbaHURhy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 13:37:54 -0400
+From: Benjamin Block <bebl@mageta.org>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: Benjamin Block <bebl@mageta.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hannes Frederic Sowa <hannes@redhat.com>
+Subject: [PATCH v2] net: ipv6: fib: don't sleep inside atomic lock
+Date: Thu, 21 Aug 2014 19:37:48 +0200
+Message-Id: <1408642668-5808-1-git-send-email-bebl@mageta.org>
+X-Mailer: git-send-email 1.8.5.5
+In-Reply-To: <20140821143103.GA25021@kalium.Speedport_W723_V_Typ_A_1_01_001>
+References: <20140821143103.GA25021@kalium.Speedport_W723_V_Typ_A_1_01_001>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:32-20140821, Murphy, Dan wrote:
-> On 08/21/2014 12:19 PM, Menon, Nishanth wrote:
-> > On 08/21/2014 11:59 AM, Murphy, Dan wrote:
-> > [...]
-> > Ooops.. missed answering one addition statement:
-> > 
-> >>> +	of_property_read_u32(np, "ti,palmas-long-press-seconds", &val);
-> >>
-> >> Probably should check the return to make sure the value exists and that is is
-> >> within an expected range.
-> > It is an optional parameter and may not exist in dt. when it does
-> > exist, the logic tries to do a best match (this is the for loop in the
-> > logic just below).
-> > 
-> 
-> The issue is val might be returned as a negative which will then proceed to
-> set the config->long_press_time_val to the lowest time value which then overrides
-> your initial setting of config->long_press_time_val = ARRAY_SIZE(lpk_times) - 1;
-> 
+The function fib6_commit_metrics() allocates a piece of memory in mode
+GFP_KERNEL while holding an atomic lock from higher up in the stack, in
+the function __ip6_ins_rt(). This produces the following BUG:
 
-Does the following as a replacement look OK? if yes, I can incorporate
-as part of v3 of this series.
-/**
- * palmas_pwron_params_ofinit() - device tree parameter parser
- * @dev:	palmas button device
- * @config:	configuration params that this fills up
- */
-static void palmas_pwron_params_ofinit(struct device *dev,
-				       struct palmas_pwron_config *config)
-{
-	struct device_node *np;
-	u32 val;
-	int i, ret;
-	u8 lpk_times[] = { 6, 8, 10, 12 };
-	int pwr_on_deb_ms[] = { 15, 100, 500, 1000 };
+> BUG: sleeping function called from invalid context at mm/slub.c:1250
+> in_atomic(): 1, irqs_disabled(): 0, pid: 2909, name: dhcpcd
+> 2 locks held by dhcpcd/2909:
+>  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81978e67>] rtnl_lock+0x17/0x20
+>  #1:  (&tb->tb6_lock){++--+.}, at: [<ffffffff81a6951a>] ip6_route_add+0x65a/0x800
+> CPU: 1 PID: 2909 Comm: dhcpcd Not tainted 3.17.0-rc1 #1
+> Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
+>  0000000000000008 ffff8800c8f13858 ffffffff81af135a 0000000000000000
+>  ffff880212202430 ffff8800c8f13878 ffffffff810f8d3a ffff880212202c98
+>  0000000000000010 ffff8800c8f138c8 ffffffff8121ad0e 0000000000000001
+> Call Trace:
+>  [<ffffffff81af135a>] dump_stack+0x4e/0x68
+>  [<ffffffff810f8d3a>] __might_sleep+0x10a/0x120
+>  [<ffffffff8121ad0e>] kmem_cache_alloc_trace+0x4e/0x190
+>  [<ffffffff81a6bcd6>] ? fib6_commit_metrics+0x66/0x110
+>  [<ffffffff81a6bcd6>] fib6_commit_metrics+0x66/0x110
+>  [<ffffffff81a6cbf3>] fib6_add+0x883/0xa80
+>  [<ffffffff81a6951a>] ? ip6_route_add+0x65a/0x800
+>  [<ffffffff81a69535>] ip6_route_add+0x675/0x800
+>  [<ffffffff81a68f2a>] ? ip6_route_add+0x6a/0x800
+>  [<ffffffff81a6990c>] inet6_rtm_newroute+0x5c/0x80
+>  [<ffffffff8197cf01>] rtnetlink_rcv_msg+0x211/0x260
+>  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
+>  [<ffffffff81119708>] ? lock_release_holdtime+0x28/0x180
+>  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
+>  [<ffffffff8197ccf0>] ? __rtnl_unlock+0x20/0x20
+>  [<ffffffff819a989e>] netlink_rcv_skb+0x6e/0xd0
+>  [<ffffffff81978ee5>] rtnetlink_rcv+0x25/0x40
+>  [<ffffffff819a8e59>] netlink_unicast+0xd9/0x180
+>  [<ffffffff819a9600>] netlink_sendmsg+0x700/0x770
+>  [<ffffffff81103735>] ? local_clock+0x25/0x30
+>  [<ffffffff8194e83c>] sock_sendmsg+0x6c/0x90
+>  [<ffffffff811f98e3>] ? might_fault+0xa3/0xb0
+>  [<ffffffff8195ca6d>] ? verify_iovec+0x7d/0xf0
+>  [<ffffffff8194ec3e>] ___sys_sendmsg+0x37e/0x3b0
+>  [<ffffffff8111ef15>] ? trace_hardirqs_on_caller+0x185/0x220
+>  [<ffffffff81af979e>] ? mutex_unlock+0xe/0x10
+>  [<ffffffff819a55ec>] ? netlink_insert+0xbc/0xe0
+>  [<ffffffff819a65e5>] ? netlink_autobind.isra.30+0x125/0x150
+>  [<ffffffff819a6520>] ? netlink_autobind.isra.30+0x60/0x150
+>  [<ffffffff819a84f9>] ? netlink_bind+0x159/0x230
+>  [<ffffffff811f989a>] ? might_fault+0x5a/0xb0
+>  [<ffffffff8194f25e>] ? SYSC_bind+0x7e/0xd0
+>  [<ffffffff8194f8cd>] __sys_sendmsg+0x4d/0x80
+>  [<ffffffff8194f912>] SyS_sendmsg+0x12/0x20
+>  [<ffffffff81afc692>] system_call_fastpath+0x16/0x1b
 
-	/* Handle cases where device node based configuration is not present */
-	if (!of_have_populated_dt())
-		return;
-	np = of_node_get(dev->of_node);
-	if (!np)
-		return;
+Fixing this by replacing the mode GFP_KERNEL with GFP_ATOMIC.
 
-	/* Default config parameters - least debounce, max long key press */
-	config->pwron_debounce_val = 0;
-	config->long_press_time_val = ARRAY_SIZE(lpk_times) - 1;
+Signed-off-by: Benjamin Block <bebl@mageta.org>
+---
+ net/ipv6/ip6_fib.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-	ret = of_property_read_u32(np, "ti,palmas-long-press-seconds", &val);
-	if (ret)
-		goto skip_lpk;
-	for (i = 0; i < ARRAY_SIZE(lpk_times); i++) {
-		if (val <= lpk_times[i]) {
-			config->long_press_time_val = i;
-			break;
-		}
-	}
-
-skip_lpk:
-	ret = of_property_read_u32(np, "ti,palmas-pwron-debounce-milli-seconds",
-				   &val);
-	if (ret)
-		goto skip_debounce;
-	for (i = 0; i < ARRAY_SIZE(pwr_on_deb_ms); i++) {
-		if (val <= pwr_on_deb_ms[i]) {
-			config->pwron_debounce_val = i;
-			break;
-		}
-	}
-
-skip_debounce:
-	dev_info(dev, "h/w controlled shutdown duration=%d seconds\n",
-		 lpk_times[config->long_press_time_val]);
-
-	of_node_put(np);
-}
+diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
+index cb4459b..76b7f5e 100644
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -643,7 +643,7 @@ static int fib6_commit_metrics(struct dst_entry *dst,
+ 	if (dst->flags & DST_HOST) {
+ 		mp = dst_metrics_write_ptr(dst);
+ 	} else {
+-		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
++		mp = kzalloc(sizeof(u32) * RTAX_MAX, GFP_ATOMIC);
+ 		if (!mp)
+ 			return -ENOMEM;
+ 		dst_init_metrics(dst, mp, 0);
 -- 
-Regards,
-Nishanth Menon
+1.8.5.5
+
