@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaHUQJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 12:09:50 -0400
-Received: from relay.parallels.com ([195.214.232.42]:58876 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187AbaHUQJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 12:09:47 -0400
-Subject: [PATCH 6/6] fuse: add mount option to disable synchronous release
-To: miklos@szeredi.hu
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, avati@gluster.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 21 Aug 2014 20:09:45 +0400
-Message-ID: <20140821160930.11005.29357.stgit@localhost.localdomain>
-In-Reply-To: <20140821160304.11005.15166.stgit@localhost.localdomain>
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1752801AbaHUQK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 12:10:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751401AbaHUQKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 12:10:24 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
+        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi Zhao <hui-zhi.zhao@hp.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Lisa Mitchell <lisa.mitchell@hp.com>
+Subject: [PATCH v3 0/7] Dynamic Pause Loop Exiting window.
+Date: Thu, 21 Aug 2014 18:08:04 +0200
+Message-Id: <1408637291-18533-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Synchronous release ensures that kernel fuse reports to userspace exactly
-last fput(). However, nothing guarantees that last fput() will happen in the
-context of close(2). So userspace applications must be prepared to the
-situation when close(2) returned, but processing of FUSE_RELEASE is not
-completed by fuse daemon yet. To make testing such use cases easier, the
-patch introduces DISABLE_SYNC_RELEASE mount option which effectively mask out
-FOPEN_SYNC_RELEASE flag.
+v2 -> v3:
+ * copy&paste frenzy [v3 4/7] (split modify_ple_window)
+ * commented update_ple_window_actual_max [v3 4/7]
+ * renamed shrinker to modifier [v3 4/7]
+ * removed an extraneous max(new, ple_window) [v3 4/7] (should have been in v2)
+ * changed tracepoint argument type, printing and macro abstractions [v3 5/7]
+ * renamed ple_t to ple_int [v3 6/7] (visible in modinfo)
+ * intelligent updates of ple_window [v3 7/7]
 
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
----
- fs/fuse/file.c   |    3 ++-
- fs/fuse/fuse_i.h |    3 +++
- fs/fuse/inode.c  |    8 ++++++++
- 3 files changed, 13 insertions(+), 1 deletion(-)
+v1 -> v2:
+ * squashed [v1 4/9] and [v1 5/9] (clamping)
+ * dropped [v1 7/9] (CPP abstractions)
+ * merged core of [v1 9/9] into [v1 4/9] (automatic maximum)
+ * reworked kernel_param_ops: closer to pure int [v2 6/6]
+ * introduced ple_window_actual_max & reworked clamping [v2 4/6]
+ * added seqlock for parameter modifications [v2 6/6]
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index b92143a..ad3d357 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -296,7 +296,8 @@ static void fuse_prepare_release(struct fuse_file *ff, int flags, int opcode)
- 
- static bool must_release_synchronously(struct fuse_file *ff)
- {
--	return ff->open_flags & FOPEN_SYNC_RELEASE;
-+	return ff->open_flags & FOPEN_SYNC_RELEASE &&
-+		!(ff->fc->flags & FUSE_DISABLE_SYNC_RELEASE);
- }
- 
- void fuse_release_common(struct file *file, int opcode)
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index e8e47a6..c5e2fca 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -44,6 +44,9 @@
-     doing the mount will be allowed to access the filesystem */
- #define FUSE_ALLOW_OTHER         (1 << 1)
- 
-+/** Disable synchronous release */
-+#define FUSE_DISABLE_SYNC_RELEASE (1 << 2)
-+
- /** Number of page pointers embedded in fuse_req */
- #define FUSE_REQ_INLINE_PAGES 1
- 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 03246cd..86d47d0 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -463,6 +463,7 @@ enum {
- 	OPT_ALLOW_OTHER,
- 	OPT_MAX_READ,
- 	OPT_BLKSIZE,
-+	OPT_DISABLE_SYNC_RELEASE,
- 	OPT_ERR
- };
- 
-@@ -475,6 +476,7 @@ static const match_table_t tokens = {
- 	{OPT_ALLOW_OTHER,		"allow_other"},
- 	{OPT_MAX_READ,			"max_read=%u"},
- 	{OPT_BLKSIZE,			"blksize=%u"},
-+	{OPT_DISABLE_SYNC_RELEASE,	"disable_sync_release"},
- 	{OPT_ERR,			NULL}
- };
- 
-@@ -560,6 +562,10 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
- 			d->blksize = value;
- 			break;
- 
-+		case OPT_DISABLE_SYNC_RELEASE:
-+			d->flags |= FUSE_DISABLE_SYNC_RELEASE;
-+			break;
-+
- 		default:
- 			return 0;
- 		}
-@@ -583,6 +589,8 @@ static int fuse_show_options(struct seq_file *m, struct dentry *root)
- 		seq_puts(m, ",default_permissions");
- 	if (fc->flags & FUSE_ALLOW_OTHER)
- 		seq_puts(m, ",allow_other");
-+	if (fc->flags & FUSE_DISABLE_SYNC_RELEASE)
-+		seq_puts(m, ",disable_sync_release");
- 	if (fc->max_read != ~0)
- 		seq_printf(m, ",max_read=%u", fc->max_read);
- 	if (sb->s_bdev && sb->s_blocksize != FUSE_DEFAULT_BLKSIZE)
+---
+PLE does not scale in its current form.  When increasing VCPU count
+above 150, one can hit soft lockups because of runqueue lock contention.
+(Which says a lot about performance.)
+
+The main reason is that kvm_ple_loop cycles through all VCPUs.
+Replacing it with a scalable solution would be ideal, but it has already
+been well optimized for various workloads, so this series tries to
+alleviate one different major problem while minimizing a chance of
+regressions: we have too many useless PLE exits.
+
+Just increasing PLE window would help some cases, but it still spirals
+out of control.  By increasing the window after every PLE exit, we can
+limit the amount of useless ones, so we don't reach the state where CPUs
+spend 99% of the time waiting for a lock.
+
+HP confirmed that this series prevents soft lockups and TSC sync errors
+on large guests.
+
+
+Radim Krčmář (7):
+  KVM: add kvm_arch_sched_in
+  KVM: x86: introduce sched_in to kvm_x86_ops
+  KVM: VMX: make PLE window per-VCPU
+  KVM: VMX: dynamise PLE window
+  KVM: trace kvm_ple_window grow/shrink
+  KVM: VMX: runtime knobs for dynamic PLE window
+  KVM: VMX: optimize ple_window updates to VMCS
+
+ arch/arm/kvm/arm.c              |   4 ++
+ arch/mips/kvm/mips.c            |   4 ++
+ arch/powerpc/kvm/powerpc.c      |   4 ++
+ arch/s390/kvm/kvm-s390.c        |   4 ++
+ arch/x86/include/asm/kvm_host.h |   2 +
+ arch/x86/kvm/svm.c              |   6 ++
+ arch/x86/kvm/trace.h            |  30 ++++++++
+ arch/x86/kvm/vmx.c              | 147 ++++++++++++++++++++++++++++++++++++++--
+ arch/x86/kvm/x86.c              |   6 ++
+ include/linux/kvm_host.h        |   2 +
+ virt/kvm/kvm_main.c             |   2 +
+ 11 files changed, 207 insertions(+), 4 deletions(-)
+
+-- 
+2.1.0
 
