@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449AbaHUWHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 18:07:35 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:37311 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988AbaHUWHc (ORCPT
+	id S1755018AbaHUWLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 18:11:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754730AbaHUWLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 18:07:32 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140821214840.GU11146@saruman.home>
-References: <1406645577-18620-1-git-send-email-frans.klaver@xsens.com> <1408450488-4083-1-git-send-email-frans.klaver@xsens.com> <1408450488-4083-4-git-send-email-frans.klaver@xsens.com> <20140819185701.GC22003@saruman.home> <20140820064028.GC9319@ci00147.xsens-tech.local> <20140820160604.GH24500@saruman.home> <20140821214117.GA7076@ci00147.xsens-tech.local> <20140821214840.GU11146@saruman.home>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [RFC PATCH 3/4] tty: omap-serial: use threaded interrupt handler
-From: Frans Klaver <fransklaver@gmail.com>
-Date: Fri, 22 Aug 2014 00:07:22 +0200
-To: balbi@ti.com, Frans Klaver <frans.klaver@xsens.com>
-CC: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexey Pelykh <alexey.pelykh@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <c5a0e820-cd57-43d0-85db-1297a83861c5@email.android.com>
+	Thu, 21 Aug 2014 18:11:17 -0400
+Date: Thu, 21 Aug 2014 15:11:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v6 11/13] mm, compaction: skip buddy pages by their
+ order in the migrate scanner
+Message-Id: <20140821151115.bcc66c15d53f7dc89d1b9b73@linux-foundation.org>
+In-Reply-To: <1407142524-2025-12-git-send-email-vbabka@suse.cz>
+References: <1407142524-2025-1-git-send-email-vbabka@suse.cz>
+	<1407142524-2025-12-git-send-email-vbabka@suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On August 21, 2014 11:48:40 PM CEST, Felipe Balbi <balbi@ti.com> wrote:
->Hi,
->
->On Thu, Aug 21, 2014 at 11:41:17PM +0200, Frans Klaver wrote:
->> On Wed, Aug 20, 2014 at 11:06:05AM -0500, Felipe Balbi wrote:
->> > On Wed, Aug 20, 2014 at 08:40:28AM +0200, Frans Klaver wrote:
->> > > On Tue, Aug 19, 2014 at 01:57:02PM -0500, Felipe Balbi wrote:
->> > > > On Tue, Aug 19, 2014 at 02:14:47PM +0200, Frans Klaver wrote:
->> > > > > At 3.6Mbaud, with slightly over 2Mbit/s data coming in, we
->see 1600 uart
->> > > > > rx buffer overflows within 30 seconds. Threading the
->interrupt handling reduces
->> > > > > this to about 170 overflows in 10 minutes.
->> > > > 
->> > > > Can you try Sebastian Siewior's patches for 8250_omap and 8250
->dma
->> > > > support ? That should help you a lot.
->> > > 
->> > > I'll have a look at that series. Thanks for pointing it out.
->> 
->> I have had a look at Sebastian's series, but I'm not convinced
->> yet that we should use it. So far the serial console seems to be
->> missing data every now and then. I haven't gotten around to testing
->our
->> high traffic application yet.
->
->as any new driver, there are bugs to be fixed. How about reporting the
->ones you found together with a way of reproducing them so they can be
->fixed ?
+On Mon,  4 Aug 2014 10:55:22 +0200 Vlastimil Babka <vbabka@suse.cz> wrote:
 
-Yes, definitely.
+> The migration scanner skips PageBuddy pages, but does not consider their order
+> as checking page_order() is generally unsafe without holding the zone->lock,
+> and acquiring the lock just for the check wouldn't be a good tradeoff.
+> 
+> Still, this could avoid some iterations over the rest of the buddy page, and
+> if we are careful, the race window between PageBuddy() check and page_order()
+> is small, and the worst thing that can happen is that we skip too much and miss
+> some isolation candidates. This is not that bad, as compaction can already fail
+> for many other reasons like parallel allocations, and those have much larger
+> race window.
+> 
+> This patch therefore makes the migration scanner obtain the buddy page order
+> and use it to skip the whole buddy page, if the order appears to be in the
+> valid range.
+> 
+> It's important that the page_order() is read only once, so that the value used
+> in the checks and in the pfn calculation is the same. But in theory the
+> compiler can replace the local variable by multiple inlines of page_order().
+> Therefore, the patch introduces page_order_unsafe() that uses ACCESS_ONCE to
+> prevent this.
+> 
+> Testing with stress-highalloc from mmtests shows a 15% reduction in number of
+> pages scanned by migration scanner. The reduction is >60% with __GFP_NO_KSWAPD
+> allocations, along with success rates better by few percent.
+> This change is also a prerequisite for a later patch which is detecting when
+> a cc->order block of pages contains non-buddy pages that cannot be isolated,
+> and the scanner should thus skip to the next block immediately.
 
-Cheers, 
-Frans
-
+What is this "later patch"?  Or is the changelog stale?
