@@ -1,115 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203AbaHUJsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 05:48:14 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56488 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753444AbaHUJsL (ORCPT
+	id S1754274AbaHUJt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 05:49:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42237 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754222AbaHUJtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 05:48:11 -0400
-Date: Thu, 21 Aug 2014 10:47:59 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH v5] irqchip: gic: Allow gic_arch_extn hooks to call
-	into scheduler
-Message-ID: <20140821094759.GK30401@n2100.arm.linux.org.uk>
-References: <1408562561-10424-1-git-send-email-sboyd@codeaurora.org>
+	Thu, 21 Aug 2014 05:49:25 -0400
+Date: Thu, 21 Aug 2014 11:49:21 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
+ Controller
+Message-ID: <20140821114921.3a91eb1b@bbrezillon>
+In-Reply-To: <20140821114159.319e741b@bbrezillon>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140821081619.GZ2452@ldesroches-Latitude-E6320>
+	<20140821103706.2349915d@bbrezillon>
+	<20140821090406.GA13733@ulmo>
+	<20140821114159.319e741b@bbrezillon>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408562561-10424-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 12:22:41PM -0700, Stephen Boyd wrote:
-> @@ -605,7 +615,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	int cpu;
->  	unsigned long flags, map = 0;
->  
-> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> +	sgi_map_lock(flags);
->  
->  	/* Convert our logical CPU mask into a physical one. */
->  	for_each_cpu(cpu, mask)
-> @@ -620,7 +630,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	/* this always happens on GIC0 */
->  	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
->  
-> -	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
-> +	sgi_map_unlock(flags);
+On Thu, 21 Aug 2014 11:41:59 +0200
+Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
 
-What would make more sense is if this were a read-write lock, then
-gic_raise_softirq() could run concurrently on several CPUs without
-interfering with each other, yet still be safe with gic_migrate_target().
+> On Thu, 21 Aug 2014 11:04:07 +0200
+> Thierry Reding <thierry.reding@gmail.com> wrote:
+> 
+> > On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
+> > > Hi Ludovic,
+> > > 
+> > > On Thu, 21 Aug 2014 10:16:19 +0200
+> > > Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
+> > > 
+> > > > Hi Boris,
+> > > > 
+> > > > You can add
+> > > > 
+> > > > Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> > > 
+> > > Thanks for testing this driver.
+> > > 
+> > > > 
+> > > > Only one issue but not related to your patches, you can't display
+> > > > quickly the bootup logo since the panel detection takes too much
+> > > > time.
+> > > 
+> > > Yes, actually this is related to the device probe order: the
+> > > hlcdc-display-controller device is probed before the simple-panel, thus
+> > > nothing is detected on the RGB connector (I use of_drm_find_panel to
+> > > check for panel availability) when the display controller is
+> > > instantiated. I rely on the default polling infrastructure provided by
+> > > the DRM/KMS framework which polls for a new connector every 10s, and
+> > > this is far more than you kernel boot time.
+> > > 
+> > > Do anyone see a solution to reduce this delay (without changing the
+> > > polling interval). I thought we could add a notifier infrastructure to
+> > > the DRM panel framework, but I'm not sure this is how you want things
+> > > done...
+> > 
+> > Other drivers return -EPROBE_DEFER when a panel hasn't been registered
+> > yet. This will automatically take care of ordering things in a way that
+> > DRM/KMS will only be initialized after the panel has been probed.
+> 
+> Actually I'd like to avoid doing this with a deferred probe, because,
+> AFAIU, the remote endpoint is not tightly linked with the display
+> controller driver (I mean the display controller can still be
+> initialized without having a display connected on it).
+> Moreover the atmel dev kit I'm using has an HDMI bridge connected on
+> the same RGB connector and I'd like to use it in a near future.
+> Returning -EPROBE_DEFER in case of several devices connected on the
+> same connector implies that I'll have to wait for all the remote
+> end-points to be available before my display controller could be
+> instantiated.
+> 
+> While this could be acceptable when all drivers are statically linked
+> in the kernel, it might be problematic when you're using modules,
+> meaning that you won't be able to display anything on your LCD panel
+> until your HDMI bridge module has been loaded.
+> 
+> > That
+> > will still cause some delay before everything gets set up, but hopefully
+> > less than what you're seeing now. There's also another thread where this
+> > is being discussed because deferred probing is causing "unacceptable"
+> > delays as well.
+> 
+> Could you point this thread out to me please ?
 
-I'd then argue that we wouldn't need the ifdeffery, we might as well
-keep the locking in place - it's overhead is likely small (when lockdep
-is disabled) when compared to everything else which goes on in this
-path.
+Sorry, I didn't check my emails before asking this :-).
 
-> @@ -690,6 +700,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  	ror_val = (cur_cpu_id - new_cpu_id) & 31;
->  
->  	raw_spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&gic_sgi_lock);
->  
->  	/* Update the target interface for this logical CPU */
->  	gic_cpu_map[cpu] = 1 << new_cpu_id;
-> @@ -709,6 +720,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  		}
->  	}
->  
-> +	raw_spin_unlock(&gic_sgi_lock);
->  	raw_spin_unlock(&irq_controller_lock);
+> 
+> Best Regards,
+> 
+> Boris
+> 
 
-I would actually suggest we go a bit further.  Use gic_sgi_lock to only
-lock gic_cpu_map[] itself, and not have it beneath any other lock.
-That's an advantage because right now, lockdep learns from the above that
-there's a dependency between irq_controller_lock and gic_sgi_lock.
-Reasonably keeping lock dependencies to a minimum is always a good idea.
 
-The places where gic_cpu_map[] is used are:
-
-static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
-                            bool force)
-{
-...
-        raw_spin_lock(&irq_controller_lock);
-        mask = 0xff << shift;
-        bit = gic_cpu_map[cpu] << shift;
-        val = readl_relaxed(reg) & ~mask;
-        writel_relaxed(val | bit, reg);
-        raw_spin_unlock(&irq_controller_lock);
-
-So, we can move:
-
-        mask = 0xff << shift;
-        bit = gic_cpu_map[cpu] << shift;
-
-out from under irq_controller_lock and put it under gic_sgi_lock.  The
-"mask" bit doesn't need to be under any lock at all.
-
-There's gic_cpu_init():
-
-        cpu_mask = gic_get_cpumask(gic);
-        gic_cpu_map[cpu] = cpu_mask;
-
-        /*
-         * Clear our mask from the other map entries in case they're
-         * still undefined.
-         */
-        for (i = 0; i < NR_GIC_CPU_IF; i++)
-                if (i != cpu)
-                        gic_cpu_map[i] &= ~cpu_mask;
-
-which better had be stable after boot - if not, this needs locking.
-Remember that the above will be called on hotplug too.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
