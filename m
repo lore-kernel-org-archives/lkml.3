@@ -1,153 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaHUObJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 10:31:09 -0400
-Received: from server102.greatnet.de ([83.133.97.2]:53067 "EHLO
-	server102.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396AbaHUObH (ORCPT
+	id S1755512AbaHUOct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 10:32:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43954 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751476AbaHUOcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 10:31:07 -0400
-Date: Thu, 21 Aug 2014 16:31:03 +0200
-From: Benjamin Block <bebl@mageta.org>
-To: Hannes Frederic Sowa <hannes@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ipv6: fib: don't sleep inside atomic lock
-Message-ID: <20140821143103.GA25021@kalium.Speedport_W723_V_Typ_A_1_01_001>
-References: <1408551366-24237-1-git-send-email-bebl@mageta.org>
- <1408625680.5817.9.camel@localhost>
+	Thu, 21 Aug 2014 10:32:46 -0400
+Date: Thu, 21 Aug 2014 16:32:32 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
+ Controller
+Message-ID: <20140821163232.475c0ed8@bbrezillon>
+In-Reply-To: <20140821131552.GA19293@ulmo.nvidia.com>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140821081619.GZ2452@ldesroches-Latitude-E6320>
+	<20140821103706.2349915d@bbrezillon>
+	<20140821090406.GA13733@ulmo>
+	<20140821114159.319e741b@bbrezillon>
+	<20140821095202.GA21848@ulmo>
+	<20140821150600.37788d82@bbrezillon>
+	<20140821131552.GA19293@ulmo.nvidia.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
-Content-Disposition: inline
-In-Reply-To: <1408625680.5817.9.camel@localhost>
-X-PGP-Key: http://www.mageta.org/pgp/bblock.private.asc
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 21 Aug 2014 15:16:08 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
---LQksG6bCIzRHxTLp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thu, Aug 21, 2014 at 03:06:00PM +0200, Boris BREZILLON wrote:
+> > On Thu, 21 Aug 2014 11:52:03 +0200
+> > Thierry Reding <thierry.reding@gmail.com> wrote:
+> > 
+> > > On Thu, Aug 21, 2014 at 11:41:59AM +0200, Boris BREZILLON wrote:
+> > > > On Thu, 21 Aug 2014 11:04:07 +0200
+> > > > Thierry Reding <thierry.reding@gmail.com> wrote:
+> > > > 
+> > > > > On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
+> > > > > > Hi Ludovic,
+> > > > > > 
+> > > > > > On Thu, 21 Aug 2014 10:16:19 +0200
+> > > > > > Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
+> > > > > > 
+> > > > > > > Hi Boris,
+> > > > > > > 
+> > > > > > > You can add
+> > > > > > > 
+> > > > > > > Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> > > > > > 
+> > > > > > Thanks for testing this driver.
+> > > > > > 
+> > > > > > > 
+> > > > > > > Only one issue but not related to your patches, you can't display
+> > > > > > > quickly the bootup logo since the panel detection takes too much
+> > > > > > > time.
+> > > > > > 
+> > > > > > Yes, actually this is related to the device probe order: the
+> > > > > > hlcdc-display-controller device is probed before the simple-panel, thus
+> > > > > > nothing is detected on the RGB connector (I use of_drm_find_panel to
+> > > > > > check for panel availability) when the display controller is
+> > > > > > instantiated. I rely on the default polling infrastructure provided by
+> > > > > > the DRM/KMS framework which polls for a new connector every 10s, and
+> > > > > > this is far more than you kernel boot time.
+> > > > > > 
+> > > > > > Do anyone see a solution to reduce this delay (without changing the
+> > > > > > polling interval). I thought we could add a notifier infrastructure to
+> > > > > > the DRM panel framework, but I'm not sure this is how you want things
+> > > > > > done...
+> > > > > 
+> > > > > Other drivers return -EPROBE_DEFER when a panel hasn't been registered
+> > > > > yet. This will automatically take care of ordering things in a way that
+> > > > > DRM/KMS will only be initialized after the panel has been probed.
+> > > > 
+> > > > Actually I'd like to avoid doing this with a deferred probe, because,
+> > > > AFAIU, the remote endpoint is not tightly linked with the display
+> > > > controller driver (I mean the display controller can still be
+> > > > initialized without having a display connected on it).
+> > > > Moreover the atmel dev kit I'm using has an HDMI bridge connected on
+> > > > the same RGB connector and I'd like to use it in a near future.
+> > > > Returning -EPROBE_DEFER in case of several devices connected on the
+> > > > same connector implies that I'll have to wait for all the remote
+> > > > end-points to be available before my display controller could be
+> > > > instantiated.
+> > > > 
+> > > > While this could be acceptable when all drivers are statically linked
+> > > > in the kernel, it might be problematic when you're using modules,
+> > > > meaning that you won't be able to display anything on your LCD panel
+> > > > until your HDMI bridge module has been loaded.
+> > > 
+> > > No. HDMI should be using proper hotplugging anyway, hence it should be
+> > > always be loaded anyway. You're in for a world of pain if you think you
+> > > can run DRM with a driver that's composed of separate kernel modules.
+> > 
+> > I was talking about the external RGB to HDMI encoder, should the driver
+> > for this encoder (which is not on On Chip block) be compiled
+> > statically too ?
+> > 
+> > > 
+> > > Also if you don't want to use deferred probe, then you're in for the
+> > > full hotplugging panel dance and that implies that you need to fix a
+> > > bunch of things in DRM (one being the framebuffer console instantiation
+> > > that I referred to in the other thread).
+> > 
+> > For now, I wait until there is a device connected on the RGB connector
+> > (connector status set to connector_status_connected) before creating an
+> > fbdev. It might not be the cleanest way to solve this issue, but it
+> > works :-).
+> 
+> Yeah, I guess that's one way to do it. But it's tricky to get right when
+> you have several outputs. Which one should be considered the primary and
+> trigger fbdev creation?
+> 
+> > > You also can't be using the
+> > > current device tree bindings because they all assume a dependency from
+> > > the display controller/output to the panel. For hotplugging you'd need
+> > > the dependency the other way around (the panel needs to refer to the
+> > > output by phandle).
+> > 
+> > Here [1] is a proposal for notification support in the drm_panel
+> > infrastructure (which is not that complicated), and here [2] is how
+> > I use it in my atmel-hlcdc driver to generate hotplug events.
+> > 
+> > Let me know if you want me to submit a proper patch series...
+> > 
+> > Best Regards,
+> > 
+> > Boris
+> > 
+> > [1]http://code.bulix.org/scq4g3-86804
+> > [2]http://code.bulix.org/7dg501-86805
+> 
+> Those look interesting. Any chance you could look into how to do the
+> same without resorting to notifiers?
 
-On 14:54 Thu 21 Aug     , Hannes Frederic Sowa wrote:
-> On Mi, 2014-08-20 at 18:16 +0200, Benjamin Block wrote:
-> > The function fib6_commit_metrics() allocates a piece of memory in mode
-> > GFP_KERNEL while holding an atomic lock from higher up in the stack, in
-> > the function __ip6_ins_rt(). This produces the following BUG:
-> >=20
-> > > BUG: sleeping function called from invalid context at mm/slub.c:1250
-> > > in_atomic(): 1, irqs_disabled(): 0, pid: 2909, name: dhcpcd
-> > > 2 locks held by dhcpcd/2909:
-> > >  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81978e67>] rtnl_lock+0x17/0=
-x20
-> > >  #1:  (&tb->tb6_lock){++--+.}, at: [<ffffffff81a6951a>] ip6_route_add=
-+0x65a/0x800
-> > > CPU: 1 PID: 2909 Comm: dhcpcd Not tainted 3.17.0-rc1 #1
-> > > Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
-> > >  0000000000000008 ffff8800c8f13858 ffffffff81af135a 0000000000000000
-> > >  ffff880212202430 ffff8800c8f13878 ffffffff810f8d3a ffff880212202c98
-> > >  0000000000000010 ffff8800c8f138c8 ffffffff8121ad0e 0000000000000001
-> > > Call Trace:
-> > >  [<ffffffff81af135a>] dump_stack+0x4e/0x68
-> > >  [<ffffffff810f8d3a>] __might_sleep+0x10a/0x120
-> > >  [<ffffffff8121ad0e>] kmem_cache_alloc_trace+0x4e/0x190
-> > >  [<ffffffff81a6bcd6>] ? fib6_commit_metrics+0x66/0x110
-> > >  [<ffffffff81a6bcd6>] fib6_commit_metrics+0x66/0x110
-> > >  [<ffffffff81a6cbf3>] fib6_add+0x883/0xa80
-> > >  [<ffffffff81a6951a>] ? ip6_route_add+0x65a/0x800
-> > >  [<ffffffff81a69535>] ip6_route_add+0x675/0x800
-> > >  [<ffffffff81a68f2a>] ? ip6_route_add+0x6a/0x800
-> > >  [<ffffffff81a6990c>] inet6_rtm_newroute+0x5c/0x80
-> > >  [<ffffffff8197cf01>] rtnetlink_rcv_msg+0x211/0x260
-> > >  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
-> > >  [<ffffffff81119708>] ? lock_release_holdtime+0x28/0x180
-> > >  [<ffffffff81978e67>] ? rtnl_lock+0x17/0x20
-> > >  [<ffffffff8197ccf0>] ? __rtnl_unlock+0x20/0x20
-> > >  [<ffffffff819a989e>] netlink_rcv_skb+0x6e/0xd0
-> > >  [<ffffffff81978ee5>] rtnetlink_rcv+0x25/0x40
-> > >  [<ffffffff819a8e59>] netlink_unicast+0xd9/0x180
-> > >  [<ffffffff819a9600>] netlink_sendmsg+0x700/0x770
-> > >  [<ffffffff81103735>] ? local_clock+0x25/0x30
-> > >  [<ffffffff8194e83c>] sock_sendmsg+0x6c/0x90
-> > >  [<ffffffff811f98e3>] ? might_fault+0xa3/0xb0
-> > >  [<ffffffff8195ca6d>] ? verify_iovec+0x7d/0xf0
-> > >  [<ffffffff8194ec3e>] ___sys_sendmsg+0x37e/0x3b0
-> > >  [<ffffffff8111ef15>] ? trace_hardirqs_on_caller+0x185/0x220
-> > >  [<ffffffff81af979e>] ? mutex_unlock+0xe/0x10
-> > >  [<ffffffff819a55ec>] ? netlink_insert+0xbc/0xe0
-> > >  [<ffffffff819a65e5>] ? netlink_autobind.isra.30+0x125/0x150
-> > >  [<ffffffff819a6520>] ? netlink_autobind.isra.30+0x60/0x150
-> > >  [<ffffffff819a84f9>] ? netlink_bind+0x159/0x230
-> > >  [<ffffffff811f989a>] ? might_fault+0x5a/0xb0
-> > >  [<ffffffff8194f25e>] ? SYSC_bind+0x7e/0xd0
-> > >  [<ffffffff8194f8cd>] __sys_sendmsg+0x4d/0x80
-> > >  [<ffffffff8194f912>] SyS_sendmsg+0x12/0x20
-> > >  [<ffffffff81afc692>] system_call_fastpath+0x16/0x1b
-> >=20
-> > Fixing this by replacing the mode GFP_KERNEL with GFP_NOWAIT.
-> >=20
-> > Signed-off-by: Benjamin Block <bebl@mageta.org>
-> > ---
-> >  net/ipv6/ip6_fib.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >=20
-> > diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-> > index cb4459b..7eef9fc 100644
-> > --- a/net/ipv6/ip6_fib.c
-> > +++ b/net/ipv6/ip6_fib.c
-> > @@ -643,7 +643,7 @@ static int fib6_commit_metrics(struct dst_entry *ds=
-t,
-> >  	if (dst->flags & DST_HOST) {
-> >  		mp =3D dst_metrics_write_ptr(dst);
-> >  	} else {
-> > -		mp =3D kzalloc(sizeof(u32) * RTAX_MAX, GFP_KERNEL);
-> > +		mp =3D kzalloc(sizeof(u32) * RTAX_MAX, GFP_NOWAIT);
-> >  		if (!mp)
-> >  			return -ENOMEM;
-> >  		dst_init_metrics(dst, mp, 0);
->=20
-> I actually think we should go with GFP_ATOMIC like the rest of the
-> stack. The code path we are talking about here mostly uses GFP_ATOMIC,
-> so in case this one GFP_NOWAITit bails out via error path, all those
-> GFP_ATOMIC allocations before were useless.
->=20
+A new version without notifiers usage:
+http://code.bulix.org/7urh8v-86806
 
-Fair enough, I was thinking about it and was more along the line, the
-original author obviously wasn't concerned with any delay, and thus
-GFP_NOWAIT would suffice as well.
 
---=20
-BOFH Excuse #174:
-Backbone adjustment
---
-                                                          best regards,
-                                                            - Benjamin Block
-
---LQksG6bCIzRHxTLp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQGcBAEBAgAGBQJT9gKnAAoJEEbgTgVnoy6eWekMAIRmilPdig2lOTrJip4R2euB
-CVk5ZMmEgPThbncTTimYFVlEGGJAdXdz+cmsZA0mYOPWWx0A4DLt/H9+IK6afbDU
-lkiwDThj0A7KI0HtDY3yKhWhvVLciI+GEOgQj5+yGYhsQyH8b0CJGwhNw43KmA9E
-ccYFIZcGKXZ/w2NY+gYN/OEbwm6fFqNWJbPuB66hU82jp9pRG3QEwB5PiNVStB2v
-RqrO9XI3hCA31P74BMjsZgDw8bEjAqMxY04hrOO4W07HSr47eBfRuhIjUi6tGpMc
-ATYakQA3dRjtXz81+ziabjgJ2q7OJRgBOL0IUZb/SQ9fpao7jONFtYyp30zGUH9L
-gBQxFuJmM/YS9qy/VOpICPtU84fWLsPob9YVqVAR2ZAKEtGUhsYuTjb1M1/Av0Gn
-RJ1UfY0vLRFPoo7hN1PFKMK7rU/aakk5q2jm4pQdzSCQprwTCMyzGBfrGKNq/CM2
-Dbj+q5NIez+RH8Uq1osrOUVLGFMHoSWXGQgXQINE3g==
-=DxhV
------END PGP SIGNATURE-----
-
---LQksG6bCIzRHxTLp--
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
