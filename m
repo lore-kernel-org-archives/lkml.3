@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785AbaHUUGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 16:06:03 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:40821 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103AbaHUUEu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 16:04:50 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: James Hogan <james.hogan@imgtec.com>, Paul Burton <paul.burton@imgtec.com>,
-        David Daney <david.daney@cavium.com>,
-        John Crispin <blogic@openwrt.org>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Qais Yousef <qais.yousef@imgtec.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 4/7] MIPS: Lantiq: Move device-trees to arch/mips/boot/dts/
-Date: Thu, 21 Aug 2014 13:04:23 -0700
-Message-Id: <1408651466-8334-5-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
-References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+	id S1754838AbaHUUGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 16:06:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754713AbaHUUGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 16:06:00 -0400
+Date: Thu, 21 Aug 2014 16:05:55 -0400
+From: Aristeu Rozanski <arozansk@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-api@vger.kernel.org,
+        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com,
+        serge@hallyn.com
+Subject: Re: [PATCH V4 0/8] namespaces: log namespaces per task
+Message-ID: <20140821200555.GK5620@redhat.com>
+References: <cover.1408581429.git.rgb@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1408581429.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the Lantiq device-trees to arch/mips/boot/dts/ and update the
-Makefiles accordingly.  There is currently only a single Lantiq
-device-tree (EASY50712), and it's required to be built into the kernel,
-so select BUILTIN_DTB for it.
+Hi Richard,
+On Wed, Aug 20, 2014 at 09:09:33PM -0400, Richard Guy Briggs wrote:
+> Is there a way to link serial numbers of namespaces involved in migration of a
+> container to another kernel?  It sounds like what is needed is a part of a
+> mangement application that is able to pull the audit records from constituent
+> hosts to build an audit trail of a container.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- arch/mips/boot/dts/Makefile                  | 1 +
- arch/mips/{lantiq => boot}/dts/danube.dtsi   | 0
- arch/mips/{lantiq => boot}/dts/easy50712.dts | 0
- arch/mips/lantiq/Kconfig                     | 1 +
- arch/mips/lantiq/Makefile                    | 2 --
- arch/mips/lantiq/dts/Makefile                | 1 -
- 6 files changed, 2 insertions(+), 3 deletions(-)
- rename arch/mips/{lantiq => boot}/dts/danube.dtsi (100%)
- rename arch/mips/{lantiq => boot}/dts/easy50712.dts (100%)
- delete mode 100644 arch/mips/lantiq/dts/Makefile
+since you're introducing a brand new serial number to make it unique
+across different procfs mounts, why not instead of a simple counter,
+use the hash output of say, $hostname-$creation_time-$random? Or perhaps
+get a short hash of the hostname (generated once whenever hostname is
+set) and append the serial number you're implementing? It'd be way less human
+readable than your current proposal but it'd be unique "globally" (as long you
+don't have machines with the same hostname migrating containers between them),
+allowing the migrated namespaces to retain their unique identification across
+audit logs. It'd of course be way more costly than just using an atomic counter,
+but could be useful to anything that needs to refer to a namespace and could be
+migrated to another machine.
 
-diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
-index 51acad6..4f265ec 100644
---- a/arch/mips/boot/dts/Makefile
-+++ b/arch/mips/boot/dts/Makefile
-@@ -1,4 +1,5 @@
- dtb-$(CONFIG_CAVIUM_OCTEON_SOC)		+= octeon_3xxx.dtb octeon_68xx.dtb
-+dtb-$(CONFIG_DT_EASY50712)		+= easy50712.dtb
- 
- obj-y		+= $(patsubst %.dtb, %.dtb.o, $(dtb-y))
- 
-diff --git a/arch/mips/lantiq/dts/danube.dtsi b/arch/mips/boot/dts/danube.dtsi
-similarity index 100%
-rename from arch/mips/lantiq/dts/danube.dtsi
-rename to arch/mips/boot/dts/danube.dtsi
-diff --git a/arch/mips/lantiq/dts/easy50712.dts b/arch/mips/boot/dts/easy50712.dts
-similarity index 100%
-rename from arch/mips/lantiq/dts/easy50712.dts
-rename to arch/mips/boot/dts/easy50712.dts
-diff --git a/arch/mips/lantiq/Kconfig b/arch/mips/lantiq/Kconfig
-index c002191..e10d333 100644
---- a/arch/mips/lantiq/Kconfig
-+++ b/arch/mips/lantiq/Kconfig
-@@ -30,6 +30,7 @@ choice
- config DT_EASY50712
- 	bool "Easy50712"
- 	depends on SOC_XWAY
-+	select BUILTIN_DTB
- endchoice
- 
- config PCI_LANTIQ
-diff --git a/arch/mips/lantiq/Makefile b/arch/mips/lantiq/Makefile
-index d6bdc57..690257a 100644
---- a/arch/mips/lantiq/Makefile
-+++ b/arch/mips/lantiq/Makefile
-@@ -6,8 +6,6 @@
- 
- obj-y := irq.o clk.o prom.o
- 
--obj-y += dts/
--
- obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
- 
- obj-$(CONFIG_SOC_TYPE_XWAY) += xway/
-diff --git a/arch/mips/lantiq/dts/Makefile b/arch/mips/lantiq/dts/Makefile
-deleted file mode 100644
-index 6fa72dd..0000000
---- a/arch/mips/lantiq/dts/Makefile
-+++ /dev/null
-@@ -1 +0,0 @@
--obj-$(CONFIG_DT_EASY50712) := easy50712.dtb.o
+What you think? Sounds too crazy? :)
+
 -- 
-2.1.0.rc2.206.gedb03e5
+Aristeu
 
