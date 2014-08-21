@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569AbaHUDFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 23:05:20 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:51627 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaHUDFS convert rfc822-to-8bit (ORCPT
+	id S1753615AbaHUDIa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 23:08:30 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57803 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaHUDI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 23:05:18 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: Revert "platform/x86/toshiba-apci.c possible bad if test?"
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-In-Reply-To: <20140820235354.67516660E82@gitolite.kernel.org>
-Date: Thu, 21 Aug 2014 04:05:14 +0100
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <979CCE59-6BA9-4319-8F7C-4818FD2DB8F2@cam.ac.uk>
-References: <20140820235354.67516660E82@gitolite.kernel.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Wed, 20 Aug 2014 23:08:27 -0400
+Message-ID: <53F5624E.3010102@linaro.org>
+Date: Thu, 21 Aug 2014 11:06:54 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v2 08/18] ARM64 / ACPI: Get the enable method for SMP
+ initialization in ACPI way
+References: <1407166105-17675-1-git-send-email-hanjun.guo@linaro.org> <1407166105-17675-9-git-send-email-hanjun.guo@linaro.org> <20140818142733.GT20043@localhost> <53F30B99.4000704@linaro.org> <20140820145219.GO24600@localhost>
+In-Reply-To: <20140820145219.GO24600@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew,
-
-There is no doubt that the revert was needed but I think the original check which is now reinstated is also wrong.
-
-I do not know what the intention actually is so cannot say what the correct check is but just logically speaking the check makes no sense:
-
-	if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
-
-The condition "(mode != 2 || mode != 1)" will always be true given that mode can only have a single value: if mode == 1 then mode != 2 is true and thus the condition is true and vice versa if mode == 2 then mode != 1 is true and thus the condition is true, too.  And if mode is neither 1 nor 2 then both mode != 2 and mode != 1 are true and thus the condition is true, too.  Thus no matter what value "mode" has, the condition is true thus there is no point in it being there thus the if clause is exactly the same as:
-
-	if (sscanf(buf, "%i", &mode) != 1)
-
-Presumably that was not the original intention...
-
-Perhaps the intention was to check that mode is either 1 or 2 and other values are not allowed?  If so the correct statement would be:
-
-	if (sscanf(buf, "%i", &mode) != 1 || (mode != 2 && mode != 1))
-
-But as I said above I do not know if that was the original intention but it looks like that this may have been the intention...
-
-Best regards,
-
-	Anton
-
-On 21 Aug 2014, at 00:53, Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
-
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=8039aabb6c9f802bca04cc77ca210060a5b53916
-> Commit:     8039aabb6c9f802bca04cc77ca210060a5b53916
-> Parent:     186e4e89a0922d75fba476f15b723e541cc34bea
-> Refname:    refs/heads/master
-> Author:     Matthew Garrett <matthew.garrett@nebula.com>
-> AuthorDate: Wed Aug 20 08:18:18 2014 -0700
-> Committer:  Matthew Garrett <matthew.garrett@nebula.com>
-> CommitDate: Wed Aug 20 08:18:18 2014 -0700
+On 2014-8-20 22:52, Catalin Marinas wrote:
+> On Tue, Aug 19, 2014 at 09:32:25AM +0100, Hanjun Guo wrote:
+>> On 2014-8-18 22:27, Catalin Marinas wrote:
+>>> On Mon, Aug 04, 2014 at 04:28:15PM +0100, Hanjun Guo wrote:
+>>>> +#ifdef CONFIG_ACPI
+>>>> +/*
+>>>> + * Get a cpu's boot method in the ACPI way.
+>>>> + */
+>>>> +static char * __init acpi_get_cpu_boot_method(void)
+>>>> +{
+>>>> +	/*
+>>>> +	 * For ACPI 5.1, only two kind of methods are provided,
+>>>> +	 * Parking protocol and PSCI, but Parking protocol is
+>>>> +	 * specified for ARMv7 only, so make PSCI as the only method
+>>>> +	 * for SMP initialization before the ACPI spec or Parking
+>>>> +	 * protocol spec is updated.
+>>>> +	 */
+>>>> +	switch (smp_boot_protocol()) {
+>>>> +	case ACPI_SMP_BOOT_PSCI:
+>>>> +		return "psci";
+>>>> +	case ACPI_SMP_BOOT_PARKING_PROTOCOL:
+>>>> +	default:
+>>>> +		return NULL;
+>>>> +	}
+>>>> +}
+>>>
+>>> Actually, do we even need to define smp_boot_protocol()? Is it used
+>>> anywhere else apart from this patch (I still haven't gone through all
+>>> patches)?
+>>
+>> It is just used in this patch. I think we can make the ACPI boot protocol
+>> scalable in this way, if we support another boot protocol in ACPI in the
+>> future, we can easily update the function to support it, does it make sense?
 > 
->    Revert "platform/x86/toshiba-apci.c possible bad if test?"
+> Not really. You just add additional code, enums, functions when all you
+> do is check for acpi_psci_present() (or whatever new protocol you would
+> get). If the enum is never going to be used outside this file, don't
+> bother with additional functions.
 > 
->    This reverts commit bdc3ae7221213963f438faeaa69c8b4a2195f491.
-> 
->    Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
-> drivers/platform/x86/toshiba_acpi.c | 2 +-
-> 1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-> index e4da61b..b062d3d 100644
-> --- a/drivers/platform/x86/toshiba_acpi.c
-> +++ b/drivers/platform/x86/toshiba_acpi.c
-> @@ -1258,7 +1258,7 @@ static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
-> 	int mode = -1;
-> 	int time = -1;
-> 
-> -	if (sscanf(buf, "%i", &mode) != 1  || (mode != 2 || mode != 1))
-> +	if (sscanf(buf, "%i", &mode) != 1 && (mode != 2 || mode != 1))
-> 		return -EINVAL;
-> 
-> 	/* Set the Keyboard Backlight Mode where:
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-University of Cambridge Information Services, Roger Needham Building
-7 JJ Thomson Avenue, Cambridge, CB3 0RB, UK
+> BTW, it would be nicer if the acpi related functions are contained in as
+> fewer files as possible. So here you could keep
+> acpi_get_cpu_boot_method() in the acpi.c file. It only returns a string.
+
+ok, I will update them.
+
+Thanks
+Hanjun
+
 
