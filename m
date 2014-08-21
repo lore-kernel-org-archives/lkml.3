@@ -1,133 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038AbaHUNF2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:05:28 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:58376 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222AbaHUNF0 (ORCPT
+	id S1755101AbaHUNGJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:06:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43115 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754547AbaHUNGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:05:26 -0400
-Date: Thu, 21 Aug 2014 22:05:04 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: "'Minchan Kim'" <minchan@kernel.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
-        "'Jerome Marchand'" <jmarchan@redhat.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] zram: add num_discards for discarded pages stat
-Message-ID: <20140821130504.GB946@swordfish>
-References: <001201cfb838$fb0ac4a0$f1204de0$@samsung.com>
- <20140815061138.GA940@swordfish>
- <002d01cfbb70$ea7410c0$bf5c3240$@samsung.com>
- <20140819112500.GA2484@swordfish>
- <20140820020924.GD32620@bbox>
- <006701cfbc4f$c9d2fe00$5d78fa00$@samsung.com>
- <20140821011854.GE17372@bbox>
- <001601cfbd1f$b9f068d0$2dd13a70$@samsung.com>
+	Thu, 21 Aug 2014 09:06:06 -0400
+Date: Thu, 21 Aug 2014 15:06:00 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-pwm@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Bo Shen <voice.shen@atmel.com>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 00/11] drm: add support for Atmel HLCDC Display
+ Controller
+Message-ID: <20140821150600.37788d82@bbrezillon>
+In-Reply-To: <20140821095202.GA21848@ulmo>
+References: <1406034695-15534-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140821081619.GZ2452@ldesroches-Latitude-E6320>
+	<20140821103706.2349915d@bbrezillon>
+	<20140821090406.GA13733@ulmo>
+	<20140821114159.319e741b@bbrezillon>
+	<20140821095202.GA21848@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001601cfbd1f$b9f068d0$2dd13a70$@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/21/14 17:09), Chao Yu wrote:
-[cut]
+On Thu, 21 Aug 2014 11:52:03 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
+
+> On Thu, Aug 21, 2014 at 11:41:59AM +0200, Boris BREZILLON wrote:
+> > On Thu, 21 Aug 2014 11:04:07 +0200
+> > Thierry Reding <thierry.reding@gmail.com> wrote:
 > > 
-> > I hope I'm not discouraging. :)
+> > > On Thu, Aug 21, 2014 at 10:37:06AM +0200, Boris BREZILLON wrote:
+> > > > Hi Ludovic,
+> > > > 
+> > > > On Thu, 21 Aug 2014 10:16:19 +0200
+> > > > Ludovic Desroches <ludovic.desroches@atmel.com> wrote:
+> > > > 
+> > > > > Hi Boris,
+> > > > > 
+> > > > > You can add
+> > > > > 
+> > > > > Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> > > > 
+> > > > Thanks for testing this driver.
+> > > > 
+> > > > > 
+> > > > > Only one issue but not related to your patches, you can't display
+> > > > > quickly the bootup logo since the panel detection takes too much
+> > > > > time.
+> > > > 
+> > > > Yes, actually this is related to the device probe order: the
+> > > > hlcdc-display-controller device is probed before the simple-panel, thus
+> > > > nothing is detected on the RGB connector (I use of_drm_find_panel to
+> > > > check for panel availability) when the display controller is
+> > > > instantiated. I rely on the default polling infrastructure provided by
+> > > > the DRM/KMS framework which polls for a new connector every 10s, and
+> > > > this is far more than you kernel boot time.
+> > > > 
+> > > > Do anyone see a solution to reduce this delay (without changing the
+> > > > polling interval). I thought we could add a notifier infrastructure to
+> > > > the DRM panel framework, but I'm not sure this is how you want things
+> > > > done...
+> > > 
+> > > Other drivers return -EPROBE_DEFER when a panel hasn't been registered
+> > > yet. This will automatically take care of ordering things in a way that
+> > > DRM/KMS will only be initialized after the panel has been probed.
+> > 
+> > Actually I'd like to avoid doing this with a deferred probe, because,
+> > AFAIU, the remote endpoint is not tightly linked with the display
+> > controller driver (I mean the display controller can still be
+> > initialized without having a display connected on it).
+> > Moreover the atmel dev kit I'm using has an HDMI bridge connected on
+> > the same RGB connector and I'd like to use it in a near future.
+> > Returning -EPROBE_DEFER in case of several devices connected on the
+> > same connector implies that I'll have to wait for all the remote
+> > end-points to be available before my display controller could be
+> > instantiated.
+> > 
+> > While this could be acceptable when all drivers are statically linked
+> > in the kernel, it might be problematic when you're using modules,
+> > meaning that you won't be able to display anything on your LCD panel
+> > until your HDMI bridge module has been loaded.
 > 
-> Nope, please let me try again, :)
+> No. HDMI should be using proper hotplugging anyway, hence it should be
+> always be loaded anyway. You're in for a world of pain if you think you
+> can run DRM with a driver that's composed of separate kernel modules.
+
+I was talking about the external RGB to HDMI encoder, should the driver
+for this encoder (which is not on On Chip block) be compiled
+statically too ?
+
 > 
-> Since we have supported handling discard request in this commit
-> f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
-> one more chance to free unused memory whenever received discard request. But
-> without stating for discard request, there is no method for user to know whether
-> discard request has been handled by zram or how many blocks were discarded by
-> zram when user wants to know the effect of discard.
-> 
-> In this patch, we add num_discards to stat discarded pages, and export it to
-> sysfs for users.
-> 
+> Also if you don't want to use deferred probe, then you're in for the
+> full hotplugging panel dance and that implies that you need to fix a
+> bunch of things in DRM (one being the framebuffer console instantiation
+> that I referred to in the other thread).
 
-In other words, here is my proposal:
+For now, I wait until there is a device connected on the RGB connector
+(connector status set to connector_status_connected) before creating an
+fbdev. It might not be the cleanest way to solve this issue, but it
+works :-).
 
------8<-----8<-----
+> You also can't be using the
+> current device tree bindings because they all assume a dependency from
+> the display controller/output to the panel. For hotplugging you'd need
+> the dependency the other way around (the panel needs to refer to the
+> output by phandle).
 
-Subject: [PATCH] zram: use notify_free to account all free notifications
+Here [1] is a proposal for notification support in the drm_panel
+infrastructure (which is not that complicated), and here [2] is how
+I use it in my atmel-hlcdc driver to generate hotplug events.
 
-notify_free device attribute accounts the number of slot free notifications
-and internally represents the number of zram_free_page() calls. Slot free
-notifications are sent only when device is used as a swap device, hence
-notify_free is used only for swap devices. Since f4659d8e620d08 (zram:
-support REQ_DISCARD) ZRAM handles yet another one free notification (also
-via zram_free_page() call) -- REQ_DISCARD requests, which are sent by a
-filesystem, whenever some data blocks are discarded. However, there is no
-way to know the number of notifications in the latter case.
+Let me know if you want me to submit a proper patch series...
 
-Use notify_free to account the number of pages freed in zram_free_page(),
-instead of accounting only swap_slot_free_notify() calls (each
-zram_slot_free_notify() call frees one page).
+Best Regards,
 
-This means that depending on usage scenario notify_free represents:
- a) the number of pages freed because of slot free notifications, which is
-   equal to the number of swap_slot_free_notify() calls, so there is no
-   behaviour change
+Boris
 
- b) the number of pages freed because of REQ_DISCARD notifications
+[1]http://code.bulix.org/scq4g3-86804
+[2]http://code.bulix.org/7dg501-86805
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
----
- Documentation/ABI/testing/sysfs-block-zram | 13 ++++++++-----
- drivers/block/zram/zram_drv.c              |  2 +-
- 2 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-index 70ec992..73ed400 100644
---- a/Documentation/ABI/testing/sysfs-block-zram
-+++ b/Documentation/ABI/testing/sysfs-block-zram
-@@ -77,11 +77,14 @@ What:		/sys/block/zram<id>/notify_free
- Date:		August 2010
- Contact:	Nitin Gupta <ngupta@vflare.org>
- Description:
--		The notify_free file is read-only and specifies the number of
--		swap slot free notifications received by this device. These
--		notifications are sent to a swap block device when a swap slot
--		is freed. This statistic is applicable only when this disk is
--		being used as a swap disk.
-+		The notify_free file is read-only. Depending on device usage
-+		scenario it may account a) the number of swap slot free
-+		notifications or b) the number of REQ_DISCARD requests sent
-+		by bio. The former ones are sent to a swap block device when a
-+		swap slot is freed, which implies that this disk is being used
-+		as a swap disk. The latter ones are sent by filesystem mounted
-+		with discard option, whenever some data blocks are getting
-+		discarded.
- 
- What:		/sys/block/zram<id>/zero_pages
- Date:		August 2010
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index d00831c..c2e7127 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -344,6 +344,7 @@ static void zram_free_page(struct zram *zram, size_t index)
- 	atomic64_sub(zram_get_obj_size(meta, index),
- 			&zram->stats.compr_data_size);
- 	atomic64_dec(&zram->stats.pages_stored);
-+	atomic64_inc(&zram->stats.notify_free);
- 
- 	meta->table[index].handle = 0;
- 	zram_set_obj_size(meta, index, 0);
-@@ -843,7 +844,6 @@ static void zram_slot_free_notify(struct block_device *bdev,
- 	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
- 	zram_free_page(zram, index);
- 	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
--	atomic64_inc(&zram->stats.notify_free);
- }
- 
- static const struct block_device_operations zram_devops = {
 -- 
-2.1.0.233.g9eef2c8
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
