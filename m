@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038AbaHURTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 13:19:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55939 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752660AbaHURTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 13:19:40 -0400
-Date: Thu, 21 Aug 2014 19:17:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, richard@nod.at,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kernel: signal: NULL ptr deref when killing process
-Message-ID: <20140821171726.GB27140@redhat.com>
-References: <20140820150619.GA12706@redhat.com> <53F48402.4080302@oracle.com> <20140820141252.GA27301@redhat.com> <3200.1408638173@warthog.procyon.org.uk>
+	id S1753244AbaHURUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 13:20:11 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39806 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795AbaHURUH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 13:20:07 -0400
+Message-ID: <53F62A2B.6010208@ti.com>
+Date: Thu, 21 Aug 2014 12:19:39 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3200.1408638173@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Murphy, Dan" <dmurphy@ti.com>, Dmitry Torokhov <dtor@mail.ru>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 2/2] Input: misc: introduce palmas-pwrbutton
+References: <1408392810-16011-1-git-send-email-nm@ti.com> <1408636935-29515-1-git-send-email-nm@ti.com> <1408636935-29515-3-git-send-email-nm@ti.com> <00FC9A978A94B7418C33AFAE8A35ED49DF0662@DFLE09.ent.ti.com>
+In-Reply-To: <00FC9A978A94B7418C33AFAE8A35ED49DF0662@DFLE09.ent.ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21, David Howells wrote:
->
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > David, any other reason why ->real_cred can be NULL ? (assuming that I
-> > interpret this asm correctly).
->
-> It should only be possible to see ->real_cred as being NULL after exit_creds()
-> has been called from __put_task_struct() for a task that has finished
-> construction.
+On 08/21/2014 11:59 AM, Murphy, Dan wrote:
+[...]
+Ooops.. missed answering one addition statement:
 
-Yes, thanks, this was my understanding...
+>> +	of_property_read_u32(np, "ti,palmas-long-press-seconds", &val);
+> 
+> Probably should check the return to make sure the value exists and that is is
+> within an expected range.
+It is an optional parameter and may not exist in dt. when it does
+exist, the logic tries to do a best match (this is the for loop in the
+logic just below).
 
-> Is there a race between kill() and exit() brought on by the kill path only
-> using the RCU read lock?  This doesn't prevent ->real_cred from being
-> modified, but it looks like this should, in combination with
-> delayed_put_task_struct(), prevent it from being cleared.
-
-Yes, rcu should protect us from both delayed_put_pid() and delayed_put_task().
-Everything looks correct... And there are a lot of other similar users of
-find_vpid/find_task_by_vpid/pid_task/etc under rcu, I can't recall any bug
-in this area.
-
-I am puzzled. Note also that ->signal == NULL. Will try to think more,
-but so far I have no any idea.
-
-Oleg.
-
+-- 
+Regards,
+Nishanth Menon
