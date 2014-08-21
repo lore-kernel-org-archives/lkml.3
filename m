@@ -1,97 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370AbaHUTDm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 15:03:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7974 "EHLO mx1.redhat.com"
+	id S1754485AbaHUTDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 15:03:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2393 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138AbaHUTDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 15:03:40 -0400
-Date: Fri, 22 Aug 2014 03:03:36 +0800
-From: Amos Kong <akong@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
- runnable
-Message-ID: <20140821190336.GB20066@z.redhat.com>
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
- <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+	id S1754397AbaHUTDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 15:03:47 -0400
+Date: Thu, 21 Aug 2014 21:00:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] mempolicy: introduce __get_vma_policy(), export
+	get_task_policy()
+Message-ID: <20140821190051.GB8703@redhat.com>
+References: <20140805194627.GA30693@redhat.com> <20140820192207.GA8524@redhat.com> <20140821190020.GA8703@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408608310-13579-2-git-send-email-jasowang@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140821190020.GA8703@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 04:05:10PM +0800, Jason Wang wrote:
-> Rx busy loop does not scale well in the case when several parallel
-> sessions is active. This is because we keep looping even if there's
-> another process is runnable. For example, if that process is about to
-> send packet, keep busy polling in current process will brings extra
-> delay and damage the performance.
-> 
-> This patch solves this issue by exiting the busy loop when there's
-> another process is runnable in current cpu. Simple test that pin two
-> netperf sessions in the same cpu in receiving side shows obvious
-> improvement:
-> 
-> Before:
-> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
-> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
-> 16384  87380  1        1       10.00    15513.74
-> 16384  87380
-> 16384  87380  1        1       10.00    15092.78
-> 16384  87380
-> 
-> After:
-> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
-> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
-> 16384  87380  1        1       10.00    23334.53
-> 16384  87380
-> 16384  87380  1        1       10.00    23327.58
-> 16384  87380
-> 
-> Benchmark was done through two 8 cores Xeon machine back to back connected
-> with mlx4 through netperf TCP_RR test (busy_read were set to 50):
-> 
-> sessions/bytes/before/after/+improvement%/busy_read=0/
-> 1/1/30062.10/30034.72/+0%/20228.96/
-> 16/1/214719.83/307669.01/+43%/268997.71/
-> 32/1/231252.81/345845.16/+49%/336157.442/
-> 64/512/212467.39/373464.93/+75%/397449.375/
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  include/net/busy_poll.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
-> index 1d67fb6..8a33fb2 100644
-> --- a/include/net/busy_poll.h
-> +++ b/include/net/busy_poll.h
-> @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
->  		cpu_relax();
->  
->  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
-> -		 !need_resched() && !busy_loop_timeout(end_time));
-> +		 !need_resched() && !busy_loop_timeout(end_time) &&
-> +		 nr_running_this_cpu() < 2);
+Extract the code which looks for vma's policy from get_vma_policy()
+into the new helper, __get_vma_policy(). Export get_task_policy().
 
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/mempolicy.h |    3 +++
+ mm/mempolicy.c            |   44 ++++++++++++++++++++++++++------------------
+ 2 files changed, 29 insertions(+), 18 deletions(-)
 
-Reviewed-by: Amos Kong <akong@redhat.com>
-  
->  	rc = !skb_queue_empty(&sk->sk_receive_queue);
->  out:
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 5e4bfce..e1abe24 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -134,6 +134,9 @@ void mpol_free_shared_policy(struct shared_policy *p);
+ struct mempolicy *mpol_shared_policy_lookup(struct shared_policy *sp,
+ 					    unsigned long idx);
+ 
++struct mempolicy *get_task_policy(struct task_struct *p);
++struct mempolicy *__get_vma_policy(struct vm_area_struct *vma,
++		unsigned long addr);
+ struct mempolicy *get_vma_policy(struct task_struct *tsk,
+ 		struct vm_area_struct *vma, unsigned long addr);
+ bool vma_policy_mof(struct vm_area_struct *vma);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index ad27bbc..4378c33 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -123,7 +123,7 @@ static struct mempolicy default_policy = {
+ 
+ static struct mempolicy preferred_node_policy[MAX_NUMNODES];
+ 
+-static struct mempolicy *get_task_policy(struct task_struct *p)
++struct mempolicy *get_task_policy(struct task_struct *p)
+ {
+ 	struct mempolicy *pol = p->mempolicy;
+ 	int node;
+@@ -1603,23 +1603,8 @@ COMPAT_SYSCALL_DEFINE6(mbind, compat_ulong_t, start, compat_ulong_t, len,
+ 
+ #endif
+ 
+-/*
+- * get_vma_policy(@task, @vma, @addr)
+- * @task: task for fallback if vma policy == default
+- * @vma: virtual memory area whose policy is sought
+- * @addr: address in @vma for shared policy lookup
+- *
+- * Returns effective policy for a VMA at specified address.
+- * Falls back to @task or system default policy, as necessary.
+- * Current or other task's task mempolicy and non-shared vma policies must be
+- * protected by task_lock(task) by the caller.
+- * Shared policies [those marked as MPOL_F_SHARED] require an extra reference
+- * count--added by the get_policy() vm_op, as appropriate--to protect against
+- * freeing by another task.  It is the caller's responsibility to free the
+- * extra reference for shared policies.
+- */
+-struct mempolicy *get_vma_policy(struct task_struct *task,
+-		struct vm_area_struct *vma, unsigned long addr)
++struct mempolicy *__get_vma_policy(struct vm_area_struct *vma,
++						unsigned long addr)
+ {
+ 	struct mempolicy *pol = NULL;
+ 
+@@ -1640,6 +1625,29 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		}
+ 	}
+ 
++	return pol;
++}
++
++/*
++ * get_vma_policy(@task, @vma, @addr)
++ * @task: task for fallback if vma policy == default
++ * @vma: virtual memory area whose policy is sought
++ * @addr: address in @vma for shared policy lookup
++ *
++ * Returns effective policy for a VMA at specified address.
++ * Falls back to @task or system default policy, as necessary.
++ * Current or other task's task mempolicy and non-shared vma policies must be
++ * protected by task_lock(task) by the caller.
++ * Shared policies [those marked as MPOL_F_SHARED] require an extra reference
++ * count--added by the get_policy() vm_op, as appropriate--to protect against
++ * freeing by another task.  It is the caller's responsibility to free the
++ * extra reference for shared policies.
++ */
++struct mempolicy *get_vma_policy(struct task_struct *task,
++		struct vm_area_struct *vma, unsigned long addr)
++{
++	struct mempolicy *pol = __get_vma_policy(vma, addr);
++
+ 	if (!pol)
+ 		pol = get_task_policy(task);
+ 
 -- 
-			Amos.
+1.5.5.1
+
+
