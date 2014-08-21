@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127AbaHULgc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 07:36:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29682 "EHLO mga02.intel.com"
+	id S1755154AbaHULgy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 07:36:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7024 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754666AbaHULeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 07:34:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.01,908,1400050800"; 
-   d="scan'208";a="591291260"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH 1/6] phy: safer to_phy() macro
-Date: Thu, 21 Aug 2014 14:33:18 +0300
-Message-Id: <1408620803-10464-2-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408620803-10464-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1408620803-10464-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1754527AbaHULeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 07:34:01 -0400
+Message-ID: <53F5D920.1080800@redhat.com>
+Date: Thu, 21 Aug 2014 13:33:52 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 12/13] pmcraid: Get rid of a redundant assignment
+References: <cover.1408335523.git.agordeev@redhat.com> <8058dca6525ca29845019ea9922c37f3416c0c7a.1408335523.git.agordeev@redhat.com>
+In-Reply-To: <8058dca6525ca29845019ea9922c37f3416c0c7a.1408335523.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes to_phy() macro work with other variable names
-besides "dev".
+On 08/18/2014 08:01 AM, Alexander Gordeev wrote:
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/pmcraid.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+> index 6f3275d..6e575ed 100644
+> --- a/drivers/scsi/pmcraid.c
+> +++ b/drivers/scsi/pmcraid.c
+> @@ -4746,7 +4746,6 @@ pmcraid_isr_legacy:
+>  	pinstance->hrrq_vector[0].drv_inst = pinstance;
+>  	pinstance->hrrq_vector[0].vector = pdev->irq;
+>  	pinstance->num_hrrq = 1;
+> -	rc = 0;
+>  
+>  	rc = request_irq(pdev->irq, pmcraid_isr, IRQF_SHARED,
+>  			 PMCRAID_DRIVER_NAME, &pinstance->hrrq_vector[0]);
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- include/linux/phy/phy.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Patch looks good to me.
 
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 8cb6f81..9fda683 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -110,7 +110,7 @@ struct phy_init_data {
- 	.port		= _port,				\
- }
- 
--#define	to_phy(dev)	(container_of((dev), struct phy, dev))
-+#define	to_phy(a)	(container_of((a), struct phy, dev))
- 
- #define	of_phy_provider_register(dev, xlate)	\
- 	__of_phy_provider_register((dev), THIS_MODULE, (xlate))
--- 
-2.1.0
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
 
