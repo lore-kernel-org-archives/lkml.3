@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344AbaHUNZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 09:25:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754551AbaHUNZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 09:25:45 -0400
-Message-ID: <53F5F346.5090105@redhat.com>
-Date: Thu, 21 Aug 2014 15:25:26 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@kernel.org>,
-        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>,
-        Vinod Chegu <chegu_vinod@hp.com>, Hui-Zhi <hui-zhi.zhao@hp.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH v2 1/6] KVM: add kvm_arch_sched_in
-References: <1408567997-21222-1-git-send-email-rkrcmar@redhat.com> <1408567997-21222-2-git-send-email-rkrcmar@redhat.com> <53F5ADF6.7060000@redhat.com> <20140821113801.GA20546@potion.brq.redhat.com> <53F5E5B1.6020106@redhat.com> <20140821125056.GE20453@potion.brq.redhat.com>
-In-Reply-To: <20140821125056.GE20453@potion.brq.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755163AbaHUN1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 09:27:24 -0400
+Received: from regular1.263xmail.com ([211.150.99.132]:48897 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779AbaHUN1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 09:27:22 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <efa75186ac68d51a8b3c7f01f13ddd33>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Chris Zhong <zyw@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
+        Chris Zhong <zyw@rock-chips.com>
+Subject: [PATCH v3 0/5] Add rockchip RK808 pmic driver
+Date: Thu, 21 Aug 2014 21:25:08 +0800
+Message-Id: <1408627508-16090-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/08/2014 14:50, Radim Krčmář ha scritto:
-> > > 
-> > > All empty arch functions are in '.c' files, so it seems better to follow
-> > > the same path.
-> > > (And have one refactoring patch if GCC does not optimize this.)
-> > 
-> > GCC certainly does not optimize this (unless you use LTO).
-> 
-> I see LTO patches in next ... do we want to move every empty arch
-> function into headers?
+This is the initial version of the RK808 PMIC. This is a power management IC
+for multimedia products.
 
-I wouldn't reject the patches.
+It provides regulators that are able to supply power to processor cores
+and other components. The chip provides other modules including RTC, Clockout
 
-(It would also save some lines of code, since in the headers it's common
-to do "static inline void foo(void) {}" on a single line).
+Changes in v3:
+- fix compile err
+- fix compile err
 
-> (It is probably going to take LTO few years to be enabled by default.)
+Changes in v2:
+Adviced by javier.martinez
+- separated from rtc-rk808.c
+Adviced by Mark Browm:
+- change of_find_node_by_name to find_child_by_name
+- use RK808_NUM_REGULATORS as the name of the constant
+- create a pdata when missing platform data
+- use the rk808_reg name to supply_regulator name
+- replace regulator_register with devm_regulator_register
+- some other problem with coding style
+Adviced by javier.martinez
+- Add a separate clock driver, rather than in RTC driver
+Adviced by Mark Browm:
+- use defines for register setting value
+- remove rtc alarm disable in shutdown
+- remove while(1) in shutdown
+- remove read 0x2f in probe
 
-Indeed...  see also
-http://lwn.net/SubscriberLink/608945/7763ad2aee106f1d/ from today's LWN
-issue.
+Chris Zhong (5):
+  MFD: Add rk808 device tree bindings documentation
+  MFD: RK808: Add new mfd driver for RK808
+  RTC: RK808: add RTC driver for RK808
+  Regulator: RK808: Add regulator driver for RK808
+  Clk: RK808: Add clkout driver for RK808
 
-Paolo
+ Documentation/devicetree/bindings/mfd/rk808.txt |  128 +++++++
+ drivers/clk/Kconfig                             |    9 +
+ drivers/clk/Makefile                            |    1 +
+ drivers/clk/clk-rk808.c                         |  147 ++++++++
+ drivers/mfd/Kconfig                             |   13 +
+ drivers/mfd/Makefile                            |    1 +
+ drivers/mfd/rk808.c                             |  296 +++++++++++++++
+ drivers/regulator/Kconfig                       |   10 +
+ drivers/regulator/Makefile                      |    1 +
+ drivers/regulator/rk808-regulator.c             |  410 ++++++++++++++++++++
+ drivers/rtc/Kconfig                             |   11 +
+ drivers/rtc/Makefile                            |    1 +
+ drivers/rtc/rtc-rk808.c                         |  460 +++++++++++++++++++++++
+ include/linux/mfd/rk808.h                       |  220 +++++++++++
+ 14 files changed, 1708 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/rk808.txt
+ create mode 100644 drivers/clk/clk-rk808.c
+ create mode 100644 drivers/mfd/rk808.c
+ create mode 100644 drivers/regulator/rk808-regulator.c
+ create mode 100644 drivers/rtc/rtc-rk808.c
+ create mode 100644 include/linux/mfd/rk808.h
+
+-- 
+1.7.9.5
+
+
