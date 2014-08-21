@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367AbaHUFow (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 01:44:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:33118 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769AbaHUFov (ORCPT
+	id S1752665AbaHUFp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 01:45:56 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:28105 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750791AbaHUFpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 01:44:51 -0400
+	Thu, 21 Aug 2014 01:45:55 -0400
+X-IronPort-AV: E=Sophos;i="5.04,370,1406563200"; 
+   d="scan'208";a="34880054"
+From: chai wen <chaiw.fnst@cn.fujitsu.com>
+CC: <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        chai wen <chaiw.fnst@cn.fujitsu.com>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] softlockup: make detector be aware of task switch of processes hogging cpu
+Date: Thu, 21 Aug 2014 13:42:22 +0800
+Message-ID: <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20140821023051.GO49576@redhat.com>
+References: <20140821023051.GO49576@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <53F3B89D.6070703@kernel.dk>
-References: <1408031441-31156-1-git-send-email-ming.lei@canonical.com>
-	<1408031441-31156-6-git-send-email-ming.lei@canonical.com>
-	<20140815163111.GA16652@infradead.org>
-	<53EE370D.1060106@kernel.dk>
-	<53EE3966.60609@kernel.dk>
-	<CACVXFVO+3SHy0=zESJqG3ZB68AZaeK5_QK2CVmZWzZ7oBWDGwg@mail.gmail.com>
-	<53F0EAEC.9040505@kernel.dk>
-	<CACVXFVO3CrD2CoHiBOZ8GNMXrT2pJ=t2BzmAHksqRTmgrpsaaQ@mail.gmail.com>
-	<CACVXFVN6W-AAQ6g4LXHOyvMzU+EAmj_YYBEuYRnoSB+VqCJg8A@mail.gmail.com>
-	<53F3B89D.6070703@kernel.dk>
-Date: Thu, 21 Aug 2014 13:44:48 +0800
-Message-ID: <CACVXFVOR0mzMWo+iPtU8jUvYgH+non=hQ0XaP0Z1Fu0qiSbJNA@mail.gmail.com>
-Subject: Re: [PATCH v1 5/9] block: loop: convert to blk-mq
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>, Zach Brown <zab@zabbo.net>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>,
-        "open list:AIO <linux-aio@kvack.org>, Linux FS Devel
-	<linux-fsdevel@vger.kernel.org>, Dave Chinner" <david@fromorbit.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.161]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 4:50 AM, Jens Axboe <axboe@kernel.dk> wrote:
+For now, soft lockup detector warns once for each case of process softlockup.
+But the thread 'watchdog/n' may not always get the cpu at the time slot between
+the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
 
->
->
-> Reworked a bit more:
->
-> http://git.kernel.dk/?p=linux-block.git;a=commit;h=a323185a761b9a54dc340d383695b4205ea258b6
+An example would be two processes hogging the cpu.  Process A causes the
+softlockup warning and is killed manually by a user.  Process B immediately
+becomes the new process hogging the cpu preventing the softlockup code from
+resetting the soft_watchdog_warn variable.
 
-One big problem of the commit is that it is basically a serialized workqueue
-because of single &hctx->run_work, and per-req work_struct has to be
-used for concurrent implementation.  So looks the approach isn't flexible
-enough compared with doing that in driver, or any idea about how to fix
-that?
+This case is a false negative of "warn only once for a process", as there may
+be a different process that is going to hog the cpu.  Resolve this by
+saving/checking the task pointer of the hogging process and use that to reset
+soft_watchdog_warn too.
 
+Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-Thanks
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 0037db6..2e55620 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+ static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+ static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
++static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+ static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+@@ -328,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 			return HRTIMER_RESTART;
+ 
+ 		/* only warn once */
+-		if (__this_cpu_read(soft_watchdog_warn) == true)
++		if (__this_cpu_read(soft_watchdog_warn) == true) {
++			/*
++			 * Handle the case where multiple processes are
++			 * causing softlockups but the duration is small
++			 * enough, the softlockup detector can not reset
++			 * itself in time.  Use task pointers to detect this.
++			 */
++			if (__this_cpu_read(softlockup_task_ptr_saved) !=
++			    current) {
++				__this_cpu_write(soft_watchdog_warn, false);
++				__touch_watchdog();
++			}
+ 			return HRTIMER_RESTART;
++		}
+ 
+ 		if (softlockup_all_cpu_backtrace) {
+ 			/* Prevent multiple soft-lockup reports if one cpu is already
+@@ -345,6 +358,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 		pr_emerg("BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+ 			smp_processor_id(), duration,
+ 			current->comm, task_pid_nr(current));
++		__this_cpu_write(softlockup_task_ptr_saved, current);
+ 		print_modules();
+ 		print_irqtrace_events(current);
+ 		if (regs)
+-- 
+1.7.1
+
