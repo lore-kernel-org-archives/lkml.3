@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169AbaHUByW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:54:22 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:49096 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaHUByV (ORCPT
+	id S1751449AbaHUB65 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:58:57 -0400
+Received: from mail.windriver.com ([147.11.1.11]:53676 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaHUB64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:54:21 -0400
-Message-ID: <53F5514A.5050007@linaro.org>
-Date: Thu, 21 Aug 2014 03:54:18 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 20 Aug 2014 21:58:56 -0400
+From: Ying Xue <ying.xue@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <viro@zeniv.linux.org.uk>, <jack@suse.cz>
+Subject: [PATCH] acct: eliminate compile warning
+Date: Thu, 21 Aug 2014 09:58:46 +0800
+Message-ID: <1408586326-24579-1-git-send-email-ying.xue@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Chuansheng Liu <chuansheng.liu@intel.com>, luto@amacapital.net,
-        peterz@infradead.org, rjw@rjwysocki.net, mingo@redhat.com
-CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        changcheng.liu@intel.com, xiaoming.wang@intel.com,
-        souvik.k.chakravarty@intel.com
-Subject: Re: [PATCH 1/3] sched: Add new API wake_up_if_idle() to wake up the
- idle cpu
-References: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
-In-Reply-To: <1408351052-25075-1-git-send-email-chuansheng.liu@intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2014 10:37 AM, Chuansheng Liu wrote:
-> Implementing one new API wake_up_if_idle(), which is used to
-> wake up the idle CPU.
+If ACCT_VERSION is not defined to 3, below warning appears:
+  CC      kernel/acct.o
+  kernel/acct.c: In function ‘do_acct_process’:
+  kernel/acct.c:475:24: warning: unused variable ‘ns’ [-Wunused-variable]
 
-Is this patchset tested ? Did you check it solves the issue you were 
-facing ?
+Signed-off-by: Ying Xue <ying.xue@windriver.com>
+---
+ kernel/acct.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> Suggested-by: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> ---
->   include/linux/sched.h |    1 +
->   kernel/sched/core.c   |   16 ++++++++++++++++
->   2 files changed, 17 insertions(+)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 857ba40..3f89ac1 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1024,6 +1024,7 @@ struct sched_domain_topology_level {
->   extern struct sched_domain_topology_level *sched_domain_topology;
->
->   extern void set_sched_topology(struct sched_domain_topology_level *tl);
-> +extern void wake_up_if_idle(int cpu);
->
->   #ifdef CONFIG_SCHED_DEBUG
->   # define SD_INIT_NAME(type)		.name = #type
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 1211575..adf104f 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1620,6 +1620,22 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
->   	}
->   }
->
-> +void wake_up_if_idle(int cpu)
-> +{
-> +	struct rq *rq = cpu_rq(cpu);
-> +	unsigned long flags;
-> +
-> +	if (set_nr_if_polling(rq->idle)) {
-> +		trace_sched_wake_idle_without_ipi(cpu);
-> +	} else {
-> +		raw_spin_lock_irqsave(&rq->lock, flags);
-> +		if (rq->curr == rq->idle)
-> +			smp_send_reschedule(cpu);
-> +		/* Else cpu is not in idle, do nothing here */
-> +		raw_spin_unlock_irqrestore(&rq->lock, flags);
-> +	}
-> +}
-> +
->   bool cpus_share_cache(int this_cpu, int that_cpu)
->   {
->   	return per_cpu(sd_llc_id, this_cpu) == per_cpu(sd_llc_id, that_cpu);
->
-
-
+diff --git a/kernel/acct.c b/kernel/acct.c
+index b4c667d..bb52701 100644
+--- a/kernel/acct.c
++++ b/kernel/acct.c
+@@ -472,7 +472,6 @@ static void do_acct_process(struct bsd_acct_struct *acct)
+ 	acct_t ac;
+ 	unsigned long flim;
+ 	const struct cred *orig_cred;
+-	struct pid_namespace *ns = acct->ns;
+ 	struct file *file = acct->file;
+ 
+ 	/*
+@@ -500,9 +499,10 @@ static void do_acct_process(struct bsd_acct_struct *acct)
+ 	ac.ac_gid16 = ac.ac_gid;
+ #endif
+ #if ACCT_VERSION == 3
+-	ac.ac_pid = task_tgid_nr_ns(current, ns);
++	ac.ac_pid = task_tgid_nr_ns(current, acct->ns);
+ 	rcu_read_lock();
+-	ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent), ns);
++	ac.ac_ppid = task_tgid_nr_ns(rcu_dereference(current->real_parent),
++				     acct->ns);
+ 	rcu_read_unlock();
+ #endif
+ 	/*
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.7.9.5
 
