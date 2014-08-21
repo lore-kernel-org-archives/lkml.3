@@ -1,356 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbaHUSh7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 14:37:59 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:34375 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196AbaHUSh5 (ORCPT
+	id S1753696AbaHUSia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 14:38:30 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16170 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaHUSi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 14:37:57 -0400
-Date: Thu, 21 Aug 2014 11:37:52 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com, lee.jones@linaro.org,
-        wim@iguana.be, linux-watchdog@vger.kernel.org, cooloney@gmail.com,
-        rpurdie@rpsys.net, linux-leds@vger.kernel.org, jdelvare@suse.de,
-        lm-sensors@lm-sensors.org
-Subject: Re: [PATCH v4 4/4] drivers/hwmon/menf21bmc_hwmon: introduce
- MEN14F021P00 BMC HWMON driver
-Message-ID: <20140821183752.GA16045@roeck-us.net>
-References: <cover.1407918792.git.andreas.werner@men.de>
- <cf0593273cbadcb16b094b7bc3bd9d3b5a93f7ed.1407918792.git.andreas.werner@men.de>
+	Thu, 21 Aug 2014 14:38:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1911J0HEyYBOWSfFvzn1+2f
+Date: Thu, 21 Aug 2014 11:38:20 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        balbi@ti.com, Vinod Koul <vinod.koul@intel.com>
+Subject: Re: [PATCH 05/15] tty: serial: Add 8250-core based omap driver
+Message-ID: <20140821183820.GE10066@atomide.com>
+References: <1408124563-31541-1-git-send-email-bigeasy@linutronix.de>
+ <1408124563-31541-6-git-send-email-bigeasy@linutronix.de>
+ <20140815210716.GE9239@atomide.com>
+ <53F5D16B.4030007@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <cf0593273cbadcb16b094b7bc3bd9d3b5a93f7ed.1407918792.git.andreas.werner@men.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53F5D16B.4030007@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 13, 2014 at 10:40:37AM +0200, Andreas Werner wrote:
-> Added driver to support the 14F021P00 BMC Hardware Monitoring.
-> The BMC is a Board Management Controller including monitoring of the
-> board voltages.
+* Sebastian Andrzej Siewior <bigeasy@linutronix.de> [140821 04:04]:
+> On 08/15/2014 11:07 PM, Tony Lindgren wrote:
+> > Nice, now it mostly works for me with off-idle too :) That is as long
+> > as I have the DMA channels commented out in the .dts file.
+> > 
+> > And I'm still seeing an occasional hang with pstore console just
+> > showing:
+> > 
+> > [  289.076538] In-band Error seen by MPU  at address 0
+> > [  289.076538] ------------[ cut here ]------------
+> > [  289.076568] WARNING: CPU: 0 PID: 99 at drivers/bus/omap_l3_smx.c:162 omap3_l3_app_irq+0xdc/0x134()
+> > [  289.076599] Modules linked in:
+> > [  289.076599] CPU: 0 PID: 99 Comm: test-idle-off-8 Tainted: G        W      3.16.0+ #510
+> > [  289.076629] [<c0016c44>] (unwind_backtrace) from [<c00129c8>] (show_stack+0x20/0x24)
+> > [  289.076660] [<c00129c8>] (show_stack) from [<c0714cd4>] (dump_stack+0x88/0xa4)
 > 
-> Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> ---
->  drivers/hwmon/Kconfig           |   7 ++
->  drivers/hwmon/Makefile          |   1 +
->  drivers/hwmon/menf21bmc_hwmon.c | 238 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 246 insertions(+)
->  create mode 100644 drivers/hwmon/menf21bmc_hwmon.c
+> Okay. So this backtrace does not show more like from where the access
+> is happening?
+
+No, or if the omap_l3_smx.c can show the address it's not implemented.
+ 
+> > Which most likely means there's still some glitch with the
+> > runtime PM somewhere and registers are being accessed when
+> > not clocked. I _think_ I did not see it when I did not have
+> > console=ttyS2,115200 in my cmdline but was using just pstore
+> > console.
+> > 
+> >> The device name is ttyS based instead of ttyO. If a ttyO based node name
+> >> is required please ask udev for it. If both driver are activated (this
+> >> and omap-serial) then this serial driver will take control over the
+> >> device due to the link order
+> > 
+> > That's still not going to help with the existing kernel cmdlines
+> > and existing installs.. I wonder if we can just do a minimal
+> > dummy serial-omap.c that just proxies all the ttyO read/write
+> > access to ttyS?
 > 
-> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-> index 37908ff..437c00f 100644
-> --- a/drivers/hwmon/Kconfig
-> +++ b/drivers/hwmon/Kconfig
-> @@ -828,6 +828,13 @@ config SENSORS_MCP3021
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called mcp3021.
->  
-> +config SENSORS_MENF21BMC_HWMON
-> +	tristate "MEN 14F021P00 BMC Hardware Monitoring"
-> +	depends on MFD_MENF21BMC && I2C
-> +	help
-> +	  Say Y here to include support for the MEN 14F021P00 BMC
-> +	  hardware monitoring.
-> +
->  config SENSORS_ADCXX
->  	tristate "National Semiconductor ADCxxxSxxx"
->  	depends on SPI_MASTER
-> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-> index 1362382..56ab872 100644
-> --- a/drivers/hwmon/Makefile
-> +++ b/drivers/hwmon/Makefile
-> @@ -114,6 +114,7 @@ obj-$(CONFIG_SENSORS_MAX6650)	+= max6650.o
->  obj-$(CONFIG_SENSORS_MAX6697)	+= max6697.o
->  obj-$(CONFIG_SENSORS_MC13783_ADC)+= mc13783-adc.o
->  obj-$(CONFIG_SENSORS_MCP3021)	+= mcp3021.o
-> +obj-$(CONFIG_SENSORS_MENF21BMC_HWMON) += menf21bmc_hwmon.o
->  obj-$(CONFIG_SENSORS_NCT6683)	+= nct6683.o
->  obj-$(CONFIG_SENSORS_NCT6775)	+= nct6775.o
->  obj-$(CONFIG_SENSORS_NTC_THERMISTOR)	+= ntc_thermistor.o
-> diff --git a/drivers/hwmon/menf21bmc_hwmon.c b/drivers/hwmon/menf21bmc_hwmon.c
-> new file mode 100644
-> index 0000000..ecb0ef1
-> --- /dev/null
-> +++ b/drivers/hwmon/menf21bmc_hwmon.c
-> @@ -0,0 +1,238 @@
-> +/*
-> + *  MEN 14F021P00 Board Management Controller (BMC) hwmon driver.
-> + *
-> + *  This is the core hwmon driver of the MEN 14F021P00 BMC.
-> + *  The BMC monitors the board voltages which can be access with this
-> + *  driver through sysfs.
-> + *
-> + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
+> Hmm. So you are not a friend of the udev solution?. For now the driver
+> is "default n" and you have to explicit enable it and _then_ you should
+> be able to update your command line, etc.
+> If I introduce a kernel proxy for compatibility I assume that people
+> will wake up once that compatibility piece is gone.
 
-The license statement below states GPL v2, which contradicts the statement here.
-Maybe it should just be GPL below ?
+The udev solution will not help with all the existing cases of
+console=ttyO2,115200. But maybe we just need to translate the
+cmdline to ttS2 in those cases?
 
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-sysfs.h>
-> +#include <linux/jiffies.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c.h>
-> +
-> +#define DEVNAME "menf21bmc_hwmon"
-> +
-While that makes sense for the driver name, it doesn't really for the hwmon
-device. You might want to consider just using "menf21bmc" when you register the
-hwmon device.
+Then the udev rules could fix up most of the distro issues, but
+not all of them. And still requires the userspace to be updated.
+ 
+> However, if you insist… I tried to make a symlink but nobody does this
+> in kernel. The "rtc -> rtc0" and friends seem to come from udev _or_
+> distro. So I sff could a second device node with the same major/minor.
+> That would work for userland but not for the kernel console… So we need
+> a proxy-console for this.
 
-> +#define BMC_VOLT_COUNT	5
-> +#define MENF21BMC_V33	0
-> +#define MENF21BMC_V5	1
-> +#define MENF21BMC_V12	2
-> +#define MENF21BMC_V5_SB	3
-> +#define MENF21BMC_VBAT	4
-> +
-> +#define BMC_CMD_GET_NUM_VOLT 0x8E
-> +#define IDX_TO_VOLT_MIN_CMD(idx) (0x40 + idx)
-> +#define IDX_TO_VOLT_MAX_CMD(idx) (0x50 + idx)
-> +#define IDX_TO_VOLT_INP_CMD(idx) (0x60 + idx)
-> +
-> +struct menf21bmc_hwmon {
-> +	char valid;
-> +	struct i2c_client *i2c_client;
-> +	unsigned long last_update;
-> +	u16 in_val[BMC_VOLT_COUNT];
-> +	u16 in_min[BMC_VOLT_COUNT];
-> +	u16 in_max[BMC_VOLT_COUNT];
-> +};
-> +
-> +static const char *const input_names[] = {
-> +	[MENF21BMC_V33]		= "MON_3,3V",
-> +	[MENF21BMC_V5]		= "MON_5V",
-> +	[MENF21BMC_V12]		= "MON_12V",
-> +	[MENF21BMC_V5_SB]	= "5V_STANDBY",
-> +	[MENF21BMC_VBAT]	= "VBAT"
-> +};
-> +
-> +static struct menf21bmc_hwmon *menf21bmc_hwmon_update(struct device *dev)
-> +{
-> +	int i;
-> +	uint16_t val;
-> +	struct menf21bmc_hwmon *drv_data = dev_get_drvdata(dev);
-> +	struct menf21bmc_hwmon *data_ret = drv_data;
-> +
-> +	if (time_after(jiffies, drv_data->last_update + HZ) || !drv_data->valid) {
-> +		for (i = 0; i < BMC_VOLT_COUNT; i++) {
-> +			val = i2c_smbus_read_word_data(drv_data->i2c_client,
-> +						       IDX_TO_VOLT_INP_CMD(i));
-> +			if (val < 0)
-> +				goto abort;
+Yeah the symlinks won't work, think read-only rootfs for example :)
+ 
+> Before I spent time on this proxy-console I would like to hear from Greg
+> that he is okay with this.
 
-I don't really see the point here. You ignore the return value,
-yet you abort reading further values. The caller will assume that there was no
-error even though the values in in_val were either never initialized or are out
-of date.
+Yeah me too.
 
-> +
-> +			drv_data->in_val[i] = val;
-> +		}
-> +		drv_data->last_update = jiffies;
-> +		drv_data->valid = 1;
-> +	}
-> +abort:
-> +	return data_ret;
-
-At the same time you do have a separate variable to return.
-One of those doesn't make sense.
-If the idea was to return an error in data_ret, you would have to assign it
-accordingly, and check in the calling code if there was an error or not.
-
-> +}
-> +
-> +static int menf21bmc_hwmon_get_volt_limits(struct menf21bmc_hwmon *drv_data)
-> +{
-> +	int i;
-> +	uint16_t val;
-> +
-> +	for (i = 0; i < BMC_VOLT_COUNT; i++) {
-> +		val = i2c_smbus_read_word_data(drv_data->i2c_client,
-> +					       IDX_TO_VOLT_MIN_CMD(i));
-> +		if (val < 0)
-> +			return val;
-> +
-> +		drv_data->in_min[i] = val;
-> +
-> +		val = i2c_smbus_read_word_data(drv_data->i2c_client,
-> +					       IDX_TO_VOLT_MAX_CMD(i));
-> +		if (val < 0)
-> +			return val;
-> +
-> +		drv_data->in_max[i] = val;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static ssize_t
-> +show_label(struct device *dev, struct device_attribute *devattr, char *buf)
-> +{
-> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> +
-> +	return sprintf(buf, "%s\n", input_names[attr->index]);
-> +}
-> +
-> +static ssize_t
-> +show_in(struct device *dev, struct device_attribute *devattr, char *buf)
-> +{
-> +	uint16_t val;
-> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> +	struct menf21bmc_hwmon *drv_data = menf21bmc_hwmon_update(dev);
-> +
-> +	val = drv_data->in_val[attr->index];
-> +	return sprintf(buf, "%d\n", val);
-> +}
-> +
-> +static ssize_t
-> +show_min(struct device *dev, struct device_attribute *devattr, char *buf)
-> +{
-> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> +	struct menf21bmc_hwmon *drv_data = menf21bmc_hwmon_update(dev);
-> +
-> +	return sprintf(buf, "%d\n", drv_data->in_min[attr->index]);
-> +}
-> +
-> +static ssize_t
-> +show_max(struct device *dev, struct device_attribute *devattr, char *buf)
-> +{
-> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-> +	struct menf21bmc_hwmon *drv_data = menf21bmc_hwmon_update(dev);
-> +
-> +	return sprintf(buf, "%d\n", drv_data->in_max[attr->index]);
-> +}
-> +
-You could merge all the above functions into one by using a dual-indexed array
-and sensor_device_attribute_2. If you don't, it does not really make sense to
-call _hwmon_update to update the input voltages just to display the limits
-(which you don't update).
-
-> +#define create_voltage_sysfs(idx)			\
-> +static SENSOR_DEVICE_ATTR(in##idx##_input, S_IRUGO,	\
-> +			show_in, NULL, idx);		\
-> +static SENSOR_DEVICE_ATTR(in##idx##_min, S_IRUGO,	\
-> +			show_min, NULL, idx);		\
-> +static SENSOR_DEVICE_ATTR(in##idx##_max, S_IRUGO,	\
-> +			show_max, NULL, idx);		\
-> +static SENSOR_DEVICE_ATTR(in##idx##_label, S_IRUGO,	\
-> +			show_label, NULL, idx);
-> +
-> +create_voltage_sysfs(0);
-> +create_voltage_sysfs(1);
-> +create_voltage_sysfs(2);
-> +create_voltage_sysfs(3);
-> +create_voltage_sysfs(4);
-> +
-> +static struct attribute *menf21bmc_hwmon_attr_volts[] = {
-> +	&sensor_dev_attr_in0_input.dev_attr.attr,
-> +	&sensor_dev_attr_in0_min.dev_attr.attr,
-> +	&sensor_dev_attr_in0_max.dev_attr.attr,
-> +	&sensor_dev_attr_in0_label.dev_attr.attr,
-> +
-> +	&sensor_dev_attr_in1_input.dev_attr.attr,
-> +	&sensor_dev_attr_in1_min.dev_attr.attr,
-> +	&sensor_dev_attr_in1_max.dev_attr.attr,
-> +	&sensor_dev_attr_in1_label.dev_attr.attr,
-> +
-> +	&sensor_dev_attr_in2_input.dev_attr.attr,
-> +	&sensor_dev_attr_in2_min.dev_attr.attr,
-> +	&sensor_dev_attr_in2_max.dev_attr.attr,
-> +	&sensor_dev_attr_in2_label.dev_attr.attr,
-> +
-> +	&sensor_dev_attr_in3_input.dev_attr.attr,
-> +	&sensor_dev_attr_in3_min.dev_attr.attr,
-> +	&sensor_dev_attr_in3_max.dev_attr.attr,
-> +	&sensor_dev_attr_in3_label.dev_attr.attr,
-> +
-> +	&sensor_dev_attr_in4_input.dev_attr.attr,
-> +	&sensor_dev_attr_in4_min.dev_attr.attr,
-> +	&sensor_dev_attr_in4_max.dev_attr.attr,
-> +	&sensor_dev_attr_in4_label.dev_attr.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group menf21bmc_hwmon_attr_group_volts = {
-> +	.attrs = menf21bmc_hwmon_attr_volts,
-> +};
-> +
-> +static const struct attribute_group *menf21bmc_hwmon_groups[] = {
-> +	&menf21bmc_hwmon_attr_group_volts,
-> +	NULL
-> +};
-
-Please use the ATTRIBUTE_GROUPS() macro.
-
-> +
-> +static int menf21bmc_hwmon_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct menf21bmc_hwmon *drv_data;
-> +	struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
-> +	struct device *hwmon_dev;
-> +
-> +	drv_data = devm_kzalloc(&pdev->dev, sizeof(struct menf21bmc_hwmon),
-> +				GFP_KERNEL);
-> +	if (!drv_data)
-> +		return -ENOMEM;
-> +
-> +	drv_data->i2c_client = i2c_client;
-> +	platform_set_drvdata(pdev, drv_data);
-
-What is this used for ?
-
-> +
-> +	ret = menf21bmc_hwmon_get_volt_limits(drv_data);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to read sensor limits");
-> +		return ret;
-> +	}
-> +
-> +	hwmon_dev = devm_hwmon_device_register_with_groups(&pdev->dev,
-> +							   DEVNAME, drv_data,
-> +							   menf21bmc_hwmon_groups);
-> +
-> +	if (IS_ERR(hwmon_dev))
-> +		return PTR_ERR(hwmon_dev);
-> +
-> +	dev_info(&pdev->dev, "MEN 14F021P00 BMC hwmon device enabled");
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver menf21bmc_hwmon = {
-> +	.probe		= menf21bmc_hwmon_probe,
-> +	.driver		= {
-> +		.name		= DEVNAME,
-> +		.owner		= THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(menf21bmc_hwmon);
-> +
-> +MODULE_AUTHOR("Andreas Werner <andreas.werner@men.de>");
-> +MODULE_DESCRIPTION("MEN 14F021P00 BMC hwmon");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:menf21bmc_hwmon");
-> -- 
-> 2.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Tony
