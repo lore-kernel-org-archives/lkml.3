@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaHUBKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 20 Aug 2014 21:10:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9398 "EHLO mx1.redhat.com"
+	id S1752855AbaHUBKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 20 Aug 2014 21:10:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464AbaHUBK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 20 Aug 2014 21:10:27 -0400
+	id S1751428AbaHUBKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 20 Aug 2014 21:10:25 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org, linux-api@vger.kernel.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com,
         eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com,
         serge@hallyn.com
-Subject: [PATCH V4 5/8] namespaces: expose ns_entries
-Date: Wed, 20 Aug 2014 21:09:38 -0400
-Message-Id: <91b9d8da8145ec17b28283b1e3978edcbb0f9e09.1408581429.git.rgb@redhat.com>
+Subject: [PATCH V4 4/8] Documentation: add a section for /proc/<pid>/ns/
+Date: Wed, 20 Aug 2014 21:09:37 -0400
+Message-Id: <33a865923e59f054dbd8e63a85b1f3db4fc5e467.1408581429.git.rgb@redhat.com>
 In-Reply-To: <cover.1408581429.git.rgb@redhat.com>
 References: <cover.1408581429.git.rgb@redhat.com>
 In-Reply-To: <cover.1408581429.git.rgb@redhat.com>
@@ -23,40 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose ns_entries so subsystems other than proc can use this set of namespace
-operations.
-
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- fs/proc/namespaces.c    |    2 +-
- include/linux/proc_ns.h |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
+ Documentation/filesystems/proc.txt |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index e953e0a..29c3909 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -15,7 +15,7 @@
- #include "internal.h"
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index ddc531a..c4bfd6f 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -42,6 +42,7 @@ Table of Contents
+   3.6	/proc/<pid>/comm  & /proc/<pid>/task/<tid>/comm
+   3.7   /proc/<pid>/task/<tid>/children - Information about task children
+   3.8   /proc/<pid>/fdinfo/<fd> - Information about opened file
++  3.9   /proc/<pid>/ns/<ns>{,_snum} - Information about process namespaces
+ 
+   4	Configuring procfs
+   4.1	Mount options
+@@ -1744,6 +1745,21 @@ pair provide additional information particular to the objects they represent.
+ 	optional and may be omitted if no marks created yet.
  
  
--static const struct proc_ns_operations *ns_entries[] = {
-+const struct proc_ns_operations *ns_entries[] = {
- #ifdef CONFIG_NET_NS
- 	&netns_operations,
- #endif
-diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
-index aaafe3e..f4563db 100644
---- a/include/linux/proc_ns.h
-+++ b/include/linux/proc_ns.h
-@@ -28,6 +28,7 @@ extern const struct proc_ns_operations ipcns_operations;
- extern const struct proc_ns_operations pidns_operations;
- extern const struct proc_ns_operations userns_operations;
- extern const struct proc_ns_operations mntns_operations;
-+extern const struct proc_ns_operations *ns_entries[];
- 
- /*
-  * We always define these enumerators
++3.9	/proc/<pid>/ns/<nstype>{,_snum} - Information about process namespaces
++--------------------------------------------------------------------------
++These files provides information about the namespaces within which the process
++is contained.  The files named only with the namespace type <nstype> contain a
++link that lists the containing namespace' inode number in its proc filesystem.
++The files with suffix _snum contain a link that lists the containing
++namespace' instance serial number, unique per kernel since boot.  The
++namespace types are self-describing.
++
++The output format of the inode links is:
++	<nstype>:[<inode_number>]
++The output format of the serial number links is:
++	<nstype>_snum:[<serial_number>]
++
++
+ ------------------------------------------------------------------------------
+ Configuring procfs
+ ------------------------------------------------------------------------------
 -- 
 1.7.1
 
