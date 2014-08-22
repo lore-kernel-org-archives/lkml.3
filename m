@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373AbaHVOIM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:08:12 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63180 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132AbaHVOII (ORCPT
+	id S932725AbaHVOIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:08:24 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:38916 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132AbaHVOIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:08:08 -0400
-Date: Fri, 22 Aug 2014 17:07:59 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: trond.myklebust@primarydata.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] nfs: delegation: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140822140759.GA31775@ada>
+	Fri, 22 Aug 2014 10:08:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140821160916.11005.37344.stgit@localhost.localdomain>
+References: <20140821160304.11005.15166.stgit@localhost.localdomain>
+	<20140821160916.11005.37344.stgit@localhost.localdomain>
+Date: Fri, 22 Aug 2014 16:08:19 +0200
+Message-ID: <CAJfpegsWoaqR1vQRq8QpYdwUX9Ace9XTe77eOkOUy2VyHUeEdQ@mail.gmail.com>
+Subject: Re: [PATCH 5/6] fuse: fix synchronous case of fuse_file_put()
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Anand Avati <avati@gluster.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of "rcu_assign_pointer()" is NULLing out the pointer.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+On Thu, Aug 21, 2014 at 6:09 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
+> If fuse_file_put() is called with sync==true, the user may be blocked for
+> a while, until userspace ACKs our FUSE_RELEASE request. This blocking must be
+> uninterruptible. Otherwise request could be interrupted, but file association
+> in user space remains.
+>
+> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+> ---
+>  fs/fuse/file.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+>
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index cd55488..b92143a 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -136,6 +136,10 @@ static void fuse_file_put(struct fuse_file *ff, bool sync)
+>                         path_put(&req->misc.release.path);
+>                         fuse_put_request(ff->fc, req);
+>                 } else if (sync) {
+> +                       /* Must force. Otherwise request could be interrupted,
+> +                        * but file association in user space remains.
+> +                        */
+> +                       req->force = 1;
+>                         req->background = 0;
+>                         fuse_request_send(ff->fc, req);
+>                         path_put(&req->misc.release.path);
+>
 
-The following Coccinelle semantic patch was used:
-@@
-@@
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+Some thought needs to go into this:  if RELEASE is interrupted, then
+we should possibly allow that, effectively backgrounding the request.
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- fs/nfs/delegation.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The synchronous nature is just an optimization and we really don't
+know where we are being interrupted, possibly in a place which very
+much *should* allow interruption.
 
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 5d8ccec..349e63b 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -249,7 +249,7 @@ nfs_detach_delegation_locked(struct nfs_inode *nfsi,
- 	list_del_rcu(&delegation->super_list);
- 	delegation->inode = NULL;
- 	nfsi->delegation_state = 0;
--	rcu_assign_pointer(nfsi->delegation, NULL);
-+	RCU_INIT_POINTER(nfsi->delegation, NULL);
- 	spin_unlock(&delegation->lock);
- 	return delegation;
- }
--- 
-1.9.1
+Also fuse really should distinguish fatal and non-fatal interruptions
+and handle them accordingly...
 
+Thanks,
+Miklos
