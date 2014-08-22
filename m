@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610AbaHVPRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:17:31 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:37294 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756539AbaHVPRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:17:30 -0400
-Message-ID: <53F75F02.2030300@iki.fi>
-Date: Fri, 22 Aug 2014 18:17:22 +0300
-From: Antti Palosaari <crope@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1756624AbaHVPVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:21:17 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:48052 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756387AbaHVPVQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:21:16 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] drivers: usb: gadget: fusb300_udc.h: Fix typo in include guard
+Organization: D03
+References: <20140822140656.GB22707@saruman.home>
+	<1408718673-2003-1-git-send-email-linux@rasmusvillemoes.dk>
+	<20140822144848.GF22707@saruman.home>
+X-Hashcash: 1:20:140822:linux-usb@vger.kernel.org::XKsC2lZXsP9fwws9:0000000000000000000000000000000000000hXw
+X-Hashcash: 1:20:140822:balbi@ti.com::nnPHi0XpeKUKabAj:000001M22
+X-Hashcash: 1:20:140822:linux-kernel@vger.kernel.org::cg8jUv/yHZ5hVRVs:0000000000000000000000000000000001Vm3
+X-Hashcash: 1:20:140822:gregkh@linuxfoundation.org::swNNZGKRMFPH3Y2D:00000000000000000000000000000000000479R
+Date: Fri, 22 Aug 2014 17:21:12 +0200
+In-Reply-To: <20140822144848.GF22707@saruman.home> (Felipe Balbi's message of
+	"Fri, 22 Aug 2014 09:48:48 -0500")
+Message-ID: <87a96wsg7r.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Jeff Mahoney <jeffm@suse.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: Autoselecting SPI for MEDIA_SUBDRV_AUTOSELECT?
-References: <53F75B26.2020101@suse.com>
-In-Reply-To: <53F75B26.2020101@suse.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 82.128.191.73
-X-SA-Exim-Mail-From: crope@iki.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moikka!
+Felipe Balbi <balbi@ti.com> writes:
 
-On 08/22/2014 06:00 PM, Jeff Mahoney wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+> On Fri, Aug 22, 2014 at 04:44:33PM +0200, Rasmus Villemoes wrote:
+>> Clearly this was meant to be an include guard, but a trailing
+>> underscore was missing. It has been this way since the file was
+>> introduced in 0fe6f1d1 ("usb: udc: add Faraday fusb300 driver").
+>> 
 >
-> Hi Antti -
+> right here you need to have:
 >
-> Commit e4462ffc160 ([media] Kconfig: sub-driver auto-select SPI bus)
-> enables CONFIG_SPI globally for a driver that won't even be enabled in
-> many cases.
->
-> Is there a reason USB_MSI2500 doesn't select SPI instead of
-> MEDIA_SUBDRV_AUTOSELECT?
+> Fixes: 0fe6f1d1 ("usb: udc: add Faraday fusb300 driver")
+> Cc: <stable@vger.kernel.org>
 
-Nothing but I decided to set it similarly as I2C, another more common 
-bus. IIRC same was for I2C_MUX too.
+Really? I can't see that it satisfies the
+Documentation/stable_kernel_rules.txt. There's no chance of build error, since the
+file is only included directly from a single .c file. As you can see on
+LKML I've sent a few handfuls of similar patches all over the tree; IMHO
+none of them qualify for stable.
 
-You could still disable media subdriver autoselect and then disable SPI 
-and select all the media drivers (excluding MSSi2500) manually.
+If you insist, I'll add the Fixes and Cc tags.
 
-I have feeling that media auto-select was added to select everything 
-needed for media.
-
-regards
-Antti
-
--- 
-http://palosaari.fi/
+Thanks,
+Rasmus
