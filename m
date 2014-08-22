@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950AbaHVQzK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:55:10 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57023 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932830AbaHVQxp (ORCPT
+	id S932936AbaHVQzI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:55:08 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:54589 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932853AbaHVQxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:53:45 -0400
+	Fri, 22 Aug 2014 12:53:47 -0400
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org, cl@linux-foundation.org
 Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/15] percpu: implement [__]alloc_percpu_gfp()
-Date: Fri, 22 Aug 2014 12:53:15 -0400
-Message-Id: <1408726399-4436-12-git-send-email-tj@kernel.org>
+Subject: [PATCH 12/15] percpu: make sure chunk->map array has available space
+Date: Fri, 22 Aug 2014 12:53:16 -0400
+Message-Id: <1408726399-4436-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408726399-4436-1-git-send-email-tj@kernel.org>
 References: <1408726399-4436-1-git-send-email-tj@kernel.org>
@@ -21,209 +21,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that pcpu_alloc_area() can allocate only from populated areas,
-it's easy to add atomic allocation support to [__]alloc_percpu().
-Update pcpu_alloc() so that it accepts @gfp and skips all the blocking
-operations and allocates only from the populated areas if @gfp doesn't
-contain GFP_KERNEL.  New interface functions [__]alloc_percpu_gfp()
-are added.
-
-While this means that atomic allocations are possible, this isn't
-complete yet as there's no mechanism to ensure that certain amount of
-populated areas is kept available and atomic allocations may keep
-failing under certain conditions.
+An allocation attempt may require extending chunk->map array which
+requires GFP_KERNEL context which isn't available for atomic
+allocations.  This patch ensures that chunk->map array usually keeps
+some amount of available space by directly allocating buffer space
+during GFP_KERNEL allocations and scheduling async extension during
+atomic ones.  This should make atomic allocation failures from map
+space exhaustion rare.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/percpu.h |  9 +++++--
- mm/percpu.c            | 64 ++++++++++++++++++++++++++++++--------------------
- 2 files changed, 46 insertions(+), 27 deletions(-)
+ mm/percpu.c | 53 +++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 45 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index 6f61b61..d1b416d 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -122,11 +122,16 @@ extern void __init setup_per_cpu_areas(void);
- #endif
- extern void __init percpu_init_late(void);
- 
-+extern void __percpu *__alloc_percpu_gfp(size_t size, size_t align, gfp_t gfp);
- extern void __percpu *__alloc_percpu(size_t size, size_t align);
- extern void free_percpu(void __percpu *__pdata);
- extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
- 
--#define alloc_percpu(type)	\
--	(typeof(type) __percpu *)__alloc_percpu(sizeof(type), __alignof__(type))
-+#define alloc_percpu_gfp(type, gfp)					\
-+	(typeof(type) __percpu *)__alloc_percpu_gfp(sizeof(type),	\
-+						__alignof__(type), gfp)
-+#define alloc_percpu(type)						\
-+	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\
-+						__alignof__(type))
- 
- #endif /* __LINUX_PERCPU_H */
 diff --git a/mm/percpu.c b/mm/percpu.c
-index 7a012d4..e2a8089 100644
+index e2a8089..d6b36e7 100644
 --- a/mm/percpu.c
 +++ b/mm/percpu.c
-@@ -151,11 +151,6 @@ static struct pcpu_chunk *pcpu_first_chunk;
- static struct pcpu_chunk *pcpu_reserved_chunk;
- static int pcpu_reserved_chunk_limit;
+@@ -76,6 +76,8 @@
  
--/*
-- * Free path accesses and alters only the index data structures and can be
-- * safely called from atomic context.  When memory needs to be returned to
-- * the system, free path schedules reclaim_work.
-- */
- static DEFINE_SPINLOCK(pcpu_lock);	/* all internal data structures */
- static DEFINE_MUTEX(pcpu_alloc_mutex);	/* chunk create/destroy, [de]pop */
+ #define PCPU_SLOT_BASE_SHIFT		5	/* 1-31 shares the same slot */
+ #define PCPU_DFL_MAP_ALLOC		16	/* start a map with 16 ents */
++#define PCPU_ATOMIC_MAP_MARGIN_LOW	32
++#define PCPU_ATOMIC_MAP_MARGIN_HIGH	64
  
-@@ -727,20 +722,21 @@ static struct pcpu_chunk *pcpu_chunk_addr_search(void *addr)
-  * @size: size of area to allocate in bytes
-  * @align: alignment of area (max PAGE_SIZE)
-  * @reserved: allocate from the reserved chunk if available
-+ * @gfp: allocation flags
-  *
-- * Allocate percpu area of @size bytes aligned at @align.
-- *
-- * CONTEXT:
-- * Does GFP_KERNEL allocation.
-+ * Allocate percpu area of @size bytes aligned at @align.  If @gfp doesn't
-+ * contain %GFP_KERNEL, the allocation is atomic.
-  *
-  * RETURNS:
-  * Percpu pointer to the allocated area on success, NULL on failure.
-  */
--static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
-+static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved,
-+				 gfp_t gfp)
- {
- 	static int warn_limit = 10;
- 	struct pcpu_chunk *chunk;
- 	const char *err;
-+	bool is_atomic = !(gfp & GFP_KERNEL);
- 	int slot, off, new_alloc, cpu, ret;
- 	unsigned long flags;
- 	void __percpu *ptr;
-@@ -773,14 +769,15 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
- 
- 		while ((new_alloc = pcpu_need_to_extend(chunk))) {
- 			spin_unlock_irqrestore(&pcpu_lock, flags);
--			if (pcpu_extend_area_map(chunk, new_alloc) < 0) {
-+			if (is_atomic ||
-+			    pcpu_extend_area_map(chunk, new_alloc) < 0) {
- 				err = "failed to extend area map of reserved chunk";
- 				goto fail;
- 			}
- 			spin_lock_irqsave(&pcpu_lock, flags);
- 		}
- 
--		off = pcpu_alloc_area(chunk, size, align, false);
-+		off = pcpu_alloc_area(chunk, size, align, is_atomic);
- 		if (off >= 0)
- 			goto area_found;
- 
-@@ -797,6 +794,8 @@ restart:
- 
- 			new_alloc = pcpu_need_to_extend(chunk);
- 			if (new_alloc) {
-+				if (is_atomic)
-+					continue;
- 				spin_unlock_irqrestore(&pcpu_lock, flags);
- 				if (pcpu_extend_area_map(chunk,
- 							 new_alloc) < 0) {
-@@ -811,7 +810,7 @@ restart:
- 				goto restart;
- 			}
- 
--			off = pcpu_alloc_area(chunk, size, align, false);
-+			off = pcpu_alloc_area(chunk, size, align, is_atomic);
- 			if (off >= 0)
- 				goto area_found;
- 		}
-@@ -824,6 +823,9 @@ restart:
- 	 * tasks to create chunks simultaneously.  Serialize and create iff
- 	 * there's still no empty chunk after grabbing the mutex.
- 	 */
-+	if (is_atomic)
-+		goto fail;
+ #ifdef CONFIG_SMP
+ /* default addr <-> pcpu_ptr mapping, override in asm/percpu.h if necessary */
+@@ -102,9 +104,12 @@ struct pcpu_chunk {
+ 	int			free_size;	/* free bytes in the chunk */
+ 	int			contig_hint;	/* max contiguous size hint */
+ 	void			*base_addr;	/* base address of this chunk */
 +
- 	mutex_lock(&pcpu_alloc_mutex);
+ 	int			map_used;	/* # of map entries used before the sentry */
+ 	int			map_alloc;	/* # of map entries allocated */
+ 	int			*map;		/* allocation map */
++	struct work_struct	map_extend_work;/* async ->map[] extension */
++
+ 	void			*data;		/* chunk data */
+ 	int			first_free;	/* no free below this */
+ 	bool			immutable;	/* no [de]population allowed */
+@@ -318,9 +323,14 @@ static void pcpu_chunk_relocate(struct pcpu_chunk *chunk, int oslot)
+ /**
+  * pcpu_need_to_extend - determine whether chunk area map needs to be extended
+  * @chunk: chunk of interest
++ * @is_atomic: the allocation context
+  *
+- * Determine whether area map of @chunk needs to be extended to
+- * accommodate a new allocation.
++ * Determine whether area map of @chunk needs to be extended.  If
++ * @is_atomic, only the amount necessary for a new allocation is
++ * considered; however, async extension is scheduled if the left amount is
++ * low.  If !@is_atomic, it aims for more empty space.  Combined, this
++ * ensures that the map is likely to have enough available space to
++ * accomodate atomic allocations which can't extend maps directly.
+  *
+  * CONTEXT:
+  * pcpu_lock.
+@@ -329,15 +339,25 @@ static void pcpu_chunk_relocate(struct pcpu_chunk *chunk, int oslot)
+  * New target map allocation length if extension is necessary, 0
+  * otherwise.
+  */
+-static int pcpu_need_to_extend(struct pcpu_chunk *chunk)
++static int pcpu_need_to_extend(struct pcpu_chunk *chunk, bool is_atomic)
+ {
+-	int new_alloc;
++	int margin, new_alloc;
++
++	if (is_atomic) {
++		margin = 3;
  
- 	if (list_empty(&pcpu_slot[pcpu_nr_slots - 1])) {
-@@ -846,7 +848,7 @@ area_found:
- 	spin_unlock_irqrestore(&pcpu_lock, flags);
+-	if (chunk->map_alloc >= chunk->map_used + 3)
++		if (chunk->map_alloc <
++		    chunk->map_used + PCPU_ATOMIC_MAP_MARGIN_LOW)
++			schedule_work(&chunk->map_extend_work);
++	} else {
++		margin = PCPU_ATOMIC_MAP_MARGIN_HIGH;
++	}
++
++	if (chunk->map_alloc >= chunk->map_used + margin)
+ 		return 0;
  
- 	/* populate if not all pages are already there */
--	if (true) {
-+	if (!is_atomic) {
- 		int page_start, page_end, rs, re;
+ 	new_alloc = PCPU_DFL_MAP_ALLOC;
+-	while (new_alloc < chunk->map_used + 3)
++	while (new_alloc < chunk->map_used + margin)
+ 		new_alloc *= 2;
  
- 		mutex_lock(&pcpu_alloc_mutex);
-@@ -884,9 +886,9 @@ area_found:
- fail_unlock:
- 	spin_unlock_irqrestore(&pcpu_lock, flags);
- fail:
--	if (warn_limit) {
--		pr_warning("PERCPU: allocation failed, size=%zu align=%zu, "
--			   "%s\n", size, align, err);
-+	if (!is_atomic && warn_limit) {
-+		pr_warning("PERCPU: allocation failed, size=%zu align=%zu atomic=%d, %s\n",
-+			   size, align, is_atomic, err);
- 		dump_stack();
- 		if (!--warn_limit)
- 			pr_info("PERCPU: limit reached, disable warning\n");
-@@ -895,22 +897,34 @@ fail:
+ 	return new_alloc;
+@@ -394,6 +414,20 @@ out_unlock:
+ 	return 0;
  }
  
- /**
-- * __alloc_percpu - allocate dynamic percpu area
-+ * __alloc_percpu_gfp - allocate dynamic percpu area
-  * @size: size of area to allocate in bytes
-  * @align: alignment of area (max PAGE_SIZE)
-+ * @gfp: allocation flags
-  *
-- * Allocate zero-filled percpu area of @size bytes aligned at @align.
-- * Might sleep.  Might trigger writeouts.
-- *
-- * CONTEXT:
-- * Does GFP_KERNEL allocation.
-+ * Allocate zero-filled percpu area of @size bytes aligned at @align.  If
-+ * @gfp doesn't contain %GFP_KERNEL, the allocation doesn't block and can
-+ * be called from any context but is a lot more likely to fail.
-  *
-  * RETURNS:
-  * Percpu pointer to the allocated area on success, NULL on failure.
-  */
-+void __percpu *__alloc_percpu_gfp(size_t size, size_t align, gfp_t gfp)
++static void pcpu_map_extend_workfn(struct work_struct *work)
 +{
-+	return pcpu_alloc(size, align, false, gfp);
-+}
-+EXPORT_SYMBOL_GPL(__alloc_percpu_gfp);
++	struct pcpu_chunk *chunk = container_of(work, struct pcpu_chunk,
++						map_extend_work);
++	int new_alloc;
 +
-+/**
-+ * __alloc_percpu - allocate dynamic percpu area
-+ * @size: size of area to allocate in bytes
-+ * @align: alignment of area (max PAGE_SIZE)
-+ *
-+ * Equivalent to __alloc_percpu_gfp(size, align, %GFP_KERNEL).
-+ */
- void __percpu *__alloc_percpu(size_t size, size_t align)
- {
--	return pcpu_alloc(size, align, false);
-+	return pcpu_alloc(size, align, false, GFP_KERNEL);
- }
- EXPORT_SYMBOL_GPL(__alloc_percpu);
- 
-@@ -932,7 +946,7 @@ EXPORT_SYMBOL_GPL(__alloc_percpu);
-  */
- void __percpu *__alloc_reserved_percpu(size_t size, size_t align)
- {
--	return pcpu_alloc(size, align, true);
-+	return pcpu_alloc(size, align, true, GFP_KERNEL);
- }
- 
++	spin_lock_irq(&pcpu_lock);
++	new_alloc = pcpu_need_to_extend(chunk, false);
++	spin_unlock_irq(&pcpu_lock);
++
++	if (new_alloc)
++		pcpu_extend_area_map(chunk, new_alloc);
++}
++
  /**
+  * pcpu_fit_in_area - try to fit the requested allocation in a candidate area
+  * @chunk: chunk the candidate area belongs to
+@@ -647,6 +681,7 @@ static struct pcpu_chunk *pcpu_alloc_chunk(void)
+ 	chunk->map_used = 1;
+ 
+ 	INIT_LIST_HEAD(&chunk->list);
++	INIT_WORK(&chunk->map_extend_work, pcpu_map_extend_workfn);
+ 	chunk->free_size = pcpu_unit_size;
+ 	chunk->contig_hint = pcpu_unit_size;
+ 
+@@ -767,7 +802,7 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved,
+ 			goto fail_unlock;
+ 		}
+ 
+-		while ((new_alloc = pcpu_need_to_extend(chunk))) {
++		while ((new_alloc = pcpu_need_to_extend(chunk, is_atomic))) {
+ 			spin_unlock_irqrestore(&pcpu_lock, flags);
+ 			if (is_atomic ||
+ 			    pcpu_extend_area_map(chunk, new_alloc) < 0) {
+@@ -792,7 +827,7 @@ restart:
+ 			if (size > chunk->contig_hint)
+ 				continue;
+ 
+-			new_alloc = pcpu_need_to_extend(chunk);
++			new_alloc = pcpu_need_to_extend(chunk, is_atomic);
+ 			if (new_alloc) {
+ 				if (is_atomic)
+ 					continue;
+@@ -1418,6 +1453,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	 */
+ 	schunk = memblock_virt_alloc(pcpu_chunk_struct_size, 0);
+ 	INIT_LIST_HEAD(&schunk->list);
++	INIT_WORK(&schunk->map_extend_work, pcpu_map_extend_workfn);
+ 	schunk->base_addr = base_addr;
+ 	schunk->map = smap;
+ 	schunk->map_alloc = ARRAY_SIZE(smap);
+@@ -1446,6 +1482,7 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 	if (dyn_size) {
+ 		dchunk = memblock_virt_alloc(pcpu_chunk_struct_size, 0);
+ 		INIT_LIST_HEAD(&dchunk->list);
++		INIT_WORK(&dchunk->map_extend_work, pcpu_map_extend_workfn);
+ 		dchunk->base_addr = base_addr;
+ 		dchunk->map = dmap;
+ 		dchunk->map_alloc = ARRAY_SIZE(dmap);
 -- 
 1.9.3
 
