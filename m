@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252AbaHVMis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 08:38:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49960 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755920AbaHVMiq (ORCPT
+	id S1756266AbaHVMky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:40:54 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:38645 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756039AbaHVMkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 08:38:46 -0400
-Message-ID: <53F739C2.8070809@linaro.org>
-Date: Fri, 22 Aug 2014 20:38:26 +0800
-From: "zhichang.yuan" <zhichang.yuan@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 22 Aug 2014 08:40:53 -0400
+Date: Fri, 22 Aug 2014 15:40:44 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] blk-cgroup: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140822124044.GA18828@ada>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>
-CC: Deepak Saxena <dsaxena@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Some questions about DEBUG_PAGEALLOC on ARMv8
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin, Will,
+The use of "rcu_assign_pointer()" is NULLing out the pointer.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-I am working to implement the DEBUG_PAGEALLOC on ARMv8.
-After i investigated the DEBUG_PAGEALLOC implementation on x86 arch, some questions are standing in the way to
-start coding.
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-1. How to handle the large page when DEBUG_PAGEALLOC is enabled
-In ARMv8, the kernel direct memory page table entries will set the block flag for better performance. When
-DEBUG_PAGEALLOC is configured, if the size of freed page is not multiply of page block size, there is no
-corresponding page table entry. In the old x86 kernel version, the large page to be freed will be split into
-normal page size and build the corresponding PTEs. And afterwards, someone done a patch to remove the
-splitting process. It will make the code simpler and easily stable.
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
 
-I prefer the current design in x86, what are your thoughts here?
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ block/blk-cgroup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 069bc20..9a95b3f 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -337,7 +337,7 @@ static void blkg_destroy(struct blkcg_gq *blkg)
+ 	 * will.  Hint assignment itself can race safely.
+ 	 */
+ 	if (rcu_access_pointer(blkcg->blkg_hint) == blkg)
+-		rcu_assign_pointer(blkcg->blkg_hint, NULL);
++		RCU_INIT_POINTER(blkcg->blkg_hint, NULL);
  
-2. Does ARMv8 support HIBERNATION?
+ 	/*
+ 	 * If root blkg is destroyed.  Just clear the pointer since root_rl
+-- 
+1.9.1
 
-The HIBERNATION has some dependency on DEBUG_PAGEALLOC.
-It seems that current kernel does not support hibernation, does it?
-
-
-3. Is the hypothesis of DEBUG_PAGEALLOC always true?
-
->From the x86 code, DEBUG_PAGEALLOC use the invalid page table entries to catch the accesses to free pages.
-This mechanism is based on the hypothesis that all the corresponding page table entries that are corresponding
-to the free pages are cleared correctly. Supposed this condition is always true, what we need to do is just to
-clear the kernel linear mapping page entries, since those page tables are fixable after initialization.
-DEBUG_PAGEALLOC on x86 seems to do like that.
-
-Is it possible the hypothesis will be broken?
-If the answer is yes, DEBUG_PAGEALLOC can catch the accesses to free page with kernel linear mapping address.
-But if the virtual address is from other mapped areas and target to the free pages, DEBUG_PAGEALLOC will do
-nothing.
-
-Is this result the original objective of DEBUG_PAGEALLOC?
-I can not find the initial commit log in kernel Git, i am not sure about it.
-
-
-Thanks!
-Zhichang
