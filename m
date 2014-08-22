@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627AbaHVQk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:40:58 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:49038 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159AbaHVQk5 (ORCPT
+	id S932626AbaHVQmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:42:09 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:46506 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932484AbaHVQmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:40:57 -0400
-Date: Fri, 22 Aug 2014 11:40:51 -0500
-From: Tejun Heo <htejun@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Mike Travis <travis@sgi.com>
-Subject: Re: percpu: Define this_cpu_cpumask_var_t_ptr
-Message-ID: <20140822164051.GB15713@mtj.dyndns.org>
-References: <alpine.DEB.2.11.1408070959250.28468@gentwo.org>
- <20140821222212.GA7996@mtj.dyndns.org>
- <alpine.DEB.2.11.1408212001100.19762@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1408212001100.19762@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 22 Aug 2014 12:42:07 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] drivers: media: b2c2: flexcop.h: Fix typo in include guard
+Date: Fri, 22 Aug 2014 18:41:56 +0200
+Message-Id: <1408725716-2695-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Christoph.
+Three trailing underscores is one too many.
 
-On Thu, Aug 21, 2014 at 08:03:25PM -0500, Christoph Lameter wrote:
-> Its a pretty simple function (actually more a name substituion) so I
-> did not think it worth creating an inline function.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/media/common/b2c2/flexcop.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Unless there are specific reasons like multi-type arg or breaking
-hellish definition order dependency, I think we're better off with
-inline functions, especially here, as the implementation will happily
-accept arguments of the wrong type.
-
-> _t is there because I wanted to include the full "ugly" name of the
-> variable to make it similarly ugly. It is needed to make the clear
-> distinction to "struct cpumask *" which does not have these issues.
-
-The compiler can enforce that rule easily if the interface functions
-are properly typed.  I think it'd be far better to go with properly
-typed accessors with less unwieldy names.
-
-Thanks.
-
+diff --git a/drivers/media/common/b2c2/flexcop.h b/drivers/media/common/b2c2/flexcop.h
+index 897b10c..8942bda 100644
+--- a/drivers/media/common/b2c2/flexcop.h
++++ b/drivers/media/common/b2c2/flexcop.h
+@@ -4,7 +4,7 @@
+  * see flexcop.c for copyright information
+  */
+ #ifndef __FLEXCOP_H__
+-#define __FLEXCOP_H___
++#define __FLEXCOP_H__
+ 
+ #define FC_LOG_PREFIX "b2c2-flexcop"
+ #include "flexcop-common.h"
 -- 
-tejun
+2.0.4
+
