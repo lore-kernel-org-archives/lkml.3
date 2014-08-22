@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618AbaHVB0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:26:38 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54077 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902AbaHVB0h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:26:37 -0400
-Date: Thu, 21 Aug 2014 20:26:22 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: atull@opensource.altera.com, jdelvare@suse.de, lm-sensors@lm-sensors.org,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Message-ID: <20140822012622.GS24407@sirena.org.uk>
-References: <1408659686-29106-1-git-send-email-atull@opensource.altera.com>
- <1408659686-29106-3-git-send-email-atull@opensource.altera.com>
- <20140822003650.GQ24407@sirena.org.uk>
- <20140822011810.GA17461@roeck-us.net>
+	id S1755689AbaHVB1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:27:17 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:42518 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755604AbaHVB1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 21:27:15 -0400
+Date: Fri, 22 Aug 2014 10:27:01 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH] kbuild: Make scripts executable
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <53F5BCC8.4060000@suse.cz>
+References: <20140821122521.2D67.AA925319@jp.panasonic.com> <53F5BCC8.4060000@suse.cz>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20140822102701.2D80.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eV6hq+iIxLRNwbYS"
-Content-Disposition: inline
-In-Reply-To: <20140822011810.GA17461@roeck-us.net>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 208.59.64.2
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] pmbus: ltc2978: add regulator gating
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michal,
 
---eV6hq+iIxLRNwbYS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Thu, 21 Aug 2014 11:32:56 +0200
+Michal Marek <mmarek@suse.cz> wrote:
 
-On Thu, Aug 21, 2014 at 06:18:10PM -0700, Guenter Roeck wrote:
-> On Thu, Aug 21, 2014 at 07:36:50PM -0500, Mark Brown wrote:
-> > On Thu, Aug 21, 2014 at 05:21:26PM -0500, atull@opensource.altera.com wrote:
+> On 2014-08-21 05:25, Masahiro Yamada wrote:
+> > Hi Michal,
+> > 
+> > 
+> > On Wed, 20 Aug 2014 16:10:48 +0200
+> > Michal Marek <mmarek@suse.cz> wrote:
+> > 
+> >> The Makefiles call the respective interpreter explicitly, but this makes
+> >> it easier to use the scripts manually.
+> >>
+> >> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> > 
+> > 
+> > I am not sure at all, but
+> > it seems scripts/checkpatch.pl has a rule
+> > to ban execute permissions.
+> 
+> I didn't know about this, but the intent of the rule seems to be to
+> avoid *.c files with execute permissions.
+> 
+> 
+> > # Check for incorrect file permissions
+> >                 if ($line =~ /^new (file )?mode.*[7531]\d{0,2}$/) {
+> >                         my $permhere = $here . "FILE: $realfile\n";
+> >                         if ($realfile !~ m@scripts/@ &&
+> >                             $realfile !~ /\.(py|pl|awk|sh)$/) {
+> 
+> Here it explicitly skips files below scripts/ and files with known
+> script suffixes.
+> 
 
-> > This all looks very much like pmbus could use regmap and then the regmap
-> > helpers.  I'd not insist on it though.  What I would however suggest is
+OK then. I replied without understanding this code well.
+My appologies.
 
-> Not unless regmap got extended recently to support quick, byte, and word
-> smbus accesses at the same time.
 
-Depending on how you decide which it quite possibly does - if it's based
-on the register number that'd work.
+Best Regards
+Masahiro Yamada
 
---eV6hq+iIxLRNwbYS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT9pw7AAoJELSic+t+oim9I8YP/3fxE8mTRYRNcShnaQi0RNox
-SQV3BtIGhKtEfQo7bZTvynT27JeKeQoh0JCU9SqdDbpLKrqgbP/CAqd/E6z97xxT
-tCF+wB+iHlHG1Xd4uMuoHzdbUEo94zlm3TA8hwkqK0lrz7fRl8Q6K08DBkzCuT9p
-+Xyez0epnYMzTkYriE1gQqbm7My4uRZ3MgDRpBnjZ03ljnyVzdoZvijgLks3R2wD
-nnxWG2Af2gIBcbtcpwjeCrVRq0qRktUj6bsORqH6eIhbUqGECtfhXC1CpzZaPruu
-3g1nRy1bds5mgS7yHS0jzxyJR9FIlZlIAGarGNP8oJ1FRm/LERGpQ1UMp29WQXdg
-+akTj3M3b4bm2LR1pzWocg3cEU5UMsynmKNUKkI4n6UequFiqgc3o59SYl+/Z2Wi
-AZfHSoN+jHAedMA2B9J1qSHHT1ZX9U3jqXbi+Np+FTuk84aZjfOSdD9do3p5/Y/q
-cMAZBHo6+Ky0sTr7E3+/QxStaZfYnhE3Ib5E7ScCfyQQ7Win1pIiIXzgoZh7/ieD
-i3naTY535FqQ5fv1mY6nl218YfkSj+ZPNwDInxq3YaJk/DEt9DGcJ0Bj3zqDmD4N
-t9rSgMRCPy8LeAdPHFj+ylWIIoDS+Zbx6PQVpLl8EuZJ9zaAWh7eh4GaY5Ppw70o
-q1XoMED8yzEGf1RmP/g4
-=a4Kt
------END PGP SIGNATURE-----
-
---eV6hq+iIxLRNwbYS--
