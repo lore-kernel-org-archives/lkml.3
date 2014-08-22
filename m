@@ -1,365 +1,1001 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486AbaHVP6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:58:51 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:63722 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137AbaHVP6t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:58:49 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linux.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8723au: Fix "foo* bar" should be "foo *bar" errors
-Date: Fri, 22 Aug 2014 10:57:49 -0500
-Message-Id: <1408723069-11621-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S932392AbaHVQAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:00:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47900 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932137AbaHVQAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 12:00:51 -0400
+Message-ID: <53F7690D.5070007@redhat.com>
+Date: Fri, 22 Aug 2014 18:00:13 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Ching Huang <ching2048@areca.com.tw>, hch@infradead.org,
+        jbottomley@parallels.com, dan.carpenter@oracle.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 13/17] arcmsr: fix ioctl data read/write error for
+ adapter type C
+References: <1408432665.4748.65.camel@Centos6.3-64>
+In-Reply-To: <1408432665.4748.65.camel@Centos6.3-64>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "foo* bar" should be "foo *bar" errors
+On 08/19/2014 09:17 AM, Ching Huang wrote:
+> From: Ching Huang <ching2048@areca.com.tw>
+>
+> Rewrite ioctl entry and its relate function.
+> This patch fix ioctl data read/write error and change data I/O access from byte to Dword.
+>
+> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+> ---
+>
+> diff -uprN a/drivers/scsi/arcmsr/arcmsr_attr.c b/drivers/scsi/arcmsr/arcmsr_attr.c
+> --- a/drivers/scsi/arcmsr/arcmsr_attr.c	2014-02-06 17:47:24.000000000 +0800
+> +++ b/drivers/scsi/arcmsr/arcmsr_attr.c	2014-04-29 17:10:42.000000000 +0800
+> @@ -70,40 +70,75 @@ static ssize_t arcmsr_sysfs_iop_message_
+>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
+>  	uint8_t *pQbuffer,*ptmpQbuffer;
+>  	int32_t allxfer_len = 0;
+> +	unsigned long flags;
+>  
+>  	if (!capable(CAP_SYS_ADMIN))
+>  		return -EACCES;
+>  
+>  	/* do message unit read. */
+>  	ptmpQbuffer = (uint8_t *)buf;
+> -	while ((acb->rqbuf_firstindex != acb->rqbuf_lastindex)
+> -		&& (allxfer_len < 1031)) {
+> +	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+> +	if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_ap.c           |  2 +-
- drivers/staging/rtl8723au/core/rtw_cmd.c          |  4 ++--
- drivers/staging/rtl8723au/core/rtw_ieee80211.c    |  4 ++--
- drivers/staging/rtl8723au/core/rtw_mlme.c         | 22 +++++++++++-----------
- drivers/staging/rtl8723au/core/rtw_mlme_ext.c     | 22 +++++++++++-----------
- drivers/staging/rtl8723au/core/rtw_recv.c         |  4 ++--
- drivers/staging/rtl8723au/include/ieee80211.h     |  2 +-
- drivers/staging/rtl8723au/include/rtl8723a_rf.h   |  4 ++--
- drivers/staging/rtl8723au/include/rtw_mlme_ext.h  |  6 +++---
- drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c |  2 +-
- 10 files changed, 36 insertions(+), 36 deletions(-)
+Hi - does this condition (acb->rqbuf_firstindex == acb->rqbuf_lastindex) mean we could just release 
+the spinlock and return ?
+ 
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-index 4d2880a..888abeb 100644
---- a/drivers/staging/rtl8723au/core/rtw_ap.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-@@ -644,7 +644,7 @@ static void start_bss_network(struct rtw_adapter *padapter, u8 *pbuf)
- 	u32 acparm;
- 	struct registry_priv *pregpriv = &padapter->registrypriv;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
--	struct security_priv* psecuritypriv = &padapter->securitypriv;
-+	struct security_priv *psecuritypriv = &padapter->securitypriv;
- 	struct wlan_bssid_ex *pnetwork = &pmlmepriv->cur_network.network;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
-diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
-index 7241a5a..71a0878 100644
---- a/drivers/staging/rtl8723au/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
-@@ -1513,8 +1513,8 @@ void rtw_setassocsta_cmdrsp_callback23a(struct rtw_adapter *padapter,
- {
- 	struct sta_priv *pstapriv = &padapter->stapriv;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
--	struct set_assocsta_parm* passocsta_parm;
--	struct set_assocsta_rsp* passocsta_rsp;
-+	struct set_assocsta_parm *passocsta_parm;
-+	struct set_assocsta_rsp *passocsta_rsp;
- 	struct sta_info *psta;
- 
- 	passocsta_parm = (struct set_assocsta_parm *)(pcmd->parmbuf);
-diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-index 23e6662..6274cb3 100644
---- a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-@@ -295,7 +295,7 @@ exit:
- 	return ret;
- }
- 
--void rtw_set_supported_rate23a(u8* SupportedRates, uint mode)
-+void rtw_set_supported_rate23a(u8 *SupportedRates, uint mode)
- {
- 
- 
-@@ -520,7 +520,7 @@ int rtw_parse_wpa_ie23a(const u8* wpa_ie, int wpa_ie_len, int *group_cipher, int
- 	return ret;
- }
- 
--int rtw_parse_wpa2_ie23a(const u8* rsn_ie, int rsn_ie_len, int *group_cipher,
-+int rtw_parse_wpa2_ie23a(const u8 *rsn_ie, int rsn_ie_len, int *group_cipher,
- 		      int *pairwise_cipher, int *is_8021x)
- {
- 	int i, ret = _SUCCESS;
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme.c b/drivers/staging/rtl8723au/core/rtw_mlme.c
-index c475b79..57f93f5 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme.c
-@@ -208,7 +208,7 @@ int rtw_if_up23a(struct rtw_adapter *padapter)
- 	return res;
- }
- 
--void rtw_generate_random_ibss23a(u8* pibss)
-+void rtw_generate_random_ibss23a(u8 *pibss)
- {
- 	unsigned long curtime = jiffies;
- 
-@@ -610,7 +610,7 @@ void rtw_survey_event_cb23a(struct rtw_adapter *adapter, const u8 *pbuf)
- 		   "rtw_survey_event_cb23a : WIFI_ADHOC_MASTER_STATE\n\n"); */
- 		if (ether_addr_equal(pmlmepriv->cur_network.network.MacAddress,
- 				     pnetwork->MacAddress)) {
--			struct wlan_network* ibss_wlan;
-+			struct wlan_network *ibss_wlan;
- 
- 			pmlmepriv->cur_network.network.beacon_interval =
- 				pnetwork->beacon_interval;
-@@ -754,11 +754,11 @@ static void free_scanqueue(struct mlme_priv *pmlmepriv)
- void rtw_free_assoc_resources23a(struct rtw_adapter *adapter,
- 				 int lock_scanned_queue)
- {
--	struct wlan_network* pwlan;
-+	struct wlan_network *pwlan;
- 	struct mlme_priv *pmlmepriv = &adapter->mlmepriv;
- 	struct sta_priv *pstapriv = &adapter->stapriv;
- 	struct wlan_network *tgt_network = &pmlmepriv->cur_network;
--	struct sta_info* psta;
-+	struct sta_info *psta;
- 
- 	RT_TRACE(_module_rtl871x_mlme_c_, _drv_notice_,
- 		 ("+rtw_free_assoc_resources23a\n"));
-@@ -1335,7 +1335,7 @@ void rtw_stadel_event_callback23a(struct rtw_adapter *adapter, const u8 *pbuf)
- {
- 	int mac_id;
- 	struct sta_info *psta;
--	struct wlan_network* pwlan;
-+	struct wlan_network *pwlan;
- 	struct wlan_bssid_ex *pdev_network;
- 	struct mlme_priv *pmlmepriv = &adapter->mlmepriv;
- 	struct stadel_event *pstadel = (struct stadel_event *)pbuf;
-@@ -1768,7 +1768,7 @@ exit:
- int rtw_set_auth23a(struct rtw_adapter * adapter,
- 		    struct security_priv *psecuritypriv)
- {
--	struct cmd_obj* pcmd;
-+	struct cmd_obj *pcmd;
- 	struct setauth_parm *psetauthparm;
- 	struct cmd_priv *pcmdpriv = &adapter->cmdpriv;
- 	int res = _SUCCESS;
-@@ -2048,10 +2048,10 @@ int rtw_restruct_sec_ie23a(struct rtw_adapter *adapter, u8 *in_ie, u8 *out_ie,
- 	return ielength;
- }
- 
--void rtw_init_registrypriv_dev_network23a(struct rtw_adapter* adapter)
-+void rtw_init_registrypriv_dev_network23a(struct rtw_adapter *adapter)
- {
--	struct registry_priv* pregistrypriv = &adapter->registrypriv;
--	struct eeprom_priv* peepriv = &adapter->eeprompriv;
-+	struct registry_priv *pregistrypriv = &adapter->registrypriv;
-+	struct eeprom_priv *peepriv = &adapter->eeprompriv;
- 	struct wlan_bssid_ex    *pdev_network = &pregistrypriv->dev_network;
- 	u8 *myhwaddr = myid(peepriv);
- 
-@@ -2063,10 +2063,10 @@ void rtw_init_registrypriv_dev_network23a(struct rtw_adapter* adapter)
- 	pdev_network->beacon_interval = 100;
- }
- 
--void rtw_update_registrypriv_dev_network23a(struct rtw_adapter* adapter)
-+void rtw_update_registrypriv_dev_network23a(struct rtw_adapter *adapter)
- {
- 	int sz = 0;
--	struct registry_priv* pregistrypriv = &adapter->registrypriv;
-+	struct registry_priv *pregistrypriv = &adapter->registrypriv;
- 	struct wlan_bssid_ex *pdev_network = &pregistrypriv->dev_network;
- 	struct security_priv *psecuritypriv = &adapter->securitypriv;
- 	struct wlan_network *cur_network = &adapter->mlmepriv.cur_network;
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-index c5fdcb8..c5511ea 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-@@ -356,7 +356,7 @@ int init_hw_mlme_ext23a(struct rtw_adapter *padapter)
- 	return _SUCCESS;
- }
- 
--static void init_mlme_ext_priv23a_value(struct rtw_adapter* padapter)
-+static void init_mlme_ext_priv23a_value(struct rtw_adapter *padapter)
- {
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
-@@ -480,7 +480,7 @@ static void init_channel_list(struct rtw_adapter *padapter,
- 	channel_list->reg_classes = cla;
- }
- 
--static u8 init_channel_set(struct rtw_adapter* padapter, u8 cplan,
-+static u8 init_channel_set(struct rtw_adapter *padapter, u8 cplan,
- 			   struct rt_channel_info *c_set)
- {
- 	u8 i, ch_size = 0;
-@@ -564,10 +564,10 @@ static u8 init_channel_set(struct rtw_adapter* padapter, u8 cplan,
- 	return ch_size;
- }
- 
--int init_mlme_ext_priv23a(struct rtw_adapter* padapter)
-+int init_mlme_ext_priv23a(struct rtw_adapter *padapter)
- {
- 	int res = _SUCCESS;
--	struct registry_priv* pregistrypriv = &padapter->registrypriv;
-+	struct registry_priv *pregistrypriv = &padapter->registrypriv;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
-@@ -4313,7 +4313,7 @@ fail:
- 	return NULL;
- }
- 
--static void start_create_ibss(struct rtw_adapter* padapter)
-+static void start_create_ibss(struct rtw_adapter *padapter)
- {
- 	unsigned short caps;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
-@@ -4362,7 +4362,7 @@ static void start_create_ibss(struct rtw_adapter* padapter)
- 	}
- }
- 
--static void start_clnt_join(struct rtw_adapter* padapter)
-+static void start_clnt_join(struct rtw_adapter *padapter)
- {
- 	unsigned short caps;
- 	u8 val8;
-@@ -4422,7 +4422,7 @@ static void start_clnt_join(struct rtw_adapter* padapter)
- 	}
- }
- 
--static void start_clnt_auth(struct rtw_adapter* padapter)
-+static void start_clnt_auth(struct rtw_adapter *padapter)
- {
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
-@@ -4453,7 +4453,7 @@ static void start_clnt_auth(struct rtw_adapter* padapter)
- 	set_link_timer(pmlmeext, REAUTH_TO);
- }
- 
--static void start_clnt_assoc(struct rtw_adapter* padapter)
-+static void start_clnt_assoc(struct rtw_adapter *padapter)
- {
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
-@@ -4878,7 +4878,7 @@ void report_join_res23a(struct rtw_adapter *padapter, int res)
- }
- 
- void report_del_sta_event23a(struct rtw_adapter *padapter,
--			     unsigned char* MacAddr, unsigned short reason)
-+			     unsigned char *MacAddr, unsigned short reason)
- {
- 	struct cmd_obj *pcmd_obj;
- 	u8 *pevtcmd;
-@@ -4934,7 +4934,7 @@ void report_del_sta_event23a(struct rtw_adapter *padapter,
- }
- 
- void report_add_sta_event23a(struct rtw_adapter *padapter,
--			     unsigned char* MacAddr, int cam_idx)
-+			     unsigned char *MacAddr, int cam_idx)
- {
- 	struct cmd_obj *pcmd_obj;
- 	u8 *pevtcmd;
-@@ -6022,7 +6022,7 @@ int add_ba_hdl23a(struct rtw_adapter *padapter, const u8 *pbuf)
- 	return H2C_SUCCESS;
- }
- 
--int set_tx_beacon_cmd23a(struct rtw_adapter* padapter)
-+int set_tx_beacon_cmd23a(struct rtw_adapter *padapter)
- {
- 	struct cmd_obj *ph2c;
- 	struct Tx_Beacon_param *ptxBeacon_parm;
-diff --git a/drivers/staging/rtl8723au/core/rtw_recv.c b/drivers/staging/rtl8723au/core/rtw_recv.c
-index a9f8183..0cdcd12 100644
---- a/drivers/staging/rtl8723au/core/rtw_recv.c
-+++ b/drivers/staging/rtl8723au/core/rtw_recv.c
-@@ -1230,7 +1230,7 @@ static int validate_recv_ctrl_frame(struct rtw_adapter *padapter,
- 	return _FAIL;
- }
- 
--struct recv_frame* recvframe_chk_defrag23a(struct rtw_adapter *padapter,
-+struct recv_frame *recvframe_chk_defrag23a(struct rtw_adapter *padapter,
- 					struct recv_frame *precv_frame);
- static int validate_recv_mgnt_frame(struct rtw_adapter *padapter,
- 				    struct recv_frame *precv_frame)
-@@ -1705,7 +1705,7 @@ struct recv_frame *recvframe_defrag(struct rtw_adapter *adapter,
- }
- 
- /* check if need to defrag, if needed queue the frame to defrag_q */
--struct recv_frame* recvframe_chk_defrag23a(struct rtw_adapter *padapter,
-+struct recv_frame *recvframe_chk_defrag23a(struct rtw_adapter *padapter,
- 					struct recv_frame *precv_frame)
- {
- 	u8	ismfrag;
-diff --git a/drivers/staging/rtl8723au/include/ieee80211.h b/drivers/staging/rtl8723au/include/ieee80211.h
-index e9f465f..c1a334d 100644
---- a/drivers/staging/rtl8723au/include/ieee80211.h
-+++ b/drivers/staging/rtl8723au/include/ieee80211.h
-@@ -332,7 +332,7 @@ u8 *rtw_get_ie23a(u8*pbuf, int index, int *len, int limit);
- u8 *rtw_get_ie23a_ex(u8 *in_ie, uint in_len, u8 eid, u8 *oui, u8 oui_len, u8 *ie, uint *ielen);
- int rtw_ies_remove_ie23a(u8 *ies, uint *ies_len, uint offset, u8 eid, u8 *oui, u8 oui_len);
- 
--void rtw_set_supported_rate23a(u8* SupportedRates, uint mode) ;
-+void rtw_set_supported_rate23a(u8 *SupportedRates, uint mode);
- 
- int rtw_parse_wpa_ie23a(const u8* wpa_ie, int wpa_ie_len, int *group_cipher, int *pairwise_cipher, int *is_8021x);
- int rtw_parse_wpa2_ie23a(const u8* wpa_ie, int wpa_ie_len, int *group_cipher, int *pairwise_cipher, int *is_8021x);
-diff --git a/drivers/staging/rtl8723au/include/rtl8723a_rf.h b/drivers/staging/rtl8723au/include/rtl8723a_rf.h
-index 166a45f..0432799 100644
---- a/drivers/staging/rtl8723au/include/rtl8723a_rf.h
-+++ b/drivers/staging/rtl8723au/include/rtl8723a_rf.h
-@@ -47,9 +47,9 @@
- void rtl8723a_phy_rf6052set_bw(struct rtw_adapter *Adapter,
- 			       enum ht_channel_width Bandwidth);
- void rtl823a_phy_rf6052setccktxpower(struct rtw_adapter *Adapter,
--				      u8* pPowerlevel);
-+				      u8 *pPowerlevel);
- void rtl8723a_PHY_RF6052SetOFDMTxPower(struct rtw_adapter *Adapter,
--				       u8* pPowerLevel, u8 Channel);
-+				       u8 *pPowerLevel, u8 Channel);
- 
- /*--------------------------Exported Function prototype---------------------*/
- 
-diff --git a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-index 2e32c83..ea53d73 100644
---- a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-+++ b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-@@ -266,7 +266,7 @@ struct mlme_handler {
- 
- struct action_handler {
- 	unsigned int   num;
--	char* str;
-+	char *str;
- 	int (*func)(struct rtw_adapter *padapter, struct recv_frame *precv_frame);
- };
- 
-@@ -446,7 +446,7 @@ struct mlme_ext_priv {
- 	u8 active_keep_alive_check;
- };
- 
--int init_mlme_ext_priv23a(struct rtw_adapter* padapter);
-+int init_mlme_ext_priv23a(struct rtw_adapter *padapter);
- int init_hw_mlme_ext23a(struct rtw_adapter *padapter);
- void free_mlme_ext_priv23a (struct mlme_ext_priv *pmlmeext);
- void init_mlme_ext_timer23a(struct rtw_adapter *padapter);
-@@ -514,7 +514,7 @@ void update_capinfo23a(struct rtw_adapter *Adapter, u16 updateCap);
- void update_wireless_mode23a(struct rtw_adapter * padapter);
- void update_tx_basic_rate23a(struct rtw_adapter *padapter, u8 modulation);
- void update_bmc_sta_support_rate23a(struct rtw_adapter *padapter, u32 mac_id);
--int update_sta_support_rate23a(struct rtw_adapter *padapter, u8* pvar_ie,
-+int update_sta_support_rate23a(struct rtw_adapter *padapter, u8 *pvar_ie,
- 			    uint var_ie_len, int cam_idx);
- 
- /* for sta/adhoc mode */
-diff --git a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-index 93dc844..4b39476 100644
---- a/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-+++ b/drivers/staging/rtl8723au/os_dep/ioctl_cfg80211.c
-@@ -1118,7 +1118,7 @@ exit:
- 	return ret;
- }
- 
--int cfg80211_infrastructure_mode(struct rtw_adapter* padapter,
-+int cfg80211_infrastructure_mode(struct rtw_adapter *padapter,
- 				 enum nl80211_iftype ifmode)
- {
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
--- 
-1.9.1
+>  		pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
+> -		memcpy(ptmpQbuffer, pQbuffer, 1);
+> -		acb->rqbuf_firstindex++;
+> -		acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> -		ptmpQbuffer++;
+> -		allxfer_len++;
+> +		if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
+> +			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >= 1032) {
+> +				memcpy(ptmpQbuffer, pQbuffer, 1032);
+> +				acb->rqbuf_firstindex += 1032;
+> +				acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> +				allxfer_len = 1032;
+> +			} else {
+> +				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex)
+> +					+ acb->rqbuf_lastindex) > 1032) {
+> +					memcpy(ptmpQbuffer, pQbuffer,
+> +						ARCMSR_MAX_QBUFFER
+> +						- acb->rqbuf_firstindex);
+> +					ptmpQbuffer += ARCMSR_MAX_QBUFFER
+> +						- acb->rqbuf_firstindex;
+> +					memcpy(ptmpQbuffer, acb->rqbuffer, 1032
+> +						- (ARCMSR_MAX_QBUFFER -
+> +						acb->rqbuf_firstindex));
+
+This code looks like you were copying some data from a ring buffer,
+in that case - shouldn't be acb->rqbuf_lastindex used instead of firstindex?
+
+What does the 1032 mean is that a hw. limit, actually could you explain the code 
+should do? Maybe I'm just wrong with my assumptions.
+
+Thanks,
+Tomas
+
+> +					acb->rqbuf_firstindex = 1032 -
+> +						(ARCMSR_MAX_QBUFFER -
+> +						acb->rqbuf_firstindex);
+> +					allxfer_len = 1032;
+> +				} else {
+> +					memcpy(ptmpQbuffer, pQbuffer,
+> +						ARCMSR_MAX_QBUFFER -
+> +						acb->rqbuf_firstindex);
+> +					ptmpQbuffer += ARCMSR_MAX_QBUFFER -
+> +						acb->rqbuf_firstindex;
+> +					memcpy(ptmpQbuffer, acb->rqbuffer,
+> +						acb->rqbuf_lastindex);
+> +					allxfer_len = ARCMSR_MAX_QBUFFER -
+> +						acb->rqbuf_firstindex +
+> +						acb->rqbuf_lastindex;
+> +					acb->rqbuf_firstindex =
+> +						acb->rqbuf_lastindex;
+> +				}
+> +			}
+> +		} else {
+> +			if ((acb->rqbuf_lastindex - acb->rqbuf_firstindex) > 1032) {
+> +				memcpy(ptmpQbuffer, pQbuffer, 1032);
+> +				acb->rqbuf_firstindex += 1032;
+> +				allxfer_len = 1032;
+> +			} else {
+> +				memcpy(ptmpQbuffer, pQbuffer, acb->rqbuf_lastindex
+> +					- acb->rqbuf_firstindex);
+> +				allxfer_len = acb->rqbuf_lastindex -
+> +					acb->rqbuf_firstindex;
+> +				acb->rqbuf_firstindex = acb->rqbuf_lastindex;
+> +			}
+> +		}
+>  	}
+>  	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+>  		struct QBUFFER __iomem *prbuffer;
+> -		uint8_t __iomem *iop_data;
+> -		int32_t iop_len;
+> -
+>  		acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
+>  		prbuffer = arcmsr_get_iop_rqbuffer(acb);
+> -		iop_data = prbuffer->data;
+> -		iop_len = readl(&prbuffer->data_len);
+> -		while (iop_len > 0) {
+> -			acb->rqbuffer[acb->rqbuf_lastindex] = readb(iop_data);
+> -			acb->rqbuf_lastindex++;
+> -			acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
+> -			iop_data++;
+> -			iop_len--;
+> -		}
+> -		arcmsr_iop_message_read(acb);
+> +		if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) == 0)
+> +			acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
+>  	}
+> -	return (allxfer_len);
+> +	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
+> +	return allxfer_len;
+>  }
+>  
+>  static ssize_t arcmsr_sysfs_iop_message_write(struct file *filp,
+> @@ -117,6 +152,7 @@ static ssize_t arcmsr_sysfs_iop_message_
+>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
+>  	int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
+>  	uint8_t *pQbuffer, *ptmpuserbuffer;
+> +	unsigned long flags;
+>  
+>  	if (!capable(CAP_SYS_ADMIN))
+>  		return -EACCES;
+> @@ -125,18 +161,19 @@ static ssize_t arcmsr_sysfs_iop_message_
+>  	/* do message unit write. */
+>  	ptmpuserbuffer = (uint8_t *)buf;
+>  	user_len = (int32_t)count;
+> +	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+>  	wqbuf_lastindex = acb->wqbuf_lastindex;
+>  	wqbuf_firstindex = acb->wqbuf_firstindex;
+>  	if (wqbuf_lastindex != wqbuf_firstindex) {
+> -		arcmsr_post_ioctldata2iop(acb);
+> +		arcmsr_write_ioctldata2iop(acb);
+> +		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+>  		return 0;	/*need retry*/
+>  	} else {
+>  		my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
+> -				&(ARCMSR_MAX_QBUFFER - 1);
+> +			&(ARCMSR_MAX_QBUFFER - 1);
+>  		if (my_empty_len >= user_len) {
+>  			while (user_len > 0) {
+> -				pQbuffer =
+> -				&acb->wqbuffer[acb->wqbuf_lastindex];
+> +				pQbuffer = &acb->wqbuffer[acb->wqbuf_lastindex];
+>  				memcpy(pQbuffer, ptmpuserbuffer, 1);
+>  				acb->wqbuf_lastindex++;
+>  				acb->wqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
+> @@ -146,10 +183,12 @@ static ssize_t arcmsr_sysfs_iop_message_
+>  			if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_CLEARED) {
+>  				acb->acb_flags &=
+>  					~ACB_F_MESSAGE_WQBUFFER_CLEARED;
+> -				arcmsr_post_ioctldata2iop(acb);
+> +				arcmsr_write_ioctldata2iop(acb);
+>  			}
+> +			spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+>  			return count;
+>  		} else {
+> +			spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+>  			return 0;	/*need retry*/
+>  		}
+>  	}
+> @@ -165,22 +204,24 @@ static ssize_t arcmsr_sysfs_iop_message_
+>  	struct Scsi_Host *host = class_to_shost(dev);
+>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
+>  	uint8_t *pQbuffer;
+> +	unsigned long flags;
+>  
+>  	if (!capable(CAP_SYS_ADMIN))
+>  		return -EACCES;
+>  
+> -	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> -		acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
+> -		arcmsr_iop_message_read(acb);
+> -	}
+> +	arcmsr_clear_iop2drv_rqueue_buffer(acb);
+>  	acb->acb_flags |=
+>  		(ACB_F_MESSAGE_WQBUFFER_CLEARED
+>  		| ACB_F_MESSAGE_RQBUFFER_CLEARED
+>  		| ACB_F_MESSAGE_WQBUFFER_READED);
+> +	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+>  	acb->rqbuf_firstindex = 0;
+>  	acb->rqbuf_lastindex = 0;
+> +	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
+> +	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+>  	acb->wqbuf_firstindex = 0;
+>  	acb->wqbuf_lastindex = 0;
+> +	spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+>  	pQbuffer = acb->rqbuffer;
+>  	memset(pQbuffer, 0, sizeof (struct QBUFFER));
+>  	pQbuffer = acb->wqbuffer;
+> diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
+> --- a/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:38.000000000 +0800
+> +++ b/drivers/scsi/arcmsr/arcmsr.h	2014-05-06 15:28:58.000000000 +0800
+> @@ -518,6 +518,8 @@ struct AdapterControlBlock
+>  	uint32_t			reg_mu_acc_handle0;
+>  	spinlock_t                      			eh_lock;
+>  	spinlock_t                      			ccblist_lock;
+> +	spinlock_t			rqbuffer_lock;
+> +	spinlock_t			wqbuffer_lock;
+>  	union {
+>  		struct MessageUnit_A __iomem *pmuA;
+>  		struct MessageUnit_B 	*pmuB;
+> @@ -693,8 +695,10 @@ struct SENSE_DATA
+>  #define     ARCMSR_MU_OUTBOUND_MESSAGE0_INTMASKENABLE               0x01
+>  #define     ARCMSR_MU_OUTBOUND_ALL_INTMASKENABLE                    0x1F
+>  
+> -extern void arcmsr_post_ioctldata2iop(struct AdapterControlBlock *);
+> -extern void arcmsr_iop_message_read(struct AdapterControlBlock *);
+> +extern void arcmsr_write_ioctldata2iop(struct AdapterControlBlock *);
+> +extern uint32_t arcmsr_Read_iop_rqbuffer_data(struct AdapterControlBlock *,
+> +	struct QBUFFER __iomem *);
+> +extern void arcmsr_clear_iop2drv_rqueue_buffer(struct AdapterControlBlock *);
+>  extern struct QBUFFER __iomem *arcmsr_get_iop_rqbuffer(struct AdapterControlBlock *);
+>  extern struct device_attribute *arcmsr_host_attrs[];
+>  extern int arcmsr_alloc_sysfs_attr(struct AdapterControlBlock *);
+> diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> --- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:38.000000000 +0800
+> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-08-14 18:40:48.000000000 +0800
+> @@ -627,6 +627,8 @@ static int arcmsr_probe(struct pci_dev *
+>  	}
+>  	spin_lock_init(&acb->eh_lock);
+>  	spin_lock_init(&acb->ccblist_lock);
+> +	spin_lock_init(&acb->rqbuffer_lock);
+> +	spin_lock_init(&acb->wqbuffer_lock);
+>  	acb->acb_flags |= (ACB_F_MESSAGE_WQBUFFER_CLEARED |
+>  			ACB_F_MESSAGE_RQBUFFER_CLEARED |
+>  			ACB_F_MESSAGE_WQBUFFER_READED);
+> @@ -1423,68 +1425,174 @@ static struct QBUFFER __iomem *arcmsr_ge
+>  	return pqbuffer;
+>  }
+>  
+> -static void arcmsr_iop2drv_data_wrote_handle(struct AdapterControlBlock *acb)
+> -{
+> -	struct QBUFFER __iomem *prbuffer;
+> -	struct QBUFFER *pQbuffer;
+> -	uint8_t __iomem *iop_data;
+> -	int32_t my_empty_len, iop_len, rqbuf_firstindex, rqbuf_lastindex;
+> -	rqbuf_lastindex = acb->rqbuf_lastindex;
+> -	rqbuf_firstindex = acb->rqbuf_firstindex;
+> -	prbuffer = arcmsr_get_iop_rqbuffer(acb);
+> -	iop_data = (uint8_t __iomem *)prbuffer->data;
+> -	iop_len = prbuffer->data_len;
+> -	my_empty_len = (rqbuf_firstindex - rqbuf_lastindex - 1) & (ARCMSR_MAX_QBUFFER - 1);
+> +static uint32_t arcmsr_Read_iop_rqbuffer_in_DWORD(struct AdapterControlBlock *acb,
+> +	struct QBUFFER __iomem *prbuffer) {
+>  
+> -	if (my_empty_len >= iop_len)
+> -	{
+> -		while (iop_len > 0) {
+> -			pQbuffer = (struct QBUFFER *)&acb->rqbuffer[rqbuf_lastindex];
+> -			memcpy(pQbuffer, iop_data, 1);
+> -			rqbuf_lastindex++;
+> -			rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
+> +	uint8_t *pQbuffer;
+> +	uint8_t *buf1 = NULL;
+> +	uint32_t __iomem *iop_data;
+> +	uint32_t iop_len, data_len, *buf2 = NULL;
+> +
+> +	iop_data = (uint32_t __iomem *)prbuffer->data;
+> +	iop_len = readl(&prbuffer->data_len);
+> +	if (iop_len > 0) {
+> +		buf1 = kmalloc(128, GFP_ATOMIC);
+> +		buf2 = (uint32_t *)buf1;
+> +		if (buf1 == NULL)
+> +			return 0;
+> +		data_len = iop_len;
+> +		while (data_len >= 4) {
+> +			*buf2++ = readl(iop_data);
+>  			iop_data++;
+> -			iop_len--;
+> +			data_len -= 4;
+>  		}
+> -		acb->rqbuf_lastindex = rqbuf_lastindex;
+> -		arcmsr_iop_message_read(acb);
+> +		if (data_len)
+> +			*buf2 = readl(iop_data);
+> +		buf2 = (uint32_t *)buf1;
+> +	}
+> +	while (iop_len > 0) {
+> +		pQbuffer = &acb->rqbuffer[acb->rqbuf_lastindex];
+> +		*pQbuffer = *buf1;
+> +		acb->rqbuf_lastindex++;
+> +		/* if last, index number set it to 0 */
+> +		acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
+> +		buf1++;
+> +		iop_len--;
+> +	}
+> +	if (buf2)
+
+This test is not needed.
+
+> +		kfree(buf2);
+> +	/* let IOP know data has been read */
+> +	arcmsr_iop_message_read(acb);
+> +	return 1;
+> +}
+> +
+> +uint32_t
+> +arcmsr_Read_iop_rqbuffer_data(struct AdapterControlBlock *acb,
+> +	struct QBUFFER __iomem *prbuffer) {
+> +
+> +	uint8_t *pQbuffer;
+> +	uint8_t __iomem *iop_data;
+> +	uint32_t iop_len;
+> +
+> +	if (acb->adapter_type & ACB_ADAPTER_TYPE_C)
+> +		return arcmsr_Read_iop_rqbuffer_in_DWORD(acb, prbuffer);
+> +	iop_data = (uint8_t __iomem *)prbuffer->data;
+> +	iop_len = readl(&prbuffer->data_len);
+> +	while (iop_len > 0) {
+> +		pQbuffer = &acb->rqbuffer[acb->rqbuf_lastindex];
+> +		*pQbuffer = readb(iop_data);
+> +		acb->rqbuf_lastindex++;
+> +		acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
+> +		iop_data++;
+> +		iop_len--;
+>  	}
+> +	arcmsr_iop_message_read(acb);
+> +	return 1;
+> +}
+> +
+> +static void arcmsr_iop2drv_data_wrote_handle(struct AdapterControlBlock *acb)
+> +{
+> +	unsigned long flags;
+> +	struct QBUFFER __iomem  *prbuffer;
+> +	int32_t buf_empty_len;
+>  
+> -	else {
+> +	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+> +	prbuffer = arcmsr_get_iop_rqbuffer(acb);
+> +	buf_empty_len = (acb->rqbuf_lastindex - acb->rqbuf_firstindex - 1) &
+> +		(ARCMSR_MAX_QBUFFER - 1);
+> +	if (buf_empty_len >= readl(&prbuffer->data_len)) {
+> +		if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) == 0)
+> +			acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
+> +	} else
+>  		acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
+> +	spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
+> +}
+> +
+> +static void arcmsr_write_ioctldata2iop_in_DWORD(struct AdapterControlBlock *acb)
+> +{
+> +	uint8_t *pQbuffer;
+> +	struct QBUFFER __iomem *pwbuffer;
+> +	uint8_t *buf1 = NULL;
+> +	uint32_t __iomem *iop_data;
+> +	uint32_t allxfer_len = 0, data_len, *buf2 = NULL, data;
+> +
+> +	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {
+> +		buf1 = kmalloc(128, GFP_ATOMIC);
+> +		buf2 = (uint32_t *)buf1;
+> +		if (buf1 == NULL)
+> +			return;
+> +
+> +		acb->acb_flags &= (~ACB_F_MESSAGE_WQBUFFER_READED);
+> +		pwbuffer = arcmsr_get_iop_wqbuffer(acb);
+> +		iop_data = (uint32_t __iomem *)pwbuffer->data;
+> +		while ((acb->wqbuf_firstindex != acb->wqbuf_lastindex)
+> +			&& (allxfer_len < 124)) {
+> +			pQbuffer = &acb->wqbuffer[acb->wqbuf_firstindex];
+> +			*buf1 = *pQbuffer;
+> +			acb->wqbuf_firstindex++;
+> +			acb->wqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> +			buf1++;
+> +			allxfer_len++;
+> +		}
+> +		data_len = allxfer_len;
+> +		buf1 = (uint8_t *)buf2;
+> +		while (data_len >= 4) {
+> +			data = *buf2++;
+> +			writel(data, iop_data);
+> +			iop_data++;
+> +			data_len -= 4;
+> +		}
+> +		if (data_len) {
+> +			data = *buf2;
+> +			writel(data, iop_data);
+> +		}
+> +		writel(allxfer_len, &pwbuffer->data_len);
+> +		kfree(buf1);
+> +		arcmsr_iop_message_wrote(acb);
+>  	}
+>  }
+>  
+> -static void arcmsr_iop2drv_data_read_handle(struct AdapterControlBlock *acb)
+> +void
+> +arcmsr_write_ioctldata2iop(struct AdapterControlBlock *acb)
+>  {
+> -	acb->acb_flags |= ACB_F_MESSAGE_WQBUFFER_READED;
+> -	if (acb->wqbuf_firstindex != acb->wqbuf_lastindex) {
+> -		uint8_t *pQbuffer;
+> -		struct QBUFFER __iomem *pwbuffer;
+> -		uint8_t __iomem *iop_data;
+> -		int32_t allxfer_len = 0;
+> +	uint8_t *pQbuffer;
+> +	struct QBUFFER __iomem *pwbuffer;
+> +	uint8_t __iomem *iop_data;
+> +	int32_t allxfer_len = 0;
+>  
+> +	if (acb->adapter_type & ACB_ADAPTER_TYPE_C) {
+> +		arcmsr_write_ioctldata2iop_in_DWORD(acb);
+> +		return;
+> +	}
+> +	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {
+>  		acb->acb_flags &= (~ACB_F_MESSAGE_WQBUFFER_READED);
+>  		pwbuffer = arcmsr_get_iop_wqbuffer(acb);
+>  		iop_data = (uint8_t __iomem *)pwbuffer->data;
+> -
+> -		while ((acb->wqbuf_firstindex != acb->wqbuf_lastindex) && \
+> -							(allxfer_len < 124)) {
+> +		while ((acb->wqbuf_firstindex != acb->wqbuf_lastindex)
+> +			&& (allxfer_len < 124)) {
+>  			pQbuffer = &acb->wqbuffer[acb->wqbuf_firstindex];
+> -			memcpy(iop_data, pQbuffer, 1);
+> +			writeb(*pQbuffer, iop_data);
+>  			acb->wqbuf_firstindex++;
+>  			acb->wqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+>  			iop_data++;
+>  			allxfer_len++;
+>  		}
+> -		pwbuffer->data_len = allxfer_len;
+> -
+> +		writel(allxfer_len, &pwbuffer->data_len);
+>  		arcmsr_iop_message_wrote(acb);
+>  	}
+> +}
+>  
+> -	if (acb->wqbuf_firstindex == acb->wqbuf_lastindex) {
+> +static void arcmsr_iop2drv_data_read_handle(struct AdapterControlBlock *acb)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+> +	acb->acb_flags |= ACB_F_MESSAGE_WQBUFFER_READED;
+> +	if (acb->wqbuf_firstindex != acb->wqbuf_lastindex)
+> +		arcmsr_write_ioctldata2iop(acb);
+> +	if (acb->wqbuf_firstindex == acb->wqbuf_lastindex)
+>  		acb->acb_flags |= ACB_F_MESSAGE_WQBUFFER_CLEARED;
+> -	}
+> +	spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+>  }
+>  
+>  static void arcmsr_hbaA_doorbell_isr(struct AdapterControlBlock *acb)
+> @@ -1742,296 +1850,344 @@ static void arcmsr_iop_parking(struct Ad
+>  	}
+>  }
+>  
+> -void arcmsr_post_ioctldata2iop(struct AdapterControlBlock *acb)
+> +
+> +void arcmsr_clear_iop2drv_rqueue_buffer(struct AdapterControlBlock *acb)
+>  {
+> -	int32_t wqbuf_firstindex, wqbuf_lastindex;
+> -	uint8_t *pQbuffer;
+> -	struct QBUFFER __iomem *pwbuffer;
+> -	uint8_t __iomem *iop_data;
+> -	int32_t allxfer_len = 0;
+> -	pwbuffer = arcmsr_get_iop_wqbuffer(acb);
+> -	iop_data = (uint8_t __iomem *)pwbuffer->data;
+> -	if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_READED) {
+> -		acb->acb_flags &= (~ACB_F_MESSAGE_WQBUFFER_READED);
+> -		wqbuf_firstindex = acb->wqbuf_firstindex;
+> -		wqbuf_lastindex = acb->wqbuf_lastindex;
+> -		while ((wqbuf_firstindex != wqbuf_lastindex) && (allxfer_len < 124)) {
+> -			pQbuffer = &acb->wqbuffer[wqbuf_firstindex];
+> -			memcpy(iop_data, pQbuffer, 1);
+> -			wqbuf_firstindex++;
+> -			wqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> -			iop_data++;
+> -			allxfer_len++;
+> +	uint32_t	i;
+> +
+> +	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> +		for (i = 0; i < 15; i++) {
+> +			if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> +				acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
+> +				acb->rqbuf_firstindex = 0;
+> +				acb->rqbuf_lastindex = 0;
+> +				arcmsr_iop_message_read(acb);
+> +				mdelay(30);
+> +			} else if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
+> +				acb->rqbuf_firstindex = 0;
+> +				acb->rqbuf_lastindex = 0;
+> +				mdelay(30);
+> +			} else
+> +				break;
+>  		}
+> -		acb->wqbuf_firstindex = wqbuf_firstindex;
+> -		pwbuffer->data_len = allxfer_len;
+> -		arcmsr_iop_message_wrote(acb);
+>  	}
+>  }
+>  
+> -static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb,
+> -					struct scsi_cmnd *cmd)
+> +static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb, struct scsi_cmnd *cmd)
+>  {
+> -	struct CMD_MESSAGE_FIELD *pcmdmessagefld;
+> -	int retvalue = 0, transfer_len = 0;
+>  	char *buffer;
+> +	unsigned short use_sg;
+> +	int retvalue = 0, transfer_len = 0;
+> +	unsigned long flags;
+> +	struct CMD_MESSAGE_FIELD *pcmdmessagefld;
+> +	uint32_t controlcode = (uint32_t)cmd->cmnd[5] << 24 |
+> +		(uint32_t)cmd->cmnd[6] << 16 |
+> +		(uint32_t)cmd->cmnd[7] << 8 |
+> +		(uint32_t)cmd->cmnd[8];
+>  	struct scatterlist *sg;
+> -	uint32_t controlcode = (uint32_t ) cmd->cmnd[5] << 24 |
+> -						(uint32_t ) cmd->cmnd[6] << 16 |
+> -						(uint32_t ) cmd->cmnd[7] << 8  |
+> -						(uint32_t ) cmd->cmnd[8];
+> -						/* 4 bytes: Areca io control code */
+> +
+> +	use_sg = scsi_sg_count(cmd);
+>  	sg = scsi_sglist(cmd);
+>  	buffer = kmap_atomic(sg_page(sg)) + sg->offset;
+> -	if (scsi_sg_count(cmd) > 1) {
+> +	if (use_sg > 1) {
+>  		retvalue = ARCMSR_MESSAGE_FAIL;
+>  		goto message_out;
+>  	}
+>  	transfer_len += sg->length;
+> -
+>  	if (transfer_len > sizeof(struct CMD_MESSAGE_FIELD)) {
+>  		retvalue = ARCMSR_MESSAGE_FAIL;
+> +		pr_info("%s: ARCMSR_MESSAGE_FAIL!\n", __func__);
+>  		goto message_out;
+>  	}
+> -	pcmdmessagefld = (struct CMD_MESSAGE_FIELD *) buffer;
+> -	switch(controlcode) {
+> -
+> +	pcmdmessagefld = (struct CMD_MESSAGE_FIELD *)buffer;
+> +	switch (controlcode) {
+>  	case ARCMSR_MESSAGE_READ_RQBUFFER: {
+>  		unsigned char *ver_addr;
+>  		uint8_t *pQbuffer, *ptmpQbuffer;
+> -		int32_t allxfer_len = 0;
+> -
+> +		uint32_t allxfer_len = 0;
+>  		ver_addr = kmalloc(1032, GFP_ATOMIC);
+>  		if (!ver_addr) {
+>  			retvalue = ARCMSR_MESSAGE_FAIL;
+> +			pr_info("%s: memory not enough!\n", __func__);
+>  			goto message_out;
+>  		}
+> -				
+>  		ptmpQbuffer = ver_addr;
+> -		while ((acb->rqbuf_firstindex != acb->rqbuf_lastindex)
+> -			&& (allxfer_len < 1031)) {
+> +		spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+> +		if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
+>  			pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
+> -			memcpy(ptmpQbuffer, pQbuffer, 1);
+> -			acb->rqbuf_firstindex++;
+> -			acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> -			ptmpQbuffer++;
+> -			allxfer_len++;
+> +			if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
+> +				if ((ARCMSR_MAX_QBUFFER -
+> +					acb->rqbuf_firstindex) >= 1032) {
+> +					memcpy(ptmpQbuffer, pQbuffer, 1032);
+> +					acb->rqbuf_firstindex += 1032;
+> +					acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> +					allxfer_len = 1032;
+> +				} else {
+> +					if (((ARCMSR_MAX_QBUFFER -
+> +						acb->rqbuf_firstindex) +
+> +						acb->rqbuf_lastindex) > 1032) {
+> +						memcpy(ptmpQbuffer,
+> +							pQbuffer, ARCMSR_MAX_QBUFFER
+> +							- acb->rqbuf_firstindex);
+> +						ptmpQbuffer +=
+> +							ARCMSR_MAX_QBUFFER -
+> +							acb->rqbuf_firstindex;
+> +						memcpy(ptmpQbuffer,
+> +							acb->rqbuffer, 1032 -
+> +							(ARCMSR_MAX_QBUFFER
+> +							- acb->rqbuf_firstindex));
+> +						acb->rqbuf_firstindex =
+> +							1032 - (ARCMSR_MAX_QBUFFER
+> +							- acb->rqbuf_firstindex);
+> +						allxfer_len = 1032;
+> +					} else {
+> +						memcpy(ptmpQbuffer,
+> +							pQbuffer, ARCMSR_MAX_QBUFFER
+> +							- acb->rqbuf_firstindex);
+> +						ptmpQbuffer +=
+> +							ARCMSR_MAX_QBUFFER -
+> +							acb->rqbuf_firstindex;
+> +						memcpy(ptmpQbuffer,
+> +							acb->rqbuffer,
+> +							acb->rqbuf_lastindex);
+> +						allxfer_len = ARCMSR_MAX_QBUFFER
+> +							- acb->rqbuf_firstindex +
+> +							acb->rqbuf_lastindex;
+> +						acb->rqbuf_firstindex =
+> +							acb->rqbuf_lastindex;
+> +					}
+> +				}
+> +			} else {
+> +				if ((acb->rqbuf_lastindex -
+> +					acb->rqbuf_firstindex) > 1032) {
+> +					memcpy(ptmpQbuffer, pQbuffer, 1032);
+> +					acb->rqbuf_firstindex += 1032;
+> +					allxfer_len = 1032;
+> +				} else {
+> +					memcpy(ptmpQbuffer, pQbuffer,
+> +						acb->rqbuf_lastindex -
+> +						acb->rqbuf_firstindex);
+> +					allxfer_len = acb->rqbuf_lastindex
+> +						- acb->rqbuf_firstindex;
+> +					acb->rqbuf_firstindex =
+> +						acb->rqbuf_lastindex;
+> +				}
+> +			}
+>  		}
+> +		memcpy(pcmdmessagefld->messagedatabuffer, ver_addr,
+> +			allxfer_len);
+>  		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> -
+>  			struct QBUFFER __iomem *prbuffer;
+> -			uint8_t __iomem *iop_data;
+> -			int32_t iop_len;
+> -
+>  			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
+>  			prbuffer = arcmsr_get_iop_rqbuffer(acb);
+> -			iop_data = prbuffer->data;
+> -			iop_len = readl(&prbuffer->data_len);
+> -			while (iop_len > 0) {
+> -				acb->rqbuffer[acb->rqbuf_lastindex] = readb(iop_data);
+> -				acb->rqbuf_lastindex++;
+> -				acb->rqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
+> -				iop_data++;
+> -				iop_len--;
+> -			}
+> -			arcmsr_iop_message_read(acb);
+> -		}
+> -		memcpy(pcmdmessagefld->messagedatabuffer, ver_addr, allxfer_len);
+> -		pcmdmessagefld->cmdmessage.Length = allxfer_len;
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> -			pcmdmessagefld->cmdmessage.ReturnCode = ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}else{
+> -			pcmdmessagefld->cmdmessage.ReturnCode = ARCMSR_MESSAGE_RETURNCODE_OK;
+> +			if (arcmsr_Read_iop_rqbuffer_data(acb, prbuffer) == 0)
+> +				acb->acb_flags |= ACB_F_IOPDATA_OVERFLOW;
+>  		}
+> +		spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
+>  		kfree(ver_addr);
+> -		}
+> +		pcmdmessagefld->cmdmessage.Length = allxfer_len;
+> +		if (acb->fw_flag == FW_DEADLOCK)
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+>  		break;
+> -
+> +	}
+>  	case ARCMSR_MESSAGE_WRITE_WQBUFFER: {
+>  		unsigned char *ver_addr;
+>  		int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
+>  		uint8_t *pQbuffer, *ptmpuserbuffer;
+> -
+>  		ver_addr = kmalloc(1032, GFP_ATOMIC);
+>  		if (!ver_addr) {
+>  			retvalue = ARCMSR_MESSAGE_FAIL;
+>  			goto message_out;
+>  		}
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> -			pcmdmessagefld->cmdmessage.ReturnCode = 
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}else{
+> -			pcmdmessagefld->cmdmessage.ReturnCode = 
+> -			ARCMSR_MESSAGE_RETURNCODE_OK;
+> -		}
+>  		ptmpuserbuffer = ver_addr;
+>  		user_len = pcmdmessagefld->cmdmessage.Length;
+> -		memcpy(ptmpuserbuffer, pcmdmessagefld->messagedatabuffer, user_len);
+> +		memcpy(ptmpuserbuffer,
+> +			pcmdmessagefld->messagedatabuffer, user_len);
+> +		spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+>  		wqbuf_lastindex = acb->wqbuf_lastindex;
+>  		wqbuf_firstindex = acb->wqbuf_firstindex;
+>  		if (wqbuf_lastindex != wqbuf_firstindex) {
+>  			struct SENSE_DATA *sensebuffer =
+>  				(struct SENSE_DATA *)cmd->sense_buffer;
+> -			arcmsr_post_ioctldata2iop(acb);
+> +			arcmsr_write_ioctldata2iop(acb);
+>  			/* has error report sensedata */
+> -			sensebuffer->ErrorCode = 0x70;
+> +			sensebuffer->ErrorCode = SCSI_SENSE_CURRENT_ERRORS;
+>  			sensebuffer->SenseKey = ILLEGAL_REQUEST;
+>  			sensebuffer->AdditionalSenseLength = 0x0A;
+>  			sensebuffer->AdditionalSenseCode = 0x20;
+>  			sensebuffer->Valid = 1;
+>  			retvalue = ARCMSR_MESSAGE_FAIL;
+>  		} else {
+> -			my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
+> -				&(ARCMSR_MAX_QBUFFER - 1);
+> +			my_empty_len = (wqbuf_firstindex - wqbuf_lastindex - 1)
+> +				& (ARCMSR_MAX_QBUFFER - 1);
+>  			if (my_empty_len >= user_len) {
+>  				while (user_len > 0) {
+> -					pQbuffer =
+> -					&acb->wqbuffer[acb->wqbuf_lastindex];
+> -					memcpy(pQbuffer, ptmpuserbuffer, 1);
+> -					acb->wqbuf_lastindex++;
+> -					acb->wqbuf_lastindex %= ARCMSR_MAX_QBUFFER;
+> -					ptmpuserbuffer++;
+> -					user_len--;
+> +					pQbuffer = &acb->wqbuffer[acb->wqbuf_lastindex];
+> +					if ((acb->wqbuf_lastindex + user_len)
+> +						> ARCMSR_MAX_QBUFFER) {
+> +						memcpy(pQbuffer, ptmpuserbuffer,
+> +							ARCMSR_MAX_QBUFFER -
+> +							acb->wqbuf_lastindex);
+> +						ptmpuserbuffer +=
+> +							(ARCMSR_MAX_QBUFFER
+> +							- acb->wqbuf_lastindex);
+> +						user_len -= (ARCMSR_MAX_QBUFFER
+> +							- acb->wqbuf_lastindex);
+> +						acb->wqbuf_lastindex = 0;
+> +					} else {
+> +						memcpy(pQbuffer, ptmpuserbuffer,
+> +							user_len);
+> +						acb->wqbuf_lastindex += user_len;
+> +						acb->wqbuf_lastindex %=
+> +							ARCMSR_MAX_QBUFFER;
+> +						user_len = 0;
+> +					}
+>  				}
+> -				if (acb->acb_flags & ACB_F_MESSAGE_WQBUFFER_CLEARED) {
+> +				if (acb->acb_flags &
+> +					ACB_F_MESSAGE_WQBUFFER_CLEARED) {
+>  					acb->acb_flags &=
+>  						~ACB_F_MESSAGE_WQBUFFER_CLEARED;
+> -					arcmsr_post_ioctldata2iop(acb);
+> +					arcmsr_write_ioctldata2iop(acb);
+>  				}
+>  			} else {
+> -				/* has error report sensedata */
+>  				struct SENSE_DATA *sensebuffer =
+>  					(struct SENSE_DATA *)cmd->sense_buffer;
+> -				sensebuffer->ErrorCode = 0x70;
+> +				/* has error report sensedata */
+> +				sensebuffer->ErrorCode =
+> +					SCSI_SENSE_CURRENT_ERRORS;
+>  				sensebuffer->SenseKey = ILLEGAL_REQUEST;
+>  				sensebuffer->AdditionalSenseLength = 0x0A;
+>  				sensebuffer->AdditionalSenseCode = 0x20;
+>  				sensebuffer->Valid = 1;
+>  				retvalue = ARCMSR_MESSAGE_FAIL;
+>  			}
+> -			}
+> -			kfree(ver_addr);
+>  		}
+> +		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+> +		kfree(ver_addr);
+> +		if (acb->fw_flag == FW_DEADLOCK)
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+>  		break;
+> -
+> +	}
+>  	case ARCMSR_MESSAGE_CLEAR_RQBUFFER: {
+>  		uint8_t *pQbuffer = acb->rqbuffer;
+> -		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> -			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
+> -			arcmsr_iop_message_read(acb);
+> -		}
+> +
+> +		arcmsr_clear_iop2drv_rqueue_buffer(acb);
+> +		spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+>  		acb->acb_flags |= ACB_F_MESSAGE_RQBUFFER_CLEARED;
+>  		acb->rqbuf_firstindex = 0;
+>  		acb->rqbuf_lastindex = 0;
+>  		memset(pQbuffer, 0, ARCMSR_MAX_QBUFFER);
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> +		spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
+> +		if (acb->fw_flag == FW_DEADLOCK)
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}else{
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_OK;
+> -		}
+> -		}
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+>  		break;
+> -
+> +	}
+>  	case ARCMSR_MESSAGE_CLEAR_WQBUFFER: {
+>  		uint8_t *pQbuffer = acb->wqbuffer;
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> -			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}else{
+> -			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_OK;
+> -		}
+> -
+> -		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> -			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
+> -			arcmsr_iop_message_read(acb);
+> -		}
+> -		acb->acb_flags |=
+> -			(ACB_F_MESSAGE_WQBUFFER_CLEARED |
+> -				ACB_F_MESSAGE_WQBUFFER_READED);
+> +		spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+> +		acb->acb_flags |= (ACB_F_MESSAGE_WQBUFFER_CLEARED |
+> +			ACB_F_MESSAGE_WQBUFFER_READED);
+>  		acb->wqbuf_firstindex = 0;
+>  		acb->wqbuf_lastindex = 0;
+>  		memset(pQbuffer, 0, ARCMSR_MAX_QBUFFER);
+> -		}
+> +		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+> +		if (acb->fw_flag == FW_DEADLOCK)
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+>  		break;
+> -
+> +	}
+>  	case ARCMSR_MESSAGE_CLEAR_ALLQBUFFER: {
+>  		uint8_t *pQbuffer;
+> -
+> -		if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> -			acb->acb_flags &= ~ACB_F_IOPDATA_OVERFLOW;
+> -			arcmsr_iop_message_read(acb);
+> -		}
+> -		acb->acb_flags |=
+> -			(ACB_F_MESSAGE_WQBUFFER_CLEARED
+> -			| ACB_F_MESSAGE_RQBUFFER_CLEARED
+> -			| ACB_F_MESSAGE_WQBUFFER_READED);
+> +		arcmsr_clear_iop2drv_rqueue_buffer(acb);
+> +		spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+> +		acb->acb_flags |= ACB_F_MESSAGE_RQBUFFER_CLEARED;
+>  		acb->rqbuf_firstindex = 0;
+>  		acb->rqbuf_lastindex = 0;
+> -		acb->wqbuf_firstindex = 0;
+> -		acb->wqbuf_lastindex = 0;
+>  		pQbuffer = acb->rqbuffer;
+>  		memset(pQbuffer, 0, sizeof(struct QBUFFER));
+> +		spin_unlock_irqrestore(&acb->rqbuffer_lock, flags);
+> +		spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+> +		acb->acb_flags |= (ACB_F_MESSAGE_WQBUFFER_CLEARED |
+> +			ACB_F_MESSAGE_WQBUFFER_READED);
+> +		acb->wqbuf_firstindex = 0;
+> +		acb->wqbuf_lastindex = 0;
+>  		pQbuffer = acb->wqbuffer;
+>  		memset(pQbuffer, 0, sizeof(struct QBUFFER));
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> +		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+> +		if (acb->fw_flag == FW_DEADLOCK)
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}else{
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_OK;
+> -		}
+> -		}
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+>  		break;
+> -
+> +	}
+>  	case ARCMSR_MESSAGE_RETURN_CODE_3F: {
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> +		if (acb->fw_flag == FW_DEADLOCK)
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}else{
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_3F;
+> -		}
+> +				ARCMSR_MESSAGE_RETURNCODE_3F;
+>  		break;
+> -		}
+> +	}
+>  	case ARCMSR_MESSAGE_SAY_HELLO: {
+>  		int8_t *hello_string = "Hello! I am ARCMSR";
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> +		if (acb->fw_flag == FW_DEADLOCK)
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}else{
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_OK;
+> -		}
+> -		memcpy(pcmdmessagefld->messagedatabuffer, hello_string
+> -			, (int16_t)strlen(hello_string));
+> -		}
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+> +		memcpy(pcmdmessagefld->messagedatabuffer,
+> +			hello_string, (int16_t)strlen(hello_string));
+>  		break;
+> -
+> -	case ARCMSR_MESSAGE_SAY_GOODBYE:
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> +	}
+> +	case ARCMSR_MESSAGE_SAY_GOODBYE: {
+> +		if (acb->fw_flag == FW_DEADLOCK)
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+>  		arcmsr_iop_parking(acb);
+>  		break;
+> -
+> -	case ARCMSR_MESSAGE_FLUSH_ADAPTER_CACHE:
+> -		if(acb->fw_flag == FW_DEADLOCK) {
+> +	}
+> +	case ARCMSR_MESSAGE_FLUSH_ADAPTER_CACHE: {
+> +		if (acb->fw_flag == FW_DEADLOCK)
+>  			pcmdmessagefld->cmdmessage.ReturnCode =
+> -			ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> -		}
+> +				ARCMSR_MESSAGE_RETURNCODE_BUS_HANG_ON;
+> +		else
+> +			pcmdmessagefld->cmdmessage.ReturnCode =
+> +				ARCMSR_MESSAGE_RETURNCODE_OK;
+>  		arcmsr_flush_adapter_cache(acb);
+>  		break;
+> -
+> +	}
+>  	default:
+>  		retvalue = ARCMSR_MESSAGE_FAIL;
+> +		pr_info("%s: unknown controlcode!\n", __func__);
+> +	}
+> +message_out:
+> +	if (use_sg) {
+> +		struct scatterlist *sg;
+> +		sg = scsi_sglist(cmd);
+> +		kunmap_atomic(buffer - sg->offset);
+>  	}
+> -	message_out:
+> -	sg = scsi_sglist(cmd);
+> -	kunmap_atomic(buffer - sg->offset);
+>  	return retvalue;
+>  }
+>  
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
