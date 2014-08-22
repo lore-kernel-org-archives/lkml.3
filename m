@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932989AbaHVQ4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:56:54 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:60441 "EHLO
+	id S932995AbaHVQ5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:57:18 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:60501 "EHLO
 	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159AbaHVQxj (ORCPT
+	with ESMTP id S932783AbaHVQxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:53:39 -0400
+	Fri, 22 Aug 2014 12:53:37 -0400
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org, cl@linux-foundation.org
 Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, vgoyal@redhat.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/15] percpu: move region iterations out of pcpu_[de]populate_chunk()
-Date: Fri, 22 Aug 2014 12:53:10 -0400
-Message-Id: <1408726399-4436-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/15] percpu: move common parts out of pcpu_[de]populate_chunk()
+Date: Fri, 22 Aug 2014 12:53:09 -0400
+Message-Id: <1408726399-4436-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408726399-4436-1-git-send-email-tj@kernel.org>
 References: <1408726399-4436-1-git-send-email-tj@kernel.org>
@@ -21,203 +21,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, pcpu_[de]populate_chunk() were called with the range which
-may contain multiple target regions in it and
-pcpu_[de]populate_chunk() iterated over the regions.  This has the
-benefit of batching up cache flushes for all the regions; however,
-we're planning to add more bookkeeping logic around [de]population to
-support atomic allocations and this delegation of iterations gets in
-the way.
+percpu-vm and percpu-km implement separate versions of
+pcpu_[de]populate_chunk() and some part which is or should be common
+are currently in the specific implementations.  Make the following
+changes.
 
-This patch moves the region iterations out of
-pcpu_[de]populate_chunk() into its callers - pcpu_alloc() and
-pcpu_reclaim() - so that we can later add logic to track more states
-around them.  This change may make cache and tlb flushes more frequent
-but multi-region [de]populations are rare anyway and if this actually
-becomes a problem, it's not difficult to factor out cache flushes as
-separate callbacks which are directly invoked from percpu.c.
+* Allocate area clearing is moved from the pcpu_populate_chunk()
+  implementations to pcpu_alloc().  This makes percpu-km's version
+  noop.
+
+* Quick exit tests in pcpu_[de]populate_chunk() of percpu-vm are moved
+  to their respective callers so that they are applied to percpu-km
+  too.  This doesn't make any meaningful difference as both functions
+  are noop for percpu-km; however, this is more consistent and will
+  help implementing atomic allocation support.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- mm/percpu-km.c |  6 ++++--
- mm/percpu-vm.c | 57 ++++++++++++++++-----------------------------------------
- mm/percpu.c    | 19 ++++++++-----------
- 3 files changed, 28 insertions(+), 54 deletions(-)
+ mm/percpu-km.c |  5 -----
+ mm/percpu-vm.c | 27 +--------------------------
+ mm/percpu.c    | 39 ++++++++++++++++++++++++++++++---------
+ 3 files changed, 31 insertions(+), 40 deletions(-)
 
 diff --git a/mm/percpu-km.c b/mm/percpu-km.c
-index 9a9096f..a6e34bc 100644
+index 89633fe..9a9096f 100644
 --- a/mm/percpu-km.c
 +++ b/mm/percpu-km.c
-@@ -33,12 +33,14 @@
+@@ -35,11 +35,6 @@
  
- #include <linux/log2.h>
- 
--static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
-+static int pcpu_populate_chunk(struct pcpu_chunk *chunk,
-+			       int page_start, int page_end)
+ static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
  {
+-	unsigned int cpu;
+-
+-	for_each_possible_cpu(cpu)
+-		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
+-
  	return 0;
  }
  
--static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
-+static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk,
-+				  int page_start, int page_end)
- {
- 	/* nada */
- }
 diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index edf7097..538998a 100644
+index d9e0b61..edf7097 100644
 --- a/mm/percpu-vm.c
 +++ b/mm/percpu-vm.c
-@@ -261,8 +261,8 @@ static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
- /**
-  * pcpu_populate_chunk - populate and map an area of a pcpu_chunk
-  * @chunk: chunk of interest
-- * @off: offset to the area to populate
-- * @size: size of the area to populate in bytes
-+ * @page_start: the start page
-+ * @page_end: the end page
+@@ -265,7 +265,7 @@ static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
+  * @size: size of the area to populate in bytes
   *
   * For each cpu, populate and map pages [@page_start,@page_end) into
-  * @chunk.
-@@ -270,66 +270,43 @@ static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
+- * @chunk.  The area is cleared on return.
++ * @chunk.
+  *
   * CONTEXT:
   * pcpu_alloc_mutex, does GFP_KERNEL allocation.
-  */
--static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
-+static int pcpu_populate_chunk(struct pcpu_chunk *chunk,
-+			       int page_start, int page_end)
- {
--	int page_start = PFN_DOWN(off);
--	int page_end = PFN_UP(off + size);
--	int free_end = page_start, unmap_end = page_start;
+@@ -276,18 +276,8 @@ static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
+ 	int page_end = PFN_UP(off + size);
+ 	int free_end = page_start, unmap_end = page_start;
  	struct page **pages;
--	int rs, re, rc;
+-	unsigned int cpu;
+ 	int rs, re, rc;
  
+-	/* quick path, check whether all pages are already there */
+-	rs = page_start;
+-	pcpu_next_pop(chunk, &rs, &re, page_end);
+-	if (rs == page_start && re == page_end)
+-		goto clear;
+-
+-	/* need to allocate and map pages, this chunk can't be immutable */
+-	WARN_ON(chunk->immutable);
+-
  	pages = pcpu_get_pages(chunk);
  	if (!pages)
  		return -ENOMEM;
- 
--	/* alloc and map */
--	pcpu_for_each_unpop_region(chunk, rs, re, page_start, page_end) {
--		rc = pcpu_alloc_pages(chunk, pages, rs, re);
--		if (rc)
--			goto err_free;
--		free_end = re;
--	}
-+	if (pcpu_alloc_pages(chunk, pages, page_start, page_end))
-+		return -ENOMEM;
- 
--	pcpu_for_each_unpop_region(chunk, rs, re, page_start, page_end) {
--		rc = pcpu_map_pages(chunk, pages, rs, re);
--		if (rc)
--			goto err_unmap;
--		unmap_end = re;
-+	if (pcpu_map_pages(chunk, pages, page_start, page_end)) {
-+		pcpu_free_pages(chunk, pages, page_start, page_end);
-+		return -ENOMEM;
+@@ -308,10 +298,6 @@ static int pcpu_populate_chunk(struct pcpu_chunk *chunk, int off, int size)
  	}
  	pcpu_post_map_flush(chunk, page_start, page_end);
  
+-	bitmap_set(chunk->populated, page_start, page_end - page_start);
+-clear:
+-	for_each_possible_cpu(cpu)
+-		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
  	return 0;
--
--err_unmap:
--	pcpu_pre_unmap_flush(chunk, page_start, unmap_end);
--	pcpu_for_each_unpop_region(chunk, rs, re, page_start, unmap_end)
--		pcpu_unmap_pages(chunk, pages, rs, re);
--	pcpu_post_unmap_tlb_flush(chunk, page_start, unmap_end);
--err_free:
--	pcpu_for_each_unpop_region(chunk, rs, re, page_start, free_end)
--		pcpu_free_pages(chunk, pages, rs, re);
--	return rc;
- }
  
- /**
-  * pcpu_depopulate_chunk - depopulate and unmap an area of a pcpu_chunk
-  * @chunk: chunk to depopulate
-- * @off: offset to the area to depopulate
-- * @size: size of the area to depopulate in bytes
-+ * @page_start: the start page
-+ * @page_end: the end page
-  *
-  * For each cpu, depopulate and unmap pages [@page_start,@page_end)
-- * from @chunk.  If @flush is true, vcache is flushed before unmapping
-- * and tlb after.
-+ * from @chunk.
-  *
-  * CONTEXT:
-  * pcpu_alloc_mutex.
-  */
--static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
-+static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk,
-+				  int page_start, int page_end)
- {
--	int page_start = PFN_DOWN(off);
--	int page_end = PFN_UP(off + size);
+ err_unmap:
+@@ -345,15 +331,6 @@ static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
  	struct page **pages;
--	int rs, re;
+ 	int rs, re;
  
+-	/* quick path, check whether it's empty already */
+-	rs = page_start;
+-	pcpu_next_unpop(chunk, &rs, &re, page_end);
+-	if (rs == page_start && re == page_end)
+-		return;
+-
+-	/* immutable chunks can't be depopulated */
+-	WARN_ON(chunk->immutable);
+-
  	/*
  	 * If control reaches here, there must have been at least one
-@@ -342,13 +319,11 @@ static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
- 	/* unmap and free */
- 	pcpu_pre_unmap_flush(chunk, page_start, page_end);
+ 	 * successful population attempt so the temp pages array must
+@@ -372,8 +349,6 @@ static void pcpu_depopulate_chunk(struct pcpu_chunk *chunk, int off, int size)
  
--	pcpu_for_each_pop_region(chunk, rs, re, page_start, page_end)
--		pcpu_unmap_pages(chunk, pages, rs, re);
-+	pcpu_unmap_pages(chunk, pages, page_start, page_end);
- 
- 	/* no need to flush tlb, vmalloc will handle it lazily */
- 
--	pcpu_for_each_pop_region(chunk, rs, re, page_start, page_end)
--		pcpu_free_pages(chunk, pages, rs, re);
-+	pcpu_free_pages(chunk, pages, page_start, page_end);
+ 	pcpu_for_each_pop_region(chunk, rs, re, page_start, page_end)
+ 		pcpu_free_pages(chunk, pages, rs, re);
+-
+-	bitmap_clear(chunk->populated, page_start, page_end - page_start);
  }
  
  static struct pcpu_chunk *pcpu_create_chunk(void)
 diff --git a/mm/percpu.c b/mm/percpu.c
-index 12b0049..c8fe482 100644
+index 2139e30..12b0049 100644
 --- a/mm/percpu.c
 +++ b/mm/percpu.c
-@@ -807,20 +807,17 @@ area_found:
- 	page_start = PFN_DOWN(off);
- 	page_end = PFN_UP(off + size);
+@@ -709,7 +709,8 @@ static void __percpu *pcpu_alloc(size_t size, size_t align, bool reserved)
+ 	static int warn_limit = 10;
+ 	struct pcpu_chunk *chunk;
+ 	const char *err;
+-	int slot, off, new_alloc;
++	int slot, off, new_alloc, cpu;
++	int page_start, page_end, rs, re;
+ 	unsigned long flags;
+ 	void __percpu *ptr;
  
--	rs = page_start;
--	pcpu_next_pop(chunk, &rs, &re, page_end);
--
--	if (rs != page_start || re != page_end) {
-+	pcpu_for_each_unpop_region(chunk, rs, re, page_start, page_end) {
- 		WARN_ON(chunk->immutable);
+@@ -802,17 +803,32 @@ restart:
+ area_found:
+ 	spin_unlock_irqrestore(&pcpu_lock, flags);
  
--		if (pcpu_populate_chunk(chunk, off, size)) {
-+		if (pcpu_populate_chunk(chunk, rs, re)) {
- 			spin_lock_irqsave(&pcpu_lock, flags);
- 			pcpu_free_area(chunk, off);
- 			err = "failed to populate";
- 			goto fail_unlock;
- 		}
- 
--		bitmap_set(chunk->populated, page_start, page_end - page_start);
-+		bitmap_set(chunk->populated, rs, re - rs);
+-	/* populate, map and clear the area */
+-	if (pcpu_populate_chunk(chunk, off, size)) {
+-		spin_lock_irqsave(&pcpu_lock, flags);
+-		pcpu_free_area(chunk, off);
+-		err = "failed to populate";
+-		goto fail_unlock;
++	/* populate if not all pages are already there */
++	page_start = PFN_DOWN(off);
++	page_end = PFN_UP(off + size);
++
++	rs = page_start;
++	pcpu_next_pop(chunk, &rs, &re, page_end);
++
++	if (rs != page_start || re != page_end) {
++		WARN_ON(chunk->immutable);
++
++		if (pcpu_populate_chunk(chunk, off, size)) {
++			spin_lock_irqsave(&pcpu_lock, flags);
++			pcpu_free_area(chunk, off);
++			err = "failed to populate";
++			goto fail_unlock;
++		}
++
++		bitmap_set(chunk->populated, page_start, page_end - page_start);
  	}
  
  	mutex_unlock(&pcpu_alloc_mutex);
-@@ -919,12 +916,12 @@ static void pcpu_reclaim(struct work_struct *work)
+ 
+-	/* return address relative to base address */
++	/* clear the areas and return address relative to base address */
++	for_each_possible_cpu(cpu)
++		memset((void *)pcpu_chunk_addr(chunk, cpu, 0) + off, 0, size);
++
+ 	ptr = __addr_to_pcpu_ptr(chunk->base_addr + off);
+ 	kmemleak_alloc_percpu(ptr, size);
+ 	return ptr;
+@@ -903,7 +919,12 @@ static void pcpu_reclaim(struct work_struct *work)
  	spin_unlock_irq(&pcpu_lock);
  
  	list_for_each_entry_safe(chunk, next, &todo, list) {
--		int rs = 0, re;
--
--		pcpu_next_unpop(chunk, &rs, &re, PFN_UP(pcpu_unit_size));
--		if (rs || re != PFN_UP(pcpu_unit_size))
--			pcpu_depopulate_chunk(chunk, 0, pcpu_unit_size);
-+		int rs, re;
- 
-+		pcpu_for_each_pop_region(chunk, rs, re, 0, pcpu_unit_pages) {
-+			pcpu_depopulate_chunk(chunk, rs, re);
-+			bitmap_clear(chunk->populated, rs, re - rs);
-+		}
+-		pcpu_depopulate_chunk(chunk, 0, pcpu_unit_size);
++		int rs = 0, re;
++
++		pcpu_next_unpop(chunk, &rs, &re, PFN_UP(pcpu_unit_size));
++		if (rs || re != PFN_UP(pcpu_unit_size))
++			pcpu_depopulate_chunk(chunk, 0, pcpu_unit_size);
++
  		pcpu_destroy_chunk(chunk);
  	}
  
