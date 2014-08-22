@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628AbaHVAzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:55:04 -0400
-Received: from mail-pd0-f201.google.com ([209.85.192.201]:59248 "EHLO
-	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863AbaHVAzC (ORCPT
+	id S1755533AbaHVBBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:01:45 -0400
+Received: from mx1.scotdoyle.com ([23.226.141.211]:34378 "EHLO
+	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaHVBBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:55:02 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        Addy Ke <addy.ke@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] regulator: RK808: Fix uninitialized value
-Date: Thu, 21 Aug 2014 17:54:55 -0700
-Message-Id: <1408668895-1108-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Thu, 21 Aug 2014 21:01:43 -0400
+Date: Fri, 22 Aug 2014 00:58:41 +0000 (UTC)
+From: Scot Doyle <lkml14@scotdoyle.com>
+To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>
+cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] tpm_tis: Verify ACPI-specified interrupt
+Message-ID: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain>
+User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RK808 regulator driver was putting its config on the stack but not
-initting it.  That means that you got a semi-random config.  Fix this.
+Some machines, such as the Acer C720 and Toshiba CB35, have TPMs
+that do not use interrupts while also having an ACPI TPM entry
+indicating a specific interrupt to be used. Since this interrupt
+is invalid, these machines freeze on resume until the interrupt
+times out.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
+Generate the ACPI-specified interrupt. If none is received, then
+fall back to polling mode.
+
+Signed-off-by: Scot Doyle <lkml14@scotdoyle.com>
+Tested-by: James Duley <jagduley@gmail.com>
+Tested-by: Michael Mullin <masmullin@gmail.com>
 ---
- drivers/regulator/rk808-regulator.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  drivers/char/tpm/tpm_tis.c | 14 ++++++++------
+  1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
-index 94753fd..4d5041c 100644
---- a/drivers/regulator/rk808-regulator.c
-+++ b/drivers/regulator/rk808-regulator.c
-@@ -334,7 +334,7 @@ static int rk808_regulator_probe(struct platform_device *pdev)
- {
- 	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
- 	struct rk808_board *pdata;
--	struct regulator_config config;
-+	struct regulator_config config = {};
- 	struct regulator_dev *rk808_rdev;
- 	struct regulator_init_data *reg_data;
- 	int i = 0;
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 2c46734..736ed4a 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -633,12 +633,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+  	iowrite32(intmask,
+  		  chip->vendor.iobase +
+  		  TPM_INT_ENABLE(chip->vendor.locality));
+-	if (interrupts)
+-		chip->vendor.irq = irq;
+-	if (interrupts && !chip->vendor.irq) {
+-		irq_s =
+-		    ioread8(chip->vendor.iobase +
+-			    TPM_INT_VECTOR(chip->vendor.locality));
++	chip->vendor.irq = 0;
++	if (interrupts) {
++		if (irq)
++			irq_s = irq;
++		else
++			irq_s =
++			    ioread8(chip->vendor.iobase +
++				    TPM_INT_VECTOR(chip->vendor.locality));
+  		if (irq_s) {
+  			irq_e = irq_s;
+  		} else {
 -- 
-2.1.0.rc2.206.gedb03e5
-
+2.0.4
