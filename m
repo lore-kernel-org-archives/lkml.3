@@ -1,270 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769AbaHVDtX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 23:49:23 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:38689 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553AbaHVDtV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 23:49:21 -0400
-Date: Fri, 22 Aug 2014 12:49:18 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>, rabin@rab.in,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Magnus Damm <magnus.damm@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH v7 1/8] clk: Add temporary mapping to the existing API
-Message-ID: <20140822034917.GN9099@verge.net.au>
-References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
- <1408375833-10703-2-git-send-email-tomeu.vizoso@collabora.com>
- <20140820145006.5251.30923@quantum>
- <20140821180448.GD10066@atomide.com>
- <20140821181007.GY12769@titan.lakedaemon.net>
+	id S1751019AbaHVEDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 00:03:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48861 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733AbaHVEDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 00:03:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,377,1406617200"; 
+   d="scan'208";a="580223453"
+Date: Fri, 22 Aug 2014 12:04:20 +0800
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink
+ supporting
+Message-ID: <20140822040420.GA4756@kernel>
+Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
+References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130411232907.GC29398@hacker.(null)>
+ <20130412152237.GM16732@two.firstfloor.org>
+ <20140821233729.GB2420@kernel>
+ <53F69E26.1090408@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140821181007.GY12769@titan.lakedaemon.net>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53F69E26.1090408@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 02:10:07PM -0400, Jason Cooper wrote:
-> On Thu, Aug 21, 2014 at 11:04:48AM -0700, Tony Lindgren wrote:
-> > * Mike Turquette <mturquette@linaro.org> [140820 07:53]:
-> > > Quoting Tomeu Vizoso (2014-08-18 08:30:27)
-> > > > To preserve git-bisectability, add aliases from the future provider API to the
-> > > > existing public API.
-> > > > 
-> > > > Also includes clk-provider.h and clk-dev.h in a few places so the right
-> > > > functions are defined.
-> > > > 
-> > > > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> > > 
-> > > Cc'ing Tony for the OMAP2+ parts, Simon & Magnus for the SHMobile parts,
-> > > Jason & Andrew for the Orion parts, Mauro & Kukjin for the Exynos parts.
-> > > 
-> > > This change is super trivial but it's best not to touch these files
-> > > without a heads-up for the owners.
-> > 
-> > As long as it compiles omap2plus_defconfig it seems safe to me:
-> > 
-> > Acked-by: Tony Lindgren <tony@atomide.com>
-> 
-> Same here for orion5x_defconfig, dove_defconfig, and mv78xx_defconfig.
-> 
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
-> 
-> Also, added Sebastian to the Cc as he's the maintainer of mach-berlin.
+On Fri, Aug 22, 2014 at 09:34:30AM +0800, Zhang Yanfei wrote:
+>Hello Wanpeng
+>
+>On 08/22/2014 07:37 AM, Wanpeng Li wrote:
+>> Hi Andi,
+>> On Fri, Apr 12, 2013 at 05:22:37PM +0200, Andi Kleen wrote:
+>>> On Fri, Apr 12, 2013 at 07:29:07AM +0800, Wanpeng Li wrote:
+>>>> Ping Andi,
+>>>> On Thu, Apr 04, 2013 at 05:09:08PM +0800, Wanpeng Li wrote:
+>>>>> order >= MAX_ORDER pages are only allocated at boot stage using the 
+>>>>> bootmem allocator with the "hugepages=xxx" option. These pages are never 
+>>>>> free after boot by default since it would be a one-way street(>= MAX_ORDER
+>>>>> pages cannot be allocated later), but if administrator confirm not to 
+>>>>> use these gigantic pages any more, these pinned pages will waste memory
+>>>>> since other users can't grab free pages from gigantic hugetlb pool even
+>>>>> if OOM, it's not flexible.  The patchset add hugetlb gigantic page pools
+>>>>> shrink supporting. Administrator can enable knob exported in sysctl to
+>>>>> permit to shrink gigantic hugetlb pool.
+>>>
+>>>
+>>> I originally didn't allow this because it's only one way and it seemed
+>>> dubious.  I've been recently working on a new patchkit to allocate
+>>> GB pages from CMA. With that freeing actually makes sense, as 
+>>> the pages can be reallocated.
+>>>
+>> 
+>> More than one year past, If your allocate GB pages from CMA merged? 
+>
+>commit 944d9fec8d7aee3f2e16573e9b6a16634b33f403
+>Author: Luiz Capitulino <lcapitulino@redhat.com>
+>Date:   Wed Jun 4 16:07:13 2014 -0700
+>
+>    hugetlb: add support for gigantic page allocation at runtime
+>
+>
 
-I will add my usual 2c worth about global changes vs adding things to
-infrastructure, updating the platforms, then removing things from
-infrastructure, in separate patches picked up by the relevant maintainers.
-But if everyone else is happy with doing things this way I won't say no.
+Ah, thanks for your pointing out.
 
-Ideally I'd like the shmobile portion patch to apply cleanly to linux-next
-(it looks like it should) and for the following to still compile:
-ape6evm_defconfig, armadillo800eva_defconfig, bockw_defconfig,
-koelsch_defconfig, kzm9g_defconfig, lager_defconfig, mackerel_defconfig,
-marzen_defconfig, shmobile_defconfig.
+Regards,
+Wanpeng Li 
 
-With all that said and done:
-
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
-
-> thx,
-> 
-> Jason.
-> 
-> > 
-> > > > ---
-> > > > v7: * Add mappings for clk_notifier_[un]register
-> > > >     * Add more clk-provider.h includes to clk implementations
-> > > > 
-> > > > v4: * Add more clk-provider.h includes to clk implementations
-> > > >     * Add mapping for clk_provider_round_rate
-> > > > ---
-> > > >  arch/arm/mach-omap2/display.c                 |  1 +
-> > > >  arch/arm/mach-omap2/omap_device.c             |  1 +
-> > > >  arch/arm/mach-shmobile/clock.c                |  1 +
-> > > >  arch/arm/plat-orion/common.c                  |  1 +
-> > > >  drivers/clk/berlin/bg2.c                      |  1 +
-> > > >  drivers/clk/berlin/bg2q.c                     |  1 +
-> > > >  drivers/clk/clk-conf.c                        |  1 +
-> > > >  drivers/clk/clkdev.c                          |  1 +
-> > > >  drivers/media/platform/exynos4-is/media-dev.c |  1 +
-> > > >  include/linux/clk-provider.h                  | 25 +++++++++++++++++++++++++
-> > > >  include/linux/clk/zynq.h                      |  1 +
-> > > >  11 files changed, 35 insertions(+)
-> > > > 
-> > > > diff --git a/arch/arm/mach-omap2/display.c b/arch/arm/mach-omap2/display.c
-> > > > index bf852d7..0f9e479 100644
-> > > > --- a/arch/arm/mach-omap2/display.c
-> > > > +++ b/arch/arm/mach-omap2/display.c
-> > > > @@ -21,6 +21,7 @@
-> > > >  #include <linux/platform_device.h>
-> > > >  #include <linux/io.h>
-> > > >  #include <linux/clk.h>
-> > > > +#include <linux/clk-provider.h>
-> > > >  #include <linux/err.h>
-> > > >  #include <linux/delay.h>
-> > > >  #include <linux/of.h>
-> > > > diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-> > > > index 01ef59d..fbe8cf0 100644
-> > > > --- a/arch/arm/mach-omap2/omap_device.c
-> > > > +++ b/arch/arm/mach-omap2/omap_device.c
-> > > > @@ -32,6 +32,7 @@
-> > > >  #include <linux/io.h>
-> > > >  #include <linux/clk.h>
-> > > >  #include <linux/clkdev.h>
-> > > > +#include <linux/clk-provider.h>
-> > > >  #include <linux/pm_runtime.h>
-> > > >  #include <linux/of.h>
-> > > >  #include <linux/notifier.h>
-> > > > diff --git a/arch/arm/mach-shmobile/clock.c b/arch/arm/mach-shmobile/clock.c
-> > > > index 806f940..ed415dc 100644
-> > > > --- a/arch/arm/mach-shmobile/clock.c
-> > > > +++ b/arch/arm/mach-shmobile/clock.c
-> > > > @@ -24,6 +24,7 @@
-> > > >  
-> > > >  #ifdef CONFIG_COMMON_CLK
-> > > >  #include <linux/clk.h>
-> > > > +#include <linux/clk-provider.h>
-> > > >  #include <linux/clkdev.h>
-> > > >  #include "clock.h"
-> > > >  
-> > > > diff --git a/arch/arm/plat-orion/common.c b/arch/arm/plat-orion/common.c
-> > > > index 3ec6e8e..961b593 100644
-> > > > --- a/arch/arm/plat-orion/common.c
-> > > > +++ b/arch/arm/plat-orion/common.c
-> > > > @@ -15,6 +15,7 @@
-> > > >  #include <linux/serial_8250.h>
-> > > >  #include <linux/ata_platform.h>
-> > > >  #include <linux/clk.h>
-> > > > +#include <linux/clk-provider.h>
-> > > >  #include <linux/clkdev.h>
-> > > >  #include <linux/mv643xx_eth.h>
-> > > >  #include <linux/mv643xx_i2c.h>
-> > > > diff --git a/drivers/clk/berlin/bg2.c b/drivers/clk/berlin/bg2.c
-> > > > index 515fb13..4c81e09 100644
-> > > > --- a/drivers/clk/berlin/bg2.c
-> > > > +++ b/drivers/clk/berlin/bg2.c
-> > > > @@ -19,6 +19,7 @@
-> > > >  
-> > > >  #include <linux/clk.h>
-> > > >  #include <linux/clk-provider.h>
-> > > > +#include <linux/clkdev.h>
-> > > >  #include <linux/kernel.h>
-> > > >  #include <linux/of.h>
-> > > >  #include <linux/of_address.h>
-> > > > diff --git a/drivers/clk/berlin/bg2q.c b/drivers/clk/berlin/bg2q.c
-> > > > index 21784e4..748da9b 100644
-> > > > --- a/drivers/clk/berlin/bg2q.c
-> > > > +++ b/drivers/clk/berlin/bg2q.c
-> > > > @@ -19,6 +19,7 @@
-> > > >  
-> > > >  #include <linux/clk.h>
-> > > >  #include <linux/clk-provider.h>
-> > > > +#include <linux/clkdev.h>
-> > > >  #include <linux/kernel.h>
-> > > >  #include <linux/of.h>
-> > > >  #include <linux/of_address.h>
-> > > > diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
-> > > > index aad4796..d36a7b3 100644
-> > > > --- a/drivers/clk/clk-conf.c
-> > > > +++ b/drivers/clk/clk-conf.c
-> > > > @@ -8,6 +8,7 @@
-> > > >   */
-> > > >  
-> > > >  #include <linux/clk.h>
-> > > > +#include <linux/clkdev.h>
-> > > >  #include <linux/clk-provider.h>
-> > > >  #include <linux/clk/clk-conf.h>
-> > > >  #include <linux/device.h>
-> > > > diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> > > > index da4bda8..c751d0c 100644
-> > > > --- a/drivers/clk/clkdev.c
-> > > > +++ b/drivers/clk/clkdev.c
-> > > > @@ -18,6 +18,7 @@
-> > > >  #include <linux/string.h>
-> > > >  #include <linux/mutex.h>
-> > > >  #include <linux/clk.h>
-> > > > +#include <linux/clk-provider.h>
-> > > >  #include <linux/clkdev.h>
-> > > >  #include <linux/of.h>
-> > > >  
-> > > > diff --git a/drivers/media/platform/exynos4-is/media-dev.c b/drivers/media/platform/exynos4-is/media-dev.c
-> > > > index 344718d..2620c48 100644
-> > > > --- a/drivers/media/platform/exynos4-is/media-dev.c
-> > > > +++ b/drivers/media/platform/exynos4-is/media-dev.c
-> > > > @@ -13,6 +13,7 @@
-> > > >  #include <linux/bug.h>
-> > > >  #include <linux/clk.h>
-> > > >  #include <linux/clk-provider.h>
-> > > > +#include <linux/clkdev.h>
-> > > >  #include <linux/device.h>
-> > > >  #include <linux/errno.h>
-> > > >  #include <linux/i2c.h>
-> > > > diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> > > > index 411dd7e..a1a7bb7 100644
-> > > > --- a/include/linux/clk-provider.h
-> > > > +++ b/include/linux/clk-provider.h
-> > > > @@ -16,6 +16,31 @@
-> > > >  
-> > > >  #ifdef CONFIG_COMMON_CLK
-> > > >  
-> > > > +/* Temporarily map the to-be-added API to the old API, just so stuff compiles */
-> > > > +#define clk_core                       clk
-> > > > +
-> > > > +#define __clk_create_clk
-> > > > +
-> > > > +#define clk_provider_get                       clk_get
-> > > > +#define clk_provider_get_sys                   clk_get_sys
-> > > > +#define devm_clk_provider_get                  devm_clk_get
-> > > > +#define of_clk_provider_get                    of_clk_get
-> > > > +#define of_clk_provider_get_by_name            of_clk_get_by_name
-> > > > +
-> > > > +#define clk_provider_set_rate                  clk_set_rate
-> > > > +#define clk_provider_get_rate                  clk_get_rate
-> > > > +#define clk_provider_round_rate                        clk_round_rate
-> > > > +#define clk_provider_set_parent                        clk_set_parent
-> > > > +#define clk_provider_get_parent                        clk_get_parent
-> > > > +#define clk_provider_prepare                   clk_prepare
-> > > > +#define clk_provider_unprepare                 clk_unprepare
-> > > > +#define clk_provider_enable                    clk_enable
-> > > > +#define clk_provider_disable                   clk_disable
-> > > > +#define clk_provider_prepare_enable            clk_prepare_enable
-> > > > +#define clk_provider_disable_unprepare         clk_unprepare
-> > > > +#define clk_provider_notifier_register         clk_notifier_register
-> > > > +#define clk_provider_notifier_unregister       clk_notifier_unregister
-> > > > +
-> > > >  /*
-> > > >   * flags used across common struct clk.  these flags should only affect the
-> > > >   * top-level framework.  custom flags for dealing with hardware specifics
-> > > > diff --git a/include/linux/clk/zynq.h b/include/linux/clk/zynq.h
-> > > > index 7a5633b..a990a59 100644
-> > > > --- a/include/linux/clk/zynq.h
-> > > > +++ b/include/linux/clk/zynq.h
-> > > > @@ -21,6 +21,7 @@
-> > > >  #define __LINUX_CLK_ZYNQ_H_
-> > > >  
-> > > >  #include <linux/spinlock.h>
-> > > > +#include <linux/clk-provider.h>
-> > > >  
-> > > >  void zynq_clock_init(void);
-> > > >  
-> > > > -- 
-> > > > 1.9.3
-> > > > 
-> 
+>> 
+>> Regards,
+>> Wanpeng Li 
+>> 
+>>> -Andi
+>>>
+>>> --
+>>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>>> see: http://www.linux-mm.org/ .
+>>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>> .
+>> 
+>
+>
+>-- 
+>Thanks.
+>Zhang Yanfei
+>
+>--
+>To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>the body to majordomo@kvack.org.  For more info on Linux MM,
+>see: http://www.linux-mm.org/ .
+>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
