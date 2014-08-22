@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236AbaHVMxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 08:53:00 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:16839 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756121AbaHVMw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 08:52:59 -0400
-X-IronPort-AV: E=Sophos;i="5.04,380,1406592000"; 
-   d="scan'208";a="164142585"
-Message-ID: <53F73D29.4020401@citrix.com>
-Date: Fri, 22 Aug 2014 13:52:57 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Arianna Avanzini <avanzini.arianna@gmail.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <bob.liu@oracle.com>, <felipe.franciosi@citrix.com>, <axboe@fb.com>
-Subject: Re: [PATCH RFC 3/4] xen, blkfront: introduce support for multiple
- hw queues
-References: <1408706404-6614-1-git-send-email-avanzini.arianna@gmail.com> <1408706404-6614-4-git-send-email-avanzini.arianna@gmail.com>
-In-Reply-To: <1408706404-6614-4-git-send-email-avanzini.arianna@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+	id S1756259AbaHVMyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:54:40 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:44136 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062AbaHVMyi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 08:54:38 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] drivers: target: target_core_ua_h: Add #define of include guard
+Date: Fri, 22 Aug 2014 14:54:31 +0200
+Message-Id: <1408712071-14474-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/08/14 12:20, Arianna Avanzini wrote:
-> This commit introduces in xen-blkfront actual support for multiple
-> hardware queues. The number of available hardware queues is gathered
-> from the backend via XenStore; in case the expected XenStore key
-> is not available, the frontend defaults to a single I/O ring.
+Clearly the file was meant to contain an include guard, but it was
+missing the #define part.
 
-Can you split this into a part that reactors blkfront handle multiple
-queues and the part that adds the XenStore negotiation for this?
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/target/target_core_ua.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-You will also need to to add documentation for the XenStore keys to the
-blkif.h header in Xen.
+diff --git a/drivers/target/target_core_ua.h b/drivers/target/target_core_ua.h
+index be912b3..a6b56b3 100644
+--- a/drivers/target/target_core_ua.h
++++ b/drivers/target/target_core_ua.h
+@@ -1,4 +1,5 @@
+ #ifndef TARGET_CORE_UA_H
++#define TARGET_CORE_UA_H
+ 
+ /*
+  * From spc4r17, Table D.1: ASC and ASCQ Assignement
+-- 
+1.9.2
 
-David
