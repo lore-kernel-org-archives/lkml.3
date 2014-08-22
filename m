@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391AbaHVNGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:06:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37700 "EHLO mx1.redhat.com"
+	id S1756323AbaHVNGD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:06:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34325 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756333AbaHVNGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:06:06 -0400
+	id S1756285AbaHVNF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 09:05:59 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <andi@firstfloor.org>,
@@ -18,27 +18,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <andi@firstfloor.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/5] perf tools: Add hash of periods for struct perf_sample_id
-Date: Fri, 22 Aug 2014 15:05:17 +0200
-Message-Id: <1408712718-19656-5-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 3/5] perf tools: Add support to traverse xyarrays
+Date: Fri, 22 Aug 2014 15:05:16 +0200
+Message-Id: <1408712718-19656-4-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1408712718-19656-1-git-send-email-jolsa@kernel.org>
 References: <1408712718-19656-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With PERF_FORMAT_GROUP format on inherited events being allowed
-in kernel, we can now allow leader sampling on inherited events.
+Adding xyarray__for_each define to allow sequentially
+traverse xyarrays. It will be handy in following patch.
 
-But before we actually switch it on, we need to change the sorting
-of PERF_SAMPLE_READ sample's data. Currently PERF_SAMPLE_READ values
-are sorted on event id. Now when we'll get data from all children
-processes we need to add TID as another sort key.
-
-Adding hash of TIDs into each 'struct perf_sample_id' to
-hold event values for different TIDs.
-
-Reported-by: Jen-Cheng(Tommy) Huang <tommy24@gatech.edu>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -52,185 +43,134 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/evsel.c   | 13 +++++++
- tools/perf/util/evsel.h   |  5 ++-
- tools/perf/util/session.c | 93 ++++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 104 insertions(+), 7 deletions(-)
+ tools/perf/Makefile.perf        |  1 +
+ tools/perf/tests/builtin-test.c |  4 ++++
+ tools/perf/tests/tests.h        |  1 +
+ tools/perf/tests/xyarray.c      | 33 +++++++++++++++++++++++++++++++++
+ tools/perf/util/xyarray.c       |  4 +++-
+ tools/perf/util/xyarray.h       |  6 ++++++
+ 6 files changed, 48 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/tests/xyarray.c
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index b38de5819323..507d458ded2c 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -787,8 +787,21 @@ void perf_evsel__free_fd(struct perf_evsel *evsel)
- 	evsel->fd = NULL;
- }
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 1ea31e275b4d..555acea22f20 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -425,6 +425,7 @@ endif
+ endif
+ LIB_OBJS += $(OUTPUT)tests/mmap-thread-lookup.o
+ LIB_OBJS += $(OUTPUT)tests/thread-mg-share.o
++LIB_OBJS += $(OUTPUT)tests/xyarray.o
  
-+static void free_sample_id(struct perf_evsel *evsel)
-+{
-+	struct perf_sample_id *sid;
-+
-+	if (evsel->sample_id) {
-+		xyarray__for_each(evsel->sample_id, sid) {
-+			if (sid->periods)
-+				perf_sample_hash__delete(sid->periods);
-+		}
-+	}
-+}
-+
- void perf_evsel__free_id(struct perf_evsel *evsel)
- {
-+	free_sample_id(evsel);
- 	xyarray__delete(evsel->sample_id);
- 	evsel->sample_id = NULL;
- 	zfree(&evsel->id);
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 7bc314be6a7b..41c000fc018b 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -29,6 +29,7 @@ struct perf_counts {
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index 99481361b19f..43d40273565f 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -154,6 +154,10 @@ static struct test {
+ 		.func = test__hists_cumulate,
+ 	},
+ 	{
++		.desc = "Test xyarray",
++		.func = test__xyarray,
++	},
++	{
+ 		.func = NULL,
+ 	},
  };
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index ed64790a395f..d11378f04126 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -48,6 +48,7 @@ int test__mmap_thread_lookup(void);
+ int test__thread_mg_share(void);
+ int test__hists_output(void);
+ int test__hists_cumulate(void);
++int test__xyarray(void);
  
- struct perf_evsel;
-+struct perf_sample_hash;
- 
- /*
-  * Per fd, to map back from PERF_SAMPLE_ID to evsel, only used when there are
-@@ -40,9 +41,11 @@ struct perf_sample_id {
- 	struct perf_evsel	*evsel;
- 
- 	/* Holds total ID period value for PERF_SAMPLE_READ processing. */
--	u64			period;
-+	struct perf_sample_hash	*periods;
- };
- 
-+void perf_sample_hash__delete(struct perf_sample_hash *hash);
+ #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
+diff --git a/tools/perf/tests/xyarray.c b/tools/perf/tests/xyarray.c
+new file mode 100644
+index 000000000000..e1a1d6a45106
+--- /dev/null
++++ b/tools/perf/tests/xyarray.c
+@@ -0,0 +1,33 @@
++#include "tests.h"
++#include "xyarray.h"
++#include "debug.h"
 +
- /** struct perf_evsel - event selector
-  *
-  * @name - Can be set to retain the original event name passed by the user,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6d2d50dea1d8..dcd2662b3b2e 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1,4 +1,6 @@
- #include <linux/kernel.h>
-+#include <linux/bitops.h>
-+#include <linux/hash.h>
- #include <traceevent/event-parse.h>
- 
- #include <byteswap.h>
-@@ -733,6 +735,82 @@ static struct machine *
- 	return &session->machines.host;
- }
- 
-+struct perf_sample_period {
-+	struct hlist_node	node;
-+	u64			value;
-+	pid_t			tid;
++struct krava {
++	int a;
 +};
 +
-+#define PERF_SAMPLE__HLIST_BITS 8
-+#define PERF_SAMPLE__HLIST_SIZE (1 << PERF_SAMPLE__HLIST_BITS)
++#define X 100
++#define Y 100
 +
-+struct perf_sample_hash {
-+	struct hlist_head heads[PERF_SAMPLE__HLIST_SIZE];
-+};
-+
-+void perf_sample_hash__delete(struct perf_sample_hash *hash)
++int test__xyarray(void)
 +{
-+	int h;
++	struct xyarray *a;
++	struct krava *k;
++	int x, y;
 +
-+	for (h = 0; h < PERF_SAMPLE__HLIST_SIZE; h++) {
-+		struct perf_sample_period *period;
-+		struct hlist_head *head;
-+		struct hlist_node *n;
++	a = xyarray__new(X, Y, sizeof(struct krava));
++	TEST_ASSERT_VAL("failed to allocate xyarray", a);
 +
-+		head = &hash->heads[h];
-+		hlist_for_each_entry_safe(period, n, head, node) {
-+			hlist_del(&period->node);
-+			free(period);
++	for (x = 0; x < X; x++) {
++		for (y = 0; y < Y; y++) {
++			k = xyarray__entry(a, x, y);
++			k->a = x * X + y;
 +		}
 +	}
 +
-+	free(hash);
++	y = 0;
++	xyarray__for_each(a, k)
++		TEST_ASSERT_VAL("wrong array value", k->a == y++);
++
++	return 0;
 +}
-+
-+static struct perf_sample_period*
-+findnew_hash_period(struct perf_sample_hash *hash, pid_t tid)
-+{
-+	struct perf_sample_period *period;
-+	struct hlist_head *head;
-+	int hash_val;
-+
-+	hash_val = hash_64(tid, PERF_SAMPLE__HLIST_BITS);
-+	head = &hash->heads[hash_val];
-+
-+	hlist_for_each_entry(period, head, node) {
-+		if (period->tid == tid)
-+			return period;
-+	}
-+
-+	period = zalloc(sizeof(*period));
-+	if (period) {
-+		period->tid = tid;
-+		hlist_add_head(&period->node, &hash->heads[hash_val]);
-+	}
-+
-+	return period;
-+}
-+
-+static struct perf_sample_period*
-+get_sample_period(struct perf_sample_id *sid, pid_t tid)
-+{
-+	struct perf_sample_hash *hash = sid->periods;
-+	int i;
-+
-+	if (hash == NULL) {
-+		hash = zalloc(sizeof(*hash));
-+		if (hash == NULL)
-+			return NULL;
-+
-+		for (i = 0; i < PERF_SAMPLE__HLIST_SIZE; ++i)
-+			INIT_HLIST_HEAD(&hash->heads[i]);
-+
-+		sid->periods = hash;
-+	}
-+
-+	return findnew_hash_period(hash, tid);
-+}
-+
- static int deliver_sample_value(struct perf_session *session,
- 				struct perf_tool *tool,
- 				union perf_event *event,
-@@ -741,19 +819,22 @@ static int deliver_sample_value(struct perf_session *session,
- 				struct machine *machine)
+diff --git a/tools/perf/util/xyarray.c b/tools/perf/util/xyarray.c
+index 22afbf6c536a..077e8240fe98 100644
+--- a/tools/perf/util/xyarray.c
++++ b/tools/perf/util/xyarray.c
+@@ -4,11 +4,13 @@
+ struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size)
  {
- 	struct perf_sample_id *sid;
-+	struct perf_sample_period *period;
+ 	size_t row_size = ylen * entry_size;
+-	struct xyarray *xy = zalloc(sizeof(*xy) + xlen * row_size);
++	size_t size = xlen * row_size;
++	struct xyarray *xy = zalloc(sizeof(*xy) + size);
  
- 	sid = perf_evlist__id2sid(session->evlist, v->id);
--	if (sid) {
--		sample->id     = v->id;
--		sample->period = v->value - sid->period;
--		sid->period    = v->value;
--	}
--
- 	if (!sid || sid->evsel == NULL) {
- 		++session->stats.nr_unknown_id;
- 		return 0;
+ 	if (xy != NULL) {
+ 		xy->entry_size = entry_size;
+ 		xy->row_size   = row_size;
++		xy->size       = size;
  	}
  
-+	period = get_sample_period(sid, sample->tid);
-+	if (period == NULL)
-+		return -ENOMEM;
-+
-+	sample->id     = v->id;
-+	sample->period = v->value - period->value;
-+	period->value  = v->value;
-+
- 	return tool->sample(tool, event, sample, sid->evsel, machine);
+ 	return xy;
+diff --git a/tools/perf/util/xyarray.h b/tools/perf/util/xyarray.h
+index c488a07275dd..e4efa075fd76 100644
+--- a/tools/perf/util/xyarray.h
++++ b/tools/perf/util/xyarray.h
+@@ -6,6 +6,7 @@
+ struct xyarray {
+ 	size_t row_size;
+ 	size_t entry_size;
++	size_t size;
+ 	char contents[];
+ };
+ 
+@@ -17,4 +18,9 @@ static inline void *xyarray__entry(struct xyarray *xy, int x, int y)
+ 	return &xy->contents[x * xy->row_size + y * xy->entry_size];
  }
  
++#define xyarray__for_each(array, entry)					\
++	for (entry = (void *) &array->contents[0];			\
++	     (void *) entry < ((void *) array->contents + array->size);	\
++	     entry++)
++
+ #endif /* _PERF_XYARRAY_H_ */
 -- 
 1.8.3.1
 
