@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411AbaHVPvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:51:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55520 "EHLO
+	id S932480AbaHVPv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:51:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55538 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932251AbaHVPua (ORCPT
+	with ESMTP id S932195AbaHVPu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:50:30 -0400
+	Fri, 22 Aug 2014 11:50:27 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
@@ -18,9 +18,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 7/9] usb: rename transceiver and phy to usb_phy in ChipIdea
-Date: Fri, 22 Aug 2014 17:50:18 +0200
-Message-Id: <1408722621-3635-8-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v3 4/9] usb: rename phy to usb_phy in HCD
+Date: Fri, 22 Aug 2014 17:50:15 +0200
+Message-Id: <1408722621-3635-5-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -31,236 +31,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares the introduction of the generic PHY support in the
-USB ChipIdea common functions. The USB PHY member of the ChipIdea
-structure ('transceiver') is renamed to 'usb_phy', the 'phy' member of
-the ChipIdea pdata structure is renamed to 'usb_phy' and modifications
-are done in all drivers accessing it. Renaming this pointer will allow
-to keep the compatibility for USB PHY drivers.
+The USB PHY member of the HCD structure is renamed to 'usb_phy' and
+modifications are done in all drivers accessing it.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/chipidea/ci.h          |  4 ++--
- drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
- drivers/usb/chipidea/ci_hdrc_msm.c |  8 ++++----
- drivers/usb/chipidea/core.c        | 20 ++++++++++----------
- drivers/usb/chipidea/debug.c       |  2 +-
- drivers/usb/chipidea/host.c        |  4 ++--
- drivers/usb/chipidea/otg_fsm.c     |  4 ++--
- drivers/usb/chipidea/udc.c         |  4 ++--
- include/linux/usb/chipidea.h       |  2 +-
- 9 files changed, 25 insertions(+), 25 deletions(-)
+ drivers/usb/chipidea/host.c   |  2 +-
+ drivers/usb/core/hcd.c        | 20 ++++++++++----------
+ drivers/usb/core/hub.c        |  8 ++++----
+ drivers/usb/host/ehci-fsl.c   | 16 ++++++++--------
+ drivers/usb/host/ehci-hub.c   |  2 +-
+ drivers/usb/host/ehci-msm.c   |  4 ++--
+ drivers/usb/host/ehci-tegra.c | 16 ++++++++--------
+ drivers/usb/host/ohci-omap.c  | 20 ++++++++++----------
+ include/linux/usb/hcd.h       |  2 +-
+ 9 files changed, 45 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-index 9563cb56d564..b2caa1772712 100644
---- a/drivers/usb/chipidea/ci.h
-+++ b/drivers/usb/chipidea/ci.h
-@@ -161,7 +161,7 @@ struct hw_bank {
-  * @test_mode: the selected test mode
-  * @platdata: platform specific information supplied by parent device
-  * @vbus_active: is VBUS active
-- * @transceiver: pointer to USB PHY, if any
-+ * @usb_phy: pointer to USB PHY, if any
-  * @hcd: pointer to usb_hcd for ehci host driver
-  * @debugfs: root dentry for this controller in debugfs
-  * @id_event: indicates there is an id event, and handled at ci_otg_work
-@@ -201,7 +201,7 @@ struct ci_hdrc {
- 
- 	struct ci_hdrc_platform_data	*platdata;
- 	int				vbus_active;
--	struct usb_phy			*transceiver;
-+	struct usb_phy			*usb_phy;
- 	struct usb_hcd			*hcd;
- 	struct dentry			*debugfs;
- 	bool				id_event;
-diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
-index 65444b02bd68..3aa3f62e079c 100644
---- a/drivers/usb/chipidea/ci_hdrc_imx.c
-+++ b/drivers/usb/chipidea/ci_hdrc_imx.c
-@@ -139,7 +139,7 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
- 		goto err_clk;
- 	}
- 
--	pdata.phy = data->phy;
-+	pdata.usb_phy = data->phy;
- 
- 	if (imx_platform_flag->flags & CI_HDRC_IMX_IMX28_WRITE_FIX)
- 		pdata.flags |= CI_HDRC_IMX28_WRITE_FIX;
-diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-index d72b9d2de2c5..94cd7c3e12a3 100644
---- a/drivers/usb/chipidea/ci_hdrc_msm.c
-+++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-@@ -31,13 +31,13 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
- 	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
- 		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
- 		/*
--		 * Put the transceiver in non-driving mode. Otherwise host
-+		 * Put the phy in non-driving mode. Otherwise host
- 		 * may not detect soft-disconnection.
- 		 */
--		val = usb_phy_io_read(ci->transceiver, ULPI_FUNC_CTRL);
-+		val = usb_phy_io_read(ci->usb_phy, ULPI_FUNC_CTRL);
- 		val &= ~ULPI_FUNC_CTRL_OPMODE_MASK;
- 		val |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
--		usb_phy_io_write(ci->transceiver, val, ULPI_FUNC_CTRL);
-+		usb_phy_io_write(ci->usb_phy, val, ULPI_FUNC_CTRL);
- 		break;
- 	default:
- 		dev_dbg(dev, "unknown ci_hdrc event\n");
-@@ -71,7 +71,7 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
- 	if (IS_ERR(phy))
- 		return PTR_ERR(phy);
- 
--	ci_hdrc_msm_platdata.phy = phy;
-+	ci_hdrc_msm_platdata.usb_phy = phy;
- 
- 	plat_ci = ci_hdrc_add_device(&pdev->dev,
- 				pdev->resource, pdev->num_resources,
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index 619d13e29995..a8cd35fd8175 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -306,7 +306,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_UTMI:
- 	case USBPHY_INTERFACE_MODE_UTMIW:
- 	case USBPHY_INTERFACE_MODE_HSIC:
--		ret = usb_phy_init(ci->transceiver);
-+		ret = usb_phy_init(ci->usb_phy);
- 		if (ret)
- 			return ret;
- 		hw_phymode_configure(ci);
-@@ -314,12 +314,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_ULPI:
- 	case USBPHY_INTERFACE_MODE_SERIAL:
- 		hw_phymode_configure(ci);
--		ret = usb_phy_init(ci->transceiver);
-+		ret = usb_phy_init(ci->usb_phy);
- 		if (ret)
- 			return ret;
- 		break;
- 	default:
--		ret = usb_phy_init(ci->transceiver);
-+		ret = usb_phy_init(ci->usb_phy);
- 	}
- 
- 	return ret;
-@@ -595,13 +595,13 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	if (ci->platdata->phy)
--		ci->transceiver = ci->platdata->phy;
-+	if (ci->platdata->usb_phy)
-+		ci->usb_phy = ci->platdata->usb_phy;
- 	else
--		ci->transceiver = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
- 
--	if (IS_ERR(ci->transceiver)) {
--		ret = PTR_ERR(ci->transceiver);
-+	if (IS_ERR(ci->usb_phy)) {
-+		ret = PTR_ERR(ci->usb_phy);
- 		/*
- 		 * if -ENXIO is returned, it means PHY layer wasn't
- 		 * enabled, so it makes no sense to return -EPROBE_DEFER
-@@ -718,7 +718,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- stop:
- 	ci_role_destroy(ci);
- deinit_phy:
--	usb_phy_shutdown(ci->transceiver);
-+	usb_phy_shutdown(ci->usb_phy);
- 
- 	return ret;
- }
-@@ -731,7 +731,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
- 	free_irq(ci->irq, ci);
- 	ci_role_destroy(ci);
- 	ci_hdrc_enter_lpm(ci, true);
--	usb_phy_shutdown(ci->transceiver);
-+	usb_phy_shutdown(ci->usb_phy);
- 	kfree(ci->hw_bank.regmap);
- 
- 	return 0;
-diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-index 787671d40379..5a7ea93011dd 100644
---- a/drivers/usb/chipidea/debug.c
-+++ b/drivers/usb/chipidea/debug.c
-@@ -219,7 +219,7 @@ static int ci_otg_show(struct seq_file *s, void *unused)
- 	fsm = &ci->fsm;
- 
- 	/* ------ State ----- */
--		usb_otg_state_string(ci->transceiver->otg.state));
-+		usb_otg_state_string(ci->usb_phy->otg.state));
- 
- 	/* ------ State Machine Variables ----- */
- 	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
 diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-index fc7541c906a2..0b67d78dd953 100644
+index a93d950e9468..fc7541c906a2 100644
 --- a/drivers/usb/chipidea/host.c
 +++ b/drivers/usb/chipidea/host.c
 @@ -59,7 +59,7 @@ static int host_start(struct ci_hdrc *ci)
  	hcd->has_tt = 1;
  
  	hcd->power_budget = ci->platdata->power_budget;
--	hcd->usb_phy = ci->transceiver;
-+	hcd->usb_phy = ci->usb_phy;
+-	hcd->phy = ci->transceiver;
++	hcd->usb_phy = ci->transceiver;
  
  	ehci = hcd_to_ehci(hcd);
  	ehci->caps = ci->hw_bank.cap;
-@@ -85,7 +85,7 @@ static int host_start(struct ci_hdrc *ci)
- 	if (ret) {
- 		goto disable_reg;
- 	} else {
--		struct usb_otg *otg = ci->transceiver->otg;
-+		struct usb_otg *otg = ci->usb_phy->otg;
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index c4ed66cb9ff3..86fdce55ae16 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2628,7 +2628,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	int retval;
+ 	struct usb_device *rhdev;
  
- 		ci->hcd = hcd;
- 		if (otg) {
-diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-index d8490e758a74..8a64ce87364e 100644
---- a/drivers/usb/chipidea/otg_fsm.c
-+++ b/drivers/usb/chipidea/otg_fsm.c
-@@ -788,10 +788,10 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
- 		return -ENOMEM;
+-	if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->phy) {
++	if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->usb_phy) {
+ 		struct usb_phy *phy = usb_get_phy_dev(hcd->self.controller, 0);
+ 
+ 		if (IS_ERR(phy)) {
+@@ -2641,7 +2641,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 				usb_put_phy(phy);
+ 				return retval;
+ 			}
+-			hcd->phy = phy;
++			hcd->usb_phy = phy;
+ 			hcd->remove_phy = 1;
+ 		}
+ 	}
+@@ -2819,10 +2819,10 @@ err_create_buf:
+ 		hcd->gen_phy = NULL;
+ 	}
+ err_phy:
+-	if (hcd->remove_phy && hcd->phy) {
+-		usb_phy_shutdown(hcd->phy);
+-		usb_put_phy(hcd->phy);
+-		hcd->phy = NULL;
++	if (hcd->remove_phy && hcd->usb_phy) {
++		usb_phy_shutdown(hcd->usb_phy);
++		usb_put_phy(hcd->usb_phy);
++		hcd->usb_phy = NULL;
+ 	}
+ 	return retval;
+ }
+@@ -2902,10 +2902,10 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+ 		phy_put(hcd->gen_phy);
+ 		hcd->gen_phy = NULL;
+ 	}
+-	if (hcd->remove_phy && hcd->phy) {
+-		usb_phy_shutdown(hcd->phy);
+-		usb_put_phy(hcd->phy);
+-		hcd->phy = NULL;
++	if (hcd->remove_phy && hcd->usb_phy) {
++		usb_phy_shutdown(hcd->usb_phy);
++		usb_put_phy(hcd->usb_phy);
++		hcd->usb_phy = NULL;
  	}
  
--	otg->usb_phy = ci->transceiver;
-+	otg->usb_phy = ci->usb_phy;
- 	otg->gadget = &ci->gadget;
- 	ci->fsm.otg = otg;
--	ci->transceiver->otg = ci->fsm.otg;
-+	ci->usb_phy->otg = ci->fsm.otg;
- 	ci->fsm.power_up = 1;
- 	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
- 	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
-diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
-index b8125aa64ad8..ce8b4d72fe28 100644
---- a/drivers/usb/chipidea/udc.c
-+++ b/drivers/usb/chipidea/udc.c
-@@ -1519,8 +1519,8 @@ static int ci_udc_vbus_draw(struct usb_gadget *_gadget, unsigned ma)
+ 	usb_put_invalidate_rhdev(hcd);
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 8a4dcbc7a75f..20b772342a6a 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4455,8 +4455,8 @@ hub_port_init (struct usb_hub *hub, struct usb_device *udev, int port1,
+ 	if (retval)
+ 		goto fail;
+ 
+-	if (hcd->phy && !hdev->parent)
+-		usb_phy_notify_connect(hcd->phy, udev->speed);
++	if (hcd->usb_phy && !hdev->parent)
++		usb_phy_notify_connect(hcd->usb_phy, udev->speed);
+ 
+ 	/*
+ 	 * Some superspeed devices have finished the link training process
+@@ -4611,9 +4611,9 @@ static void hub_port_connect(struct usb_hub *hub, int port1, u16 portstatus,
+ 
+ 	/* Disconnect any existing devices under this port */
+ 	if (udev) {
+-		if (hcd->phy && !hdev->parent &&
++		if (hcd->usb_phy && !hdev->parent &&
+ 				!(portstatus & USB_PORT_STAT_CONNECTION))
+-			usb_phy_notify_disconnect(hcd->phy, udev->speed);
++			usb_phy_notify_disconnect(hcd->usb_phy, udev->speed);
+ 		usb_disconnect(&port_dev->child);
+ 	}
+ 
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index cf2734b532a7..4bdcd3439d47 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -136,15 +136,15 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
+ 	if (pdata->operating_mode == FSL_USB2_DR_OTG) {
+ 		struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+ 
+-		hcd->phy = usb_get_phy(USB_PHY_TYPE_USB2);
++		hcd->usb_phy = usb_get_phy(USB_PHY_TYPE_USB2);
+ 		dev_dbg(&pdev->dev, "hcd=0x%p  ehci=0x%p, phy=0x%p\n",
+-			hcd, ehci, hcd->phy);
++			hcd, ehci, hcd->usb_phy);
+ 
+-		if (!IS_ERR_OR_NULL(hcd->phy)) {
+-			retval = otg_set_host(hcd->phy->otg,
++		if (!IS_ERR_OR_NULL(hcd->usb_phy)) {
++			retval = otg_set_host(hcd->usb_phy->otg,
+ 					      &ehci_to_hcd(ehci)->self);
+ 			if (retval) {
+-				usb_put_phy(hcd->phy);
++				usb_put_phy(hcd->usb_phy);
+ 				goto err2;
+ 			}
+ 		} else {
+@@ -181,9 +181,9 @@ static void usb_hcd_fsl_remove(struct usb_hcd *hcd,
  {
- 	struct ci_hdrc *ci = container_of(_gadget, struct ci_hdrc, gadget);
+ 	struct fsl_usb2_platform_data *pdata = dev_get_platdata(&pdev->dev);
  
--	if (ci->transceiver)
--		return usb_phy_set_power(ci->transceiver, ma);
-+	if (ci->usb_phy)
-+		return usb_phy_set_power(ci->usb_phy, ma);
- 	return -ENOTSUPP;
- }
+-	if (!IS_ERR_OR_NULL(hcd->phy)) {
+-		otg_set_host(hcd->phy->otg, NULL);
+-		usb_put_phy(hcd->phy);
++	if (!IS_ERR_OR_NULL(hcd->usb_phy)) {
++		otg_set_host(hcd->usb_phy->otg, NULL);
++		usb_put_phy(hcd->usb_phy);
+ 	}
  
-diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
-index bbe779f640be..57d757a1aa83 100644
---- a/include/linux/usb/chipidea.h
-+++ b/include/linux/usb/chipidea.h
-@@ -13,7 +13,7 @@ struct ci_hdrc_platform_data {
- 	/* offset of the capability registers */
- 	uintptr_t	 capoffset;
- 	unsigned	 power_budget;
--	struct usb_phy	*phy;
-+	struct usb_phy	*usb_phy;
- 	enum usb_phy_interface phy_mode;
- 	unsigned long	 flags;
- #define CI_HDRC_REGS_SHARED		BIT(0)
+ 	usb_remove_hcd(hcd);
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index cc305c71ac3d..619d2e051e8c 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -922,7 +922,7 @@ int ehci_hub_control(
+ #ifdef CONFIG_USB_OTG
+ 			if ((hcd->self.otg_port == (wIndex + 1))
+ 			    && hcd->self.b_hnp_enable) {
+-				otg_start_hnp(hcd->phy->otg);
++				otg_start_hnp(hcd->usb_phy->otg);
+ 				break;
+ 			}
+ #endif
+diff --git a/drivers/usb/host/ehci-msm.c b/drivers/usb/host/ehci-msm.c
+index 934b39d5e44a..9dc2118ae808 100644
+--- a/drivers/usb/host/ehci-msm.c
++++ b/drivers/usb/host/ehci-msm.c
+@@ -124,7 +124,7 @@ static int ehci_msm_probe(struct platform_device *pdev)
+ 		goto put_hcd;
+ 	}
+ 
+-	hcd->phy = phy;
++	hcd->usb_phy = phy;
+ 	device_init_wakeup(&pdev->dev, 1);
+ 	/*
+ 	 * OTG device parent of HCD takes care of putting
+@@ -151,7 +151,7 @@ static int ehci_msm_remove(struct platform_device *pdev)
+ 	pm_runtime_disable(&pdev->dev);
+ 	pm_runtime_set_suspended(&pdev->dev);
+ 
+-	otg_set_host(hcd->phy->otg, NULL);
++	otg_set_host(hcd->usb_phy->otg, NULL);
+ 
+ 	/* FIXME: need to call usb_remove_hcd() here? */
+ 
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 7aafb05e7a40..aaa01971efe9 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -206,7 +206,7 @@ static int tegra_ehci_hub_control(
+ 		if (tegra->port_resuming && !(temp & PORT_SUSPEND)) {
+ 			/* Resume completed, re-enable disconnect detection */
+ 			tegra->port_resuming = 0;
+-			tegra_usb_phy_postresume(hcd->phy);
++			tegra_usb_phy_postresume(hcd->usb_phy);
+ 		}
+ 	}
+ 
+@@ -259,7 +259,7 @@ static int tegra_ehci_hub_control(
+ 			goto done;
+ 
+ 		/* Disable disconnect detection during port resume */
+-		tegra_usb_phy_preresume(hcd->phy);
++		tegra_usb_phy_preresume(hcd->usb_phy);
+ 
+ 		ehci->reset_done[wIndex-1] = jiffies + msecs_to_jiffies(25);
+ 
+@@ -454,7 +454,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 		err = PTR_ERR(u_phy);
+ 		goto cleanup_clk_en;
+ 	}
+-	hcd->phy = u_phy;
++	hcd->usb_phy = u_phy;
+ 
+ 	tegra->needs_double_reset = of_property_read_bool(pdev->dev.of_node,
+ 		"nvidia,needs-double-reset");
+@@ -475,7 +475,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	ehci->caps = hcd->regs + 0x100;
+ 	ehci->has_hostpc = soc_config->has_hostpc;
+ 
+-	err = usb_phy_init(hcd->phy);
++	err = usb_phy_init(hcd->usb_phy);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Failed to initialize phy\n");
+ 		goto cleanup_clk_en;
+@@ -490,7 +490,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	}
+ 	u_phy->otg->host = hcd_to_bus(hcd);
+ 
+-	err = usb_phy_set_suspend(hcd->phy, 0);
++	err = usb_phy_set_suspend(hcd->usb_phy, 0);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Failed to power on the phy\n");
+ 		goto cleanup_phy;
+@@ -517,7 +517,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ cleanup_otg_set_host:
+ 	otg_set_host(u_phy->otg, NULL);
+ cleanup_phy:
+-	usb_phy_shutdown(hcd->phy);
++	usb_phy_shutdown(hcd->usb_phy);
+ cleanup_clk_en:
+ 	clk_disable_unprepare(tegra->clk);
+ cleanup_hcd_create:
+@@ -531,9 +531,9 @@ static int tegra_ehci_remove(struct platform_device *pdev)
+ 	struct tegra_ehci_hcd *tegra =
+ 		(struct tegra_ehci_hcd *)hcd_to_ehci(hcd)->priv;
+ 
+-	otg_set_host(hcd->phy->otg, NULL);
++	otg_set_host(hcd->usb_phy->otg, NULL);
+ 
+-	usb_phy_shutdown(hcd->phy);
++	usb_phy_shutdown(hcd->usb_phy);
+ 	usb_remove_hcd(hcd);
+ 
+ 	clk_disable_unprepare(tegra->clk);
+diff --git a/drivers/usb/host/ohci-omap.c b/drivers/usb/host/ohci-omap.c
+index 61967405b56d..4629dd7db728 100644
+--- a/drivers/usb/host/ohci-omap.c
++++ b/drivers/usb/host/ohci-omap.c
+@@ -180,10 +180,10 @@ static void start_hnp(struct ohci_hcd *ohci)
+ 	unsigned long	flags;
+ 	u32 l;
+ 
+-	otg_start_hnp(hcd->phy->otg);
++	otg_start_hnp(hcd->usb_phy->otg);
+ 
+ 	local_irq_save(flags);
+-	hcd->phy->otg.state = OTG_STATE_A_SUSPEND;
++	hcd->usb_phy->otg.state = OTG_STATE_A_SUSPEND;
+ 	writel (RH_PS_PSS, &ohci->regs->roothub.portstatus [port]);
+ 	l = omap_readl(OTG_CTRL);
+ 	l &= ~OTG_A_BUSREQ;
+@@ -220,14 +220,14 @@ static int ohci_omap_reset(struct usb_hcd *hcd)
+ 
+ #ifdef	CONFIG_USB_OTG
+ 	if (need_transceiver) {
+-		hcd->phy = usb_get_phy(USB_PHY_TYPE_USB2);
+-		if (!IS_ERR_OR_NULL(hcd->phy)) {
+-			int	status = otg_set_host(hcd->phy->otg,
++		hcd->usb_phy = usb_get_phy(USB_PHY_TYPE_USB2);
++		if (!IS_ERR_OR_NULL(hcd->usb_phy)) {
++			int	status = otg_set_host(hcd->usb_phy->otg,
+ 						&ohci_to_hcd(ohci)->self);
+ 			dev_dbg(hcd->self.controller, "init %s phy, status %d\n",
+-					hcd->phy->label, status);
++					hcd->usb_phy->label, status);
+ 			if (status) {
+-				usb_put_phy(hcd->phy);
++				usb_put_phy(hcd->usb_phy);
+ 				return status;
+ 			}
+ 		} else {
+@@ -399,9 +399,9 @@ usb_hcd_omap_remove (struct usb_hcd *hcd, struct platform_device *pdev)
+ 	dev_dbg(hcd->self.controller, "stopping USB Controller\n");
+ 	usb_remove_hcd(hcd);
+ 	omap_ohci_clock_power(0);
+-	if (!IS_ERR_OR_NULL(hcd->phy)) {
+-		(void) otg_set_host(hcd->phy->otg, 0);
+-		usb_put_phy(hcd->phy);
++	if (!IS_ERR_OR_NULL(hcd->usb_phy)) {
++		(void) otg_set_host(hcd->usb_phy->otg, 0);
++		usb_put_phy(hcd->usb_phy);
+ 	}
+ 	if (machine_is_omap_osk())
+ 		gpio_free(9);
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index 2aefbcc83b22..604d2e6e0c1c 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -106,7 +106,7 @@ struct usb_hcd {
+ 	 * OTG and some Host controllers need software interaction with phys;
+ 	 * other external phys should be software-transparent
+ 	 */
+-	struct usb_phy		*phy;
++	struct usb_phy		*usb_phy;
+ 	struct phy		*gen_phy;
+ 
+ 	/* Flags that need to be manipulated atomically because they can
 -- 
 1.9.1
 
