@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513AbaHVODt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:03:49 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34016 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456AbaHVODD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932458AbaHVODD (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 22 Aug 2014 10:03:03 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43959 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756523AbaHVOC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:02:59 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
@@ -15,9 +15,9 @@ CC: Kevin Hilman <khilman@deeprootsystems.com>,
         <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Nishanth Menon <nm@ti.com>
-Subject: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
-Date: Fri, 22 Aug 2014 09:02:32 -0500
-Message-ID: <1408716154-26101-9-git-send-email-nm@ti.com>
+Subject: [PATCH 05/10] ARM: OMAP5 / DRA7: PM: Avoid all SAR saves
+Date: Fri, 22 Aug 2014 09:02:29 -0500
+Message-ID: <1408716154-26101-6-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408716154-26101-1-git-send-email-nm@ti.com>
 References: <1408716154-26101-1-git-send-email-nm@ti.com>
@@ -27,183 +27,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+From: Rajendra Nayak <rnayak@ti.com>
 
-Add OMAP5/DRA74/72 CPUIDLE support.
+Get rid of all assumptions about always having a sar base on *all*
+OMAP4+ platforms. We dont need one on DRA7 and it is not necessary at
+this point for OMAP5 either.
 
-This patch adds MPUSS low power states in cpuidle.
-
-        C1 - CPU0 WFI + CPU1 WFI + MPU ON
-        C2 - CPU0 RET + CPU1 RET + MPU CSWR
-
-Tested on DRA74/72-EVM for C1 and C2 states.
-
-NOTE: DRA7 does not do voltage scaling as part of retention transition
-and has Mercury which speeds up transition paths - Latency numbers are
-based on measurements done by toggling GPIOs.
-
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-[ j-keerthy@ti.com rework on 3.14]
-Signed-off-by: Keerthy <j-keerthy@ti.com>
-[nm@ti.com: updates based on profiling, OMAP5 squashed]
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+[nm@ti.com: Split and optimize]
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/mach-omap2/cpuidle44xx.c |   82 ++++++++++++++++++++++++++++++++++++-
- arch/arm/mach-omap2/pm44xx.c      |    2 +-
- 2 files changed, 82 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/omap-mpuss-lowpower.c |   55 ++++++++++++++++++-----------
+ 1 file changed, 34 insertions(+), 21 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
-index 2498ab0..8ad4f44 100644
---- a/arch/arm/mach-omap2/cpuidle44xx.c
-+++ b/arch/arm/mach-omap2/cpuidle44xx.c
-@@ -22,6 +22,7 @@
- #include "common.h"
- #include "pm.h"
- #include "prm.h"
-+#include "soc.h"
- #include "clockdomain.h"
- 
- #define MAX_CPUS	2
-@@ -31,6 +32,7 @@ struct idle_statedata {
- 	u32 cpu_state;
- 	u32 mpu_logic_state;
- 	u32 mpu_state;
-+	u32 mpu_state_vote;
- };
- 
- static struct idle_statedata omap4_idle_data[] = {
-@@ -51,12 +53,26 @@ static struct idle_statedata omap4_idle_data[] = {
- 	},
- };
- 
-+static struct idle_statedata dra7_idle_data[] = {
-+	{
-+		.cpu_state = PWRDM_POWER_ON,
-+		.mpu_state = PWRDM_POWER_ON,
-+		.mpu_logic_state = PWRDM_POWER_ON,
-+	},
-+	{
-+		.cpu_state = PWRDM_POWER_RET,
-+		.mpu_state = PWRDM_POWER_RET,
-+		.mpu_logic_state = PWRDM_POWER_RET,
-+	},
-+};
-+
- static struct powerdomain *mpu_pd, *cpu_pd[MAX_CPUS];
- static struct clockdomain *cpu_clkdm[MAX_CPUS];
- 
- static atomic_t abort_barrier;
- static bool cpu_done[MAX_CPUS];
- static struct idle_statedata *state_ptr = &omap4_idle_data[0];
-+static DEFINE_RAW_SPINLOCK(mpu_lock);
- 
- /* Private functions */
- 
-@@ -78,6 +94,32 @@ static int omap_enter_idle_simple(struct cpuidle_device *dev,
- 	return index;
- }
- 
-+static int omap_enter_idle_smp(struct cpuidle_device *dev,
-+			       struct cpuidle_driver *drv,
-+			       int index)
-+{
-+	struct idle_statedata *cx = state_ptr + index;
-+	unsigned long flag;
-+
-+	raw_spin_lock_irqsave(&mpu_lock, flag);
-+	cx->mpu_state_vote++;
-+	if (cx->mpu_state_vote == num_online_cpus()) {
-+		pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
-+		omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
-+	}
-+	raw_spin_unlock_irqrestore(&mpu_lock, flag);
-+
-+	omap4_enter_lowpower(dev->cpu, cx->cpu_state);
-+
-+	raw_spin_lock_irqsave(&mpu_lock, flag);
-+	if (cx->mpu_state_vote == num_online_cpus())
-+		omap_set_pwrdm_state(mpu_pd, PWRDM_POWER_ON);
-+	cx->mpu_state_vote--;
-+	raw_spin_unlock_irqrestore(&mpu_lock, flag);
-+
-+	return index;
-+}
-+
- static int omap_enter_idle_coupled(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
- 			int index)
-@@ -224,6 +266,34 @@ static struct cpuidle_driver omap4_idle_driver = {
- 	.safe_state_index = 0,
- };
- 
-+static struct cpuidle_driver dra7_idle_driver = {
-+	.name				= "dra7_idle",
-+	.owner				= THIS_MODULE,
-+	.states = {
-+		{
-+			/* C1 - CPU0 ON + CPU1 ON + MPU ON */
-+			.exit_latency = 2 + 2,
-+			.target_residency = 5,
-+			.flags = CPUIDLE_FLAG_TIME_VALID,
-+			.enter = omap_enter_idle_simple,
-+			.name = "C1",
-+			.desc = "CPUx WFI, MPUSS ON"
-+		},
-+		{
-+			/* C2 - CPU0 RET + CPU1 RET + MPU CSWR */
-+			.exit_latency = 48 + 60,
-+			.target_residency = 100,
-+			.flags = CPUIDLE_FLAG_TIME_VALID
-+					| CPUIDLE_FLAG_TIMER_STOP,
-+			.enter = omap_enter_idle_smp,
-+			.name = "C2",
-+			.desc = "CPUx CSWR, MPUSS CSWR",
-+		},
-+	},
-+	.state_count = ARRAY_SIZE(dra7_idle_data),
-+	.safe_state_index = 0,
-+};
-+
- /* Public functions */
- 
- /**
-@@ -234,6 +304,16 @@ static struct cpuidle_driver omap4_idle_driver = {
-  */
- int __init omap4_idle_init(void)
+diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+index fad6e8c..53d8de5 100644
+--- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
++++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
+@@ -118,7 +118,8 @@ static inline void set_cpu_wakeup_addr(unsigned int cpu_id, u32 addr)
  {
-+	struct cpuidle_driver *idle_driver;
-+
-+	if (soc_is_dra7xx() || soc_is_omap54xx()) {
-+		state_ptr = &dra7_idle_data[0];
-+		idle_driver = &dra7_idle_driver;
-+	} else {
-+		state_ptr = &omap4_idle_data[0];
-+		idle_driver = &omap4_idle_driver;
-+	}
-+
- 	mpu_pd = pwrdm_lookup("mpu_pwrdm");
- 	cpu_pd[0] = pwrdm_lookup("cpu0_pwrdm");
- 	cpu_pd[1] = pwrdm_lookup("cpu1_pwrdm");
-@@ -248,5 +328,5 @@ int __init omap4_idle_init(void)
- 	/* Configure the broadcast timer on each cpu */
- 	on_each_cpu(omap_setup_broadcast_timer, NULL, 1);
+ 	struct omap4_cpu_pm_info *pm_info = &per_cpu(omap4_pm_info, cpu_id);
  
--	return cpuidle_register(&omap4_idle_driver, cpu_online_mask);
-+	return cpuidle_register(idle_driver, cpu_online_mask);
+-	writel_relaxed(addr, pm_info->wkup_sar_addr);
++	if (pm_info->wkup_sar_addr)
++		writel_relaxed(addr, pm_info->wkup_sar_addr);
  }
-diff --git a/arch/arm/mach-omap2/pm44xx.c b/arch/arm/mach-omap2/pm44xx.c
-index c063833..1d22162 100644
---- a/arch/arm/mach-omap2/pm44xx.c
-+++ b/arch/arm/mach-omap2/pm44xx.c
-@@ -293,7 +293,7 @@ int __init omap4_pm_init(void)
- 	/* Overwrite the default cpu_do_idle() */
- 	arm_pm_idle = omap_default_idle;
  
--	if (cpu_is_omap44xx())
-+	if (cpu_is_omap44xx() || soc_is_dra7xx() || soc_is_omap54xx())
- 		omap4_idle_init();
+ /*
+@@ -143,7 +144,8 @@ static void scu_pwrst_prepare(unsigned int cpu_id, unsigned int cpu_state)
+ 		break;
+ 	}
  
- err2:
+-	writel_relaxed(scu_pwr_st, pm_info->scu_sar_addr);
++	if (pm_info->scu_sar_addr)
++		writel_relaxed(scu_pwr_st, pm_info->scu_sar_addr);
+ }
+ 
+ /* Helper functions for MPUSS OSWR */
+@@ -181,7 +183,8 @@ static void l2x0_pwrst_prepare(unsigned int cpu_id, unsigned int save_state)
+ {
+ 	struct omap4_cpu_pm_info *pm_info = &per_cpu(omap4_pm_info, cpu_id);
+ 
+-	writel_relaxed(save_state, pm_info->l2x0_sar_addr);
++	if (pm_info->l2x0_sar_addr)
++		writel_relaxed(save_state, pm_info->l2x0_sar_addr);
+ }
+ 
+ /*
+@@ -191,10 +194,14 @@ static void l2x0_pwrst_prepare(unsigned int cpu_id, unsigned int save_state)
+ #ifdef CONFIG_CACHE_L2X0
+ static void __init save_l2x0_context(void)
+ {
+-	writel_relaxed(l2x0_saved_regs.aux_ctrl,
+-		     sar_base + L2X0_AUXCTRL_OFFSET);
+-	writel_relaxed(l2x0_saved_regs.prefetch_ctrl,
+-		     sar_base + L2X0_PREFETCH_CTRL_OFFSET);
++	void __iomem *l2x0_base = omap4_get_l2cache_base();
++
++	if (l2x0_base && sar_base) {
++		writel_relaxed(l2x0_saved_regs.aux_ctrl,
++			       sar_base + L2X0_AUXCTRL_OFFSET);
++		writel_relaxed(l2x0_saved_regs.prefetch_ctrl,
++			       sar_base + L2X0_PREFETCH_CTRL_OFFSET);
++	}
+ }
+ #else
+ static void __init save_l2x0_context(void)
+@@ -347,13 +354,17 @@ int __init omap4_mpuss_init(void)
+ 		return -ENODEV;
+ 	}
+ 
+-	sar_base = omap4_get_sar_ram_base();
++	if (cpu_is_omap44xx())
++		sar_base = omap4_get_sar_ram_base();
+ 
+ 	/* Initilaise per CPU PM information */
+ 	pm_info = &per_cpu(omap4_pm_info, 0x0);
+-	pm_info->scu_sar_addr = sar_base + SCU_OFFSET0;
+-	pm_info->wkup_sar_addr = sar_base + CPU0_WAKEUP_NS_PA_ADDR_OFFSET;
+-	pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET0;
++	if (sar_base) {
++		pm_info->scu_sar_addr = sar_base + SCU_OFFSET0;
++		pm_info->wkup_sar_addr = sar_base +
++					CPU0_WAKEUP_NS_PA_ADDR_OFFSET;
++		pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET0;
++	}
+ 	pm_info->pwrdm = pwrdm_lookup("cpu0_pwrdm");
+ 	if (!pm_info->pwrdm) {
+ 		pr_err("Lookup failed for CPU0 pwrdm\n");
+@@ -368,9 +379,12 @@ int __init omap4_mpuss_init(void)
+ 	pwrdm_set_next_pwrst(pm_info->pwrdm, PWRDM_POWER_ON);
+ 
+ 	pm_info = &per_cpu(omap4_pm_info, 0x1);
+-	pm_info->scu_sar_addr = sar_base + SCU_OFFSET1;
+-	pm_info->wkup_sar_addr = sar_base + CPU1_WAKEUP_NS_PA_ADDR_OFFSET;
+-	pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET1;
++	if (sar_base) {
++		pm_info->scu_sar_addr = sar_base + SCU_OFFSET1;
++		pm_info->wkup_sar_addr = sar_base +
++					CPU1_WAKEUP_NS_PA_ADDR_OFFSET;
++		pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET1;
++	}
+ 	if (cpu_is_omap446x())
+ 		pm_info->secondary_startup = omap4460_secondary_startup;
+ 	else
+@@ -397,13 +411,12 @@ int __init omap4_mpuss_init(void)
+ 	pwrdm_clear_all_prev_pwrst(mpuss_pd);
+ 	mpuss_clear_prev_logic_pwrst();
+ 
+-	/* Save device type on scratchpad for low level code to use */
+-	if (omap_type() != OMAP2_DEVICE_TYPE_GP)
+-		writel_relaxed(1, sar_base + OMAP_TYPE_OFFSET);
+-	else
+-		writel_relaxed(0, sar_base + OMAP_TYPE_OFFSET);
+-
+-	save_l2x0_context();
++	if (sar_base) {
++		/* Save device type on scratchpad for low level code to use */
++		writel_relaxed((omap_type() != OMAP2_DEVICE_TYPE_GP) ? 1 : 0,
++			       sar_base + OMAP_TYPE_OFFSET);
++		save_l2x0_context();
++	}
+ 
+ 	if (cpu_is_omap44xx()) {
+ 		omap_pm_ops.finish_suspend = omap4_finish_suspend;
 -- 
 1.7.9.5
 
