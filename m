@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259AbaHVVCV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:02:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43324 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018AbaHVVAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:00:15 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/10] perf evlist: Monitor POLLERR and POLLHUP events too
-Date: Fri, 22 Aug 2014 17:59:43 -0300
-Message-Id: <1408741190-5123-4-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1408741190-5123-1-git-send-email-acme@kernel.org>
-References: <1408741190-5123-1-git-send-email-acme@kernel.org>
+	id S1752009AbaHVVFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:05:46 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:9599 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751477AbaHVVFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 17:05:45 -0400
+Date: Fri, 22 Aug 2014 17:05:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Javi Merino" <javi.merino@arm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace-cmd: link trace-record in ctracecmd.so
+Message-ID: <20140822170535.52f12438@gandalf.local.home>
+In-Reply-To: <1408116698-23033-1-git-send-email-javi.merino@arm.com>
+References: <1408116698-23033-1-git-send-email-javi.merino@arm.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Fri, 15 Aug 2014 16:31:38 +0100
+"Javi Merino" <javi.merino@arm.com> wrote:
 
-We want to know when the fd went away, like when a monitored thread
-exits.
+> Commit b1e9220819eb (trace-cmd: Report stats for all instances) moved
+> tracecmd_stat_cpu() from trace-recorder.c to trace-record.c.  This
+> makes import ctracecmd fail in tracecmd.py:
+> 
+> $ python tracecmd.py
+> Traceback (most recent call last):
+>   File "tracecmd.py", line 22, in <module>
+>     from ctracecmd import *
+> ImportError: ctracecmd.so: undefined symbol: tracecmd_stat_cpu
+> 
+> Link trace-record in ctracecmd.so to add back the required symbol.
+> 
 
-If we do not monitor such events, then the tools will wait forever on
-events from a vanished thread, like when running:
+I just applied this. May push this out next week. I have other changes
+I'm adding and need to get them finished before I push it out. It may
+not go out until September though.
 
- $ sleep 5s &
- $ perf record -p `pidof sleep`
+-- Steve
 
-This builds upon the kernel patch by Jiri Olsa that actually makes a
-poll on those file descriptors to return POLLHUP.
-
-It is also needed to change the tools to use
-perf_evlist__filter_pollfd() to check if there are remainings fds to
-monitor or if all are gone, in which case they will exit the
-poll/mmap/read loop.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-a4fslwspov0bs69nj825hqpq@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evlist.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index bd7896073d10..cddc700d718f 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -424,7 +424,7 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
- {
- 	fcntl(fd, F_SETFL, O_NONBLOCK);
- 	evlist->pollfd[evlist->nr_fds].fd = fd;
--	evlist->pollfd[evlist->nr_fds].events = POLLIN;
-+	evlist->pollfd[evlist->nr_fds].events = POLLIN | POLLERR | POLLHUP;
- 	evlist->nr_fds++;
- }
- 
--- 
-1.9.3
+> Signed-off-by: Javi Merino <javi.merino@arm.com>
+> ---
+>  Makefile | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Makefile b/Makefile
+> index cbe0eb9..308d7f8 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -317,8 +317,9 @@ KERNEL_SHARK_OBJS = $(TRACE_VIEW_OBJS) $(TRACE_GRAPH_OBJS) $(TRACE_GUI_OBJS) \
+>  
+>  PEVENT_LIB_OBJS = event-parse.o trace-seq.o parse-filter.o parse-utils.o
+>  TCMD_LIB_OBJS = $(PEVENT_LIB_OBJS) trace-util.o trace-input.o trace-ftrace.o \
+> -			trace-output.o trace-recorder.o trace-restore.o trace-usage.o \
+> -			trace-blk-hack.o kbuffer-parse.o event-plugin.o
+> +			trace-output.o trace-record.o trace-recorder.o \
+> +			trace-restore.o trace-usage.o trace-blk-hack.o \
+> +			kbuffer-parse.o event-plugin.o
+>  
+>  PLUGIN_OBJS =
+>  PLUGIN_OBJS += plugin_jbd2.o
 
