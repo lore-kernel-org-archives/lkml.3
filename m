@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554AbaHVOky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:40:54 -0400
-Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:58162 "EHLO
-	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271AbaHVOkw convert rfc822-to-8bit (ORCPT
+	id S1756566AbaHVOnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:43:37 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:36872 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756227AbaHVOng convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:40:52 -0400
-From: Jayamohan Kallickal <Jayamohan.Kallickal@Emulex.Com>
-To: Tomas Henzl <thenzl@redhat.com>, Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: RE: [PATCH v3 08/13] be2iscsi: Use pci_enable_msix_range()
-Thread-Topic: [PATCH v3 08/13] be2iscsi: Use pci_enable_msix_range()
-Thread-Index: AQHPuqoBt3Eq2WF7cE2CRar3E4nKOJvbYPyAgAFXboA=
-Date: Fri, 22 Aug 2014 14:40:25 +0000
-Message-ID: <37724B2049F71D4C9B086F99DDB2DE11572409D6@CMEXMB2.ad.emulex.com>
-References: <cover.1408335523.git.agordeev@redhat.com>
- <1cf2c3d3243067edac8d170cda0450c82bbfc025.1408335523.git.agordeev@redhat.com>
- <53F5D397.2020508@redhat.com>
-In-Reply-To: <53F5D397.2020508@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [138.239.125.171]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 22 Aug 2014 10:43:36 -0400
 MIME-Version: 1.0
+In-Reply-To: <53F752A2.7080604@redhat.com>
+References: <53E62EEF.9040801@gmail.com>
+	<53F752A2.7080604@redhat.com>
+Date: Fri, 22 Aug 2014 17:43:35 +0300
+Message-ID: <CAPWNY8V4pfazk4Hw9qu07cAQZywC-GS7eyS+54fazXZaKMjMQw@mail.gmail.com>
+Subject: Re: Loading initrd above 4G causes freeze on boot
+From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
+To: Harald Hoyer <harald@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------Original Message-----
-From: Tomas Henzl [mailto:thenzl@redhat.com] 
-Sent: Thursday, August 21, 2014 4:10 AM
-To: Alexander Gordeev; linux-kernel@vger.kernel.org
-Cc: Jayamohan Kallickal; linux-scsi@vger.kernel.org; linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 08/13] be2iscsi: Use pci_enable_msix_range()
-
-On 08/18/2014 08:01 AM, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers using these 
-> two interfaces need to be updated to use the new 
-> pci_enable_msi_range() and pci_enable_msix_range() interfaces.
-
-Patch looks good to me.
-
-Reviewed-by: Tomas Henzl <thenzl@redhat.com>
-
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/be2iscsi/be_main.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+On Fri, Aug 22, 2014 at 5:24 PM, Harald Hoyer <harald@redhat.com> wrote:
+> On 09.08.2014 16:23, Mantas Mikulėnas wrote:
+>> As of commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"),
+>> the kernel freezes at the earliest possible moment when trying to boot
+>> via UEFI on my Asus laptop. (It still boots via BIOS.)
+>>
+>> If I revert that commit on current master (c309bfa9b481), it boots
+>> correctly again [although I see "setup_efi_pci() failed" being printed].
+>>
+>> (Seems like it freezes when handle_cmdline_files() attempts to read
+>> the last chunk of the initramfs -- the last call to efi_file_read()
+>> never returns. Figuring out why that happens is beyond me, though.)
+>>
 >
-> diff --git a/drivers/scsi/be2iscsi/be_main.c 
-> b/drivers/scsi/be2iscsi/be_main.c index 915c26b..b422659 100644
-> --- a/drivers/scsi/be2iscsi/be_main.c
-> +++ b/drivers/scsi/be2iscsi/be_main.c
-> @@ -5276,9 +5276,9 @@ static void beiscsi_msix_enable(struct beiscsi_hba *phba)
->  	for (i = 0; i <= phba->num_cpus; i++)
->  		phba->msix_entries[i].entry = i;
->  
-> -	status = pci_enable_msix(phba->pcidev, phba->msix_entries,
-> -				 (phba->num_cpus + 1));
-> -	if (!status)
-> +	status = pci_enable_msix_range(phba->pcidev, phba->msix_entries,
-> +				       phba->num_cpus + 1, phba->num_cpus + 1);
-> +	if (status > 0)
->  		phba->msix_enabled = true;
->  
->  	return;
+> I fixed my issue with: https://lkml.org/lkml/2014/8/22/232
 
+...Well. If that's the _physical_ address, then I suppose it wouldn't
+have worked on my 4 GB laptop either way. (I thought UEFI already used
+some sort of virtual memory, so I never even thought to mention
+this... Oh well.)
 
-Looks Good.
+Though if that's the case, then I'm wondering why it would be affected
+by the read size? Shouldn't it have crashed either as soon as the high
+address was used, or never at all? (I really don't know much about
+memory at this level. Sorry.)
 
-Acked-by:  Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
---
+> Care to test?
+
+Will try later today.
+
+-- 
+Mantas Mikulėnas <grawity@gmail.com>
