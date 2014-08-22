@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499AbaHVO7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:59:39 -0400
-Received: from ozlabs.org ([103.22.144.67]:53511 "EHLO ozlabs.org"
+	id S1756584AbaHVPBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:01:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32792 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756303AbaHVO7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:59:38 -0400
-Date: Sat, 23 Aug 2014 00:59:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: error while fetching the mips tree
-Message-ID: <20140823005925.159d4f58@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1756303AbaHVPA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:00:58 -0400
+Message-ID: <53F75B26.2020101@suse.com>
+Date: Fri, 22 Aug 2014 11:00:54 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/E720twxdUSFEDsuo=BWFulU"; protocol="application/pgp-signature"
+To: Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Autoselecting SPI for MEDIA_SUBDRV_AUTOSELECT?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/E720twxdUSFEDsuo=BWFulU
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Hi Ralf,
+Hi Antti -
 
-Fetching the mips tree produces this error:
+Commit e4462ffc160 ([media] Kconfig: sub-driver auto-select SPI bus)
+enables CONFIG_SPI globally for a driver that won't even be enabled in
+many cases.
 
-fatal: unable to connect to git.linux-mips.org:
-git.linux-mips.org[0: 78.24.191.183]: errno=3DConnection refused
+Is there a reason USB_MSI2500 doesn't select SPI instead of
+MEDIA_SUBDRV_AUTOSELECT?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+- -Jeff
 
---Sig_/E720twxdUSFEDsuo=BWFulU
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
+- -- 
+Jeff Mahoney
+SUSE Labs
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG/MacGPG2 v2.0.19 (Darwin)
 
-iQIcBAEBCAAGBQJT91rTAAoJEMDTa8Ir7ZwVoFMP/3yDxCI0blArLTPK9J8SgvqD
-HvESmLwG6WOjlQn2lltCQD0qvEQ1HzGXLZFteZEqdEOKIuu2/idDTpzyUNqlk4sE
-6WRSTL2szbzFAEebhQ1DrXoAcdqDFMSwFeKJh7FC74+YaDaJiMlZzW+DbFvrfET7
-7LTAyltFo8m05kr687N24N2yBFUULn7Zsrdk92MXLjtTX/KzcBxAuazp+Djwsgtj
-K7C/R5u0Fo2lYN7sl0Mhdss6o8HEwukM00wvfeolf3Ydpshg9p5EcWdWTli/AvuY
-i70XL9l8qAfr8ct+fyqPBcXQTnYEiNEgJVjL+Q9D7weyh0QaC9OFNdOlaMYNcblF
-qqgqaWyrHIG0oOueMA9X95R2usRmnYHxgqO4GWqKU+pzoWr4RV3yB5dFHHWOv12m
-3o7vGgG7V+GKVehwldBQRhTxJLDydrhqU+M66A8vUYlXuUzXRrP7jlQ8wntc3kUt
-0gCI8o/SFTe1D64hTtXNspLwFruI72s3XelKzpD0lZO/D8TG9OGiqGJvUk8NVWhP
-0bXQ+28wxvD89HMhbp5xt1QhsQOqEYBOWOkDsHK91LZWzJIAABAf+KALogNGZVcg
-E+Dlc0kcQUdwkoyvg2tMHm1ZYog3xdcIDQo8o32ypRXx405HoCi2lfgjazF56Hr9
-AQ4ojZhugiIWFF3G9kfj
-=pOF9
+iQIcBAEBAgAGBQJT91smAAoJEB57S2MheeWytcQP/jVJNWUWQ414XaltxVyAF8XT
+kyCCEXl/MslN8W36p6oMC6TX7KaXjQQSFVUltyt/UgcezuqhkU8nBUETEgLVou1n
+1uF120zBu3gy3Hr+dG/3Awsdqb1UbrUrNM2LRL6sU5GIqYSdTxErL8inzXjj6/ow
+MttC0yBf2aEumihLEfAqcmEPM0ryS9aZECEyclPA+KrYO9qJaicE2lg8JcSrg8yR
+TyNYvRrQ2NOuh5thE4qDH/+jfwtZ4yuEXavIgLsZVuDL9+s11RsfOCxY6eLDPPer
+qCI3r/2VYm4xMoF06FhOjafKvhhR97H4dm7jecW1zsGfwamrXMmB0+76IJkzxKpA
+le7R5NHk9wag2d9zOLmWC2RQbAVspxV5idD/oq+6bSNLl2un89Pz2RMdZGln68db
+z+Oz8W7OKhdQm7PyV2RhHNi67rcaGYt5m3fFkjp2RsylqZdQ7oO/zcMOiZxCxdqT
+hGmsNXrgRDLoifA71BGrzyC2xmXYDzZ4K89W3msfW/h6TCNu1IWwqxs1qPucaHXk
+xBXu5hn5+1sSmgDJAkg5ODum3hCt6PRdP54/D6hy4Ul9742HtBg5MzPEojSlqdLO
+yF0ePAs7Ga8/xOGatCsz1aK8upFAOq6fvrakE2ibx5/0+Yyta9efR0X8q3oKskCr
+Tc0Azhsxyhe1F/AObQW+
+=7Eoh
 -----END PGP SIGNATURE-----
-
---Sig_/E720twxdUSFEDsuo=BWFulU--
