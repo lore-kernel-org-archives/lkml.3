@@ -1,127 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723AbaHVOHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:07:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25767 "EHLO mga09.intel.com"
+	id S932672AbaHVOGh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:06:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34158 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932130AbaHVOHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:07:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,380,1406617200"; 
-   d="scan'208";a="562149592"
-Message-ID: <53F74E5D.2040108@linux.intel.com>
-Date: Fri, 22 Aug 2014 22:06:21 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756542AbaHVOG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:06:29 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <devicetree@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH 5/6] ARM: dts: OMAP5/DRA7: switch over to interrupts-extended property for UART
+Date: Fri, 22 Aug 2014 09:03:54 -0500
+Message-ID: <1408716235-26164-6-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408716235-26164-1-git-send-email-nm@ti.com>
+References: <1408716235-26164-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Len Brown <lenb@kernel.org>
-CC: Kumar P Mahesh <mahesh.kumar.p@intel.com>, Alan Cox <alan@linux.intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] intel_idle: add idle values for Cherrytrail/Braswell
-References: <1408701508-13636-1-git-send-email-mika.westerberg@linux.intel.com> <1408707540-12393-1-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1408707540-12393-1-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/22 19:39, Mika Westerberg wrote:
-> From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
-> 
-> Cherrytrail/Braswell is a successor of Intel Baytrail but has slighly
-> different CPU idle values and latencies.
-> 
-> Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
-> I learned from Mahesh that C1e, C4 and S0i2 states are deprecated so those
-> are now removed.
+We've had deeper idle states working on omaps for few years now,
+but only in the legacy mode. When booted with device tree, the
+wake-up events did not have a chance to work until commit
+3e6cee1786a1 ("pinctrl: single: Add support for wake-up interrupts")
+that recently got merged. In addition to that we also needed
+commit 79d9701559a9 ("of/irq: create interrupts-extended property")
+that's now also merged.
 
-If the platform has ACPI supported, I believe Len wants to see what
-C-states number exported by ACPI.
+Note that there's no longer need to specify the wake-up bit in
+the pinctrl settings, the request_irq on the wake-up pin takes
+care of that.
 
-Please boot the machine with "intel_idle.max_cstate=0" to disable
-intel_idle, then post the output of the following commands
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/boot/dts/dra7.dtsi  |   20 ++++++++++----------
+ arch/arm/boot/dts/omap5.dtsi |   12 ++++++------
+ 2 files changed, 16 insertions(+), 16 deletions(-)
 
-dmesg | grep idle
-grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
-
-Thanks,
--Aubrey
-
-> 
->  drivers/idle/intel_idle.c | 42 ++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 42 insertions(+)
-> 
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 9b7ee7e427df..e472580c1826 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -197,6 +197,42 @@ static struct cpuidle_state snb_cstates[] = {
->  		.enter = NULL }
->  };
->  
-> +static struct cpuidle_state cht_cstates[] = {
-> +	{ /* MWAIT C1 */
-> +		.name = "C1-CHT",
-> +		.desc = "MWAIT 0x00",
-> +		.flags = MWAIT2flg(0x00) | CPUIDLE_FLAG_TIME_VALID,
-> +		.exit_latency = 1,
-> +		.target_residency = 4,
-> +		.enter = &intel_idle },
-> +	{ /* MWAIT C6 */
-> +		.name = "C6-CHT",
-> +		.desc = "MWAIT 0x52",
-> +		.flags = MWAIT2flg(0x52) | CPUIDLE_FLAG_TIME_VALID
-> +						| CPUIDLE_FLAG_TLB_FLUSHED,
-> +		.exit_latency = 140,
-> +		.target_residency = 560,
-> +		.enter = &intel_idle },
-> +	{ /* MWAIT C7-S0i1 */
-> +		.name = "S0i1-CHT",
-> +		.desc = "MWAIT 0x60",
-> +		.flags = MWAIT2flg(0x60) | CPUIDLE_FLAG_TIME_VALID
-> +						| CPUIDLE_FLAG_TLB_FLUSHED,
-> +		.exit_latency = 1200,
-> +		.target_residency = 4000,
-> +		.enter = &intel_idle },
-> +	{ /* MWAIT C9-S0i3 */
-> +		.name = "S0i3-CHT",
-> +		.desc = "MWAIT 0x64",
-> +		.flags = MWAIT2flg(0x64) | CPUIDLE_FLAG_TIME_VALID
-> +						| CPUIDLE_FLAG_TLB_FLUSHED,
-> +		.exit_latency = 10000,
-> +		.target_residency = 20000,
-> +		.enter = &intel_idle },
-> +	{
-> +		.enter = NULL }
-> +};
-> +
->  static struct cpuidle_state byt_cstates[] = {
->  	{
->  		.name = "C1-BYT",
-> @@ -677,6 +713,11 @@ static const struct idle_cpu idle_cpu_byt = {
->  	.byt_auto_demotion_disable_flag = true,
->  };
->  
-> +static const struct idle_cpu idle_cpu_cht = {
-> +	.state_table = cht_cstates,
-> +	.disable_promotion_to_c1e = true,
-> +};
-> +
->  static const struct idle_cpu idle_cpu_ivb = {
->  	.state_table = ivb_cstates,
->  	.disable_promotion_to_c1e = true,
-> @@ -725,6 +766,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
->  	ICPU(0x3f, idle_cpu_hsw),
->  	ICPU(0x45, idle_cpu_hsw),
->  	ICPU(0x46, idle_cpu_hsw),
-> +	ICPU(0x4c, idle_cpu_cht),
->  	ICPU(0x4d, idle_cpu_avn),
->  	ICPU(0x3d, idle_cpu_bdw),
->  	ICPU(0x4f, idle_cpu_bdw),
-> 
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 4e4ce96..45cb91f 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -331,7 +331,7 @@
+ 		uart1: serial@4806a000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x4806a000 0x100>;
+-			interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart1";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -340,7 +340,7 @@
+ 		uart2: serial@4806c000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x4806c000 0x100>;
+-			interrupts = <GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart2";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -349,7 +349,7 @@
+ 		uart3: serial@48020000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48020000 0x100>;
+-			interrupts = <GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart3";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -358,7 +358,7 @@
+ 		uart4: serial@4806e000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x4806e000 0x100>;
+-			interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart4";
+ 			clock-frequency = <48000000>;
+                         status = "disabled";
+@@ -367,7 +367,7 @@
+ 		uart5: serial@48066000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48066000 0x100>;
+-			interrupts = <GIC_SPI 100 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 100 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart5";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -376,7 +376,7 @@
+ 		uart6: serial@48068000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48068000 0x100>;
+-			interrupts = <GIC_SPI 101 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 101 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart6";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -385,7 +385,7 @@
+ 		uart7: serial@48420000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48420000 0x100>;
+-			interrupts = <GIC_SPI 218 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 218 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart7";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -394,7 +394,7 @@
+ 		uart8: serial@48422000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48422000 0x100>;
+-			interrupts = <GIC_SPI 219 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 219 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart8";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -403,7 +403,7 @@
+ 		uart9: serial@48424000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48424000 0x100>;
+-			interrupts = <GIC_SPI 220 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 220 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart9";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+@@ -412,7 +412,7 @@
+ 		uart10: serial@4ae2b000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x4ae2b000 0x100>;
+-			interrupts = <GIC_SPI 221 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 221 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart10";
+ 			clock-frequency = <48000000>;
+ 			status = "disabled";
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 04acda6..fe2effd 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -452,7 +452,7 @@
+ 		uart1: serial@4806a000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x4806a000 0x100>;
+-			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart1";
+ 			clock-frequency = <48000000>;
+ 		};
+@@ -460,7 +460,7 @@
+ 		uart2: serial@4806c000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x4806c000 0x100>;
+-			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart2";
+ 			clock-frequency = <48000000>;
+ 		};
+@@ -468,7 +468,7 @@
+ 		uart3: serial@48020000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48020000 0x100>;
+-			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart3";
+ 			clock-frequency = <48000000>;
+ 		};
+@@ -476,7 +476,7 @@
+ 		uart4: serial@4806e000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x4806e000 0x100>;
+-			interrupts = <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart4";
+ 			clock-frequency = <48000000>;
+ 		};
+@@ -484,7 +484,7 @@
+ 		uart5: serial@48066000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48066000 0x100>;
+-			interrupts = <GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 105 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart5";
+ 			clock-frequency = <48000000>;
+ 		};
+@@ -492,7 +492,7 @@
+ 		uart6: serial@48068000 {
+ 			compatible = "ti,omap4-uart";
+ 			reg = <0x48068000 0x100>;
+-			interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>;
++			interrupts-extended = <&gic GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "uart6";
+ 			clock-frequency = <48000000>;
+ 		};
+-- 
+1.7.9.5
 
