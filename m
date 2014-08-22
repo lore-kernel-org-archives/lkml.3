@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750AbaHVCih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 22:38:37 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:59860 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227AbaHVCif convert rfc822-to-8bit (ORCPT
+	id S1755792AbaHVCkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 22:40:36 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63783 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883AbaHVCkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 22:38:35 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s7M2cSpf000800, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH net-next 3/4] r8152: remove clear_bp function
-Thread-Topic: [PATCH net-next 3/4] r8152: remove clear_bp function
-Thread-Index: AQHPvFUIMC0XCO2SIU2CCT2BnisNvpvY3f+AgAFyBiCAAHwfAIABGttg
-Date: Fri, 22 Aug 2014 02:38:27 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2515F7E@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-16-Taiwan-albertk@realtek.com>
- <1394712342-15778-19-Taiwan-albertk@realtek.com>
- <201408210131.s7L1VuAJ031162@rtits1.realtek.com>
- <0835B3720019904CB8F7AA43166CEEB2515BB5@RTITMBSV03.realtek.com.tw>
- <53F62C78.8040404@cogentembedded.com>
-In-Reply-To: <53F62C78.8040404@cogentembedded.com>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 21 Aug 2014 22:40:35 -0400
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+X-Google-Original-From: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+To: <fw@strlen.de>, <pablo@netfilter.org>, <kaber@trash.net>,
+        <kadlec@blackhole.kfki.hu>, <davem@davemloft.net>,
+        <netfilter-devel@vger.kernel.org>, <coreteam@netfilter.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jbaron@akamai.com>
+Cc: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: [PATCH V2 1/1] netfilter/jump_label: HAVE_JUMP_LABEL instead of CONFIG_JUMP_LABEL
+Date: Fri, 22 Aug 2014 10:40:15 +0800
+Message-Id: <1408675215-2893-1-git-send-email-yizhouzhou@ict.ac.cn>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com] 
-[...]
-> >>      Why leave 2 empty lines? One is enough.
-> 
-> > The next patch would use another fucntion at the
-> > same location. I skip removing the empty line and
-> > re-adding it again. Is that better to do so? I would
-> > resend the patches if the answer is yes.
-> 
->     Sorry, I haven't looked at your next patch, too big for me. :-)
+Use HAVE_JUMP_LABEL as elsewhere in the kernel to ensure
+that the toolchain has the required support in addition to
+CONFIG_JUMP_LABEL being set.
 
-It's my mistake. I would avoid it next time. Thanks for your notice.
+
+Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Reviewed-by: Florian Westphal <fw@strlen.de>
+---
+ include/linux/netfilter.h |    5 +++--
+ net/netfilter/core.c      |    6 +++---
+ 2 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
+index 2077489..83a1952 100644
+--- a/include/linux/netfilter.h
++++ b/include/linux/netfilter.h
+@@ -9,6 +9,7 @@
+ #include <linux/in6.h>
+ #include <linux/wait.h>
+ #include <linux/list.h>
++#include <linux/static_key.h>
+ #include <uapi/linux/netfilter.h>
+ #ifdef CONFIG_NETFILTER
+ static inline int NF_DROP_GETERR(int verdict)
+@@ -99,8 +100,8 @@ void nf_unregister_sockopt(struct nf_sockopt_ops *reg);
  
-Best Regards,
-Hayes
+ extern struct list_head nf_hooks[NFPROTO_NUMPROTO][NF_MAX_HOOKS];
+ 
+-#if defined(CONFIG_JUMP_LABEL)
+-#include <linux/static_key.h>
++#ifdef HAVE_JUMP_LABEL
++
+ extern struct static_key nf_hooks_needed[NFPROTO_NUMPROTO][NF_MAX_HOOKS];
+ static inline bool nf_hooks_active(u_int8_t pf, unsigned int hook)
+ {
+diff --git a/net/netfilter/core.c b/net/netfilter/core.c
+index a93c97f..024a2e2 100644
+--- a/net/netfilter/core.c
++++ b/net/netfilter/core.c
+@@ -54,7 +54,7 @@ EXPORT_SYMBOL_GPL(nf_unregister_afinfo);
+ struct list_head nf_hooks[NFPROTO_NUMPROTO][NF_MAX_HOOKS] __read_mostly;
+ EXPORT_SYMBOL(nf_hooks);
+ 
+-#if defined(CONFIG_JUMP_LABEL)
++#ifdef HAVE_JUMP_LABEL
+ struct static_key nf_hooks_needed[NFPROTO_NUMPROTO][NF_MAX_HOOKS];
+ EXPORT_SYMBOL(nf_hooks_needed);
+ #endif
+@@ -72,7 +72,7 @@ int nf_register_hook(struct nf_hook_ops *reg)
+ 	}
+ 	list_add_rcu(&reg->list, elem->list.prev);
+ 	mutex_unlock(&nf_hook_mutex);
+-#if defined(CONFIG_JUMP_LABEL)
++#ifdef HAVE_JUMP_LABEL
+ 	static_key_slow_inc(&nf_hooks_needed[reg->pf][reg->hooknum]);
+ #endif
+ 	return 0;
+@@ -84,7 +84,7 @@ void nf_unregister_hook(struct nf_hook_ops *reg)
+ 	mutex_lock(&nf_hook_mutex);
+ 	list_del_rcu(&reg->list);
+ 	mutex_unlock(&nf_hook_mutex);
+-#if defined(CONFIG_JUMP_LABEL)
++#ifdef HAVE_JUMP_LABEL
+ 	static_key_slow_dec(&nf_hooks_needed[reg->pf][reg->hooknum]);
+ #endif
+ 	synchronize_net();
+-- 
+1.7.10.4
+
