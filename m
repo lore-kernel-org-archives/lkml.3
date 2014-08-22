@@ -1,86 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139AbaHVLXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 07:23:51 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:44582 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844AbaHVLXs (ORCPT
+	id S1756080AbaHVL33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 07:29:29 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53090 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753476AbaHVL31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 07:23:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL1qeaH=8Fgw6Zia3DuBL8wrrYMjZ8pqC2NanYtb5-YVJwmtsg@mail.gmail.com>
-References: <1408381705-3623-1-git-send-email-abrestic@chromium.org>
- <CAAObsKDT4BV=fGAFkMxieQnC3HX=zm8G_qJ44yay4qG8inxoPQ@mail.gmail.com> <CAL1qeaH=8Fgw6Zia3DuBL8wrrYMjZ8pqC2NanYtb5-YVJwmtsg@mail.gmail.com>
-From: Tomeu Vizoso <tomeu@tomeuvizoso.net>
-Date: Fri, 22 Aug 2014 13:23:27 +0200
-X-Google-Sender-Auth: pKiujFaqY7NJyxd_UgoKdxBcHXc
-Message-ID: <CAAObsKCfKtZm5j9Ecze+3GwWCN3DFOjHUUACdYR4TmV+ExbC8A@mail.gmail.com>
-Subject: Re: [PATCH v2 0/9] Tegra xHCI support
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 22 Aug 2014 07:29:27 -0400
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sudeep Holla <sudeep.holla@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        David Herrmann <dh.herrmann@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: [PATCH] drivers: base: add cpu_device_create to support per-cpu devices
+Date: Fri, 22 Aug 2014 12:29:23 +0100
+Message-Id: <1408706963-23195-1-git-send-email-sudeep.holla@arm.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>
+References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 August 2014 19:26, Andrew Bresticker <abrestic@chromium.org> wrote:
-> On Thu, Aug 21, 2014 at 6:34 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
->> On 18 August 2014 19:08, Andrew Bresticker <abrestic@chromium.org> wrote:
->>>
->>> Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
->>> USB3.0 memory sticks and ethernet dongles using controller firmware from
->>> the ChromiumOS tree [2].
->>
->> Hi Andrew,
->>
->> do you have any information regarding the port assignments for the
->> Blaze board? Would like to test this there.
->
-> Sure:
-> - USB3 port 0 (using PCIe lane 0) and UTMI port 0 are connected to the
-> USB A connector on the left side,
-> - UTMI port 1 is connected to an internal hub, which is in turn
-> connected to the camera, the LTE modem (if present), and one of the
-> USB A connectors on the right side, and
-> - UTMI port 2 is connected to the other USB A connector on the right side.
-> The mapping of ports on the right side varies by SKU (i.e. the one on
-> the internal hub may be the front or rear USB A port).
->
-> The USB3 device tree bits for Venice2 should work just fine for Blaze;
-> the only real difference is that USB3 port 1/PCIe lane 1 are unused.
->
-> Also, because of the board design on Blaze, the fused HS_CURR_LEVEL
-> values need to be adjusted before being programmed into
-> USB2_OTG_PAD*_CTL0.  This only affects UTMI ports 0 and 2, so ports
-> connected to the internal hub should still work.  I'll add a pinconfig
-> property to address this in the likely event I need to re-spin this
-> series.  Or, if you like, I can send a follow-on patch to this set to
-> add the property.
+From: Sudeep Holla <sudeep.holla@arm.com>
 
-Yeah, that would be great, if it's not too much trouble for you. So
-far the internal camera is working so I'm able to do some
-experimenting with it already.
+This patch adds a new function to create per-cpu devices.
+This helps in:
+1. reusing the device infrastructure to create any cpu related
+   attributes and corresponding sysfs instead of creating and
+   dealing with raw kobjects directly
+2. retaining the legacy path(/sys/devices/system/cpu/..) to support
+   existing sysfs ABI
+3. avoiding to create links in the bus directory pointing to the
+   device as there would be per-cpu instance of these devices with
+   the same name since dev->bus is not populated to cpu_sysbus on
+   purpose
 
-Thanks,
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/cpu.h |  4 ++++
+ 2 files changed, 58 insertions(+)
 
-Tomeu
+Hi Greg,
+
+Here is the alternate solution I could come up with instead of
+creating cpu class. cpu_device_create is very similar to
+device_create_groups_vargs w/o class support, but I could not
+reuse anything else to avoid creating similar function.
+
+Let me know your thoughts/suggestions on this.
+
+Regards,
+Sudeep
+
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 277a9cfa9040..53f0c4141d05 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -363,6 +363,60 @@ struct device *get_cpu_device(unsigned cpu)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_device);
+ 
++static void device_create_release(struct device *dev)
++{
++	kfree(dev);
++}
++
++static struct device *
++__cpu_device_create(struct device *parent, void *drvdata,
++		    const struct attribute_group **groups,
++		    const char *fmt, va_list args)
++{
++	struct device *dev = NULL;
++	int retval = -ENODEV;
++
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev) {
++		retval = -ENOMEM;
++		goto error;
++	}
++
++	device_initialize(dev);
++	dev->parent = parent;
++	dev->groups = groups;
++	dev->release = device_create_release;
++	dev_set_drvdata(dev, drvdata);
++
++	retval = kobject_set_name_vargs(&dev->kobj, fmt, args);
++	if (retval)
++		goto error;
++
++	retval = device_add(dev);
++	if (retval)
++		goto error;
++
++	return dev;
++
++error:
++	put_device(dev);
++	return ERR_PTR(retval);
++}
++
++struct device *cpu_device_create(struct device *parent, void *drvdata,
++				 const struct attribute_group **groups,
++				 const char *fmt, ...)
++{
++	va_list vargs;
++	struct device *dev;
++
++	va_start(vargs, fmt);
++	dev = __cpu_device_create(parent, drvdata, groups, fmt, vargs);
++	va_end(vargs);
++	return dev;
++}
++EXPORT_SYMBOL_GPL(cpu_device_create);
++
+ #ifdef CONFIG_GENERIC_CPU_AUTOPROBE
+ static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
+ #endif
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 95978ad7fcdd..bb790a5621c0 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -19,6 +19,7 @@
+ 
+ struct device;
+ struct device_node;
++struct attribute_group;
+ 
+ struct cpu {
+ 	int node_id;		/* The node which contains the CPU */
+@@ -39,6 +40,9 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
+ extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
+ extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
+ 
++extern struct device *cpu_device_create(struct device *parent, void *drvdata,
++					const struct attribute_group **groups,
++					const char *fmt, ...);
+ #ifdef CONFIG_HOTPLUG_CPU
+ extern void unregister_cpu(struct cpu *cpu);
+ extern ssize_t arch_cpu_probe(const char *, size_t);
+-- 
+1.8.3.2
+
