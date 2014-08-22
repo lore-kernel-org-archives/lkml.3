@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680AbaHVRxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:53:24 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:23078 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469AbaHVRxX (ORCPT
+	id S932791AbaHVRx1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:53:27 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:44699 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469AbaHVRxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:53:23 -0400
-Message-ID: <1408729387.28990.85.camel@misato.fc.hp.com>
-Subject: Re: [Xen-devel] [PATCH RFC 1/3] x86: Make page cache mode a real
- type
-From: Toshi Kani <toshi.kani@hp.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Juergen Gross <JGross@suse.com>, stefan.bader@canonical.com,
-        x86@kernel.org, ville.syrjala@linux.intel.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Date: Fri, 22 Aug 2014 11:43:07 -0600
-In-Reply-To: <53F72856020000780002C93D@mail.emea.novell.com>
-References: <1408454745-32358-1-git-send-email-jgross@suse.com>
-	 <1408454745-32358-2-git-send-email-jgross@suse.com>
-	 <1408562787.28990.65.camel@misato.fc.hp.com> <53F5BC2F.8050609@suse.com>
-	 <53F72856020000780002C93D@mail.emea.novell.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
+	Fri, 22 Aug 2014 13:53:25 -0400
+Message-ID: <53F7838F.8060906@collabora.co.uk>
+Date: Fri, 22 Aug 2014 19:53:19 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Yuvaraj Cd <yuvaraj.lkml@gmail.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Prashanth G <prashanth.g@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
+Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
+References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk> <1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk> <CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com> <53F73472.8010609@collabora.co.uk> <20140822144531.GV24407@sirena.org.uk>
+In-Reply-To: <20140822144531.GV24407@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-22 at 10:24 +0100, Jan Beulich wrote:
-> >>> On 21.08.14 at 11:30, <JGross@suse.com> wrote:
-> > On 08/20/2014 09:26 PM, Toshi Kani wrote:
-> >> On Tue, 2014-08-19 at 15:25 +0200, jgross@suse.com wrote:
-> >>> --- a/arch/x86/mm/init.c
-> >>> +++ b/arch/x86/mm/init.c
-> >>> @@ -27,6 +27,35 @@
-> >>>
-> >>>   #include "mm_internal.h"
-> >>>
-> >>> +/*
-> >>> + * Tables translating between page_cache_type_t and pte encoding.
-> >>> + * Minimal supported modes are defined statically, modified if more supported
-> >>> + * cache modes are available.
-> >>> + * Index into __cachemode2pte_tbl is the cachemode.
-> >>> + * Index into __pte2cachemode_tbl are the caching attribute bits of the pte
-> >>> + * (_PAGE_PWT, _PAGE_PCD, _PAGE_PAT) at index bit positions 0, 1, 2.
-> >>> + */
-> >>> +uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
-> >>> +	[_PAGE_CACHE_MODE_WB]		= 0,
-> >>> +	[_PAGE_CACHE_MODE_WC]		= _PAGE_PWT,
-> >>> +	[_PAGE_CACHE_MODE_UC_MINUS]	= _PAGE_PCD,
-> >>> +	[_PAGE_CACHE_MODE_UC]		= _PAGE_PCD | _PAGE_PWT,
-> >>> +	[_PAGE_CACHE_MODE_WT]		= _PAGE_PWT,
-> >>> +	[_PAGE_CACHE_MODE_WP]		= _PAGE_PWT,
-> >>> +};
-> >>
-> >> I think WT and WP should be set to _PAGE_PCD (UC_MINUS) for safe.
-> > 
-> > Oh, you are right.
+Hello Mark,
+
+On 08/22/2014 04:45 PM, Mark Brown wrote:
+> On Fri, Aug 22, 2014 at 02:15:46PM +0200, Javier Martinez Canillas wrote:
 > 
-> Actually I suppose the original comment was about WC and WP;
-> defaulting WT to _PAGE_PWT seems quite correct to me.
+>> Mark, any opinions on how this should be solved will be highly appreciated.
+> 
+> If someone could tell me what "this" is that'd help...
+> 
 
-My comment was about WT and WP, whose cache modes are defined here but
-are not supported in this patchset.  _PAGE_PWT is used by WC, which has
-weakly ordered writes.  WT and WP have strongly ordered writes, so they
-should be redirected to UC- for safe.
+Sorry for not being clear on that regard. By "this" I meant the problem
+reported by Yuvaraj.
 
-Thanks,
--Toshi
+The regulators operating mode is read from the hardware registers on probe
+as you suggested but that means that if the regulator is disabled and the
+machine rebooted (warm reset) the opmode reported by the hardware is
+MAX77802_OPMODE_OFF.
+
+The problem is that one of these regulators is used as the vqmmc-supply
+(VCCQ/VDD_IO) so the mmc host controller driver disables it on
+MMC_POWER_OFF. Now AFAIK (Yuvaraj can correct me what I got wrong) this
+shouldn't be an issue since on card detection, the vqmmc supply should be
+enabled again but on Exynos the built-in card detect line is on the same
+power rail as vqmmc. That means that disabling the regulator prevents card
+insertions to be detected.
+
+This does not happen on the downstream Chrome OS kernel because the
+max77802 regulator driver has some ad-hoc DT bindings were you can define
+the operating mode to be set on probe. For this particular regulator is
+MAX77802_OPMODE_STANDBY.
+
+Yuvaraj solution was to set the operating mode to MAX77802_OPMODE_NORMAL
+on probe() which was what I did on a previous version of the driver but
+you explained to me that it was not safe to do that.
+
+That's why I'm asking for suggestions.
+
+Thanks a lot and best regards,
+Javier
 
