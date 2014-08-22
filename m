@@ -1,333 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540AbaHVAN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:13:26 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56466 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288AbaHVANZ (ORCPT
+	id S1753578AbaHVATW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 20:19:22 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:53978 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063AbaHVATV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:13:25 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH v3] perf hists browser: Consolidate callchain print functions in TUI
-Date: Fri, 22 Aug 2014 09:13:21 +0900
-Message-Id: <1408666401-594-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.0.0
+	Thu, 21 Aug 2014 20:19:21 -0400
+Message-ID: <53F68C81.6020807@linaro.org>
+Date: Fri, 22 Aug 2014 09:19:13 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
+        arndb@arndb.de,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 1/6] arm64: ptrace: add PTRACE_SET_SYSCALL
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>	<1408611405-8943-2-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jJrTEhdDZ8fipNeaVm1_wto7u2f=uq_KzyMcVHJMT57vw@mail.gmail.com>
+In-Reply-To: <CAGXu5jJrTEhdDZ8fipNeaVm1_wto7u2f=uq_KzyMcVHJMT57vw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there're two callchain print functions in TUI - one for the
-hists browser and another for file dump.  They do almost same job so
-it'd be better consolidate the codes.
+On 08/22/2014 01:47 AM, Kees Cook wrote:
+> On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
+> <takahiro.akashi@linaro.org> wrote:
+>> To allow tracer to be able to change/skip a system call by re-writing
+>> a syscall number, there are several approaches:
+>>
+>> (1) modify x8 register with ptrace(PTRACE_SETREGSET), and handle this case
+>>      later on in syscall_trace_enter(), or
+>> (2) support ptrace(PTRACE_SET_SYSCALL) as on arm
+>>
+>> Thinking of the fact that user_pt_regs doesn't expose 'syscallno' to
+>> tracer as well as that secure_computing() expects a changed syscall number
+>> to be visible, especially case of -1, before this function returns in
+>> syscall_trace_enter(), we'd better take (2).
+>>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>
+> Thanks, I like having this on both arm and arm64.
 
-To do that, provide two callbacks to the generic logic - one for
-printing and another for checking whether it should stop.
+Yeah, having this simplified the code of syscall_trace_enter() a bit, but
+also imposes some restriction on arm64, too.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 203 ++++++++++++++++-------------------------
- 1 file changed, 80 insertions(+), 123 deletions(-)
+ > I wonder if other archs should add this option too.
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 519353d9f5fb..026421e0d53d 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -477,20 +477,37 @@ static char *callchain_list__sym_name(struct callchain_list *cl,
- 	return bf;
- }
- 
-+struct callchain_print_arg {
-+	/* for hists browser */
-+	off_t row_offset;
-+	bool is_current_entry;
-+
-+	/* for file dump */
-+	FILE *fp;
-+	int printed;
-+};
-+
-+typedef void (*print_callchain_entry_fn)(struct hist_browser *browser,
-+					 struct callchain_list *chain,
-+					 const char *str, int offset,
-+					 unsigned short row,
-+					 struct callchain_print_arg *arg);
-+
- static void hist_browser__show_callchain_entry(struct hist_browser *browser,
- 					       struct callchain_list *chain,
--					       unsigned short row, int offset,
--					       char folded_sign, const char *str,
--					       bool *is_current_entry)
-+					       const char *str, int offset,
-+					       unsigned short row,
-+					       struct callchain_print_arg *arg)
- {
- 	int color, width;
-+	char folded_sign = callchain_list__folded(chain);
- 
- 	color = HE_COLORSET_NORMAL;
- 	width = browser->b.width - (offset + 2);
- 	if (ui_browser__is_current_entry(&browser->b, row)) {
- 		browser->selection = &chain->ms;
- 		color = HE_COLORSET_SELECTED;
--		*is_current_entry = true;
-+		arg->is_current_entry = true;
- 	}
- 
- 	ui_browser__set_color(&browser->b, color);
-@@ -500,12 +517,41 @@ static void hist_browser__show_callchain_entry(struct hist_browser *browser,
- 	slsmg_write_nstring(str, width);
- }
- 
-+static void hist_browser__fprintf_callchain_entry(struct hist_browser *b __maybe_unused,
-+						  struct callchain_list *chain,
-+						  const char *str, int offset,
-+						  unsigned short row __maybe_unused,
-+						  struct callchain_print_arg *arg)
-+{
-+	char folded_sign = callchain_list__folded(chain);
-+
-+	arg->printed += fprintf(arg->fp, "%*s%c %s\n", offset, " ",
-+				folded_sign, str);
-+}
-+
-+typedef bool (*check_output_full_fn)(struct hist_browser *browser,
-+				     unsigned short row);
-+
-+static bool hist_browser__check_output_full(struct hist_browser *browser,
-+					    unsigned short row)
-+{
-+	return browser->b.rows == row;
-+}
-+
-+static bool hist_browser__check_dump_full(struct hist_browser *browser __maybe_unused,
-+					  unsigned short row __maybe_unused)
-+{
-+	return false;
-+}
-+
- #define LEVEL_OFFSET_STEP 3
- 
- static int hist_browser__show_callchain(struct hist_browser *browser,
- 					struct rb_root *root, int level,
--					unsigned short row, off_t *row_offset,
--					u64 total, bool *is_current_entry)
-+					unsigned short row, u64 total,
-+					print_callchain_entry_fn print,
-+					struct callchain_print_arg *arg,
-+					check_output_full_fn check)
- {
- 	struct rb_node *node;
- 	int first_row = row, offset = level * LEVEL_OFFSET_STEP;
-@@ -532,8 +578,8 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 				extra_offset = LEVEL_OFFSET_STEP;
- 
- 			folded_sign = callchain_list__folded(chain);
--			if (*row_offset != 0) {
--				--*row_offset;
-+			if (arg->row_offset != 0) {
-+				arg->row_offset--;
- 				goto do_next;
- 			}
- 
-@@ -550,13 +596,11 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
- 					str = alloc_str;
- 			}
- 
--			hist_browser__show_callchain_entry(browser, chain, row,
--							   offset + extra_offset,
--							   folded_sign, str,
--							   is_current_entry);
-+			print(browser, chain, str, offset + extra_offset, row, arg);
-+
- 			free(alloc_str);
- 
--			if (++row == browser->b.rows)
-+			if (check(browser, ++row))
- 				goto out;
- do_next:
- 			if (folded_sign == '+')
-@@ -572,12 +616,10 @@ do_next:
- 				new_total = total;
- 
- 			row += hist_browser__show_callchain(browser, &child->rb_root,
--							    new_level,
--							    row, row_offset,
--							    new_total,
--							    is_current_entry);
-+							    new_level, row, new_total,
-+							    print, arg, check);
- 		}
--		if (row == browser->b.rows)
-+		if (check(browser, row))
- 			break;
- 		node = next;
- 	}
-@@ -757,16 +799,20 @@ static int hist_browser__show_entry(struct hist_browser *browser,
- 
- 	if (folded_sign == '-' && row != browser->b.rows) {
- 		u64 total = hists__total_period(entry->hists);
-+		struct callchain_print_arg arg = {
-+			.row_offset = row_offset,
-+			.is_current_entry = current_entry,
-+		};
- 
- 		if (symbol_conf.cumulate_callchain)
- 			total = entry->stat_acc->period;
- 
- 		printed += hist_browser__show_callchain(browser,
--							&entry->sorted_chain,
--							1, row, &row_offset,
--							total, &current_entry);
-+					&entry->sorted_chain, 1, row, total,
-+					hist_browser__show_callchain_entry, &arg,
-+					hist_browser__check_output_full);
- 
--		if (current_entry)
-+		if (arg.is_current_entry)
- 			browser->he_selection = entry;
- 	}
- 
-@@ -1022,110 +1068,21 @@ do_offset:
- 	}
- }
- 
--static int hist_browser__fprintf_callchain_node_rb_tree(struct hist_browser *browser,
--							struct callchain_node *chain_node,
--							u64 total, int level,
--							FILE *fp)
--{
--	struct rb_node *node;
--	int offset = level * LEVEL_OFFSET_STEP;
--	u64 new_total;
--	int printed = 0;
--
--	if (callchain_param.mode == CHAIN_GRAPH_REL)
--		new_total = chain_node->children_hit;
--	else
--		new_total = total;
--
--	node = rb_first(&chain_node->rb_root);
--	while (node) {
--		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
--		struct rb_node *next = rb_next(node);
--		u64 cumul = callchain_cumul_hits(child);
--		struct callchain_list *chain;
--		char folded_sign = ' ';
--		int first = true;
--		int extra_offset = 0;
--
--		list_for_each_entry(chain, &child->val, list) {
--			char bf[1024], *alloc_str;
--			const char *str;
--			bool was_first = first;
--
--			if (first)
--				first = false;
--			else
--				extra_offset = LEVEL_OFFSET_STEP;
--
--			folded_sign = callchain_list__folded(chain);
--
--			alloc_str = NULL;
--			str = callchain_list__sym_name(chain, bf, sizeof(bf),
--						       browser->show_dso);
--			if (was_first) {
--				double percent = cumul * 100.0 / new_total;
--
--				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
--					str = "Not enough memory!";
--				else
--					str = alloc_str;
--			}
--
--			printed += fprintf(fp, "%*s%c %s\n", offset + extra_offset, " ", folded_sign, str);
--			free(alloc_str);
--			if (folded_sign == '+')
--				break;
--		}
--
--		if (folded_sign == '-') {
--			const int new_level = level + (extra_offset ? 2 : 1);
--			printed += hist_browser__fprintf_callchain_node_rb_tree(browser, child, new_total,
--										new_level, fp);
--		}
--
--		node = next;
--	}
--
--	return printed;
--}
--
--static int hist_browser__fprintf_callchain_node(struct hist_browser *browser,
--						struct callchain_node *node,
--						int level, FILE *fp)
--{
--	struct callchain_list *chain;
--	int offset = level * LEVEL_OFFSET_STEP;
--	char folded_sign = ' ';
--	int printed = 0;
--
--	list_for_each_entry(chain, &node->val, list) {
--		char bf[1024], *s;
--
--		folded_sign = callchain_list__folded(chain);
--		s = callchain_list__sym_name(chain, bf, sizeof(bf), browser->show_dso);
--		printed += fprintf(fp, "%*s%c %s\n", offset, " ", folded_sign, s);
--	}
--
--	if (folded_sign == '-')
--		printed += hist_browser__fprintf_callchain_node_rb_tree(browser, node,
--									browser->hists->stats.total_period,
--									level + 1,  fp);
--	return printed;
--}
--
- static int hist_browser__fprintf_callchain(struct hist_browser *browser,
--					   struct rb_root *chain, int level, FILE *fp)
-+					   struct hist_entry *he, FILE *fp)
- {
--	struct rb_node *nd;
--	int printed = 0;
--
--	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
--		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
-+	u64 total = hists__total_period(he->hists);
-+	struct callchain_print_arg arg  = {
-+		.fp = fp,
-+	};
- 
--		printed += hist_browser__fprintf_callchain_node(browser, node, level, fp);
--	}
-+	if (symbol_conf.cumulate_callchain)
-+		total = he->stat_acc->period;
- 
--	return printed;
-+	hist_browser__show_callchain(browser, &he->sorted_chain, 1, 0, total,
-+				     hist_browser__fprintf_callchain_entry, &arg,
-+				     hist_browser__check_dump_full);
-+	return arg.printed;
- }
- 
- static int hist_browser__fprintf_entry(struct hist_browser *browser,
-@@ -1164,7 +1121,7 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
- 	printed += fprintf(fp, "%s\n", rtrim(s));
- 
- 	if (folded_sign == '-')
--		printed += hist_browser__fprintf_callchain(browser, &he->sorted_chain, 1, fp);
-+		printed += hist_browser__fprintf_callchain(browser, he, fp);
- 
- 	return printed;
- }
--- 
-2.0.0
+Do you think so? I assumed that SET_SYSCALL is to be avoided if possible.
 
+I also think that SET_SYSCALL should take an extra argument for a return value
+just in case of -1 (or we have SKIP_SYSCALL?).
+
+-Takahiro AKASHI
+
+> Reviewed-by: Kees Cook <keescook@chromium.org>
+>
+>> ---
+>>   arch/arm64/include/uapi/asm/ptrace.h |    1 +
+>>   arch/arm64/kernel/ptrace.c           |   14 +++++++++++++-
+>>   2 files changed, 14 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm64/include/uapi/asm/ptrace.h b/arch/arm64/include/uapi/asm/ptrace.h
+>> index 6913643..49c6174 100644
+>> --- a/arch/arm64/include/uapi/asm/ptrace.h
+>> +++ b/arch/arm64/include/uapi/asm/ptrace.h
+>> @@ -23,6 +23,7 @@
+>>
+>>   #include <asm/hwcap.h>
+>>
+>> +#define PTRACE_SET_SYSCALL     23
+>>
+>>   /*
+>>    * PSR bits
+>> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
+>> index 0310811..8876049 100644
+>> --- a/arch/arm64/kernel/ptrace.c
+>> +++ b/arch/arm64/kernel/ptrace.c
+>> @@ -1077,7 +1077,19 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
+>>   long arch_ptrace(struct task_struct *child, long request,
+>>                   unsigned long addr, unsigned long data)
+>>   {
+>> -       return ptrace_request(child, request, addr, data);
+>> +       int ret;
+>> +
+>> +       switch (request) {
+>> +               case PTRACE_SET_SYSCALL:
+>> +                       task_pt_regs(child)->syscallno = data;
+>> +                       ret = 0;
+>> +                       break;
+>> +               default:
+>> +                       ret = ptrace_request(child, request, addr, data);
+>> +                       break;
+>> +       }
+>> +
+>> +       return ret;
+>>   }
+>>
+>>   enum ptrace_syscall_dir {
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
