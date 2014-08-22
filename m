@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035AbaHVHxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:53:35 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:32996 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755945AbaHVHxd (ORCPT
+	id S1756163AbaHVHx5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:53:57 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:34690 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130AbaHVHxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:53:33 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-27-53f6f6fa973c
+	Fri, 22 Aug 2014 03:53:54 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-fa-53f6f710f781
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,63 +18,72 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 04/15] drm/exynos/ipp: remove only related commands on file
- close
-Date: Fri, 22 Aug 2014 09:52:15 +0200
-Message-id: <1408693946-15456-5-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 15/15] drm/exynos/fimc: fix source buffer registers
+Date: Fri, 22 Aug 2014 09:52:26 +0200
+Message-id: <1408693946-15456-16-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
 References: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xq7q/vn0LNni7XNPi1rpzrBZXvr5n
-	s5h0fwKLxYt7F1kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYHTo/73ceZPPq2rGL0+LxJ
-	LoA5issmJTUnsyy1SN8ugSvj3PFpzAXnuCvef2tnbmC8w9nFyMkhIWAi8f/WRHYIW0ziwr31
-	bF2MXBxCAksZJX5tfMEI4fQxSfzp/MwKUsUmoCnxd/NNNhBbREBZYtW+dnaQImaBj0wSV5a+
-	YQZJCAsES5zd9A9sLIuAqsTOXSfA4rwCzhINDfNZIdbJSZw8NhnM5hRwkbhwcBpYjRBQTdft
-	aUwTGHkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJrC87GBcfszrEKMDBqMTDm/j7
-	a7AQa2JZcWXuIUYJDmYlEd5N874FC/GmJFZWpRblxxeV5qQWH2Jk4uCUamA0M35w4ni7uteF
-	jawzffi3PdIznKuYPYv7Ud0tXqPYQw2P00PPq0pZO8n2SbhtTjtRFfh6zZ9D1z3dd7DXdfYr
-	nliYcmdiW2P+dkV/q/jTE9cw13V9V5Hxc/Beb7rSQVzh3CULn39HFV2L44S6w/KSbgpHnTJa
-	fKXN7ASvS+bEtoiCvMMT5yqxFGckGmoxFxUnAgAYtJ1xCgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xq7oC378FG+y8bmZxa905VosrX9+z
+	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
+	F8AcxWWTkpqTWZZapG+XwJXxakorU8Eh3orbzyawNjAu5+5i5OCQEDCRuP+joIuRE8gUk7hw
+	bz1bFyMXh5DAUkaJWd/WM0M4fUwS97ufsIBUsQloSvzdfJMNxBYRUJZYta+dHaSIWeAjk8SV
+	pW+YQRLCAs4Sa3bOYAKxWQRUJY7MWwzWzCvgIjHt3mM2iHVyEiePTWYFsTmB4hcOTgPrFQLq
+	7bo9jWkCI+8CRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFh9XUH49JjVocYBTgYlXh4
+	I798DRZiTSwrrsw9xCjBwawkwrtp3rdgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYzT73gWRDh5
+	mbrW6wqyx7y5d+LhVvH7eoa+vyaHNe8/zD9T3EO0Te9JItvVCSL8ZzuyGw71ttXeerAmdm9R
+	8grP7aV3ut7d1zp+K+pmIteZXW5VO41yan8WP9MT8Jo4+5KTUAv77+nLN9kqLpD5tL9czFpt
+	ae7NfLapIX+uL84V+jOlX+GYygklluKMREMt5qLiRACfBTE0CQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On file close driver should remove only command nodes created
-via this file.
+FIMC in default mode of operation uses only one input buffer,
+but the driver used also second buffer, as a result only the
+first frame was processed correctly. The patch fixes it.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index bbe9968..81f780e 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -1681,14 +1681,11 @@ static int ipp_subdrv_open(struct drm_device *drm_dev, struct device *dev,
- static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
- 		struct drm_file *file)
- {
--	struct drm_exynos_file_private *file_priv = file->driver_priv;
- 	struct exynos_drm_ippdrv *ippdrv = NULL;
- 	struct ipp_context *ctx = get_ipp_context(dev);
- 	struct drm_exynos_ipp_cmd_node *c_node, *tc_node;
- 	int count = 0;
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimc.c b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+index b20078e..e985253 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fimc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+@@ -720,24 +720,24 @@ static int fimc_src_set_addr(struct device *dev,
+ 	case IPP_BUF_ENQUEUE:
+ 		config = &property->config[EXYNOS_DRM_OPS_SRC];
+ 		fimc_write(ctx, buf_info->base[EXYNOS_DRM_PLANAR_Y],
+-			EXYNOS_CIIYSA(buf_id));
++			EXYNOS_CIIYSA0);
  
--	DRM_DEBUG_KMS("for priv[0x%x]\n", (int)file_priv->ipp_dev);
--
- 	list_for_each_entry(ippdrv, &exynos_drm_ippdrv_list, drv_list) {
- 		mutex_lock(&ippdrv->cmd_lock);
- 		list_for_each_entry_safe(c_node, tc_node,
-@@ -1696,7 +1693,7 @@ static void ipp_subdrv_close(struct drm_device *drm_dev, struct device *dev,
- 			DRM_DEBUG_KMS("count[%d]ippdrv[0x%x]\n",
- 				count++, (int)ippdrv);
- 
--			if (c_node->dev == file_priv->ipp_dev) {
-+			if (c_node->filp == file) {
- 				/*
- 				 * userland goto unnormal state. process killed.
- 				 * and close the file.
+ 		if (config->fmt == DRM_FORMAT_YVU420) {
+ 			fimc_write(ctx, buf_info->base[EXYNOS_DRM_PLANAR_CR],
+-				EXYNOS_CIICBSA(buf_id));
++				EXYNOS_CIICBSA0);
+ 			fimc_write(ctx, buf_info->base[EXYNOS_DRM_PLANAR_CB],
+-				EXYNOS_CIICRSA(buf_id));
++				EXYNOS_CIICRSA0);
+ 		} else {
+ 			fimc_write(ctx, buf_info->base[EXYNOS_DRM_PLANAR_CB],
+-				EXYNOS_CIICBSA(buf_id));
++				EXYNOS_CIICBSA0);
+ 			fimc_write(ctx, buf_info->base[EXYNOS_DRM_PLANAR_CR],
+-				EXYNOS_CIICRSA(buf_id));
++				EXYNOS_CIICRSA0);
+ 		}
+ 		break;
+ 	case IPP_BUF_DEQUEUE:
+-		fimc_write(ctx, 0x0, EXYNOS_CIIYSA(buf_id));
+-		fimc_write(ctx, 0x0, EXYNOS_CIICBSA(buf_id));
+-		fimc_write(ctx, 0x0, EXYNOS_CIICRSA(buf_id));
++		fimc_write(ctx, 0x0, EXYNOS_CIIYSA0);
++		fimc_write(ctx, 0x0, EXYNOS_CIICBSA0);
++		fimc_write(ctx, 0x0, EXYNOS_CIICRSA0);
+ 		break;
+ 	default:
+ 		/* bypass */
 -- 
 1.9.1
 
