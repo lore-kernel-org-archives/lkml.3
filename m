@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639AbaHVPd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:33:29 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:58361 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482AbaHVPd1 (ORCPT
+	id S932173AbaHVPiC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:38:02 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44460 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932097AbaHVPiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:33:27 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Remove various orphaned header files
-Organization: D03
-References: <1403630855-29186-1-git-send-email-linux@rasmusvillemoes.dk>
-	<1403631263.29061.17.camel@joe-AO725>
-X-Hashcash: 1:20:140822:gregkh@linuxfoundation.org::USR0QE6+LUTU9LI3:000000000000000000000000000000000000EnI
-X-Hashcash: 1:20:140822:kernel-janitors@vger.kernel.org::oX2dD8wUnADo4Hqz:0000000000000000000000000000000vGg
-X-Hashcash: 1:20:140822:linux-kernel@vger.kernel.org::l2nBxeFVivynAJ6Q:0000000000000000000000000000000001eZm
-X-Hashcash: 1:20:140822:joe@perches.com::SQTZM+gqiU8GPio8:007xOF
-Date: Fri, 22 Aug 2014 17:33:24 +0200
-In-Reply-To: <1403631263.29061.17.camel@joe-AO725> (Joe Perches's message of
-	"Tue, 24 Jun 2014 10:34:23 -0700")
-Message-ID: <8761hksfnf.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 22 Aug 2014 11:38:00 -0400
+Date: Fri, 22 Aug 2014 11:37:58 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] kernel: trace_syscalls: Replace rcu_assign_pointer()
+ with RCU_INIT_POINTER()
+Message-ID: <20140822113758.172eb474@gandalf.local.home>
+In-Reply-To: <20140822142822.GA32391@ada>
+References: <20140822142822.GA32391@ada>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+On Fri, 22 Aug 2014 17:28:22 +0300
+Andreea-Cristina Bernat <bernat.ada@gmail.com> wrote:
 
-> On Tue, 2014-06-24 at 19:27 +0200, Rasmus Villemoes wrote:
->> AFAICT, these headers are not used anywhere, and are just accidental
->> leftovers from past cleanups.
->
-> Thanks.
+> The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+> According to RCU_INIT_POINTER()'s block comment:
+> "1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+> it is better to use it instead of rcu_assign_pointer() because it has a
+> smaller overhead.
+> 
+> The following Coccinelle semantic patch was used:
+> @@
+> @@
+> 
+> - rcu_assign_pointer
+> + RCU_INIT_POINTER
+>   (..., NULL)
 
-Did anyone pick these [1] up? All six files still seem to be present.
+I guess I can add this. It's a very slow path thus it isn't critical.
 
-Thanks,
-Rasmus
+Although, I hate the name. Perhaps we should add another macro called
+RCU_CLEAR_POINTER() or something that just nulls it. That way it
+documents the use. To me, INIT means the pointer is being initialized,
+where in reality it's just being cleared. I guess one could argue that
+the pointer is being "re-initialized".
 
-[1]
-http://thread.gmane.org/gmane.linux.kernel.janitors/30940/focus=1732006
+Thanks!
+
+-- Steve
+
+> 
+> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> ---
+>  kernel/trace/trace_syscalls.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index 759d5e0..4dc8b79 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -425,7 +425,7 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+>  		return;
+>  	mutex_lock(&syscall_trace_lock);
+>  	tr->sys_refcount_enter--;
+> -	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
+> +	RCU_INIT_POINTER(tr->enter_syscall_files[num], NULL);
+>  	if (!tr->sys_refcount_enter)
+>  		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+>  	mutex_unlock(&syscall_trace_lock);
+> @@ -463,7 +463,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+>  		return;
+>  	mutex_lock(&syscall_trace_lock);
+>  	tr->sys_refcount_exit--;
+> -	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
+> +	RCU_INIT_POINTER(tr->exit_syscall_files[num], NULL);
+>  	if (!tr->sys_refcount_exit)
+>  		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+>  	mutex_unlock(&syscall_trace_lock);
+
