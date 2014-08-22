@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657AbaHVPCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:02:45 -0400
-Received: from www.sr71.net ([198.145.64.142]:54369 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756582AbaHVPCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:02:43 -0400
-Message-ID: <53F75B91.2040100@sr71.net>
-Date: Fri, 22 Aug 2014 08:02:41 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1756674AbaHVPDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:03:11 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60540 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756290AbaHVPDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:03:09 -0400
+Date: Fri, 22 Aug 2014 08:03:07 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Arianna Avanzini <avanzini.arianna@gmail.com>, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, bob.liu@oracle.com,
+        felipe.franciosi@citrix.com, axboe@fb.com
+Subject: Re: [PATCH RFC 1/4] xen, blkfront: add support for the multi-queue
+ block layer API
+Message-ID: <20140822150307.GB29424@infradead.org>
+References: <1408706404-6614-1-git-send-email-avanzini.arianna@gmail.com>
+ <1408706404-6614-2-git-send-email-avanzini.arianna@gmail.com>
+ <53F736BE.9010202@citrix.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
-        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
-        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
-        penberg@kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        lauraa@codeaurora.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] [v3] warn on performance-impacting configs aka. TAINT_PERFORMANCE
-References: <20140821202424.7ED66A50@viggo.jf.intel.com> <20140822072023.GA7218@gmail.com>
-In-Reply-To: <20140822072023.GA7218@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F736BE.9010202@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 12:20 AM, Ingo Molnar wrote:
-> Essentially all DEBUG_OBJECTS_* options are expensive, assuming 
-> they are enabled, i.e. DEBUG_OBJECTS_ENABLE_DEFAULT=y.
+On Fri, Aug 22, 2014 at 01:25:34PM +0100, David Vrabel wrote:
+> > +	spin_lock_irq(&info->io_lock);
 > 
-> Otherwise they should only be warned about if the debugobjects 
-> boot option got enabled.
-> 
-> I.e. you'll need a bit of a runtime check for this one.
+> Is this lock necessary?  Does the block layer serialise calls to the
+> queue_rq op?
 
-At that point, what do we print, and when do we print it?  We're not
-saying that the config option should be disabled because it's really the
-boot option plus the config option that is causing the problem.
+Calls to ->queue_rq are not serialized by the block layer.
 
-I'll just put the DEBUG_OBJECTS_ENABLE_DEFAULT in here which is
-analogous to what we're doing with SLUB_DEBUG_ON.
-
->> +static ssize_t performance_taint_read(struct file *file, char __user *user_buf,
->> +			size_t count, loff_t *ppos)
->> +{
->> +	int i;
->> +	int ret;
->> +	char *buf;
->> +	size_t buf_written = 0;
->> +	size_t buf_left;
->> +	size_t buf_len;
->> +
->> +	if (!ARRAY_SIZE(perfomance_killing_configs))
->> +		return 0;
->> +
->> +	buf_len = 1;
->> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++)
->> +		buf_len += strlen(config_prefix) +
->> +			   strlen(perfomance_killing_configs[i]);
->> +	/* Add a byte for for each entry in the array for a \n */
->> +	buf_len += ARRAY_SIZE(perfomance_killing_configs);
->> +
->> +	buf = kmalloc(buf_len, GFP_KERNEL);
->> +	if (!buf)
->> +		return -ENOMEM;
->> +
->> +	buf_left = buf_len;
->> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++) {
->> +		buf_written += snprintf(buf + buf_written, buf_left,
->> +					"%s%s\n", config_prefix,
->> +					perfomance_killing_configs[i]);
->> +		buf_left = buf_len - buf_written;
-> 
-> So, ARRAY_SIZE(performance_killing_configs) is written out four 
-> times, a temporary variable would be in order I suspect.
-
-If one of them had gone over 80 chars, I probably would have. :)  I put
-one in anyway.
-
-> Also, do you want to check buf_left and break out early from 
-> the loop if it goes non-positive?
-
-You're slowly inflating my patch for no practical gain. :)
-
-Oh well, I put that in too.
-
-I think I got the rest of the things addressed too.  v4 coming soon.
