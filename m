@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067AbaHVHuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:50:51 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:62225 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425AbaHVHut (ORCPT
+	id S1755910AbaHVHw0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:52:26 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:49200 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827AbaHVHwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:50:49 -0400
-Date: Fri, 22 Aug 2014 08:50:41 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v5 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
-Message-ID: <20140822075041.GT4266@lee--X1>
-References: <1407796988-25872-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1407796988-25872-3-git-send-email-bjorn.andersson@sonymobile.com>
- <20140821132204.GH4266@lee--X1>
- <20140822012748.GB12494@sonymobile.com>
+	Fri, 22 Aug 2014 03:52:25 -0400
+Date: Fri, 22 Aug 2014 08:52:21 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] EFI urgent fixes
+Message-ID: <20140822075221.GK29733@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140822012748.GB12494@sonymobile.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Aug 2014, Bjorn Andersson wrote:
-> On Thu 21 Aug 06:22 PDT 2014, Lee Jones wrote:
-> > > +struct qcom_rpm *dev_get_qcom_rpm(struct device *dev)
-> > > +{
-> > > +	return dev_get_drvdata(dev);
-> > > +}
-> > > +EXPORT_SYMBOL(dev_get_qcom_rpm);
-> > 
-> > No need for this at all.  Use dev_get_drvdata() direct instead.
-> > 
-> 
-> I see that others have put this as static inline in the header file, so I will
-> follow that. I don't want to expose this directly in the implementation of the
-> clients.
-> 
-> Let me know if you object.
+Hi guys, please pull the following fixes, which trade the locking
+WARN_ON()s in the efivars code for the more usual lockdep_*() functions
+and an arm64 EFI change that allows the gamut of runtime services to be
+invoked.
 
-I do (unless you convince me otherwise).  Why is this a good idea and
-why 'exposing' this directly is a bad one?  At the moment this looks
-to me like abstraction for the sake of abstraction.
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-> > > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > > +	rpm->status_regs = devm_ioremap_resource(&pdev->dev, res);
-> > > +	rpm->ctrl_regs = rpm->status_regs + 0x400;
-> > > +	rpm->req_regs = rpm->status_regs + 0x600;
-> > > +	if (IS_ERR(rpm->status_regs))
-> > > +		return PTR_ERR(rpm->status_regs);
-> > 
-> > You should probably do this _before_ using it above.
-> 
-> There's no difference in behaviour, but it just feels cleaner than:
-> 
-> res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> rpm->status_regs = devm_ioremap_resource(&pdev->dev, res);
-> if (IS_ERR(rpm->status_regs))
-> 	return PTR_ERR(rpm->status_regs);
-> rpm->ctrl_regs = rpm->status_regs + 0x400;
-> rpm->req_regs = rpm->status_regs + 0x600;
-> 
-> If you don't like it, I'll change it.
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-There is a difference.  In the current implementation you're doing math
-with a possible error code and assigning rubbish to rpm->ctrl_regs and
-rpm->req_regs.
+are available in the git repository at:
 
-[...]
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
 
-> > > +MODULE_DESCRIPTION("Qualcomm Resource Power Manager driver");
-> > > +MODULE_LICENSE("GPL v2");
-> > 
-> > No one authored this driver?
-> > 
-> 
-> Thought that was optional, will update.
+for you to fetch changes up to 6a7519e81321343165f89abb8b616df186d3e57a:
 
-It's also helpful.  Can you place an Author: line in the header(s) too.
+  efi/arm64: Store Runtime Services revision (2014-08-22 08:45:41 +0100)
+
+----------------------------------------------------------------
+ * WARN_ON(!spin_is_locked()) always triggers on non-SMP machines.
+   Swap it for the more canonical lockdep_assert_held() which always
+   does the right thing - Guenter Roeck
+
+ * Assign the correct value to efi.runtime_version on arm64 so that all
+   the runtime services can be invoked - Semen Protsenko
+
+----------------------------------------------------------------
+Guenter Roeck (1):
+      firmware: Do not use WARN_ON(!spin_is_locked())
+
+Semen Protsenko (1):
+      efi/arm64: Store Runtime Services revision
+
+ arch/arm64/kernel/efi.c     | 2 ++
+ drivers/firmware/efi/vars.c | 8 ++++----
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Matt Fleming, Intel Open Source Technology Center
