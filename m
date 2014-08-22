@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbaHVVNV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:13:21 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:55353 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaHVVNR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:13:17 -0400
-Date: Sat, 23 Aug 2014 01:13:14 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
-        avagin@openvz.org, ebiederm@xmission.com, hpa@zytor.com,
-        serge.hallyn@canonical.com, xemul@parallels.com, segoon@openwall.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 4/4] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP
- operation, v3
-Message-ID: <20140822211314.GD25918@moon>
-References: <20140804172255.109539743@openvz.org>
- <20140804172610.965949916@openvz.org>
- <20140821155115.8433bb37bf631b8ae8340f84@linux-foundation.org>
- <20140822063242.GI14072@moon>
- <20140821234912.f007e2fb.akpm@linux-foundation.org>
- <20140822203809.GC25918@moon>
- <20140822134628.5df9cda87d744e35d794b5c2@linux-foundation.org>
+	id S1752015AbaHVVQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:16:57 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:38957
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751234AbaHVVQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 17:16:56 -0400
+From: <atull@opensource.altera.com>
+To: <linux@roeck-us.net>, <jdelvare@suse.de>
+CC: <lm-sensors@lm-sensors.org>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH v2 0/2] dd regulator support for pmbus and ltc2978
+Date: Fri, 22 Aug 2014 16:11:32 -0500
+Message-ID: <1408741894-24879-1-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140822134628.5df9cda87d744e35d794b5c2@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CO1PR06CA041.namprd06.prod.outlook.com (10.242.160.31) To
+ BL2PR03MB305.namprd03.prod.outlook.com (10.141.68.13)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0311124FA9
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(199003)(164054003)(189002)(33646002)(48376002)(85852003)(4396001)(87976001)(19580395003)(20776003)(87286001)(81542001)(81342001)(83322001)(92566001)(83072002)(50226001)(21056001)(92726001)(95666004)(62966002)(81156004)(50466002)(106356001)(105586002)(90102001)(64706001)(19580405001)(229853001)(66066001)(99396002)(69596002)(47776003)(79102001)(86152002)(77156001)(77982001)(31966008)(53416004)(107046002)(102836001)(89996001)(77096002)(74662001)(76482001)(74502001)(42186005)(85306004)(80022001)(86362001)(101416001)(46102001)(50986999)(104166001);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB305;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 01:46:28PM -0700, Andrew Morton wrote:
-> On Sat, 23 Aug 2014 00:38:09 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> 
-> > > 
-> > > Or will we?  What happens if we later decide that some additional field
-> > > needs to be added?  Do we version the interface?  Add a new prctl()
-> > > mode?  Let's cook up a plan for that and at least add to changelog?
-> > 
-> > I don't expect to change it anytime soon but we still have an option --
-> > if we decide to extend or shrink it we always can use sizeof/offsetof
-> > helpers to check which exactly version userspace asks us to use.
-> 
-> How does that work?  We just have a blob of bytes coming in from
-> userspace.
+From: Alan Tull <atull@opensource.altera.com>
 
-Not just blob. We have it as a structure where all fields have a
-constant size. Say we have
+Version 2 :
+  * Get regulator_init_data from platform data or device tree.
+  * One regulator per pmbus part.
+  * Clean up Kconfig and #includes.
 
-struct prctl_mm_map {
-	__u64 start_code;
-	__u64 start_code;
-	__u64 some-new-field;
-};
+This set of patches adds regulator support to pmbus_core.c and to
+ltc2978.c.  Other pmbus parts can use this to add their own
+regulator support.  Current ltc2978 support is limited to
+enable/disable.
 
-in the kernel, so its size will be 24 bytes but userspace
-uses old definition without @some-new-field member (16 bytes).
-So when we get a reguest with 16 bytes from userspace we can
-find the userspace have passed old definition. It's not as
-explicit as if we would have some @version field in struct
-prctl_mm_mmap, but looks fine for me. Still I can add @version
-into the structure if you prefer.
+Tested on ltc2978.  Looking at the datasheets for the other parts
+supported by ltc2978.c, it looks like it should work.
 
-> > As far as I understand the mm_struct is not the structure which
-> > changes that frequently, right?
-> 
-> We might find existing things which criu wants to access.  And criu
-> lives forever, yes?  The mm_struct is likely to change over that time
-> period ;)
+Thanks,
+Alan
 
-Hopefully criu will live long enough so I would have a chance to update
-prctl_mm_map accordingly :) Still the good thing is that once mm_struct
-get changed the kernel fails to build in sys.c and the change will
-be noticed immediately so we update sys.c as well.
+Alan Tull (2):
+  pmbus: add regulator support
+  pmbus: ltc2978: add regulator gating
+
+ drivers/hwmon/pmbus/Kconfig      |    7 +++++
+ drivers/hwmon/pmbus/ltc2978.c    |   60 ++++++++++++++++++++++++++++++++++++++
+ drivers/hwmon/pmbus/pmbus.h      |    5 ++++
+ drivers/hwmon/pmbus/pmbus_core.c |   51 ++++++++++++++++++++++++++++++++
+ include/linux/i2c/pmbus.h        |    1 +
+ 5 files changed, 124 insertions(+)
+
+-- 
+1.7.9.5
+
