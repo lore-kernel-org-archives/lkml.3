@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704AbaHVCUZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 22:20:25 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54272 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755553AbaHVCUK (ORCPT
+	id S1755519AbaHVCao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 22:30:44 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:37968 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827AbaHVCan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 22:20:10 -0400
-Date: Thu, 21 Aug 2014 21:19:38 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        Addy Ke <addy.ke@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140822021938.GT24407@sirena.org.uk>
-References: <1408668895-1108-1-git-send-email-dianders@chromium.org>
+	Thu, 21 Aug 2014 22:30:43 -0400
+Date: Thu, 21 Aug 2014 19:30:38 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: atull@opensource.altera.com, jdelvare@suse.de, lm-sensors@lm-sensors.org,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH 2/2] pmbus: ltc2978: add regulator gating
+Message-ID: <20140822023038.GA17819@roeck-us.net>
+References: <1408659686-29106-1-git-send-email-atull@opensource.altera.com>
+ <1408659686-29106-3-git-send-email-atull@opensource.altera.com>
+ <20140822003650.GQ24407@sirena.org.uk>
+ <20140822011810.GA17461@roeck-us.net>
+ <20140822012622.GS24407@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nreWiX4Cj9hiu/Wx"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408668895-1108-1-git-send-email-dianders@chromium.org>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 208.59.64.2
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: RK808: Fix uninitialized value
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140822012622.GS24407@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 21, 2014 at 08:26:22PM -0500, Mark Brown wrote:
+> On Thu, Aug 21, 2014 at 06:18:10PM -0700, Guenter Roeck wrote:
+> > On Thu, Aug 21, 2014 at 07:36:50PM -0500, Mark Brown wrote:
+> > > On Thu, Aug 21, 2014 at 05:21:26PM -0500, atull@opensource.altera.com wrote:
+> 
+> > > This all looks very much like pmbus could use regmap and then the regmap
+> > > helpers.  I'd not insist on it though.  What I would however suggest is
+> 
+> > Not unless regmap got extended recently to support quick, byte, and word
+> > smbus accesses at the same time.
+> 
+> Depending on how you decide which it quite possibly does - if it's based
+> on the register number that'd work.
 
---nreWiX4Cj9hiu/Wx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Mostly per register, but also per chip (for manufacturing specific registers
+the register size is determined by the chip type). Also, there are block
+registers. Plus, the scope of each register (ie if it is paged or not)
+is chip specific.  The same register may be paged on one chip, and unpaged
+on another. I'll have another look to see if that all can be mapped into the
+regmap model. If yes, it might actually be quite helpful and might simplify
+the pmbus code quite a bit.
 
-On Thu, Aug 21, 2014 at 05:54:55PM -0700, Doug Anderson wrote:
-> The RK808 regulator driver was putting its config on the stack but not
-> initting it.  That means that you got a semi-random config.  Fix this.
+Either case, even if regmap now supports all the PMBus oddities, converting
+the pmbus drivers to use regmap should be a separate patch set and not be
+tied together.
 
-Applied, thanks.
-
---nreWiX4Cj9hiu/Wx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT9qi2AAoJELSic+t+oim9uO4P/3SqdYEN9T+uiY7MgoQUKgI5
-7+SHs9i3cxB66vc0a8OAFBMs+cjBdIuCR4NyUn4v9fC5a08YT7UBjgEyd3xS9/Fr
-l9O5gMjdeJQjYGvMocxI8/OUbuzjcgq38T+4j2qVTzVsmdN9j1T6INtkU9KkFnRC
-QsRNXK55l7UCR1Yh4kavHEaqItQGeG31/kekZJVclqunst9OYi2ry6bCCrx9gu0a
-jQvCS/LjURec0++1nFk+nGIVMZcQs8nU4y6DBhHnL7Cn5IpUq1lynVbTFiKzNJ4q
-R1vGVyN0SQnjG62wNTUzx945hyObPbDug6Lm8GshmjmtFaMBshK7GWaTUOH5kjjx
-ygyks4zVaW8w3OVOswcYwrM/JvxUDIEtt6bSzFvWer4m0geatykV2L0G3gV00FV7
-z0YRUjXxq/+oYugjD9cRafirvKoFazz2CXTwRli0xhA5/ruJMRHYCdHwFCwI6be3
-bohB2GrGcUlksBYK0VWxrR+O4vcw7dphQwObYExlpVKqfaLS6syckpD+zZjwLwNL
-ofU4R1gMnk6jo/C3bguPecbLgQVLZ8zWGuwIKxE+UuFkM/YZI4l0IrA215zlZbYp
-FDUI78vVDZklQ2DcpJiz9S5ipeJQy1l6oSvZKk1lUWxfNaA9Lwn3dNES7A0c316q
-iPYHvQ7qokj8A3QtW/P4
-=MRYd
------END PGP SIGNATURE-----
-
---nreWiX4Cj9hiu/Wx--
+Tnanks,
+Guenter
