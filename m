@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173AbaHVPiC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:38:02 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44460 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932097AbaHVPiA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:38:00 -0400
-Date: Fri, 22 Aug 2014 11:37:58 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] kernel: trace_syscalls: Replace rcu_assign_pointer()
- with RCU_INIT_POINTER()
-Message-ID: <20140822113758.172eb474@gandalf.local.home>
-In-Reply-To: <20140822142822.GA32391@ada>
-References: <20140822142822.GA32391@ada>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S932209AbaHVPiR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:38:17 -0400
+Received: from [207.46.163.189] ([207.46.163.189]:22148 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932097AbaHVPiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:38:14 -0400
+Date: Fri, 22 Aug 2014 10:30:58 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Mark Brown <broonie@kernel.org>
+CC: <linux@roeck-us.net>, <jdelvare@suse.de>, <lm-sensors@lm-sensors.org>,
+        <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH 2/2] pmbus: ltc2978: add regulator gating
+In-Reply-To: <20140822003650.GQ24407@sirena.org.uk>
+Message-ID: <alpine.DEB.2.02.1408221026340.30084@atx-linux-37>
+References: <1408659686-29106-1-git-send-email-atull@opensource.altera.com> <1408659686-29106-3-git-send-email-atull@opensource.altera.com> <20140822003650.GQ24407@sirena.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BN1PR02CA0018.namprd02.prod.outlook.com (10.141.56.18) To
+ BL2PR03MB306.namprd03.prod.outlook.com (10.141.68.14)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0311124FA9
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(6009001)(51704005)(41574002)(199003)(189002)(24454002)(51914003)(92566001)(79102001)(83506001)(87976001)(19580395003)(69596002)(85306004)(105586002)(95666004)(110136001)(106356001)(54356999)(46406003)(85852003)(76176999)(90102001)(99396002)(86362001)(80022001)(83322001)(107046002)(92726001)(83072002)(81542001)(50986999)(20776003)(81342001)(46102001)(21056001)(23726002)(102836001)(64706001)(47776003)(50466002)(42186005)(4396001)(86152002)(77096002)(101416001)(66066001)(31966008)(33716001)(53416004)(74662001)(77982001)(76482001)(74502001)(81156004);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB306;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014 17:28:22 +0300
-Andreea-Cristina Bernat <bernat.ada@gmail.com> wrote:
+On Fri, 22 Aug 2014, Mark Brown wrote:
 
-> The uses of "rcu_assign_pointer()" are NULLing out the pointers.
-> According to RCU_INIT_POINTER()'s block comment:
-> "1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-> it is better to use it instead of rcu_assign_pointer() because it has a
-> smaller overhead.
+> On Thu, Aug 21, 2014 at 05:21:26PM -0500, atull@opensource.altera.com wrote:
 > 
-> The following Coccinelle semantic patch was used:
-> @@
-> @@
+> > +config SENSORS_LTC2978_REGULATOR
+> > +	boolean "Regulator support for LTC2974, LTC2978, LTC3880, and LTC3883"
+> > +	default n
 > 
-> - rcu_assign_pointer
-> + RCU_INIT_POINTER
->   (..., NULL)
+> No need to say default n here, it's the default default.
+> 
+> > +	depends on SENSORS_LTC2978
+> > +	select REGULATOR
+> 
+> I'd expect a depends here.
 
-I guess I can add this. It's a very slow path thus it isn't critical.
+Hi Mark,
 
-Although, I hate the name. Perhaps we should add another macro called
-RCU_CLEAR_POINTER() or something that just nulls it. That way it
-documents the use. To me, INIT means the pointer is being initialized,
-where in reality it's just being cleared. I guess one could argue that
-the pointer is being "re-initialized".
+Thanks for the review.  I'll fix these two Kconfig issues.
+
+> 
+> > +#include <linux/regulator/driver.h>
+> > +#include <linux/regulator/machine.h>
+> 
+> If you need machine.h that's suspicious...  why do you need it?
+
+It was to define 'struct regulator_init_data' which I had hardwired here 
+as you noted below.  Will fix.
+
+> 
+> > +static int ltc2978_write_pmbus_operation(struct regulator_dev *rdev, u8 value)
+> > +{
+> > +	struct device *dev = rdev_get_dev(rdev);
+> > +	struct i2c_client *client = to_i2c_client(dev->parent);
+> > +	int ret;
+> > +
+> > +	ret = pmbus_set_page(client, 0xff);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	return i2c_smbus_write_byte_data(client, PMBUS_OPERATION, value);
+> > +}
+> 
+> This all looks very much like pmbus could use regmap and then the regmap
+> helpers.  I'd not insist on it though.  What I would however suggest is
+> that these functions should all be helpers which read the specific
+> page, addresses and bits to write from the driver structure - I bet the
+> code is going to be identical for most pmbus using regulators and so it
+> makes sense to share it like we do with the generic regmap functions.
+> 
+> That means that any good practice can be deployed more easily and any
+> API updates only need to update the helpers.
+> 
+> > +static struct regulator_init_data ltc2978_regulator_init = {
+> > +	.constraints = {
+> > +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+> > +	},
+> > +};
+> 
+> You should not be forcing this on, you don't know what's safe on any
+> given board.  Allow the board to specify constraints then it has
+> control.
+> 
+
+Yes, this info should be from board info or device tree.  I'll fix this.
 
 Thanks!
 
--- Steve
-
-> 
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-> ---
->  kernel/trace/trace_syscalls.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> index 759d5e0..4dc8b79 100644
-> --- a/kernel/trace/trace_syscalls.c
-> +++ b/kernel/trace/trace_syscalls.c
-> @@ -425,7 +425,7 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
->  		return;
->  	mutex_lock(&syscall_trace_lock);
->  	tr->sys_refcount_enter--;
-> -	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
-> +	RCU_INIT_POINTER(tr->enter_syscall_files[num], NULL);
->  	if (!tr->sys_refcount_enter)
->  		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
->  	mutex_unlock(&syscall_trace_lock);
-> @@ -463,7 +463,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
->  		return;
->  	mutex_lock(&syscall_trace_lock);
->  	tr->sys_refcount_exit--;
-> -	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
-> +	RCU_INIT_POINTER(tr->exit_syscall_files[num], NULL);
->  	if (!tr->sys_refcount_exit)
->  		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
->  	mutex_unlock(&syscall_trace_lock);
-
+Alan
