@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056AbaHVHxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:53:40 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:49654 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755945AbaHVHxh (ORCPT
+	id S1756160AbaHVH5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:57:32 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:49131 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaHVHxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:53:37 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-b9-53f6f6ff9d9a
+	Fri, 22 Aug 2014 03:53:30 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-1f-53f6f6f8ecfb
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,128 +18,93 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 06/15] drm/exynos/ipp: free partially allocated resources on
- error
-Date: Fri, 22 Aug 2014 09:52:17 +0200
-Message-id: <1408693946-15456-7-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 03/15] drm/exynos/ipp: move file reference from memory to
+ command node
+Date: Fri, 22 Aug 2014 09:52:14 +0200
+Message-id: <1408693946-15456-4-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
 References: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xq7r/v30LNjgxRc/i1rpzrBZXvr5n
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xq7o/vn0LNnixWNPi1rpzrBZXvr5n
 	s5h0fwKLxYt7F1kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYHTo/73ceZPPq2rGL0+LxJ
-	LoA5issmJTUnsyy1SN8ugSujvVGv4I1Ixf/2aYwNjJ2CXYycHBICJhJvnrUwQdhiEhfurWfr
-	YuTiEBJYyijx9+QLVginj0liVfdmZpAqNgFNib+bb7KB2CICyhKr9rWzgxQxC3xkkriy9A1Y
-	kbBAiMTWxS/YQWwWAVWJj+9egzXwCjhLfNzzhBlinZzEyWOTWUFsTgEXiQsHp4HFhYBqum5P
-	Y5rAyLuAkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhYfd3BuPSY1SFGAQ5GJR7eyC9f
-	g4VYE8uKK3MPMUpwMCuJ8G6a9y1YiDclsbIqtSg/vqg0J7X4ECMTB6dUA+MO4wqTj9eY/L58
-	OG/vs90gumV70503rE0d96UT33DKPV71nenAfg4vv6VVMhrbtbVni7xM8WrUfbmHR+/x9K5F
-	C8Jk5zjbfGyq7Z/ncPfArbAQ86bglw3dLs/qrx7Llrsa4uWX6MGdLH7HR+s504W/byKPvFio
-	arH/6AH33Le7MkVzlG4eLVNiKc5INNRiLipOBACZtLw0CQIAAA==
+	LoA5issmJTUnsyy1SN8ugStj7fMJbAXHBSuarh9ka2C8xNfFyMkhIWAi8W3HD1YIW0ziwr31
+	bF2MXBxCAksZJS727mWFcPqYJM4fusMGUsUmoCnxd/NNMFtEQFli1b52dpAiZoGPTBJXlr5h
+	BkkIC0RInPm7jRHEZhFQldjzcztLFyMHB6+As8Tv24wQ2+QkTh6bDLaZU8BF4sLBaWCtQkAl
+	XbenMU1g5F3AyLCKUTS1NLmgOCk911CvODG3uDQvXS85P3cTIySsvuxgXHzM6hCjAAejEg9v
+	4u+vwUKsiWXFlbmHGCU4mJVEeDfN+xYsxJuSWFmVWpQfX1Sak1p8iJGJg1OqgTHpUe7RT9dd
+	pE49qHX4dLiS48fFlN9eTzYs8Nc69rY6te7asbXiGeEnDnyV3DFvTcOkpgMWRt7Hz767d3zW
+	zf0JhiJqPQZeVw6ruH60mWj0Zo43j6fQNOvgKS919Y9detcv/kr5x4LMB/pP3i5c03rjvK2F
+	eIb3C+5DLrMU759S2Hc9P3VJe+RWJZbijERDLeai4kQAiFxolwkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of allocation errors some already allocated buffers
-were not freed. The patch fixes it.
+Command node should contain file reference to distinguish commands
+created by different processes.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 68 ++++++++++++++++-----------------
- 1 file changed, 33 insertions(+), 35 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 5 ++---
+ drivers/gpu/drm/exynos/exynos_drm_ipp.h | 2 ++
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 060a198..728f3b9 100644
+index 9770966..bbe9968 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -599,6 +599,37 @@ static int ipp_set_mem_node(struct exynos_drm_ippdrv *ippdrv,
- 	return ret;
- }
+@@ -75,7 +75,6 @@ struct drm_exynos_ipp_mem_node {
+ 	u32	prop_id;
+ 	u32	buf_id;
+ 	struct drm_exynos_ipp_buf_info	buf_info;
+-	struct drm_file		*filp;
+ };
  
-+static int ipp_put_mem_node(struct drm_device *drm_dev,
-+		struct drm_exynos_ipp_cmd_node *c_node,
-+		struct drm_exynos_ipp_mem_node *m_node)
-+{
-+	int i;
-+
-+	DRM_DEBUG_KMS("node[0x%x]\n", (int)m_node);
-+
-+	if (!m_node) {
-+		DRM_ERROR("invalid dequeue node.\n");
-+		return -EFAULT;
-+	}
-+
-+	DRM_DEBUG_KMS("ops_id[%d]\n", m_node->ops_id);
-+
-+	/* put gem buffer */
-+	for_each_ipp_planar(i) {
-+		unsigned long handle = m_node->buf_info.handles[i];
-+		if (handle)
-+			exynos_drm_gem_put_dma_addr(drm_dev, handle,
-+							c_node->filp);
-+	}
-+
-+	/* conditionally remove from queue */
-+	if (m_node->list.next)
-+		list_del(&m_node->list);
-+	kfree(m_node);
-+
-+	return 0;
-+}
-+
- static struct drm_exynos_ipp_mem_node
- 		*ipp_get_mem_node(struct drm_device *drm_dev,
- 		struct drm_file *file,
-@@ -634,7 +665,8 @@ static struct drm_exynos_ipp_mem_node
- 					qbuf->handle[i], file);
- 			if (IS_ERR(addr)) {
- 				DRM_ERROR("failed to get addr.\n");
--				goto err_clear;
-+				ipp_put_mem_node(drm_dev, c_node, m_node);
-+				return ERR_PTR(-EFAULT);
- 			}
+ /*
+@@ -448,6 +447,7 @@ int exynos_drm_ipp_set_property(struct drm_device *drm_dev, void *data,
+ 	c_node->dev = dev;
+ 	c_node->property = *property;
+ 	c_node->state = IPP_STATE_IDLE;
++	c_node->filp = file;
  
- 			buf_info->handles[i] = qbuf->handle[i];
-@@ -649,40 +681,6 @@ static struct drm_exynos_ipp_mem_node
+ 	c_node->start_work = ipp_create_cmd_work();
+ 	if (IS_ERR(c_node->start_work)) {
+@@ -645,7 +645,6 @@ static struct drm_exynos_ipp_mem_node
+ 		}
+ 	}
+ 
+-	m_node->filp = file;
+ 	mutex_lock(&c_node->mem_lock);
+ 	list_add_tail(&m_node->list, &c_node->mem_list[qbuf->ops_id]);
  	mutex_unlock(&c_node->mem_lock);
+@@ -677,7 +676,7 @@ static int ipp_put_mem_node(struct drm_device *drm_dev,
+ 		unsigned long handle = m_node->buf_info.handles[i];
+ 		if (handle)
+ 			exynos_drm_gem_put_dma_addr(drm_dev, handle,
+-							m_node->filp);
++							c_node->filp);
+ 	}
  
- 	return m_node;
--
--err_clear:
--	kfree(m_node);
--	return ERR_PTR(-EFAULT);
--}
--
--static int ipp_put_mem_node(struct drm_device *drm_dev,
--		struct drm_exynos_ipp_cmd_node *c_node,
--		struct drm_exynos_ipp_mem_node *m_node)
--{
--	int i;
--
--	DRM_DEBUG_KMS("node[0x%x]\n", (int)m_node);
--
--	if (!m_node) {
--		DRM_ERROR("invalid dequeue node.\n");
--		return -EFAULT;
--	}
--
--	DRM_DEBUG_KMS("ops_id[%d]\n", m_node->ops_id);
--
--	/* put gem buffer */
--	for_each_ipp_planar(i) {
--		unsigned long handle = m_node->buf_info.handles[i];
--		if (handle)
--			exynos_drm_gem_put_dma_addr(drm_dev, handle,
--							c_node->filp);
--	}
--
--	/* delete list in queue */
--	list_del(&m_node->list);
--	kfree(m_node);
--
--	return 0;
- }
+ 	/* delete list in queue */
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.h b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
+index 6f48d62..0311035 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_ipp.h
++++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.h
+@@ -62,6 +62,7 @@ struct drm_exynos_ipp_cmd_work {
+  * @stop_work: stop command work structure.
+  * @event_work: event work structure.
+  * @state: state of command node.
++ * @filp: associated file pointer.
+  */
+ struct drm_exynos_ipp_cmd_node {
+ 	struct device		*dev;
+@@ -78,6 +79,7 @@ struct drm_exynos_ipp_cmd_node {
+ 	struct drm_exynos_ipp_cmd_work *stop_work;
+ 	struct drm_exynos_ipp_event_work *event_work;
+ 	enum drm_exynos_ipp_state	state;
++	struct drm_file	*filp;
+ };
  
- static void ipp_free_event(struct drm_pending_event *event)
+ /*
 -- 
 1.9.1
 
