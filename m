@@ -1,273 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299AbaHVPtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:49:33 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59904 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756466AbaHVPtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:49:31 -0400
-Date: Fri, 22 Aug 2014 08:49:31 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
-Message-ID: <20140822154800.GA90003@jaegeuk-mac02.mot-mobility.com>
-References: <1408140229-54949-1-git-send-email-jaegeuk@kernel.org>
- <1408140229-54949-3-git-send-email-jaegeuk@kernel.org>
- <003401cfbb84$441c5b60$cc551220$@samsung.com>
- <20140819165808.GA69881@jaegeuk-mac02>
- <005e01cfbc1b$8be08600$a3a19200$@samsung.com>
- <20140821164506.GA83828@jaegeuk-mac02>
- <000b01cfbdd6$533d48d0$f9b7da70$@samsung.com>
+	id S1756673AbaHVPu0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:50:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55502 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756622AbaHVPuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:50:24 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        sergei.shtylyov@cogentembedded.com, yoshihiro.shimoda.uh@renesas.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/9] usb: add support for the generic PHY framework
+Date: Fri, 22 Aug 2014 17:50:11 +0200
+Message-Id: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000b01cfbdd6$533d48d0$f9b7da70$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 02:56:37PM +0800, Chao Yu wrote:
-> Hi Jaegeuk,
-> 
-> > -----Original Message-----
-> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > Sent: Friday, August 22, 2014 12:45 AM
-> > To: Chao Yu
-> > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > linux-f2fs-devel@lists.sourceforge.net
-> > Subject: Re: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
-> > 
-> > On Wed, Aug 20, 2014 at 10:07:04AM +0800, Chao Yu wrote:
-> > > > -----Original Message-----
-> > > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > > Sent: Wednesday, August 20, 2014 12:58 AM
-> > > > To: Chao Yu
-> > > > Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> > > > linux-f2fs-devel@lists.sourceforge.net
-> > > > Subject: Re: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
-> > > >
-> > > > On Tue, Aug 19, 2014 at 04:04:11PM +0800, Chao Yu wrote:
-> > > > > Hi Jaegeuk,
-> > > > >
-> > > > > > -----Original Message-----
-> > > > > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
-> > > > > > Sent: Saturday, August 16, 2014 6:04 AM
-> > > > > > To: linux-kernel@vger.kernel.org; linux-fsdevel@vger.kernel.org;
-> > > > > > linux-f2fs-devel@lists.sourceforge.net
-> > > > > > Cc: Jaegeuk Kim
-> > > > > > Subject: [f2fs-dev] [PATCH 3/4] f2fs: avoid double lock in truncate_blocks
-> > > > > >
-> > > > > > The init_inode_metadata calls truncate_blocks when error is occurred.
-> > > > > > The callers holds f2fs_lock_op, so we should not call it again in
-> > > > > > truncate_blocks.
-> > > > >
-> > > > > Nice catch! Your solution is a good way to fix this issue.
-> > > > >
-> > > > > Previously, in create inode path, I found there are some redundant codes between
-> > > > > init_inode_metadata and evict_inode, including:
-> > > > > 	truncate_inode_pages(&inode->i_data, 0);
-> > > > > 	truncate_blocks(inode, 0);
-> > > > > 	remove_dirty_dir_inode(inode);
-> > > > > 	remove_inode_page(inode);
-> > > > >
-> > > > > So I think there is another way to fix this issue by removing error path handling
-> > > > > codes in init_inode_metadata, not making the inode bad to left garbage clean work in
-> > > > > evict_inode. In this way we can avoid adding additional argument for all different
-> > > > > callers.
-> > > >
-> > > > Well, possible.
-> > > > But we need to take a closer look at the race condition on the inode cache.
-> > > > What can happen if this bad inode is reassigned to the other thread?
-> > >
-> > > I don't get it. As I know, in evict(), we call ->evict_inode before
-> > > remove_inode_hash(), so before all clean work was done we will not reassign
-> > > this hashed uncleaned inode to other thread.
-> > >
-> > > Am I missing anything?
-> > 
-> > What I meant was it may happen between init_inode_metadata and iput.
-> 
-> Actually, can happen between unlock_new_inode and iput in error path of
-> create/symlink/mkdir/mknod/tmpfile. Scenario is like this:
-> 
-> 					->f2fs_mkdir
-> 					  ->f2fs_add_link
-> 					    ->__f2fs_add_link
-> 					      ->init_inode_metadata failed here
-> ->gc_thread_func
->   ->f2fs_gc
->     ->do_garbage_collect
->       ->gc_data_segment
->         ->f2fs_iget
->           ->iget_locked
->             ->wait_on_inode
-> 					  ->unlock_new_inode
->         ->move_data_page
-> 					  ->make_bad_inode
-> 					  ->iput
-> 
-> No problem now, but I'd like to remove unlock_new_inode from error path of inode
-> creating procedure as we'd better wakeup waiter in end of ->iput instead of
-> wakeup waiter in unlock_new_inode before invoking make_bad_inod.
-> 
-> How do you think?
+Hi all,
 
-Hmm. It seems that this is a lot different issue wrt this patch.
-Anyway, I agreed that it needs to relocate unlock_new_inode.
+This is an attempt to add more common USB code aware of the generic PHY
+framework, while keeping the compatibility for the USB PHY one. It does
+not add the full support, some USB PHY specific functions not being
+available currently in the generic PHY subsystem (e.g. usb_phy_set_power()).
+But it allows to use the generic PHY framework in other cases, and might
+help others to convert their USB PHY drivers.
 
-Thanks,
+A little background: I submitted a series to support USB on Berlin SoCs[1].
+One patch added a new PHY driver in drivers/usb/phy and Felipe asked it to
+be in the generic PHY framework instead[2]. This PHY being used by a ChipIdea
+driver, changes were needed in ChipIdea, OTG and HCD.
 
-> 
-> Anyway, drop this proposal if you do not like it, although I think it will be
-> ok theoretically after we fix above issue.
-> 
-> Thanks,
-> Yu
-> 
-> > 
-> > Thanks,
-> > 
-> > >
-> > > Regards,
-> > > Yu
-> > >
-> > > >
-> > > > >
-> > > > > How do you think?
-> > > > >
-> > > > > Thanks,
-> > > > > Yu
-> > > > >
-> > > > > >
-> > > > > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > > > > > ---
-> > > > > >  fs/f2fs/data.c   |  2 +-
-> > > > > >  fs/f2fs/dir.c    |  2 +-
-> > > > > >  fs/f2fs/f2fs.h   |  2 +-
-> > > > > >  fs/f2fs/file.c   | 13 ++++++++-----
-> > > > > >  fs/f2fs/inline.c |  2 +-
-> > > > > >  5 files changed, 12 insertions(+), 9 deletions(-)
-> > > > > >
-> > > > > > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-> > > > > > index 68834e2..14cc3e8 100644
-> > > > > > --- a/fs/f2fs/data.c
-> > > > > > +++ b/fs/f2fs/data.c
-> > > > > > @@ -935,7 +935,7 @@ static void f2fs_write_failed(struct address_space *mapping, loff_t
-> > > > to)
-> > > > > >
-> > > > > >  	if (to > inode->i_size) {
-> > > > > >  		truncate_pagecache(inode, inode->i_size);
-> > > > > > -		truncate_blocks(inode, inode->i_size);
-> > > > > > +		truncate_blocks(inode, inode->i_size, true);
-> > > > > >  	}
-> > > > > >  }
-> > > > > >
-> > > > > > diff --git a/fs/f2fs/dir.c b/fs/f2fs/dir.c
-> > > > > > index a69bbfa..155fb05 100644
-> > > > > > --- a/fs/f2fs/dir.c
-> > > > > > +++ b/fs/f2fs/dir.c
-> > > > > > @@ -391,7 +391,7 @@ put_error:
-> > > > > >  error:
-> > > > > >  	/* once the failed inode becomes a bad inode, i_mode is S_IFREG */
-> > > > > >  	truncate_inode_pages(&inode->i_data, 0);
-> > > > > > -	truncate_blocks(inode, 0);
-> > > > > > +	truncate_blocks(inode, 0, false);
-> > > > > >  	remove_dirty_dir_inode(inode);
-> > > > > >  	remove_inode_page(inode);
-> > > > > >  	return ERR_PTR(err);
-> > > > > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> > > > > > index 2723b2d..7f976c1 100644
-> > > > > > --- a/fs/f2fs/f2fs.h
-> > > > > > +++ b/fs/f2fs/f2fs.h
-> > > > > > @@ -1122,7 +1122,7 @@ static inline void f2fs_stop_checkpoint(struct f2fs_sb_info *sbi)
-> > > > > >   */
-> > > > > >  int f2fs_sync_file(struct file *, loff_t, loff_t, int);
-> > > > > >  void truncate_data_blocks(struct dnode_of_data *);
-> > > > > > -int truncate_blocks(struct inode *, u64);
-> > > > > > +int truncate_blocks(struct inode *, u64, bool);
-> > > > > >  void f2fs_truncate(struct inode *);
-> > > > > >  int f2fs_getattr(struct vfsmount *, struct dentry *, struct kstat *);
-> > > > > >  int f2fs_setattr(struct dentry *, struct iattr *);
-> > > > > > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> > > > > > index ecbdf6a..a8e97f8 100644
-> > > > > > --- a/fs/f2fs/file.c
-> > > > > > +++ b/fs/f2fs/file.c
-> > > > > > @@ -422,7 +422,7 @@ out:
-> > > > > >  	f2fs_put_page(page, 1);
-> > > > > >  }
-> > > > > >
-> > > > > > -int truncate_blocks(struct inode *inode, u64 from)
-> > > > > > +int truncate_blocks(struct inode *inode, u64 from, bool lock)
-> > > > > >  {
-> > > > > >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-> > > > > >  	unsigned int blocksize = inode->i_sb->s_blocksize;
-> > > > > > @@ -438,14 +438,16 @@ int truncate_blocks(struct inode *inode, u64 from)
-> > > > > >  	free_from = (pgoff_t)
-> > > > > >  			((from + blocksize - 1) >> (sbi->log_blocksize));
-> > > > > >
-> > > > > > -	f2fs_lock_op(sbi);
-> > > > > > +	if (lock)
-> > > > > > +		f2fs_lock_op(sbi);
-> > > > > >
-> > > > > >  	set_new_dnode(&dn, inode, NULL, NULL, 0);
-> > > > > >  	err = get_dnode_of_data(&dn, free_from, LOOKUP_NODE);
-> > > > > >  	if (err) {
-> > > > > >  		if (err == -ENOENT)
-> > > > > >  			goto free_next;
-> > > > > > -		f2fs_unlock_op(sbi);
-> > > > > > +		if (lock)
-> > > > > > +			f2fs_unlock_op(sbi);
-> > > > > >  		trace_f2fs_truncate_blocks_exit(inode, err);
-> > > > > >  		return err;
-> > > > > >  	}
-> > > > > > @@ -463,7 +465,8 @@ int truncate_blocks(struct inode *inode, u64 from)
-> > > > > >  	f2fs_put_dnode(&dn);
-> > > > > >  free_next:
-> > > > > >  	err = truncate_inode_blocks(inode, free_from);
-> > > > > > -	f2fs_unlock_op(sbi);
-> > > > > > +	if (lock)
-> > > > > > +		f2fs_unlock_op(sbi);
-> > > > > >  done:
-> > > > > >  	/* lastly zero out the first data page */
-> > > > > >  	truncate_partial_data_page(inode, from);
-> > > > > > @@ -480,7 +483,7 @@ void f2fs_truncate(struct inode *inode)
-> > > > > >
-> > > > > >  	trace_f2fs_truncate(inode);
-> > > > > >
-> > > > > > -	if (!truncate_blocks(inode, i_size_read(inode))) {
-> > > > > > +	if (!truncate_blocks(inode, i_size_read(inode), true)) {
-> > > > > >  		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
-> > > > > >  		mark_inode_dirty(inode);
-> > > > > >  	}
-> > > > > > diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-> > > > > > index 520758b..4d1f39f 100644
-> > > > > > --- a/fs/f2fs/inline.c
-> > > > > > +++ b/fs/f2fs/inline.c
-> > > > > > @@ -247,7 +247,7 @@ process_inline:
-> > > > > >  		update_inode(inode, ipage);
-> > > > > >  		f2fs_put_page(ipage, 1);
-> > > > > >  	} else if (ri && (ri->i_inline & F2FS_INLINE_DATA)) {
-> > > > > > -		truncate_blocks(inode, 0);
-> > > > > > +		truncate_blocks(inode, 0, false);
-> > > > > >  		set_inode_flag(F2FS_I(inode), FI_INLINE_DATA);
-> > > > > >  		goto process_inline;
-> > > > > >  	}
-> > > > > > --
-> > > > > > 1.8.5.2 (Apple Git-48)
-> > > > > >
-> > > > > >
-> > > > > > ------------------------------------------------------------------------------
-> > > > > > _______________________________________________
-> > > > > > Linux-f2fs-devel mailing list
-> > > > > > Linux-f2fs-devel@lists.sourceforge.net
-> > > > > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
-> > > > >
-> > > > >
-> > > > > ------------------------------------------------------------------------------
-> > > > > _______________________________________________
-> > > > > Linux-f2fs-devel mailing list
-> > > > > Linux-f2fs-devel@lists.sourceforge.net
-> > > > > https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+This is done in 3 steps:
+        1. moving the OTG state from the USB PHY structure to the OTG one
+        2. renaming the field 'phy' to 'usb_phy'
+        3. adding a field for the generic framework PHY and dissociating its
+           use from the USB PHY one
+
+Step 1 is in the first patch. Steps 2 and 3 are done for OTG, and ChipIdea
+subsystems in patches 2-3, 7 and 9.
+
+HCD generic PHY support was made by Sergei and Yoshihiro[1]. I added some
+modifications to make this support consistent with this series in patches
+4-6.
+
+The usb_otg has been moved into the ci_hdrc structure in ChipIdea, in patch 8.
+
+I tested it by using the ChipIdea driver I introduced, both with an USB PHY
+and a PHY driver successfully. I also compiled a multi_v7 kernel (ARM), with
+every driver I could enable in the USB section.
+
+Patches can also be found at:
+git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+
+The series applies on top of Sergei and Yoshihiro generic PHY support in
+HCD[1].
+
+Thanks a lot!
+
+Antoine
+
+Changes since v2:
+        - rebased the series on top of v3.17-rc1 (and [1])
+        - moved phy_exit() after phy_power_on()
+        - switched to devm_phy_get() to handle non DT cases
+        - moved usb_otg into the ci_hdrc structure
+
+Changes since v1:
+        - rebased the series on top of [1] (generic PHY support for HCD)
+        - split s/phy/usb_phy/ renaming and generic PHY support in separate
+          patches
+
+[1] https://www.mail-archive.com/linux-usb@vger.kernel.org/msg43471.html
+
+Antoine Ténart (9):
+  usb: move the OTG state from the USB PHY to the OTG structure
+  usb: rename phy to usb_phy in OTG
+  usb: add support to the generic PHY framework in OTG
+  usb: rename phy to usb_phy in HCD
+  usb: rename gen_phy to phy in HCD
+  usb: allow to supply the PHY in the drivers when using HCD
+  usb: rename transceiver and phy to usb_phy in ChipIdea
+  usb: chipidea: move usb_otg into struct ci_hdrc
+  usb: chipidea: add support to the generic PHY framework in ChipIdea
+
+ drivers/phy/phy-omap-usb2.c         | 14 ++----
+ drivers/usb/chipidea/ci.h           |  8 +++-
+ drivers/usb/chipidea/ci_hdrc_imx.c  |  2 +-
+ drivers/usb/chipidea/ci_hdrc_msm.c  |  8 ++--
+ drivers/usb/chipidea/core.c         | 71 ++++++++++++++++++++++-----
+ drivers/usb/chipidea/debug.c        |  5 +-
+ drivers/usb/chipidea/host.c         | 13 ++---
+ drivers/usb/chipidea/otg_fsm.c      | 29 +++++------
+ drivers/usb/chipidea/udc.c          |  4 +-
+ drivers/usb/common/usb-otg-fsm.c    |  8 ++--
+ drivers/usb/core/hcd.c              | 45 +++++++++---------
+ drivers/usb/core/hub.c              |  8 ++--
+ drivers/usb/host/ehci-fsl.c         | 16 +++----
+ drivers/usb/host/ehci-hub.c         |  2 +-
+ drivers/usb/host/ehci-msm.c         |  4 +-
+ drivers/usb/host/ehci-tegra.c       | 16 +++----
+ drivers/usb/host/ohci-omap.c        | 20 ++++----
+ drivers/usb/musb/am35x.c            | 28 +++++------
+ drivers/usb/musb/blackfin.c         | 18 +++----
+ drivers/usb/musb/da8xx.c            | 28 +++++------
+ drivers/usb/musb/davinci.c          | 18 +++----
+ drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++------------------
+ drivers/usb/musb/musb_dsps.c        | 26 +++++-----
+ drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
+ drivers/usb/musb/musb_host.c        |  8 ++--
+ drivers/usb/musb/musb_virthub.c     | 22 ++++-----
+ drivers/usb/musb/omap2430.c         | 30 ++++++------
+ drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
+ drivers/usb/musb/ux500.c            | 10 ++--
+ drivers/usb/phy/phy-ab8500-usb.c    | 16 +++----
+ drivers/usb/phy/phy-fsl-usb.c       | 23 ++++-----
+ drivers/usb/phy/phy-generic.c       |  6 +--
+ drivers/usb/phy/phy-gpio-vbus-usb.c | 14 +++---
+ drivers/usb/phy/phy-isp1301-omap.c  | 10 ++--
+ drivers/usb/phy/phy-msm-usb.c       | 95 +++++++++++++++++++------------------
+ drivers/usb/phy/phy-mv-usb.c        | 50 +++++++++----------
+ drivers/usb/phy/phy-samsung-usb2.c  |  2 +-
+ drivers/usb/phy/phy-tahvo.c         |  8 ++--
+ drivers/usb/phy/phy-ulpi.c          |  6 +--
+ include/linux/usb/chipidea.h        |  4 +-
+ include/linux/usb/hcd.h             |  6 ++-
+ include/linux/usb/otg.h             |  7 ++-
+ include/linux/usb/phy.h             |  1 -
+ 43 files changed, 467 insertions(+), 412 deletions(-)
+
+-- 
+1.9.1
+
