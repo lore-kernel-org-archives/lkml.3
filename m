@@ -1,171 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038AbaHVLho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 07:37:44 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:33138 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbaHVLhn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 07:37:43 -0400
+	id S1756116AbaHVLiB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 07:38:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57380 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751947AbaHVLhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 07:37:55 -0400
+Message-ID: <53F72B8D.1080305@suse.de>
+Date: Fri, 22 Aug 2014 13:37:49 +0200
+From: =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+Organization: SUSE LINUX Products GmbH
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1408706963-23195-1-git-send-email-sudeep.holla@arm.com>
-References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>
-	<1408706963-23195-1-git-send-email-sudeep.holla@arm.com>
-Date: Fri, 22 Aug 2014 13:37:42 +0200
-Message-ID: <CANq1E4SJZQeAuXhggdnsjRFKFJD01WEnBpcdPC1pkJiv3WegCA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu devices
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Kay Sievers <kay@vrfy.org>
+To: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        "'Vincent Palatin'" <vpalatin@chromium.org>,
+        "'Doug Anderson'" <dianders@chromium.org>,
+        "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>,
+        "'Tomasz Figa'" <t.figa@samsung.com>,
+        "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7] ARM: dts: Prepare node labels for exynos5250
+References: <53DCD74B.8090400@gmail.com> <1408539764-5835-1-git-send-email-afaerber@suse.de> <080101cfbdf6$c8fd1f30$5af75d90$@samsung.com>
+In-Reply-To: <080101cfbdf6$c8fd1f30$5af75d90$@samsung.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Am 22.08.2014 12:49, schrieb Kukjin Kim:
+> Andreas Färber wrote:
+>>
+>> Allows them to be extended by reference.
+>>
+>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>> Signed-off-by: Andreas Färber <afaerber@suse.de>
+>> ---
+>>  v6 -> v7:
+>>  * Dropped uart* labels (Tomasz Figa)
+>>
+>>  v6: Split off from Snow/SMDK cleanups (Doug Anderson)
+>>
+>>  arch/arm/boot/dts/exynos5250.dtsi | 16 ++++++++--------
+>>  1 file changed, 8 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+>> index 492e1eff37bd..42eafd19cfb2 100644
+>> --- a/arch/arm/boot/dts/exynos5250.dtsi
+>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+>> @@ -218,7 +218,7 @@
+>>  		clock-names = "fimg2d";
+>>  	};
+>>
+>> -	codec@11000000 {
+>> +	mfc: codec@11000000 {
+>>  		compatible = "samsung,mfc-v6";
+>>  		reg = <0x11000000 0x10000>;
+>>  		interrupts = <0 96 0>;
+>> @@ -227,7 +227,7 @@
+>>  		clock-names = "mfc";
+>>  	};
+>>
+>> -	rtc@101E0000 {
+>> +	rtc: rtc@101E0000 {
+>>  		clocks = <&clock CLK_RTC>;
+>>  		clock-names = "rtc";
+>>  		status = "disabled";
+>> @@ -261,7 +261,7 @@
+>>  		clock-names = "uart", "clk_uart_baud0";
+>>  	};
+>>
+>> -	sata@122F0000 {
+>> +	sata: sata@122F0000 {
+>>  		compatible = "snps,dwc-ahci";
+>>  		samsung,sata-freq = <66>;
+>>  		reg = <0x122F0000 0x1ff>;
+>> @@ -573,7 +573,7 @@
+>>  		#phy-cells = <1>;
+>>  	};
+>>
+>> -	usb@12110000 {
+>> +	ehci: usb@12110000 {
+> 
+> I'm not sure which one is recommended between above and "ehci: ehci@12110000 {"
+> 
+>>  		compatible = "samsung,exynos4210-ehci";
+>>  		reg = <0x12110000 0x100>;
+>>  		interrupts = <0 71 0>;
+>> @@ -588,7 +588,7 @@
+>>  		};
+>>  	};
+>>
+>> -	usb@12120000 {
+>> +	ohci: usb@12120000 {
+> 
+> Same as above...
 
-On Fri, Aug 22, 2014 at 1:29 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
-> From: Sudeep Holla <sudeep.holla@arm.com>
->
-> This patch adds a new function to create per-cpu devices.
-> This helps in:
-> 1. reusing the device infrastructure to create any cpu related
->    attributes and corresponding sysfs instead of creating and
->    dealing with raw kobjects directly
-> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
->    existing sysfs ABI
-> 3. avoiding to create links in the bus directory pointing to the
->    device as there would be per-cpu instance of these devices with
->    the same name since dev->bus is not populated to cpu_sysbus on
->    purpose
->
-> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/cpu.h |  4 ++++
->  2 files changed, 58 insertions(+)
->
-> Hi Greg,
->
-> Here is the alternate solution I could come up with instead of
-> creating cpu class. cpu_device_create is very similar to
-> device_create_groups_vargs w/o class support, but I could not
-> reuse anything else to avoid creating similar function.
->
-> Let me know your thoughts/suggestions on this.
->
-> Regards,
-> Sudeep
->
->
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> index 277a9cfa9040..53f0c4141d05 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -363,6 +363,60 @@ struct device *get_cpu_device(unsigned cpu)
->  }
->  EXPORT_SYMBOL_GPL(get_cpu_device);
->
-> +static void device_create_release(struct device *dev)
-> +{
-> +       kfree(dev);
-> +}
-> +
-> +static struct device *
-> +__cpu_device_create(struct device *parent, void *drvdata,
-> +                   const struct attribute_group **groups,
-> +                   const char *fmt, va_list args)
-> +{
-> +       struct device *dev = NULL;
-> +       int retval = -ENODEV;
-> +
-> +       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-> +       if (!dev) {
-> +               retval = -ENOMEM;
-> +               goto error;
-> +       }
-> +
-> +       device_initialize(dev);
-> +       dev->parent = parent;
-> +       dev->groups = groups;
-> +       dev->release = device_create_release;
-> +       dev_set_drvdata(dev, drvdata);
-> +
-> +       retval = kobject_set_name_vargs(&dev->kobj, fmt, args);
-> +       if (retval)
-> +               goto error;
-> +
-> +       retval = device_add(dev);
-> +       if (retval)
-> +               goto error;
+A quick git-grep in v3.16.1 shows both ways used in arch/arm/boot/dts/:
+ usb@: 232
+ xhci@: 0
+ ehci@: 41
+ ohci@: 60
+ uhci@: 7
 
-Exactly! As I said, simply setting dev->groups before calling device_add().
+>>  		compatible = "samsung,exynos4210-ohci";
+>>  		reg = <0x12120000 0x100>;
+>>  		interrupts = <0 71 0>;
+>> @@ -725,7 +725,7 @@
+>>  		clock-names = "gscl";
+>>  	};
+>>
+>> -	hdmi {
+>> +	hdmi: hdmi {
+> 
+> Should be
+> 
+> +	hdmi: hdmi@14530000 { ?
 
-However, I really don't understand why we need this as global API.
-Skimming over the other patches, you use cpu_device_create() only in
-one place. Why not hard-code this all there? It is totally OK to do
-device initialization in drivers. All the helpers (like
-device_create(), device_create_with_groups(), and so on) are just
-convenience functions. The driver-core API explicitly allows drivers
-to initialize devices manually.
+Actually, without applying this patch and my follow-up cleanups strictly
+using these new labels, we can't rename any of the nodes here, since it
+would break the derived .dts files. It was specifically requested in v5
+to make this patch here separate from subsequent uses of the new labels
+for the benefit of cherry-picking.
 
-Nevertheless, this patch looks fine.
+So since you don't seem to disagree with the label names that I add
+here, I consider renaming nodes outside the scope of this patch.
 
-Thanks
-David
++1 for reflecting the reg address in the unit address of the hdmi node
+as a follow-up to the refactorings, if that does not break any driver
+assumptions.
 
-> +
-> +       return dev;
-> +
-> +error:
-> +       put_device(dev);
-> +       return ERR_PTR(retval);
-> +}
-> +
-> +struct device *cpu_device_create(struct device *parent, void *drvdata,
-> +                                const struct attribute_group **groups,
-> +                                const char *fmt, ...)
-> +{
-> +       va_list vargs;
-> +       struct device *dev;
-> +
-> +       va_start(vargs, fmt);
-> +       dev = __cpu_device_create(parent, drvdata, groups, fmt, vargs);
-> +       va_end(vargs);
-> +       return dev;
-> +}
-> +EXPORT_SYMBOL_GPL(cpu_device_create);
-> +
->  #ifdef CONFIG_GENERIC_CPU_AUTOPROBE
->  static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
->  #endif
-> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-> index 95978ad7fcdd..bb790a5621c0 100644
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -19,6 +19,7 @@
->
->  struct device;
->  struct device_node;
-> +struct attribute_group;
->
->  struct cpu {
->         int node_id;            /* The node which contains the CPU */
-> @@ -39,6 +40,9 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
->  extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
->  extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
->
-> +extern struct device *cpu_device_create(struct device *parent, void *drvdata,
-> +                                       const struct attribute_group **groups,
-> +                                       const char *fmt, ...);
->  #ifdef CONFIG_HOTPLUG_CPU
->  extern void unregister_cpu(struct cpu *cpu);
->  extern ssize_t arch_cpu_probe(const char *, size_t);
-> --
-> 1.8.3.2
->
+Regards,
+Andreas
+
+>>  		compatible = "samsung,exynos4212-hdmi";
+>>  		reg = <0x14530000 0x70000>;
+>>  		interrupts = <0 95 0>;
+>> @@ -751,14 +751,14 @@
+>>  		#phy-cells = <0>;
+>>  	};
+>>
+>> -	dp-controller@145B0000 {
+>> +	dp: dp-controller@145B0000 {
+>>  		clocks = <&clock CLK_DP>;
+>>  		clock-names = "dp";
+>>  		phys = <&dp_phy>;
+>>  		phy-names = "dp";
+>>  	};
+>>
+>> -	fimd@14400000 {
+>> +	fimd: fimd@14400000 {
+>>  		clocks = <&clock CLK_SCLK_FIMD1>, <&clock CLK_FIMD1>;
+>>  		clock-names = "sclk_fimd", "fimd";
+>>  	};
+>> --
+>> 2.0.4
+
+-- 
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
