@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138AbaHVO2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:28:32 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:53254 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756317AbaHVO2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:28:31 -0400
-Date: Fri, 22 Aug 2014 17:28:22 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: rostedt@goodmis.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] kernel: trace_syscalls: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140822142822.GA32391@ada>
+	id S932174AbaHVO26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:28:58 -0400
+Received: from sauhun.de ([89.238.76.85]:38267 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932143AbaHVO24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:28:56 -0400
+Date: Fri, 22 Aug 2014 09:28:52 -0500
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: Trickle charging for rtc-bq32k
+Message-ID: <20140822142852.GA1545@katana>
+References: <20140822131150.GA26724@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140822131150.GA26724@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The uses of "rcu_assign_pointer()" are NULLing out the pointers.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- kernel/trace/trace_syscalls.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> _But_ this should probably be enabled using device tree entry, right?
+> Unfortunately, the driver is i2c driver, not platform one, so I don't
+> see how to do that easily...
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 759d5e0..4dc8b79 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -425,7 +425,7 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_enter--;
--	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
-+	RCU_INIT_POINTER(tr->enter_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_enter)
- 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
- 	mutex_unlock(&syscall_trace_lock);
-@@ -463,7 +463,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_exit--;
--	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
-+	RCU_INIT_POINTER(tr->exit_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_exit)
- 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
- 	mutex_unlock(&syscall_trace_lock);
--- 
-1.9.1
+Trickle charging is usually depending on the hardware setup, so
+devicetree is actually a good place to put it. We'd just need generic
+bindings so that they could be applied to various RTC. Just guessing,
+resistor value would probably be one such property? We would not need
+putting plain register values into DT.
 
+There should be no difference regarding DT between i2c and platform
+drivers.
+
+You should add the devicetree ML for discussing such things.
+
+> Or would module parameter be acceptable?
+
+No, this is device dependent, not module dependent.
+
+>   * Copyright (C) 2009 Semihalf.
+> + * Copyright (C) 2014 Pavel Machek <pavel@denx.de>
+
+IMO, such a small improvement does not justify claiming copyright on the
+driver.
+
+
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT91OkAAoJEBQN5MwUoCm2NxkQAKXsavr8KG5W7aKhJKLzlmSj
+bAoTge2kV5thmC+Jg1ePHYmC+L5WnSrMbHgCQ7RcHmbzb9uO6BCJeDrOoSQsRwR8
+OVs6fruuvhfF/3ASShKKa0P+JFBf1rCU0eU0pmd3Y4YLU1lnx6EbXAQnGv+jtaaO
+tkq1nVOUMHf191GY+4fuCz96EplJ636eh/xtgREFnYQBGYI+JmCJgIaPYucUu1ux
+/dL1MoCSHQzHAqNp8Hth1mdRrPRXArxpKRkiNpyJ82L4HhPcso6nNTBIK/DAHXM3
+xtBmmtpw9TzI14xXO5bWuwZ1c2Es9gXGqnRz2aZf6giTIHCCHfi64kS0ojeBDK2F
+KJebaBCgGaY1y8oZ2YzPLTxNNwnF5GY+reohgzM+qynNdGzEAG+dPziBHZfgahuW
+OTulNubtpbijNwQ+xNAv7sR1rvY7uXYsGNt+rCj/07c/AQ8AVJKgFOv0xU5unE1I
+2ZwFWhmIKUgxFJa9YTPx5mrNEEJZcwgGgisQ4wTZc4Fqsf4I455zpcOTKGHsFI29
+fAxhGiwzqlte4RfeZkgMLVNzQ47tDCk6YAGhpF3tCKUw7AoFOTW6rLG692lDSWEZ
+10lOdsrTVDz2bNqOjR+w+IPT65IC38X6vYie0NuAC7l1Jm/Q650b4GWUZSSD2IuF
+J1QOtNzmk4Mpz45Sf1hC
+=RglU
+-----END PGP SIGNATURE-----
+
+--Q68bSM7Ycu6FN28Q--
