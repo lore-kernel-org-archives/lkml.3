@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933AbaHVHaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:30:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53909 "EHLO mx1.redhat.com"
+	id S1755941AbaHVHbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:31:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4212 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887AbaHVHaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:30:11 -0400
-Message-ID: <53F6F14B.1030609@redhat.com>
-Date: Fri, 22 Aug 2014 15:29:15 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>	 <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net>
-In-Reply-To: <1408683665.5648.69.camel@marge.simpson.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1755663AbaHVHbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 03:31:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,378,1406617200"; 
+   d="scan'208";a="580285611"
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: jic23@kernel.org, linux-iio@vger.kernel.org
+Cc: srinivas.pandruvada@linux.intel.com, pmeerw@pmeerw.net,
+        daniel.baluta@intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] io: accel: kxcjk1013: Remove redundant assignment
+Date: Fri, 22 Aug 2014 10:35:56 +0300
+Message-Id: <1408692956-11379-1-git-send-email-daniel.baluta@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 01:01 PM, Mike Galbraith wrote:
-> On Thu, 2014-08-21 at 16:05 +0800, Jason Wang wrote: 
->> > Rx busy loop does not scale well in the case when several parallel
->> > sessions is active. This is because we keep looping even if there's
->> > another process is runnable. For example, if that process is about to
->> > send packet, keep busy polling in current process will brings extra
->> > delay and damage the performance.
->> > 
->> > This patch solves this issue by exiting the busy loop when there's
->> > another process is runnable in current cpu. Simple test that pin two
->> > netperf sessions in the same cpu in receiving side shows obvious
->> > improvement:
-> That patch says to me it's a bad idea to spin when someone (anyone) else
-> can get some work done on a CPU, which intuitively makes sense.  But..
->
-> (ponders net goop: with silly 1 byte ping-pong load, throughput is bound
-> by fastpath latency, net plus sched plus fixable nohz and governor crud
-> if not polling, so you can't get a lot of data moved byte at a time no
-> matter how sexy the pipe whether polling or not due to bound.  If OTOH
-> net hardware is a blazing fast large bore packet cannon, net overhead
-> per unit payload drops, sched+crud is a constant)
+data->range is already set by kxcjk1013_set_range.
 
-Polling could be done by either rx busy loop in process context or NAPI
-in softirq. Rx busy loop may only spin and poll when no packet were
-found in socket receive queue. It spins in the hope that at least one
-packet will come (in this case the process will exit rx busy loop) in a
-short while. In this way, it eliminates the overheads of NAPI, wakeup
-and scheduling. This patch just make the busy polling less aggressive:
-Since the process finds nothing to receive when still spinning in this
-loop, there's no need to waste cpu cycles ( or even call cpu_relax()) if
-there's another work could be done by current CPU.
+Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+---
+ drivers/iio/accel/kxcjk-1013.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-For stream workload like you mentioned here, if the card was fast
-enough, the socket receive queue was not easy to be drained. Rx busy
-loop won't help or even won't be triggered in this case.
->
-> Seems the only time it's a good idea to poll is if blasting big packets
-> on sexy hardware, and if you're doing that, you want to poll regardless
-> of whether somebody else is waiting, or?
+diff --git a/drivers/iio/accel/kxcjk-1013.c b/drivers/iio/accel/kxcjk-1013.c
+index 70a5679..01e86d0 100644
+--- a/drivers/iio/accel/kxcjk-1013.c
++++ b/drivers/iio/accel/kxcjk-1013.c
+@@ -239,9 +239,6 @@ static int kxcjk1013_chip_init(struct kxcjk1013_data *data)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	data->range = KXCJK1013_RANGE_4G;
+-
+-
+ 	ret = i2c_smbus_read_byte_data(data->client, KXCJK1013_REG_DATA_CTRL);
+ 	if (ret < 0) {
+ 		dev_err(&data->client->dev, "Error reading reg_data_ctrl\n");
+-- 
+1.9.1
 
-NAPI will work instead of rx busy loop in this case. It will poll and
-try to drain nic's rx ring in softirq regardless somebody else.
-
-Btw, current rx busy loop does not perform well on stream workload since
-it bypasses GRO to reduce latency. But this issue beyond the scope of
-this patch.
