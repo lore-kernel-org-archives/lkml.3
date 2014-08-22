@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177AbaHVMgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 08:36:54 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:51649 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755956AbaHVMgw (ORCPT
+	id S1756232AbaHVMho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:37:44 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:52795 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755956AbaHVMhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 08:36:52 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkIAIc491NbdWOb/2dsb2JhbABZgw2BKoJ80SoCAgGBDBZ3hAQBBSMVQRAEBw4KAgImAgJXBhMIiD4Brw+VHheBLI08ZAeCeYFTAQSQfotLlQyDYDsvgQaBSQEBAQ
-X-IPAS-Result: AkkIAIc491NbdWOb/2dsb2JhbABZgw2BKoJ80SoCAgGBDBZ3hAQBBSMVQRAEBw4KAgImAgJXBhMIiD4Brw+VHheBLI08ZAeCeYFTAQSQfotLlQyDYDsvgQaBSQEBAQ
-X-IronPort-AV: E=Sophos;i="5.04,380,1406584800"; 
-   d="scan'208";a="250956531"
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: Re: [PATCH] drivers/ipack/devices/ipoctal.h: Fix typo in include  guard
-X-PHP-Originating-Script: 33:rcmail.php
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Fri, 22 Aug 2014 14:36:44 +0200
-From: =?UTF-8?Q?Samuel_Iglesias_Gons=C3=A1lvez?= <siglesias@igalia.com>
-Cc: Jens Taprogge <jens.taprogge@taprogge.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Organization: Igalia
-In-Reply-To: <1408709363-13361-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1408709363-13361-1-git-send-email-linux@rasmusvillemoes.dk>
-Message-ID: <4b63988bb76babf9516c1dbcf38ce463@igalia.com>
-User-Agent: Roundcube Webmail/0.9.5
+	Fri, 22 Aug 2014 08:37:40 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] drivers: scsi: #define missing include guards
+Date: Fri, 22 Aug 2014 14:37:33 +0200
+Message-Id: <1408711053-14129-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-22 14:09, Rasmus Villemoes wrote:
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  drivers/ipack/devices/ipoctal.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/ipack/devices/ipoctal.h 
-> b/drivers/ipack/devices/ipoctal.h
-> index 28f1c42..7fede0e 100644
-> --- a/drivers/ipack/devices/ipoctal.h
-> +++ b/drivers/ipack/devices/ipoctal.h
-> @@ -12,7 +12,7 @@
->   * Software Foundation; version 2 of the License.
->   */
-> 
-> -#ifndef _IPOCTAL_H
-> +#ifndef _IPOCTAL_H_
->  #define _IPOCTAL_H_
-> 
->  #define NR_CHANNELS		8
+The four files aha1542.h, aha1740.h, gvp11.h and mvme147.h under
+drivers/scsi/ contain two-thirds of an include guard, but do not
+elsewhere.
 
-Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/scsi/aha1542.h | 1 +
+ drivers/scsi/aha1740.h | 1 +
+ drivers/scsi/gvp11.h   | 1 +
+ drivers/scsi/mvme147.h | 1 +
+ 4 files changed, 4 insertions(+)
 
-Greg, Would you mind picking this patch through your char-misc tree?
+diff --git a/drivers/scsi/aha1542.h b/drivers/scsi/aha1542.h
+index b871d2b..8f4e07a 100644
+--- a/drivers/scsi/aha1542.h
++++ b/drivers/scsi/aha1542.h
+@@ -1,4 +1,5 @@
+ #ifndef _AHA1542_H
++#define _AHA1542_H
+ 
+ /* $Id: aha1542.h,v 1.1 1992/07/24 06:27:38 root Exp root $
+  *
+diff --git a/drivers/scsi/aha1740.h b/drivers/scsi/aha1740.h
+index af23fd6..7ea484f 100644
+--- a/drivers/scsi/aha1740.h
++++ b/drivers/scsi/aha1740.h
+@@ -1,4 +1,5 @@
+ #ifndef _AHA1740_H
++#define _AHA1740_H
+ 
+ /* $Id$
+  *
+diff --git a/drivers/scsi/gvp11.h b/drivers/scsi/gvp11.h
+index 852913c..5aabe90 100644
+--- a/drivers/scsi/gvp11.h
++++ b/drivers/scsi/gvp11.h
+@@ -1,4 +1,5 @@
+ #ifndef GVP11_H
++#define GVP11_H
+ 
+ /* $Id: gvp11.h,v 1.4 1997/01/19 23:07:12 davem Exp $
+  *
+diff --git a/drivers/scsi/mvme147.h b/drivers/scsi/mvme147.h
+index bfd4566..479e9b4 100644
+--- a/drivers/scsi/mvme147.h
++++ b/drivers/scsi/mvme147.h
+@@ -1,4 +1,5 @@
+ #ifndef MVME147_H
++#define MVME147_H
+ 
+ /* $Id: mvme147.h,v 1.4 1997/01/19 23:07:10 davem Exp $
+  *
+-- 
+1.9.2
 
-Thanks,
-
-Sam
