@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaHVOMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:12:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44417 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932097AbaHVOMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:12:46 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-input@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <dmitry.torokhov@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH] doc: dt/bindings: input: Fix drv260x binding document
-Date: Fri, 22 Aug 2014 09:12:21 -0500
-Message-ID: <1408716741-1163-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932215AbaHVOPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:15:46 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42037 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088AbaHVOPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:15:45 -0400
+Date: Fri, 22 Aug 2014 17:15:36 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] kernel: events: callchain: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140822141536.GA32051@ada>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the drv260x dt binding document:
-- Change the node name to the devices function not the
-device name.
-- Add vbat-supply to the example.
-- Fix indentation of the example.
+The use of "rcu_assign_pointer()" is NULLing out the pointer.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
+The following Coccinelle semantic patch was used:
+@@
+@@
+
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 ---
- .../devicetree/bindings/input/ti,drv260x.txt       |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ kernel/events/callchain.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-index a9c8519..214e25d 100644
---- a/Documentation/devicetree/bindings/input/ti,drv260x.txt
-+++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-@@ -37,15 +37,16 @@ Optional properties:
- 			  3.2 v.
- Example:
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index 97b67df..f2a88de 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -52,7 +52,7 @@ static void release_callchain_buffers(void)
+ 	struct callchain_cpus_entries *entries;
  
--drv2605l: drv2605l@5a {
--		compatible = "ti,drv2605l";
--		reg = <0x5a>;
--		enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
--		mode = <DRV260X_LRA_MODE>;
--		library-sel = <DRV260X_LIB_LRA>;
--		vib-rated-mv = <3200>;
--		vib-overdriver-mv = <3200>;
--};
-+haptics:@5a {
-+	compatible = "ti,drv2605l";
-+	reg = <0x5a>;
-+	vbat-supply = <&vbat>;
-+	enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
-+	mode = <DRV260X_LRA_MODE>;
-+	library-sel = <DRV260X_LIB_LRA>;
-+	vib-rated-mv = <3200>;
-+	vib-overdriver-mv = <3200>;
-+}
+ 	entries = callchain_cpus_entries;
+-	rcu_assign_pointer(callchain_cpus_entries, NULL);
++	RCU_INIT_POINTER(callchain_cpus_entries, NULL);
+ 	call_rcu(&entries->rcu_head, release_callchain_buffers_rcu);
+ }
  
- For more product information please see the link below:
- http://www.ti.com/product/drv2605
 -- 
-1.7.9.5
+1.9.1
 
