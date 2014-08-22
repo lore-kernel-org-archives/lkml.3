@@ -1,379 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908AbaHVJIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:08:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61864 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaHVJIt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:08:49 -0400
+	id S1755968AbaHVJJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:09:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59327 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752330AbaHVJJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 05:09:20 -0400
+Message-ID: <53F70887.8030602@redhat.com>
+Date: Fri, 22 Aug 2014 17:08:23 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.01.1408211725420.6001@pmeerw.net>
-References: <1408634903-4305-1-git-send-email-daniel.baluta@intel.com>
-	<alpine.DEB.2.01.1408211725420.6001@pmeerw.net>
-Date: Fri, 22 Aug 2014 12:08:48 +0300
-X-Google-Sender-Auth: jsve3slZTnN2I_uzb3URqk1Tv2k
-Message-ID: <CAEnQRZCm=sSj6xNWjPJOtPM4bz+wmjmKtsXD2kxb9xdVZzWn=g@mail.gmail.com>
-Subject: Re: [PATCH v2] iio: Add Dyna-Image AL3320A ambient light sensor driver
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Peter Meerwald <pmeerw@pmeerw.net>
-Cc: Daniel Baluta <daniel.baluta@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tsechih_Lin@asus.com
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com> <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net> <20140822073653.GA7372@gmail.com>
+In-Reply-To: <20140822073653.GA7372@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 6:31 PM, Peter Meerwald <pmeerw@pmeerw.net> wrote:
+On 08/22/2014 03:36 PM, Ingo Molnar wrote:
+>>> diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+>>> index 1d67fb6..8a33fb2 100644
+>>> --- a/include/net/busy_poll.h
+>>> +++ b/include/net/busy_poll.h
+>>> @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+>>>  		cpu_relax();
+>>>  
+>>>  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+>>> -		 !need_resched() && !busy_loop_timeout(end_time));
+>>> +		 !need_resched() && !busy_loop_timeout(end_time) &&
+>>> +		 nr_running_this_cpu() < 2);
+> So it's generally a bad idea to couple to the scheduler through 
+> such a low level, implementation dependent value like 
+> 'nr_running', causing various problems:
 >
->> Minimal implementation. This driver provides raw illuminance readings.
->>
->> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
->> by Tsechih Lin <Tsechih_Lin@asus.com>
->>
->> * https://android.googlesource.com/kernel/msm.git
+>  - It misses important work that might be pending on this CPU,
+>    like RCU callbacks.
 >
-> some more comments on minor things below...
+>  - It will also over-credit task contexts that might be
+>    runnable, but which are less important than the currently
+>    running one: such as a SCHED_IDLE task
 >
->> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->> ---
->> Changes since v1: (reported by Peter Meerwald)
->>       * used u8 instead of int for passing gain and mean_time
->>       * used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
->>       * used devm_iio_device_register instead of iio_device_register
->>       * small style fixes
->>
->>  drivers/iio/light/Kconfig   |  10 ++
->>  drivers/iio/light/Makefile  |   1 +
->>  drivers/iio/light/al3320a.c | 247 ++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 258 insertions(+)
->>  create mode 100644 drivers/iio/light/al3320a.c
->>
->> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
->> index bf05ca5..5bea821 100644
->> --- a/drivers/iio/light/Kconfig
->> +++ b/drivers/iio/light/Kconfig
->> @@ -17,6 +17,16 @@ config ADJD_S311
->>        This driver can also be built as a module.  If so, the module
->>        will be called adjd_s311.
->>
->> +config AL3320A
->> +     tristate "AL3320A ambient light sensor"
->> +     depends on I2C
->> +     help
->> +      Say Y here if you want to build a driver for the Dyna Image AL3320A
->> +      ambient light sensor.
->> +
->> +      To compile this driver as a module, choose M here: the
->> +      module will be called al3320a.
->> +
->>  config APDS9300
->>       tristate "APDS9300 ambient light sensor"
->>       depends on I2C
->> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
->> index 8b8c09f..47877a3 100644
->> --- a/drivers/iio/light/Makefile
->> +++ b/drivers/iio/light/Makefile
->> @@ -4,6 +4,7 @@
->>
->>  # When adding new entries keep the list in alphabetical order
->>  obj-$(CONFIG_ADJD_S311)              += adjd_s311.o
->> +obj-$(CONFIG_AL3320A)                += al3320a.o
->>  obj-$(CONFIG_APDS9300)               += apds9300.o
->>  obj-$(CONFIG_CM32181)                += cm32181.o
->>  obj-$(CONFIG_CM36651)                += cm36651.o
->> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
->> new file mode 100644
->> index 0000000..787ce2e
->> --- /dev/null
->> +++ b/drivers/iio/light/al3320a.c
->> @@ -0,0 +1,247 @@
->> +/*
->> + * AL3320A - Dyna Image Ambient Light Sensor
->> + *
->> + * Copyright (c) 2014, Intel Corporation.
->> + *
->> + * This file is subject to the terms and conditions of version 2 of
->> + * the GNU General Public License.  See the file COPYING in the main
->> + * directory of this archive for more details.
->> + *
->> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
->> + *
->> + * TODO: interrupt support
->> + *
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/init.h>
->> +#include <linux/i2c.h>
->> +#include <linux/mutex.h>
->
-> mutex is not needed
+>  - It will also over-credit even regular SCHED_NORMAL tasks, if
+>    this current task is more important than them: say
+>    SCHED_FIFO. A SCHED_FIFO workload should run just as fast 
+>    with SCHED_NORMAL tasks around, as a SCHED_NORMAL workload 
+>    on an otherwise idle system.
 
-Correct. To be fixed in v3.
+I see.
+> So what you want is a more sophisticated query to the 
+> scheduler, a sched_expected_runtime() method that returns the 
+> number of nsecs this task is expected to run in the future, 
+> which returns 0 if you will be scheduled away on the next 
+> schedule(), and returns infinity for a high prio SCHED_FIFO 
+> task, or if this SCHED_NORMAL task is on an otherwise idle CPU.
 >
->> +
->> +#include <linux/iio/iio.h>
->> +#include <linux/iio/sysfs.h>
->> +
->> +#define AL3320A_DRV_NAME "al3320a"
->> +
->> +#define AL3320A_REG_CONFIG           0x00
->> +#define AL3320A_REG_STATUS           0x01
->> +#define AL3320A_REG_INT                      0x02
->> +#define AL3320A_REG_WAIT             0x06
->> +#define AL3320A_REG_CONFIG_RANGE     0x07
->> +#define AL3320A_REG_PERSIST          0x08
+> It will return a regular time slice value in other cases, when 
+> there's some load on the CPU.
 >
-> PERSIST is not used, maybe add to TODO
-Hmm, I think PERSIST is an internal part of interrupt support which is
-already listed in TODO list.
->
->> +#define AL3320A_REG_MEAN_TIME                0x09
->> +#define AL3320A_REG_ADUMMY           0x0A
->> +#define AL3320A_REG_DATA_LOW         0x22
->> +#define AL3320A_REG_DATA_HIGH                0x23
->
-> DATA_HIGH became unused by read_word_swapped()
-Ok, removed in v3. I've seen that it is a common practice to define
-only used registers. Anyhow, I think that drivers would be easier to
-understand/maintain if all register definitions are listed from start.
+> The polling logic can then do its decision based on that time 
+> value.
 
+But this is just for current process. We want to determine whether or
+not it was worth to loop busily in current process by checking if
+there's any another runnable processes or callbacks. And what we need
+here is just a simple and lockless hint which can't be wrong but may be
+inaccurate to exit the busy loop. The net code does not depends on this
+hint to do scheduling or yielding.
+
+How about just introducing a boolean helper like current_can_busy_loop()
+and return true in one of the following conditions:
+
+- Current task is SCHED_FIFO
+- Current task is neither SCHED_FIFO nor SCHED_IDLE and no other
+runnable processes or pending RCU callbacks in current cpu
+
+And add warns to make sure it can only be called in process context.
+
+Thanks
 >
->> +
->> +#define AL3320A_REG_LOW_THRESH_LOW   0x30
->> +#define AL3320A_REG_LOW_THRESH_HIGH  0x31
->> +#define AL3320A_REG_HIGH_THRESH_LOW  0x32
->> +#define AL3320A_REG_HIGH_THRESH_HIGH 0x33
+> All this can be done reasonably fast and lockless in most 
+> cases, so that it can be called from busy-polling code.
 >
-> threshold are TODO
-ok.
+> An added advantage would be that this approach consolidates the 
+> somewhat random need_resched() checks into this method as well.
 >
->> +
->> +#define AL3320A_CONFIG_DISABLE               0x00
->> +#define AL3320A_CONFIG_ENABLE                BIT(0)
->> +#define AL3320A_CONFIG_SW_RESET              BIT(2)
+> In any case I don't agree with the nr_running_this_cpu() 
+> method.
 >
-> SW_RESET is unused
-Removed in v3.
+> (Please Cc: me and lkml to future iterations of this patchset.)
 >
->> +
->> +#define AL3320A_GAIN_SHIFT           1
->> +
->> +/* chip params default values */
->> +#define AL3320A_DEFAULT_MEAN_TIME    4
->> +#define AL3320A_DEFAULT_WAIT_TIME    0 /* no waiting */
->> +
->> +enum al3320a_range {
->> +     AL3320A_RANGE_1, /* 33.28K lux */
->> +     AL3320A_RANGE_2, /* 8.32K lux  */
->> +     AL3320A_RANGE_3, /* 2.08K lux  */
->> +     AL3320A_RANGE_4  /* 0.65K lux  */
->> +};
->> +
->> +static const int al3320a_scales[][2] = {
->> +     {0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
->> +};
->> +
->> +struct al3320a_data {
->> +     struct i2c_client *client;
->> +     u8 range;
->> +};
->> +
->> +static const struct iio_chan_spec al3320a_channels[] = {
->> +     {
->> +             .type   = IIO_LIGHT,
->> +             .info_mask_separate =
->> +                     BIT(IIO_CHAN_INFO_RAW) |
->> +                     BIT(IIO_CHAN_INFO_SCALE),
->> +     }
->> +};
->> +
->> +static int al3320a_enable(struct al3320a_data *data)
->> +{
->> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
->> +                                      AL3320A_CONFIG_ENABLE);
->> +}
->> +
->> +static int al3320a_disable(struct al3320a_data *data)
->> +{
->> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
->> +                                      AL3320A_CONFIG_DISABLE);
->> +}
->> +
->> +static int al3320a_set_config_range(struct al3320a_data *data, u8 gain)
->> +{
->> +     int ret;
->> +
->> +     ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
->> +                                      gain << AL3320A_GAIN_SHIFT);
->> +     if (ret >= 0)
->> +             data->range = gain;
->> +     return ret;
->> +}
->> +
->> +static int al3320a_set_mean_time(struct al3320a_data *data, u8 mean_time)
->> +{
->> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
->> +                                      mean_time);
->> +}
->> +
->> +static int al3320a_set_wait_time(struct al3320a_data *data, u8 wait_time)
->> +{
->> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
->> +                                      wait_time);
->> +}
->> +
->> +static int al3320a_get_adc_value(struct al3320a_data *data)
->> +{
->> +     return i2c_smbus_read_word_swapped(data->client, AL3320A_REG_DATA_LOW);
->> +}
->> +
->> +static int al3320a_init(struct al3320a_data *data)
->> +{
->> +     int ret;
->> +
->> +     /* power on */
->> +     ret = al3320a_enable(data);
->> +     if (ret)
->> +             return ret;
->> +
->> +     ret = al3320a_set_config_range(data, AL3320A_RANGE_3);
->> +     if (ret)
->> +             return ret;
->> +
->> +     ret = al3320a_set_mean_time(data, AL3320A_DEFAULT_MEAN_TIME);
->> +     if (ret)
->> +             return ret;
->> +
->> +     ret = al3320a_set_wait_time(data, AL3320A_DEFAULT_WAIT_TIME);
->> +     if (ret)
->> +             return ret;
->> +
->> +     return 0;
->> +}
->> +
->> +static int al3320a_read_raw(struct iio_dev *indio_dev,
->> +                         struct iio_chan_spec const *chan,
->> +                         int *val,
->> +                         int *val2,
->> +                         long mask)
->> +{
->> +     struct al3320a_data *data = iio_priv(indio_dev);
->> +     int ret;
->> +
->> +     switch (mask) {
->> +     case IIO_CHAN_INFO_RAW:
->> +             ret = al3320a_get_adc_value(data);
->> +             if (ret < 0)
->> +                     return ret;
->> +             *val = ret;
->> +             return IIO_VAL_INT;
->> +     case IIO_CHAN_INFO_SCALE:
->> +             *val = al3320a_scales[data->range][0];
->> +             *val2 = al3320a_scales[data->range][1];
->> +             return IIO_VAL_INT_PLUS_MICRO;
->> +     }
->> +     return -EINVAL;
->> +}
->> +
->> +static int al3320a_write_raw(struct iio_dev *indio_dev,
->> +                          struct iio_chan_spec const *chan,
->> +                          int val, int val2, long mask)
->> +{
->> +     struct al3320a_data *data = iio_priv(indio_dev);
->> +     int i;
->> +
->> +     switch (mask) {
->> +     case IIO_CHAN_INFO_SCALE:
->> +             for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
->> +                     if (val == al3320a_scales[i][0] &&
->> +                         val2 == al3320a_scales[i][1])
->> +                             return al3320a_set_config_range(data, i);
->> +             }
+> Thanks,
 >
-> could add a break; here so it is not missed when handling more masks
-Fixed in v3.
->
->> +     }
->> +     return -EINVAL;
->> +}
->> +
->> +static const struct iio_info al3320a_info = {
->> +     .driver_module  = THIS_MODULE,
->> +     .read_raw       = al3320a_read_raw,
->> +     .write_raw      = al3320a_write_raw,
->> +};
->> +
->> +static int al3320a_probe(struct i2c_client *client,
->> +                      const struct i2c_device_id *id)
->> +{
->> +     struct al3320a_data *data;
->> +     struct iio_dev *indio_dev;
->> +     int ret;
->> +
->> +     indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
->> +     if (!indio_dev)
->> +             return -ENOMEM;
->> +
->> +     data = iio_priv(indio_dev);
->> +     i2c_set_clientdata(client, indio_dev);
->> +     data->client = client;
->> +
->> +     indio_dev->dev.parent = &client->dev;
->> +     indio_dev->info = &al3320a_info;
->> +     indio_dev->name = AL3320A_DRV_NAME;
->> +     indio_dev->channels = al3320a_channels;
->> +     indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
->> +     indio_dev->modes = INDIO_DIRECT_MODE;
->> +
->> +     ret = al3320a_init(data);
->> +     if (ret) {
->> +             dev_err(&client->dev, "al3320a chip init failed\n");
->> +             return ret;
->> +     }
->> +
->> +     return devm_iio_device_register(&client->dev, indio_dev);
->> +}
->> +
->> +static int al3320a_remove(struct i2c_client *client)
->> +{
->> +     struct iio_dev *indio_dev = i2c_get_clientdata(client);
->> +     struct al3320a_data *data = iio_priv(indio_dev);
->> +
->> +     return  al3320a_disable(data);
->
-> extra space before al3320a_disable()
-Good catch. Fixed in v3.
->
->> +}
->> +
->> +static const struct i2c_device_id al3320a_id[] = {
->> +     {"al3320a", 0},
->> +     {}
->> +};
->> +MODULE_DEVICE_TABLE(i2c, al3320a_id);
->> +
->> +static struct i2c_driver al3320a_driver = {
->> +     .driver = {
->> +             .name = AL3320A_DRV_NAME,
->> +     },
->> +     .probe          = al3320a_probe,
->> +     .remove         = al3320a_remove,
->> +     .id_table       = al3320a_id,
->> +};
->> +
->> +module_i2c_driver(al3320a_driver);
->> +
->> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
->> +MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
->> +MODULE_LICENSE("GPL v2");
->>
->
+> 	Ingo
 > --
->
-> Peter Meerwald
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks again Peter.
