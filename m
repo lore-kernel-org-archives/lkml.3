@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711AbaHVQwR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:52:17 -0400
-Received: from smtprelay0228.hostedemail.com ([216.40.44.228]:35424 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932159AbaHVQwP (ORCPT
+	id S932758AbaHVQwy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:52:54 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:33495 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932159AbaHVQww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:52:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3874:4321:5007:7652:7903:8660:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12663:12740:13069:13148:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bit11_309476a794b33
-X-Filterd-Recvd-Size: 1862
-Message-ID: <1408726332.13483.25.camel@joe-AO725>
-Subject: Re: [PATCH] errno.h: Improve ENOSYS's comment
-From: Joe Perches <joe@perches.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andy Whitcroft <apw@canonical.com>, Arnd Bergmann <arnd@arndb.de>,
+	Fri, 22 Aug 2014 12:52:52 -0400
+X-IronPort-AV: E=Sophos;i="5.04,382,1406584800"; 
+   d="scan'208";a="90643874"
+Date: Fri, 22 Aug 2014 18:52:49 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Joe Perches <joe@perches.com>
+cc: Dan Williams <dan.j.williams@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 22 Aug 2014 09:52:12 -0700
-In-Reply-To: <5c34ad9efb9b1ef1ffed1077d064ad877819dffc.1408724938.git.luto@amacapital.net>
-References: <5c34ad9efb9b1ef1ffed1077d064ad877819dffc.1408724938.git.luto@amacapital.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Dave Young <hidave.darkstar@gmail.com>,
+        =?ISO-8859-15?Q?Manuel_Sch=F6lling?= <manuel.schoelling@gmx.de>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] ioat: Use time_before()
+In-Reply-To: <1408643084.23250.84.camel@joe-AO725>
+Message-ID: <alpine.DEB.2.02.1408221851510.2055@localhost6.localdomain6>
+References: <1400789466-11156-1-git-send-email-manuel.schoelling@gmx.de>  <CAPcyv4gnMVHd6R=WuN84TLxrAgsBAq8u9_PcmpgD8QECZMZAQw@mail.gmail.com> <1408643084.23250.84.camel@joe-AO725>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1777988654-1408726370=:2055"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-22 at 09:30 -0700, Andy Lutomirski wrote:
-> ENOSYS is the mechanism used by user code to detect whether the
-> running kernel implements a given system call.  It should not be
-> returned by anything except an unimplemented system call.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-1777988654-1408726370=:2055
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+
+
+
+On Thu, 21 Aug 2014, Joe Perches wrote:
+
+> On Thu, 2014-08-21 at 10:10 -0700, Dan Williams wrote:
+> > On Thu, May 22, 2014 at 1:11 PM, Manuel Schölling
+> > <manuel.schoelling@gmx.de> wrote:
+> > > To be future-proof and for better readability the time comparisons are modified
+> > > to use time_before() instead of plain, error-prone math.
+> []
+> > > diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+> []
+> > > @@ -735,7 +735,8 @@ int ioat2_check_space_lock(struct ioat2_dma_chan *ioat, int num_descs)
+> > >          * called under bh_disabled so we need to trigger the timer
+> > >          * event directly
+> > >          */
+> > > -       if (jiffies > chan->timer.expires && timer_pending(&chan->timer)) {
+> > > +       if (time_before(chan->timer.expires, jiffies)
+> > > +           && timer_pending(&chan->timer)) {
+> > >                 struct ioatdma_device *device = chan->device;
+> > 
+> > Thanks, let's use time_is_before_jiffies() for this cleanup... I'll
+> > fix up and apply.
 > 
-> Unfortunately, it is rather frequently used in the kernel to
-> indicate that various new functions of existing system calls are not
-> implemented.  This should be discouraged.
+> There are thousands of uses of time_before( and time_after(
+> with jiffies, and 6 years after being added, a little more
+> than a dozen or so of time_is_[before|after]_jiffies.
 > 
-> Improve the command in errno.h to help clarify ENOSYS's purpose.
-[]
-> diff --git a/include/uapi/asm-generic/errno.h b/include/uapi/asm-generic/errno.h
-[]
-> @@ -6,7 +6,7 @@
-[]
-> -#define	ENOSYS		38	/* Function not implemented */
-> +#define	ENOSYS		38	/* Bad system call number */
+> I also think the "time_is_[before|after]_jiffies" macros are
+> not very well named.
+> 
+> Using them is more text than using jiffies directly.
+> There is a small benefit in argument ordering correctness.
+> 
+> 	time_after(jiffies, foo)
+> 	time_is_after_jiffies(foo)
+> 
+> I'd rather just drop jiffies altogether
+> 	time_is_after(foo)
+> or maybe add and use
+> 	jiffies_is_after(foo)
 
-I suggest "Invalid" rather than "Bad".
+jiffies_is_after is very understandable.  The others seem to require some 
+thought.
 
-Maybe also add something like:
-	/* see: man 2 syscalls */
-or
-	/* grep for SYSCALL_DEFINE */
-
-
+julia
+--8323328-1777988654-1408726370=:2055--
