@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985AbaHVHiM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:38:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64021 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844AbaHVHiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:38:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,378,1406617200"; 
-   d="scan'208";a="588403236"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: rjw@rjwysocki.net, lenb@kernel.org, bebl@mageta.org, davem@davemloft.net
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI: Run fixed button devices' notify callback in the process context
-Date: Fri, 22 Aug 2014 15:37:55 +0800
-Message-Id: <1408693091-16268-1-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1755927AbaHVHke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:40:34 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:56635 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbaHVHkd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 03:40:33 -0400
+Date: Fri, 22 Aug 2014 09:40:30 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hawkes <hawkes@google.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: [GIT PULL] HID
+Message-ID: <20140822074030.GA297@x4>
+References: <alpine.LNX.2.00.1408211146110.23162@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1408211146110.23162@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently fixed button devices' notify callbacks are running in the
-interrupt context. It's not necessary and prevent calling functions
-with mutex lock(E,G evaluating ACPI method). Otherwise, it's different
-with non-fixed button device whose notify callback is running in the process
-context. This patch is to make fixed button device's notify
-callback in the process context and this also can avoid dead lock
-when using netlink to report button event to user space.
+On 2014.08.21 at 12:43 -0500, Jiri Kosina wrote:
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
- drivers/acpi/scan.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+>       HID: logitech: perform bounds checking on device_id early enough
 
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 0a817ad..bfb7fc5 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -922,12 +922,17 @@ static void acpi_device_notify(acpi_handle handle, u32 event, void *data)
- 	device->driver->ops.notify(device, event);
- }
- 
--static acpi_status acpi_device_notify_fixed(void *data)
-+static void acpi_device_notify_fixed_run(void *data)
- {
- 	struct acpi_device *device = data;
- 
--	/* Fixed hardware devices have no handles */
- 	acpi_device_notify(NULL, ACPI_FIXED_HARDWARE_EVENT, device);
-+}
-+
-+static acpi_status acpi_device_notify_fixed(void *data)
-+{
-+	/* Fixed hardware devices have no handles */
-+	acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_device_notify_fixed_run, data);
- 	return AE_OK;
- }
- 
+The commit above (ad3e14d7c5268c2e) causes the bounds checking to always
+fail on my monolithic kernel (without modules):
+
+...
+[    2.922617] usb 4-2: new full-speed USB device number 2 using ohci-pci
+[    2.996587] udevd[98]: starting eudev version 1.0
+[    3.071203] random: nonblocking pool is initialized
+[    3.108360] logitech-djreceiver 0003:046D:C52B.0003: hiddev0,hidraw0: USB HID v1.11 Device [Logitech USB Receiver] on usb-0000:00:12.1-2/input2
+[    3.163208] input: Logitech Unifying Device. Wireless PID:4026 as /devices/pci0000:00/0000:00:12.1/usb4/4-2/4-2:1.2/0003:046D:C52B.0003/0003:046D:C52B.0004/input/input2
+[    3.163511] logitech-djdevice 0003:046D:C52B.0004: input,hidraw1: USB HID v1.11 Keyboard [Logitech Unifying Device. Wireless PID:4026] on usb-0000:00:12.1-2:1
+[    3.164121] logitech-djreceiver 0003:046D:C52B.0003: logi_dj_raw_event: invalid device index:0
+[    3.289261] usb 3-1: new low-speed USB device number 2 using ohci-pci
+[    3.457606] input: HID 046a:0011 as /devices/pci0000:00/0000:00:12.0/usb3/3-1/3-1:1.0/0003:046A:0011.0005/input/input3
+[    3.457794] hid-generic 0003:046A:0011.0005: input,hidraw2: USB HID v1.10 Keyboard [HID 046a:0011] on usb-0000:00:12.0-1/input0
+[    3.712886] Switched to clocksource tsc
+...
+
 -- 
-1.8.3.1
-
+Markus
