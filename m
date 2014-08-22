@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598AbaHVAhO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:37:14 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54017 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573AbaHVAhJ (ORCPT
+	id S1755630AbaHVAiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 20:38:21 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:42128 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaHVAiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:37:09 -0400
-Date: Thu, 21 Aug 2014 19:36:50 -0500
-From: Mark Brown <broonie@kernel.org>
-To: atull@opensource.altera.com
-Cc: linux@roeck-us.net, jdelvare@suse.de, lm-sensors@lm-sensors.org,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Message-ID: <20140822003650.GQ24407@sirena.org.uk>
-References: <1408659686-29106-1-git-send-email-atull@opensource.altera.com>
- <1408659686-29106-3-git-send-email-atull@opensource.altera.com>
+	Thu, 21 Aug 2014 20:38:20 -0400
+Message-ID: <53F690F4.8060007@linaro.org>
+Date: Fri, 22 Aug 2014 09:38:12 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QnQ62SBZf/0gbjGf"
-Content-Disposition: inline
-In-Reply-To: <1408659686-29106-3-git-send-email-atull@opensource.altera.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 208.59.64.2
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] pmbus: ltc2978: add regulator gating
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Kees Cook <keescook@chromium.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
+        arndb@arndb.de,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 3/6] asm-generic: add generic seccomp.h for secure
+ computing mode 1
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>	<1408611405-8943-4-git-send-email-takahiro.akashi@linaro.org> <CAGXu5j+6kyiZqXF0pScqsCzqDonCthKSvYDVT5+vEd3+iY72vg@mail.gmail.com>
+In-Reply-To: <CAGXu5j+6kyiZqXF0pScqsCzqDonCthKSvYDVT5+vEd3+iY72vg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/22/2014 02:51 AM, Kees Cook wrote:
+> On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
+> <takahiro.akashi@linaro.org> wrote:
+>> Those values (__NR_seccomp_*) are used solely in secure_computing()
+>> to identify mode 1 system calls. If compat system calls have different
+>> syscall numbers, asm/seccomp.h may override them.
+>>
+>> Acked-by: Arnd Bergmann <arnd@arndb.de>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>
+> Reviewed-by: Kees Cook <keescook@chromium.org>
+>
+>> ---
+>>   include/asm-generic/seccomp.h |   28 ++++++++++++++++++++++++++++
+>>   1 file changed, 28 insertions(+)
+>>   create mode 100644 include/asm-generic/seccomp.h
+>>
+>> diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
+>> new file mode 100644
+>> index 0000000..5e97022
+>> --- /dev/null
+>> +++ b/include/asm-generic/seccomp.h
+>> @@ -0,0 +1,28 @@
+>> +/*
+>> + * include/asm-generic/seccomp.h
+>> + *
+>> + * Copyright (C) 2014 Linaro Limited
+>> + * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +#ifndef _ASM_GENERIC_SECCOMP_H
+>> +#define _ASM_GENERIC_SECCOMP_H
+>> +
+>> +#include <asm-generic/unistd.h>
+>
+> While this isn't a problem for ARM, this should be linux/unistd.h for
+> other architectures to get the right stuff.
 
---QnQ62SBZf/0gbjGf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I will fix it.
 
-On Thu, Aug 21, 2014 at 05:21:26PM -0500, atull@opensource.altera.com wrote:
+>> +
+>> +#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
+>> +#define __NR_seccomp_read_32           __NR_read
+>> +#define __NR_seccomp_write_32          __NR_write
+>> +#define __NR_seccomp_exit_32           __NR_exit
+>> +#define __NR_seccomp_sigreturn_32      __NR_rt_sigreturn
+>> +#endif /* CONFIG_COMPAT && ! already defined */
+>> +
+>> +#define __NR_seccomp_read              __NR_read
+>> +#define __NR_seccomp_write             __NR_write
+>> +#define __NR_seccomp_exit              __NR_exit
+>> +#define __NR_seccomp_sigreturn         __NR_rt_sigreturn
+>
+> Some architectures use __NR_sigreturn, so this will need to be
+> adjusted in the future into:
+>
+> #ifdef __NR_seccomp_sigreturn
+> #define __NR_seccomp_sigreturn         __NR_rt_sigreturn
+> #endif
 
-> +config SENSORS_LTC2978_REGULATOR
-> +	boolean "Regulator support for LTC2974, LTC2978, LTC3880, and LTC3883"
-> +	default n
+I will fix it.
 
-No need to say default n here, it's the default default.
+> After these changes, I was able to port x86 to using this
+> asm-generic/seccomp.h too.
 
-> +	depends on SENSORS_LTC2978
-> +	select REGULATOR
+Thanks,
+-Takahiro AKASHI
 
-I'd expect a depends here.
-
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/machine.h>
-
-If you need machine.h that's suspicious...  why do you need it?
-
-> +static int ltc2978_write_pmbus_operation(struct regulator_dev *rdev, u8 value)
-> +{
-> +	struct device *dev = rdev_get_dev(rdev);
-> +	struct i2c_client *client = to_i2c_client(dev->parent);
-> +	int ret;
-> +
-> +	ret = pmbus_set_page(client, 0xff);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return i2c_smbus_write_byte_data(client, PMBUS_OPERATION, value);
-> +}
-
-This all looks very much like pmbus could use regmap and then the regmap
-helpers.  I'd not insist on it though.  What I would however suggest is
-that these functions should all be helpers which read the specific
-page, addresses and bits to write from the driver structure - I bet the
-code is going to be identical for most pmbus using regulators and so it
-makes sense to share it like we do with the generic regmap functions.
-
-That means that any good practice can be deployed more easily and any
-API updates only need to update the helpers.
-
-> +static struct regulator_init_data ltc2978_regulator_init = {
-> +	.constraints = {
-> +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-> +	},
-> +};
-
-You should not be forcing this on, you don't know what's safe on any
-given board.  Allow the board to specify constraints then it has
-control.
-
---QnQ62SBZf/0gbjGf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT9pCaAAoJELSic+t+oim95/AQAJBdLKWmfBhC0DZLKA59KaHD
-XaEnqz6WgACkJWij6cduXFNW41JhnT/NeuQHypWGbeQ7+HYWVNO/9jYRsO4SFh4n
-Jcyd7qiIU+Pfcw4Ee++dGrT+FeuYTYeY8W6vd5fErwI7Fd0liPESk7wybImPDJoS
-AQDrZwyfgB48fns8GwukAignXTn0PMowSTDHDVDT0pStUuqZGZzK+RV6N2b069/q
-E88+5TW15xnTzI0xPvZ+6B61bzZxFVJbvnUynctmP6gNqlEY4CUHgmySyCjI9/Oo
-eM8u669kOEkeeNJLTZ8JxKZYwp4yijE+HqJ2F4QZMzXE/9+i+BilEBGDaGhd9Ocq
-2mNL476GYEqfCp7l+84jI1sBR5LRcAg+j19yrxPKt+4oSSyPGTypvFn10rG9zZ79
-stAfdILmSq/gvSmcm48V5Itw+of4HpdHHWtf/6gVrxW+dn9d4lywespgeKv1gbgW
-TaYM5RyWpnD9DnBsG397a8MEl58v47VEV9t6QME8w7h4tsDtdPGI3VLFPQsZHzLk
-dGJegrDGRtOAt5FSh84WWHU4/noWjRSgjof4vt3GPmZkqOHxo3lMKGKttIqeaAc7
-dKWkDWLM8V8lkS9Q7DkcqGgUeWhGnreiX9XJ/HxG74Kg+LIFmS/idXuAEC904Z6+
-rv5TCjsKCOBg/DA17mMe
-=eRDL
------END PGP SIGNATURE-----
-
---QnQ62SBZf/0gbjGf--
+> -Kees
+>
+>> +
+>> +#endif /* _ASM_GENERIC_SECCOMP_H */
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
