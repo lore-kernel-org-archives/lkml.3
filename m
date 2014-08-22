@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaHVVbU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:31:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37079 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaHVVbT (ORCPT
+	id S1752041AbaHVVdB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:33:01 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:45713 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaHVVc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:31:19 -0400
-Date: Fri, 22 Aug 2014 14:31:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zhaoxiu Zeng <zhaoxiu.zeng@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, George Spelvin <linux@horizon.com>,
-        David Howells <dhowells@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] GCD: add binary GCD algorithm
-Message-Id: <20140822143117.29474ac2ac8092e27d26660a@linux-foundation.org>
-In-Reply-To: <1408106956-12986-1-git-send-email-zhaoxiu.zeng@gmail.com>
-References: <1408106956-12986-1-git-send-email-zhaoxiu.zeng@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 22 Aug 2014 17:32:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140822.114711.856705392345846995.davem@davemloft.net>
+References: <20140822.114711.856705392345846995.davem@davemloft.net>
+Date: Fri, 22 Aug 2014 14:32:58 -0700
+X-Google-Sender-Auth: vk8F15wJ6xCelgGJxRsYN2Zh260
+Message-ID: <CA+55aFxsf02Lt+rFOxf0rXu1WoqZW0omGzwdHUfSfo+O9EqUAw@mail.gmail.com>
+Subject: Re: [GIT PULL] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Aug 2014 20:49:16 +0800 Zhaoxiu Zeng <zhaoxiu.zeng@gmail.com> wrote:
+On Fri, Aug 22, 2014 at 11:47 AM, David Miller <davem@davemloft.net> wrote:
+>
+> Here are some bug fixes that have piled up during ksummit/linuxcon.
 
-> Because some architectures (alpha, armv6, etc.) don't provide hardware division,
-> the mod operation is slow! Binary GCD algorithm uses simple arithmetic operations,
-> it replaces division with arithmetic shifts, comparisons, and subtraction.
+Hmm. What happened to the patch titled "mac80211: fix channel switch
+for chanctx-based drivers" by Michal Kazior?
 
-I had a look around and it seems that most (all?) gcd() and lcd()
-callers are on initialization-time slowpaths.
+That one fixes a rather nasty oops that results in dead machines. It's
+generic wireless code, but hits with at least intel wireless cards. It
+needs the AP to send a channel switch request, but if that happens
+(and it does), the kernel goes belly-up.
 
-Do you know of a workload which will significantly benefit from this
-change?  If so, by how much?
-
-Otherwise I don't think we can justify the additional maintenance
-cost/risk, sorry.
-
-And if we *do* decide to proceed with this patch, we should include a
-patch which enables it on as many architectures as possible, so it gets
-runtime tested.
-
+            Linus
