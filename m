@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968AbaHVJJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:09:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59327 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330AbaHVJJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:09:20 -0400
-Message-ID: <53F70887.8030602@redhat.com>
-Date: Fri, 22 Aug 2014 17:08:23 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755648AbaHVJNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:13:04 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:61220 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936AbaHVJNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 05:13:00 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com> <1408608310-13579-2-git-send-email-jasowang@redhat.com> <1408683665.5648.69.camel@marge.simpson.net> <20140822073653.GA7372@gmail.com>
-In-Reply-To: <20140822073653.GA7372@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <53F5E652.6050408@arm.com>
+References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
+ <1408618794-28497-1-git-send-email-sudeep.holla@arm.com> <1408618794-28497-4-git-send-email-sudeep.holla@arm.com>
+ <CANq1E4Q4GRYUxrysUyTD5bO3di9M17i0H5V0fXb5+HrTrYY5aQ@mail.gmail.com> <53F5E652.6050408@arm.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 22 Aug 2014 11:12:39 +0200
+Message-ID: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>
+Subject: Re: [PATCH v3 03/11] drivers: base: add new class "cpu" to group cpu devices
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 03:36 PM, Ingo Molnar wrote:
->>> diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
->>> index 1d67fb6..8a33fb2 100644
->>> --- a/include/net/busy_poll.h
->>> +++ b/include/net/busy_poll.h
->>> @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
->>>  		cpu_relax();
->>>  
->>>  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
->>> -		 !need_resched() && !busy_loop_timeout(end_time));
->>> +		 !need_resched() && !busy_loop_timeout(end_time) &&
->>> +		 nr_running_this_cpu() < 2);
-> So it's generally a bad idea to couple to the scheduler through 
-> such a low level, implementation dependent value like 
-> 'nr_running', causing various problems:
+On Thu, Aug 21, 2014 at 2:30 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
+> On 21/08/14 12:20, David Herrmann wrote:
+>> On Thu, Aug 21, 2014 at 12:59 PM, Sudeep Holla <sudeep.holla@arm.com>
+>> wrote:
+>>>
+>>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>>
+>>> This patch creates a new class called "cpu" and assigns it to all the
+>>> cpu devices. This helps in grouping all the cpu devices and associated
+>>> child devices under the same class.
+>>>
+>>> This patch also:
+>>> 1. modifies the get_parent_device to return the legacy path
+>>>     (/sys/devices/system/cpu/..) for the cpu class devices to support
+>>>     existing sysfs ABI
+>>> 2. avoids creating link in the class directory pointing to the device as
+>>>     there would be per-cpu instance of these devices with the same name
+>>> 3. makes sure subsystem symlink continues pointing to cpu bus instead of
+>>>     cpu class for cpu devices
+>>
+>>
+>> This patch lacks any explanation _why_ you add a class for CPUs. With
+>> this patch applied, these directories are effectively the same:
+>>    /sys/bus/cpu/devices/
+>>    /sys/class/cpu/
+>>
 >
->  - It misses important work that might be pending on this CPU,
->    like RCU callbacks.
+> Yes that's the intention, so that we don't break any existing sysfs/ABI
 >
->  - It will also over-credit task contexts that might be
->    runnable, but which are less important than the currently
->    running one: such as a SCHED_IDLE task
 >
->  - It will also over-credit even regular SCHED_NORMAL tasks, if
->    this current task is more important than them: say
->    SCHED_FIFO. A SCHED_FIFO workload should run just as fast 
->    with SCHED_NORMAL tasks around, as a SCHED_NORMAL workload 
->    on an otherwise idle system.
+>> Why do we need a cpu-class if the same set of information is already
+>> available on the cpu-bus? Furthermore, classes are deprecated anyway.
+>> Everything you can do with a class can be solved with a bus. And we
+>> already have a bus for cpus.
+>>
+>
+> This was suggested[1] by GregKH. The main reason it was added is to
+> reuse the device attributes rather than creating the raw kobjects.
+>
+> It helps to move few other cpu related subsystems using raw kobjects to
+> the device attribute groups.
 
-I see.
-> So what you want is a more sophisticated query to the 
-> scheduler, a sched_expected_runtime() method that returns the 
-> number of nsecs this task is expected to run in the future, 
-> which returns 0 if you will be scheduled away on the next 
-> schedule(), and returns infinity for a high prio SCHED_FIFO 
-> task, or if this SCHED_NORMAL task is on an otherwise idle CPU.
->
-> It will return a regular time slice value in other cases, when 
-> there's some load on the CPU.
->
-> The polling logic can then do its decision based on that time 
-> value.
+No, nothing should ever create a bus and a class with the same name.
+This is not supported by userspace tools.
 
-But this is just for current process. We want to determine whether or
-not it was worth to loop busily in current process by checking if
-there's any another runnable processes or callbacks. And what we need
-here is just a simple and lockless hint which can't be wrong but may be
-inaccurate to exit the busy loop. The net code does not depends on this
-hint to do scheduling or yielding.
+Your problem needs to be addressed by adding things to the existing
+"cpu" bus, not by adding a new class.
 
-How about just introducing a boolean helper like current_can_busy_loop()
-and return true in one of the following conditions:
-
-- Current task is SCHED_FIFO
-- Current task is neither SCHED_FIFO nor SCHED_IDLE and no other
-runnable processes or pending RCU callbacks in current cpu
-
-And add warns to make sure it can only be called in process context.
-
-Thanks
->
-> All this can be done reasonably fast and lockless in most 
-> cases, so that it can be called from busy-polling code.
->
-> An added advantage would be that this approach consolidates the 
-> somewhat random need_resched() checks into this method as well.
->
-> In any case I don't agree with the nr_running_this_cpu() 
-> method.
->
-> (Please Cc: me and lkml to future iterations of this patchset.)
->
-> Thanks,
->
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Kay
