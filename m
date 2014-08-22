@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554AbaHVRJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:09:41 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:44152 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297AbaHVRJk (ORCPT
+	id S932628AbaHVRJp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:09:45 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:60852 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932531AbaHVRJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:09:40 -0400
+	Fri, 22 Aug 2014 13:09:41 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 X-Google-Original-From: Frederic Weisbecker <frederic@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: [GIT PULL] nohz: Fix double clock write on idle ticks
-Date: Fri, 22 Aug 2014 19:09:31 +0200
-Message-Id: <1408727373-8166-1-git-send-email-frederic@kernel.org>
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 1/2] nohz: Fix spurious periodic tick behaviour in low-res dynticks mode
+Date: Fri, 22 Aug 2014 19:09:32 +0200
+Message-Id: <1408727373-8166-2-git-send-email-frederic@kernel.org>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1408727373-8166-1-git-send-email-frederic@kernel.org>
+References: <1408727373-8166-1-git-send-email-frederic@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-Ingo,
+When we reach the end of the tick handler, we unconditionally reschedule
+the next tick to the next jiffy. Then on irq exit, the nohz code
+overrides that setting if needed and defers the next tick as far away in
+the future as possible.
 
-Please pull the nohz/drop-double-write-v3 branch that can be found at:
+Now in the best dynticks case, when we actually don't need any tick in
+the future (ie: expires == KTIME_MAX), low-res and high-res behave
+differently. What we want in this case is to cancel the next tick
+programmed by the previous one. That's what we do in high-res mode. OTOH
+we lack a low-res mode equivalent of hrtimer_cancel() so we simply don't
+do anything in this case and the next tick remains scheduled to jiffies + 1.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-	nohz/drop-double-write-v3
+As a result, in low-res mode, when the dynticks code determines that no
+tick is needed in the future, we can recursively get a spurious tick
+every jiffy because then the next tick is always reprogrammed from the
+tick handler and is never cancelled. And this can happen indefinetly
+until some subsystem actually needs a precise tick in the future and only
+then we eventually overwrite the previous tick handler setting to defer
+the next tick.
 
-Although the 1st patch fixes a bug, it was a longstanding issue so
-that branch doesn't need to be applied in 3.17. The next merge window
-looks better.
+We are fixing this by introducing the ONESHOT_STOPPED mode which will
+let us pause a clockevent when no further interrupt is needed. Meanwhile
+we can't expect all drivers to support this new mode.
 
---
-The tick reschedules itself unconditionally. It's relevant in periodic
-mode but not in dynticks mode where it results in spurious double clock
-writes and even spurious periodic behaviour for low-res case.
+So lets reduce much of the symptoms by skipping the nohz-blind tick
+rescheduling from the tick-handler when the CPU is in dynticks mode.
+That tick rescheduling wrongly assumed periodicity and the low-res
+dynticks code can't cancel such decision. This breaks the recursive (and
+thus the worst) part of the problem. In the worst case now, we'll get
+only one extra tick due to uncancelled tick scheduled before we entered
+dynticks mode.
 
-This set fixes that:
+This also removes a needless clockevent write on idle ticks. Since those
+clock write are usually considered to be slow, it's a general win.
 
-* 1st patch removes low-res periodic tick rescheduling in nohz mode.
-This fixes spurious periodic behaviour.
-
-* 2nd patch does the same for high-res mode. Here there is no such
-spurious periodic behaviour but it still spares a double clock write
-in some cases.
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
+ kernel/time/tick-sched.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 99aa6ee..153870a 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -968,6 +968,10 @@ static void tick_nohz_handler(struct clock_event_device *dev)
+ 	tick_sched_do_timer(now);
+ 	tick_sched_handle(ts, regs);
+ 
++	/* No need to reprogram if we are running tickless  */
++	if (unlikely(ts->tick_stopped))
++		return;
++
+ 	while (tick_nohz_reprogram(ts, now)) {
+ 		now = ktime_get();
+ 		tick_do_update_jiffies64(now);
+-- 
+2.1.0
 
-Thanks,
-	Frederic
----
-
-Viresh Kumar (2):
-      nohz: Fix spurious periodic tick behaviour in low-res dynticks mode
-      nohz: Avoid tick's double reprogramming in highres mode
-
-
- kernel/time/tick-sched.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
