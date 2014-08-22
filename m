@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933031AbaHVRAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:00:08 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:32907 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383AbaHVQ77 (ORCPT
+	id S933040AbaHVRAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:00:15 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:17021 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933029AbaHVRAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:59:59 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-0a-53f7770ecd98
+	Fri, 22 Aug 2014 13:00:08 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-10-53f777165331
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
@@ -17,29 +17,30 @@ Cc: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH v2 3/5] usb: phy: samsung: remove old USB 2.0 PHY driver
-Date: Fri, 22 Aug 2014 18:59:03 +0200
-Message-id: <1408726745-31135-4-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v2 5/5] usb: phy: samsung: remove old common USB PHY code
+Date: Fri, 22 Aug 2014 18:59:05 +0200
+Message-id: <1408726745-31135-6-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1408726745-31135-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1408726745-31135-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrELMWRmVeSWpSXmKPExsVy+t9jAV2+8u/BBu3TuS02zljPanHwfr3F
-	puvXWS3arhxkt/jx+gKbRe+Cq2wWF572sFmcbXrDbnF51xw2ixnn9zFZLFrWyuzA7XHn2h42
-	j74tqxg9jt/YzuTxeZNcAEsUl01Kak5mWWqRvl0CV8a0NXeYCm62M1acu72QpYFxa0EXIyeH
-	hICJRO/ZK+wQtpjEhXvr2boYuTiEBBYxSny43MsO4XQxSbQ19LCBVLEJWElMbF/FCGKLCKhJ
-	9CzeyghSxCxwn0li88PTrCAJYQEPiccNk5hBbBYBVYmv+/aCreAFip+c844NYp2iRPezCUA2
-	BwengKfE9aM6IKYQUMnlpdETGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAgOuWdS
-	OxhXNlgcYhTgYFTi4TXw+B4sxJpYVlyZe4hRgoNZSYRXuhAoxJuSWFmVWpQfX1Sak1p8iFGa
-	g0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJg1OqgXFus2Fwv9nPEv7Ns2T7uy2PvuZ8sOi/uNXp
-	i0d3J08JXmgQolQivuJW/qlQXbkZvLeaPh+5LPD2BUNLUJnKoqwDl92d05pkBR5KOp+JYg/w
-	XHlW9/rllXY6t1p29ZnNZX23vWCLxNq4c395pu8RZj7c+iXuS9yUqtgJJW8VptnxSKxNlQ54
-	UK3EUpyRaKjFXFScCAC0QX9SNQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t9jAV2x8u/BBs8OalhsnLGe1eLg/XqL
+	Tdevs1q0XTnIbvHj9QU2i94FV9ksLjztYbM42/SG3eLyrjlsFjPO72OyWLSsldmB2+POtT1s
+	Hn1bVjF6HL+xncnj8ya5AJYoLpuU1JzMstQifbsEroxT+zoYC96sZKyY1/iJsYFxaTdjFyMn
+	h4SAicTzN1eYIGwxiQv31rOB2EICixgl+u+kQ9hdTBLrO51BbDYBK4mJ7avAekUE1CR6Fm8F
+	srk4mAXuM0lsfniaFSQhLOApMWHtVLBBLAKqEl8XtoDFeQU8JBp7l0AtU5TofjYBqIaDgxOo
+	/vpRHRBTCKjk8tLoCYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEB9wzqR2MKxss
+	DjEKcDAq8fAaeHwPFmJNLCuuzD3EKMHBrCTCK10IFOJNSaysSi3Kjy8qzUktPsQozcGiJM57
+	oNU6UEggPbEkNTs1tSC1CCbLxMEp1cC40fOUyxRPkdbryzvlWy9tj7ZyOfRsDT9Lxhulc1wW
+	p7z/esxIV319RV/wlXxmm+66abLGi94+bDuRaWAusnkxr7LjN7vrDmcnva6q/vn6t2fFwtk+
+	87elTlbKncLol3nE0PjIk4avz5YbHqw3rLr1+FV2D++am5e+mQS9ubzwjEDZLrX+/TYqSizF
+	GYmGWsxFxYkAM7MXcTQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/usb/phy/phy-samsung-usb2 driver got replaced by
-drivers/phy/phy-samsung-usb2 one and is no longer used.
+drivers/usb/phy/phy-samsung-usb[2,3] drivers got replaced by
+drivers/phy/phy-samsung-usb[2,3] ones and the old common Samsung
+USB PHY code is no longer used.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
@@ -48,58 +49,62 @@ Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
 Cc: Kamil Debski <k.debski@samsung.com>
 ---
- drivers/usb/phy/Kconfig            |   8 -
- drivers/usb/phy/Makefile           |   1 -
- drivers/usb/phy/phy-samsung-usb2.c | 541 -------------------------------------
- 3 files changed, 550 deletions(-)
- delete mode 100644 drivers/usb/phy/phy-samsung-usb2.c
+ drivers/usb/phy/Kconfig                      |   7 -
+ drivers/usb/phy/Makefile                     |   1 -
+ drivers/usb/phy/phy-samsung-usb.c            | 241 ------------------
+ drivers/usb/phy/phy-samsung-usb.h            | 349 ---------------------------
+ include/linux/platform_data/samsung-usbphy.h |  27 ---
+ 5 files changed, 625 deletions(-)
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb.c
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb.h
+ delete mode 100644 include/linux/platform_data/samsung-usbphy.h
 
 diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index e253fa0..452e252 100644
+index 0cd1f44..7012a82 100644
 --- a/drivers/usb/phy/Kconfig
 +++ b/drivers/usb/phy/Kconfig
-@@ -78,14 +78,6 @@ config SAMSUNG_USBPHY
- 	  This driver provides common interface to interact, for Samsung USB 2.0 PHY
- 	  driver and later for Samsung USB 3.0 PHY driver.
+@@ -71,13 +71,6 @@ config AM335X_PHY_USB
+ 	  This driver provides PHY support for that phy which part for the
+ 	  AM335x SoC.
  
--config SAMSUNG_USB2PHY
--	tristate "Samsung USB 2.0 PHY controller Driver"
--	select SAMSUNG_USBPHY
--	select USB_PHY
+-config SAMSUNG_USBPHY
+-	tristate
 -	help
--	  Enable this to support Samsung USB 2.0 (High Speed) PHY controller
--	  driver for Samsung SoCs.
+-	  Enable this to support Samsung USB phy helper driver for Samsung SoCs.
+-	  This driver provides common interface to interact, for Samsung USB 2.0 PHY
+-	  driver and later for Samsung USB 3.0 PHY driver.
 -
- config SAMSUNG_USB3PHY
- 	tristate "Samsung USB 3.0 PHY controller Driver"
- 	select SAMSUNG_USBPHY
+ config TWL6030_USB
+ 	tristate "TWL6030 USB Transceiver Driver"
+ 	depends on TWL4030_CORE && OMAP_USB2 && USB_MUSB_OMAP2PLUS
 diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
-index 24a9133..c651005 100644
+index 75f2bba..1e38a6f 100644
 --- a/drivers/usb/phy/Makefile
 +++ b/drivers/usb/phy/Makefile
-@@ -15,7 +15,6 @@ obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
+@@ -14,7 +14,6 @@ obj-$(CONFIG_TAHVO_USB)			+= phy-tahvo.o
+ obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
  obj-$(CONFIG_AM335X_PHY_USB)		+= phy-am335x.o
  obj-$(CONFIG_OMAP_OTG)			+= phy-omap-otg.o
- obj-$(CONFIG_SAMSUNG_USBPHY)		+= phy-samsung-usb.o
--obj-$(CONFIG_SAMSUNG_USB2PHY)		+= phy-samsung-usb2.o
- obj-$(CONFIG_SAMSUNG_USB3PHY)		+= phy-samsung-usb3.o
+-obj-$(CONFIG_SAMSUNG_USBPHY)		+= phy-samsung-usb.o
  obj-$(CONFIG_TWL6030_USB)		+= phy-twl6030-usb.o
  obj-$(CONFIG_USB_EHCI_TEGRA)		+= phy-tegra-usb.o
-diff --git a/drivers/usb/phy/phy-samsung-usb2.c b/drivers/usb/phy/phy-samsung-usb2.c
+ obj-$(CONFIG_USB_GPIO_VBUS)		+= phy-gpio-vbus-usb.o
+diff --git a/drivers/usb/phy/phy-samsung-usb.c b/drivers/usb/phy/phy-samsung-usb.c
 deleted file mode 100644
-index b3ba866..0000000
---- a/drivers/usb/phy/phy-samsung-usb2.c
+index ac025ca..0000000
+--- a/drivers/usb/phy/phy-samsung-usb.c
 +++ /dev/null
-@@ -1,541 +0,0 @@
--/* linux/drivers/usb/phy/phy-samsung-usb2.c
+@@ -1,241 +0,0 @@
+-/* linux/drivers/usb/phy/phy-samsung-usb.c
 - *
 - * Copyright (c) 2012 Samsung Electronics Co., Ltd.
 - *              http://www.samsung.com
 - *
 - * Author: Praveen Paneri <p.paneri@samsung.com>
 - *
-- * Samsung USB2.0 PHY transceiver; talks to S3C HS OTG controller, EHCI-S5P and
-- * OHCI-EXYNOS controllers.
+- * Samsung USB-PHY helper driver with common function calls;
+- * interacts with Samsung USB 2.0 PHY controller driver and later
+- * with Samsung USB 3.0 PHY driver.
 - *
 - * This program is free software; you can redistribute it and/or modify
 - * it under the terms of the GNU General Public License version 2 as
@@ -114,524 +119,611 @@ index b3ba866..0000000
 -#include <linux/module.h>
 -#include <linux/platform_device.h>
 -#include <linux/clk.h>
--#include <linux/delay.h>
 -#include <linux/device.h>
 -#include <linux/err.h>
 -#include <linux/io.h>
 -#include <linux/of.h>
--#include <linux/usb/otg.h>
+-#include <linux/of_address.h>
 -#include <linux/usb/samsung_usb_phy.h>
--#include <linux/platform_data/samsung-usbphy.h>
 -
 -#include "phy-samsung-usb.h"
 -
--static int samsung_usbphy_set_host(struct usb_otg *otg, struct usb_bus *host)
+-int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
 -{
--	if (!otg)
--		return -ENODEV;
+-	struct device_node *usbphy_sys;
 -
--	if (!otg->host)
--		otg->host = host;
+-	/* Getting node for system controller interface for usb-phy */
+-	usbphy_sys = of_get_child_by_name(sphy->dev->of_node, "usbphy-sys");
+-	if (!usbphy_sys) {
+-		dev_err(sphy->dev, "No sys-controller interface for usb-phy\n");
+-		return -ENODEV;
+-	}
+-
+-	sphy->pmuregs = of_iomap(usbphy_sys, 0);
+-
+-	if (sphy->pmuregs == NULL) {
+-		dev_err(sphy->dev, "Can't get usb-phy pmu control register\n");
+-		goto err0;
+-	}
+-
+-	sphy->sysreg = of_iomap(usbphy_sys, 1);
+-
+-	/*
+-	 * Not returning error code here, since this situation is not fatal.
+-	 * Few SoCs may not have this switch available
+-	 */
+-	if (sphy->sysreg == NULL)
+-		dev_warn(sphy->dev, "Can't get usb-phy sysreg cfg register\n");
+-
+-	of_node_put(usbphy_sys);
 -
 -	return 0;
--}
 -
--static bool exynos5_phyhost_is_on(void __iomem *regs)
+-err0:
+-	of_node_put(usbphy_sys);
+-	return -ENXIO;
+-}
+-EXPORT_SYMBOL_GPL(samsung_usbphy_parse_dt);
+-
+-/*
+- * Set isolation here for phy.
+- * Here 'on = true' would mean USB PHY block is isolated, hence
+- * de-activated and vice-versa.
+- */
+-void samsung_usbphy_set_isolation_4210(struct samsung_usbphy *sphy, bool on)
+-{
+-	void __iomem *reg = NULL;
+-	u32 reg_val;
+-	u32 en_mask = 0;
+-
+-	if (!sphy->pmuregs) {
+-		dev_warn(sphy->dev, "Can't set pmu isolation\n");
+-		return;
+-	}
+-
+-	if (sphy->phy_type == USB_PHY_TYPE_DEVICE) {
+-		reg = sphy->pmuregs + sphy->drv_data->devphy_reg_offset;
+-		en_mask = sphy->drv_data->devphy_en_mask;
+-	} else if (sphy->phy_type == USB_PHY_TYPE_HOST) {
+-		reg = sphy->pmuregs + sphy->drv_data->hostphy_reg_offset;
+-		en_mask = sphy->drv_data->hostphy_en_mask;
+-	}
+-
+-	reg_val = readl(reg);
+-
+-	if (on)
+-		reg_val &= ~en_mask;
+-	else
+-		reg_val |= en_mask;
+-
+-	writel(reg_val, reg);
+-
+-	if (sphy->drv_data->cpu_type == TYPE_EXYNOS4X12) {
+-		writel(reg_val, sphy->pmuregs + EXYNOS4X12_PHY_HSIC_CTRL0);
+-		writel(reg_val, sphy->pmuregs + EXYNOS4X12_PHY_HSIC_CTRL1);
+-	}
+-}
+-EXPORT_SYMBOL_GPL(samsung_usbphy_set_isolation_4210);
+-
+-/*
+- * Configure the mode of working of usb-phy here: HOST/DEVICE.
+- */
+-void samsung_usbphy_cfg_sel(struct samsung_usbphy *sphy)
 -{
 -	u32 reg;
 -
--	reg = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
--
--	return !(reg & HOST_CTRL0_SIDDQ);
--}
--
--static void samsung_exynos5_usb2phy_enable(struct samsung_usbphy *sphy)
--{
--	void __iomem *regs = sphy->regs;
--	u32 phyclk = sphy->ref_clk_freq;
--	u32 phyhost;
--	u32 phyotg;
--	u32 phyhsic;
--	u32 ehcictrl;
--	u32 ohcictrl;
--
--	/*
--	 * phy_usage helps in keeping usage count for phy
--	 * so that the first consumer enabling the phy is also
--	 * the last consumer to disable it.
--	 */
--
--	atomic_inc(&sphy->phy_usage);
--
--	if (exynos5_phyhost_is_on(regs)) {
--		dev_info(sphy->dev, "Already power on PHY\n");
+-	if (!sphy->sysreg) {
+-		dev_warn(sphy->dev, "Can't configure specified phy mode\n");
 -		return;
 -	}
 -
--	/* Host configuration */
--	phyhost = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
+-	reg = readl(sphy->sysreg);
 -
--	/* phy reference clock configuration */
--	phyhost &= ~HOST_CTRL0_FSEL_MASK;
--	phyhost |= HOST_CTRL0_FSEL(phyclk);
+-	if (sphy->phy_type == USB_PHY_TYPE_DEVICE)
+-		reg &= ~EXYNOS_USB20PHY_CFG_HOST_LINK;
+-	else if (sphy->phy_type == USB_PHY_TYPE_HOST)
+-		reg |= EXYNOS_USB20PHY_CFG_HOST_LINK;
 -
--	/* host phy reset */
--	phyhost &= ~(HOST_CTRL0_PHYSWRST |
--			HOST_CTRL0_PHYSWRSTALL |
--			HOST_CTRL0_SIDDQ |
--			/* Enable normal mode of operation */
--			HOST_CTRL0_FORCESUSPEND |
--			HOST_CTRL0_FORCESLEEP);
--
--	/* Link reset */
--	phyhost |= (HOST_CTRL0_LINKSWRST |
--			HOST_CTRL0_UTMISWRST |
--			/* COMMON Block configuration during suspend */
--			HOST_CTRL0_COMMONON_N);
--	writel(phyhost, regs + EXYNOS5_PHY_HOST_CTRL0);
--	udelay(10);
--	phyhost &= ~(HOST_CTRL0_LINKSWRST |
--			HOST_CTRL0_UTMISWRST);
--	writel(phyhost, regs + EXYNOS5_PHY_HOST_CTRL0);
--
--	/* OTG configuration */
--	phyotg = readl(regs + EXYNOS5_PHY_OTG_SYS);
--
--	/* phy reference clock configuration */
--	phyotg &= ~OTG_SYS_FSEL_MASK;
--	phyotg |= OTG_SYS_FSEL(phyclk);
--
--	/* Enable normal mode of operation */
--	phyotg &= ~(OTG_SYS_FORCESUSPEND |
--			OTG_SYS_SIDDQ_UOTG |
--			OTG_SYS_FORCESLEEP |
--			OTG_SYS_REFCLKSEL_MASK |
--			/* COMMON Block configuration during suspend */
--			OTG_SYS_COMMON_ON);
--
--	/* OTG phy & link reset */
--	phyotg |= (OTG_SYS_PHY0_SWRST |
--			OTG_SYS_LINKSWRST_UOTG |
--			OTG_SYS_PHYLINK_SWRESET |
--			OTG_SYS_OTGDISABLE |
--			/* Set phy refclk */
--			OTG_SYS_REFCLKSEL_CLKCORE);
--
--	writel(phyotg, regs + EXYNOS5_PHY_OTG_SYS);
--	udelay(10);
--	phyotg &= ~(OTG_SYS_PHY0_SWRST |
--			OTG_SYS_LINKSWRST_UOTG |
--			OTG_SYS_PHYLINK_SWRESET);
--	writel(phyotg, regs + EXYNOS5_PHY_OTG_SYS);
--
--	/* HSIC phy configuration */
--	phyhsic = (HSIC_CTRL_REFCLKDIV_12 |
--			HSIC_CTRL_REFCLKSEL |
--			HSIC_CTRL_PHYSWRST);
--	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL1);
--	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL2);
--	udelay(10);
--	phyhsic &= ~HSIC_CTRL_PHYSWRST;
--	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL1);
--	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL2);
--
--	udelay(80);
--
--	/* enable EHCI DMA burst */
--	ehcictrl = readl(regs + EXYNOS5_PHY_HOST_EHCICTRL);
--	ehcictrl |= (HOST_EHCICTRL_ENAINCRXALIGN |
--				HOST_EHCICTRL_ENAINCR4 |
--				HOST_EHCICTRL_ENAINCR8 |
--				HOST_EHCICTRL_ENAINCR16);
--	writel(ehcictrl, regs + EXYNOS5_PHY_HOST_EHCICTRL);
--
--	/* set ohci_suspend_on_n */
--	ohcictrl = readl(regs + EXYNOS5_PHY_HOST_OHCICTRL);
--	ohcictrl |= HOST_OHCICTRL_SUSPLGCY;
--	writel(ohcictrl, regs + EXYNOS5_PHY_HOST_OHCICTRL);
+-	writel(reg, sphy->sysreg);
 -}
--
--static void samsung_usb2phy_enable(struct samsung_usbphy *sphy)
--{
--	void __iomem *regs = sphy->regs;
--	u32 phypwr;
--	u32 phyclk;
--	u32 rstcon;
--
--	/* set clock frequency for PLL */
--	phyclk = sphy->ref_clk_freq;
--	phypwr = readl(regs + SAMSUNG_PHYPWR);
--	rstcon = readl(regs + SAMSUNG_RSTCON);
--
--	switch (sphy->drv_data->cpu_type) {
--	case TYPE_S3C64XX:
--		phyclk &= ~PHYCLK_COMMON_ON_N;
--		phypwr &= ~PHYPWR_NORMAL_MASK;
--		rstcon |= RSTCON_SWRST;
--		break;
--	case TYPE_EXYNOS4X12:
--		phypwr &= ~(PHYPWR_NORMAL_MASK_HSIC0 |
--				PHYPWR_NORMAL_MASK_HSIC1 |
--				PHYPWR_NORMAL_MASK_PHY1);
--		rstcon |= RSTCON_HOSTPHY_SWRST;
--	case TYPE_EXYNOS4210:
--		phypwr &= ~PHYPWR_NORMAL_MASK_PHY0;
--		rstcon |= RSTCON_SWRST;
--	default:
--		break;
--	}
--
--	writel(phyclk, regs + SAMSUNG_PHYCLK);
--	/* Configure PHY0 for normal operation*/
--	writel(phypwr, regs + SAMSUNG_PHYPWR);
--	/* reset all ports of PHY and Link */
--	writel(rstcon, regs + SAMSUNG_RSTCON);
--	udelay(10);
--	if (sphy->drv_data->cpu_type == TYPE_EXYNOS4X12)
--		rstcon &= ~RSTCON_HOSTPHY_SWRST;
--	rstcon &= ~RSTCON_SWRST;
--	writel(rstcon, regs + SAMSUNG_RSTCON);
--}
--
--static void samsung_exynos5_usb2phy_disable(struct samsung_usbphy *sphy)
--{
--	void __iomem *regs = sphy->regs;
--	u32 phyhost;
--	u32 phyotg;
--	u32 phyhsic;
--
--	if (atomic_dec_return(&sphy->phy_usage) > 0) {
--		dev_info(sphy->dev, "still being used\n");
--		return;
--	}
--
--	phyhsic = (HSIC_CTRL_REFCLKDIV_12 |
--			HSIC_CTRL_REFCLKSEL |
--			HSIC_CTRL_SIDDQ |
--			HSIC_CTRL_FORCESLEEP |
--			HSIC_CTRL_FORCESUSPEND);
--	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL1);
--	writel(phyhsic, regs + EXYNOS5_PHY_HSIC_CTRL2);
--
--	phyhost = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
--	phyhost |= (HOST_CTRL0_SIDDQ |
--			HOST_CTRL0_FORCESUSPEND |
--			HOST_CTRL0_FORCESLEEP |
--			HOST_CTRL0_PHYSWRST |
--			HOST_CTRL0_PHYSWRSTALL);
--	writel(phyhost, regs + EXYNOS5_PHY_HOST_CTRL0);
--
--	phyotg = readl(regs + EXYNOS5_PHY_OTG_SYS);
--	phyotg |= (OTG_SYS_FORCESUSPEND |
--			OTG_SYS_SIDDQ_UOTG |
--			OTG_SYS_FORCESLEEP);
--	writel(phyotg, regs + EXYNOS5_PHY_OTG_SYS);
--}
--
--static void samsung_usb2phy_disable(struct samsung_usbphy *sphy)
--{
--	void __iomem *regs = sphy->regs;
--	u32 phypwr;
--
--	phypwr = readl(regs + SAMSUNG_PHYPWR);
--
--	switch (sphy->drv_data->cpu_type) {
--	case TYPE_S3C64XX:
--		phypwr |= PHYPWR_NORMAL_MASK;
--		break;
--	case TYPE_EXYNOS4X12:
--		phypwr |= (PHYPWR_NORMAL_MASK_HSIC0 |
--				PHYPWR_NORMAL_MASK_HSIC1 |
--				PHYPWR_NORMAL_MASK_PHY1);
--	case TYPE_EXYNOS4210:
--		phypwr |= PHYPWR_NORMAL_MASK_PHY0;
--	default:
--		break;
--	}
--
--	/* Disable analog and otg block power */
--	writel(phypwr, regs + SAMSUNG_PHYPWR);
--}
+-EXPORT_SYMBOL_GPL(samsung_usbphy_cfg_sel);
 -
 -/*
-- * The function passed to the usb driver for phy initialization
+- * PHYs are different for USB Device and USB Host.
+- * This make sure that correct PHY type is selected before
+- * any operation on PHY.
 - */
--static int samsung_usb2phy_init(struct usb_phy *phy)
+-int samsung_usbphy_set_type(struct usb_phy *phy,
+-				enum samsung_usb_phy_type phy_type)
 -{
--	struct samsung_usbphy *sphy;
--	struct usb_bus *host = NULL;
--	unsigned long flags;
--	int ret = 0;
+-	struct samsung_usbphy *sphy = phy_to_sphy(phy);
 -
--	sphy = phy_to_sphy(phy);
--
--	host = phy->otg->host;
--
--	/* Enable the phy clock */
--	ret = clk_prepare_enable(sphy->clk);
--	if (ret) {
--		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
--		return ret;
--	}
--
--	spin_lock_irqsave(&sphy->lock, flags);
--
--	if (host) {
--		/* setting default phy-type for USB 2.0 */
--		if (!strstr(dev_name(host->controller), "ehci") ||
--				!strstr(dev_name(host->controller), "ohci"))
--			samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_HOST);
--	} else {
--		samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
--	}
--
--	/* Disable phy isolation */
--	if (sphy->plat && sphy->plat->pmu_isolation)
--		sphy->plat->pmu_isolation(false);
--	else if (sphy->drv_data->set_isolation)
--		sphy->drv_data->set_isolation(sphy, false);
--
--	/* Selecting Host/OTG mode; After reset USB2.0PHY_CFG: HOST */
--	samsung_usbphy_cfg_sel(sphy);
--
--	/* Initialize usb phy registers */
--	sphy->drv_data->phy_enable(sphy);
--
--	spin_unlock_irqrestore(&sphy->lock, flags);
--
--	/* Disable the phy clock */
--	clk_disable_unprepare(sphy->clk);
--
--	return ret;
--}
--
--/*
-- * The function passed to the usb driver for phy shutdown
-- */
--static void samsung_usb2phy_shutdown(struct usb_phy *phy)
--{
--	struct samsung_usbphy *sphy;
--	struct usb_bus *host = NULL;
--	unsigned long flags;
--
--	sphy = phy_to_sphy(phy);
--
--	host = phy->otg->host;
--
--	if (clk_prepare_enable(sphy->clk)) {
--		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
--		return;
--	}
--
--	spin_lock_irqsave(&sphy->lock, flags);
--
--	if (host) {
--		/* setting default phy-type for USB 2.0 */
--		if (!strstr(dev_name(host->controller), "ehci") ||
--				!strstr(dev_name(host->controller), "ohci"))
--			samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_HOST);
--	} else {
--		samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
--	}
--
--	/* De-initialize usb phy registers */
--	sphy->drv_data->phy_disable(sphy);
--
--	/* Enable phy isolation */
--	if (sphy->plat && sphy->plat->pmu_isolation)
--		sphy->plat->pmu_isolation(true);
--	else if (sphy->drv_data->set_isolation)
--		sphy->drv_data->set_isolation(sphy, true);
--
--	spin_unlock_irqrestore(&sphy->lock, flags);
--
--	clk_disable_unprepare(sphy->clk);
--}
--
--static int samsung_usb2phy_probe(struct platform_device *pdev)
--{
--	struct samsung_usbphy *sphy;
--	struct usb_otg *otg;
--	struct samsung_usbphy_data *pdata = dev_get_platdata(&pdev->dev);
--	const struct samsung_usbphy_drvdata *drv_data;
--	struct device *dev = &pdev->dev;
--	struct resource *phy_mem;
--	void __iomem	*phy_base;
--	struct clk *clk;
--	int ret;
--
--	phy_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	phy_base = devm_ioremap_resource(dev, phy_mem);
--	if (IS_ERR(phy_base))
--		return PTR_ERR(phy_base);
--
--	sphy = devm_kzalloc(dev, sizeof(*sphy), GFP_KERNEL);
--	if (!sphy)
--		return -ENOMEM;
--
--	otg = devm_kzalloc(dev, sizeof(*otg), GFP_KERNEL);
--	if (!otg)
--		return -ENOMEM;
--
--	drv_data = samsung_usbphy_get_driver_data(pdev);
--
--	if (drv_data->cpu_type == TYPE_EXYNOS5250)
--		clk = devm_clk_get(dev, "usbhost");
--	else
--		clk = devm_clk_get(dev, "otg");
--
--	if (IS_ERR(clk)) {
--		dev_err(dev, "Failed to get usbhost/otg clock\n");
--		return PTR_ERR(clk);
--	}
--
--	sphy->dev = dev;
--
--	if (dev->of_node) {
--		ret = samsung_usbphy_parse_dt(sphy);
--		if (ret < 0)
--			return ret;
--	} else {
--		if (!pdata) {
--			dev_err(dev, "no platform data specified\n");
--			return -EINVAL;
--		}
--	}
--
--	sphy->plat		= pdata;
--	sphy->regs		= phy_base;
--	sphy->clk		= clk;
--	sphy->drv_data		= drv_data;
--	sphy->phy.dev		= sphy->dev;
--	sphy->phy.label		= "samsung-usb2phy";
--	sphy->phy.type		= USB_PHY_TYPE_USB2;
--	sphy->phy.init		= samsung_usb2phy_init;
--	sphy->phy.shutdown	= samsung_usb2phy_shutdown;
--
--	sphy->ref_clk_freq = samsung_usbphy_get_refclk_freq(sphy);
--	if (sphy->ref_clk_freq < 0)
--		return -EINVAL;
--
--	sphy->phy.otg		= otg;
--	sphy->phy.otg->phy	= &sphy->phy;
--	sphy->phy.otg->set_host = samsung_usbphy_set_host;
--
--	spin_lock_init(&sphy->lock);
--
--	platform_set_drvdata(pdev, sphy);
--
--	return usb_add_phy_dev(&sphy->phy);
--}
--
--static int samsung_usb2phy_remove(struct platform_device *pdev)
--{
--	struct samsung_usbphy *sphy = platform_get_drvdata(pdev);
--
--	usb_remove_phy(&sphy->phy);
--
--	if (sphy->pmuregs)
--		iounmap(sphy->pmuregs);
--	if (sphy->sysreg)
--		iounmap(sphy->sysreg);
+-	sphy->phy_type = phy_type;
 -
 -	return 0;
 -}
+-EXPORT_SYMBOL_GPL(samsung_usbphy_set_type);
 -
--static const struct samsung_usbphy_drvdata usb2phy_s3c64xx = {
--	.cpu_type		= TYPE_S3C64XX,
--	.devphy_en_mask		= S3C64XX_USBPHY_ENABLE,
--	.rate_to_clksel		= samsung_usbphy_rate_to_clksel_64xx,
--	.set_isolation		= NULL, /* TODO */
--	.phy_enable		= samsung_usb2phy_enable,
--	.phy_disable		= samsung_usb2phy_disable,
--};
+-int samsung_usbphy_rate_to_clksel_64xx(struct samsung_usbphy *sphy,
+-							unsigned long rate)
+-{
+-	unsigned int clksel;
 -
--static const struct samsung_usbphy_drvdata usb2phy_exynos4 = {
--	.cpu_type		= TYPE_EXYNOS4210,
--	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
--	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
--	.rate_to_clksel		= samsung_usbphy_rate_to_clksel_64xx,
--	.set_isolation		= samsung_usbphy_set_isolation_4210,
--	.phy_enable		= samsung_usb2phy_enable,
--	.phy_disable		= samsung_usb2phy_disable,
--};
+-	switch (rate) {
+-	case 12 * MHZ:
+-		clksel = PHYCLK_CLKSEL_12M;
+-		break;
+-	case 24 * MHZ:
+-		clksel = PHYCLK_CLKSEL_24M;
+-		break;
+-	case 48 * MHZ:
+-		clksel = PHYCLK_CLKSEL_48M;
+-		break;
+-	default:
+-		dev_err(sphy->dev,
+-			"Invalid reference clock frequency: %lu\n", rate);
+-		return -EINVAL;
+-	}
 -
--static const struct samsung_usbphy_drvdata usb2phy_exynos4x12 = {
--	.cpu_type		= TYPE_EXYNOS4X12,
--	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
--	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
--	.rate_to_clksel		= samsung_usbphy_rate_to_clksel_4x12,
--	.set_isolation		= samsung_usbphy_set_isolation_4210,
--	.phy_enable		= samsung_usb2phy_enable,
--	.phy_disable		= samsung_usb2phy_disable,
--};
+-	return clksel;
+-}
+-EXPORT_SYMBOL_GPL(samsung_usbphy_rate_to_clksel_64xx);
 -
--static struct samsung_usbphy_drvdata usb2phy_exynos5 = {
--	.cpu_type		= TYPE_EXYNOS5250,
--	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
--	.hostphy_reg_offset	= EXYNOS_USBHOST_PHY_CTRL_OFFSET,
--	.rate_to_clksel		= samsung_usbphy_rate_to_clksel_4x12,
--	.set_isolation		= samsung_usbphy_set_isolation_4210,
--	.phy_enable		= samsung_exynos5_usb2phy_enable,
--	.phy_disable		= samsung_exynos5_usb2phy_disable,
--};
+-int samsung_usbphy_rate_to_clksel_4x12(struct samsung_usbphy *sphy,
+-							unsigned long rate)
+-{
+-	unsigned int clksel;
 -
--#ifdef CONFIG_OF
--static const struct of_device_id samsung_usbphy_dt_match[] = {
--	{
--		.compatible = "samsung,s3c64xx-usb2phy",
--		.data = &usb2phy_s3c64xx,
--	}, {
--		.compatible = "samsung,exynos4210-usb2phy",
--		.data = &usb2phy_exynos4,
--	}, {
--		.compatible = "samsung,exynos4x12-usb2phy",
--		.data = &usb2phy_exynos4x12,
--	}, {
--		.compatible = "samsung,exynos5250-usb2phy",
--		.data = &usb2phy_exynos5
--	},
--	{},
--};
--MODULE_DEVICE_TABLE(of, samsung_usbphy_dt_match);
+-	switch (rate) {
+-	case 9600 * KHZ:
+-		clksel = FSEL_CLKSEL_9600K;
+-		break;
+-	case 10 * MHZ:
+-		clksel = FSEL_CLKSEL_10M;
+-		break;
+-	case 12 * MHZ:
+-		clksel = FSEL_CLKSEL_12M;
+-		break;
+-	case 19200 * KHZ:
+-		clksel = FSEL_CLKSEL_19200K;
+-		break;
+-	case 20 * MHZ:
+-		clksel = FSEL_CLKSEL_20M;
+-		break;
+-	case 24 * MHZ:
+-		clksel = FSEL_CLKSEL_24M;
+-		break;
+-	case 50 * MHZ:
+-		clksel = FSEL_CLKSEL_50M;
+-		break;
+-	default:
+-		dev_err(sphy->dev,
+-			"Invalid reference clock frequency: %lu\n", rate);
+-		return -EINVAL;
+-	}
+-
+-	return clksel;
+-}
+-EXPORT_SYMBOL_GPL(samsung_usbphy_rate_to_clksel_4x12);
+-
+-/*
+- * Returns reference clock frequency selection value
+- */
+-int samsung_usbphy_get_refclk_freq(struct samsung_usbphy *sphy)
+-{
+-	struct clk *ref_clk;
+-	unsigned long rate;
+-	int refclk_freq;
+-
+-	/*
+-	 * In exynos5250 USB host and device PHY use
+-	 * external crystal clock XXTI
+-	 */
+-	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
+-		ref_clk = clk_get(sphy->dev, "ext_xtal");
+-	else
+-		ref_clk = clk_get(sphy->dev, "xusbxti");
+-	if (IS_ERR(ref_clk)) {
+-		dev_err(sphy->dev, "Failed to get reference clock\n");
+-		return PTR_ERR(ref_clk);
+-	}
+-
+-	rate = clk_get_rate(ref_clk);
+-	refclk_freq = sphy->drv_data->rate_to_clksel(sphy, rate);
+-
+-	clk_put(ref_clk);
+-
+-	return refclk_freq;
+-}
+-EXPORT_SYMBOL_GPL(samsung_usbphy_get_refclk_freq);
+diff --git a/drivers/usb/phy/phy-samsung-usb.h b/drivers/usb/phy/phy-samsung-usb.h
+deleted file mode 100644
+index 68771bf..0000000
+--- a/drivers/usb/phy/phy-samsung-usb.h
++++ /dev/null
+@@ -1,349 +0,0 @@
+-/* linux/drivers/usb/phy/phy-samsung-usb.h
+- *
+- * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+- *              http://www.samsung.com
+- *
+- * Samsung USB-PHY transceiver; talks to S3C HS OTG controller, EHCI-S5P and
+- * OHCI-EXYNOS controllers.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-#include <linux/usb/phy.h>
+-
+-/* Register definitions */
+-
+-#define SAMSUNG_PHYPWR				(0x00)
+-
+-#define PHYPWR_NORMAL_MASK			(0x19 << 0)
+-#define PHYPWR_OTG_DISABLE			(0x1 << 4)
+-#define PHYPWR_ANALOG_POWERDOWN			(0x1 << 3)
+-#define PHYPWR_FORCE_SUSPEND			(0x1 << 1)
+-/* For Exynos4 */
+-#define PHYPWR_NORMAL_MASK_PHY0			(0x39 << 0)
+-#define PHYPWR_SLEEP_PHY0			(0x1 << 5)
+-
+-#define SAMSUNG_PHYCLK				(0x04)
+-
+-#define PHYCLK_MODE_USB11			(0x1 << 6)
+-#define PHYCLK_EXT_OSC				(0x1 << 5)
+-#define PHYCLK_COMMON_ON_N			(0x1 << 4)
+-#define PHYCLK_ID_PULL				(0x1 << 2)
+-#define PHYCLK_CLKSEL_MASK			(0x3 << 0)
+-#define PHYCLK_CLKSEL_48M			(0x0 << 0)
+-#define PHYCLK_CLKSEL_12M			(0x2 << 0)
+-#define PHYCLK_CLKSEL_24M			(0x3 << 0)
+-
+-#define SAMSUNG_RSTCON				(0x08)
+-
+-#define RSTCON_PHYLINK_SWRST			(0x1 << 2)
+-#define RSTCON_HLINK_SWRST			(0x1 << 1)
+-#define RSTCON_SWRST				(0x1 << 0)
+-
+-/* EXYNOS4X12 */
+-#define EXYNOS4X12_PHY_HSIC_CTRL0		(0x04)
+-#define EXYNOS4X12_PHY_HSIC_CTRL1		(0x08)
+-
+-#define PHYPWR_NORMAL_MASK_HSIC1		(0x7 << 12)
+-#define PHYPWR_NORMAL_MASK_HSIC0		(0x7 << 9)
+-#define PHYPWR_NORMAL_MASK_PHY1			(0x7 << 6)
+-
+-#define RSTCON_HOSTPHY_SWRST			(0xf << 3)
+-
+-/* EXYNOS5 */
+-#define EXYNOS5_PHY_HOST_CTRL0			(0x00)
+-
+-#define HOST_CTRL0_PHYSWRSTALL			(0x1 << 31)
+-
+-#define HOST_CTRL0_REFCLKSEL_MASK		(0x3 << 19)
+-#define HOST_CTRL0_REFCLKSEL_XTAL		(0x0 << 19)
+-#define HOST_CTRL0_REFCLKSEL_EXTL		(0x1 << 19)
+-#define HOST_CTRL0_REFCLKSEL_CLKCORE		(0x2 << 19)
+-
+-#define HOST_CTRL0_FSEL_MASK			(0x7 << 16)
+-#define HOST_CTRL0_FSEL(_x)			((_x) << 16)
+-
+-#define FSEL_CLKSEL_50M				(0x7)
+-#define FSEL_CLKSEL_24M				(0x5)
+-#define FSEL_CLKSEL_20M				(0x4)
+-#define FSEL_CLKSEL_19200K			(0x3)
+-#define FSEL_CLKSEL_12M				(0x2)
+-#define FSEL_CLKSEL_10M				(0x1)
+-#define FSEL_CLKSEL_9600K			(0x0)
+-
+-#define HOST_CTRL0_TESTBURNIN			(0x1 << 11)
+-#define HOST_CTRL0_RETENABLE			(0x1 << 10)
+-#define HOST_CTRL0_COMMONON_N			(0x1 << 9)
+-#define HOST_CTRL0_SIDDQ			(0x1 << 6)
+-#define HOST_CTRL0_FORCESLEEP			(0x1 << 5)
+-#define HOST_CTRL0_FORCESUSPEND			(0x1 << 4)
+-#define HOST_CTRL0_WORDINTERFACE		(0x1 << 3)
+-#define HOST_CTRL0_UTMISWRST			(0x1 << 2)
+-#define HOST_CTRL0_LINKSWRST			(0x1 << 1)
+-#define HOST_CTRL0_PHYSWRST			(0x1 << 0)
+-
+-#define EXYNOS5_PHY_HOST_TUNE0			(0x04)
+-
+-#define EXYNOS5_PHY_HSIC_CTRL1			(0x10)
+-
+-#define EXYNOS5_PHY_HSIC_TUNE1			(0x14)
+-
+-#define EXYNOS5_PHY_HSIC_CTRL2			(0x20)
+-
+-#define EXYNOS5_PHY_HSIC_TUNE2			(0x24)
+-
+-#define HSIC_CTRL_REFCLKSEL_MASK		(0x3 << 23)
+-#define HSIC_CTRL_REFCLKSEL			(0x2 << 23)
+-
+-#define HSIC_CTRL_REFCLKDIV_MASK		(0x7f << 16)
+-#define HSIC_CTRL_REFCLKDIV(_x)			((_x) << 16)
+-#define HSIC_CTRL_REFCLKDIV_12			(0x24 << 16)
+-#define HSIC_CTRL_REFCLKDIV_15			(0x1c << 16)
+-#define HSIC_CTRL_REFCLKDIV_16			(0x1a << 16)
+-#define HSIC_CTRL_REFCLKDIV_19_2		(0x15 << 16)
+-#define HSIC_CTRL_REFCLKDIV_20			(0x14 << 16)
+-
+-#define HSIC_CTRL_SIDDQ				(0x1 << 6)
+-#define HSIC_CTRL_FORCESLEEP			(0x1 << 5)
+-#define HSIC_CTRL_FORCESUSPEND			(0x1 << 4)
+-#define HSIC_CTRL_WORDINTERFACE			(0x1 << 3)
+-#define HSIC_CTRL_UTMISWRST			(0x1 << 2)
+-#define HSIC_CTRL_PHYSWRST			(0x1 << 0)
+-
+-#define EXYNOS5_PHY_HOST_EHCICTRL		(0x30)
+-
+-#define HOST_EHCICTRL_ENAINCRXALIGN		(0x1 << 29)
+-#define HOST_EHCICTRL_ENAINCR4			(0x1 << 28)
+-#define HOST_EHCICTRL_ENAINCR8			(0x1 << 27)
+-#define HOST_EHCICTRL_ENAINCR16			(0x1 << 26)
+-
+-#define EXYNOS5_PHY_HOST_OHCICTRL		(0x34)
+-
+-#define HOST_OHCICTRL_SUSPLGCY			(0x1 << 3)
+-#define HOST_OHCICTRL_APPSTARTCLK		(0x1 << 2)
+-#define HOST_OHCICTRL_CNTSEL			(0x1 << 1)
+-#define HOST_OHCICTRL_CLKCKTRST			(0x1 << 0)
+-
+-#define EXYNOS5_PHY_OTG_SYS			(0x38)
+-
+-#define OTG_SYS_PHYLINK_SWRESET			(0x1 << 14)
+-#define OTG_SYS_LINKSWRST_UOTG			(0x1 << 13)
+-#define OTG_SYS_PHY0_SWRST			(0x1 << 12)
+-
+-#define OTG_SYS_REFCLKSEL_MASK			(0x3 << 9)
+-#define OTG_SYS_REFCLKSEL_XTAL			(0x0 << 9)
+-#define OTG_SYS_REFCLKSEL_EXTL			(0x1 << 9)
+-#define OTG_SYS_REFCLKSEL_CLKCORE		(0x2 << 9)
+-
+-#define OTG_SYS_IDPULLUP_UOTG			(0x1 << 8)
+-#define OTG_SYS_COMMON_ON			(0x1 << 7)
+-
+-#define OTG_SYS_FSEL_MASK			(0x7 << 4)
+-#define OTG_SYS_FSEL(_x)			((_x) << 4)
+-
+-#define OTG_SYS_FORCESLEEP			(0x1 << 3)
+-#define OTG_SYS_OTGDISABLE			(0x1 << 2)
+-#define OTG_SYS_SIDDQ_UOTG			(0x1 << 1)
+-#define OTG_SYS_FORCESUSPEND			(0x1 << 0)
+-
+-#define EXYNOS5_PHY_OTG_TUNE			(0x40)
+-
+-/* EXYNOS5: USB 3.0 DRD */
+-#define EXYNOS5_DRD_LINKSYSTEM			(0x04)
+-
+-#define LINKSYSTEM_FLADJ_MASK			(0x3f << 1)
+-#define LINKSYSTEM_FLADJ(_x)			((_x) << 1)
+-#define LINKSYSTEM_XHCI_VERSION_CONTROL		(0x1 << 27)
+-
+-#define EXYNOS5_DRD_PHYUTMI			(0x08)
+-
+-#define PHYUTMI_OTGDISABLE			(0x1 << 6)
+-#define PHYUTMI_FORCESUSPEND			(0x1 << 1)
+-#define PHYUTMI_FORCESLEEP			(0x1 << 0)
+-
+-#define EXYNOS5_DRD_PHYPIPE			(0x0c)
+-
+-#define EXYNOS5_DRD_PHYCLKRST			(0x10)
+-
+-#define PHYCLKRST_SSC_REFCLKSEL_MASK		(0xff << 23)
+-#define PHYCLKRST_SSC_REFCLKSEL(_x)		((_x) << 23)
+-
+-#define PHYCLKRST_SSC_RANGE_MASK		(0x03 << 21)
+-#define PHYCLKRST_SSC_RANGE(_x)			((_x) << 21)
+-
+-#define PHYCLKRST_SSC_EN			(0x1 << 20)
+-#define PHYCLKRST_REF_SSP_EN			(0x1 << 19)
+-#define PHYCLKRST_REF_CLKDIV2			(0x1 << 18)
+-
+-#define PHYCLKRST_MPLL_MULTIPLIER_MASK		(0x7f << 11)
+-#define PHYCLKRST_MPLL_MULTIPLIER_100MHZ_REF	(0x19 << 11)
+-#define PHYCLKRST_MPLL_MULTIPLIER_50M_REF	(0x02 << 11)
+-#define PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF	(0x68 << 11)
+-#define PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF	(0x7d << 11)
+-#define PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF	(0x02 << 11)
+-
+-#define PHYCLKRST_FSEL_MASK			(0x3f << 5)
+-#define PHYCLKRST_FSEL(_x)			((_x) << 5)
+-#define PHYCLKRST_FSEL_PAD_100MHZ		(0x27 << 5)
+-#define PHYCLKRST_FSEL_PAD_24MHZ		(0x2a << 5)
+-#define PHYCLKRST_FSEL_PAD_20MHZ		(0x31 << 5)
+-#define PHYCLKRST_FSEL_PAD_19_2MHZ		(0x38 << 5)
+-
+-#define PHYCLKRST_RETENABLEN			(0x1 << 4)
+-
+-#define PHYCLKRST_REFCLKSEL_MASK		(0x03 << 2)
+-#define PHYCLKRST_REFCLKSEL_PAD_REFCLK		(0x2 << 2)
+-#define PHYCLKRST_REFCLKSEL_EXT_REFCLK		(0x3 << 2)
+-
+-#define PHYCLKRST_PORTRESET			(0x1 << 1)
+-#define PHYCLKRST_COMMONONN			(0x1 << 0)
+-
+-#define EXYNOS5_DRD_PHYREG0			(0x14)
+-#define EXYNOS5_DRD_PHYREG1			(0x18)
+-
+-#define EXYNOS5_DRD_PHYPARAM0			(0x1c)
+-
+-#define PHYPARAM0_REF_USE_PAD			(0x1 << 31)
+-#define PHYPARAM0_REF_LOSLEVEL_MASK		(0x1f << 26)
+-#define PHYPARAM0_REF_LOSLEVEL			(0x9 << 26)
+-
+-#define EXYNOS5_DRD_PHYPARAM1			(0x20)
+-
+-#define PHYPARAM1_PCS_TXDEEMPH_MASK		(0x1f << 0)
+-#define PHYPARAM1_PCS_TXDEEMPH			(0x1c)
+-
+-#define EXYNOS5_DRD_PHYTERM			(0x24)
+-
+-#define EXYNOS5_DRD_PHYTEST			(0x28)
+-
+-#define PHYTEST_POWERDOWN_SSP			(0x1 << 3)
+-#define PHYTEST_POWERDOWN_HSP			(0x1 << 2)
+-
+-#define EXYNOS5_DRD_PHYADP			(0x2c)
+-
+-#define EXYNOS5_DRD_PHYBATCHG			(0x30)
+-
+-#define PHYBATCHG_UTMI_CLKSEL			(0x1 << 2)
+-
+-#define EXYNOS5_DRD_PHYRESUME			(0x34)
+-#define EXYNOS5_DRD_LINKPORT			(0x44)
+-
+-#ifndef MHZ
+-#define MHZ (1000*1000)
 -#endif
 -
--static struct platform_device_id samsung_usbphy_driver_ids[] = {
--	{
--		.name		= "s3c64xx-usb2phy",
--		.driver_data	= (unsigned long)&usb2phy_s3c64xx,
--	}, {
--		.name		= "exynos4210-usb2phy",
--		.driver_data	= (unsigned long)&usb2phy_exynos4,
--	}, {
--		.name		= "exynos4x12-usb2phy",
--		.driver_data	= (unsigned long)&usb2phy_exynos4x12,
--	}, {
--		.name		= "exynos5250-usb2phy",
--		.driver_data	= (unsigned long)&usb2phy_exynos5,
--	},
--	{},
+-#ifndef KHZ
+-#define KHZ (1000)
+-#endif
+-
+-#define EXYNOS_USBHOST_PHY_CTRL_OFFSET		(0x4)
+-#define S3C64XX_USBPHY_ENABLE			(0x1 << 16)
+-#define EXYNOS_USBPHY_ENABLE			(0x1 << 0)
+-#define EXYNOS_USB20PHY_CFG_HOST_LINK		(0x1 << 0)
+-
+-enum samsung_cpu_type {
+-	TYPE_S3C64XX,
+-	TYPE_EXYNOS4210,
+-	TYPE_EXYNOS4X12,
+-	TYPE_EXYNOS5250,
 -};
 -
--MODULE_DEVICE_TABLE(platform, samsung_usbphy_driver_ids);
+-struct samsung_usbphy;
 -
--static struct platform_driver samsung_usb2phy_driver = {
--	.probe		= samsung_usb2phy_probe,
--	.remove		= samsung_usb2phy_remove,
--	.id_table	= samsung_usbphy_driver_ids,
--	.driver		= {
--		.name	= "samsung-usb2phy",
--		.owner	= THIS_MODULE,
--		.of_match_table = of_match_ptr(samsung_usbphy_dt_match),
--	},
+-/*
+- * struct samsung_usbphy_drvdata - driver data for various SoC variants
+- * @cpu_type: machine identifier
+- * @devphy_en_mask: device phy enable mask for PHY CONTROL register
+- * @hostphy_en_mask: host phy enable mask for PHY CONTROL register
+- * @devphy_reg_offset: offset to DEVICE PHY CONTROL register from
+- *		       mapped address of system controller.
+- * @hostphy_reg_offset: offset to HOST PHY CONTROL register from
+- *		       mapped address of system controller.
+- *
+- *	Here we have a separate mask for device type phy.
+- *	Having different masks for host and device type phy helps
+- *	in setting independent masks in case of SoCs like S5PV210,
+- *	in which PHY0 and PHY1 enable bits belong to same register
+- *	placed at position 0 and 1 respectively.
+- *	Although for newer SoCs like exynos these bits belong to
+- *	different registers altogether placed at position 0.
+- */
+-struct samsung_usbphy_drvdata {
+-	int cpu_type;
+-	int devphy_en_mask;
+-	int hostphy_en_mask;
+-	u32 devphy_reg_offset;
+-	u32 hostphy_reg_offset;
+-	int (*rate_to_clksel)(struct samsung_usbphy *, unsigned long);
+-	void (*set_isolation)(struct samsung_usbphy *, bool);
+-	void (*phy_enable)(struct samsung_usbphy *);
+-	void (*phy_disable)(struct samsung_usbphy *);
 -};
 -
--module_platform_driver(samsung_usb2phy_driver);
+-/*
+- * struct samsung_usbphy - transceiver driver state
+- * @phy: transceiver structure
+- * @plat: platform data
+- * @dev: The parent device supplied to the probe function
+- * @clk: usb phy clock
+- * @regs: usb phy controller registers memory base
+- * @pmuregs: USB device PHY_CONTROL register memory base
+- * @sysreg: USB2.0 PHY_CFG register memory base
+- * @ref_clk_freq: reference clock frequency selection
+- * @drv_data: driver data available for different SoCs
+- * @phy_type: Samsung SoCs specific phy types:	#HOST
+- *						#DEVICE
+- * @phy_usage: usage count for phy
+- * @lock: lock for phy operations
+- */
+-struct samsung_usbphy {
+-	struct usb_phy	phy;
+-	struct samsung_usbphy_data *plat;
+-	struct device	*dev;
+-	struct clk	*clk;
+-	void __iomem	*regs;
+-	void __iomem	*pmuregs;
+-	void __iomem	*sysreg;
+-	int		ref_clk_freq;
+-	const struct samsung_usbphy_drvdata *drv_data;
+-	enum samsung_usb_phy_type phy_type;
+-	atomic_t	phy_usage;
+-	spinlock_t	lock;
+-};
 -
--MODULE_DESCRIPTION("Samsung USB 2.0 phy controller");
--MODULE_AUTHOR("Praveen Paneri <p.paneri@samsung.com>");
--MODULE_LICENSE("GPL");
--MODULE_ALIAS("platform:samsung-usb2phy");
+-#define phy_to_sphy(x)		container_of((x), struct samsung_usbphy, phy)
+-
+-static const struct of_device_id samsung_usbphy_dt_match[];
+-
+-static inline const struct samsung_usbphy_drvdata
+-*samsung_usbphy_get_driver_data(struct platform_device *pdev)
+-{
+-	if (pdev->dev.of_node) {
+-		const struct of_device_id *match;
+-		match = of_match_node(samsung_usbphy_dt_match,
+-							pdev->dev.of_node);
+-		return match->data;
+-	}
+-
+-	return (struct samsung_usbphy_drvdata *)
+-				platform_get_device_id(pdev)->driver_data;
+-}
+-
+-extern int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy);
+-extern void samsung_usbphy_set_isolation_4210(struct samsung_usbphy *sphy,
+-								bool on);
+-extern void samsung_usbphy_cfg_sel(struct samsung_usbphy *sphy);
+-extern int samsung_usbphy_set_type(struct usb_phy *phy,
+-					enum samsung_usb_phy_type phy_type);
+-extern int samsung_usbphy_get_refclk_freq(struct samsung_usbphy *sphy);
+-extern int samsung_usbphy_rate_to_clksel_64xx(struct samsung_usbphy *sphy,
+-							unsigned long rate);
+-extern int samsung_usbphy_rate_to_clksel_4x12(struct samsung_usbphy *sphy,
+-							unsigned long rate);
+diff --git a/include/linux/platform_data/samsung-usbphy.h b/include/linux/platform_data/samsung-usbphy.h
+deleted file mode 100644
+index 1bd24cb..0000000
+--- a/include/linux/platform_data/samsung-usbphy.h
++++ /dev/null
+@@ -1,27 +0,0 @@
+-/*
+- * Copyright (C) 2012 Samsung Electronics Co.Ltd
+- *		http://www.samsung.com/
+- * Author: Praveen Paneri <p.paneri@samsung.com>
+- *
+- * Defines platform data for samsung usb phy driver.
+- *
+- * This program is free software; you can redistribute  it and/or modify it
+- * under  the terms of  the GNU General  Public License as published by the
+- * Free Software Foundation;  either version 2 of the  License, or (at your
+- * option) any later version.
+- */
+-
+-#ifndef __SAMSUNG_USBPHY_PLATFORM_H
+-#define __SAMSUNG_USBPHY_PLATFORM_H
+-
+-/**
+- * samsung_usbphy_data - Platform data for USB PHY driver.
+- * @pmu_isolation: Function to control usb phy isolation in PMU.
+- */
+-struct samsung_usbphy_data {
+-	void (*pmu_isolation)(int on);
+-};
+-
+-extern void samsung_usbphy_set_pdata(struct samsung_usbphy_data *pd);
+-
+-#endif /* __SAMSUNG_USBPHY_PLATFORM_H */
 -- 
 1.8.2.3
 
