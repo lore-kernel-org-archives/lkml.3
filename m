@@ -1,180 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797AbaHVRj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:39:28 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:58530 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487AbaHVRj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:39:26 -0400
+	id S932834AbaHVRkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:40:13 -0400
+Received: from mout.web.de ([212.227.15.14]:53452 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932487AbaHVRkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 13:40:11 -0400
+Date: Fri, 22 Aug 2014 19:40:07 +0200
+From: Julian Wollrath <jwollrath@web.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Subject: Re: Trace with v3.17-rc1 while trying to enable power saving for
+ pci device
+Message-ID: <20140822194007.017260e7@saldaea>
+In-Reply-To: <20140822174846.18eba9a2@saldaea>
+References: <20140822174846.18eba9a2@saldaea>
 MIME-Version: 1.0
-In-Reply-To: <1408708399-20423-1-git-send-email-sojka@merica.cz>
-References: <1408708399-20423-1-git-send-email-sojka@merica.cz>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 22 Aug 2014 10:39:03 -0700
-Message-ID: <CAK5ve-LaGPgsAVMMMw3=EWpjom5NF29btu0Yxjg=6iwPpioQFg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] leds: usb: Add LED trigger for USB gadget activity
-To: Michal Sojka <sojka@merica.cz>
-Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>, michal.vokac@comap.cz,
-        Richard Purdie <rpurdie@rpsys.net>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:4NkLXwNZD8zArtBO14HgvAWDCLq6gd67d7gL1cEZo31CFsUgkFX
+ xkNh8AOF1OvvNNupuB4QwlQ15B0ZTJZtQE5wfSarAxJUz7/JKe23bQczWX21faSflMNYFma
+ XKpsZd2INg/v63LjZ9E23clVpMsh3308su8kz3bNRFusfcy0LRgDJgMtxdEk0ckH8hx9nXX
+ nhcCRWoOtAhkOckDhwmDA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 4:53 AM, Michal Sojka <sojka@merica.cz> wrote:
-> With this patch, USB gadget activity can be signaled by blinking a LED.
->
-> Since there is no generic code where to put the trigger for all USB
-> controllers, each USB controller needs to call the trigger individually.
-> This patch adds the call only for the musb controller where I can test
-> it.
->
+Hi,
 
-Generally I think one led trigger for both USB host and USB gadget
-activity is good enough. We don't need 2 same led trigger here.
+> I just tried out the current git master (commit 5317821c08) and got
+> the following trace:
+> [   25.637181] ------------[ cut here ]------------
+> [   25.637191] WARNING: CPU: 0 PID: 756 at fs/proc/generic.c:521
+> remove_proc_entry+0x170/0x180() [   25.637194] remove_proc_entry:
+> removing non-empty directory 'irq/23', leaking at least
+> 'ehci_hcd:usb4' [   25.637196] Modules linked in: ecb btusb bluetooth
+> crc16 arc4 iwldvm x86_pkg_temp_thermal mac80211 intel_powerclamp
+> snd_hda_codec_hdmi snd_hda_codec_realtek i915 snd_hda_codec_generic
+> snd_hda_intel intel_rapl coretemp kvm_intel snd_hda_controller
+> snd_hda_codec kvm snd_hwdep iwlwifi psmouse snd_pcm thinkpad_acpi
+> uvcvideo cfg80211 evdev serio_raw nvram snd_timer i2c_algo_bit
+> videobuf2_vmalloc videobuf2_memops drm_kms_helper videobuf2_core snd
+> v4l2_common drm soundcore wmi pcspkr tpm_tis tpm rfkill videodev
+> battery ac video i2c_i801 i2ccore button processor sch_fq fuse
+> autofs4 dm_crypt dm_mod sd_mod crc_t10dif crct10dif_generic
+> crct10dif_pclmul crct10dif_common crc32_pclmul crc32c_intel
+> ghash_clmulni_intel ahci libahci libata scsi_mod ehci_pci ehci_hcd
+> xhci_hcd sdhci_pci e1000e sdhci ptp pps_core mmc_core usbcore thermal
+> usb_common thermal_sys [   25.637257] CPU: 0 PID: 756 Comm: rc.local
+> Not tainted 3.17.0-rc1+ #1 [   25.637259] Hardware name: LENOVO
+> 23250BM/23250BM, BIOS G2ETA1WW (2.61 ) 04/22/2014 [   25.637261]
+> 0000000000000009 ffffffff814b56ef ffff8800c9b7fc30 ffffffff8106eb42
+> [   25.637265]  ffff880037648c40 ffff8800c9b7fc80 0000000000000002
+> ffff8800c9b7fce6 [   25.637268]  ffff8800c9b7fce6 ffffffff8106eba7
+> ffffffff81719f08 ffff880000000030 [   25.637271] Call Trace:
+> [   25.637277]  [<ffffffff814b56ef>] ? dump_stack+0x41/0x51
+> [   25.637283]  [<ffffffff8106eb42>] ? warn_slowpath_common+0x72/0x90
+> [   25.637286]  [<ffffffff8106eba7>] ? warn_slowpath_fmt+0x47/0x50
+> [   25.637291]  [<ffffffff811da561>] ? proc_entry_rundown+0x41/0x80
+> [   25.637294]  [<ffffffff811de740>] ? remove_proc_entry+0x170/0x180
+> [   25.637300]  [<ffffffff810b7db7>] ? unregister_irq_proc+0xb7/0xc0
+> [   25.637303]  [<ffffffff810b2ab2>] ? free_desc+0x22/0x60
+> [   25.637307]  [<ffffffff810b2b22>] ? irq_free_descs+0x32/0x80
+> [   25.637312]  [<ffffffff810335f4>] ? mp_unmap_irq+0x74/0xb0
+> [   25.637316]  [<ffffffff812d733c>] ?
+> do_pci_disable_device+0x4c/0x60 [   25.637319]
+> [<ffffffff812d7390>] ? pci_disable_device+0x40/0xb0 [   25.637330]
+> [<ffffffffa0038fc2>] ? suspend_common+0x52/0x150 [usbcore]
+> [   25.637335]  [<ffffffff812d8ff7>] ?
+> pci_pm_runtime_suspend+0x57/0x150 [   25.637340]
+> [<ffffffff8137e636>] ? __rpm_callback+0x26/0x60 [   25.637343]
+> [<ffffffff8137e688>] ? rpm_callback+0x18/0x80 [   25.637346]
+> [<ffffffff8137f137>] ? rpm_suspend+0x107/0x600 [   25.637350]
+> [<ffffffff810a1c6f>] ? __wake_up+0x2f/0x50 [   25.637353]
+> [<ffffffff8137fcad>] ? pm_runtime_allow+0x4d/0x50 [   25.637357]
+> [<ffffffff8137c75d>] ? control_store+0xbd/0xc0 [   25.637361]
+> [<ffffffff811e91bb>] ? kernfs_fop_write+0xdb/0x160 [   25.637365]
+> [<ffffffff811835ed>] ? vfs_write+0xad/0x1e0 [   25.637368]
+> [<ffffffff811840fd>] ? SyS_write+0x3d/0xa0 [   25.637373]
+> [<ffffffff814bb052>] ? system_call_fastpath+0x16/0x1b [   25.637375]
+> ---[ end trace 40fa9ae9acda7087 ]---
+> 
+> I get the trace due to enabling power saving via
+> 'echo 'auto' > /sys/bus/pci/devices/0000:00:1d.0/power/control'
+> with 00:1d.0 being the USB controller (according to lspci):
+> 00:1d.0 USB controller [0c03]: Intel Corporation 7 Series/C210 Series
+> Chipset Family USB Enhanced Host Controller #1 [8086:1e26] (rev 04)
+> 
+> If you need more information, please do not hesitate to ask.
 
-And probably you can just put this code in drivers/usb subsystem,
-since this driver is quite simple to add to USB subsystem.
+Inspired by commit c5946f9d286, which mentions a similar problem, I
+tried the following:
+diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
+index efc953119ce2..c5160bcaa790 100644
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -361,6 +361,7 @@ void usb_hcd_pci_remove(struct pci_dev *dev)
+        }
+ 
+        usb_put_hcd(hcd);
++       free_irq(hcd->irq, hcd);
+        pci_disable_device(dev);
+ }
+ EXPORT_SYMBOL_GPL(usb_hcd_pci_remove);
 
-Thanks,
--Bryan
+But this did not work, so maybe somebody, who actually knows this code
+should have a look at this.
 
-> Signed-off-by: Michal Sojka <sojka@merica.cz>
-> ---
->  drivers/leds/trigger/Kconfig             |  8 ++++++
->  drivers/leds/trigger/Makefile            |  1 +
->  drivers/leds/trigger/ledtrig-usbgadget.c | 45 ++++++++++++++++++++++++++++++++
->  drivers/usb/musb/musb_gadget.c           |  6 +++--
->  include/linux/leds.h                     |  6 +++++
->  5 files changed, 64 insertions(+), 2 deletions(-)
->  create mode 100644 drivers/leds/trigger/ledtrig-usbgadget.c
->
-> diff --git a/drivers/leds/trigger/Kconfig b/drivers/leds/trigger/Kconfig
-> index 49794b4..9562963 100644
-> --- a/drivers/leds/trigger/Kconfig
-> +++ b/drivers/leds/trigger/Kconfig
-> @@ -41,6 +41,14 @@ config LEDS_TRIGGER_IDE_DISK
->           This allows LEDs to be controlled by IDE disk activity.
->           If unsure, say Y.
->
-> +config LEDS_TRIGGER_USBGADGET
-> +       bool "LED USB Gadget Trigger"
-> +       depends on (USB_MUSB_GADGET || USB_MUSB_DUAL_ROLE)
-> +       depends on LEDS_TRIGGERS
-> +       help
-> +         This allows LEDs to be controlled by USB gadget activity.
-> +         If unsure, say Y.
-> +
->  config LEDS_TRIGGER_HEARTBEAT
->         tristate "LED Heartbeat Trigger"
->         depends on LEDS_TRIGGERS
-> diff --git a/drivers/leds/trigger/Makefile b/drivers/leds/trigger/Makefile
-> index 1abf48d..45917c0 100644
-> --- a/drivers/leds/trigger/Makefile
-> +++ b/drivers/leds/trigger/Makefile
-> @@ -8,3 +8,4 @@ obj-$(CONFIG_LEDS_TRIGGER_CPU)          += ledtrig-cpu.o
->  obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)  += ledtrig-default-on.o
->  obj-$(CONFIG_LEDS_TRIGGER_TRANSIENT)   += ledtrig-transient.o
->  obj-$(CONFIG_LEDS_TRIGGER_CAMERA)      += ledtrig-camera.o
-> +obj-$(CONFIG_LEDS_TRIGGER_USBGADGET)   += ledtrig-usbgadget.o
-> diff --git a/drivers/leds/trigger/ledtrig-usbgadget.c b/drivers/leds/trigger/ledtrig-usbgadget.c
-> new file mode 100644
-> index 0000000..1eb90da
-> --- /dev/null
-> +++ b/drivers/leds/trigger/ledtrig-usbgadget.c
-> @@ -0,0 +1,45 @@
-> +/*
-> + * LED Trigger for USB Gadget Activity
-> + *
-> + * Copyright 2014 Michal Sojka <sojka@merica.cz>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/leds.h>
-> +
-> +#define BLINK_DELAY 30
-> +
-> +DEFINE_LED_TRIGGER(ledtrig_usbgadget);
-> +static unsigned long usbgadget_blink_delay = BLINK_DELAY;
-> +
-> +void ledtrig_usbgadget_activity(void)
-> +{
-> +       led_trigger_blink_oneshot(ledtrig_usbgadget,
-> +                                 &usbgadget_blink_delay, &usbgadget_blink_delay, 0);
-> +}
-> +EXPORT_SYMBOL(ledtrig_usbgadget_activity);
-> +
-> +static int __init ledtrig_usbgadget_init(void)
-> +{
-> +       led_trigger_register_simple("usb-gadget", &ledtrig_usbgadget);
-> +       return 0;
-> +}
-> +
-> +static void __exit ledtrig_usbgadget_exit(void)
-> +{
-> +       led_trigger_unregister_simple(ledtrig_usbgadget);
-> +}
-> +
-> +module_init(ledtrig_usbgadget_init);
-> +module_exit(ledtrig_usbgadget_exit);
-> +
-> +MODULE_AUTHOR("Michal Sojka <sojka@merica.cz>");
-> +MODULE_DESCRIPTION("LED Trigger for USB Gadget Activity");
-> +MODULE_LICENSE("GPL");
-> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-> index d4aa779..98f8b24 100644
-> --- a/drivers/usb/musb/musb_gadget.c
-> +++ b/drivers/usb/musb/musb_gadget.c
-> @@ -42,6 +42,7 @@
->  #include <linux/delay.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/slab.h>
-> +#include <linux/leds.h>
->
->  #include "musb_core.h"
->
-> @@ -167,11 +168,12 @@ __acquires(ep->musb->lock)
->         if (!dma_mapping_error(&musb->g.dev, request->dma))
->                 unmap_dma_buffer(req, musb);
->
-> -       if (request->status == 0)
-> +       if (request->status == 0) {
->                 dev_dbg(musb->controller, "%s done request %p,  %d/%d\n",
->                                 ep->end_point.name, request,
->                                 req->request.actual, req->request.length);
-> -       else
-> +               ledtrig_usbgadget_activity();
-> +       } else
->                 dev_dbg(musb->controller, "%s request %p, %d/%d fault %d\n",
->                                 ep->end_point.name, request,
->                                 req->request.actual, req->request.length,
-> diff --git a/include/linux/leds.h b/include/linux/leds.h
-> index 0287ab2..5d9668e 100644
-> --- a/include/linux/leds.h
-> +++ b/include/linux/leds.h
-> @@ -218,6 +218,12 @@ extern void ledtrig_ide_activity(void);
->  static inline void ledtrig_ide_activity(void) {}
->  #endif
->
-> +#ifdef CONFIG_LEDS_TRIGGER_USBGADGET
-> +extern void ledtrig_usbgadget_activity(void);
-> +#else
-> +static inline void ledtrig_usbgadget_activity(void) {}
-> +#endif
-> +
->  #if defined(CONFIG_LEDS_TRIGGER_CAMERA) || defined(CONFIG_LEDS_TRIGGER_CAMERA_MODULE)
->  extern void ledtrig_flash_ctrl(bool on);
->  extern void ledtrig_torch_ctrl(bool on);
-> --
-> 2.1.0
->
+
+With best regards,
+Julian Wollrath
