@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661AbaHVNwT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:52:19 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:53692 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409AbaHVNwP (ORCPT
+	id S1756675AbaHVNwt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:52:49 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:58151 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756409AbaHVNws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:52:15 -0400
-Date: Fri, 22 Aug 2014 16:52:07 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: dhowells@redhat.com, linux-afs@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] afs: security: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140822135207.GA31237@ada>
+	Fri, 22 Aug 2014 09:52:48 -0400
+X-IronPort-AV: E=Sophos;i="5.04,380,1406592000"; 
+   d="scan'208";a="164897617"
+Message-ID: <53F74B29.4090601@citrix.com>
+Date: Fri, 22 Aug 2014 14:52:41 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mukesh Rathor <mukesh.rathor@oracle.com>, <boris.ostrovsky@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [V0 PATCH 0/2] AMD PVH domU support
+References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
+In-Reply-To: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of "rcu_assign_pointer()" is NULLing out the pointer.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+On 21/08/14 03:16, Mukesh Rathor wrote:
+> Hi,
+> 
+> Here's first stab at AMD PVH domU support. Pretty much the only thing
+> needed is EFER bits set. Please review.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+I'm not going to accept this until there is some ABI documentation
+stating explicitly what state non-boot CPUs will be in.
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+I'm particularly concerned that: a) there is a difference between AMD
+and Intel; and b) you want to change the ABI by clearing a the EFER.SCE bit.
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- fs/afs/security.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/afs/security.c b/fs/afs/security.c
-index 8d01042..42f7cf3 100644
---- a/fs/afs/security.c
-+++ b/fs/afs/security.c
-@@ -114,7 +114,7 @@ void afs_clear_permits(struct afs_vnode *vnode)
- 
- 	mutex_lock(&vnode->permits_lock);
- 	permits = vnode->permits;
--	rcu_assign_pointer(vnode->permits, NULL);
-+	RCU_INIT_POINTER(vnode->permits, NULL);
- 	mutex_unlock(&vnode->permits_lock);
- 
- 	if (permits)
--- 
-1.9.1
-
+David
