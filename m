@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884AbaHVJc1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:32:27 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:37638 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974AbaHVJc0 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Fri, 22 Aug 2014 05:32:26 -0400
-Message-Id: <53F72A46020000780002C957@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Fri, 22 Aug 2014 10:32:22 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Juergen Gross" <JGross@suse.com>
-Cc: <stefan.bader@canonical.com>, <toshi.kani@hp.com>, <x86@kernel.org>,
-        <ville.syrjala@linux.intel.com>,
-        "xen-devel" <xen-devel@lists.xenproject.org>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH RFC 2/3] x86: Enable PAT to use cache
- mode translation tables
-References: <1408454745-32358-1-git-send-email-jgross@suse.com>
- <1408454745-32358-3-git-send-email-jgross@suse.com>
-In-Reply-To: <1408454745-32358-3-git-send-email-jgross@suse.com>
+	id S1754808AbaHVJlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:41:25 -0400
+Received: from smtp.sanfor.com ([58.251.49.30]:48505 "EHLO mail.sangfor.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751451AbaHVJlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 05:41:24 -0400
+X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Aug 2014 05:41:22 EDT
+Date: Fri, 22 Aug 2014 17:30:15 +0800
+From: "Zhang Haoyu" <zhanghy@sangfor.com>
+To: "Razya Ladelsky" <RAZYA@il.ibm.com>,
+        "Christian Borntraeger" <borntraeger@de.ibm.com>,
+        "mashirle" <mashirle@us.ibm.com>, "Jason Wang" <jasowang@redhat.com>,
+        "Michael S.Tsirkin" <mst@redhat.com>
+Cc: "abel.gordon" <abel.gordon@gmail.com>, "Alex Glikson" <GLIKSON@il.ibm.com>,
+        "Eran Raichstein" <ERANRA@il.ibm.com>, "Joel Nider" <JOELN@il.ibm.com>,
+        "kvm" <kvm@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>, "mst" <mst@redhat.com>,
+        "netdev" <netdev@vger.kernel.org>,
+        "virtualization" <virtualization@lists.linux-foundation.org>,
+        "Yossi Kuperman1" <YOSSIKU@il.ibm.com>
+References: <1407659404-razya@il.ibm.com>,
+ <20140810083035.0CF58380729@moren.haifa.ibm.com>,
+ <53F45F3C.5000207@de.ibm.com>,
+ <OF9D20825B.8FFA2829-ONC2257D3B.004A777F-C2257D3B.004C47BC@il.ibm.com>
+Subject: Re: [PATCH] vhost: Add polling mode
+Message-ID: <201408221730137909287@sangfor.com>
+X-mailer: Foxmail 6, 15, 201, 20 [cn]
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain;
+	charset="gb2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 19.08.14 at 15:25, <JGross@suse.com> wrote:
-> @@ -118,8 +167,14 @@ void pat_init(void)
->  	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
->  
->  	/* Boot CPU check */
-> -	if (!boot_pat_state)
-> +	if (!boot_pat_state) {
->  		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
-> +		/*
-> +		 * Init cache mode tables before writing MSR to give Xen a
-> +		 * chance to correct the changes when doing the write.
-> +		 */
+>> > 
+>> > Results:
+>> > 
+>> > Netperf, 1 vm:
+>> > The polling patch improved throughput by ~33% (1516 MB/sec -> 2046 MB/sec).
+>> > Number of exits/sec decreased 6x.
+>> > The same improvement was shown when I tested with 3 vms running netperf
+>> > (4086 MB/sec -> 5545 MB/sec).
+>> > 
+>> > filebench, 1 vm:
+>> > ops/sec improved by 13% with the polling patch. Number of exits 
+>> was reduced by
+>> > 31%.
+>> > The same experiment with 3 vms running filebench showed similar numbers.
+>> > 
+>> > Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
+>> 
+>> Gave it a quick try on s390/kvm. As expected it makes no difference 
+>> for big streaming workload like iperf.
+>> uperf with a 1-1 round robin got indeed faster by about 30%.
+>> The high CPU consumption is something that bothers me though, as 
+>> virtualized systems tend to be full.
+>> 
+>> 
+>
+>Thanks for confirming the results!
+>The best way to use this patch would be along with a shared vhost thread 
+>for multiple
+>devices/vms, as described in:
+>http://domino.research.ibm.com/library/cyberdig.nsf/1e4115aea78b6e7c85256b360066f0d4/479e3578ed05bfac85257b4200427735!OpenDocument
+>This work assumes having a dedicated I/O core where the vhost thread 
+>serves multiple vms, which 
+>makes the high cpu utilization less of a concern. 
+>
+Hi, Razya, Shirley
+I am going to test the combination of 
+"several (depends on total number of cpu on host, e.g.,  total_number * 1/3) vhost threads server all VMs" and "vhost: add polling mode",
+now I get the patch "http://thread.gmane.org/gmane.comp.emulators.kvm.devel/88682/focus=88723" posted by Shirley,
+any update to this patch?
 
-This comment seems pretty odd to me: For one, a PV guest on Xen
-shouldn't be trying to write PAT MSR at all under the current ABI
-(the write will be ignored, yes, but accompanied with a warning
-message, which PV kernels - by the mere fact that they're PV -
-should try to avoid). And then "correct the changes" both gives
-the impression as if they were wrong and as if some of what the
-kernel writes may be under the kernel's control. Hence I think this
-code and comment should either be consistently assuming that the
-kernel has no control at all, or should read back the value after
-having written it, and set the internal tables based on the value
-read back.
+And, I want to make a bit change on this patch, create total_cpu_number * 1/N(N={3,4}) vhost threads instead of per-cpu vhost thread to server all VMs,
+any ideas?
 
-Jan
-
-> +		pat_init_cache_modes(pat);
-> +	}
->  
->  	wrmsrl(MSR_IA32_CR_PAT, pat);
->  
-
+Thanks,
+Zhang Haoyu
+>
+>
+>> > +static int poll_start_rate = 0;
+>> > +module_param(poll_start_rate, int, S_IRUGO|S_IWUSR);
+>> > +MODULE_PARM_DESC(poll_start_rate, "Start continuous polling of 
+>> virtqueue when rate of events is at least this number per jiffy. If 
+>> 0, never start polling.");
+>> > +
+>> > +static int poll_stop_idle = 3*HZ; /* 3 seconds */
+>> > +module_param(poll_stop_idle, int, S_IRUGO|S_IWUSR);
+>> > +MODULE_PARM_DESC(poll_stop_idle, "Stop continuous polling of 
+>> virtqueue after this many jiffies of no work.");
+>> 
+>> This seems ridicoudly high. Even one jiffie is an eternity, so 
+>> setting it to 1 as a default would reduce the CPU overhead for most cases.
+>> If we dont have a packet in one millisecond, we can surely go back 
+>> to the kick approach, I think.
+>> 
+>> Christian
+>> 
+>
+>Good point, will reduce it and recheck.
+>Thank you,
+>Razya
 
