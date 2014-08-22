@@ -1,83 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674AbaHVAjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:39:44 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:48304 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863AbaHVAjn (ORCPT
+	id S1755743AbaHVAlq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 20:41:46 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54564 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295AbaHVAlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:39:43 -0400
-Message-ID: <53F69147.4040204@linaro.org>
-Date: Fri, 22 Aug 2014 09:39:35 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
-        arndb@arndb.de,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 4/6] arm64: add seccomp syscall for compat task
-References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>	<1408611405-8943-5-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jK9yThj5Ma1ajmQkNOfL1gggDebmFPdh-KV3R3BkveO_w@mail.gmail.com>
-In-Reply-To: <CAGXu5jK9yThj5Ma1ajmQkNOfL1gggDebmFPdh-KV3R3BkveO_w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 21 Aug 2014 20:41:40 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v4 3/4] zram: zram memory size limitation
+Date: Fri, 22 Aug 2014 09:42:13 +0900
+Message-Id: <1408668134-21696-4-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1408668134-21696-1-git-send-email-minchan@kernel.org>
+References: <1408668134-21696-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 02:52 AM, Kees Cook wrote:
-> On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
-> <takahiro.akashi@linaro.org> wrote:
->> This patch allows compat task to issue seccomp() system call.
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/include/asm/unistd.h   |    2 +-
->>   arch/arm64/include/asm/unistd32.h |    3 +++
->>   2 files changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
->> index 4bc95d2..cf6ee31 100644
->> --- a/arch/arm64/include/asm/unistd.h
->> +++ b/arch/arm64/include/asm/unistd.h
->> @@ -41,7 +41,7 @@
->>   #define __ARM_NR_compat_cacheflush     (__ARM_NR_COMPAT_BASE+2)
->>   #define __ARM_NR_compat_set_tls                (__ARM_NR_COMPAT_BASE+5)
->>
->> -#define __NR_compat_syscalls           383
->> +#define __NR_compat_syscalls           384
->>   #endif
->>
->>   #define __ARCH_WANT_SYS_CLONE
->> diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
->> index e242600..2922c40 100644
->> --- a/arch/arm64/include/asm/unistd32.h
->> +++ b/arch/arm64/include/asm/unistd32.h
->> @@ -787,3 +787,6 @@ __SYSCALL(__NR_sched_setattr, sys_sched_setattr)
->>   __SYSCALL(__NR_sched_getattr, sys_sched_getattr)
->>   #define __NR_renameat2 382
->>   __SYSCALL(__NR_renameat2, sys_renameat2)
->> +#define __NR_seccomp 383
->> +__SYSCALL(__NR_seccomp, sys_seccomp)
->> +
->
-> Nit: this adds a trailing blank line. Other than that:
+Since zram has no control feature to limit memory usage,
+it makes hard to manage system memrory.
 
-I will fix it.
-Thanks,
+This patch adds new knob "mem_limit" via sysfs to set up the
+a limit so that zram could fail allocation once it reaches
+the limit.
 
--Takahiro AKASHI
+In addition, user could change the limit in runtime so that
+he could manage the memory more dynamically.
 
-> Reviewed-by: Kees Cook <keescook@chromium.org>
->
-> -Kees
->
->> --
->> 1.7.9.5
->>
->
->
->
+Default is no limit so it doesn't break old behavior.
+
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++
+ Documentation/blockdev/zram.txt            | 24 ++++++++++++++---
+ drivers/block/zram/zram_drv.c              | 41 ++++++++++++++++++++++++++++++
+ drivers/block/zram/zram_drv.h              |  5 ++++
+ 4 files changed, 76 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+index 70ec992514d0..b8c779d64968 100644
+--- a/Documentation/ABI/testing/sysfs-block-zram
++++ b/Documentation/ABI/testing/sysfs-block-zram
+@@ -119,3 +119,13 @@ Description:
+ 		efficiency can be calculated using compr_data_size and this
+ 		statistic.
+ 		Unit: bytes
++
++What:		/sys/block/zram<id>/mem_limit
++Date:		August 2014
++Contact:	Minchan Kim <minchan@kernel.org>
++Description:
++		The mem_limit file is read/write and specifies the amount
++		of memory to be able to consume memory to store store
++		compressed data. The limit could be changed in run time
++		and "0" is default which means disable the limit.
++		Unit: bytes
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index 0595c3f56ccf..82c6a41116db 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -74,14 +74,30 @@ There is little point creating a zram of greater than twice the size of memory
+ since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
+ size of the disk when not in use so a huge zram is wasteful.
+ 
+-5) Activate:
++5) Set memory limit: Optional
++	Set memory limit by writing the value to sysfs node 'mem_limit'.
++	The value can be either in bytes or you can use mem suffixes.
++	In addition, you could change the value in runtime.
++	Examples:
++	    # limit /dev/zram0 with 50MB memory
++	    echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
++
++	    # Using mem suffixes
++	    echo 256K > /sys/block/zram0/mem_limit
++	    echo 512M > /sys/block/zram0/mem_limit
++	    echo 1G > /sys/block/zram0/mem_limit
++
++	    # To disable memory limit
++	    echo 0 > /sys/block/zram0/mem_limit
++
++6) Activate:
+ 	mkswap /dev/zram0
+ 	swapon /dev/zram0
+ 
+ 	mkfs.ext4 /dev/zram1
+ 	mount /dev/zram1 /tmp
+ 
+-6) Stats:
++7) Stats:
+ 	Per-device statistics are exported as various nodes under
+ 	/sys/block/zram<id>/
+ 		disksize
+@@ -96,11 +112,11 @@ size of the disk when not in use so a huge zram is wasteful.
+ 		compr_data_size
+ 		mem_used_total
+ 
+-7) Deactivate:
++8) Deactivate:
+ 	swapoff /dev/zram0
+ 	umount /dev/zram1
+ 
+-8) Reset:
++9) Reset:
+ 	Write any positive value to 'reset' sysfs node
+ 	echo 1 > /sys/block/zram0/reset
+ 	echo 1 > /sys/block/zram1/reset
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index f0b8b30a7128..370c355eb127 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -122,6 +122,33 @@ static ssize_t max_comp_streams_show(struct device *dev,
+ 	return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+ }
+ 
++static ssize_t mem_limit_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	u64 val;
++	struct zram *zram = dev_to_zram(dev);
++
++	down_read(&zram->init_lock);
++	val = zram->limit_pages;
++	up_read(&zram->init_lock);
++
++	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
++}
++
++static ssize_t mem_limit_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t len)
++{
++	u64 limit;
++	struct zram *zram = dev_to_zram(dev);
++
++	limit = memparse(buf, NULL);
++	down_write(&zram->init_lock);
++	zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
++	up_write(&zram->init_lock);
++
++	return len;
++}
++
+ static ssize_t max_comp_streams_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
+ {
+@@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
++
++	if (zram->limit_pages &&
++		zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
++		zs_free(meta->mem_pool, handle);
++		ret = -ENOMEM;
++		goto out;
++	}
++
+ 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+ 
+ 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
+@@ -617,6 +652,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 	struct zram_meta *meta;
+ 
+ 	down_write(&zram->init_lock);
++
++	zram->limit_pages = 0;
++
+ 	if (!init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		return;
+@@ -857,6 +895,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+ static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+ static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
++static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
++		mem_limit_store);
+ static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+ 		max_comp_streams_show, max_comp_streams_store);
+ static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+@@ -885,6 +925,7 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_orig_data_size.attr,
+ 	&dev_attr_compr_data_size.attr,
+ 	&dev_attr_mem_used_total.attr,
++	&dev_attr_mem_limit.attr,
+ 	&dev_attr_max_comp_streams.attr,
+ 	&dev_attr_comp_algorithm.attr,
+ 	NULL,
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index e0f725c87cc6..b7aa9c21553f 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -112,6 +112,11 @@ struct zram {
+ 	u64 disksize;	/* bytes */
+ 	int max_comp_streams;
+ 	struct zram_stats stats;
++	/*
++	 * the number of pages zram can consume for storing compressed data
++	 */
++	unsigned long limit_pages;
++
+ 	char compressor[10];
+ };
+ #endif
+-- 
+2.0.0
+
