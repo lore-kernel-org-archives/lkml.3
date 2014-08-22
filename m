@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756472AbaHVNdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:33:03 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:50256 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433AbaHVNdB (ORCPT
+	id S1756507AbaHVNdy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:33:54 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:20825 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756283AbaHVNdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:33:01 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: net: wireless: Add include guards
-Organization: D03
-References: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Hashcash: 1:20:140822:linux-kernel@vger.kernel.org::EDi7BmvdJNH2IpYd:0000000000000000000000000000000003GKv
-X-Hashcash: 1:20:140822:netdev@vger.kernel.org::EIzGJRaA9L5ZR9aU:0000000000000000000000000000000000000001qC5
-X-Hashcash: 1:20:140822:linux-wireless@vger.kernel.org::pyujkpvHXgMUJojp:00000000000000000000000000000002+j6
-X-Hashcash: 1:20:140822:linville@tuxdriver.com::HC/8vBngHqEFsOD1:0000000000000000000000000000000000000002SUJ
-Date: Fri, 22 Aug 2014 15:32:58 +0200
-In-Reply-To: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
-	(Rasmus Villemoes's message of "Fri, 22 Aug 2014 14:26:54 +0200")
-Message-ID: <87egw8sl85.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 22 Aug 2014 09:33:53 -0400
+Date: Fri, 22 Aug 2014 14:33:16 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] arm/smp: Absorb boot_secondary()
+Message-ID: <20140822133315.GC20583@arm.com>
+References: <1404918119-3676-1-git-send-email-geert+renesas@glider.be>
+ <CAMuHMdXp0ruZjjJLXmWyCdfAXs9_9xFHDcmJ08M9_SbZqqq04g@mail.gmail.com>
+ <201408202130.28389.arnd@arndb.de>
+ <CAMuHMdVp3xeJ2nDYJ00tLc7HuZ5v+jC-T8omWV5+G_3C8XoyoA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVp3xeJ2nDYJ00tLc7HuZ5v+jC-T8omWV5+G_3C8XoyoA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+On Wed, Aug 20, 2014 at 08:55:33PM +0100, Geert Uytterhoeven wrote:
+> Has anyone already written a "git-send-email"-compatible script to
+> submit patches there?
 
-> The files ray_cs.h and rayctl.h both contain two thirds of what
-> appears to be an include guard using the macro name RAYLINK_H (both
-> lack the #define). Since RAYLINK_H is not defined anywhere, the
-> guards using different macro names.
->
+You can send patches as usual to patches@arm.linux.org.uk, just add
+KernelVersion: v3.?? after the --- line in your patch (maybe this could
+be automate as well but I didn't bother).
 
-I need to stop using the # character in my commit messages, or at least
-check that git didn't eat any of my lines.
+For series, because the arrival order is not guaranteed, I use the git
+alias below to trick it into sleeping 60s between patches:
 
-This was supposed to be something like "... defined anywhere, the
-#ifndefs are simply confusing no-ops. Add proper include guards using
-different macro names".
+ksend-rmk-patch = !git send-email --annotate --no-thread --suppress-cc=all --to-cmd='sleep 60 && echo patches@arm.linux.org.uk "#"'
 
-Rasmus
+For stgit, I have a dedicated template:
+
+From: %(sender)s
+To: patches@arm.linux.org.uk
+Subject: %(prefix)s%(shortdescr)s
+
+%(longdescr)s
+PATCH FOLLOWS
+KernelVersion:%(version)s
+%(diff)s
+
+And there is always git pull request that Russell is happy with.
+
+-- 
+Catalin
