@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaHVN4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:56:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59846 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756506AbaHVN4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:56:09 -0400
-Date: Fri, 22 Aug 2014 15:56:07 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] builddeb: put the dbg files into the correct directory
-Message-ID: <20140822135607.GA15255@sepie.suse.cz>
-References: <20140819054928.GO2808@birch.djwong.org>
+	id S932162AbaHVN5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:57:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33076 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122AbaHVN5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 09:57:14 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH 3/3] ARM: AM437x: use pdata quirks for pinctrl information
+Date: Fri, 22 Aug 2014 08:55:25 -0500
+Message-ID: <1408715725-25919-4-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408715725-25919-1-git-send-email-nm@ti.com>
+References: <1408715725-25919-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140819054928.GO2808@birch.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 10:49:28PM -0700, Darrick J. Wong wrote:
-> Since the conversion of objtree to use relative pathnames (commit
-> 7e1c04779e, "kbuild: Use relative path for $(objtree)"), the debug
-> info files have been ending up in /debian/dbgtmp/ in the regular
-> linux-image package instead of the debug files package.  Fix up the
-> paths so that the debug files end up in the -dbg package.
-> 
-> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> ---
->  scripts/package/builddeb |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> index 5707466..0456322 100644
-> --- a/scripts/package/builddeb
-> +++ b/scripts/package/builddeb
-> @@ -153,15 +153,16 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
->  	fi
->  	if [ -n "$BUILD_DEBUG" ] ; then
->  		(
-> +			old_dir="$(pwd)"
->  			cd $tmpdir
+From: Keerthy <j-keerthy@ti.com>
 
-Can you try the patch below? I'd rather get rid of the directory change,
-if possible.
+Provide pdata-quirks for Am437x processor family.
 
-Michal
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+---
+ arch/arm/mach-omap2/pdata-quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index 35d5a58..dcfdbda 100755
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -152,18 +152,16 @@ if grep -q '^CONFIG_MODULES=y' $KCONFIG_CONFIG ; then
- 		rmdir "$tmpdir/lib/modules/$version"
- 	fi
- 	if [ -n "$BUILD_DEBUG" ] ; then
--		(
--			cd $tmpdir
--			for module in $(find lib/modules/ -name *.ko); do
--				mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
--				# only keep debug symbols in the debug file
--				$OBJCOPY --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
--				# strip original module from debug symbols
--				$OBJCOPY --strip-debug $module
--				# then add a link to those
--				$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
--			done
--		)
-+		for module in $(find $tmpdir/lib/modules/ -name *.ko -printf '%P\n'); do
-+			module=lib/modules/$module
-+			mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
-+			# only keep debug symbols in the debug file
-+			$OBJCOPY --only-keep-debug $tmpdir/$module $dbg_dir/usr/lib/debug/$module
-+			# strip original module from debug symbols
-+			$OBJCOPY --strip-debug $tmpdir/$module
-+			# then add a link to those
-+			$OBJCOPY --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
-+		done
- 	fi
- fi
- 
+diff --git a/arch/arm/mach-omap2/pdata-quirks.c b/arch/arm/mach-omap2/pdata-quirks.c
+index 827e106..5fea34e 100644
+--- a/arch/arm/mach-omap2/pdata-quirks.c
++++ b/arch/arm/mach-omap2/pdata-quirks.c
+@@ -359,6 +359,9 @@ struct of_dev_auxdata omap_auxdata_lookup[] __initdata = {
+ #ifdef CONFIG_SOC_DRA7XX
+ 	OF_DEV_AUXDATA("ti,dra7-padconf", 0x4a003400, "4a003400.pinmux", &pcs_pdata),
+ #endif
++#ifdef CONFIG_SOC_AM43XX
++	OF_DEV_AUXDATA("ti,am437-padconf", 0x44e10800, "44e10800.pinmux", &pcs_pdata),
++#endif
+ #if defined(CONFIG_ARCH_OMAP4) || defined(CONFIG_SOC_OMAP5)
+ 	OF_DEV_AUXDATA("ti,omap4-iommu", 0x4a066000, "4a066000.mmu",
+ 		       &omap4_iommu_pdata),
 -- 
-1.8.4.5
+1.7.9.5
 
