@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629AbaHVPCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:02:31 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58223 "EHLO mail.kernel.org"
+	id S1756657AbaHVPCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:02:45 -0400
+Received: from www.sr71.net ([198.145.64.142]:54369 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756582AbaHVPC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:02:29 -0400
-Date: Fri, 22 Aug 2014 12:02:24 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/2] perf tools: Add +field argument support for
- --field/--sort options
-Message-ID: <20140822150224.GB3473@kernel.org>
-References: <1408715919-25990-1-git-send-email-jolsa@kernel.org>
+	id S1756582AbaHVPCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:02:43 -0400
+Message-ID: <53F75B91.2040100@sr71.net>
+Date: Fri, 22 Aug 2014 08:02:41 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408715919-25990-1-git-send-email-jolsa@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
+        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
+        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
+        penberg@kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        lauraa@codeaurora.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] [v3] warn on performance-impacting configs aka. TAINT_PERFORMANCE
+References: <20140821202424.7ED66A50@viggo.jf.intel.com> <20140822072023.GA7218@gmail.com>
+In-Reply-To: <20140822072023.GA7218@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Aug 22, 2014 at 03:58:37PM +0200, Jiri Olsa escreveu:
-> hi,
-> adding support to add field(s) to default field and sort orders
-> via using the '+' prefix, like for report:
->   $ perf report -F +period,sample
->   $ perf report -s +cpu
+On 08/22/2014 12:20 AM, Ingo Molnar wrote:
+> Essentially all DEBUG_OBJECTS_* options are expensive, assuming 
+> they are enabled, i.e. DEBUG_OBJECTS_ENABLE_DEFAULT=y.
 > 
-> thanks,
-> jirka
-
-Really cool feature, (lightly) tested and applied,
-
-Thanks,
-
-- Arnaldo
- 
+> Otherwise they should only be warned about if the debugobjects 
+> boot option got enabled.
 > 
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> ---
-> Jiri Olsa (2):
->       perf tools: Add +field argument support for --field option
->       perf tools: Add +field argument support for --sort option
+> I.e. you'll need a bit of a runtime check for this one.
+
+At that point, what do we print, and when do we print it?  We're not
+saying that the config option should be disabled because it's really the
+boot option plus the config option that is causing the problem.
+
+I'll just put the DEBUG_OBJECTS_ENABLE_DEFAULT in here which is
+analogous to what we're doing with SLUB_DEBUG_ON.
+
+>> +static ssize_t performance_taint_read(struct file *file, char __user *user_buf,
+>> +			size_t count, loff_t *ppos)
+>> +{
+>> +	int i;
+>> +	int ret;
+>> +	char *buf;
+>> +	size_t buf_written = 0;
+>> +	size_t buf_left;
+>> +	size_t buf_len;
+>> +
+>> +	if (!ARRAY_SIZE(perfomance_killing_configs))
+>> +		return 0;
+>> +
+>> +	buf_len = 1;
+>> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++)
+>> +		buf_len += strlen(config_prefix) +
+>> +			   strlen(perfomance_killing_configs[i]);
+>> +	/* Add a byte for for each entry in the array for a \n */
+>> +	buf_len += ARRAY_SIZE(perfomance_killing_configs);
+>> +
+>> +	buf = kmalloc(buf_len, GFP_KERNEL);
+>> +	if (!buf)
+>> +		return -ENOMEM;
+>> +
+>> +	buf_left = buf_len;
+>> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++) {
+>> +		buf_written += snprintf(buf + buf_written, buf_left,
+>> +					"%s%s\n", config_prefix,
+>> +					perfomance_killing_configs[i]);
+>> +		buf_left = buf_len - buf_written;
 > 
->  tools/perf/ui/hist.c   |  4 ++--
->  tools/perf/util/sort.c | 52 ++++++++++++++++++++++++++++++++++++++++++++++------
->  tools/perf/util/sort.h |  1 +
->  3 files changed, 49 insertions(+), 8 deletions(-)
+> So, ARRAY_SIZE(performance_killing_configs) is written out four 
+> times, a temporary variable would be in order I suspect.
+
+If one of them had gone over 80 chars, I probably would have. :)  I put
+one in anyway.
+
+> Also, do you want to check buf_left and break out early from 
+> the loop if it goes non-positive?
+
+You're slowly inflating my patch for no practical gain. :)
+
+Oh well, I put that in too.
+
+I think I got the rest of the things addressed too.  v4 coming soon.
