@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889AbaHVJqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:46:53 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:64518 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaHVJqr (ORCPT
+	id S1756008AbaHVJrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:47:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:33793 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451AbaHVJqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:46:47 -0400
-X-AuditID: cbfee690-b7f526d000003627-e8-53f711840eae
+	Fri, 22 Aug 2014 05:46:51 -0400
+X-AuditID: cbfee690-b7f526d000003627-fe-53f7118679f7
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: a.zummo@towertech.it
 Cc: kgene.kim@samsung.com, kyungmin.park@samsung.com,
         akpm@linux-foundation.org, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [RESEND PATCHv2 1/5] rtc: s3c: Define s3c_rtc structure to remove
- global variables.
-Date: Fri, 22 Aug 2014 18:46:38 +0900
-Message-id: <1408700802-15673-2-git-send-email-cw00.choi@samsung.com>
+Subject: [RESEND PATCHv2 4/5] rtc: s3c: Add support for RTC of Exynos3250 SoC
+Date: Fri, 22 Aug 2014 18:46:41 +0900
+Message-id: <1408700802-15673-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1408700802-15673-1-git-send-email-cw00.choi@samsung.com>
 References: <1408700802-15673-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkSLdF8HuwwbvZFhZLLl5lt5izfg2b
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsWyRsSkQLdN8HuwwbaPIhZLLl5lt5izfg2b
 	xfUvz1ktehdcZbM42/SG3eLyrjlsFjPO72Oy2N/ZwejA4bFn4kk2jxMzfrN49G1Zxegxfd5P
-	Jo/Pm+QCWKO4bFJSczLLUov07RK4MrY1Shcs38ZYsXLRVKYGxiNTGbsYOTkkBEwkPmzawgZh
-	i0lcuLceyObiEBJYyihxeetuFpiipgMH2SES0xklFsxfBeU0MUmcObKVGaSKTUBLYv+LG2Cj
-	RAQkJJbMucMIUsQscINRYuHiL6wgCWGBOIn106+AjWURUJU48eQgmM0r4Cox4WwvO8Q6OYkP
-	ex6B2ZwCbhL9Lf1MXYwcQNtcJS5+KAGZKSGwjF2iYeEnRog5AhLfJh9iAamREJCV2HSAGWKM
-	pMTBFTdYJjAKL2BkWMUomlqQXFCclF5kolecmFtcmpeul5yfu4kRGPSn/z2bsIPx3gHrQ4zJ
-	QOMmMkuJJucDoyavJN7Q2MzIwtTE1NjI3NKMNGElcV61R0lBQgLpiSWp2ampBalF8UWlOanF
-	hxiZODilGhjzpVl/cK09+Wz2FUZlrXi99d5ntop80H4R07fO2vEJv77Wh9Ptz1l6ri20uXXm
-	9abJJ8L85O77MgQwsBVPPaI942d5nugdpSzh099lRXUZ49IWhVa0r/oQF7f+5WsRc+YluQIb
-	w4QKshk0t4fZVKTtD7jNUPTN87dox+rSR2u9p/1xZ3996rUSS3FGoqEWc1FxIgBmUBrjkAIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsVy+t9jQd0Wwe/BBvs/a1ssuXiV3WLO+jVs
+	Jo/Pm+QCWKO4bFJSczLLUov07RK4Mlavm81UsDeu4unnSWwNjJ1+XYycHBICJhJzd+5ghbDF
+	JC7cW8/WxcjFISSwlFHi7bH7jDBFjVfmM4HYQgLTGSU+bLGHKGpikphypxesiE1AS2L/ixts
+	ILaIgITEkjl3GEGKmAVuMEosXPwFbIWwgK/E3S/TwCaxCKhKXJs/nR3E5hVwlWi42wO1TU7i
+	w55HYHFOATeJ/pZ+oHoOoG2uEhc/lIDMlBBYxi6xb/5eqDkCEt8mH2IBqZEQkJXYdIAZYoyk
+	xMEVN1gmMAovYGRYxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREY8Kf/PZuwg/HeAetDjMlA
+	4yYyS4km5wMjJq8k3tDYzMjC1MTU2Mjc0ow0YSVxXrVHSUFCAumJJanZqakFqUXxRaU5qcWH
+	GJk4OKUaGI11fjLf/1ah8GbPL72DU9fq5vBuOSvCNrX7btrVINYFlX9aM0VsnO+J/8ydnH7R
+	aP4WLYXQ76Knkxk/Ptx/vp7zeOgV/caNZxJqk18/P1HaUFjM+r4/7LTy5KirIkLJu/dmbi0X
+	lE4+29+r8XlmMn9F28V09tfGnUUf/t5YVDbtc4ranimyR5RYijMSDbWYi4oTAXZVbTyOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jQd02we/BBm9WclksuXiV3WLO+jVs
 	Fte/PGe16F1wlc3ibNMbdovLu+awWcw4v4/JYn9nB6MDh8eeiSfZPE7M+M3i0bdlFaPH9Hk/
 	mTw+b5ILYI1qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQ
-	dcvMATpGSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ixrVG6YPk2xoqV
-	i6YyNTAemcrYxcjJISFgItF04CA7hC0mceHeerYuRi4OIYHpjBIL5q9ih3CamCTOHNnKDFLF
-	JqAlsf/FDTYQW0RAQmLJnDuMIEXMAjcYJRYu/sIKkhAWiJNYP/0KC4jNIqAqceLJQTCbV8BV
-	YsLZXqh1chIf9jwCszkF3CT6W/qZuhg5gLa5Slz8UDKBkXcBI8MqRtHUguSC4qT0XCO94sTc
-	4tK8dL3k/NxNjOCYeia9g3FVg8UhRgEORiUe3ogvX4OFWBPLiitzDzFKcDArifD+4PseLMSb
-	klhZlVqUH19UmpNafIjRFOioicxSosn5wHjPK4k3NDYxM7I0Mje0MDI2VxLnPdhqHSgkkJ5Y
-	kpqdmlqQWgTTx8TBKdXAWMofp5fgf2ReSPG8WaL3y6QV7pyU5pZ5qiZaMLPwSUEd2xd52bAz
-	HCpKsSYiW75tiZLZKb5rQ+OqH8Yfbt5RE9ipcSz826Hswi7tn+m6slUKgl626+/8fBF7wbn7
-	5wKjxjUXfq7f/D1/KdPdWcENuX0lZpNkrloIqDlEOb4ViI858mWrsqi0EktxRqKhFnNRcSIA
-	9eBwib8CAAA=
+	dcvMATpGSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ixet1spoK9cRVP
+	P09ia2Ds9Oti5OSQEDCRaLwynwnCFpO4cG89G4gtJDCdUeLDFvsuRi4gu4lJYsqdXkaQBJuA
+	lsT+FzfAikQEJCSWzLnDCFLELHCDUWLh4i+sIAlhAV+Ju1+mgU1lEVCVuDZ/OjuIzSvgKtFw
+	t4cRYpucxIc9j8DinAJuEv0t/UD1HEDbXCUufiiZwMi7gJFhFaNoakFyQXFSeq6hXnFibnFp
+	Xrpecn7uJkZwPD2T2sG4ssHiEKMAB6MSD2/El6/BQqyJZcWVuYcYJTiYlUR4f/B9DxbiTUms
+	rEotyo8vKs1JLT7EaAp01ERmKdHkfGCs55XEGxqbmBlZGpkbWhgZmyuJ8x5otQ4UEkhPLEnN
+	Tk0tSC2C6WPi4JRqYDxx9djxZyuUN82T2HHwy20pZZXlCj8eMk39OHvHfK4vJrLRS5gtzku+
+	4VTleW2UkhyYY8TEHHj+/9byCVPNJxfI5LBHf3sYGuc2vfuw39ygdwa2Xj5ePVfesN1tsdFw
+	S5aaV18X/GbVxs1PzXxfz3l86IvPlPKmiZP971yPvDJ78qPz/0wMf/9QYinOSDTUYi4qTgQA
+	6KJaiL0CAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,767 +51,371 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch define s3c_rtc structure including necessary variables for S3C RTC
-device instead of global variables. This patch improves the readability by
-removing global variables.
+This patch add support for RTC of Exynos3250 SoC. The Exynos3250 needs source
+clock(32.768KHz) for RTC block. If source clock of RTC is registerd on clock
+list of common clk framework, Exynos RTC drvier have to control this clock.
+
+Clock list for s3c-rtc device:
+- rtc : CLK_RTC of CLK_GATE_IP_PERIR is gate clock for RTC.
+- rtc_src : XrtcXTI is 32.768.kHz source clock for RTC.
+ (XRTCXTI: Specifies a clock from 32.768 kHz crystal pad with XRTCXTI and
+ XRTCXTO pins. RTC uses this clock as the source of a real-time clock.)
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Alessandro Zummo <a.zummo@towertech.it>
 Cc: Kukjin Kim <kgene.kim@samsung.com>
 ---
- drivers/rtc/rtc-s3c.c | 448 ++++++++++++++++++++++++++------------------------
- 1 file changed, 235 insertions(+), 213 deletions(-)
+ Documentation/devicetree/bindings/rtc/s3c-rtc.txt |  1 +
+ drivers/rtc/rtc-s3c.c                             | 93 ++++++++++++++++++++++-
+ 2 files changed, 93 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
+index 06db446..ab757b84 100644
+--- a/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
++++ b/Documentation/devicetree/bindings/rtc/s3c-rtc.txt
+@@ -6,6 +6,7 @@ Required properties:
+     * "samsung,s3c2416-rtc" - for controllers compatible with s3c2416 rtc.
+     * "samsung,s3c2443-rtc" - for controllers compatible with s3c2443 rtc.
+     * "samsung,s3c6410-rtc" - for controllers compatible with s3c6410 rtc.
++    * "samsung,exynos3250-rtc" - for controllers compatible with exynos3250 rtc.
+ - reg: physical base address of the controller and length of memory mapped
+   region.
+ - interrupts: Two interrupt numbers to the cpu should be specified. First
 diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-index 4958a36..1d9e158 100644
+index 26a88f9..90dcf51 100644
 --- a/drivers/rtc/rtc-s3c.c
 +++ b/drivers/rtc/rtc-s3c.c
-@@ -43,125 +43,135 @@ struct s3c_rtc_drv_data {
- 	int cpu_type;
- };
+@@ -38,6 +38,7 @@ struct s3c_rtc {
  
--/* I have yet to find an S3C implementation with more than one
-- * of these rtc blocks in */
-+struct s3c_rtc {
-+	struct device *dev;
-+	struct rtc_device *rtc;
-+
-+	void __iomem *base;
-+	struct clk *rtc_clk;
-+	bool enabled;
+ 	void __iomem *base;
+ 	struct clk *rtc_clk;
++	struct clk *rtc_src_clk;
+ 	bool enabled;
  
--static struct clk *rtc_clk;
--static void __iomem *s3c_rtc_base;
--static int s3c_rtc_alarmno;
--static int s3c_rtc_tickno;
--static enum s3c_cpu_type s3c_rtc_cpu_type;
-+	enum s3c_cpu_type cpu_type;
+ 	struct s3c_rtc_data *data;
+@@ -54,6 +55,7 @@ struct s3c_rtc {
  
--static DEFINE_SPINLOCK(s3c_rtc_pie_lock);
-+	int irq_alarm;
-+	int irq_tick;
+ struct s3c_rtc_data {
+ 	int max_user_freq;
++	bool needs_src_clk;
  
--static void s3c_rtc_alarm_clk_enable(bool enable)
-+	spinlock_t pie_lock;
-+	spinlock_t alarm_clk_lock;
-+
-+	int ticnt_save, ticnt_en_save;
-+	bool wake_en;
-+};
-+
-+static void s3c_rtc_alarm_clk_enable(struct s3c_rtc *info, bool enable)
- {
--	static DEFINE_SPINLOCK(s3c_rtc_alarm_clk_lock);
--	static bool alarm_clk_enabled;
- 	unsigned long irq_flags;
- 
--	spin_lock_irqsave(&s3c_rtc_alarm_clk_lock, irq_flags);
-+	spin_lock_irqsave(&info->alarm_clk_lock, irq_flags);
+ 	void (*irq_handler) (struct s3c_rtc *info, int mask);
+ 	void (*set_freq) (struct s3c_rtc *info, int freq);
+@@ -73,10 +75,14 @@ static void s3c_rtc_alarm_clk_enable(struct s3c_rtc *info, bool enable)
  	if (enable) {
--		if (!alarm_clk_enabled) {
--			clk_enable(rtc_clk);
--			alarm_clk_enabled = true;
-+		if (!info->enabled) {
-+			clk_enable(info->rtc_clk);
-+			info->enabled = true;
+ 		if (!info->enabled) {
+ 			clk_enable(info->rtc_clk);
++			if (info->data->needs_src_clk)
++				clk_enable(info->rtc_src_clk);
+ 			info->enabled = true;
  		}
  	} else {
--		if (alarm_clk_enabled) {
--			clk_disable(rtc_clk);
--			alarm_clk_enabled = false;
-+		if (info->enabled) {
-+			clk_disable(info->rtc_clk);
-+			info->enabled = false;
+ 		if (info->enabled) {
++			if (info->data->needs_src_clk)
++				clk_disable(info->rtc_src_clk);
+ 			clk_disable(info->rtc_clk);
+ 			info->enabled = false;
  		}
- 	}
--	spin_unlock_irqrestore(&s3c_rtc_alarm_clk_lock, irq_flags);
-+	spin_unlock_irqrestore(&info->alarm_clk_lock, irq_flags);
- }
+@@ -117,12 +123,16 @@ static int s3c_rtc_setaie(struct device *dev, unsigned int enabled)
+ 	dev_dbg(info->dev, "%s: aie=%d\n", __func__, enabled);
  
- /* IRQ Handlers */
--
- static irqreturn_t s3c_rtc_alarmirq(int irq, void *id)
- {
--	struct rtc_device *rdev = id;
-+	struct s3c_rtc *info = (struct s3c_rtc *)id;
- 
--	clk_enable(rtc_clk);
--	rtc_update_irq(rdev, 1, RTC_AF | RTC_IRQF);
-+	clk_enable(info->rtc_clk);
-+	rtc_update_irq(info->rtc, 1, RTC_AF | RTC_IRQF);
- 
--	if (s3c_rtc_cpu_type == TYPE_S3C64XX)
--		writeb(S3C2410_INTP_ALM, s3c_rtc_base + S3C2410_INTP);
-+	if (info->cpu_type == TYPE_S3C64XX)
-+		writeb(S3C2410_INTP_ALM, info->base + S3C2410_INTP);
- 
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
- 
--	s3c_rtc_alarm_clk_enable(false);
-+	s3c_rtc_alarm_clk_enable(info, false);
- 
- 	return IRQ_HANDLED;
- }
- 
- static irqreturn_t s3c_rtc_tickirq(int irq, void *id)
- {
--	struct rtc_device *rdev = id;
-+	struct s3c_rtc *info = (struct s3c_rtc *)id;
-+
-+	clk_enable(info->rtc_clk);
-+	rtc_update_irq(info->rtc, 1, RTC_PF | RTC_IRQF);
- 
--	clk_enable(rtc_clk);
--	rtc_update_irq(rdev, 1, RTC_PF | RTC_IRQF);
-+	if (info->cpu_type == TYPE_S3C64XX)
-+		writeb(S3C2410_INTP_TIC, info->base + S3C2410_INTP);
- 
--	if (s3c_rtc_cpu_type == TYPE_S3C64XX)
--		writeb(S3C2410_INTP_TIC, s3c_rtc_base + S3C2410_INTP);
-+	clk_disable(info->rtc_clk);
- 
--	clk_disable(rtc_clk);
- 	return IRQ_HANDLED;
- }
- 
- /* Update control registers */
- static int s3c_rtc_setaie(struct device *dev, unsigned int enabled)
- {
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 	unsigned int tmp;
- 
--	dev_dbg(dev, "%s: aie=%d\n", __func__, enabled);
-+	if (!info->base)
-+		return -EINVAL;
-+
-+	dev_dbg(info->dev, "%s: aie=%d\n", __func__, enabled);
- 
--	clk_enable(rtc_clk);
--	tmp = readb(s3c_rtc_base + S3C2410_RTCALM) & ~S3C2410_RTCALM_ALMEN;
-+	clk_enable(info->rtc_clk);
-+	tmp = readb(info->base + S3C2410_RTCALM) & ~S3C2410_RTCALM_ALMEN;
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 	tmp = readb(info->base + S3C2410_RTCALM) & ~S3C2410_RTCALM_ALMEN;
  
  	if (enabled)
  		tmp |= S3C2410_RTCALM_ALMEN;
  
--	writeb(tmp, s3c_rtc_base + S3C2410_RTCALM);
--	clk_disable(rtc_clk);
-+	writeb(tmp, info->base + S3C2410_RTCALM);
-+	clk_disable(info->rtc_clk);
+ 	writeb(tmp, info->base + S3C2410_RTCALM);
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
--	s3c_rtc_alarm_clk_enable(enabled);
-+	s3c_rtc_alarm_clk_enable(info, enabled);
- 
- 	return 0;
- }
- 
--static int s3c_rtc_setfreq(struct device *dev, int freq)
-+static int s3c_rtc_setfreq(struct s3c_rtc *info, int freq)
- {
--	struct platform_device *pdev = to_platform_device(dev);
--	struct rtc_device *rtc_dev = platform_get_drvdata(pdev);
- 	unsigned int tmp = 0;
- 	int val;
- 
- 	if (!is_power_of_2(freq))
+ 	s3c_rtc_alarm_clk_enable(info, enabled);
+@@ -137,12 +147,16 @@ static int s3c_rtc_setfreq(struct s3c_rtc *info, int freq)
  		return -EINVAL;
  
--	clk_enable(rtc_clk);
--	spin_lock_irq(&s3c_rtc_pie_lock);
-+	clk_enable(info->rtc_clk);
-+	spin_lock_irq(&info->pie_lock);
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 	spin_lock_irq(&info->pie_lock);
  
--	if (s3c_rtc_cpu_type != TYPE_S3C64XX) {
--		tmp = readb(s3c_rtc_base + S3C2410_TICNT);
-+	if (info->cpu_type != TYPE_S3C64XX) {
-+		tmp = readb(info->base + S3C2410_TICNT);
- 		tmp &= S3C2410_TICNT_ENABLE;
- 	}
+ 	if (info->data->set_freq)
+ 		info->data->set_freq(info, freq);
  
--	val = (rtc_dev->max_user_freq / freq) - 1;
-+	val = (info->rtc->max_user_freq / freq) - 1;
- 
--	if (s3c_rtc_cpu_type == TYPE_S3C2416 || s3c_rtc_cpu_type == TYPE_S3C2443) {
-+	if (info->cpu_type == TYPE_S3C2416 || info->cpu_type == TYPE_S3C2443) {
- 		tmp |= S3C2443_TICNT_PART(val);
--		writel(S3C2443_TICNT1_PART(val), s3c_rtc_base + S3C2443_TICNT1);
-+		writel(S3C2443_TICNT1_PART(val), info->base + S3C2443_TICNT1);
- 
--		if (s3c_rtc_cpu_type == TYPE_S3C2416)
--			writel(S3C2416_TICNT2_PART(val), s3c_rtc_base + S3C2416_TICNT2);
-+		if (info->cpu_type == TYPE_S3C2416)
-+			writel(S3C2416_TICNT2_PART(val),
-+				info->base + S3C2416_TICNT2);
- 	} else {
- 		tmp |= val;
- 	}
- 
--	writel(tmp, s3c_rtc_base + S3C2410_TICNT);
--	spin_unlock_irq(&s3c_rtc_pie_lock);
--	clk_disable(rtc_clk);
-+	writel(tmp, info->base + S3C2410_TICNT);
-+	spin_unlock_irq(&info->pie_lock);
-+	clk_disable(info->rtc_clk);
+ 	spin_unlock_irq(&info->pie_lock);
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
  	return 0;
- }
-@@ -170,17 +180,20 @@ static int s3c_rtc_setfreq(struct device *dev, int freq)
+@@ -158,6 +172,9 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
+ 		return -EINVAL;
  
- static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
- {
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 	unsigned int have_retried = 0;
--	void __iomem *base = s3c_rtc_base;
- 
--	clk_enable(rtc_clk);
-+	if (!info->base)
-+		return -EINVAL;
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
 +
-+	clk_enable(info->rtc_clk);
   retry_get_time:
--	rtc_tm->tm_min  = readb(base + S3C2410_RTCMIN);
--	rtc_tm->tm_hour = readb(base + S3C2410_RTCHOUR);
--	rtc_tm->tm_mday = readb(base + S3C2410_RTCDATE);
--	rtc_tm->tm_mon  = readb(base + S3C2410_RTCMON);
--	rtc_tm->tm_year = readb(base + S3C2410_RTCYEAR);
--	rtc_tm->tm_sec  = readb(base + S3C2410_RTCSEC);
-+	rtc_tm->tm_min  = readb(info->base + S3C2410_RTCMIN);
-+	rtc_tm->tm_hour = readb(info->base + S3C2410_RTCHOUR);
-+	rtc_tm->tm_mday = readb(info->base + S3C2410_RTCDATE);
-+	rtc_tm->tm_mon  = readb(info->base + S3C2410_RTCMON);
-+	rtc_tm->tm_year = readb(info->base + S3C2410_RTCYEAR);
-+	rtc_tm->tm_sec  = readb(info->base + S3C2410_RTCSEC);
- 
- 	/* the only way to work out whether the system was mid-update
- 	 * when we read it is to check the second counter, and if it
-@@ -207,15 +220,19 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
+ 	rtc_tm->tm_min  = readb(info->base + S3C2410_RTCMIN);
+ 	rtc_tm->tm_hour = readb(info->base + S3C2410_RTCHOUR);
+@@ -191,6 +208,8 @@ static int s3c_rtc_gettime(struct device *dev, struct rtc_time *rtc_tm)
  
  	rtc_tm->tm_mon -= 1;
  
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
-+
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
+ 
  	return rtc_valid_tm(rtc_tm);
- }
- 
- static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
- {
--	void __iomem *base = s3c_rtc_base;
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 	int year = tm->tm_year - 100;
- 
-+	if (!info->base)
-+		return -EINVAL;
-+
- 	dev_dbg(dev, "set time %04d.%02d.%02d %02d:%02d:%02d\n",
- 		 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
- 		 tm->tm_hour, tm->tm_min, tm->tm_sec);
-@@ -227,33 +244,38 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
- 		return -EINVAL;
+@@ -216,6 +235,8 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
  	}
  
--	clk_enable(rtc_clk);
--	writeb(bin2bcd(tm->tm_sec),  base + S3C2410_RTCSEC);
--	writeb(bin2bcd(tm->tm_min),  base + S3C2410_RTCMIN);
--	writeb(bin2bcd(tm->tm_hour), base + S3C2410_RTCHOUR);
--	writeb(bin2bcd(tm->tm_mday), base + S3C2410_RTCDATE);
--	writeb(bin2bcd(tm->tm_mon + 1), base + S3C2410_RTCMON);
--	writeb(bin2bcd(year), base + S3C2410_RTCYEAR);
--	clk_disable(rtc_clk);
-+	clk_enable(info->rtc_clk);
-+
-+	writeb(bin2bcd(tm->tm_sec),  info->base + S3C2410_RTCSEC);
-+	writeb(bin2bcd(tm->tm_min),  info->base + S3C2410_RTCMIN);
-+	writeb(bin2bcd(tm->tm_hour), info->base + S3C2410_RTCHOUR);
-+	writeb(bin2bcd(tm->tm_mday), info->base + S3C2410_RTCDATE);
-+	writeb(bin2bcd(tm->tm_mon + 1), info->base + S3C2410_RTCMON);
-+	writeb(bin2bcd(year), info->base + S3C2410_RTCYEAR);
-+
-+	clk_disable(info->rtc_clk);
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 
+ 	writeb(bin2bcd(tm->tm_sec),  info->base + S3C2410_RTCSEC);
+ 	writeb(bin2bcd(tm->tm_min),  info->base + S3C2410_RTCMIN);
+@@ -224,6 +245,8 @@ static int s3c_rtc_settime(struct device *dev, struct rtc_time *tm)
+ 	writeb(bin2bcd(tm->tm_mon + 1), info->base + S3C2410_RTCMON);
+ 	writeb(bin2bcd(year), info->base + S3C2410_RTCYEAR);
+ 
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
  	return 0;
- }
+@@ -239,6 +262,9 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		return -EINVAL;
  
- static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
- {
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 	struct rtc_time *alm_tm = &alrm->time;
--	void __iomem *base = s3c_rtc_base;
- 	unsigned int alm_en;
- 
--	clk_enable(rtc_clk);
--	alm_tm->tm_sec  = readb(base + S3C2410_ALMSEC);
--	alm_tm->tm_min  = readb(base + S3C2410_ALMMIN);
--	alm_tm->tm_hour = readb(base + S3C2410_ALMHOUR);
--	alm_tm->tm_mon  = readb(base + S3C2410_ALMMON);
--	alm_tm->tm_mday = readb(base + S3C2410_ALMDATE);
--	alm_tm->tm_year = readb(base + S3C2410_ALMYEAR);
-+	if (!info->base)
-+		return -EINVAL;
- 
--	alm_en = readb(base + S3C2410_RTCALM);
-+	clk_enable(info->rtc_clk);
-+	alm_tm->tm_sec  = readb(info->base + S3C2410_ALMSEC);
-+	alm_tm->tm_min  = readb(info->base + S3C2410_ALMMIN);
-+	alm_tm->tm_hour = readb(info->base + S3C2410_ALMHOUR);
-+	alm_tm->tm_mon  = readb(info->base + S3C2410_ALMMON);
-+	alm_tm->tm_mday = readb(info->base + S3C2410_ALMDATE);
-+	alm_tm->tm_year = readb(info->base + S3C2410_ALMYEAR);
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
 +
-+	alm_en = readb(info->base + S3C2410_RTCALM);
- 
- 	alrm->enabled = (alm_en & S3C2410_RTCALM_ALMEN) ? 1 : 0;
- 
-@@ -297,65 +319,73 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	alm_tm->tm_sec  = readb(info->base + S3C2410_ALMSEC);
+ 	alm_tm->tm_min  = readb(info->base + S3C2410_ALMMIN);
+ 	alm_tm->tm_hour = readb(info->base + S3C2410_ALMHOUR);
+@@ -290,7 +316,10 @@ static int s3c_rtc_getalarm(struct device *dev, struct rtc_wkalrm *alrm)
  	else
  		alm_tm->tm_year = -1;
  
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
++
  	return 0;
  }
  
- static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
- {
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 	struct rtc_time *tm = &alrm->time;
--	void __iomem *base = s3c_rtc_base;
- 	unsigned int alrm_en;
+@@ -304,6 +333,9 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 		return -EINVAL;
  
--	clk_enable(rtc_clk);
-+	if (!info->base)
-+		return -EINVAL;
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
 +
-+	clk_enable(info->rtc_clk);
  	dev_dbg(dev, "s3c_rtc_setalarm: %d, %04d.%02d.%02d %02d:%02d:%02d\n",
  		 alrm->enabled,
  		 1900 + tm->tm_year, tm->tm_mon + 1, tm->tm_mday,
- 		 tm->tm_hour, tm->tm_min, tm->tm_sec);
- 
--	alrm_en = readb(base + S3C2410_RTCALM) & S3C2410_RTCALM_ALMEN;
--	writeb(0x00, base + S3C2410_RTCALM);
-+	alrm_en = readb(info->base + S3C2410_RTCALM) & S3C2410_RTCALM_ALMEN;
-+	writeb(0x00, info->base + S3C2410_RTCALM);
- 
- 	if (tm->tm_sec < 60 && tm->tm_sec >= 0) {
- 		alrm_en |= S3C2410_RTCALM_SECEN;
--		writeb(bin2bcd(tm->tm_sec), base + S3C2410_ALMSEC);
-+		writeb(bin2bcd(tm->tm_sec), info->base + S3C2410_ALMSEC);
- 	}
- 
- 	if (tm->tm_min < 60 && tm->tm_min >= 0) {
- 		alrm_en |= S3C2410_RTCALM_MINEN;
--		writeb(bin2bcd(tm->tm_min), base + S3C2410_ALMMIN);
-+		writeb(bin2bcd(tm->tm_min), info->base + S3C2410_ALMMIN);
- 	}
- 
- 	if (tm->tm_hour < 24 && tm->tm_hour >= 0) {
- 		alrm_en |= S3C2410_RTCALM_HOUREN;
--		writeb(bin2bcd(tm->tm_hour), base + S3C2410_ALMHOUR);
-+		writeb(bin2bcd(tm->tm_hour), info->base + S3C2410_ALMHOUR);
- 	}
- 
- 	dev_dbg(dev, "setting S3C2410_RTCALM to %08x\n", alrm_en);
- 
--	writeb(alrm_en, base + S3C2410_RTCALM);
-+	writeb(alrm_en, info->base + S3C2410_RTCALM);
+@@ -333,6 +365,8 @@ static int s3c_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
  
  	s3c_rtc_setaie(dev, alrm->enabled);
  
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
-+
- 	return 0;
- }
- 
- static int s3c_rtc_proc(struct device *dev, struct seq_file *seq)
- {
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 	unsigned int ticnt;
- 
--	clk_enable(rtc_clk);
--	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
--		ticnt = readw(s3c_rtc_base + S3C2410_RTCCON);
-+	if (!info->base)
-+		return -EINVAL;
-+
-+	clk_enable(info->rtc_clk);
-+	if (info->cpu_type == TYPE_S3C64XX) {
-+		ticnt = readw(info->base + S3C2410_RTCCON);
- 		ticnt &= S3C64XX_RTCCON_TICEN;
- 	} else {
--		ticnt = readb(s3c_rtc_base + S3C2410_TICNT);
-+		ticnt = readb(info->base + S3C2410_TICNT);
- 		ticnt &= S3C2410_TICNT_ENABLE;
- 	}
- 
- 	seq_printf(seq, "periodic_IRQ\t: %s\n", ticnt  ? "yes" : "no");
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
- 	return 0;
- }
- 
-@@ -368,63 +398,64 @@ static const struct rtc_class_ops s3c_rtcops = {
- 	.alarm_irq_enable = s3c_rtc_setaie,
- };
- 
--static void s3c_rtc_enable(struct platform_device *pdev, int en)
-+static void s3c_rtc_enable(struct s3c_rtc *info, int en)
- {
--	void __iomem *base = s3c_rtc_base;
- 	unsigned int tmp;
- 
--	if (s3c_rtc_base == NULL)
-+	if (!info->base)
- 		return;
- 
--	clk_enable(rtc_clk);
-+	clk_enable(info->rtc_clk);
- 	if (!en) {
--		tmp = readw(base + S3C2410_RTCCON);
--		if (s3c_rtc_cpu_type == TYPE_S3C64XX)
-+		tmp = readw(info->base + S3C2410_RTCCON);
-+		if (info->cpu_type == TYPE_S3C64XX)
- 			tmp &= ~S3C64XX_RTCCON_TICEN;
- 		tmp &= ~S3C2410_RTCCON_RTCEN;
--		writew(tmp, base + S3C2410_RTCCON);
-+		writew(tmp, info->base + S3C2410_RTCCON);
- 
--		if (s3c_rtc_cpu_type != TYPE_S3C64XX) {
--			tmp = readb(base + S3C2410_TICNT);
-+		if (info->cpu_type != TYPE_S3C64XX) {
-+			tmp = readb(info->base + S3C2410_TICNT);
- 			tmp &= ~S3C2410_TICNT_ENABLE;
--			writeb(tmp, base + S3C2410_TICNT);
-+			writeb(tmp, info->base + S3C2410_TICNT);
- 		}
- 	} else {
- 		/* re-enable the device, and check it is ok */
- 
--		if ((readw(base+S3C2410_RTCCON) & S3C2410_RTCCON_RTCEN) == 0) {
--			dev_info(&pdev->dev, "rtc disabled, re-enabling\n");
-+		if ((readw(info->base + S3C2410_RTCCON) & S3C2410_RTCCON_RTCEN) == 0) {
-+			dev_info(info->dev, "rtc disabled, re-enabling\n");
- 
--			tmp = readw(base + S3C2410_RTCCON);
-+			tmp = readw(info->base + S3C2410_RTCCON);
- 			writew(tmp | S3C2410_RTCCON_RTCEN,
--				base + S3C2410_RTCCON);
-+				info->base + S3C2410_RTCCON);
- 		}
- 
--		if ((readw(base + S3C2410_RTCCON) & S3C2410_RTCCON_CNTSEL)) {
--			dev_info(&pdev->dev, "removing RTCCON_CNTSEL\n");
-+		if ((readw(info->base + S3C2410_RTCCON) & S3C2410_RTCCON_CNTSEL)) {
-+			dev_info(info->dev, "removing RTCCON_CNTSEL\n");
- 
--			tmp = readw(base + S3C2410_RTCCON);
-+			tmp = readw(info->base + S3C2410_RTCCON);
- 			writew(tmp & ~S3C2410_RTCCON_CNTSEL,
--				base + S3C2410_RTCCON);
-+				info->base + S3C2410_RTCCON);
- 		}
- 
--		if ((readw(base + S3C2410_RTCCON) & S3C2410_RTCCON_CLKRST)) {
--			dev_info(&pdev->dev, "removing RTCCON_CLKRST\n");
-+		if ((readw(info->base + S3C2410_RTCCON) & S3C2410_RTCCON_CLKRST)) {
-+			dev_info(info->dev, "removing RTCCON_CLKRST\n");
- 
--			tmp = readw(base + S3C2410_RTCCON);
-+			tmp = readw(info->base + S3C2410_RTCCON);
- 			writew(tmp & ~S3C2410_RTCCON_CLKRST,
--				base + S3C2410_RTCCON);
-+				info->base + S3C2410_RTCCON);
- 		}
- 	}
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
- }
- 
--static int s3c_rtc_remove(struct platform_device *dev)
-+static int s3c_rtc_remove(struct platform_device *pdev)
- {
--	s3c_rtc_setaie(&dev->dev, 0);
-+	struct s3c_rtc *info = platform_get_drvdata(pdev);
- 
--	clk_unprepare(rtc_clk);
--	rtc_clk = NULL;
-+	s3c_rtc_setaie(info->dev, 0);
-+
-+	clk_unprepare(info->rtc_clk);
-+	info->rtc_clk = NULL;
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
  	return 0;
+@@ -346,10 +380,14 @@ static int s3c_rtc_proc(struct device *dev, struct seq_file *seq)
+ 		return -EINVAL;
+ 
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 
+ 	if (info->data->enable_tick)
+ 		info->data->enable_tick(info, seq);
+ 
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
+ 
+ 	return 0;
+@@ -369,6 +407,8 @@ static void s3c24xx_rtc_enable(struct s3c_rtc *info)
+ 	unsigned int con, tmp;
+ 
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 
+ 	con = readw(info->base + S3C2410_RTCCON);
+ 	/* re-enable the device, and check it is ok */
+@@ -396,6 +436,8 @@ static void s3c24xx_rtc_enable(struct s3c_rtc *info)
+ 			info->base + S3C2410_RTCCON);
+ 	}
+ 
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  }
-@@ -447,73 +478,85 @@ static inline int s3c_rtc_get_driver_data(struct platform_device *pdev)
  
- static int s3c_rtc_probe(struct platform_device *pdev)
- {
--	struct rtc_device *rtc;
-+	struct s3c_rtc *info = NULL;
- 	struct rtc_time rtc_tm;
- 	struct resource *res;
- 	int ret;
- 	int tmp;
+@@ -404,6 +446,8 @@ static void s3c24xx_rtc_disable(struct s3c_rtc *info)
+ 	unsigned int con;
  
--	dev_dbg(&pdev->dev, "%s: probe=%p\n", __func__, pdev);
-+	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
  
- 	/* find the IRQs */
--
--	s3c_rtc_tickno = platform_get_irq(pdev, 1);
--	if (s3c_rtc_tickno < 0) {
-+	info->irq_tick = platform_get_irq(pdev, 1);
-+	if (info->irq_tick < 0) {
- 		dev_err(&pdev->dev, "no irq for rtc tick\n");
--		return s3c_rtc_tickno;
-+		return info->irq_tick;
+ 	con = readw(info->base + S3C2410_RTCCON);
+ 	con &= ~S3C2410_RTCCON_RTCEN;
+@@ -413,6 +457,8 @@ static void s3c24xx_rtc_disable(struct s3c_rtc *info)
+ 	con &= ~S3C2410_TICNT_ENABLE;
+ 	writeb(con, info->base + S3C2410_TICNT);
+ 
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
+ }
+ 
+@@ -421,12 +467,16 @@ static void s3c6410_rtc_disable(struct s3c_rtc *info)
+ 	unsigned int con;
+ 
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 
+ 	con = readw(info->base + S3C2410_RTCCON);
+ 	con &= ~S3C64XX_RTCCON_TICEN;
+ 	con &= ~S3C2410_RTCCON_RTCEN;
+ 	writew(con, info->base + S3C2410_RTCCON);
+ 
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
+ }
+ 
+@@ -498,11 +548,19 @@ static int s3c_rtc_probe(struct platform_device *pdev)
+ 
+ 	info->rtc_clk = devm_clk_get(&pdev->dev, "rtc");
+ 	if (IS_ERR(info->rtc_clk)) {
+-		dev_err(&pdev->dev, "failed to find rtc clock source\n");
++		dev_err(&pdev->dev, "failed to find rtc clock\n");
+ 		return PTR_ERR(info->rtc_clk);
  	}
+ 	clk_prepare_enable(info->rtc_clk);
  
--	s3c_rtc_alarmno = platform_get_irq(pdev, 0);
--	if (s3c_rtc_alarmno < 0) {
-+	info->dev = &pdev->dev;
-+	info->cpu_type = s3c_rtc_get_driver_data(pdev);
-+	spin_lock_init(&info->pie_lock);
-+	spin_lock_init(&info->alarm_clk_lock);
++	info->rtc_src_clk = devm_clk_get(&pdev->dev, "rtc_src");
++	if (IS_ERR(info->rtc_src_clk)) {
++		dev_err(&pdev->dev, "failed to find rtc source clock\n");
++		return PTR_ERR(info->rtc_src_clk);
++	}
++	clk_prepare_enable(info->rtc_src_clk);
 +
-+	platform_set_drvdata(pdev, info);
 +
-+	info->irq_alarm = platform_get_irq(pdev, 0);
-+	if (info->irq_alarm < 0) {
- 		dev_err(&pdev->dev, "no irq for alarm\n");
--		return s3c_rtc_alarmno;
-+		return info->irq_alarm;
- 	}
- 
- 	dev_dbg(&pdev->dev, "s3c2410_rtc: tick irq %d, alarm irq %d\n",
--		 s3c_rtc_tickno, s3c_rtc_alarmno);
-+		 info->irq_tick, info->irq_alarm);
- 
- 	/* get the memory region */
--
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	s3c_rtc_base = devm_ioremap_resource(&pdev->dev, res);
--	if (IS_ERR(s3c_rtc_base))
--		return PTR_ERR(s3c_rtc_base);
-+	info->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(info->base))
-+		return PTR_ERR(info->base);
- 
--	rtc_clk = devm_clk_get(&pdev->dev, "rtc");
--	if (IS_ERR(rtc_clk)) {
-+	info->rtc_clk = devm_clk_get(&pdev->dev, "rtc");
-+	if (IS_ERR(info->rtc_clk)) {
- 		dev_err(&pdev->dev, "failed to find rtc clock source\n");
--		ret = PTR_ERR(rtc_clk);
--		rtc_clk = NULL;
--		return ret;
-+		return PTR_ERR(info->rtc_clk);
- 	}
--
--	clk_prepare_enable(rtc_clk);
-+	clk_prepare_enable(info->rtc_clk);
- 
  	/* check to see if everything is setup correctly */
--
--	s3c_rtc_enable(pdev, 1);
-+	s3c_rtc_enable(info, 1);
+ 	if (info->data->enable)
+ 		info->data->enable(info);
+@@ -556,6 +614,8 @@ static int s3c_rtc_probe(struct platform_device *pdev)
  
- 	dev_dbg(&pdev->dev, "s3c2410_rtc: RTCCON=%02x\n",
--		 readw(s3c_rtc_base + S3C2410_RTCCON));
-+		 readw(info->base + S3C2410_RTCCON));
+ 	s3c_rtc_setfreq(info, 1);
  
- 	device_init_wakeup(&pdev->dev, 1);
- 
- 	/* register RTC and exit */
--
--	rtc = devm_rtc_device_register(&pdev->dev, "s3c", &s3c_rtcops,
-+	info->rtc = devm_rtc_device_register(&pdev->dev, "s3c", &s3c_rtcops,
- 				  THIS_MODULE);
--
--	if (IS_ERR(rtc)) {
-+	if (IS_ERR(info->rtc)) {
- 		dev_err(&pdev->dev, "cannot attach rtc\n");
--		ret = PTR_ERR(rtc);
-+		ret = PTR_ERR(info->rtc);
- 		goto err_nortc;
- 	}
- 
--	s3c_rtc_cpu_type = s3c_rtc_get_driver_data(pdev);
-+	ret = devm_request_irq(&pdev->dev, info->irq_alarm, s3c_rtc_alarmirq,
-+			  0,  "s3c2410-rtc alarm", info);
-+	if (ret) {
-+		dev_err(&pdev->dev, "IRQ%d error %d\n", info->irq_alarm, ret);
-+		goto err_nortc;
-+	}
- 
--	/* Check RTC Time */
-+	ret = devm_request_irq(&pdev->dev, info->irq_tick, s3c_rtc_tickirq,
-+			  0,  "s3c2410-rtc tick", info);
-+	if (ret) {
-+		dev_err(&pdev->dev, "IRQ%d error %d\n", info->irq_tick, ret);
-+		goto err_nortc;
-+	}
- 
--	s3c_rtc_gettime(NULL, &rtc_tm);
-+	/* Check RTC Time */
-+	s3c_rtc_gettime(&pdev->dev, &rtc_tm);
- 
- 	if (rtc_valid_tm(&rtc_tm)) {
- 		rtc_tm.tm_year	= 100;
-@@ -523,111 +566,90 @@ static int s3c_rtc_probe(struct platform_device *pdev)
- 		rtc_tm.tm_min	= 0;
- 		rtc_tm.tm_sec	= 0;
- 
--		s3c_rtc_settime(NULL, &rtc_tm);
-+		s3c_rtc_settime(&pdev->dev, &rtc_tm);
- 
- 		dev_warn(&pdev->dev, "warning: invalid RTC value so initializing it\n");
- 	}
- 
--	if (s3c_rtc_cpu_type != TYPE_S3C2410)
--		rtc->max_user_freq = 32768;
-+	if (info->cpu_type != TYPE_S3C2410)
-+		info->rtc->max_user_freq = 32768;
- 	else
--		rtc->max_user_freq = 128;
-+		info->rtc->max_user_freq = 128;
- 
--	if (s3c_rtc_cpu_type == TYPE_S3C2416 || s3c_rtc_cpu_type == TYPE_S3C2443) {
--		tmp = readw(s3c_rtc_base + S3C2410_RTCCON);
-+	if (info->cpu_type == TYPE_S3C2416 || info->cpu_type == TYPE_S3C2443) {
-+		tmp = readw(info->base + S3C2410_RTCCON);
- 		tmp |= S3C2443_RTCCON_TICSEL;
--		writew(tmp, s3c_rtc_base + S3C2410_RTCCON);
-+		writew(tmp, info->base + S3C2410_RTCCON);
- 	}
- 
--	platform_set_drvdata(pdev, rtc);
-+	s3c_rtc_setfreq(info, 1);
- 
--	s3c_rtc_setfreq(&pdev->dev, 1);
--
--	ret = devm_request_irq(&pdev->dev, s3c_rtc_alarmno, s3c_rtc_alarmirq,
--			  0,  "s3c2410-rtc alarm", rtc);
--	if (ret) {
--		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_alarmno, ret);
--		goto err_nortc;
--	}
--
--	ret = devm_request_irq(&pdev->dev, s3c_rtc_tickno, s3c_rtc_tickirq,
--			  0,  "s3c2410-rtc tick", rtc);
--	if (ret) {
--		dev_err(&pdev->dev, "IRQ%d error %d\n", s3c_rtc_tickno, ret);
--		goto err_nortc;
--	}
--
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
  	return 0;
+@@ -575,6 +635,8 @@ static int s3c_rtc_suspend(struct device *dev)
+ 	struct s3c_rtc *info = dev_get_drvdata(dev);
  
-  err_nortc:
--	s3c_rtc_enable(pdev, 0);
--	clk_disable_unprepare(rtc_clk);
-+	s3c_rtc_enable(info, 0);
-+	clk_disable_unprepare(info->rtc_clk);
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
  
- 	return ret;
- }
- 
- #ifdef CONFIG_PM_SLEEP
--/* RTC Power management control */
--
--static int ticnt_save, ticnt_en_save;
--static bool wake_en;
- 
- static int s3c_rtc_suspend(struct device *dev)
- {
--	struct platform_device *pdev = to_platform_device(dev);
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 
--	clk_enable(rtc_clk);
-+	clk_enable(info->rtc_clk);
  	/* save TICNT for anyone using periodic interrupts */
--	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
--		ticnt_en_save = readw(s3c_rtc_base + S3C2410_RTCCON);
--		ticnt_en_save &= S3C64XX_RTCCON_TICEN;
--		ticnt_save = readl(s3c_rtc_base + S3C2410_TICNT);
-+	if (info->cpu_type == TYPE_S3C64XX) {
-+		info->ticnt_en_save = readw(info->base + S3C2410_RTCCON);
-+		info->ticnt_en_save &= S3C64XX_RTCCON_TICEN;
-+		info->ticnt_save = readl(info->base + S3C2410_TICNT);
- 	} else {
--		ticnt_save = readb(s3c_rtc_base + S3C2410_TICNT);
-+		info->ticnt_save = readb(info->base + S3C2410_TICNT);
- 	}
--	s3c_rtc_enable(pdev, 0);
-+	s3c_rtc_enable(info, 0);
- 
--	if (device_may_wakeup(dev) && !wake_en) {
--		if (enable_irq_wake(s3c_rtc_alarmno) == 0)
--			wake_en = true;
-+	if (device_may_wakeup(dev) && !info->wake_en) {
-+		if (enable_irq_wake(info->irq_alarm) == 0)
-+			info->wake_en = true;
- 		else
+ 	if (info->data->save_tick_cnt)
+@@ -590,6 +652,8 @@ static int s3c_rtc_suspend(struct device *dev)
  			dev_err(dev, "enable_irq_wake failed\n");
  	}
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
+ 
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
  	return 0;
- }
+@@ -600,6 +664,8 @@ static int s3c_rtc_resume(struct device *dev)
+ 	struct s3c_rtc *info = dev_get_drvdata(dev);
  
- static int s3c_rtc_resume(struct device *dev)
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 
+ 	if (info->data->enable)
+ 		info->data->enable(info);
+@@ -612,6 +678,8 @@ static int s3c_rtc_resume(struct device *dev)
+ 		info->wake_en = false;
+ 	}
+ 
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
+ 
+ 	return 0;
+@@ -622,7 +690,11 @@ static SIMPLE_DEV_PM_OPS(s3c_rtc_pm_ops, s3c_rtc_suspend, s3c_rtc_resume);
+ static void s3c24xx_rtc_irq(struct s3c_rtc *info, int mask)
  {
--	struct platform_device *pdev = to_platform_device(dev);
-+	struct s3c_rtc *info = dev_get_drvdata(dev);
- 	unsigned int tmp;
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 	rtc_update_irq(info->rtc, 1, RTC_AF | RTC_IRQF);
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
--	clk_enable(rtc_clk);
--	s3c_rtc_enable(pdev, 1);
--	if (s3c_rtc_cpu_type == TYPE_S3C64XX) {
--		writel(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
--		if (ticnt_en_save) {
--			tmp = readw(s3c_rtc_base + S3C2410_RTCCON);
--			writew(tmp | ticnt_en_save,
--					s3c_rtc_base + S3C2410_RTCCON);
-+	clk_enable(info->rtc_clk);
-+	s3c_rtc_enable(info, 1);
-+	if (info->cpu_type == TYPE_S3C64XX) {
-+		writel(info->ticnt_save, info->base + S3C2410_TICNT);
-+		if (info->ticnt_en_save) {
-+			tmp = readw(info->base + S3C2410_RTCCON);
-+			writew(tmp | info->ticnt_en_save,
-+					info->base + S3C2410_RTCCON);
- 		}
- 	} else {
--		writeb(ticnt_save, s3c_rtc_base + S3C2410_TICNT);
-+		writeb(info->ticnt_save, info->base + S3C2410_TICNT);
- 	}
+ 	s3c_rtc_alarm_clk_enable(info, false);
+@@ -631,8 +703,12 @@ static void s3c24xx_rtc_irq(struct s3c_rtc *info, int mask)
+ static void s3c6410_rtc_irq(struct s3c_rtc *info, int mask)
+ {
+ 	clk_enable(info->rtc_clk);
++	if (info->data->needs_src_clk)
++		clk_enable(info->rtc_src_clk);
+ 	rtc_update_irq(info->rtc, 1, RTC_AF | RTC_IRQF);
+ 	writeb(mask, info->base + S3C2410_INTP);
++	if (info->data->needs_src_clk)
++		clk_disable(info->rtc_src_clk);
+ 	clk_disable(info->rtc_clk);
  
--	if (device_may_wakeup(dev) && wake_en) {
--		disable_irq_wake(s3c_rtc_alarmno);
--		wake_en = false;
-+	if (device_may_wakeup(dev) && info->wake_en) {
-+		disable_irq_wake(info->irq_alarm);
-+		info->wake_en = false;
- 	}
--	clk_disable(rtc_clk);
-+	clk_disable(info->rtc_clk);
+ 	s3c_rtc_alarm_clk_enable(info, false);
+@@ -798,6 +874,18 @@ static struct s3c_rtc_data const s3c6410_rtc_data = {
+ 	.disable		= s3c6410_rtc_disable,
+ };
  
- 	return 0;
- }
- #endif
--
- static SIMPLE_DEV_PM_OPS(s3c_rtc_pm_ops, s3c_rtc_suspend, s3c_rtc_resume);
- 
- #ifdef CONFIG_OF
++static struct s3c_rtc_data const exynos3250_rtc_data = {
++	.max_user_freq		= 32768,
++	.needs_src_clk		= true,
++	.irq_handler		= s3c6410_rtc_irq,
++	.set_freq		= s3c6410_rtc_setfreq,
++	.enable_tick		= s3c6410_rtc_enable_tick,
++	.save_tick_cnt		= s3c6410_rtc_save_tick_cnt,
++	.restore_tick_cnt	= s3c6410_rtc_restore_tick_cnt,
++	.enable			= s3c24xx_rtc_enable,
++	.disable		= s3c6410_rtc_disable,
++};
++
+ static const struct of_device_id s3c_rtc_dt_match[] = {
+ 	{
+ 		.compatible = "samsung,s3c2410-rtc",
+@@ -811,6 +899,9 @@ static const struct of_device_id s3c_rtc_dt_match[] = {
+ 	}, {
+ 		.compatible = "samsung,s3c6410-rtc",
+ 		.data = (void *)&s3c6410_rtc_data,
++	}, {
++		.compatible = "samsung,exynos3250-rtc",
++		.data = (void *)&exynos3250_rtc_data,
+ 	},
+ 	{ /* sentinel */ },
+ };
 -- 
 1.8.0
 
