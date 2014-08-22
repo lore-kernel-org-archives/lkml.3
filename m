@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604AbaHVCrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 22:47:11 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50535 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562AbaHVCrK (ORCPT
+	id S1755728AbaHVCsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 22:48:17 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:50262 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629AbaHVCsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 22:47:10 -0400
-Date: Thu, 21 Aug 2014 19:46:56 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [V0 PATCH 1/2] AMD-PVH: set EFER.NX and EFER.SCE
- for the boot vcpu
-Message-ID: <20140821194656.4eea5654@mantra.us.oracle.com>
-In-Reply-To: <20140822013904.GA20329@laptop.dumpdata.com>
-References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-	<1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
-	<20140822013904.GA20329@laptop.dumpdata.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Thu, 21 Aug 2014 22:48:15 -0400
+Message-ID: <53F6AF66.10204@linux.vnet.ibm.com>
+Date: Fri, 22 Aug 2014 08:18:06 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Shilpasri G Bhat <shilpabhatppc@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH] cpufreq: powernv: Register the driver with reboot notifier
+References: <1408015178-21745-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com> <CAKohponDNHYrD9b==cp+pVmAi2ygA9-HcLZWqr4w3DDivB=-Ng@mail.gmail.com> <53F57E51.4060200@gmail.com> <CAKohpon8ANWoy52B=_nSuNyHALrsQOLX4cA+690E=CifnVRFtg@mail.gmail.com>
+In-Reply-To: <CAKohpon8ANWoy52B=_nSuNyHALrsQOLX4cA+690E=CifnVRFtg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082202-6688-0000-0000-00000432FEAF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 21 Aug 2014 21:39:04 -0400
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+Hi Viresh,
 
-> On Wed, Aug 20, 2014 at 07:16:39PM -0700, Mukesh Rathor wrote:
-> > On AMD, NX feature must be enabled in the efer for NX to be honored
-> > in the pte entries, otherwise protection fault. We also set SC for
-> > system calls to be enabled.
+On 08/21/2014 11:56 AM, Viresh Kumar wrote:
+> On 21 August 2014 10:36, Shilpasri G Bhat <shilpabhatppc@gmail.com> wrote:
+>> The intention here is stop the cpufreq governor and then to set the cpus to
+>> nominal frequency so as to ensure that the frequency won't be changed later.
+>>
+>> The .suspend callback of the driver is not called during reboot/kexec.
+>> So we need an explicit reboot notifier to call cpufreq-suspend() to
+>> suffice the requirement.
 > 
-> How come we don't need to do that for Intel (that is set the NX bit)?
-> Could you include the explanation here please?
-
-Intel doesn't have EFER.NX bit. The SC bit is being set in xen, but it
-doesn't need to be, and I'm going to submit a patch to undo it.
-
+> Hi Shilpa,
 > 
-> > 
-> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > ---
-> >  arch/x86/xen/enlighten.c | 12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> > 
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index c0cb11f..4af512d 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -1499,6 +1499,17 @@ void __ref xen_pvh_secondary_vcpu_init(int
-> > cpu) xen_pvh_set_cr_flags(cpu);
-> >  }
-> >  
-> > +/* This is done in secondary_startup_64 for hvm guests. */
-> > +static void __init xen_configure_efer(void)
-> > +{
-> > +	u64 efer;
-> > +
-> > +	rdmsrl(MSR_EFER, efer);
-> > +	efer |= EFER_SCE;
-> > +	efer |= (cpuid_edx(0x80000001) & (1 << 20)) ? EFER_NX : 0;
+> No, we can't allow any platform driver to misuse cpufreq_suspend().
+> Platform drivers aren't *allowed* to call this routine.
+
+At the moment this looks like the best way forward. We need to do this
+cleanly by ensuring that we stop the governors and then call into the
+driver to deal with the cpu frequency in its own way during reboot. The
+best way to do this would be by calling this routine. Either this or
+cpufreq_suspend() should be called in the reboot path generically. The
+latter might not be an enticing option for other platforms.
+
+Regards
+Preeti U Murthy
 > 
-> Ahem? #defines for these magic values please?
+> Now the deal is how do we move to nominal frequency on reboot..
+> @Rafael: Any suggestions? How do we ensure that governors
+> are stopped on these notifiers, or if there is some other solution here?
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
-Linux uses these directly all over the code as they are set in stone
-pretty much, and I didn't find any #defines. See cpu/common.c for one of
-the places. Also see secondary_startup_64, and others...
-
-> Or could you use 'boot_cpu_has'?
-
-Nop, it's not initialized at this point.
-
-thanks,
-Mukesh
