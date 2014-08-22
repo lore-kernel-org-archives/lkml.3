@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753AbaHVBSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:18:16 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:34182 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538AbaHVBSP (ORCPT
+	id S1755618AbaHVB0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:26:38 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54077 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754902AbaHVB0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:18:15 -0400
-Date: Thu, 21 Aug 2014 18:18:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Brown <broonie@kernel.org>
+	Thu, 21 Aug 2014 21:26:37 -0400
+Date: Thu, 21 Aug 2014 20:26:22 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
 Cc: atull@opensource.altera.com, jdelvare@suse.de, lm-sensors@lm-sensors.org,
         lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
         delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
         yvanderv@opensource.altera.com
-Subject: Re: [PATCH 2/2] pmbus: ltc2978: add regulator gating
-Message-ID: <20140822011810.GA17461@roeck-us.net>
+Message-ID: <20140822012622.GS24407@sirena.org.uk>
 References: <1408659686-29106-1-git-send-email-atull@opensource.altera.com>
  <1408659686-29106-3-git-send-email-atull@opensource.altera.com>
  <20140822003650.GQ24407@sirena.org.uk>
+ <20140822011810.GA17461@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eV6hq+iIxLRNwbYS"
 Content-Disposition: inline
-In-Reply-To: <20140822003650.GQ24407@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140822011810.GA17461@roeck-us.net>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 208.59.64.2
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] pmbus: ltc2978: add regulator gating
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 07:36:50PM -0500, Mark Brown wrote:
-> On Thu, Aug 21, 2014 at 05:21:26PM -0500, atull@opensource.altera.com wrote:
-> 
-> > +config SENSORS_LTC2978_REGULATOR
-> > +	boolean "Regulator support for LTC2974, LTC2978, LTC3880, and LTC3883"
-> > +	default n
-> 
-> No need to say default n here, it's the default default.
-> 
-> > +	depends on SENSORS_LTC2978
-> > +	select REGULATOR
-> 
-> I'd expect a depends here.
-> 
-> > +#include <linux/regulator/driver.h>
-> > +#include <linux/regulator/machine.h>
-> 
-> If you need machine.h that's suspicious...  why do you need it?
-> 
-> > +static int ltc2978_write_pmbus_operation(struct regulator_dev *rdev, u8 value)
-> > +{
-> > +	struct device *dev = rdev_get_dev(rdev);
-> > +	struct i2c_client *client = to_i2c_client(dev->parent);
-> > +	int ret;
-> > +
-> > +	ret = pmbus_set_page(client, 0xff);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	return i2c_smbus_write_byte_data(client, PMBUS_OPERATION, value);
-> > +}
-> 
-> This all looks very much like pmbus could use regmap and then the regmap
-> helpers.  I'd not insist on it though.  What I would however suggest is
 
-Not unless regmap got extended recently to support quick, byte, and word
-smbus accesses at the same time.
+--eV6hq+iIxLRNwbYS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Guenter
+On Thu, Aug 21, 2014 at 06:18:10PM -0700, Guenter Roeck wrote:
+> On Thu, Aug 21, 2014 at 07:36:50PM -0500, Mark Brown wrote:
+> > On Thu, Aug 21, 2014 at 05:21:26PM -0500, atull@opensource.altera.com wrote:
 
-> that these functions should all be helpers which read the specific
-> page, addresses and bits to write from the driver structure - I bet the
-> code is going to be identical for most pmbus using regulators and so it
-> makes sense to share it like we do with the generic regmap functions.
-> 
-> That means that any good practice can be deployed more easily and any
-> API updates only need to update the helpers.
-> 
-> > +static struct regulator_init_data ltc2978_regulator_init = {
-> > +	.constraints = {
-> > +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-> > +	},
-> > +};
-> 
-> You should not be forcing this on, you don't know what's safe on any
-> given board.  Allow the board to specify constraints then it has
-> control.
+> > This all looks very much like pmbus could use regmap and then the regmap
+> > helpers.  I'd not insist on it though.  What I would however suggest is
 
+> Not unless regmap got extended recently to support quick, byte, and word
+> smbus accesses at the same time.
 
+Depending on how you decide which it quite possibly does - if it's based
+on the register number that'd work.
+
+--eV6hq+iIxLRNwbYS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT9pw7AAoJELSic+t+oim9I8YP/3fxE8mTRYRNcShnaQi0RNox
+SQV3BtIGhKtEfQo7bZTvynT27JeKeQoh0JCU9SqdDbpLKrqgbP/CAqd/E6z97xxT
+tCF+wB+iHlHG1Xd4uMuoHzdbUEo94zlm3TA8hwkqK0lrz7fRl8Q6K08DBkzCuT9p
++Xyez0epnYMzTkYriE1gQqbm7My4uRZ3MgDRpBnjZ03ljnyVzdoZvijgLks3R2wD
+nnxWG2Af2gIBcbtcpwjeCrVRq0qRktUj6bsORqH6eIhbUqGECtfhXC1CpzZaPruu
+3g1nRy1bds5mgS7yHS0jzxyJR9FIlZlIAGarGNP8oJ1FRm/LERGpQ1UMp29WQXdg
++akTj3M3b4bm2LR1pzWocg3cEU5UMsynmKNUKkI4n6UequFiqgc3o59SYl+/Z2Wi
+AZfHSoN+jHAedMA2B9J1qSHHT1ZX9U3jqXbi+Np+FTuk84aZjfOSdD9do3p5/Y/q
+cMAZBHo6+Ky0sTr7E3+/QxStaZfYnhE3Ib5E7ScCfyQQ7Win1pIiIXzgoZh7/ieD
+i3naTY535FqQ5fv1mY6nl218YfkSj+ZPNwDInxq3YaJk/DEt9DGcJ0Bj3zqDmD4N
+t9rSgMRCPy8LeAdPHFj+ylWIIoDS+Zbx6PQVpLl8EuZJ9zaAWh7eh4GaY5Ppw70o
+q1XoMED8yzEGf1RmP/g4
+=a4Kt
+-----END PGP SIGNATURE-----
+
+--eV6hq+iIxLRNwbYS--
