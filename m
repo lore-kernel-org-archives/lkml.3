@@ -1,95 +1,460 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652AbaHVB62 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:58:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4464 "EHLO mx1.redhat.com"
+	id S1755712AbaHVCAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 22:00:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18539 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755604AbaHVB60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:58:26 -0400
-Date: Thu, 21 Aug 2014 21:58:22 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: chai wen <chaiw.fnst@cn.fujitsu.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] softlockup: make detector be aware of task switch of
- processes hogging cpu
-Message-ID: <20140822015822.GZ49576@redhat.com>
-References: <20140821023051.GO49576@redhat.com>
- <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753227AbaHVCAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 22:00:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="375556040"
+Message-ID: <1408672831.3315.35.camel@rzhang1-toshiba>
+Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device
+ objects
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Date: Fri, 22 Aug 2014 10:00:31 +0800
+In-Reply-To: <2188871.Tr0Kbz91aK@vostro.rjw.lan>
+References: <5487060.QsgluucUH4@vostro.rjw.lan>
+	 <1408622934.3315.8.camel@rzhang1-toshiba>
+	 <2188871.Tr0Kbz91aK@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 01:42:22PM +0800, chai wen wrote:
-> For now, soft lockup detector warns once for each case of process softlockup.
-> But the thread 'watchdog/n' may not always get the cpu at the time slot between
-> the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
+On Thu, 2014-08-21 at 19:10 +0200, Rafael J. Wysocki wrote:
+> On Thursday, August 21, 2014 08:08:54 PM Zhang Rui wrote:
+> > Hi, Rafael,
+> > 
+> > On Thu, 2014-08-21 at 06:04 +0200, Rafael J. Wysocki wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> An example would be two processes hogging the cpu.  Process A causes the
-> softlockup warning and is killed manually by a user.  Process B immediately
-> becomes the new process hogging the cpu preventing the softlockup code from
-> resetting the soft_watchdog_warn variable.
+> [cut]
 > 
-> This case is a false negative of "warn only once for a process", as there may
-> be a different process that is going to hog the cpu.  Resolve this by
-> saving/checking the task pointer of the hogging process and use that to reset
-> soft_watchdog_warn too.
+> > Note that I've just tested on my machine and it works well.
+> > I still need the bug reporter to check if the patch fixes bug 81511 or not.
 > 
-> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> The FUJ02B1 and FUJ02E3 devices in bug 81971 have the same problem and
+> they aren't motherboard devices.
 
-Acked-by: Don Zickus <dzickus@redhat.com>
+Right, but IMO, the rootcause of that bug is that
+1. the PNP id table in fujitsu-laptop driver was introduced for some
+reason, probably it is used as an indicator for module auto-loading, and
+nowadays, this is redundant because fujitsu-laptop driver probes ACPI
+device only, and the driver will be loaded if the ACPI device objects
+for FUJ02B1 and FUJ02E3 is created.
+2. This "redundant" PNP id table results in that those IDs are added to
+PNP ID list unnecessarily, and results in PNP device nodes for those
+devices are created unnecessarily.
 
-> ---
->  kernel/watchdog.c |   16 +++++++++++++++-
->  1 files changed, 15 insertions(+), 1 deletions(-)
+>   Yes, we need to convert that driver
+> to use a PNP driver structure or a platform device, but (1) we need a
+> -stable fix *first*
+
+I agree.
+
+>  and (2) the cases we already know about may not be
+> the only broken ones.
+
+Agree.
+But the issue addressed in your patch is that PNP scan handler blocks
+ACPI driver from being probed, right?
+So my question would be,
+1. If the id in PNP scan handler does not have a PNP driver, like the
+   FUJ02B1/FUJ02E3 issue, what do we need the id in PNP scan handler?
+   In fact, I think this is a good chance for us to cleanup the ACPI PNP
+   id list, as long as we can fix them in time.
+2. If the id in PNP scan handler has a PNP driver, should we allow both
+   PNP driver and ACPI driver loaded? I think PNP system driver is the
+   only case that makes us have to say yes, and what I'm trying to do
+   is to fix this in the following patch.
+
+Plus, IMO, your patch only fixes the PNP bus vs. ACPI bus issue. We
+still may get bug report complaining some *PLATFORM* driver stops to
+functional if the ACPI node has _CID PNP0C01/PNP0C02, sooner or later.
+right?
+
+thanks,
+rui
+
 > 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 0037db6..2e55620 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
->  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
->  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
->  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
-> +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
->  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
-> @@ -328,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  			return HRTIMER_RESTART;
->  
->  		/* only warn once */
-> -		if (__this_cpu_read(soft_watchdog_warn) == true)
-> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
-> +			/*
-> +			 * Handle the case where multiple processes are
-> +			 * causing softlockups but the duration is small
-> +			 * enough, the softlockup detector can not reset
-> +			 * itself in time.  Use task pointers to detect this.
-> +			 */
-> +			if (__this_cpu_read(softlockup_task_ptr_saved) !=
-> +			    current) {
-> +				__this_cpu_write(soft_watchdog_warn, false);
-> +				__touch_watchdog();
-> +			}
->  			return HRTIMER_RESTART;
-> +		}
->  
->  		if (softlockup_all_cpu_backtrace) {
->  			/* Prevent multiple soft-lockup reports if one cpu is already
-> @@ -345,6 +358,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  		pr_emerg("BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
->  			smp_processor_id(), duration,
->  			current->comm, task_pid_nr(current));
-> +		__this_cpu_write(softlockup_task_ptr_saved, current);
->  		print_modules();
->  		print_irqtrace_events(current);
->  		if (regs)
-> -- 
-> 1.7.1
+> > From c6c388728d08a6368f21dab61d6f0a940e0ea13a Mon Sep 17 00:00:00 2001
+> > From: Zhang Rui <rui.zhang@intel.com>
+> > Date: Thu, 21 Aug 2014 13:39:47 +0800
+> > Subject: [RFC PATCH] ACPI: introduce motherboard resource management
+> > 
+> > ACPI Devices with _HID/_CID PNP0C01/PNP0C02 represents that
+> > they have some motherboard resources that needs to be reserved.
+> > 
+> > We used to enumerated those devices to PNP bus and rely on
+> > PNP system driver to do resource reservation.
+> > But this mechanism does not work well nowadays as many devices
+> > not only represent motherboard resources, but also represent
+> > physical devices that need native drivers other than PNP system
+> > driver for the device to work. For example,
+> > 1) https://bugzilla.kernel.org/show_bug.cgi?id=46741,
+> >     Device (NIPM)
+> >     {
+> >         Name (_HID, EisaId ("IPI0001"))  // _HID: Hardware ID
+> >         Name (_CID, EisaId ("PNP0C01"))  // _CID: Compatible ID
+> >    the NIPM device has _CID PNP0C01 but it is an IPMI device.
+> >    PNP system driver blocks the PNP IPMI driver to probe.
 > 
+> That is a good reason for PNP0C01 to be dropped from acpi_pnp_device_ids[].
+> 
+> > 2) https://bugzilla.kernel.org/show_bug.cgi?id=81511
+> >         Device (IFFS)
+> >         {
+> >             Name (_HID, EisaId ("INT3392"))  // _HID: Hardware ID
+> >             Name (_CID, EisaId ("PNP0C02"))  // _CID: Compatible ID
+> >    the IFFS device has _CID PNP0C02, but it is an intel rapid start
+> >    device, which already has an ACPI driver at
+> >    drivers/platform/x86/intel-rst.c
+> 
+> And which should be a platform driver really.
+> 
+> > 3) a couple of machines, including the on in
+> >    https://bugzilla.kernel.org/show_bug.cgi?id=81511, has the AML code
+> >    like following
+> >         Device (PTID)
+> >         {
+> >             Name (_HID, EisaId ("INT340E"))  // _HID: Hardware ID
+> >             Name (_CID, EisaId ("PNP0C02"))  // _CID: Compatible ID
+> >    the PTID device has _CID PNP0C02, but it is also represents an
+> >    INT340E device, there is a platform bus driver for this device
+> >    which will be introduced by myself soon.
+> 
+> Again, that's a good reason for dropping PNP0C02 from acpi_pnp_device_ids[].
+> 
+> > In any of the above cases, the current code for managing PNP0C01/PNP0C02
+> > resources in Linux kernel is broken, because it either blocks the physical
+> > device driver on the same bus, or results in multiple drivers loaded for
+> > the same ACPI device node, which may also has some potential risks.
+> > 
+> > Thus, IMO, we need a clean way to handle those motherboard resources.
+> > Given that PNP0C01/PNP0C02 is more like an indicator for reserving the
+> > resources, this patch
+> > 1. does the resource reservation in ACPI code directly, with the same logic
+> >    and time point in drivers/pnp/quirks.c and drivers/pnp/system.c.
+> > 2. makes PNP0C01/PNP0C02 PNP id transparent to Linux devices and drivers,
+> >    thus PNP system driver becomes a no-op for ACPI enumerated devices.
+> > 
+> > This is just a draft patch, and I'd like to see if this is
+> > the right direction to go. Any comments are welcome.
+> > 
+> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> > ---
+> >  drivers/acpi/acpi_pnp.c |   3 -
+> >  drivers/acpi/scan.c     | 208 +++++++++++++++++++++++++++++++++++++++++++++++-
+> >  2 files changed, 204 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/acpi_pnp.c b/drivers/acpi/acpi_pnp.c
+> > index 1f8b204..a7deae5 100644
+> > --- a/drivers/acpi/acpi_pnp.c
+> > +++ b/drivers/acpi/acpi_pnp.c
+> > @@ -134,9 +134,6 @@ static const struct acpi_device_id acpi_pnp_device_ids[] = {
+> >  	{"FUJ02bf"},
+> >  	{"FUJ02B1"},
+> >  	{"FUJ02E3"},
+> > -	/* system */
+> > -	{"PNP0c02"},		/* General ID for reserving resources */
+> > -	{"PNP0c01"},		/* memory controller */
+> >  	/* rtc_cmos */
+> >  	{"PNP0b00"},
+> >  	{"PNP0b01"},
+> > diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> > index 0a817ad..674518b 100644
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -11,6 +11,7 @@
+> >  #include <linux/kthread.h>
+> >  #include <linux/dmi.h>
+> >  #include <linux/nls.h>
+> > +#include <linux/pci.h>
+> >  
+> >  #include <asm/pgtable.h>
+> >  
+> > @@ -1781,12 +1782,201 @@ static bool acpi_object_is_system_bus(acpi_handle handle)
+> >  	return false;
+> >  }
+> >  
+> > +static bool acpi_is_motherboard_resource(char *id)
+> > +{
+> > +	return !(strncmp(id, "PNP0C01", sizeof("PNP0C01")) &&
+> > +		 strncmp(id, "PNP0C02", sizeof("PNP0C02")));
+> > +}
+> 
+> Can we use __acpi_match_device() for that?
+> 
+> > +
+> > +static LIST_HEAD(acpi_motherboard_resource_list);
+> > +
+> > +struct acpi_motherboard_resource {
+> > +	acpi_handle handle;
+> > +	struct list_head node;
+> > +};
+> > +
+> > +static void acpi_record_motherboard_resource(acpi_handle handle)
+> > +{
+> > +	struct acpi_motherboard_resource *res;
+> > +
+> > +	res = kzalloc(sizeof(struct acpi_motherboard_resource), GFP_KERNEL);
+> > +	if (!res)
+> > +		return;
+> > +	res->handle = handle;
+> > +	list_add(&res->node, &acpi_motherboard_resource_list);
+> > +}
+> > +
+> > +static void reserve_range(struct acpi_device *device, struct resource *r, int port)
+> > +{
+> > +	char *regionid;
+> > +	resource_size_t start = r->start, end = r->end;
+> > +	struct resource *res;
+> > +	int result;
+> > +
+> > +	regionid = kmalloc(20, GFP_KERNEL);
+> > +	if (!regionid)
+> > +		return;
+> > +
+> > +	snprintf(regionid, 20, "ACPI %s", dev_name(&device->dev));
+> > +		
+> > +	if (port)
+> > +		res = request_region(start, end - start + 1, regionid);
+> > +	else
+> > +		res = request_mem_region(start, end - start + 1, regionid);
+> > +	if (res)
+> > +		res->flags &= ~IORESOURCE_BUSY;
+> > +	else
+> > +		kfree(regionid);
+> > +
+> > +	dev_info(&device->dev, "%pR %s reserved\n", r,
+> > +			res ? "has been" : "could not be");
+> > +}
+> > +
+> 
+> The routine below should go into the PCI core.
+> 
+> > +static int is_pci_reserved(struct resource *res)
+> > +{
+> > +	struct pci_dev *pdev = NULL;
+> > +	resource_size_t acpi_start, acpi_end, pci_start, pci_end;
+> > +	int i;
+> > +
+> > +	/*
+> > +	 * Some BIOSes have motherboard devices with resources that
+> > +	 * partially overlap PCI BARs.
+> > +	 * Those resources should not be reserved, or else, it will
+> > +	 * prevent the normal PCI driver from requesting them later.
+> > +	 */
+> > +	for_each_pci_dev(pdev) {
+> > +		for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+> > +			unsigned long type;
+> > +
+> > +			type = pci_resource_flags(pdev, i) & res->flags
+> > +			       & (IORESOURCE_IO | IORESOURCE_MEM);
+> > +			if (!type || pci_resource_len(pdev, i) == 0)
+> > +				continue;
+> > +
+> > +			pci_start = pci_resource_start(pdev, i);
+> > +			pci_end = pci_resource_end(pdev, i);
+> > +
+> > +			if (res->start == 0 && res->end == 0)
+> > +				continue;
+> > +
+> > +			acpi_start = res->start;
+> > +			acpi_end = res->end;
+> > +
+> > +			/*
+> > +			 * If the ACPI region doesn't overlap the PCI
+> > +			 * region at all, there's no problem.
+> > +			 */
+> > +			if (acpi_end < pci_start || acpi_start > pci_end)
+> > +				continue;
+> > +
+> > +			/*
+> > +			 * If the PNP region completely encloses (or is
+> > +			 * at least as large as) the PCI region, that's
+> > +			 * also OK.  For example, this happens when the
+> > +			 * PNP device describes a bridge with PCI
+> > +			 * behind it.
+> > +			 */
+> > +			if (acpi_start <= pci_start && acpi_end >= pci_end)
+> > +				continue;
+> > +
+> > +			/*
+> > +			 * Otherwise, the ACPI region overlaps *part* of
+> > +			 * the PCI region, and that might prevent a PCI
+> > +			 * driver from requesting its resources.
+> > +			 */
+> > +			return true;
+> > +		}
+> > +	}
+> > +	return false;
+> > +}
+> > +
+> 
+> The routine below should go into resource.c.
+> 
+> > +static acpi_status __init __acpi_reserve_motherboard_resource(struct acpi_resource *res,
+> > +							void *data)
+> > +{
+> > +	struct resource r = {0};
+> > +	acpi_handle handle = data;
+> > +	struct acpi_device *device;
+> > +	int result;
+> > +
+> > +	result = acpi_bus_get_device(handle, &device);
+> > +	if (result)
+> > +		return AE_OK;
+> > +
+> > +	if (!device->status.present)
+> > +		return AE_OK;
+> > +
+> > +	switch (res->type) {
+> > +	case ACPI_RESOURCE_TYPE_MEMORY24:
+> > +	case ACPI_RESOURCE_TYPE_MEMORY32:
+> > +	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+> > +		if (!acpi_dev_resource_memory(res, &r))
+> > +			return AE_OK;
+> > +		break;
+> > +	case ACPI_RESOURCE_TYPE_IO:
+> > +	case ACPI_RESOURCE_TYPE_FIXED_IO:
+> > +		if (!acpi_dev_resource_io(res, &r))
+> > +			return AE_OK;
+> > +		break;
+> > +	case ACPI_RESOURCE_TYPE_ADDRESS16:
+> > +	case ACPI_RESOURCE_TYPE_ADDRESS32:
+> > +	case ACPI_RESOURCE_TYPE_ADDRESS64:
+> > +		if (!acpi_dev_resource_address_space(res, &r))
+> > +			return AE_OK;
+> > +		break;
+> > +	case ACPI_RESOURCE_TYPE_EXTENDED_ADDRESS64:
+> > +		if (!acpi_dev_resource_ext_address_space(res, &r))
+> > +			return AE_OK;
+> > +		break;
+> > +	default:
+> > +		return AE_OK;
+> > +	}
+> > +
+> > +	if (r.flags & IORESOURCE_DISABLED)
+> > +		return AE_OK;
+> > +
+> > +	if (is_pci_reserved(&r))
+> > +		return AE_OK;
+> > +
+> > +	if (r.flags & IORESOURCE_IO) {
+> > +		if (r.start < 0x100)
+> > +		/*
+> > +		 * Below 0x100 is only standard PC hardware
+> > +		 * (pics, kbd, timer, dma, ...)
+> > +		 * We should not get resource conflicts there,
+> > +		 * and the kernel reserves these anyway
+> > +		 * (see arch/i386/kernel/setup.c).
+> > +		 * So, do nothing
+> > +		 */
+> > +			return AE_OK;
+> > +		if (r.end < r.start)
+> > +			return AE_OK;       /* invalid */
+> > +                reserve_range(device, &r, 1);
+> > +        } else if (r.flags & IORESOURCE_MEM) {
+> > +                reserve_range(device, &r, 0);
+> > +        }
+> > +
+> > +	return AE_OK;
+> > +}
+> > +
+> > +static int __init acpi_reserve_motherboard_resource(void)
+> > +{
+> > +	struct acpi_motherboard_resource *res;
+> > +
+> > +	list_for_each_entry(res, &acpi_motherboard_resource_list, node)
+> > +		acpi_walk_resources(res->handle, METHOD_NAME__CRS,
+> > +			__acpi_reserve_motherboard_resource, res->handle);
+> > +
+> > +	return 0;
+> > +}
+> > +fs_initcall(acpi_reserve_motherboard_resource);
+> 
+> Why don't we call that directly from acpi_scan_init() and do we need the
+> acpi_motherboard_resource_list list to be present any more after calling
+> this function?
+> 
+> > +
+> >  static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+> >  				int device_type)
+> >  {
+> >  	acpi_status status;
+> >  	struct acpi_device_info *info;
+> >  	struct acpi_pnp_device_id_list *cid_list;
+> > +	int is_mb_resource = 0;
+> >  	int i;
+> >  
+> >  	switch (device_type) {
+> > @@ -1804,13 +1994,20 @@ static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+> >  		}
+> >  
+> >  		if (info->valid & ACPI_VALID_HID) {
+> > -			acpi_add_id(pnp, info->hardware_id.string);
+> > -			pnp->type.platform_id = 1;
+> > +			if (!acpi_is_motherboard_resource(info->hardware_id.string)) {
+> 
+> I would reverse the check.  That is, do
+> 
+> 			if (!acpi_is_motherboard_resource(info->hardware_id.string)) {
+> 				is_mb_resource = 1;
+> 			} else { ...
+> 
+> Also, don't we really want to create platform devices for the ACPI device objects
+> in question?
+> 
+> > +				acpi_add_id(pnp, info->hardware_id.string);
+> > +				pnp->type.platform_id = 1;
+> > +			} else
+> > +				is_mb_resource = 1;
+> >  		}
+> >  		if (info->valid & ACPI_VALID_CID) {
+> >  			cid_list = &info->compatible_id_list;
+> > -			for (i = 0; i < cid_list->count; i++)
+> > -				acpi_add_id(pnp, cid_list->ids[i].string);
+> > +			for (i = 0; i < cid_list->count; i++) {
+> > +				if (!acpi_is_motherboard_resource(cid_list->ids[i].string))
+> > +					acpi_add_id(pnp, cid_list->ids[i].string);
+> > +				else
+> > +					is_mb_resource = 1;
+> > +			}
+> >  		}
+> >  		if (info->valid & ACPI_VALID_ADR) {
+> >  			pnp->bus_address = info->address;
+> > @@ -1822,6 +2019,9 @@ static void acpi_set_pnp_ids(acpi_handle handle, struct acpi_device_pnp *pnp,
+> >  
+> >  		kfree(info);
+> >  
+> > +		if (is_mb_resource)
+> > +			acpi_record_motherboard_resource(handle);
+> > +
+> >  		/*
+> >  		 * Some devices don't reliably have _HIDs & _CIDs, so add
+> >  		 * synthetic HIDs to make sure drivers can find them.
+> > 
+> 
+> Overall, it looks reasonable, but it can't be a replacement for the $subject
+> patch.
+> 
+> I also should mention that I don't want the special case for PNP devices to
+> stay there forever, but in my opinion we do need it at the moment for a couple
+> of reasons.
+> 
+> Rafael
+> 
+
+
