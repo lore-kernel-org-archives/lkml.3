@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751019AbaHVEDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 00:03:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48861 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733AbaHVEDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 00:03:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,377,1406617200"; 
-   d="scan'208";a="580223453"
-Date: Fri, 22 Aug 2014 12:04:20 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink
- supporting
-Message-ID: <20140822040420.GA4756@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20130411232907.GC29398@hacker.(null)>
- <20130412152237.GM16732@two.firstfloor.org>
- <20140821233729.GB2420@kernel>
- <53F69E26.1090408@cn.fujitsu.com>
+	id S1751801AbaHVEFk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 00:05:40 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:51835 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaHVEFi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 00:05:38 -0400
+X-DKIM: OpenDKIM Filter v2.4.1 mail.betterlinux.com 7A68E37C01E
+Date: Thu, 21 Aug 2014 22:05:35 -0600
+From: Andrea Righi <andrea@betterlinux.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Ingo Molnar <mingo@redhat.com>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Heaton <matt@betterlinux.com>
+Subject: Re: [PATCH] cgroup: add tracepoints to track cgroup events
+Message-ID: <20140822040535.GA2298@Dell>
+References: <1408592785-6700-1-git-send-email-andrea@betterlinux.com>
+ <20140821141330.GA1766@mtj.dyndns.org>
+ <20140821153541.GA7625@Dell>
+ <20140821170002.GB7625@Dell>
+ <20140821170701.GA3940@mtj.dyndns.org>
+ <20140821194514.0e97b26a@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53F69E26.1090408@cn.fujitsu.com>
+In-Reply-To: <20140821194514.0e97b26a@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 09:34:30AM +0800, Zhang Yanfei wrote:
->Hello Wanpeng
->
->On 08/22/2014 07:37 AM, Wanpeng Li wrote:
->> Hi Andi,
->> On Fri, Apr 12, 2013 at 05:22:37PM +0200, Andi Kleen wrote:
->>> On Fri, Apr 12, 2013 at 07:29:07AM +0800, Wanpeng Li wrote:
->>>> Ping Andi,
->>>> On Thu, Apr 04, 2013 at 05:09:08PM +0800, Wanpeng Li wrote:
->>>>> order >= MAX_ORDER pages are only allocated at boot stage using the 
->>>>> bootmem allocator with the "hugepages=xxx" option. These pages are never 
->>>>> free after boot by default since it would be a one-way street(>= MAX_ORDER
->>>>> pages cannot be allocated later), but if administrator confirm not to 
->>>>> use these gigantic pages any more, these pinned pages will waste memory
->>>>> since other users can't grab free pages from gigantic hugetlb pool even
->>>>> if OOM, it's not flexible.  The patchset add hugetlb gigantic page pools
->>>>> shrink supporting. Administrator can enable knob exported in sysctl to
->>>>> permit to shrink gigantic hugetlb pool.
->>>
->>>
->>> I originally didn't allow this because it's only one way and it seemed
->>> dubious.  I've been recently working on a new patchkit to allocate
->>> GB pages from CMA. With that freeing actually makes sense, as 
->>> the pages can be reallocated.
->>>
->> 
->> More than one year past, If your allocate GB pages from CMA merged? 
->
->commit 944d9fec8d7aee3f2e16573e9b6a16634b33f403
->Author: Luiz Capitulino <lcapitulino@redhat.com>
->Date:   Wed Jun 4 16:07:13 2014 -0700
->
->    hugetlb: add support for gigantic page allocation at runtime
->
->
+On Thu, Aug 21, 2014 at 07:45:14PM -0400, Steven Rostedt wrote:
+> On Thu, 21 Aug 2014 12:07:01 -0500
+> Tejun Heo <tj@kernel.org> wrote:
+> 
+> > Hello, Anrea.
+> > 
+> > On Thu, Aug 21, 2014 at 11:00:02AM -0600, Andrea Righi wrote:
+> > > hmm... am I missing something or we already support directory events?
+> > 
+> > Ah, right, those mkdir/rmdir and writes automatically generate those
+> > events.
+> > 
+> > > root@Dell:~# grep cgroups /proc/mounts
+> > > none /cgroups cgroup rw,relatime,cpuset,cpu,cpuacct,memory,devices,freezer,perf_event,hugetlb 0 0
+> > > root@Dell:~# inotifywait -m -r -e modify -e move -e create -e delete /cgroups
+> > > Setting up watches.  Beware: since -r was given, this may take a while!
+> > > Watches established.
+> > > /cgroups/ CREATE,ISDIR test
+> > > /cgroups/test/ MODIFY cgroup.procs
+> > > /cgroups/test/ MODIFY cgroup.procs
+> > > /cgroups/test/ MODIFY cgroup.populated
+> > > /cgroups/ MODIFY cgroup.procs
+> > > /cgroups/ MODIFY cgroup.procs
+> > > /cgroups/test/ MODIFY cgroup.populated
+> > > /cgroups/ DELETE,ISDIR test
+> > > 
+> > > I still need to figure out a smart way to track which PIDs are
+> > > added/removed to/from cgroup.procs from userland (inotifywait + git? :)),
+> > > but all the other informations provided by my tracepoint patch seem to
+> > > be already available via [di]notify.
+> > 
+> > Hmmm... yeah, determining exactly which pids got added / removed can
+> > be cumbersome from just MODIFY events.  That said, what are you trying
+> > to do with such information?
+> > 
+> 
+> OK, is this patch not being pushed then? I have a lot of comments to
+> make about it, but if this patch is being dropped for another way of
+> doing things I wont waste my time on it.
+> 
+> Thanks,
+> 
+> -- Steve
 
-Ah, thanks for your pointing out.
+Comments are always welcome, but at this point I'd say we can drop this
+patch, so don't waste your time on it. I can find an alternative way to
+get the same informations from user-space.
 
-Regards,
-Wanpeng Li 
-
->> 
->> Regards,
->> Wanpeng Li 
->> 
->>> -Andi
->>>
->>> --
->>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>> see: http://www.linux-mm.org/ .
->>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->> .
->> 
->
->
->-- 
->Thanks.
->Zhang Yanfei
->
->--
->To unsubscribe, send a message with 'unsubscribe linux-mm' in
->the body to majordomo@kvack.org.  For more info on Linux MM,
->see: http://www.linux-mm.org/ .
->Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thanks,
+-Andrea
