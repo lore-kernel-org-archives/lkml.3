@@ -1,88 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717AbaHVOHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:07:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44149 "EHLO arroyo.ext.ti.com"
+	id S932723AbaHVOHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:07:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25767 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932152AbaHVOHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:07:04 -0400
-Date: Fri, 22 Aug 2014 09:06:56 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: usb: gadget: fusb300_udc.h: Fix typo in include
- guard
-Message-ID: <20140822140656.GB22707@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1408712372-14686-1-git-send-email-linux@rasmusvillemoes.dk>
+	id S932130AbaHVOHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:07:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,380,1406617200"; 
+   d="scan'208";a="562149592"
+Message-ID: <53F74E5D.2040108@linux.intel.com>
+Date: Fri, 22 Aug 2014 22:06:21 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mojUlQ0s9EVzWg2t"
-Content-Disposition: inline
-In-Reply-To: <1408712372-14686-1-git-send-email-linux@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Len Brown <lenb@kernel.org>
+CC: Kumar P Mahesh <mahesh.kumar.p@intel.com>, Alan Cox <alan@linux.intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] intel_idle: add idle values for Cherrytrail/Braswell
+References: <1408701508-13636-1-git-send-email-mika.westerberg@linux.intel.com> <1408707540-12393-1-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <1408707540-12393-1-git-send-email-mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mojUlQ0s9EVzWg2t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Aug 22, 2014 at 02:59:32PM +0200, Rasmus Villemoes wrote:
-
-you need a commit log. Has this always been there ? Which commit are you
-fixing ?
-
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+On 2014/8/22 19:39, Mika Westerberg wrote:
+> From: Mahesh Kumar P <mahesh.kumar.p@intel.com>
+> 
+> Cherrytrail/Braswell is a successor of Intel Baytrail but has slighly
+> different CPU idle values and latencies.
+> 
+> Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > ---
->  drivers/usb/gadget/udc/fusb300_udc.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/gadget/udc/fusb300_udc.h b/drivers/usb/gadget/ud=
-c/fusb300_udc.h
-> index ae811d8..ad39f89 100644
-> --- a/drivers/usb/gadget/udc/fusb300_udc.h
-> +++ b/drivers/usb/gadget/udc/fusb300_udc.h
-> @@ -12,7 +12,7 @@
-> =20
-> =20
->  #ifndef __FUSB300_UDC_H__
-> -#define __FUSB300_UDC_H_
-> +#define __FUSB300_UDC_H__
-> =20
->  #include <linux/kernel.h>
-> =20
-> --=20
-> 1.9.2
->=20
+> I learned from Mahesh that C1e, C4 and S0i2 states are deprecated so those
+> are now removed.
 
---=20
-balbi
+If the platform has ACPI supported, I believe Len wants to see what
+C-states number exported by ACPI.
 
---mojUlQ0s9EVzWg2t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Please boot the machine with "intel_idle.max_cstate=0" to disable
+intel_idle, then post the output of the following commands
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+dmesg | grep idle
+grep . /sys/devices/system/cpu/cpu0/cpuidle/*/*
 
-iQIcBAEBAgAGBQJT906AAAoJEIaOsuA1yqREoZcQAIkU/ptl5LiXohGbYxTGvYdk
-HgE33mkCR/l7iP//eifb96AV9wFGS1E2sKg3wf1pLDtoZNsR4E1hv4+ZzmgXKVXJ
-CSO9VKXm03sPkZGVhqskcZQ8yj0opRg9baEFiRWQlv/Owdcl9YYbyx/KI4L2V8OQ
-bKyHVdSAoj3zt5PposraEqlAopHo+mzaXRATaLo7Q7vfNAh9PcCDEM2gkNaRWghq
-ikNXWVev6GDNGgWIrhm7SdbLrdHptGYLtWFrdnNw2G3fEW1HihcL5IR4o35ZbYMN
-LfMxs2XI5uM7laa1ksXdEINZ7RM8XeS2MT9mrXIIznhVNt6tNOB79vsMoqiw/7UA
-1hlTRrP1pr4qE1LBncw90EUheArL28dX5xAFePI0uwajXLV1euKDA/9vOwdqBKHO
-48P0421yTsKLQUvGPoPgT5LO/gpKujgJDjCLGZ04KTvlr3JLrWacXyhuVncdvC54
-PUll0CprjJKkzdswD7qwxbJirJohkg+8UxBB9oWQifBwVdRX3Ho1SE7YHa3P6jLJ
-TeR04KcDySs9vGlW9c2Wt9cFDwQLxuTVeZxT+BZCtmLngL1r19eB+bgSV5ACEIUE
-mJvqMlwVHx1gUaoXYbPvb3HbQ4RXns+bIkdW4sUcLYtvVUFkgmN/h8Rk9RYijBrj
-U9ZLZrsJo7KBZuBsypJz
-=J6FF
------END PGP SIGNATURE-----
+Thanks,
+-Aubrey
 
---mojUlQ0s9EVzWg2t--
+> 
+>  drivers/idle/intel_idle.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 42 insertions(+)
+> 
+> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> index 9b7ee7e427df..e472580c1826 100644
+> --- a/drivers/idle/intel_idle.c
+> +++ b/drivers/idle/intel_idle.c
+> @@ -197,6 +197,42 @@ static struct cpuidle_state snb_cstates[] = {
+>  		.enter = NULL }
+>  };
+>  
+> +static struct cpuidle_state cht_cstates[] = {
+> +	{ /* MWAIT C1 */
+> +		.name = "C1-CHT",
+> +		.desc = "MWAIT 0x00",
+> +		.flags = MWAIT2flg(0x00) | CPUIDLE_FLAG_TIME_VALID,
+> +		.exit_latency = 1,
+> +		.target_residency = 4,
+> +		.enter = &intel_idle },
+> +	{ /* MWAIT C6 */
+> +		.name = "C6-CHT",
+> +		.desc = "MWAIT 0x52",
+> +		.flags = MWAIT2flg(0x52) | CPUIDLE_FLAG_TIME_VALID
+> +						| CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.exit_latency = 140,
+> +		.target_residency = 560,
+> +		.enter = &intel_idle },
+> +	{ /* MWAIT C7-S0i1 */
+> +		.name = "S0i1-CHT",
+> +		.desc = "MWAIT 0x60",
+> +		.flags = MWAIT2flg(0x60) | CPUIDLE_FLAG_TIME_VALID
+> +						| CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.exit_latency = 1200,
+> +		.target_residency = 4000,
+> +		.enter = &intel_idle },
+> +	{ /* MWAIT C9-S0i3 */
+> +		.name = "S0i3-CHT",
+> +		.desc = "MWAIT 0x64",
+> +		.flags = MWAIT2flg(0x64) | CPUIDLE_FLAG_TIME_VALID
+> +						| CPUIDLE_FLAG_TLB_FLUSHED,
+> +		.exit_latency = 10000,
+> +		.target_residency = 20000,
+> +		.enter = &intel_idle },
+> +	{
+> +		.enter = NULL }
+> +};
+> +
+>  static struct cpuidle_state byt_cstates[] = {
+>  	{
+>  		.name = "C1-BYT",
+> @@ -677,6 +713,11 @@ static const struct idle_cpu idle_cpu_byt = {
+>  	.byt_auto_demotion_disable_flag = true,
+>  };
+>  
+> +static const struct idle_cpu idle_cpu_cht = {
+> +	.state_table = cht_cstates,
+> +	.disable_promotion_to_c1e = true,
+> +};
+> +
+>  static const struct idle_cpu idle_cpu_ivb = {
+>  	.state_table = ivb_cstates,
+>  	.disable_promotion_to_c1e = true,
+> @@ -725,6 +766,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
+>  	ICPU(0x3f, idle_cpu_hsw),
+>  	ICPU(0x45, idle_cpu_hsw),
+>  	ICPU(0x46, idle_cpu_hsw),
+> +	ICPU(0x4c, idle_cpu_cht),
+>  	ICPU(0x4d, idle_cpu_avn),
+>  	ICPU(0x3d, idle_cpu_bdw),
+>  	ICPU(0x4f, idle_cpu_bdw),
+> 
+
