@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441AbaHVQQv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:16:51 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:40227 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274AbaHVQQt (ORCPT
+	id S932363AbaHVQVM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:21:12 -0400
+Received: from smtprelay0043.hostedemail.com ([216.40.44.43]:60723 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932260AbaHVQVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:16:49 -0400
-Date: Fri, 22 Aug 2014 09:16:41 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org, sergei.shtylyov@cogentembedded.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v3] i2c: rk3x: fix bug that cause transfer fails in
- master receive mode
-Message-ID: <20140822161641.GA12900@core.coreip.homeip.net>
-References: <1408657107-8715-1-git-send-email-addy.ke@rock-chips.com>
- <1408669991-9703-1-git-send-email-addy.ke@rock-chips.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408669991-9703-1-git-send-email-addy.ke@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Aug 2014 12:21:09 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1434:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:7514:7652:7974:9010:10004:10400:10848:11232:11658:11914:12043:12517:12519:12679:12740:13069:13161:13211:13229:13311:13357:13891:14096:14097:21063:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: coil98_440da62894b0f
+X-Filterd-Recvd-Size: 2327
+Message-ID: <1408724465.13483.17.camel@joe-AO725>
+Subject: Re: [PATCH 0/6] Remove various orphaned header files
+From: Joe Perches <joe@perches.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 22 Aug 2014 09:21:05 -0700
+In-Reply-To: <8761hksfnf.fsf@rasmusvillemoes.dk>
+References: <1403630855-29186-1-git-send-email-linux@rasmusvillemoes.dk>
+	 <1403631263.29061.17.camel@joe-AO725> <8761hksfnf.fsf@rasmusvillemoes.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Addy,
+On Fri, 2014-08-22 at 17:33 +0200, Rasmus Villemoes wrote:
+> Joe Perches <joe@perches.com> writes:
+> 
+> > On Tue, 2014-06-24 at 19:27 +0200, Rasmus Villemoes wrote:
+> >> AFAICT, these headers are not used anywhere, and are just accidental
+> >> leftovers from past cleanups.
+> >
+> > Thanks.
+> 
+> Did anyone pick these [1] up? All six files still seem to be present.
 
-On Fri, Aug 22, 2014 at 09:13:11AM +0800, Addy Ke wrote:
-> In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
-> in one chunk, so the size of data to be write/read to/from TXDATAx/RXDATAx
-> must be less than or equal 32 bytes at a time.
-> 
-> Tested on rk3288-pinky board, elan receive 158 bytes data.
-> 
-> Acked-by: Max Schwarz <max.schwarz@online.de>
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> ---
-> Changes in v2:
-> - Use cleaner syntax as suggested by Sergei.
-> - Update commit message as suggested by Wolfram.
-> 
-> Changes in v3:
-> - fix typo: maste --> master and double spaces after 'len'
-> 
->  drivers/i2c/busses/i2c-rk3x.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-> index 69e1185..806724a 100644
-> --- a/drivers/i2c/busses/i2c-rk3x.c
-> +++ b/drivers/i2c/busses/i2c-rk3x.c
-> @@ -323,6 +323,10 @@ static void rk3x_i2c_handle_read(struct rk3x_i2c *i2c, unsigned int ipd)
->  	/* ack interrupt */
->  	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
->  
-> +	/* Can only handle a maximum of 32 bytes at a time */
-> +	if (unlikely(len > 32))
-> +		len = 32;
+Doesn't look like it.  There is no guaranteed
+mechanism to get these types of patches applied.
 
-I do not think we should be using unlikely here (and in another spot in the
-driver): unlikely should be used only if the condition happens extremely
-infrequently in all of the systems. Here, if a box happens to have a device
-that uses transfers larger than 32 bytes we'd be hitting unlikely branch pretty
-often.
+I suggest you resend these to a wider audience.
 
-Thanks.
+Jiri Kosina <trivial@kernel.org> is the maintainer of
+the "trivial" tree, some patches of this type go
+through that tree every once in awhile.
 
--- 
-Dmitry
+Andrew Morton <akpm@linux-foundation.org> sometimes
+picks up things like this.
+
+Also, make sure to send the individual deletions to the
+original maintainers, authors and signers of each file.
+
+For instance:
+
+$ ./scripts/get_maintainer.pl -f include/linux/platform_data/tegra_emc.h
+Stephen Warren <swarren@wwwdotorg.org> (supporter:TEGRA ARCHITECTUR...)
+Thierry Reding <thierry.reding@gmail.com> (supporter:TEGRA ARCHITECTUR...)
+linux-tegra@vger.kernel.org (open list:TEGRA ARCHITECTUR...)
+
+$ git log --format="Author: %an <%ae>" include/linux/platform_data/tegra_emc.h
+Author: Olof Johansson <olof@lixom.net>
+
+Lastly, if none of that works within a couple of
+release cycles, send them directly to Linus.
+
+
