@@ -1,31 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870AbaHVSf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 14:35:59 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55676 "EHLO
+	id S1752229AbaHVSg0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:36:26 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55683 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaHVSf6 (ORCPT
+	with ESMTP id S1752275AbaHVSgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 14:35:58 -0400
-Date: Fri, 22 Aug 2014 13:35:34 -0500
+	Fri, 22 Aug 2014 14:36:24 -0400
+Date: Fri, 22 Aug 2014 13:36:14 -0500
 From: Mark Brown <broonie@kernel.org>
 To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Support Opensource <support.opensource@diasemi.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140822183534.GZ24407@sirena.org.uk>
-References: <1408699513-7318-1-git-send-email-linux@rasmusvillemoes.dk>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Thierry Reding <thierry.reding@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Message-ID: <20140822183614.GA24407@sirena.org.uk>
+References: <1408699627-7364-1-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="g1M0U3R/ia+9V6wa"
+	protocol="application/pgp-signature"; boundary="QNuYedFeXxEqrKRj"
 Content-Disposition: inline
-In-Reply-To: <1408699513-7318-1-git-send-email-linux@rasmusvillemoes.dk>
+In-Reply-To: <1408699627-7364-1-git-send-email-linux@rasmusvillemoes.dk>
 X-Cookie: If you can read this, you're too close.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 208.59.64.2
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] sound: soc: da732x.h: Fix typo in include guard
+Subject: Re: [PATCH] sound: tegra: tegra_asoc_utils.h: Fix typo in include
+ guard
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,37 +34,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---g1M0U3R/ia+9V6wa
+--QNuYedFeXxEqrKRj
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Aug 22, 2014 at 11:25:13AM +0200, Rasmus Villemoes wrote:
+On Fri, Aug 22, 2014 at 11:27:07AM +0200, Rasmus Villemoes wrote:
 > Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-Applied, but please use subject lines matching the style for the
-subsystem - if your commit log looks different to others for the same
-files  try to avoid that.
+Applied, thanks - again please try to follow the subject line style.
 
---g1M0U3R/ia+9V6wa
+--QNuYedFeXxEqrKRj
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT941zAAoJELSic+t+oim9ywAP/1ZoFPJfEA0hgNEZJ8l9nR2Y
-H20YS+jn9UnknuME/wqarCMyYLNcsj7EjQt+ETUwswUa2VY41mge0q3RH/ZnD60C
-SGnDUEj8hJTJF9b9mnZI1NtdtXCj3LjoaVcjQT4CmnXiWQmJ1ZXwqsPHeNbfE1fG
-i7YUKDWyFdsyccmQJFVJw9BUGl7yscvCPRrGO2JqHoSWEYkVmZDkKy7NCuBBfyGz
-nmpfikXzoPd10ZIjeZgTjh/7f276CItUBvkNMSffKEqDjhKqz3WuDDS47ys6qRFp
-1LCgCRwVv6cT+3OrhJD8FtxwTj8ZzYMMm5IM5epUMXOMuDK4rF0JPhEteGcY5Sjy
-RG+iHuXKuZWdm1FCbjydODh+BmiDZcFssJwfjJHkg2EqRRi2ux4I3PXMwxemLwSL
-p3V/0QLFNcM/mZcayHH1DvygA0MPoMSb7zSL827xAq/7je9Mynyv7NFEz9xYqD+W
-b3BobcJfAuSonglYpyLcf173R/umMNmJuQrvFfN73ExWQxWilPqFEyWtpb9z8WyM
-oT3bsp9wwEGJK411u2/W652xiXOvsNrqZRF8VkAsvCBWivv8JX9LuCE1EOEgIP/H
-hH+avS9AGbvkxgMopEaccvCvkWvvKiaCDDPyTBzVuPgHsJQ30RBvanNRrJ/6J2Zr
-4JUY0JUnWEiztL3BoEWb
-=l/vg
+iQIcBAEBAgAGBQJT942bAAoJELSic+t+oim9QVEP/A5lcOY4hD5lH0c9WIdFRVU2
+WyxgGjse3VGcqS4pC463UbwOCPtWbi05oiTPK9/txg3HQihs3SVX1hftq7s+dfpd
+aEXcFTg3bpDWFwp2DjucO7NXg603OG0gPMkh46HbpuMtyqL7UohyJTpmLZTnWL9a
+RtB4uMV4ML51TAVwLofE+RDb1tF9PeEQGKXFR6mGAB5MEMtBf7aX2C6JpVY0ZtTL
+gKK5uAVGS4alcdSw1Bi4WlzsBtAU2/Wm36TqZo2IfZE3pdrzJu5JDZ8C0+wqfGSt
+E627gKgOSTtdnaiAi0am5lIPv64U4lOvYNinPEZ+uQMnk2Kwr6F7/V9gPX3flUe5
+iFP3Wfpnc2oDJTjixCK4Oc3OK89qsjQaZAOmRDdEoa1OdaGN+WEvnMgu3wyAaedh
+hD5Wf4dBBdEKO9DUqKaIVvr+h/U7V4B4r2MhGB8z5Lj+aMdSYVK23qZ+Zq0yqOJ+
+r9QN9rASCu0tjDE8HGlydLOzpFzkKcRdzH0b2xi8vzz/y9xJISkUxu7vaBayTzcx
+nOB0AVi5mqDb66NEvLrehRFRhCvbRVkVZOcfNFol+LDQPemLKiT0eNgGte+BjC78
+m6NRRZOTpUon1ql3YGrcJJ9yoWzLkdyi0UisqNt9lGm+NcMvk88u8PE02Wiwit7v
+DbmqCObdJM38aJEQchos
+=Ly7C
 -----END PGP SIGNATURE-----
 
---g1M0U3R/ia+9V6wa--
+--QNuYedFeXxEqrKRj--
