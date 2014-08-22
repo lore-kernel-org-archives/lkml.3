@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702AbaHVOGk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:06:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33569 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756533AbaHVOG0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:06:26 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <devicetree@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 0/6] ARM: dts: OMAP5+: Fixes for pinctrl support 
-Date: Fri, 22 Aug 2014 09:03:49 -0500
-Message-ID: <1408716235-26164-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932717AbaHVOHK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:07:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44149 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932152AbaHVOHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:07:04 -0400
+Date: Fri, 22 Aug 2014 09:06:56 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: usb: gadget: fusb300_udc.h: Fix typo in include
+ guard
+Message-ID: <20140822140656.GB22707@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1408712372-14686-1-git-send-email-linux@rasmusvillemoes.dk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mojUlQ0s9EVzWg2t"
+Content-Disposition: inline
+In-Reply-To: <1408712372-14686-1-git-send-email-linux@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series add the missing dts changes needed for pinctrl to
-finally work on OMAP5/DRA7.
+--mojUlQ0s9EVzWg2t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is part 6/6 series which eventually enables framework for
-suspend-to-ram and cpuidle for OMAP5 and DRA7.
+On Fri, Aug 22, 2014 at 02:59:32PM +0200, Rasmus Villemoes wrote:
 
-Depends on previous series for pinctrl and PRM fixes for
-functionality, but is capable of continuing to provide older
-functionality with older zImage
+you need a commit log. Has this always been there ? Which commit are you
+fixing ?
 
-NOTE: Various hwmod and dts fixes for various other IP blocks are
-still pending for complete suspend functionality.
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  drivers/usb/gadget/udc/fusb300_udc.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/gadget/udc/fusb300_udc.h b/drivers/usb/gadget/ud=
+c/fusb300_udc.h
+> index ae811d8..ad39f89 100644
+> --- a/drivers/usb/gadget/udc/fusb300_udc.h
+> +++ b/drivers/usb/gadget/udc/fusb300_udc.h
+> @@ -12,7 +12,7 @@
+> =20
+> =20
+>  #ifndef __FUSB300_UDC_H__
+> -#define __FUSB300_UDC_H_
+> +#define __FUSB300_UDC_H__
+> =20
+>  #include <linux/kernel.h>
+> =20
+> --=20
+> 1.9.2
+>=20
 
-Each of series is based on v3.17-rc1 and this specific series is available:
-weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/v3.17/dts-fixes
+--=20
+balbi
 
-git repo: https://github.com/nmenon/linux-2.6-playground.git push/v3.17/dts-fixes
+--mojUlQ0s9EVzWg2t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-An complete integrated branch is available here: https://github.com/nmenon/linux-2.6-playground/commits/testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Nishanth Menon (6):
-  ARM: dts: OMAP3+: Add PRM interrupt
-  ARM: dts: OMAP5: switch to compatible pinctrl
-  ARM: dts: DRA7: switch to compatible pinctrl
-  ARM: dts: AM437x: switch to compatible pinctrl
-  ARM: dts: OMAP5/DRA7: switch over to interrupts-extended property for
-    UART
-  ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable
+iQIcBAEBAgAGBQJT906AAAoJEIaOsuA1yqREoZcQAIkU/ptl5LiXohGbYxTGvYdk
+HgE33mkCR/l7iP//eifb96AV9wFGS1E2sKg3wf1pLDtoZNsR4E1hv4+ZzmgXKVXJ
+CSO9VKXm03sPkZGVhqskcZQ8yj0opRg9baEFiRWQlv/Owdcl9YYbyx/KI4L2V8OQ
+bKyHVdSAoj3zt5PposraEqlAopHo+mzaXRATaLo7Q7vfNAh9PcCDEM2gkNaRWghq
+ikNXWVev6GDNGgWIrhm7SdbLrdHptGYLtWFrdnNw2G3fEW1HihcL5IR4o35ZbYMN
+LfMxs2XI5uM7laa1ksXdEINZ7RM8XeS2MT9mrXIIznhVNt6tNOB79vsMoqiw/7UA
+1hlTRrP1pr4qE1LBncw90EUheArL28dX5xAFePI0uwajXLV1euKDA/9vOwdqBKHO
+48P0421yTsKLQUvGPoPgT5LO/gpKujgJDjCLGZ04KTvlr3JLrWacXyhuVncdvC54
+PUll0CprjJKkzdswD7qwxbJirJohkg+8UxBB9oWQifBwVdRX3Ho1SE7YHa3P6jLJ
+TeR04KcDySs9vGlW9c2Wt9cFDwQLxuTVeZxT+BZCtmLngL1r19eB+bgSV5ACEIUE
+mJvqMlwVHx1gUaoXYbPvb3HbQ4RXns+bIkdW4sUcLYtvVUFkgmN/h8Rk9RYijBrj
+U9ZLZrsJo7KBZuBsypJz
+=J6FF
+-----END PGP SIGNATURE-----
 
- arch/arm/boot/dts/am4372.dtsi  |    4 +++-
- arch/arm/boot/dts/dra7-evm.dts |    2 ++
- arch/arm/boot/dts/dra7.dtsi    |   25 ++++++++++++++-----------
- arch/arm/boot/dts/omap3.dtsi   |    1 +
- arch/arm/boot/dts/omap4.dtsi   |    1 +
- arch/arm/boot/dts/omap5.dtsi   |   21 +++++++++++++--------
- 6 files changed, 34 insertions(+), 20 deletions(-)
-
--- 
-1.7.9.5
-
+--mojUlQ0s9EVzWg2t--
