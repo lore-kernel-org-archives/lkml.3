@@ -1,223 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581AbaHVAuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:50:50 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60300 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197AbaHVAur (ORCPT
+	id S1755636AbaHVAvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 20:51:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54037 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448AbaHVAvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:50:47 -0400
-Message-ID: <a97b7b39f243133f7e7272bfbea09889.squirrel@www.codeaurora.org>
-Date: Fri, 22 Aug 2014 00:50:46 -0000
-Subject: Re: [PATCH v3] scsi: ufs-msm: add UFS controller support for
- Qualcomm MSM chips
-From: subhashj@codeaurora.org
-To: ygardi@codeaurora.org
-Cc: "Kumar Gala" <galak@codeaurora.org>, "Yaniv Gardi" <ygardi@codeaurora.org>,
-        james.bottomley@hansenpartnership.com, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
-        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
-        noag@codeaurora.org, draviv@codeaurora.org,
-        "Rob Herring" <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        "Vinayak Holikatti" <vinholikatti@gmail.com>,
-        "James E.J. Bottomley" <jbottomley@parallels.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        "Sujit Reddy Thumma" <sthumma@codeaurora.org>,
-        "Sahitya Tummala" <stummala@codeaurora.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22-4.el6
+	Thu, 21 Aug 2014 20:51:04 -0400
+Date: Thu, 21 Aug 2014 19:50:30 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Frank.Li@freescale.com,
+        shawn.guo@linaro.org, marex@denx.de
+Message-ID: <20140822005030.GR24407@sirena.org.uk>
+References: <1408593190-1031-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uAY1Vrrb3oVaqxed"
+Content-Disposition: inline
+In-Reply-To: <1408593190-1031-1-git-send-email-b38343@freescale.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 208.59.64.2
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] spi: spi-imx: add DMA support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On Aug 14, 2014, at 9:22 AM, Yaniv Gardi <ygardi@codeaurora.org> wrote:
->>> The files in this change implement the UFS HW (controller & PHY) specific
->>> behavior in Qualcomm MSM chips.
->>> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
->>> ---
->>> Documentation/devicetree/bindings/ufs/ufs-msm.txt  |   37 +
->>> .../devicetree/bindings/ufs/ufshcd-pltfrm.txt      |    4 +
->>> drivers/scsi/ufs/Kconfig                           |   12 +
->>> drivers/scsi/ufs/Makefile                          |    4 +
->>> drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.c            |  254 +++++
-drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.h            |  216 ++++
-drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.c            |  368 +++++++
-drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.h            |  735
-+++++++++++++
->>> drivers/scsi/ufs/ufs-msm-phy.c                     |  646 ++++++++++++
-drivers/scsi/ufs/ufs-msm-phy.h                     |  193 ++++
->> Any reason not to put the phy driver in drivers/phy ?
-> Yes. Phy driver introduces a generic phy framework.
-> And as a framework it provides with API's, callbacks,
-> And data structures.
-> I think the right place to have the >implementation< of the ufs-msm-phy
-code
-> Is under drivers/scsi/ufs as it's more related to ufs than it's related
-to
-> the framework itself.
 
-I would agree with Kumar that PHY specific platform driver (which uses the
-generic PHY framwork) can actually go under drivers/phy/*, if i look at
-the 3.17-rc1, there are many platform specific phy drivers under
-drivers/phy/.
+--uAY1Vrrb3oVaqxed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>> drivers/scsi/ufs/ufs-msm.c                         | 1105
->>> ++++++++++++++++++++
->>> drivers/scsi/ufs/ufs-msm.h                         |  158 +++
->>> 12 files changed, 3732 insertions(+)
->>> create mode 100644 Documentation/devicetree/bindings/ufs/ufs-msm.txt
-create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.c
->>> create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-20nm.h
->>> create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.c
->>> create mode 100644 drivers/scsi/ufs/ufs-msm-phy-qmp-28nm.h
->>> create mode 100644 drivers/scsi/ufs/ufs-msm-phy.c
->>> create mode 100644 drivers/scsi/ufs/ufs-msm-phy.h
->>> create mode 100644 drivers/scsi/ufs/ufs-msm.c
->>> create mode 100644 drivers/scsi/ufs/ufs-msm.h
->> Seems like we should spit this into two patches, one for the phy and
-one
->> for the UFS driver itself.  Maybe even three, one for the 20nm phy, one
-for the 28nm phy, and one for ufs-msm.c,h.
-> we could try to split it, but since we didn't split this change into
-functional sub-changes, we decided to upload this change as a whole, as
-one change without the other wouldn't work anyhow, and they are both
-needed for proper functionality.
->>> diff --git a/Documentation/devicetree/bindings/ufs/ufs-msm.txt
-b/Documentation/devicetree/bindings/ufs/ufs-msm.txt
->>> new file mode 100644
->>> index 0000000..b5caace
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/ufs/ufs-msm.txt
->> This should probably be bindings/phy/qcom-ufs-phy.txt
+On Thu, Aug 21, 2014 at 11:53:10AM +0800, Robin Gong wrote:
 
-If Yaniv also agrees that Qualcomm UFS MSM PHY specific driver should move
-under drivers/phy then yes, "ufs-msm.txt" should also move under
-bindings/phy/.
+> Change from v2:
+> http://thread.gmane.org/gmane.linux.ports.arm.kernel/291722/focus=294363
+> 1. dma setup only for imx51-ecspi
+> 2. use one small dummy buffer(1 bd size) to templiy store data
+>    for meanless rx/tx, instead of malloc the actual transfer size.
 
-Btw, regarding using "qcom-ufs-phy.txt" instead "ufs-msm.txt", i would
-agree that we need to add "phy" in file name but not sure we would like to
-replace "msm" with "qcom" because we used "msm" prefix/postfix almost
-everywhere.
+You can use the must_tx and must_rx flags to use the core implementation
+of this functionality.  This will mean you get any performance or other
+improvements we implement there.
 
+> +	int (*txrx_bufs)(struct spi_device *spi, struct spi_transfer *t);
+> +	struct dma_chan *dma_chan_rx;
+> +	struct dma_chan *dma_chan_tx;
 
+The SPI controller has variables for this already - you should use them
+(and the core support).  In general my main comment on this patch is
+that you should be using the core DMA support, it fixes some problems
+(like not having mapping for vmalloc() buffers) and factors out some
+code.
 
->>> @@ -0,0 +1,37 @@
->>> +* MSM Universal Flash Storage (UFS) PHY
->>> +
->>> +UFSPHY nodes are defined to describe on-chip UFS PHY hardware macro.
-+Each UFS PHY node should have its own node.
->>> +
->>> +To bind UFS PHY with UFS host controller, the controller node should
-+contain a phandle reference to UFS PHY node.
->>> +
->>> +Required properties:
->>> +- compatible        : compatible list, contains
->>> "qcom,ufs-msm-phy-qmp-28nm"
->>> +                      or "qcom,ufs-msm-phy-qmp-20nm" according to the
-relevant
->>> +                      phy in use
->> Do we really need ‘-msm’ in the compat name?
+--uAY1Vrrb3oVaqxed
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-That's the convention we followed for all file names and hence carry
-forwarded to compatible name as well. Any specific issues with it?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
->>> +- reg               : <registers mapping>
->>> +- #phy-cells         : This property shall be set to 0
->>> +- vdda-phy-supply   : phandle to main PHY supply for analog domain +-
-vdda-pll-supply   : phandle to PHY PLL and Power-Gen block power
-supply
->>> +
->>> +Optional properties:
->>> +- vdda-phy-max-microamp : specifies max. load that can be drawn from
-phy supply
->>> +- vdda-pll-max-microamp : specifies max. load that can be drawn from
-pll supply
->>> +
->>> +Example:
->>> +
->>> +	ufsphy1: ufsphy@0xfc597000 {
->>> +		compatible = "qcom,ufs-msm-phy-qmp-28nm";
->>> +		reg = <0xfc597000 0x800>;
->>> +		#phy-cells = <0>;
->>> +		vdda-phy-supply = <&pma8084_l4>;
->>> +		vdda-pll-supply = <&pma8084_l12>;
->>> +		vdda-phy-max-microamp = <50000>;
->>> +		vdda-pll-max-microamp = <1000>;
->>> +	};
->>> +
->>> +	ufshc@0xfc598000 {
->>> +		...
->>> +		phys = <&ufsphy1>;
->>> +	};
->>> diff --git a/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
-b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
->>> index e73a619..378585c 100644
->>> --- a/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
->>> +++ b/Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
->>> @@ -9,6 +9,9 @@ Required properties:
->>> - reg               : <registers mapping>
->>> Optional properties:
->>> +- phys			: phandle to UFS PHY node
->>> +- phy-names		: the string "ufs_msm_phy" when is found in a node,
-along
->>> +			  with "phys" attribute, provides phandle to UFS PHY node
->> seems like the phy-names should be more generic like “ufsphy"
+iQIcBAEBAgAGBQJT9pPTAAoJELSic+t+oim9MY0P/RclDEBWSGFKDrO98Sfgbcgo
+7bCCzB+xENogpwedLzVcEZeZsvt9igFLm7t0CaXnEJv7/fB5rN3bFzvYYHyGkM82
+pCgplHwyjZculow1+LddjCHuPvPeL3dGYfeV1Jtvi3uPvpRUkTx//rtQREoHpvPg
+GUPU+7huxAds7Prkx+1nKq2KMl9aHz/p27FJJCbKBwvdgRIVqd9Cz0ZnzhA+LKqb
+eav74fNNaDn/KI1QL5S9BtS5JrMrQaNsEXkgSdGEkioqx4Pk8+R7dPFDLTn4Thtv
+UGWYRm+oHRAKBETGY/JAF5MuTlsxTY1Jn3TX29Tm2DBMnRnrN1YEyTs8tGGP/GU/
+04fq20HJWwODK+9fJOOYNjnTxQuByZZLrD/PfFuklc9Q8oN4HQACnBCBcq6zEkBJ
+ZZW9pKjEPbu15LHDyqgxC2M/T3gYuIuLEHhoERE6ALZKKBpE1YG5s+Z+0AnnJRHu
+EKeh62h/es04yQdOK2qiAiwXygn58k22cqdoy/gXni7n3A4dFEvSlp2uSFTmCOY4
+7wJuFRmMjUQ/EDPsK8jnGIIuTiZLepilM0+BK8STHwrazt9Z1wCGJJq4DQ/8OfB2
+jZtAhUrhLsWQpMIIidBU+2unQHWxxP+zZ11d81KRgbz7HPXDJCp6EVLp8uJ6jiZa
+o6rFDeK5DnFYTwH+3SQf
+=mcz3
+-----END PGP SIGNATURE-----
 
-Agreed, in facts this "phy-names" property is no longer required. Yaniv,
-can you please remove this.
-
->>> - vcc-supply            : phandle to VCC supply regulator node -
-vccq-supply           : phandle to VCCQ supply regulator node -
-vccq2-supply          : phandle to VCCQ2 supply regulator node @@
--39,6 +42,7 @@ Example:
->>> 		reg = <0xfc598000 0x800>;
->>> 		interrupts = <0 28 0>;
->>> +		ufs-phy = <&ufsphy>;
->>> 		vcc-supply = <&xxx_reg1>;
->>> 		vcc-supply-1p8;
->>> 		vccq-supply = <&xxx_reg2>;
->>> diff --git a/drivers/scsi/ufs/Kconfig b/drivers/scsi/ufs/Kconfig index
-6e07b2a..a8259e0 100644
->>> --- a/drivers/scsi/ufs/Kconfig
->>> +++ b/drivers/scsi/ufs/Kconfig
->>> @@ -70,3 +70,15 @@ config SCSI_UFSHCD_PLATFORM
->>> 	If you have a controller with this interface, say Y or M here.
->>> 	  If unsure, say N.
->>> +
->>> +config SCSI_UFS_MSM
->>> +	bool "MSM specific hooks to UFS controller platform driver"
->>> +	depends on SCSI_UFSHCD_PLATFORM && ARCH_MSM
->> This should probably be ARCH_QCOM instead of ARCH_MSM
-
-ok. will check this. Thanks.
-
->>> +	help
->>> +	  This selects the MSM specific additions to UFSHCD platform driver.
-+	  UFS host on MSM needs some vendor specific configuration before +	
- accessing the hardware which includes PHY configuration and vendor +	
- specific registers.
->>> +
->>> +	  Select this if you have UFS controller on MSM chipset.
->>> +	  If unsure, say N.
->> [ snip ]
->> - k
->> --
->> Employee of Qualcomm Innovation Center, Inc.
->> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted
->> by The Linux Foundation
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
-
+--uAY1Vrrb3oVaqxed--
