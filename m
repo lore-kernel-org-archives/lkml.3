@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432AbaHVX3c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 19:29:32 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31936 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaHVX3a (ORCPT
+	id S1752571AbaHVXbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 19:31:07 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:63390 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464AbaHVXbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 19:29:30 -0400
-Date: Fri, 22 Aug 2014 16:29:07 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: Borislav Petkov <bp@alien8.de>, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [V0 PATCH 1/2] AMD-PVH: set EFER.NX and EFER.SCE
- for the boot vcpu
-Message-ID: <20140822162907.3d769e2b@mantra.us.oracle.com>
-In-Reply-To: <20140822120927.03752bc6@mantra.us.oracle.com>
-References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-	<1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
-	<20140822013904.GA20329@laptop.dumpdata.com>
-	<20140821194656.4eea5654@mantra.us.oracle.com>
-	<20140822044140.GB11381@nazgul.tnic>
-	<20140822120927.03752bc6@mantra.us.oracle.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Fri, 22 Aug 2014 19:31:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1408749762.17241.50.camel@joe-AO725>
+References: <20140821162050.GA1323@www.outflux.net>
+	<1408641520.23250.71.camel@joe-AO725>
+	<CAGXu5jJmp4-sposMxjTobEj0xzueQY54OzvdDQg-GC-HhJuBwQ@mail.gmail.com>
+	<1408666251.22832.33.camel@joe-AO725>
+	<1408747041.17241.39.camel@joe-AO725>
+	<94D0CD8314A33A4D9D801C0FE68B402958C1CAFD@G9W0745.americas.hpqcorp.net>
+	<1408749762.17241.50.camel@joe-AO725>
+Date: Fri, 22 Aug 2014 16:31:03 -0700
+X-Google-Sender-Auth: KABeAxjOpHUQxKzOl2a6aeqJppc
+Message-ID: <CAGXu5jJi77abkA=1Nzxf3wvFuOP_iDuqnnyikKJWj6QJWmoj8Q@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: look for common misspellings
+From: Kees Cook <keescook@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, Masanari Iida <standby24x7@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-doc <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014 12:09:27 -0700
-Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+On Fri, Aug 22, 2014 at 4:22 PM, Joe Perches <joe@perches.com> wrote:
+> On Fri, 2014-08-22 at 23:00 +0000, Elliott, Robert (Server Storage)
+> wrote:
+>> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+>> > owner@vger.kernel.org] On Behalf Of Joe Perches
+>> ...
+>> > +chang||change
+>>
+>> Although there are at least 2 misuses in the current kernel,
+>> that's also a fairly common name.
+>
+> True.  Thanks.
+>
+> That one should likely be removed.
+> There are dozens of Chang name uses in the kernel.
 
-> On Fri, 22 Aug 2014 06:41:40 +0200
-> Borislav Petkov <bp@alien8.de> wrote:
-> 
-> > On Thu, Aug 21, 2014 at 07:46:56PM -0700, Mukesh Rathor wrote:
-> > > Intel doesn't have EFER.NX bit.
-> > 
-> > Of course it does.
-> > 
-> 
-> Right, it does. Some code/comment is misleading... Anyways, reading
-> intel SDMs, if I understand the convoluted text correctly, EFER.NX is
-> not required to be set for l1.nx to be set, thus allowing for page
-> level protection. Where as on AMD, EFER.NX must be set for l1.nx to
-> be used. So, in the end, this patch would apply to both amd/intel.... 
-> 
-> I'll reword and submit.
+Right, I removed a bunch similar things like this.
 
-Err, try again, the section "4.1.1 Three Paging Modes" says:
+> I'm not attached at all to any of these btw.
+>
+> Any others you think should not be used or
+> should be added?
+>
+> One I thought kind of iffy was
+>
+>         contant||contact
+>
+> Maybe that should be content instead.
 
-"Execute-disable access rights are applied only if IA32_EFER.NXE = 1"
+Or "constant". I'll go through the list and see if anything stands out.
 
-So, I guess NX is broken on Intel PVH because EFER.NX is currently 
-not being set.  While AMD will #GP if l1.NX is set and EFER.NX is not, 
-I guess Intel just ignores the l1.XD if EFER.NX is not set. 
+> Another thing the script might do is to check
+> if the $typo match is all upper case and then
+> substitute an all upper case $typo_fix.
 
-Mukesh
+That might be a good idea.
+
+> It's also kind of noisy when run using -f,
+> so maybe this test should be --strict check with
+> files and a warning with patches.
+
+Sure, seems reasonable. I'll get a v2 spun up.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
