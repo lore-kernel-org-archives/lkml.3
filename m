@@ -1,114 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764AbaHVAlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:41:50 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:55828 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388AbaHVAlp (ORCPT
+	id S1755726AbaHVAlo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 20:41:44 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54553 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755388AbaHVAlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:41:45 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Hannes Reinecke <hare@suse.de>
-CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: RE: [RFC PATCH -logging 00/10] scsi/constants: Output continuous
- error messages on trace
-Thread-Topic: [RFC PATCH -logging 00/10] scsi/constants: Output continuous
- error messages on trace
-Thread-Index: AQHPsv8DDp/7HOesqUm0wDKcjvfaUJvb1eAQ
-Date: Fri, 22 Aug 2014 00:39:59 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C1A9E5@G9W0745.americas.hpqcorp.net>
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
-In-Reply-To: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Thu, 21 Aug 2014 20:41:40 -0400
+X-Original-SENDERIP: 10.177.222.156
+X-Original-MAILFROM: minchan@kernel.org
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v4 2/4] zsmalloc: change return value unit of  zs_get_total_size_bytes
+Date: Fri, 22 Aug 2014 09:42:12 +0900
+Message-Id: <1408668134-21696-3-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1408668134-21696-1-git-send-email-minchan@kernel.org>
+References: <1408668134-21696-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7M0ftG4009811
 
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Yoshihiro YUNOMAE
-> Sent: Friday, 08 August, 2014 6:50 AM
-> Subject: [RFC PATCH -logging 00/10] scsi/constants: Output continuous
-> error messages on trace
-...
-> 1) printk
-> Keeps current implemntation of upstream kernel.
-> The messages are divided and can be mixed, but all users can
-> check the error messages without any settings.
+zs_get_total_size_bytes returns a amount of memory zsmalloc
+consumed with *byte unit* but zsmalloc operates *page unit*
+rather than byte unit so let's change the API so benefit
+we could get is that reduce unnecessary overhead
+(ie, change page unit with byte unit) in zsmalloc.
 
-scsi_io_completion ignore the scsi_logging_level and always calls
-printk if it detects ACTION_FAIL, resulting in messages like:
+Since return type is pages, "zs_get_total_pages" is better than
+"zs_get_total_size_bytes".
 
-    [10240.338600] sd 2:0:0:0: [sdr]
-    [10240.339722] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-    [10240.341662] sd 2:0:0:0: [sdr]
-    [10240.342792] Sense Key : Hardware Error [current]
-    [10240.344575] sd 2:0:0:0: [sdr]
-    [10240.345653] Add. Sense: Logical unit failure
-    [10240.347138] sd 2:0:0:0: [sdr] CDB:
-    [10240.348309] Read(10): 28 00 00 00 00 80 00 00 08 00
-
-If you trigger hundreds of errors (e.g., hot remove a device
-during heavy IO), then all the prints to the linux serial console
-bog down the system, causing timeouts in commands to other
-devices and soft lockups for applications.
-
-Some changes that would help are:
-1. Put them under SCSI logging level control
-2. Use printk_ratelimited so an excessive number are trimmed
-
-Would you like to include something like this in your
-patch set?
-
-This is an example patch that only prints them if the MLCOMPLETE 
-logging level is nonzero.
-Off: scsi_logging_level --set --mlcomplete=0
-On: scsi_logging_level --set --mlcomplete=1
-
-Some other loglevel (e.g., ERROR_RECOVERY) could be used.
-
-diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-index d6b4ea8..dbb601f 100644
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1037,7 +1037,9 @@ void scsi_io_completion(struct scsi_cmnd *cmd, unsigned int good_bytes)
- 	switch (action) {
- 	case ACTION_FAIL:
- 		/* Give up and fail the remainder of the request */
--		if (!(req->cmd_flags & REQ_QUIET)) {
-+		if (!(req->cmd_flags & REQ_QUIET) &&
-+		    SCSI_LOG_LEVEL(SCSI_LOG_MLCOMPLETE_SHIFT,
-+		    SCSI_LOG_MLCOMPLETE_BITS)) {
- 			scsi_print_result(cmd);
- 			if (driver_byte(result) & DRIVER_SENSE)
- 				scsi_print_sense("", cmd);
-
-Converting to printk_ratelimited is harder since the prints
-are spread out over three functions (and as your patch
-series notes, many individual printk calls).  The rates
-for the printk calls might not match, which would lead to
-even more confusing output.
-
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
-Rob Elliott    HP Server Storage
+ drivers/block/zram/zram_drv.c | 4 ++--
+ include/linux/zsmalloc.h      | 2 +-
+ mm/zsmalloc.c                 | 9 ++++-----
+ 3 files changed, 7 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index d00831c3d731..f0b8b30a7128 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -103,10 +103,10 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 
+ 	down_read(&zram->init_lock);
+ 	if (init_done(zram))
+-		val = zs_get_total_size_bytes(meta->mem_pool);
++		val = zs_get_total_pages(meta->mem_pool);
+ 	up_read(&zram->init_lock);
+ 
+-	return scnprintf(buf, PAGE_SIZE, "%llu\n", val);
++	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
+ }
+ 
+ static ssize_t max_comp_streams_show(struct device *dev,
+diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+index e44d634e7fb7..05c214760977 100644
+--- a/include/linux/zsmalloc.h
++++ b/include/linux/zsmalloc.h
+@@ -46,6 +46,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 			enum zs_mapmode mm);
+ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+ 
+-u64 zs_get_total_size_bytes(struct zs_pool *pool);
++unsigned long zs_get_total_pages(struct zs_pool *pool);
+ 
+ #endif
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index 2a4acf400846..c4a91578dc96 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -297,7 +297,7 @@ static void zs_zpool_unmap(void *pool, unsigned long handle)
+ 
+ static u64 zs_zpool_total_size(void *pool)
+ {
+-	return zs_get_total_size_bytes(pool);
++	return zs_get_total_pages(pool) << PAGE_SHIFT;
+ }
+ 
+ static struct zpool_driver zs_zpool_driver = {
+@@ -1181,12 +1181,11 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+ }
+ EXPORT_SYMBOL_GPL(zs_unmap_object);
+ 
+-u64 zs_get_total_size_bytes(struct zs_pool *pool)
++unsigned long zs_get_total_pages(struct zs_pool *pool)
+ {
+-	u64 npages = atomic_long_read(&pool->pages_allocated);
+-	return npages << PAGE_SHIFT;
++	return atomic_long_read(&pool->pages_allocated);
+ }
+-EXPORT_SYMBOL_GPL(zs_get_total_size_bytes);
++EXPORT_SYMBOL_GPL(zs_get_total_pages);
+ 
+ module_init(zs_init);
+ module_exit(zs_exit);
+-- 
+2.0.0
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
