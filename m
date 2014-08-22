@@ -1,41 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795AbaHVCsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 22:48:47 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:61216 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576AbaHVCsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 22:48:45 -0400
-Date: Thu, 21 Aug 2014 19:48:38 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <sandeep_n@ti.com>
-Subject: Re: [PATCH v2 2/3] net: Add Keystone NetCP ethernet driver
-Message-ID: <20140821194838.32f2c3f1@uryu.home.lan>
-In-Reply-To: <1408115562-22487-3-git-send-email-santosh.shilimkar@ti.com>
-References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com>
-	<1408115562-22487-3-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755720AbaHVCxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 22:53:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15862 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753562AbaHVCxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 22:53:35 -0400
+Message-ID: <53F6B0AB.2060700@redhat.com>
+Date: Fri, 22 Aug 2014 10:53:31 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com> <1408608310-13579-2-git-send-email-jasowang@redhat.com> <20140821081140.GA29116@redhat.com>
+In-Reply-To: <20140821081140.GA29116@redhat.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 15 Aug 2014 11:12:41 -0400
-Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+On 08/21/2014 04:11 PM, Michael S. Tsirkin wrote:
+> On Thu, Aug 21, 2014 at 04:05:10PM +0800, Jason Wang wrote:
+>> > Rx busy loop does not scale well in the case when several parallel
+>> > sessions is active. This is because we keep looping even if there's
+>> > another process is runnable. For example, if that process is about to
+>> > send packet, keep busy polling in current process will brings extra
+>> > delay and damage the performance.
+>> > 
+>> > This patch solves this issue by exiting the busy loop when there's
+>> > another process is runnable in current cpu. Simple test that pin two
+>> > netperf sessions in the same cpu in receiving side shows obvious
+>> > improvement:
+>> > 
+>> > Before:
+>> > netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+>> > netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+>> > 16384  87380  1        1       10.00    15513.74
+>> > 16384  87380
+>> > 16384  87380  1        1       10.00    15092.78
+>> > 16384  87380
+>> > 
+>> > After:
+>> > netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+>> > netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+>> > 16384  87380  1        1       10.00    23334.53
+>> > 16384  87380
+>> > 16384  87380  1        1       10.00    23327.58
+>> > 16384  87380
+>> > 
+>> > Benchmark was done through two 8 cores Xeon machine back to back connected
+>> > with mlx4 through netperf TCP_RR test (busy_read were set to 50):
+>> > 
+>> > sessions/bytes/before/after/+improvement%/busy_read=0/
+>> > 1/1/30062.10/30034.72/+0%/20228.96/
+>> > 16/1/214719.83/307669.01/+43%/268997.71/
+>> > 32/1/231252.81/345845.16/+49%/336157.442/
+>> > 64/512/212467.39/373464.93/+75%/397449.375/
+>> > 
+>> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> > ---
+>> >  include/net/busy_poll.h | 3 ++-
+>> >  1 file changed, 2 insertions(+), 1 deletion(-)
+>> > 
+>> > diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+>> > index 1d67fb6..8a33fb2 100644
+>> > --- a/include/net/busy_poll.h
+>> > +++ b/include/net/busy_poll.h
+>> > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+>> >  		cpu_relax();
+>> >  
+>> >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+>> > -		 !need_resched() && !busy_loop_timeout(end_time));
+>> > +		 !need_resched() && !busy_loop_timeout(end_time) &&
+>> > +		 nr_running_this_cpu() < 2);
+> <= 1 would be a bit clearer? We want at most one process here.
+>
 
-> NetCP driver has a plug-in module architecture where each of the NetCP
-> sub-modules exist as a loadable kernel module which plug in to the netcp
-> core. These sub-modules are represented as "netcp-devices" in the dts
-> bindings. It is mandatory to have the ethernet switch sub-module for
-> the ethernet interface to be operational. Any other sub-module like the
-> PA is optional.
-
-What are you doing to prevent/discourage proprietary binary only
-sub-modules?
+Ok, will change it in next version.
