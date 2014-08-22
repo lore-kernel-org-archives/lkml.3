@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaHVT2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:28:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53534 "EHLO
+	id S1751980AbaHVT2r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:28:47 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53539 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878AbaHVT2c (ORCPT
+	with ESMTP id S1751149AbaHVT2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:28:32 -0400
-Date: Fri, 22 Aug 2014 12:28:31 -0700 (PDT)
-Message-Id: <20140822.122831.451083152510385540.davem@davemloft.net>
-To: bernat.ada@gmail.com
-Cc: stephen@networkplumber.org, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] br_multicast: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
+	Fri, 22 Aug 2014 15:28:46 -0400
+Date: Fri, 22 Aug 2014 12:28:45 -0700 (PDT)
+Message-Id: <20140822.122845.47909761068311924.davem@davemloft.net>
+To: himangi774@gmail.com
+Cc: linux-decnet-user@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH] dn_dev: Use time_before
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140822130609.GA19576@ada>
-References: <20140822130609.GA19576@ada>
+In-Reply-To: <20140820174306.GA4180@himangi-Dell>
+References: <20140820174306.GA4180@himangi-Dell>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 22 Aug 2014 12:28:31 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 22 Aug 2014 12:28:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-Date: Fri, 22 Aug 2014 16:06:09 +0300
+From: Himangi Saraogi <himangi774@gmail.com>
+Date: Wed, 20 Aug 2014 23:13:07 +0530
 
-> The use of "rcu_assign_pointer()" is NULLing out the pointer.
-> According to RCU_INIT_POINTER()'s block comment:
-> "1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-> it is better to use it instead of rcu_assign_pointer() because it has a
-> smaller overhead.
- ...
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> The functions time_before, time_before_eq, time_after, and time_after_eq
+> are more robust for comparing jiffies against other values.
+> 
+> A simplified version of the Coccinelle semantic patch making this change
+> is as follows:
+> 
+> @change@
+> expression E1,E2;
+> @@
+> 
+> (
+> - (jiffies - E1) < E2
+> + time_before(jiffies, E1+E2)
+> )
+> 
+> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
+> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
 Applied.
