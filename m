@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaHVSg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 14:36:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55683 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbaHVSgY (ORCPT
+	id S1751340AbaHVSkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:40:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55236 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaHVSkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 14:36:24 -0400
-Date: Fri, 22 Aug 2014 13:36:14 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Thierry Reding <thierry.reding@gmail.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Message-ID: <20140822183614.GA24407@sirena.org.uk>
-References: <1408699627-7364-1-git-send-email-linux@rasmusvillemoes.dk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QNuYedFeXxEqrKRj"
-Content-Disposition: inline
-In-Reply-To: <1408699627-7364-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 208.59.64.2
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] sound: tegra: tegra_asoc_utils.h: Fix typo in include
- guard
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 22 Aug 2014 14:40:08 -0400
+Message-Id: <b13fc1b6d923e7063746f34968bd2f1c4cb09002.1408731991.git.geoff@infradead.org>
+In-Reply-To: <cover.1408731991.git.geoff@infradead.org>
+References: <cover.1408731991.git.geoff@infradead.org>
+From: Geoff Levand <geoff@infradead.org>
+Patch-Date: Wed, 20 Aug 2014 14:44:41 -0700
+Subject: [PATCH 3/5] kexec: Add bit definitions for kimage entry flags
+To: Eric Biederman <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Fri, 22 Aug 2014 18:39:47 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Define new kexec preprocessor macros IND_*_BIT that define the bit position of
+the kimage entry flags.  Change the existing IND_* flag macros to be defined as
+bit shifts of the corresponding IND_*_BIT macros.  Also wrap all C language code
+in kexec.h with #if !defined(__ASSEMBLY__) so assembly files can include kexec.h
+to get the IND_* and IND_*_BIT macros.
 
---QNuYedFeXxEqrKRj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Some CPU instruction sets have tests for bit position which are convenient in
+implementing routines that operate on the kimage entry list.  The addition of
+these bit position macros in a common location will avoid duplicate definitions
+and the chance that changes to the IND_* flags will not be propagated to
+assembly files.
 
-On Fri, Aug 22, 2014 at 11:27:07AM +0200, Rasmus Villemoes wrote:
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Geoff Levand <geoff@infradead.org>
+---
+ include/linux/kexec.h | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-Applied, thanks - again please try to follow the subject line style.
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 4b2a0e1..8c628ca 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -1,6 +1,18 @@
+ #ifndef LINUX_KEXEC_H
+ #define LINUX_KEXEC_H
+ 
++#define IND_DESTINATION_BIT 0
++#define IND_INDIRECTION_BIT 1
++#define IND_DONE_BIT        2
++#define IND_SOURCE_BIT      3
++
++#define IND_DESTINATION  (1 << IND_DESTINATION_BIT)
++#define IND_INDIRECTION  (1 << IND_INDIRECTION_BIT)
++#define IND_DONE         (1 << IND_DONE_BIT)
++#define IND_SOURCE       (1 << IND_SOURCE_BIT)
++
++#if !defined(__ASSEMBLY__)
++
+ #include <uapi/linux/kexec.h>
+ 
+ #ifdef CONFIG_KEXEC
+@@ -64,10 +76,6 @@
+  */
+ 
+ typedef unsigned long kimage_entry_t;
+-#define IND_DESTINATION  0x1
+-#define IND_INDIRECTION  0x2
+-#define IND_DONE         0x4
+-#define IND_SOURCE       0x8
+ 
+ struct kexec_segment {
+ 	/*
+@@ -312,4 +320,7 @@ struct task_struct;
+ static inline void crash_kexec(struct pt_regs *regs) { }
+ static inline int kexec_should_crash(struct task_struct *p) { return 0; }
+ #endif /* CONFIG_KEXEC */
++
++#endif /* !defined(__ASSEBMLY__) */
++
+ #endif /* LINUX_KEXEC_H */
+-- 
+1.9.1
 
---QNuYedFeXxEqrKRj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT942bAAoJELSic+t+oim9QVEP/A5lcOY4hD5lH0c9WIdFRVU2
-WyxgGjse3VGcqS4pC463UbwOCPtWbi05oiTPK9/txg3HQihs3SVX1hftq7s+dfpd
-aEXcFTg3bpDWFwp2DjucO7NXg603OG0gPMkh46HbpuMtyqL7UohyJTpmLZTnWL9a
-RtB4uMV4ML51TAVwLofE+RDb1tF9PeEQGKXFR6mGAB5MEMtBf7aX2C6JpVY0ZtTL
-gKK5uAVGS4alcdSw1Bi4WlzsBtAU2/Wm36TqZo2IfZE3pdrzJu5JDZ8C0+wqfGSt
-E627gKgOSTtdnaiAi0am5lIPv64U4lOvYNinPEZ+uQMnk2Kwr6F7/V9gPX3flUe5
-iFP3Wfpnc2oDJTjixCK4Oc3OK89qsjQaZAOmRDdEoa1OdaGN+WEvnMgu3wyAaedh
-hD5Wf4dBBdEKO9DUqKaIVvr+h/U7V4B4r2MhGB8z5Lj+aMdSYVK23qZ+Zq0yqOJ+
-r9QN9rASCu0tjDE8HGlydLOzpFzkKcRdzH0b2xi8vzz/y9xJISkUxu7vaBayTzcx
-nOB0AVi5mqDb66NEvLrehRFRhCvbRVkVZOcfNFol+LDQPemLKiT0eNgGte+BjC78
-m6NRRZOTpUon1ql3YGrcJJ9yoWzLkdyi0UisqNt9lGm+NcMvk88u8PE02Wiwit7v
-DbmqCObdJM38aJEQchos
-=Ly7C
------END PGP SIGNATURE-----
-
---QNuYedFeXxEqrKRj--
