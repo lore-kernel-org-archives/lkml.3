@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399AbaHVOS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:18:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27472 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099AbaHVOSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:18:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,381,1406617200"; 
-   d="scan'208";a="591912670"
-Date: Fri, 22 Aug 2014 07:18:07 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink
- supporting
-Message-ID: <20140822141807.GA5803@tassilo.jf.intel.com>
-References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20130411232907.GC29398@hacker.(null)>
- <20130412152237.GM16732@two.firstfloor.org>
- <20140821233729.GB2420@kernel>
- <53F69E26.1090408@cn.fujitsu.com>
- <20140822040420.GA4756@kernel>
+	id S932264AbaHVOVH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:21:07 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:42807 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932120AbaHVOVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:21:05 -0400
+Date: Fri, 22 Aug 2014 17:20:55 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: mingo@redhat.com, peterz@infradead.com, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] kernel: sched: fair: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140822142055.GA32239@ada>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140822040420.GA4756@kernel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >commit 944d9fec8d7aee3f2e16573e9b6a16634b33f403
-> >Author: Luiz Capitulino <lcapitulino@redhat.com>
-> >Date:   Wed Jun 4 16:07:13 2014 -0700
-> >
-> >    hugetlb: add support for gigantic page allocation at runtime
-> >
-> >
-> 
-> Ah, thanks for your pointing out.
+The use of "rcu_assign_pointer()" is NULLing out the pointer.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-I should add the CMA allocation would still make sense, as CMA would do
-compaction and better pre-allocation while this does not. Should probably
-revisit the issue. But it's at least partially solved now.
+The following Coccinelle semantic patch was used:
+@@
+@@
 
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
 
--Andi
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index fea7d33..7d4f743 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1759,7 +1759,7 @@ void task_numa_free(struct task_struct *p)
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+ 		spin_unlock_irqrestore(&grp->lock, flags);
+-		rcu_assign_pointer(p->numa_group, NULL);
++		RCU_INIT_POINTER(p->numa_group, NULL);
+ 		put_numa_group(grp);
+ 	}
+ 
+-- 
+1.9.1
+
