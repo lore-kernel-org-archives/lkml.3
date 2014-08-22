@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664AbaHVOux (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:50:53 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:55018 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316AbaHVOuw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:50:52 -0400
-Date: Fri, 22 Aug 2014 17:50:43 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [RESEND PATCH] kernel: sched: fair: Replace rcu_assign_pointer()
- with RCU_INIT_POINTER()
-Message-ID: <20140822145043.GA580@ada>
+	id S1756499AbaHVO7j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:59:39 -0400
+Received: from ozlabs.org ([103.22.144.67]:53511 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756303AbaHVO7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:59:38 -0400
+Date: Sat, 23 Aug 2014 00:59:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: error while fetching the mips tree
+Message-ID: <20140823005925.159d4f58@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/E720twxdUSFEDsuo=BWFulU"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of "rcu_assign_pointer()" is NULLing out the pointer.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+--Sig_/E720twxdUSFEDsuo=BWFulU
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+Hi Ralf,
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+Fetching the mips tree produces this error:
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+fatal: unable to connect to git.linux-mips.org:
+git.linux-mips.org[0: 78.24.191.183]: errno=3DConnection refused
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fea7d33..7d4f743 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1759,7 +1759,7 @@ void task_numa_free(struct task_struct *p)
- 		list_del(&p->numa_entry);
- 		grp->nr_tasks--;
- 		spin_unlock_irqrestore(&grp->lock, flags);
--		rcu_assign_pointer(p->numa_group, NULL);
-+		RCU_INIT_POINTER(p->numa_group, NULL);
- 		put_numa_group(grp);
- 	}
- 
--- 
-1.9.1
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/E720twxdUSFEDsuo=BWFulU
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJT91rTAAoJEMDTa8Ir7ZwVoFMP/3yDxCI0blArLTPK9J8SgvqD
+HvESmLwG6WOjlQn2lltCQD0qvEQ1HzGXLZFteZEqdEOKIuu2/idDTpzyUNqlk4sE
+6WRSTL2szbzFAEebhQ1DrXoAcdqDFMSwFeKJh7FC74+YaDaJiMlZzW+DbFvrfET7
+7LTAyltFo8m05kr687N24N2yBFUULn7Zsrdk92MXLjtTX/KzcBxAuazp+Djwsgtj
+K7C/R5u0Fo2lYN7sl0Mhdss6o8HEwukM00wvfeolf3Ydpshg9p5EcWdWTli/AvuY
+i70XL9l8qAfr8ct+fyqPBcXQTnYEiNEgJVjL+Q9D7weyh0QaC9OFNdOlaMYNcblF
+qqgqaWyrHIG0oOueMA9X95R2usRmnYHxgqO4GWqKU+pzoWr4RV3yB5dFHHWOv12m
+3o7vGgG7V+GKVehwldBQRhTxJLDydrhqU+M66A8vUYlXuUzXRrP7jlQ8wntc3kUt
+0gCI8o/SFTe1D64hTtXNspLwFruI72s3XelKzpD0lZO/D8TG9OGiqGJvUk8NVWhP
+0bXQ+28wxvD89HMhbp5xt1QhsQOqEYBOWOkDsHK91LZWzJIAABAf+KALogNGZVcg
+E+Dlc0kcQUdwkoyvg2tMHm1ZYog3xdcIDQo8o32ypRXx405HoCi2lfgjazF56Hr9
+AQ4ojZhugiIWFF3G9kfj
+=pOF9
+-----END PGP SIGNATURE-----
+
+--Sig_/E720twxdUSFEDsuo=BWFulU--
