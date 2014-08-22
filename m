@@ -1,122 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712AbaHVUQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 16:16:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28582 "EHLO mx1.redhat.com"
+	id S1751878AbaHVURQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 16:17:16 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:37740 "EHLO vps0.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283AbaHVUQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 16:16:10 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] HID: logitech-dj: prevent false errors to be shown
-Date: Fri, 22 Aug 2014 16:16:05 -0400
-Message-Id: <1408738566-6805-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1751636AbaHVURP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 16:17:15 -0400
+Date: Fri, 22 Aug 2014 22:11:12 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Andrew Lunn <andrew@lunn.ch>, Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Rabin Vincent <rabin@rab.in>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7 3/8] cpufreq: kirkwood: Remove use of the clk provider
+ API
+Message-ID: <20140822201112.GH17277@lunn.ch>
+References: <1408375833-10703-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1408375833-10703-4-git-send-email-tomeu.vizoso@collabora.com>
+ <20140820225513.5251.284@quantum>
+ <53F5A587.9030200@collabora.com>
+ <20140821133825.GH8608@lunn.ch>
+ <20140822192933.5251.53733@quantum>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822192933.5251.53733@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "HID: logitech: perform bounds checking on device_id early
-enough" unfortunately leaks some errors to dmesg which are not real
-ones:
-- if the report is not a DJ one, then there is not point in checking
-  the device_id
-- the receiver (index 0) can also receive some notifications which
-  can be safely ignored given the current implementation
+> Thanks for reviewing. I think my patch is equivalent to the old way of
+> doing things, with one exception that I will address later below.
+> 
+> struct cpufreq_frequency_table kirkwood_freq_table has clock rates
+> initialized to zero, so there is no regression compared to my unsigned
+> long cpu_frequency variable used for tracking the clock rate. Both
+> implementations start with unknown rates in hardware and initialize a
+> variable to zero until that rate can be discovered later on in
+> kirkwood_cpufreq_probe().
+> 
+> kirkwood_cpufreq_get_cpu_frequency() returns the frequency based on the
+> state of the clock. As best I can tell, this clock is only touched by
+> this cpufreq driver and nowhere else
 
-Move out the test regarding the report_id and also discards
-printing errors when the receiver got notified.
+Not quite true. u-boot might of touch the clock. Weird things happen
+with some kirkwood boards. Some don't have the ability to control
+there power supplies. So some boards implement "power off" by
+rebooting, and letting u-boot spin until a button is pressed. I hope
+such a u-boot powers off as much as possible, and e.g. drops the CPU
+clock to the lower frequency. One would also hope it puts it back to
+high speed before calling the kernel.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-logitech-dj.c | 43 +++++++++++++++++++++++++------------------
- drivers/hid/hid-logitech-dj.h |  1 +
- 2 files changed, 26 insertions(+), 18 deletions(-)
+There is also the somewhat unlikely case that somebody uses kexec to
+go from one kernel to another. You have no idea what state the
+previous kernel left the clock in.
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index b7ba829..9bf8637 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -656,7 +656,6 @@ static int logi_dj_raw_event(struct hid_device *hdev,
- 	struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
- 	struct dj_report *dj_report = (struct dj_report *) data;
- 	unsigned long flags;
--	bool report_processed = false;
- 
- 	dbg_hid("%s, size:%d\n", __func__, size);
- 
-@@ -683,34 +682,42 @@ static int logi_dj_raw_event(struct hid_device *hdev,
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+
-+	/* case 1) */
-+	if (data[0] != REPORT_ID_DJ_SHORT)
-+		return false;
-+
- 	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
- 	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+		/*
-+		 * Device index is wrong, bail out.
-+		 * This driver can ignore safely the receiver notifications,
-+		 * so ignore those reports too.
-+		 */
-+		if (dj_report->device_index != DJ_RECEIVER_INDEX)
-+			dev_err(&hdev->dev, "%s: invalid device index:%d\n",
- 				__func__, dj_report->device_index);
- 		return false;
- 	}
- 
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
--	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
--		switch (dj_report->report_type) {
--		case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
--		case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
--			logi_dj_recv_queue_notification(djrcv_dev, dj_report);
--			break;
--		case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
--			if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
--			    STATUS_LINKLOSS) {
--				logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
--			}
--			break;
--		default:
--			logi_dj_recv_forward_report(djrcv_dev, dj_report);
-+	switch (dj_report->report_type) {
-+	case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
-+	case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
-+		logi_dj_recv_queue_notification(djrcv_dev, dj_report);
-+		break;
-+	case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
-+		if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
-+		    STATUS_LINKLOSS) {
-+			logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
- 		}
--		report_processed = true;
-+		break;
-+	default:
-+		logi_dj_recv_forward_report(djrcv_dev, dj_report);
- 	}
- 	spin_unlock_irqrestore(&djrcv_dev->lock, flags);
- 
--	return report_processed;
-+	return true;
- }
- 
- static int logi_dj_probe(struct hid_device *hdev,
-diff --git a/drivers/hid/hid-logitech-dj.h b/drivers/hid/hid-logitech-dj.h
-index 4a40003..daeb0aa 100644
---- a/drivers/hid/hid-logitech-dj.h
-+++ b/drivers/hid/hid-logitech-dj.h
-@@ -27,6 +27,7 @@
- 
- #define DJ_MAX_PAIRED_DEVICES			6
- #define DJ_MAX_NUMBER_NOTIFICATIONS		8
-+#define DJ_RECEIVER_INDEX			0
- #define DJ_DEVICE_INDEX_MIN 			1
- #define DJ_DEVICE_INDEX_MAX 			6
- 
--- 
-2.1.0
+> , so the driver knows the state of
+> the clock implicitly and doesn't need to read any hardware registers to
+> see if it is enabled or not. Every time we enable or disable the clock
+> we can know the cpu frequency.
+> 
+> > 
+> > However, if you don't cause an actual state change, the WFI never
+> > returns. If this assumption is wrong, your box is dead the first time
+> > it tries to change cpu frequency.
+> 
+> So if a state change in hardware never occurs, the cpu will not wake up?
 
+Correct. I had that situation a few times while developing this
+driver. And it is not obvious what has happened, since it does not
+happen immediately, but when the governor decides the CPU load passes
+a threshold and the frequency can be changed. I had it stop dead while
+i assume it executed some sleep in an /etc/init.d script.
+
+> That sounds like a bad situation but I do not understand how it relates
+> to the changes I made in the driver. Could you explain how tracking
+> cpu_frequency in the driver would result in the cpu not waking up from
+> wfi?
+
+It was clearer in earlier versions of the driver, but code has been
+refactored into the cpufreq core. The core should call
+kirkwood_cpufreq_get_cpu_frequency() in order to get the current
+frequency, and only perform a change if the requested frequency is
+different. In the current code, kirkwood_cpufreq_get_cpu_frequency()
+reads from the hardware what the current frequency is. So we are
+guaranteed to only call kirkwood_cpufreq_target() when there is a real
+change.
+
+[snip]
+
+> Can the driver's
+> view of the clock status be out of sync with the actual hardware?
+
+Yes, at startup, as explained above, we have no idea what the current
+state of the hardware is. Once we do know the real state, we can track
+it within the driver, but we need to get that initial state correct,
+or we WFI forever on the first frequency change.
+
+   Andrew
