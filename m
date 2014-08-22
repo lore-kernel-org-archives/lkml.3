@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611AbaHVCUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 22:20:10 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:49788 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158AbaHVCTx (ORCPT
+	id S1755704AbaHVCUZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 22:20:25 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54272 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755553AbaHVCUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 22:19:53 -0400
-Date: Thu, 21 Aug 2014 19:19:47 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Andreas =?iso-8859-1?Q?F=E4rber?= <afaerber@suse.de>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-doc@vger.kernel.org,
+	Thu, 21 Aug 2014 22:20:10 -0400
+Date: Thu, 21 Aug 2014 21:19:38 -0500
+From: Mark Brown <broonie@kernel.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Sonny Rao <sonnyrao@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
+        Addy Ke <addy.ke@rock-chips.com>, Chris Zhong <zyw@rock-chips.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org, lgirdwood@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 04/11] arm: Support restart through restart handler
- call chain
-Message-ID: <20140822021947.GA17788@roeck-us.net>
-References: <1408495538-27480-1-git-send-email-linux@roeck-us.net>
- <1408495538-27480-5-git-send-email-linux@roeck-us.net>
- <53F69DBA.4070806@suse.de>
+Message-ID: <20140822021938.GT24407@sirena.org.uk>
+References: <1408668895-1108-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nreWiX4Cj9hiu/Wx"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53F69DBA.4070806@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408668895-1108-1-git-send-email-dianders@chromium.org>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 208.59.64.2
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: RK808: Fix uninitialized value
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 03:32:42AM +0200, Andreas Färber wrote:
-> Hi,
-> 
-> Am 20.08.2014 02:45, schrieb Guenter Roeck:
-> > The kernel core now supports a restart handler call chain for system
-> > restart functions.
-> > 
-> > With this change, the arm_pm_restart callback is now optional, so
-> > drop its initialization and check if it is set before calling it.
-> > Only call the kernel restart handler if arm_pm_restart is not set.
-> [...]
-> > diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> > index 81ef686..ea279f7 100644
-> > --- a/arch/arm/kernel/process.c
-> > +++ b/arch/arm/kernel/process.c
-> > @@ -114,17 +114,13 @@ void soft_restart(unsigned long addr)
-> >  	BUG();
-> >  }
-> >  
-> > -static void null_restart(enum reboot_mode reboot_mode, const char *cmd)
-> > -{
-> > -}
-> > -
-> >  /*
-> >   * Function pointers to optional machine specific functions
-> >   */
-> >  void (*pm_power_off)(void);
-> >  EXPORT_SYMBOL(pm_power_off);
-> >  
-> > -void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd) = null_restart;
-> > +void (*arm_pm_restart)(enum reboot_mode reboot_mode, const char *cmd);
-> 
-> Stupid newbie question maybe, but isn't this variable uninitialized now,
-> like any non-static variable in C99? Or does the kernel assure that all
-> such "fields" are zero-initialized?
-> 
-It is initialized with NULL, like all other global and static variables in the
-kernel (and like pm_power_off a few lines above).
 
-Guenter
+--nreWiX4Cj9hiu/Wx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Aug 21, 2014 at 05:54:55PM -0700, Doug Anderson wrote:
+> The RK808 regulator driver was putting its config on the stack but not
+> initting it.  That means that you got a semi-random config.  Fix this.
+
+Applied, thanks.
+
+--nreWiX4Cj9hiu/Wx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT9qi2AAoJELSic+t+oim9uO4P/3SqdYEN9T+uiY7MgoQUKgI5
+7+SHs9i3cxB66vc0a8OAFBMs+cjBdIuCR4NyUn4v9fC5a08YT7UBjgEyd3xS9/Fr
+l9O5gMjdeJQjYGvMocxI8/OUbuzjcgq38T+4j2qVTzVsmdN9j1T6INtkU9KkFnRC
+QsRNXK55l7UCR1Yh4kavHEaqItQGeG31/kekZJVclqunst9OYi2ry6bCCrx9gu0a
+jQvCS/LjURec0++1nFk+nGIVMZcQs8nU4y6DBhHnL7Cn5IpUq1lynVbTFiKzNJ4q
+R1vGVyN0SQnjG62wNTUzx945hyObPbDug6Lm8GshmjmtFaMBshK7GWaTUOH5kjjx
+ygyks4zVaW8w3OVOswcYwrM/JvxUDIEtt6bSzFvWer4m0geatykV2L0G3gV00FV7
+z0YRUjXxq/+oYugjD9cRafirvKoFazz2CXTwRli0xhA5/ruJMRHYCdHwFCwI6be3
+bohB2GrGcUlksBYK0VWxrR+O4vcw7dphQwObYExlpVKqfaLS6syckpD+zZjwLwNL
+ofU4R1gMnk6jo/C3bguPecbLgQVLZ8zWGuwIKxE+UuFkM/YZI4l0IrA215zlZbYp
+FDUI78vVDZklQ2DcpJiz9S5ipeJQy1l6oSvZKk1lUWxfNaA9Lwn3dNES7A0c316q
+iPYHvQ7qokj8A3QtW/P4
+=MRYd
+-----END PGP SIGNATURE-----
+
+--nreWiX4Cj9hiu/Wx--
