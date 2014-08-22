@@ -1,141 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaHXVig (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 17:38:36 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:57294 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286AbaHXVie (ORCPT
+	id S1753554AbaHXVwh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 17:52:37 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:63584 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706AbaHXVwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 17:38:34 -0400
-Message-ID: <53FA5B55.4000603@gmail.com>
-Date: Sun, 24 Aug 2014 23:38:29 +0200
-From: Marcin Jabrzyk <marcin.jabrzyk@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 24 Aug 2014 17:52:35 -0400
+Date: Fri, 22 Aug 2014 16:51:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Benson Leung <bleung@google.com>,
+        Patrik Fimml <patrikf@google.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dudley Du <dudl@cypress.com>
+Subject: Re: [PATCH v4 5/14] input: cyapa: add read firmware image and raw
+ data interfaces in debugfs system
+Message-ID: <20140822235138.GA24242@core.coreip.homeip.net>
+References: <53c772c1.e683460a.3dd2.4a4c@mx.google.com>
 MIME-Version: 1.0
-To: mathieu.poirier@linaro.org, linus.walleij@linaro.org, will.deacon@arm.com,
-        linux@arm.linux.org.uk, 00regkh@linuxfoundation.org
-CC: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
-        jonas.svennebring@avagotech.com, james.king@linaro.org,
-        panchaxari.prasannamurthy@linaro.org, kaixu.xia@linaro.org,
-        r.sengupta@samsung.com, robbelibobban@gmail.com,
-        Tony.Armitstead@arm.com, daniel.thompson@linaro.org,
-        patches@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/11 v4] coresight: adding support for beagle and beagleXM
-References: <1408554231-24321-1-git-send-email-mathieu.poirier@linaro.org> <1408554231-24321-10-git-send-email-mathieu.poirier@linaro.org>
-In-Reply-To: <1408554231-24321-10-git-send-email-mathieu.poirier@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53c772c1.e683460a.3dd2.4a4c@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Dudley,
 
-W dniu 20.08.2014 o 19:03, mathieu.poirier@linaro.org pisze:
-> From: Mathieu Poirier <mathieu.poirier@linaro.org>
->
-> Currently supporting ETM and ETB.  Support for TPIU
-> and SDTI are yet to be added.
-Did you tried running the drivers on board or are there any special
-preparation needed?
-I've BeagleBoard-xM Rev. C applied your patches and enabled the
-functions the in menuconfig.
-But on dmesg I see that:
-
-[    0.685028] of_amba_device_create(): amba_device_add() failed (-19)
-for /etb@5401b000
-[    0.685119] of_amba_device_create(): amba_device_add() failed (-19)
-for /etm@54010000
-
-There are no nodes according coresight in /sys/kernel/debug/ .
-
-Best regards,
-Marcin
-
->
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+On Thu, Jul 17, 2014 at 02:52:36PM +0800, Dudley Du wrote:
+> Add read_fw and raw_data debugfs interfaces for easier issues location
+> and collection when report by user.
+> TEST=test on Chromebooks.
+> 
+> Signed-off-by: Dudley Du <dudl@cypress.com>
 > ---
->  arch/arm/boot/dts/omap3-beagle-xm.dts | 28 ++++++++++++++++++++++++++++
->  arch/arm/boot/dts/omap3-beagle.dts    | 28 ++++++++++++++++++++++++++++
->  2 files changed, 56 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> index 1becefc..eec73d8 100644
-> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> @@ -145,6 +145,34 @@
->  			};
->  		};
->  	};
-> +
-> +	etb@5401b000 {
-> +		compatible = "arm,coresight-etb10", "arm,primecell";
-> +		reg = <0x5401b000 0x1000>;
-> +
-> +		coresight-default-sink;
-> +		clocks = <&emu_src_ck>;
-> +		clock-names = "apb_pclk";
-> +		port {
-> +			etb_in: endpoint {
-> +				slave-mode;
-> +				remote-endpoint = <&etm_out>;
-> +			};
-> +		};
-> +	};
-> +
-> +	etm@54010000 {
-> +		compatible = "arm,coresight-etm3x", "arm,primecell";
-> +		reg = <0x54010000 0x1000>;
-> +
-> +		clocks = <&emu_src_ck>;
-> +		clock-names = "apb_pclk";
-> +		port {
-> +			etm_out: endpoint {
-> +				remote-endpoint = <&etb_in>;
-> +			};
-> +		};
-> +	};
->  };
+>  drivers/input/mouse/cyapa.c |  219 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 219 insertions(+)
+> 
+> diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+> index 53c9d59..ae24b02 100644
+> --- a/drivers/input/mouse/cyapa.c
+> +++ b/drivers/input/mouse/cyapa.c
+> @@ -39,6 +39,8 @@
 >  
->  &omap3_pmx_wkup {
-> diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
-> index 3c3e6da..a151daf 100644
-> --- a/arch/arm/boot/dts/omap3-beagle.dts
-> +++ b/arch/arm/boot/dts/omap3-beagle.dts
-> @@ -140,6 +140,34 @@
->  			};
->  		};
->  	};
-> +
-> +	etb@540000000 {
-> +		compatible = "arm,coresight-etb10", "arm,primecell";
-> +		reg = <0x5401b000 0x1000>;
-> +
-> +		coresight-default-sink;
-> +		clocks = <&emu_src_ck>;
-> +		clock-names = "apb_pclk";
-> +		port {
-> +			etb_in: endpoint {
-> +				slave-mode;
-> +				remote-endpoint = <&etm_out>;
-> +			};
-> +		};
-> +	};
-> +
-> +	etm@54010000 {
-> +		compatible = "arm,coresight-etm3x", "arm,primecell";
-> +		reg = <0x54010000 0x1000>;
-> +
-> +		clocks = <&emu_src_ck>;
-> +		clock-names = "apb_pclk";
-> +		port {
-> +			etm_out: endpoint {
-> +				remote-endpoint = <&etb_in>;
-> +			};
-> +		};
-> +	};
->  };
+>  const char unique_str[] = "CYTRA";
 >  
->  &omap3_pmx_wkup {
+> +/* Global root node of the cyapa debugfs directory. */
+> +static struct dentry *cyapa_debugfs_root;
+>  
+>  
+>  ssize_t cyapa_i2c_reg_read_block(struct cyapa *cyapa, u8 reg, size_t len,
+> @@ -461,6 +463,205 @@ done:
+>  }
+>  
+>  /*
+> + **************************************************************
+> + * debugfs interface
+> + **************************************************************
+> +*/
+> +static int cyapa_debugfs_open(struct inode *inode, struct file *file)
+> +{
+> +	struct cyapa *cyapa = inode->i_private;
+> +	int ret;
+> +
+> +	if (!cyapa)
+> +		return -ENODEV;
+> +
+> +	ret = mutex_lock_interruptible(&cyapa->debugfs_mutex);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (!kobject_get(&cyapa->client->dev.kobj)) {
 
+Why not get_device() here and elsewhere?
+
+> +		ret = -ENODEV;
+> +		goto out;
+> +	}
+> +
+> +	file->private_data = cyapa;
+> +
+> +	if (cyapa->fw_image) {
+> +		ret = 0;
+> +		goto out;
+> +	}
+> +
+> +	mutex_lock(&cyapa->state_sync_lock);
+> +	/*
+> +	 * If firmware hasn't been read yet, read it all in one pass.
+> +	 * Subsequent opens will reuse the data in this same buffer.
+> +	 */
+> +	if (cyapa->ops->read_fw)
+> +		ret = cyapa->ops->read_fw(cyapa);
+> +	else
+> +		ret = -EPERM;
+> +	mutex_unlock(&cyapa->state_sync_lock);
+> +
+> +	/* Redetect trackpad device states. */
+> +	cyapa_detect_async(cyapa, 0);
+> +
+> +out:
+> +	mutex_unlock(&cyapa->debugfs_mutex);
+> +	return ret;
+> +}
+> +
+> +static int cyapa_debugfs_release(struct inode *inode, struct file *file)
+> +{
+> +	struct cyapa *cyapa = file->private_data;
+> +	int ret;
+> +
+> +	if (!cyapa)
+> +		return 0;
+> +
+> +	ret = mutex_lock_interruptible(&cyapa->debugfs_mutex);
+> +	if (ret)
+> +		return ret;
+> +	file->private_data = NULL;
+> +	kobject_put(&cyapa->client->dev.kobj);
+> +	mutex_unlock(&cyapa->debugfs_mutex);
+> +
+> +	return 0;
+> +}
+> +
+> +/* Return some bytes from the buffered firmware image, starting from *ppos */
+> +static ssize_t cyapa_debugfs_read_fw(struct file *file, char __user *buffer,
+> +				     size_t count, loff_t *ppos)
+> +{
+> +	struct cyapa *cyapa = file->private_data;
+> +
+> +	if (!cyapa->fw_image)
+> +		return -EINVAL;
+> +
+> +	if (*ppos >= cyapa->fw_image_size)
+> +		return 0;
+> +
+> +	if (count + *ppos > cyapa->fw_image_size)
+> +		count = cyapa->fw_image_size - *ppos;
+> +
+> +	if (copy_to_user(buffer, &cyapa->fw_image[*ppos], count))
+> +		return -EFAULT;
+> +
+> +	*ppos += count;
+> +	return count;
+> +}
+> +
+> +static const struct file_operations cyapa_read_fw_fops = {
+> +	.open = cyapa_debugfs_open,
+> +	.release = cyapa_debugfs_release,
+> +	.read = cyapa_debugfs_read_fw
+> +};
+> +
+> +static int cyapa_debugfs_raw_data_open(struct inode *inode, struct file *file)
+> +{
+> +	struct cyapa *cyapa = inode->i_private;
+> +	int ret;
+> +
+> +	if (!cyapa)
+> +		return -ENODEV;
+> +
+> +	/* Start to be supported after Gen5 trackpad devices. */
+> +	if (cyapa->gen < CYAPA_GEN5)
+> +		return -ENOTSUPP;
+> +
+> +	ret = mutex_lock_interruptible(&cyapa->debugfs_mutex);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (!kobject_get(&cyapa->client->dev.kobj)) {
+> +		ret = -ENODEV;
+> +		goto out;
+> +	}
+> +
+> +	file->private_data = cyapa;
+> +
+> +	mutex_lock(&cyapa->state_sync_lock);
+> +	if (cyapa->ops->read_raw_data)
+> +		ret = cyapa->ops->read_raw_data(cyapa);
+> +	else
+> +		ret = -EPERM;
+> +	mutex_unlock(&cyapa->state_sync_lock);
+> +out:
+> +	mutex_unlock(&cyapa->debugfs_mutex);
+> +	return ret;
+> +}
+> +
+> +static int cyapa_debugfs_raw_data_release(struct inode *inode,
+> +				struct file *file)
+> +{
+> +	struct cyapa *cyapa = file->private_data;
+> +	int ret;
+> +
+> +	if (!cyapa)
+> +		return 0;
+> +
+> +	ret = mutex_lock_interruptible(&cyapa->debugfs_mutex);
+> +	if (ret)
+> +		return ret;
+> +	file->private_data = NULL;
+> +	kobject_put(&cyapa->client->dev.kobj);
+> +	mutex_unlock(&cyapa->debugfs_mutex);
+> +
+> +	return 0;
+> +}
+> +
+> +/* Always return the sensors' latest raw data from trackpad device. */
+> +static ssize_t cyapa_debugfs_read_raw_data(struct file *file,
+> +				     char __user *buffer,
+> +				     size_t count, loff_t *ppos)
+> +{
+> +	struct cyapa *cyapa = file->private_data;
+> +
+> +	if (!cyapa->tp_raw_data)
+> +		return -EINVAL;
+> +
+> +	if (*ppos >= cyapa->tp_raw_data_size)
+> +		return 0;
+> +
+> +	if (count + *ppos > cyapa->tp_raw_data_size)
+> +		count = cyapa->tp_raw_data_size - *ppos;
+> +
+> +	if (copy_to_user(buffer, &cyapa->tp_raw_data[*ppos], count))
+> +		return -EFAULT;
+> +
+> +	*ppos += count;
+> +	return count;
+> +}
+> +
+> +static const struct file_operations cyapa_read_raw_data_fops = {
+> +	.open = cyapa_debugfs_raw_data_open,
+> +	.release = cyapa_debugfs_raw_data_release,
+> +	.read = cyapa_debugfs_read_raw_data
+> +};
+> +
+> +static int cyapa_debugfs_init(struct cyapa *cyapa)
+> +{
+> +	struct device *dev = &cyapa->client->dev;
+> +
+> +	if (!cyapa_debugfs_root)
+> +		return -ENODEV;
+> +
+> +	cyapa->dentry_dev = debugfs_create_dir(kobject_name(&dev->kobj),
+> +					       cyapa_debugfs_root);
+> +
+> +	if (!cyapa->dentry_dev)
+> +		return -ENODEV;
+> +
+> +	mutex_init(&cyapa->debugfs_mutex);
+> +
+> +	debugfs_create_file(CYAPA_DEBUGFS_READ_FW, S_IRUSR, cyapa->dentry_dev,
+> +			    cyapa, &cyapa_read_fw_fops);
+> +
+> +	debugfs_create_file(CYAPA_DEBUGFS_RAW_DATA, S_IRUSR, cyapa->dentry_dev,
+> +			    cyapa, &cyapa_read_raw_data_fops);
+> +	return 0;
+> +}
+> +
+> +/*
+>   * Sysfs Interface.
+>   */
+>  
+> @@ -869,6 +1070,13 @@ static int cyapa_probe(struct i2c_client *client,
+>  	if (sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group))
+>  		dev_warn(dev, "error creating sysfs entries.\n");
+>  
+> +	/* Create a global debugfs root for all cyapa devices */
+> +	cyapa_debugfs_root = debugfs_create_dir("cyapa", NULL);
+> +	if (cyapa_debugfs_root == ERR_PTR(-ENODEV))
+> +		cyapa_debugfs_root = NULL;
+> +	if (cyapa_debugfs_init(cyapa))
+> +		dev_warn(dev, "error creating debugfs entries.\n");
+> +
+>  #ifdef CONFIG_PM_SLEEP
+>  	if (device_can_wakeup(dev) &&
+>  	    sysfs_merge_group(&client->dev.kobj, &cyapa_power_wakeup_group))
+> @@ -902,8 +1110,19 @@ static int cyapa_remove(struct i2c_client *client)
+>  #ifdef CONFIG_PM_RUNTIME
+>  	sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_runtime_group);
+>  #endif
+> +
+> +	kfree(cyapa->fw_image);
+> +	cyapa->fw_image = NULL;
+> +	cyapa->fw_image_size = 0;
+> +	kfree(cyapa->tp_raw_data);
+> +	cyapa->tp_raw_data = NULL;
+> +	cyapa->tp_raw_data_size = 0;
+
+This should be happening only after you remove debugfs entries.
+
+
+>  	free_irq(cyapa->irq, cyapa);
+>  
+> +	debugfs_remove_recursive(cyapa->dentry_dev);
+> +	debugfs_remove_recursive(cyapa_debugfs_root);
+
+Hm, it seems that your debugfs entries are created per-devce, but you remove
+all of them at one when very first device us unbound. You probably want to
+create and destroy root of your debugfs hierarchy on module level.
+
+> +	mutex_destroy(&cyapa->debugfs_mutex);
+> +
+>  	input_unregister_device(cyapa->input);
+>  	if (cyapa->ops->set_power_mode)
+>  		cyapa->ops->set_power_mode(cyapa, PWR_MODE_OFF, 0);
+> -- 
+> 1.7.9.5
+> 
+> 
+
+Thanks.
+
+-- 
+Dmitry
