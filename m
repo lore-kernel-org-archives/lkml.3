@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbaHVXRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 19:17:32 -0400
-Received: from arrakis.dune.hu ([78.24.191.176]:46901 "EHLO arrakis.dune.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaHVXRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 19:17:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL1qeaEaZx0KpMpTSGqZVMZZj1VrzGY3ffRbzEdy4Aks2yHciA@mail.gmail.com>
-References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
- <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
- <53F7AEAC.90303@gmail.com> <CAL1qeaEaZx0KpMpTSGqZVMZZj1VrzGY3ffRbzEdy4Aks2yHciA@mail.gmail.com>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Sat, 23 Aug 2014 01:16:37 +0200
-Message-ID: <CAOiHx=kLfKLZA2Nv+dn87S50209DBXRj8OgZsywXQ0MoqTVA8A@mail.gmail.com>
-Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: David Daney <ddaney.cavm@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752453AbaHVXWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 19:22:48 -0400
+Received: from smtprelay0119.hostedemail.com ([216.40.44.119]:53851 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751744AbaHVXWq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 19:22:46 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6742:7576:7652:10004:10394:10400:10848:11232:11658:11914:12043:12517:12519:12663:12740:13069:13161:13184:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,Do
+X-HE-Tag: word08_6f1eba0603560
+X-Filterd-Recvd-Size: 2396
+Message-ID: <1408749762.17241.50.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch: look for common misspellings
+From: Joe Perches <joe@perches.com>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, Masanari Iida <standby24x7@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-doc <linux-doc@vger.kernel.org>
+Date: Fri, 22 Aug 2014 16:22:42 -0700
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958C1CAFD@G9W0745.americas.hpqcorp.net>
+References: <20140821162050.GA1323@www.outflux.net>
+	 <1408641520.23250.71.camel@joe-AO725>
+	 <CAGXu5jJmp4-sposMxjTobEj0xzueQY54OzvdDQg-GC-HhJuBwQ@mail.gmail.com>
+	 <1408666251.22832.33.camel@joe-AO725> <1408747041.17241.39.camel@joe-AO725>
+	 <94D0CD8314A33A4D9D801C0FE68B402958C1CAFD@G9W0745.americas.hpqcorp.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 23, 2014 at 12:10 AM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
-> On Fri, Aug 22, 2014 at 1:57 PM, David Daney <ddaney.cavm@gmail.com> wrote:
->> On 08/22/2014 01:42 PM, Florian Fainelli wrote:
->>>
->>> On Aug 21, 2014 3:05 PM, "Andrew Bresticker" <abrestic@chromium.org
->>> <mailto:abrestic@chromium.org>> wrote:
->>>  >
->>>  > To be consistent with other architectures and to avoid unnecessary
->>>  > makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
->>>  > and build them with a common makefile.
->>>
->>> I recall reading that the ARM organization for DTS files was a bit
->>> unfortunate and should have been something like:
->>>
->>> arch/arm/boot/dts/<vendor>/
->>>
->>> Is this something we should do for the MIPS and update the other
->>> architectures to follow that scheme?
->>
->>
->> If we choose not to intermingle .dts files from all the vendors in a single
->> directory, why do anything at all?  Currently the .dts files for a vendor
->> are nicely segregated with the rest of the vendors code under a single
->> directory.
->>
->> Personally I think things are fine as they are.  Any common code remaining
->> in the Makefiles could be moved to the scripts directory for a smaller
->> change.
->
-> Assuming we don't move them to a common location just to segregate
-> them again, it makes MIPS consistent with every other architecture
-> (not just ARM!) using DT.  It also makes it easier to introduce common
-> changes later on, like the 'dtbs' or 'dtbs_install' make targets.
+On Fri, 2014-08-22 at 23:00 +0000, Elliott, Robert (Server Storage)
+wrote:
+> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> > owner@vger.kernel.org] On Behalf Of Joe Perches
+> ...
+> > +chang||change
+> 
+> Although there are at least 2 misuses in the current kernel,
+> that's also a fairly common name.
 
-I think having dts files under a predictable location is a good idea,
-especially if it allows common code/targets as "dtbs".
+True.  Thanks.
 
-Maybe a totally insane idea, but how this for having the cake and eating it too:
+That one should likely be removed.
+There are dozens of Chang name uses in the kernel.
 
-arch/mips/boot/dts/*.dts => dts files to be built along side the kernel as .dtbs
+I'm not attached at all to any of these btw.
 
-arch/mips/<mach>/*.dts => dts files built into the kernel
+Any others you think should not be used or
+should be added?
 
-(the ../*.dts isn't meant as they should be in the top directory, just
-somewhere in that sub tree)
+One I thought kind of iffy was
 
-Because I can see a use case where you want both. For example octeon
-uses generic device tree boards to use as a basis if the bootloader
-did not provide one/is too old, but maybe also provide dts files for
-known boards, which shouldn't be included in the kernel binary itself.
+	contant||contact
 
-And I would like to do a similar thing when I want to convert bcm63xx
-to device tree, i.e. have dts files for supported boards, but also
-include a "standard"/"fall-back" dts for each of the supported SoCs to
-load if there is no dtb passed and the old board registration code is
-used.
+Maybe that should be content instead.
+
+Another thing the script might do is to check
+if the $typo match is all upper case and then
+substitute an all upper case $typo_fix.
+
+It's also kind of noisy when run using -f,
+so maybe this test should be --strict check with
+files and a warning with patches.
 
 
-Jonas
