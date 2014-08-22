@@ -1,177 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894AbaHVEzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 00:55:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60792 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755855AbaHVEzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 00:55:20 -0400
-Date: Fri, 22 Aug 2014 06:55:16 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chip <chip.programmer@att.net>, Robert Richter <rric@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: amd_mce.c redundant if check?
-Message-ID: <20140822045516.GC11381@nazgul.tnic>
-References: <A94C429ECA0745D9802830213B114DFE@chip>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <A94C429ECA0745D9802830213B114DFE@chip>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755912AbaHVEza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 00:55:30 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:55107 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855AbaHVEz1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 00:55:27 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: linux-mmc@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v3 3/3] mmc: mmci: rename sdio flag in vendor data to st_sdio
+Date: Fri, 22 Aug 2014 05:55:16 +0100
+Message-Id: <1408683316-8074-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch renames sdio flag in vendor data to st_sdio, as this flag is
+only used to enable ST specific sdio setup. This will also ensure that
+the ST specfic setup is not done on other vendor like Qualcomm.
 
-first of all, please remember to hit Reply-to-all when replying to mails
-on lkml otherwise your note might get lost in the flood.
+Originally the issue was detected while testing WLAN ath6kl on IFC6410
+board with APQ8064 SOC.
 
-On Wed, Aug 20, 2014 at 10:08:18PM -0600, Chip wrote:
-> On Wed, Aug 20, 2014 at 11:18:21AM -0600, Adam Duskett wrote:
-> 
-> >I have recently come upon this section of code in
-> >arch/x86/kernel/cpu/mcheck/mce_amd.c that seems to be a redundant
-> >unnecessary if check.
-> >
-> >
-> >From line 170 - 176:
-> >
-> >if (tr->set_lvt_off) {
-> >if (lvt_off_valid(tr->b, tr->lvt_off, lo, hi)) {
-> >/* set new lvt offset */
-> >hi &= ~MASK_LVTOFF_HI;
-> >hi |= tr->lvt_off << 20;
-> >}
-> >}
-> >
-> >
-> >This seems like it's not actually doing anything because it's setting
-> >the same value that the bit-field already has to itself.
-> 
-> I brought this up to Adam the other day, so he posted the question
-> to this list today to elicit a response from the original
-> developer(s).  I realize the quickest response is to ask the
-> original poster (Adam) to investigate further, such as with pen and
-> paper, but that is not a proper response to a legitimate question.
-> Here is the #define that is referenced, and the two routines in
-> question.  This is current in kernel version 3.16 in
-> arch/x86/kernel/cpu/mcheck/mce_amd.c.
-> 
-> #define MASK_LVTOFF_HI    0x00F00000
-> 
-> static int lvt_off_valid(struct threshold_block *b, int apic, u32
-> lo, u32 hi)
-> {
->        int msr = (hi & MASK_LVTOFF_HI) >> 20;
-> 
->        if (apic < 0) {
->                pr_err(FW_BUG "cpu %d, failed to setup threshold interrupt "
->                       "for bank %d, block %d (MSR%08X=0x%x%08x)\n", b->cpu,
->                       b->bank, b->block, b->address, hi, lo);
->                return 0;
->        }
-> 
->        if (apic != msr) {
->                pr_err(FW_BUG "cpu %d, invalid threshold interrupt
-> offset %d "
->                       "for bank %d, block %d (MSR%08X=0x%x%08x)\n",
->                       b->cpu, apic, b->bank, b->block, b->address, hi, lo);
->                return 0;
->        }
-> 
->        return 1;
-> };
-> 
-> /*
-> * Called via smp_call_function_single(), must be called with correct
-> * cpu affinity.
-> */
-> static void threshold_restart_bank(void *_tr)
-> {
->        struct thresh_restart *tr = _tr;
->        u32 hi, lo;
-> 
->        rdmsr(tr->b->address, lo, hi);
-> 
->        if (tr->b->threshold_limit < (hi & THRESHOLD_MAX))
->                tr->reset = 1;  /* limit cannot be lower than err count */
-> 
->        if (tr->reset) {                /* reset err count and
-> overflow bit */
->                hi =
->                    (hi & ~(MASK_ERR_COUNT_HI | MASK_OVERFLOW_HI)) |
->                    (THRESHOLD_MAX - tr->b->threshold_limit);
->        } else if (tr->old_limit) {     /* change limit w/o reset */
->                int new_count = (hi & THRESHOLD_MAX) +
->                    (tr->old_limit - tr->b->threshold_limit);
-> 
->                hi = (hi & ~MASK_ERR_COUNT_HI) |
->                    (new_count & THRESHOLD_MAX);
->        }
-> 
->        /* clear IntType */
->        hi &= ~MASK_INT_TYPE_HI;
-> 
->        if (!tr->b->interrupt_capable)
->                goto done;
-> 
->        if (tr->set_lvt_off) {
->                if (lvt_off_valid(tr->b, tr->lvt_off, lo, hi)) {
->                        /* set new lvt offset */
->                        hi &= ~MASK_LVTOFF_HI;
->                        hi |= tr->lvt_off << 20;
->                }
->        }
-> 
->        if (tr->b->interrupt_enable)
->                hi |= INT_TYPE_APIC;
-> 
-> done:
-> 
->        hi |= MASK_COUNT_EN_HI;
->        wrmsr(tr->b->address, lo, hi);
-> }
-> 
-> 
-> If one were to actually analyze the source file from which this
-> snippet comes (lines 117 - 185), one would realize the call to
-> lvt_off_valid() is given tr->lvt_off as the input "apic" value that
-> is compared to the content in "hi" at bit positions 23:20 (MSR bits
-> 55:52); this field is called LVT Offset (LVTOFF).  The value for
-> tr->lvt_off is usually from 0 to 4, inclusive.  If this value is
-> equal to the LVTOFF value in "hi", then lvt_off_valid() returns 1
-> for true.  If the value for tr->lvt_off differs from the LVTOFF
-> value in "hi", then lvt_off_valid() returns 0 for false.
-> 
-> Now, if the return from lvt_off_valid() is false, then nothing is
-> changed in "hi".  However, if the return is true, which means the
-> value in tr->lvt_off is equal to the LVTOFF value in "hi", then the
-> LVTOFF value in "hi" is replaced with the value in tr->lvt_off.  One
-> has to wonder, then, why bother actually calling lvt_off_valid() in
-> the first place when the end result is that "hi" does not change.
-> What is the rationale for having the code snippet at lines 170 - 176
-> when that condition check does nothing to change "hi"?
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+---
+ drivers/mmc/host/mmci.c | 48 ++++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
 
-Right, I see what you mean now. This is
-
-bbaff08dca3c ("mce, amd: Add helper functions to setup APIC")
-
-Frankly, I'm not too worried about the overwriting the LVT offset with
-the same value in the success case - that doesn't hurt anyone.
-
-What is more interesting is what we do in the !lvt_off_valid case... I
-don't think we should be writing the MSR at all at the end but just exit
-early. But I've long forgotten the details of the whole APIC vectors
-deal we thought up at the time.
-
-Bob, can you please take a look?
-
-Thanks.
-
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index a25759e..264c947 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -61,7 +61,7 @@ static unsigned int fmax = 515633;
+  * @fifohalfsize: number of bytes that can be written when MCI_TXFIFOHALFEMPTY
+  *		  is asserted (likewise for RX)
+  * @data_cmd_enable: enable value for data commands.
+- * @sdio: variant supports SDIO
++ * @st_sdio: enable ST specific SDIO logic
+  * @st_clkdiv: true if using a ST-specific clock divider algorithm
+  * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
+  * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
+@@ -91,7 +91,7 @@ struct variant_data {
+ 	unsigned int		data_cmd_enable;
+ 	unsigned int		datactrl_mask_ddrmode;
+ 	unsigned int		datactrl_mask_sdio;
+-	bool			sdio;
++	bool			st_sdio;
+ 	bool			st_clkdiv;
+ 	bool			blksz_datactrl16;
+ 	bool			blksz_datactrl4;
+@@ -141,7 +141,7 @@ static struct variant_data variant_u300 = {
+ 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
+ 	.datalength_bits	= 16,
+ 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
+-	.sdio			= true,
++	.st_sdio			= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
+ 	.f_max			= 100000000,
+ 	.signal_direction	= true,
+@@ -155,7 +155,7 @@ static struct variant_data variant_nomadik = {
+ 	.clkreg			= MCI_CLK_ENABLE,
+ 	.datalength_bits	= 24,
+ 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
+-	.sdio			= true,
++	.st_sdio		= true,
+ 	.st_clkdiv		= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
+ 	.f_max			= 100000000,
+@@ -173,7 +173,7 @@ static struct variant_data variant_ux500 = {
+ 	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
+ 	.datalength_bits	= 24,
+ 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
+-	.sdio			= true,
++	.st_sdio		= true,
+ 	.st_clkdiv		= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
+ 	.f_max			= 100000000,
+@@ -193,7 +193,7 @@ static struct variant_data variant_ux500v2 = {
+ 	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
+ 	.datalength_bits	= 24,
+ 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
+-	.sdio			= true,
++	.st_sdio		= true,
+ 	.st_clkdiv		= true,
+ 	.blksz_datactrl16	= true,
+ 	.pwrreg_powerup		= MCI_PWR_ON,
+@@ -818,26 +818,26 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+ 	if (data->flags & MMC_DATA_READ)
+ 		datactrl |= MCI_DPSM_DIRECTION;
+ 
+-	if (variant->sdio && host->mmc->card)
+-		if (mmc_card_sdio(host->mmc->card)) {
+-			u32 clk;
+-			datactrl |= variant->datactrl_mask_sdio;
++	if (host->mmc->card && mmc_card_sdio(host->mmc->card)) {
++		u32 clk;
+ 
+-			/*
+-			 * The ST Micro variant for SDIO small write transfers
+-			 * needs to have clock H/W flow control disabled,
+-			 * otherwise the transfer will not start. The threshold
+-			 * depends on the rate of MCLK.
+-			 */
+-			if (data->flags & MMC_DATA_WRITE &&
+-			    (host->size < 8 ||
+-			     (host->size <= 8 && host->mclk > 50000000)))
+-				clk = host->clk_reg & ~variant->clkreg_enable;
+-			else
+-				clk = host->clk_reg | variant->clkreg_enable;
++		datactrl |= variant->datactrl_mask_sdio;
+ 
+-			mmci_write_clkreg(host, clk);
+-		}
++		/*
++		 * The ST Micro variant for SDIO small write transfers
++		 * needs to have clock H/W flow control disabled,
++		 * otherwise the transfer will not start. The threshold
++		 * depends on the rate of MCLK.
++		 */
++		if (variant->st_sdio && data->flags & MMC_DATA_WRITE &&
++		    (host->size < 8 ||
++		     (host->size <= 8 && host->mclk > 50000000)))
++			clk = host->clk_reg & ~variant->clkreg_enable;
++		else
++			clk = host->clk_reg | variant->clkreg_enable;
++
++		mmci_write_clkreg(host, clk);
++	}
+ 
+ 	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50 ||
+ 	    host->mmc->ios.timing == MMC_TIMING_MMC_DDR52)
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
