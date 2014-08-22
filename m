@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755792AbaHVCkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 22:40:36 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:63783 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883AbaHVCkf (ORCPT
+	id S1755604AbaHVCrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 22:47:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50535 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562AbaHVCrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 22:40:35 -0400
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-X-Google-Original-From: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-To: <fw@strlen.de>, <pablo@netfilter.org>, <kaber@trash.net>,
-        <kadlec@blackhole.kfki.hu>, <davem@davemloft.net>,
-        <netfilter-devel@vger.kernel.org>, <coreteam@netfilter.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jbaron@akamai.com>
-Cc: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: [PATCH V2 1/1] netfilter/jump_label: HAVE_JUMP_LABEL instead of CONFIG_JUMP_LABEL
-Date: Fri, 22 Aug 2014 10:40:15 +0800
-Message-Id: <1408675215-2893-1-git-send-email-yizhouzhou@ict.ac.cn>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 21 Aug 2014 22:47:10 -0400
+Date: Thu, 21 Aug 2014 19:46:56 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [V0 PATCH 1/2] AMD-PVH: set EFER.NX and EFER.SCE
+ for the boot vcpu
+Message-ID: <20140821194656.4eea5654@mantra.us.oracle.com>
+In-Reply-To: <20140822013904.GA20329@laptop.dumpdata.com>
+References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
+	<1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
+	<20140822013904.GA20329@laptop.dumpdata.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use HAVE_JUMP_LABEL as elsewhere in the kernel to ensure
-that the toolchain has the required support in addition to
-CONFIG_JUMP_LABEL being set.
+On Thu, 21 Aug 2014 21:39:04 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
+> On Wed, Aug 20, 2014 at 07:16:39PM -0700, Mukesh Rathor wrote:
+> > On AMD, NX feature must be enabled in the efer for NX to be honored
+> > in the pte entries, otherwise protection fault. We also set SC for
+> > system calls to be enabled.
+> 
+> How come we don't need to do that for Intel (that is set the NX bit)?
+> Could you include the explanation here please?
 
-Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Reviewed-by: Florian Westphal <fw@strlen.de>
----
- include/linux/netfilter.h |    5 +++--
- net/netfilter/core.c      |    6 +++---
- 2 files changed, 6 insertions(+), 5 deletions(-)
+Intel doesn't have EFER.NX bit. The SC bit is being set in xen, but it
+doesn't need to be, and I'm going to submit a patch to undo it.
 
-diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
-index 2077489..83a1952 100644
---- a/include/linux/netfilter.h
-+++ b/include/linux/netfilter.h
-@@ -9,6 +9,7 @@
- #include <linux/in6.h>
- #include <linux/wait.h>
- #include <linux/list.h>
-+#include <linux/static_key.h>
- #include <uapi/linux/netfilter.h>
- #ifdef CONFIG_NETFILTER
- static inline int NF_DROP_GETERR(int verdict)
-@@ -99,8 +100,8 @@ void nf_unregister_sockopt(struct nf_sockopt_ops *reg);
- 
- extern struct list_head nf_hooks[NFPROTO_NUMPROTO][NF_MAX_HOOKS];
- 
--#if defined(CONFIG_JUMP_LABEL)
--#include <linux/static_key.h>
-+#ifdef HAVE_JUMP_LABEL
-+
- extern struct static_key nf_hooks_needed[NFPROTO_NUMPROTO][NF_MAX_HOOKS];
- static inline bool nf_hooks_active(u_int8_t pf, unsigned int hook)
- {
-diff --git a/net/netfilter/core.c b/net/netfilter/core.c
-index a93c97f..024a2e2 100644
---- a/net/netfilter/core.c
-+++ b/net/netfilter/core.c
-@@ -54,7 +54,7 @@ EXPORT_SYMBOL_GPL(nf_unregister_afinfo);
- struct list_head nf_hooks[NFPROTO_NUMPROTO][NF_MAX_HOOKS] __read_mostly;
- EXPORT_SYMBOL(nf_hooks);
- 
--#if defined(CONFIG_JUMP_LABEL)
-+#ifdef HAVE_JUMP_LABEL
- struct static_key nf_hooks_needed[NFPROTO_NUMPROTO][NF_MAX_HOOKS];
- EXPORT_SYMBOL(nf_hooks_needed);
- #endif
-@@ -72,7 +72,7 @@ int nf_register_hook(struct nf_hook_ops *reg)
- 	}
- 	list_add_rcu(&reg->list, elem->list.prev);
- 	mutex_unlock(&nf_hook_mutex);
--#if defined(CONFIG_JUMP_LABEL)
-+#ifdef HAVE_JUMP_LABEL
- 	static_key_slow_inc(&nf_hooks_needed[reg->pf][reg->hooknum]);
- #endif
- 	return 0;
-@@ -84,7 +84,7 @@ void nf_unregister_hook(struct nf_hook_ops *reg)
- 	mutex_lock(&nf_hook_mutex);
- 	list_del_rcu(&reg->list);
- 	mutex_unlock(&nf_hook_mutex);
--#if defined(CONFIG_JUMP_LABEL)
-+#ifdef HAVE_JUMP_LABEL
- 	static_key_slow_dec(&nf_hooks_needed[reg->pf][reg->hooknum]);
- #endif
- 	synchronize_net();
--- 
-1.7.10.4
+> 
+> > 
+> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > ---
+> >  arch/x86/xen/enlighten.c | 12 ++++++++++++
+> >  1 file changed, 12 insertions(+)
+> > 
+> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> > index c0cb11f..4af512d 100644
+> > --- a/arch/x86/xen/enlighten.c
+> > +++ b/arch/x86/xen/enlighten.c
+> > @@ -1499,6 +1499,17 @@ void __ref xen_pvh_secondary_vcpu_init(int
+> > cpu) xen_pvh_set_cr_flags(cpu);
+> >  }
+> >  
+> > +/* This is done in secondary_startup_64 for hvm guests. */
+> > +static void __init xen_configure_efer(void)
+> > +{
+> > +	u64 efer;
+> > +
+> > +	rdmsrl(MSR_EFER, efer);
+> > +	efer |= EFER_SCE;
+> > +	efer |= (cpuid_edx(0x80000001) & (1 << 20)) ? EFER_NX : 0;
+> 
+> Ahem? #defines for these magic values please?
 
+Linux uses these directly all over the code as they are set in stone
+pretty much, and I didn't find any #defines. See cpu/common.c for one of
+the places. Also see secondary_startup_64, and others...
+
+> Or could you use 'boot_cpu_has'?
+
+Nop, it's not initialized at this point.
+
+thanks,
+Mukesh
