@@ -1,173 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaHVB6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:58:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21572 "EHLO mx1.redhat.com"
+	id S1755652AbaHVB62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:58:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4464 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747AbaHVB6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:58:13 -0400
-Date: Thu, 21 Aug 2014 21:58:03 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
-        arozansk@redhat.com, linux-audit@redhat.com,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in
- proc
-Message-ID: <20140822015803.GG20529@madcap2.tricolour.ca>
-References: <cover.1408581429.git.rgb@redhat.com>
- <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
- <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
+	id S1755604AbaHVB60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 21:58:26 -0400
+Date: Thu, 21 Aug 2014 21:58:22 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: chai wen <chaiw.fnst@cn.fujitsu.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] softlockup: make detector be aware of task switch of
+ processes hogging cpu
+Message-ID: <20140822015822.GZ49576@redhat.com>
+References: <20140821023051.GO49576@redhat.com>
+ <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
+In-Reply-To: <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/08/21, Andy Lutomirski wrote:
-> On Aug 20, 2014 8:12 PM, "Richard Guy Briggs" <rgb@redhat.com> wrote:
-> > Expose the namespace instace serial numbers in the proc filesystem at
-> > /proc/<pid>/ns/<ns>_snum.  The link text gives the serial number in hex.
+On Thu, Aug 21, 2014 at 01:42:22PM +0800, chai wen wrote:
+> For now, soft lockup detector warns once for each case of process softlockup.
+> But the thread 'watchdog/n' may not always get the cpu at the time slot between
+> the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
 > 
-> What's the use case?
+> An example would be two processes hogging the cpu.  Process A causes the
+> softlockup warning and is killed manually by a user.  Process B immediately
+> becomes the new process hogging the cpu preventing the softlockup code from
+> resetting the soft_watchdog_warn variable.
 > 
-> I understand the utility of giving unique numbers to the audit code,
-> but I don't think this part is necessary for that, and I'd like to
-> understand what else will use this before committing to a duplicative
-> API like this.
-
-How does a container manager get those numbers?  It could provoke a task
-to cause an audit event that emits a NS_INFO message, or it could run a
-task in that container to report its namespace serial numbers directly
-from its /proc mount.
-
-The discussion in this thread touches on the use cases:
-	https://lkml.org/lkml/2014/4/22/662
-
-> Note that this API is thoroughly incompatible with CRIU.  If we do
-> this, someone will ask for a namespace number namespace, and that way
-> lies madness.
-
-I had a very brief look at CRIU, but not enough to understand the issue.
-Others have hinted at this problem.
-
-Do you have a suggestion of a different approach that would be
-compatible with CRIU?
-
-I'd originally considered some sort of UUID that would be globally
-unique, but that would be very hard to devise or guarantee, and besides,
-namespaces aren't only used by containers and could be shared in other
-ways.  Tracking the usage and migration of namespaces should be the task
-of an upper layer.
-
-> --Andy
+> This case is a false negative of "warn only once for a process", as there may
+> be a different process that is going to hog the cpu.  Resolve this by
+> saving/checking the task pointer of the hogging process and use that to reset
+> soft_watchdog_warn too.
 > 
-> >
-> > "snum" was chosen instead of "seq" for consistency with inum and there are a
-> > number of other uses of "seq" in the namespace code.
-> >
-> > Suggested-by: Serge E. Hallyn <serge@hallyn.com>
-> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> > ---
-> >  fs/proc/namespaces.c |   33 +++++++++++++++++++++++++--------
-> >  1 files changed, 25 insertions(+), 8 deletions(-)
-> >
-> > diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-> > index 8902609..e953e0a 100644
-> > --- a/fs/proc/namespaces.c
-> > +++ b/fs/proc/namespaces.c
-> > @@ -47,12 +47,15 @@ static char *ns_dname(struct dentry *dentry, char *buffer, int buflen)
-> >         struct inode *inode = dentry->d_inode;
-> >         const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns.ns_ops;
-> >
-> > -       return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
-> > -               ns_ops->name, inode->i_ino);
-> > +       if (strstr(dentry->d_iname, "_snum"))
-> > +               return dynamic_dname(dentry, buffer, buflen, "%s_snum:[%llx]",
-> > +                       ns_ops->name, ns_ops->snum(PROC_I(inode)->ns.ns));
-> > +       else
-> > +               return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
-> > +                       ns_ops->name, inode->i_ino);
-> >  }
-> >
-> > -const struct dentry_operations ns_dentry_operations =
-> > -{
-> > +const struct dentry_operations ns_dentry_operations = {
-> >         .d_delete       = always_delete_dentry,
-> >         .d_dname        = ns_dname,
-> >  };
-> > @@ -160,7 +163,10 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
-> >         if (!ns)
-> >                 goto out_put_task;
-> >
-> > -       snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
-> > +       if (strstr(dentry->d_iname, "_snum"))
-> > +               snprintf(name, sizeof(name), "%s_snum:[%llx]", ns_ops->name, ns_ops->snum(ns));
-> > +       else
-> > +               snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
-> >         res = readlink_copy(buffer, buflen, name);
-> >         ns_ops->put(ns);
-> >  out_put_task:
-> > @@ -210,16 +216,23 @@ static int proc_ns_dir_readdir(struct file *file, struct dir_context *ctx)
-> >
-> >         if (!dir_emit_dots(file, ctx))
-> >                 goto out;
-> > -       if (ctx->pos >= 2 + ARRAY_SIZE(ns_entries))
-> > +       if (ctx->pos >= 2 + 2 * ARRAY_SIZE(ns_entries))
-> >                 goto out;
-> >         entry = ns_entries + (ctx->pos - 2);
-> >         last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
-> >         while (entry <= last) {
-> >                 const struct proc_ns_operations *ops = *entry;
-> > +               char name[50];
-> > +
-> >                 if (!proc_fill_cache(file, ctx, ops->name, strlen(ops->name),
-> >                                      proc_ns_instantiate, task, ops))
-> >                         break;
-> >                 ctx->pos++;
-> > +               snprintf(name, sizeof(name), "%s_snum", ops->name);
-> > +               if (!proc_fill_cache(file, ctx, name, strlen(name),
-> > +                                    proc_ns_instantiate, task, ops))
-> > +                       break;
-> > +               ctx->pos++;
-> >                 entry++;
-> >         }
-> >  out:
-> > @@ -247,9 +260,13 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
-> >
-> >         last = &ns_entries[ARRAY_SIZE(ns_entries)];
-> >         for (entry = ns_entries; entry < last; entry++) {
-> > -               if (strlen((*entry)->name) != len)
-> > +               char name[50];
-> > +
-> > +               snprintf(name, sizeof(name), "%s_snum", (*entry)->name);
-> > +               if (strlen((*entry)->name) != len && strlen(name) != len)
-> >                         continue;
-> > -               if (!memcmp(dentry->d_name.name, (*entry)->name, len))
-> > +               if (!memcmp(dentry->d_name.name, (*entry)->name, len)
-> > +                   || !memcmp(dentry->d_name.name, name, len))
-> >                         break;
-> >         }
-> >         if (entry == last)
-> > --
-> > 1.7.1
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 
-- RGB
+Acked-by: Don Zickus <dzickus@redhat.com>
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> ---
+>  kernel/watchdog.c |   16 +++++++++++++++-
+>  1 files changed, 15 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 0037db6..2e55620 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
+>  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
+>  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
+>  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
+> +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
+>  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
+> @@ -328,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>  			return HRTIMER_RESTART;
+>  
+>  		/* only warn once */
+> -		if (__this_cpu_read(soft_watchdog_warn) == true)
+> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
+> +			/*
+> +			 * Handle the case where multiple processes are
+> +			 * causing softlockups but the duration is small
+> +			 * enough, the softlockup detector can not reset
+> +			 * itself in time.  Use task pointers to detect this.
+> +			 */
+> +			if (__this_cpu_read(softlockup_task_ptr_saved) !=
+> +			    current) {
+> +				__this_cpu_write(soft_watchdog_warn, false);
+> +				__touch_watchdog();
+> +			}
+>  			return HRTIMER_RESTART;
+> +		}
+>  
+>  		if (softlockup_all_cpu_backtrace) {
+>  			/* Prevent multiple soft-lockup reports if one cpu is already
+> @@ -345,6 +358,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>  		pr_emerg("BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+>  			smp_processor_id(), duration,
+>  			current->comm, task_pid_nr(current));
+> +		__this_cpu_write(softlockup_task_ptr_saved, current);
+>  		print_modules();
+>  		print_irqtrace_events(current);
+>  		if (regs)
+> -- 
+> 1.7.1
+> 
