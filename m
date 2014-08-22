@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263AbaHVMqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 08:46:40 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:37078 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101AbaHVMqi (ORCPT
+	id S1756347AbaHVMq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:46:56 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:62625 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756217AbaHVMqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 08:46:38 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Rui Zhang <rui.zhang@intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] thermal soc changes
-Date: Fri, 22 Aug 2014 08:46:32 -0400
-Message-Id: <1408711592-8917-1-git-send-email-edubezval@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 22 Aug 2014 08:46:54 -0400
+Date: Fri, 22 Aug 2014 15:46:46 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] blk-ioc: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+Message-ID: <20140822124646.GA18990@ada>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rui,
+The use of "rcu_assign_pointer()" is NULLing out the pointer.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Please pull these changes. Here we have three new features: IMX driver has
-now support to i.mx6sx, the of-thermal now if aware of disabled thermal zones
-in DT, and we shall have tracing support on thermal framework.
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-The following changes since commit 47d104ba5879790c7c91c3390b0b08399e168efe:
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
 
-  Merge branches 'exynos-fix', 'for-rc', 'int3403-fix', 'misc', 'rcar-thermal' and 'sti-thermal' of .git into next (2014-07-22 10:13:00 +0800)
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ block/blk-ioc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-are available in the git repository at:
+diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+index 1a27f45..c024a77 100644
+--- a/block/blk-ioc.c
++++ b/block/blk-ioc.c
+@@ -69,7 +69,7 @@ static void ioc_destroy_icq(struct io_cq *icq)
+ 	 * will.  Hint assignment itself can race safely.
+ 	 */
+ 	if (rcu_access_pointer(ioc->icq_hint) == icq)
+-		rcu_assign_pointer(ioc->icq_hint, NULL);
++		RCU_INIT_POINTER(ioc->icq_hint, NULL);
+ 
+ 	ioc_exit_icq(icq);
+ 
+-- 
+1.9.1
 
-
-  https://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git 
-
-for you to fetch changes up to 3c94f17e72a7bcf689756da100b6051e535c45f4:
-
-  Thermal: imx: add i.mx6sx thermal support (2014-08-09 10:29:30 -0400)
-
-----------------------------------------------------------------
-Anson Huang (1):
-      Thermal: imx: add i.mx6sx thermal support
-
-Laxman Dewangan (1):
-      thermal: add support to disable thermal zone from DTS
-
-Punit Agrawal (3):
-      thermal: trace: Trace temperature changes
-      thermal: trace: Trace when a cooling device's state is updated
-      thermal: trace: Trace when temperature is above a trip point
-
- .../devicetree/bindings/thermal/imx-thermal.txt    |  5 +-
- drivers/thermal/fair_share.c                       | 12 +++
- drivers/thermal/imx_thermal.c                      | 91 ++++++++++++++++++----
- drivers/thermal/of-thermal.c                       | 12 +++
- drivers/thermal/step_wise.c                        |  5 +-
- drivers/thermal/thermal_core.c                     |  7 ++
- include/trace/events/thermal.h                     | 83 ++++++++++++++++++++
- 7 files changed, 200 insertions(+), 15 deletions(-)
- create mode 100644 include/trace/events/thermal.h
-
-
- BR,
-
- Eduardo Valentin
