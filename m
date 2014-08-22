@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053AbaHVVAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:00:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43304 "EHLO mail.kernel.org"
+	id S1752075AbaHVVAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:00:22 -0400
+Received: from mail.kernel.org ([198.145.19.201]:43357 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751234AbaHVVAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:00:10 -0400
+	id S1751234AbaHVVAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 17:00:19 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/10] perf tests: Add test for perf_evlist__filter_pollfd()
-Date: Fri, 22 Aug 2014 17:59:42 -0300
-Message-Id: <1408741190-5123-3-git-send-email-acme@kernel.org>
+Subject: [PATCH 04/10] perf record: Filter out POLLHUP'ed file descriptors
+Date: Fri, 22 Aug 2014 17:59:44 -0300
+Message-Id: <1408741190-5123-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408741190-5123-1-git-send-email-acme@kernel.org>
 References: <1408741190-5123-1-git-send-email-acme@kernel.org>
@@ -28,25 +28,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-That will use a synthetic evlist with just what is touched by this new
-method to check that it works as expected.
+So that we don't continue polling on vanished file descriptors, i.e.
+file descriptors for events monitoring threads that exited.
 
-Output in verbose mode:
+I.e. the following 'perf record' command now exits as expected, instead
+of staying in an eternal loop:
 
-  $ perf test -v pollfd
-  33: Filter fds with revents mask in a pollfd array         :
-  --- start ---
-  filtering all but pollfd[2]:
-  before:   5 [ 5, 4, 3, 2, 1 ]
-   after:   1 [ 3 ]
-  filtering all but (pollfd[0], pollfd[3]):
-  before:   5 [ 5, 4, 3, 2, 1 ]
-   after:   2 [ 5, 2 ]
-  test child finished with 0
-  ---- end ----
-  Filter fds with revents mask in a pollfd array: Ok
-  $
+  $ sleep 5s &
+  $ perf record -p `pidof sleep`
 
+Reported-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Don Zickus <dzickus@redhat.com>
@@ -58,164 +49,26 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-x7c8liszdvc3ocmanf2cet8p@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ftg46awsyfjc3axb0xm63oig@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf        |   1 +
- tools/perf/tests/builtin-test.c |   4 ++
- tools/perf/tests/evlist.c       | 103 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |   1 +
- 4 files changed, 109 insertions(+)
- create mode 100644 tools/perf/tests/evlist.c
+ tools/perf/builtin-record.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 95e832b1bc3c..9ce194fc00a0 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -399,6 +399,7 @@ LIB_OBJS += $(OUTPUT)tests/open-syscall-tp-fields.o
- LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
- LIB_OBJS += $(OUTPUT)tests/perf-record.o
- LIB_OBJS += $(OUTPUT)tests/rdpmc.o
-+LIB_OBJS += $(OUTPUT)tests/evlist.o
- LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/pmu.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 6a4145e5ad2c..41e556edbe02 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -158,6 +158,10 @@ static struct test {
- 		.func = test__switch_tracking,
- 	},
- 	{
-+		.desc = "Filter fds with revents mask in a pollfd array",
-+		.func = test__perf_evlist__filter_pollfd,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/evlist.c b/tools/perf/tests/evlist.c
-new file mode 100644
-index 000000000000..77579158f4d9
---- /dev/null
-+++ b/tools/perf/tests/evlist.c
-@@ -0,0 +1,103 @@
-+#include "util/evlist.h"
-+#include "util/debug.h"
-+#include "tests/tests.h"
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 87e28a4e33ba..b87708ce09c9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -467,6 +467,9 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+ 			if (err > 0 || (err < 0 && errno == EINTR))
+ 				err = 0;
+ 			waking++;
 +
-+static void perf_evlist__init_pollfd(struct perf_evlist *evlist,
-+				     int nr_fds_alloc, short revents)
-+{
-+	int fd;
-+
-+	evlist->nr_fds = nr_fds_alloc;
-+
-+	for (fd = 0; fd < nr_fds_alloc; ++fd) {
-+		evlist->pollfd[fd].fd	   = nr_fds_alloc - fd;
-+		evlist->pollfd[fd].revents = revents;
-+	}
-+}
-+
-+static int perf_evlist__fprintf_pollfd(struct perf_evlist *evlist,
-+				       const char *prefix, FILE *fp)
-+{
-+	int printed = 0, fd;
-+
-+	if (!verbose)
-+		return 0;
-+
-+	printed += fprintf(fp, "\n%s: %3d [ ", prefix, evlist->nr_fds);
-+	for (fd = 0; fd < evlist->nr_fds; ++fd)
-+		printed += fprintf(fp, "%s%d", fd ? ", " : "", evlist->pollfd[fd].fd);
-+	printed += fprintf(fp, " ]");
-+	return printed;
-+}
-+
-+int test__perf_evlist__filter_pollfd(void)
-+{
-+	const int nr_fds_alloc = 5;
-+	int nr_fds, expected_fd[2], fd;
-+	struct pollfd pollfd[nr_fds_alloc];
-+	struct perf_evlist evlist_alloc = {
-+		.pollfd	= pollfd,
-+	}, *evlist = &evlist_alloc;
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLIN);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	if (nr_fds != nr_fds_alloc) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != %d shouldn't have filtered anything",
-+			 nr_fds, nr_fds_alloc);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLHUP);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	if (nr_fds != 0) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != %d, should have filtered all fds",
-+			 nr_fds, nr_fds_alloc);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLHUP);
-+	pollfd[2].revents = POLLIN;
-+	expected_fd[0] = pollfd[2].fd;
-+
-+	pr_debug("\nfiltering all but pollfd[2]:");
-+	perf_evlist__fprintf_pollfd(evlist, "before", stderr);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	perf_evlist__fprintf_pollfd(evlist, " after", stderr);
-+	if (nr_fds != 1) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != 1, should have left just one event",
-+			 nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	if (pollfd[0].fd != expected_fd[0]) {
-+		pr_debug("\npollfd[0].fd=%d != %d\n", pollfd[0].fd, expected_fd[0]);
-+		return TEST_FAIL;
-+	}
-+
-+	perf_evlist__init_pollfd(evlist, nr_fds_alloc, POLLHUP);
-+	pollfd[0].revents = POLLIN;
-+	expected_fd[0] = pollfd[0].fd;
-+	pollfd[3].revents = POLLIN;
-+	expected_fd[1] = pollfd[3].fd;
-+
-+	pr_debug("\nfiltering all but (pollfd[0], pollfd[3]):");
-+	perf_evlist__fprintf_pollfd(evlist, "before", stderr);
-+	nr_fds = perf_evlist__filter_pollfd(evlist, POLLHUP);
-+	perf_evlist__fprintf_pollfd(evlist, " after", stderr);
-+	if (nr_fds != 2) {
-+		pr_debug("\nperf_evlist__filter_pollfd()=%d != 2, should have left just two events",
-+			 nr_fds);
-+		return TEST_FAIL;
-+	}
-+
-+	for (fd = 0; fd < 2; ++fd) {
-+		if (pollfd[fd].fd != expected_fd[fd]) {
-+			pr_debug("\npollfd[%d].fd=%d != %d\n", fd, pollfd[fd].fd, expected_fd[fd]);
-+			return TEST_FAIL;
-+		}
-+	}
-+
-+	pr_debug("\n");
-+
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index be8be10e3957..72c4c039bd80 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -49,6 +49,7 @@ int test__thread_mg_share(void);
- int test__hists_output(void);
- int test__hists_cumulate(void);
- int test__switch_tracking(void);
-+int test__perf_evlist__filter_pollfd(void);
++			if (perf_evlist__filter_pollfd(rec->evlist, POLLERR | POLLHUP) == 0)
++				done = 1;
+ 		}
  
- #if defined(__x86_64__) || defined(__i386__) || defined(__arm__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
+ 		/*
 -- 
 1.9.3
 
