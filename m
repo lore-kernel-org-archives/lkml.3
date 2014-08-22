@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893AbaHVJbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:31:44 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:59486 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556AbaHVJbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:31:42 -0400
-Date: Fri, 22 Aug 2014 11:31:39 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] sound: tegra: tegra_asoc_utils.h: Fix typo in include
- guard
-Message-ID: <20140822093137.GA10253@ulmo>
-References: <1408699627-7364-1-git-send-email-linux@rasmusvillemoes.dk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
+	id S1755884AbaHVJc1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:32:27 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:37638 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbaHVJc0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Fri, 22 Aug 2014 05:32:26 -0400
+Message-Id: <53F72A46020000780002C957@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 22 Aug 2014 10:32:22 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Juergen Gross" <JGross@suse.com>
+Cc: <stefan.bader@canonical.com>, <toshi.kani@hp.com>, <x86@kernel.org>,
+        <ville.syrjala@linux.intel.com>,
+        "xen-devel" <xen-devel@lists.xenproject.org>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH RFC 2/3] x86: Enable PAT to use cache
+ mode translation tables
+References: <1408454745-32358-1-git-send-email-jgross@suse.com>
+ <1408454745-32358-3-git-send-email-jgross@suse.com>
+In-Reply-To: <1408454745-32358-3-git-send-email-jgross@suse.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1408699627-7364-1-git-send-email-linux@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 19.08.14 at 15:25, <JGross@suse.com> wrote:
+> @@ -118,8 +167,14 @@ void pat_init(void)
+>  	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+>  
+>  	/* Boot CPU check */
+> -	if (!boot_pat_state)
+> +	if (!boot_pat_state) {
+>  		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
+> +		/*
+> +		 * Init cache mode tables before writing MSR to give Xen a
+> +		 * chance to correct the changes when doing the write.
+> +		 */
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This comment seems pretty odd to me: For one, a PV guest on Xen
+shouldn't be trying to write PAT MSR at all under the current ABI
+(the write will be ignored, yes, but accompanied with a warning
+message, which PV kernels - by the mere fact that they're PV -
+should try to avoid). And then "correct the changes" both gives
+the impression as if they were wrong and as if some of what the
+kernel writes may be under the kernel's control. Hence I think this
+code and comment should either be consistently assuming that the
+kernel has no control at all, or should read back the value after
+having written it, and set the internal tables based on the value
+read back.
 
-On Fri, Aug 22, 2014 at 11:27:07AM +0200, Rasmus Villemoes wrote:
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  sound/soc/tegra/tegra_asoc_utils.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/sound/soc/tegra/tegra_asoc_utils.h b/sound/soc/tegra/tegra_a=
-soc_utils.h
-> index 9577121..ca80376 100644
-> --- a/sound/soc/tegra/tegra_asoc_utils.h
-> +++ b/sound/soc/tegra/tegra_asoc_utils.h
-> @@ -21,7 +21,7 @@
->   */
-> =20
->  #ifndef __TEGRA_ASOC_UTILS_H__
-> -#define __TEGRA_ASOC_UTILS_H_
-> +#define __TEGRA_ASOC_UTILS_H__
-> =20
->  struct clk;
->  struct device;
+Jan
 
-Hehe, good catch.
+> +		pat_init_cache_modes(pat);
+> +	}
+>  
+>  	wrmsrl(MSR_IA32_CR_PAT, pat);
+>  
 
-Acked-by: Thierry Reding <treding@nvidia.com>
 
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT9w35AAoJEN0jrNd/PrOhykAP/0I7U/Re3ToHKhxX3UuO+b3Z
-iTN4TRR8bYGkd0HTSxdBXVfgXj479UhFRKAzsNWvx/DivXNI7ll6xtzIcT5BALYk
-tEz2axYuz7hZw4yYeMughAJxPqoHF8iU+lDcMvmYFh1zLcpUwbwldKwOJ1TKZaYY
-2xpeZ1W+zdDcBJoOGAsZwt1wL5d6Dhjq0v/148XrohpeRadNBJGuQMcUWd4lRqD4
-JJFPrMrmQjgb7wSRL/z5UosJd0MEA+k3Fxak95OFSWeYPlggFyiVv969LmlvyoU5
-kfw5CZPQXPaNNalQMObEXhBfN9MkrEEKY1RL3b1DNh1hs0ow5bEdFzRUrUFk68h1
-VYcSpLMj7E/jULTto+gBYQkTDSC4+VO08RWuxaeBBZDrDfdH0p/o3hnTdRETHcuP
-iF1+xfjiUjl8BJWPsv1dtaepU+hB8O1seKAO2pHBlRo5DsmaFDHoLkTq5nWfSmLH
-1ggV9GulgINJN4gepBKp/OGiBH5aJMHDTt657IXJFptHWf5GZBwIJrr+Q26S8sux
-5Z1eSGj8AnA5dZ2L0IWGhrl8cO2llEPR7/XjxBSYa+me1UNvMd6D1zysZtbveGC+
-pux/UIhGWHgDGinqAy29H1gkJKBJ0S/s8Z1T4viGVYUVV4SDGV5VDB8qZOKrgegv
-0PxhGSOSXB8jvYQ7wOvP
-=rQL8
------END PGP SIGNATURE-----
-
---ZGiS0Q5IWpPtfppv--
