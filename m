@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570AbaHVO0J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:26:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15550 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756319AbaHVO0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:26:07 -0400
-Date: Fri, 22 Aug 2014 10:25:55 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ben Hawkes <hawkes@google.com>
-Subject: Re: [GIT PULL] HID
-Message-ID: <20140822142555.GB17328@mail.corp.redhat.com>
-References: <alpine.LNX.2.00.1408211146110.23162@pobox.suse.cz>
- <20140822074030.GA297@x4>
- <alpine.LNX.2.00.1408220257050.23162@pobox.suse.cz>
- <20140822081819.GA297@x4>
+	id S932138AbaHVO2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:28:32 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:53254 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317AbaHVO2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:28:31 -0400
+Date: Fri, 22 Aug 2014 17:28:22 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: rostedt@goodmis.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] kernel: trace_syscalls: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140822142822.GA32391@ada>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140822081819.GA297@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 22 2014 or thereabouts, Markus Trippelsdorf wrote:
-> On 2014.08.22 at 03:00 -0500, Jiri Kosina wrote:
-> > On Fri, 22 Aug 2014, Markus Trippelsdorf wrote:
-> > 
-> > > >       HID: logitech: perform bounds checking on device_id early enough
-> > > 
-> > > The commit above (ad3e14d7c5268c2e) causes the bounds checking to always
-> > > fail on my monolithic kernel (without modules):
-> > > 
-> > > ...
-> > > [    2.922617] usb 4-2: new full-speed USB device number 2 using ohci-pci
-> > > [    2.996587] udevd[98]: starting eudev version 1.0
-> > > [    3.071203] random: nonblocking pool is initialized
-> > > [    3.108360] logitech-djreceiver 0003:046D:C52B.0003: hiddev0,hidraw0: USB HID v1.11 Device [Logitech USB Receiver] on usb-0000:00:12.1-2/input2
-> > > [    3.163208] input: Logitech Unifying Device. Wireless PID:4026 as /devices/pci0000:00/0000:00:12.1/usb4/4-2/4-2:1.2/0003:046D:C52B.0003/0003:046D:C52B.0004/input/input2
-> > > [    3.163511] logitech-djdevice 0003:046D:C52B.0004: input,hidraw1: USB HID v1.11 Keyboard [Logitech Unifying Device. Wireless PID:4026] on usb-0000:00:12.1-2:1
-> > > [    3.164121] logitech-djreceiver 0003:046D:C52B.0003: logi_dj_raw_event: invalid device index:0
-> > > [    3.289261] usb 3-1: new low-speed USB device number 2 using ohci-pci
-> > > [    3.457606] input: HID 046a:0011 as /devices/pci0000:00/0000:00:12.0/usb3/3-1/3-1:1.0/0003:046A:0011.0005/input/input3
-> > > [    3.457794] hid-generic 0003:046A:0011.0005: input,hidraw2: USB HID v1.10 Keyboard [HID 046a:0011] on usb-0000:00:12.0-1/input0
-> > > [    3.712886] Switched to clocksource tsc
-> > 
-> > Thanks a lot for a timely report.
-> > 
-> > I am travelling till next week and don't unfortunately have the hardware 
-> > here with me to test momentarily, so please take this with a lot of grains 
-> > of salt (maybe Benjamin would be able to look into this before I'd be able 
-> > to on monday ... ?).
-> > 
-> > Does the shot-in-the-dark patch below put things back in shape for you?
-> 
-> Thanks a lot for the timely patch. It indeed fixes the issue for me.
-> 
+The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Huh, my bad, I should have actually test Jiri's patch instead of
-thinking "this can not break anything".
+The following Coccinelle semantic patch was used:
+@@
+@@
 
-So Jiri, your patch does not work because the device index 0 is the
-receiver, and 1-6 are the wireless devices attached to this receiver. So
-basically, this new patch removes the ability to have 6 devices paired.
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
 
-I'll try to come out with something by the end of the day which would
-both prevent the out of bound and allow to have 6 true wireless devices.
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+---
+ kernel/trace/trace_syscalls.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Cheers,
-Benjamin
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 759d5e0..4dc8b79 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -425,7 +425,7 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_enter--;
+-	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
++	RCU_INIT_POINTER(tr->enter_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_enter)
+ 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+ 	mutex_unlock(&syscall_trace_lock);
+@@ -463,7 +463,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_exit--;
+-	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
++	RCU_INIT_POINTER(tr->exit_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_exit)
+ 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+ 	mutex_unlock(&syscall_trace_lock);
+-- 
+1.9.1
 
