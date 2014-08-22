@@ -1,120 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129AbaHVMPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 08:15:54 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44492 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754517AbaHVMPw (ORCPT
+	id S1756149AbaHVMRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:17:47 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:53304 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737AbaHVMRp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 08:15:52 -0400
-Message-ID: <53F73472.8010609@collabora.co.uk>
-Date: Fri, 22 Aug 2014 14:15:46 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 22 Aug 2014 08:17:45 -0400
+Message-ID: <53F734F0.1080401@arm.com>
+Date: Fri, 22 Aug 2014 13:17:52 +0100
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Yuvaraj Cd <yuvaraj.lkml@gmail.com>
-CC: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Prashanth G <prashanth.g@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
-Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
-References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>	<1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk> <CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>
-In-Reply-To: <CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] drivers: base: add cpu_device_create to support per-cpu
+ devices
+References: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>	<1408706963-23195-1-git-send-email-sudeep.holla@arm.com> <CANq1E4SJZQeAuXhggdnsjRFKFJD01WEnBpcdPC1pkJiv3WegCA@mail.gmail.com>
+In-Reply-To: <CANq1E4SJZQeAuXhggdnsjRFKFJD01WEnBpcdPC1pkJiv3WegCA@mail.gmail.com>
+X-OriginalArrivalTime: 22 Aug 2014 12:17:42.0884 (UTC) FILETIME=[12EE9A40:01CFBE03]
+X-MC-Unique: 114082213174401401
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yuvaraj,
 
-On 08/22/2014 08:01 AM, Yuvaraj Cd wrote:
->> +
->> +static int max77802_pmic_probe(struct platform_device *pdev)
+
+On 22/08/14 12:37, David Herrmann wrote:
+> Hi
+>
+> On Fri, Aug 22, 2014 at 1:29 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
+>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>
+>> This patch adds a new function to create per-cpu devices.
+>> This helps in:
+>> 1. reusing the device infrastructure to create any cpu related
+>>     attributes and corresponding sysfs instead of creating and
+>>     dealing with raw kobjects directly
+>> 2. retaining the legacy path(/sys/devices/system/cpu/..) to support
+>>     existing sysfs ABI
+>> 3. avoiding to create links in the bus directory pointing to the
+>>     device as there would be per-cpu instance of these devices with
+>>     the same name since dev->bus is not populated to cpu_sysbus on
+>>     purpose
+>>
+>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> ---
+>>   drivers/base/cpu.c  | 54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>   include/linux/cpu.h |  4 ++++
+>>   2 files changed, 58 insertions(+)
+>>
+>> Hi Greg,
+>>
+>> Here is the alternate solution I could come up with instead of
+>> creating cpu class. cpu_device_create is very similar to
+>> device_create_groups_vargs w/o class support, but I could not
+>> reuse anything else to avoid creating similar function.
+>>
+>> Let me know your thoughts/suggestions on this.
+>>
+>> Regards,
+>> Sudeep
+>>
+>>
+>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+>> index 277a9cfa9040..53f0c4141d05 100644
+>> --- a/drivers/base/cpu.c
+>> +++ b/drivers/base/cpu.c
+>> @@ -363,6 +363,60 @@ struct device *get_cpu_device(unsigned cpu)
+>>   }
+>>   EXPORT_SYMBOL_GPL(get_cpu_device);
+>>
+>> +static void device_create_release(struct device *dev)
 >> +{
->> +       struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
->> +       struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
->> +       struct max77802_regulator_prv *max77802;
->> +       int i, ret = 0, val;
->> +       struct regulator_config config = { };
+>> +       kfree(dev);
+>> +}
 >> +
->> +       /* This is allocated by the MFD driver */
->> +       if (!pdata) {
->> +               dev_err(&pdev->dev, "no platform data found for regulator\n");
->> +               return -ENODEV;
+>> +static struct device *
+>> +__cpu_device_create(struct device *parent, void *drvdata,
+>> +                   const struct attribute_group **groups,
+>> +                   const char *fmt, va_list args)
+>> +{
+>> +       struct device *dev = NULL;
+>> +       int retval = -ENODEV;
+>> +
+>> +       dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+>> +       if (!dev) {
+>> +               retval = -ENOMEM;
+>> +               goto error;
 >> +       }
 >> +
->> +       max77802 = devm_kzalloc(&pdev->dev,
->> +                               sizeof(struct max77802_regulator_prv),
->> +                               GFP_KERNEL);
->> +       if (!max77802)
->> +               return -ENOMEM;
+>> +       device_initialize(dev);
+>> +       dev->parent = parent;
+>> +       dev->groups = groups;
+>> +       dev->release = device_create_release;
+>> +       dev_set_drvdata(dev, drvdata);
 >> +
->> +       if (iodev->dev->of_node) {
->> +               ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
->> +               if (ret)
->> +                       return ret;
->> +       }
+>> +       retval = kobject_set_name_vargs(&dev->kobj, fmt, args);
+>> +       if (retval)
+>> +               goto error;
 >> +
->> +       config.dev = iodev->dev;
->> +       config.regmap = iodev->regmap;
->> +       config.driver_data = max77802;
->> +       platform_set_drvdata(pdev, max77802);
->> +
->> +       for (i = 0; i < MAX77802_REG_MAX; i++) {
->> +               struct regulator_dev *rdev;
->> +               int id = pdata->regulators[i].id;
->> +               int shift = max77802_get_opmode_shift(id);
->> +
->> +               config.init_data = pdata->regulators[i].initdata;
->> +               config.of_node = pdata->regulators[i].of_node;
->> +
->> +               ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
->> +               max77802->opmode[id] = val >> shift & MAX77802_OPMODE_MASK;
-> 
-> I have been using this patch series for adding UHS support for dw_mmc
-> driver. During reboot testing I came across an issue where card
-> detection fails due to vqmmc regulator not getting enabled. On
-> debugging further, I found that PMIC driver is reading the operating
-> mode during probe and reusing it in the enable function. With the UHS
-> patches vqmmc regulator gets disabled during POWER_OFF and if we do
-> warm reboot, an incorrect operating mode(OFF) is read. This leads to
-> the vqmmc regulator staying disabled. I have referred to 77686 driver
-> and observed that they are handling this a little differently. With
-> the following change in the driver above issue is resolved:
-> 
-> -               ret = regmap_read(iodev->regmap,
-> regulators[i].enable_reg, &val);
-> -               max77802->opmode[id] = val >> shift & MAX77802_OPMODE_MASK;
-> +               max77802->opmode[i] = regulators[i].enable_mask >> shift;
-> 
+>> +       retval = device_add(dev);
+>> +       if (retval)
+>> +               goto error;
+>
+> Exactly! As I said, simply setting dev->groups before calling device_add().
+>
+> However, I really don't understand why we need this as global API.
 
-I don't think this change is correct it its current form since
-.enable_mask is initialized to MAX77802_OPMODE_MASK << shift so this is
-actually setting the opmode to MAX77802_OPMODE_MASK.
+Yes right now it's used only in cacheinfo. The main reason why I am 
+exporting it is that we can reuse it in some places like cpuidle/freq
+which deals with raw kobjects directly and can be moved to device 
+attributes.
 
-Now, MAX77802_OPMODE_MASK has the same value than MAX77802_OPMODE_NORMAL
-so what you are really doing here is initializing the opmode to
-MAX77802_OPMODE_NORMAL.
-
-> Please have a look and let me know, if there is any better way of handling this.
+> Skimming over the other patches, you use cpu_device_create() only in
+> one place. Why not hard-code this all there? It is totally OK to do
+> device initialization in drivers. All the helpers (like
+> device_create(), device_create_with_groups(), and so on) are just
+> convenience functions. The driver-core API explicitly allows drivers
+> to initialize devices manually.
+>
+> Nevertheless, this patch looks fine.
 >
 
-The first versions of this driver did in fact set the opmode to
-MAX77802_OPMODE_NORMAL on probe but Mark asked me to read it from the
-hardware instead [0]. I was indeed worried at the time that something like
-this could happen on a warm reset [1].
+Thanks for having a look at this.
 
-Mark, any opinions on how this should be solved will be highly appreciated.
+Regards,
+Sudeep
 
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/6/16/576
-[1]: https://lkml.org/lkml/2014/6/17/174
