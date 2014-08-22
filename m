@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751441AbaHVTP3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:15:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46671 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaHVTP1 convert rfc822-to-8bit (ORCPT
+	id S1751476AbaHVTQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:16:00 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:49914 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaHVTP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:15:27 -0400
-Date: Fri, 22 Aug 2014 12:15:20 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [V0 PATCH 0/2] AMD PVH domU support
-Message-ID: <20140822121520.66d3c072@mantra.us.oracle.com>
-In-Reply-To: <53F74BC9.6060207@citrix.com>
-References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-	<53F74B29.4090601@citrix.com>
-	<53F74BC9.6060207@citrix.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Fri, 22 Aug 2014 15:15:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1408668134-21696-1-git-send-email-minchan@kernel.org>
+References: <1408668134-21696-1-git-send-email-minchan@kernel.org>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 22 Aug 2014 15:15:36 -0400
+X-Google-Sender-Auth: sjKr37j5qbzvZrB94vrM-lDuS1s
+Message-ID: <CALZtONChBVQKzROJ9zR=nXYEHSWRcmegh_w9P34FfCz9c47Mnw@mail.gmail.com>
+Subject: Re: [PATCH v4 0/4] zram memory control enhance
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        David Horner <ds2horner@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014 14:55:21 +0100
-David Vrabel <david.vrabel@citrix.com> wrote:
+On Thu, Aug 21, 2014 at 8:42 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Currently, zram has no feature to limit memory so theoretically
+> zram can deplete system memory.
+> Users have asked for a limit several times as even without exhaustion
+> zram makes it hard to control memory usage of the platform.
+> This patchset adds the feature.
+>
+> Patch 1 makes zs_get_total_size_bytes faster because it would be
+> used frequently in later patches for the new feature.
+>
+> Patch 2 changes zs_get_total_size_bytes's return unit from bytes
+> to page so that zsmalloc doesn't need unnecessary operation(ie,
+> << PAGE_SHIFT).
+>
+> Patch 3 adds new feature. I added the feature into zram layer,
+> not zsmalloc because limiation is zram's requirement, not zsmalloc
+> so any other user using zsmalloc(ie, zpool) shouldn't affected
+> by unnecessary branch of zsmalloc. In future, if every users
+> of zsmalloc want the feature, then, we could move the feature
+> from client side to zsmalloc easily but vice versa would be
+> painful.
+>
+> Patch 4 adds news facility to report maximum memory usage of zram
+> so that this avoids user polling frequently via /sys/block/zram0/
+> mem_used_total and ensures transient max are not missed.
 
-> On 22/08/14 14:52, David Vrabel wrote:
-> > On 21/08/14 03:16, Mukesh Rathor wrote:
-> >> Hi,
-> >>
-> >> Here's first stab at AMD PVH domU support. Pretty much the only
-> >> thing needed is EFER bits set. Please review.
-> > 
-> > I'm not going to accept this until there is some ABI documentation
-> > stating explicitly what state non-boot CPUs will be in.
-> 
-> Also the boot CPU.
-> 
-> David
+FWIW, with the minor update to checking the memparse in patch 3 David
+mentioned, feel free to add to all the patches:
 
-Sure, but looks like Roger already beat me to it... 
+Reviewed-by: Dan Streetman <ddstreet@ieee.org>
 
->From Roger's "very initial PVH design document" :
-
-And finally on `EFER` the following features are enabled:
-
-  * LME (bit 8): Long mode enable.
-  * LMA (bit 10): Long mode active.
-
-
-LMK if anything additional needs to be done.
-
-Mukesh
+>
+> * From v3
+>  * get_zs_total_size_byte function name change - Dan
+>  * clarifiction of the document - Dan
+>  * atomic account instead of introducing new lock in zsmalloc - David
+>  * remove unnecessary atomic instruction in updating max - David
+>
+> * From v2
+>  * introduce helper funcntion to update max_used_pages
+>    for readability - David
+>  * avoid unncessary zs_get_total_size call in updating loop
+>    for max_used_pages - David
+>
+> * From v1
+>  * rebased on next-20140815
+>  * fix up race problem - David, Dan
+>  * reset mem_used_max as current total_bytes, rather than 0 - David
+>  * resetting works with only "0" write for extensiblilty - David, Dan
+>
+> Minchan Kim (4):
+>   zsmalloc: move pages_allocated to zs_pool
+>   zsmalloc: change return value unit of  zs_get_total_size_bytes
+>   zram: zram memory size limitation
+>   zram: report maximum used memory
+>
+>  Documentation/ABI/testing/sysfs-block-zram |  20 ++++++
+>  Documentation/blockdev/zram.txt            |  25 +++++--
+>  drivers/block/zram/zram_drv.c              | 101 ++++++++++++++++++++++++++++-
+>  drivers/block/zram/zram_drv.h              |   6 ++
+>  include/linux/zsmalloc.h                   |   2 +-
+>  mm/zsmalloc.c                              |  30 ++++-----
+>  6 files changed, 158 insertions(+), 26 deletions(-)
+>
+> --
+> 2.0.0
+>
