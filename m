@@ -1,731 +1,1166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318AbaHVKdx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 06:33:53 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:50495 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556AbaHVKdw (ORCPT
+	id S1756015AbaHVKeg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 06:34:36 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:41307 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819AbaHVKef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 06:33:52 -0400
+	Fri, 22 Aug 2014 06:34:35 -0400
 From: Miguel Oliveira <cmroliv@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: navin.patidar@gmail.com, Larry.Finger@lwfinger.net, davem@davemloft.net,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         cmroliv@gmail.com
-Subject: [PATCH 1/4] staging: rtl8188eu: os_intfs.c
-Date: Fri, 22 Aug 2014 11:32:38 +0100
-Message-Id: <1408703558-32167-1-git-send-email-cmroliv@gmail.com>
+Subject: [PATCH 2/4] staging: rtl8188eu: rtw_debug.c
+Date: Fri, 22 Aug 2014 11:33:20 +0100
+Message-Id: <1408703600-32210-1-git-send-email-cmroliv@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1408703558-32167-1-git-send-email-cmroliv@gmail.com>
+References: <1408703558-32167-1-git-send-email-cmroliv@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-void rtw_proc_remove_one(struct net_device *dev)
-{
-}
-void rtw_proc_init_one(struct net_device *dev)
-  /* TODO: Convert these to /sys */
-
-Converting the above from proc into debugfs.
 Convert all rtw_proc_xxx references to rtw_sys_xxx
+
+Code with 62 WARNING: line over 80 characters, I'll write another patch
+to clean the whole file.
 
 Signed-off-by: Miguel Oliveira <cmroliv@gmail.com>
 ---
- drivers/staging/rtl8188eu/os_dep/os_intfs.c |  517 +++++++++++++++++----------
- 1 file changed, 326 insertions(+), 191 deletions(-)
+ drivers/staging/rtl8188eu/core/rtw_debug.c    |  640 +++++++++++++------------
+ drivers/staging/rtl8188eu/include/drv_types.h |    2 +-
+ 2 files changed, 346 insertions(+), 296 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/os_intfs.c b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-index c7a44ab..49b441a 100644
---- a/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-+++ b/drivers/staging/rtl8188eu/os_dep/os_intfs.c
-@@ -29,6 +29,8 @@
+diff --git a/drivers/staging/rtl8188eu/core/rtw_debug.c b/drivers/staging/rtl8188eu/core/rtw_debug.c
+index 1f72f7d..f25401e 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_debug.c
++++ b/drivers/staging/rtl8188eu/core/rtw_debug.c
+@@ -22,30 +22,26 @@
+ #include <rtw_debug.h>
+ #include <usb_ops_linux.h>
  
- #include <usb_hal.h>
- 
-+#include <linux/debugfs.h>
-+
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("Realtek Wireless Lan Driver");
- MODULE_AUTHOR("Realtek Semiconductor Corp.");
-@@ -166,50 +168,254 @@ MODULE_PARM_DESC(rtw_notch_filter, "0:Disable, 1:Enable, 2:Enable only for P2P")
- module_param_named(debug, rtw_debug, int, 0444);
- MODULE_PARM_DESC(debug, "Set debug level (1-9) (default 1)");
- 
--/* dummy routines */
--void rtw_proc_remove_one(struct net_device *dev)
--{
--}
-+static const struct file_operations drv_version = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_drv_version,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations write_reg = {
-+	.owner =	THIS_MODULE,
-+	.write =	sys_set_write_reg,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations read_reg = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_read_reg,
-+	.write =	sys_set_read_reg,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations fwstate = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_fwstate,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations sec_info = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_sec_info,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations mlmext_state = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_mlmext_state,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations qos_option = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_qos_option,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations ht_option = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_ht_option,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations rf_info = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_rf_info,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations ap_info = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_ap_info,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations adapter_state = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_adapter_state,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations trx_info = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_trx_info,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations mac_reg_dump1 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_mac_reg_dump1,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations mac_reg_dump2 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_mac_reg_dump2,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations mac_reg_dump3 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_mac_reg_dump3,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations bb_reg_dump1 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_bb_reg_dump1,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations bb_reg_dump2 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_bb_reg_dump2,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations bb_reg_dump3 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_bb_reg_dump3,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations rf_reg_dump1 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_rf_reg_dump1,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations rf_reg_dump2 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_rf_reg_dump2,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations rf_reg_dump3 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_rf_reg_dump3,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations rf_reg_dump4 = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_rf_reg_dump4,
-+	.llseek =	default_llseek,
-+};
-+
-+#ifdef CONFIG_88EU_AP_MODE
-+
-+static const struct file_operations all_sta_info = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_all_sta_info,
-+	.llseek =	default_llseek,
-+};
-+
-+#endif
-+
-+static const struct file_operations best_channel = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_best_channel,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations rx_signal = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_rx_signal,
-+	.write =	sys_set_rx_signal,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations ht_enable = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_ht_enable,
-+	.write =	sys_set_ht_enable,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations cbw40_enable = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_cbw40_enable,
-+	.write =	sys_set_cbw40_enable,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations ampdu_enable = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_ampdu_enable,
-+	.write =	sys_set_ampdu_enable,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations rx_stbc = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_rx_stbc,
-+	.write =	sys_set_rx_stbc,
-+	.llseek =	default_llseek,
-+};
-+
-+static const struct file_operations two_path_rssi = {
-+	.owner =	THIS_MODULE,
-+	.read =		sys_get_two_path_rssi,
-+	.llseek =	default_llseek,
-+};
- 
--void rtw_proc_init_one(struct net_device *dev)
-+static const struct file_operations rssi_disp = {
-+	.owner =	THIS_MODULE,
-+	.write =	sys_set_rssi_disp,
-+	.llseek =	default_llseek,
-+};
-+
-+
-+static struct dentry *rtw_sys;
-+static int rtw_sys_cnt;
-+
-+void rtw_sys_remove_one(struct net_device *dev)
+-int proc_get_drv_version(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_drv_version(struct file *file, char __user *buffer,
++				 size_t count, loff_t *offset)
  {
-+	struct dentry *dir_dev;
-+	struct adapter *padapter = rtw_netdev_priv(dev);
+ 	int len = 0;
+ 
+-	len += snprintf(page + len, count - len, "%s\n", DRIVERVERSION);
++	if (*offset != 0)
++		return 0;
 +
-+	dir_dev = padapter->dir_dev;
-+	padapter->dir_dev = NULL;
-+
-+	debugfs_remove_recursive(dir_dev);
-+
-+	rtw_sys_cnt--;
-+	if (rtw_sys_cnt == 0) {
-+		debugfs_remove_recursive(rtw_sys);
-+		rtw_sys = NULL;
-+	}
-+
++	len += snprintf(buffer + len, count - len, "%s\n", DRIVERVERSION);
++	*offset = len;
+ 
+-	*eof = 1;
+ 	return len;
  }
  
--#if 0	/* TODO: Convert these to /sys */
--void rtw_proc_init_one(struct net_device *dev)
-+void rtw_sys_init_one(struct net_device *dev)
+-int proc_get_write_reg(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
+-{
+-	*eof = 1;
+-	return 0;
+-}
+ 
+-int proc_set_write_reg(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_write_reg(struct file *file, const char __user *buffer,
++				size_t count, loff_t *offset)
  {
--	struct proc_dir_entry *dir_dev = NULL;
--	struct proc_dir_entry *entry = NULL;
--	struct adapter	*padapter = rtw_netdev_priv(dev);
-+	struct dentry *entry;
-+	struct dentry *dir_dev;
-+	struct adapter *padapter = rtw_netdev_priv(dev);
- 	u8 rf_type;
+-	struct net_device *dev = (struct net_device *)data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	char tmp[32];
+ 	u32 addr, val, len;
+@@ -80,44 +76,45 @@ int proc_set_write_reg(struct file *file, const char __user *buffer,
+ 	return count;
+ }
  
--	if (rtw_proc == NULL) {
--		memcpy(rtw_proc_name, DRV_NAME, sizeof(DRV_NAME));
+-static u32 proc_get_read_addr = 0xeeeeeeee;
+-static u32 proc_get_read_len = 0x4;
++static u32 sys_get_read_addr = 0xeeeeeeee;
++static u32 sys_get_read_len = 0x4;
+ 
+-int proc_get_read_reg(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_read_reg(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
 -
--		rtw_proc = create_proc_entry(rtw_proc_name, S_IFDIR, init_net.proc_net);
--		if (rtw_proc == NULL) {
--			DBG_88E(KERN_ERR "Unable to create rtw_proc directory\n");
-+	if (rtw_sys == NULL) {
-+		rtw_sys = debugfs_create_dir(DRV_NAME, NULL);
-+		if (rtw_sys == NULL) {
-+			DBG_88E(KERN_ERR
-+				 "Unable to create rtw_sys directory\n");
- 			return;
+ 	int len = 0;
+ 
+-	if (proc_get_read_addr == 0xeeeeeeee) {
+-		*eof = 1;
++	if (*offset != 0)
++		return 0;
++
++	if (sys_get_read_addr == 0xeeeeeeee)
+ 		return len;
+ 
+-	switch (proc_get_read_len) {
++	switch (sys_get_read_len) {
+ 	case 1:
+-		len += snprintf(page + len, count - len, "usb_read8(0x%x)=0x%x\n", proc_get_read_addr, usb_read8(padapter, proc_get_read_addr));
++		len += snprintf(buffer + len, count - len, "usb_read8(0x%x)=0x%x\n", sys_get_read_addr, usb_read8(padapter, sys_get_read_addr));
+ 		break;
+ 	case 2:
+-		len += snprintf(page + len, count - len, "usb_read16(0x%x)=0x%x\n", proc_get_read_addr, usb_read16(padapter, proc_get_read_addr));
++		len += snprintf(buffer + len, count - len, "usb_read16(0x%x)=0x%x\n", sys_get_read_addr, usb_read16(padapter, sys_get_read_addr));
+ 		break;
+ 	case 4:
+-		len += snprintf(page + len, count - len, "usb_read32(0x%x)=0x%x\n", proc_get_read_addr, usb_read32(padapter, proc_get_read_addr));
++		len += snprintf(buffer + len, count - len, "usb_read32(0x%x)=0x%x\n", sys_get_read_addr, usb_read32(padapter, sys_get_read_addr));
+ 		break;
+ 	default:
+-		len += snprintf(page + len, count - len, "error read length=%d\n", proc_get_read_len);
++		len += snprintf(buffer + len, count - len, "error read length=%d\n", sys_get_read_len);
+ 		break;
+ 	}
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_set_read_reg(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_read_reg(struct file *file, const char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+ 	char tmp[16];
+ 	u32 addr, len;
+@@ -135,116 +132,125 @@ int proc_set_read_reg(struct file *file, const char __user *buffer,
+ 			return count;
  		}
  
--		entry = create_proc_read_entry("ver_info", S_IFREG | S_IRUGO, rtw_proc, proc_get_drv_version, dev);
-+		entry = debugfs_create_file("ver_info", S_IFREG | S_IRUGO,
-+						rtw_sys, dev, &drv_version);
- 		if (!entry) {
--			pr_info("Unable to create_proc_read_entry!\n");
-+			pr_info("Unable to create_sys_entry!\n");
- 			return;
- 		}
+-		proc_get_read_addr = addr;
++		sys_get_read_addr = addr;
+ 
+-		proc_get_read_len = len;
++		sys_get_read_len = len;
  	}
  
- 	if (padapter->dir_dev == NULL) {
--		padapter->dir_dev = create_proc_entry(dev->name,
--					  S_IFDIR | S_IRUGO | S_IXUGO,
--					  rtw_proc);
-+		padapter->dir_dev = debugfs_create_dir(dev->name, rtw_sys);
- 		dir_dev = padapter->dir_dev;
- 		if (dir_dev == NULL) {
--			if (rtw_proc_cnt == 0) {
--				if (rtw_proc) {
--					remove_proc_entry(rtw_proc_name, init_net.proc_net);
--					rtw_proc = NULL;
--				}
-+			if (rtw_sys_cnt == 0) {
-+				debugfs_remove_recursive(rtw_sys);
-+				rtw_sys = NULL;
- 			}
+ 	return count;
+ }
  
- 			pr_info("Unable to create dir_dev directory\n");
-@@ -219,295 +425,224 @@ void rtw_proc_init_one(struct net_device *dev)
- 		return;
- 	}
- 
--	rtw_proc_cnt++;
-+	rtw_sys_cnt++;
- 
--	entry = create_proc_read_entry("write_reg", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_write_reg, dev);
-+	entry = debugfs_create_file("write_reg", S_IFREG | S_IWUSR,
-+					dir_dev, dev, &write_reg);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	entry->write_proc = proc_set_write_reg;
- 
--	entry = create_proc_read_entry("read_reg", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_read_reg, dev);
-+	entry = debugfs_create_file("read_reg", S_IFREG | S_IWUSR | S_IRUGO,
-+					dir_dev, dev, &read_reg);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	entry->write_proc = proc_set_read_reg;
- 
+-int proc_get_fwstate(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_fwstate(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
 -
--	entry = create_proc_read_entry("fwstate", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_fwstate, dev);
-+	entry = debugfs_create_file("fwstate", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &fwstate);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+ 	int len = 0;
  
--	entry = create_proc_read_entry("sec_info", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_sec_info, dev);
-+	entry = debugfs_create_file("sec_info", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &sec_info);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_proc_entry!\n");
- 		return;
- 	}
+-	len += snprintf(page + len, count - len, "fwstate=0x%x\n", get_fwstate(pmlmepriv));
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "fwstate=0x%x\n", get_fwstate(pmlmepriv));
  
--	entry = create_proc_read_entry("mlmext_state", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_mlmext_state, dev);
-+	entry = debugfs_create_file("mlmext_state", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &mlmext_state);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
  
--	entry = create_proc_read_entry("qos_option", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_qos_option, dev);
-+	entry = debugfs_create_file("qos_option", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &qos_option);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-int proc_get_sec_info(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_sec_info(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct security_priv *psecuritypriv = &padapter->securitypriv;
+-
+ 	int len = 0;
  
--	entry = create_proc_read_entry("ht_option", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_ht_option, dev);
-+	entry = debugfs_create_file("ht_option", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &ht_option);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-	len += snprintf(page + len, count - len, "auth_alg=0x%x, enc_alg=0x%x, auth_type=0x%x, enc_type=0x%x\n",
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "auth_alg=0x%x, enc_alg=0x%x, auth_type=0x%x, enc_type=0x%x\n",
+ 						psecuritypriv->dot11AuthAlgrthm, psecuritypriv->dot11PrivacyAlgrthm,
+ 						psecuritypriv->ndisauthtype, psecuritypriv->ndisencryptstatus);
  
--	entry = create_proc_read_entry("rf_info", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_rf_info, dev);
-+	entry = debugfs_create_file("rf_info", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &rf_info);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
  
--	entry = create_proc_read_entry("ap_info", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_ap_info, dev);
-+	 entry = debugfs_create_file("ap_info", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &ap_info);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-int proc_get_mlmext_state(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_mlmext_state(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
+ 	struct mlme_ext_info	*pmlmeinfo = &(pmlmeext->mlmext_info);
+-
+ 	int len = 0;
  
--	entry = create_proc_read_entry("adapter_state", S_IFREG | S_IRUGO,
--				   dir_dev, proc_getstruct adapter_state, dev);
-+	entry = debugfs_create_file("adapter_state", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &adapter_state);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-	len += snprintf(page + len, count - len, "pmlmeinfo->state=0x%x\n", pmlmeinfo->state);
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "pmlmeinfo->state=0x%x\n", pmlmeinfo->state);
  
--	entry = create_proc_read_entry("trx_info", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_trx_info, dev);
-+	entry = debugfs_create_file("trx_info", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &trx_info);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
  
--	entry = create_proc_read_entry("mac_reg_dump1", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_mac_reg_dump1, dev);
-+	entry = debugfs_create_file("mac_reg_dump1", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &mac_reg_dump1);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-int proc_get_qos_option(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_qos_option(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
+-
+ 	int len = 0;
  
--	entry = create_proc_read_entry("mac_reg_dump2", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_mac_reg_dump2, dev);
-+	entry = debugfs_create_file("mac_reg_dump2", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &mac_reg_dump2);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-	len += snprintf(page + len, count - len, "qos_option=%d\n", pmlmepriv->qospriv.qos_option);
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "qos_option=%d\n", pmlmepriv->qospriv.qos_option);
+
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
  
--	entry = create_proc_read_entry("mac_reg_dump3", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_mac_reg_dump3, dev);
-+	entry = debugfs_create_file("mac_reg_dump3", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &mac_reg_dump3);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-int proc_get_ht_option(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_ht_option(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
+-
+ 	int len = 0;
+-	len += snprintf(page + len, count - len, "ht_option=%d\n", pmlmepriv->htpriv.ht_option);
+-	*eof = 1;
++
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "ht_option=%d\n", pmlmepriv->htpriv.ht_option);
++
++	*offset = len;
+ 	return len;
+ }
  
--	entry = create_proc_read_entry("bb_reg_dump1", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_bb_reg_dump1, dev);
-+	entry = debugfs_create_file("bb_reg_dump1", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &bb_reg_dump1);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-int proc_get_rf_info(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_rf_info(struct file *file, char __user *buffer,
++			size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct mlme_ext_priv	*pmlmeext = &padapter->mlmeextpriv;
+ 	int len = 0;
  
--	entry = create_proc_read_entry("bb_reg_dump2", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_bb_reg_dump2, dev);
-+	entry = debugfs_create_file("bb_reg_dump2", S_IFREG | S_IRUGO,
-+					dir_dev, dev,  &bb_reg_dump2);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-	len += snprintf(page + len, count - len, "cur_ch=%d, cur_bw=%d, cur_ch_offset=%d\n",
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "cur_ch=%d, cur_bw=%d, cur_ch_offset=%d\n",
+ 					pmlmeext->cur_channel, pmlmeext->cur_bwmode, pmlmeext->cur_ch_offset);
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
  
--	entry = create_proc_read_entry("bb_reg_dump3", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_bb_reg_dump3, dev);
-+	entry = debugfs_create_file("bb_reg_dump3", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &bb_reg_dump3);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-int proc_get_ap_info(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_ap_info(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+ 	struct sta_info *psta;
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct mlme_priv *pmlmepriv = &(padapter->mlmepriv);
+ 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
+@@ -252,312 +258,347 @@ int proc_get_ap_info(char *page, char **start,
+ 	struct sta_priv *pstapriv = &padapter->stapriv;
+ 	int len = 0;
  
--	entry = create_proc_read_entry("rf_reg_dump1", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_rf_reg_dump1, dev);
-+	entry = debugfs_create_file("rf_reg_dump1", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &rf_reg_dump1);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
++	if (*offset != 0)
++		return 0;
+ 	psta = rtw_get_stainfo(pstapriv, cur_network->network.MacAddress);
+ 	if (psta) {
+ 		int i;
+ 		struct recv_reorder_ctrl *preorder_ctrl;
  
--	entry = create_proc_read_entry("rf_reg_dump2", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_rf_reg_dump2, dev);
-+	entry = debugfs_create_file("rf_reg_dump2", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &rf_reg_dump2);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
+-		len += snprintf(page + len, count - len, "SSID=%s\n", cur_network->network.Ssid.Ssid);
+-		len += snprintf(page + len, count - len, "sta's macaddr:%pM\n", psta->hwaddr);
+-		len += snprintf(page + len, count - len, "cur_channel=%d, cur_bwmode=%d, cur_ch_offset=%d\n", pmlmeext->cur_channel, pmlmeext->cur_bwmode, pmlmeext->cur_ch_offset);
+-		len += snprintf(page + len, count - len, "rtsen=%d, cts2slef=%d\n", psta->rtsen, psta->cts2self);
+-		len += snprintf(page + len, count - len, "state=0x%x, aid=%d, macid=%d, raid=%d\n", psta->state, psta->aid, psta->mac_id, psta->raid);
+-		len += snprintf(page + len, count - len, "qos_en=%d, ht_en=%d, init_rate=%d\n", psta->qos_option, psta->htpriv.ht_option, psta->init_rate);
+-		len += snprintf(page + len, count - len, "bwmode=%d, ch_offset=%d, sgi=%d\n", psta->htpriv.bwmode, psta->htpriv.ch_offset, psta->htpriv.sgi);
+-		len += snprintf(page + len, count - len, "ampdu_enable = %d\n", psta->htpriv.ampdu_enable);
+-		len += snprintf(page + len, count - len, "agg_enable_bitmap=%x, candidate_tid_bitmap=%x\n", psta->htpriv.agg_enable_bitmap, psta->htpriv.candidate_tid_bitmap);
++		len += snprintf(buffer + len, count - len, "SSID=%s\n", cur_network->network.Ssid.Ssid);
++		len += snprintf(buffer + len, count - len, "sta's macaddr:%pM\n", psta->hwaddr);
++		len += snprintf(buffer + len, count - len, "cur_channel=%d, cur_bwmode=%d, cur_ch_offset=%d\n", pmlmeext->cur_channel, pmlmeext->cur_bwmode, pmlmeext->cur_ch_offset);
++		len += snprintf(buffer + len, count - len, "rtsen=%d, cts2slef=%d\n", psta->rtsen, psta->cts2self);
++		len += snprintf(buffer + len, count - len, "state=0x%x, aid=%d, macid=%d, raid=%d\n", psta->state, psta->aid, psta->mac_id, psta->raid);
++		len += snprintf(buffer + len, count - len, "qos_en=%d, ht_en=%d, init_rate=%d\n", psta->qos_option, psta->htpriv.ht_option, psta->init_rate);
++		len += snprintf(buffer + len, count - len, "bwmode=%d, ch_offset=%d, sgi=%d\n", psta->htpriv.bwmode, psta->htpriv.ch_offset, psta->htpriv.sgi);
++		len += snprintf(buffer + len, count - len, "ampdu_enable = %d\n", psta->htpriv.ampdu_enable);
++		len += snprintf(buffer + len, count - len, "agg_enable_bitmap=%x, candidate_tid_bitmap=%x\n", psta->htpriv.agg_enable_bitmap, psta->htpriv.candidate_tid_bitmap);
  
- 	rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
- 	if ((RF_1T2R == rf_type) || (RF_1T1R == rf_type)) {
--		entry = create_proc_read_entry("rf_reg_dump3", S_IFREG | S_IRUGO,
--					   dir_dev, proc_get_rf_reg_dump3, dev);
-+		entry = debugfs_create_file("rf_reg_dump3", S_IFREG | S_IRUGO,
-+						dir_dev, dev, &rf_reg_dump3);
- 		if (!entry) {
--			pr_info("Unable to create_proc_read_entry!\n");
-+			pr_info("Unable to create_sys_entry!\n");
- 			return;
+ 		for (i = 0; i < 16; i++) {
+ 			preorder_ctrl = &psta->recvreorder_ctrl[i];
+ 			if (preorder_ctrl->enable)
+-				len += snprintf(page + len, count - len, "tid=%d, indicate_seq=%d\n", i, preorder_ctrl->indicate_seq);
++				len += snprintf(buffer + len, count - len, "tid=%d, indicate_seq=%d\n", i, preorder_ctrl->indicate_seq);
  		}
- 
--		entry = create_proc_read_entry("rf_reg_dump4", S_IFREG | S_IRUGO,
--					   dir_dev, proc_get_rf_reg_dump4, dev);
-+		entry = debugfs_create_file("rf_reg_dump4", S_IFREG | S_IRUGO,
-+						dir_dev, dev, &rf_reg_dump4);
- 		if (!entry) {
--			pr_info("Unable to create_proc_read_entry!\n");
-+			pr_info("Unable to create_sys_entry!\n");
- 			return;
- 		}
+ 	} else {
+-		len += snprintf(page + len, count - len, "can't get sta's macaddr, cur_network's macaddr: %pM\n", cur_network->network.MacAddress);
++		len += snprintf(buffer + len, count - len, "can't get sta's macaddr, cur_network's macaddr: %pM\n", cur_network->network.MacAddress);
  	}
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_adapter_state(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_adapter_state(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 
+-	len += snprintf(page + len, count - len, "bSurpriseRemoved=%d, bDriverStopped=%d\n",
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "bSurpriseRemoved=%d, bDriverStopped=%d\n",
+ 						padapter->bSurpriseRemoved, padapter->bDriverStopped);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_trx_info(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_trx_info(struct file *file, char __user *buffer,
++			size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct xmit_priv *pxmitpriv = &padapter->xmitpriv;
+ 	struct recv_priv  *precvpriv = &padapter->recvpriv;
+ 	int len = 0;
+ 
+-	len += snprintf(page + len, count - len, "free_xmitbuf_cnt=%d, free_xmitframe_cnt=%d, free_ext_xmitbuf_cnt=%d, free_recvframe_cnt=%d\n",
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "free_xmitbuf_cnt=%d, free_xmitframe_cnt=%d, free_ext_xmitbuf_cnt=%d, free_recvframe_cnt=%d\n",
+ 				pxmitpriv->free_xmitbuf_cnt, pxmitpriv->free_xmitframe_cnt, pxmitpriv->free_xmit_extbuf_cnt, precvpriv->free_recvframe_cnt);
+-	len += snprintf(page + len, count - len, "rx_urb_pending_cn=%d\n", precvpriv->rx_pending_cnt);
++	len += snprintf(buffer + len, count - len, "rx_urb_pending_cn=%d\n", precvpriv->rx_pending_cnt);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_mac_reg_dump1(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_mac_reg_dump1(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1;
+ 
+-	len += snprintf(page + len, count - len, "\n======= MAC REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= MAC REG =======\n");
+ 
+ 	for (i = 0x0; i < 0x300; i += 4) {
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", usb_read32(padapter, i));
++			len += snprintf(buffer + len, count - len, "0x%02x", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", usb_read32(padapter, i));
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_mac_reg_dump2(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_mac_reg_dump2(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1;
+ 
+-	len += snprintf(page + len, count - len, "\n======= MAC REG =======\n");
+-	memset(page, 0, count);
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= MAC REG =======\n");
++	memset(buffer, 0, count);
+ 	for (i = 0x300; i < 0x600; i += 4) {
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", usb_read32(padapter, i));
++			len += snprintf(buffer + len, count - len, "0x%02x", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", usb_read32(padapter, i));
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_mac_reg_dump3(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_mac_reg_dump3(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1;
+ 
+-	len += snprintf(page + len, count - len, "\n======= MAC REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= MAC REG =======\n");
+ 
+ 	for (i = 0x600; i < 0x800; i += 4) {
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", usb_read32(padapter, i));
++			len += snprintf(buffer + len, count - len, "0x%02x", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", usb_read32(padapter, i));
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_bb_reg_dump1(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_bb_reg_dump1(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1;
+ 
+-	len += snprintf(page + len, count - len, "\n======= BB REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= BB REG =======\n");
+ 	for (i = 0x800; i < 0xB00; i += 4) {
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", usb_read32(padapter, i));
++			len += snprintf(buffer + len, count - len, "0x%02x", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", usb_read32(padapter, i));
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+-	*eof = 1;
++
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_bb_reg_dump2(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_bb_reg_dump2(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1;
+ 
+-	len += snprintf(page + len, count - len, "\n======= BB REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= BB REG =======\n");
+ 	for (i = 0xB00; i < 0xE00; i += 4) {
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", usb_read32(padapter, i));
++			len += snprintf(buffer + len, count - len, "0x%02x", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", usb_read32(padapter, i));
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+-	*eof = 1;
++
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_bb_reg_dump3(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_bb_reg_dump3(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1;
+ 
+-	len += snprintf(page + len, count - len, "\n======= BB REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= BB REG =======\n");
+ 	for (i = 0xE00; i < 0x1000; i += 4) {
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", usb_read32(padapter, i));
++			len += snprintf(buffer + len, count - len, "0x%02x", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", usb_read32(padapter, i));
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+-	*eof = 1;
++
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_rf_reg_dump1(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_rf_reg_dump1(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1, path;
+ 	u32 value;
+ 
+-	len += snprintf(page + len, count - len, "\n======= RF REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= RF REG =======\n");
+ 	path = 1;
+-	len += snprintf(page + len, count - len, "\nRF_Path(%x)\n", path);
++	len += snprintf(buffer + len, count - len, "\nRF_Path(%x)\n", path);
+ 	for (i = 0; i < 0xC0; i++) {
+ 		value = rtw_hal_read_rfreg(padapter, path, i, 0xffffffff);
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x ", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", value);
++			len += snprintf(buffer + len, count - len, "0x%02x ", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", value);
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+-	*eof = 1;
++
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_rf_reg_dump2(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_rf_reg_dump2(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1, path;
+ 	u32 value;
+ 
+-	len += snprintf(page + len, count - len, "\n======= RF REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= RF REG =======\n");
+ 	path = 1;
+-	len += snprintf(page + len, count - len, "\nRF_Path(%x)\n", path);
++	len += snprintf(buffer + len, count - len, "\nRF_Path(%x)\n", path);
+ 	for (i = 0xC0; i < 0x100; i++) {
+ 		value = rtw_hal_read_rfreg(padapter, path, i, 0xffffffff);
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x ", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", value);
++			len += snprintf(buffer + len, count - len, "0x%02x ", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", value);
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+-	*eof = 1;
++
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_rf_reg_dump3(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_rf_reg_dump3(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1, path;
+ 	u32 value;
+ 
+-	len += snprintf(page + len, count - len, "\n======= RF REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= RF REG =======\n");
+ 	path = 2;
+-	len += snprintf(page + len, count - len, "\nRF_Path(%x)\n", path);
++	len += snprintf(buffer + len, count - len, "\nRF_Path(%x)\n", path);
+ 	for (i = 0; i < 0xC0; i++) {
+ 		value = rtw_hal_read_rfreg(padapter, path, i, 0xffffffff);
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x ", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", value);
++			len += snprintf(buffer + len, count - len, "0x%02x ", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", value);
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+ 
+-int proc_get_rf_reg_dump4(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_rf_reg_dump4(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 	int i, j = 1, path;
+ 	u32 value;
+ 
+-	len += snprintf(page + len, count - len, "\n======= RF REG =======\n");
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "\n======= RF REG =======\n");
+ 	path = 2;
+-	len += snprintf(page + len, count - len, "\nRF_Path(%x)\n", path);
++	len += snprintf(buffer + len, count - len, "\nRF_Path(%x)\n", path);
+ 	for (i = 0xC0; i < 0x100; i++) {
+ 		value = rtw_hal_read_rfreg(padapter, path, i, 0xffffffff);
+ 		if (j%4 == 1)
+-			len += snprintf(page + len, count - len, "0x%02x ", i);
+-		len += snprintf(page + len, count - len, " 0x%08x ", value);
++			len += snprintf(buffer + len, count - len, "0x%02x ", i);
++		len += snprintf(buffer + len, count - len, " 0x%08x ", value);
+ 		if ((j++)%4 == 0)
+-			len += snprintf(page + len, count - len, "\n");
++			len += snprintf(buffer + len, count - len, "\n");
+ 	}
+-	*eof = 1;
++
++	*offset = len;
+ 	return len;
+ }
+ 
+ 
+ 
+-int proc_get_rx_signal(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_rx_signal(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	int len = 0;
+ 
+-	len = snprintf(page + len, count,
++	if (*offset != 0)
++		return 0;
++	len = snprintf(buffer + len, count,
+ 		"rssi:%d\n"
+ 		"rxpwdb:%d\n"
+ 		"signal_strength:%u\n"
+@@ -570,14 +611,15 @@ int proc_get_rx_signal(char *page, char **start,
+ 		padapter->recvpriv.noise
+ 		);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_set_rx_signal(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_rx_signal(struct file *file, const char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = (struct net_device *)data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	char tmp[32];
+ 	u32 is_signal_dbg;
+@@ -606,28 +648,31 @@ int proc_set_rx_signal(struct file *file, const char __user *buffer,
+ 	return count;
+ }
+ 
+-int proc_get_ht_enable(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_ht_enable(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+ 	int len = 0;
+ 
++	if (*offset != 0)
++		return 0;
+ 	if (pregpriv)
+-		len += snprintf(page + len, count - len,
++		len += snprintf(buffer + len, count - len,
+ 			"%d\n",
+ 			pregpriv->ht_enable
+ 			);
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_set_ht_enable(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_ht_enable(struct file *file, const char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = (struct net_device *)data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+ 	char tmp[32];
+@@ -646,30 +691,32 @@ int proc_set_ht_enable(struct file *file, const char __user *buffer,
+ 	return count;
+ }
+ 
+-int proc_get_cbw40_enable(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_cbw40_enable(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+-
+ 	int len = 0;
+ 
++	if (*offset != 0)
++		return 0;
+ 	if (pregpriv)
+-		len += snprintf(page + len, count - len,
++		len += snprintf(buffer + len, count - len,
+ 			"%d\n",
+ 			pregpriv->cbw40_enable
+ 			);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_set_cbw40_enable(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_cbw40_enable(struct file *file, const char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = (struct net_device *)data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+ 	char tmp[32];
+@@ -687,30 +734,32 @@ int proc_set_cbw40_enable(struct file *file, const char __user *buffer,
+ 	return count;
+ }
+ 
+-int proc_get_ampdu_enable(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_ampdu_enable(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+-
+ 	int len = 0;
+ 
++	if (*offset != 0)
++		return 0;
+ 	if (pregpriv)
+-		len += snprintf(page + len, count - len,
++		len += snprintf(buffer + len, count - len,
+ 			"%d\n",
+ 			pregpriv->ampdu_enable
+ 			);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_set_ampdu_enable(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_ampdu_enable(struct file *file, const char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = (struct net_device *)data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+ 	char tmp[32];
+@@ -728,50 +777,53 @@ int proc_set_ampdu_enable(struct file *file, const char __user *buffer,
+ 	return count;
+ }
+ 
+-int proc_get_two_path_rssi(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_two_path_rssi(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+-
+ 	int len = 0;
+ 
++	if (*offset != 0)
++		return 0;
+ 	if (padapter)
+-		len += snprintf(page + len, count - len,
++		len += snprintf(buffer + len, count - len,
+ 			"%d %d\n",
+ 			padapter->recvpriv.RxRssi[0],
+ 			padapter->recvpriv.RxRssi[1]
+ 			);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_get_rx_stbc(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_rx_stbc(struct file *file, char __user *buffer,
++			size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+-
+ 	int len = 0;
+ 
++	if (*offset != 0)
++		return 0;
+ 	if (pregpriv)
+-		len += snprintf(page + len, count - len,
++		len += snprintf(buffer + len, count - len,
+ 			"%d\n",
+ 			pregpriv->rx_stbc
+ 			);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+ 
+-int proc_set_rx_stbc(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_rx_stbc(struct file *file, const char __user *buffer,
++			size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = (struct net_device *)data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct registry_priv	*pregpriv = &padapter->registrypriv;
+ 	char tmp[32];
+@@ -789,18 +841,12 @@ int proc_set_rx_stbc(struct file *file, const char __user *buffer,
+ 	return count;
+ }
+ 
+-int proc_get_rssi_disp(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
+-{
+-	*eof = 1;
+-	return 0;
+-}
+ 
+-int proc_set_rssi_disp(struct file *file, const char __user *buffer,
+-		unsigned long count, void *data)
++ssize_t sys_set_rssi_disp(struct file *file, const char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+-	struct net_device *dev = (struct net_device *)data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	char tmp[32];
+ 	u32 enable = 0;
+@@ -831,12 +877,12 @@ int proc_set_rssi_disp(struct file *file, const char __user *buffer,
  
  #ifdef CONFIG_88EU_AP_MODE
  
--	entry = create_proc_read_entry("all_sta_info", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_all_sta_info, dev);
-+	entry = debugfs_create_file("all_sta_info", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &all_sta_info);
- 	if (!entry) {
- 		pr_info("Unable to create_proc_read_entry!\n");
- 		return;
+-int proc_get_all_sta_info(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_all_sta_info(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
+ {
+ 	struct sta_info *psta;
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct sta_priv *pstapriv = &padapter->stapriv;
+ 	int i, j;
+@@ -844,8 +890,10 @@ int proc_get_all_sta_info(char *page, char **start,
+ 	struct recv_reorder_ctrl *preorder_ctrl;
+ 	int len = 0;
+ 
+-
+-	len += snprintf(page + len, count - len, "sta_dz_bitmap=0x%x, tim_bitmap=0x%x\n", pstapriv->sta_dz_bitmap, pstapriv->tim_bitmap);
++
++	if (*offset != 0)
++		return 0;
++	len += snprintf(buffer + len, count - len, "sta_dz_bitmap=0x%x, tim_bitmap=0x%x\n", pstapriv->sta_dz_bitmap, pstapriv->tim_bitmap);
+ 
+ 	spin_lock_bh(&pstapriv->sta_hash_lock);
+ 
+@@ -858,46 +906,48 @@ int proc_get_all_sta_info(char *page, char **start,
+ 
+ 			plist = plist->next;
+ 
+-			len += snprintf(page + len, count - len, "sta's macaddr: %pM\n", psta->hwaddr);
+-			len += snprintf(page + len, count - len, "rtsen=%d, cts2slef=%d\n", psta->rtsen, psta->cts2self);
+-			len += snprintf(page + len, count - len, "state=0x%x, aid=%d, macid=%d, raid=%d\n", psta->state, psta->aid, psta->mac_id, psta->raid);
+-			len += snprintf(page + len, count - len, "qos_en=%d, ht_en=%d, init_rate=%d\n", psta->qos_option, psta->htpriv.ht_option, psta->init_rate);
+-			len += snprintf(page + len, count - len, "bwmode=%d, ch_offset=%d, sgi=%d\n", psta->htpriv.bwmode, psta->htpriv.ch_offset, psta->htpriv.sgi);
+-			len += snprintf(page + len, count - len, "ampdu_enable = %d\n", psta->htpriv.ampdu_enable);
+-			len += snprintf(page + len, count - len, "agg_enable_bitmap=%x, candidate_tid_bitmap=%x\n", psta->htpriv.agg_enable_bitmap, psta->htpriv.candidate_tid_bitmap);
+-			len += snprintf(page + len, count - len, "sleepq_len=%d\n", psta->sleepq_len);
+-			len += snprintf(page + len, count - len, "capability=0x%x\n", psta->capability);
+-			len += snprintf(page + len, count - len, "flags=0x%x\n", psta->flags);
+-			len += snprintf(page + len, count - len, "wpa_psk=0x%x\n", psta->wpa_psk);
+-			len += snprintf(page + len, count - len, "wpa2_group_cipher=0x%x\n", psta->wpa2_group_cipher);
+-			len += snprintf(page + len, count - len, "wpa2_pairwise_cipher=0x%x\n", psta->wpa2_pairwise_cipher);
+-			len += snprintf(page + len, count - len, "qos_info=0x%x\n", psta->qos_info);
+-			len += snprintf(page + len, count - len, "dot118021XPrivacy=0x%x\n", psta->dot118021XPrivacy);
++			len += snprintf(buffer + len, count - len, "sta's macaddr: %pM\n", psta->hwaddr);
++			len += snprintf(buffer + len, count - len, "rtsen=%d, cts2slef=%d\n", psta->rtsen, psta->cts2self);
++			len += snprintf(buffer + len, count - len, "state=0x%x, aid=%d, macid=%d, raid=%d\n", psta->state, psta->aid, psta->mac_id, psta->raid);
++			len += snprintf(buffer + len, count - len, "qos_en=%d, ht_en=%d, init_rate=%d\n", psta->qos_option, psta->htpriv.ht_option, psta->init_rate);
++			len += snprintf(buffer + len, count - len, "bwmode=%d, ch_offset=%d, sgi=%d\n", psta->htpriv.bwmode, psta->htpriv.ch_offset, psta->htpriv.sgi);
++			len += snprintf(buffer + len, count - len, "ampdu_enable = %d\n", psta->htpriv.ampdu_enable);
++			len += snprintf(buffer + len, count - len, "agg_enable_bitmap=%x, candidate_tid_bitmap=%x\n", psta->htpriv.agg_enable_bitmap, psta->htpriv.candidate_tid_bitmap);
++			len += snprintf(buffer + len, count - len, "sleepq_len=%d\n", psta->sleepq_len);
++			len += snprintf(buffer + len, count - len, "capability=0x%x\n", psta->capability);
++			len += snprintf(buffer + len, count - len, "flags=0x%x\n", psta->flags);
++			len += snprintf(buffer + len, count - len, "wpa_psk=0x%x\n", psta->wpa_psk);
++			len += snprintf(buffer + len, count - len, "wpa2_group_cipher=0x%x\n", psta->wpa2_group_cipher);
++			len += snprintf(buffer + len, count - len, "wpa2_pairwise_cipher=0x%x\n", psta->wpa2_pairwise_cipher);
++			len += snprintf(buffer + len, count - len, "qos_info=0x%x\n", psta->qos_info);
++			len += snprintf(buffer + len, count - len, "dot118021XPrivacy=0x%x\n", psta->dot118021XPrivacy);
+ 
+ 			for (j = 0; j < 16; j++) {
+ 				preorder_ctrl = &psta->recvreorder_ctrl[j];
+ 				if (preorder_ctrl->enable)
+-					len += snprintf(page + len, count - len, "tid=%d, indicate_seq=%d\n", j, preorder_ctrl->indicate_seq);
++					len += snprintf(buffer + len, count - len, "tid=%d, indicate_seq=%d\n", j, preorder_ctrl->indicate_seq);
+ 			}
+ 		}
  	}
+ 	spin_unlock_bh(&pstapriv->sta_hash_lock);
+ 
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
  #endif
  
--	entry = create_proc_read_entry("best_channel", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_best_channel, dev);
-+	entry = debugfs_create_file("best_channel", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &best_channel);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
- 
--	entry = create_proc_read_entry("rx_signal", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_rx_signal, dev);
--	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
--		return;
--	}
--	entry->write_proc = proc_set_rx_signal;
--	entry = create_proc_read_entry("ht_enable", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_ht_enable, dev);
-+	entry = debugfs_create_file("rx_signal", S_IFREG | S_IWUSR | S_IRUGO,
-+					dir_dev, dev, &rx_signal);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	entry->write_proc = proc_set_ht_enable;
- 
--	entry = create_proc_read_entry("cbw40_enable", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_cbw40_enable, dev);
-+	entry = debugfs_create_file("ht_enable", S_IFREG | S_IWUSR | S_IRUGO,
-+					dir_dev, dev, &ht_enable);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	entry->write_proc = proc_set_cbw40_enable;
- 
--	entry = create_proc_read_entry("ampdu_enable", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_ampdu_enable, dev);
-+	entry = debugfs_create_file("cbw40_enable", S_IFREG | S_IWUSR | S_IRUGO,
-+					dir_dev, dev, &cbw40_enable);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	entry->write_proc = proc_set_ampdu_enable;
- 
--	entry = create_proc_read_entry("rx_stbc", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_rx_stbc, dev);
-+	entry = debugfs_create_file("ampdu_enable", S_IFREG | S_IWUSR | S_IRUGO,
-+					dir_dev, dev, &ampdu_enable);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	entry->write_proc = proc_set_rx_stbc;
- 
--	entry = create_proc_read_entry("path_rssi", S_IFREG | S_IRUGO,
--					dir_dev, proc_get_two_path_rssi, dev);
-+	entry = debugfs_create_file("rx_stbc", S_IFREG | S_IWUSR | S_IRUGO,
-+					dir_dev, dev, &rx_stbc);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
--		return;
-+		pr_info("Unable to create_sys_entry!\n");
-+		 return;
- 	}
--	entry = create_proc_read_entry("rssi_disp", S_IFREG | S_IRUGO,
--				   dir_dev, proc_get_rssi_disp, dev);
-+
-+	entry = debugfs_create_file("path_rssi", S_IFREG | S_IRUGO,
-+					dir_dev, dev, &two_path_rssi);
- 	if (!entry) {
--		pr_info("Unable to create_proc_read_entry!\n");
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	entry->write_proc = proc_set_rssi_disp;
--}
--
--void rtw_proc_remove_one(struct net_device *dev)
--{
--	struct proc_dir_entry *dir_dev = NULL;
--	struct adapter	*padapter = rtw_netdev_priv(dev);
--	u8 rf_type;
--
--	dir_dev = padapter->dir_dev;
--	padapter->dir_dev = NULL;
--
--	if (dir_dev) {
--		remove_proc_entry("write_reg", dir_dev);
--		remove_proc_entry("read_reg", dir_dev);
--		remove_proc_entry("fwstate", dir_dev);
--		remove_proc_entry("sec_info", dir_dev);
--		remove_proc_entry("mlmext_state", dir_dev);
--		remove_proc_entry("qos_option", dir_dev);
--		remove_proc_entry("ht_option", dir_dev);
--		remove_proc_entry("rf_info", dir_dev);
--		remove_proc_entry("ap_info", dir_dev);
--		remove_proc_entry("adapter_state", dir_dev);
--		remove_proc_entry("trx_info", dir_dev);
--		remove_proc_entry("mac_reg_dump1", dir_dev);
--		remove_proc_entry("mac_reg_dump2", dir_dev);
--		remove_proc_entry("mac_reg_dump3", dir_dev);
--		remove_proc_entry("bb_reg_dump1", dir_dev);
--		remove_proc_entry("bb_reg_dump2", dir_dev);
--		remove_proc_entry("bb_reg_dump3", dir_dev);
--		remove_proc_entry("rf_reg_dump1", dir_dev);
--		remove_proc_entry("rf_reg_dump2", dir_dev);
--		rtw_hal_get_hwreg(padapter, HW_VAR_RF_TYPE, (u8 *)(&rf_type));
--		if ((RF_1T2R == rf_type) || (RF_1T1R == rf_type)) {
--			remove_proc_entry("rf_reg_dump3", dir_dev);
--			remove_proc_entry("rf_reg_dump4", dir_dev);
--		}
--#ifdef CONFIG_88EU_AP_MODE
--		remove_proc_entry("all_sta_info", dir_dev);
--#endif
- 
--		remove_proc_entry("best_channel", dir_dev);
--		remove_proc_entry("rx_signal", dir_dev);
--		remove_proc_entry("cbw40_enable", dir_dev);
--		remove_proc_entry("ht_enable", dir_dev);
--		remove_proc_entry("ampdu_enable", dir_dev);
--		remove_proc_entry("rx_stbc", dir_dev);
--		remove_proc_entry("path_rssi", dir_dev);
--		remove_proc_entry("rssi_disp", dir_dev);
--		remove_proc_entry(dev->name, rtw_proc);
--		dir_dev = NULL;
--	} else {
-+	 entry = debugfs_create_file("rssi_disp", S_IFREG | S_IWUSR,
-+					dir_dev, dev, &rssi_disp);
-+	if (!entry) {
-+		pr_info("Unable to create_sys_entry!\n");
- 		return;
- 	}
--	rtw_proc_cnt--;
--
--	if (rtw_proc_cnt == 0) {
--		if (rtw_proc) {
--			remove_proc_entry("ver_info", rtw_proc);
--
--			remove_proc_entry(rtw_proc_name, init_net.proc_net);
--			rtw_proc = NULL;
--		}
--	}
- }
--#endif
- 
- static uint loadparam(struct adapter *padapter,  struct  net_device *pnetdev)
+-int proc_get_best_channel(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++ssize_t sys_get_best_channel(struct file *file, char __user *buffer,
++				size_t count, loff_t *offset)
  {
-@@ -992,7 +1127,7 @@ int _netdev_open(struct net_device *pnetdev)
+-	struct net_device *dev = data;
++	struct inode *inode = file_inode(file);
++	struct net_device *dev = (struct net_device *)inode->i_private;
+ 	struct adapter *padapter = (struct adapter *)rtw_netdev_priv(dev);
+ 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
+ 	int len = 0;
+ 	u32 i, best_channel_24G = 1, best_channel_5G = 36, index_24G = 0, index_5G = 0;
+ 
++	if (*offset != 0)
++		return 0;
+ 	for (i = 0; pmlmeext->channel_set[i].ChannelNum != 0; i++) {
+ 		if (pmlmeext->channel_set[i].ChannelNum == 1)
+ 			index_24G = i;
+@@ -935,13 +985,13 @@ int proc_get_best_channel(char *page, char **start,
+ 			}
  		}
- 		if (padapter->intf_start)
- 			padapter->intf_start(padapter);
--		rtw_proc_init_one(pnetdev);
-+		rtw_sys_init_one(pnetdev);
+ 		/*  debug */
+-		len += snprintf(page + len, count - len, "The rx cnt of channel %3d = %d\n",
++		len += snprintf(buffer + len, count - len, "The rx cnt of channel %3d = %d\n",
+ 					pmlmeext->channel_set[i].ChannelNum, pmlmeext->channel_set[i].rx_count);
+ 	}
  
- 		rtw_led_control(padapter, LED_CTL_NO_LINK);
+-	len += snprintf(page + len, count - len, "best_channel_5G = %d\n", best_channel_5G);
+-	len += snprintf(page + len, count - len, "best_channel_24G = %d\n", best_channel_24G);
++	len += snprintf(buffer + len, count - len,
++				"best_channel_5G = %d\n", best_channel_5G);
++	len += snprintf(buffer + len, count - len,
++				"best_channel_24G = %d\n", best_channel_24G);
  
+-	*eof = 1;
++	*offset = len;
+ 	return len;
+ }
+diff --git a/drivers/staging/rtl8188eu/include/drv_types.h b/drivers/staging/rtl8188eu/include/drv_types.h
+index 8f42d48..dbf449f 100644
+--- a/drivers/staging/rtl8188eu/include/drv_types.h
++++ b/drivers/staging/rtl8188eu/include/drv_types.h
+@@ -229,7 +229,7 @@ struct adapter {
+ 	int bup;
+ 	struct net_device_stats stats;
+ 	struct iw_statistics iwstats;
+-	struct proc_dir_entry *dir_dev;/*  for proc directory */
++	struct dentry *dir_dev;/*  for sys directory replacing proc_dir_entry*/
+ 
+ 	int net_closed;
+ 	u8 bFWReady;
 -- 
 1.7.10.4
 
