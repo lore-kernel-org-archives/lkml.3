@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbaHVHrd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:47:33 -0400
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:47656
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754392AbaHVHrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:47:31 -0400
-Date: Fri, 22 Aug 2014 15:47:12 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Stefan Agner <stefan@agner.ch>, <peter.chen@freescale.com>,
-        <s.hauer@pengutronix.de>, <kernel@pengutronix.de>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <jingchang.lu@freescale.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND v2 7/7] ARM: dts: vf610-twr: Add USB support
-Message-ID: <20140822074711.GC2540@dragon>
-References: <cover.1408391385.git.stefan@agner.ch>
- <07491836b9c23a82b7a33972a5c71f2676ceaf71.1408391385.git.stefan@agner.ch>
- <53F26105.9000907@cogentembedded.com>
+	id S1756001AbaHVHrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:47:48 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.168]:30686 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755940AbaHVHrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 03:47:45 -0400
+X-Env-Sender: Andreas.Werner@men.de
+X-Msg-Ref: server-2.tower-39.messagelabs.com!1408693661!24230519!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Fri, 22 Aug 2014 09:47:42 +0200
+Date: Fri, 22 Aug 2014 10:39:31 +0200
+From: Andreas Werner <andreas.werner@men.de>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
+        <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
+        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
+        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
+        <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH v4 4/4] drivers/hwmon/menf21bmc_hwmon: introduce
+ MEN14F021P00 BMC HWMON driver
+Message-ID: <20140822083930.GB453@awelinux>
+References: <cover.1407918792.git.andreas.werner@men.de>
+ <cf0593273cbadcb16b094b7bc3bd9d3b5a93f7ed.1407918792.git.andreas.werner@men.de>
+ <20140821184501.GC16045@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <53F26105.9000907@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(377454003)(199003)(479174003)(24454002)(51704005)(189002)(44976005)(4396001)(6806004)(85306004)(47776003)(74662001)(20776003)(95666004)(83322001)(23726002)(31966008)(50466002)(79102001)(33716001)(92726001)(80022001)(92566001)(90102001)(74502001)(46102001)(99396002)(86362001)(97736001)(64706001)(97756001)(83072002)(68736004)(77982001)(87936001)(81342001)(85852003)(84676001)(104016003)(33656002)(54356999)(76482001)(83506001)(81156004)(26826002)(21056001)(105606002)(76176999)(81542001)(46406003)(50986999)(69596002)(102836001)(107046002)(110136001)(106466001)(57986006)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:DM2PR0301MB0782;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:
-X-Forefront-PRVS: 0311124FA9
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140821184501.GC16045@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.1.1.171]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 12:24:37AM +0400, Sergei Shtylyov wrote:
-> Hello.
+On Thu, Aug 21, 2014 at 11:45:01AM -0700, Guenter Roeck wrote:
+> On Wed, Aug 13, 2014 at 10:40:37AM +0200, Andreas Werner wrote:
+> > Added driver to support the 14F021P00 BMC Hardware Monitoring.
+> > The BMC is a Board Management Controller including monitoring of the
+> > board voltages.
+> > 
+> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > ---
+> >  drivers/hwmon/Kconfig           |   7 ++
+> >  drivers/hwmon/Makefile          |   1 +
+> >  drivers/hwmon/menf21bmc_hwmon.c | 238 ++++++++++++++++++++++++++++++++++++++++
 > 
-> On 08/19/2014 12:07 AM, Stefan Agner wrote:
+> Forgot: Please also provide Documentation/hwmon/menf21bmc.
 > 
-> >Add USB support for Freescale Vybrid tower. The USB hosts over-current
-> >protection signal is not connected is not connected to the PHY's over-
-> 
->    Yes, we all understood that it's not connected, no need to repeat. ;-)
 
-I will fix it up when applying.
+Did not know that i have to do it.
+But you are right it is good to have one.
 
-Shawn
+> Thanks,
+> Guenter
