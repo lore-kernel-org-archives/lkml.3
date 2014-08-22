@@ -1,75 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaHVVp5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:45:57 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55886 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851AbaHVVp4 (ORCPT
+	id S1752268AbaHVVrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:47:39 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:37488 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaHVVrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:45:56 -0400
-Date: Fri, 22 Aug 2014 16:45:46 -0500
-From: Mark Brown <broonie@kernel.org>
-To: atull@opensource.altera.com
-Cc: linux@roeck-us.net, jdelvare@suse.de, lm-sensors@lm-sensors.org,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Message-ID: <20140822214546.GD24407@sirena.org.uk>
-References: <1408741894-24879-1-git-send-email-atull@opensource.altera.com>
- <1408741894-24879-3-git-send-email-atull@opensource.altera.com>
+	Fri, 22 Aug 2014 17:47:37 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rgqXlh/A5ZVYK4yt"
-Content-Disposition: inline
-In-Reply-To: <1408741894-24879-3-git-send-email-atull@opensource.altera.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 208.59.64.2
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 2/2] pmbus: ltc2978: add regulator gating
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140822.144011.1708163582352708529.davem@davemloft.net>
+References: <20140822.114711.856705392345846995.davem@davemloft.net>
+	<CA+55aFxsf02Lt+rFOxf0rXu1WoqZW0omGzwdHUfSfo+O9EqUAw@mail.gmail.com>
+	<20140822.144011.1708163582352708529.davem@davemloft.net>
+Date: Fri, 22 Aug 2014 14:47:36 -0700
+X-Google-Sender-Auth: Ih2hfYGl23TxvmArdqc6T3p7vpE
+Message-ID: <CA+55aFy+2WiFDRDZwb9B3bh9HS_5Q8K=2PpTHkzi7keSzwc67g@mail.gmail.com>
+Subject: Re: [GIT PULL] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 22, 2014 at 2:40 PM, David Miller <davem@davemloft.net> wrote:
+>
+> I think you can apply it directly and none of us will mind, and GIT
+> will sort it all out during the next merge.
 
---rgqXlh/A5ZVYK4yt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, I'll apply it directly to my tree, since it affected my machine.
+Now that I'm back home I probably won't see the channel switch
+requests that caused the problem, but I just feel uncomfortable
+running a known-broken kernel.
 
-On Fri, Aug 22, 2014 at 04:11:34PM -0500, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
->=20
-> Add regulator with support for enabling or disabling all
-> supplies.
-
-Reviwed-by: Mark Brown <broonie@linaro.org>
-
-though it still looks like you should be able to create generic
-functions for the operations.
-
---rgqXlh/A5ZVYK4yt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT97oHAAoJELSic+t+oim9Jc4QAJkRwMPl4yQQvPD+5fBmfQPf
-UVDLPZdBSIkpa1E4mXCh8J7POVGUP+L9s1nemF79e/1lIj2HNSI4gK6Hn2vJGJ4I
-D1zTU4/IdYadHpfYmk083vHYWnkZDEQbjcHRl+lSSGhpVPRgjGx+3BuG5xERTxJF
-17dZ5z64edOk+1BMue2a3GQvGdKLse6e4QxmFmu1K2nBP1jG9c2v2lwlmiLwPPkj
-XzMwt5G0lpvJ7Xe2aH8bdP2tiPvF4CyfKAV+tNIrtt+w04ygZO6P8QMUctHHLEH2
-jFosBxdFpZSxRM2eDh+a8P/PqhYHnfsJc/p3zAyruCNdExU+IyaW8KnL/7pGMvkH
-VndaPywP5KpmmGxVHbGD15XfcjFVAduKS+ojfsAq8QhOnFYPkQvs4wvDmd/jbi3o
-uHPyp58jZJ7h+whlfIEBNPKWkblL5HvLVIuLf0IJyBxhibkYJwrpV94qXLc9I2rW
-kBHp9/bgZLO/9earmwKZ0fMOp2RDCNvMZ8feY9hVMGjYcfBgpyGCaK8/tz4U177g
-/4VkGXf4haqoLAvAV8dwpFM5AIROBdgsUiENwlhS0yhNqnxnt4i1MKMY+5gGuzuR
-0AaKSSEhplQygfbAO/QvVqE2he2+o2j80kTcqcR7g76X2PLnTAtwmsxMNeKzyRSU
-tOo8oGWgM8JL/IfjuSm3
-=xVAF
------END PGP SIGNATURE-----
-
---rgqXlh/A5ZVYK4yt--
+              Linus
