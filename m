@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaHVVn1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:43:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37103 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716AbaHVVn0 (ORCPT
+	id S1752171AbaHVVn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:43:59 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:55450 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaHVVn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:43:26 -0400
-Date: Fri, 22 Aug 2014 16:42:44 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Michal Sojka <sojka@merica.cz>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        michal.vokac@comap.cz, Richard Purdie <rpurdie@rpsys.net>,
-        Felipe Balbi <balbi@ti.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2] leds: usb: Add LED trigger for USB gadget activity
-Message-ID: <20140822214244.GA25922@kroah.com>
-References: <1408708399-20423-1-git-send-email-sojka@merica.cz>
- <CAK5ve-LaGPgsAVMMMw3=EWpjom5NF29btu0Yxjg=6iwPpioQFg@mail.gmail.com>
+	Fri, 22 Aug 2014 17:43:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-LaGPgsAVMMMw3=EWpjom5NF29btu0Yxjg=6iwPpioQFg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140822185110.GA2333@gmail.com>
+References: <cover.1403632276.git.bcrl@kvack.org>
+	<f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
+	<20140819163733.GA10132@gmail.com>
+	<20140819165404.GD13858@kvack.org>
+	<20140819171426.GA11811@gmail.com>
+	<20140820004651.GJ13858@kvack.org>
+	<20140822160111.GD20391@kvack.org>
+	<20140822161502.GA30392@gmail.com>
+	<20140822162630.GF20391@kvack.org>
+	<20140822185110.GA2333@gmail.com>
+Date: Fri, 22 Aug 2014 14:43:56 -0700
+X-Google-Sender-Auth: hGDJihQ77YHHdq0IghZvwAL2SIY
+Message-ID: <CA+55aFzZbRkEh_MbB-XmurVP-4seMP3z9tbq+YQOhkjtDNTzfg@mail.gmail.com>
+Subject: Re: Revert "aio: fix aio request leak when events are reaped by user space"
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dan Aloni <dan@kernelim.com>
+Cc: Benjamin LaHaise <bcrl@kvack.org>,
+        "security@kernel.org" <security@kernel.org>, linux-aio@kvack.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 10:39:03AM -0700, Bryan Wu wrote:
-> On Fri, Aug 22, 2014 at 4:53 AM, Michal Sojka <sojka@merica.cz> wrote:
-> > With this patch, USB gadget activity can be signaled by blinking a LED.
-> >
-> > Since there is no generic code where to put the trigger for all USB
-> > controllers, each USB controller needs to call the trigger individually.
-> > This patch adds the call only for the musb controller where I can test
-> > it.
-> >
-> 
-> Generally I think one led trigger for both USB host and USB gadget
-> activity is good enough. We don't need 2 same led trigger here.
+On Fri, Aug 22, 2014 at 11:51 AM, Dan Aloni <dan@kernelim.com> wrote:
+>
+> Ben, seems that the test program needs some twidling to make the bug
+> appear still by setting MAX_IOS to 256 (and it still passes on a
+> kernel with the original patch reverted). Under this condition the
+> ring buffer size remains 128 (here, 32*4 CPUs), and it is overrun on
+> the second attempt.
 
-What about systems that have both running at the same time?  Don't you
-want individual control?
+Ugh.
 
-> And probably you can just put this code in drivers/usb subsystem,
-> since this driver is quite simple to add to USB subsystem.
+Ben, at this point my gut feel is that we should just revert the
+original "fix", and you should take a much deeper look at this all.
+The original "fix" was more broken then the leak it purported to fix,
+and now the patch to fix your fix has gone through two iterations and
+*still* Dan is finding bugs in it.  I'm getting the feeling that this
+code needs more thinking than you are actually putting into it.
 
-I have no objection to that, if the LED people don't mind it.
-
-thanks,
-
-greg k-h
+                Linus
