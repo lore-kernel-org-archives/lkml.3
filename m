@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbaHVGcu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 02:32:50 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:46776 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413AbaHVGcs (ORCPT
+	id S1755856AbaHVGdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 02:33:35 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:48856 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779AbaHVGde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 02:32:48 -0400
-Date: Fri, 22 Aug 2014 10:32:42 +0400
+	Fri, 22 Aug 2014 02:33:34 -0400
+Date: Fri, 22 Aug 2014 10:33:31 +0400
 From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
-        avagin@openvz.org, ebiederm@xmission.com, hpa@zytor.com,
-        serge.hallyn@canonical.com, xemul@parallels.com, segoon@openwall.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 4/4] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP
- operation, v3
-Message-ID: <20140822063242.GI14072@moon>
-References: <20140804172255.109539743@openvz.org>
- <20140804172610.965949916@openvz.org>
- <20140821155115.8433bb37bf631b8ae8340f84@linux-foundation.org>
+To: Peter Feiner <pfeiner@google.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Jamie Liu <jamieliu@google.com>, Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Magnus Damm <damm@opensource.se>
+Subject: Re: [PATCH] mm: softdirty: write protect PTEs created for read
+ faults after VM_SOFTDIRTY cleared
+Message-ID: <20140822063331.GJ14072@moon>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
+ <20140820234543.GA7987@node.dhcp.inet.fi>
+ <20140821193737.GC16042@google.com>
+ <20140821205115.GH14072@moon>
+ <20140821213942.GA15218@node.dhcp.inet.fi>
+ <20140821214601.GD16042@google.com>
+ <20140821215147.GA15482@node.dhcp.inet.fi>
+ <20140821225033.GE16042@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140821155115.8433bb37bf631b8ae8340f84@linux-foundation.org>
+In-Reply-To: <20140821225033.GE16042@google.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 03:51:15PM -0700, Andrew Morton wrote:
-...
+On Thu, Aug 21, 2014 at 06:50:33PM -0400, Peter Feiner wrote:
+> On Fri, Aug 22, 2014 at 12:51:47AM +0300, Kirill A. Shutemov wrote:
+> > > > One thing: there could be (I haven't checked) complications on
+> > > > vma_merge(): since vm_flags are identical it assumes that it can reuse
+> > > > vma->vm_page_prot of expanded vma. But VM_SOFTDIRTY is excluded from
+> > > > vm_flags compatibility check. What should we do with vm_page_prot there?
+> > > 
+> > > Since the merged VMA will have VM_SOFTDIRTY set, it's OK that it's vm_page_prot
+> > > won't be setup for write notifications. For the purpose of process migration,
+> > > you'll just get some false positives, which is tolerable.
 > > 
-> > Still note that updating exe-file link now doesn't require sys-resource
-> > capability anymore, after all there is no much profit in preventing setup
-> > own file link (there are a number of ways to execute own code -- ptrace,
-> > ld-preload, so that the only reliable way to find which exactly code
-> > is executed is to inspect running program memory). Still we require
-> > the caller to be at least user-namespace root user.
-> > 
-> > I believe the old interface should be deprecated and ripped off
-> > in a couple of kernel releases if no one against.
-> > 
-> > To test if new interface is implemented in the kernel one
-> > can pass PR_SET_MM_MAP_SIZE opcode and the kernel returns
-> > the size of currently supported struct prctl_mm_map.
+> > Right. But should we disable writenotify back to avoid exessive wp-faults
+> > if it was enabled due to soft-dirty (the case when expanded vma is
+> > soft-dirty)?
 > 
-> Please convince me that we're not adding any security holes.
+> Ah, I understand now. I've got a patch in the works that disables the write
+> faults when a VMA is merged. I'll send a series with all of the changes
+> tomorrow.
 
-I've commented all the fields and their purpose and triple-checked them all,
-so I don't see any sec. problems, but for same purpose I've CC'ed a number
-of people just to be on safe side. Again, if we want this feature to be
-somehow more controlled -- we can add some sysctl variable which would
-enable/disable this interface globally.
-
-> > +	error |= __prctl_check_addr_space(start_code);
-> > +	error |= __prctl_check_addr_space(end_code);
-> > +	error |= __prctl_check_addr_space(start_data);
-> > +	error |= __prctl_check_addr_space(end_data);
-> > +	error |= __prctl_check_addr_space(start_stack);
-> > +	error |= __prctl_check_addr_space(start_brk);
-> > +	error |= __prctl_check_addr_space(brk);
-> > +	error |= __prctl_check_addr_space(arg_start);
-> > +	error |= __prctl_check_addr_space(arg_end);
-> > +	error |= __prctl_check_addr_space(env_start);
-> > +	error |= __prctl_check_addr_space(env_end);
-> 
-> Boy this is verbose.  I had a little fiddle and came up with
-...
-> 
-> +
-> +		for (i = 0; i < ARRAY_SIZE(offsets); i++) {
-> +			u64 val = ((u64 *)prctl_map)[offsets[i]];
-> +
-> +			if (val < mmap_min_addr || val >= mmap_max_addr) {
-> +				error = -EINVAL;
-> +				goto out;
-> +			}
-> +		}
-> +	}
-> 
-> and it saved 400 bytes of text.
-> 
-> But it's a bit hacky.  Can anyone think of anything smarter?
-
-Looks good to me and not that hacky actually. Should I update on top
-for -mm tree?
+Cool! Thanks a lot, guys!
