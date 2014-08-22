@@ -1,123 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766AbaHVTt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:49:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18434 "EHLO mga11.intel.com"
+	id S1751871AbaHVTuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:50:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46773 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137AbaHVTth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:49:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="375896487"
-From: kan.liang@intel.com
-To: acme@kernel.org, jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH 2/3] perf tools: parse the pmu event prefix and surfix
-Date: Fri, 22 Aug 2014 15:42:28 -0400
-Message-Id: <1408736549-4630-2-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408736549-4630-1-git-send-email-kan.liang@intel.com>
-References: <1408736549-4630-1-git-send-email-kan.liang@intel.com>
+	id S1751238AbaHVTux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 15:50:53 -0400
+Message-ID: <53F79F01.6090804@ti.com>
+Date: Fri, 22 Aug 2014 15:50:25 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stephen Hemminger <stephen@networkplumber.org>
+CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <sandeep_n@ti.com>
+Subject: Re: [PATCH v2 2/3] net: Add Keystone NetCP ethernet driver
+References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com>	<1408115562-22487-3-git-send-email-santosh.shilimkar@ti.com> <20140821194838.32f2c3f1@uryu.home.lan>
+In-Reply-To: <20140821194838.32f2c3f1@uryu.home.lan>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
+On Thursday 21 August 2014 10:48 PM, Stephen Hemminger wrote:
+> On Fri, 15 Aug 2014 11:12:41 -0400
+> Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> 
+>> NetCP driver has a plug-in module architecture where each of the NetCP
+>> sub-modules exist as a loadable kernel module which plug in to the netcp
+>> core. These sub-modules are represented as "netcp-devices" in the dts
+>> bindings. It is mandatory to have the ethernet switch sub-module for
+>> the ethernet interface to be operational. Any other sub-module like the
+>> PA is optional.
+> 
+> What are you doing to prevent/discourage proprietary binary only
+> sub-modules?
+> 
+Not sure if you mistook this infrastructure as a replacement for the
+kernel module. The sub modules are traditional kernel modules that
+just registers into the NetCP framework. Kernel module infrastructure
+already discourages the proprietary binary only sub-modules.
 
-There are two types of event formats for PMU events. E.g. el-abort OR
-cpu/el-abort/. However, the lexer mistakenly recognizes the simple style
-format as two events.
-
-The newly introduced function uses bsearch to search the name in known
-pmu event list. It can tell the lexer that the name is a PE_NAME or a
-PMU event name prefix or a PMU event name suffix. All these information
-will be used for accurately parsing kernel PMU events.
-
-The implementation is also extensible. For supporting more PMU events,
-we only need to simply add the name in the array.
-
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- tools/perf/util/parse-events.c | 34 ++++++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.h | 12 ++++++++++++
- 2 files changed, 46 insertions(+)
-
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 7a0aa75..6354648 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -666,6 +666,40 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
- 	return evsel ? 0 : -ENOMEM;
- }
- 
-+/* The contents of the pmu_events should be in ascending sorted by symbol*/
-+static struct pmu_event_symbol pmu_events[] = {
-+	{ "abort", false},
-+	{ "capacity", false},
-+	{ "commit", false},
-+	{ "conflict", false},
-+	{ "el", true},
-+	{ "start", false},
-+	{ "tx", true},
-+};
-+
-+static int
-+comp_pmu(const void *p1, const void *p2)
-+{
-+	struct pmu_event_symbol *pmu1 = (struct pmu_event_symbol *) p1;
-+	struct pmu_event_symbol *pmu2 = (struct pmu_event_symbol *) p2;
-+
-+	return strcmp(pmu1->symbol, pmu2->symbol);
-+}
-+
-+int parse_events_pmu_check(const char *name)
-+{
-+	struct pmu_event_symbol p, *r;
-+
-+	p.symbol = name;
-+	r = bsearch(&p, pmu_events, ARRAY_SIZE(pmu_events),
-+		sizeof(struct pmu_event_symbol), comp_pmu);
-+	if (r == NULL)
-+		return NONE_PMU_EVENT_FIX;
-+
-+	return r->is_prefix ?
-+			PMU_EVENT_PREFIX : PMU_EVENT_SUFFIX;
-+}
-+
- int parse_events__modifier_group(struct list_head *list,
- 				 char *event_mod)
- {
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index df094b4..946249e 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -36,6 +36,17 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
- #define EVENTS_HELP_MAX (128*1024)
- 
- enum {
-+	NONE_PMU_EVENT_FIX,
-+	PMU_EVENT_PREFIX,
-+	PMU_EVENT_SUFFIX,
-+};
-+
-+struct pmu_event_symbol {
-+	const char	*symbol;
-+	bool		is_prefix;	/* the prefix of the pmu event */
-+};
-+
-+enum {
- 	PARSE_EVENTS__TERM_TYPE_NUM,
- 	PARSE_EVENTS__TERM_TYPE_STR,
- };
-@@ -95,6 +106,7 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
- 				void *ptr, char *type);
- int parse_events_add_pmu(struct list_head *list, int *idx,
- 			 char *pmu , struct list_head *head_config);
-+int parse_events_pmu_check(const char *name);
- void parse_events__set_leader(char *name, struct list_head *list);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
--- 
-1.8.3.2
-
+Regards,
+Santosh
