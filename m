@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636AbaHVAvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:51:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54037 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755448AbaHVAvE (ORCPT
+	id S1755670AbaHVAwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 20:52:24 -0400
+Received: from uchsmtp03.uchospitals.edu ([165.68.13.125]:42381 "EHLO
+	UCHSMTP03.UCHOSPITALS.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaHVAwW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:51:04 -0400
-Date: Thu, 21 Aug 2014 19:50:30 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Robin Gong <b38343@freescale.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Frank.Li@freescale.com,
-        shawn.guo@linaro.org, marex@denx.de
-Message-ID: <20140822005030.GR24407@sirena.org.uk>
-References: <1408593190-1031-1-git-send-email-b38343@freescale.com>
+	Thu, 21 Aug 2014 20:52:22 -0400
+X-Greylist: delayed 1995 seconds by postgrey-1.27 at vger.kernel.org; Thu, 21 Aug 2014 20:52:22 EDT
+From: <Adoption.Clinic@uchospitals.edu>
+Subject: re
+Thread-Topic: re
+Thread-Index: Ac+9nehIfEFVkQl2Rki6T7bFU5A53g==
+Date: Fri, 22 Aug 2014 00:13:32 +0000
+Message-ID: <E8E9313672EDE24F87A73074B03BC287409EDA5E@EXMBXPR03CCD.UCHAD.uchospitals.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [165.68.13.5]
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uAY1Vrrb3oVaqxed"
-Content-Disposition: inline
-In-Reply-To: <1408593190-1031-1-git-send-email-b38343@freescale.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 208.59.64.2
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] spi: spi-imx: add DMA support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=18 spamscore=18 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1408220000
+X-UCH-SPAM-HEADER: IP=10.165.141.32, Adoption.Clinic@uchospitals.edu
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-21_08:2014-08-21,2014-08-21,1970-01-01 signatures=0
+Content-Type: text/plain; charset=US-ASCII
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I am Mrs Bozena Horniakova. I need your assistance on a project. Please reply bozena.horniakova@outlook.com<mailto:bozena.horniakova@outlook.com>
 
---uAY1Vrrb3oVaqxed
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+********************************************************************************
+This e-mail is intended only for the use of the individual or entity to which
+it is addressed and may contain information that is privileged and confidential.
+If the reader of this e-mail message is not the intended recipient, you are 
+hereby notified that any dissemination, distribution or copying of this
+communication is prohibited. If you have received this e-mail in error, please 
+notify the sender and destroy all copies of the transmittal. 
 
-On Thu, Aug 21, 2014 at 11:53:10AM +0800, Robin Gong wrote:
-
-> Change from v2:
-> http://thread.gmane.org/gmane.linux.ports.arm.kernel/291722/focus=294363
-> 1. dma setup only for imx51-ecspi
-> 2. use one small dummy buffer(1 bd size) to templiy store data
->    for meanless rx/tx, instead of malloc the actual transfer size.
-
-You can use the must_tx and must_rx flags to use the core implementation
-of this functionality.  This will mean you get any performance or other
-improvements we implement there.
-
-> +	int (*txrx_bufs)(struct spi_device *spi, struct spi_transfer *t);
-> +	struct dma_chan *dma_chan_rx;
-> +	struct dma_chan *dma_chan_tx;
-
-The SPI controller has variables for this already - you should use them
-(and the core support).  In general my main comment on this patch is
-that you should be using the core DMA support, it fixes some problems
-(like not having mapping for vmalloc() buffers) and factors out some
-code.
-
---uAY1Vrrb3oVaqxed
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT9pPTAAoJELSic+t+oim9MY0P/RclDEBWSGFKDrO98Sfgbcgo
-7bCCzB+xENogpwedLzVcEZeZsvt9igFLm7t0CaXnEJv7/fB5rN3bFzvYYHyGkM82
-pCgplHwyjZculow1+LddjCHuPvPeL3dGYfeV1Jtvi3uPvpRUkTx//rtQREoHpvPg
-GUPU+7huxAds7Prkx+1nKq2KMl9aHz/p27FJJCbKBwvdgRIVqd9Cz0ZnzhA+LKqb
-eav74fNNaDn/KI1QL5S9BtS5JrMrQaNsEXkgSdGEkioqx4Pk8+R7dPFDLTn4Thtv
-UGWYRm+oHRAKBETGY/JAF5MuTlsxTY1Jn3TX29Tm2DBMnRnrN1YEyTs8tGGP/GU/
-04fq20HJWwODK+9fJOOYNjnTxQuByZZLrD/PfFuklc9Q8oN4HQACnBCBcq6zEkBJ
-ZZW9pKjEPbu15LHDyqgxC2M/T3gYuIuLEHhoERE6ALZKKBpE1YG5s+Z+0AnnJRHu
-EKeh62h/es04yQdOK2qiAiwXygn58k22cqdoy/gXni7n3A4dFEvSlp2uSFTmCOY4
-7wJuFRmMjUQ/EDPsK8jnGIIuTiZLepilM0+BK8STHwrazt9Z1wCGJJq4DQ/8OfB2
-jZtAhUrhLsWQpMIIidBU+2unQHWxxP+zZ11d81KRgbz7HPXDJCp6EVLp8uJ6jiZa
-o6rFDeK5DnFYTwH+3SQf
-=mcz3
------END PGP SIGNATURE-----
-
---uAY1Vrrb3oVaqxed--
+Thank you
+University of Chicago Medical Center 
+********************************************************************************
