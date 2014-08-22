@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaHVWUu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 18:20:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:28943 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913AbaHVWUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 18:20:49 -0400
-Date: Fri, 22 Aug 2014 15:20:40 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [V0 PATCH 0/2] AMD PVH domU support
-Message-ID: <20140822152040.70221795@mantra.us.oracle.com>
-In-Reply-To: <53F74B29.4090601@citrix.com>
-References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-	<53F74B29.4090601@citrix.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1752391AbaHVWWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 18:22:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:64386 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751882AbaHVWWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 18:22:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,383,1406617200"; 
+   d="scan'208";a="592101473"
+Message-ID: <53F7C286.50800@intel.com>
+Date: Fri, 22 Aug 2014 15:21:58 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Zhang Zhen <zhenzhang.zhang@huawei.com>
+CC: Toshi Kani <toshi.kani@hp.com>, David Rientjes <rientjes@google.com>,
+        isimatu.yasuaki@jp.fujitsu.com, n-horiguchi@ah.jp.nec.com,
+        wangnan0@huawei.com, linux-kernel@vger.kernel.org,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH v2] memory-hotplug: add sysfs zones_online_to attribute
+References: <1407902811-4873-1-git-send-email-zhenzhang.zhang@huawei.com>	<53EAE534.8030303@huawei.com>	<1408138647.26567.42.camel@misato.fc.hp.com>	<53F17230.5020409@huawei.com> <20140822151622.6786c1089548ea5ceb3732bf@linux-foundation.org>
+In-Reply-To: <20140822151622.6786c1089548ea5ceb3732bf@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014 14:52:41 +0100
-David Vrabel <david.vrabel@citrix.com> wrote:
+On 08/22/2014 03:16 PM, Andrew Morton wrote:
+> Also, it's not really clear to me why we need this sysfs file at all. 
+> Do people really read sysfs files, make onlining decisions and manually
+> type in commands?  Or is this stuff all automated?  If the latter then
+> the script can take care of all this?  For example, attempt to online
+> the memory into the desired zone and report failure if that didn't
+> succeed?
 
-> On 21/08/14 03:16, Mukesh Rathor wrote:
-> > Hi,
-> > 
-> > Here's first stab at AMD PVH domU support. Pretty much the only
-> > thing needed is EFER bits set. Please review.
-> 
-> I'm not going to accept this until there is some ABI documentation
-> stating explicitly what state non-boot CPUs will be in.
-> 
-> I'm particularly concerned that: a) there is a difference between AMD
-> and Intel; and b) you want to change the ABI by clearing a the
-> EFER.SCE bit.
-
-Correct, I realize it changes the ABI, but I believe that is the right 
-thing to do while we can, specially, since we need to fix the EFER for
-NX anyways. Looking at the code, it appears this would be the final
-cleanup for this ABI... :)..
-
-However, if that's not possible, I suppose we can just leave it as is
-too for the SC bit.
-
-thanks
-Mukesh
+I guess we can just iterate over all possible zone types from userspace
+until we find one.  Seems a bit hokey, but it would work at least until
+we add a new zone type and we have to teach the scripts about the new
+type.  But that's a pretty rare event I guess.  Let's hope the script
+writers get this right, and don't make omissions like ZONE_MOVABLE
+because it's not that common in practice.
