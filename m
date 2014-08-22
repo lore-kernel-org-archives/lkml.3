@@ -1,101 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840AbaHVFBM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 01:01:12 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:59240 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755629AbaHVFBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 01:01:10 -0400
-Message-ID: <1408683665.5648.69.camel@marge.simpson.net>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
- is runnable
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Fri, 22 Aug 2014 07:01:05 +0200
-In-Reply-To: <1408608310-13579-2-git-send-email-jasowang@redhat.com>
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
-	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755560AbaHVFHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 01:07:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55057 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831AbaHVFHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 01:07:41 -0400
+Date: Fri, 22 Aug 2014 07:07:37 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Pranith Kumar <bobby.prani@gmail.com>,
+        Grant Erickson <gerickson@nuovations.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "open list:LINUX FOR POWERPC..." <linuxppc-dev@lists.ozlabs.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:EDAC-CORE" <linux-edac@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] powerpc: edac: Fix build error
+Message-ID: <20140822050737.GD11381@nazgul.tnic>
+References: <1408673991-17892-1-git-send-email-bobby.prani@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1408673991-17892-1-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-08-21 at 16:05 +0800, Jason Wang wrote: 
-> Rx busy loop does not scale well in the case when several parallel
-> sessions is active. This is because we keep looping even if there's
-> another process is runnable. For example, if that process is about to
-> send packet, keep busy polling in current process will brings extra
-> delay and damage the performance.
+On Thu, Aug 21, 2014 at 10:19:51PM -0400, Pranith Kumar wrote:
+> Fix the following build error:
 > 
-> This patch solves this issue by exiting the busy loop when there's
-> another process is runnable in current cpu. Simple test that pin two
-> netperf sessions in the same cpu in receiving side shows obvious
-> improvement:
+> drivers/edac/ppc4xx_edac.c: In function 'mfsdram':
+> drivers/edac/ppc4xx_edac.c:249: error: implicit declaration of function
+> '__mfdcri'
+> drivers/edac/ppc4xx_edac.c: In function 'mtsdram':
+> drivers/edac/ppc4xx_edac.c:266: error: implicit declaration of function
+> '__mtdcri'
+> drivers/edac/ppc4xx_edac.c:269: warning: 'return' with a value, in function
+> returning void
+> drivers/edac/ppc4xx_edac.c: In function 'ppc4xx_edac_init_csrows':
+> drivers/edac/ppc4xx_edac.c:924: warning: initialization from incompatible
+> pointer type
+> drivers/edac/ppc4xx_edac.c:977: error: request for member 'dimm' in something
+> not a structure or union
+> drivers/edac/ppc4xx_edac.c: In function 'ppc4xx_edac_map_dcrs':
+> drivers/edac/ppc4xx_edac.c:1209: warning: passing argument 1 of 'dcr_map_mmio'
+> discards qualifiers from pointer target type
+> 
+> This driver depends on PPC_DCR_NATIVE to be set for the relevant headers to be
+> included. Also if PPC_DCR_MMIO=n the build fails. So make PPC_DCR depend on both
+> these options.
+> 
+> This is compile tested only.
 
-That patch says to me it's a bad idea to spin when someone (anyone) else
-can get some work done on a CPU, which intuitively makes sense.  But..
+This driver has been carried through the years from misc people after
+its initial drop in 2009. And frankly, I'd prefer if someone with the
+hardware could actually test it before we break it any further.
 
-(ponders net goop: with silly 1 byte ping-pong load, throughput is bound
-by fastpath latency, net plus sched plus fixable nohz and governor crud
-if not polling, so you can't get a lot of data moved byte at a time no
-matter how sexy the pipe whether polling or not due to bound.  If OTOH
-net hardware is a blazing fast large bore packet cannon, net overhead
-per unit payload drops, sched+crud is a constant)
+Alternatively, if it is obsolete and no one uses it, we could very well
+delete it instead. Initial commit talks about the hw it supports:
 
-Seems the only time it's a good idea to poll is if blasting big packets
-on sexy hardware, and if you're doing that, you want to poll regardless
-of whether somebody else is waiting, or?
+dba7a77c0e40 ("edac: new ppc4xx driver module")
 
-> Before:
-> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
-> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
-> 16384  87380  1        1       10.00    15513.74
-> 16384  87380
-> 16384  87380  1        1       10.00    15092.78
-> 16384  87380
+So it would be good if we got some opinions from the PPC crowd. Who are
+on CC.
+
+(leaving in the rest for context).
+
 > 
-> After:
-> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
-> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
-> 16384  87380  1        1       10.00    23334.53
-> 16384  87380
-> 16384  87380  1        1       10.00    23327.58
-> 16384  87380
-> 
-> Benchmark was done through two 8 cores Xeon machine back to back connected
-> with mlx4 through netperf TCP_RR test (busy_read were set to 50):
-> 
-> sessions/bytes/before/after/+improvement%/busy_read=0/
-> 1/1/30062.10/30034.72/+0%/20228.96/
-> 16/1/214719.83/307669.01/+43%/268997.71/
-> 32/1/231252.81/345845.16/+49%/336157.442/
-> 64/512/212467.39/373464.93/+75%/397449.375/
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
 > ---
->  include/net/busy_poll.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  arch/powerpc/Kconfig       | 6 +++---
+>  drivers/edac/ppc4xx_edac.c | 8 ++++----
+>  2 files changed, 7 insertions(+), 7 deletions(-)
 > 
-> diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
-> index 1d67fb6..8a33fb2 100644
-> --- a/include/net/busy_poll.h
-> +++ b/include/net/busy_poll.h
-> @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
->  		cpu_relax();
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index 4bc7b62..9b90c1c 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -233,15 +233,15 @@ config ARCH_SUSPEND_POSSIBLE
 >  
->  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
-> -		 !need_resched() && !busy_loop_timeout(end_time));
-> +		 !need_resched() && !busy_loop_timeout(end_time) &&
-> +		 nr_running_this_cpu() < 2);
+>  config PPC_DCR_NATIVE
+>  	bool
+> -	default n
+> +	default y
 >  
->  	rc = !skb_queue_empty(&sk->sk_receive_queue);
->  out:
+>  config PPC_DCR_MMIO
+>  	bool
+> -	default n
+> +	default y
+>  
+>  config PPC_DCR
+>  	bool
+> -	depends on PPC_DCR_NATIVE || PPC_DCR_MMIO
+> +	depends on PPC_DCR_NATIVE && PPC_DCR_MMIO
+>  	default y
+>  
+>  config PPC_OF_PLATFORM_PCI
+> diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
+> index ef6b7e0..8725b73 100644
+> --- a/drivers/edac/ppc4xx_edac.c
+> +++ b/drivers/edac/ppc4xx_edac.c
+> @@ -246,8 +246,8 @@ static const char * const ppc4xx_plb_masters[9] = {
+>  static inline u32
+>  mfsdram(const dcr_host_t *dcr_host, unsigned int idcr_n)
+>  {
+> -	return __mfdcri(dcr_host->base + SDRAM_DCR_ADDR_OFFSET,
+> -			dcr_host->base + SDRAM_DCR_DATA_OFFSET,
+> +	return __mfdcri(dcr_host->host.native.base + SDRAM_DCR_ADDR_OFFSET,
+> +			dcr_host->host.native.base + SDRAM_DCR_DATA_OFFSET,
+>  			idcr_n);
+>  }
+>  
+> @@ -263,8 +263,8 @@ mfsdram(const dcr_host_t *dcr_host, unsigned int idcr_n)
+>  static inline void
+>  mtsdram(const dcr_host_t *dcr_host, unsigned int idcr_n, u32 value)
+>  {
+> -	return __mtdcri(dcr_host->base + SDRAM_DCR_ADDR_OFFSET,
+> -			dcr_host->base + SDRAM_DCR_DATA_OFFSET,
+> +	return __mtdcri(dcr_host->host.native.base + SDRAM_DCR_ADDR_OFFSET,
+> +			dcr_host->host.native.base + SDRAM_DCR_DATA_OFFSET,
+>  			idcr_n,
+>  			value);
+>  }
+> -- 
+> 1.9.1
+> 
+> 
 
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
