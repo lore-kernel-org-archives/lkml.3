@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910AbaHVHw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:52:26 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:49200 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827AbaHVHwZ (ORCPT
+	id S1755940AbaHVHxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:53:23 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:34637 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaHVHxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:52:25 -0400
-Date: Fri, 22 Aug 2014 08:52:21 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI urgent fixes
-Message-ID: <20140822075221.GK29733@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 22 Aug 2014 03:53:21 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-f8-53f6f6efd6fb
+From: Andrzej Hajda <a.hajda@samsung.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org (open list),
+        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
+Subject: [PATCH 00/15] drm/exynos/ipp: image post processing fixes and
+ improvements, part four
+Date: Fri, 22 Aug 2014 09:52:11 +0200
+Message-id: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPJMWRmVeSWpSXmKPExsVy+t/xq7rvv30LNvjxkM/i1rpzrBZXvr5n
+	s5h0fwKLxYt7F1kszja9Ybe4vGsOm8WM8/uYLNYeuctuMWPySzYHTo/73ceZPPq2rGL0+LxJ
+	LoA5issmJTUnsyy1SN8ugSvj6O/9LAVHuSu+brvJ2MC4j7OLkZNDQsBEYt/pWYwQtpjEhXvr
+	2boYuTiEBJYyStz7tIYZwuljkjj9YgYzSBWbgKbE38032UBsEQFliVX72tlBipgFPjJJXFn6
+	BqxIWCBB4vidpewgNouAqsT7lwfBGngFnCUurmpkg1gnJ3Hy2GTWCYzcCxgZVjGKppYmFxQn
+	peca6hUn5haX5qXrJefnbmKEBMqXHYyLj1kdYhTgYFTi4U38/TVYiDWxrLgy9xCjBAezkgjv
+	pnnfgoV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwxt46ZHtraveWFimexfEK1so+WdxMvL+3r81+
+	rah3haX/neCkGOEtN2bwdj3c9OHjsowpJfeXd3OU3nhht/xIWj9DhNutyomW84riRA7FFmyZ
+	VBlrl7xFr2jDG+3oEgNrhjUPP6eZCp9hOt5v9ujK6TVVL3+USievzpxqVrlGlvflJgvTg9ra
+	SizFGYmGWsxFxYkAFhNmsfIBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys, please pull the following fixes, which trade the locking
-WARN_ON()s in the efivars code for the more usual lockdep_*() functions
-and an arm64 EFI change that allows the gamut of runtime services to be
-invoked.
+This set of patches contains various improvement and fixes
+for exynos_drm ipp framework.
+The patchset is based on exynos-drm-next branch.
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+IPP framework was tested for regressions on exynos4210-trats target.
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+Regards
+Andrzej
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+Andrzej Hajda (15):
+  drm/exynos/ipp: remove fake pm callbacks
+  drm/exynos/ipp: cancel works before command node clean
+  drm/exynos/ipp: move file reference from memory to command node
+  drm/exynos/ipp: remove only related commands on file close
+  drm/exynos/ipp: remove unused field in command node
+  drm/exynos/ipp: free partially allocated resources on error
+  drm/exynos/ipp: move nodes cleaning to separate function
+  drm/exynos/ipp: clean memory nodes on command node cleaning
+  drm/exynos/ipp: replace work_struct casting with better constructs
+  drm/exynos/ipp: stop hardware before freeing memory
+  drm/exynos/ipp: remove events during command cleaning
+  drm/exynos/fimc: avoid clearing overflow bits
+  drm/exynos/fimc: do not enable fimc twice
+  drm/exynos/fimc: simplify buffer queuing
+  drm/exynos/fimc: fix source buffer registers
 
-for you to fetch changes up to 6a7519e81321343165f89abb8b616df186d3e57a:
-
-  efi/arm64: Store Runtime Services revision (2014-08-22 08:45:41 +0100)
-
-----------------------------------------------------------------
- * WARN_ON(!spin_is_locked()) always triggers on non-SMP machines.
-   Swap it for the more canonical lockdep_assert_held() which always
-   does the right thing - Guenter Roeck
-
- * Assign the correct value to efi.runtime_version on arm64 so that all
-   the runtime services can be invoked - Semen Protsenko
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      firmware: Do not use WARN_ON(!spin_is_locked())
-
-Semen Protsenko (1):
-      efi/arm64: Store Runtime Services revision
-
- arch/arm64/kernel/efi.c     | 2 ++
- drivers/firmware/efi/vars.c | 8 ++++----
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c    |  90 ++-----
+ drivers/gpu/drm/exynos/exynos_drm_gsc.c     |   3 +-
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c     | 369 ++++++++++++----------------
+ drivers/gpu/drm/exynos/exynos_drm_ipp.h     |   4 +-
+ drivers/gpu/drm/exynos/exynos_drm_rotator.c |   3 +-
+ 5 files changed, 180 insertions(+), 289 deletions(-)
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.9.1
+
