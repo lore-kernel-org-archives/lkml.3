@@ -1,155 +1,334 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899AbaHVHUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:20:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1950 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755757AbaHVHT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:19:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,378,1406617200"; 
-   d="scan'208";a="591768917"
-Message-ID: <53F6EF25.3000309@intel.com>
-Date: Fri, 22 Aug 2014 15:20:05 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755916AbaHVHUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:20:33 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:41454 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757AbaHVHU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 03:20:28 -0400
+Date: Fri, 22 Aug 2014 09:20:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
+        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
+        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
+        penberg@kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        lauraa@codeaurora.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] [v3] warn on performance-impacting configs aka.
+ TAINT_PERFORMANCE
+Message-ID: <20140822072023.GA7218@gmail.com>
+References: <20140821202424.7ED66A50@viggo.jf.intel.com>
 MIME-Version: 1.0
-To: Benjamin Block <bebl@mageta.org>, "David S. Miller" <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: BUG: lockdep (inconsistent usage) in netlink
-References: <20140821185209.GC25021@kalium.Speedport_W723_V_Typ_A_1_01_001> <53F65A02.2080503@mageta.org>
-In-Reply-To: <53F65A02.2080503@mageta.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140821202424.7ED66A50@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 04:43 AM, Benjamin Block wrote:
-> On 08/21/2014 08:52 PM, Benjamin Block wrote:
->> Hello,
->>
->> while rebooting one of my dev-machines I stumbled over this
->> lockdep-mess-up:
->>
->>> =================================
->>> [ INFO: inconsistent lock state ]
->>> 3.17.0-rc1-00001-gb83ca8c #2 Tainted: G           O
->>> ---------------------------------
->>> inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
->>> swapper/0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
->>>   (&(&list->lock)->rlock#3){?.-...}, at: [<ffffffff819580db>] skb_queue_tail+0x2b/0x60
->>> {HARDIRQ-ON-W} state was registered at:
->>>    [<ffffffff8111c9f7>] __lock_acquire+0x877/0x1c90
->>>    [<ffffffff8111e45a>] lock_acquire+0xca/0x120
->>>    [<ffffffff81afc744>] _raw_spin_lock_bh+0x44/0x80
->>>    [<ffffffff819a8918>] netlink_poll+0xf8/0x1c0
->>>    [<ffffffff8194e031>] sock_poll+0x161/0x190
->>>    [<ffffffff81271ffb>] SyS_epoll_ctl+0x51b/0xd10
->>>    [<ffffffff81afd452>] system_call_fastpath+0x16/0x1b
->>> irq event stamp: 1699744
->>> hardirqs last  enabled at (1699741): [<ffffffff8189b1d4>] cpuidle_enter_state+0xc4/0x190
->>> hardirqs last disabled at (1699742): [<ffffffff81afdfaa>] common_interrupt+0x6a/0x6f
->>> softirqs last  enabled at (1699744): [<ffffffff810d7fda>] _local_bh_enable+0x4a/0x50
->>> softirqs last disabled at (1699743): [<ffffffff810d88f0>] irq_enter+0x30/0x70
->>>
->>> other info that might help us debug this:
->>>   Possible unsafe locking scenario:
->>>
->>>         CPU0
->>>         ----
->>>    lock(&(&list->lock)->rlock#3);
->>>    <Interrupt>
->>>      lock(&(&list->lock)->rlock#3);
->>>
->>>   *** DEADLOCK ***
->>>
->>> no locks held by swapper/0/0.
->>>
->>> stack backtrace:
->>> CPU: 0 PID: 0 Comm: swapper/0 Tainted: G           O   3.17.0-rc1-00001-gb83ca8c #2
->>> Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
->>>   ffffffff8295a5b0 ffff8802158039a8 ffffffff81af20fa 0000000000000000
->>>   ffffffff822164e0 ffff880215803a08 ffffffff81aee400 0000000000000000
->>>   ffffffff00000000 ffff880200000001 ffffffff8105ac0f ffffffff82d2abe0
->>> Call Trace:
->>>   <IRQ>  [<ffffffff81af20fa>] dump_stack+0x4e/0x68
->>>   [<ffffffff81aee400>] print_usage_bug+0x1ec/0x1fd
->>>   [<ffffffff8105ac0f>] ? save_stack_trace+0x2f/0x50
->>>   [<ffffffff8111b600>] ? print_irq_inversion_bug+0x200/0x200
->>>   [<ffffffff8111c061>] mark_lock+0x191/0x2b0
->>>   [<ffffffff8111c96a>] __lock_acquire+0x7ea/0x1c90
->>>   [<ffffffff8111ca94>] ? __lock_acquire+0x914/0x1c90
->>>   [<ffffffff8111b600>] ? print_irq_inversion_bug+0x200/0x200
->>>   [<ffffffff8111ca94>] ? __lock_acquire+0x914/0x1c90
->>>   [<ffffffff8111e45a>] lock_acquire+0xca/0x120
->>>   [<ffffffff819580db>] ? skb_queue_tail+0x2b/0x60
->>>   [<ffffffff81afc590>] _raw_spin_lock_irqsave+0x50/0x90
->>>   [<ffffffff819580db>] ? skb_queue_tail+0x2b/0x60
->>>   [<ffffffff819580db>] skb_queue_tail+0x2b/0x60
->>>   [<ffffffff819a774f>] __netlink_sendskb+0x21f/0x250
->>>   [<ffffffff819a7d63>] netlink_broadcast_filtered+0x273/0x3b0
->>>   [<ffffffff819a7ebd>] netlink_broadcast+0x1d/0x20
->>>   [<ffffffff8152fb8a>] ? nla_reserve+0x2a/0x40
->>>   [<ffffffff81589728>] acpi_bus_generate_netlink_event+0x160/0x178
->>>   [<ffffffff815a8db9>] acpi_button_notify+0xe1/0xec
->>>   [<ffffffff81580648>] acpi_device_notify+0x19/0x1b
->>>   [<ffffffff81580662>] acpi_device_notify_fixed+0x18/0x1c
->>>   [<ffffffff8158f039>] acpi_ev_fixed_event_detect+0xe6/0x10d
->>>   [<ffffffff8159157a>] acpi_ev_sci_xrupt_handler+0x19/0x3f
->>>   [<ffffffff8157c1a9>] acpi_irq+0x16/0x31
->>>   [<ffffffff81131e2a>] handle_irq_event_percpu+0x6a/0x1d0
->>>   [<ffffffff81131fd8>] handle_irq_event+0x48/0x70
->>>   [<ffffffff8113534f>] ? handle_fasteoi_irq+0x2f/0x160
->>>   [<ffffffff811353e7>] handle_fasteoi_irq+0xc7/0x160
->>>   [<ffffffff8104cd94>] handle_irq+0x134/0x150
->>>   [<ffffffff810f4876>] ? atomic_notifier_call_chain+0x16/0x20
->>>   [<ffffffff81054dec>] ? __exit_idle+0x2c/0x30
->>>   [<ffffffff81affe7e>] do_IRQ+0x5e/0x100
->>>   [<ffffffff81afdfaf>] common_interrupt+0x6f/0x6f
->>>   <EOI>  [<ffffffff8189b1df>] ? cpuidle_enter_state+0xcf/0x190
->>>   [<ffffffff8189b1d4>] ? cpuidle_enter_state+0xc4/0x190
->>>   [<ffffffff8189b387>] cpuidle_enter+0x17/0x20
->>>   [<ffffffff81111ae1>] cpu_startup_entry+0x3a1/0x3c0
->>>   [<ffffffff81ae92a4>] rest_init+0xc4/0xd0
->>>   [<ffffffff81ae91e5>] ? rest_init+0x5/0xd0
->>>   [<ffffffff825718a1>] ? ftrace_init+0xa8/0x13b
->>>   [<ffffffff8255103a>] start_kernel+0x461/0x46e
->>>   [<ffffffff82550939>] ? set_init_arg+0x57/0x57
->>>   [<ffffffff825505af>] x86_64_start_reservations+0x2a/0x2c
->>>   [<ffffffff825506ae>] x86_64_start_kernel+0xfd/0x101
->>
->> Sadly I couldn't reproduce it. This looks all to be very general
->> functions and my best guess is, netlink_poll() needs to be irq-save.
->> Thing is, the corresponding code is quite old and I can't really bisec
->> it, because the none-reproducibility.
->>
->
-> Thinking more about it.. this seems to be unlikely. More like the
-> acpi-irq chain should not do netlink-events still in irq-context - just
-> guessing here, sry :).
 
-Hi Benjamin:
-	Basically, I think ACPI fixed button device's notify callback should not run in 
-the interrupt context. This prevents calling function with mutex lock(E,G 
-evaluating ACPI method). I will write a patch to do that.
+* Dave Hansen <dave@sr71.net> wrote:
 
->
-> I tracked around a little and came up with more recent commits in that
-> call-chain:
->
-> commit 0bf6368ee8f25826d0645c0f7a4f17c8845356a4
-> 	- adds acpi_bus_generate_netlink_event to the chain
->
-> Again, all other places around the chain seems quit old or unrelated.
->
->>
->> There is only the small ipv6-fib patch applied, I send in earlier today
->> (https://lkml.org/lkml/2014/8/21/506). This should have nothing to do
->> with this here.
->>
->
-> - Benjamin
->
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> Changes from v2:
+>  * remove tainting and stack track
+>  * add debugfs file
+>  * added a little text to guide folks who want to add more
+>    options
 
+Looks good to me conceptually.
+
+A couple of minor details:
+
+> Changes from v1:
+>  * remove schedstats
+>  * add DEBUG_PAGEALLOC and SLUB_DEBUG_ON
+> 
+> --
+> 
+> I have more than once myself been the victim of an accidentally-
+> enabled kernel config option being mistaken for a true
+> performance problem.
+> 
+> I'm sure I've also taken profiles or performance measurements
+> and assumed they were real-world when really I was measuing the
+
+s/measuring
+
+> performance with an option that nobody turns on in production.
+> 
+> A warning like this late in boot will help remind folks when
+> these kinds of things are enabled.  We can also teach tooling to
+> look for and capture /sys/kernel/debug/config_debug .
+> 
+> As for the patch...
+> 
+> I originally wanted this for CONFIG_DEBUG_VM, but I think it also
+> applies to things like lockdep and slab debugging.  See the patch
+> for the list of offending config options.  I'm open to adding
+> more, but this seemed like a good list to start.
+> 
+> The compiler is smart enough to really trim down the code when
+> the array is empty.  An objdump -d looks like this:
+> 
+> 	lib/perf-configs.o:     file format elf64-x86-64
+> 
+> 	Disassembly of section .init.text:
+> 
+> 	0000000000000000 <performance_taint>:
+> 	   0:   55                      push   %rbp
+> 	   1:   31 c0                   xor    %eax,%eax
+> 	   3:   48 89 e5                mov    %rsp,%rbp
+> 	   6:   5d                      pop    %rbp
+> 	   7:   c3                      retq
+
+So I guess the _taint bit is obsolete now?
+
+> This could be done with Kconfig and an #ifdef to save us 8 bytes
+> of text and the entry in the late_initcall() section.  Doing it
+> this way lets us keep the list of these things in one spot, and
+> also gives us a convenient way to dump out the name of the
+> offending option.
+> 
+> For anybody that *really* cares, I put the whole thing under
+> CONFIG_DEBUG_KERNEL in the Makefile.
+> 
+> The messages look like this:
+> 
+> [    3.865297] WARNING: Do not use this kernel for performance measurement.
+
+I'd warn this way:
+
+  [    3.865297] INFO: Be careful when using this kernel for performance measurement.
+
+> [    3.868776] WARNING: Potentially performance-altering options:
+> [    3.871558] 	CONFIG_LOCKDEP enabled
+> [    3.873326] 	CONFIG_SLUB_DEBUG_ON enabled
+
+And here I'd print this the following way:
+
+> [    3.868776] INFO: Potentially performance-altering options:
+> [    3.871558] 	CONFIG_LOCKDEP=y
+> [    3.873326] 	CONFIG_SLUB_DEBUG_ON=y
+
+The 'INFO:' prefix is less pushy, and the '=y' notation is what 
+people will look for in the .config anyway, so lets keep to 
+that?
+
+(Btw., you probably want to check CONFIG_PROVE_LOCKING=y, not 
+CONFIG_LOCKDEP - the former is the user configurable one.)
+
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: ak@linux.intel.com
+> Cc: tim.c.chen@linux.intel.com
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-mm@kvack.org
+> Cc: kirill@shutemov.name
+> Cc: lauraa@codeaurora.org
+> ---
+> 
+>  b/include/linux/kernel.h |    1 
+>  b/kernel/panic.c         |    1 
+>  b/lib/Makefile           |    1 
+>  b/lib/perf-configs.c     |  114 +++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 117 insertions(+)
+> 
+> diff -puN include/linux/kernel.h~taint-performance include/linux/kernel.h
+> --- a/include/linux/kernel.h~taint-performance	2014-08-19 11:38:07.424005355 -0700
+> +++ b/include/linux/kernel.h	2014-08-19 11:38:20.960615904 -0700
+> @@ -471,6 +471,7 @@ extern enum system_states {
+>  #define TAINT_OOT_MODULE		12
+>  #define TAINT_UNSIGNED_MODULE		13
+>  #define TAINT_SOFTLOCKUP		14
+> +#define TAINT_PERFORMANCE		15
+
+That's unnecessary now.
+
+>  
+>  extern const char hex_asc[];
+>  #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+> diff -puN kernel/panic.c~taint-performance kernel/panic.c
+> --- a/kernel/panic.c~taint-performance	2014-08-19 11:38:28.928975233 -0700
+> +++ b/kernel/panic.c	2014-08-20 09:56:29.528471033 -0700
+> @@ -225,6 +225,7 @@ static const struct tnt tnts[] = {
+>  	{ TAINT_OOT_MODULE,		'O', ' ' },
+>  	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+>  	{ TAINT_SOFTLOCKUP,		'L', ' ' },
+> +	{ TAINT_PERFORMANCE,		'Q', ' ' },
+
+Ditto.
+
+>  };
+>  
+>  /**
+> diff -puN /dev/null lib/perf-configs.c
+> --- /dev/null	2014-04-10 11:28:14.066815724 -0700
+> +++ b/lib/perf-configs.c	2014-08-21 13:22:25.586598278 -0700
+> @@ -0,0 +1,114 @@
+> +#include <linux/bug.h>
+> +#include <linux/debugfs.h>
+> +#include <linux/gfp.h>
+> +#include <linux/kernel.h>
+> +#include <linux/slab.h>
+> +
+> +/*
+> + * This should list any kernel options that can substantially
+> + * affect performance.  This is intended to give a loud
+> + * warning during bootup so that folks have a fighting chance
+> + * of noticing these things.
+> + *
+> + * This is fairly subjective, but a good rule of thumb for these
+> + * is: if it is enabled widely in production, then it does not
+> + * belong here.  If a major enterprise kernel enables a feature
+> + * for a non-debug kernel, it _really_ does not belong.
+> + */
+> +static const char * const perfomance_killing_configs[] = {
+> +#ifdef CONFIG_LOCKDEP
+> +	"LOCKDEP",
+> +#endif
+> +#ifdef CONFIG_LOCK_STAT
+> +	"LOCK_STAT",
+> +#endif
+> +#ifdef CONFIG_DEBUG_VM
+> +	"DEBUG_VM",
+> +#endif
+> +#ifdef CONFIG_DEBUG_VM_VMACACHE
+> +	"DEBUG_VM_VMACACHE",
+> +#endif
+> +#ifdef CONFIG_DEBUG_VM_RB
+> +	"DEBUG_VM_RB",
+> +#endif
+> +#ifdef CONFIG_DEBUG_SLAB
+> +	"DEBUG_SLAB",
+> +#endif
+> +#ifdef CONFIG_SLUB_DEBUG_ON
+> +	"SLUB_DEBUG_ON",
+> +#endif
+> +#ifdef CONFIG_DEBUG_OBJECTS_FREE
+> +	"DEBUG_OBJECTS_FREE",
+> +#endif
+
+Essentially all DEBUG_OBJECTS_* options are expensive, assuming 
+they are enabled, i.e. DEBUG_OBJECTS_ENABLE_DEFAULT=y.
+
+Otherwise they should only be warned about if the debugobjects 
+boot option got enabled.
+
+I.e. you'll need a bit of a runtime check for this one.
+
+> +#ifdef CONFIG_DEBUG_KMEMLEAK
+> +	"DEBUG_KMEMLEAK",
+> +#endif
+> +#ifdef CONFIG_DEBUG_PAGEALLOC
+> +	"DEBUG_PAGEALLOC",
+> +#endif
+
+I'd also add KMEMCHECK.
+
+> +};
+> +
+> +static const char config_prefix[] = "CONFIG_";
+> +/*
+> + * Dump out the list of the offending config options to a file
+> + * in debugfs so that tooling can look for and capture it.
+> + */
+> +static ssize_t performance_taint_read(struct file *file, char __user *user_buf,
+> +			size_t count, loff_t *ppos)
+> +{
+> +	int i;
+> +	int ret;
+> +	char *buf;
+> +	size_t buf_written = 0;
+> +	size_t buf_left;
+> +	size_t buf_len;
+> +
+> +	if (!ARRAY_SIZE(perfomance_killing_configs))
+> +		return 0;
+> +
+> +	buf_len = 1;
+> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++)
+> +		buf_len += strlen(config_prefix) +
+> +			   strlen(perfomance_killing_configs[i]);
+> +	/* Add a byte for for each entry in the array for a \n */
+> +	buf_len += ARRAY_SIZE(perfomance_killing_configs);
+> +
+> +	buf = kmalloc(buf_len, GFP_KERNEL);
+> +	if (!buf)
+> +		return -ENOMEM;
+> +
+> +	buf_left = buf_len;
+> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++) {
+> +		buf_written += snprintf(buf + buf_written, buf_left,
+> +					"%s%s\n", config_prefix,
+> +					perfomance_killing_configs[i]);
+> +		buf_left = buf_len - buf_written;
+
+So, ARRAY_SIZE(performance_killing_configs) is written out four 
+times, a temporary variable would be in order I suspect.
+
+Also, do you want to check buf_left and break out early from 
+the loop if it goes non-positive?
+
+> +	}
+> +	ret = simple_read_from_buffer(user_buf, buf_written, ppos, buf, buf_len);
+> +	kfree(buf);
+> +	return ret;
+> +}
+> +
+> +static const struct file_operations fops_perf_taint = {
+> +	.read = performance_taint_read,
+> +	.llseek = default_llseek,
+> +};
+> +
+> +static int __init performance_taint(void)
+
+I'd not name this 'taint' anymore, but check_configs() or so.
+
+> +{
+> +	int i;
+> +
+> +	if (!ARRAY_SIZE(perfomance_killing_configs))
+> +		return 0;
+
+and: s/perfomance/performance across the whole file.
+
+> +
+> +	pr_warn("WARNING: Do not use this kernel for performance measurement.\n");
+> +	pr_warn("WARNING: Potentially performance-altering options:\n");
+> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++) {
+> +		pr_warn("\t%s%s enabled\n", config_prefix,
+> +					   perfomance_killing_configs[i]);
+> +	}
+> +	debugfs_create_file("config_debug", S_IRUSR | S_IWUSR,
+> +				NULL, NULL, &fops_perf_taint);
+> +	return 0;
+> +}
+> +late_initcall(performance_taint);
+> diff -puN lib/Makefile~taint-performance lib/Makefile
+> --- a/lib/Makefile~taint-performance	2014-08-20 11:02:54.130548350 -0700
+> +++ b/lib/Makefile	2014-08-20 11:06:18.231744868 -0700
+> @@ -54,6 +54,7 @@ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight
+>  obj-$(CONFIG_BTREE) += btree.o
+>  obj-$(CONFIG_INTERVAL_TREE) += interval_tree.o
+>  obj-$(CONFIG_ASSOCIATIVE_ARRAY) += assoc_array.o
+> +obj-$(CONFIG_DEBUG_KERNEL) += perf-configs.o
+
+Please don't name it perf-*.c, that confuses it with perf 
+events.
+
+Maybe name it check-configs.c or so?
+
+Thanks,
+
+	Ingo
