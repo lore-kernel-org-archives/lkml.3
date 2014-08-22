@@ -1,122 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413AbaHVJ6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:58:34 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6258 "EHLO mga02.intel.com"
+	id S1755830AbaHVKBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 06:01:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729AbaHVJ6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:58:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,379,1406617200"; 
-   d="scan'208";a="591818549"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Kumar Mahesh <mahesh.kumar.p@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] intel_idle: add idle values for Cherrytrail/Braswell
-Date: Fri, 22 Aug 2014 12:58:28 +0300
-Message-Id: <1408701508-13636-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1754425AbaHVKBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 06:01:49 -0400
+Date: Fri, 22 Aug 2014 18:02:58 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: lv.zheng@intel.com, matt.fleming@intel.com, linux-efi@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@acpica.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
+        robert.moore@intel.com
+Subject: Re: kernel boot fail with efi earlyprintk (bisected)
+Message-ID: <20140822100258.GA1877@darkstar.nay.redhat.com>
+References: <20140819081658.GA1795@darkstar.nay.redhat.com>
+ <20140821205224.GJ29733@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140821205224.GJ29733@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kumar Mahesh <mahesh.kumar.p@intel.com>
+On 08/21/14 at 09:52pm, Matt Fleming wrote:
+> On Tue, 19 Aug, at 04:16:58PM, Dave Young wrote:
+> > Hi,
+> > 
+> > 3.16 kernel boot fail with earlyprintk=efi on my laptop.
+> > It keeps scrolling at the bottom line of screen.
+> > 
+> > Bisected, the first bad commit is below:
+> > commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
+> > Author: Lv Zheng <lv.zheng@intel.com>
+> > Date:   Fri Apr 4 12:38:57 2014 +0800
+> > 
+> >     ACPICA: Tables: Fix table checksums verification before installation.
+> > 
+> > 
+> > I did some debugging by enabling both serial and efi earlyprintk, below is
+> > some debug dmesg, seems early_ioremap fails in scroll up function due to
+> > no free slot, but I'm still not sure if the debug info is right or not.
+> 
+> Thanks Dave, your callstack seems to make sense.
+> 
+> Can you also enable early_ioremap_debug so that we can figure out where
+> all the FIXMAP slots are going?
 
-Braswell is a successor of Intel Baytrail but has slighly different CPU
-idle values and latencies.
+With early_ioremap_debug enabled, there will be a lot of "dropped printk", so
+I can not get any useful information.
 
-Signed-off-by: Kumar Mahesh <mahesh.kumar.p@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/idle/intel_idle.c | 58 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 58 insertions(+)
+Will try to do more debug.
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 9b7ee7e427df..ae6f9f1cb700 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -536,6 +536,59 @@ static struct cpuidle_state atom_cstates[] = {
- 	{
- 		.enter = NULL }
- };
-+
-+static struct cpuidle_state chv_cstates[CPUIDLE_STATE_MAX] = {
-+	{ /* MWAIT C1 */
-+		.name = "C1-ATM",
-+		.desc = "MWAIT 0x00",
-+		.flags = MWAIT2flg(0x00) | CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 1,
-+		.target_residency = 4,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C4 */
-+		.name = "C4-ATM",
-+		.desc = "MWAIT 0x30",
-+		.flags = MWAIT2flg(0x30) | CPUIDLE_FLAG_TIME_VALID
-+						| CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 100,
-+		.target_residency = 400,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C6 */
-+		.name = "C6-ATM",
-+		.desc = "MWAIT 0x52",
-+		.flags = MWAIT2flg(0x52) | CPUIDLE_FLAG_TIME_VALID
-+						| CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 140,
-+		.target_residency = 560,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C7-S0i1 */
-+		.name = "S0i1-ATM",
-+		.desc = "MWAIT 0x60",
-+		.flags = MWAIT2flg(0x60) | CPUIDLE_FLAG_TIME_VALID
-+						| CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 1200,
-+		.target_residency = 4000,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C8-S0i2 */
-+		.name = "S0i2-ATM",
-+		.desc = "MWAIT 0x62",
-+		.flags = MWAIT2flg(0x62) | CPUIDLE_FLAG_TIME_VALID
-+						| CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 2000,
-+		.target_residency = 8000,
-+		.enter = &intel_idle },
-+	{ /* MWAIT C9-S0i3 */
-+		.name = "S0i3-ATM",
-+		.desc = "MWAIT 0x64",
-+		.flags = MWAIT2flg(0x64) | CPUIDLE_FLAG_TIME_VALID
-+						| CPUIDLE_FLAG_TLB_FLUSHED,
-+		.exit_latency = 10000,
-+		.target_residency = 20000,
-+		.enter = &intel_idle },
-+	{
-+		.enter = NULL }
-+};
-+
- static struct cpuidle_state avn_cstates[] = {
- 	{
- 		.name = "C1-AVN",
-@@ -702,6 +755,10 @@ static const struct idle_cpu idle_cpu_avn = {
- 	.disable_promotion_to_c1e = true,
- };
- 
-+static const struct idle_cpu idle_cpu_chv = {
-+	.state_table = chv_cstates,
-+};
-+
- #define ICPU(model, cpu) \
- 	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
- 
-@@ -725,6 +782,7 @@ static const struct x86_cpu_id intel_idle_ids[] = {
- 	ICPU(0x3f, idle_cpu_hsw),
- 	ICPU(0x45, idle_cpu_hsw),
- 	ICPU(0x46, idle_cpu_hsw),
-+	ICPU(0x4c, idle_cpu_chv),
- 	ICPU(0x4d, idle_cpu_avn),
- 	ICPU(0x3d, idle_cpu_bdw),
- 	ICPU(0x4f, idle_cpu_bdw),
--- 
-2.1.0
-
+Thanks
+Dave
