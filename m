@@ -1,136 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaHVUiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 16:38:22 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:39511 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234AbaHVUiN (ORCPT
+	id S1751714AbaHVUmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 16:42:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36661 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaHVUmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 16:38:13 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH v2] carl9170: Remove redundant protection check
-Date: Fri, 22 Aug 2014 22:38:08 +0200
-Message-ID: <1679858.MgakDZE2Vr@debian64>
-User-Agent: KMail/4.13.3 (Linux/3.17.0-rc1-wl+; KDE/4.14.0; x86_64; ; )
-In-Reply-To: <20140822191431.GA5827@ada>
-References: <20140822191431.GA5827@ada>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 22 Aug 2014 16:42:06 -0400
+Date: Fri, 22 Aug 2014 13:42:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: y@samsung.com
+Cc: a.zummo@towertech.it, kgene.kim@samsung.com, kyungmin.park@samsung.com,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCHv2 1/5] rtc: s3c: Define s3c_rtc structure to remove
+ global variables.
+Message-Id: <20140822134204.1fa5be7aeb76a50b45ccc5f5@linux-foundation.org>
+In-Reply-To: <1407808871-6046-2-git-send-email-y@samsung.com>
+References: <y@samsung.com>
+	<1407808871-6046-1-git-send-email-y@samsung.com>
+	<1407808871-6046-2-git-send-email-y@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 22, 2014 10:14:31 PM Andreea-Cristina Bernat wrote:
-> The carl9170_op_ampdu_action() function is used only by the mac80211
-> framework. Since the mac80211 already takes care of checks and 
-> properly serializing calls to the driver's function there is no
-> need for the driver to do the same thing.
-> 
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-> ---
-> Changes in v2:
->  - Change subject line from
->    "carl9170: Replace rcu_dereference() with rcu_access_pointer()"
->    to
->    "carl9170: Remove redundant protection check"
->  - Update the commit message according to the modifications
->  - Delete the lines of interest at the suggestion and explanations of
->    Christian Lamparter <chunkeey@googlemail.com>
-> 
->  drivers/net/wireless/ath/carl9170/main.c | 6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
-> index 12018ff..6758b9a 100644
-> --- a/drivers/net/wireless/ath/carl9170/main.c
-> +++ b/drivers/net/wireless/ath/carl9170/main.c
-> @@ -1430,12 +1430,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
->  		if (!sta_info->ht_sta)
->  			return -EOPNOTSUPP;
->  
-> -		rcu_read_lock();
-> -		if (rcu_access_pointer(sta_info->agg[tid])) {
-> -			rcu_read_unlock();
-> -			return -EBUSY;
-> -		}
-> -
->  		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
->  				   GFP_ATOMIC);
->  		if (!tid_info) {
-> 
+On Tue, 12 Aug 2014 11:01:07 +0900 y@samsung.com wrote:
 
-sparse [0] hit a bug when testing the patch:
+> This patch define s3c_rtc structure including necessary variables for S3C RTC
+> device instead of global variables. This patch improves the readability by
+> removing global variables.
 
-drivers/net/wireless/ath/carl9170/main.c:1440:17: 
-  warning: context imbalance in 'carl9170_op_ampdu_action' - unexpected unlock
+Below is the v1->v2 delta.
 
-This warning is caused by the remaining, stray rcu_read protection
-in the code below (Sorry! Guess RCU needed a bit more explanation
-in the previous post. If you are looking for *pointers*, there are
-excellent resources available in Documentation/RCU/ [1]).
+Why were all those tests of info->base added?  Can it really be zero? 
+I don't see how.
 
-I've attached a full patch (see below) with all changes so far and
-tested if the device/driver still behaves ;-). This patch applies 
-cleanly on top of wireless-testing.
-
-@John,
-can you please take it?
-
----
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-
-The carl9170_op_ampdu_action() function is used only by the mac80211
-framework. Since the mac80211 already takes care of checks and 
-properly serializing calls to the driver's function there is no
-need for the driver to do the same thing.
+--- a/drivers/rtc/rtc-s3c.c~rtc-s3c-define-s3c_rtc-structure-to-remove-global-variables-v2
++++ a/drivers/rtc/rtc-s3c.c
+@@ -121,6 +121,9 @@ static int s3c_rtc_setaie(struct device
+ 	struct s3c_rtc *info = dev_get_drvdata(dev);
+ 	unsigned int tmp;
  
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-[chunkeey@googlemail.com: remove two stray rcu_read_unlock()]
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
----
-diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
-index f8ded84..ef5b6dc 100644
---- a/drivers/net/wireless/ath/carl9170/main.c
-+++ b/drivers/net/wireless/ath/carl9170/main.c
-@@ -1430,18 +1430,10 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
- 		if (!sta_info->ht_sta)
- 			return -EOPNOTSUPP;
++	if (!info->base)
++		return -EINVAL;
++
+ 	dev_dbg(info->dev, "%s: aie=%d\n", __func__, enabled);
  
--		rcu_read_lock();
--		if (rcu_dereference(sta_info->agg[tid])) {
--			rcu_read_unlock();
--			return -EBUSY;
--		}
--
- 		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
- 				   GFP_ATOMIC);
--		if (!tid_info) {
--			rcu_read_unlock();
-+		if (!tid_info)
- 			return -ENOMEM;
--		}
+ 	clk_enable(info->rtc_clk);
+@@ -180,6 +183,9 @@ static int s3c_rtc_gettime(struct device
+ 	struct s3c_rtc *info = dev_get_drvdata(dev);
+ 	unsigned int have_retried = 0;
  
- 		tid_info->hsn = tid_info->bsn = tid_info->snx = (*ssn);
- 		tid_info->state = CARL9170_TID_STATE_PROGRESS;
-@@ -1460,7 +1452,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
- 		list_add_tail_rcu(&tid_info->list, &ar->tx_ampdu_list);
- 		rcu_assign_pointer(sta_info->agg[tid], tid_info);
- 		spin_unlock_bh(&ar->tx_ampdu_list_lock);
--		rcu_read_unlock();
++	if (!info->base)
++		return -EINVAL;
++
+ 	clk_enable(info->rtc_clk);
+  retry_get_time:
+ 	rtc_tm->tm_min  = readb(info->base + S3C2410_RTCMIN);
+@@ -224,6 +230,9 @@ static int s3c_rtc_settime(struct device
+ 	struct s3c_rtc *info = dev_get_drvdata(dev);
+ 	int year = tm->tm_year - 100;
  
- 		ieee80211_start_tx_ba_cb_irqsafe(vif, sta->addr, tid);
- 		break;
----
-
-Regards
-Christian
-
-[0] <http://kernelnewbies.org/Sparse>
-[1] <https://www.kernel.org/doc/Documentation/RCU/whatisRCU.txt>
-
++	if (!info->base)
++		return -EINVAL;
++
+ 	dev_dbg(dev, "set time %04d.%02d.%02d %02d:%02d:%02d\n",
+ 		 1900 + tm->tm_year, tm->tm_mon, tm->tm_mday,
+ 		 tm->tm_hour, tm->tm_min, tm->tm_sec);
+@@ -255,6 +264,9 @@ static int s3c_rtc_getalarm(struct devic
+ 	struct rtc_time *alm_tm = &alrm->time;
+ 	unsigned int alm_en;
+ 
++	if (!info->base)
++		return -EINVAL;
++
+ 	clk_enable(info->rtc_clk);
+ 	alm_tm->tm_sec  = readb(info->base + S3C2410_ALMSEC);
+ 	alm_tm->tm_min  = readb(info->base + S3C2410_ALMMIN);
+@@ -317,6 +329,9 @@ static int s3c_rtc_setalarm(struct devic
+ 	struct rtc_time *tm = &alrm->time;
+ 	unsigned int alrm_en;
+ 
++	if (!info->base)
++		return -EINVAL;
++
+ 	clk_enable(info->rtc_clk);
+ 	dev_dbg(dev, "s3c_rtc_setalarm: %d, %04d.%02d.%02d %02d:%02d:%02d\n",
+ 		 alrm->enabled,
+@@ -357,6 +372,9 @@ static int s3c_rtc_proc(struct device *d
+ 	struct s3c_rtc *info = dev_get_drvdata(dev);
+ 	unsigned int ticnt;
+ 
++	if (!info->base)
++		return -EINVAL;
++
+ 	clk_enable(info->rtc_clk);
+ 	if (info->cpu_type == TYPE_S3C64XX) {
+ 		ticnt = readw(info->base + S3C2410_RTCCON);
+@@ -548,7 +566,7 @@ static int s3c_rtc_probe(struct platform
+ 		rtc_tm.tm_min	= 0;
+ 		rtc_tm.tm_sec	= 0;
+ 
+-		s3c_rtc_settime(NULL, &rtc_tm);
++		s3c_rtc_settime(&pdev->dev, &rtc_tm);
+ 
+ 		dev_warn(&pdev->dev, "warning: invalid RTC value so initializing it\n");
+ 	}
+_
 
