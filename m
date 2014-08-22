@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751016AbaHVTGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:06:39 -0400
-Received: from 132.79-246-81.adsl-static.isp.belgacom.be ([81.246.79.132]:44324
-	"EHLO viper.mind.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879AbaHVTGi (ORCPT
+	id S1751261AbaHVTJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:09:27 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:35391 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaHVTJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:06:38 -0400
-From: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        David Brown <davidb@codeaurora.org>,
-        "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>
-Subject: [PATCH v2] tps65910: Work around silicon erratum SWCZ010
-Date: Fri, 22 Aug 2014 17:30:56 +0200
-Message-Id: <1408721456-8101-1-git-send-email-arnout@mind.be>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408709666-5927-1-git-send-email-arnout@mind.be>
-References: <1408709666-5927-1-git-send-email-arnout@mind.be>
+	Fri, 22 Aug 2014 15:09:25 -0400
+Date: Fri, 22 Aug 2014 20:09:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: Re: linux-next: build failure after merge of the mfd tree
+Message-ID: <20140822190920.GX4266@lee--X1>
+References: <20140823025616.690f0c83@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140823025616.690f0c83@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From http://www.ti.com/lit/pdf/SWCZ010 :
+On Sat, 23 Aug 2014, Stephen Rothwell wrote:
 
-Glitch on SDA-SCL not managed correctly by the I2C IP
+> Hi Lee,
+> 
+> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> ERROR: "wm8994_base_regmap_config" [drivers/mfd/wm8994-core.ko] undefined!
+> ERROR: "wm8994_irq_init" [drivers/mfd/wm8994-core.ko] undefined!
+> ERROR: "wm1811_regmap_config" [drivers/mfd/wm8994-core.ko] undefined!
+> ERROR: "wm8958_regmap_config" [drivers/mfd/wm8994-core.ko] undefined!
+> ERROR: "wm8994_regmap_config" [drivers/mfd/wm8994-core.ko] undefined!
+> 
+> Presumably caused by commit a3ee6a4e2729 ("mfd: wm8994: Allow modular
+> build").
+> 
+> I have used the mfd tree from next-20140822 for today.
 
-Impact:
-The standard specifies that the I2C transfer should restart on a start
-event in all cases. The current design does not support two consecutive
-Start conditions. This can cause the first real access after such a
-glitch to be corrupted.
+I fixed this at 10 o'clock this morning?
 
-Description:
-An unexpected glitch on SDA and SCL can generate a wrong start event.
-In the current design, the SCL line must toggle two times to detect a
-new start event and completely restart the I2C access; hence the real
-start event is not detected in the case of a single SCL toggle.
+When did you pull?
 
-Workaround:
-Repeat I2C access.
-
-A simpler workaround is to make a dummy transfer just before the first
-access to the tps65910 chip. This can be done unconditionally.
-
-Signed-off-by: Arnout Vandecappelle (Essensium/Mind) <arnout@mind.be>
----
-This patch is based on v3.17-rc1.
-Build-tested with omap2plus_defconfig.
-Runtime tested based on v3.4.97 with a custom config.
-
-v2: use dummy transfer instead of retrying (Laxman Dewangan)
----
- drivers/mfd/tps65910.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index f243e75..7612d89 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -486,6 +486,11 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	tps65910->i2c_client = i2c;
- 	tps65910->id = chip_id;
- 
-+	/* Work around silicon erratum SWCZ010: the tps65910 may miss the
-+	 * first I2C transfer. So issue a dummy transfer before the first
-+	 * real transfer.
-+	 */
-+	i2c_master_send(i2c, "", 1);
- 	tps65910->regmap = devm_regmap_init_i2c(i2c, &tps65910_regmap_config);
- 	if (IS_ERR(tps65910->regmap)) {
- 		ret = PTR_ERR(tps65910->regmap);
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
