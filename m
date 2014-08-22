@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220AbaHVSkM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 14:40:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55232 "EHLO
+	id S1751025AbaHVSkK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:40:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55233 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaHVSkI (ORCPT
+	with ESMTP id S1750780AbaHVSkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Aug 2014 14:40:08 -0400
-Message-Id: <dc3c63e69815e00dce5454bd50e2991e9ea33f64.1408731991.git.geoff@infradead.org>
+Message-Id: <5a3bbdeb26cd8891f2b9de1ce05dbacfc282f7d1.1408731991.git.geoff@infradead.org>
 In-Reply-To: <cover.1408731991.git.geoff@infradead.org>
 References: <cover.1408731991.git.geoff@infradead.org>
 From: Geoff Levand <geoff@infradead.org>
-Patch-Date: Wed, 20 Aug 2014 14:44:42 -0700
-Subject: [PATCH 5/5] powerpc/kexec: Use global IND_FLAGS macro
+Patch-Date: Wed, 20 Aug 2014 14:44:41 -0700
+Subject: [PATCH 2/5] kexec: Simplify conditional
 To: Eric Biederman <ebiederm@xmission.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -22,27 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux/kexec.h now defines an IND_FLAGS macro.  Remove the local powerpc
-definition and use the generic one.
+Simplify the code around one of the conditionals in the kexec_load
+syscall routine.
+
+The original code was confusing with a redundant check on KEXEC_ON_CRASH
+and comments outside of the conditional block.  This change switches the
+order of the conditional check, and cleans up the comments for the
+conditional.  There is no functional change to the code.
 
 Signed-off-by: Geoff Levand <geoff@infradead.org>
 ---
- arch/powerpc/kernel/machine_kexec_64.c | 2 --
- 1 file changed, 2 deletions(-)
+ kernel/kexec.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-index 879b3aa..75652a32 100644
---- a/arch/powerpc/kernel/machine_kexec_64.c
-+++ b/arch/powerpc/kernel/machine_kexec_64.c
-@@ -96,8 +96,6 @@ int default_machine_kexec_prepare(struct kimage *image)
- 	return 0;
- }
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 0b49a0a..d04b56e 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1282,19 +1282,22 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
+ 	if (nr_segments > 0) {
+ 		unsigned long i;
  
--#define IND_FLAGS (IND_DESTINATION | IND_INDIRECTION | IND_DONE | IND_SOURCE)
--
- static void copy_segments(unsigned long ind)
- {
- 	unsigned long entry;
+-		/* Loading another kernel to reboot into */
+-		if ((flags & KEXEC_ON_CRASH) == 0)
+-			result = kimage_alloc_init(&image, entry, nr_segments,
+-						   segments, flags);
+-		/* Loading another kernel to switch to if this one crashes */
+-		else if (flags & KEXEC_ON_CRASH) {
+-			/* Free any current crash dump kernel before
++		if (flags & KEXEC_ON_CRASH) {
++			/*
++			 * Loading another kernel to switch to if this one
++			 * crashes.  Free any current crash dump kernel before
+ 			 * we corrupt it.
+ 			 */
++
+ 			kimage_free(xchg(&kexec_crash_image, NULL));
+ 			result = kimage_alloc_init(&image, entry, nr_segments,
+ 						   segments, flags);
+ 			crash_map_reserved_pages();
++		} else {
++			/* Loading another kernel to reboot into. */
++
++			result = kimage_alloc_init(&image, entry, nr_segments,
++						   segments, flags);
+ 		}
+ 		if (result)
+ 			goto out;
 -- 
 1.9.1
+
 
