@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaHVTpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:45:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57863 "EHLO arroyo.ext.ti.com"
+	id S1751506AbaHVTrS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:47:18 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:51488 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941AbaHVTpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:45:39 -0400
-Message-ID: <53F79DC5.8030003@ti.com>
-Date: Fri, 22 Aug 2014 15:45:09 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751316AbaHVTrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 15:47:15 -0400
+X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Aug 2014 15:47:14 EDT
+Message-ID: <53F79C25.6010405@osg.samsung.com>
+Date: Fri, 22 Aug 2014 13:38:13 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <sandeep_n@ti.com>
-Subject: Re: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
-References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com> <20140821.163612.282672926741753926.davem@davemloft.net>
-In-Reply-To: <20140821.163612.282672926741753926.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
+References: <cover.1408535000.git.jslaby@suse.cz>
+In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 08/20/2014 05:43 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.27 release.
+> There are 104 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.27-rc1.xz
+> and the diffstat can be found below.
+>
+> thanks,
+> js
+>
 
-On Thursday 21 August 2014 07:36 PM, David Miller wrote:
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Date: Fri, 15 Aug 2014 11:12:39 -0400
-> 
->> Update version after incorporating David Miller's comment from earlier
->> posting [1]. I would like to get these merged for upcoming 3.18 merge
->> window if there are no concerns on this version.
->>
->> The network coprocessor (NetCP) is a hardware accelerator that processes
->> Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
->> switch sub-module to send and receive packets. NetCP also includes a packet
->> accelerator (PA) module to perform packet classification operations such as
->> header matching, and packet modification operations such as checksum
->> generation. NetCP can also optionally include a Security Accelerator(SA)
->> capable of performing IPSec operations on ingress/egress packets.
->>     
->> Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
->> includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
->> 1Gb/s rates per Ethernet port.
->>     
->> NetCP driver has a plug-in module architecture where each of the NetCP
->> sub-modules exist as a loadable kernel module which plug in to the netcp
->> core. These sub-modules are represented as "netcp-devices" in the dts
->> bindings. It is mandatory to have the ethernet switch sub-module for
->> the ethernet interface to be operational. Any other sub-module like the
->> PA is optional.
->>
->> Both GBE and XGBE network processors supported using common driver. It
->> is also designed to handle future variants of NetCP.
-> 
-> I don't want to see an offload driver that doesn't plug into the existing
-> generic frameworks for configuration et al.
-> 
-> If no existing facility exists to support what you need, you must work
-> with the upstream maintainers to design and create one.
-> 
-> It is absolutely no reasonable for every "switch on a chip" driver to
-> export it's own configuration knob, we need a standard interface all
-> such drivers will plug into and provide.
-> 
-The NetCP plugin module infrastructure use all the standard kernel
-infrastructure and its very tiny. To best represent the Network processor
-and its sub module hardware which have inter dependency and ordering
-needs, we needed such infrastructure. This lets us handle all the
-hardware needs without any code duplication per module.
+Compiled and booted on my test system. No dmesg regressions.
+I pulled the patch this morning, hoping add-basic-validations
+patch has been removed.
 
-To elaborate more, there are 4 variants of network switch modules and
-then few accelerator modules like Packet accelerator, QOS and Security
-accelerator. There can be multiple instances of switches on same SOC.
-Example 1 Gbe and 10 Gbe switches. Then additional accelerator modules
-are inter connected with switch, streaming fabric and packet DMA.
-Packet routing changes based on the various offload modules presence and hence
-needs hooks for tx/rx to be called in particular order with special
-handling. This scheme is very hardware specific and doesn't have ways
-to isolate the modules from each other.
+-- Shuah
 
-On the other hand, we definitely wanted to have minimal code
-instead of duplicating ndo operations and core packet processing logic
-in multiple drivers or layers. The module approach helps
-to isolate the code based on the customer choice who can choose
-say not to build 10 Gbe hardware or say don't need QOS or Security
-accelerators. That way we keep the packet processing hot path as
-what we need without any overhead.
-
-As you can see, the tiny module handling was added more to represent
-the hardware, keep the modularity and avoid code duplication. The
-infrastructure is very minimal and NETCP specific. With this small
-infrastructure we are able to re-use code for NetCP1.0, NetCP1.5,
-10 GBe and upcoming NetCP variants from just *one* driver.
-
-Hope this gives you a better idea and rationale behind the design.
-
-Regards,
-Santosh
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
