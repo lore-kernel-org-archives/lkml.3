@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaHVVn7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:43:59 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:55450 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716AbaHVVn5 (ORCPT
+	id S1752204AbaHVVof (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:44:35 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55878 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaHVVoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:43:57 -0400
+	Fri, 22 Aug 2014 17:44:34 -0400
+Date: Fri, 22 Aug 2014 16:44:17 -0500
+From: Mark Brown <broonie@kernel.org>
+To: atull@opensource.altera.com
+Cc: linux@roeck-us.net, jdelvare@suse.de, lm-sensors@lm-sensors.org,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Message-ID: <20140822214417.GC24407@sirena.org.uk>
+References: <1408741894-24879-1-git-send-email-atull@opensource.altera.com>
+ <1408741894-24879-2-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
-In-Reply-To: <20140822185110.GA2333@gmail.com>
-References: <cover.1403632276.git.bcrl@kvack.org>
-	<f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
-	<20140819163733.GA10132@gmail.com>
-	<20140819165404.GD13858@kvack.org>
-	<20140819171426.GA11811@gmail.com>
-	<20140820004651.GJ13858@kvack.org>
-	<20140822160111.GD20391@kvack.org>
-	<20140822161502.GA30392@gmail.com>
-	<20140822162630.GF20391@kvack.org>
-	<20140822185110.GA2333@gmail.com>
-Date: Fri, 22 Aug 2014 14:43:56 -0700
-X-Google-Sender-Auth: hGDJihQ77YHHdq0IghZvwAL2SIY
-Message-ID: <CA+55aFzZbRkEh_MbB-XmurVP-4seMP3z9tbq+YQOhkjtDNTzfg@mail.gmail.com>
-Subject: Re: Revert "aio: fix aio request leak when events are reaped by user space"
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dan Aloni <dan@kernelim.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>,
-        "security@kernel.org" <security@kernel.org>, linux-aio@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/OCBIV6O7sl/38gM"
+Content-Disposition: inline
+In-Reply-To: <1408741894-24879-2-git-send-email-atull@opensource.altera.com>
+X-Cookie: If you can read this, you're too close.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 208.59.64.2
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/2] pmbus: add regulator support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 11:51 AM, Dan Aloni <dan@kernelim.com> wrote:
->
-> Ben, seems that the test program needs some twidling to make the bug
-> appear still by setting MAX_IOS to 256 (and it still passes on a
-> kernel with the original patch reverted). Under this condition the
-> ring buffer size remains 128 (here, 32*4 CPUs), and it is overrun on
-> the second attempt.
 
-Ugh.
+--/OCBIV6O7sl/38gM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ben, at this point my gut feel is that we should just revert the
-original "fix", and you should take a much deeper look at this all.
-The original "fix" was more broken then the leak it purported to fix,
-and now the patch to fix your fix has gone through two iterations and
-*still* Dan is finding bugs in it.  I'm getting the feeling that this
-code needs more thinking than you are actually putting into it.
+On Fri, Aug 22, 2014 at 04:11:33PM -0500, atull@opensource.altera.com wrote:
 
-                Linus
+> +	if (pdata && pdata->reg_init_data) {
+> +		config.init_data = pdata->reg_init_data;
+> +	} else {
+> +		config.init_data = of_get_regulator_init_data(dev, np);
+> +		if (!config.init_data)
+> +			return -ENOMEM;
+> +	}
+
+It should be fine to start with no init data - just let the regulator
+core worry about it.  This will allow users to read back the state even
+if they can't change anything which is useful for system bringup or
+general debugging.
+
+--/OCBIV6O7sl/38gM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJT97muAAoJELSic+t+oim9RE0P/3ctAmxcQw+eYMxcs0XVvZQ6
+ZwqnDoovINlsRXoi9kAGgp/gdeng1zsPgqVhdSgOdTL1p2gvoMshAnGSRGDKLopY
+abZb87Nhf65UEvNob+opqeeQvRAs7pvjLNo+3BFUQ0CfhIji1LP2EwLqJt5UwJG5
+sGK/MA2zchzWy9JZzRGA1meOS74wV7EzhZM047Ic1fu2+IkxXW8NpamiID4R5zey
+tdxdf3jnQi3Q2M2RD7ZamEwDHSlCxSiNZCtPrj8o3KdmGoM+U0/AfWHXaDuaT961
+cJNCxde7r1DSqoGMk7+4874lDjHzmdackgRyKEXFWPyDY/eAFvELbq3j7HCNKFKA
+a4bRnknMubMZq3J8pY8pIpgU8BfzV+smwRN9FIbdECnNCVX7OuWA5fQBFUFXXAZn
+UTslMrS8HihGspgctLkiZBjypThhaSJPvIvOpLpnvYACuCkekK2VY2bPCVW05sic
+Q4FP431tG5V2tLfcgxUaJAktBrE56KvTQTU8TLtFdHOe1WZ3mZJqEwsBO33p8Q/v
+fcbsWALG80OU2ljEOBdhxFfQ2Sw7aNvJyEeYToEQcYW3s8P5msPE2KkgIOcC9J9B
+h14KVTjVJmNjPRn1EDtojH/3gZOgsoIaHTwL+qNocmpsV3iYLSQcEc1DqXCyDwZ7
+/IPQv7z+iSoHn/fcGSmj
+=chNo
+-----END PGP SIGNATURE-----
+
+--/OCBIV6O7sl/38gM--
