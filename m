@@ -1,74 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaHVVHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:07:50 -0400
-Received: from ozlabs.org ([103.22.144.67]:46318 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751234AbaHVVHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:07:49 -0400
-Date: Sat, 23 Aug 2014 07:07:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: linux-next: build failure after merge of the pwm tree
-Message-ID: <20140823070737.371f09fb@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_//nJ0M/NQMUUAeP11+vmtLNn"; protocol="application/pgp-signature"
+	id S1752056AbaHVVI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:08:56 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:60418 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaHVVIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 17:08:54 -0400
+Message-ID: <1408741732.5604.23.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH v2] carl9170: Remove redundant protection check
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: Andreea-Cristina Bernat <bernat.ada@gmail.com>, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Date: Fri, 22 Aug 2014 14:08:52 -0700
+In-Reply-To: <1679858.MgakDZE2Vr@debian64>
+References: <20140822191431.GA5827@ada> <1679858.MgakDZE2Vr@debian64>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_//nJ0M/NQMUUAeP11+vmtLNn
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-08-22 at 22:38 +0200, Christian Lamparter wrote:
+> On Friday, August 22, 2014 10:14:31 PM Andreea-Cristina Bernat wrote:
+> > The carl9170_op_ampdu_action() function is used only by the mac80211
+> > framework. Since the mac80211 already takes care of checks and 
+> > properly serializing calls to the driver's function there is no
+> > need for the driver to do the same thing.
+> > 
+> > Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> > ---
+> > Changes in v2:
+> >  - Change subject line from
+> >    "carl9170: Replace rcu_dereference() with rcu_access_pointer()"
+> >    to
+> >    "carl9170: Remove redundant protection check"
+> >  - Update the commit message according to the modifications
+> >  - Delete the lines of interest at the suggestion and explanations of
+> >    Christian Lamparter <chunkeey@googlemail.com>
+> > 
+> >  drivers/net/wireless/ath/carl9170/main.c | 6 ------
+> >  1 file changed, 6 deletions(-)
+> > 
+> > diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
+> > index 12018ff..6758b9a 100644
+> > --- a/drivers/net/wireless/ath/carl9170/main.c
+> > +++ b/drivers/net/wireless/ath/carl9170/main.c
+> > @@ -1430,12 +1430,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+> >  		if (!sta_info->ht_sta)
+> >  			return -EOPNOTSUPP;
+> >  
+> > -		rcu_read_lock();
+> > -		if (rcu_access_pointer(sta_info->agg[tid])) {
+> > -			rcu_read_unlock();
+> > -			return -EBUSY;
+> > -		}
+> > -
+> >  		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
+> >  				   GFP_ATOMIC);
+> >  		if (!tid_info) {
+> > 
+> 
+> sparse [0] hit a bug when testing the patch:
+> 
+> drivers/net/wireless/ath/carl9170/main.c:1440:17: 
+>   warning: context imbalance in 'carl9170_op_ampdu_action' - unexpected unlock
+> 
+> This warning is caused by the remaining, stray rcu_read protection
+> in the code below (Sorry! Guess RCU needed a bit more explanation
+> in the previous post. If you are looking for *pointers*, there are
+> excellent resources available in Documentation/RCU/ [1]).
+> 
+> I've attached a full patch (see below) with all changes so far and
+> tested if the device/driver still behaves ;-). This patch applies 
+> cleanly on top of wireless-testing.
+> 
+> @John,
+> can you please take it?
+> 
+> ---
+> From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> 
+> The carl9170_op_ampdu_action() function is used only by the mac80211
+> framework. Since the mac80211 already takes care of checks and 
+> properly serializing calls to the driver's function there is no
+> need for the driver to do the same thing.
+>  
+> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> [chunkeey@googlemail.com: remove two stray rcu_read_unlock()]
+> Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+> ---
+> diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
+> index f8ded84..ef5b6dc 100644
+> --- a/drivers/net/wireless/ath/carl9170/main.c
+> +++ b/drivers/net/wireless/ath/carl9170/main.c
+> @@ -1430,18 +1430,10 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+>  		if (!sta_info->ht_sta)
+>  			return -EOPNOTSUPP;
+>  
+> -		rcu_read_lock();
+> -		if (rcu_dereference(sta_info->agg[tid])) {
+> -			rcu_read_unlock();
+> -			return -EBUSY;
+> -		}
+> -
+>  		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
+>  				   GFP_ATOMIC);
+> -		if (!tid_info) {
+> -			rcu_read_unlock();
+> +		if (!tid_info)
+>  			return -ENOMEM;
+> -		}
+>  
+>  		tid_info->hsn = tid_info->bsn = tid_info->snx = (*ssn);
+>  		tid_info->state = CARL9170_TID_STATE_PROGRESS;
+> @@ -1460,7 +1452,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+>  		list_add_tail_rcu(&tid_info->list, &ar->tx_ampdu_list);
+>  		rcu_assign_pointer(sta_info->agg[tid], tid_info);
+>  		spin_unlock_bh(&ar->tx_ampdu_list_lock);
+> -		rcu_read_unlock();
+>  
+>  		ieee80211_start_tx_ba_cb_irqsafe(vif, sta->addr, tid);
+>  		break;
+> ---
+> 
+> Regards
+> Christian
+> 
+> [0] <http://kernelnewbies.org/Sparse>
+> [1] <https://www.kernel.org/doc/Documentation/RCU/whatisRCU.txt>
+> 
 
-Hi Thierry,
 
-After merging the pwm tree, today's linux-next build (powerpc allyesconfig)
-failed like this:
+Sorry but this patch is not complete.
 
-drivers/pwm/pwm-lpss.c: In function 'pwm_lpss_config':
-drivers/pwm/pwm-lpss.c:81:2: error: implicit declaration of function 'readl=
-' [-Werror=3Dimplicit-function-declaration]
-  ctrl =3D readl(lpwm->regs + PWM);
-  ^
-drivers/pwm/pwm-lpss.c:87:2: error: implicit declaration of function 'write=
-l' [-Werror=3Dimplicit-function-declaration]
-  writel(ctrl, lpwm->regs + PWM);
-  ^
+You need to somehow return -EBUSY if sta_info->agg[tid] is set.
 
-Caused by commit 28160b18787b ("pwm: lpss: Properly split driver to
-parts").
+The test has to be done inside the
+spin_lock_bh(&ar->tx_ampdu_list_lock) /
+spin_unlock_bh(&ar->tx_ampdu_list_lock); region.
 
-I have reverted that commit for today (and 06c7b5394e21 ("pwm: lpss:
-pci: Move to use pcim_enable_device()") which depends on it).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+You are correct the RCU bits were wrong in this context, but we still
+have to avoid leaks.
 
---Sig_//nJ0M/NQMUUAeP11+vmtLNn
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT97EfAAoJEMDTa8Ir7ZwVzxQP/2Sqz8OZeTj9FEoHFydq5dKx
-yiu2CTJQFL4xxuOHZyZq4rqzhRlGvTyqupPi2pDKGXHLMZxx2pyfvdmV9X2YpAz/
-eCZJOwqEzZj3FbEvxmh2/PP7eDi30gm7hpHpPTpxculsDPscTmJN0c3DTulQUSBn
-2sYCG0M3kA1uXV3exUC9PnEr4xfwZ89BWQF9Gpvtq7LYZZ2gPE4xSX1XiJ3L7beV
-Eb1pSYpu6e70Gzo00v2bs9XtUbMikenD8O7sA06N0eYlLVzmMWOn50y8u7tyzmwY
-wPvpFRCLCwmzz/Hfg5qZNWdg+gnqUoKep2Gi4RiVH+FM3N9O2rIimKNzSOkqNZnb
-B6Zxek9HMsr5aM/DBH9kUbDIEb+dPtzo0pCun9XMbS4PCJ2QGRM04yApfJ3Y2Upt
-C7rD4XHI9SxXOyFNDWsDGBZSY7qXnrdZNht/uCXLmIV7xiaomOsL7OcqmOk8LJVu
-R3KBRQ1zhwFFF5O7A4mTSQ20JWapVXRH4vQZCdeekPAkjvdfrkFIW2zMKuGwiTm1
-ic3ZF79bTt3OOsN343Up/T4iKUI1wmL/AsEoLI/nz/BtE5xg44K/PDwhW7BG0kNo
-laSIV5Mc0hsZ+jk0lTPlybrGVNSSR5FDf+c13lk/bQAvtHS+6wc65BU1TEycCRlK
-pC6DfkGqueRpYuaB25a1
-=MTop
------END PGP SIGNATURE-----
-
---Sig_//nJ0M/NQMUUAeP11+vmtLNn--
