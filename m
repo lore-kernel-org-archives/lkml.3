@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbaHVNyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:54:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33538 "EHLO bear.ext.ti.com"
+	id S1756512AbaHVNyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:54:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58274 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756338AbaHVNyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:54:09 -0400
+	id S1756315AbaHVNyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 09:54:08 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
         Paul Walmsley <paul@pwsan.com>
@@ -15,9 +15,9 @@ CC: Kevin Hilman <khilman@deeprootsystems.com>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Nishanth Menon <nm@ti.com>
-Subject: [PATCH 3/6] ARM: OMAP4+: PRM: register interrupt information from DT
-Date: Fri, 22 Aug 2014 08:51:50 -0500
-Message-ID: <1408715513-25851-4-git-send-email-nm@ti.com>
+Subject: [PATCH 2/6] ARM: OMAP4: PRM: use the generic prm_inst to allow logic to be abstracted
+Date: Fri, 22 Aug 2014 08:51:49 -0500
+Message-ID: <1408715513-25851-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408715513-25851-1-git-send-email-nm@ti.com>
 References: <1408715513-25851-1-git-send-email-nm@ti.com>
@@ -27,78 +27,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow the PRM interrupt information to be picked up from device tree.
-the only exception is for OMAP4 which uses values pre-populated and allows
-compatibility with older dtb.
+use the generic function to pick up the prm_instance for a generic logic
+which can be reused from OMAP4+
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/mach-omap2/prm44xx.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ arch/arm/mach-omap2/prm44xx.c |   47 +++++++++++++++++++++++++++++++++--------
+ 1 file changed, 38 insertions(+), 9 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/prm44xx.c b/arch/arm/mach-omap2/prm44xx.c
-index d4d745e..5a70c91 100644
+index a7f6ea2..d4d745e 100644
 --- a/arch/arm/mach-omap2/prm44xx.c
 +++ b/arch/arm/mach-omap2/prm44xx.c
-@@ -17,6 +17,7 @@
- #include <linux/errno.h>
- #include <linux/err.h>
- #include <linux/io.h>
-+#include <linux/of_irq.h>
+@@ -154,21 +154,36 @@ void omap4_prm_vp_clear_txdone(u8 vp_id)
  
- 
- #include "soc.h"
-@@ -699,11 +700,50 @@ int __init omap44xx_prm_init(void)
- 	return prm_register(&omap44xx_prm_ll_data);
- }
- 
-+static struct of_device_id omap_prm_dt_match_table[] = {
-+	{ .compatible = "ti,omap4-prm" },
-+	{ .compatible = "ti,omap5-prm" },
-+	{ .compatible = "ti,dra7-prm" },
-+	{ }
-+};
-+
- static int omap44xx_prm_late_init(void)
+ u32 omap4_prm_vcvp_read(u8 offset)
  {
-+	struct device_node *np;
-+	int irq_num;
++	s32 inst = omap4_prmst_get_prm_dev_inst();
 +
- 	if (!(prm_features & PRM_HAS_IO_WAKEUP))
- 		return 0;
- 
-+	/* OMAP4+ is DT only now */
-+	if (!of_have_populated_dt())
++	if (inst == PRM_INSTANCE_UNKNOWN)
 +		return 0;
 +
-+	np = of_find_matching_node(NULL, omap_prm_dt_match_table);
-+
-+	if (!np) {
-+		/* Default loaded up with OMAP4 values */
-+		if (!cpu_is_omap44xx())
-+			return 0;
-+	} else {
-+		irq_num = of_irq_get(np, 0);
-+		/*
-+		 * Already have OMAP4 IRQ num. For all other platforms, we need
-+		 * IRQ numbers from DT
-+		 */
-+		if (irq_num < 0 && !cpu_is_omap44xx()) {
-+			if (irq_num == -EPROBE_DEFER)
-+				return irq_num;
-+
-+			/* Have nothing to do */
-+			return 0;
-+		}
-+
-+		/* Once OMAP4 DT is filled as well */
-+		if (irq_num >= 0)
-+			omap4_prcm_irq_setup.irq = irq_num;
-+	}
-+
- 	omap44xx_prm_enable_io_wakeup();
+ 	return omap4_prminst_read_inst_reg(OMAP4430_PRM_PARTITION,
+-					   OMAP4430_PRM_DEVICE_INST, offset);
++					   inst, offset);
+ }
  
- 	return omap_prcm_register_chain_handler(&omap4_prcm_irq_setup);
+ void omap4_prm_vcvp_write(u32 val, u8 offset)
+ {
++	s32 inst = omap4_prmst_get_prm_dev_inst();
++
++	if (inst == PRM_INSTANCE_UNKNOWN)
++		return;
++
+ 	omap4_prminst_write_inst_reg(val, OMAP4430_PRM_PARTITION,
+-				     OMAP4430_PRM_DEVICE_INST, offset);
++				     inst, offset);
+ }
+ 
+ u32 omap4_prm_vcvp_rmw(u32 mask, u32 bits, u8 offset)
+ {
++	s32 inst = omap4_prmst_get_prm_dev_inst();
++
++	if (inst == PRM_INSTANCE_UNKNOWN)
++		return 0;
++
+ 	return omap4_prminst_rmw_inst_reg_bits(mask, bits,
+ 					       OMAP4430_PRM_PARTITION,
+-					       OMAP4430_PRM_DEVICE_INST,
++					       inst,
+ 					       offset);
+ }
+ 
+@@ -275,14 +290,18 @@ void omap44xx_prm_restore_irqen(u32 *saved_mask)
+ void omap44xx_prm_reconfigure_io_chain(void)
+ {
+ 	int i = 0;
++	s32 inst = omap4_prmst_get_prm_dev_inst();
++
++	if (inst == PRM_INSTANCE_UNKNOWN)
++		return;
+ 
+ 	/* Trigger WUCLKIN enable */
+ 	omap4_prm_rmw_inst_reg_bits(OMAP4430_WUCLK_CTRL_MASK,
+ 				    OMAP4430_WUCLK_CTRL_MASK,
+-				    OMAP4430_PRM_DEVICE_INST,
++				    inst,
+ 				    OMAP4_PRM_IO_PMCTRL_OFFSET);
+ 	omap_test_timeout(
+-		(((omap4_prm_read_inst_reg(OMAP4430_PRM_DEVICE_INST,
++		(((omap4_prm_read_inst_reg(inst,
+ 					   OMAP4_PRM_IO_PMCTRL_OFFSET) &
+ 		   OMAP4430_WUCLK_STATUS_MASK) >>
+ 		  OMAP4430_WUCLK_STATUS_SHIFT) == 1),
+@@ -292,10 +311,10 @@ void omap44xx_prm_reconfigure_io_chain(void)
+ 
+ 	/* Trigger WUCLKIN disable */
+ 	omap4_prm_rmw_inst_reg_bits(OMAP4430_WUCLK_CTRL_MASK, 0x0,
+-				    OMAP4430_PRM_DEVICE_INST,
++				    inst,
+ 				    OMAP4_PRM_IO_PMCTRL_OFFSET);
+ 	omap_test_timeout(
+-		(((omap4_prm_read_inst_reg(OMAP4430_PRM_DEVICE_INST,
++		(((omap4_prm_read_inst_reg(inst,
+ 					   OMAP4_PRM_IO_PMCTRL_OFFSET) &
+ 		   OMAP4430_WUCLK_STATUS_MASK) >>
+ 		  OMAP4430_WUCLK_STATUS_SHIFT) == 0),
+@@ -316,9 +335,14 @@ void omap44xx_prm_reconfigure_io_chain(void)
+  */
+ static void __init omap44xx_prm_enable_io_wakeup(void)
+ {
++	s32 inst = omap4_prmst_get_prm_dev_inst();
++
++	if (inst == PRM_INSTANCE_UNKNOWN)
++		return;
++
+ 	omap4_prm_rmw_inst_reg_bits(OMAP4430_GLOBAL_WUEN_MASK,
+ 				    OMAP4430_GLOBAL_WUEN_MASK,
+-				    OMAP4430_PRM_DEVICE_INST,
++				    inst,
+ 				    OMAP4_PRM_IO_PMCTRL_OFFSET);
+ }
+ 
+@@ -333,8 +357,13 @@ static u32 omap44xx_prm_read_reset_sources(void)
+ 	struct prm_reset_src_map *p;
+ 	u32 r = 0;
+ 	u32 v;
++	s32 inst = omap4_prmst_get_prm_dev_inst();
++
++	if (inst == PRM_INSTANCE_UNKNOWN)
++		return 0;
++
+ 
+-	v = omap4_prm_read_inst_reg(OMAP4430_PRM_DEVICE_INST,
++	v = omap4_prm_read_inst_reg(inst,
+ 				    OMAP4_RM_RSTST);
+ 
+ 	p = omap44xx_prm_reset_src_map;
 -- 
 1.7.9.5
 
