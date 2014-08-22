@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563AbaHVOE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:04:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58713 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932447AbaHVODC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932210AbaHVOEz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:04:55 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33386 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932449AbaHVODC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Aug 2014 10:03:02 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -15,9 +16,9 @@ CC: Kevin Hilman <khilman@deeprootsystems.com>,
         <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Nishanth Menon <nm@ti.com>
-Subject: [PATCH 06/10] ARM: OMAP5 / DRA7: PM: Provide a dummy startup function for CPU hotplug
-Date: Fri, 22 Aug 2014 09:02:30 -0500
-Message-ID: <1408716154-26101-7-git-send-email-nm@ti.com>
+Subject: [PATCH 03/10] ARM: OMAP5 / DRA7: PM / wakeupgen: Enables ES2 PM mode by default
+Date: Fri, 22 Aug 2014 09:02:27 -0500
+Message-ID: <1408716154-26101-4-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408716154-26101-1-git-send-email-nm@ti.com>
 References: <1408716154-26101-1-git-send-email-nm@ti.com>
@@ -29,96 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Dont assume that all OMAP4+ code will be able to use OMAP4 hotplug
-logic. On OMAP5, DRA7, we do not need this in place yet, also,
-currently the CPU startup pointer is located in omap4_cpu_pm_info
-instead of cpu_pm_ops.
+Enables MPUSS ES2 power management mode using ES2_PM_MODE in
+AMBA_IF_MODE register.
 
-So, isolate the function to hotplug_restart pointer in cpu_pm_ops
-where it should have belonged, initalize them as per valid startup
-pointers for OMAP4430/60 as in current logic, however provide
-dummy_cpu_resume to be the startup location as well.
+0x0: OMAP5 ES1 behavior, CPU cores would enter and exit OFF mode together.
+     Broken! Fortunately, we do not support this anymore.
+0x1: OMAP5 ES2, DRA7 behavior, CPU cores are allowed to enter/exit OFF mode
+     independently.
+
+This is one time settings thanks to always ON domain.
 
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-[nm@ti.com: split this out of original code and isolate it]
+[nm@ti.com: minor conflict resolutions, consolidation for DRA7]
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/mach-omap2/omap-mpuss-lowpower.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ arch/arm/mach-omap2/omap-secure.h    |    1 +
+ arch/arm/mach-omap2/omap-wakeupgen.c |   17 +++++++++++++++++
+ arch/arm/mach-omap2/omap-wakeupgen.h |    1 +
+ 3 files changed, 19 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-index 53d8de5..207fce2 100644
---- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-+++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-@@ -69,7 +69,6 @@ struct omap4_cpu_pm_info {
- 	void __iomem *scu_sar_addr;
- 	void __iomem *wkup_sar_addr;
- 	void __iomem *l2x0_sar_addr;
--	void (*secondary_startup)(void);
- };
+diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
+index 3e97c6c..dec2b05 100644
+--- a/arch/arm/mach-omap2/omap-secure.h
++++ b/arch/arm/mach-omap2/omap-secure.h
+@@ -45,6 +45,7 @@
+ #define OMAP4_MON_L2X0_PREFETCH_INDEX	0x113
  
- /**
-@@ -77,6 +76,7 @@ struct omap4_cpu_pm_info {
-  * @finish_suspend:	CPU suspend finisher function pointer
-  * @resume:		CPU resume function pointer
-  * @scu_prepare:	CPU Snoop Control program function pointer
-+ * @hotplug_restart:	CPU restart function pointer
-  *
-  * Structure holds functions pointer for CPU low power operations like
-  * suspend, resume and scu programming.
-@@ -85,6 +85,7 @@ struct cpu_pm_ops {
- 	int (*finish_suspend)(unsigned long cpu_state);
- 	void (*resume)(void);
- 	void (*scu_prepare)(unsigned int cpu_id, unsigned int cpu_state);
-+	void (*hotplug_restart)(void);
- };
+ #define OMAP5_DRA7_MON_SET_CNTFRQ_INDEX	0x109
++#define OMAP5_MON_AMBA_IF_INDEX		0x108
  
- static DEFINE_PER_CPU(struct omap4_cpu_pm_info, omap4_pm_info);
-@@ -108,6 +109,7 @@ struct cpu_pm_ops omap_pm_ops = {
- 	.finish_suspend		= default_finish_suspend,
- 	.resume			= dummy_cpu_resume,
- 	.scu_prepare		= dummy_scu_prepare,
-+	.hotplug_restart	= dummy_cpu_resume,
- };
+ /* Secure PPA(Primary Protected Application) APIs */
+ #define OMAP4_PPA_L2_POR_INDEX		0x23
+diff --git a/arch/arm/mach-omap2/omap-wakeupgen.c b/arch/arm/mach-omap2/omap-wakeupgen.c
+index 37843a7..e844e16 100644
+--- a/arch/arm/mach-omap2/omap-wakeupgen.c
++++ b/arch/arm/mach-omap2/omap-wakeupgen.c
+@@ -406,6 +406,7 @@ int __init omap_wakeupgen_init(void)
+ {
+ 	int i;
+ 	unsigned int boot_cpu = smp_processor_id();
++	u32 val;
  
- /*
-@@ -312,7 +314,7 @@ int omap4_hotplug_cpu(unsigned int cpu, unsigned int power_state)
+ 	/* Not supported on OMAP4 ES1.0 silicon */
+ 	if (omap_rev() == OMAP4430_REV_ES1_0) {
+@@ -451,6 +452,22 @@ int __init omap_wakeupgen_init(void)
+ 	for (i = 0; i < max_irqs; i++)
+ 		irq_target_cpu[i] = boot_cpu;
  
- 	pwrdm_clear_all_prev_pwrst(pm_info->pwrdm);
- 	pwrdm_set_next_pwrst(pm_info->pwrdm, power_state);
--	set_cpu_wakeup_addr(cpu, virt_to_phys(pm_info->secondary_startup));
-+	set_cpu_wakeup_addr(cpu, virt_to_phys(omap_pm_ops.hotplug_restart));
- 	omap_pm_ops.scu_prepare(cpu, power_state);
- 
- 	/*
-@@ -385,10 +387,6 @@ int __init omap4_mpuss_init(void)
- 					CPU1_WAKEUP_NS_PA_ADDR_OFFSET;
- 		pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET1;
- 	}
--	if (cpu_is_omap446x())
--		pm_info->secondary_startup = omap4460_secondary_startup;
--	else
--		pm_info->secondary_startup = omap4_secondary_startup;
- 
- 	pm_info->pwrdm = pwrdm_lookup("cpu1_pwrdm");
- 	if (!pm_info->pwrdm) {
-@@ -422,12 +420,16 @@ int __init omap4_mpuss_init(void)
- 		omap_pm_ops.finish_suspend = omap4_finish_suspend;
- 		omap_pm_ops.resume = omap4_cpu_resume;
- 		omap_pm_ops.scu_prepare = scu_pwrst_prepare;
-+		omap_pm_ops.hotplug_restart = omap4_secondary_startup;
- 		cpu_context_offset = OMAP4_RM_CPU0_CPU0_CONTEXT_OFFSET;
- 	} else if (soc_is_omap54xx() || soc_is_dra7xx()) {
- 		cpu_context_offset = OMAP54XX_RM_CPU0_CPU0_CONTEXT_OFFSET;
- 		enable_mercury_retention_mode();
- 	}
- 
-+	if (cpu_is_omap446x())
-+		omap_pm_ops.hotplug_restart = omap4460_secondary_startup;
++	/*
++	 * Enables OMAP5 ES2 PM Mode using ES2_PM_MODE in AMBA_IF_MODE
++	 * 0x0:	ES1 behavior, CPU cores would enter and exit OFF mode together.
++	 * 0x1:	ES2 behavior, CPU cores are allowed to enter/exit OFF mode
++	 * independently.
++	 * This needs to be set one time thanks to always ON domain.
++	 *
++	 * We do not support ES1 behavior anymore. OMAP5 is assumed to be
++	 * ES2.0, and the same is applicable for DRA7.
++	 */
++	if (soc_is_omap54xx() || soc_is_dra7xx()) {
++		val = __raw_readl(wakeupgen_base + OMAP_AMBA_IF_MODE);
++		val |= BIT(5);
++		omap_smc1(OMAP5_MON_AMBA_IF_INDEX, val);
++	}
 +
- 	return 0;
- }
+ 	irq_hotplug_init();
+ 	irq_pm_init();
  
+diff --git a/arch/arm/mach-omap2/omap-wakeupgen.h b/arch/arm/mach-omap2/omap-wakeupgen.h
+index b0fd16f..b3c8ecc 100644
+--- a/arch/arm/mach-omap2/omap-wakeupgen.h
++++ b/arch/arm/mach-omap2/omap-wakeupgen.h
+@@ -27,6 +27,7 @@
+ #define OMAP_WKG_ENB_E_1			0x420
+ #define OMAP_AUX_CORE_BOOT_0			0x800
+ #define OMAP_AUX_CORE_BOOT_1			0x804
++#define OMAP_AMBA_IF_MODE			0x80c
+ #define OMAP_PTMSYNCREQ_MASK			0xc00
+ #define OMAP_PTMSYNCREQ_EN			0xc04
+ #define OMAP_TIMESTAMPCYCLELO			0xc08
 -- 
 1.7.9.5
 
