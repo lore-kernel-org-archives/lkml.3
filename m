@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730AbaHVRE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:04:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35166 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932297AbaHVRE5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:04:57 -0400
-Message-ID: <53F77835.7050406@suse.com>
-Date: Fri, 22 Aug 2014 13:04:53 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932313AbaHVRIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:08:23 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:45059 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932297AbaHVRIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 13:08:22 -0400
+Message-ID: <53F77902.20506@cogentembedded.com>
+Date: Fri, 22 Aug 2014 21:08:18 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Antti Palosaari <crope@iki.fi>
-CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH] Kconfig: do not select SPI bus on sub-driver auto-select
-References: <1408726929-3924-1-git-send-email-crope@iki.fi>
-In-Reply-To: <1408726929-3924-1-git-send-email-crope@iki.fi>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
+CC: yoshihiro.shimoda.uh@renesas.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 6/9] usb: allow to supply the PHY in the drivers when
+ using HCD
+References: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com> <1408722621-3635-7-git-send-email-antoine.tenart@free-electrons.com> <53F775A1.4070200@cogentembedded.com>
+In-Reply-To: <53F775A1.4070200@cogentembedded.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri Aug 22 13:02:09 2014, Antti Palosaari wrote:
-> We should not select SPI bus when sub-driver auto-select is
-> selected. That option is meant for auto-selecting all possible
-> ancillary drivers used for selected board driver. Ancillary
-> drivers should define needed dependencies itself.
->
-> I2C and I2C_MUX are still selected here for a reason described on
-> commit 347f7a3763601d7b466898d1f10080b7083ac4a3
->
-> Reverts commit e4462ffc1602d9df21c00a0381dca9080474e27a
->
-> Reported-by: Jeff Mahoney <jeffm@suse.com>
-> Signed-off-by: Antti Palosaari <crope@iki.fi>
-> ---
->  drivers/media/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
->
-> diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
-> index f60bad4..3c89fcb 100644
-> --- a/drivers/media/Kconfig
-> +++ b/drivers/media/Kconfig
-> @@ -182,7 +182,6 @@ config MEDIA_SUBDRV_AUTOSELECT
->  	depends on HAS_IOMEM
->  	select I2C
->  	select I2C_MUX
-> -	select SPI
->  	default y
->  	help
->  	  By default, a media driver auto-selects all possible ancillary
+On 08/22/2014 08:53 PM, Sergei Shtylyov wrote:
 
-FWIW, in the patch I used locally, I also did a 'select SPI' in the 
-MSI2500 driver since it wouldn't otherwise be obvious that a USB device 
-depends on SPI.
+>> This patch modify the generic code handling PHYs to allow them to be
+>> supplied from the drivers. This adds checks to ensure no PHY was already
+>> there when looking for one in the generic code. This also makes sure we
+>> do not modify its state in the generic HCD functions, it was provided by
+>> the driver.
 
--Jeff
+>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+>> ---
+>>   drivers/usb/core/hcd.c | 7 ++++---
+>>   1 file changed, 4 insertions(+), 3 deletions(-)
 
---
-Jeff Mahoney
-SUSE Labs
+>> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+>> index 6619239baf6d..dc0e46e5e618 100644
+>> --- a/drivers/usb/core/hcd.c
+>> +++ b/drivers/usb/core/hcd.c
+[...]
+>> @@ -2666,6 +2666,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+>>                   goto err_phy;
+>>               }
+>>               hcd->phy = phy;
+>> +            hcd->remove_phy = 1;
+>>           }
+>>       }
+
+>> @@ -2812,7 +2813,7 @@ err_allocate_root_hub:
+>>   err_register_bus:
+>>       hcd_buffer_destroy(hcd);
+>>   err_create_buf:
+>> -    if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
+>> +    if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
+
+>     The 'hcd->phy' check seems redundant now.
+
+    Oh, sorry, I forgot about USB PHY which also sets this flag.
+
+WBR, Segei
+
