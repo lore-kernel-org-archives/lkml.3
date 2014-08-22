@@ -1,93 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752507AbaHVXLl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 19:11:41 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44871 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaHVXLj (ORCPT
+	id S1752540AbaHVXNW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 19:13:22 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:44829 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407AbaHVXNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 19:11:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Qe28spPKNkbxAaSuiTNIV
-Date: Fri, 22 Aug 2014 16:11:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Grazvydas Ignotas <notasas@gmail.com>
-Cc: Roger Quadros <rogerq@ti.com>, Brian Norris <computersforpeace@gmail.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        pekon.gupta@gmail.com, artem.bityutskiy@linux.intel.com,
-        dwmw2@infradead.org, jg1.han@samsung.com,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mtd: nand: omap: Revert to using software ECC by
- default
-Message-ID: <20140822231129.GB17254@atomide.com>
-References: <1407233482-11642-1-git-send-email-rogerq@ti.com>
- <1407233482-11642-2-git-send-email-rogerq@ti.com>
- <CANOLnOM-Q4b8N5T522Vc_gXTSj2C-mxV6GV0hRTDPscpPgXO6A@mail.gmail.com>
- <53E1E122.4050308@ti.com>
- <CANOLnOOA5c-B9rn5LR2HGyfUW+D1UzjRE7EAL-cYsZ4NYuCaXg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANOLnOOA5c-B9rn5LR2HGyfUW+D1UzjRE7EAL-cYsZ4NYuCaXg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 22 Aug 2014 19:13:21 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Kevin Hilman <khilman@linaro.org>, afaerber@suse.de,
+        Ajay Kumar <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 1/1] ARM: exynos_defconfig: Enable options for display panel support
+Date: Sat, 23 Aug 2014 01:13:05 +0200
+Message-Id: <1408749185-14133-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grazvydas Ignotas <notasas@gmail.com> [140806 15:57]:
-> On Wed, Aug 6, 2014 at 11:02 AM, Roger Quadros <rogerq@ti.com> wrote:
-> > Hi Gražvydas,
-> >
-> > On 08/05/2014 07:15 PM, Grazvydas Ignotas wrote:
-> >> On Tue, Aug 5, 2014 at 1:11 PM, Roger Quadros <rogerq@ti.com> wrote:
-> >>> For v3.12 and prior, 1-bit Hamming code ECC via software was the
-> >>> default choice. Commit c66d039197e4 in v3.13 changed the behaviour
-> >>> to use 1-bit Hamming code via Hardware using a different ECC layout
-> >>> i.e. (ROM code layout) than what is used by software ECC.
-> >>>
-> >>> This ECC layout change causes NAND filesystems created in v3.12
-> >>> and prior to be unusable in v3.13 and later. So revert back to
-> >>> using software ECC by default if an ECC scheme is not explicitely
-> >>> specified.
-> >>>
-> >>> This defect can be observed on the following boards during legacy boot
-> >>>
-> >>> -omap3beagle
-> >>> -omap3touchbook
-> >>> -overo
-> >>> -am3517crane
-> >>> -devkit8000
-> >>> -ldp
-> >>> -3430sdp
-> >>
-> >> omap3pandora is also using sw ecc, with ubifs. Some time ago I tried
-> >> booting mainline (I think it was 3.14) with rootfs on NAND, and while
-> >> it did boot and reached a shell, there were lots of ubifs errors, fs
-> >> got corrupted and I lost all my data. I used to be able to boot
-> >> mainline this way fine sometime ~3.8 release. It's interesting that
-> >> 3.14 was able to read the data, even with wrong ecc setup.
-> >
-> > This is due to another bug introduced in 3.7 by commit 65b97cf6b8deca3ad7a3e00e8316bb89617190fb.
-> > Because of that bug (i.e. inverted CS_MASK in omap_calculate_ecc), omap_calculate_ecc() always fails with -EINVAL and calculated ECC bytes are always 0. I'll be sending a patch to fix that as well. But that will only affect the cases where OMAP_ECC_HAM1_CODE_HW is used which happened for pandora from 3.13 onwards.
-> >
-> >>
-> >> Do you think it's safe again to boot ubifs created on 3.2 after
-> >> applying this series?
-> >>
-> >
-> > Yes. If you boot pandora using legacy boot (non DT method), it passes 0 for .ecc_opt in pandora_nand_data. This used to mean OMAP_ECC_HAMMING_CODE_DEFAULT which is software ecc. i.e. NAND_ECC_SOFT with default ECC layout. Until the above mentioned commits changed the meaning. We now call that option OMAP_ECC_HAM1_CODE_SW.
-> >
-> > Please let me know if it works for you. Thanks.
-> 
-> Yes it does, thank you.
-> Tested-by: Grazvydas Ignotas <notasas@gmail.com>
+Many Exynos devices have a display panel, most of them just have
+a simple panel while others have more complex configurations that
+requires an embedded DisplayPort (eDP) to LVDS display bridge.
 
-OK thanks applying the whole series into omap-for-v3.17/fixes.
+This patch enables the following features to support both setups:
 
-Tony
+- Direct Rendering Manager (DRM)
+- DRM bridge registration and lookup framework
+- Parade ps8622/ps8625 eDP/LVDS bridge
+- NXP ptn3460 eDP/LVDS bridge
+- Exynos Fully Interactive Mobile Display controller (FIMD)
+- Panel registration and lookup framework
+- Simple panels
+- Backlight and LCD device support
+
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+
+Some of the options enabled here (e.g: the eDP/LVDS bridges)
+are still not merged in mainline so this patch depends on
+the following posted patches that were still not merged:
+
+"drm/bridge: Modify drm_bridge core to support driver model" [0]
+"drm/bridge: Add i2c based driver for ptn3460 bridge" [1]
+"drm/bridge: Add i2c based driver for ps8622/ps8625 bridge" [2]
+
+But I wanted to post anyways to make easier for others to
+figure out what are the needed options to have the display
+working on their Exynos machines.
+
+In order to test the display panel on the Peach machines,
+the following patches are also needed:
+
+"ARM: dts: Add DT changes for display on peach_pit" [3]
+"ARM: dts: Add DT changes for display on peach_pi" [4]
+
+Best regards,
+Javier
+
+[0]: http://patchwork.ozlabs.org/patch/373792/
+[1]: http://patchwork.ozlabs.org/patch/373793/
+[2]: http://patchwork.ozlabs.org/patch/373794/
+[3]: http://www.spinics.net/lists/arm-kernel/msg350568.html
+[4]: http://www.spinics.net/lists/arm-kernel/msg350569.html 
+
+ arch/arm/configs/exynos_defconfig | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
+index 676c744..f69d57e 100644
+--- a/arch/arm/configs/exynos_defconfig
++++ b/arch/arm/configs/exynos_defconfig
+@@ -101,11 +101,25 @@ CONFIG_REGULATOR_S2MPA01=y
+ CONFIG_REGULATOR_S2MPS11=y
+ CONFIG_REGULATOR_S5M8767=y
+ CONFIG_REGULATOR_TPS65090=y
++CONFIG_DRM=y
++CONFIG_DRM_BRIDGE=y
++CONFIG_DRM_PS8622=y
++CONFIG_DRM_EXYNOS=y
++CONFIG_DRM_EXYNOS_FIMD=y
++CONFIG_DRM_EXYNOS_DP=y
++CONFIG_DRM_PANEL=y
++CONFIG_DRM_PANEL_SIMPLE=y
+ CONFIG_FB=y
+ CONFIG_FB_MODE_HELPERS=y
+ CONFIG_FB_SIMPLE=y
+ CONFIG_EXYNOS_VIDEO=y
+ CONFIG_EXYNOS_MIPI_DSI=y
++CONFIG_BACKLIGHT_LCD_SUPPORT=y
++CONFIG_LCD_CLASS_DEVICE=y
++CONFIG_LCD_PLATFORM=y
++CONFIG_BACKLIGHT_CLASS_DEVICE=y
++CONFIG_BACKLIGHT_GENERIC=y
++CONFIG_BACKLIGHT_PWM=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+ CONFIG_FONTS=y
+ CONFIG_FONT_7x14=y
+-- 
+2.0.1
+
