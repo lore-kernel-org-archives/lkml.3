@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713AbaHVQtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:49:13 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:63725 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208AbaHVQtL (ORCPT
+	id S932736AbaHVQtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:49:33 -0400
+Received: from mail-yk0-f201.google.com ([209.85.160.201]:52798 "EHLO
+	mail-yk0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932208AbaHVQtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:49:11 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH] include/linux/mfd/davinci_voicecodec.h: Fix typo in include guard
-Date: Fri, 22 Aug 2014 18:49:03 +0200
-Message-Id: <1408726143-3014-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
+	Fri, 22 Aug 2014 12:49:31 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Mike Turquette <mturquette@linaro.org>, Heiko Stuebner <heiko@sntech.de>
+Cc: Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <eddie.cai@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] clk: rockchip: Fix the clocks for i2c1 and i2c2
+Date: Fri, 22 Aug 2014 09:49:29 -0700
+Message-Id: <1408726169-25515-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The include guard doesn't work as intended due to the transposition
-typo DAVINCI -> DAVINIC.
+The clocks for i2c1 and i2c2 are flipped.  The clock tree matched the
+Technical Reference Manual (TRM) but the TRM was wrong.  Swap them in
+the clock tree.  This was determined experimentally (by Addy) and
+confirmed by the Rockchip IC team.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reported-by: Addy Ke <addy.ke@rock-chips.com>
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 ---
- include/linux/mfd/davinci_voicecodec.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Changes in v2:
+- Fixed typo in commit message.
 
-diff --git a/include/linux/mfd/davinci_voicecodec.h b/include/linux/mfd/davinci_voicecodec.h
-index 5166935..cb01496 100644
---- a/include/linux/mfd/davinci_voicecodec.h
-+++ b/include/linux/mfd/davinci_voicecodec.h
-@@ -21,7 +21,7 @@
-  */
- 
- #ifndef __LINUX_MFD_DAVINCI_VOICECODEC_H_
--#define __LINUX_MFD_DAVINIC_VOICECODEC_H_
-+#define __LINUX_MFD_DAVINCI_VOICECODEC_H_
- 
- #include <linux/kernel.h>
- #include <linux/platform_device.h>
+ drivers/clk/rockchip/clk-rk3288.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+index 0d8c6c5..b22a2d2 100644
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -545,7 +545,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+ 	GATE(PCLK_PWM, "pclk_pwm", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 0, GFLAGS),
+ 	GATE(PCLK_TIMER, "pclk_timer", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 1, GFLAGS),
+ 	GATE(PCLK_I2C0, "pclk_i2c0", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 2, GFLAGS),
+-	GATE(PCLK_I2C1, "pclk_i2c1", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 3, GFLAGS),
++	GATE(PCLK_I2C2, "pclk_i2c2", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 3, GFLAGS),
+ 	GATE(0, "pclk_ddrupctl0", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 14, GFLAGS),
+ 	GATE(0, "pclk_publ0", "pclk_cpu", 0, RK3288_CLKGATE_CON(10), 15, GFLAGS),
+ 	GATE(0, "pclk_ddrupctl1", "pclk_cpu", 0, RK3288_CLKGATE_CON(11), 0, GFLAGS),
+@@ -603,7 +603,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+ 	GATE(PCLK_I2C4, "pclk_i2c4", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 15, GFLAGS),
+ 	GATE(PCLK_UART3, "pclk_uart3", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 11, GFLAGS),
+ 	GATE(PCLK_UART4, "pclk_uart4", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 12, GFLAGS),
+-	GATE(PCLK_I2C2, "pclk_i2c2", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 13, GFLAGS),
++	GATE(PCLK_I2C1, "pclk_i2c1", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 13, GFLAGS),
+ 	GATE(PCLK_I2C3, "pclk_i2c3", "pclk_peri", 0, RK3288_CLKGATE_CON(6), 14, GFLAGS),
+ 	GATE(PCLK_SARADC, "pclk_saradc", "pclk_peri", 0, RK3288_CLKGATE_CON(7), 1, GFLAGS),
+ 	GATE(PCLK_TSADC, "pclk_tsadc", "pclk_peri", 0, RK3288_CLKGATE_CON(7), 2, GFLAGS),
 -- 
-2.0.4
+2.1.0.rc2.206.gedb03e5
 
