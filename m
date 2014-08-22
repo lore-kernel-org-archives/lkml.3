@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336AbaHVOBI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54283 "EHLO mx1.redhat.com"
+	id S932375AbaHVOBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:01:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33921 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932170AbaHVOBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:01:04 -0400
-Date: Fri, 22 Aug 2014 10:00:09 -0400
-From: Dave Jones <davej@redhat.com>
-To: Catalin Iacob <iacobcatalin@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: nohz fail (was: perf related boot hang.)
-Message-ID: <20140822140009.GA8567@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Catalin Iacob <iacobcatalin@gmail.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20140811200931.GA18865@redhat.com>
- <1408566691-3023-1-git-send-email-iacobcatalin@gmail.com>
- <CAFTL4hxJ2roTB3tZBmXU3HRetgFSUT0LNVWfX-Y2hbpyXSo2pg@mail.gmail.com>
- <CAHg_5gq1XiZ1A08PtQ7Rof3rUXJ-pVYkXtmHqgFh6hB+++qPNg@mail.gmail.com>
+	id S932170AbaHVOB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:01:29 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <devicetree@vger.kernel.org>, Dave Gerlach <d-gerlach@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH 2/3] pinctrl: single: Add DRA7 pinctrl compatibility
+Date: Fri, 22 Aug 2014 09:01:01 -0500
+Message-ID: <1408716062-26055-3-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408716062-26055-1-git-send-email-nm@ti.com>
+References: <1408716062-26055-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHg_5gq1XiZ1A08PtQ7Rof3rUXJ-pVYkXtmHqgFh6hB+++qPNg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 08:01:48AM +0200, Catalin Iacob wrote:
- > On Thu, Aug 21, 2014 at 4:56 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
- > > Can you please test the series I just posted: "[RFC PATCH 0/9] nohz:
- > > Nohz full kick fixes"?
- > 
- > Before applying the series I tried one more Firefox build which
- > triggered the panic after less than 5 minutes.
- > 
- > After applying the series I did 2 full builds (around 60 minutes in
- > total) with no problem.
+DRA7 pinctrl definitions now differ from traditional 16 bit OMAP pin
+ctrl definitions, in that all 32 bits are used to describe a single pin
 
-Seems to be working fine here too after fuzzing for 17 hours so far.
+Also the location of wakeupenable and event bits have changed.
 
-	Dave
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ .../bindings/pinctrl/ti,omap-pinctrl.txt           |    1 +
+ drivers/pinctrl/pinctrl-single.c                   |    7 +++++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
+index 156d964..d45386d 100644
+--- a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
+@@ -5,5 +5,6 @@ Required properties:
+   "ti,omap3-padconf" - OMAP3 compatible pinctrl
+   "ti,omap4-padconf" - OMAP4 compatible pinctrl
+   "ti,omap5-padconf" - OMAP5 compatible pinctrl
++  "ti,dra7-padconf" - DRA7 compatible pinctrl
+ 
+ See Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt for further details.
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 95dd9cf..598d600 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -1981,6 +1981,12 @@ static const struct pcs_soc_data pinctrl_single_omap_wkup = {
+ 	.irq_status_mask = (1 << 15),	/* OMAP_WAKEUP_EVENT */
+ };
+ 
++static const struct pcs_soc_data pinctrl_single_dra7 = {
++	.flags = PCS_QUIRK_SHARED_IRQ,
++	.irq_enable_mask = (1 << 24),	/* WAKEUPENABLE */
++	.irq_status_mask = (1 << 25),	/* WAKEUPEVENT */
++};
++
+ static const struct pcs_soc_data pinctrl_single = {
+ };
+ 
+@@ -1992,6 +1998,7 @@ static struct of_device_id pcs_of_match[] = {
+ 	{ .compatible = "ti,omap3-padconf", .data = &pinctrl_single_omap_wkup },
+ 	{ .compatible = "ti,omap4-padconf", .data = &pinctrl_single_omap_wkup },
+ 	{ .compatible = "ti,omap5-padconf", .data = &pinctrl_single_omap_wkup },
++	{ .compatible = "ti,dra7-padconf", .data = &pinctrl_single_dra7 },
+ 	{ .compatible = "pinctrl-single", .data = &pinctrl_single },
+ 	{ .compatible = "pinconf-single", .data = &pinconf_single },
+ 	{ },
+-- 
+1.7.9.5
 
