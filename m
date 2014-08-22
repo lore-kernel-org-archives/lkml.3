@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620AbaHVNve (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:51:34 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33331 "EHLO bear.ext.ti.com"
+	id S1756606AbaHVNvd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:51:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33330 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756458AbaHVNuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756448AbaHVNuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Aug 2014 09:50:18 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>
@@ -15,50 +15,47 @@ CC: Kevin Hilman <khilman@deeprootsystems.com>, Tero Kristo <t-kristo@ti.com>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Nishanth Menon <nm@ti.com>
-Subject: [PATCH 0/7] ARM: OMAP4+: powerdomain fixes
-Date: Fri, 22 Aug 2014 08:49:26 -0500
-Message-ID: <1408715373-25791-1-git-send-email-nm@ti.com>
+Subject: [PATCH 6/7] ARM: OMAP4+: PM: use only valid low power state for suspend
+Date: Fri, 22 Aug 2014 08:49:32 -0500
+Message-ID: <1408715373-25791-7-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408715373-25791-1-git-send-email-nm@ti.com>
+References: <1408715373-25791-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We are using power domain state as RET and logic state as OFF. This
+state is OSWR. This may not always be supported on ALL power domains. In
+fact, on certain power domains, this might result in a hang on certain
+platforms. Instead, depend on powerdomain data to provide accurate
+information about the supported powerdomain states and use the
+appropriate function to query and use it as part of suspend path.
 
-The following series are various fixes and improvements for
-powerdomain support in OMAP4+.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/mach-omap2/pm44xx.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-This is part 1/6 series which eventually enables framework for
-suspend-to-ram and cpuidle for OMAP5 and DRA7
-
-Each of series is based on v3.17-rc1 and this specific series is available:
-weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/v3.17/powerdomain-fixes
-
-git repo: https://github.com/nmenon/linux-2.6-playground.git push/v3.17/powerdomain-fixes
-
-An complete integrated branch is available here: https://github.com/nmenon/linux-2.6-playground/commits/testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
-
-Nishanth Menon (7):
-  ARM: OMAP: DRA7: powerdomain data: fix powerdomain powerstate
-  ARM: OMAP5: powerdomain data: fix powerdomain powerstate
-  ARM: OMAP2+: powerdomain: pwrdm_for_each_clkdm iterate only valid
-    clkdms
-  ARM: OMAP2+: powerdomain: introduce logic for finding valid power
-    domain
-  ARM: OMAP4+: PM: Make logic state programmable
-  ARM: OMAP4+: PM: use only valid low power state for suspend
-  ARM: OMAP4+: PM: Use only valid low power state for CPU hotplug
-
- arch/arm/mach-omap2/omap-mpuss-lowpower.c   |    4 ++
- arch/arm/mach-omap2/pm44xx.c                |    9 +++-
- arch/arm/mach-omap2/powerdomain.c           |   76 ++++++++++++++++++++++++++-
- arch/arm/mach-omap2/powerdomain.h           |    4 ++
- arch/arm/mach-omap2/powerdomains54xx_data.c |   12 ++---
- arch/arm/mach-omap2/powerdomains7xx_data.c  |   14 ++---
- 6 files changed, 103 insertions(+), 16 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/pm44xx.c b/arch/arm/mach-omap2/pm44xx.c
+index b377b03..0bfce38 100644
+--- a/arch/arm/mach-omap2/pm44xx.c
++++ b/arch/arm/mach-omap2/pm44xx.c
+@@ -121,8 +121,10 @@ static int __init pwrdms_setup(struct powerdomain *pwrdm, void *unused)
+ 		return -ENOMEM;
+ 
+ 	pwrst->pwrdm = pwrdm;
+-	pwrst->next_state = PWRDM_POWER_RET;
+-	pwrst->next_logic_state = PWRDM_POWER_OFF;
++	pwrst->next_state = pwrdm_get_valid_lp_state(pwrdm, false,
++						     PWRDM_POWER_RET);
++	pwrst->next_logic_state = pwrdm_get_valid_lp_state(pwrdm, true,
++							   PWRDM_POWER_OFF);
+ 
+ 	list_add(&pwrst->node, &pwrst_list);
+ 
 -- 
 1.7.9.5
 
