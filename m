@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264AbaHVOVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:21:07 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:42807 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120AbaHVOVF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:21:05 -0400
-Date: Fri, 22 Aug 2014 17:20:55 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: mingo@redhat.com, peterz@infradead.com, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] kernel: sched: fair: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140822142055.GA32239@ada>
+	id S1756470AbaHVOYn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:24:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15155 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756329AbaHVOYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:24:41 -0400
+Message-ID: <53F752A2.7080604@redhat.com>
+Date: Fri, 22 Aug 2014 16:24:34 +0200
+From: Harald Hoyer <harald@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?TWFudGFzIE1pa3VsxJduYXM=?= <grawity@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+CC: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: Loading initrd above 4G causes freeze on boot
+References: <53E62EEF.9040801@gmail.com>
+In-Reply-To: <53E62EEF.9040801@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of "rcu_assign_pointer()" is NULLing out the pointer.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+On 09.08.2014 16:23, Mantas Mikulėnas wrote:
+> As of commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"),
+> the kernel freezes at the earliest possible moment when trying to boot
+> via UEFI on my Asus laptop. (It still boots via BIOS.)
+> 
+> If I revert that commit on current master (c309bfa9b481), it boots
+> correctly again [although I see "setup_efi_pci() failed" being printed].
+> 
+> (Seems like it freezes when handle_cmdline_files() attempts to read
+> the last chunk of the initramfs -- the last call to efi_file_read()
+> never returns. Figuring out why that happens is beyond me, though.)
+> 
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+I fixed my issue with: https://lkml.org/lkml/2014/8/22/232
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
-
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fea7d33..7d4f743 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1759,7 +1759,7 @@ void task_numa_free(struct task_struct *p)
- 		list_del(&p->numa_entry);
- 		grp->nr_tasks--;
- 		spin_unlock_irqrestore(&grp->lock, flags);
--		rcu_assign_pointer(p->numa_group, NULL);
-+		RCU_INIT_POINTER(p->numa_group, NULL);
- 		put_numa_group(grp);
- 	}
- 
--- 
-1.9.1
-
+Care to test?
