@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023AbaHVK6W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 06:58:22 -0400
-Received: from mga14.intel.com ([192.55.52.115]:14388 "EHLO mga14.intel.com"
+	id S1756156AbaHVK7s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 06:59:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38240 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844AbaHVK6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 06:58:20 -0400
+	id S1755651AbaHVK6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 06:58:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,379,1406617200"; 
-   d="scan'208";a="580352612"
+   d="scan'208";a="471566354"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Lee Jones <lee.jones@linaro.org>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
         Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 1/5] mfd: lpc_sch: reduce duplicate code
-Date: Fri, 22 Aug 2014 13:58:12 +0300
-Message-Id: <1408705096-31286-2-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1 4/5] mfd: lpc_sch: Add support for Intel Quark X1000
+Date: Fri, 22 Aug 2014 13:58:15 +0300
+Message-Id: <1408705096-31286-5-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -24,203 +24,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch refactors the driver to use helper functions instead of
-copy'n'pasted pieces of code.
+Intel Quark X1000 SoC supports IRQ based GPIO. This patch will
+enable MFD support for Quark X1000 and provide IRQ resources
+to Quark X1000 GPIO device driver.
 
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/mfd/lpc_sch.c | 146 ++++++++++++++++++++++----------------------------
- 1 file changed, 64 insertions(+), 82 deletions(-)
+ drivers/mfd/lpc_sch.c | 41 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 35 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-index 4ee7550..0f01ef0 100644
+index c4eb359..6145a4c 100644
 --- a/drivers/mfd/lpc_sch.c
 +++ b/drivers/mfd/lpc_sch.c
-@@ -40,41 +40,6 @@
+@@ -37,6 +37,9 @@
+ #define GPIO_IO_SIZE	64
+ #define GPIO_IO_SIZE_CENTERTON	128
+ 
++/* Intel Quark X1000 GPIO IRQ Number */
++#define GPIO_IRQ_QUARK_X1000	9
++
  #define WDTBASE		0x84
  #define WDT_IO_SIZE	64
  
--static struct resource smbus_sch_resource = {
--		.flags = IORESOURCE_IO,
--};
--
--static struct resource gpio_sch_resource = {
--		.flags = IORESOURCE_IO,
--};
--
--static struct resource wdt_sch_resource = {
--		.flags = IORESOURCE_IO,
--};
--
--static struct mfd_cell lpc_sch_cells[3];
--
--static struct mfd_cell isch_smbus_cell = {
--	.name = "isch_smbus",
--	.num_resources = 1,
--	.resources = &smbus_sch_resource,
--	.ignore_resource_conflicts = true,
--};
--
--static struct mfd_cell sch_gpio_cell = {
--	.name = "sch_gpio",
--	.num_resources = 1,
--	.resources = &gpio_sch_resource,
--	.ignore_resource_conflicts = true,
--};
--
--static struct mfd_cell wdt_sch_cell = {
--	.name = "ie6xx_wdt",
--	.num_resources = 1,
--	.resources = &wdt_sch_resource,
--	.ignore_resource_conflicts = true,
--};
--
- static const struct pci_device_id lpc_sch_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC) },
-@@ -83,67 +48,87 @@ static const struct pci_device_id lpc_sch_ids[] = {
+@@ -44,28 +47,37 @@ enum sch_chipsets {
+ 	LPC_SCH = 0,		/* Intel Poulsbo SCH */
+ 	LPC_ITC,		/* Intel Tunnel Creek */
+ 	LPC_CENTERTON,		/* Intel Centerton */
++	LPC_QUARK_X1000,	/* Intel Quark X1000 */
+ };
+ 
+ struct lpc_sch_info {
+ 	unsigned int io_size_smbus;
+ 	unsigned int io_size_gpio;
+ 	unsigned int io_size_wdt;
++	int irq_gpio;
+ };
+ 
+ static struct lpc_sch_info sch_chipset_info[] = {
+ 	[LPC_SCH] = {
+ 		.io_size_smbus = SMBUS_IO_SIZE,
+ 		.io_size_gpio = GPIO_IO_SIZE,
++		.irq_gpio = -1,
+ 	},
+ 	[LPC_ITC] = {
+ 		.io_size_smbus = SMBUS_IO_SIZE,
+ 		.io_size_gpio = GPIO_IO_SIZE,
+ 		.io_size_wdt = WDT_IO_SIZE,
++		.irq_gpio = -1,
+ 	},
+ 	[LPC_CENTERTON] = {
+ 		.io_size_smbus = SMBUS_IO_SIZE,
+ 		.io_size_gpio = GPIO_IO_SIZE_CENTERTON,
+ 		.io_size_wdt = WDT_IO_SIZE,
++		.irq_gpio = -1,
++	},
++	[LPC_QUARK_X1000] = {
++		.io_size_gpio = GPIO_IO_SIZE,
++		.irq_gpio = GPIO_IRQ_QUARK_X1000,
+ 	},
+ };
+ 
+@@ -73,6 +85,7 @@ static const struct pci_device_id lpc_sch_ids[] = {
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC), LPC_SCH },
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC), LPC_ITC },
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_CENTERTON_ILB), LPC_CENTERTON },
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB), LPC_QUARK_X1000 },
+ 	{ 0, }
  };
  MODULE_DEVICE_TABLE(pci, lpc_sch_ids);
+@@ -106,14 +119,26 @@ static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
+ 	return 0;
+ }
  
--static int lpc_sch_probe(struct pci_dev *dev,
--				const struct pci_device_id *id)
-+static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
-+			  struct resource *res, int size)
++static int lpc_sch_get_irq(struct resource *res, int irq)
++{
++	if (irq < 0)
++		return -EINVAL;
++
++	res->start = irq;
++	res->end = irq;
++	res->flags = IORESOURCE_IRQ;
++
++	return 0;
++}
++
+ static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
+-				 const char *name, int size, int id,
+-				 struct mfd_cell *cell)
++				 const char *name, int size, int irq,
++				 int id, struct mfd_cell *cell)
  {
- 	unsigned int base_addr_cfg;
- 	unsigned short base_addr;
--	int i, cells = 0;
--	int ret;
+ 	struct resource *res;
+ 	int ret;
  
--	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
-+	pci_read_config_dword(pdev, where, &base_addr_cfg);
- 	base_addr = 0;
- 	if (!(base_addr_cfg & (1 << 31)))
--		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
-+		dev_warn(&pdev->dev, "Decode of the %s I/O range disabled\n",
-+			 name);
- 	else
- 		base_addr = (unsigned short)base_addr_cfg;
+-	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
++	res = devm_kcalloc(&pdev->dev, 2, sizeof(*res), GFP_KERNEL);
+ 	if (!res)
+ 		return -ENOMEM;
  
- 	if (base_addr == 0) {
--		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
--	} else {
--		lpc_sch_cells[cells++] = isch_smbus_cell;
--		smbus_sch_resource.start = base_addr;
--		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
-+		dev_warn(&pdev->dev, "I/O space for %s uninitialized\n", name);
-+		return -ENODEV;
- 	}
+@@ -129,6 +154,10 @@ static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
+ 	cell->ignore_resource_conflicts = true;
+ 	cell->id = id;
  
--	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
--	base_addr = 0;
--	if (!(base_addr_cfg & (1 << 31)))
--		dev_warn(&dev->dev, "Decode of the GPIO I/O range disabled\n");
-+	res->start = base_addr;
-+	res->end = base_addr + size - 1;
-+	res->flags = IORESOURCE_IO;
-+
-+	return 0;
-+}
-+
-+static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
-+				 const char *name, int size, int id,
-+				 struct mfd_cell *cell)
-+{
-+	struct resource *res;
-+	int ret;
-+
-+	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
-+	if (!res)
-+		return -ENOMEM;
-+
-+	ret = lpc_sch_get_io(pdev, where, name, res, size);
-+	if (ret)
-+		return ret;
-+
-+	memset(cell, 0, sizeof(*cell));
-+
-+	cell->name = name;
-+	cell->resources = res;
-+	cell->num_resources = 1;
-+	cell->ignore_resource_conflicts = true;
-+	cell->id = id;
-+
-+	return 0;
-+}
-+
-+static int lpc_sch_probe(struct pci_dev *dev,
-+			 const struct pci_device_id *id)
-+{
-+	struct mfd_cell lpc_sch_cells[3];
-+	int size, cells = 0;
-+	int ret;
-+
-+	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus", SMBUS_IO_SIZE,
-+				    id->device, &lpc_sch_cells[cells]);
++	ret = lpc_sch_get_irq(++res, irq);
 +	if (!ret)
-+		cells++;
++		cell->num_resources++;
 +
-+	if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
-+		size = GPIO_IO_SIZE_CENTERTON;
- 	else
--		base_addr = (unsigned short)base_addr_cfg;
-+		size = GPIO_IO_SIZE;
+ 	return 0;
+ }
  
--	if (base_addr == 0) {
--		dev_warn(&dev->dev, "I/O space for GPIO uninitialized\n");
--	} else {
--		lpc_sch_cells[cells++] = sch_gpio_cell;
--		gpio_sch_resource.start = base_addr;
--		if (id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB)
--			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
--		else
--			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
--	}
-+	ret = lpc_sch_populate_cell(dev, GPIOBASE, "sch_gpio", size,
-+				    id->device, &lpc_sch_cells[cells]);
-+	if (!ret)
-+		cells++;
+@@ -141,19 +170,19 @@ static int lpc_sch_probe(struct pci_dev *dev,
+ 	int ret;
  
- 	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
- 	    || id->device == PCI_DEVICE_ID_INTEL_CENTERTON_ILB) {
--		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
--		base_addr = 0;
--		if (!(base_addr_cfg & (1 << 31)))
--			dev_warn(&dev->dev, "Decode of the WDT I/O range disabled\n");
--		else
--			base_addr = (unsigned short)base_addr_cfg;
--		if (base_addr == 0)
--			dev_warn(&dev->dev, "I/O space for WDT uninitialized\n");
--		else {
--			lpc_sch_cells[cells++] = wdt_sch_cell;
--			wdt_sch_resource.start = base_addr;
--			wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
--		}
--	}
--
--	if (WARN_ON(cells > ARRAY_SIZE(lpc_sch_cells))) {
--		dev_err(&dev->dev, "Cell count exceeds array size");
--		return -ENODEV;
-+		ret = lpc_sch_populate_cell(dev, WDTBASE, "ie6xx_wdt",
-+					    WDT_IO_SIZE,
-+					    id->device, &lpc_sch_cells[cells]);
-+		if (!ret)
-+			cells++;
- 	}
+ 	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus",
+-				    info->io_size_smbus,
++				    info->io_size_smbus, -1,
+ 				    id->device, &lpc_sch_cells[cells]);
+ 	if (!ret)
+ 		cells++;
  
- 	if (cells == 0) {
-@@ -151,9 +136,6 @@ static int lpc_sch_probe(struct pci_dev *dev,
- 		return -ENODEV;
- 	}
+ 	ret = lpc_sch_populate_cell(dev, GPIOBASE, "sch_gpio",
+-				    info->io_size_gpio,
++				    info->io_size_gpio, info->irq_gpio,
+ 				    id->device, &lpc_sch_cells[cells]);
+ 	if (!ret)
+ 		cells++;
  
--	for (i = 0; i < cells; i++)
--		lpc_sch_cells[i].id = id->device;
--
- 	ret = mfd_add_devices(&dev->dev, 0, lpc_sch_cells, cells, NULL, 0, NULL);
- 	if (ret)
- 		mfd_remove_devices(&dev->dev);
+ 	ret = lpc_sch_populate_cell(dev, WDTBASE, "ie6xx_wdt",
+-				    info->io_size_wdt,
++				    info->io_size_wdt, -1,
+ 				    id->device, &lpc_sch_cells[cells]);
+ 	if (!ret)
+ 		cells++;
 -- 
 2.1.0
 
