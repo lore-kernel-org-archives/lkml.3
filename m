@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884AbaHVRmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:42:14 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:60710 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447AbaHVRmN (ORCPT
+	id S932887AbaHVRn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:43:29 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:44634 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932447AbaHVRn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:42:13 -0400
-MIME-Version: 1.0
-Date: Fri, 22 Aug 2014 10:42:12 -0700
-Message-ID: <CA+zRj8VfVKG9fchHFOBjupVhmgAfim9sY2NhoP2JOGDS6S_78w@mail.gmail.com>
-Subject: i915 (possibly): Suspend regression Macbook Pro 15 (late 2013)
-From: Eric Rannaud <eric.rannaud@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 22 Aug 2014 13:43:28 -0400
+Date: Fri, 22 Aug 2014 12:43:25 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tejun Heo <htejun@gmail.com>
+cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Mike Travis <travis@sgi.com>
+Subject: Re: percpu: Define this_cpu_cpumask_var_t_ptr
+In-Reply-To: <20140822164051.GB15713@mtj.dyndns.org>
+Message-ID: <alpine.DEB.2.11.1408221241340.23099@gentwo.org>
+References: <alpine.DEB.2.11.1408070959250.28468@gentwo.org> <20140821222212.GA7996@mtj.dyndns.org> <alpine.DEB.2.11.1408212001100.19762@gentwo.org> <20140822164051.GB15713@mtj.dyndns.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 22 Aug 2014, Tejun Heo wrote:
 
-Between 3.13.5 and 3.15.4, suspend became partially broken on Macbook Pro 15
-(late 2013): a few minutes after wakeup from the *second* suspend following a
-fresh boot, the screen will randomly turn itself off at shorter and shorter
-time intervals, and turn itself back on after a few seconds and/or user
-interaction.  Eventually, after 4 or 5 such cycles, the screen refuses to turn
-back on altogether, and the system must be rebooted (closing the lid again has
-no effect).
+> On Thu, Aug 21, 2014 at 08:03:25PM -0500, Christoph Lameter wrote:
+> > Its a pretty simple function (actually more a name substituion) so I
+> > did not think it worth creating an inline function.
+>
+> Unless there are specific reasons like multi-type arg or breaking
+> hellish definition order dependency, I think we're better off with
+> inline functions, especially here, as the implementation will happily
+> accept arguments of the wrong type.
+>
 
-When the screen turns back on, there is usually some transient corruption (full
-screen is displayed shifted to the right by 1/10th of its full width,
-cutting off the
-right side, which wraps back to the left). This corruption disappears after
-additional user interaction that forces a re-render.
+It wont accept the wrong type since the this_cpu_* functions will do type
+checking.
 
-The issue is still present in Linus' tree (v3.17-rc1-22-g480cadc2b7e0).
+> > _t is there because I wanted to include the full "ugly" name of the
+> > variable to make it similarly ugly. It is needed to make the clear
+> > distinction to "struct cpumask *" which does not have these issues.
+>
+> The compiler can enforce that rule easily if the interface functions
+> are properly typed.  I think it'd be far better to go with properly
+> typed accessors with less unwieldy names.
 
-Before I get started trying to bisect this slow-to-reproduce problem, has
-anyone any idea of possible causes?
+What rule are we talking about? Accessors for what?
 
-Thanks,
-Eric
