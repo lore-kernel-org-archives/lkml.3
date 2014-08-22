@@ -1,55 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaHVTrS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:47:18 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:51488 "EHLO lists.s-osg.org"
+	id S1751640AbaHVTtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:49:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18434 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbaHVTrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:47:15 -0400
-X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Aug 2014 15:47:14 EDT
-Message-ID: <53F79C25.6010405@osg.samsung.com>
-Date: Fri, 22 Aug 2014 13:38:13 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
-References: <cover.1408535000.git.jslaby@suse.cz>
-In-Reply-To: <cover.1408535000.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751554AbaHVTth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 15:49:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="375896491"
+From: kan.liang@intel.com
+To: acme@kernel.org, jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH 3/3] perf tools: Add support to new style format of kernel PMU event
+Date: Fri, 22 Aug 2014 15:42:29 -0400
+Message-Id: <1408736549-4630-3-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1408736549-4630-1-git-send-email-kan.liang@intel.com>
+References: <1408736549-4630-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/20/2014 05:43 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.27 release.
-> There are 104 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.27-rc1.xz
-> and the diffstat can be found below.
->
-> thanks,
-> js
->
+From: Kan Liang <kan.liang@intel.com>
 
-Compiled and booted on my test system. No dmesg regressions.
-I pulled the patch this morning, hoping add-basic-validations
-patch has been removed.
+Add new rules for kernel PMU event.
 
--- Shuah
+event_pmu:
+PE_KERNEL_PMU_EVENT
+|
+PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF
 
+PE_KERNEL_PMU_EVENT token is for
+cycles-ct/cycles-t/mem-loads/mem-stores.
+The prefix cycles is mixed up with cpu-cycles.
+loads and stores are mixed up with cache event
+So they have to be hardcode in lex.
+
+PE_PMU_EVENT_PRE and PE_PMU_EVENT_SUF tokens are for other PMU
+events.
+The lex looks generic identifier up in the table and return the matched
+token. If there is no match, generic PE_NAME token will be return.
+
+Using the rules, kernel PMU event could use new style format without //
+
+so you can use
+
+perf record -e mem-loads ...
+
+instead of
+
+perf record -e cpu/mem-loads/
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ tools/perf/util/parse-events.l | 28 +++++++++++++++++++++++++++-
+ tools/perf/util/parse-events.y | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..ea07fde 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -51,6 +51,22 @@ static int str(yyscan_t scanner, int token)
+ 	return token;
+ }
+ 
++static int pmu_str_check(yyscan_t scanner)
++{
++	YYSTYPE *yylval = parse_events_get_lval(scanner);
++	char *text = parse_events_get_text(scanner);
++
++	yylval->str = strdup(text);
++	switch (parse_events_pmu_check(text)) {
++		case PMU_EVENT_PREFIX:
++			return PE_PMU_EVENT_PRE;
++		case PMU_EVENT_SUFFIX:
++			return PE_PMU_EVENT_SUF;
++		default:
++			return PE_NAME;
++	}
++}
++
+ static int sym(yyscan_t scanner, int type, int config)
+ {
+ 	YYSTYPE *yylval = parse_events_get_lval(scanner);
+@@ -178,6 +194,16 @@ alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_AL
+ emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
+ dummy						{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY); }
+ 
++	/*
++	 * We have to handle the kernel PMU event cycles-ct/cycles-t/mem-loads/mem-stores separately.
++	 * Because the prefix cycles is mixed up with cpu-cycles.
++	 * loads and stores are mixed up with cache event
++	 */
++cycles-ct					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++cycles-t					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-loads					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-stores					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++
+ L1-dcache|l1-d|l1d|L1-data		|
+ L1-icache|l1-i|l1i|L1-instruction	|
+ LLC|L2					|
+@@ -199,7 +225,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+ {num_hex}		{ return value(yyscanner, 16); }
+ 
+ {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+-{name}			{ return str(yyscanner, PE_NAME); }
++{name}			{ return pmu_str_check(yyscanner); }
+ "/"			{ BEGIN(config); return '/'; }
+ -			{ return '-'; }
+ ,			{ BEGIN(event); return ','; }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 0bc87ba..77e01e5 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -47,6 +47,7 @@ static inc_group_count(struct list_head *list,
+ %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
+ %token PE_PREFIX_MEM PE_PREFIX_RAW PE_PREFIX_GROUP
+ %token PE_ERROR
++%token PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> PE_VALUE
+ %type <num> PE_VALUE_SYM_HW
+ %type <num> PE_VALUE_SYM_SW
+@@ -58,6 +59,7 @@ static inc_group_count(struct list_head *list,
+ %type <str> PE_MODIFIER_EVENT
+ %type <str> PE_MODIFIER_BP
+ %type <str> PE_EVENT_NAME
++%type <str> PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> value_sym
+ %type <head> event_config
+ %type <term> event_term
+@@ -210,6 +212,46 @@ PE_NAME '/' event_config '/'
+ 	parse_events__free_terms($3);
+ 	$$ = list;
+ }
++|
++PE_KERNEL_PMU_EVENT
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head = malloc(sizeof(*head));
++	struct parse_events_term *term;
++	struct list_head *list;
++
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, 1));
++	ABORT_ON(!head);
++	INIT_LIST_HEAD(head);
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
++|
++PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head = malloc(sizeof(*head));
++	struct parse_events_term *term;
++	struct list_head *list;
++	char pmu_name[128];
++	snprintf(&pmu_name, 128, "%s-%s", $1, $3);
++
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					&pmu_name, 1));
++	ABORT_ON(!head);
++	INIT_LIST_HEAD(head);
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
+ 
+ value_sym:
+ PE_VALUE_SYM_HW
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+1.8.3.2
+
