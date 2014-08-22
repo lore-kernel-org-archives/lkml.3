@@ -1,87 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238AbaHVPK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:10:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50377 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932120AbaHVPK5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:10:57 -0400
-Date: Fri, 22 Aug 2014 16:10:07 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Dave Young <dyoung@redhat.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>
-Subject: Re: [PATCH 5/7 update] arm64/efi: do not enter virtual mode in case
- booting with efi=noruntime or noefi
-Message-ID: <20140822151007.GA17255@arm.com>
-References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
- <1408007731-15081-5-git-send-email-dyoung@redhat.com>
- <20140815150952.GY27466@arm.com>
- <20140818013007.GB3379@darkstar.nay.redhat.com>
+	id S1756529AbaHVPQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:16:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58796 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756290AbaHVPQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:16:56 -0400
+Date: Fri, 22 Aug 2014 12:16:51 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/2] perf tools: Add +field argument support for --sort
+ option
+Message-ID: <20140822151651.GC3473@kernel.org>
+References: <1408715919-25990-1-git-send-email-jolsa@kernel.org>
+ <1408715919-25990-3-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140818013007.GB3379@darkstar.nay.redhat.com>
+In-Reply-To: <1408715919-25990-3-git-send-email-jolsa@kernel.org>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 18, 2014 at 02:30:07AM +0100, Dave Young wrote:
-> In case efi runtime disabled via noefi kernel cmdline arm64_enter_virtual_mode
-> should error out.
+Em Fri, Aug 22, 2014 at 03:58:39PM +0200, Jiri Olsa escreveu:
+> Adding support to add field(s) to default sort order
+> via using the '+' prefix, like for report:
 > 
-> At the same time move early_memunmap(memmap.map, mapsize) to the beginning of
-> the function or it will leak early mem.
+>   $ perf report
+>   Samples: 2K of event 'cycles', Event count (approx.): 882172583
+>   Overhead  Command          Shared Object                Symbol
+>      7.39%  swapper          [kernel.kallsyms]            [k] intel_idle
+>      1.97%  firefox          libpthread-2.17.so           [.] pthread_mutex_lock
+>      1.39%  firefox          [snd_hda_intel]              [k] azx_get_position
+>      1.11%  firefox          libpthread-2.17.so           [.] pthread_mutex_unlock
 > 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
+>   $ perf report -s +cpu
+>   Samples: 2K of event 'cycles', Event count (approx.): 882172583
+>   Overhead  Command          Shared Object                Symbol                      CPU
+>      2.89%  swapper          [kernel.kallsyms]            [k] intel_idle              000
+>      2.61%  swapper          [kernel.kallsyms]            [k] intel_idle              002
+>      1.20%  swapper          [kernel.kallsyms]            [k] intel_idle              001
+>      0.82%  firefox          libpthread-2.17.so           [.] pthread_mutex_lock      002
+> 
+> Works in general for commands using --sort option.
+> 
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 > ---
->  arch/arm64/kernel/efi.c | 11 ++++++++---
->  1 file changed, 8 insertions(+), 3 deletions(-)
+>  tools/perf/util/sort.c | 28 +++++++++++++++++++++++++++-
+>  1 file changed, 27 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-> index 6ed0362..8f5db4a 100644
-> --- a/arch/arm64/kernel/efi.c
-> +++ b/arch/arm64/kernel/efi.c
-> @@ -392,11 +392,16 @@ static int __init arm64_enter_virtual_mode(void)
->  		return -1;
->  	}
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index 1958637cf136..b3d7dc1837ec 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -1446,12 +1446,38 @@ static const char *get_default_sort_order(void)
+>  	return default_sort_orders[sort__mode];
+>  }
 >  
-> -	pr_info("Remapping and enabling EFI services.\n");
-> -
-> -	/* replace early memmap mapping with permanent mapping */
->  	mapsize = memmap.map_end - memmap.map;
->  	early_memunmap(memmap.map, mapsize);
+> +static int setup_sort_order(void)
+> +{
+> +#define BUF_MAX 4096
+
+This is an arbitrary value, and you will use this just here, so you
+could just have used a number and later used sizeof(buf).
+
+Anyway, what bothers me is the use of yet another static buffer.
+
+The thing to use here is asprintf, that will do it all for you, format
+_and_ allocate a buffer the size you need.
+
+> +	static char buf[BUF_MAX];
 > +
-> +	if (efi_runtime_disabled()) {
-> +		pr_info("EFI runtime services will be disabled.\n");
-> +		return -1;
+> +	if (!sort_order || is_strict_order(sort_order))
+> +		return 0;
+> +
+> +	if (!strlen(sort_order + 1)) {
+> +		error("Invalid --fields key: `+'");
+> +		return -EINVAL;
 > +	}
 > +
-> +	pr_info("Remapping and enabling EFI services.\n");
-> +	/* replace early memmap mapping with permanent mapping */
->  	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
->  						   mapsize);
->  	memmap.map_end = memmap.map + mapsize;
+> +	scnprintf(buf, BUF_MAX, "%s,%s",
+> +		  get_default_sort_order(),
+> +		  sort_order + 1);
+> +
+> +	sort_order = buf;
 
-This looks better, thanks:
+I.e. it would be better to have this as:
 
-  Reviewed-by: Will Deacon <will.deacon@arm.com>
+	char *new_sort_order;
 
-Are you sending these via the efi tree as part of this series, or do you
-need me to pick anything up into the arm64 tree?
+	if (sort_order[1] == '\0') {
+		error("Invalid --fields key: `+'");
+		return -EINVAL;
+	}
 
-Will
+	if (asprintf(&new_sort_order, "%s,%s",
+		     get_default_sort_order(), sort_order + 1) < 0) {
+		error("Not enough memory to set up --sort");
+		return -ENOMEM;
+	}
+		
+	sort_order = new_sort_order;
+
+> +	return 0;
+
+
+Also please fix the error message, there is a cut'n'paste error there :-)
+
+I applied the --fields one.
+
+- Arnaldo
+
+> +#undef BUF_MAX
+> +}
+> +
+>  static int __setup_sorting(void)
+>  {
+>  	char *tmp, *tok, *str;
+> -	const char *sort_keys = sort_order;
+> +	const char *sort_keys;
+>  	int ret = 0;
+>  
+> +	if (setup_sort_order())
+> +		return -EINVAL;
+> +
+> +	sort_keys = sort_order;
+>  	if (sort_keys == NULL) {
+>  		if (is_strict_order(field_order)) {
+>  			/*
+> -- 
+> 1.8.3.1
