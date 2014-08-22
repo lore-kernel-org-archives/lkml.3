@@ -1,147 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731AbaHVSK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 14:10:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16090 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932410AbaHVSKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 14:10:25 -0400
-Message-ID: <53F78780.9000206@redhat.com>
-Date: Fri, 22 Aug 2014 11:10:08 -0700
-From: Anand Avati <avati@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        Maxim Patlasov <MPatlasov@parallels.com>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [fuse-devel] [PATCH 6/6] fuse: add mount option to disable synchronous
- release
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>	<20140821160930.11005.29357.stgit@localhost.localdomain> <CAJfpegvGhPYnrwUk3gZwBo=NKpk=KzCSMpfm_sgji5O-X9kJLA@mail.gmail.com>
-In-Reply-To: <CAJfpegvGhPYnrwUk3gZwBo=NKpk=KzCSMpfm_sgji5O-X9kJLA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S932795AbaHVSKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:10:50 -0400
+Received: from smtprelay0111.hostedemail.com ([216.40.44.111]:54204 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932410AbaHVSKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 14:10:48 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3868:3872:4321:5007:6119:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13071:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: club57_6ca76fa6f02b
+X-Filterd-Recvd-Size: 2833
+Message-ID: <1408731045.17241.10.camel@joe-AO725>
+Subject: Re: [PATCH] drivers: staging: rtl8723au: Fix "(foo*)" should be
+ "(foo *)" errors
+From: Joe Perches <joe@perches.com>
+To: Greg Donald <gdonald@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linux.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
+Date: Fri, 22 Aug 2014 11:10:45 -0700
+In-Reply-To: <1408728056-17306-1-git-send-email-gdonald@gmail.com>
+References: <1408728056-17306-1-git-send-email-gdonald@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/22/14, 7:09 AM, Miklos Szeredi wrote:
-> On Thu, Aug 21, 2014 at 6:09 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
->> Synchronous release ensures that kernel fuse reports to userspace exactly
->> last fput(). However, nothing guarantees that last fput() will happen in the
->> context of close(2). So userspace applications must be prepared to the
->> situation when close(2) returned, but processing of FUSE_RELEASE is not
->> completed by fuse daemon yet. To make testing such use cases easier, the
->> patch introduces DISABLE_SYNC_RELEASE mount option which effectively mask out
->> FOPEN_SYNC_RELEASE flag.
->
-> Why not make this an INIT flag?  Much easier to add support for in userspace.
->
-> Thanks,
-> Miklos
+On Fri, 2014-08-22 at 12:20 -0500, Greg Donald wrote:
+> Fix checkpatch.pl "(foo*)" should be "(foo *)" errors
 
-In a real world scenario you may want to perform synchronous release 
-selectively. As such performance over lots of small files is generally 
-slow because of context switches, and a synchronous release adds an 
-extra switch. In cases like 'grep -r' over lots of text files where 
-consistency don't matter or userspace knows data doesn't get modified, 
-the userspace can chose to not perform synchronous release with some 
-heuristics (like size is small and open flag is O_RDONLY etc.) where as 
-for large read/write files (like VM images?) you would want to perform 
-synchronous release for consistency purposes. A global flag in INIT 
-would make it too crude and impose the same consistency for all files.
+Hello Greg.
 
-Thanks
-Avati
+> diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
+[]
+> @@ -599,7 +599,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
+>  
+>  	/* todo: init other variables */
+>  
+> -	memset((void*)&psta->sta_stats, 0, sizeof(struct stainfo_stats));
+> +	memset((void *)&psta->sta_stats, 0, sizeof(struct stainfo_stats));
 
->
->>
->> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
->> ---
->> ---
->>   fs/fuse/file.c   |    3 ++-
->>   fs/fuse/fuse_i.h |    3 +++
->>   fs/fuse/inode.c  |    8 ++++++++
->>   3 files changed, 13 insertions(+), 1 deletion(-)
->>
->> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
->> index b92143a..ad3d357 100644
->> --- a/fs/fuse/file.c
->> +++ b/fs/fuse/file.c
->> @@ -296,7 +296,8 @@ static void fuse_prepare_release(struct fuse_file *ff, int flags, int opcode)
->>
->>   static bool must_release_synchronously(struct fuse_file *ff)
->>   {
->> -       return ff->open_flags & FOPEN_SYNC_RELEASE;
->> +       return ff->open_flags & FOPEN_SYNC_RELEASE &&
->> +               !(ff->fc->flags & FUSE_DISABLE_SYNC_RELEASE);
->>   }
->>
->>   void fuse_release_common(struct file *file, int opcode)
->> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
->> index e8e47a6..c5e2fca 100644
->> --- a/fs/fuse/fuse_i.h
->> +++ b/fs/fuse/fuse_i.h
->> @@ -44,6 +44,9 @@
->>       doing the mount will be allowed to access the filesystem */
->>   #define FUSE_ALLOW_OTHER         (1 << 1)
->>
->> +/** Disable synchronous release */
->> +#define FUSE_DISABLE_SYNC_RELEASE (1 << 2)
->> +
->>   /** Number of page pointers embedded in fuse_req */
->>   #define FUSE_REQ_INLINE_PAGES 1
->>
->> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
->> index 03246cd..86d47d0 100644
->> --- a/fs/fuse/inode.c
->> +++ b/fs/fuse/inode.c
->> @@ -463,6 +463,7 @@ enum {
->>          OPT_ALLOW_OTHER,
->>          OPT_MAX_READ,
->>          OPT_BLKSIZE,
->> +       OPT_DISABLE_SYNC_RELEASE,
->>          OPT_ERR
->>   };
->>
->> @@ -475,6 +476,7 @@ static const match_table_t tokens = {
->>          {OPT_ALLOW_OTHER,               "allow_other"},
->>          {OPT_MAX_READ,                  "max_read=%u"},
->>          {OPT_BLKSIZE,                   "blksize=%u"},
->> +       {OPT_DISABLE_SYNC_RELEASE,      "disable_sync_release"},
->>          {OPT_ERR,                       NULL}
->>   };
->>
->> @@ -560,6 +562,10 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
->>                          d->blksize = value;
->>                          break;
->>
->> +               case OPT_DISABLE_SYNC_RELEASE:
->> +                       d->flags |= FUSE_DISABLE_SYNC_RELEASE;
->> +                       break;
->> +
->>                  default:
->>                          return 0;
->>                  }
->> @@ -583,6 +589,8 @@ static int fuse_show_options(struct seq_file *m, struct dentry *root)
->>                  seq_puts(m, ",default_permissions");
->>          if (fc->flags & FUSE_ALLOW_OTHER)
->>                  seq_puts(m, ",allow_other");
->> +       if (fc->flags & FUSE_DISABLE_SYNC_RELEASE)
->> +               seq_puts(m, ",disable_sync_release");
->>          if (fc->max_read != ~0)
->>                  seq_printf(m, ",max_read=%u", fc->max_read);
->>          if (sb->s_bdev && sb->s_blocksize != FUSE_DEFAULT_BLKSIZE)
->>
->
-> ------------------------------------------------------------------------------
-> Slashdot TV.
-> Video for Nerds.  Stuff that matters.
-> http://tv.slashdot.org/
-> _______________________________________________
-> fuse-devel mailing list
-> fuse-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/fuse-devel
->
+It'd be better to remove the (void *) cast instead.
+
+[]
+> diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
+[]
+> @@ -1493,7 +1493,7 @@ void rtw_setstaKey_cmdrsp_callback23a(struct rtw_adapter *padapter,
+>  	struct sta_info *psta;
+>  
+>  	pstapriv = &padapter->stapriv;
+> -	psetstakey_rsp = (struct set_stakey_rsp*) (pcmd->rsp);
+> +	psetstakey_rsp = (struct set_stakey_rsp *) (pcmd->rsp);
+
+Probably better to remove the space and the
+unnecessary parentheses:
+
+	psetstakey_rsp = (struct set_stakey_rsp *)pcmd->rsp;
+
+> @@ -1518,7 +1518,7 @@ void rtw_setassocsta_cmdrsp_callback23a(struct rtw_adapter *padapter,
+>  	struct sta_info *psta;
+>  
+>  	passocsta_parm = (struct set_assocsta_parm *)(pcmd->parmbuf);
+> -	passocsta_rsp = (struct set_assocsta_rsp*) (pcmd->rsp);
+> +	passocsta_rsp = (struct set_assocsta_rsp *) (pcmd->rsp);
+
+same unnecessary parentheses, maybe
+submit separate patches for those.
+
+> diff --git a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
+[]
+> @@ -4763,7 +4763,7 @@ void report_survey_event23a(struct rtw_adapter *padapter,
+>  	pcmd_obj->rsp = NULL;
+>  	pcmd_obj->rspsz  = 0;
+>  
+> -	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
+> +	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
+
+more unnecessary parentheses, etc...
+
 
