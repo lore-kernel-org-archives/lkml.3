@@ -1,112 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468AbaHVTxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:53:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1038 "EHLO mga01.intel.com"
+	id S1751613AbaHVTyZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:54:25 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:49771 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008AbaHVTxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:53:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,383,1406617200"; 
-   d="scan'208";a="580558436"
-Date: Fri, 22 Aug 2014 13:53:40 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Christoph Hellwig <hch@infradead.org>
-cc: Keith Busch <keith.busch@intel.com>, linux-nvme@lists.infradead.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk, willy@linux.intel.com,
-        nilesh.choudhury@oracle.com, indraneel.m@samsung.com,
-        shiro.itou@outlook.com
-Subject: Re: [PATCH] fs/block_dev.c: Use hd_part to find block inodes
-In-Reply-To: <20140822174848.GA11819@infradead.org>
-Message-ID: <alpine.LRH.2.03.1408221341280.4696@AMR>
-References: <1408724896-3671-1-git-send-email-keith.busch@intel.com> <20140822174848.GA11819@infradead.org>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1750844AbaHVTyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 15:54:23 -0400
+Message-ID: <53F79FE8.7030406@interlog.com>
+Date: Fri, 22 Aug 2014 15:54:16 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+CC: Hannes Reinecke <hare@suse.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-scsi@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC PATCH -logging 00/10] scsi/constants: Output continuous
+ error messages on trace
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <53E4CB7B.7020705@interlog.com> <53EAD7CC.8030408@hitachi.com>
+In-Reply-To: <53EAD7CC.8030408@hitachi.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014, Christoph Hellwig wrote:
-> On Fri, Aug 22, 2014 at 10:28:16AM -0600, Keith Busch wrote:
->> When using the GENHD_FL_EXT_DEVT disk flags, a newly added device may
->> be assigned the same major/minor as one that was previously removed but
->> opened, and the pesky userspace refuses to close it!
+On 14-08-12 11:13 PM, Yoshihiro YUNOMAE wrote:
+> Hi Douglas,
 >
-> Which means life time rules for those dev_t allocations are broken.
-> Please fix it to not release the dev_t until the device isn't referenced
-> at all.
+> Thank you for your comment.
+>
+> (2014/08/08 22:07), Douglas Gilbert wrote:
+>> On 14-08-08 01:50 PM, Yoshihiro YUNOMAE wrote:
+>>> Hi All,
+>>>
+>>> This patch set introduces new traceevents in order to output
+>>> continuous error
+>>> messages. Current SCSI printk messages in upstream kernel can be
+>>> divided by and
+>>> mixed with other messages. Even if each error message has its device id,
+>>> sometimes we can easily be lost in mixed logs because the message's
+>>> device id
+>>> is separated from it's body. To avoid it, I'd like to use traceevents to
+>>> store error messages into the ftrace or perf buuffer, because traceevents
+>>> are atomically commited to the buffer.
+>>>
+>>> In this patch set, all printk messages are removed based on a local
+>>> discussion with Hannes, but I think printk messages should be kept
+>>> because all
+>>> users don't enable traceevents and rsyslog can store as files.
+>>>
+>>> However, if printk of logging branch is kept, the messages are
+>>> duplicate and
+>>> it can induce stack overflow by using local buffer(*1).
+>>>
+>>>   (*1) https://lkml.org/lkml/2014/5/20/742
+>>>
+>>> So, my suggestion is follows:
+>>>
+>>> 1) printk
+>>> Keeps current implemntation of upstream kernel.
+>>> The messages are divided and can be mixed, but all users can check the
+>>> error
+>>> messages without any settings.
+>>>
+>>> 2) traceevents
+>>> To get the complete messages, we can use ftrace or perf (or something
+>>> on them).
+>>> Users can always understand correct messages, but they need to set up the
+>>> tracers.
+>>>
+>>> This patch set is based on Hannes' logging branch:
+>>> http://git.kernel.org/cgit/linux/kernel/git/hare/scsi-devel.git/log/?h=logging
+>>>
+>>>
+>>> [1/10] ~  [6/10]: just cleanup for logging branch
+>>> [7/10] ~ [10/10]: introduce new traceevents
+>>>
+>>> Any comments are welcome!
+>>
+>> In sg3_utils there are now string yielding equivalents
+>> to the sense buffer "print" functions. They take a form
+>> like this:
+>>    char * get_sense_str(const unsigned char * sense_buffer,
+>>                         int sb_len, int blen, char * b);
+>>
+>> So this just does the hard work of decoding the sense buffer
+>> (or saying it is invalid) the result of which it places in
+>> buffer 'b'. And 'b' is returned (so this function can be in
+>> the arguments of a driver's printing function).
+>>
+>> Adding such string functions would give other parts of the
+>> SCSI subsystem the capability of tailoring their own
+>> messages that include sense data information.
+>>
+>>
+>> Existing sense buffer "print" function could be kept and
+>> implemented using the newer "_str" variants. Would that
+>> be worth the trouble?
+>
+> I have already sent the idea using local buffer on this February,
+> but it was rejected by James (*1). By using stack region for local
+> buffer, stack overflow can occur. So, I implemented this feature
+> to atomically output an error message with device information.
+>
+> (*1) https://lkml.org/lkml/2014/5/20/742
 
-Okay, thanks. So a proper fix would not let extended devt minors get
-reused while still referenced, so we can't release it unconditionally
-from del_gendisk(). I think the following does that, but I had to add
-a reference counter to gendisk.
+Hi,
+In the "_str" variants that I referred to, the caller provides
+the buffer and its length. The responsibility of the
+implementation of those "_str" variants is to use that
+buffer, not exceed it, and make sure that it is null terminated
+on return.
 
----
-diff --git a/block/genhd.c b/block/genhd.c
-index 791f419..a41478a 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -453,6 +453,12 @@ void blk_free_devt(dev_t devt)
-  	}
-  }
+Can't see any inherent threat to the stack size there, and if
+there is then that is just bad design by the caller.
 
-+static void free_ext_dev(struct kref *kref)
-+{
-+	struct gendisk *disk = container_of(kref, struct gendisk, kref);
-+	blk_free_devt(disk_to_dev(disk)->devt);
-+}
-+
-  static char *bdevt_str(dev_t devt, char *buf)
-  {
-  	if (MAJOR(devt) <= 0xff && MINOR(devt) <= 0xff) {
-@@ -665,7 +671,6 @@ void del_gendisk(struct gendisk *disk)
-  		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
-  	pm_runtime_set_memalloc_noio(disk_to_dev(disk), false);
-  	device_del(disk_to_dev(disk));
--	blk_free_devt(disk_to_dev(disk)->devt);
-  }
-  EXPORT_SYMBOL(del_gendisk);
+The advantage of the "_str" variants is that the caller can
+supply context and print/log a more useful message, perhaps
+including the caller's __func__ . That message could include
+sense information (perhaps truncated to 128 bytes, say),
+and be output as a single unit.
 
-@@ -1283,6 +1288,7 @@ struct gendisk *alloc_disk_node(int minors, int node_id)
-  		disk_to_dev(disk)->class = &block_class;
-  		disk_to_dev(disk)->type = &disk_type;
-  		device_initialize(disk_to_dev(disk));
-+		kref_init(&disk->kref);
-  	}
-  	return disk;
-  }
-@@ -1303,6 +1309,7 @@ struct kobject *get_disk(struct gendisk *disk)
-  		module_put(owner);
-  		return NULL;
-  	}
-+	kref_get(&disk->kref);
-  	return kobj;
+IMO too many log messages are multi-line and in a noisy,
+misbehaving system those messages can be interleaved
+with other "noise" making them difficult to decipher.
 
-  }
-@@ -1311,8 +1318,10 @@ EXPORT_SYMBOL(get_disk);
+Doug Gilbert
 
-  void put_disk(struct gendisk *disk)
-  {
--	if (disk)
-+	if (disk) {
-+		kref_put(&disk->kref, free_ext_dev);
-  		kobject_put(&disk_to_dev(disk)->kobj);
-+	}
-  }
 
-  EXPORT_SYMBOL(put_disk);
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index ec274e0..d51b099 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -200,6 +200,7 @@ struct gendisk {
-  	struct blk_integrity *integrity;
-  #endif
-  	int node_id;
-+	struct kref kref;
-  };
-
-  static inline struct gendisk *part_to_disk(struct hd_struct *part)
---
