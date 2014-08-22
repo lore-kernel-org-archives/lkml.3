@@ -1,209 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153AbaHVFAH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 01:00:07 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:57084 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaHVFAD (ORCPT
+	id S1755840AbaHVFBM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 01:01:12 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:59240 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629AbaHVFBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 01:00:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <1407860725-25202-4-git-send-email-Liviu.Dudau@arm.com>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com> <1407860725-25202-4-git-send-email-Liviu.Dudau@arm.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 21 Aug 2014 23:59:41 -0500
-Message-ID: <CAL_JsqKgW=HN35YnYBtAVDPxMYQfR35Bw3ekonXPmNhjrsVDUg@mail.gmail.com>
-Subject: Re: [PATCH v9 03/12] PCI: Introduce helper functions to deal with PCI
- I/O ranges.
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 22 Aug 2014 01:01:10 -0400
+Message-ID: <1408683665.5648.69.camel@marge.simpson.net>
+Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process
+ is runnable
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Fri, 22 Aug 2014 07:01:05 +0200
+In-Reply-To: <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
+	 <1408608310-13579-2-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 12, 2014 at 11:25 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> Some architectures do not have a simple view of the PCI I/O space
-> and instead use a range of CPU addresses that map to bus addresses.
-> For some architectures these ranges will be expressed by OF bindings
-> in a device tree file.
->
-> This patch introduces a pci_register_io_range() helper function with
-> a generic implementation that can be used by such architectures to
-> keep track of the I/O ranges described by the PCI bindings. If the
-> PCI_IOBASE macro is not defined that signals lack of support for PCI
-> and we return an error.
->
-> In order to retrieve the CPU address associated with an I/O port, a
-> new helper function pci_pio_to_address() is introduced. This will
-> search in the list of ranges registered with pci_register_io_range()
-> and return the CPU address that corresponds to the given port.
->
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+On Thu, 2014-08-21 at 16:05 +0800, Jason Wang wrote: 
+> Rx busy loop does not scale well in the case when several parallel
+> sessions is active. This is because we keep looping even if there's
+> another process is runnable. For example, if that process is about to
+> send packet, keep busy polling in current process will brings extra
+> delay and damage the performance.
+> 
+> This patch solves this issue by exiting the busy loop when there's
+> another process is runnable in current cpu. Simple test that pin two
+> netperf sessions in the same cpu in receiving side shows obvious
+> improvement:
 
-Acked-by: Rob Herring <robh@kernel.org>
+That patch says to me it's a bad idea to spin when someone (anyone) else
+can get some work done on a CPU, which intuitively makes sense.  But..
 
+(ponders net goop: with silly 1 byte ping-pong load, throughput is bound
+by fastpath latency, net plus sched plus fixable nohz and governor crud
+if not polling, so you can't get a lot of data moved byte at a time no
+matter how sexy the pipe whether polling or not due to bound.  If OTOH
+net hardware is a blazing fast large bore packet cannon, net overhead
+per unit payload drops, sched+crud is a constant)
 
+Seems the only time it's a good idea to poll is if blasting big packets
+on sexy hardware, and if you're doing that, you want to poll regardless
+of whether somebody else is waiting, or?
+
+> Before:
+> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+> 16384  87380  1        1       10.00    15513.74
+> 16384  87380
+> 16384  87380  1        1       10.00    15092.78
+> 16384  87380
+> 
+> After:
+> netperf -H 192.168.100.2 -T 0,0 -t TCP_RR -P 0 & \
+> netperf -H 192.168.100.2 -T 1,0 -t TCP_RR -P 0
+> 16384  87380  1        1       10.00    23334.53
+> 16384  87380
+> 16384  87380  1        1       10.00    23327.58
+> 16384  87380
+> 
+> Benchmark was done through two 8 cores Xeon machine back to back connected
+> with mlx4 through netperf TCP_RR test (busy_read were set to 50):
+> 
+> sessions/bytes/before/after/+improvement%/busy_read=0/
+> 1/1/30062.10/30034.72/+0%/20228.96/
+> 16/1/214719.83/307669.01/+43%/268997.71/
+> 32/1/231252.81/345845.16/+49%/336157.442/
+> 64/512/212467.39/373464.93/+75%/397449.375/
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 > ---
->  drivers/of/address.c       | 95 ++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_address.h |  2 +
->  2 files changed, 97 insertions(+)
->
-> diff --git a/drivers/of/address.c b/drivers/of/address.c
-> index 5edfcb0..4dab700 100644
-> --- a/drivers/of/address.c
-> +++ b/drivers/of/address.c
-> @@ -5,6 +5,7 @@
->  #include <linux/module.h>
->  #include <linux/of_address.h>
->  #include <linux/pci_regs.h>
-> +#include <linux/slab.h>
->  #include <linux/string.h>
->
->  /* Max address size we deal with */
-> @@ -601,12 +602,106 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
->  }
->  EXPORT_SYMBOL(of_get_address);
->
-> +#ifdef PCI_IOBASE
-> +struct io_range {
-> +       struct list_head list;
-> +       phys_addr_t start;
-> +       resource_size_t size;
-> +};
-> +
-> +static LIST_HEAD(io_range_list);
-> +static DEFINE_SPINLOCK(io_range_lock);
-> +#endif
-> +
-> +/*
-> + * Record the PCI IO range (expressed as CPU physical address + size).
-> + * Return a negative value if an error has occured, zero otherwise
-> + */
-> +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
-> +{
-> +#ifdef PCI_IOBASE
-> +       struct io_range *range;
-> +       resource_size_t allocated_size = 0;
-> +
-> +       /* check if the range hasn't been previously recorded */
-> +       spin_lock(&io_range_lock);
-> +       list_for_each_entry(range, &io_range_list, list) {
-> +               if (addr >= range->start && addr + size <= range->start + size)
-> +                       return 0;
-> +               allocated_size += range->size;
-> +       }
-> +       spin_unlock(&io_range_lock);
-> +
-> +       /* range not registed yet, check for available space */
-> +       if (allocated_size + size - 1 > IO_SPACE_LIMIT) {
-> +               /* if it's too big check if 64K space can be reserved */
-> +               if (allocated_size + SZ_64K - 1 > IO_SPACE_LIMIT)
-> +                       return -E2BIG;
-> +
-> +               size = SZ_64K;
-> +               pr_warn("Requested IO range too big, new size set to 64K\n");
-> +       }
-> +
-> +       /* add the range to the list */
-> +       range = kzalloc(sizeof(*range), GFP_KERNEL);
-> +       if (!range)
-> +               return -ENOMEM;
-> +
-> +       range->start = addr;
-> +       range->size = size;
-> +
-> +       list_add_tail(&range->list, &io_range_list);
-> +#endif
-> +
-> +       return 0;
-> +}
-> +
-> +phys_addr_t pci_pio_to_address(unsigned long pio)
-> +{
-> +       phys_addr_t address = (phys_addr_t)OF_BAD_ADDR;
-> +
-> +#ifdef PCI_IOBASE
-> +       struct io_range *range;
-> +       resource_size_t allocated_size = 0;
-> +
-> +       if (pio > IO_SPACE_LIMIT)
-> +               return address;
-> +
-> +       spin_lock(&io_range_lock);
-> +       list_for_each_entry(range, &io_range_list, list) {
-> +               if (pio >= allocated_size && pio < allocated_size + range->size) {
-> +                       address = range->start + pio - allocated_size;
-> +                       break;
-> +               }
-> +               allocated_size += range->size;
-> +       }
-> +       spin_unlock(&io_range_lock);
-> +#endif
-> +
-> +       return address;
-> +}
-> +
->  unsigned long __weak pci_address_to_pio(phys_addr_t address)
->  {
-> +#ifdef PCI_IOBASE
-> +       struct io_range *res;
-> +       resource_size_t offset = 0;
-> +
-> +       list_for_each_entry(res, &io_range_list, list) {
-> +               if (address >= res->start &&
-> +                       address < res->start + res->size) {
-> +                       return res->start - address + offset;
-> +               }
-> +               offset += res->size;
-> +       }
-> +
-> +       return (unsigned long)-1;
-> +#else
->         if (address > IO_SPACE_LIMIT)
->                 return (unsigned long)-1;
->
->         return (unsigned long) address;
-> +#endif
->  }
->
->  static int __of_address_to_resource(struct device_node *dev,
-> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-> index c13b878..28e6836 100644
-> --- a/include/linux/of_address.h
-> +++ b/include/linux/of_address.h
-> @@ -55,7 +55,9 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
->  extern const __be32 *of_get_address(struct device_node *dev, int index,
->                            u64 *size, unsigned int *flags);
->
-> +extern int pci_register_io_range(phys_addr_t addr, resource_size_t size);
->  extern unsigned long pci_address_to_pio(phys_addr_t addr);
-> +extern phys_addr_t pci_pio_to_address(unsigned long pio);
->
->  extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
->                         struct device_node *node);
-> --
-> 2.0.4
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>  include/net/busy_poll.h | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+> index 1d67fb6..8a33fb2 100644
+> --- a/include/net/busy_poll.h
+> +++ b/include/net/busy_poll.h
+> @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
+>  		cpu_relax();
+>  
+>  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+> -		 !need_resched() && !busy_loop_timeout(end_time));
+> +		 !need_resched() && !busy_loop_timeout(end_time) &&
+> +		 nr_running_this_cpu() < 2);
+>  
+>  	rc = !skb_queue_empty(&sk->sk_receive_queue);
+>  out:
+
+
