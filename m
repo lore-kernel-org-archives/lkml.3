@@ -1,144 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912AbaHVEza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 00:55:30 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:55107 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855AbaHVEz1 (ORCPT
+	id S1753153AbaHVFAH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 01:00:07 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:57084 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbaHVFAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 00:55:27 -0400
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-To: linux-mmc@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v3 3/3] mmc: mmci: rename sdio flag in vendor data to st_sdio
-Date: Fri, 22 Aug 2014 05:55:16 +0100
-Message-Id: <1408683316-8074-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Fri, 22 Aug 2014 01:00:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1407860725-25202-4-git-send-email-Liviu.Dudau@arm.com>
+References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com> <1407860725-25202-4-git-send-email-Liviu.Dudau@arm.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Thu, 21 Aug 2014 23:59:41 -0500
+Message-ID: <CAL_JsqKgW=HN35YnYBtAVDPxMYQfR35Bw3ekonXPmNhjrsVDUg@mail.gmail.com>
+Subject: Re: [PATCH v9 03/12] PCI: Introduce helper functions to deal with PCI
+ I/O ranges.
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch renames sdio flag in vendor data to st_sdio, as this flag is
-only used to enable ST specific sdio setup. This will also ensure that
-the ST specfic setup is not done on other vendor like Qualcomm.
+On Tue, Aug 12, 2014 at 11:25 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> Some architectures do not have a simple view of the PCI I/O space
+> and instead use a range of CPU addresses that map to bus addresses.
+> For some architectures these ranges will be expressed by OF bindings
+> in a device tree file.
+>
+> This patch introduces a pci_register_io_range() helper function with
+> a generic implementation that can be used by such architectures to
+> keep track of the I/O ranges described by the PCI bindings. If the
+> PCI_IOBASE macro is not defined that signals lack of support for PCI
+> and we return an error.
+>
+> In order to retrieve the CPU address associated with an I/O port, a
+> new helper function pci_pio_to_address() is introduced. This will
+> search in the list of ranges registered with pci_register_io_range()
+> and return the CPU address that corresponds to the given port.
+>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-Originally the issue was detected while testing WLAN ath6kl on IFC6410
-board with APQ8064 SOC.
+Acked-by: Rob Herring <robh@kernel.org>
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
----
- drivers/mmc/host/mmci.c | 48 ++++++++++++++++++++++++------------------------
- 1 file changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index a25759e..264c947 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -61,7 +61,7 @@ static unsigned int fmax = 515633;
-  * @fifohalfsize: number of bytes that can be written when MCI_TXFIFOHALFEMPTY
-  *		  is asserted (likewise for RX)
-  * @data_cmd_enable: enable value for data commands.
-- * @sdio: variant supports SDIO
-+ * @st_sdio: enable ST specific SDIO logic
-  * @st_clkdiv: true if using a ST-specific clock divider algorithm
-  * @datactrl_mask_ddrmode: ddr mode mask in datactrl register.
-  * @blksz_datactrl16: true if Block size is at b16..b30 position in datactrl register
-@@ -91,7 +91,7 @@ struct variant_data {
- 	unsigned int		data_cmd_enable;
- 	unsigned int		datactrl_mask_ddrmode;
- 	unsigned int		datactrl_mask_sdio;
--	bool			sdio;
-+	bool			st_sdio;
- 	bool			st_clkdiv;
- 	bool			blksz_datactrl16;
- 	bool			blksz_datactrl4;
-@@ -141,7 +141,7 @@ static struct variant_data variant_u300 = {
- 	.clkreg_8bit_bus_enable = MCI_ST_8BIT_BUS,
- 	.datalength_bits	= 16,
- 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
--	.sdio			= true,
-+	.st_sdio			= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
- 	.f_max			= 100000000,
- 	.signal_direction	= true,
-@@ -155,7 +155,7 @@ static struct variant_data variant_nomadik = {
- 	.clkreg			= MCI_CLK_ENABLE,
- 	.datalength_bits	= 24,
- 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
--	.sdio			= true,
-+	.st_sdio		= true,
- 	.st_clkdiv		= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
- 	.f_max			= 100000000,
-@@ -173,7 +173,7 @@ static struct variant_data variant_ux500 = {
- 	.clkreg_neg_edge_enable	= MCI_ST_UX500_NEG_EDGE,
- 	.datalength_bits	= 24,
- 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
--	.sdio			= true,
-+	.st_sdio		= true,
- 	.st_clkdiv		= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
- 	.f_max			= 100000000,
-@@ -193,7 +193,7 @@ static struct variant_data variant_ux500v2 = {
- 	.datactrl_mask_ddrmode	= MCI_ST_DPSM_DDRMODE,
- 	.datalength_bits	= 24,
- 	.datactrl_mask_sdio	= MCI_ST_DPSM_SDIOEN,
--	.sdio			= true,
-+	.st_sdio		= true,
- 	.st_clkdiv		= true,
- 	.blksz_datactrl16	= true,
- 	.pwrreg_powerup		= MCI_PWR_ON,
-@@ -818,26 +818,26 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- 	if (data->flags & MMC_DATA_READ)
- 		datactrl |= MCI_DPSM_DIRECTION;
- 
--	if (variant->sdio && host->mmc->card)
--		if (mmc_card_sdio(host->mmc->card)) {
--			u32 clk;
--			datactrl |= variant->datactrl_mask_sdio;
-+	if (host->mmc->card && mmc_card_sdio(host->mmc->card)) {
-+		u32 clk;
- 
--			/*
--			 * The ST Micro variant for SDIO small write transfers
--			 * needs to have clock H/W flow control disabled,
--			 * otherwise the transfer will not start. The threshold
--			 * depends on the rate of MCLK.
--			 */
--			if (data->flags & MMC_DATA_WRITE &&
--			    (host->size < 8 ||
--			     (host->size <= 8 && host->mclk > 50000000)))
--				clk = host->clk_reg & ~variant->clkreg_enable;
--			else
--				clk = host->clk_reg | variant->clkreg_enable;
-+		datactrl |= variant->datactrl_mask_sdio;
- 
--			mmci_write_clkreg(host, clk);
--		}
-+		/*
-+		 * The ST Micro variant for SDIO small write transfers
-+		 * needs to have clock H/W flow control disabled,
-+		 * otherwise the transfer will not start. The threshold
-+		 * depends on the rate of MCLK.
-+		 */
-+		if (variant->st_sdio && data->flags & MMC_DATA_WRITE &&
-+		    (host->size < 8 ||
-+		     (host->size <= 8 && host->mclk > 50000000)))
-+			clk = host->clk_reg & ~variant->clkreg_enable;
-+		else
-+			clk = host->clk_reg | variant->clkreg_enable;
-+
-+		mmci_write_clkreg(host, clk);
-+	}
- 
- 	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50 ||
- 	    host->mmc->ios.timing == MMC_TIMING_MMC_DDR52)
--- 
-1.9.1
-
+> ---
+>  drivers/of/address.c       | 95 ++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_address.h |  2 +
+>  2 files changed, 97 insertions(+)
+>
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index 5edfcb0..4dab700 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/module.h>
+>  #include <linux/of_address.h>
+>  #include <linux/pci_regs.h>
+> +#include <linux/slab.h>
+>  #include <linux/string.h>
+>
+>  /* Max address size we deal with */
+> @@ -601,12 +602,106 @@ const __be32 *of_get_address(struct device_node *dev, int index, u64 *size,
+>  }
+>  EXPORT_SYMBOL(of_get_address);
+>
+> +#ifdef PCI_IOBASE
+> +struct io_range {
+> +       struct list_head list;
+> +       phys_addr_t start;
+> +       resource_size_t size;
+> +};
+> +
+> +static LIST_HEAD(io_range_list);
+> +static DEFINE_SPINLOCK(io_range_lock);
+> +#endif
+> +
+> +/*
+> + * Record the PCI IO range (expressed as CPU physical address + size).
+> + * Return a negative value if an error has occured, zero otherwise
+> + */
+> +int __weak pci_register_io_range(phys_addr_t addr, resource_size_t size)
+> +{
+> +#ifdef PCI_IOBASE
+> +       struct io_range *range;
+> +       resource_size_t allocated_size = 0;
+> +
+> +       /* check if the range hasn't been previously recorded */
+> +       spin_lock(&io_range_lock);
+> +       list_for_each_entry(range, &io_range_list, list) {
+> +               if (addr >= range->start && addr + size <= range->start + size)
+> +                       return 0;
+> +               allocated_size += range->size;
+> +       }
+> +       spin_unlock(&io_range_lock);
+> +
+> +       /* range not registed yet, check for available space */
+> +       if (allocated_size + size - 1 > IO_SPACE_LIMIT) {
+> +               /* if it's too big check if 64K space can be reserved */
+> +               if (allocated_size + SZ_64K - 1 > IO_SPACE_LIMIT)
+> +                       return -E2BIG;
+> +
+> +               size = SZ_64K;
+> +               pr_warn("Requested IO range too big, new size set to 64K\n");
+> +       }
+> +
+> +       /* add the range to the list */
+> +       range = kzalloc(sizeof(*range), GFP_KERNEL);
+> +       if (!range)
+> +               return -ENOMEM;
+> +
+> +       range->start = addr;
+> +       range->size = size;
+> +
+> +       list_add_tail(&range->list, &io_range_list);
+> +#endif
+> +
+> +       return 0;
+> +}
+> +
+> +phys_addr_t pci_pio_to_address(unsigned long pio)
+> +{
+> +       phys_addr_t address = (phys_addr_t)OF_BAD_ADDR;
+> +
+> +#ifdef PCI_IOBASE
+> +       struct io_range *range;
+> +       resource_size_t allocated_size = 0;
+> +
+> +       if (pio > IO_SPACE_LIMIT)
+> +               return address;
+> +
+> +       spin_lock(&io_range_lock);
+> +       list_for_each_entry(range, &io_range_list, list) {
+> +               if (pio >= allocated_size && pio < allocated_size + range->size) {
+> +                       address = range->start + pio - allocated_size;
+> +                       break;
+> +               }
+> +               allocated_size += range->size;
+> +       }
+> +       spin_unlock(&io_range_lock);
+> +#endif
+> +
+> +       return address;
+> +}
+> +
+>  unsigned long __weak pci_address_to_pio(phys_addr_t address)
+>  {
+> +#ifdef PCI_IOBASE
+> +       struct io_range *res;
+> +       resource_size_t offset = 0;
+> +
+> +       list_for_each_entry(res, &io_range_list, list) {
+> +               if (address >= res->start &&
+> +                       address < res->start + res->size) {
+> +                       return res->start - address + offset;
+> +               }
+> +               offset += res->size;
+> +       }
+> +
+> +       return (unsigned long)-1;
+> +#else
+>         if (address > IO_SPACE_LIMIT)
+>                 return (unsigned long)-1;
+>
+>         return (unsigned long) address;
+> +#endif
+>  }
+>
+>  static int __of_address_to_resource(struct device_node *dev,
+> diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+> index c13b878..28e6836 100644
+> --- a/include/linux/of_address.h
+> +++ b/include/linux/of_address.h
+> @@ -55,7 +55,9 @@ extern void __iomem *of_iomap(struct device_node *device, int index);
+>  extern const __be32 *of_get_address(struct device_node *dev, int index,
+>                            u64 *size, unsigned int *flags);
+>
+> +extern int pci_register_io_range(phys_addr_t addr, resource_size_t size);
+>  extern unsigned long pci_address_to_pio(phys_addr_t addr);
+> +extern phys_addr_t pci_pio_to_address(unsigned long pio);
+>
+>  extern int of_pci_range_parser_init(struct of_pci_range_parser *parser,
+>                         struct device_node *node);
+> --
+> 2.0.4
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
