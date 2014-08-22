@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984AbaHVKEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 06:04:10 -0400
-Received: from smtp.sanfor.com ([58.251.49.30]:52927 "EHLO mail.sangfor.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740AbaHVKEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 06:04:08 -0400
-Date: Fri, 22 Aug 2014 18:01:52 +0800
-From: "Zhang Haoyu" <zhanghy@sangfor.com>
-To: "Zhang Haoyu" <zhanghy@sangfor.com>, "Razya Ladelsky" <RAZYA@il.ibm.com>,
-        "Christian Borntraeger" <borntraeger@de.ibm.com>,
-        "mashirle" <mashirle@us.ibm.com>, "Jason Wang" <jasowang@redhat.com>,
-        "Michael S.Tsirkin" <mst@redhat.com>
-Cc: "abel.gordon" <abel.gordon@gmail.com>, "Alex Glikson" <GLIKSON@il.ibm.com>,
-        "Eran Raichstein" <ERANRA@il.ibm.com>, "Joel Nider" <JOELN@il.ibm.com>,
-        "kvm" <kvm@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>, "mst" <mst@redhat.com>,
-        "netdev" <netdev@vger.kernel.org>,
-        "virtualization" <virtualization@lists.linux-foundation.org>,
-        "Yossi Kuperman1" <YOSSIKU@il.ibm.com>
-References: <1407659404-razya@il.ibm.com>,
- <20140810083035.0CF58380729@moren.haifa.ibm.com>,
- <53F45F3C.5000207@de.ibm.com>,
- <OF9D20825B.8FFA2829-ONC2257D3B.004A777F-C2257D3B.004C47BC@il.ibm.com>
-Subject: Re: [PATCH] vhost: Add polling mode
-Message-ID: <201408221801508088964@sangfor.com>
-X-mailer: Foxmail 6, 15, 201, 20 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="gb2312"
-Content-Transfer-Encoding: 7bit
+	id S1756011AbaHVKGS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 06:06:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31327 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974AbaHVKGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 06:06:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,379,1406617200"; 
+   d="scan'208";a="471554511"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] cpufreq: intel_pstate: Add CPU ID for Braswell processor
+Date: Fri, 22 Aug 2014 13:05:44 +0300
+Message-Id: <1408701944-14734-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> > 
->>> > Results:
->>> > 
->>> > Netperf, 1 vm:
->>> > The polling patch improved throughput by ~33% (1516 MB/sec -> 2046 MB/sec).
->>> > Number of exits/sec decreased 6x.
->>> > The same improvement was shown when I tested with 3 vms running netperf
->>> > (4086 MB/sec -> 5545 MB/sec).
->>> > 
->>> > filebench, 1 vm:
->>> > ops/sec improved by 13% with the polling patch. Number of exits 
->>> was reduced by
->>> > 31%.
->>> > The same experiment with 3 vms running filebench showed similar numbers.
->>> > 
->>> > Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
->>> 
->>> Gave it a quick try on s390/kvm. As expected it makes no difference 
->>> for big streaming workload like iperf.
->>> uperf with a 1-1 round robin got indeed faster by about 30%.
->>> The high CPU consumption is something that bothers me though, as 
->>> virtualized systems tend to be full.
->>> 
->>> 
->>
->>Thanks for confirming the results!
->>The best way to use this patch would be along with a shared vhost thread 
->>for multiple
->>devices/vms, as described in:
->>http://domino.research.ibm.com/library/cyberdig.nsf/1e4115aea78b6e7c85256b360066f0d4/479e3578ed05bfac85257b4200427735!OpenDocument
->>This work assumes having a dedicated I/O core where the vhost thread 
->>serves multiple vms, which 
->>makes the high cpu utilization less of a concern. 
->>
->Hi, Razya, Shirley
->I am going to test the combination of 
->"several (depends on total number of cpu on host, e.g.,  total_number * 1/3) vhost threads server all VMs" and "vhost: add polling mode",
->now I get the patch "http://thread.gmane.org/gmane.comp.emulators.kvm.devel/88682/focus=88723" posted by Shirley,
->any update to this patch?
->
->And, I want to make a bit change on this patch, create total_cpu_number * 1/N(N={3,4}) vhost threads instead of per-cpu vhost thread to server all VMs,
-Just like xen netback threads, whose number is equal to num_online_cpus on Dom0, 
-but for kvm host, I think per-cpu vhost thread is too many.
->any ideas?
->
->Thanks,
->Zhang Haoyu
->>
->>
->>> > +static int poll_start_rate = 0;
->>> > +module_param(poll_start_rate, int, S_IRUGO|S_IWUSR);
->>> > +MODULE_PARM_DESC(poll_start_rate, "Start continuous polling of 
->>> virtqueue when rate of events is at least this number per jiffy. If 
->>> 0, never start polling.");
->>> > +
->>> > +static int poll_stop_idle = 3*HZ; /* 3 seconds */
->>> > +module_param(poll_stop_idle, int, S_IRUGO|S_IWUSR);
->>> > +MODULE_PARM_DESC(poll_stop_idle, "Stop continuous polling of 
->>> virtqueue after this many jiffies of no work.");
->>> 
->>> This seems ridicoudly high. Even one jiffie is an eternity, so 
->>> setting it to 1 as a default would reduce the CPU overhead for most cases.
->>> If we dont have a packet in one millisecond, we can surely go back 
->>> to the kick approach, I think.
->>> 
->>> Christian
->>> 
->>
->>Good point, will reduce it and recheck.
->>Thank you,
->>Razya
+This is pretty much the same as Intel Baytrail, only the CPU ID is
+different. Add the new ID to the supported CPU list.
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>
+---
+ drivers/cpufreq/intel_pstate.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index c5eac949760d..a3cf8994160b 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -660,6 +660,7 @@ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
+ 	ICPU(0x3f, core_params),
+ 	ICPU(0x45, core_params),
+ 	ICPU(0x46, core_params),
++	ICPU(0x4c, byt_params),
+ 	ICPU(0x4f, core_params),
+ 	ICPU(0x56, core_params),
+ 	{}
+-- 
+2.1.0
 
