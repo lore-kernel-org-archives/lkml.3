@@ -1,257 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633AbaHVEtP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 00:49:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41754 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaHVEtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 00:49:13 -0400
-Message-ID: <53F6CBAD.8040803@ti.com>
-Date: Fri, 22 Aug 2014 10:18:45 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] usb: phy: twl4030-usb: Fix regressions to runtime PM
- on omaps
-References: <20140821164346.GA10066@atomide.com>
-In-Reply-To: <20140821164346.GA10066@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755781AbaHVEyZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 00:54:25 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:36303 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394AbaHVEyX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 00:54:23 -0400
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+To: linux-mmc@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Subject: [PATCH v3 0/3] mmc: mmci: sdio related fixes
+Date: Fri, 22 Aug 2014 05:53:39 +0100
+Message-Id: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408446785-1399-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1408446785-1399-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patchset fixes few sdio related issues encountered while testing
+WLAN ath6kl via SDIO on IFC6410 board with Qualcomm APQ8064 SOC.
 
-On Thursday 21 August 2014 10:13 PM, Tony Lindgren wrote:
-> Commit 30a70b026b4cd ("usb: musb: fix obex in g_nokia.ko causing kernel
-> panic") attempted to fix runtime PM handling for PHYs that are on the
-> I2C bus. Commit 3063a12be2b0 (usb: musb: fix PHY power on/off) then
-> changed things around to enable of PHYs that rely on runtime PM.
-> 
-> These changes however broke idling of the PHY and causes at least
-> 100 mW extra power consumption on omaps, which is a lot with
-> the idle power consumption being below 10 mW range on many devices.
-> 
-> As calling phy_power_on/off from runtime PM calls in the USB
-> causes complicated issues with I2C connected PHYs, let's just let
-> the PHY do it's own runtime PM as needed. This leaves out the
-> dependency between PHYs and USB controller drivers for runtime
-> PM.
-> 
-> Let's fix the regression for twl4030-usb by adding minimal runtime
-> PM support. This allows idling the PHY on disconnect.
-> 
-> Note that we are changing to use standard runtime PM handling
-> for twl4030_phy_init() as that function just checks the state
-> and does not initialize the PHY. The PHY won't get initialized
-> until in twl4030_phy_power_on().
-> 
-> Fixes: 30a70b026b4cd ("usb: musb: fix obex in g_nokia.ko causing kernel panic")
-> Fixes: 3063a12be2b0 ("usb: musb: fix PHY power on/off")
-> Cc: stable@vger.kernel.org # v3.15+
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> 
-> ---
-> 
-> Kishon, this regression fix would be nice to get into the v3.17-rc
-> series if no objections. If you don't have other fixes, I can also
-> queue via arm-soc with proper acks.
+Patch: "mmc: mmci: Support any block sizes for ux500v2 and qcom variant" is
+a very old patch by Ulf to support IPs which support any size of block sizes.
+http://www.spinics.net/lists/linux-mmc/msg12160.html I modified the subject
+line to include qcom.
+Patch fixes below issues reported while testing sdio.
+The issue was ath6kl driver was issuing 12 bytes and 24 bytes reads
+which are caught as part of the error handing in the driver and
+resulting in failures. 
 
-I can queue this one up once put_autosuspend() is used.
+Patch "mmc: mmci: Add sdio enable mask in variant data" adds extra
+variant parameter to enable sdio. This makes mmci driver more flexible.
 
-Thanks
-Kishon
-> 
-> It probably does not make sense to try to fix this without using
-> runtime PM without complicating the code further.
-> 
-> --- a/drivers/phy/phy-twl4030-usb.c
-> +++ b/drivers/phy/phy-twl4030-usb.c
-> @@ -34,6 +34,7 @@
->  #include <linux/delay.h>
->  #include <linux/usb/otg.h>
->  #include <linux/phy/phy.h>
-> +#include <linux/pm_runtime.h>
->  #include <linux/usb/musb-omap.h>
->  #include <linux/usb/ulpi.h>
->  #include <linux/i2c/twl.h>
-> @@ -422,37 +423,55 @@ static void twl4030_phy_power(struct twl4030_usb *twl, int on)
->  	}
->  }
->  
-> -static int twl4030_phy_power_off(struct phy *phy)
-> +static int twl4030_usb_runtime_suspend(struct device *dev)
->  {
-> -	struct twl4030_usb *twl = phy_get_drvdata(phy);
-> +	struct twl4030_usb *twl = dev_get_drvdata(dev);
->  
-> +	dev_dbg(twl->dev, "%s\n", __func__);
->  	if (twl->asleep)
->  		return 0;
->  
->  	twl4030_phy_power(twl, 0);
->  	twl->asleep = 1;
-> -	dev_dbg(twl->dev, "%s\n", __func__);
-> +
->  	return 0;
->  }
->  
-> -static void __twl4030_phy_power_on(struct twl4030_usb *twl)
-> +static int twl4030_usb_runtime_resume(struct device *dev)
->  {
-> +	struct twl4030_usb *twl = dev_get_drvdata(dev);
-> +
-> +	dev_dbg(twl->dev, "%s\n", __func__);
-> +	if (!twl->asleep)
-> +		return 0;
-> +
->  	twl4030_phy_power(twl, 1);
-> -	twl4030_i2c_access(twl, 1);
-> -	twl4030_usb_set_mode(twl, twl->usb_mode);
-> -	if (twl->usb_mode == T2_USB_MODE_ULPI)
-> -		twl4030_i2c_access(twl, 0);
-> +	twl->asleep = 0;
-> +
-> +	return 0;
-> +}
-> +
-> +static int twl4030_phy_power_off(struct phy *phy)
-> +{
-> +	struct twl4030_usb *twl = phy_get_drvdata(phy);
-> +
-> +	dev_dbg(twl->dev, "%s\n", __func__);
-> +	pm_runtime_mark_last_busy(twl->dev);
-> +	pm_runtime_put_autosuspend(twl->dev);
-> +
-> +	return 0;
->  }
->  
->  static int twl4030_phy_power_on(struct phy *phy)
->  {
->  	struct twl4030_usb *twl = phy_get_drvdata(phy);
->  
-> -	if (!twl->asleep)
-> -		return 0;
-> -	__twl4030_phy_power_on(twl);
-> -	twl->asleep = 0;
->  	dev_dbg(twl->dev, "%s\n", __func__);
-> +	pm_runtime_get_sync(twl->dev);
-> +	twl4030_i2c_access(twl, 1);
-> +	twl4030_usb_set_mode(twl, twl->usb_mode);
-> +	if (twl->usb_mode == T2_USB_MODE_ULPI)
-> +		twl4030_i2c_access(twl, 0);
->  
->  	/*
->  	 * XXX When VBUS gets driven after musb goes to A mode,
-> @@ -558,6 +577,16 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
->  		 * USB_LINK_VBUS state.  musb_hdrc won't care until it
->  		 * starts to handle softconnect right.
->  		 */
-> +		if ((status == OMAP_MUSB_VBUS_VALID) ||
-> +		    (status == OMAP_MUSB_ID_GROUND)) {
-> +			if (twl->asleep)
-> +				pm_runtime_get_sync(twl->dev);
-> +		} else {
-> +			if (!twl->asleep) {
-> +				pm_runtime_mark_last_busy(twl->dev);
-> +				pm_runtime_put_autosuspend(twl->dev);
-> +			}
-> +		}
->  		omap_musb_mailbox(status);
->  	}
->  	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
-> @@ -599,22 +628,17 @@ static int twl4030_phy_init(struct phy *phy)
->  	struct twl4030_usb *twl = phy_get_drvdata(phy);
->  	enum omap_musb_vbus_id_status status;
->  
-> -	/*
-> -	 * Start in sleep state, we'll get called through set_suspend()
-> -	 * callback when musb is runtime resumed and it's time to start.
-> -	 */
-> -	__twl4030_phy_power(twl, 0);
-> -	twl->asleep = 1;
-> -
-> +	pm_runtime_get_sync(twl->dev);
->  	status = twl4030_usb_linkstat(twl);
->  	twl->linkstat = status;
->  
-> -	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID) {
-> +	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID)
->  		omap_musb_mailbox(twl->linkstat);
-> -		twl4030_phy_power_on(phy);
-> -	}
->  
->  	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
-> +	pm_runtime_mark_last_busy(twl->dev);
-> +	pm_runtime_put_autosuspend(twl->dev);
-> +
->  	return 0;
->  }
->  
-> @@ -650,6 +674,11 @@ static const struct phy_ops ops = {
->  	.owner		= THIS_MODULE,
->  };
->  
-> +static const struct dev_pm_ops twl4030_usb_pm_ops = {
-> +	SET_RUNTIME_PM_OPS(twl4030_usb_runtime_suspend,
-> +			   twl4030_usb_runtime_resume, NULL)
-> +};
-> +
->  static int twl4030_usb_probe(struct platform_device *pdev)
->  {
->  	struct twl4030_usb_data *pdata = dev_get_platdata(&pdev->dev);
-> @@ -726,6 +755,11 @@ static int twl4030_usb_probe(struct platform_device *pdev)
->  
->  	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
->  
-> +	pm_runtime_use_autosuspend(&pdev->dev);
-> +	pm_runtime_set_autosuspend_delay(&pdev->dev, 2000);
-> +	pm_runtime_enable(&pdev->dev);
-> +	pm_runtime_get_sync(&pdev->dev);
-> +
->  	/* Our job is to use irqs and status from the power module
->  	 * to keep the transceiver disabled when nothing's connected.
->  	 *
-> @@ -744,6 +778,9 @@ static int twl4030_usb_probe(struct platform_device *pdev)
->  		return status;
->  	}
->  
-> +	pm_runtime_mark_last_busy(&pdev->dev);
-> +	pm_runtime_put(&pdev->dev);
-> +
->  	dev_info(&pdev->dev, "Initialized TWL4030 USB module\n");
->  	return 0;
->  }
-> @@ -753,6 +790,7 @@ static int twl4030_usb_remove(struct platform_device *pdev)
->  	struct twl4030_usb *twl = platform_get_drvdata(pdev);
->  	int val;
->  
-> +	pm_runtime_get_sync(twl->dev);
->  	cancel_delayed_work(&twl->id_workaround_work);
->  	device_remove_file(twl->dev, &dev_attr_vbus);
->  
-> @@ -772,9 +810,8 @@ static int twl4030_usb_remove(struct platform_device *pdev)
->  
->  	/* disable complete OTG block */
->  	twl4030_usb_clear_bits(twl, POWER_CTRL, POWER_CTRL_OTG_ENAB);
-> -
-> -	if (!twl->asleep)
-> -		twl4030_phy_power(twl, 0);
-> +	pm_runtime_mark_last_busy(twl->dev);
-> +	pm_runtime_put(twl->dev);
->  
->  	return 0;
->  }
-> @@ -792,6 +829,7 @@ static struct platform_driver twl4030_usb_driver = {
->  	.remove		= twl4030_usb_remove,
->  	.driver		= {
->  		.name	= "twl4030_usb",
-> +		.pm	= &twl4030_usb_pm_ops,
->  		.owner	= THIS_MODULE,
->  		.of_match_table = of_match_ptr(twl4030_usb_id_table),
->  	},
-> 
+Patch "mmc: mmci: rename sdio flag in vendor data to st_sdio" renames sdio
+flag in vendor data to st_sdio, as this flag is only used to setup st
+specific sdio logic.
+
+All these patches are tested on IFC6410 board with ath6kl WLAN via SDIO.
+
+Thanks to Linus W, Ulf annd Russell for comments since RFC.
+
+Changes since v2:
+	- removed "mmc: mmci: move block size validation under relevant code" patch
+	as this is already fixed by original patch from Ulf.
+
+Changes since RFC:
+	- moved sdio flag to st_sdio to simplify the checks.
+	- use Ulf's patch to address IP's which support anysize blocks.
+
+Thanks,
+srini
+
+Srinivas Kandagatla (2):
+  mmc: mmci: Add sdio enable mask in variant data
+  mmc: mmci: rename sdio flag in vendor data to st_sdio
+
+Ulf Hansson (1):
+  mmc: mmci: Support any block sizes for ux500v2 and qcom variant
+
+ drivers/mmc/host/mmci.c | 68 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 36 insertions(+), 32 deletions(-)
+
+-- 
+1.9.1
+
