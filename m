@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855AbaHVSBs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 14:01:48 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:41948 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaHVSBq (ORCPT
+	id S932648AbaHVSFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:05:34 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:51656 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932410AbaHVSFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 14:01:46 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: wsa@the-dreams.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <a4adf7b22bd739d44cb50c9d6080bb7d>
-X-DNS-TYPE: 1
-From: Addy Ke <addy.ke@rock-chips.com>
-To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org, dmitry.torokhov@gmail.com
-Cc: sergei.shtylyov@cogentembedded.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH v4] i2c: rk3x: fix bug that cause transfer fails in master receive mode
-Date: Sat, 23 Aug 2014 02:00:52 +0800
-Message-Id: <1408730452-3552-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408669991-9703-1-git-send-email-addy.ke@rock-chips.com>
-References: <1408669991-9703-1-git-send-email-addy.ke@rock-chips.com>
+	Fri, 22 Aug 2014 14:05:33 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3] checkpatch.pl: New instances of ENOSYS are errors
+Date: Fri, 22 Aug 2014 11:05:25 -0700
+Message-Id: <5eb299021dec23c1a48fa7d9f2c8b794e967766d.1408730669.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
-in one chunk, so the size of data to be write/read to/from TXDATAx/RXDATAx
-must be less than or equal 32 bytes at a time.
+ENOSYS means that a nonexistent system call was called.  We have a
+bad habit of using it for things like invalid operations on
+otherwise valid syscalls.  We should avoid this in new code.
 
-Tested on rk3288-pinky board, elan receive 158 bytes data.
-
-Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-Acked-by: Max Schwarz <max.schwarz@online.de>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
-Changes in v2:
-- Use cleaner syntax as suggested by Sergei.
-- Update commit message as suggested by Wolfram.
 
-Changes in v3:
-- fix typo: maste --> master and double spaces after 'len'
- drivers/i2c/busses/i2c-rk3x.c | 4 ++++
+Pervasive incorrect usage of ENOSYS came up at the kernel summit ABI
+review discussion.  Let's see if checkpatch can help.
 
-Changes in v4:
-- remove unlikely() annotations, suggested by Dmitry Torokhov
+I'll submit a separate patch for include/uapi/asm-generic/errno.h.
 
-diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-index b8b2b89..31de730 100644
---- a/drivers/i2c/busses/i2c-rk3x.c
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -323,6 +323,10 @@ static void rk3x_i2c_handle_read(struct rk3x_i2c *i2c, unsigned int ipd)
- 	/* ack interrupt */
- 	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
+Changes from v2:
+ - Reduce severity to WARN.
+ - Remove unnecessary clarification.
+ - Rebase onto Linus' tree instead of v3.16.
+
+Changes from v1:
+ - Moved later so that it won't warn on context lines.
+ - Use $herecur.
+ - Improve regex pattern.
+
+ scripts/checkpatch.pl | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 31a731e..448d075 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3214,6 +3214,14 @@ sub process {
+ 			     "Prefer dev_$level(... to dev_printk(KERN_$orig, ...\n" . $herecurr);
+ 		}
  
-+	/* Can only handle a maximum of 32 bytes at a time */
-+	if (len > 32)
-+		len = 32;
++# ENOSYS means "bad syscall nr" and nothing else.  This will have a small
++# number of false positives, but assembly files are not checked, so at
++# least the arch entry code will not trigger this warning.
++		if ($line =~ /\bENOSYS\b/) {
++			WARN("ENOSYS",
++			     "ENOSYS means 'invalid syscall nr' and nothing else\n" . $herecurr);
++		}
 +
- 	/* read the data from receive buffer */
- 	for (i = 0; i < len; ++i) {
- 		if (i % 4 == 0)
+ # function brace can't be on same line, except for #defines of do while,
+ # or if closed on same line
+ 		if (($line=~/$Type\s*$Ident\(.*\).*\s*{/) and
 -- 
-1.8.3.2
-
+1.9.3
 
