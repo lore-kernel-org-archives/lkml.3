@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109AbaHVHxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:53:48 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:34675 "EHLO
+	id S1756126AbaHVHxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:53:51 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:34681 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062AbaHVHxp (ORCPT
+	with ESMTP id S1756102AbaHVHxs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:53:45 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-54-53f6f7072f09
+	Fri, 22 Aug 2014 03:53:48 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-64-53f6f70a6618
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,73 +18,47 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 10/15] drm/exynos/ipp: stop hardware before freeing memory
-Date: Fri, 22 Aug 2014 09:52:21 +0200
-Message-id: <1408693946-15456-11-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 12/15] drm/exynos/fimc: avoid clearing overflow bits
+Date: Fri, 22 Aug 2014 09:52:23 +0200
+Message-id: <1408693946-15456-13-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
 References: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xq7rs378FG7xbxmtxa905VosrX9+z
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xq7pc378FG6x7p2Rxa905VosrX9+z
 	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJWxec8CxoLjXBW7bsxibWC8ydHFyMkhIWAi8en/ZiYIW0ziwr31
-	bF2MXBxCAksZJa79bGGEcPqYJG68+QlWxSagKfF38002EFtEQFli1b52dpAiZoGPTBJXlr5h
-	BkkIC3hJnLhzkBHEZhFQlXjwsxMszivgIvF34xFGiHVyEiePTWYFsTmB4hcOTgOrERJwlui6
-	PY1pAiPvAkaGVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghgfVlB+PiY1aHGAU4GJV4eBN/
-	fw0WYk0sK67MPcQowcGsJMK7ad63YCHelMTKqtSi/Pii0pzU4kOMTBycUg2MC5l31Qh+l3Vd
-	tLEg4PfGgGNMC7g3+67JuN5hv3B9YbPQ8oXzJOr7PE+5Lzxn65Tfz6TEO4nl/PJZ7jtDv7+Y
-	VvQ018PqkHBPs3jF/KZN/cu/T5T5PPeJbc2tvMhyl7iXGw+q6H48d2filmWFCqdKhFWs+Ms5
-	49heRqf3bbe8qcqQy+72clW+EktxRqKhFnNRcSIAbtekPAoCAAA=
+	F8AcxWWTkpqTWZZapG+XwJXx4cs9toI7bBXnj89kb2B8wNrFyMEhIWAi8f+eeBcjJ5ApJnHh
+	3nq2LkYuDiGBpYwSl28tZ4Jw+pgkfj3bzwxSxSagKfF38002EFtEQFli1b52dpAiZoGPTBJX
+	lr4BKxIWcJG4fWIJWBGLgKrE1bOr2EC28QLFO55kQGyTkzh5bDIriM0JFL5wcBpYq5CAs0TX
+	7WlMExh5FzAyrGIUTS1NLihOSs811CtOzC0uzUvXS87P3cQICaovOxgXH7M6xCjAwajEw5v4
+	+2uwEGtiWXFl7iFGCQ5mJRHeTfO+BQvxpiRWVqUW5ccXleakFh9iZOLglGpgtF0z4/UdZ4Z5
+	ZxqXzqv48H/2DzFupg0zPMJ8lu3h6RHVYBGM+tGvvSulJcHPzUAzcOLThAXHDqn1X7glyRtU
+	EV29M0iubtOk5UqWgpo5kofz7DoeyC4Nyl7PfNBvnpGietDqGS7vXpvd2+f8QqxIp/98XqVL
+	oGCFGeeVgwHqei8mMAT9W+qjxFKckWioxVxUnAgA58BKawgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory shouldn't be freed when hardware is still running.
+Overflow bits shall be cleared by H/W.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_fimc.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index c72d8d1..6de75aa 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -1283,12 +1283,15 @@ static int ipp_stop_property(struct drm_device *drm_dev,
- 		struct drm_exynos_ipp_cmd_node *c_node)
- {
- 	struct drm_exynos_ipp_property *property = &c_node->property;
--	int ret = 0, i;
-+	int i;
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_fimc.c b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+index 3264ed3..bbaf4f9 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_fimc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_fimc.c
+@@ -341,9 +341,6 @@ static bool fimc_check_ovf(struct fimc_context *ctx)
+ 		fimc_set_bits(ctx, EXYNOS_CIWDOFST,
+ 			EXYNOS_CIWDOFST_CLROVFIY | EXYNOS_CIWDOFST_CLROVFICB |
+ 			EXYNOS_CIWDOFST_CLROVFICR);
+-		fimc_clear_bits(ctx, EXYNOS_CIWDOFST,
+-			EXYNOS_CIWDOFST_CLROVFIY | EXYNOS_CIWDOFST_CLROVFICB |
+-			EXYNOS_CIWDOFST_CLROVFICR);
  
- 	DRM_DEBUG_KMS("prop_id[%d]\n", property->prop_id);
- 
- 	/* put event */
- 	ipp_put_event(c_node, NULL);
-+	/* stop operations */
-+	if (ippdrv->stop)
-+		ippdrv->stop(ippdrv->dev, property->cmd);
- 
- 	/* check command */
- 	switch (property->cmd) {
-@@ -1304,16 +1307,10 @@ static int ipp_stop_property(struct drm_device *drm_dev,
- 		break;
- 	default:
- 		DRM_ERROR("invalid operations.\n");
--		ret = -EINVAL;
--		goto err_clear;
-+		return -EINVAL;
- 	}
- 
--err_clear:
--	/* stop operations */
--	if (ippdrv->stop)
--		ippdrv->stop(ippdrv->dev, property->cmd);
--
--	return ret;
-+	return 0;
- }
- 
- void ipp_sched_cmd(struct work_struct *work)
+ 		dev_err(ippdrv->dev, "occurred overflow at %d, status 0x%x.\n",
+ 			ctx->id, status);
 -- 
 1.9.1
 
