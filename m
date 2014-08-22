@@ -1,347 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaHVJNO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:13:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:41696 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755772AbaHVJNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:13:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,378,1406617200"; 
-   d="scan'208";a="580319531"
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: jic23@kernel.org, linux-iio@vger.kernel.org, pmeerw@pmeerw.net
-Cc: daniel.baluta@intel.com, linux-kernel@vger.kernel.org,
-        Tsechih_Lin@asus.com
-Subject: [PATCH v3] iio: Add Dyna-Image AL3320A ambient light sensor driver
-Date: Fri, 22 Aug 2014 12:17:22 +0300
-Message-Id: <1408699042-17336-1-git-send-email-daniel.baluta@intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753036AbaHVJVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:21:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40800 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729AbaHVJVL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 05:21:11 -0400
+Message-ID: <53F70B72.7030407@canonical.com>
+Date: Fri, 22 Aug 2014 11:20:50 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Xen PV domain regression with KASLR enabled (kernel
+ 3.16)
+References: <53E4B281.5050302@canonical.com>	<53E4C5D5.2090103@citrix.com>	<53E4E042.1070300@canonical.com>	<CAGXu5jJ+FTqgYpLH5x0VBm9QMND-b0Sze6q6pc=tRe2oFMu5uA@mail.gmail.com>	<53EA5782.1080301@canonical.com>	<CAGXu5jJXHd9WqWs+FHQsRZdJNv1n075q7rwm20EwwXBdVgaVsA@mail.gmail.com>	<20140812190726.GC13996@laptop.dumpdata.com> <CAGXu5jJFkdgaSs=5eWczWW5f3Gbr_-GLf3r_VXHq4z3rULVo_A@mail.gmail.com>
+In-Reply-To: <CAGXu5jJFkdgaSs=5eWczWW5f3Gbr_-GLf3r_VXHq4z3rULVo_A@mail.gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="Gcscjn5KuS6pROlKKdIpAwjvmeiCQV32l"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minimal implementation. This driver provides raw illuminance readings.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Gcscjn5KuS6pROlKKdIpAwjvmeiCQV32l
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
-by Tsechih Lin <Tsechih_Lin@asus.com>
+On 21.08.2014 18:03, Kees Cook wrote:
+> On Tue, Aug 12, 2014 at 2:07 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+>> On Tue, Aug 12, 2014 at 11:53:03AM -0700, Kees Cook wrote:
+>>> On Tue, Aug 12, 2014 at 11:05 AM, Stefan Bader
+>>> <stefan.bader@canonical.com> wrote:
+>>>> On 12.08.2014 19:28, Kees Cook wrote:
+>>>>> On Fri, Aug 8, 2014 at 7:35 AM, Stefan Bader <stefan.bader@canonica=
+l.com> wrote:
+>>>>>> On 08.08.2014 14:43, David Vrabel wrote:
+>>>>>>> On 08/08/14 12:20, Stefan Bader wrote:
+>>>>>>>> Unfortunately I have not yet figured out why this happens, but c=
+an confirm by
+>>>>>>>> compiling with or without CONFIG_RANDOMIZE_BASE being set that w=
+ithout KASLR all
+>>>>>>>> is ok, but with it enabled there are issues (actually a dom0 doe=
+s not even boot
+>>>>>>>> as a follow up error).
+>>>>>>>>
+>>>>>>>> Details can be seen in [1] but basically this is always some por=
+tion of a
+>>>>>>>> vmalloc allocation failing after hitting a freshly allocated PTE=
+ space not being
+>>>>>>>> PTE_NONE (usually from a module load triggered by systemd-udevd)=
+=2E In the
+>>>>>>>> non-dom0 case this repeats many times but ends in a guest that a=
+llows login. In
+>>>>>>>> the dom0 case there is a more fatal error at some point causing =
+a crash.
+>>>>>>>>
+>>>>>>>> I have not tried this for a normal PV guest but for dom0 it also=
+ does not help
+>>>>>>>> to add "nokaslr" to the kernel command-line.
+>>>>>>>
+>>>>>>> Maybe it's overlapping with regions of the virtual address space
+>>>>>>> reserved for Xen?  What the the VA that fails?
+>>>>>>>
+>>>>>>> David
+>>>>>>>
+>>>>>> Yeah, there is some code to avoid some regions of memory (like ini=
+trd). Maybe
+>>>>>> missing p2m tables? I probably need to add debugging to find the f=
+ailing VA (iow
+>>>>>> not sure whether it might be somewhere in the stacktraces in the r=
+eport).
+>>>>>>
+>>>>>> The kernel-command line does not seem to be looked at. It should p=
+ut something
+>>>>>> into dmesg and that never shows up. Also today's random feature is=
+ other PV
+>>>>>> guests crashing after a bit somewhere in the check_for_corruption =
+area...
+>>>>>
+>>>>> Right now, the kaslr code just deals with initrd, cmdline, etc. If
+>>>>> there are other reserved regions that aren't listed in the e820, it=
+'ll
+>>>>> need to locate and skip them.
+>>>>>
+>>>>> -Kees
+>>>>>
+>>>> Making my little steps towards more understanding I figured out that=
+ it isn't
+>>>> the code that does the relocation. Even with that completely disable=
+d there were
+>>>> the vmalloc issues. What causes it seems to be the default of the up=
+per limit
+>>>> and that this changes the split between kernel and modules to 1G+1G =
+instead of
+>>>> 512M+1.5G. That is the reason why nokaslr has no effect.
+>>>
+>>> Oh! That's very interesting. There must be some assumption in Xen
+>>> about the kernel VM layout then?
+>>
+>> No. I think most of the changes that look at PTE and PMDs are are all
+>> in arch/x86/xen/mmu.c. I wonder if this is xen_cleanhighmap being
+>> too aggressive
+>=20
+> (Sorry I had to cut our chat short at Kernel Summit!)
+>=20
+> I sounded like there was another region of memory that Xen was setting
+> aside for page tables? But Stefan's investigation seems to show this
+> isn't about layout at boot (since the kaslr=3D0 case means no relocatio=
+n
+> is done). Sounds more like the split between kernel and modules area,
+> so I'm not sure how the memory area after the initrd would be part of
+> this. What should next steps be, do you think?
 
-* https://android.googlesource.com/kernel/msm.git
+Maybe layout, but not about placement of the kernel. Basically leaving KA=
+SLR
+enabled but shrink the possible range back to the original kernel/module =
+split
+is fine as well.
 
-Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
----
-Changes since v2: (reported by Peter Meerwald)
-	* removed definition of DATA_HIGH and SW_RESET as they are not used
-	* added a comment to al3320a_get_adc_value() function
-	* added thresholds on TODO list
-	* small stye fixes
+I am bouncing between feeling close to understand to being confused. Konr=
+ad
+suggested xen_cleanhighmap being overly aggressive. But maybe its the oth=
+er way
+round. The warning that occurs first indicates that PTE that was obtained=
+ for
+some vmalloc mapping is not unused (0) as it is expected. So it feels rat=
+her
+like some cleanup has *not* been done.
 
-Changes since v1: (reported by Peter Meerwald)
-	* used u8 instead of int for passing gain and mean_time
-	* used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
-	* used devm_iio_device_register instead of iio_device_register
-	* small style fixes
+Let me think aloud a bit... What seems to cause this, is the change of th=
+e
+kernel/module split from 512M:1.5G to 1G:1G (not exactly since there is 8=
+M
+vsyscalls and 2M hole at the end). Which in vaddr terms means:
 
- drivers/iio/light/Kconfig   |  10 ++
- drivers/iio/light/Makefile  |   1 +
- drivers/iio/light/al3320a.c | 255 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 266 insertions(+)
- create mode 100644 drivers/iio/light/al3320a.c
+Before:
+ffffffff80000000 - ffffffff9fffffff (=3D512 MB)  kernel text mapping, fro=
+m phys 0
+ffffffffa0000000 - ffffffffff5fffff (=3D1526 MB) module mapping space
 
-diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
-index bf05ca5..5bea821 100644
---- a/drivers/iio/light/Kconfig
-+++ b/drivers/iio/light/Kconfig
-@@ -17,6 +17,16 @@ config ADJD_S311
- 	 This driver can also be built as a module.  If so, the module
- 	 will be called adjd_s311.
- 
-+config AL3320A
-+	tristate "AL3320A ambient light sensor"
-+	depends on I2C
-+	help
-+	 Say Y here if you want to build a driver for the Dyna Image AL3320A
-+	 ambient light sensor.
-+
-+	 To compile this driver as a module, choose M here: the
-+	 module will be called al3320a.
-+
- config APDS9300
- 	tristate "APDS9300 ambient light sensor"
- 	depends on I2C
-diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
-index 8b8c09f..47877a3 100644
---- a/drivers/iio/light/Makefile
-+++ b/drivers/iio/light/Makefile
-@@ -4,6 +4,7 @@
- 
- # When adding new entries keep the list in alphabetical order
- obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
-+obj-$(CONFIG_AL3320A)		+= al3320a.o
- obj-$(CONFIG_APDS9300)		+= apds9300.o
- obj-$(CONFIG_CM32181)		+= cm32181.o
- obj-$(CONFIG_CM36651)		+= cm36651.o
-diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
-new file mode 100644
-index 0000000..28fc8b0
---- /dev/null
-+++ b/drivers/iio/light/al3320a.c
-@@ -0,0 +1,255 @@
-+/*
-+ * AL3320A - Dyna Image Ambient Light Sensor
-+ *
-+ * Copyright (c) 2014, Intel Corporation.
-+ *
-+ * This file is subject to the terms and conditions of version 2 of
-+ * the GNU General Public License.  See the file COPYING in the main
-+ * directory of this archive for more details.
-+ *
-+ * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
-+ *
-+ * TODO: interrupt support, thresholds
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/i2c.h>
-+
-+#include <linux/iio/iio.h>
-+#include <linux/iio/sysfs.h>
-+
-+#define AL3320A_DRV_NAME "al3320a"
-+
-+#define AL3320A_REG_CONFIG		0x00
-+#define AL3320A_REG_STATUS		0x01
-+#define AL3320A_REG_INT			0x02
-+#define AL3320A_REG_WAIT		0x06
-+#define AL3320A_REG_CONFIG_RANGE	0x07
-+#define AL3320A_REG_PERSIST		0x08
-+#define AL3320A_REG_MEAN_TIME		0x09
-+#define AL3320A_REG_ADUMMY		0x0A
-+#define AL3320A_REG_DATA_LOW		0x22
-+
-+#define AL3320A_REG_LOW_THRESH_LOW	0x30
-+#define AL3320A_REG_LOW_THRESH_HIGH	0x31
-+#define AL3320A_REG_HIGH_THRESH_LOW	0x32
-+#define AL3320A_REG_HIGH_THRESH_HIGH	0x33
-+
-+#define AL3320A_CONFIG_DISABLE		0x00
-+#define AL3320A_CONFIG_ENABLE		BIT(0)
-+
-+#define AL3320A_GAIN_SHIFT		1
-+
-+/* chip params default values */
-+#define AL3320A_DEFAULT_MEAN_TIME	4
-+#define AL3320A_DEFAULT_WAIT_TIME	0 /* no waiting */
-+
-+enum al3320a_range {
-+	AL3320A_RANGE_1, /* 33.28K lux */
-+	AL3320A_RANGE_2, /* 8.32K lux  */
-+	AL3320A_RANGE_3, /* 2.08K lux  */
-+	AL3320A_RANGE_4  /* 0.65K lux  */
-+};
-+
-+static const int al3320a_scales[][2] = {
-+	{0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
-+};
-+
-+struct al3320a_data {
-+	struct i2c_client *client;
-+	u8 range;
-+};
-+
-+static const struct iio_chan_spec al3320a_channels[] = {
-+	{
-+		.type	= IIO_LIGHT,
-+		.info_mask_separate =
-+			BIT(IIO_CHAN_INFO_RAW) |
-+			BIT(IIO_CHAN_INFO_SCALE),
-+	}
-+};
-+
-+static int al3320a_enable(struct al3320a_data *data)
-+{
-+	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
-+					 AL3320A_CONFIG_ENABLE);
-+}
-+
-+static int al3320a_disable(struct al3320a_data *data)
-+{
-+	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
-+					 AL3320A_CONFIG_DISABLE);
-+}
-+
-+static int al3320a_set_config_range(struct al3320a_data *data, u8 gain)
-+{
-+	int ret;
-+
-+	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
-+					 gain << AL3320A_GAIN_SHIFT);
-+	if (ret >= 0)
-+		data->range = gain;
-+	return ret;
-+}
-+
-+static int al3320a_set_mean_time(struct al3320a_data *data, u8 mean_time)
-+{
-+	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
-+					 mean_time);
-+}
-+
-+static int al3320a_set_wait_time(struct al3320a_data *data, u8 wait_time)
-+{
-+	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
-+					 wait_time);
-+}
-+
-+/**
-+ * al3320a_get_adc_value() - report raw ADC reading
-+ * @data - pointer to struct al3320a_data
-+ *
-+ * ALS ADC value is stored in two adjacent registers:
-+ *   - low byte of the channel output is stored at AL3320A_REG_DATA_LOW
-+ *   - high byte of channel output is stored at AL3320A_REG_DATA_LOW + 1.
-+ *
-+ * Return: positive raw ADC reading or negative error code.
-+ */
-+static int al3320a_get_adc_value(struct al3320a_data *data)
-+{
-+	return i2c_smbus_read_word_swapped(data->client, AL3320A_REG_DATA_LOW);
-+}
-+
-+static int al3320a_init(struct al3320a_data *data)
-+{
-+	int ret;
-+
-+	/* power on */
-+	ret = al3320a_enable(data);
-+	if (ret)
-+		return ret;
-+
-+	ret = al3320a_set_config_range(data, AL3320A_RANGE_3);
-+	if (ret)
-+		return ret;
-+
-+	ret = al3320a_set_mean_time(data, AL3320A_DEFAULT_MEAN_TIME);
-+	if (ret)
-+		return ret;
-+
-+	ret = al3320a_set_wait_time(data, AL3320A_DEFAULT_WAIT_TIME);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int al3320a_read_raw(struct iio_dev *indio_dev,
-+			    struct iio_chan_spec const *chan,
-+			    int *val,
-+			    int *val2,
-+			    long mask)
-+{
-+	struct al3320a_data *data = iio_priv(indio_dev);
-+	int ret;
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_RAW:
-+		ret = al3320a_get_adc_value(data);
-+		if (ret < 0)
-+			return ret;
-+		*val = ret;
-+		return IIO_VAL_INT;
-+	case IIO_CHAN_INFO_SCALE:
-+		*val = al3320a_scales[data->range][0];
-+		*val2 = al3320a_scales[data->range][1];
-+		return IIO_VAL_INT_PLUS_MICRO;
-+	}
-+	return -EINVAL;
-+}
-+
-+static int al3320a_write_raw(struct iio_dev *indio_dev,
-+			     struct iio_chan_spec const *chan,
-+			     int val, int val2, long mask)
-+{
-+	struct al3320a_data *data = iio_priv(indio_dev);
-+	int i;
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_SCALE:
-+		for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
-+			if (val == al3320a_scales[i][0] &&
-+			    val2 == al3320a_scales[i][1])
-+				return al3320a_set_config_range(data, i);
-+		}
-+		break;
-+	}
-+	return -EINVAL;
-+}
-+
-+static const struct iio_info al3320a_info = {
-+	.driver_module	= THIS_MODULE,
-+	.read_raw	= al3320a_read_raw,
-+	.write_raw	= al3320a_write_raw,
-+};
-+
-+static int al3320a_probe(struct i2c_client *client,
-+			 const struct i2c_device_id *id)
-+{
-+	struct al3320a_data *data;
-+	struct iio_dev *indio_dev;
-+	int ret;
-+
-+	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	data = iio_priv(indio_dev);
-+	i2c_set_clientdata(client, indio_dev);
-+	data->client = client;
-+
-+	indio_dev->dev.parent = &client->dev;
-+	indio_dev->info = &al3320a_info;
-+	indio_dev->name = AL3320A_DRV_NAME;
-+	indio_dev->channels = al3320a_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
-+	indio_dev->modes = INDIO_DIRECT_MODE;
-+
-+	ret = al3320a_init(data);
-+	if (ret) {
-+		dev_err(&client->dev, "al3320a chip init failed\n");
-+		return ret;
-+	}
-+
-+	return devm_iio_device_register(&client->dev, indio_dev);
-+}
-+
-+static int al3320a_remove(struct i2c_client *client)
-+{
-+	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-+	struct al3320a_data *data = iio_priv(indio_dev);
-+
-+	return al3320a_disable(data);
-+}
-+
-+static const struct i2c_device_id al3320a_id[] = {
-+	{"al3320a", 0},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(i2c, al3320a_id);
-+
-+static struct i2c_driver al3320a_driver = {
-+	.driver = {
-+		.name = AL3320A_DRV_NAME,
-+	},
-+	.probe		= al3320a_probe,
-+	.remove		= al3320a_remove,
-+	.id_table	= al3320a_id,
-+};
-+
-+module_i2c_driver(al3320a_driver);
-+
-+MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
-+MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.9.1
+After:
+ffffffff80000000 - ffffffffbfffffff (=3D1024 MB) kernel text mapping, fro=
+m phys 0
+ffffffffc0000000 - ffffffffff5fffff (=3D1014 MB) module mapping space
 
+Now, *if* I got this right, this means the kernel starts on a vaddr that =
+is
+pointed at by:
+
+PGD[510]->PUD[510]->PMD[0]->PTE[0]
+
+In the old layout the module vaddr area would start in the same PUD area,=
+ but
+with the change the kernel would cover PUD[510] and the module vaddr + vs=
+yscalls
+and the hole would cover PUD[511].
+
+xen_cleanhighmap operates only on the kernel_level2_pgt which (speculatin=
+g a bit
+since I am not sure I understand enough details) I believe is the one PMD=
+
+pointed at by PGD[510]->PUD[510]. That could mean that before the change
+xen_cleanhighmap may touch some (the initial 512M) of the module vaddr sp=
+ace but
+not after the change. Maybe that also means it always should have covered=
+ more
+but this would not be observed as long as modules would not claim more th=
+an
+512M? I still need to check the vaddr ranges for which xen_cleanhighmap i=
+s
+actually called. The modules vaddr space would normally not be touched (o=
+nly
+with DEBUG set). I moved that to be unconditionally done but then this mi=
+ght be
+of no use when it needs to cover a different PMD...
+
+Really not sure here. But maybe a starter for others...
+
+-Stefan
+
+>=20
+> -Kees
+>=20
+>=20
+>>>
+>>> -Kees
+>>>
+>>> --
+>>> Kees Cook
+>>> Chrome OS Security
+>>>
+>>> _______________________________________________
+>>> Xen-devel mailing list
+>>> Xen-devel@lists.xen.org
+>>> http://lists.xen.org/xen-devel
+>=20
+>=20
+>=20
+
+
+
+--Gcscjn5KuS6pROlKKdIpAwjvmeiCQV32l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJT9wuDAAoJEOhnXe7L7s6j46UP/2zAtzzywAz9tLng5xoR0piW
+TYm4NihAjL8gwhbut4M4H+XN+GjB7GV1fPjDi4bhLhsR+LJUN7cEPDOmnwVpjyTG
+p4KWh5mX9ApT8AY85yTb4tIV9aMHUvRSnoBbWLozgLOqcyvVchDRV6acs3clEfPR
+SgZk8xHk3O2dP0kj5dpEpknjnz9OVGY7FRhGpmUXmlZViYPX0AorfCW3WmgtI1sO
+1O6CJUEV8BPPtt7g7cF2UvNRIECRaPFuV1m65AYXMDRKL5+kV24lc7gb0vfD1NHN
+gnzOm88seb051Vw33nmnDfdnm4d24kgOmc2BNeIYulZ16NjHt8DG9kNKJpbURwg1
+jpdlRwmD7HU/2ukBwbWVoPxe6Qz/hAxE2ez9Tddyi6rpul8LXf4/EYRNAJy7ZVRf
+OKQJLmwQAJ92/hCz8f9Wq0kH/ntFKPocqdu/6rgxa+rtHCqNJjuEccHxG9NtX2CY
+3nWFSR/shkUz/ZcMH7YIjQ4xsyk3WYL1nUm8MJ3aZKFlyM7kT/YI+egzsZb9oBEB
+tQZVuZR1qd+XXBnMmB/eKXWWZjGKj2u1Z2sIDSGs26yjSME+aBTiNFH8bYUyf4/g
+VEQzz1va18BrB5AyiTKtcjXmV8uFMZXtjxHBOnOAHthzJkP0fL7Srzg9ntYbjXDy
+/1JhgRuUxLQnk3YWz46R
+=XYyL
+-----END PGP SIGNATURE-----
+
+--Gcscjn5KuS6pROlKKdIpAwjvmeiCQV32l--
