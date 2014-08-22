@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586AbaHVEZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 00:25:19 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46071 "EHLO
+	id S1752711AbaHVEbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 00:31:00 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46128 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaHVEZR (ORCPT
+	with ESMTP id S1750831AbaHVEa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 00:25:17 -0400
-Date: Thu, 21 Aug 2014 21:25:14 -0700 (PDT)
-Message-Id: <20140821.212514.4787122329921320.davem@davemloft.net>
-To: bpoirier@suse.de
-Cc: mchan@broadcom.com, prashant@broadcom.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] tg3: Fix tx_pending checks for tg3_tso_bug
+	Fri, 22 Aug 2014 00:30:59 -0400
+Date: Thu, 21 Aug 2014 21:30:57 -0700 (PDT)
+Message-Id: <20140821.213057.1438247518790500739.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next] hyperv: Add handling of IP header with option
+ field in netvsc_set_hash()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140821215911.GA7117@f1.synalogic.ca>
-References: <20140821012303.GA15440@f1.synalogic.ca>
-	<1408614683.7644.19.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
-	<20140821215911.GA7117@f1.synalogic.ca>
+In-Reply-To: <1408481635-29639-1-git-send-email-haiyangz@microsoft.com>
+References: <1408481635-29639-1-git-send-email-haiyangz@microsoft.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 21 Aug 2014 21:25:16 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 21 Aug 2014 21:30:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Poirier <bpoirier@suse.de>
-Date: Thu, 21 Aug 2014 14:59:11 -0700
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Tue, 19 Aug 2014 20:53:55 +0000
 
-> Ah, now I understand the reason for the * 3 in
-> 	u32 frag_cnt_est = skb_shinfo(skb)->gso_segs * 3;
-> 
-> 	/* Estimate the number of fragments in the worst case */
-> but that is not really the "worst case". It's not forbidden to have more than
-> two frags per skb output from skb_gso_segment(). I've kept this estimation
-> approach but I've added code to validate the estimation or else linearize the
-> skb.
+> @@ -200,12 +202,18 @@ static bool netvsc_set_hash(u32 *hash, struct sk_buff *skb)
+>  	iphdr = ip_hdr(skb);
+>  
+>  	if (iphdr->version == 4) {
+> -		if (iphdr->protocol == IPPROTO_TCP)
+> +		data = (u8 *)&iphdr->saddr;
+> +		if (iphdr->protocol == IPPROTO_TCP) {
+>  			data_len = 12;
+> -		else
+> +			if (iphdr->ihl > 5) {
+> +				memcpy(dbuf, &iphdr->saddr, 8);
+> +				memcpy(&dbuf[8], &tcp_hdr(skb)->source, 4);
 
-This is a common situation drivers run into, and there have been a few
-notable situations in virtualization drivers recently.  Although in
-those cases the problems arise from the fact that if an SKB fragment
-is a compound page, this can evaluate to requiring multiple
-descriptors, one for each 4K segment within that fragment.
+This is rediculous.
 
-Anyways, the point I wanted to make is that you shouldn't do anything
-too complicated to handle all of this.  And I think your conclusion
-to linearize if the estimation fails is a good one.
+Make hash_comp() take a void pointer for the buffer.
+
+Then your code is simply:
+
+	be32 dbuf[2];
+
+	dbuf[1] = iph->saddr;
+	dbuf[2] = iph->daddr;
+	dbuf[3] = *(be32 *)tcph->source;
+
+	*hash = comp_hash(netvsc_hash_key, HASH_KEYLEN, dbuf, 12);
+
+No special cases for IP options or any garbage like that.
