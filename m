@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756424AbaHVN26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:28:58 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:53215 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756321AbaHVN25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:28:57 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: scsi: #define missing include guards
-Organization: D03
-References: <1408711053-14129-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Hashcash: 1:20:140822:linux-scsi@vger.kernel.org::Hj/BcxWiDW3fjNT8:000000000000000000000000000000000001H7A
-X-Hashcash: 1:20:140822:jbottomley@parallels.com::BjOpCROFe+/uujlN:00000000000000000000000000000000000003SFH
-X-Hashcash: 1:20:140822:linux-kernel@vger.kernel.org::zrQVerdfY+HziPof:000000000000000000000000000000000GcEw
-Date: Fri, 22 Aug 2014 15:28:54 +0200
-In-Reply-To: <1408711053-14129-1-git-send-email-linux@rasmusvillemoes.dk>
-	(Rasmus Villemoes's message of "Fri, 22 Aug 2014 14:37:33 +0200")
-Message-ID: <87iolkslex.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756380AbaHVNb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:31:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48656 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756216AbaHVNb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 09:31:27 -0400
+Date: Fri, 22 Aug 2014 15:30:56 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC 0/5] perf: Allow leader sampling on inherited events
+Message-ID: <20140822133056.GA22315@krava.brq.redhat.com>
+References: <1408712718-19656-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408712718-19656-1-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+On Fri, Aug 22, 2014 at 03:05:13PM +0200, Jiri Olsa wrote:
+> hi,
+> Jen-Cheng(Tommy) Huang reported the leader sampling not working
+> on children processes:
+>   http://www.mail-archive.com/linux-perf-users@vger.kernel.org/msg01644.html
+> 
+> The leader sampling (example below) lets the group leader event (cycles)
+> do the sampling and reads the rest of the group (cache-misses) via
+> PERF_FORMAT_GROUP format.
+> 
+> Example:
+>   $ perf record -e '{cycles,cache-misses}:S' <workload>
+>   $ perf report --group
+> 
+>   The perf report --group allows to see all events group
+>   data in single view.
+> 
+> The reason for leader sampling being switched off for inherited
+> events, is that the kernel does no allow PERF_FORMAT_GROUP format
+> on inherited events (which is used by leader sampling).
+> 
+> I switched on the PERF_FORMAT_GROUP format for inherited events
+> with few other fixies in patches:
+>   perf: Deny optimized switch for events read by PERF_SAMPLE_READ
+>   perf: Allow PERF_FORMAT_GROUP format on inherited events
+> 
+> And I fixed perf tool code to be able to process data from
+> children processes.
+> 
+> Anyway, I might have missed some other reason why this was
+> never switched on in kernel, so sending this as RFC.
 
-> The four files aha1542.h, aha1740.h, gvp11.h and mvme147.h under
-> drivers/scsi/ contain two-thirds of an include guard, but do not
-> elsewhere.
->
+Also reachable in here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/core_format_group
 
-Argh, git commit ate a line because it happened to start with #. This
-was supposed to be something like "...but do not #define the macro. git
-grep says that the macro names are not defined elsewhere."
-
-Rasmus
-
+jirka
