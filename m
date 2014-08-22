@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754AbaHVRuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:50:22 -0400
-Received: from mail-oi0-f74.google.com ([209.85.218.74]:55504 "EHLO
-	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469AbaHVRuV (ORCPT
+	id S932680AbaHVRxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:53:24 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:23078 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469AbaHVRxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:50:21 -0400
-X-Greylist: delayed 378 seconds by postgrey-1.27 at vger.kernel.org; Fri, 22 Aug 2014 13:50:21 EDT
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Addy Ke <addy.ke@rock-chips.com>, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, heiko@sntech.de,
-        max.schwarz@online.de, dan.carpenter@oracle.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c: rk3x: Remove unlikely() annotations
-Date: Fri, 22 Aug 2014 10:43:44 -0700
-Message-Id: <1408729424-11433-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Fri, 22 Aug 2014 13:53:23 -0400
+Message-ID: <1408729387.28990.85.camel@misato.fc.hp.com>
+Subject: Re: [Xen-devel] [PATCH RFC 1/3] x86: Make page cache mode a real
+ type
+From: Toshi Kani <toshi.kani@hp.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Juergen Gross <JGross@suse.com>, stefan.bader@canonical.com,
+        x86@kernel.org, ville.syrjala@linux.intel.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Date: Fri, 22 Aug 2014 11:43:07 -0600
+In-Reply-To: <53F72856020000780002C93D@mail.emea.novell.com>
+References: <1408454745-32358-1-git-send-email-jgross@suse.com>
+	 <1408454745-32358-2-git-send-email-jgross@suse.com>
+	 <1408562787.28990.65.camel@misato.fc.hp.com> <53F5BC2F.8050609@suse.com>
+	 <53F72856020000780002C93D@mail.emea.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having a transfer more than 32 bits is not all that unlikely.  Remove
-the annotation.
+On Fri, 2014-08-22 at 10:24 +0100, Jan Beulich wrote:
+> >>> On 21.08.14 at 11:30, <JGross@suse.com> wrote:
+> > On 08/20/2014 09:26 PM, Toshi Kani wrote:
+> >> On Tue, 2014-08-19 at 15:25 +0200, jgross@suse.com wrote:
+> >>> --- a/arch/x86/mm/init.c
+> >>> +++ b/arch/x86/mm/init.c
+> >>> @@ -27,6 +27,35 @@
+> >>>
+> >>>   #include "mm_internal.h"
+> >>>
+> >>> +/*
+> >>> + * Tables translating between page_cache_type_t and pte encoding.
+> >>> + * Minimal supported modes are defined statically, modified if more supported
+> >>> + * cache modes are available.
+> >>> + * Index into __cachemode2pte_tbl is the cachemode.
+> >>> + * Index into __pte2cachemode_tbl are the caching attribute bits of the pte
+> >>> + * (_PAGE_PWT, _PAGE_PCD, _PAGE_PAT) at index bit positions 0, 1, 2.
+> >>> + */
+> >>> +uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
+> >>> +	[_PAGE_CACHE_MODE_WB]		= 0,
+> >>> +	[_PAGE_CACHE_MODE_WC]		= _PAGE_PWT,
+> >>> +	[_PAGE_CACHE_MODE_UC_MINUS]	= _PAGE_PCD,
+> >>> +	[_PAGE_CACHE_MODE_UC]		= _PAGE_PCD | _PAGE_PWT,
+> >>> +	[_PAGE_CACHE_MODE_WT]		= _PAGE_PWT,
+> >>> +	[_PAGE_CACHE_MODE_WP]		= _PAGE_PWT,
+> >>> +};
+> >>
+> >> I think WT and WP should be set to _PAGE_PCD (UC_MINUS) for safe.
+> > 
+> > Oh, you are right.
+> 
+> Actually I suppose the original comment was about WC and WP;
+> defaulting WT to _PAGE_PWT seems quite correct to me.
 
-The unlikely in the IRQ handler can't gain us much.  It's not in a
-loop, so at most it would save 1 instruction per IRQ, which isn't
-much.  In fact on the compiler I tested it produced the exact same
-code.  Remove it too.
+My comment was about WT and WP, whose cache modes are defined here but
+are not supported in this patchset.  _PAGE_PWT is used by WC, which has
+weakly ordered writes.  WT and WP have strongly ordered writes, so they
+should be redirected to UC- for safe.
 
-Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/i2c/busses/i2c-rk3x.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-index 69e1185..b8b2b89 100644
---- a/drivers/i2c/busses/i2c-rk3x.c
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -208,7 +208,7 @@ static void rk3x_i2c_prepare_read(struct rk3x_i2c *i2c)
- 	 * The hw can read up to 32 bytes at a time. If we need more than one
- 	 * chunk, send an ACK after the last byte of the current chunk.
- 	 */
--	if (unlikely(len > 32)) {
-+	if (len > 32) {
- 		len = 32;
- 		con &= ~REG_CON_LASTACK;
- 	} else {
-@@ -399,7 +399,7 @@ static irqreturn_t rk3x_i2c_irq(int irqno, void *dev_id)
- 	}
- 
- 	/* is there anything left to handle? */
--	if (unlikely((ipd & REG_INT_ALL) == 0))
-+	if ((ipd & REG_INT_ALL) == 0)
- 		goto out;
- 
- 	switch (i2c->state) {
--- 
-2.1.0.rc2.206.gedb03e5
+Thanks,
+-Toshi
 
