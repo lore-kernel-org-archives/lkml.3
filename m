@@ -1,91 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679AbaHVR6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:58:34 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:53663 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaHVR6d (ORCPT
+	id S932777AbaHVSAE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:00:04 -0400
+Received: from server102.greatnet.de ([83.133.97.2]:39725 "EHLO
+	server102.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932410AbaHVSAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:58:33 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linux.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8723au: Fix space prohibited before that close parenthesis ')' errors
-Date: Fri, 22 Aug 2014 12:58:13 -0500
-Message-Id: <1408730293-22582-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 22 Aug 2014 14:00:01 -0400
+Message-ID: <53F78516.3040607@mageta.org>
+Date: Fri, 22 Aug 2014 19:59:50 +0200
+From: Benjamin Block <bebl@mageta.org>
+Reply-To: bebl@mageta.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lan Tianyu <tianyu.lan@intel.com>
+CC: lenb@kernel.org, davem@davemloft.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Run fixed button devices' notify callback in the
+ process context
+References: <1408693091-16268-1-git-send-email-tianyu.lan@intel.com> <3313221.quKCYo2xmm@vostro.rjw.lan>
+In-Reply-To: <3313221.quKCYo2xmm@vostro.rjw.lan>
+OpenPGP: url=http://mageta.org/pgp/bblock.private.asc
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl space prohibited before that close parenthesis ')' errors
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_efuse.c        | 2 +-
- drivers/staging/rtl8723au/include/osdep_service.h | 2 +-
- drivers/staging/rtl8723au/include/rtl8723a_spec.h | 6 +++---
- drivers/staging/rtl8723au/include/rtw_efuse.h     | 2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+On 08/22/2014 07:33 PM, Rafael J. Wysocki wrote:
+> On Friday, August 22, 2014 03:37:55 PM Lan Tianyu wrote:
+>> Currently fixed button devices' notify callbacks are running in the
+>> interrupt context. It's not necessary and prevent calling functions
+>> with mutex lock(E,G evaluating ACPI method). Otherwise, it's different=
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_efuse.c b/drivers/staging/rtl8723au/core/rtw_efuse.c
-index abc5d3c..9f6ce7d 100644
---- a/drivers/staging/rtl8723au/core/rtw_efuse.c
-+++ b/drivers/staging/rtl8723au/core/rtw_efuse.c
-@@ -731,7 +731,7 @@ EFUSE_ShadowRead23a(
- 	struct rtw_adapter *	pAdapter,
- 	u8		Type,
- 	u16		Offset,
--	u32		*Value	)
-+	u32		*Value)
- {
- 	if (Type == 1)
- 		efuse_ShadowRead1Byte(pAdapter, Offset, (u8 *)Value);
-diff --git a/drivers/staging/rtl8723au/include/osdep_service.h b/drivers/staging/rtl8723au/include/osdep_service.h
-index a5ebdb8..51a5d7b 100644
---- a/drivers/staging/rtl8723au/include/osdep_service.h
-+++ b/drivers/staging/rtl8723au/include/osdep_service.h
-@@ -62,7 +62,7 @@ static inline int rtw_netif_queue_stopped(struct net_device *pnetdev)
- 	return (netif_tx_queue_stopped(netdev_get_tx_queue(pnetdev, 0)) &&
- 		netif_tx_queue_stopped(netdev_get_tx_queue(pnetdev, 1)) &&
- 		netif_tx_queue_stopped(netdev_get_tx_queue(pnetdev, 2)) &&
--		netif_tx_queue_stopped(netdev_get_tx_queue(pnetdev, 3)) );
-+		netif_tx_queue_stopped(netdev_get_tx_queue(pnetdev, 3)));
- }
- 
- static inline u32 CHKBIT(u32 x)
-diff --git a/drivers/staging/rtl8723au/include/rtl8723a_spec.h b/drivers/staging/rtl8723au/include/rtl8723a_spec.h
-index 59b545b..2f18689 100644
---- a/drivers/staging/rtl8723au/include/rtl8723a_spec.h
-+++ b/drivers/staging/rtl8723au/include/rtl8723a_spec.h
-@@ -1367,9 +1367,9 @@ Current IOREG MAP
- #define _TXDMA_HIQ_MAP(x)		(((x)&0x3) << 14)
- #define _TXDMA_MGQ_MAP(x)		(((x)&0x3) << 12)
- #define _TXDMA_BKQ_MAP(x)		(((x)&0x3) << 10)
--#define _TXDMA_BEQ_MAP(x)		(((x)&0x3) << 8 )
--#define _TXDMA_VIQ_MAP(x)		(((x)&0x3) << 6 )
--#define _TXDMA_VOQ_MAP(x)		(((x)&0x3) << 4 )
-+#define _TXDMA_BEQ_MAP(x)		(((x)&0x3) << 8)
-+#define _TXDMA_VIQ_MAP(x)		(((x)&0x3) << 6)
-+#define _TXDMA_VOQ_MAP(x)		(((x)&0x3) << 4)
- 
- #define QUEUE_LOW			1
- #define QUEUE_NORMAL			2
-diff --git a/drivers/staging/rtl8723au/include/rtw_efuse.h b/drivers/staging/rtl8723au/include/rtw_efuse.h
-index 07bdc34..3e9bad5 100644
---- a/drivers/staging/rtl8723au/include/rtw_efuse.h
-+++ b/drivers/staging/rtl8723au/include/rtw_efuse.h
-@@ -55,7 +55,7 @@ enum _EFUSE_DEF_TYPE {
- #define		EFUSE_MAX_HW_SIZE		512
- #define		EFUSE_MAX_SECTION_BASE	16
- 
--#define EXT_HEADER(header) ((header & 0x1F ) == 0x0F)
-+#define EXT_HEADER(header) ((header & 0x1F) == 0x0F)
- #define ALL_WORDS_DISABLED(wde)	((wde & 0x0F) == 0x0F)
- #define GET_HDR_OFFSET_2_0(header) ( (header & 0xE0) >> 5)
- 
--- 
-1.9.1
+>> with non-fixed button device whose notify callback is running in the p=
+rocess
+>> context. This patch is to make fixed button device's notify
+>> callback in the process context and this also can avoid dead lock
+>> when using netlink to report button event to user space.
+>=20
+> I guess this is the main reason for the patch?
+>=20
+> Is there a bug report regarding this?
+>
 
+There is: https://lkml.org/lkml/2014/8/21/606
+
+>=20
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>> ---
+>>  drivers/acpi/scan.c | 9 +++++++--
+>>  1 file changed, 7 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+>> index 0a817ad..bfb7fc5 100644
+>> --- a/drivers/acpi/scan.c
+>> +++ b/drivers/acpi/scan.c
+>> @@ -922,12 +922,17 @@ static void acpi_device_notify(acpi_handle handl=
+e, u32 event, void *data)
+>>  	device->driver->ops.notify(device, event);
+>>  }
+>> =20
+>> -static acpi_status acpi_device_notify_fixed(void *data)
+>> +static void acpi_device_notify_fixed_run(void *data)
+>>  {
+>>  	struct acpi_device *device =3D data;
+>> =20
+>> -	/* Fixed hardware devices have no handles */
+>>  	acpi_device_notify(NULL, ACPI_FIXED_HARDWARE_EVENT, device);
+>> +}
+>> +
+>> +static acpi_status acpi_device_notify_fixed(void *data)
+>> +{
+>> +	/* Fixed hardware devices have no handles */
+>> +	acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_device_notify_fixed_run, da=
+ta);
+>>  	return AE_OK;
+>>  }
+>> =20
+>>
+>=20
+
+
+
+--jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQGcBAEBAgAGBQJT94UeAAoJEEbgTgVnoy6ea8sL/0/hY3daEZsVMmpSn9aIK/Bg
+1UnOQJDHl+7h8nGnzGzVBHyJRl3effw3YVK3y3MnB5q26OJxrurdO3ztLeWfO2gz
+apGhOxvbikMq6C0nBAululJ1mdA2kUX79fa8jQbuDfyRMr/1QfLXEH/6Ad3UneTa
+1Y3xl1eOsZPgDJnnIr9JLth2fZ3eNez8xG0zzMmUn7rERbQG+b3SreiTcs2SEVd9
+LZ9Wip6KXMrnX3loh0dvbb1s9d9u0WJdJZ/J/oMlXxIC1PFRLSJsXfpDyQ0A5v4f
+qoKhSSKX2hiH3lPLC/RJhBRIUMAwcE/wEQVoU5VW0OGhy89Lyv92d+10UjIV/lke
+N2T0GsW5CW3kE547U4DDPhiFolMZYfMcuMaJ/Jer2E2Wt7gtuiZxc+axfUFaRKCB
+E26OD6qngul6D3WffbGFizLiobh6bslDsgg7Qb0lVItgwRYzTIVzckFrDVGIWez6
+85YtreuS/pYjd+2NQCX9zHugMMSz2zTVMII5dI4zSg==
+=/aBT
+-----END PGP SIGNATURE-----
+
+--jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw--
