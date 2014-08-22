@@ -1,266 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaHVU42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 16:56:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1545 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751234AbaHVU40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 16:56:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="375917175"
-Subject: [PATCH] [v4] warn on performance-impacting configs aka. TAINT_PERFORMANCE
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
-        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
-        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
-        penberg@kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        lauraa@codeaurora.org, davej@redhat.com
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 22 Aug 2014 13:56:25 -0700
-Message-Id: <20140822205625.657E9890@viggo.jf.intel.com>
+	id S1751875AbaHVU5W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 16:57:22 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:44459 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaHVU5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 16:57:20 -0400
+Message-ID: <53F7AEAC.90303@gmail.com>
+Date: Fri, 22 Aug 2014 13:57:16 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>
+CC: Andrew Bresticker <abrestic@chromium.org>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org> <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
+In-Reply-To: <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/22/2014 01:42 PM, Florian Fainelli wrote:
+> On Aug 21, 2014 3:05 PM, "Andrew Bresticker" <abrestic@chromium.org
+> <mailto:abrestic@chromium.org>> wrote:
+>  >
+>  > To be consistent with other architectures and to avoid unnecessary
+>  > makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
+>  > and build them with a common makefile.
+>
+> I recall reading that the ARM organization for DTS files was a bit
+> unfortunate and should have been something like:
+>
+> arch/arm/boot/dts/<vendor>/
+>
+> Is this something we should do for the MIPS and update the other
+> architectures to follow that scheme?
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+If we choose not to intermingle .dts files from all the vendors in a 
+single directory, why do anything at all?  Currently the .dts files for 
+a vendor are nicely segregated with the rest of the vendors code under a 
+single directory.
 
-Changes from v3:
- * remove vestiges of TAINT_PERFORMANCE
- * change filename to check-configs
- * fix typos in description
- * print out CONFIG_FOO=y
- * tone down warning message
- * add KMEMCHECK and GCOV
- * add PROVE_LOCKING, but keep LOCKDEP since _anything_ selecting
-   it will cause scalaing issues at least.  But, move LOCKDEP
-   below LOCK_STAT and PROVE_LOCKING.
- * no more perfo-mance (missing an 'r')
- * temporary variable in lieu of multiple ARRAY_SIZE()
- * break early out of snprintf() loop
+Personally I think things are fine as they are.  Any common code 
+remaining in the Makefiles could be moved to the scripts directory for a 
+smaller change.
 
-Changes from v2:
- * remove tainting and stack track
- * add debugfs file
- * added a little text to guide folks who want to add more
-   options
 
-Changes from v1:
- * remove schedstats
- * add DEBUG_PAGEALLOC and SLUB_DEBUG_ON
+>
+>  >
+>  > Patch 1 sets up the makefiles for building the DTs in arch/mips/boot/dts
+>  > and introduces the config option BUILTIN_DTB for platforms that require
+>  > it.
+>  >
+>  > Patch 2 introduces the 'dtbs' makefile target to allow building of just
+>  > the DT binaries.
+>  >
+>  > Patches 3-7 move the DTs out of the platform directores.
+>  >
+>  > I've build tested this on all affected platforms (Octeon, Lantiq, SEAD3,
+>  > Netlogic, and Ralink) as well as Malta.  For platforms where builtin DTBs
+>  > are optional (Netlogic and Ralink), I built with and without the builtin
+>  > DTBs.
+>  >
+>  > Based on 3.17-rc1.
+>  >
+>  > Andrew Bresticker (7):
+>  >   MIPS: Create common infrastructure for building built-in device-trees
+>  >   MIPS: Add support for building device-tree binaries
+>  >   MIPS: Octeon: Move device-trees to arch/mips/boot/dts/
+>  >   MIPS: Lantiq: Move device-trees to arch/mips/boot/dts/
+>  >   MIPS: sead3: Move device-trees to arch/mips/boot/dts/
+>  >   MIPS: Netlogic: Move device-trees to arch/mips/boot/dts/
+>  >   MIPS: ralink: Move device-trees to arch/mips/boot/dts/
+>  >
+>  >  arch/mips/Kconfig                                    |  5 +++++
+>  >  arch/mips/Makefile                                   | 11 +++++++++++
+>  >  arch/mips/boot/.gitignore                            |  1 +
+>  >  arch/mips/boot/dts/Makefile                          | 20
+> ++++++++++++++++++++
+>  >  arch/mips/{lantiq => boot}/dts/danube.dtsi           |  0
+>  >  arch/mips/{lantiq => boot}/dts/easy50712.dts         |  0
+>  >  arch/mips/{ralink => boot}/dts/mt7620a.dtsi          |  0
+>  >  arch/mips/{ralink => boot}/dts/mt7620a_eval.dts      |  0
+>  >  .../mips/{cavium-octeon => boot/dts}/octeon_3xxx.dts |  0
+>  >  .../mips/{cavium-octeon => boot/dts}/octeon_68xx.dts |  0
+>  >  arch/mips/{ralink => boot}/dts/rt2880.dtsi           |  0
+>  >  arch/mips/{ralink => boot}/dts/rt2880_eval.dts       |  0
+>  >  arch/mips/{ralink => boot}/dts/rt3050.dtsi           |  0
+>  >  arch/mips/{ralink => boot}/dts/rt3052_eval.dts       |  0
+>  >  arch/mips/{ralink => boot}/dts/rt3883.dtsi           |  0
+>  >  arch/mips/{ralink => boot}/dts/rt3883_eval.dts       |  0
+>  >  arch/mips/{mti-sead3 => boot/dts}/sead3.dts          |  0
+>  >  arch/mips/{netlogic => boot}/dts/xlp_evp.dts         |  0
+>  >  arch/mips/{netlogic => boot}/dts/xlp_fvp.dts         |  0
+>  >  arch/mips/{netlogic => boot}/dts/xlp_gvp.dts         |  0
+>  >  arch/mips/{netlogic => boot}/dts/xlp_svp.dts         |  0
+>  >  arch/mips/cavium-octeon/.gitignore                   |  2 --
+>  >  arch/mips/cavium-octeon/Makefile                     | 10 ----------
+>  >  arch/mips/lantiq/Kconfig                             |  1 +
+>  >  arch/mips/lantiq/Makefile                            |  2 --
+>  >  arch/mips/lantiq/dts/Makefile                        |  1 -
+>  >  arch/mips/mti-sead3/Makefile                         |  4 ----
+>  >  arch/mips/netlogic/Kconfig                           |  4 ++++
+>  >  arch/mips/netlogic/Makefile                          |  1 -
+>  >  arch/mips/netlogic/dts/Makefile                      |  4 ----
+>  >  arch/mips/ralink/Kconfig                             |  4 ++++
+>  >  arch/mips/ralink/Makefile                            |  2 --
+>  >  arch/mips/ralink/dts/Makefile                        |  4 ----
+>  >  33 files changed, 46 insertions(+), 30 deletions(-)
+>  >  create mode 100644 arch/mips/boot/dts/Makefile
+>  >  rename arch/mips/{lantiq => boot}/dts/danube.dtsi (100%)
+>  >  rename arch/mips/{lantiq => boot}/dts/easy50712.dts (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/mt7620a.dtsi (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/mt7620a_eval.dts (100%)
+>  >  rename arch/mips/{cavium-octeon => boot/dts}/octeon_3xxx.dts (100%)
+>  >  rename arch/mips/{cavium-octeon => boot/dts}/octeon_68xx.dts (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/rt2880.dtsi (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/rt2880_eval.dts (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/rt3050.dtsi (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/rt3052_eval.dts (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/rt3883.dtsi (100%)
+>  >  rename arch/mips/{ralink => boot}/dts/rt3883_eval.dts (100%)
+>  >  rename arch/mips/{mti-sead3 => boot/dts}/sead3.dts (100%)
+>  >  rename arch/mips/{netlogic => boot}/dts/xlp_evp.dts (100%)
+>  >  rename arch/mips/{netlogic => boot}/dts/xlp_fvp.dts (100%)
+>  >  rename arch/mips/{netlogic => boot}/dts/xlp_gvp.dts (100%)
+>  >  rename arch/mips/{netlogic => boot}/dts/xlp_svp.dts (100%)
+>  >  delete mode 100644 arch/mips/cavium-octeon/.gitignore
+>  >  delete mode 100644 arch/mips/lantiq/dts/Makefile
+>  >  delete mode 100644 arch/mips/netlogic/dts/Makefile
+>  >  delete mode 100644 arch/mips/ralink/dts/Makefile
+>  >
+>  > --
+>  > 2.1.0.rc2.206.gedb03e5
+>  >
+>  > --
+>  > To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>  > the body of a message to majordomo@vger.kernel.org
+> <mailto:majordomo@vger.kernel.org>
+>  > More majordomo info at http://vger.kernel.org/majordomo-info.html
+>
 
---
-
-I have more than once myself been the victim of an accidentally-
-enabled kernel config option being mistaken for a true
-performance problem.
-
-I'm sure I've also taken profiles or performance measurements
-and assumed they were real-world when really I was measuring the
-performance with an option that nobody turns on in production.
-
-A warning like this late in boot will help remind folks when
-these kinds of things are enabled.  We can also teach tooling to
-look for and capture /sys/kernel/debug/config_debug .
-
-As for the patch...
-
-I originally wanted this for CONFIG_DEBUG_VM, but I think it also
-applies to things like lockdep and slab debugging.  See the patch
-for the list of offending config options.  I'm open to adding
-more, but this seemed like a good list to start.
-
-The compiler is smart enough to really trim down the code when
-the array is empty.  An objdump -d looks like this:
-
-	lib/check-configs.o:     file format elf64-x86-64
-
-	Disassembly of section .init.text:
-
-	000000000000000 <check_configs>:
-	  0:	55                   	push   %rbp
-	  1:	31 c0                	xor    %eax,%eax
-	  3:	48 89 e5             	mov    %rsp,%rbp
-	  6:	5d                   	pop    %rbp
-	  7:	c3                   	retq
-
-This could be done with Kconfig and an #ifdef to save us 8 bytes
-of text and the entry in the late_initcall() section.  Doing it
-this way lets us keep the list of these things in one spot, and
-also gives us a convenient way to dump out the name of the
-offending option.
-
-For anybody that *really* cares, I put the whole thing under
-CONFIG_DEBUG_KERNEL in the Makefile.
-
-The messages look like this:
-
-[    3.865297] INFO: Be careful when using this kernel for performance measurement.
-[    3.868776] INFO: Potentially performance-altering options enabled:
-[    3.871558] 	CONFIG_LOCKDEP=y
-[    3.873326] 	CONFIG_SLUB_DEBUG_ON=y
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: ak@linux.intel.com
-Cc: tim.c.chen@linux.intel.com
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
-Cc: kirill@shutemov.name
-Cc: lauraa@codeaurora.org
-Cc: davej@redhat.com
----
-
- b/kernel/Makefile        |    1 
- b/kernel/check-configs.c |  128 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 129 insertions(+)
-
-diff -puN kernel/Makefile~taint-performance kernel/Makefile
---- a/kernel/Makefile~taint-performance	2014-08-22 09:29:43.009121391 -0700
-+++ b/kernel/Makefile	2014-08-22 09:29:43.014121620 -0700
-@@ -96,6 +96,7 @@ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
- obj-$(CONFIG_JUMP_LABEL) += jump_label.o
- obj-$(CONFIG_CONTEXT_TRACKING) += context_tracking.o
- obj-$(CONFIG_TORTURE_TEST) += torture.o
-+obj-$(CONFIG_DEBUG_KERNEL) += check-configs.o
- 
- $(obj)/configs.o: $(obj)/config_data.h
- 
-diff -puN /dev/null kernel/check-configs.c
---- /dev/null	2014-04-10 11:28:14.066815724 -0700
-+++ b/kernel/check-configs.c	2014-08-22 11:20:14.679463265 -0700
-@@ -0,0 +1,128 @@
-+#include <linux/bug.h>
-+#include <linux/debugfs.h>
-+#include <linux/gfp.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+
-+/*
-+ * This should list any kernel options that can substantially
-+ * affect performance.  This is intended to give a loud
-+ * warning during bootup so that folks have a fighting chance
-+ * of noticing these things.
-+ *
-+ * This is fairly subjective, but a good rule of thumb for these
-+ * is: if it is enabled widely in production, then it does not
-+ * belong here.  If a major enterprise kernel enables a feature
-+ * for a non-debug kernel, it _really_ does not belong.
-+ */
-+static const char * const performance_killing_configs[] = {
-+#ifdef CONFIG_PROVE_LOCKING
-+	"PROVE_LOCKING",
-+#endif
-+#ifdef CONFIG_LOCK_STAT
-+	"LOCK_STAT",
-+#endif
-+#ifdef CONFIG_LOCKDEP
-+	"LOCKDEP",
-+#endif
-+#ifdef CONFIG_DEBUG_VM
-+	"DEBUG_VM",
-+#endif
-+#ifdef CONFIG_DEBUG_VM_VMACACHE
-+	"DEBUG_VM_VMACACHE",
-+#endif
-+#ifdef CONFIG_DEBUG_VM_RB
-+	"DEBUG_VM_RB",
-+#endif
-+#ifdef CONFIG_DEBUG_SLAB
-+	"DEBUG_SLAB",
-+#endif
-+#ifdef CONFIG_SLUB_DEBUG_ON
-+	"SLUB_DEBUG_ON",
-+#endif
-+#ifdef CONFIG_DEBUG_KMEMLEAK
-+	"DEBUG_KMEMLEAK",
-+#endif
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+	"DEBUG_PAGEALLOC",
-+#endif
-+#ifdef CONFIG_KMEMCHECK
-+	"DEBUG_KMEMCHECK",
-+#endif
-+#ifdef CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT
-+	"DEBUG_OBJECTS_ENABLE_DEFAULT",
-+#endif
-+#ifdef CONFIG_GCOV_KERNEL
-+	"GCOV_KERNEL",
-+#endif
-+};
-+
-+static const char config_prefix[] = "CONFIG_";
-+static const char config_postfix[] = "=y\n";
-+/*
-+ * Dump out the list of the offending config options to a file
-+ * in debugfs so that tooling can look for and capture it.
-+ */
-+static ssize_t performance_check_read(struct file *file, char __user *user_buf,
-+			size_t count, loff_t *ppos)
-+{
-+	int i;
-+	int ret;
-+	char *buf;
-+	size_t buf_written = 0;
-+	size_t buf_left;
-+	size_t buf_len;
-+	int nr_configs = ARRAY_SIZE(performance_killing_configs);
-+
-+	if (!nr_configs)
-+		return 0;
-+
-+	buf_len = 1;
-+	for (i = 0; i < nr_configs; i++)
-+		buf_len += strlen(config_prefix) +
-+			   strlen(performance_killing_configs[i]);
-+	/* Add space for the end of the line for each entry */
-+	buf_len += nr_configs * strlen(config_postfix);
-+
-+	buf = kmalloc(buf_len, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	buf_left = buf_len;
-+	for (i = 0; i < nr_configs; i++) {
-+		buf_written += snprintf(buf + buf_written, buf_left,
-+					"%s%s%s", config_prefix,
-+					performance_killing_configs[i],
-+					config_postfix);
-+		buf_left = buf_len - buf_written;
-+		if (buf_left <= 0)
-+			break;
-+	}
-+	ret = simple_read_from_buffer(user_buf, buf_written, ppos, buf, buf_len);
-+	kfree(buf);
-+	return ret;
-+}
-+
-+static const struct file_operations fops_performance_check = {
-+	.read = performance_check_read,
-+	.llseek = default_llseek,
-+};
-+
-+static int __init check_configs(void)
-+{
-+	int i;
-+
-+	if (!ARRAY_SIZE(performance_killing_configs))
-+		return 0;
-+
-+	pr_info("INFO: Be careful when using this kernel for performance measurement.\n");
-+	pr_info("INFO: Potentially performance-altering options present:\n");
-+	for (i = 0; i < ARRAY_SIZE(performance_killing_configs); i++) {
-+		pr_warn("\t%s%s%s", config_prefix,
-+				performance_killing_configs[i], config_postfix);
-+	}
-+	debugfs_create_file("config_debug", S_IRUSR | S_IWUSR,
-+				NULL, NULL, &fops_performance_check);
-+	return 0;
-+}
-+late_initcall(check_configs);
-_
