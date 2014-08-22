@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380AbaHVNb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:31:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48656 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756216AbaHVNb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:31:27 -0400
-Date: Fri, 22 Aug 2014 15:30:56 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Jen-Cheng(Tommy) Huang" <tommy24@gatech.edu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 0/5] perf: Allow leader sampling on inherited events
-Message-ID: <20140822133056.GA22315@krava.brq.redhat.com>
-References: <1408712718-19656-1-git-send-email-jolsa@kernel.org>
+	id S1756472AbaHVNdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:33:03 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:50256 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756433AbaHVNdB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 09:33:01 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: net: wireless: Add include guards
+Organization: D03
+References: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Hashcash: 1:20:140822:linux-kernel@vger.kernel.org::EDi7BmvdJNH2IpYd:0000000000000000000000000000000003GKv
+X-Hashcash: 1:20:140822:netdev@vger.kernel.org::EIzGJRaA9L5ZR9aU:0000000000000000000000000000000000000001qC5
+X-Hashcash: 1:20:140822:linux-wireless@vger.kernel.org::pyujkpvHXgMUJojp:00000000000000000000000000000002+j6
+X-Hashcash: 1:20:140822:linville@tuxdriver.com::HC/8vBngHqEFsOD1:0000000000000000000000000000000000000002SUJ
+Date: Fri, 22 Aug 2014 15:32:58 +0200
+In-Reply-To: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
+	(Rasmus Villemoes's message of "Fri, 22 Aug 2014 14:26:54 +0200")
+Message-ID: <87egw8sl85.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408712718-19656-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 03:05:13PM +0200, Jiri Olsa wrote:
-> hi,
-> Jen-Cheng(Tommy) Huang reported the leader sampling not working
-> on children processes:
->   http://www.mail-archive.com/linux-perf-users@vger.kernel.org/msg01644.html
-> 
-> The leader sampling (example below) lets the group leader event (cycles)
-> do the sampling and reads the rest of the group (cache-misses) via
-> PERF_FORMAT_GROUP format.
-> 
-> Example:
->   $ perf record -e '{cycles,cache-misses}:S' <workload>
->   $ perf report --group
-> 
->   The perf report --group allows to see all events group
->   data in single view.
-> 
-> The reason for leader sampling being switched off for inherited
-> events, is that the kernel does no allow PERF_FORMAT_GROUP format
-> on inherited events (which is used by leader sampling).
-> 
-> I switched on the PERF_FORMAT_GROUP format for inherited events
-> with few other fixies in patches:
->   perf: Deny optimized switch for events read by PERF_SAMPLE_READ
->   perf: Allow PERF_FORMAT_GROUP format on inherited events
-> 
-> And I fixed perf tool code to be able to process data from
-> children processes.
-> 
-> Anyway, I might have missed some other reason why this was
-> never switched on in kernel, so sending this as RFC.
+Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
 
-Also reachable in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_format_group
+> The files ray_cs.h and rayctl.h both contain two thirds of what
+> appears to be an include guard using the macro name RAYLINK_H (both
+> lack the #define). Since RAYLINK_H is not defined anywhere, the
+> guards using different macro names.
+>
 
-jirka
+I need to stop using the # character in my commit messages, or at least
+check that git didn't eat any of my lines.
+
+This was supposed to be something like "... defined anywhere, the
+#ifndefs are simply confusing no-ops. Add proper include guards using
+different macro names".
+
+Rasmus
