@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427AbaHVQZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:25:36 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:3253 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932098AbaHVQZf (ORCPT
+	id S932443AbaHVQ0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:26:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51444 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932098AbaHVQ0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:25:35 -0400
-X-IronPort-AV: E=Sophos;i="5.04,382,1406584800"; 
-   d="scan'208";a="90639469"
-Date: Fri, 22 Aug 2014 18:25:32 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] Remove various orphaned header files
-In-Reply-To: <1408724465.13483.17.camel@joe-AO725>
-Message-ID: <alpine.DEB.2.02.1408221824490.2055@localhost6.localdomain6>
-References: <1403630855-29186-1-git-send-email-linux@rasmusvillemoes.dk>  <1403631263.29061.17.camel@joe-AO725> <8761hksfnf.fsf@rasmusvillemoes.dk> <1408724465.13483.17.camel@joe-AO725>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 22 Aug 2014 12:26:23 -0400
+Date: Fri, 22 Aug 2014 17:25:34 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Dave Young <dyoung@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH 5/7 update] arm64/efi: do not enter virtual mode in case
+ booting with efi=noruntime or noefi
+Message-ID: <20140822162534.GP17255@arm.com>
+References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
+ <1408007731-15081-5-git-send-email-dyoung@redhat.com>
+ <20140815150952.GY27466@arm.com>
+ <20140818013007.GB3379@darkstar.nay.redhat.com>
+ <20140822151007.GA17255@arm.com>
+ <20140822154719.GN29733@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822154719.GN29733@console-pimps.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 22 Aug 2014, Joe Perches wrote:
-
-> On Fri, 2014-08-22 at 17:33 +0200, Rasmus Villemoes wrote:
-> > Joe Perches <joe@perches.com> writes:
+On Fri, Aug 22, 2014 at 04:47:19PM +0100, Matt Fleming wrote:
+> On Fri, 22 Aug, at 04:10:07PM, Will Deacon wrote:
 > > 
-> > > On Tue, 2014-06-24 at 19:27 +0200, Rasmus Villemoes wrote:
-> > >> AFAICT, these headers are not used anywhere, and are just accidental
-> > >> leftovers from past cleanups.
-> > >
-> > > Thanks.
-> > 
-> > Did anyone pick these [1] up? All six files still seem to be present.
+> > Are you sending these via the efi tree as part of this series, or do you
+> > need me to pick anything up into the arm64 tree?
 > 
-> Doesn't look like it.  There is no guaranteed
-> mechanism to get these types of patches applied.
+> I was planning on taking the entire series through the EFI tree (once
+> I've had chance to review it).
 > 
-> I suggest you resend these to a wider audience.
-> 
-> Jiri Kosina <trivial@kernel.org> is the maintainer of
-> the "trivial" tree, some patches of this type go
-> through that tree every once in awhile.
-> 
-> Andrew Morton <akpm@linux-foundation.org> sometimes
-> picks up things like this.
-> 
-> Also, make sure to send the individual deletions to the
-> original maintainers, authors and signers of each file.
-> 
-> For instance:
-> 
-> $ ./scripts/get_maintainer.pl -f include/linux/platform_data/tegra_emc.h
-> Stephen Warren <swarren@wwwdotorg.org> (supporter:TEGRA ARCHITECTUR...)
-> Thierry Reding <thierry.reding@gmail.com> (supporter:TEGRA ARCHITECTUR...)
-> linux-tegra@vger.kernel.org (open list:TEGRA ARCHITECTUR...)
-> 
-> $ git log --format="Author: %an <%ae>" include/linux/platform_data/tegra_emc.h
-> Author: Olof Johansson <olof@lixom.net>
-> 
-> Lastly, if none of that works within a couple of
-> release cycles, send them directly to Linus.
+> Does that work?
 
-If the individual patches are independent, I was told to make that 
-explicit.  Otherwise, each person thinks someone else should take care of 
-it.
+Fine by me; I think I've acked/reviewed all the arm64 bits. If you find an
+arm64 patch with a missing ack, just ping me and I'll take a look.
 
-julia
+Cheers,
+
+Will
