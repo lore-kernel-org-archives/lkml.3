@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291AbaHVM4C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 08:56:02 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14703 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756188AbaHVM4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 08:56:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 22 Aug 2014 05:42:05 -0700
-Message-ID: <53F73DDC.2000303@nvidia.com>
-Date: Fri, 22 Aug 2014 15:55:56 +0300
-From: Mikko Perttunen <mperttunen@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1756325AbaHVM6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:58:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6223 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756094AbaHVM6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 08:58:07 -0400
+Date: Fri, 22 Aug 2014 18:26:49 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140822125649.GI16198@grmbl.mre>
+References: <20140812213936.GA3106@linux.vnet.ibm.com>
+ <20140812214151.GB3106@linux.vnet.ibm.com>
+ <20140813054439.GA29913@grmbl.mre>
+ <20140813130049.GS4752@linux.vnet.ibm.com>
+ <20140815052411.GF1934@grmbl.mre>
+ <20140815150402.GD4752@linux.vnet.ibm.com>
+ <20140818175345.GD31856@grmbl.mre>
+ <20140819040149.GJ4752@linux.vnet.ibm.com>
+ <20140822122453.GG16198@grmbl.mre>
+ <20140822123651.GH16198@grmbl.mre>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <wni@nvidia.com>
-Subject: Re: [PATCH v2 5/5] ARM: tegra: Add thermal reset (thermtrip) support
- to PMC
-References: <1407933685-12404-1-git-send-email-mperttunen@nvidia.com> <1407933685-12404-6-git-send-email-mperttunen@nvidia.com> <53F5042A.7020603@wwwdotorg.org> <53F5F019.10308@nvidia.com> <53F612D2.8020803@wwwdotorg.org>
-In-Reply-To: <53F612D2.8020803@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822123651.GH16198@grmbl.mre>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On (Fri) 22 Aug 2014 [18:06:51], Amit Shah wrote:
+> On (Fri) 22 Aug 2014 [17:54:53], Amit Shah wrote:
+> > On (Mon) 18 Aug 2014 [21:01:49], Paul E. McKenney wrote:
+> > 
+> > > The odds are low over the next few days.  I am adding nastier rcutorture
+> > > testing, however.  It would still be very good to get debug information
+> > > from your setup.  One approach would be to convert the trace function
+> > > calls into printk(), if that would help.
+> > 
+> > I added a few printks on the lines of the traces in cases where
+> > rcu_nocb_poll was checked -- since that reproduces the hang.  Are the
+> > following traces sufficient, or should I keep adding more printks?
+> > 
+> > In the case of rcu-trace-nopoll.txt, the messages stop after a while
+> > (when the guest locks up hard).  That's when I kill the qemu process.
+> 
+> And this is bt from gdb when the endless 
+> 
+>   RCUDEBUG __call_rcu_nocb_enqueue 2146 rcu_preempt 0 WakeNot
+> 
+> messages are being spewed.
+> 
+> I can't time it, but hope it gives some indication along with the printks.
+
+... and after the system 'locks up', this is the state it's in:
+
+^C
+Program received signal SIGINT, Interrupt.
+native_safe_halt () at ./arch/x86/include/asm/irqflags.h:50
+50		 }
+(gdb) bt
+#0  native_safe_halt () at ./arch/x86/include/asm/irqflags.h:50
+#1  0xffffffff8100b9c1 in arch_safe_halt () at ./arch/x86/include/asm/paravirt.h:111
+#2  default_idle () at arch/x86/kernel/process.c:311
+#3  0xffffffff8100c107 in arch_cpu_idle () at arch/x86/kernel/process.c:302
+#4  0xffffffff8106a25a in cpuidle_idle_call () at kernel/sched/idle.c:120
+#5  cpu_idle_loop () at kernel/sched/idle.c:220
+#6  cpu_startup_entry (state=<optimized out>) at kernel/sched/idle.c:268
+#7  0xffffffff813e068b in rest_init () at init/main.c:418
+#8  0xffffffff81a8cf5a in start_kernel () at init/main.c:680
+#9  0xffffffff81a8c4ba in x86_64_start_reservations (real_mode_data=<optimized out>) at arch/x86/kernel/head64.c:193
+#10 0xffffffff81a8c607 in x86_64_start_kernel (real_mode_data=0x13f90 <cpu_lock_stats+29184> <error: Cannot access memory at address 0x13f90>)
+    at arch/x86/kernel/head64.c:182
+#11 0x0000000000000000 in ?? ()
 
 
-On 21/08/14 18:40, Stephen Warren wrote:
-> On 08/21/2014 07:11 AM, Mikko Perttunen wrote:
->> On 20/08/14 23:25, Stephen Warren wrote:
->>> On 08/13/2014 06:41 AM, Mikko Perttunen wrote:
->>>> This adds a device tree controlled option to enable PMC-based
->>>> thermal reset in overheating situations. Thermtrip is supported on
->>>> Tegra30, Tegra114 and Tegra124. The thermal reset only works when
->>>> the thermal sensors are calibrated, so a soctherm driver is also
->>>> required.
->>>
->>> If calibration is required, presumably the soctherm must initialize
->>> before this thermtrip code can initialize, or this thermtrip logic might
->>> be triggered by uncalibrated sensors?
->>
->> SOCTHERM requires that each sensor be explicitly enabled before it gives
->> readings. If a sensor is not enabled, the temperature given by the
->> register (and used to trigger thermtrip) will be zero. So in order for a
->> thermtrip shutdown to be caused before soctherm is initialized, the
->> thermtrip temperature would have to be programmed to below zero (the
->> default value is 105C), in which case an immediate shutdown would
->> probably be in order anyway (unless the user uses LN2 or something to
->> cool the soc below zero).
->>
->>>
->>> If so, then there needs to be some explicit mechanism to force the two
->>> drivers into probing in the right order.
->>
->> Because of the above, I think it isn't necessary to probe these in order.
->
-> OK, that makes sense. Briefly mentioning this in the commit description
-> could be useful.
->
+Wondering why it's doing this.  Am stepping through
+cpu_startup_entry() to see if I get any clues.
 
-Sure, I'll add a mention to the next version.
 
-Mikko
+		Amit
