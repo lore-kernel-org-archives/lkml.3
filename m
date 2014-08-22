@@ -1,64 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113AbaHVVxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:53:47 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:54596 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716AbaHVVxp (ORCPT
+	id S1752162AbaHVVyA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:54:00 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:41570 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaHVVxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:53:45 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andreea-Cristina Bernat <bernat.ada@gmail.com>, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH v2] carl9170: Remove redundant protection check
-Date: Fri, 22 Aug 2014 23:53:40 +0200
-Message-ID: <1931285.KsvFbLZH2Q@debian64>
-User-Agent: KMail/4.13.3 (Linux/3.17.0-rc1-wl+; KDE/4.14.0; x86_64; ; )
-In-Reply-To: <1408741732.5604.23.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <20140822191431.GA5827@ada> <1679858.MgakDZE2Vr@debian64> <1408741732.5604.23.camel@edumazet-glaptop2.roam.corp.google.com>
+	Fri, 22 Aug 2014 17:53:52 -0400
+Date: Fri, 22 Aug 2014 14:53:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
+        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
+        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140822215343.GH2663@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140813130049.GS4752@linux.vnet.ibm.com>
+ <20140815052411.GF1934@grmbl.mre>
+ <20140815150402.GD4752@linux.vnet.ibm.com>
+ <20140818175345.GD31856@grmbl.mre>
+ <20140819040149.GJ4752@linux.vnet.ibm.com>
+ <20140822122453.GG16198@grmbl.mre>
+ <20140822123651.GH16198@grmbl.mre>
+ <20140822125649.GI16198@grmbl.mre>
+ <20140822144819.GG2663@linux.vnet.ibm.com>
+ <20140822171405.GJ16198@grmbl.mre>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822171405.GJ16198@grmbl.mre>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082221-8236-0000-0000-000004D3E371
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 22, 2014 02:08:52 PM Eric Dumazet wrote:
-> On Fri, 2014-08-22 at 22:38 +0200, Christian Lamparter wrote:
-> [...]
-> > From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+On Fri, Aug 22, 2014 at 10:44:05PM +0530, Amit Shah wrote:
+> On (Fri) 22 Aug 2014 [07:48:19], Paul E. McKenney wrote:
+> > On Fri, Aug 22, 2014 at 06:26:49PM +0530, Amit Shah wrote:
+> > > On (Fri) 22 Aug 2014 [18:06:51], Amit Shah wrote:
+> > > > On (Fri) 22 Aug 2014 [17:54:53], Amit Shah wrote:
+> > > > > On (Mon) 18 Aug 2014 [21:01:49], Paul E. McKenney wrote:
+> > > > > 
+> > > > > > The odds are low over the next few days.  I am adding nastier rcutorture
+> > > > > > testing, however.  It would still be very good to get debug information
+> > > > > > from your setup.  One approach would be to convert the trace function
+> > > > > > calls into printk(), if that would help.
+> > > > > 
+> > > > > I added a few printks on the lines of the traces in cases where
+> > > > > rcu_nocb_poll was checked -- since that reproduces the hang.  Are the
+> > > > > following traces sufficient, or should I keep adding more printks?
+> > > > > 
+> > > > > In the case of rcu-trace-nopoll.txt, the messages stop after a while
+> > > > > (when the guest locks up hard).  That's when I kill the qemu process.
+> > > > 
+> > > > And this is bt from gdb when the endless 
+> > > > 
+> > > >   RCUDEBUG __call_rcu_nocb_enqueue 2146 rcu_preempt 0 WakeNot
+> > > > 
+> > > > messages are being spewed.
+> > > > 
+> > > > I can't time it, but hope it gives some indication along with the printks.
+> > > 
+> > > ... and after the system 'locks up', this is the state it's in:
+> > > 
+> > > ^C
+> > > Program received signal SIGINT, Interrupt.
+> > > native_safe_halt () at ./arch/x86/include/asm/irqflags.h:50
+> > > 50		 }
+> > > (gdb) bt
+> > > #0  native_safe_halt () at ./arch/x86/include/asm/irqflags.h:50
+> > > #1  0xffffffff8100b9c1 in arch_safe_halt () at ./arch/x86/include/asm/paravirt.h:111
+> > > #2  default_idle () at arch/x86/kernel/process.c:311
+> > > #3  0xffffffff8100c107 in arch_cpu_idle () at arch/x86/kernel/process.c:302
+> > > #4  0xffffffff8106a25a in cpuidle_idle_call () at kernel/sched/idle.c:120
+> > > #5  cpu_idle_loop () at kernel/sched/idle.c:220
+> > > #6  cpu_startup_entry (state=<optimized out>) at kernel/sched/idle.c:268
+> > > #7  0xffffffff813e068b in rest_init () at init/main.c:418
+> > > #8  0xffffffff81a8cf5a in start_kernel () at init/main.c:680
+> > > #9  0xffffffff81a8c4ba in x86_64_start_reservations (real_mode_data=<optimized out>) at arch/x86/kernel/head64.c:193
+> > > #10 0xffffffff81a8c607 in x86_64_start_kernel (real_mode_data=0x13f90 <cpu_lock_stats+29184> <error: Cannot access memory at address 0x13f90>)
+> > >     at arch/x86/kernel/head64.c:182
+> > > #11 0x0000000000000000 in ?? ()
+> > > 
+> > > 
+> > > Wondering why it's doing this.  Am stepping through
+> > > cpu_startup_entry() to see if I get any clues.
 > > 
-> > The carl9170_op_ampdu_action() function is used only by the mac80211
-> > framework. Since the mac80211 already takes care of checks and 
-> > properly serializing calls to the driver's function there is no
-> > need for the driver to do the same thing.
-> >  
-> > ---
-> > @@ -1430,18 +1430,10 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
-> >  		if (!sta_info->ht_sta)
-> >  			return -EOPNOTSUPP;
-> >  
-> > -		rcu_read_lock();
-> > -		if (rcu_dereference(sta_info->agg[tid])) {
-> > -			rcu_read_unlock();
-> > -			return -EBUSY;
-> > -		}
-> > -
-> > [...]
-> > ---
+> > This looks to me like normal behavior in the x86 ACPI idle loop.
+> > My guess is that the lockup is caused by indefinite blocking, in
+> > which case we would expect all the CPUs to be in the idle loop.
 > 
-> Sorry but this patch is not complete.
+> Hm, found it:
 > 
-> You need to somehow return -EBUSY if sta_info->agg[tid] is set.
-The sta_info->agg[tid] check is not needed (for reference, see [0]).
-(There is already a check in mac80211 which prevents the leak of
-sta_info->agg[tid] [1]).
+> The stall happens in do_initcalls().
+> 
+> pm_sysrq_init() is the function that causes the hang.  When I #if 0
+> the line
+> 
+>     register_sysrq_key('o', &sysrq_poweroff_op);
+> 
+> in pm_sysrq_init(), the boot proceeds normally.
 
-Regards
-Christian
+Yow!!!
 
-[0] <https://lkml.org/lkml/2014/8/20/725>
-[1] <http://lxr.free-electrons.com/source/net/mac80211/agg-tx.c#L583>
+> Now what this is, and what relation this has to rcu and that patch in
+> particular is next...
+
+Hmmm...  Please try replacing the synchronize_rcu() in
+__sysrq_swap_key_ops() with (say) schedule_timeout_interruptible(HZ / 10).
+I bet that gets rid of the hang.  (And also introduces a low-probability
+bug, but should be OK for testing.)
+
+The other thing to try is to revert your patch that turned my event
+traces into printk()s, then put an ftrace_dump(DUMP_ALL); just after
+the synchronize_rcu() -- that might make it so that the ftrace data
+actually gets dumped out.
+
+							Thanx, Paul
 
