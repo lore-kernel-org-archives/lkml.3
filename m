@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994AbaHVJZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:25:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55652 "EHLO mx2.suse.de"
+	id S1756019AbaHVJZd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:25:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55657 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751451AbaHVJZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:25:24 -0400
-Date: Fri, 22 Aug 2014 11:25:22 +0200
-Message-ID: <s5hegw8anb1.wl-tiwai@suse.de>
+	id S1751451AbaHVJZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 05:25:31 -0400
+Date: Fri, 22 Aug 2014 11:25:30 +0200
+Message-ID: <s5hd2bsanat.wl-tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH] sound: pci: ca0132_regs.h: Fix typo in include	guard
-In-Reply-To: <1408699329-7218-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1408699329-7218-1-git-send-email-linux@rasmusvillemoes.dk>
+Subject: Re: [alsa-devel] [PATCH] sound: pci: ct20k1reg: Fix typo in include	guard
+In-Reply-To: <1408699389-7272-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1408699389-7272-1-git-send-email-linux@rasmusvillemoes.dk>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 22 Aug 2014 11:22:09 +0200,
+At Fri, 22 Aug 2014 11:23:09 +0200,
 Rasmus Villemoes wrote:
 > 
 > Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
@@ -35,22 +35,28 @@ Applied, thanks.
 Takashi
 
 > ---
->  sound/pci/hda/ca0132_regs.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  sound/pci/ctxfi/ct20k1reg.h | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
-> diff --git a/sound/pci/hda/ca0132_regs.h b/sound/pci/hda/ca0132_regs.h
-> index 07e7609..8371274 100644
-> --- a/sound/pci/hda/ca0132_regs.h
-> +++ b/sound/pci/hda/ca0132_regs.h
-> @@ -20,7 +20,7 @@
+> diff --git a/sound/pci/ctxfi/ct20k1reg.h b/sound/pci/ctxfi/ct20k1reg.h
+> index f2e34e3..5851249 100644
+> --- a/sound/pci/ctxfi/ct20k1reg.h
+> +++ b/sound/pci/ctxfi/ct20k1reg.h
+> @@ -7,7 +7,7 @@
 >   */
 >  
->  #ifndef __CA0132_REGS_H
-> -#define __CA0312_REGS_H
-> +#define __CA0132_REGS_H
+>  #ifndef CT20K1REG_H
+> -#define CT20k1REG_H
+> +#define CT20K1REG_H
 >  
->  #define DSP_CHIP_OFFSET                0x100000
->  #define DSP_DBGCNTL_MODULE_OFFSET      0xE30
+>  /* 20k1 registers */
+>  #define 	DSPXRAM_START 			0x000000
+> @@ -632,5 +632,3 @@
+>  #define I2SD_R    0x19L
+>  
+>  #endif /* CT20K1REG_H */
+> -
+> -
 > -- 
 > 1.9.2
 > 
