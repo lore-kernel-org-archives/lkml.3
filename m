@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641AbaHVOtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:49:13 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:61709 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756561AbaHVOtK (ORCPT
+	id S1756653AbaHVOuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:50:19 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32847 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756303AbaHVOuQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:49:10 -0400
+	Fri, 22 Aug 2014 10:50:16 -0400
+From: "Murphy, Dan" <dmurphy@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] doc: dt/bindings: input: Fix drv260x binding document
+Thread-Topic: [PATCH] doc: dt/bindings: input: Fix drv260x binding document
+Thread-Index: AQHPvhMXmuDbV0D58UmgOrd6qfqhIg==
+Date: Fri, 22 Aug 2014 14:49:52 +0000
+Message-ID: <00FC9A978A94B7418C33AFAE8A35ED49DF2059@DFLE09.ent.ti.com>
+References: <1408716741-1163-1-git-send-email-dmurphy@ti.com>
+ <20140822141532.GC22707@saruman.home>
+ <00FC9A978A94B7418C33AFAE8A35ED49DF1F66@DFLE09.ent.ti.com>
+ <20140822144524.GE22707@saruman.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140822140759.GA31775@ada>
-References: <20140822140759.GA31775@ada>
-Date: Fri, 22 Aug 2014 10:49:09 -0400
-Message-ID: <CAHQdGtQGWBkH23eTF-1=dGcz18QK8atHEom0vy9eWhPXPtCsfg@mail.gmail.com>
-Subject: Re: [PATCH] nfs: delegation: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 10:07 AM, Andreea-Cristina Bernat
-<bernat.ada@gmail.com> wrote:
-> The use of "rcu_assign_pointer()" is NULLing out the pointer.
-> According to RCU_INIT_POINTER()'s block comment:
-> "1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-> it is better to use it instead of rcu_assign_pointer() because it has a
-> smaller overhead.
->
-> The following Coccinelle semantic patch was used:
-> @@
-> @@
->
-> - rcu_assign_pointer
-> + RCU_INIT_POINTER
->   (..., NULL)
->
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-> ---
->  fs/nfs/delegation.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-> index 5d8ccec..349e63b 100644
-> --- a/fs/nfs/delegation.c
-> +++ b/fs/nfs/delegation.c
-> @@ -249,7 +249,7 @@ nfs_detach_delegation_locked(struct nfs_inode *nfsi,
->         list_del_rcu(&delegation->super_list);
->         delegation->inode = NULL;
->         nfsi->delegation_state = 0;
-> -       rcu_assign_pointer(nfsi->delegation, NULL);
-> +       RCU_INIT_POINTER(nfsi->delegation, NULL);
->         spin_unlock(&delegation->lock);
->         return delegation;
->  }
-> --
-> 1.9.1
+Felipe
 
-Sorry, but NACK.
+On 08/22/2014 09:45 AM, Balbi, Felipe wrote:
+> Hi,
+> 
+> On Fri, Aug 22, 2014 at 09:25:13AM -0500, Murphy, Dan wrote:
+>> Felipe
+>>
+>> On 08/22/2014 09:15 AM, Balbi, Felipe wrote:
+>>> On Fri, Aug 22, 2014 at 09:12:21AM -0500, Dan Murphy wrote:
+>>>> Update the drv260x dt binding document:
+>>>> - Change the node name to the devices function not the
+>>>> device name.
+>>>> - Add vbat-supply to the example.
+>>>> - Fix indentation of the example.
+>>>>
+>>>> Signed-off-by: Dan Murphy <dmurphy@ti.com>
+>>>> ---
+>>>>  .../devicetree/bindings/input/ti,drv260x.txt       |   19 ++++++++++---------
+>>>>  1 file changed, 10 insertions(+), 9 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
+>>>> index a9c8519..214e25d 100644
+>>>> --- a/Documentation/devicetree/bindings/input/ti,drv260x.txt
+>>>> +++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
+>>>> @@ -37,15 +37,16 @@ Optional properties:
+>>>>  			  3.2 v.
+>>>>  Example:
+>>>>  
+>>>> -drv2605l: drv2605l@5a {
+>>>> -		compatible = "ti,drv2605l";
+>>>> -		reg = <0x5a>;
+>>>> -		enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
+>>>> -		mode = <DRV260X_LRA_MODE>;
+>>>> -		library-sel = <DRV260X_LIB_LRA>;
+>>>> -		vib-rated-mv = <3200>;
+>>>> -		vib-overdriver-mv = <3200>;
+>>>> -};
+>>>> +haptics:@5a {
+>>>
+>>> haptics: haptics@5a ??
+>>>
+>>
+>> I found both types of entries in the bindings docs.
+>> There is no consistency within the input bindings documentation.
+> 
+> I could swear neither two types have a colon character between node name
+> and its base address.
+> 
 
-We do need the memory barriers here, as the nfs_inode is globally
-visible, and other threads may be checking nfsi->delegation_state
-and/or delegation->inode in order to conclude whether or not there is
-still a delegation associated with this inode.
+I will add it to the fixes.
 
-Cheers
-  Trond
+Dan
+
 -- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+------------------
+Dan Murphy
