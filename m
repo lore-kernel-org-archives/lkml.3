@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689AbaHVRcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:32:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35605 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932410AbaHVRcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:32:53 -0400
-Message-ID: <53F77EC1.6080604@suse.de>
-Date: Fri, 22 Aug 2014 19:32:49 +0200
-From: =?ISO-8859-15?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S932762AbaHVReo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:34:44 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54385 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932410AbaHVRel (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 13:34:41 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Dirk Griesbach <spamthis@freenet.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH] ACPI / scan: Allow ACPI drivers to bind to PNP device objects
+Date: Fri, 22 Aug 2014 19:53:42 +0200
+Message-ID: <3770704.uNPCcL4EDK@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1408672831.3315.35.camel@rzhang1-toshiba>
+References: <5487060.QsgluucUH4@vostro.rjw.lan> <2188871.Tr0Kbz91aK@vostro.rjw.lan> <1408672831.3315.35.camel@rzhang1-toshiba>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-CC: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Kamil Debski <k.debski@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        Mark Brown <broonie@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] ARM: dts: remove old USB2 PHY node hook for Arndale
-References: <1408726745-31135-1-git-send-email-b.zolnierkie@samsung.com> <1408726745-31135-2-git-send-email-b.zolnierkie@samsung.com>
-In-Reply-To: <1408726745-31135-2-git-send-email-b.zolnierkie@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.08.2014 18:59, schrieb Bartlomiej Zolnierkiewicz:
-> drivers/usb/phy/phy-samsung-usb2 driver got replaced by
-> drivers/phy/phy-samsung-usb2 one.  Remove the leftover hook
-> from Arndale dts file.
+On Friday, August 22, 2014 10:00:31 AM Zhang Rui wrote:
+> On Thu, 2014-08-21 at 19:10 +0200, Rafael J. Wysocki wrote:
+> > On Thursday, August 21, 2014 08:08:54 PM Zhang Rui wrote:
+> > > Hi, Rafael,
+> > > 
+> > > On Thu, 2014-08-21 at 06:04 +0200, Rafael J. Wysocki wrote:
+> > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > [cut]
+> > 
+> > > Note that I've just tested on my machine and it works well.
+> > > I still need the bug reporter to check if the patch fixes bug 81511 or not.
+> > 
+> > The FUJ02B1 and FUJ02E3 devices in bug 81971 have the same problem and
+> > they aren't motherboard devices.
 > 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Reviewed-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Reviewed-by: Jingoo Han <jg1.han@samsung.com>
-> Acked-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Cc: Mark Brown <broonie@linaro.org>
-> Cc: Kamil Debski <k.debski@samsung.com>
-> ---
->  arch/arm/boot/dts/exynos5250-arndale.dts | 4 ----
->  1 file changed, 4 deletions(-)
+> Right, but IMO, the rootcause of that bug is that
+> 1. the PNP id table in fujitsu-laptop driver was introduced for some
+> reason, probably it is used as an indicator for module auto-loading, and
+> nowadays, this is redundant because fujitsu-laptop driver probes ACPI
+> device only, and the driver will be loaded if the ACPI device objects
+> for FUJ02B1 and FUJ02E3 is created.
+
+We may be able to drop the Fujitsu devices from the ACPI PNP list and all may
+work.  Still, does that fix all of the potential problems?
+
+> 2. This "redundant" PNP id table results in that those IDs are added to
+> PNP ID list unnecessarily, and results in PNP device nodes for those
+> devices are created unnecessarily.
+
+Yes, that may be the case, but the way to deal with that is not to break
+thing and then see what's broken and fix it, but to get rid of ACPI drivers
+one by one in which case we can control what's been changed and why.
+
+> >   Yes, we need to convert that driver
+> > to use a PNP driver structure or a platform device, but (1) we need a
+> > -stable fix *first*
 > 
-> diff --git a/arch/arm/boot/dts/exynos5250-arndale.dts b/arch/arm/boot/dts/exynos5250-arndale.dts
-> index d0de1f5..dad8f9b 100644
-> --- a/arch/arm/boot/dts/exynos5250-arndale.dts
-> +++ b/arch/arm/boot/dts/exynos5250-arndale.dts
-> @@ -570,8 +570,4 @@
->  			connect-gpios = <&gpd1 7 1>;
->  		};
->  	};
-> -
-> -	usb@12110000 {
-> -		usb-phy = <&usb2_phy>;
-> -	};
->  };
+> I agree.
+> 
+> >  and (2) the cases we already know about may not be
+> > the only broken ones.
+> 
+> Agree.
+> But the issue addressed in your patch is that PNP scan handler blocks
+> ACPI driver from being probed, right?
 
-This will trivially conflict with my exynos5250 cleanups in the Spring
-series: &ehci {...} there.
+Yes.
 
-https://patchwork.kernel.org/patch/4664751/
+> So my question would be,
+> 1. If the id in PNP scan handler does not have a PNP driver, like the
+>    FUJ02B1/FUJ02E3 issue, what do we need the id in PNP scan handler?
+>    In fact, I think this is a good chance for us to cleanup the ACPI PNP
+>    id list, as long as we can fix them in time.
 
-Regards,
-Andreas
+No.
 
--- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+We need -stable to work and there's no way I will mark the motherboard
+resource changes for -stable.  Second, if we deal with it as I said (that is,
+get rid of ACPI drivers gradually), we will clean up that list in the process
+without breaking things for people in random ways.
+
+> 2. If the id in PNP scan handler has a PNP driver, should we allow both
+>    PNP driver and ACPI driver loaded? I think PNP system driver is the
+>    only case that makes us have to say yes, and what I'm trying to do
+>    is to fix this in the following patch.
+> 
+> Plus, IMO, your patch only fixes the PNP bus vs. ACPI bus issue. We
+> still may get bug report complaining some *PLATFORM* driver stops to
+> functional if the ACPI node has _CID PNP0C01/PNP0C02, sooner or later.
+> right?
+
+No.
+
+We never allowed ACPI drivers to bind to ACPI device objects having platform
+device companions, wherease we *did* allow that for ACPI device objects having
+PNP device companions.  We simply need to go back to what we were doing and fix
+things *on* *top* of that.
+
+Any other approach pretty much guarantees leaving breakage in random places.
+
+So I'm fine with cleaning up the PNP list *if* you convert the drivers in
+question from ACPI drivers to something else (platform drivers preferably)
+at the same time.
+
+Rafael
+
