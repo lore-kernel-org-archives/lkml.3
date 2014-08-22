@@ -1,106 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaHVXNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 19:13:22 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44829 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407AbaHVXNV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 19:13:21 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Kevin Hilman <khilman@linaro.org>, afaerber@suse.de,
-        Ajay Kumar <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 1/1] ARM: exynos_defconfig: Enable options for display panel support
-Date: Sat, 23 Aug 2014 01:13:05 +0200
-Message-Id: <1408749185-14133-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.0.1
+	id S1752375AbaHVXRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 19:17:32 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:46901 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751744AbaHVXRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 19:17:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAL1qeaEaZx0KpMpTSGqZVMZZj1VrzGY3ffRbzEdy4Aks2yHciA@mail.gmail.com>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+ <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
+ <53F7AEAC.90303@gmail.com> <CAL1qeaEaZx0KpMpTSGqZVMZZj1VrzGY3ffRbzEdy4Aks2yHciA@mail.gmail.com>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Sat, 23 Aug 2014 01:16:37 +0200
+Message-ID: <CAOiHx=kLfKLZA2Nv+dn87S50209DBXRj8OgZsywXQ0MoqTVA8A@mail.gmail.com>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: David Daney <ddaney.cavm@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many Exynos devices have a display panel, most of them just have
-a simple panel while others have more complex configurations that
-requires an embedded DisplayPort (eDP) to LVDS display bridge.
+On Sat, Aug 23, 2014 at 12:10 AM, Andrew Bresticker
+<abrestic@chromium.org> wrote:
+> On Fri, Aug 22, 2014 at 1:57 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+>> On 08/22/2014 01:42 PM, Florian Fainelli wrote:
+>>>
+>>> On Aug 21, 2014 3:05 PM, "Andrew Bresticker" <abrestic@chromium.org
+>>> <mailto:abrestic@chromium.org>> wrote:
+>>>  >
+>>>  > To be consistent with other architectures and to avoid unnecessary
+>>>  > makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
+>>>  > and build them with a common makefile.
+>>>
+>>> I recall reading that the ARM organization for DTS files was a bit
+>>> unfortunate and should have been something like:
+>>>
+>>> arch/arm/boot/dts/<vendor>/
+>>>
+>>> Is this something we should do for the MIPS and update the other
+>>> architectures to follow that scheme?
+>>
+>>
+>> If we choose not to intermingle .dts files from all the vendors in a single
+>> directory, why do anything at all?  Currently the .dts files for a vendor
+>> are nicely segregated with the rest of the vendors code under a single
+>> directory.
+>>
+>> Personally I think things are fine as they are.  Any common code remaining
+>> in the Makefiles could be moved to the scripts directory for a smaller
+>> change.
+>
+> Assuming we don't move them to a common location just to segregate
+> them again, it makes MIPS consistent with every other architecture
+> (not just ARM!) using DT.  It also makes it easier to introduce common
+> changes later on, like the 'dtbs' or 'dtbs_install' make targets.
 
-This patch enables the following features to support both setups:
+I think having dts files under a predictable location is a good idea,
+especially if it allows common code/targets as "dtbs".
 
-- Direct Rendering Manager (DRM)
-- DRM bridge registration and lookup framework
-- Parade ps8622/ps8625 eDP/LVDS bridge
-- NXP ptn3460 eDP/LVDS bridge
-- Exynos Fully Interactive Mobile Display controller (FIMD)
-- Panel registration and lookup framework
-- Simple panels
-- Backlight and LCD device support
+Maybe a totally insane idea, but how this for having the cake and eating it too:
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
+arch/mips/boot/dts/*.dts => dts files to be built along side the kernel as .dtbs
 
-Some of the options enabled here (e.g: the eDP/LVDS bridges)
-are still not merged in mainline so this patch depends on
-the following posted patches that were still not merged:
+arch/mips/<mach>/*.dts => dts files built into the kernel
 
-"drm/bridge: Modify drm_bridge core to support driver model" [0]
-"drm/bridge: Add i2c based driver for ptn3460 bridge" [1]
-"drm/bridge: Add i2c based driver for ps8622/ps8625 bridge" [2]
+(the ../*.dts isn't meant as they should be in the top directory, just
+somewhere in that sub tree)
 
-But I wanted to post anyways to make easier for others to
-figure out what are the needed options to have the display
-working on their Exynos machines.
+Because I can see a use case where you want both. For example octeon
+uses generic device tree boards to use as a basis if the bootloader
+did not provide one/is too old, but maybe also provide dts files for
+known boards, which shouldn't be included in the kernel binary itself.
 
-In order to test the display panel on the Peach machines,
-the following patches are also needed:
+And I would like to do a similar thing when I want to convert bcm63xx
+to device tree, i.e. have dts files for supported boards, but also
+include a "standard"/"fall-back" dts for each of the supported SoCs to
+load if there is no dtb passed and the old board registration code is
+used.
 
-"ARM: dts: Add DT changes for display on peach_pit" [3]
-"ARM: dts: Add DT changes for display on peach_pi" [4]
 
-Best regards,
-Javier
-
-[0]: http://patchwork.ozlabs.org/patch/373792/
-[1]: http://patchwork.ozlabs.org/patch/373793/
-[2]: http://patchwork.ozlabs.org/patch/373794/
-[3]: http://www.spinics.net/lists/arm-kernel/msg350568.html
-[4]: http://www.spinics.net/lists/arm-kernel/msg350569.html 
-
- arch/arm/configs/exynos_defconfig | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-index 676c744..f69d57e 100644
---- a/arch/arm/configs/exynos_defconfig
-+++ b/arch/arm/configs/exynos_defconfig
-@@ -101,11 +101,25 @@ CONFIG_REGULATOR_S2MPA01=y
- CONFIG_REGULATOR_S2MPS11=y
- CONFIG_REGULATOR_S5M8767=y
- CONFIG_REGULATOR_TPS65090=y
-+CONFIG_DRM=y
-+CONFIG_DRM_BRIDGE=y
-+CONFIG_DRM_PS8622=y
-+CONFIG_DRM_EXYNOS=y
-+CONFIG_DRM_EXYNOS_FIMD=y
-+CONFIG_DRM_EXYNOS_DP=y
-+CONFIG_DRM_PANEL=y
-+CONFIG_DRM_PANEL_SIMPLE=y
- CONFIG_FB=y
- CONFIG_FB_MODE_HELPERS=y
- CONFIG_FB_SIMPLE=y
- CONFIG_EXYNOS_VIDEO=y
- CONFIG_EXYNOS_MIPI_DSI=y
-+CONFIG_BACKLIGHT_LCD_SUPPORT=y
-+CONFIG_LCD_CLASS_DEVICE=y
-+CONFIG_LCD_PLATFORM=y
-+CONFIG_BACKLIGHT_CLASS_DEVICE=y
-+CONFIG_BACKLIGHT_GENERIC=y
-+CONFIG_BACKLIGHT_PWM=y
- CONFIG_FRAMEBUFFER_CONSOLE=y
- CONFIG_FONTS=y
- CONFIG_FONT_7x14=y
--- 
-2.0.1
-
+Jonas
