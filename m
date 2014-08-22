@@ -1,62 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaHVISY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 04:18:24 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:36954 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658AbaHVISV (ORCPT
+	id S1755903AbaHVIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 04:22:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:11296 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212AbaHVIWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 04:18:21 -0400
-Date: Fri, 22 Aug 2014 10:18:19 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hawkes <hawkes@google.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: Re: [GIT PULL] HID
-Message-ID: <20140822081819.GA297@x4>
-References: <alpine.LNX.2.00.1408211146110.23162@pobox.suse.cz>
- <20140822074030.GA297@x4>
- <alpine.LNX.2.00.1408220257050.23162@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1408220257050.23162@pobox.suse.cz>
+	Fri, 22 Aug 2014 04:22:24 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-d7-53f6fdb21952
+From: Chao Yu <chao2.yu@samsung.com>
+To: minchan@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        "'Jerome Marchand'" <jmarchan@redhat.com>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+Subject: [PATCH v3] zram: add num_discards for discarded pages stat
+Date: Fri, 22 Aug 2014 16:21:01 +0800
+Message-id: <000201cfbde2$2ae08710$80a19530$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac+91sMbbhPLxeHVS1Gw3Vk4S34MbQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9jAd1Nf78FG2w+JG8xZ/0aNotTf64z
+	WVzeNYfN4t6a/6wWy76+Z7fY0DKL3WLt58fsDuweO2fdZffYtKqTzWPTp0nsHidm/GbxeL/v
+	KpvHzk+bWT0+b5ILYI/isklJzcksSy3St0vgypjY2sZe8EmuomFeC0sD42PJLkYODgkBE4kt
+	80K7GDmBTDGJC/fWs4HYQgKLGCWmn4/pYuQCsn8wShyefY4JJMEmoCKxvOM/mC0C1PD4yw92
+	kCJmgRuMEjd/HmMFSQgLOEs83v2AHcRmEVCVuNLyFyzOK2Ap8aJtKTuELSjxY/I9FhCbWUBL
+	Yv3O40wQtrzE5jVvmSEuUpDYcfY1I8QyPYmG2XMYIWrEJTYeucUygVFgFpJRs5CMmoVk1Cwk
+	LQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfEM6kdjCsbLA4xCnAwKvHwRnz5GizE
+	mlhWXJl7iFGCg1lJhHfTvG/BQrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoHCgmkJ5akZqem
+	FqQWwWSZODilGhhZ9+XOfXsqXyB2Kn+X1jKWd8+rl8y+WhItmK3HLy0gO62xdvqrxUfj9H6x
+	v5zBftkpt/iqiOfFEyYz97xj6zCbcefM7unqB154q7+9wP7/1tH3gQVvYp8eCObalXvT8aLH
+	kdYDaTP9bNV+Pi3K/W0f4nf0rYdxRc6vwp4LjXO6LJLTHwp/NbioxFKckWioxVxUnAgAeNSP
+	vYQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.08.22 at 03:00 -0500, Jiri Kosina wrote:
-> On Fri, 22 Aug 2014, Markus Trippelsdorf wrote:
-> 
-> > >       HID: logitech: perform bounds checking on device_id early enough
-> > 
-> > The commit above (ad3e14d7c5268c2e) causes the bounds checking to always
-> > fail on my monolithic kernel (without modules):
-> > 
-> > ...
-> > [    2.922617] usb 4-2: new full-speed USB device number 2 using ohci-pci
-> > [    2.996587] udevd[98]: starting eudev version 1.0
-> > [    3.071203] random: nonblocking pool is initialized
-> > [    3.108360] logitech-djreceiver 0003:046D:C52B.0003: hiddev0,hidraw0: USB HID v1.11 Device [Logitech USB Receiver] on usb-0000:00:12.1-2/input2
-> > [    3.163208] input: Logitech Unifying Device. Wireless PID:4026 as /devices/pci0000:00/0000:00:12.1/usb4/4-2/4-2:1.2/0003:046D:C52B.0003/0003:046D:C52B.0004/input/input2
-> > [    3.163511] logitech-djdevice 0003:046D:C52B.0004: input,hidraw1: USB HID v1.11 Keyboard [Logitech Unifying Device. Wireless PID:4026] on usb-0000:00:12.1-2:1
-> > [    3.164121] logitech-djreceiver 0003:046D:C52B.0003: logi_dj_raw_event: invalid device index:0
-> > [    3.289261] usb 3-1: new low-speed USB device number 2 using ohci-pci
-> > [    3.457606] input: HID 046a:0011 as /devices/pci0000:00/0000:00:12.0/usb3/3-1/3-1:1.0/0003:046A:0011.0005/input/input3
-> > [    3.457794] hid-generic 0003:046A:0011.0005: input,hidraw2: USB HID v1.10 Keyboard [HID 046a:0011] on usb-0000:00:12.0-1/input0
-> > [    3.712886] Switched to clocksource tsc
-> 
-> Thanks a lot for a timely report.
-> 
-> I am travelling till next week and don't unfortunately have the hardware 
-> here with me to test momentarily, so please take this with a lot of grains 
-> of salt (maybe Benjamin would be able to look into this before I'd be able 
-> to on monday ... ?).
-> 
-> Does the shot-in-the-dark patch below put things back in shape for you?
+Since we have supported handling discard request in this commit
+f4659d8e620d08bd1a84a8aec5d2f5294a242764 (zram: support REQ_DISCARD), zram got
+one more chance to free unused memory whenever received discard request. But
+without stating for discard request, there is no method for user to know whether
+discard request has been handled by zram or how many blocks were discarded by
+zram when user wants to know the effect of discard.
 
-Thanks a lot for the timely patch. It indeed fixes the issue for me.
+In this patch, we add num_discards to stat discarded pages, and export it to
+sysfs for users.
 
+* From v1
+ * Update zram document to show num_discards in statistics list.
+
+* From v2
+ * Update description of this patch with clear goal.
+
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++++
+ Documentation/blockdev/zram.txt            |  1 +
+ drivers/block/zram/zram_drv.c              |  3 +++
+ drivers/block/zram/zram_drv.h              |  1 +
+ 4 files changed, 15 insertions(+)
+
+diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+index 70ec992..fa8936e 100644
+--- a/Documentation/ABI/testing/sysfs-block-zram
++++ b/Documentation/ABI/testing/sysfs-block-zram
+@@ -57,6 +57,16 @@ Description:
+ 		The failed_writes file is read-only and specifies the number of
+ 		failed writes happened on this device.
+ 
++
++What:		/sys/block/zram<id>/num_discards
++Date:		August 2014
++Contact:	Chao Yu <chao2.yu@samsung.com>
++Description:
++		The num_discards file is read-only and specifies the number of
++		physical blocks which are discarded by this device. These blocks
++		are included in discard request which is sended by filesystem as
++		the blocks are no longer used.
++
+ What:		/sys/block/zram<id>/max_comp_streams
+ Date:		February 2014
+ Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+index 0595c3f..e50e18b 100644
+--- a/Documentation/blockdev/zram.txt
++++ b/Documentation/blockdev/zram.txt
+@@ -89,6 +89,7 @@ size of the disk when not in use so a huge zram is wasteful.
+ 		num_writes
+ 		failed_reads
+ 		failed_writes
++		num_discards
+ 		invalid_io
+ 		notify_free
+ 		zero_pages
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index d00831c..904e7a5 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -606,6 +606,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+ 		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+ 		zram_free_page(zram, index);
+ 		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
++		atomic64_inc(&zram->stats.num_discards);
+ 		index++;
+ 		n -= PAGE_SIZE;
+ 	}
+@@ -866,6 +867,7 @@ ZRAM_ATTR_RO(num_reads);
+ ZRAM_ATTR_RO(num_writes);
+ ZRAM_ATTR_RO(failed_reads);
+ ZRAM_ATTR_RO(failed_writes);
++ZRAM_ATTR_RO(num_discards);
+ ZRAM_ATTR_RO(invalid_io);
+ ZRAM_ATTR_RO(notify_free);
+ ZRAM_ATTR_RO(zero_pages);
+@@ -879,6 +881,7 @@ static struct attribute *zram_disk_attrs[] = {
+ 	&dev_attr_num_writes.attr,
+ 	&dev_attr_failed_reads.attr,
+ 	&dev_attr_failed_writes.attr,
++	&dev_attr_num_discards.attr,
+ 	&dev_attr_invalid_io.attr,
+ 	&dev_attr_notify_free.attr,
+ 	&dev_attr_zero_pages.attr,
+diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+index e0f725c..2994aaf 100644
+--- a/drivers/block/zram/zram_drv.h
++++ b/drivers/block/zram/zram_drv.h
+@@ -86,6 +86,7 @@ struct zram_stats {
+ 	atomic64_t num_writes;	/* --do-- */
+ 	atomic64_t failed_reads;	/* can happen when memory is too low */
+ 	atomic64_t failed_writes;	/* can happen when memory is too low */
++	atomic64_t num_discards;	/* no. of discarded pages */
+ 	atomic64_t invalid_io;	/* non-page-aligned I/O requests */
+ 	atomic64_t notify_free;	/* no. of swap slot free notifications */
+ 	atomic64_t zero_pages;		/* no. of zero filled pages */
 -- 
-Markus
+2.0.1.474.g72c7794
+
+
