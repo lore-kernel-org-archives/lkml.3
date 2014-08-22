@@ -1,202 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319AbaHVOA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:00:59 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:45718 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290AbaHVOA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:00:56 -0400
+	id S932336AbaHVOBI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:01:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932170AbaHVOBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:01:04 -0400
+Date: Fri, 22 Aug 2014 10:00:09 -0400
+From: Dave Jones <davej@redhat.com>
+To: Catalin Iacob <iacobcatalin@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: nohz fail (was: perf related boot hang.)
+Message-ID: <20140822140009.GA8567@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Catalin Iacob <iacobcatalin@gmail.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20140811200931.GA18865@redhat.com>
+ <1408566691-3023-1-git-send-email-iacobcatalin@gmail.com>
+ <CAFTL4hxJ2roTB3tZBmXU3HRetgFSUT0LNVWfX-Y2hbpyXSo2pg@mail.gmail.com>
+ <CAHg_5gq1XiZ1A08PtQ7Rof3rUXJ-pVYkXtmHqgFh6hB+++qPNg@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140821160823.11005.32693.stgit@localhost.localdomain>
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>
-	<20140821160823.11005.32693.stgit@localhost.localdomain>
-Date: Fri, 22 Aug 2014 16:00:55 +0200
-Message-ID: <CAJfpegu6ZDNK9LyG6Vi2_hRMAW7cisTYZ_7wgT9foYOpbZRoqg@mail.gmail.com>
-Subject: Re: [PATCH 3/6] fuse: wait for end of IO on release
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHg_5gq1XiZ1A08PtQ7Rof3rUXJ-pVYkXtmHqgFh6hB+++qPNg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 6:08 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
-> There are two types of I/O activity that can be "in progress" at the time
-> of fuse_release() execution: asynchronous read-ahead and write-back. The
-> patch ensures that they are completed before fuse_release_common sends
-> FUSE_RELEASE to userspace.
->
-> So far as fuse_release() waits for end of async I/O, its callbacks
-> (fuse_readpages_end and fuse_writepage_finish) calling fuse_file_put cannot
-> be the last holders of fuse file anymore. To emphasize the fact, the patch
-> replaces fuse_file_put with __fuse_file_put there.
+On Fri, Aug 22, 2014 at 08:01:48AM +0200, Catalin Iacob wrote:
+ > On Thu, Aug 21, 2014 at 4:56 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+ > > Can you please test the series I just posted: "[RFC PATCH 0/9] nohz:
+ > > Nohz full kick fixes"?
+ > 
+ > Before applying the series I tried one more Firefox build which
+ > triggered the panic after less than 5 minutes.
+ > 
+ > After applying the series I did 2 full builds (around 60 minutes in
+ > total) with no problem.
 
-1) spinlock around __fuse_file_put() is unnecessary,
-wake_up/wait_event will provide the necessary synchronization.
-2) can't we always wait for I/O and just make the actual RELEASE
-message sync or async based on the flag?
-3) and can't we merge the fuseblk case into this as well?
+Seems to be working fine here too after fuzzing for 17 hours so far.
 
-Thanks,
-Miklos
+	Dave
 
->
-> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
-> ---
->  fs/fuse/file.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 71 insertions(+), 5 deletions(-)
->
-> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-> index 7723b3f..73bce1b 100644
-> --- a/fs/fuse/file.c
-> +++ b/fs/fuse/file.c
-> @@ -149,6 +149,17 @@ static void fuse_file_put(struct fuse_file *ff, bool sync)
->         }
->  }
->
-> +/*
-> + * Asynchronous callbacks may use it instead of fuse_file_put() because
-> + * we guarantee that they are never last holders of ff. Hitting BUG() below
-> + * will make clear any violation of the guarantee.
-> + */
-> +static void __fuse_file_put(struct fuse_file *ff)
-> +{
-> +       if (atomic_dec_and_test(&ff->count))
-> +               BUG();
-> +}
-> +
->  int fuse_do_open(struct fuse_conn *fc, u64 nodeid, struct file *file,
->                  bool isdir)
->  {
-> @@ -279,6 +290,11 @@ static void fuse_prepare_release(struct fuse_file *ff, int flags, int opcode)
->         req->in.args[0].value = inarg;
->  }
->
-> +static bool must_release_synchronously(struct fuse_file *ff)
-> +{
-> +       return ff->open_flags & FOPEN_SYNC_RELEASE;
-> +}
-> +
->  void fuse_release_common(struct file *file, int opcode)
->  {
->         struct fuse_file *ff;
-> @@ -302,6 +318,13 @@ void fuse_release_common(struct file *file, int opcode)
->         req->misc.release.path = file->f_path;
->
->         /*
-> +        * No more in-flight asynchronous READ or WRITE requests if
-> +        * fuse file release is synchronous
-> +        */
-> +       if (must_release_synchronously(ff))
-> +               BUG_ON(atomic_read(&ff->count) != 1);
-> +
-> +       /*
->          * Normally this will send the RELEASE request, however if
->          * some asynchronous READ or WRITE requests are outstanding,
->          * the sending will be delayed.
-> @@ -321,11 +344,34 @@ static int fuse_open(struct inode *inode, struct file *file)
->  static int fuse_release(struct inode *inode, struct file *file)
->  {
->         struct fuse_conn *fc = get_fuse_conn(inode);
-> +       struct fuse_file *ff = file->private_data;
->
->         /* see fuse_vma_close() for !writeback_cache case */
->         if (fc->writeback_cache)
->                 write_inode_now(inode, 1);
->
-> +       if (must_release_synchronously(ff)) {
-> +               struct fuse_inode *fi = get_fuse_inode(inode);
-> +
-> +               /*
-> +                * Must remove file from write list. Otherwise it is possible
-> +                * this file will get more writeback from another files
-> +                * rerouted via write_files.
-> +                */
-> +               spin_lock(&ff->fc->lock);
-> +               list_del_init(&ff->write_entry);
-> +               spin_unlock(&ff->fc->lock);
-> +
-> +               wait_event(fi->page_waitq, atomic_read(&ff->count) == 1);
-> +
-> +               /*
-> +                * spin_unlock_wait(&ff->fc->lock) would be natural here to
-> +                * wait for threads just released ff to leave their critical
-> +                * sections. But taking spinlock is the first thing
-> +                * fuse_release_common does, so that this is unnecessary.
-> +                */
-> +       }
-> +
->         fuse_release_common(file, FUSE_RELEASE);
->
->         /* return value is ignored by VFS */
-> @@ -823,8 +869,17 @@ static void fuse_readpages_end(struct fuse_conn *fc, struct fuse_req *req)
->                 unlock_page(page);
->                 page_cache_release(page);
->         }
-> -       if (req->ff)
-> -               fuse_file_put(req->ff, false);
-> +       if (req->ff) {
-> +               if (must_release_synchronously(req->ff)) {
-> +                       struct fuse_inode *fi = get_fuse_inode(req->inode);
-> +
-> +                       spin_lock(&fc->lock);
-> +                       __fuse_file_put(req->ff);
-> +                       wake_up(&fi->page_waitq);
-> +                       spin_unlock(&fc->lock);
-> +               } else
-> +                       fuse_file_put(req->ff, false);
-> +       }
->  }
->
->  struct fuse_fill_data {
-> @@ -851,6 +906,7 @@ static void fuse_send_readpages(struct fuse_fill_data *data)
->         if (fc->async_read) {
->                 req->ff = fuse_file_get(ff);
->                 req->end = fuse_readpages_end;
-> +               req->inode = data->inode;
->                 fuse_request_send_background(fc, req);
->         } else {
->                 fuse_request_send(fc, req);
-> @@ -1502,7 +1558,7 @@ static void fuse_writepage_free(struct fuse_conn *fc, struct fuse_req *req)
->         for (i = 0; i < req->num_pages; i++)
->                 __free_page(req->pages[i]);
->
-> -       if (req->ff)
-> +       if (req->ff && !must_release_synchronously(req->ff))
->                 fuse_file_put(req->ff, false);
->  }
->
-> @@ -1519,6 +1575,8 @@ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
->                 dec_zone_page_state(req->pages[i], NR_WRITEBACK_TEMP);
->                 bdi_writeout_inc(bdi);
->         }
-> +       if (must_release_synchronously(req->ff))
-> +               __fuse_file_put(req->ff);
->         wake_up(&fi->page_waitq);
->  }
->
-> @@ -1659,8 +1717,16 @@ int fuse_write_inode(struct inode *inode, struct writeback_control *wbc)
->
->         ff = __fuse_write_file_get(fc, fi);
->         err = fuse_flush_times(inode, ff);
-> -       if (ff)
-> -               fuse_file_put(ff, 0);
-> +       if (ff) {
-> +               if (must_release_synchronously(ff)) {
-> +                       spin_lock(&fc->lock);
-> +                       __fuse_file_put(ff);
-> +                       wake_up(&fi->page_waitq);
-> +                       spin_unlock(&fc->lock);
-> +
-> +               } else
-> +                       fuse_file_put(ff, false);
-> +       }
->
->         return err;
->  }
->
