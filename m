@@ -1,200 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682AbaHVRVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:21:40 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:44127 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaHVRVj (ORCPT
+	id S932715AbaHVRXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:23:07 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:51231 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932329AbaHVRXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:21:39 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linux.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8723au: Fix "(foo*)" should be "(foo *)" errors
-Date: Fri, 22 Aug 2014 12:20:56 -0500
-Message-Id: <1408728056-17306-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 22 Aug 2014 13:23:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1408627674-16130-1-git-send-email-zyw@rock-chips.com>
+References: <1408627674-16130-1-git-send-email-zyw@rock-chips.com>
+Date: Fri, 22 Aug 2014 10:23:03 -0700
+X-Google-Sender-Auth: 93onLlxUGq6THmi5UNUDIcZuCX4
+Message-ID: <CAD=FV=VKafGeurYc3OJk1tbdyCAKu6w2qDetgDQ0MRKEFquiAQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/5] MFD: Add rk808 device tree bindings documentation
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
+        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        xxx <xxx@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Dmitry Torokhov <dtor@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kever Yang <kever.yang@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "(foo*)" should be "(foo *)" errors
+Chris,
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_ap.c        |  8 ++++----
- drivers/staging/rtl8723au/core/rtw_cmd.c       |  6 +++---
- drivers/staging/rtl8723au/core/rtw_mlme.c      |  4 ++--
- drivers/staging/rtl8723au/core/rtw_mlme_ext.c  | 12 ++++++------
- drivers/staging/rtl8723au/core/rtw_wlan_util.c |  2 +-
- 5 files changed, 16 insertions(+), 16 deletions(-)
+On Thu, Aug 21, 2014 at 6:27 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+> rk808.txt: Add device tree bindings for rockchip's rk808 pmic.
+>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>
+> ---
+>
+> Changes in v3:
+> - fix compile err
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-index 4d2880a..c2e190e 100644
---- a/drivers/staging/rtl8723au/core/rtw_ap.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-@@ -143,7 +143,7 @@ static void update_BCNTIM(struct rtw_adapter *padapter)
- 		*dst_ie++ = 0;
- 
- 	if (tim_ielen == 4) {
--		*dst_ie++ = *(u8*)&tim_bitmap_le;
-+		*dst_ie++ = *(u8 *)&tim_bitmap_le;
- 	} else if (tim_ielen == 5) {
- 		memcpy(dst_ie, &tim_bitmap_le, 2);
- 		dst_ie+= 2;
-@@ -599,7 +599,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
- 
- 	/* todo: init other variables */
- 
--	memset((void*)&psta->sta_stats, 0, sizeof(struct stainfo_stats));
-+	memset((void *)&psta->sta_stats, 0, sizeof(struct stainfo_stats));
- 
- 	spin_lock_bh(&psta->lock);
- 	psta->state |= _FW_LINKED;
-@@ -1021,7 +1021,7 @@ int rtw_check_beacon_data23a(struct rtw_adapter *padapter,
- 	pbss_network->Length = get_wlan_bssid_ex_sz(pbss_network);
- 
- 	/* issue beacon to start bss network */
--	start_bss_network(padapter, (u8*)pbss_network);
-+	start_bss_network(padapter, (u8 *)pbss_network);
- 
- 	/* alloc sta_info for ap itself */
- 	psta = rtw_get_stainfo23a(&padapter->stapriv, pbss_network->MacAddress);
-@@ -1829,7 +1829,7 @@ void rtw_ap_restore_network(struct rtw_adapter *padapter)
- 
- 	set_channel_bwmode23a(padapter, pmlmeext->cur_channel, pmlmeext->cur_ch_offset, pmlmeext->cur_bwmode);
- 
--	start_bss_network(padapter, (u8*)&mlmepriv->cur_network.network);
-+	start_bss_network(padapter, (u8 *)&mlmepriv->cur_network.network);
- 
- 	if (padapter->securitypriv.dot11PrivacyAlgrthm ==
- 	    WLAN_CIPHER_SUITE_TKIP ||
-diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
-index 7241a5a..c95946c 100644
---- a/drivers/staging/rtl8723au/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
-@@ -677,7 +677,7 @@ int rtw_setstakey_cmd23a(struct rtw_adapter *padapter, u8 *psta, u8 unicast_key)
- 	struct set_stakey_rsp *psetstakey_rsp = NULL;
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 	struct security_priv *psecuritypriv = &padapter->securitypriv;
--	struct sta_info *sta = (struct sta_info*)psta;
-+	struct sta_info *sta = (struct sta_info *)psta;
- 	int res = _SUCCESS;
- 
- 	ph2c = kzalloc(sizeof(struct cmd_obj), GFP_KERNEL);
-@@ -1493,7 +1493,7 @@ void rtw_setstaKey_cmdrsp_callback23a(struct rtw_adapter *padapter,
- 	struct sta_info *psta;
- 
- 	pstapriv = &padapter->stapriv;
--	psetstakey_rsp = (struct set_stakey_rsp*) (pcmd->rsp);
-+	psetstakey_rsp = (struct set_stakey_rsp *) (pcmd->rsp);
- 	psta = rtw_get_stainfo23a(pstapriv, psetstakey_rsp->addr);
- 
- 	if (!psta) {
-@@ -1518,7 +1518,7 @@ void rtw_setassocsta_cmdrsp_callback23a(struct rtw_adapter *padapter,
- 	struct sta_info *psta;
- 
- 	passocsta_parm = (struct set_assocsta_parm *)(pcmd->parmbuf);
--	passocsta_rsp = (struct set_assocsta_rsp*) (pcmd->rsp);
-+	passocsta_rsp = (struct set_assocsta_rsp *) (pcmd->rsp);
- 	psta = rtw_get_stainfo23a(pstapriv, passocsta_parm->addr);
- 
- 	if (psta == NULL) {
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme.c b/drivers/staging/rtl8723au/core/rtw_mlme.c
-index c475b79..dddc5b2 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme.c
-@@ -1256,7 +1256,7 @@ void rtw_stassoc_event_callback23a(struct rtw_adapter *adapter, const u8 *pbuf)
- {
- 	struct sta_info *psta;
- 	struct mlme_priv *pmlmepriv = &adapter->mlmepriv;
--	struct stassoc_event *pstassoc = (struct stassoc_event*)pbuf;
-+	struct stassoc_event *pstassoc = (struct stassoc_event *)pbuf;
- 	struct wlan_network *cur_network = &pmlmepriv->cur_network;
- 	struct wlan_network *ptarget_wlan;
- 
-@@ -2187,7 +2187,7 @@ bool rtw_restructure_ht_ie23a(struct rtw_adapter *padapter, u8 *in_ie,
- 
- 		pframe = rtw_set_ie23a(out_ie + out_len, WLAN_EID_HT_CAPABILITY,
- 				    sizeof(struct ieee80211_ht_cap),
--				    (unsigned char*)&ht_capie, pout_len);
-+				    (unsigned char *)&ht_capie, pout_len);
- 
- 		phtpriv->ht_option = true;
- 
-diff --git a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-index c5fdcb8..03a1f01 100644
---- a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-+++ b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-@@ -2436,7 +2436,7 @@ void issue_beacon23a(struct rtw_adapter *padapter, int timeout_ms)
- 		if (wps_ie && wps_ie[1] > 0) {
- 			rtw_get_wps_attr_content23a(wps_ie, wps_ie[1],
- 						    WPS_ATTR_SELECTED_REGISTRAR,
--						    (u8*)&sr);
-+						    (u8 *)&sr);
- 		}
- 		if (sr != 0)
- 			set_fwstate(pmlmepriv, WIFI_UNDER_WPS);
-@@ -4763,7 +4763,7 @@ void report_survey_event23a(struct rtw_adapter *padapter,
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct survey_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_Survey);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4814,7 +4814,7 @@ void report_surveydone_event23a(struct rtw_adapter *padapter)
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct surveydone_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_SurveyDone);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4858,7 +4858,7 @@ void report_join_res23a(struct rtw_adapter *padapter, int res)
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct joinbss_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_JoinBss);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4908,7 +4908,7 @@ void report_del_sta_event23a(struct rtw_adapter *padapter,
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct stadel_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_DelSTA);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-@@ -4962,7 +4962,7 @@ void report_add_sta_event23a(struct rtw_adapter *padapter,
- 	pcmd_obj->rsp = NULL;
- 	pcmd_obj->rspsz  = 0;
- 
--	pc2h_evt_hdr = (struct C2HEvent_Header*)(pevtcmd);
-+	pc2h_evt_hdr = (struct C2HEvent_Header *)(pevtcmd);
- 	pc2h_evt_hdr->len = sizeof(struct stassoc_event);
- 	pc2h_evt_hdr->ID = GEN_EVT_CODE(_AddSTA);
- 	pc2h_evt_hdr->seq = atomic_inc_return(&pmlmeext->event_seq);
-diff --git a/drivers/staging/rtl8723au/core/rtw_wlan_util.c b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-index 32f3603..bc587b3 100644
---- a/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-+++ b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
-@@ -1537,7 +1537,7 @@ void process_addba_req23a(struct rtw_adapter *padapter,
- 	u16 tid, start_seq, param;
- 	struct recv_reorder_ctrl *preorder_ctrl;
- 	struct sta_priv *pstapriv = &padapter->stapriv;
--	struct ADDBA_request *preq = (struct ADDBA_request*)paddba_req;
-+	struct ADDBA_request *preq = (struct ADDBA_request *)paddba_req;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 	struct mlme_ext_info *pmlmeinfo = &pmlmeext->mlmext_info;
- 
--- 
-1.9.1
+Please make sure to address comments that were made against your v2
+version, too.
 
+>
+> Changes in v2:
+> Adviced by javier.martinez
+> - separated from rtc-rk808.c
+>
+>  Documentation/devicetree/bindings/mfd/rk808.txt |  128 +++++++++++++++++++++++
+>  1 file changed, 128 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/rk808.txt
+>
+> diff --git a/Documentation/devicetree/bindings/mfd/rk808.txt b/Documentation/devicetree/bindings/mfd/rk808.txt
+> new file mode 100644
+> index 0000000..876291d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/rk808.txt
+> @@ -0,0 +1,128 @@
+> +RK808 Power Management Integrated Circuit
+> +
+> +Required properties:
+> +- compatible: "rockchip,rk808"
+> +- reg: I2C slave address
+> +- interrupt-parent: The parent interrupt controller.
+> +- interrupts: the interrupt outputs of the controller.
+> +- pinctrl-names: Should contain only one value - "default".
+> +- pinctrl-0: Should specify pin control groups used for this controller.
+> +- regulators: This is the list of child nodes that specify the regulator
+> +  initialization data for defined regulators. Not all regulators for the given
+> +  device need to be present. The definition for each of these nodes is defined
+> +  using the standard binding for regulators found at
+> +  Documentation/devicetree/bindings/regulator/regulator.txt.
+
+I think you need a "#clock-cells = <1>;" in here.  You should also
+create a "include/dt-bindings/clock/rockchip,rk808.h" file that lists
+numbers for your two clocks.
+
+
+> +Optional properties:
+> +- rockchip,system-power-controller: Telling whether or not this pmic is controlling
+> +  the system power.
+
+You should add "clock-output-names" as haoyu,hym8563.txt has.
+
+> +
+> +Example:
+> +rk808: pmic@1b {
+> +       compatible = "rockchip,rk808";
+> +       interrupt-parent = <&gpio0>;
+> +       interrupts = <4 IRQ_TYPE_EDGE_FALLING>;
+> +       pinctrl-names = "default";
+> +       pinctrl-0 = <&pmic_int>;
+> +       reg = <0x1b>;
+> +       rockchip,system-power-controller;
+> +
+> +               regulators {
+> +                       rk808_dcdc1_reg: DCDC_REG1 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <1200000>;
+> +                               regulator-max-microvolt = <1200000>;
+> +                               regulator-name = "vdd_arm";
+> +                       };
+> +
+> +                       rk808_dcdc2_reg: DCDC_REG2 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <850000>;
+> +                               regulator-max-microvolt = <1250000>;
+> +                               regulator-name = "vdd_gpu";
+> +                       };
+> +
+> +                       rk808_dcdc3_reg: DCDC_REG3 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-name = "vdd_ddr";
+> +                       };
+> +
+> +                       rk808_dcdc4_reg: DCDC_REG4 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <3300000>;
+> +                               regulator-max-microvolt = <3300000>;
+> +                               regulator-name = "vccio";
+> +                       };
+> +
+> +                       rk808_ldo1_reg: LDO_REG1 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <3300000>;
+> +                               regulator-max-microvolt = <3300000>;
+> +                       };
+> +
+> +                       rk808_ldo2_reg: LDO_REG2 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <3300000>;
+> +                               regulator-max-microvolt = <3300000>;
+> +                       };
+> +
+> +                       rk808_ldo3_reg: LDO_REG3 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <1000000>;
+> +                               regulator-max-microvolt = <1000000>;
+> +                               regulator-name = "LDO_REG3";
+> +                       };
+> +
+> +                       rk808_ldo4_reg: LDO_REG4 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <1800000>;
+> +                               regulator-max-microvolt = <1800000>;
+> +                       };
+> +
+> +                       rk808_ldo5_reg: LDO_REG5 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <1800000>;
+> +                               regulator-max-microvolt = <3300000>;
+> +                       };
+> +
+> +                       rk808_ldo6_reg: LDO_REG6 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <1000000>;
+> +                               regulator-max-microvolt = <1000000>;
+> +                       };
+> +
+> +                       rk808_ldo7_reg: LDO_REG7 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <1800000>;
+> +                               regulator-max-microvolt = <1800000>;
+> +                       };
+> +
+> +                       rk808_ldo8_reg: LDO_REG8 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                               regulator-min-microvolt = <3300000>;
+> +                               regulator-max-microvolt = <3300000>;
+> +                       };
+> +
+> +                       rk808_switch1_reg: SWITCH_REG1 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                       };
+> +
+> +                       rk808_switch2_reg: SWITCH_REG2 {
+> +                               regulator-always-on;
+> +                               regulator-boot-on;
+> +                       };
+> +               };
+> +       };
+> --
+> 1.7.9.5
+>
+>
