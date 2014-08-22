@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178AbaHVLmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 07:42:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56021 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752166AbaHVLmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 07:42:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,379,1406617200"; 
-   d="scan'208";a="580365463"
-Date: Fri, 22 Aug 2014 19:43:02 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Petr =?utf-8?Q?Ml=C3=A1dek?= <pmladek@suse.cz>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tibor Billes <tbilles@gmx.com>, Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: rcu: Throttle rcu_try_advance_all_cbs() execution causes visible
- slowdown in ftrace switching
-Message-ID: <20140822114302.GG27650@localhost>
-References: <1383326384.6788.49.camel@pathway.suse.cz>
- <20140822033529.GA7541@localhost>
- <20140822083257.GI17334@pathway.suse.cz>
+	id S1755967AbaHVLwe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 07:52:34 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:34934 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947AbaHVLwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 07:52:33 -0400
+Date: Fri, 22 Aug 2014 07:52:22 -0400 (EDT)
+From: Pankaj Gupta <pagupta@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        davem@davemloft.net, dgibson@redhat.com, vfalico@gmail.com,
+        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
+        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
+        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org
+Message-ID: <175719847.27217377.1408708342392.JavaMail.zimbra@redhat.com>
+In-Reply-To: <53F575F8.7000208@redhat.com>
+References: <1408369040-1216-1-git-send-email-pagupta@redhat.com> <1408369040-1216-3-git-send-email-pagupta@redhat.com> <20140820105817.GB1916@nanopsycho.orion> <20140820111724.GE17371@redhat.com> <53F575F8.7000208@redhat.com>
+Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
+ module_param
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140822083257.GI17334@pathway.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.7]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
+Thread-Topic: tuntap: Publish tuntap maximum number of queues as module_param
+Thread-Index: 4Q0fVAZmtlP/GAp9GvUUSjyQkxkx3A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 10:32:57AM +0200, Petr Mládek wrote:
-> On Fri 2014-08-22 11:35:29, Fengguang Wu wrote:
-> > Hi Petr,
-> > 
-> > Sorry for picking up this old thread, but I noticed your attached
-> > ftrace test script and would like to ask for your permission to
-> > include it in
-> > 
-> >         https://git.kernel.org/cgit/linux/kernel/git/wfg/lkp-tests.git
-> > 
-> > which is GPLv2. If you kindly agree, I'll run it actively for testing
-> > the upstream linux kernels.
+
 > 
-> Sure. Feel free to use the test script under GPLv2 license.
+> On 08/20/2014 07:17 PM, Michael S. Tsirkin wrote:
+> > On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
+> >> > Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
+> >>> > > This patch publishes maximum number of tun/tap queues allocated as a
+> >>> > > read_only module parameter which a user space application like
+> >>> > > libvirt
+> >>> > > can make use of to limit maximum number of queues. Value of read_only
+> >>> > > module parameter can be writable only at module load time. If no
+> >>> > > value is set
+> >>> > > at module load time a default value 256 is used which is equal to
+> >>> > > maximum number
+> >>> > > of vCPUS allowed by KVM.
+> >>> > >
+> >>> > > Administrator can specify maximum number of queues only at the driver
+> >>> > > module load time.
+> >>> > >
+> >>> > >Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> >>> > >---
+> >>> > > drivers/net/tun.c |   13 +++++++++++--
+> >>> > > 1 files changed, 11 insertions(+), 2 deletions(-)
+> >>> > >
+> >>> > >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> >>> > >index acaaf67..1f518e2 100644
+> >>> > >--- a/drivers/net/tun.c
+> >>> > >+++ b/drivers/net/tun.c
+> >>> > >@@ -119,6 +119,9 @@ struct tap_filter {
+> >>> > > 
+> >>> > > #define TUN_FLOW_EXPIRE (3 * HZ)
+> >>> > > 
+> >>> > >+static int max_tap_queues = MAX_TAP_QUEUES;
+> >>> > >+module_param(max_tap_queues, int, S_IRUGO);
+> >> > 
+> >> > Please do not introduce new module paramaters. Please other ways to
+> >> > interchange values with userspace.
+> > I suggested this initially, but thinking more about it, I agree.
+> >
+> > It's a global limit (necessary to limit memory utilization by
+> > userspace), but it should be possible to change it
+> > after module load.
+> 
+> How about pass this limit through ifr during TUNSETIFF, then
+> alloc_netdev_mq() can use this limit.
 
-Great, thank you very much!
+Any other ideas/comments from the experts. Or shall I re-repost other patches 
+in the series except this patch until we agree on one.
 
-Fengguang
+> 
