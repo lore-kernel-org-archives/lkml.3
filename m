@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389AbaHVQGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:06:42 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:36552 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187AbaHVQGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:06:40 -0400
-Date: Fri, 22 Aug 2014 10:06:26 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Scot Doyle <lkml14@scotdoyle.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tpm_tis: Verify ACPI-specified interrupt
-Message-ID: <20140822160626.GA8477@obsidianresearch.com>
-References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain>
+	id S932288AbaHVQNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:13:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33980 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189AbaHVQNC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 12:13:02 -0400
+Date: Fri, 22 Aug 2014 11:12:19 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Samuel Iglesias =?iso-8859-1?Q?Gons=E1lvez?= 
+	<siglesias@igalia.com>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Jens Taprogge <jens.taprogge@taprogge.org>,
+        industrypack-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/ipack/devices/ipoctal.h: Fix typo in include
+ guard
+Message-ID: <20140822161219.GA21154@kroah.com>
+References: <1408709363-13361-1-git-send-email-linux@rasmusvillemoes.dk>
+ <4b63988bb76babf9516c1dbcf38ce463@igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4b63988bb76babf9516c1dbcf38ce463@igalia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 12:58:41AM +0000, Scot Doyle wrote:
-> Some machines, such as the Acer C720 and Toshiba CB35, have TPMs
-> that do not use interrupts while also having an ACPI TPM entry
+On Fri, Aug 22, 2014 at 02:36:44PM +0200, Samuel Iglesias Gonsálvez wrote:
+> On 2014-08-22 14:09, Rasmus Villemoes wrote:
+> >Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> >---
+> > drivers/ipack/devices/ipoctal.h | 2 +-
+> > 1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> >diff --git a/drivers/ipack/devices/ipoctal.h
+> >b/drivers/ipack/devices/ipoctal.h
+> >index 28f1c42..7fede0e 100644
+> >--- a/drivers/ipack/devices/ipoctal.h
+> >+++ b/drivers/ipack/devices/ipoctal.h
+> >@@ -12,7 +12,7 @@
+> >  * Software Foundation; version 2 of the License.
+> >  */
+> >
+> >-#ifndef _IPOCTAL_H
+> >+#ifndef _IPOCTAL_H_
+> > #define _IPOCTAL_H_
+> >
+> > #define NR_CHANNELS		8
+> 
+> Acked-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+> 
+> Greg, Would you mind picking this patch through your char-misc tree?
 
-How do these machines work in Windows?
-
-Why only resume? Shouldn't every TPM command (such as the 3 or 4 the
-driver issues at startup) timeout too?
-
-> indicating a specific interrupt to be used. Since this interrupt
-> is invalid, these machines freeze on resume until the interrupt
-> times out.
-
-> Generate the ACPI-specified interrupt. If none is received, then
-> fall back to polling mode.
-
-So, this makes the IRQ detection code run unconditionally, but that
-code was only ever really used in certain old non-probable case..
-
-I wonder if it works reliably?
-
-In any event, I think a FIRMWARE_BUG message should be printed if this
-case is detected.
-
-I'd be more comfortable with some kind of ACPI black list or patch or
-something? What is normal for handling broken ACPI?
-
-Jason
+Sure, will do.
