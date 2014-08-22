@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777AbaHVSAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 14:00:04 -0400
-Received: from server102.greatnet.de ([83.133.97.2]:39725 "EHLO
-	server102.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410AbaHVSAB (ORCPT
+	id S932828AbaHVSAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:00:24 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25064 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932410AbaHVSAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 14:00:01 -0400
-Message-ID: <53F78516.3040607@mageta.org>
-Date: Fri, 22 Aug 2014 19:59:50 +0200
-From: Benjamin Block <bebl@mageta.org>
-Reply-To: bebl@mageta.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 22 Aug 2014 14:00:20 -0400
+Date: Thu, 21 Aug 2014 23:32:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [V0 PATCH 1/2] AMD-PVH: set EFER.NX and EFER.SCE for
+ the boot vcpu
+Message-ID: <20140822033228.GA4296@laptop.dumpdata.com>
+References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
+ <1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
+ <20140822013904.GA20329@laptop.dumpdata.com>
+ <20140821194656.4eea5654@mantra.us.oracle.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Lan Tianyu <tianyu.lan@intel.com>
-CC: lenb@kernel.org, davem@davemloft.net, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: Run fixed button devices' notify callback in the
- process context
-References: <1408693091-16268-1-git-send-email-tianyu.lan@intel.com> <3313221.quKCYo2xmm@vostro.rjw.lan>
-In-Reply-To: <3313221.quKCYo2xmm@vostro.rjw.lan>
-OpenPGP: url=http://mageta.org/pgp/bblock.private.asc
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140821194656.4eea5654@mantra.us.oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Aug 21, 2014 at 07:46:56PM -0700, Mukesh Rathor wrote:
+> On Thu, 21 Aug 2014 21:39:04 -0400
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> 
+> > On Wed, Aug 20, 2014 at 07:16:39PM -0700, Mukesh Rathor wrote:
+> > > On AMD, NX feature must be enabled in the efer for NX to be honored
+> > > in the pte entries, otherwise protection fault. We also set SC for
+> > > system calls to be enabled.
+> > 
+> > How come we don't need to do that for Intel (that is set the NX bit)?
+> > Could you include the explanation here please?
+> 
+> Intel doesn't have EFER.NX bit. The SC bit is being set in xen, but it
+> doesn't need to be, and I'm going to submit a patch to undo it.
 
-On 08/22/2014 07:33 PM, Rafael J. Wysocki wrote:
-> On Friday, August 22, 2014 03:37:55 PM Lan Tianyu wrote:
->> Currently fixed button devices' notify callbacks are running in the
->> interrupt context. It's not necessary and prevent calling functions
->> with mutex lock(E,G evaluating ACPI method). Otherwise, it's different=
+I understand that it does not have an EFER.NX bit. What I was trying
+to figure out is _where_ do we set the NX bit for Intel CPUs? Is
+it done in the hypervisor? In the Linux code?
 
->> with non-fixed button device whose notify callback is running in the p=
-rocess
->> context. This patch is to make fixed button device's notify
->> callback in the process context and this also can avoid dead lock
->> when using netlink to report button event to user space.
->=20
-> I guess this is the main reason for the patch?
->=20
-> Is there a bug report regarding this?
->
-
-There is: https://lkml.org/lkml/2014/8/21/606
-
->=20
->> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->> ---
->>  drivers/acpi/scan.c | 9 +++++++--
->>  1 file changed, 7 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
->> index 0a817ad..bfb7fc5 100644
->> --- a/drivers/acpi/scan.c
->> +++ b/drivers/acpi/scan.c
->> @@ -922,12 +922,17 @@ static void acpi_device_notify(acpi_handle handl=
-e, u32 event, void *data)
->>  	device->driver->ops.notify(device, event);
->>  }
->> =20
->> -static acpi_status acpi_device_notify_fixed(void *data)
->> +static void acpi_device_notify_fixed_run(void *data)
->>  {
->>  	struct acpi_device *device =3D data;
->> =20
->> -	/* Fixed hardware devices have no handles */
->>  	acpi_device_notify(NULL, ACPI_FIXED_HARDWARE_EVENT, device);
->> +}
->> +
->> +static acpi_status acpi_device_notify_fixed(void *data)
->> +{
->> +	/* Fixed hardware devices have no handles */
->> +	acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_device_notify_fixed_run, da=
-ta);
->>  	return AE_OK;
->>  }
->> =20
->>
->=20
-
-
-
---jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQGcBAEBAgAGBQJT94UeAAoJEEbgTgVnoy6ea8sL/0/hY3daEZsVMmpSn9aIK/Bg
-1UnOQJDHl+7h8nGnzGzVBHyJRl3effw3YVK3y3MnB5q26OJxrurdO3ztLeWfO2gz
-apGhOxvbikMq6C0nBAululJ1mdA2kUX79fa8jQbuDfyRMr/1QfLXEH/6Ad3UneTa
-1Y3xl1eOsZPgDJnnIr9JLth2fZ3eNez8xG0zzMmUn7rERbQG+b3SreiTcs2SEVd9
-LZ9Wip6KXMrnX3loh0dvbb1s9d9u0WJdJZ/J/oMlXxIC1PFRLSJsXfpDyQ0A5v4f
-qoKhSSKX2hiH3lPLC/RJhBRIUMAwcE/wEQVoU5VW0OGhy89Lyv92d+10UjIV/lke
-N2T0GsW5CW3kE547U4DDPhiFolMZYfMcuMaJ/Jer2E2Wt7gtuiZxc+axfUFaRKCB
-E26OD6qngul6D3WffbGFizLiobh6bslDsgg7Qb0lVItgwRYzTIVzckFrDVGIWez6
-85YtreuS/pYjd+2NQCX9zHugMMSz2zTVMII5dI4zSg==
-=/aBT
------END PGP SIGNATURE-----
-
---jcnP2A9R7oLCVKLLsxCrieJLxfXGKbBUw--
+Thank you.
+> 
+> > 
+> > > 
+> > > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > ---
+> > >  arch/x86/xen/enlighten.c | 12 ++++++++++++
+> > >  1 file changed, 12 insertions(+)
+> > > 
+> > > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> > > index c0cb11f..4af512d 100644
+> > > --- a/arch/x86/xen/enlighten.c
+> > > +++ b/arch/x86/xen/enlighten.c
+> > > @@ -1499,6 +1499,17 @@ void __ref xen_pvh_secondary_vcpu_init(int
+> > > cpu) xen_pvh_set_cr_flags(cpu);
+> > >  }
+> > >  
+> > > +/* This is done in secondary_startup_64 for hvm guests. */
+> > > +static void __init xen_configure_efer(void)
+> > > +{
+> > > +	u64 efer;
+> > > +
+> > > +	rdmsrl(MSR_EFER, efer);
+> > > +	efer |= EFER_SCE;
+> > > +	efer |= (cpuid_edx(0x80000001) & (1 << 20)) ? EFER_NX : 0;
+> > 
+> > Ahem? #defines for these magic values please?
+> 
+> Linux uses these directly all over the code as they are set in stone
+> pretty much, and I didn't find any #defines. See cpu/common.c for one of
+> the places. Also see secondary_startup_64, and others...
+> 
+> > Or could you use 'boot_cpu_has'?
+> 
+> Nop, it's not initialized at this point.
+> 
+> thanks,
+> Mukesh
