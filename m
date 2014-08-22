@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266AbaHVMky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 08:40:54 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:38645 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756039AbaHVMkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 08:40:53 -0400
-Date: Fri, 22 Aug 2014 15:40:44 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH] blk-cgroup: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140822124044.GA18828@ada>
+	id S1756298AbaHVMmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:42:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61628 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756166AbaHVMl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 08:41:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,380,1406617200"; 
+   d="scan'208";a="562119328"
+Date: Fri, 22 Aug 2014 15:41:45 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Patch V4 29/42] x86, irq: introduce two helper functions to
+ support irqdomain map operation
+Message-ID: <20140822124145.GF1660@lahna.fi.intel.com>
+References: <1402302011-23642-1-git-send-email-jiang.liu@linux.intel.com>
+ <1402302011-23642-30-git-send-email-jiang.liu@linux.intel.com>
+ <20140821141729.GT1660@lahna.fi.intel.com>
+ <20140821165728.GV1660@lahna.fi.intel.com>
+ <53F641E0.8040401@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53F641E0.8040401@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of "rcu_assign_pointer()" is NULLing out the pointer.
-According to RCU_INIT_POINTER()'s block comment:
-"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
-it is better to use it instead of rcu_assign_pointer() because it has a
-smaller overhead.
+On Fri, Aug 22, 2014 at 03:00:48AM +0800, Jiang Liu wrote:
+> Hi Mika,
+> 	I'm out of office until next Tuesday. Will handle this
+> when back to work. Could you please help to take a look at
+> mp_set_gsi_attr() to check whether it could be used to resolve
+> this issue.
 
-The following Coccinelle semantic patch was used:
-@@
-@@
+The problem seems to be that when we allocate the legacy 16 IRQ range,
+they will be set to edge-triggered and then info->set is set to 1
+preventing any further configuration (if I understand that part right).
 
-- rcu_assign_pointer
-+ RCU_INIT_POINTER
-  (..., NULL)
+I tried simply following and it seems to work. Not sure how correct it
+is, though.
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
- block/blk-cgroup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 069bc20..9a95b3f 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -337,7 +337,7 @@ static void blkg_destroy(struct blkcg_gq *blkg)
- 	 * will.  Hint assignment itself can race safely.
- 	 */
- 	if (rcu_access_pointer(blkcg->blkg_hint) == blkg)
--		rcu_assign_pointer(blkcg->blkg_hint, NULL);
-+		RCU_INIT_POINTER(blkcg->blkg_hint, NULL);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 29290f554e79..29c5d4fa9e86 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1531,8 +1531,7 @@ static void __init setup_IO_APIC_irqs(void)
+ 				    KERN_DEBUG " apic %d pin %d not connected\n",
+ 				    mpc_ioapic_id(ioapic), pin);
+ 		else
+-			pin_2_irq(idx, ioapic, pin,
+-				  ioapic ? 0 : IOAPIC_MAP_ALLOC);
++			pin_2_irq(idx, ioapic, pin, 0);
+ 	}
+ }
  
- 	/*
- 	 * If root blkg is destroyed.  Just clear the pointer since root_rl
--- 
-1.9.1
-
