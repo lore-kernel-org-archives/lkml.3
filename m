@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622AbaHVT5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:57:36 -0400
-Received: from ozlabs.org ([103.22.144.67]:35332 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaHVT5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:57:35 -0400
-Date: Sat, 23 Aug 2014 05:57:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>, Felipe Balbi <balbi@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: linux-next: manual merge of the usb-gadget tree with the
- usb-gadget-fixes tree
-Message-ID: <20140823055723.1bbfe099@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i486-pc-linux-gnu)
+	id S1751425AbaHVUEu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 16:04:50 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:39542 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaHVUEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 16:04:49 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/rc0cu0JvMw0tHyCs4nlw.GE"; protocol="application/pgp-signature"
+In-Reply-To: <53F79046.5020803@rock-chips.com>
+References: <1408669991-9703-1-git-send-email-addy.ke@rock-chips.com>
+	<1408730452-3552-1-git-send-email-addy.ke@rock-chips.com>
+	<CAD=FV=Vof8mOmCHkRyrhjGBewJqJaCu==1RfUZ+8C9Jm+UH50w@mail.gmail.com>
+	<53F79046.5020803@rock-chips.com>
+Date: Fri, 22 Aug 2014 13:04:48 -0700
+X-Google-Sender-Auth: kZ36pprOuJTg5c3HI7iU61hdJmE
+Message-ID: <CAD=FV=U9Rsjfnn-2ZxraDEJpOTcXVzJUN7e-67qiaFZFCmG-Sw@mail.gmail.com>
+Subject: Re: [PATCH v4] i2c: rk3x: fix bug that cause transfer fails in master
+ receive mode
+From: Doug Anderson <dianders@chromium.org>
+To: addy ke <addy.ke@rock-chips.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, max.schwarz@online.de,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        sergei.shtylyov@cogentembedded.com,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>,
+        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/rc0cu0JvMw0tHyCs4nlw.GE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Addy,
 
-Hi Felipe,
+On Fri, Aug 22, 2014 at 11:47 AM, addy ke <addy.ke@rock-chips.com> wrote:
+>> Addy,
+>>
+>> On Fri, Aug 22, 2014 at 11:00 AM, Addy Ke <addy.ke@rock-chips.com> wrote:
+>>> In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
+>>> in one chunk, so the size of data to be write/read to/from TXDATAx/RXDATAx
+>>> must be less than or equal 32 bytes at a time.
+>>>
+>>> Tested on rk3288-pinky board, elan receive 158 bytes data.
+>>>
+>>> Suggested-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>
+>> You only need a "Suggested-by" if the entire patch was suggested by
+>> someone.  If someone provides you review feedback you don't need it.
+>>
+>> Said another way: in this case Dmitry didn't suggest that you need to
+>> fix the i2c controller to transmit 32 byte chunks (he only provided
+>> review feedback), so you shouldn't say this was Suggested-by him.
+>>
+>> You also had my reviewed-by on a previous version so you could keep it.
+>>
+>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>
+> so, Do I need repost this patch or post a new one as patch v5?
 
-Today's linux-next merge of the usb-gadget tree got a conflict in
-drivers/usb/phy/phy-samsung-usb.h between commit bbc66e140bab ("usb:
-phy: samsung: Fix wrong bit mask for PHYPARAM1_PCS_TXDEEMPH") from the
-usb-gadget-fixes tree and commit 0dafc3d94596 ("usb: phy: samsung:
-Remove unnecessary lines of register bit definitions") from the
-usb-gadget tree.
+Tags are typically something that the maintainer (Wolfram) can adjust
+when he adds his own.  I think it's OK and he can remove the
+"Suggested-by".  However, if Wolfram responds and asks you to respin
+then you should follow his advice.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/usb/phy/phy-samsung-usb.h
-index 80eedd45a20a,4eef45555971..000000000000
---- a/drivers/usb/phy/phy-samsung-usb.h
-+++ b/drivers/usb/phy/phy-samsung-usb.h
-@@@ -215,8 -185,7 +185,7 @@@
-  #define PHYPARAM0_REF_LOSLEVEL			(0x9 << 26)
- =20
-  #define EXYNOS5_DRD_PHYPARAM1			(0x20)
--=20
- -#define PHYPARAM1_PCS_TXDEEMPH_MASK		(0x1f << 0)
- +#define PHYPARAM1_PCS_TXDEEMPH_MASK		(0x3f << 0)
-  #define PHYPARAM1_PCS_TXDEEMPH			(0x1c)
- =20
-  #define EXYNOS5_DRD_PHYTERM			(0x24)
-
---Sig_/rc0cu0JvMw0tHyCs4nlw.GE
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJT96CoAAoJEMDTa8Ir7ZwVqfwP/2B8DG6SFvJO0GuOxEo7YnOS
-p3JUf9ss/k5AV0cG6/t29mOVNcpmOHOXFnG+FdjNuMD7evlGKZAnTWejho93J9qn
-rCc7Vlfd1sd1TWIowUY9R5eWft+jxwktusBRkX3fzTYwWml4M/S3TClWjH+BeqWs
-5De8/fFnoYyI3+A0AAxQMThP4juJxUwXNl5Y1xec+Ow9VeSTPCbqdzz1lsNuZlUb
-g92rX7UxN94wuUDnlpzqyQLqEKVv+Zqjw501Gd4u/VW+uF/ZHvFMDnVIEfbjxthI
-fKlDKygA6XfbZQBRl6pqvS/yU7aGidkdXzQ8zzPJueaauSvnOQmWAkzZxhyJWtU4
-ADdctDHL/AIIaetnM8t/s9xF7+ZoFPqqByuv+a451W76ddcYkLZh/jcKkL88Df+L
-X1ET0YyoAgFfBqqgwFRbqo1/hj2aAu69GNkE5exG21ytgrXQ+n//e6wizvZQ7FTw
-5/2wC2TnHry+dl5/hHWImIY8t/aSJffHUXvV3HOBnNM/hYvcOFmfRObgR+w5avW3
-o9yyjcpV1foloQe16M+QmShTYOcrarH68pnPX81v25szDDvVnL4jLPi52IILisU8
-5rY45c7LQwVIbBz5oUz6w0dCkK79O+8tJBEShjUItf5eAdJiLxyOi1XXjtTjFYay
-wE+4bfpts3/ftbx+tWXv
-=vKZ3
------END PGP SIGNATURE-----
-
---Sig_/rc0cu0JvMw0tHyCs4nlw.GE--
+-Doug
