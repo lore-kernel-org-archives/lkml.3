@@ -1,41 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675AbaHVNwt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:52:49 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:58151 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756409AbaHVNws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:52:48 -0400
-X-IronPort-AV: E=Sophos;i="5.04,380,1406592000"; 
-   d="scan'208";a="164897617"
-Message-ID: <53F74B29.4090601@citrix.com>
-Date: Fri, 22 Aug 2014 14:52:41 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1756679AbaHVNyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:54:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33538 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756338AbaHVNyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 09:54:09 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH 3/6] ARM: OMAP4+: PRM: register interrupt information from DT
+Date: Fri, 22 Aug 2014 08:51:50 -0500
+Message-ID: <1408715513-25851-4-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408715513-25851-1-git-send-email-nm@ti.com>
+References: <1408715513-25851-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Mukesh Rathor <mukesh.rathor@oracle.com>, <boris.ostrovsky@oracle.com>
-CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [V0 PATCH 0/2] AMD PVH domU support
-References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-In-Reply-To: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/08/14 03:16, Mukesh Rathor wrote:
-> Hi,
-> 
-> Here's first stab at AMD PVH domU support. Pretty much the only thing
-> needed is EFER bits set. Please review.
+Allow the PRM interrupt information to be picked up from device tree.
+the only exception is for OMAP4 which uses values pre-populated and allows
+compatibility with older dtb.
 
-I'm not going to accept this until there is some ABI documentation
-stating explicitly what state non-boot CPUs will be in.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/mach-omap2/prm44xx.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-I'm particularly concerned that: a) there is a difference between AMD
-and Intel; and b) you want to change the ABI by clearing a the EFER.SCE bit.
+diff --git a/arch/arm/mach-omap2/prm44xx.c b/arch/arm/mach-omap2/prm44xx.c
+index d4d745e..5a70c91 100644
+--- a/arch/arm/mach-omap2/prm44xx.c
++++ b/arch/arm/mach-omap2/prm44xx.c
+@@ -17,6 +17,7 @@
+ #include <linux/errno.h>
+ #include <linux/err.h>
+ #include <linux/io.h>
++#include <linux/of_irq.h>
+ 
+ 
+ #include "soc.h"
+@@ -699,11 +700,50 @@ int __init omap44xx_prm_init(void)
+ 	return prm_register(&omap44xx_prm_ll_data);
+ }
+ 
++static struct of_device_id omap_prm_dt_match_table[] = {
++	{ .compatible = "ti,omap4-prm" },
++	{ .compatible = "ti,omap5-prm" },
++	{ .compatible = "ti,dra7-prm" },
++	{ }
++};
++
+ static int omap44xx_prm_late_init(void)
+ {
++	struct device_node *np;
++	int irq_num;
++
+ 	if (!(prm_features & PRM_HAS_IO_WAKEUP))
+ 		return 0;
+ 
++	/* OMAP4+ is DT only now */
++	if (!of_have_populated_dt())
++		return 0;
++
++	np = of_find_matching_node(NULL, omap_prm_dt_match_table);
++
++	if (!np) {
++		/* Default loaded up with OMAP4 values */
++		if (!cpu_is_omap44xx())
++			return 0;
++	} else {
++		irq_num = of_irq_get(np, 0);
++		/*
++		 * Already have OMAP4 IRQ num. For all other platforms, we need
++		 * IRQ numbers from DT
++		 */
++		if (irq_num < 0 && !cpu_is_omap44xx()) {
++			if (irq_num == -EPROBE_DEFER)
++				return irq_num;
++
++			/* Have nothing to do */
++			return 0;
++		}
++
++		/* Once OMAP4 DT is filled as well */
++		if (irq_num >= 0)
++			omap4_prcm_irq_setup.irq = irq_num;
++	}
++
+ 	omap44xx_prm_enable_io_wakeup();
+ 
+ 	return omap_prcm_register_chain_handler(&omap4_prcm_irq_setup);
+-- 
+1.7.9.5
 
-David
