@@ -1,164 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaHVK7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 06:59:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38240 "EHLO mga03.intel.com"
+	id S1756167AbaHVLA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 07:00:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16586 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755651AbaHVK6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 06:58:21 -0400
+	id S1754425AbaHVLA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 07:00:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,379,1406617200"; 
-   d="scan'208";a="471566354"
+   d="scan'208";a="580353246"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: Lee Jones <lee.jones@linaro.org>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
         Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 4/5] mfd: lpc_sch: Add support for Intel Quark X1000
-Date: Fri, 22 Aug 2014 13:58:15 +0300
-Message-Id: <1408705096-31286-5-git-send-email-andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1 0/5] mfd: lpc_sch: Intel Quark support
+Date: Fri, 22 Aug 2014 13:58:11 +0300
+Message-Id: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Quark X1000 SoC supports IRQ based GPIO. This patch will
-enable MFD support for Quark X1000 and provide IRQ resources
-to Quark X1000 GPIO device driver.
+This brings support of the LPC SCH device found on Intel Quark SoC. Patches
+were compile tested, and driver runs on actual hardware.
 
-Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Tested-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- drivers/mfd/lpc_sch.c | 41 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 35 insertions(+), 6 deletions(-)
+Please, note that PCI ID will be used in future in the gpio-sch driver.
 
-diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-index c4eb359..6145a4c 100644
---- a/drivers/mfd/lpc_sch.c
-+++ b/drivers/mfd/lpc_sch.c
-@@ -37,6 +37,9 @@
- #define GPIO_IO_SIZE	64
- #define GPIO_IO_SIZE_CENTERTON	128
- 
-+/* Intel Quark X1000 GPIO IRQ Number */
-+#define GPIO_IRQ_QUARK_X1000	9
-+
- #define WDTBASE		0x84
- #define WDT_IO_SIZE	64
- 
-@@ -44,28 +47,37 @@ enum sch_chipsets {
- 	LPC_SCH = 0,		/* Intel Poulsbo SCH */
- 	LPC_ITC,		/* Intel Tunnel Creek */
- 	LPC_CENTERTON,		/* Intel Centerton */
-+	LPC_QUARK_X1000,	/* Intel Quark X1000 */
- };
- 
- struct lpc_sch_info {
- 	unsigned int io_size_smbus;
- 	unsigned int io_size_gpio;
- 	unsigned int io_size_wdt;
-+	int irq_gpio;
- };
- 
- static struct lpc_sch_info sch_chipset_info[] = {
- 	[LPC_SCH] = {
- 		.io_size_smbus = SMBUS_IO_SIZE,
- 		.io_size_gpio = GPIO_IO_SIZE,
-+		.irq_gpio = -1,
- 	},
- 	[LPC_ITC] = {
- 		.io_size_smbus = SMBUS_IO_SIZE,
- 		.io_size_gpio = GPIO_IO_SIZE,
- 		.io_size_wdt = WDT_IO_SIZE,
-+		.irq_gpio = -1,
- 	},
- 	[LPC_CENTERTON] = {
- 		.io_size_smbus = SMBUS_IO_SIZE,
- 		.io_size_gpio = GPIO_IO_SIZE_CENTERTON,
- 		.io_size_wdt = WDT_IO_SIZE,
-+		.irq_gpio = -1,
-+	},
-+	[LPC_QUARK_X1000] = {
-+		.io_size_gpio = GPIO_IO_SIZE,
-+		.irq_gpio = GPIO_IRQ_QUARK_X1000,
- 	},
- };
- 
-@@ -73,6 +85,7 @@ static const struct pci_device_id lpc_sch_ids[] = {
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC), LPC_SCH },
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC), LPC_ITC },
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_CENTERTON_ILB), LPC_CENTERTON },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB), LPC_QUARK_X1000 },
- 	{ 0, }
- };
- MODULE_DEVICE_TABLE(pci, lpc_sch_ids);
-@@ -106,14 +119,26 @@ static int lpc_sch_get_io(struct pci_dev *pdev, int where, const char *name,
- 	return 0;
- }
- 
-+static int lpc_sch_get_irq(struct resource *res, int irq)
-+{
-+	if (irq < 0)
-+		return -EINVAL;
-+
-+	res->start = irq;
-+	res->end = irq;
-+	res->flags = IORESOURCE_IRQ;
-+
-+	return 0;
-+}
-+
- static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
--				 const char *name, int size, int id,
--				 struct mfd_cell *cell)
-+				 const char *name, int size, int irq,
-+				 int id, struct mfd_cell *cell)
- {
- 	struct resource *res;
- 	int ret;
- 
--	res = devm_kzalloc(&pdev->dev, sizeof(*res), GFP_KERNEL);
-+	res = devm_kcalloc(&pdev->dev, 2, sizeof(*res), GFP_KERNEL);
- 	if (!res)
- 		return -ENOMEM;
- 
-@@ -129,6 +154,10 @@ static int lpc_sch_populate_cell(struct pci_dev *pdev, int where,
- 	cell->ignore_resource_conflicts = true;
- 	cell->id = id;
- 
-+	ret = lpc_sch_get_irq(++res, irq);
-+	if (!ret)
-+		cell->num_resources++;
-+
- 	return 0;
- }
- 
-@@ -141,19 +170,19 @@ static int lpc_sch_probe(struct pci_dev *dev,
- 	int ret;
- 
- 	ret = lpc_sch_populate_cell(dev, SMBASE, "isch_smbus",
--				    info->io_size_smbus,
-+				    info->io_size_smbus, -1,
- 				    id->device, &lpc_sch_cells[cells]);
- 	if (!ret)
- 		cells++;
- 
- 	ret = lpc_sch_populate_cell(dev, GPIOBASE, "sch_gpio",
--				    info->io_size_gpio,
-+				    info->io_size_gpio, info->irq_gpio,
- 				    id->device, &lpc_sch_cells[cells]);
- 	if (!ret)
- 		cells++;
- 
- 	ret = lpc_sch_populate_cell(dev, WDTBASE, "ie6xx_wdt",
--				    info->io_size_wdt,
-+				    info->io_size_wdt, -1,
- 				    id->device, &lpc_sch_cells[cells]);
- 	if (!ret)
- 		cells++;
+Andy Shevchenko (4):
+  mfd: lpc_sch: reduce duplicate code
+  mfd: lpc_sch: better code manageability with chipset info struct
+  mfd: lpc_sch: Add support for Intel Quark X1000
+  mfd: lpc_sch: remove FSF address
+
+Josef Ahmad (1):
+  pci_ids: add support for Intel Quark ILB
+
+ drivers/mfd/lpc_sch.c   | 207 ++++++++++++++++++++++++++++--------------------
+ include/linux/pci_ids.h |   1 +
+ 2 files changed, 122 insertions(+), 86 deletions(-)
+
 -- 
 2.1.0
 
