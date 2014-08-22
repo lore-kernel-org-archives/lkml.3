@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaHVOBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:01:32 -0400
-Received: from 132.79-246-81.adsl-static.isp.belgacom.be ([81.246.79.132]:43179
-	"EHLO viper.mind.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160AbaHVOB2 (ORCPT
+	id S932433AbaHVOCG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:02:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33290 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932338AbaHVOB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:01:28 -0400
-Message-ID: <53F74D2F.2000006@mind.be>
-Date: Fri, 22 Aug 2014 16:01:19 +0200
-From: Arnout Vandecappelle <arnout@mind.be>
-Organization: Essensium/Mind
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Fri, 22 Aug 2014 10:01:29 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <devicetree@vger.kernel.org>, Dave Gerlach <d-gerlach@ti.com>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH 0/3] pinctrl: Add DRA7/AM437x pinctrl compatibility
+Date: Fri, 22 Aug 2014 09:00:59 -0500
+Message-ID: <1408716062-26055-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH] tps65910: Work around silicon erratum SWCZ010
-References: <1408709666-5927-1-git-send-email-arnout@mind.be> <53F7499D.7070103@nvidia.com>
-In-Reply-To: <53F7499D.7070103@nvidia.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/14 15:46, Laxman Dewangan wrote:
-> On Friday 22 August 2014 05:44 PM, Arnout Vandecappelle (Essensium/Mind) wrote:
-> >  From http://www.ti.com/lit/pdf/SWCZ010 :
-> >
-> > Glitch on SDA-SCL not managed correctly by the I2C IP
-> >
-> > Impact:
-> > The standard specifies that the I2C transfer should restart on a start
-> > event in all cases. The current design does not support two consecutive
-> > Start conditions. This can cause the first real access after such a
-> > glitch to be corrupted.
-> >
-> > Description:
-> > An unexpected glitch on SDA and SCL can generate a wrong start event.
-> > In the current design, the SCL line must toggle two times to detect a
-> > new start event and completely restart the I2C access; hence the real
-> > start event is not detected in the case of a single SCL toggle.
-> >
-> > Workaround:
-> > Repeat I2C access.
-> >
-> > The first access to the tps65910 that we do is when loading the regmap
-> > in the probe function. If there has been a glitch during boot and the
-> > erratum is triggered, then the regmap loading will fail with -REMOTEIO
-> > since the I2C transfer is not ACKed by the tps65910.
-> >
-> > A simple retry will work around it, because a subsequent I2C start
-> > condition is detected properly by the tps65910.
-> >
-> > Signed-off-by: Arnout Vandecappelle (Essensium/Mind) <arnout@mind.be>
-> > ---
-> > This patch is based on v3.17-rc1.
-> > Build-tested with omap2plus_defconfig.
-> > Runtime tested based on v3.4.97 with a custom config.
-> > ---
-> >   drivers/mfd/tps65910.c | 12 +++++++++++-
-> >   1 file changed, 11 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> > index f243e75..cc1ca33 100644
-> > --- a/drivers/mfd/tps65910.c
-> > +++ b/drivers/mfd/tps65910.c
-> > @@ -487,8 +487,18 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
-> >       tps65910->id = chip_id;
-> >   
->
-> I think one dummy read of any register unconditionally before regmap init will
-> resolve this issue.
-> Similar issue we face with Palmas TPS65913 and TI recommended to use dummy read
-> before any valid transfer.
->
+The following series are various fixes and improvements for pinctrl
+for AM437x and DRA7. It also tries to add documentation for existing
+pinctrl bindings for Texas Instruments' OMAP SoCs.
 
- Yeah, good idea.
+Functionality depends on the dts update (in series 6), PRM fixes and
+the pdata quirk changes
 
- So something like
+This is part 4/6 series which eventually enables framework for
+suspend-to-ram and cpuidle for OMAP5 and DRA7
 
-i2c_master_send(i2c, "", 1);
+Each of series is based on v3.17-rc1 and this specific series is available:
+weblink: https://github.com/nmenon/linux-2.6-playground/commits/push/v3.17/pinctrl-compat
 
-just before the regmap_init.
+git repo: https://github.com/nmenon/linux-2.6-playground.git push/v3.17/pinctrl-compat
 
- Is abusing the empty string like that OK or should I declare a dummy buffer?
+An complete integrated branch is available here: https://github.com/nmenon/linux-2.6-playground/commits/testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
 
- Regards,
- Arnout
+Keerthy (1):
+  pinctrl: single: AM437x: Add pinctrl compatibility
 
+Nishanth Menon (2):
+  pinctrl: bindings: Add OMAP pinctrl binding
+  pinctrl: single: Add DRA7 pinctrl compatibility
+
+ .../bindings/pinctrl/ti,omap-pinctrl.txt           |   11 +++++++++++
+ drivers/pinctrl/pinctrl-single.c                   |   14 ++++++++++++++
+ 2 files changed, 25 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
 
 -- 
-Arnout Vandecappelle arnout at mind be
-Senior Embedded Software Architect +32-16-286500
-Essensium/Mind http://www.mind.be
-G.Geenslaan 9, 3001 Leuven, Belgium BE 872 984 063 RPR Leuven
-LinkedIn profile: http://www.linkedin.com/in/arnoutvandecappelle
-GPG fingerprint: 7CB5 E4CC 6C2E EFD4 6E3D A754 F963 ECAB 2450 2F1F
+1.7.9.5
+
