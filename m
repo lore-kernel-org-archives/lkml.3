@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271AbaHVPnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:43:21 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:37103 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098AbaHVPnT (ORCPT
+	id S932291AbaHVPpn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:45:43 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55505 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098AbaHVPpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:43:19 -0400
-X-AuditID: cbfec372-b7f2f6d0000052b3-41-53f76515ef5e
-Date: Fri, 22 Aug 2014 10:43:08 -0500
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Antti Palosaari <crope@iki.fi>
-Cc: Jeff Mahoney <jeffm@suse.com>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: Autoselecting SPI for MEDIA_SUBDRV_AUTOSELECT?
-Message-id: <20140822104308.63767b6a.m.chehab@samsung.com>
-In-reply-to: <53F75F02.2030300@iki.fi>
-References: <53F75B26.2020101@suse.com> <53F75F02.2030300@iki.fi>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/hYF3R1O/BBj9nGll8b37PZnFnzWdW
-	i8u75rBZ9GzYyurA4nH460IWj/VbrrJ4fN4kF8AcxWWTkpqTWZZapG+XwJWx8rd4QTNPxYe9
-	N5kaGLdxdjFyckgImEjs+HKTHcIWk7hwbz1bFyMXh5DAEkaJtXsfMUM4zUwSq7f2AFVxcLAI
-	qEq039cCaWATMJJ41djCCmKLCChJLNiwkwmknlmgiVHiz6NLzCAJYQFriZ0PVjKC2LwCVhJL
-	D60G28YpoCZxuHcPWFxIwFHi5LKnjBBXOEv8nDkJql5Q4sfkeywgNrOAlsTmbU2sELa8xOY1
-	b5knMArMQlI2C0nZLCRlCxiZVzGKlhYnFxQnpeca6hUn5haX5qXrJefnbmKEhGzRDsZnG6wO
-	MQpwMCrx8Bp4fA8WYk0sK67MPcQowcGsJMI71wYoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgVHu
-	w2enP6vCrrus8rngqqJZnDVfyXCLyRv5M/cC7/DOS8/fp2C41JKj6fe8DxffL0r/sPLVa9uA
-	Un7DoolZ3I+TWjLs5gUbtfZ9KXXJP7TRN1cn69DE/w4+93s5NiQqz5vx/ZxVrvDPPFa2xvN1
-	y65pMM1/oFzHmHt9+aJ56720HSu7l56Z8UaJpTgj0VCLuag4EQBt2g1CNwIAAA==
+	Fri, 22 Aug 2014 11:45:42 -0400
+Message-ID: <53F7657D.2060304@ahsoftware.de>
+Date: Fri, 22 Aug 2014 17:45:01 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jon Loeliger <jdl@jdl.com>, Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver initialization
+ order based on the DT)
+References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de> <20140514141914.446F7C4153D@trevor.secretlab.ca> <20140821140211.GD19293@ulmo.nvidia.com> <53F64624.5000403@ahsoftware.de> <20140822131919.GX21734@leverpostej>
+In-Reply-To: <20140822131919.GX21734@leverpostej>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 22 Aug 2014 18:17:22 +0300
-Antti Palosaari <crope@iki.fi> escreveu:
+Am 22.08.2014 15:19, schrieb Mark Rutland:
+> On Thu, Aug 21, 2014 at 08:19:00PM +0100, Alexander Holler wrote:
+>> Am 21.08.2014 16:02, schrieb Thierry Reding:
+>>
+>>> Anyway, those are all fairly standard reasons for where deferred probe
+>>> triggers, and since I do like deferred probe for it's simplicity and
+>>> reliability I'd rather not try to work around it if boot time is all
+>>> that people are concerned about.
+>>
+>> It's neither simple nor reliable. It's non deterministic brutforcing
+>> while making it almost impossible to identify real errors.
+>
+> It's horrible, yes.
+>
+>> In my humble opinion the worst way to solve something. I'm pretty sure
+>> if I would have suggest such a solution, the maintainer crowd would have
+>> eaten me without cooking.
+>
+> We didn't have a better workable solution at the time. Having a hack
+> that got boards booting was considered better than not having them boot.
+> I don't remember people being particularly enthralled by the idea.
 
-> Moikka!
-> 
-> On 08/22/2014 06:00 PM, Jeff Mahoney wrote:
-> > -----BEGIN PGP SIGNED MESSAGE-----
-> > Hash: SHA1
-> >
-> > Hi Antti -
-> >
-> > Commit e4462ffc160 ([media] Kconfig: sub-driver auto-select SPI bus)
-> > enables CONFIG_SPI globally for a driver that won't even be enabled in
-> > many cases.
-> >
-> > Is there a reason USB_MSI2500 doesn't select SPI instead of
-> > MEDIA_SUBDRV_AUTOSELECT?
-> 
-> Nothing but I decided to set it similarly as I2C, another more common 
-> bus. IIRC same was for I2C_MUX too.
-> 
-> You could still disable media subdriver autoselect and then disable SPI 
-> and select all the media drivers (excluding MSSi2500) manually.
-> 
-> I have feeling that media auto-select was added to select everything 
-> needed for media.
+Agreed. And usually I don't flame about workarounds. They are needed 
+practice usually born out of a time limited background or similiar 
+constraints.
 
-No. Actually, it is meant to be used to select the features that are
-needed for the devices that got selected.
+Only Linux kernel maintainers do demand perfect stuff from others as the 
+kernel seems to have to be a perfect school project. I for myself 
+already think checkpatch is a ridiculous tool, only invented to drive 
+people crazy. Of course, it's better a tool drives people crazy than a 
+maintainer who make decisions based on the phase of the moon, but ... ;)
 
-Selecting I2C there is already a hack, as there are a couple of devices
-that don't need it (like as102). Still, we're doing that, as there are
-so few exceptions that, for the sake of cleaner Kconfig setup, it is
-the best solution.
+And I haven't flamed much about deferred probe before, but if I read 
+it's simple and reliable I couldn't stand still.
 
-I2C_MUX is also a little of abuse today, as there are also few devices
-that use it, but we should change it, as there are some good reasons
-to stop using the current I2C gate control by an i2c_mux.
+Sorry,
 
-I don't think that selecting SPI belongs there. The best is to move it
-to the very few drivers that use it.
+Alexander Holler
 
-Regards,
-Mauro
+
