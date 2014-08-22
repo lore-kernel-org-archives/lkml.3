@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338AbaHVQPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:15:00 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:34208 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297AbaHVQO5 convert rfc822-to-8bit (ORCPT
+	id S932397AbaHVQPK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:15:10 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:56455 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932297AbaHVQPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:14:57 -0400
+	Fri, 22 Aug 2014 12:15:07 -0400
+Date: Fri, 22 Aug 2014 19:15:02 +0300
+From: Dan Aloni <dan@kernelim.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
+        stable@vger.kernel.org
+Subject: Re: Revert "aio: fix aio request leak when events are reaped by user
+ space"
+Message-ID: <20140822161502.GA30392@gmail.com>
+References: <cover.1403632276.git.bcrl@kvack.org>
+ <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
+ <20140819163733.GA10132@gmail.com>
+ <20140819165404.GD13858@kvack.org>
+ <20140819171426.GA11811@gmail.com>
+ <20140820004651.GJ13858@kvack.org>
+ <20140822160111.GD20391@kvack.org>
 MIME-Version: 1.0
-In-Reply-To: <080101cfbdf6$c8fd1f30$5af75d90$@samsung.com>
-References: <53DCD74B.8090400@gmail.com>
-	<1408539764-5835-1-git-send-email-afaerber@suse.de>
-	<080101cfbdf6$c8fd1f30$5af75d90$@samsung.com>
-Date: Fri, 22 Aug 2014 09:14:56 -0700
-X-Google-Sender-Auth: FKPX_qjmPV-uMv_G1iaeNzFt25c
-Message-ID: <CAD=FV=VS8e4Fs-j4CFvGYtvj58QwOk52gWh7AfnZcpswVRnDKA@mail.gmail.com>
-Subject: Re: [PATCH v7] ARM: dts: Prepare node labels for exynos5250
-From: Doug Anderson <dianders@chromium.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822160111.GD20391@kvack.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kukjin,
+On Fri, Aug 22, 2014 at 12:01:11PM -0400, Benjamin LaHaise wrote:
+> On Tue, Aug 19, 2014 at 08:46:51PM -0400, Benjamin LaHaise wrote:
+> > You can trigger the behaviour with fio by using userspace event reaping.  
+> > Adding a test case for that behaviour to libaio would be a good idea.
+> 
+> > I thought about how to fix this, and it isn't actually that hard.  Move 
+> > the put_reqs_available() call back into event consumption, and then add 
+> > code in the submit path to call put_reqs_available() if the system runs 
+> > out of events by noticing that there is free space in the event ring.  
+> > Something along the lines below should do it (please note, this is 
+> > completely untested!).  I'll test and polish this off tomorrow, as it's 
+> > getting a bit late here.
+> 
+> Dan, does this patch work for you?  It seems to pass your test program 
+> when I run it in a vm...
 
-On Fri, Aug 22, 2014 at 3:49 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Andreas Färber wrote:
->>
->> Allows them to be extended by reference.
->>
->> Reviewed-by: Doug Anderson <dianders@chromium.org>
->> Signed-off-by: Andreas Färber <afaerber@suse.de>
->> ---
->>  v6 -> v7:
->>  * Dropped uart* labels (Tomasz Figa)
->>
->>  v6: Split off from Snow/SMDK cleanups (Doug Anderson)
->>
->>  arch/arm/boot/dts/exynos5250.dtsi | 16 ++++++++--------
->>  1 file changed, 8 insertions(+), 8 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
->> index 492e1eff37bd..42eafd19cfb2 100644
->> --- a/arch/arm/boot/dts/exynos5250.dtsi
->> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->> @@ -218,7 +218,7 @@
->>               clock-names = "fimg2d";
->>       };
->>
->> -     codec@11000000 {
->> +     mfc: codec@11000000 {
->>               compatible = "samsung,mfc-v6";
->>               reg = <0x11000000 0x10000>;
->>               interrupts = <0 96 0>;
->> @@ -227,7 +227,7 @@
->>               clock-names = "mfc";
->>       };
->>
->> -     rtc@101E0000 {
->> +     rtc: rtc@101E0000 {
->>               clocks = <&clock CLK_RTC>;
->>               clock-names = "rtc";
->>               status = "disabled";
->> @@ -261,7 +261,7 @@
->>               clock-names = "uart", "clk_uart_baud0";
->>       };
->>
->> -     sata@122F0000 {
->> +     sata: sata@122F0000 {
->>               compatible = "snps,dwc-ahci";
->>               samsung,sata-freq = <66>;
->>               reg = <0x122F0000 0x1ff>;
->> @@ -573,7 +573,7 @@
->>               #phy-cells = <1>;
->>       };
->>
->> -     usb@12110000 {
->> +     ehci: usb@12110000 {
->
-> I'm not sure which one is recommended between above and "ehci: ehci@12110000 {"
+Sorry, I was waiting for a new patch from your direction, I should
+have replied earlier. What bothered me about the patch you sent is that
+completed_events is added as a new field but nothing assigns to it, so I 
+wonder how it can be effective.
 
-My understanding is that more generic names should be used for node
-names.  AKA: "usb" and not "ehci".  "mmc" and not "dwmmc".
-
-In another thread I was pointed at ePAPR
-<http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf>:
-
-The name of a node should be somewhat generic, reflecting the function
-of the device and not its precise programming model.
-
-
->> -     hdmi {
->> +     hdmi: hdmi {
->
-> Should be
->
-> +       hdmi: hdmi@14530000 { ?
-
-Seems like that should be a followon patch.
+-- 
+Dan Aloni
