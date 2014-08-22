@@ -1,150 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaHVVI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:08:56 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60418 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716AbaHVVIy (ORCPT
+	id S1752096AbaHVVK0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:10:26 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:41706 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaHVVKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:08:54 -0400
-Message-ID: <1408741732.5604.23.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v2] carl9170: Remove redundant protection check
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christian Lamparter <chunkeey@googlemail.com>
-Cc: Andreea-Cristina Bernat <bernat.ada@gmail.com>, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
-Date: Fri, 22 Aug 2014 14:08:52 -0700
-In-Reply-To: <1679858.MgakDZE2Vr@debian64>
-References: <20140822191431.GA5827@ada> <1679858.MgakDZE2Vr@debian64>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 22 Aug 2014 17:10:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+	<CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
+Date: Fri, 22 Aug 2014 14:10:23 -0700
+X-Google-Sender-Auth: Xts5yKtEyb28XbhiEuJCARUpm1s
+Message-ID: <CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-08-22 at 22:38 +0200, Christian Lamparter wrote:
-> On Friday, August 22, 2014 10:14:31 PM Andreea-Cristina Bernat wrote:
-> > The carl9170_op_ampdu_action() function is used only by the mac80211
-> > framework. Since the mac80211 already takes care of checks and 
-> > properly serializing calls to the driver's function there is no
-> > need for the driver to do the same thing.
-> > 
-> > Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-> > ---
-> > Changes in v2:
-> >  - Change subject line from
-> >    "carl9170: Replace rcu_dereference() with rcu_access_pointer()"
-> >    to
-> >    "carl9170: Remove redundant protection check"
-> >  - Update the commit message according to the modifications
-> >  - Delete the lines of interest at the suggestion and explanations of
-> >    Christian Lamparter <chunkeey@googlemail.com>
-> > 
-> >  drivers/net/wireless/ath/carl9170/main.c | 6 ------
-> >  1 file changed, 6 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
-> > index 12018ff..6758b9a 100644
-> > --- a/drivers/net/wireless/ath/carl9170/main.c
-> > +++ b/drivers/net/wireless/ath/carl9170/main.c
-> > @@ -1430,12 +1430,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
-> >  		if (!sta_info->ht_sta)
-> >  			return -EOPNOTSUPP;
-> >  
-> > -		rcu_read_lock();
-> > -		if (rcu_access_pointer(sta_info->agg[tid])) {
-> > -			rcu_read_unlock();
-> > -			return -EBUSY;
-> > -		}
-> > -
-> >  		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
-> >  				   GFP_ATOMIC);
-> >  		if (!tid_info) {
-> > 
-> 
-> sparse [0] hit a bug when testing the patch:
-> 
-> drivers/net/wireless/ath/carl9170/main.c:1440:17: 
->   warning: context imbalance in 'carl9170_op_ampdu_action' - unexpected unlock
-> 
-> This warning is caused by the remaining, stray rcu_read protection
-> in the code below (Sorry! Guess RCU needed a bit more explanation
-> in the previous post. If you are looking for *pointers*, there are
-> excellent resources available in Documentation/RCU/ [1]).
-> 
-> I've attached a full patch (see below) with all changes so far and
-> tested if the device/driver still behaves ;-). This patch applies 
-> cleanly on top of wireless-testing.
-> 
-> @John,
-> can you please take it?
-> 
-> ---
-> From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-> 
-> The carl9170_op_ampdu_action() function is used only by the mac80211
-> framework. Since the mac80211 already takes care of checks and 
-> properly serializing calls to the driver's function there is no
-> need for the driver to do the same thing.
->  
-> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-> [chunkeey@googlemail.com: remove two stray rcu_read_unlock()]
-> Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-> ---
-> diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
-> index f8ded84..ef5b6dc 100644
-> --- a/drivers/net/wireless/ath/carl9170/main.c
-> +++ b/drivers/net/wireless/ath/carl9170/main.c
-> @@ -1430,18 +1430,10 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
->  		if (!sta_info->ht_sta)
->  			return -EOPNOTSUPP;
->  
-> -		rcu_read_lock();
-> -		if (rcu_dereference(sta_info->agg[tid])) {
-> -			rcu_read_unlock();
-> -			return -EBUSY;
-> -		}
-> -
->  		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
->  				   GFP_ATOMIC);
-> -		if (!tid_info) {
-> -			rcu_read_unlock();
-> +		if (!tid_info)
->  			return -ENOMEM;
-> -		}
->  
->  		tid_info->hsn = tid_info->bsn = tid_info->snx = (*ssn);
->  		tid_info->state = CARL9170_TID_STATE_PROGRESS;
-> @@ -1460,7 +1452,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
->  		list_add_tail_rcu(&tid_info->list, &ar->tx_ampdu_list);
->  		rcu_assign_pointer(sta_info->agg[tid], tid_info);
->  		spin_unlock_bh(&ar->tx_ampdu_list_lock);
-> -		rcu_read_unlock();
->  
->  		ieee80211_start_tx_ba_cb_irqsafe(vif, sta->addr, tid);
->  		break;
-> ---
-> 
-> Regards
-> Christian
-> 
-> [0] <http://kernelnewbies.org/Sparse>
-> [1] <https://www.kernel.org/doc/Documentation/RCU/whatisRCU.txt>
-> 
+On Fri, Aug 22, 2014 at 1:42 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>
+> On Aug 21, 2014 3:05 PM, "Andrew Bresticker" <abrestic@chromium.org> wrote:
+> >
+> > To be consistent with other architectures and to avoid unnecessary
+> > makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
+> > and build them with a common makefile.
+>
+> I recall reading that the ARM organization for DTS files was a bit unfortunate
+> and should have been something like:
+>
+> arch/arm/boot/dts/<vendor>/
+>
+> Is this something we should do for the MIPS and update the other architectures
+> to follow that scheme?
 
-
-Sorry but this patch is not complete.
-
-You need to somehow return -EBUSY if sta_info->agg[tid] is set.
-
-The test has to be done inside the
-spin_lock_bh(&ar->tx_ampdu_list_lock) /
-spin_unlock_bh(&ar->tx_ampdu_list_lock); region.
-
-You are correct the RCU bits were wrong in this context, but we still
-have to avoid leaks.
-
-
+I recall reading that as well and that it would be adopted for ARM64,
+but that hasn't seemed to have happened.  Perhaps Olof (CC'ed) will no
+more.
