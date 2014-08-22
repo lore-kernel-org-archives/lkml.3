@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458AbaHVODD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:03:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43959 "EHLO arroyo.ext.ti.com"
+	id S932563AbaHVOE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:04:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58713 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756523AbaHVOC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:02:59 -0400
+	id S932447AbaHVODC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:03:02 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
@@ -15,9 +15,9 @@ CC: Kevin Hilman <khilman@deeprootsystems.com>,
         <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
         Nishanth Menon <nm@ti.com>
-Subject: [PATCH 05/10] ARM: OMAP5 / DRA7: PM: Avoid all SAR saves
-Date: Fri, 22 Aug 2014 09:02:29 -0500
-Message-ID: <1408716154-26101-6-git-send-email-nm@ti.com>
+Subject: [PATCH 06/10] ARM: OMAP5 / DRA7: PM: Provide a dummy startup function for CPU hotplug
+Date: Fri, 22 Aug 2014 09:02:30 -0500
+Message-ID: <1408716154-26101-7-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408716154-26101-1-git-send-email-nm@ti.com>
 References: <1408716154-26101-1-git-send-email-nm@ti.com>
@@ -27,130 +27,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rajendra Nayak <rnayak@ti.com>
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Get rid of all assumptions about always having a sar base on *all*
-OMAP4+ platforms. We dont need one on DRA7 and it is not necessary at
-this point for OMAP5 either.
+Dont assume that all OMAP4+ code will be able to use OMAP4 hotplug
+logic. On OMAP5, DRA7, we do not need this in place yet, also,
+currently the CPU startup pointer is located in omap4_cpu_pm_info
+instead of cpu_pm_ops.
 
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-[nm@ti.com: Split and optimize]
+So, isolate the function to hotplug_restart pointer in cpu_pm_ops
+where it should have belonged, initalize them as per valid startup
+pointers for OMAP4430/60 as in current logic, however provide
+dummy_cpu_resume to be the startup location as well.
+
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+[nm@ti.com: split this out of original code and isolate it]
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/mach-omap2/omap-mpuss-lowpower.c |   55 ++++++++++++++++++-----------
- 1 file changed, 34 insertions(+), 21 deletions(-)
+ arch/arm/mach-omap2/omap-mpuss-lowpower.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/omap-mpuss-lowpower.c b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-index fad6e8c..53d8de5 100644
+index 53d8de5..207fce2 100644
 --- a/arch/arm/mach-omap2/omap-mpuss-lowpower.c
 +++ b/arch/arm/mach-omap2/omap-mpuss-lowpower.c
-@@ -118,7 +118,8 @@ static inline void set_cpu_wakeup_addr(unsigned int cpu_id, u32 addr)
- {
- 	struct omap4_cpu_pm_info *pm_info = &per_cpu(omap4_pm_info, cpu_id);
+@@ -69,7 +69,6 @@ struct omap4_cpu_pm_info {
+ 	void __iomem *scu_sar_addr;
+ 	void __iomem *wkup_sar_addr;
+ 	void __iomem *l2x0_sar_addr;
+-	void (*secondary_startup)(void);
+ };
  
--	writel_relaxed(addr, pm_info->wkup_sar_addr);
-+	if (pm_info->wkup_sar_addr)
-+		writel_relaxed(addr, pm_info->wkup_sar_addr);
- }
+ /**
+@@ -77,6 +76,7 @@ struct omap4_cpu_pm_info {
+  * @finish_suspend:	CPU suspend finisher function pointer
+  * @resume:		CPU resume function pointer
+  * @scu_prepare:	CPU Snoop Control program function pointer
++ * @hotplug_restart:	CPU restart function pointer
+  *
+  * Structure holds functions pointer for CPU low power operations like
+  * suspend, resume and scu programming.
+@@ -85,6 +85,7 @@ struct cpu_pm_ops {
+ 	int (*finish_suspend)(unsigned long cpu_state);
+ 	void (*resume)(void);
+ 	void (*scu_prepare)(unsigned int cpu_id, unsigned int cpu_state);
++	void (*hotplug_restart)(void);
+ };
+ 
+ static DEFINE_PER_CPU(struct omap4_cpu_pm_info, omap4_pm_info);
+@@ -108,6 +109,7 @@ struct cpu_pm_ops omap_pm_ops = {
+ 	.finish_suspend		= default_finish_suspend,
+ 	.resume			= dummy_cpu_resume,
+ 	.scu_prepare		= dummy_scu_prepare,
++	.hotplug_restart	= dummy_cpu_resume,
+ };
  
  /*
-@@ -143,7 +144,8 @@ static void scu_pwrst_prepare(unsigned int cpu_id, unsigned int cpu_state)
- 		break;
+@@ -312,7 +314,7 @@ int omap4_hotplug_cpu(unsigned int cpu, unsigned int power_state)
+ 
+ 	pwrdm_clear_all_prev_pwrst(pm_info->pwrdm);
+ 	pwrdm_set_next_pwrst(pm_info->pwrdm, power_state);
+-	set_cpu_wakeup_addr(cpu, virt_to_phys(pm_info->secondary_startup));
++	set_cpu_wakeup_addr(cpu, virt_to_phys(omap_pm_ops.hotplug_restart));
+ 	omap_pm_ops.scu_prepare(cpu, power_state);
+ 
+ 	/*
+@@ -385,10 +387,6 @@ int __init omap4_mpuss_init(void)
+ 					CPU1_WAKEUP_NS_PA_ADDR_OFFSET;
+ 		pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET1;
  	}
- 
--	writel_relaxed(scu_pwr_st, pm_info->scu_sar_addr);
-+	if (pm_info->scu_sar_addr)
-+		writel_relaxed(scu_pwr_st, pm_info->scu_sar_addr);
- }
- 
- /* Helper functions for MPUSS OSWR */
-@@ -181,7 +183,8 @@ static void l2x0_pwrst_prepare(unsigned int cpu_id, unsigned int save_state)
- {
- 	struct omap4_cpu_pm_info *pm_info = &per_cpu(omap4_pm_info, cpu_id);
- 
--	writel_relaxed(save_state, pm_info->l2x0_sar_addr);
-+	if (pm_info->l2x0_sar_addr)
-+		writel_relaxed(save_state, pm_info->l2x0_sar_addr);
- }
- 
- /*
-@@ -191,10 +194,14 @@ static void l2x0_pwrst_prepare(unsigned int cpu_id, unsigned int save_state)
- #ifdef CONFIG_CACHE_L2X0
- static void __init save_l2x0_context(void)
- {
--	writel_relaxed(l2x0_saved_regs.aux_ctrl,
--		     sar_base + L2X0_AUXCTRL_OFFSET);
--	writel_relaxed(l2x0_saved_regs.prefetch_ctrl,
--		     sar_base + L2X0_PREFETCH_CTRL_OFFSET);
-+	void __iomem *l2x0_base = omap4_get_l2cache_base();
-+
-+	if (l2x0_base && sar_base) {
-+		writel_relaxed(l2x0_saved_regs.aux_ctrl,
-+			       sar_base + L2X0_AUXCTRL_OFFSET);
-+		writel_relaxed(l2x0_saved_regs.prefetch_ctrl,
-+			       sar_base + L2X0_PREFETCH_CTRL_OFFSET);
-+	}
- }
- #else
- static void __init save_l2x0_context(void)
-@@ -347,13 +354,17 @@ int __init omap4_mpuss_init(void)
- 		return -ENODEV;
- 	}
- 
--	sar_base = omap4_get_sar_ram_base();
-+	if (cpu_is_omap44xx())
-+		sar_base = omap4_get_sar_ram_base();
- 
- 	/* Initilaise per CPU PM information */
- 	pm_info = &per_cpu(omap4_pm_info, 0x0);
--	pm_info->scu_sar_addr = sar_base + SCU_OFFSET0;
--	pm_info->wkup_sar_addr = sar_base + CPU0_WAKEUP_NS_PA_ADDR_OFFSET;
--	pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET0;
-+	if (sar_base) {
-+		pm_info->scu_sar_addr = sar_base + SCU_OFFSET0;
-+		pm_info->wkup_sar_addr = sar_base +
-+					CPU0_WAKEUP_NS_PA_ADDR_OFFSET;
-+		pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET0;
-+	}
- 	pm_info->pwrdm = pwrdm_lookup("cpu0_pwrdm");
- 	if (!pm_info->pwrdm) {
- 		pr_err("Lookup failed for CPU0 pwrdm\n");
-@@ -368,9 +379,12 @@ int __init omap4_mpuss_init(void)
- 	pwrdm_set_next_pwrst(pm_info->pwrdm, PWRDM_POWER_ON);
- 
- 	pm_info = &per_cpu(omap4_pm_info, 0x1);
--	pm_info->scu_sar_addr = sar_base + SCU_OFFSET1;
--	pm_info->wkup_sar_addr = sar_base + CPU1_WAKEUP_NS_PA_ADDR_OFFSET;
--	pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET1;
-+	if (sar_base) {
-+		pm_info->scu_sar_addr = sar_base + SCU_OFFSET1;
-+		pm_info->wkup_sar_addr = sar_base +
-+					CPU1_WAKEUP_NS_PA_ADDR_OFFSET;
-+		pm_info->l2x0_sar_addr = sar_base + L2X0_SAVE_OFFSET1;
-+	}
- 	if (cpu_is_omap446x())
- 		pm_info->secondary_startup = omap4460_secondary_startup;
- 	else
-@@ -397,13 +411,12 @@ int __init omap4_mpuss_init(void)
- 	pwrdm_clear_all_prev_pwrst(mpuss_pd);
- 	mpuss_clear_prev_logic_pwrst();
- 
--	/* Save device type on scratchpad for low level code to use */
--	if (omap_type() != OMAP2_DEVICE_TYPE_GP)
--		writel_relaxed(1, sar_base + OMAP_TYPE_OFFSET);
+-	if (cpu_is_omap446x())
+-		pm_info->secondary_startup = omap4460_secondary_startup;
 -	else
--		writel_relaxed(0, sar_base + OMAP_TYPE_OFFSET);
--
--	save_l2x0_context();
-+	if (sar_base) {
-+		/* Save device type on scratchpad for low level code to use */
-+		writel_relaxed((omap_type() != OMAP2_DEVICE_TYPE_GP) ? 1 : 0,
-+			       sar_base + OMAP_TYPE_OFFSET);
-+		save_l2x0_context();
-+	}
+-		pm_info->secondary_startup = omap4_secondary_startup;
  
- 	if (cpu_is_omap44xx()) {
+ 	pm_info->pwrdm = pwrdm_lookup("cpu1_pwrdm");
+ 	if (!pm_info->pwrdm) {
+@@ -422,12 +420,16 @@ int __init omap4_mpuss_init(void)
  		omap_pm_ops.finish_suspend = omap4_finish_suspend;
+ 		omap_pm_ops.resume = omap4_cpu_resume;
+ 		omap_pm_ops.scu_prepare = scu_pwrst_prepare;
++		omap_pm_ops.hotplug_restart = omap4_secondary_startup;
+ 		cpu_context_offset = OMAP4_RM_CPU0_CPU0_CONTEXT_OFFSET;
+ 	} else if (soc_is_omap54xx() || soc_is_dra7xx()) {
+ 		cpu_context_offset = OMAP54XX_RM_CPU0_CPU0_CONTEXT_OFFSET;
+ 		enable_mercury_retention_mode();
+ 	}
+ 
++	if (cpu_is_omap446x())
++		omap_pm_ops.hotplug_restart = omap4460_secondary_startup;
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.5
 
