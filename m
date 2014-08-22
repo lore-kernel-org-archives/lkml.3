@@ -1,117 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaHVBwo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:52:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38267 "EHLO mga11.intel.com"
+	id S1755582AbaHVB6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:58:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753227AbaHVBwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:52:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,377,1406617200"; 
-   d="scan'208";a="580186027"
-Date: Fri, 22 Aug 2014 09:52:23 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: Re: [ext4] 71d4f7d0321: -49.6% xfstests.generic.274.seconds
-Message-ID: <20140822015223.GA11430@localhost>
-References: <20140821143006.GA19943@localhost>
+	id S1753747AbaHVB6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 21 Aug 2014 21:58:13 -0400
+Date: Thu, 21 Aug 2014 21:58:03 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
+        arozansk@redhat.com, linux-audit@redhat.com,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in
+ proc
+Message-ID: <20140822015803.GG20529@madcap2.tricolour.ca>
+References: <cover.1408581429.git.rgb@redhat.com>
+ <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
+ <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140821143006.GA19943@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 10:30:06PM +0800, Fengguang Wu wrote:
-> Hi Ted,
+On 14/08/21, Andy Lutomirski wrote:
+> On Aug 20, 2014 8:12 PM, "Richard Guy Briggs" <rgb@redhat.com> wrote:
+> > Expose the namespace instace serial numbers in the proc filesystem at
+> > /proc/<pid>/ns/<ns>_snum.  The link text gives the serial number in hex.
 > 
-> We noticed increased xfstests 274's test speed and the first good
-> commit is 71d4f7d032149b935a26eb3ff85c6c837f3714e1 ("ext4: remove
-> metadata reservation checks").
+> What's the use case?
 > 
-> test case: snb-drag/xfstests/4HDD-ext4-generic-slow2
-> snb-drag is a Sandy Bridge PC with 6G memory.
+> I understand the utility of giving unique numbers to the audit code,
+> but I don't think this part is necessary for that, and I'd like to
+> understand what else will use this before committing to a duplicative
+> API like this.
+
+How does a container manager get those numbers?  It could provoke a task
+to cause an audit event that emits a NS_INFO message, or it could run a
+task in that container to report its namespace serial numbers directly
+from its /proc mount.
+
+The discussion in this thread touches on the use cases:
+	https://lkml.org/lkml/2014/4/22/662
+
+> Note that this API is thoroughly incompatible with CRIU.  If we do
+> this, someone will ask for a namespace number namespace, and that way
+> lies madness.
+
+I had a very brief look at CRIU, but not enough to understand the issue.
+Others have hinted at this problem.
+
+Do you have a suggestion of a different approach that would be
+compatible with CRIU?
+
+I'd originally considered some sort of UUID that would be globally
+unique, but that would be very hard to devise or guarantee, and besides,
+namespaces aren't only used by containers and could be shared in other
+ways.  Tracking the usage and migration of namespaces should be the task
+of an upper layer.
+
+> --Andy
 > 
-> d5e03cbb0c88cd1  71d4f7d032149b935a26eb3ff 
-> ---------------  ------------------------- 
->         51 ± 2%     -49.6%         25 ± 1%  TOTAL xfstests.generic.274.seconds
->        817 ± 1%      -3.0%        792 ± 1%  TOTAL time.elapsed_time
-> 
->                           xfstests.generic.274.seconds
-> 
->   60 ++---------------------------------------------------------------------+
->      |                                                                      |
->   55 ++         .*..*..             *..               *..                   |
->      |       .*.       .          ..                ..                      |
->   50 *+.*..*.           *..*..*..*     *..*..*..*..*     *                  |
->      |                                                                      |
->   45 ++                                                                     |
->      |                                                                      |
->   40 ++                                                                     |
->      |                                                                      |
->   35 ++                                                                     |
->      |                                                                      |
->   30 ++                                                                     |
->      |                                                                      |
->   25 O+-O--O--O--O--O---O--O--O--O--O--O--O--O--O--O--O--O---O--O--O--O--O--O
-> 
-> 
-> 	[*] bisect-good sample
-> 	[O] bisect-bad  sample
+> >
+> > "snum" was chosen instead of "seq" for consistency with inum and there are a
+> > number of other uses of "seq" in the namespace code.
+> >
+> > Suggested-by: Serge E. Hallyn <serge@hallyn.com>
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  fs/proc/namespaces.c |   33 +++++++++++++++++++++++++--------
+> >  1 files changed, 25 insertions(+), 8 deletions(-)
+> >
+> > diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+> > index 8902609..e953e0a 100644
+> > --- a/fs/proc/namespaces.c
+> > +++ b/fs/proc/namespaces.c
+> > @@ -47,12 +47,15 @@ static char *ns_dname(struct dentry *dentry, char *buffer, int buflen)
+> >         struct inode *inode = dentry->d_inode;
+> >         const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns.ns_ops;
+> >
+> > -       return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
+> > -               ns_ops->name, inode->i_ino);
+> > +       if (strstr(dentry->d_iname, "_snum"))
+> > +               return dynamic_dname(dentry, buffer, buflen, "%s_snum:[%llx]",
+> > +                       ns_ops->name, ns_ops->snum(PROC_I(inode)->ns.ns));
+> > +       else
+> > +               return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
+> > +                       ns_ops->name, inode->i_ino);
+> >  }
+> >
+> > -const struct dentry_operations ns_dentry_operations =
+> > -{
+> > +const struct dentry_operations ns_dentry_operations = {
+> >         .d_delete       = always_delete_dentry,
+> >         .d_dname        = ns_dname,
+> >  };
+> > @@ -160,7 +163,10 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
+> >         if (!ns)
+> >                 goto out_put_task;
+> >
+> > -       snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
+> > +       if (strstr(dentry->d_iname, "_snum"))
+> > +               snprintf(name, sizeof(name), "%s_snum:[%llx]", ns_ops->name, ns_ops->snum(ns));
+> > +       else
+> > +               snprintf(name, sizeof(name), "%s:[%u]", ns_ops->name, ns_ops->inum(ns));
+> >         res = readlink_copy(buffer, buflen, name);
+> >         ns_ops->put(ns);
+> >  out_put_task:
+> > @@ -210,16 +216,23 @@ static int proc_ns_dir_readdir(struct file *file, struct dir_context *ctx)
+> >
+> >         if (!dir_emit_dots(file, ctx))
+> >                 goto out;
+> > -       if (ctx->pos >= 2 + ARRAY_SIZE(ns_entries))
+> > +       if (ctx->pos >= 2 + 2 * ARRAY_SIZE(ns_entries))
+> >                 goto out;
+> >         entry = ns_entries + (ctx->pos - 2);
+> >         last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
+> >         while (entry <= last) {
+> >                 const struct proc_ns_operations *ops = *entry;
+> > +               char name[50];
+> > +
+> >                 if (!proc_fill_cache(file, ctx, ops->name, strlen(ops->name),
+> >                                      proc_ns_instantiate, task, ops))
+> >                         break;
+> >                 ctx->pos++;
+> > +               snprintf(name, sizeof(name), "%s_snum", ops->name);
+> > +               if (!proc_fill_cache(file, ctx, name, strlen(name),
+> > +                                    proc_ns_instantiate, task, ops))
+> > +                       break;
+> > +               ctx->pos++;
+> >                 entry++;
+> >         }
+> >  out:
+> > @@ -247,9 +260,13 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
+> >
+> >         last = &ns_entries[ARRAY_SIZE(ns_entries)];
+> >         for (entry = ns_entries; entry < last; entry++) {
+> > -               if (strlen((*entry)->name) != len)
+> > +               char name[50];
+> > +
+> > +               snprintf(name, sizeof(name), "%s_snum", (*entry)->name);
+> > +               if (strlen((*entry)->name) != len && strlen(name) != len)
+> >                         continue;
+> > -               if (!memcmp(dentry->d_name.name, (*entry)->name, len))
+> > +               if (!memcmp(dentry->d_name.name, (*entry)->name, len)
+> > +                   || !memcmp(dentry->d_name.name, name, len))
+> >                         break;
+> >         }
+> >         if (entry == last)
+> > --
+> > 1.7.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-api" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-This is sweet, got another improvement:
+- RGB
 
-testbox/testcase/testparams: snb-drag/xfstests/4HDD-ext4-generic-mid
-
-d5e03cbb0c88cd1  71d4f7d032149b935a26eb3ff  
----------------  -------------------------  
-        45 ± 4%     -50.2%         22 ± 7%  xfstests.generic.256.seconds
-   7044859 ± 2%      -7.0%    6553446 ± 0%  time.minor_page_faults
-     36156 ± 2%      -7.0%      33638 ± 0%  time.involuntary_context_switches
-    171551 ± 1%      -4.8%     163312 ± 0%  time.voluntary_context_switches
-       436 ± 1%      -5.7%        411 ± 0%  time.elapsed_time
-
-                           time.voluntary_context_switches
-
-  176000 ++-----------------------------------------------------------------+
-         |                   *        *..         *..                       |
-  174000 ++       *..      .. :      :   *..*    :   *                      |
-  172000 ++     ..     .*.*   :      :       +   :    +                     |
-         *..*..*     *.        :    :         + :      +  .*                |
-  170000 ++                    :  .*           *        *.                  |                                                                   
-  168000 ++                     *.                                          |
-         |                                                                  |
-  166000 ++                                                                 |
-  164000 ++                     O                                  O        |
-         |                   O     O  O     O     O  O  O       O     O  O  O
-  162000 ++ O        O  O O                                O O              |
-  160000 O+                              O     O                            |
-         |     O  O                                                         |
-  158000 ++-----------------------------------------------------------------+
-
-
-                          xfstests.generic.256.seconds
-
-  60 ++-----------------------------*---------------------------------------+
-     |                             : :                                      |
-  55 ++                            : :                                      |
-  50 ++                           :   :                                     |
-     | .*..                     .*    :     .*..                            |
-  45 *+    *..  .*..*...*..*..*.       : .*.      .*..  .*                  |
-     |        *.                       *.       *.    *.                    |
-  40 ++                                                                     |
-     |                                                                      |
-  35 ++                                                                     |
-  30 ++                                                                     |
-     |                                                                      |
-  25 ++                                                  O         O        |
-     O  O     O  O      O  O           O     O     O         O  O     O  O  |
-  20 ++----O--------O---------O--O--O-----O-----O-----O---------------------O
-
-Thanks,
-Fengguang
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
