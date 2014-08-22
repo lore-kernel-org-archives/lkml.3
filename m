@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaHVKTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 06:19:53 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:47545 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690AbaHVKTv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 06:19:51 -0400
+	id S1755367AbaHVKZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 06:25:25 -0400
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:42569
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751844AbaHVKZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 06:25:23 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: <mturquette@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>
+Subject: [RESEND] clk: ppc-corenet: Add Freescale ARM-based platforms CLK_OF_DECLARE support
+Date: Fri, 22 Aug 2014 17:34:56 +0800
+Message-ID: <1408700096-25415-1-git-send-email-jingchang.lu@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(189002)(36756003)(4396001)(99396002)(62966002)(26826002)(83322001)(68736004)(92726001)(50466002)(47776003)(19580395003)(48376002)(44976005)(19580405001)(46102001)(74662001)(6806004)(92566001)(85306004)(74502001)(81156004)(90102001)(89996001)(81542001)(107046002)(87286001)(21056001)(77156001)(110136001)(93916002)(81342001)(77982001)(64706001)(86362001)(97736001)(2351001)(83072002)(79102001)(69596002)(105606002)(84676001)(95666004)(31966008)(87936001)(102836001)(33646002)(20776003)(80022001)(85852003)(50986999)(76482001)(50226001)(229853001)(104016003)(106466001)(104166001)(88136002);DIR:OUT;SFP:;SCL:1;SRVR:BL2PR03MB465;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <1408701944-14734-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1408701944-14734-1-git-send-email-mika.westerberg@linux.intel.com>
-Date: Fri, 22 Aug 2014 15:49:50 +0530
-Message-ID: <CAKohpo=7CyRT7szhJAQXjRfBFyw_6LuHSdVS39z=899T0eBoMg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Add CPU ID for Braswell processor
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 0311124FA9
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=jingchang.lu@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 August 2014 15:35, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> This is pretty much the same as Intel Baytrail, only the CPU ID is
-> different. Add the new ID to the supported CPU list.
->
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+---
+ drivers/clk/Kconfig           | 7 ++++---
+ drivers/clk/clk-ppc-corenet.c | 5 +++++
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-Dirk might be away on holidays..
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index cfd3af7..8784704 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -82,11 +82,12 @@ config COMMON_CLK_AXI_CLKGEN
+ 	  FPGAs. It is commonly used in Analog Devices' reference designs.
+ 
+ config CLK_PPC_CORENET
+-	bool "Clock driver for PowerPC corenet platforms"
+-	depends on PPC_E500MC && OF
++	bool "Clock driver for PowerPC corenet and compatible ARM-based platforms"
++	depends on (PPC_E500MC || ARM) && OF
+ 	---help---
+ 	  This adds the clock driver support for Freescale PowerPC corenet
+-	  platforms using common clock framework.
++	  platforms and compatible Freescale ARM based platforms using common
++	  clock framework.
+ 
+ config COMMON_CLK_XGENE
+ 	bool "Clock driver for APM XGene SoC"
+diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-ppc-corenet.c
+index 8e58edf..7692cac 100644
+--- a/drivers/clk/clk-ppc-corenet.c
++++ b/drivers/clk/clk-ppc-corenet.c
+@@ -305,3 +305,8 @@ static int __init ppc_corenet_clk_init(void)
+ 	return platform_driver_register(&ppc_corenet_clk_driver);
+ }
+ subsys_initcall(ppc_corenet_clk_init);
++
++CLK_OF_DECLARE(ppc_core_pll_v1, "fsl,qoriq-core-pll-1.0", core_pll_init);
++CLK_OF_DECLARE(ppc_core_pll_v2, "fsl,qoriq-core-pll-2.0", core_pll_init);
++CLK_OF_DECLARE(ppc_core_mux_v1, "fsl,qoriq-core-mux-1.0", core_mux_init);
++CLK_OF_DECLARE(ppc_core_mux_v2, "fsl,qoriq-core-mux-2.0", core_mux_init);
+-- 
+1.8.0
 
-> ---
->  drivers/cpufreq/intel_pstate.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index c5eac949760d..a3cf8994160b 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -660,6 +660,7 @@ static const struct x86_cpu_id intel_pstate_cpu_ids[] = {
->         ICPU(0x3f, core_params),
->         ICPU(0x45, core_params),
->         ICPU(0x46, core_params),
-> +       ICPU(0x4c, byt_params),
->         ICPU(0x4f, core_params),
->         ICPU(0x56, core_params),
->         {}
-
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
