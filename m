@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091AbaHVHxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:53:44 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:34664 "EHLO
+	id S1756109AbaHVHxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:53:48 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:34675 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062AbaHVHxl (ORCPT
+	with ESMTP id S1756062AbaHVHxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:53:41 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-4b-53f6f703182a
+	Fri, 22 Aug 2014 03:53:45 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-54-53f6f7072f09
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,55 +18,73 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 08/15] drm/exynos/ipp: clean memory nodes on command node
- cleaning
-Date: Fri, 22 Aug 2014 09:52:19 +0200
-Message-id: <1408693946-15456-9-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 10/15] drm/exynos/ipp: stop hardware before freeing memory
+Date: Fri, 22 Aug 2014 09:52:21 +0200
+Message-id: <1408693946-15456-11-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
 References: <1408693946-15456-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xq7rM378FG9w+YmFxa905VosrX9+z
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t/xq7rs378FG7xbxmtxa905VosrX9+z
 	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJUxbfcPloIt7BWnJu9nbWBcxdbFyMkhIWAicWvCNlYIW0ziwr31
-	YHEhgaWMEg8nM0HYfUwS519Eg9hsApoSfzffBKsREVCWWLWvnb2LkYuDWeAjk8SVpW+YQRLC
-	AiESM/rbwJpZBFQl7j3+BRbnFXCWuLT5EhPEMjmJk8cmgy3mFHCRuHBwGjPEMmeJrtvTmCYw
-	8i5gZFjFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERJUX3YwLj5mdYhRgINRiYc38ffXYCHW
-	xLLiytxDjBIczEoivJvmfQsW4k1JrKxKLcqPLyrNSS0+xMjEwSnVwNi+sTpBtufHlw2x+VrP
-	d59a8G6PXY1KsP7GUNlQz2/PvjZdZfO7kOvc9I+bz7+Wg7esJWZP580JGrcrtRM+W/tFrZ/V
-	toJXJfl721rfhTe2q5p//LXLfVLs7fcn5e3/H5oTqBrtbW7O3NzKdeTJWsOWfV5Xjn/K5/c7
-	wtSzlUWn0evhp5qsECWW4oxEQy3mouJEAH3S8IoIAgAA
+	F8AcxWWTkpqTWZZapG+XwJWxec8CxoLjXBW7bsxibWC8ydHFyMkhIWAi8en/ZiYIW0ziwr31
+	bF2MXBxCAksZJa79bGGEcPqYJG68+QlWxSagKfF38002EFtEQFli1b52dpAiZoGPTBJXlr5h
+	BkkIC3hJnLhzkBHEZhFQlXjwsxMszivgIvF34xFGiHVyEiePTWYFsTmB4hcOTgOrERJwlui6
+	PY1pAiPvAkaGVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxghgfVlB+PiY1aHGAU4GJV4eBN/
+	fw0WYk0sK67MPcQowcGsJMK7ad63YCHelMTKqtSi/Pii0pzU4kOMTBycUg2MC5l31Qh+l3Vd
+	tLEg4PfGgGNMC7g3+67JuN5hv3B9YbPQ8oXzJOr7PE+5Lzxn65Tfz6TEO4nl/PJZ7jtDv7+Y
+	VvQ018PqkHBPs3jF/KZN/cu/T5T5PPeJbc2tvMhyl7iXGw+q6H48d2filmWFCqdKhFWs+Ms5
+	49heRqf3bbe8qcqQy+72clW+EktxRqKhFnNRcSIAbtekPAoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nodes should be removed before removing command node.
+Memory shouldn't be freed when hardware is still running.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_ipp.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/exynos/exynos_drm_ipp.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_ipp.c b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-index 22bd551..6ab6190 100644
+index c72d8d1..6de75aa 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_ipp.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_ipp.c
-@@ -604,11 +604,16 @@ static void ipp_clean_mem_nodes(struct drm_device *drm_dev,
- static void ipp_clean_cmd_node(struct ipp_context *ctx,
- 				struct drm_exynos_ipp_cmd_node *c_node)
+@@ -1283,12 +1283,15 @@ static int ipp_stop_property(struct drm_device *drm_dev,
+ 		struct drm_exynos_ipp_cmd_node *c_node)
  {
+ 	struct drm_exynos_ipp_property *property = &c_node->property;
+-	int ret = 0, i;
 +	int i;
-+
- 	/* cancel works */
- 	cancel_work_sync(&c_node->start_work->work);
- 	cancel_work_sync(&c_node->stop_work->work);
- 	cancel_work_sync(&c_node->event_work->work);
  
-+	for_each_ipp_ops(i)
-+		ipp_clean_mem_nodes(ctx->subdrv.drm_dev, c_node, i);
-+
- 	/* delete list */
- 	list_del(&c_node->list);
+ 	DRM_DEBUG_KMS("prop_id[%d]\n", property->prop_id);
  
+ 	/* put event */
+ 	ipp_put_event(c_node, NULL);
++	/* stop operations */
++	if (ippdrv->stop)
++		ippdrv->stop(ippdrv->dev, property->cmd);
+ 
+ 	/* check command */
+ 	switch (property->cmd) {
+@@ -1304,16 +1307,10 @@ static int ipp_stop_property(struct drm_device *drm_dev,
+ 		break;
+ 	default:
+ 		DRM_ERROR("invalid operations.\n");
+-		ret = -EINVAL;
+-		goto err_clear;
++		return -EINVAL;
+ 	}
+ 
+-err_clear:
+-	/* stop operations */
+-	if (ippdrv->stop)
+-		ippdrv->stop(ippdrv->dev, property->cmd);
+-
+-	return ret;
++	return 0;
+ }
+ 
+ void ipp_sched_cmd(struct work_struct *work)
 -- 
 1.9.1
 
