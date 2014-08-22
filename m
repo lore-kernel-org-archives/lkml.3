@@ -1,211 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaHVAms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 20:42:48 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:54586 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755467AbaHVAll (ORCPT
+	id S1755635AbaHVAod (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 20:44:33 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44131 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaHVAoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 20:41:41 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>, ds2horner@gmail.com,
-        Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v4 4/4] zram: report maximum used memory
-Date: Fri, 22 Aug 2014 09:42:14 +0900
-Message-Id: <1408668134-21696-5-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1408668134-21696-1-git-send-email-minchan@kernel.org>
-References: <1408668134-21696-1-git-send-email-minchan@kernel.org>
+	Thu, 21 Aug 2014 20:44:32 -0400
+Message-ID: <53F69266.4070806@linaro.org>
+Date: Fri, 22 Aug 2014 09:44:22 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Deepak Saxena <dsaxena@linaro.org>,
+        arndb@arndb.de,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 5/6] arm64: add SIGSYS siginfo for compat task
+References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org>	<1408611405-8943-6-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jLFZEWKgSVKrz=6cOfEV_2M-MwE4m+n_oOpHFZqmjRkVA@mail.gmail.com>
+In-Reply-To: <CAGXu5jLFZEWKgSVKrz=6cOfEV_2M-MwE4m+n_oOpHFZqmjRkVA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Normally, zram user could get maximum memory usage zram consumed
-via polling mem_used_total with sysfs in userspace.
+On 08/22/2014 02:54 AM, Kees Cook wrote:
+> On Thu, Aug 21, 2014 at 3:56 AM, AKASHI Takahiro
+> <takahiro.akashi@linaro.org> wrote:
+>> SIGSYS is primarily used in secure computing to notify tracer.
+>> This patch allows signal handler on compat task to get correct information
+>> with SA_SYSINFO specified when this signal is delivered.
 
-But it has a critical problem because user can miss peak memory
-usage during update inverval of polling. For avoiding that,
-user should poll it with shorter interval(ie, 0.0000000001s)
-with mlocking to avoid page fault delay when memory pressure
-is heavy. It would be troublesome.
+typo: SA_SIGINFO
 
-This patch adds new knob "mem_used_max" so user could see
-the maximum memory usage easily via reading the knob and reset
-it via "echo 0 > /sys/block/zram0/mem_used_max".
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>
+> I'm unable to test this myself, but if you've got the test suite
+> passing in compat mode, then this patch must be correct. :)
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/ABI/testing/sysfs-block-zram | 10 +++++
- Documentation/blockdev/zram.txt            |  1 +
- drivers/block/zram/zram_drv.c              | 60 +++++++++++++++++++++++++++++-
- drivers/block/zram/zram_drv.h              |  1 +
- 4 files changed, 70 insertions(+), 2 deletions(-)
+Thanks.
+Actually I found this bug when I ran your test programs, TRAP.handler, on 32bit userland.
 
-diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-index b8c779d64968..7b8fca6a9b77 100644
---- a/Documentation/ABI/testing/sysfs-block-zram
-+++ b/Documentation/ABI/testing/sysfs-block-zram
-@@ -120,6 +120,16 @@ Description:
- 		statistic.
- 		Unit: bytes
- 
-+What:		/sys/block/zram<id>/mem_used_max
-+Date:		August 2014
-+Contact:	Minchan Kim <minchan@kernel.org>
-+Description:
-+		The mem_used_max file is read/write and specifies the amount
-+		of maximum memory zram have consumed to store compressed data.
-+		For resetting the value, you should write "0". Otherwise,
-+		you could see -EINVAL.
-+		Unit: bytes
-+
- What:		/sys/block/zram<id>/mem_limit
- Date:		August 2014
- Contact:	Minchan Kim <minchan@kernel.org>
-diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
-index 82c6a41116db..7fcf9c6592ec 100644
---- a/Documentation/blockdev/zram.txt
-+++ b/Documentation/blockdev/zram.txt
-@@ -111,6 +111,7 @@ size of the disk when not in use so a huge zram is wasteful.
- 		orig_data_size
- 		compr_data_size
- 		mem_used_total
-+		mem_used_max
- 
- 8) Deactivate:
- 	swapoff /dev/zram0
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 370c355eb127..1a2b3e320ea5 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -149,6 +149,41 @@ static ssize_t mem_limit_store(struct device *dev,
- 	return len;
- }
- 
-+static ssize_t mem_used_max_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	u64 val = 0;
-+	struct zram *zram = dev_to_zram(dev);
-+
-+	down_read(&zram->init_lock);
-+	if (init_done(zram))
-+		val = atomic_long_read(&zram->stats.max_used_pages);
-+	up_read(&zram->init_lock);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-+}
-+
-+static ssize_t mem_used_max_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t len)
-+{
-+	int err;
-+	unsigned long val;
-+	struct zram *zram = dev_to_zram(dev);
-+	struct zram_meta *meta = zram->meta;
-+
-+	err = kstrtoul(buf, 10, &val);
-+	if (err || val != 0)
-+		return -EINVAL;
-+
-+	down_read(&zram->init_lock);
-+	if (init_done(zram))
-+		atomic_long_set(&zram->stats.max_used_pages,
-+				zs_get_total_pages(meta->mem_pool));
-+	up_read(&zram->init_lock);
-+
-+	return len;
-+}
-+
- static ssize_t max_comp_streams_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t len)
- {
-@@ -461,6 +496,21 @@ out_cleanup:
- 	return ret;
- }
- 
-+static inline void update_used_max(struct zram *zram,
-+					const unsigned long pages)
-+{
-+	int old_max, cur_max;
-+
-+	old_max = atomic_long_read(&zram->stats.max_used_pages);
-+
-+	do {
-+		cur_max = old_max;
-+		if (pages > cur_max)
-+			old_max = atomic_long_cmpxchg(
-+				&zram->stats.max_used_pages, cur_max, pages);
-+	} while (old_max != cur_max);
-+}
-+
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
- {
-@@ -472,6 +522,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	struct zram_meta *meta = zram->meta;
- 	struct zcomp_strm *zstrm;
- 	bool locked = false;
-+	unsigned long alloced_pages;
- 
- 	page = bvec->bv_page;
- 	if (is_partial_io(bvec)) {
-@@ -541,13 +592,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 		goto out;
- 	}
- 
--	if (zram->limit_pages &&
--		zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
-+	alloced_pages = zs_get_total_pages(meta->mem_pool);
-+	if (zram->limit_pages && alloced_pages > zram->limit_pages) {
- 		zs_free(meta->mem_pool, handle);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
- 
-+	update_used_max(zram, alloced_pages);
-+
- 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
- 
- 	if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
-@@ -897,6 +950,8 @@ static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
- static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
- static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
- 		mem_limit_store);
-+static DEVICE_ATTR(mem_used_max, S_IRUGO | S_IWUSR, mem_used_max_show,
-+		mem_used_max_store);
- static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
- 		max_comp_streams_show, max_comp_streams_store);
- static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
-@@ -926,6 +981,7 @@ static struct attribute *zram_disk_attrs[] = {
- 	&dev_attr_compr_data_size.attr,
- 	&dev_attr_mem_used_total.attr,
- 	&dev_attr_mem_limit.attr,
-+	&dev_attr_mem_used_max.attr,
- 	&dev_attr_max_comp_streams.attr,
- 	&dev_attr_comp_algorithm.attr,
- 	NULL,
-diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-index b7aa9c21553f..c6ee271317f5 100644
---- a/drivers/block/zram/zram_drv.h
-+++ b/drivers/block/zram/zram_drv.h
-@@ -90,6 +90,7 @@ struct zram_stats {
- 	atomic64_t notify_free;	/* no. of swap slot free notifications */
- 	atomic64_t zero_pages;		/* no. of zero filled pages */
- 	atomic64_t pages_stored;	/* no. of pages currently stored */
-+	atomic_long_t max_used_pages;	/* no. of maximum pages stored */
- };
- 
- struct zram_meta {
--- 
-2.0.0
+-Takahiro AKASHI
 
+
+> Reviewed-by: Kees Cook <keescook@chromium.org>
+>
+> -Kees
+>
+>> ---
+>>   arch/arm64/include/asm/compat.h |    7 +++++++
+>>   arch/arm64/kernel/signal32.c    |    8 ++++++++
+>>   2 files changed, 15 insertions(+)
+>>
+>> diff --git a/arch/arm64/include/asm/compat.h b/arch/arm64/include/asm/compat.h
+>> index 253e33b..c877915 100644
+>> --- a/arch/arm64/include/asm/compat.h
+>> +++ b/arch/arm64/include/asm/compat.h
+>> @@ -205,6 +205,13 @@ typedef struct compat_siginfo {
+>>                          compat_long_t _band;    /* POLL_IN, POLL_OUT, POLL_MSG */
+>>                          int _fd;
+>>                  } _sigpoll;
+>> +
+>> +               /* SIGSYS */
+>> +               struct {
+>> +                       compat_uptr_t _call_addr; /* calling user insn */
+>> +                       int _syscall;   /* triggering system call number */
+>> +                       unsigned int _arch;     /* AUDIT_ARCH_* of syscall */
+>> +               } _sigsys;
+>>          } _sifields;
+>>   } compat_siginfo_t;
+>>
+>> diff --git a/arch/arm64/kernel/signal32.c b/arch/arm64/kernel/signal32.c
+>> index 1b9ad02..aa550d6 100644
+>> --- a/arch/arm64/kernel/signal32.c
+>> +++ b/arch/arm64/kernel/signal32.c
+>> @@ -186,6 +186,14 @@ int copy_siginfo_to_user32(compat_siginfo_t __user *to, const siginfo_t *from)
+>>                  err |= __put_user(from->si_uid, &to->si_uid);
+>>                  err |= __put_user((compat_uptr_t)(unsigned long)from->si_ptr, &to->si_ptr);
+>>                  break;
+>> +#ifdef __ARCH_SIGSYS
+>> +       case __SI_SYS:
+>> +               err |= __put_user((compat_uptr_t)(unsigned long)
+>> +                               from->si_call_addr, &to->si_call_addr);
+>> +               err |= __put_user(from->si_syscall, &to->si_syscall);
+>> +               err |= __put_user(from->si_arch, &to->si_arch);
+>> +               break;
+>> +#endif
+>>          default: /* this is just in case for now ... */
+>>                  err |= __put_user(from->si_pid, &to->si_pid);
+>>                  err |= __put_user(from->si_uid, &to->si_uid);
+>> --
+>> 1.7.9.5
+>>
+>
+>
+>
