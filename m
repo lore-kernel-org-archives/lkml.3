@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaHVLAd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 07:00:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38535 "EHLO mga03.intel.com"
+	id S1756028AbaHVLJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 07:09:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57063 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754517AbaHVLAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 07:00:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,379,1406617200"; 
-   d="scan'208";a="471567025"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Cc: Josef Ahmad <josef.ahmad@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 3/5] pci_ids: add support for Intel Quark ILB
-Date: Fri, 22 Aug 2014 13:58:14 +0300
-Message-Id: <1408705096-31286-4-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1408705096-31286-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1751974AbaHVLJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 07:09:23 -0400
+Message-ID: <53F724DD.1080605@suse.cz>
+Date: Fri, 22 Aug 2014 13:09:17 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Chen Gang <gang.chen.5i5j@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Salter <msalter@redhat.com>,
+        "a-jacquiot@ti.com" <a-jacquiot@ti.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-c6x-dev@linux-c6x.org,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH v2] arch: Kconfig: Let all little endian architectures
+ define CPU_LITTLE_ENDIAN explicitly
+References: <53EA99C3.90203@gmail.com> <CAMuHMdV_2b-A+eE--cXEFA68=72HK6mqx8+TCXRMVkyhESLYxQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdV_2b-A+eE--cXEFA68=72HK6mqx8+TCXRMVkyhESLYxQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josef Ahmad <josef.ahmad@intel.com>
+Dne 13.8.2014 10:03, Geert Uytterhoeven napsal(a):
+> CC kbuild
+> 
+> On Wed, Aug 13, 2014 at 12:48 AM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+>> index c49a775..0510a5d 100644
+>> --- a/arch/arm/Kconfig
+>> +++ b/arch/arm/Kconfig
+>> @@ -199,6 +199,11 @@ config NEED_DMA_MAP_STATE
+>>  config ARCH_SUPPORTS_UPROBES
+>>         def_bool y
+>>
+>> +config CPU_LITTLE_ENDIAN
+>> +       depends on !CPU_BIG_ENDIAN
+>> +       def_bool y
+>> +
+>> +
+>>  config ARCH_HAS_DMA_SET_COHERENT_MASK
+>>         bool
+> 
+> As this is a common symbol, and replicated for all affected architectures,
+> I'm wondering if we should have the "config CPU_LITTLE_ENDIAN" in
+> common Kconfig code instead, and make the individual architectures do a
+> "select CPU_LITTLE_ENDIAN"?
 
-This patch adds the PCI id for Intel Quark ILB.
-It will be used for GPIO and Multifunction device driver.
+Yes!
 
-Signed-off-by: Josef Ahmad <josef.ahmad@intel.com>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
----
- include/linux/pci_ids.h | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 6ed0bb7..4e82195 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -2557,6 +2557,7 @@
- #define PCI_DEVICE_ID_INTEL_MFD_EMMC0	0x0823
- #define PCI_DEVICE_ID_INTEL_MFD_EMMC1	0x0824
- #define PCI_DEVICE_ID_INTEL_MRST_SD2	0x084F
-+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB	0x095E
- #define PCI_DEVICE_ID_INTEL_I960	0x0960
- #define PCI_DEVICE_ID_INTEL_I960RM	0x0962
- #define PCI_DEVICE_ID_INTEL_CENTERTON_ILB	0x0c60
--- 
-2.1.0
+> Also we could have "config CPU_BIG_ENDIAN", too, and error out
+> if none or both are selected (can Kconfig error out?).
 
+We can error out in the Makefile, if there is consensus that we should
+be doing so.
+
+Michal
