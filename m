@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741AbaHVQaf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 12:30:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33819 "EHLO mail.kernel.org"
+	id S932756AbaHVQao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 12:30:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:33869 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932149AbaHVQaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 12:30:30 -0400
+	id S932149AbaHVQaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 12:30:39 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -18,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/16] perf: Fix perf_poll to return proper POLLHUP value
-Date: Fri, 22 Aug 2014 13:29:24 -0300
-Message-Id: <1408724968-3441-13-git-send-email-acme@kernel.org>
+Subject: [PATCH 14/16] perf top: Use set_term_quiet() instead of open coded equivalent
+Date: Fri, 22 Aug 2014 13:29:26 -0300
+Message-Id: <1408724968-3441-15-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1408724968-3441-1-git-send-email-acme@kernel.org>
 References: <1408724968-3441-1-git-send-email-acme@kernel.org>
@@ -30,42 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@kernel.org>
 
-Currently perf_poll returns POLL_HUP in case of error, which is wrong,
-because poll syscall expects POLLHUP.  The POLL_HUP is meant to be used
-for SIGIO state.
-
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140811120102.GY9918@twins.programming.kicks-ass.net
 Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-0ywfthh4lh65swe15f6w2x2q@git.kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Link: http://lkml.kernel.org/n/tip-h7n9te70flmaqfnj6l06ay6r@git.kernel.org
+[ Yanked this out of a patch containing this and some other change ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/events/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-top.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 2d7363adf678..4575dd6e59ea 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3627,7 +3627,7 @@ static unsigned int perf_poll(struct file *file, poll_table *wait)
- {
- 	struct perf_event *event = file->private_data;
- 	struct ring_buffer *rb;
--	unsigned int events = POLL_HUP;
-+	unsigned int events = POLLHUP;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index a77ff6ca5fbd..9848e270b92c 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -433,18 +433,13 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
  
- 	poll_wait(file, &event->waitq, wait);
- 	/*
+ 	if (!perf_top__key_mapped(top, c)) {
+ 		struct pollfd stdin_poll = { .fd = 0, .events = POLLIN };
+-		struct termios tc, save;
++		struct termios save;
+ 
+ 		perf_top__print_mapped_keys(top);
+ 		fprintf(stdout, "\nEnter selection, or unmapped key to continue: ");
+ 		fflush(stdout);
+ 
+-		tcgetattr(0, &save);
+-		tc = save;
+-		tc.c_lflag &= ~(ICANON | ECHO);
+-		tc.c_cc[VMIN] = 0;
+-		tc.c_cc[VTIME] = 0;
+-		tcsetattr(0, TCSANOW, &tc);
++		set_term_quiet_input(&save);
+ 
+ 		poll(&stdin_poll, 1, -1);
+ 		c = getc(stdin);
 -- 
 1.9.3
 
