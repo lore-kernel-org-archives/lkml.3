@@ -1,200 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873AbaHVJGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:06:49 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:55782 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846AbaHVJGr (ORCPT
+	id S1755908AbaHVJIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:08:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:61864 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725AbaHVJIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:06:47 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-c9-53f70825920e
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-To: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: kyungmin.park@samsung.com, b.zolnierkie@samsung.com,
-        Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Andrzej Hajda <a.hajda@samsung.com>, Lee Jones <lee.jones@linaro.org>,
-        SangYoung Son <hello.son@smasung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH] mfd: max77693: improve support for the flash cell
-Date: Fri, 22 Aug 2014 11:06:18 +0200
-Message-id: <1408698378-25181-1-git-send-email-j.anaszewski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpiluLIzCtJLcpLzFFi42I5/e+xoK4qx/dgg9c/JS1urTvHarFxxnpW
-	i4/3/rFa9F59zmhxtukNu8X9r0cZLS7vmsNmsfXNOkaL092sDpwed67tYfOYdzLQo2/LKkaP
-	Zx/fMXt83iQXwBrFZZOSmpNZllqkb5fAlfH2xz/mgpeqFTPPHGJrYHwq38XIySEhYCKx/9Zp
-	dghbTOLCvfVsXYxcHEIC0xklDjxrYYRw2pkkJq/ZwAJSxSZgKPHzxWsmEFtEwEaid8YkMJtZ
-	4B+jxPfHXCC2sICTxK0DHcwgNouAqsTnn7OANnBw8Ap4SLR9UgUxJQQUJOZMspnAyL2AkWEV
-	o2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnDIPJPewbiqweIQowAHoxIPb8SXr8FCrIllxZW5
-	hxglOJiVRHib2L4HC/GmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliSmp2aWpBaBJNl
-	4uCUamBMk8nneCBufFD48L6Lod8SNl2arVpw+VmZ+MdoJl+JZVN/ZLHzPJ/dsrn6/mL7Rwuy
-	IvewxHgbb1H+GCX5ooKB4T/npZ0SpvJBJ9c2x302yDVxO3NaTGLGpdOy+jMjNgTcyXGadfPk
-	ry/L+jYE3n7GoMMU1XNoaVmB9oyXm+wNtLsFkooEZDcrsRRnJBpqMRcVJwIAjHpZPxUCAAA=
+	Fri, 22 Aug 2014 05:08:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.01.1408211725420.6001@pmeerw.net>
+References: <1408634903-4305-1-git-send-email-daniel.baluta@intel.com>
+	<alpine.DEB.2.01.1408211725420.6001@pmeerw.net>
+Date: Fri, 22 Aug 2014 12:08:48 +0300
+X-Google-Sender-Auth: jsve3slZTnN2I_uzb3URqk1Tv2k
+Message-ID: <CAEnQRZCm=sSj6xNWjPJOtPM4bz+wmjmKtsXD2kxb9xdVZzWn=g@mail.gmail.com>
+Subject: Re: [PATCH v2] iio: Add Dyna-Image AL3320A ambient light sensor driver
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: Peter Meerwald <pmeerw@pmeerw.net>
+Cc: Daniel Baluta <daniel.baluta@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tsechih_Lin@asus.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch improves support for the flash cell of
-max77693 mfd by adding relevant of_compatible field
-and a structure for caching related platform data.
-Added are also FLASH registers related macro definitions.
+On Thu, Aug 21, 2014 at 6:31 PM, Peter Meerwald <pmeerw@pmeerw.net> wrote:
+>
+>> Minimal implementation. This driver provides raw illuminance readings.
+>>
+>> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
+>> by Tsechih Lin <Tsechih_Lin@asus.com>
+>>
+>> * https://android.googlesource.com/kernel/msm.git
+>
+> some more comments on minor things below...
+>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+>> ---
+>> Changes since v1: (reported by Peter Meerwald)
+>>       * used u8 instead of int for passing gain and mean_time
+>>       * used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
+>>       * used devm_iio_device_register instead of iio_device_register
+>>       * small style fixes
+>>
+>>  drivers/iio/light/Kconfig   |  10 ++
+>>  drivers/iio/light/Makefile  |   1 +
+>>  drivers/iio/light/al3320a.c | 247 ++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 258 insertions(+)
+>>  create mode 100644 drivers/iio/light/al3320a.c
+>>
+>> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+>> index bf05ca5..5bea821 100644
+>> --- a/drivers/iio/light/Kconfig
+>> +++ b/drivers/iio/light/Kconfig
+>> @@ -17,6 +17,16 @@ config ADJD_S311
+>>        This driver can also be built as a module.  If so, the module
+>>        will be called adjd_s311.
+>>
+>> +config AL3320A
+>> +     tristate "AL3320A ambient light sensor"
+>> +     depends on I2C
+>> +     help
+>> +      Say Y here if you want to build a driver for the Dyna Image AL3320A
+>> +      ambient light sensor.
+>> +
+>> +      To compile this driver as a module, choose M here: the
+>> +      module will be called al3320a.
+>> +
+>>  config APDS9300
+>>       tristate "APDS9300 ambient light sensor"
+>>       depends on I2C
+>> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+>> index 8b8c09f..47877a3 100644
+>> --- a/drivers/iio/light/Makefile
+>> +++ b/drivers/iio/light/Makefile
+>> @@ -4,6 +4,7 @@
+>>
+>>  # When adding new entries keep the list in alphabetical order
+>>  obj-$(CONFIG_ADJD_S311)              += adjd_s311.o
+>> +obj-$(CONFIG_AL3320A)                += al3320a.o
+>>  obj-$(CONFIG_APDS9300)               += apds9300.o
+>>  obj-$(CONFIG_CM32181)                += cm32181.o
+>>  obj-$(CONFIG_CM36651)                += cm36651.o
+>> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
+>> new file mode 100644
+>> index 0000000..787ce2e
+>> --- /dev/null
+>> +++ b/drivers/iio/light/al3320a.c
+>> @@ -0,0 +1,247 @@
+>> +/*
+>> + * AL3320A - Dyna Image Ambient Light Sensor
+>> + *
+>> + * Copyright (c) 2014, Intel Corporation.
+>> + *
+>> + * This file is subject to the terms and conditions of version 2 of
+>> + * the GNU General Public License.  See the file COPYING in the main
+>> + * directory of this archive for more details.
+>> + *
+>> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
+>> + *
+>> + * TODO: interrupt support
+>> + *
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/init.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/mutex.h>
+>
+> mutex is not needed
 
-Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: SangYoung Son <hello.son@smasung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
----
- drivers/mfd/max77693.c               |    5 ++-
- include/linux/mfd/max77693-private.h |   59 ++++++++++++++++++++++++++++++++++
- include/linux/mfd/max77693.h         |   40 +++++++++++++++++++++++
- 3 files changed, 103 insertions(+), 1 deletion(-)
+Correct. To be fixed in v3.
+>
+>> +
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +
+>> +#define AL3320A_DRV_NAME "al3320a"
+>> +
+>> +#define AL3320A_REG_CONFIG           0x00
+>> +#define AL3320A_REG_STATUS           0x01
+>> +#define AL3320A_REG_INT                      0x02
+>> +#define AL3320A_REG_WAIT             0x06
+>> +#define AL3320A_REG_CONFIG_RANGE     0x07
+>> +#define AL3320A_REG_PERSIST          0x08
+>
+> PERSIST is not used, maybe add to TODO
+Hmm, I think PERSIST is an internal part of interrupt support which is
+already listed in TODO list.
+>
+>> +#define AL3320A_REG_MEAN_TIME                0x09
+>> +#define AL3320A_REG_ADUMMY           0x0A
+>> +#define AL3320A_REG_DATA_LOW         0x22
+>> +#define AL3320A_REG_DATA_HIGH                0x23
+>
+> DATA_HIGH became unused by read_word_swapped()
+Ok, removed in v3. I've seen that it is a common practice to define
+only used registers. Anyhow, I think that drivers would be easier to
+understand/maintain if all register definitions are listed from start.
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 249c139..cf008f4 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -44,9 +44,12 @@
- static const struct mfd_cell max77693_devs[] = {
- 	{ .name = "max77693-pmic", },
- 	{ .name = "max77693-charger", },
--	{ .name = "max77693-flash", },
- 	{ .name = "max77693-muic", },
- 	{ .name = "max77693-haptic", },
-+	{
-+		.name = "max77693-flash",
-+		.of_compatible = "maxim,max77693-flash",
-+	},
- };
- 
- static const struct regmap_config max77693_regmap_config = {
-diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-index 615f121..de06377 100644
---- a/include/linux/mfd/max77693-private.h
-+++ b/include/linux/mfd/max77693-private.h
-@@ -85,6 +85,65 @@ enum max77693_pmic_reg {
- 	MAX77693_PMIC_REG_END,
- };
- 
-+/* MAX77693 ITORCH register */
-+#define TORCH_IOUT1_SHIFT	0
-+#define TORCH_IOUT2_SHIFT	4
-+#define TORCH_IOUT_MIN		15625
-+#define TORCH_IOUT_MAX		250000
-+#define TORCH_IOUT_STEP		15625
-+
-+/* MAX77693 IFLASH1 and IFLASH2 registers */
-+#define FLASH_IOUT_MIN		15625
-+#define FLASH_IOUT_MAX_1LED	1000000
-+#define FLASH_IOUT_MAX_2LEDS	625000
-+#define FLASH_IOUT_STEP		15625
-+
-+/* MAX77693 TORCH_TIMER register */
-+#define TORCH_TMR_NO_TIMER	0x40
-+#define TORCH_TIMEOUT_MIN	262000
-+#define TORCH_TIMEOUT_MAX	15728000
-+
-+/* MAX77693 FLASH_TIMER register */
-+#define FLASH_TMR_LEVEL		0x80
-+#define FLASH_TIMEOUT_MIN	62500
-+#define FLASH_TIMEOUT_MAX	1000000
-+#define FLASH_TIMEOUT_STEP	62500
-+
-+/* MAX77693 FLASH_EN register */
-+#define FLASH_EN_OFF		0x0
-+#define FLASH_EN_FLASH		0x1
-+#define FLASH_EN_TORCH		0x2
-+#define FLASH_EN_ON		0x3
-+#define FLASH_EN_SHIFT(x)	(6 - ((x) - 1) * 2)
-+#define TORCH_EN_SHIFT(x)	(2 - ((x) - 1) * 2)
-+
-+/* MAX77693 MAX_FLASH1 register */
-+#define MAX_FLASH1_MAX_FL_EN	0x80
-+#define MAX_FLASH1_VSYS_MIN	2400
-+#define MAX_FLASH1_VSYS_MAX	3400
-+#define MAX_FLASH1_VSYS_STEP	33
-+
-+/* MAX77693 VOUT_CNTL register */
-+#define FLASH_BOOST_FIXED	0x04
-+#define FLASH_BOOST_LEDNUM_2	0x80
-+
-+/* MAX77693 VOUT_FLASH1 register */
-+#define FLASH_VOUT_MIN		3300
-+#define FLASH_VOUT_MAX		5500
-+#define FLASH_VOUT_STEP		25
-+#define FLASH_VOUT_RMIN		0x0c
-+
-+/* MAX77693 FLASH_STATUS register */
-+#define FLASH_STATUS_FLASH_ON	BIT(3)
-+#define FLASH_STATUS_TORCH_ON	BIT(2)
-+
-+/* MAX77693 FLASH_INT register */
-+#define FLASH_INT_FLED2_OPEN	BIT(0)
-+#define FLASH_INT_FLED2_SHORT	BIT(1)
-+#define FLASH_INT_FLED1_OPEN	BIT(2)
-+#define FLASH_INT_FLED1_SHORT	BIT(3)
-+#define FLASH_INT_OVER_CURRENT	BIT(4)
-+
- /* MAX77693 CHG_CNFG_00 register */
- #define CHG_CNFG_00_CHG_MASK		0x1
- #define CHG_CNFG_00_BUCK_MASK		0x4
-diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
-index 3f3dc45..f0b6585 100644
---- a/include/linux/mfd/max77693.h
-+++ b/include/linux/mfd/max77693.h
-@@ -63,6 +63,45 @@ struct max77693_muic_platform_data {
- 	int path_uart;
- };
- 
-+/* MAX77693 led flash */
-+
-+/* triggers */
-+enum max77693_led_trigger {
-+	MAX77693_LED_TRIG_OFF,
-+	MAX77693_LED_TRIG_FLASH,
-+	MAX77693_LED_TRIG_TORCH,
-+	MAX77693_LED_TRIG_EXT,
-+	MAX77693_LED_TRIG_SOFT,
-+};
-+
-+/* trigger types */
-+enum max77693_led_trigger_type {
-+	MAX77693_LED_TRIG_TYPE_EDGE,
-+	MAX77693_LED_TRIG_TYPE_LEVEL,
-+};
-+
-+/* boost modes */
-+enum max77693_led_boost_mode {
-+	MAX77693_LED_BOOST_NONE,
-+	MAX77693_LED_BOOST_ADAPTIVE,
-+	MAX77693_LED_BOOST_FIXED,
-+};
-+
-+struct max77693_led_platform_data {
-+	u32 fleds[2];
-+	u32 iout_torch[2];
-+	u32 iout_flash[2];
-+	u32 trigger[2];
-+	u32 trigger_type[2];
-+	u32 num_leds;
-+	u32 boost_mode;
-+	u32 flash_timeout;
-+	u32 boost_vout;
-+	u32 low_vsys;
-+};
-+
-+/* MAX77693 */
-+
- struct max77693_platform_data {
- 	/* regulator data */
- 	struct max77693_regulator_data *regulators;
-@@ -70,5 +109,6 @@ struct max77693_platform_data {
- 
- 	/* muic data */
- 	struct max77693_muic_platform_data *muic_data;
-+	struct max77693_led_platform_data *led_data;
- };
- #endif	/* __LINUX_MFD_MAX77693_H */
--- 
-1.7.9.5
+>
+>> +
+>> +#define AL3320A_REG_LOW_THRESH_LOW   0x30
+>> +#define AL3320A_REG_LOW_THRESH_HIGH  0x31
+>> +#define AL3320A_REG_HIGH_THRESH_LOW  0x32
+>> +#define AL3320A_REG_HIGH_THRESH_HIGH 0x33
+>
+> threshold are TODO
+ok.
+>
+>> +
+>> +#define AL3320A_CONFIG_DISABLE               0x00
+>> +#define AL3320A_CONFIG_ENABLE                BIT(0)
+>> +#define AL3320A_CONFIG_SW_RESET              BIT(2)
+>
+> SW_RESET is unused
+Removed in v3.
+>
+>> +
+>> +#define AL3320A_GAIN_SHIFT           1
+>> +
+>> +/* chip params default values */
+>> +#define AL3320A_DEFAULT_MEAN_TIME    4
+>> +#define AL3320A_DEFAULT_WAIT_TIME    0 /* no waiting */
+>> +
+>> +enum al3320a_range {
+>> +     AL3320A_RANGE_1, /* 33.28K lux */
+>> +     AL3320A_RANGE_2, /* 8.32K lux  */
+>> +     AL3320A_RANGE_3, /* 2.08K lux  */
+>> +     AL3320A_RANGE_4  /* 0.65K lux  */
+>> +};
+>> +
+>> +static const int al3320a_scales[][2] = {
+>> +     {0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
+>> +};
+>> +
+>> +struct al3320a_data {
+>> +     struct i2c_client *client;
+>> +     u8 range;
+>> +};
+>> +
+>> +static const struct iio_chan_spec al3320a_channels[] = {
+>> +     {
+>> +             .type   = IIO_LIGHT,
+>> +             .info_mask_separate =
+>> +                     BIT(IIO_CHAN_INFO_RAW) |
+>> +                     BIT(IIO_CHAN_INFO_SCALE),
+>> +     }
+>> +};
+>> +
+>> +static int al3320a_enable(struct al3320a_data *data)
+>> +{
+>> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
+>> +                                      AL3320A_CONFIG_ENABLE);
+>> +}
+>> +
+>> +static int al3320a_disable(struct al3320a_data *data)
+>> +{
+>> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
+>> +                                      AL3320A_CONFIG_DISABLE);
+>> +}
+>> +
+>> +static int al3320a_set_config_range(struct al3320a_data *data, u8 gain)
+>> +{
+>> +     int ret;
+>> +
+>> +     ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
+>> +                                      gain << AL3320A_GAIN_SHIFT);
+>> +     if (ret >= 0)
+>> +             data->range = gain;
+>> +     return ret;
+>> +}
+>> +
+>> +static int al3320a_set_mean_time(struct al3320a_data *data, u8 mean_time)
+>> +{
+>> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
+>> +                                      mean_time);
+>> +}
+>> +
+>> +static int al3320a_set_wait_time(struct al3320a_data *data, u8 wait_time)
+>> +{
+>> +     return i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
+>> +                                      wait_time);
+>> +}
+>> +
+>> +static int al3320a_get_adc_value(struct al3320a_data *data)
+>> +{
+>> +     return i2c_smbus_read_word_swapped(data->client, AL3320A_REG_DATA_LOW);
+>> +}
+>> +
+>> +static int al3320a_init(struct al3320a_data *data)
+>> +{
+>> +     int ret;
+>> +
+>> +     /* power on */
+>> +     ret = al3320a_enable(data);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     ret = al3320a_set_config_range(data, AL3320A_RANGE_3);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     ret = al3320a_set_mean_time(data, AL3320A_DEFAULT_MEAN_TIME);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     ret = al3320a_set_wait_time(data, AL3320A_DEFAULT_WAIT_TIME);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int al3320a_read_raw(struct iio_dev *indio_dev,
+>> +                         struct iio_chan_spec const *chan,
+>> +                         int *val,
+>> +                         int *val2,
+>> +                         long mask)
+>> +{
+>> +     struct al3320a_data *data = iio_priv(indio_dev);
+>> +     int ret;
+>> +
+>> +     switch (mask) {
+>> +     case IIO_CHAN_INFO_RAW:
+>> +             ret = al3320a_get_adc_value(data);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +             *val = ret;
+>> +             return IIO_VAL_INT;
+>> +     case IIO_CHAN_INFO_SCALE:
+>> +             *val = al3320a_scales[data->range][0];
+>> +             *val2 = al3320a_scales[data->range][1];
+>> +             return IIO_VAL_INT_PLUS_MICRO;
+>> +     }
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static int al3320a_write_raw(struct iio_dev *indio_dev,
+>> +                          struct iio_chan_spec const *chan,
+>> +                          int val, int val2, long mask)
+>> +{
+>> +     struct al3320a_data *data = iio_priv(indio_dev);
+>> +     int i;
+>> +
+>> +     switch (mask) {
+>> +     case IIO_CHAN_INFO_SCALE:
+>> +             for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
+>> +                     if (val == al3320a_scales[i][0] &&
+>> +                         val2 == al3320a_scales[i][1])
+>> +                             return al3320a_set_config_range(data, i);
+>> +             }
+>
+> could add a break; here so it is not missed when handling more masks
+Fixed in v3.
+>
+>> +     }
+>> +     return -EINVAL;
+>> +}
+>> +
+>> +static const struct iio_info al3320a_info = {
+>> +     .driver_module  = THIS_MODULE,
+>> +     .read_raw       = al3320a_read_raw,
+>> +     .write_raw      = al3320a_write_raw,
+>> +};
+>> +
+>> +static int al3320a_probe(struct i2c_client *client,
+>> +                      const struct i2c_device_id *id)
+>> +{
+>> +     struct al3320a_data *data;
+>> +     struct iio_dev *indio_dev;
+>> +     int ret;
+>> +
+>> +     indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+>> +     if (!indio_dev)
+>> +             return -ENOMEM;
+>> +
+>> +     data = iio_priv(indio_dev);
+>> +     i2c_set_clientdata(client, indio_dev);
+>> +     data->client = client;
+>> +
+>> +     indio_dev->dev.parent = &client->dev;
+>> +     indio_dev->info = &al3320a_info;
+>> +     indio_dev->name = AL3320A_DRV_NAME;
+>> +     indio_dev->channels = al3320a_channels;
+>> +     indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
+>> +     indio_dev->modes = INDIO_DIRECT_MODE;
+>> +
+>> +     ret = al3320a_init(data);
+>> +     if (ret) {
+>> +             dev_err(&client->dev, "al3320a chip init failed\n");
+>> +             return ret;
+>> +     }
+>> +
+>> +     return devm_iio_device_register(&client->dev, indio_dev);
+>> +}
+>> +
+>> +static int al3320a_remove(struct i2c_client *client)
+>> +{
+>> +     struct iio_dev *indio_dev = i2c_get_clientdata(client);
+>> +     struct al3320a_data *data = iio_priv(indio_dev);
+>> +
+>> +     return  al3320a_disable(data);
+>
+> extra space before al3320a_disable()
+Good catch. Fixed in v3.
+>
+>> +}
+>> +
+>> +static const struct i2c_device_id al3320a_id[] = {
+>> +     {"al3320a", 0},
+>> +     {}
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, al3320a_id);
+>> +
+>> +static struct i2c_driver al3320a_driver = {
+>> +     .driver = {
+>> +             .name = AL3320A_DRV_NAME,
+>> +     },
+>> +     .probe          = al3320a_probe,
+>> +     .remove         = al3320a_remove,
+>> +     .id_table       = al3320a_id,
+>> +};
+>> +
+>> +module_i2c_driver(al3320a_driver);
+>> +
+>> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
+>> +MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
+>> +MODULE_LICENSE("GPL v2");
+>>
+>
+> --
+>
+> Peter Meerwald
 
+Thanks again Peter.
