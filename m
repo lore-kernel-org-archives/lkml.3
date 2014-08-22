@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001AbaHVHrs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:47:48 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.168]:30686 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755940AbaHVHrp (ORCPT
+	id S932067AbaHVHuv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:50:51 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:62225 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425AbaHVHut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:47:45 -0400
-X-Env-Sender: Andreas.Werner@men.de
-X-Msg-Ref: server-2.tower-39.messagelabs.com!1408693661!24230519!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 22 Aug 2014 09:47:42 +0200
-Date: Fri, 22 Aug 2014 10:39:31 +0200
-From: Andreas Werner <andreas.werner@men.de>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Andreas Werner <andreas.werner@men.de>, <linux-kernel@vger.kernel.org>,
-        <sameo@linux.intel.com>, <lee.jones@linaro.org>, <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <cooloney@gmail.com>,
-        <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>, <jdelvare@suse.de>,
-        <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH v4 4/4] drivers/hwmon/menf21bmc_hwmon: introduce
- MEN14F021P00 BMC HWMON driver
-Message-ID: <20140822083930.GB453@awelinux>
-References: <cover.1407918792.git.andreas.werner@men.de>
- <cf0593273cbadcb16b094b7bc3bd9d3b5a93f7ed.1407918792.git.andreas.werner@men.de>
- <20140821184501.GC16045@roeck-us.net>
+	Fri, 22 Aug 2014 03:50:49 -0400
+Date: Fri, 22 Aug 2014 08:50:41 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v5 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
+Message-ID: <20140822075041.GT4266@lee--X1>
+References: <1407796988-25872-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1407796988-25872-3-git-send-email-bjorn.andersson@sonymobile.com>
+ <20140821132204.GH4266@lee--X1>
+ <20140822012748.GB12494@sonymobile.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140821184501.GC16045@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.1.1.171]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140822012748.GB12494@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 11:45:01AM -0700, Guenter Roeck wrote:
-> On Wed, Aug 13, 2014 at 10:40:37AM +0200, Andreas Werner wrote:
-> > Added driver to support the 14F021P00 BMC Hardware Monitoring.
-> > The BMC is a Board Management Controller including monitoring of the
-> > board voltages.
+On Thu, 21 Aug 2014, Bjorn Andersson wrote:
+> On Thu 21 Aug 06:22 PDT 2014, Lee Jones wrote:
+> > > +struct qcom_rpm *dev_get_qcom_rpm(struct device *dev)
+> > > +{
+> > > +	return dev_get_drvdata(dev);
+> > > +}
+> > > +EXPORT_SYMBOL(dev_get_qcom_rpm);
 > > 
-> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> > ---
-> >  drivers/hwmon/Kconfig           |   7 ++
-> >  drivers/hwmon/Makefile          |   1 +
-> >  drivers/hwmon/menf21bmc_hwmon.c | 238 ++++++++++++++++++++++++++++++++++++++++
+> > No need for this at all.  Use dev_get_drvdata() direct instead.
+> > 
 > 
-> Forgot: Please also provide Documentation/hwmon/menf21bmc.
+> I see that others have put this as static inline in the header file, so I will
+> follow that. I don't want to expose this directly in the implementation of the
+> clients.
 > 
+> Let me know if you object.
 
-Did not know that i have to do it.
-But you are right it is good to have one.
+I do (unless you convince me otherwise).  Why is this a good idea and
+why 'exposing' this directly is a bad one?  At the moment this looks
+to me like abstraction for the sake of abstraction.
 
-> Thanks,
-> Guenter
+> > > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > > +	rpm->status_regs = devm_ioremap_resource(&pdev->dev, res);
+> > > +	rpm->ctrl_regs = rpm->status_regs + 0x400;
+> > > +	rpm->req_regs = rpm->status_regs + 0x600;
+> > > +	if (IS_ERR(rpm->status_regs))
+> > > +		return PTR_ERR(rpm->status_regs);
+> > 
+> > You should probably do this _before_ using it above.
+> 
+> There's no difference in behaviour, but it just feels cleaner than:
+> 
+> res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> rpm->status_regs = devm_ioremap_resource(&pdev->dev, res);
+> if (IS_ERR(rpm->status_regs))
+> 	return PTR_ERR(rpm->status_regs);
+> rpm->ctrl_regs = rpm->status_regs + 0x400;
+> rpm->req_regs = rpm->status_regs + 0x600;
+> 
+> If you don't like it, I'll change it.
+
+There is a difference.  In the current implementation you're doing math
+with a possible error code and assigning rubbish to rpm->ctrl_regs and
+rpm->req_regs.
+
+[...]
+
+> > > +MODULE_DESCRIPTION("Qualcomm Resource Power Manager driver");
+> > > +MODULE_LICENSE("GPL v2");
+> > 
+> > No one authored this driver?
+> > 
+> 
+> Thought that was optional, will update.
+
+It's also helpful.  Can you place an Author: line in the header(s) too.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
