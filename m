@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaHVWKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 18:10:22 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:62608 "EHLO
+	id S1752194AbaHVWPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 18:15:09 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:43680 "EHLO
 	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716AbaHVWKU (ORCPT
+	with ESMTP id S1751716AbaHVWPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 18:10:20 -0400
+	Fri, 22 Aug 2014 18:15:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <53F7AEAC.90303@gmail.com>
-References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
-	<CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
-	<53F7AEAC.90303@gmail.com>
-Date: Fri, 22 Aug 2014 15:10:19 -0700
-X-Google-Sender-Auth: TUQBiRiU1MJGUsjK1YFogOtlIjY
-Message-ID: <CAL1qeaEaZx0KpMpTSGqZVMZZj1VrzGY3ffRbzEdy4Aks2yHciA@mail.gmail.com>
-Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
-From: Andrew Bresticker <abrestic@chromium.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+In-Reply-To: <53F7BDD8.7060500@collabora.co.uk>
+References: <1408350762-15520-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1408350762-15520-2-git-send-email-javier.martinez@collabora.co.uk>
+	<CA+NduCDL65=Y=PyU3FfXsTz0FfbmYzicGrY4U7ji3_V+nXhtCQ@mail.gmail.com>
+	<53F73472.8010609@collabora.co.uk>
+	<20140822144531.GV24407@sirena.org.uk>
+	<53F7838F.8060906@collabora.co.uk>
+	<20140822183054.GY24407@sirena.org.uk>
+	<53F7BDD8.7060500@collabora.co.uk>
+Date: Fri, 22 Aug 2014 15:15:04 -0700
+X-Google-Sender-Auth: TUrK3kH4tOPoxmCEPJYn4yhi2xU
+Message-ID: <CAD=FV=WC0h7fYm2QFqu3Zka7CsU4BtG-oyPpJav+ygC+gmCR+A@mail.gmail.com>
+Subject: Re: [PATCH v9 1/2] regulator: Add driver for max77802 PMIC PMIC regulators
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Yuvaraj Cd <yuvaraj.lkml@gmail.com>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Prashanth G <prashanth.g@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>, sunil joshi <joshi@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 1:57 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-> On 08/22/2014 01:42 PM, Florian Fainelli wrote:
->>
->> On Aug 21, 2014 3:05 PM, "Andrew Bresticker" <abrestic@chromium.org
->> <mailto:abrestic@chromium.org>> wrote:
->>  >
->>  > To be consistent with other architectures and to avoid unnecessary
->>  > makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
->>  > and build them with a common makefile.
->>
->> I recall reading that the ARM organization for DTS files was a bit
->> unfortunate and should have been something like:
->>
->> arch/arm/boot/dts/<vendor>/
->>
->> Is this something we should do for the MIPS and update the other
->> architectures to follow that scheme?
->
->
-> If we choose not to intermingle .dts files from all the vendors in a single
-> directory, why do anything at all?  Currently the .dts files for a vendor
-> are nicely segregated with the rest of the vendors code under a single
-> directory.
->
-> Personally I think things are fine as they are.  Any common code remaining
-> in the Makefiles could be moved to the scripts directory for a smaller
-> change.
+Hi,
 
-Assuming we don't move them to a common location just to segregate
-them again, it makes MIPS consistent with every other architecture
-(not just ARM!) using DT.  It also makes it easier to introduce common
-changes later on, like the 'dtbs' or 'dtbs_install' make targets.
+On Fri, Aug 22, 2014 at 3:02 PM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> Hello Mark,
+>
+> On 08/22/2014 08:30 PM, Mark Brown wrote:
+>>
+>>> The problem is that one of these regulators is used as the vqmmc-supply
+>>> (VCCQ/VDD_IO) so the mmc host controller driver disables it on
+>>> MMC_POWER_OFF. Now AFAIK (Yuvaraj can correct me what I got wrong) this
+>>> shouldn't be an issue since on card detection, the vqmmc supply should be
+>>> enabled again but on Exynos the built-in card detect line is on the same
+>>> power rail as vqmmc. That means that disabling the regulator prevents card
+>>> insertions to be detected.
+>>
+>> If the MMC host controller needs a supply enabling in order to do card
+>> detection and it's supposed to be doing card detection I'd expect it to
+>> be enabling that supply.  Why is it not doing that?
+>>
+>
+> Good question. I'm not that familiar with the dw_mmc host controller nor
+> its driver implementation so I'll let Yuvaraj or Doug to answer that.
+
+I haven't seen the issue that Yuvaraj is reporting (but I also haven't
+picked up all of the relevant patches and tried to reproduce), so I'm
+going to have to leave it to Yuvaraj to answer.
+
+As far as I know the dw_mmc driver ought to be enabling vqmmc when it
+needs it.  Perhaps there's a bug in your patch series that adds vqmmc
+support to dw_mmc?
+
+-Doug
