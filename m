@@ -1,135 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaHVV53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 17:57:29 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:42380 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716AbaHVV51 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 17:57:27 -0400
-Date: Fri, 22 Aug 2014 14:57:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
- kthread wakeups
-Message-ID: <20140822215720.GA21092@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140815052411.GF1934@grmbl.mre>
- <20140815150402.GD4752@linux.vnet.ibm.com>
- <20140818175345.GD31856@grmbl.mre>
- <20140819040149.GJ4752@linux.vnet.ibm.com>
- <20140822122453.GG16198@grmbl.mre>
- <20140822123651.GH16198@grmbl.mre>
- <20140822125649.GI16198@grmbl.mre>
- <20140822144819.GG2663@linux.vnet.ibm.com>
- <20140822171405.GJ16198@grmbl.mre>
- <20140822215343.GH2663@linux.vnet.ibm.com>
+	id S1752211AbaHVV7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 17:59:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34212 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000AbaHVV7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 17:59:51 -0400
+Date: Fri, 22 Aug 2014 16:59:24 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Michal Sojka <sojka@merica.cz>
+CC: <linux-leds@vger.kernel.org>, <michal.vokac@comap.cz>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/2] leds: usb: Add LED trigger for USB gadget activity
+Message-ID: <20140822215924.GB19838@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1408708399-20423-1-git-send-email-sojka@merica.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1LKvkjL3sHcu1TtY"
 Content-Disposition: inline
-In-Reply-To: <20140822215343.GH2663@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082221-8236-0000-0000-000004D3E637
+In-Reply-To: <1408708399-20423-1-git-send-email-sojka@merica.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 02:53:44PM -0700, Paul E. McKenney wrote:
-> On Fri, Aug 22, 2014 at 10:44:05PM +0530, Amit Shah wrote:
-> > On (Fri) 22 Aug 2014 [07:48:19], Paul E. McKenney wrote:
-> > > On Fri, Aug 22, 2014 at 06:26:49PM +0530, Amit Shah wrote:
-> > > > On (Fri) 22 Aug 2014 [18:06:51], Amit Shah wrote:
-> > > > > On (Fri) 22 Aug 2014 [17:54:53], Amit Shah wrote:
-> > > > > > On (Mon) 18 Aug 2014 [21:01:49], Paul E. McKenney wrote:
-> > > > > > 
-> > > > > > > The odds are low over the next few days.  I am adding nastier rcutorture
-> > > > > > > testing, however.  It would still be very good to get debug information
-> > > > > > > from your setup.  One approach would be to convert the trace function
-> > > > > > > calls into printk(), if that would help.
-> > > > > > 
-> > > > > > I added a few printks on the lines of the traces in cases where
-> > > > > > rcu_nocb_poll was checked -- since that reproduces the hang.  Are the
-> > > > > > following traces sufficient, or should I keep adding more printks?
-> > > > > > 
-> > > > > > In the case of rcu-trace-nopoll.txt, the messages stop after a while
-> > > > > > (when the guest locks up hard).  That's when I kill the qemu process.
-> > > > > 
-> > > > > And this is bt from gdb when the endless 
-> > > > > 
-> > > > >   RCUDEBUG __call_rcu_nocb_enqueue 2146 rcu_preempt 0 WakeNot
-> > > > > 
-> > > > > messages are being spewed.
-> > > > > 
-> > > > > I can't time it, but hope it gives some indication along with the printks.
-> > > > 
-> > > > ... and after the system 'locks up', this is the state it's in:
-> > > > 
-> > > > ^C
-> > > > Program received signal SIGINT, Interrupt.
-> > > > native_safe_halt () at ./arch/x86/include/asm/irqflags.h:50
-> > > > 50		 }
-> > > > (gdb) bt
-> > > > #0  native_safe_halt () at ./arch/x86/include/asm/irqflags.h:50
-> > > > #1  0xffffffff8100b9c1 in arch_safe_halt () at ./arch/x86/include/asm/paravirt.h:111
-> > > > #2  default_idle () at arch/x86/kernel/process.c:311
-> > > > #3  0xffffffff8100c107 in arch_cpu_idle () at arch/x86/kernel/process.c:302
-> > > > #4  0xffffffff8106a25a in cpuidle_idle_call () at kernel/sched/idle.c:120
-> > > > #5  cpu_idle_loop () at kernel/sched/idle.c:220
-> > > > #6  cpu_startup_entry (state=<optimized out>) at kernel/sched/idle.c:268
-> > > > #7  0xffffffff813e068b in rest_init () at init/main.c:418
-> > > > #8  0xffffffff81a8cf5a in start_kernel () at init/main.c:680
-> > > > #9  0xffffffff81a8c4ba in x86_64_start_reservations (real_mode_data=<optimized out>) at arch/x86/kernel/head64.c:193
-> > > > #10 0xffffffff81a8c607 in x86_64_start_kernel (real_mode_data=0x13f90 <cpu_lock_stats+29184> <error: Cannot access memory at address 0x13f90>)
-> > > >     at arch/x86/kernel/head64.c:182
-> > > > #11 0x0000000000000000 in ?? ()
-> > > > 
-> > > > 
-> > > > Wondering why it's doing this.  Am stepping through
-> > > > cpu_startup_entry() to see if I get any clues.
-> > > 
-> > > This looks to me like normal behavior in the x86 ACPI idle loop.
-> > > My guess is that the lockup is caused by indefinite blocking, in
-> > > which case we would expect all the CPUs to be in the idle loop.
-> > 
-> > Hm, found it:
-> > 
-> > The stall happens in do_initcalls().
-> > 
-> > pm_sysrq_init() is the function that causes the hang.  When I #if 0
-> > the line
-> > 
-> >     register_sysrq_key('o', &sysrq_poweroff_op);
-> > 
-> > in pm_sysrq_init(), the boot proceeds normally.
-> 
-> Yow!!!
-> 
-> > Now what this is, and what relation this has to rcu and that patch in
-> > particular is next...
-> 
-> Hmmm...  Please try replacing the synchronize_rcu() in
-> __sysrq_swap_key_ops() with (say) schedule_timeout_interruptible(HZ / 10).
-> I bet that gets rid of the hang.  (And also introduces a low-probability
-> bug, but should be OK for testing.)
-> 
-> The other thing to try is to revert your patch that turned my event
-> traces into printk()s, then put an ftrace_dump(DUMP_ALL); just after
-> the synchronize_rcu() -- that might make it so that the ftrace data
-> actually gets dumped out.
+--1LKvkjL3sHcu1TtY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And one other thing to try...
+Hi,
 
-Put a printk at the beginning of rcu_spawn_gp_kthread(), which is in
-kernel/rcu/tree.c.  If that printk does not appear before the call
-to pm_sysrq_init(), that would be an important clue.
+On Fri, Aug 22, 2014 at 01:53:12PM +0200, Michal Sojka wrote:
+> With this patch, USB gadget activity can be signaled by blinking a LED.
+>=20
+> Since there is no generic code where to put the trigger for all USB
+> controllers, each USB controller needs to call the trigger individually.
+> This patch adds the call only for the musb controller where I can test
+> it.
+>=20
+> Signed-off-by: Michal Sojka <sojka@merica.cz>
+> ---
+>  drivers/leds/trigger/Kconfig             |  8 ++++++
+>  drivers/leds/trigger/Makefile            |  1 +
+>  drivers/leds/trigger/ledtrig-usbgadget.c | 45 ++++++++++++++++++++++++++=
+++++++
+>  drivers/usb/musb/musb_gadget.c           |  6 +++--
+>  include/linux/leds.h                     |  6 +++++
+>  5 files changed, 64 insertions(+), 2 deletions(-)
+>  create mode 100644 drivers/leds/trigger/ledtrig-usbgadget.c
+>=20
+> diff --git a/drivers/leds/trigger/Kconfig b/drivers/leds/trigger/Kconfig
+> index 49794b4..9562963 100644
+> --- a/drivers/leds/trigger/Kconfig
+> +++ b/drivers/leds/trigger/Kconfig
+> @@ -41,6 +41,14 @@ config LEDS_TRIGGER_IDE_DISK
+>  	  This allows LEDs to be controlled by IDE disk activity.
+>  	  If unsure, say Y.
+> =20
+> +config LEDS_TRIGGER_USBGADGET
+> +	bool "LED USB Gadget Trigger"
+> +	depends on (USB_MUSB_GADGET || USB_MUSB_DUAL_ROLE)
+> +	depends on LEDS_TRIGGERS
+> +	help
+> +	  This allows LEDs to be controlled by USB gadget activity.
+> +	  If unsure, say Y.
+> +
+>  config LEDS_TRIGGER_HEARTBEAT
+>  	tristate "LED Heartbeat Trigger"
+>  	depends on LEDS_TRIGGERS
+> diff --git a/drivers/leds/trigger/Makefile b/drivers/leds/trigger/Makefile
+> index 1abf48d..45917c0 100644
+> --- a/drivers/leds/trigger/Makefile
+> +++ b/drivers/leds/trigger/Makefile
+> @@ -8,3 +8,4 @@ obj-$(CONFIG_LEDS_TRIGGER_CPU)		+=3D ledtrig-cpu.o
+>  obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+=3D ledtrig-default-on.o
+>  obj-$(CONFIG_LEDS_TRIGGER_TRANSIENT)	+=3D ledtrig-transient.o
+>  obj-$(CONFIG_LEDS_TRIGGER_CAMERA)	+=3D ledtrig-camera.o
+> +obj-$(CONFIG_LEDS_TRIGGER_USBGADGET)	+=3D ledtrig-usbgadget.o
+> diff --git a/drivers/leds/trigger/ledtrig-usbgadget.c b/drivers/leds/trig=
+ger/ledtrig-usbgadget.c
+> new file mode 100644
+> index 0000000..1eb90da
+> --- /dev/null
+> +++ b/drivers/leds/trigger/ledtrig-usbgadget.c
+> @@ -0,0 +1,45 @@
+> +/*
+> + * LED Trigger for USB Gadget Activity
+> + *
+> + * Copyright 2014 Michal Sojka <sojka@merica.cz>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/leds.h>
+> +
+> +#define BLINK_DELAY 30
+> +
+> +DEFINE_LED_TRIGGER(ledtrig_usbgadget);
+> +static unsigned long usbgadget_blink_delay =3D BLINK_DELAY;
+> +
+> +void ledtrig_usbgadget_activity(void)
+> +{
+> +	led_trigger_blink_oneshot(ledtrig_usbgadget,
+> +				  &usbgadget_blink_delay, &usbgadget_blink_delay, 0);
+> +}
+> +EXPORT_SYMBOL(ledtrig_usbgadget_activity);
+> +
+> +static int __init ledtrig_usbgadget_init(void)
+> +{
+> +	led_trigger_register_simple("usb-gadget", &ledtrig_usbgadget);
+> +	return 0;
+> +}
+> +
+> +static void __exit ledtrig_usbgadget_exit(void)
+> +{
+> +	led_trigger_unregister_simple(ledtrig_usbgadget);
+> +}
+> +
+> +module_init(ledtrig_usbgadget_init);
+> +module_exit(ledtrig_usbgadget_exit);
+> +
+> +MODULE_AUTHOR("Michal Sojka <sojka@merica.cz>");
+> +MODULE_DESCRIPTION("LED Trigger for USB Gadget Activity");
+> +MODULE_LICENSE("GPL");
+> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadge=
+t.c
+> index d4aa779..98f8b24 100644
+> --- a/drivers/usb/musb/musb_gadget.c
+> +++ b/drivers/usb/musb/musb_gadget.c
+> @@ -42,6 +42,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/slab.h>
+> +#include <linux/leds.h>
+> =20
+>  #include "musb_core.h"
+> =20
+> @@ -167,11 +168,12 @@ __acquires(ep->musb->lock)
+>  	if (!dma_mapping_error(&musb->g.dev, request->dma))
+>  		unmap_dma_buffer(req, musb);
+> =20
+> -	if (request->status =3D=3D 0)
+> +	if (request->status =3D=3D 0) {
+>  		dev_dbg(musb->controller, "%s done request %p,  %d/%d\n",
+>  				ep->end_point.name, request,
+>  				req->request.actual, req->request.length);
+> -	else
+> +		ledtrig_usbgadget_activity();
 
-							Thanx, Paul
+looks like this should, somehow, be done at udc-core.c although you'd
+need some refactoring to make that happen. It shouldn't be too difficult
+to have a generic usb_gadget_giveback_request()
 
+cheers
+
+--=20
+balbi
+
+--1LKvkjL3sHcu1TtY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJT9708AAoJEIaOsuA1yqREPd0P/3OkR5ysdQMva73RvxrvSrzv
+3YLSUK9JN+EXGUmIU6CdXYZPWstZYOLgWiX7QZ32eh+ODi3cChJhhBZqKJOUgzx6
+XuF4SnU6BJi7aRtLsSYuEKBTyqShP2nIYf5qKdujCawZGmV0RBXzrTQTqKdHyfPO
+94InuXtLrWBJBa9oNxd7mmWvsEPxaQplb20EOeT0a81tae6BgT2BlZWRn30e5LW8
+M9J88LDE/7MKgWF09Xye+cJ+bMBccURNHN3Gel6ExMEga8vcb1arl4ol3t9V/el/
+ULQw/cbDRb1npi08ON5hI1LtOL3t6s5QyY/bfbAfBebNzh/zHn+RkPTbJkbZXaDH
+wbdto9tHd7NVwrdokEdZOaiRGsvBOCIGlDMDpLDD8usqkAV2PRbaBGN1EoV2ECQR
+LkKMik9wU2qBnlyr9Y9XUNKiMfnzX4k+UpWxnSsnQccHpxkkVQt8mJ7ykdQAPWFz
+xx5UDixlgDbb3I/GDKmQhjqTbS06qTvcSViiTEL0sS02WOkodg5Ba9hB5qarKHSF
+udWuAFr6BbtpRSTP3gL2QXcUwUC0ecbbz2AhvKKbvUJThyAHPo9C5AMlxRYHy1Yx
+HXbsMRmTuPDuIneAS7Rw/ruGPeMLRNmoaST1Seoos2/mMXT5iC85ViExyYkL7ovc
+FyuzKKmKTWtF3QfDlYud
+=d+kJ
+-----END PGP SIGNATURE-----
+
+--1LKvkjL3sHcu1TtY--
