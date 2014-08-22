@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661AbaHVBjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:39:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:34170 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701AbaHVBjM (ORCPT
+	id S1755673AbaHVBnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:43:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50375 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755519AbaHVBni convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:39:12 -0400
-Date: Thu, 21 Aug 2014 21:39:04 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [V0 PATCH 1/2] AMD-PVH: set EFER.NX and EFER.SCE for
- the boot vcpu
-Message-ID: <20140822013904.GA20329@laptop.dumpdata.com>
-References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
- <1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
+	Thu, 21 Aug 2014 21:43:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,377,1406617200"; 
+   d="scan'208";a="471444348"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Matt Fleming <matt@console-pimps.org>, Dave Young <dyoung@redhat.com>
+CC: "Fleming, Matt" <matt.fleming@intel.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: kernel boot fail with efi earlyprintk (bisected)
+Thread-Topic: kernel boot fail with efi earlyprintk (bisected)
+Thread-Index: AQHPu4XSRTaCxkfh/U+HttRB4JxB75vbBnYAgADUTDA=
+Date: Fri, 22 Aug 2014 01:43:15 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880265EF49@SHSMSX101.ccr.corp.intel.com>
+References: <20140819081658.GA1795@darkstar.nay.redhat.com>
+ <20140821205224.GJ29733@console-pimps.org>
+In-Reply-To: <20140821205224.GJ29733@console-pimps.org>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 07:16:39PM -0700, Mukesh Rathor wrote:
-> On AMD, NX feature must be enabled in the efer for NX to be honored in
-> the pte entries, otherwise protection fault. We also set SC for
-> system calls to be enabled.
+Hi,
 
-How come we don't need to do that for Intel (that is set the NX bit)?
-Could you include the explanation here please?
+There is only limited entries in the x86 early mapping which is implemented by the FIXMAP.
+So this means for all __init call invoked for x86, if there was a early mapping in it, it should be unmapped before exiting the __init call.
 
+Using this rule, all __init call implementers can make sure that before entering the __init call, the limited number of FIXMAP entries is enough.
 
+The following bisected commit just increase early mapping times from 1 to 2 in ACPICA early table handling code.
+The number of 2 is less than the number of available FIXMAP entries.
+And ACPICA code has ensured that all mappings are correctly unmapped after the table initialization.
+So we didn't break the rule.
+
+We can offer a workaround in ACPICA to reduce mapping count from 2 to 1 using a global option.
+But since this report sounds like that the root cause is earlyprintk=efi has broken the above rule and the existing issue is triggered by this cleanup.
+So could someone check the earlyprintk=efi code first?
+I think earlyprintk=efi should either unmap the increased mapping or increase the number of FIXMAP entries in case earlyprintk=efi need additional early mappings.
+Otherwise it will always be chances for earlyprintk=efi to break future code.
+
+Thanks and best regards
+-Lv
+
+> From: Matt Fleming [mailto:matt@console-pimps.org]
+> Sent: Friday, August 22, 2014 4:52 AM
 > 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> ---
->  arch/x86/xen/enlighten.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
+> On Tue, 19 Aug, at 04:16:58PM, Dave Young wrote:
+> > Hi,
+> >
+> > 3.16 kernel boot fail with earlyprintk=efi on my laptop.
+> > It keeps scrolling at the bottom line of screen.
+> >
+> > Bisected, the first bad commit is below:
+> > commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
+> > Author: Lv Zheng <lv.zheng@intel.com>
+> > Date:   Fri Apr 4 12:38:57 2014 +0800
+> >
+> >     ACPICA: Tables: Fix table checksums verification before installation.
+> >
+> >
+> > I did some debugging by enabling both serial and efi earlyprintk, below is
+> > some debug dmesg, seems early_ioremap fails in scroll up function due to
+> > no free slot, but I'm still not sure if the debug info is right or not.
 > 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index c0cb11f..4af512d 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1499,6 +1499,17 @@ void __ref xen_pvh_secondary_vcpu_init(int cpu)
->  	xen_pvh_set_cr_flags(cpu);
->  }
->  
-> +/* This is done in secondary_startup_64 for hvm guests. */
-> +static void __init xen_configure_efer(void)
-> +{
-> +	u64 efer;
-> +
-> +	rdmsrl(MSR_EFER, efer);
-> +	efer |= EFER_SCE;
-> +	efer |= (cpuid_edx(0x80000001) & (1 << 20)) ? EFER_NX : 0;
-
-Ahem? #defines for these magic values please?
-
-Or could you use 'boot_cpu_has'?
-
-> +	wrmsrl(MSR_EFER, efer);
-> +}
-> +
->  static void __init xen_pvh_early_guest_init(void)
->  {
->  	if (!xen_feature(XENFEAT_auto_translated_physmap))
-> @@ -1508,6 +1519,7 @@ static void __init xen_pvh_early_guest_init(void)
->  		return;
->  
->  	xen_have_vector_callback = 1;
-> +	xen_configure_efer();
->  	xen_pvh_set_cr_flags(0);
->  
->  #ifdef CONFIG_X86_32
-> -- 
-> 1.8.3.1
+> Thanks Dave, your callstack seems to make sense.
 > 
+> Can you also enable early_ioremap_debug so that we can figure out where
+> all the FIXMAP slots are going?
 > 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+> --
+> Matt Fleming, Intel Open Source Technology Center
