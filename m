@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643AbaHVBgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:36:22 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:33279 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755514AbaHVBgV (ORCPT
+	id S1755661AbaHVBjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:39:13 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34170 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaHVBjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:36:21 -0400
-X-IronPort-AV: E=Sophos;i="5.04,377,1406563200"; 
-   d="scan'208";a="34922644"
-Message-ID: <53F69E26.1090408@cn.fujitsu.com>
-Date: Fri, 22 Aug 2014 09:34:30 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
+	Thu, 21 Aug 2014 21:39:12 -0400
+Date: Thu, 21 Aug 2014 21:39:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [V0 PATCH 1/2] AMD-PVH: set EFER.NX and EFER.SCE for
+ the boot vcpu
+Message-ID: <20140822013904.GA20329@laptop.dumpdata.com>
+References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
+ <1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
 MIME-Version: 1.0
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink supporting
-References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com> <20130411232907.GC29398@hacker.(null)> <20130412152237.GM16732@two.firstfloor.org> <20140821233729.GB2420@kernel>
-In-Reply-To: <20140821233729.GB2420@kernel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.225.89]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408587400-18663-2-git-send-email-mukesh.rathor@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wanpeng
+On Wed, Aug 20, 2014 at 07:16:39PM -0700, Mukesh Rathor wrote:
+> On AMD, NX feature must be enabled in the efer for NX to be honored in
+> the pte entries, otherwise protection fault. We also set SC for
+> system calls to be enabled.
 
-On 08/22/2014 07:37 AM, Wanpeng Li wrote:
-> Hi Andi,
-> On Fri, Apr 12, 2013 at 05:22:37PM +0200, Andi Kleen wrote:
->> On Fri, Apr 12, 2013 at 07:29:07AM +0800, Wanpeng Li wrote:
->>> Ping Andi,
->>> On Thu, Apr 04, 2013 at 05:09:08PM +0800, Wanpeng Li wrote:
->>>> order >= MAX_ORDER pages are only allocated at boot stage using the 
->>>> bootmem allocator with the "hugepages=xxx" option. These pages are never 
->>>> free after boot by default since it would be a one-way street(>= MAX_ORDER
->>>> pages cannot be allocated later), but if administrator confirm not to 
->>>> use these gigantic pages any more, these pinned pages will waste memory
->>>> since other users can't grab free pages from gigantic hugetlb pool even
->>>> if OOM, it's not flexible.  The patchset add hugetlb gigantic page pools
->>>> shrink supporting. Administrator can enable knob exported in sysctl to
->>>> permit to shrink gigantic hugetlb pool.
->>
->>
->> I originally didn't allow this because it's only one way and it seemed
->> dubious.  I've been recently working on a new patchkit to allocate
->> GB pages from CMA. With that freeing actually makes sense, as 
->> the pages can be reallocated.
->>
-> 
-> More than one year past, If your allocate GB pages from CMA merged? 
-
-commit 944d9fec8d7aee3f2e16573e9b6a16634b33f403
-Author: Luiz Capitulino <lcapitulino@redhat.com>
-Date:   Wed Jun 4 16:07:13 2014 -0700
-
-    hugetlb: add support for gigantic page allocation at runtime
+How come we don't need to do that for Intel (that is set the NX bit)?
+Could you include the explanation here please?
 
 
 > 
-> Regards,
-> Wanpeng Li 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> ---
+>  arch/x86/xen/enlighten.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 > 
->> -Andi
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index c0cb11f..4af512d 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1499,6 +1499,17 @@ void __ref xen_pvh_secondary_vcpu_init(int cpu)
+>  	xen_pvh_set_cr_flags(cpu);
+>  }
+>  
+> +/* This is done in secondary_startup_64 for hvm guests. */
+> +static void __init xen_configure_efer(void)
+> +{
+> +	u64 efer;
+> +
+> +	rdmsrl(MSR_EFER, efer);
+> +	efer |= EFER_SCE;
+> +	efer |= (cpuid_edx(0x80000001) & (1 << 20)) ? EFER_NX : 0;
+
+Ahem? #defines for these magic values please?
+
+Or could you use 'boot_cpu_has'?
+
+> +	wrmsrl(MSR_EFER, efer);
+> +}
+> +
+>  static void __init xen_pvh_early_guest_init(void)
+>  {
+>  	if (!xen_feature(XENFEAT_auto_translated_physmap))
+> @@ -1508,6 +1519,7 @@ static void __init xen_pvh_early_guest_init(void)
+>  		return;
+>  
+>  	xen_have_vector_callback = 1;
+> +	xen_configure_efer();
+>  	xen_pvh_set_cr_flags(0);
+>  
+>  #ifdef CONFIG_X86_32
+> -- 
+> 1.8.3.1
 > 
-
-
--- 
-Thanks.
-Zhang Yanfei
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
