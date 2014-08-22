@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418AbaHVOCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:02:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33923 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932339AbaHVOBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:01:30 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Tero Kristo <t-kristo@ti.com>, Paul Walmsley <paul@pwsan.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <devicetree@vger.kernel.org>, Dave Gerlach <d-gerlach@ti.com>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH 1/3] pinctrl: bindings: Add OMAP pinctrl binding
-Date: Fri, 22 Aug 2014 09:01:00 -0500
-Message-ID: <1408716062-26055-2-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408716062-26055-1-git-send-email-nm@ti.com>
-References: <1408716062-26055-1-git-send-email-nm@ti.com>
+	id S1756422AbaHVOCf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:02:35 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:58164 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756227AbaHVOC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 10:02:29 -0400
+Date: Fri, 22 Aug 2014 17:02:20 +0300
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: paulmck@linux.vnet.ibm.com
+Subject: [PATCH] fs: file: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
+Message-ID: <20140822140220.GA31576@ada>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic skeleton of OMAP pinctrl bindings. This is compatible with
-pinctrl,single bindings and is meant purely as a reference point.
+The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
+The following Coccinelle semantic patch was used:
+@@
+@@
+
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 ---
- .../bindings/pinctrl/ti,omap-pinctrl.txt           |    9 +++++++++
- 1 file changed, 9 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
+ fs/file.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-new file mode 100644
-index 0000000..156d964
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-@@ -0,0 +1,9 @@
-+OMAP Pinctrl definitions
-+
-+Required properties:
-+- compatible : Should be one of:
-+  "ti,omap3-padconf" - OMAP3 compatible pinctrl
-+  "ti,omap4-padconf" - OMAP4 compatible pinctrl
-+  "ti,omap5-padconf" - OMAP5 compatible pinctrl
-+
-+See Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt for further details.
+diff --git a/fs/file.c b/fs/file.c
+index 66923fe..cd6a471 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -491,7 +491,7 @@ repeat:
+ 	/* Sanity check */
+ 	if (rcu_access_pointer(fdt->fd[fd]) != NULL) {
+ 		printk(KERN_WARNING "alloc_fd: slot %d not NULL!\n", fd);
+-		rcu_assign_pointer(fdt->fd[fd], NULL);
++		RCU_INIT_POINTER(fdt->fd[fd], NULL);
+ 	}
+ #endif
+ 
+@@ -582,7 +582,7 @@ int __close_fd(struct files_struct *files, unsigned fd)
+ 	file = fdt->fd[fd];
+ 	if (!file)
+ 		goto out_unlock;
+-	rcu_assign_pointer(fdt->fd[fd], NULL);
++	RCU_INIT_POINTER(fdt->fd[fd], NULL);
+ 	__clear_close_on_exec(fd, fdt);
+ 	__put_unused_fd(files, fd);
+ 	spin_unlock(&files->file_lock);
+@@ -617,7 +617,7 @@ void do_close_on_exec(struct files_struct *files)
+ 			file = fdt->fd[fd];
+ 			if (!file)
+ 				continue;
+-			rcu_assign_pointer(fdt->fd[fd], NULL);
++			RCU_INIT_POINTER(fdt->fd[fd], NULL);
+ 			__put_unused_fd(files, fd);
+ 			spin_unlock(&files->file_lock);
+ 			filp_close(file, files);
 -- 
-1.7.9.5
+1.9.1
 
