@@ -1,104 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885AbaHVHRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:17:45 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:51217 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755863AbaHVHRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:17:43 -0400
-X-AuditID: cbfee691-b7f306d000003d81-f1-53f6ee95fa06
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Geert Uytterhoeven'" <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org,
-        "'Linux Fbdev development list'" <linux-fbdev@vger.kernel.org>,
-        "'Bryan Wu'" <cooloney@gmail.com>,
-        "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <007701cfbdd1$a70486e0$f50d94a0$%han@samsung.com>
- <CAMuHMdUWwwRC1drp6XOxUOY2zDf4qY62OKT4taRthktGgOM=6g@mail.gmail.com>
-In-reply-to: <CAMuHMdUWwwRC1drp6XOxUOY2zDf4qY62OKT4taRthktGgOM=6g@mail.gmail.com>
-Subject: Re: [PATCH] backlight: platform_lcd: remove unnecessary #ifdef
- CONFIG_OF
-Date: Fri, 22 Aug 2014 16:17:40 +0900
-Message-id: <008101cfbdd9$28ce10e0$7a6a32a0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac+92JIsHmMNordiQ+6BZnJr5zizgQAACWOA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t8zI92p774FG+yaxW1xdOdEJotnt/Yy
-	WVxeeInV4v7Xo4wWJ/o+sFpc3jWHzYHNY+esu+wed67tYfM4dLiD0aNvyypGj8+b5AJYo7hs
-	UlJzMstSi/TtErgytu55w14wk6fi+zfDBsaLnF2MnBwSAiYSZ16uY4SwxSQu3FvP1sXIxSEk
-	sIxR4mzvdCaYoo/Pz0ElFjFK3Hj4nAXC+c0o8XLeT7B2NgE1iS9fDrOD2CIC+hLbFv5jBCli
-	FjjLKPG7/SBURwujROuNWawgVZwCwRJTp7xnA7GFgezZN5eATWIRUJU4OfUvmM0rYCtxcl8r
-	G4QtKPFj8j2gQRxAU9UlpkzJBQkzC8hLbF7zlhkkLAEUfvRXF+IGI4kf6zezQ5SISOx78Q7s
-	HgmBe+wSs84dZYVYJSDxbfIhFoheWYlNB5ghPpaUOLjiBssERolZSBbPQlg8C8niWUg2LGBk
-	WcUomlqQXFCclF5kqlecmFtcmpeul5yfu4kRErMTdzDeP2B9iDEZaPtEZinR5HxgzOeVxBsa
-	mxlZmJqYGhuZW5qRJqwkzpv+KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+OGyTpmSU4+
-	+3WW982SeeO04Mk9/r8TdbuEEp4a8Nxce+OdP0NHSmt6tzSzfsStlxcn1pqf218i4zox/kao
-	6Z2jvqcD/m9uYe8qcZi08J1tNqve7r0+Hzc/fPtipfLFr2fF1BUuM39rUfjy68v0H1px8V3S
-	sm+Vpb5FLfCy4f7Wq9u0lCvng7kSS3FGoqEWc1FxIgDsRgrW7wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgO7Ud9+CDabtZLc4unMik8WzW3uZ
-	LC4vvMRqcf/rUUaLE30fWC0u75rD5sDmsXPWXXaPO9f2sHkcOtzB6NG3ZRWjx+dNcgGsUQ2M
-	NhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJygplCXm
-	lAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM7buecNeMJOn4vs3wwbGi5xdjJwc
-	EgImEh+fn2ODsMUkLtxbD2RzcQgJLGKUuPHwOQuE85tR4uW8n4wgVWwCahJfvhxmB7FFBPQl
-	ti38xwhSxCxwllHid/tBqI4WRonWG7NYQao4BYIlpk55D7ZDGMiefXMJ2CQWAVWJk1P/gtm8
-	ArYSJ/e1skHYghI/Jt8DGsQBNFVdYsqUXJAws4C8xOY1b5lBwhJA4Ud/dSFuMJL4sX4zO0SJ
-	iMS+F+8YJzAKzUIyaBbCoFlIBs1C0rGAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBC
-	eCa9g3FVg8UhRgEORiUe3ogvX4OFWBPLiitzDzFKcDArifBumvctWIg3JbGyKrUoP76oNCe1
-	+BCjKdCbE5mlRJPzgckqryTe0NjEzMjSyMzCyMTcXEmc92CrdaCQQHpiSWp2ampBahFMHxMH
-	p1QD49xXkboNfP2L1FUiWZw1tJaaha69lDDxzqyMrb8quvj632V8mKa+xoTRPr2h0eXugkCP
-	XX++7p78trLv9fwWrqIJ9Y2ZdguFff9tfly1xVkutftOM5tLa2mBIqtjksXmrcdNV8wUeijZ
-	rcmQFf57ouZH6+XRVxf1Z2rN1yi/sev3I6eft+bsUWIpzkg01GIuKk4EAGH4Qz4eAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755899AbaHVHUD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:20:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1950 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755757AbaHVHT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 03:19:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,378,1406617200"; 
+   d="scan'208";a="591768917"
+Message-ID: <53F6EF25.3000309@intel.com>
+Date: Fri, 22 Aug 2014 15:20:05 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Benjamin Block <bebl@mageta.org>, "David S. Miller" <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: BUG: lockdep (inconsistent usage) in netlink
+References: <20140821185209.GC25021@kalium.Speedport_W723_V_Typ_A_1_01_001> <53F65A02.2080503@mageta.org>
+In-Reply-To: <53F65A02.2080503@mageta.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 22, 2014 4:13 PM, Jingoo Han wrote:
-> On Fri, Aug 22, 2014 at 8:23 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> > Remove unnecessary #ifdef CONFIG_OF, because this is already
-> > handled by the of_match_ptr macro.
-> >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > ---
-> >  drivers/video/backlight/platform_lcd.c | 2 --
-> >  1 file changed, 2 deletions(-)
-> >
-> > diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
-> > index c3d2e209fc8f..2bca5ca760ee 100644
-> > --- a/drivers/video/backlight/platform_lcd.c
-> > +++ b/drivers/video/backlight/platform_lcd.c
-> > @@ -137,13 +137,11 @@ static int platform_lcd_resume(struct device *dev)
-> >  static SIMPLE_DEV_PM_OPS(platform_lcd_pm_ops, platform_lcd_suspend,
-> >                         platform_lcd_resume);
-> >
-> > -#ifdef CONFIG_OF
-> >  static const struct of_device_id platform_lcd_of_match[] = {
-> >         { .compatible = "platform-lcd" },
-> >         {},
-> >  };
-> >  MODULE_DEVICE_TABLE(of, platform_lcd_of_match);
-> > -#endif
-> >
-> >  static struct platform_driver platform_lcd_driver = {
-> >         .driver         = {
-> 
-> Doesn't this introduce a compiler warning ("defined but not used") if
-> CONFIG_OF is not set?
+On 08/22/2014 04:43 AM, Benjamin Block wrote:
+> On 08/21/2014 08:52 PM, Benjamin Block wrote:
+>> Hello,
+>>
+>> while rebooting one of my dev-machines I stumbled over this
+>> lockdep-mess-up:
+>>
+>>> =================================
+>>> [ INFO: inconsistent lock state ]
+>>> 3.17.0-rc1-00001-gb83ca8c #2 Tainted: G           O
+>>> ---------------------------------
+>>> inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+>>> swapper/0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
+>>>   (&(&list->lock)->rlock#3){?.-...}, at: [<ffffffff819580db>] skb_queue_tail+0x2b/0x60
+>>> {HARDIRQ-ON-W} state was registered at:
+>>>    [<ffffffff8111c9f7>] __lock_acquire+0x877/0x1c90
+>>>    [<ffffffff8111e45a>] lock_acquire+0xca/0x120
+>>>    [<ffffffff81afc744>] _raw_spin_lock_bh+0x44/0x80
+>>>    [<ffffffff819a8918>] netlink_poll+0xf8/0x1c0
+>>>    [<ffffffff8194e031>] sock_poll+0x161/0x190
+>>>    [<ffffffff81271ffb>] SyS_epoll_ctl+0x51b/0xd10
+>>>    [<ffffffff81afd452>] system_call_fastpath+0x16/0x1b
+>>> irq event stamp: 1699744
+>>> hardirqs last  enabled at (1699741): [<ffffffff8189b1d4>] cpuidle_enter_state+0xc4/0x190
+>>> hardirqs last disabled at (1699742): [<ffffffff81afdfaa>] common_interrupt+0x6a/0x6f
+>>> softirqs last  enabled at (1699744): [<ffffffff810d7fda>] _local_bh_enable+0x4a/0x50
+>>> softirqs last disabled at (1699743): [<ffffffff810d88f0>] irq_enter+0x30/0x70
+>>>
+>>> other info that might help us debug this:
+>>>   Possible unsafe locking scenario:
+>>>
+>>>         CPU0
+>>>         ----
+>>>    lock(&(&list->lock)->rlock#3);
+>>>    <Interrupt>
+>>>      lock(&(&list->lock)->rlock#3);
+>>>
+>>>   *** DEADLOCK ***
+>>>
+>>> no locks held by swapper/0/0.
+>>>
+>>> stack backtrace:
+>>> CPU: 0 PID: 0 Comm: swapper/0 Tainted: G           O   3.17.0-rc1-00001-gb83ca8c #2
+>>> Hardware name: ASUS All Series/Q87T, BIOS 0216 10/16/2013
+>>>   ffffffff8295a5b0 ffff8802158039a8 ffffffff81af20fa 0000000000000000
+>>>   ffffffff822164e0 ffff880215803a08 ffffffff81aee400 0000000000000000
+>>>   ffffffff00000000 ffff880200000001 ffffffff8105ac0f ffffffff82d2abe0
+>>> Call Trace:
+>>>   <IRQ>  [<ffffffff81af20fa>] dump_stack+0x4e/0x68
+>>>   [<ffffffff81aee400>] print_usage_bug+0x1ec/0x1fd
+>>>   [<ffffffff8105ac0f>] ? save_stack_trace+0x2f/0x50
+>>>   [<ffffffff8111b600>] ? print_irq_inversion_bug+0x200/0x200
+>>>   [<ffffffff8111c061>] mark_lock+0x191/0x2b0
+>>>   [<ffffffff8111c96a>] __lock_acquire+0x7ea/0x1c90
+>>>   [<ffffffff8111ca94>] ? __lock_acquire+0x914/0x1c90
+>>>   [<ffffffff8111b600>] ? print_irq_inversion_bug+0x200/0x200
+>>>   [<ffffffff8111ca94>] ? __lock_acquire+0x914/0x1c90
+>>>   [<ffffffff8111e45a>] lock_acquire+0xca/0x120
+>>>   [<ffffffff819580db>] ? skb_queue_tail+0x2b/0x60
+>>>   [<ffffffff81afc590>] _raw_spin_lock_irqsave+0x50/0x90
+>>>   [<ffffffff819580db>] ? skb_queue_tail+0x2b/0x60
+>>>   [<ffffffff819580db>] skb_queue_tail+0x2b/0x60
+>>>   [<ffffffff819a774f>] __netlink_sendskb+0x21f/0x250
+>>>   [<ffffffff819a7d63>] netlink_broadcast_filtered+0x273/0x3b0
+>>>   [<ffffffff819a7ebd>] netlink_broadcast+0x1d/0x20
+>>>   [<ffffffff8152fb8a>] ? nla_reserve+0x2a/0x40
+>>>   [<ffffffff81589728>] acpi_bus_generate_netlink_event+0x160/0x178
+>>>   [<ffffffff815a8db9>] acpi_button_notify+0xe1/0xec
+>>>   [<ffffffff81580648>] acpi_device_notify+0x19/0x1b
+>>>   [<ffffffff81580662>] acpi_device_notify_fixed+0x18/0x1c
+>>>   [<ffffffff8158f039>] acpi_ev_fixed_event_detect+0xe6/0x10d
+>>>   [<ffffffff8159157a>] acpi_ev_sci_xrupt_handler+0x19/0x3f
+>>>   [<ffffffff8157c1a9>] acpi_irq+0x16/0x31
+>>>   [<ffffffff81131e2a>] handle_irq_event_percpu+0x6a/0x1d0
+>>>   [<ffffffff81131fd8>] handle_irq_event+0x48/0x70
+>>>   [<ffffffff8113534f>] ? handle_fasteoi_irq+0x2f/0x160
+>>>   [<ffffffff811353e7>] handle_fasteoi_irq+0xc7/0x160
+>>>   [<ffffffff8104cd94>] handle_irq+0x134/0x150
+>>>   [<ffffffff810f4876>] ? atomic_notifier_call_chain+0x16/0x20
+>>>   [<ffffffff81054dec>] ? __exit_idle+0x2c/0x30
+>>>   [<ffffffff81affe7e>] do_IRQ+0x5e/0x100
+>>>   [<ffffffff81afdfaf>] common_interrupt+0x6f/0x6f
+>>>   <EOI>  [<ffffffff8189b1df>] ? cpuidle_enter_state+0xcf/0x190
+>>>   [<ffffffff8189b1d4>] ? cpuidle_enter_state+0xc4/0x190
+>>>   [<ffffffff8189b387>] cpuidle_enter+0x17/0x20
+>>>   [<ffffffff81111ae1>] cpu_startup_entry+0x3a1/0x3c0
+>>>   [<ffffffff81ae92a4>] rest_init+0xc4/0xd0
+>>>   [<ffffffff81ae91e5>] ? rest_init+0x5/0xd0
+>>>   [<ffffffff825718a1>] ? ftrace_init+0xa8/0x13b
+>>>   [<ffffffff8255103a>] start_kernel+0x461/0x46e
+>>>   [<ffffffff82550939>] ? set_init_arg+0x57/0x57
+>>>   [<ffffffff825505af>] x86_64_start_reservations+0x2a/0x2c
+>>>   [<ffffffff825506ae>] x86_64_start_kernel+0xfd/0x101
+>>
+>> Sadly I couldn't reproduce it. This looks all to be very general
+>> functions and my best guess is, netlink_poll() needs to be irq-save.
+>> Thing is, the corresponding code is quite old and I can't really bisec
+>> it, because the none-reproducibility.
+>>
+>
+> Thinking more about it.. this seems to be unlikely. More like the
+> acpi-irq chain should not do netlink-events still in irq-context - just
+> guessing here, sry :).
 
-Hi Geert Uytterhoeven,
+Hi Benjamin:
+	Basically, I think ACPI fixed button device's notify callback should not run in 
+the interrupt context. This prevents calling function with mutex lock(E,G 
+evaluating ACPI method). I will write a patch to do that.
 
-Thank you for your feedback. I already tested this patch with both
-cases such as CONFIG_OF=y and CONFIG_OF=n.  When CONFIG_OF is not set,
-it does NOT make any compile warnings such as "defined but not used".
-Thank you.
-
-Best regards,
-Jingoo Han
+>
+> I tracked around a little and came up with more recent commits in that
+> call-chain:
+>
+> commit 0bf6368ee8f25826d0645c0f7a4f17c8845356a4
+> 	- adds acpi_bus_generate_netlink_event to the chain
+>
+> Again, all other places around the chain seems quit old or unrelated.
+>
+>>
+>> There is only the small ipv6-fib patch applied, I send in earlier today
+>> (https://lkml.org/lkml/2014/8/21/506). This should have nothing to do
+>> with this here.
+>>
+>
+> - Benjamin
+>
 
