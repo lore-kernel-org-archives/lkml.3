@@ -1,64 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627AbaHVUiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 16:38:14 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:43970 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaHVUiM (ORCPT
+	id S1751918AbaHVUiW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 16:38:22 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:39511 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234AbaHVUiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 16:38:12 -0400
-Date: Sat, 23 Aug 2014 00:38:09 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org, tj@kernel.org,
-        avagin@openvz.org, ebiederm@xmission.com, hpa@zytor.com,
-        serge.hallyn@canonical.com, xemul@parallels.com, segoon@openwall.com,
-        kamezawa.hiroyu@jp.fujitsu.com, mtk.manpages@gmail.com, jln@google.com
-Subject: Re: [patch 4/4] prctl: PR_SET_MM -- Introduce PR_SET_MM_MAP
- operation, v3
-Message-ID: <20140822203809.GC25918@moon>
-References: <20140804172255.109539743@openvz.org>
- <20140804172610.965949916@openvz.org>
- <20140821155115.8433bb37bf631b8ae8340f84@linux-foundation.org>
- <20140822063242.GI14072@moon>
- <20140821234912.f007e2fb.akpm@linux-foundation.org>
+	Fri, 22 Aug 2014 16:38:13 -0400
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH v2] carl9170: Remove redundant protection check
+Date: Fri, 22 Aug 2014 22:38:08 +0200
+Message-ID: <1679858.MgakDZE2Vr@debian64>
+User-Agent: KMail/4.13.3 (Linux/3.17.0-rc1-wl+; KDE/4.14.0; x86_64; ; )
+In-Reply-To: <20140822191431.GA5827@ada>
+References: <20140822191431.GA5827@ada>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140821234912.f007e2fb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 11:49:12PM -0700, Andrew Morton wrote:
-> > > 
-> > > But it's a bit hacky.  Can anyone think of anything smarter?
-> > 
-> > Looks good to me and not that hacky actually.
+On Friday, August 22, 2014 10:14:31 PM Andreea-Cristina Bernat wrote:
+> The carl9170_op_ampdu_action() function is used only by the mac80211
+> framework. Since the mac80211 already takes care of checks and 
+> properly serializing calls to the driver's function there is no
+> need for the driver to do the same thing.
 > 
-> Hacky :( I guess it's pretty safe because this is a userspace-visible
-> structure so we'll never be changing it.
-
-Well, I saw something similar in netfilter code a long ago :)
-
+> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+> ---
+> Changes in v2:
+>  - Change subject line from
+>    "carl9170: Replace rcu_dereference() with rcu_access_pointer()"
+>    to
+>    "carl9170: Remove redundant protection check"
+>  - Update the commit message according to the modifications
+>  - Delete the lines of interest at the suggestion and explanations of
+>    Christian Lamparter <chunkeey@googlemail.com>
 > 
-> Or will we?  What happens if we later decide that some additional field
-> needs to be added?  Do we version the interface?  Add a new prctl()
-> mode?  Let's cook up a plan for that and at least add to changelog?
-
-I don't expect to change it anytime soon but we still have an option --
-if we decide to extend or shrink it we always can use sizeof/offsetof
-helpers to check which exactly version userspace asks us to use.
-As far as I understand the mm_struct is not the structure which
-changes that frequently, right?
-
-> > Should I update on top for -mm tree?
+>  drivers/net/wireless/ath/carl9170/main.c | 6 ------
+>  1 file changed, 6 deletions(-)
 > 
-> Spose so.  Let's see what the code savings are when the other two sites
-> are similarly changed?
+> diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
+> index 12018ff..6758b9a 100644
+> --- a/drivers/net/wireless/ath/carl9170/main.c
+> +++ b/drivers/net/wireless/ath/carl9170/main.c
+> @@ -1430,12 +1430,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+>  		if (!sta_info->ht_sta)
+>  			return -EOPNOTSUPP;
+>  
+> -		rcu_read_lock();
+> -		if (rcu_access_pointer(sta_info->agg[tid])) {
+> -			rcu_read_unlock();
+> -			return -EBUSY;
+> -		}
+> -
+>  		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
+>  				   GFP_ATOMIC);
+>  		if (!tid_info) {
 > 
-> To save a bit more space offsets[] could be an array of uchar, I guess.
-> A BUILD_BUG_ON(sizeof(struct prctl_map) >= 256) would keep that sane.
 
-Sure, thanks!
+sparse [0] hit a bug when testing the patch:
+
+drivers/net/wireless/ath/carl9170/main.c:1440:17: 
+  warning: context imbalance in 'carl9170_op_ampdu_action' - unexpected unlock
+
+This warning is caused by the remaining, stray rcu_read protection
+in the code below (Sorry! Guess RCU needed a bit more explanation
+in the previous post. If you are looking for *pointers*, there are
+excellent resources available in Documentation/RCU/ [1]).
+
+I've attached a full patch (see below) with all changes so far and
+tested if the device/driver still behaves ;-). This patch applies 
+cleanly on top of wireless-testing.
+
+@John,
+can you please take it?
+
+---
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+
+The carl9170_op_ampdu_action() function is used only by the mac80211
+framework. Since the mac80211 already takes care of checks and 
+properly serializing calls to the driver's function there is no
+need for the driver to do the same thing.
+ 
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+[chunkeey@googlemail.com: remove two stray rcu_read_unlock()]
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+---
+diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
+index f8ded84..ef5b6dc 100644
+--- a/drivers/net/wireless/ath/carl9170/main.c
++++ b/drivers/net/wireless/ath/carl9170/main.c
+@@ -1430,18 +1430,10 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+ 		if (!sta_info->ht_sta)
+ 			return -EOPNOTSUPP;
+ 
+-		rcu_read_lock();
+-		if (rcu_dereference(sta_info->agg[tid])) {
+-			rcu_read_unlock();
+-			return -EBUSY;
+-		}
+-
+ 		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
+ 				   GFP_ATOMIC);
+-		if (!tid_info) {
+-			rcu_read_unlock();
++		if (!tid_info)
+ 			return -ENOMEM;
+-		}
+ 
+ 		tid_info->hsn = tid_info->bsn = tid_info->snx = (*ssn);
+ 		tid_info->state = CARL9170_TID_STATE_PROGRESS;
+@@ -1460,7 +1452,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
+ 		list_add_tail_rcu(&tid_info->list, &ar->tx_ampdu_list);
+ 		rcu_assign_pointer(sta_info->agg[tid], tid_info);
+ 		spin_unlock_bh(&ar->tx_ampdu_list_lock);
+-		rcu_read_unlock();
+ 
+ 		ieee80211_start_tx_ba_cb_irqsafe(vif, sta->addr, tid);
+ 		break;
+---
+
+Regards
+Christian
+
+[0] <http://kernelnewbies.org/Sparse>
+[1] <https://www.kernel.org/doc/Documentation/RCU/whatisRCU.txt>
+
+
