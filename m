@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaHVXDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 19:03:00 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32709 "EHLO
+	id S1752483AbaHVXFC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 19:05:02 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:35263 "EHLO
 	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaHVXC6 (ORCPT
+	with ESMTP id S1752188AbaHVXFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 19:02:58 -0400
+	Fri, 22 Aug 2014 19:05:00 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 99.127.230.128
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+X1rFJtVA86tLlIOyKz4W5
-Date: Fri, 22 Aug 2014 16:02:54 -0700
+X-MHO-User: U2FsdGVkX1/nCAcEGU1/4vdgWl2D0EbX
+Date: Fri, 22 Aug 2014 16:04:56 -0700
 From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: devicetree@vger.kernel.org, inux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: DRA7: fix interrupt-cells for GPIO
-Message-ID: <20140822230253.GJ10066@atomide.com>
-References: <1406748032-19417-1-git-send-email-nm@ti.com>
- <53F249F3.9070402@ti.com>
+To: Hans Wennborg <hans@hanshq.net>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/19] ARM: OMAP: fix %d confusingly prefixed with 0x in
+ format string
+Message-ID: <20140822230456.GK10066@atomide.com>
+References: <1407111483-14512-1-git-send-email-hans@hanshq.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53F249F3.9070402@ti.com>
+In-Reply-To: <1407111483-14512-1-git-send-email-hans@hanshq.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140818 11:49]:
-> On 07/30/2014 02:20 PM, Nishanth Menon wrote:
-> > GPIO modules are also interrupt sources. However, they require both the
-> > GPIO number and IRQ type to function properly.
-> > 
-> > By declaring that GPIO uses interrupt-cells=<1>, we essentially do not
-> > allow users of the nodes to use the interrupt property appropritely.
-> > 
-> > With this change, the following now works:
-> > 
-> > interrupt-parent = <&gpio6>;
-> > interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
-> > 
-> > Fixes: 6e58b8f1daaf ('ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board')
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > ---
-> > Based on v3.16-rc7
-> > 
-> >  arch/arm/boot/dts/dra7.dtsi |   16 ++++++++--------
-> >  1 file changed, 8 insertions(+), 8 deletions(-)
+* Hans Wennborg <hans@hanshq.net> [140803 17:21]:
+> Signed-off-by: Hans Wennborg <hans@hanshq.net>
+> ---
+>  arch/arm/mach-omap2/id.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Tony,
-> Gentle ping. we still have this issue on 3.17-rc1. any suggestions on
-> if we can pick this up during RC?
+> diff --git a/arch/arm/mach-omap2/id.c b/arch/arm/mach-omap2/id.c
+> index d42022f..53841de 100644
+> --- a/arch/arm/mach-omap2/id.c
+> +++ b/arch/arm/mach-omap2/id.c
+> @@ -663,7 +663,7 @@ void __init dra7xxx_check_revision(void)
+>  
+>  	default:
+>  		/* Unknown default to latest silicon rev as default*/
+> -		pr_warn("%s: unknown idcode=0x%08x (hawkeye=0x%08x,rev=0x%d)\n",
+> +		pr_warn("%s: unknown idcode=0x%08x (hawkeye=0x%08x,rev=0x%x)\n",
+>  			__func__, idcode, hawkeye, rev);
+>  		omap_revision = DRA752_REV_ES1_1;
+>  	}
 
-Yes thanks applying into omap-for-v3.17/fixes.
+Thanks applying into omap-for-v3.17/fixes.
 
 Tony
