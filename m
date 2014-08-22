@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431AbaHVOi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 10:38:57 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45578 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227AbaHVOi4 (ORCPT
+	id S1756554AbaHVOky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 10:40:54 -0400
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:58162 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271AbaHVOkw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 10:38:56 -0400
-Date: Fri, 22 Aug 2014 16:38:53 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: Trickle charging for rtc-bq32k
-Message-ID: <20140822143853.GA28820@amd>
-References: <20140822131150.GA26724@amd>
- <20140822142852.GA1545@katana>
+	Fri, 22 Aug 2014 10:40:52 -0400
+From: Jayamohan Kallickal <Jayamohan.Kallickal@Emulex.Com>
+To: Tomas Henzl <thenzl@redhat.com>, Alexander Gordeev <agordeev@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: RE: [PATCH v3 08/13] be2iscsi: Use pci_enable_msix_range()
+Thread-Topic: [PATCH v3 08/13] be2iscsi: Use pci_enable_msix_range()
+Thread-Index: AQHPuqoBt3Eq2WF7cE2CRar3E4nKOJvbYPyAgAFXboA=
+Date: Fri, 22 Aug 2014 14:40:25 +0000
+Message-ID: <37724B2049F71D4C9B086F99DDB2DE11572409D6@CMEXMB2.ad.emulex.com>
+References: <cover.1408335523.git.agordeev@redhat.com>
+ <1cf2c3d3243067edac8d170cda0450c82bbfc025.1408335523.git.agordeev@redhat.com>
+ <53F5D397.2020508@redhat.com>
+In-Reply-To: <53F5D397.2020508@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [138.239.125.171]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140822142852.GA1545@katana>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2014-08-22 09:28:52, Wolfram Sang wrote:
-> 
-> > _But_ this should probably be enabled using device tree entry, right?
-> > Unfortunately, the driver is i2c driver, not platform one, so I don't
-> > see how to do that easily...
-> 
-> Trickle charging is usually depending on the hardware setup, so
-> devicetree is actually a good place to put it. We'd just need generic
-> bindings so that they could be applied to various RTC. Just guessing,
-> resistor value would probably be one such property? We would not need
-> putting plain register values into DT.
 
-Well, for bq32000 there's selection between "no charging", "diode +
-resistor", "different resistor".
 
-> There should be no difference regarding DT between i2c and platform
-> drivers.
+-----Original Message-----
+From: Tomas Henzl [mailto:thenzl@redhat.com] 
+Sent: Thursday, August 21, 2014 4:10 AM
+To: Alexander Gordeev; linux-kernel@vger.kernel.org
+Cc: Jayamohan Kallickal; linux-scsi@vger.kernel.org; linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 08/13] be2iscsi: Use pci_enable_msix_range()
 
-Do you have example how to acces of_ from i2c driver?
+On 08/18/2014 08:01 AM, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers using these 
+> two interfaces need to be updated to use the new 
+> pci_enable_msi_range() and pci_enable_msix_range() interfaces.
 
-Platform drivers do:
+Patch looks good to me.
 
-static int palmas_rtc_probe(struct platform_device *pdev)
-{
-        struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
-        struct palmas_rtc *palmas_rtc = NULL;
-	int ret;
-        bool enable_bb_charging = false;
-        bool high_bb_charging;
+Reviewed-by: Tomas Henzl <thenzl@redhat.com>
 
-        if (pdev->dev.of_node) {
-	   enable_bb_charging =
-	   of_property_read_bool(pdev->dev.of_node,
-                                        "ti,backup-battery-chargeable");
-					        high_bb_charging =
-	   of_property_read_bool(pdev->dev.of_node,
-                                        "ti,backup-battery-charge-high-current");
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/be2iscsi/be_main.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/scsi/be2iscsi/be_main.c 
+> b/drivers/scsi/be2iscsi/be_main.c index 915c26b..b422659 100644
+> --- a/drivers/scsi/be2iscsi/be_main.c
+> +++ b/drivers/scsi/be2iscsi/be_main.c
+> @@ -5276,9 +5276,9 @@ static void beiscsi_msix_enable(struct beiscsi_hba *phba)
+>  	for (i = 0; i <= phba->num_cpus; i++)
+>  		phba->msix_entries[i].entry = i;
+>  
+> -	status = pci_enable_msix(phba->pcidev, phba->msix_entries,
+> -				 (phba->num_cpus + 1));
+> -	if (!status)
+> +	status = pci_enable_msix_range(phba->pcidev, phba->msix_entries,
+> +				       phba->num_cpus + 1, phba->num_cpus + 1);
+> +	if (status > 0)
+>  		phba->msix_enabled = true;
+>  
+>  	return;
 
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+Looks Good.
+
+Acked-by:  Jayamohan Kallickal <jayamohan.kallickal@emulex.com>
+--
