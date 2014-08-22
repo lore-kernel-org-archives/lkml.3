@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544AbaHVPIC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:08:02 -0400
-Received: from mout.perfora.net ([74.208.4.197]:52505 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756308AbaHVPIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:08:00 -0400
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com
-Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, stefan@agner.ch,
-        Marcel Ziswiler <marcel@ziswiler.com>
-Subject: [PATCH] arm: tegra: apalis/colibri t30: fix on-module 5v0 supplies
-Date: Fri, 22 Aug 2014 17:06:45 +0200
-Message-Id: <cbf0902cd98332bc0218d84fd055b42fab3ea3b2.1408719375.git.marcel@ziswiler.com>
-X-Mailer: git-send-email 1.9.3
-X-Provags-ID: V02:K0:iktxWjFkxQdDx3FfnwQt93yV1/NDdNoQF3jCXTaiAFf
- wFlx1cRrTFeJCrrelOz6g/He1IcKfQmakFkxjxwzF3FFbQy57L
- U/6L+v0HygEhBm+hIYgEw5slhVhh4N6a6hA4/oDBmK/d0EiPtU
- 878JQK2QUXJF649d2IBs2Olzx8NRsGGaykFagVQoSage3noMvs
- XLdUELW1fbNHDOYzG8ue21ZaFjnil1kTYI6PXWJyCFEGhNuEOC
- 7a2hdaByyOk/aniyECC8pxJcKnflMGOIs93dJWPHkPEoiiasVJ
- ralMU/YALJ7ub6q6COTqbei+II/C6Oayldd/zenI9EVmnzybbJ
- namYIK71uClWbU+iwFr+ZVXkF0Ta7xC2SXqTWGCiyiFdpn3DnA
- 2yrhZ25iey1unWdssWW4PxwDEggSoKS5Mg0IJMQHK1oC+H6d6u
- 2bKQqf2amidSPJ61iLwSN10qBAQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S932238AbaHVPK7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:10:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50377 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932120AbaHVPK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 11:10:57 -0400
+Date: Fri, 22 Aug 2014 16:10:07 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>
+Subject: Re: [PATCH 5/7 update] arm64/efi: do not enter virtual mode in case
+ booting with efi=noruntime or noefi
+Message-ID: <20140822151007.GA17255@arm.com>
+References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
+ <1408007731-15081-5-git-send-email-dyoung@redhat.com>
+ <20140815150952.GY27466@arm.com>
+ <20140818013007.GB3379@darkstar.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140818013007.GB3379@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Working on Gigabit/PCIe support in U-Boot for Apalis T30 I realised
-that the current device tree source includes for our modules only
-happen to work due to referencing the on-carrier 5v0 supply from USB
-which is not at all available on-module. The modules actually contain
-TPS60150 charge pumps to generate the PMIC required 5 volts from the
-one and only 3.3 volt module supply. This patch fixes this.
+On Mon, Aug 18, 2014 at 02:30:07AM +0100, Dave Young wrote:
+> In case efi runtime disabled via noefi kernel cmdline arm64_enter_virtual_mode
+> should error out.
+> 
+> At the same time move early_memunmap(memmap.map, mapsize) to the beginning of
+> the function or it will leak early mem.
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/arm64/kernel/efi.c | 11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+> index 6ed0362..8f5db4a 100644
+> --- a/arch/arm64/kernel/efi.c
+> +++ b/arch/arm64/kernel/efi.c
+> @@ -392,11 +392,16 @@ static int __init arm64_enter_virtual_mode(void)
+>  		return -1;
+>  	}
+>  
+> -	pr_info("Remapping and enabling EFI services.\n");
+> -
+> -	/* replace early memmap mapping with permanent mapping */
+>  	mapsize = memmap.map_end - memmap.map;
+>  	early_memunmap(memmap.map, mapsize);
+> +
+> +	if (efi_runtime_disabled()) {
+> +		pr_info("EFI runtime services will be disabled.\n");
+> +		return -1;
+> +	}
+> +
+> +	pr_info("Remapping and enabling EFI services.\n");
+> +	/* replace early memmap mapping with permanent mapping */
+>  	memmap.map = (__force void *)ioremap_cache((phys_addr_t)memmap.phys_map,
+>  						   mapsize);
+>  	memmap.map_end = memmap.map + mapsize;
 
-Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
----
- arch/arm/boot/dts/tegra30-apalis.dtsi  | 11 ++++++++++-
- arch/arm/boot/dts/tegra30-colibri.dtsi | 11 ++++++++++-
- 2 files changed, 20 insertions(+), 2 deletions(-)
+This looks better, thanks:
 
-diff --git a/arch/arm/boot/dts/tegra30-apalis.dtsi b/arch/arm/boot/dts/tegra30-apalis.dtsi
-index 8adaa78..a5446cb 100644
---- a/arch/arm/boot/dts/tegra30-apalis.dtsi
-+++ b/arch/arm/boot/dts/tegra30-apalis.dtsi
-@@ -423,7 +423,7 @@
- 			vcc4-supply = <&sys_3v3_reg>;
- 			vcc5-supply = <&sys_3v3_reg>;
- 			vcc6-supply = <&vio_reg>;
--			vcc7-supply = <&sys_5v0_reg>;
-+			vcc7-supply = <&charge_pump_5v0_reg>;
- 			vccio-supply = <&sys_3v3_reg>;
- 
- 			regulators {
-@@ -674,5 +674,14 @@
- 			regulator-max-microvolt = <3300000>;
- 			regulator-always-on;
- 		};
-+
-+		charge_pump_5v0_reg: regulator@101 {
-+			compatible = "regulator-fixed";
-+			reg = <101>;
-+			regulator-name = "5v0";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/tegra30-colibri.dtsi b/arch/arm/boot/dts/tegra30-colibri.dtsi
-index bf16f8e..c4ed1be 100644
---- a/arch/arm/boot/dts/tegra30-colibri.dtsi
-+++ b/arch/arm/boot/dts/tegra30-colibri.dtsi
-@@ -201,7 +201,7 @@
- 			vcc4-supply = <&sys_3v3_reg>;
- 			vcc5-supply = <&sys_3v3_reg>;
- 			vcc6-supply = <&vio_reg>;
--			vcc7-supply = <&sys_5v0_reg>;
-+			vcc7-supply = <&charge_pump_5v0_reg>;
- 			vccio-supply = <&sys_3v3_reg>;
- 
- 			regulators {
-@@ -373,5 +373,14 @@
- 			regulator-max-microvolt = <3300000>;
- 			regulator-always-on;
- 		};
-+
-+		charge_pump_5v0_reg: regulator@101 {
-+			compatible = "regulator-fixed";
-+			reg = <101>;
-+			regulator-name = "5v0";
-+			regulator-min-microvolt = <5000000>;
-+			regulator-max-microvolt = <5000000>;
-+			regulator-always-on;
-+		};
- 	};
- };
--- 
-1.9.3
+  Reviewed-by: Will Deacon <will.deacon@arm.com>
 
+Are you sending these via the efi tree as part of this series, or do you
+need me to pick anything up into the arm64 tree?
+
+Will
