@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaHVLwe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 07:52:34 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:34934 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbaHVLwd (ORCPT
+	id S1756064AbaHVMAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 08:00:09 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60561 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214AbaHVMAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 07:52:33 -0400
-Date: Fri, 22 Aug 2014 07:52:22 -0400 (EDT)
-From: Pankaj Gupta <pagupta@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, dgibson@redhat.com, vfalico@gmail.com,
-        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org
-Message-ID: <175719847.27217377.1408708342392.JavaMail.zimbra@redhat.com>
-In-Reply-To: <53F575F8.7000208@redhat.com>
-References: <1408369040-1216-1-git-send-email-pagupta@redhat.com> <1408369040-1216-3-git-send-email-pagupta@redhat.com> <20140820105817.GB1916@nanopsycho.orion> <20140820111724.GE17371@redhat.com> <53F575F8.7000208@redhat.com>
-Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
- module_param
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.7]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
-Thread-Topic: tuntap: Publish tuntap maximum number of queues as module_param
-Thread-Index: 4Q0fVAZmtlP/GAp9GvUUSjyQkxkx3A==
+	Fri, 22 Aug 2014 08:00:07 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH 1/3] x86: kernel/tls.h: Add missing #define
+Date: Fri, 22 Aug 2014 13:59:17 +0200
+Message-Id: <1408708759-13164-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The macro name suggests that the include guard idiom was meant, but
+the #define was missing.
 
-> 
-> On 08/20/2014 07:17 PM, Michael S. Tsirkin wrote:
-> > On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
-> >> > Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
-> >>> > > This patch publishes maximum number of tun/tap queues allocated as a
-> >>> > > read_only module parameter which a user space application like
-> >>> > > libvirt
-> >>> > > can make use of to limit maximum number of queues. Value of read_only
-> >>> > > module parameter can be writable only at module load time. If no
-> >>> > > value is set
-> >>> > > at module load time a default value 256 is used which is equal to
-> >>> > > maximum number
-> >>> > > of vCPUS allowed by KVM.
-> >>> > >
-> >>> > > Administrator can specify maximum number of queues only at the driver
-> >>> > > module load time.
-> >>> > >
-> >>> > >Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-> >>> > >---
-> >>> > > drivers/net/tun.c |   13 +++++++++++--
-> >>> > > 1 files changed, 11 insertions(+), 2 deletions(-)
-> >>> > >
-> >>> > >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> >>> > >index acaaf67..1f518e2 100644
-> >>> > >--- a/drivers/net/tun.c
-> >>> > >+++ b/drivers/net/tun.c
-> >>> > >@@ -119,6 +119,9 @@ struct tap_filter {
-> >>> > > 
-> >>> > > #define TUN_FLOW_EXPIRE (3 * HZ)
-> >>> > > 
-> >>> > >+static int max_tap_queues = MAX_TAP_QUEUES;
-> >>> > >+module_param(max_tap_queues, int, S_IRUGO);
-> >> > 
-> >> > Please do not introduce new module paramaters. Please other ways to
-> >> > interchange values with userspace.
-> > I suggested this initially, but thinking more about it, I agree.
-> >
-> > It's a global limit (necessary to limit memory utilization by
-> > userspace), but it should be possible to change it
-> > after module load.
-> 
-> How about pass this limit through ifr during TUNSETIFF, then
-> alloc_netdev_mq() can use this limit.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ arch/x86/kernel/tls.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-Any other ideas/comments from the experts. Or shall I re-repost other patches 
-in the series except this patch until we agree on one.
+diff --git a/arch/x86/kernel/tls.h b/arch/x86/kernel/tls.h
+index 2f083a2..a18e48b 100644
+--- a/arch/x86/kernel/tls.h
++++ b/arch/x86/kernel/tls.h
+@@ -11,6 +11,7 @@
+  */
+ 
+ #ifndef _ARCH_X86_KERNEL_TLS_H
++#define _ARCH_X86_KERNEL_TLS_H
+ 
+ #include <linux/regset.h>
+ 
+-- 
+1.9.2
 
-> 
