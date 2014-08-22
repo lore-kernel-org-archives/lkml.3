@@ -1,79 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648AbaHVJNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 05:13:04 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:61220 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936AbaHVJNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 05:13:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <53F5E652.6050408@arm.com>
-References: <1406306692-7135-1-git-send-email-sudeep.holla@arm.com>
- <1408618794-28497-1-git-send-email-sudeep.holla@arm.com> <1408618794-28497-4-git-send-email-sudeep.holla@arm.com>
- <CANq1E4Q4GRYUxrysUyTD5bO3di9M17i0H5V0fXb5+HrTrYY5aQ@mail.gmail.com> <53F5E652.6050408@arm.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 22 Aug 2014 11:12:39 +0200
-Message-ID: <CAPXgP130hg8uwdmSKAAAKZzxncT-VXYYXvmN-ta7wcXQXgXEmw@mail.gmail.com>
-Subject: Re: [PATCH v3 03/11] drivers: base: add new class "cpu" to group cpu devices
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755977AbaHVJNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 05:13:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41696 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755772AbaHVJNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 05:13:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,378,1406617200"; 
+   d="scan'208";a="580319531"
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: jic23@kernel.org, linux-iio@vger.kernel.org, pmeerw@pmeerw.net
+Cc: daniel.baluta@intel.com, linux-kernel@vger.kernel.org,
+        Tsechih_Lin@asus.com
+Subject: [PATCH v3] iio: Add Dyna-Image AL3320A ambient light sensor driver
+Date: Fri, 22 Aug 2014 12:17:22 +0300
+Message-Id: <1408699042-17336-1-git-send-email-daniel.baluta@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21, 2014 at 2:30 PM, Sudeep Holla <sudeep.holla@arm.com> wrote:
-> On 21/08/14 12:20, David Herrmann wrote:
->> On Thu, Aug 21, 2014 at 12:59 PM, Sudeep Holla <sudeep.holla@arm.com>
->> wrote:
->>>
->>> From: Sudeep Holla <sudeep.holla@arm.com>
->>>
->>> This patch creates a new class called "cpu" and assigns it to all the
->>> cpu devices. This helps in grouping all the cpu devices and associated
->>> child devices under the same class.
->>>
->>> This patch also:
->>> 1. modifies the get_parent_device to return the legacy path
->>>     (/sys/devices/system/cpu/..) for the cpu class devices to support
->>>     existing sysfs ABI
->>> 2. avoids creating link in the class directory pointing to the device as
->>>     there would be per-cpu instance of these devices with the same name
->>> 3. makes sure subsystem symlink continues pointing to cpu bus instead of
->>>     cpu class for cpu devices
->>
->>
->> This patch lacks any explanation _why_ you add a class for CPUs. With
->> this patch applied, these directories are effectively the same:
->>    /sys/bus/cpu/devices/
->>    /sys/class/cpu/
->>
->
-> Yes that's the intention, so that we don't break any existing sysfs/ABI
->
->
->> Why do we need a cpu-class if the same set of information is already
->> available on the cpu-bus? Furthermore, classes are deprecated anyway.
->> Everything you can do with a class can be solved with a bus. And we
->> already have a bus for cpus.
->>
->
-> This was suggested[1] by GregKH. The main reason it was added is to
-> reuse the device attributes rather than creating the raw kobjects.
->
-> It helps to move few other cpu related subsystems using raw kobjects to
-> the device attribute groups.
+Minimal implementation. This driver provides raw illuminance readings.
 
-No, nothing should ever create a bus and a class with the same name.
-This is not supported by userspace tools.
+This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
+by Tsechih Lin <Tsechih_Lin@asus.com>
 
-Your problem needs to be addressed by adding things to the existing
-"cpu" bus, not by adding a new class.
+* https://android.googlesource.com/kernel/msm.git
 
-Kay
+Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+---
+Changes since v2: (reported by Peter Meerwald)
+	* removed definition of DATA_HIGH and SW_RESET as they are not used
+	* added a comment to al3320a_get_adc_value() function
+	* added thresholds on TODO list
+	* small stye fixes
+
+Changes since v1: (reported by Peter Meerwald)
+	* used u8 instead of int for passing gain and mean_time
+	* used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
+	* used devm_iio_device_register instead of iio_device_register
+	* small style fixes
+
+ drivers/iio/light/Kconfig   |  10 ++
+ drivers/iio/light/Makefile  |   1 +
+ drivers/iio/light/al3320a.c | 255 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 266 insertions(+)
+ create mode 100644 drivers/iio/light/al3320a.c
+
+diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
+index bf05ca5..5bea821 100644
+--- a/drivers/iio/light/Kconfig
++++ b/drivers/iio/light/Kconfig
+@@ -17,6 +17,16 @@ config ADJD_S311
+ 	 This driver can also be built as a module.  If so, the module
+ 	 will be called adjd_s311.
+ 
++config AL3320A
++	tristate "AL3320A ambient light sensor"
++	depends on I2C
++	help
++	 Say Y here if you want to build a driver for the Dyna Image AL3320A
++	 ambient light sensor.
++
++	 To compile this driver as a module, choose M here: the
++	 module will be called al3320a.
++
+ config APDS9300
+ 	tristate "APDS9300 ambient light sensor"
+ 	depends on I2C
+diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
+index 8b8c09f..47877a3 100644
+--- a/drivers/iio/light/Makefile
++++ b/drivers/iio/light/Makefile
+@@ -4,6 +4,7 @@
+ 
+ # When adding new entries keep the list in alphabetical order
+ obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
++obj-$(CONFIG_AL3320A)		+= al3320a.o
+ obj-$(CONFIG_APDS9300)		+= apds9300.o
+ obj-$(CONFIG_CM32181)		+= cm32181.o
+ obj-$(CONFIG_CM36651)		+= cm36651.o
+diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
+new file mode 100644
+index 0000000..28fc8b0
+--- /dev/null
++++ b/drivers/iio/light/al3320a.c
+@@ -0,0 +1,255 @@
++/*
++ * AL3320A - Dyna Image Ambient Light Sensor
++ *
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This file is subject to the terms and conditions of version 2 of
++ * the GNU General Public License.  See the file COPYING in the main
++ * directory of this archive for more details.
++ *
++ * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
++ *
++ * TODO: interrupt support, thresholds
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/i2c.h>
++
++#include <linux/iio/iio.h>
++#include <linux/iio/sysfs.h>
++
++#define AL3320A_DRV_NAME "al3320a"
++
++#define AL3320A_REG_CONFIG		0x00
++#define AL3320A_REG_STATUS		0x01
++#define AL3320A_REG_INT			0x02
++#define AL3320A_REG_WAIT		0x06
++#define AL3320A_REG_CONFIG_RANGE	0x07
++#define AL3320A_REG_PERSIST		0x08
++#define AL3320A_REG_MEAN_TIME		0x09
++#define AL3320A_REG_ADUMMY		0x0A
++#define AL3320A_REG_DATA_LOW		0x22
++
++#define AL3320A_REG_LOW_THRESH_LOW	0x30
++#define AL3320A_REG_LOW_THRESH_HIGH	0x31
++#define AL3320A_REG_HIGH_THRESH_LOW	0x32
++#define AL3320A_REG_HIGH_THRESH_HIGH	0x33
++
++#define AL3320A_CONFIG_DISABLE		0x00
++#define AL3320A_CONFIG_ENABLE		BIT(0)
++
++#define AL3320A_GAIN_SHIFT		1
++
++/* chip params default values */
++#define AL3320A_DEFAULT_MEAN_TIME	4
++#define AL3320A_DEFAULT_WAIT_TIME	0 /* no waiting */
++
++enum al3320a_range {
++	AL3320A_RANGE_1, /* 33.28K lux */
++	AL3320A_RANGE_2, /* 8.32K lux  */
++	AL3320A_RANGE_3, /* 2.08K lux  */
++	AL3320A_RANGE_4  /* 0.65K lux  */
++};
++
++static const int al3320a_scales[][2] = {
++	{0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
++};
++
++struct al3320a_data {
++	struct i2c_client *client;
++	u8 range;
++};
++
++static const struct iio_chan_spec al3320a_channels[] = {
++	{
++		.type	= IIO_LIGHT,
++		.info_mask_separate =
++			BIT(IIO_CHAN_INFO_RAW) |
++			BIT(IIO_CHAN_INFO_SCALE),
++	}
++};
++
++static int al3320a_enable(struct al3320a_data *data)
++{
++	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
++					 AL3320A_CONFIG_ENABLE);
++}
++
++static int al3320a_disable(struct al3320a_data *data)
++{
++	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
++					 AL3320A_CONFIG_DISABLE);
++}
++
++static int al3320a_set_config_range(struct al3320a_data *data, u8 gain)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
++					 gain << AL3320A_GAIN_SHIFT);
++	if (ret >= 0)
++		data->range = gain;
++	return ret;
++}
++
++static int al3320a_set_mean_time(struct al3320a_data *data, u8 mean_time)
++{
++	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
++					 mean_time);
++}
++
++static int al3320a_set_wait_time(struct al3320a_data *data, u8 wait_time)
++{
++	return i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
++					 wait_time);
++}
++
++/**
++ * al3320a_get_adc_value() - report raw ADC reading
++ * @data - pointer to struct al3320a_data
++ *
++ * ALS ADC value is stored in two adjacent registers:
++ *   - low byte of the channel output is stored at AL3320A_REG_DATA_LOW
++ *   - high byte of channel output is stored at AL3320A_REG_DATA_LOW + 1.
++ *
++ * Return: positive raw ADC reading or negative error code.
++ */
++static int al3320a_get_adc_value(struct al3320a_data *data)
++{
++	return i2c_smbus_read_word_swapped(data->client, AL3320A_REG_DATA_LOW);
++}
++
++static int al3320a_init(struct al3320a_data *data)
++{
++	int ret;
++
++	/* power on */
++	ret = al3320a_enable(data);
++	if (ret)
++		return ret;
++
++	ret = al3320a_set_config_range(data, AL3320A_RANGE_3);
++	if (ret)
++		return ret;
++
++	ret = al3320a_set_mean_time(data, AL3320A_DEFAULT_MEAN_TIME);
++	if (ret)
++		return ret;
++
++	ret = al3320a_set_wait_time(data, AL3320A_DEFAULT_WAIT_TIME);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int al3320a_read_raw(struct iio_dev *indio_dev,
++			    struct iio_chan_spec const *chan,
++			    int *val,
++			    int *val2,
++			    long mask)
++{
++	struct al3320a_data *data = iio_priv(indio_dev);
++	int ret;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_RAW:
++		ret = al3320a_get_adc_value(data);
++		if (ret < 0)
++			return ret;
++		*val = ret;
++		return IIO_VAL_INT;
++	case IIO_CHAN_INFO_SCALE:
++		*val = al3320a_scales[data->range][0];
++		*val2 = al3320a_scales[data->range][1];
++		return IIO_VAL_INT_PLUS_MICRO;
++	}
++	return -EINVAL;
++}
++
++static int al3320a_write_raw(struct iio_dev *indio_dev,
++			     struct iio_chan_spec const *chan,
++			     int val, int val2, long mask)
++{
++	struct al3320a_data *data = iio_priv(indio_dev);
++	int i;
++
++	switch (mask) {
++	case IIO_CHAN_INFO_SCALE:
++		for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
++			if (val == al3320a_scales[i][0] &&
++			    val2 == al3320a_scales[i][1])
++				return al3320a_set_config_range(data, i);
++		}
++		break;
++	}
++	return -EINVAL;
++}
++
++static const struct iio_info al3320a_info = {
++	.driver_module	= THIS_MODULE,
++	.read_raw	= al3320a_read_raw,
++	.write_raw	= al3320a_write_raw,
++};
++
++static int al3320a_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct al3320a_data *data;
++	struct iio_dev *indio_dev;
++	int ret;
++
++	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	data = iio_priv(indio_dev);
++	i2c_set_clientdata(client, indio_dev);
++	data->client = client;
++
++	indio_dev->dev.parent = &client->dev;
++	indio_dev->info = &al3320a_info;
++	indio_dev->name = AL3320A_DRV_NAME;
++	indio_dev->channels = al3320a_channels;
++	indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
++	indio_dev->modes = INDIO_DIRECT_MODE;
++
++	ret = al3320a_init(data);
++	if (ret) {
++		dev_err(&client->dev, "al3320a chip init failed\n");
++		return ret;
++	}
++
++	return devm_iio_device_register(&client->dev, indio_dev);
++}
++
++static int al3320a_remove(struct i2c_client *client)
++{
++	struct iio_dev *indio_dev = i2c_get_clientdata(client);
++	struct al3320a_data *data = iio_priv(indio_dev);
++
++	return al3320a_disable(data);
++}
++
++static const struct i2c_device_id al3320a_id[] = {
++	{"al3320a", 0},
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, al3320a_id);
++
++static struct i2c_driver al3320a_driver = {
++	.driver = {
++		.name = AL3320A_DRV_NAME,
++	},
++	.probe		= al3320a_probe,
++	.remove		= al3320a_remove,
++	.id_table	= al3320a_id,
++};
++
++module_i2c_driver(al3320a_driver);
++
++MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
++MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.9.1
+
