@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769AbaHVRMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 13:12:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52526 "EHLO arroyo.ext.ti.com"
+	id S932661AbaHVROG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 13:14:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8458 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932297AbaHVRMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 13:12:48 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-input@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <dmitry.torokhov@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH v2] doc: dt/bindings: input: Fix drv260x binding document
-Date: Fri, 22 Aug 2014 12:12:19 -0500
-Message-ID: <1408727539-15996-1-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932297AbaHVROE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 13:14:04 -0400
+Date: Fri, 22 Aug 2014 19:11:42 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] x86, fpu: shift drop_init_fpu() from save_xstate_sig()
+	to handle_signal()
+Message-ID: <20140822171142.GA14812@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the drv260x dt binding document:
-- Change the node name to the devices function not the
-device name.
-- Add vbat-supply to the example.
-- Fix indentation of the example.
+Al, Linus, could you take a look?
 
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
+Looks simple, but I have to admit that every time I read FPU code
+I feel that I never read it before. And I never really understood
+it in details.
 
-v2 - Address comments on indentation, node declaration, add vbat-supply,
-removed description as it did not make sense - https://patchwork.kernel.org/patch/4765141/
+See the changelog, but in short drop_init_fpu() in save_xstate_sig()
+looks wrong. This assumes that we are going to call the handler and
+thus we need the new FPU state. But this is only true if setup_frame()
+won't fail after that. If it fails, we simply lose the FPU state.
 
- .../devicetree/bindings/input/ti,drv260x.txt       |   23 ++++++++++----------
- 1 file changed, 11 insertions(+), 12 deletions(-)
+Many thanks to Bean Anderson for the detailed report, let me quote it:
 
-diff --git a/Documentation/devicetree/bindings/input/ti,drv260x.txt b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-index a9c8519..ee09c8f 100644
---- a/Documentation/devicetree/bindings/input/ti,drv260x.txt
-+++ b/Documentation/devicetree/bindings/input/ti,drv260x.txt
-@@ -1,6 +1,4 @@
--Texas Instruments - drv260x Haptics driver family
--
--The drv260x family serial control bus communicates through I2C protocols
-+* Texas Instruments - drv260x Haptics driver family
- 
- Required properties:
- 	- compatible - One of:
-@@ -37,15 +35,16 @@ Optional properties:
- 			  3.2 v.
- Example:
- 
--drv2605l: drv2605l@5a {
--		compatible = "ti,drv2605l";
--		reg = <0x5a>;
--		enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
--		mode = <DRV260X_LRA_MODE>;
--		library-sel = <DRV260X_LIB_LRA>;
--		vib-rated-mv = <3200>;
--		vib-overdriver-mv = <3200>;
--};
-+haptics: haptics@5a {
-+	compatible = "ti,drv2605l";
-+	reg = <0x5a>;
-+	vbat-supply = <&vbat>;
-+	enable-gpio = <&gpio1 28 GPIO_ACTIVE_HIGH>;
-+	mode = <DRV260X_LRA_MODE>;
-+	library-sel = <DRV260X_LIB_LRA>;
-+	vib-rated-mv = <3200>;
-+	vib-overdriver-mv = <3200>;
-+}
- 
- For more product information please see the link below:
- http://www.ti.com/product/drv2605
--- 
-1.7.9.5
+	(1) A real-time signal is being delivered to a thread.
+	(2) There is not enough room to push the ucontext on the
+	    stack so a SIGSEGV is generated
+	(3) The segv handler is running on the sigaltstack.
+	(4) The ucontext received by the segv handler does not contain
+	    the FP registers. And on return from the segv handler, the
+	    existing FP registers appear to be zero'd out.
+
+Oleg.
 
