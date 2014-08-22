@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973AbaHVHhA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:37:00 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:61360 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754214AbaHVHg7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:36:59 -0400
-Date: Fri, 22 Aug 2014 09:36:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Jason Wang <jasowang@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mst@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH net-next 2/2] net: exit busy loop when another process is
- runnable
-Message-ID: <20140822073653.GA7372@gmail.com>
-References: <1408608310-13579-1-git-send-email-jasowang@redhat.com>
- <1408608310-13579-2-git-send-email-jasowang@redhat.com>
- <1408683665.5648.69.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408683665.5648.69.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755985AbaHVHiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:38:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64021 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755844AbaHVHiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 03:38:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,378,1406617200"; 
+   d="scan'208";a="588403236"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, lenb@kernel.org, bebl@mageta.org, davem@davemloft.net
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI: Run fixed button devices' notify callback in the process context
+Date: Fri, 22 Aug 2014 15:37:55 +0800
+Message-Id: <1408693091-16268-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently fixed button devices' notify callbacks are running in the
+interrupt context. It's not necessary and prevent calling functions
+with mutex lock(E,G evaluating ACPI method). Otherwise, it's different
+with non-fixed button device whose notify callback is running in the process
+context. This patch is to make fixed button device's notify
+callback in the process context and this also can avoid dead lock
+when using netlink to report button event to user space.
 
-> > diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
-> > index 1d67fb6..8a33fb2 100644
-> > --- a/include/net/busy_poll.h
-> > +++ b/include/net/busy_poll.h
-> > @@ -109,7 +109,8 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
-> >  		cpu_relax();
-> >  
-> >  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
-> > -		 !need_resched() && !busy_loop_timeout(end_time));
-> > +		 !need_resched() && !busy_loop_timeout(end_time) &&
-> > +		 nr_running_this_cpu() < 2);
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/acpi/scan.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-So it's generally a bad idea to couple to the scheduler through 
-such a low level, implementation dependent value like 
-'nr_running', causing various problems:
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 0a817ad..bfb7fc5 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -922,12 +922,17 @@ static void acpi_device_notify(acpi_handle handle, u32 event, void *data)
+ 	device->driver->ops.notify(device, event);
+ }
+ 
+-static acpi_status acpi_device_notify_fixed(void *data)
++static void acpi_device_notify_fixed_run(void *data)
+ {
+ 	struct acpi_device *device = data;
+ 
+-	/* Fixed hardware devices have no handles */
+ 	acpi_device_notify(NULL, ACPI_FIXED_HARDWARE_EVENT, device);
++}
++
++static acpi_status acpi_device_notify_fixed(void *data)
++{
++	/* Fixed hardware devices have no handles */
++	acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_device_notify_fixed_run, data);
+ 	return AE_OK;
+ }
+ 
+-- 
+1.8.3.1
 
- - It misses important work that might be pending on this CPU,
-   like RCU callbacks.
-
- - It will also over-credit task contexts that might be
-   runnable, but which are less important than the currently
-   running one: such as a SCHED_IDLE task
-
- - It will also over-credit even regular SCHED_NORMAL tasks, if
-   this current task is more important than them: say
-   SCHED_FIFO. A SCHED_FIFO workload should run just as fast 
-   with SCHED_NORMAL tasks around, as a SCHED_NORMAL workload 
-   on an otherwise idle system.
-
-So what you want is a more sophisticated query to the 
-scheduler, a sched_expected_runtime() method that returns the 
-number of nsecs this task is expected to run in the future, 
-which returns 0 if you will be scheduled away on the next 
-schedule(), and returns infinity for a high prio SCHED_FIFO 
-task, or if this SCHED_NORMAL task is on an otherwise idle CPU.
-
-It will return a regular time slice value in other cases, when 
-there's some load on the CPU.
-
-The polling logic can then do its decision based on that time 
-value.
-
-All this can be done reasonably fast and lockless in most 
-cases, so that it can be called from busy-polling code.
-
-An added advantage would be that this approach consolidates the 
-somewhat random need_resched() checks into this method as well.
-
-In any case I don't agree with the nr_running_this_cpu() 
-method.
-
-(Please Cc: me and lkml to future iterations of this patchset.)
-
-Thanks,
-
-	Ingo
