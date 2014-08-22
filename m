@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647AbaHVT1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:27:34 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53481 "EHLO
+	id S1751771AbaHVT1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:27:54 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53501 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578AbaHVT1b (ORCPT
+	with ESMTP id S1751719AbaHVT1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:27:31 -0400
-Date: Fri, 22 Aug 2014 12:27:30 -0700 (PDT)
-Message-Id: <20140822.122730.802892307084788125.davem@davemloft.net>
-To: himangi774@gmail.com
-Cc: hjlipp@web.de, tilman@imap.cc, isdn@linux-pingi.de,
-        gigaset307x-common@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH] isdn/bas_gigaset: use USB API functions rather than
- constants
+	Fri, 22 Aug 2014 15:27:52 -0400
+Date: Fri, 22 Aug 2014 12:27:51 -0700 (PDT)
+Message-Id: <20140822.122751.953073827713209046.davem@davemloft.net>
+To: bernat.ada@gmail.com
+Cc: mchan@broadcom.com, eddie.wai@broadcom.com, joe@perches.com,
+        mingo@kernel.org, peterz@infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH v2] cnic: Replace rcu_dereference() with
+ rcu_access_pointer()
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140817003120.GA11815@himangi-Dell>
-References: <20140817003120.GA11815@himangi-Dell>
+In-Reply-To: <20140817101149.GA3692@ada>
+References: <20140817101149.GA3692@ada>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 22 Aug 2014 12:27:31 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 22 Aug 2014 12:27:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
-Date: Sun, 17 Aug 2014 06:01:20 +0530
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Date: Sun, 17 Aug 2014 13:12:09 +0300
 
-> This patch introduces the use of the function usb_endpoint_num.
-> 
-> The Coccinelle semantic patch that makes these changes is as follows:
-> 
-> @@ struct usb_endpoint_descriptor *epd; @@
-> 
-> - (epd->bEndpointAddress & \(USB_ENDPOINT_NUMBER_MASK\|0x0f\))
-> + usb_endpoint_num(epd)
-> 
-> Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-> Acked-by: Julia Lawall <julia.lawall@lip6.fr>
+> The "rcu_dereference()" calls are used directly in conditions.
+> Since their return values are never dereferenced it is recommended to use
+> "rcu_access_pointer()" instead of "rcu_dereference()".
+> Therefore, this patch makes the replacements.
+ ...
+> Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 
 Applied.
