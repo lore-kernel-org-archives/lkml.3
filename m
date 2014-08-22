@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733AbaHVBPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 21 Aug 2014 21:15:51 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:31346 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755714AbaHVBPt (ORCPT
+	id S1755753AbaHVBSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 21 Aug 2014 21:18:16 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:34182 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538AbaHVBSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 21 Aug 2014 21:15:49 -0400
-X-IronPort-AV: E=Sophos;i="5.04,376,1406563200"; 
-   d="scan'208";a="34921743"
-Message-ID: <53F698FD.6030409@cn.fujitsu.com>
-Date: Fri, 22 Aug 2014 09:12:29 +0800
-From: Chai Wen <chaiw.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Thu, 21 Aug 2014 21:18:15 -0400
+Date: Thu, 21 Aug 2014 18:18:10 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: atull@opensource.altera.com, jdelvare@suse.de, lm-sensors@lm-sensors.org,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH 2/2] pmbus: ltc2978: add regulator gating
+Message-ID: <20140822011810.GA17461@roeck-us.net>
+References: <1408659686-29106-1-git-send-email-atull@opensource.altera.com>
+ <1408659686-29106-3-git-send-email-atull@opensource.altera.com>
+ <20140822003650.GQ24407@sirena.org.uk>
 MIME-Version: 1.0
-To: <mingo@redhat.com>, Don Zickus <dzickus@redhat.com>
-CC: chai wen <chaiw.fnst@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] softlockup: make detector be aware of task switch of
- processes hogging cpu
-References: <20140821023051.GO49576@redhat.com> <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
-In-Reply-To: <1408599742-21674-1-git-send-email-chaiw.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.161]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822003650.GQ24407@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 01:42 PM, chai wen wrote:
-
-> For now, soft lockup detector warns once for each case of process softlockup.
-> But the thread 'watchdog/n' may not always get the cpu at the time slot between
-> the task switch of two processes hogging that cpu to reset soft_watchdog_warn.
+On Thu, Aug 21, 2014 at 07:36:50PM -0500, Mark Brown wrote:
+> On Thu, Aug 21, 2014 at 05:21:26PM -0500, atull@opensource.altera.com wrote:
 > 
-> An example would be two processes hogging the cpu.  Process A causes the
-> softlockup warning and is killed manually by a user.  Process B immediately
-> becomes the new process hogging the cpu preventing the softlockup code from
-> resetting the soft_watchdog_warn variable.
+> > +config SENSORS_LTC2978_REGULATOR
+> > +	boolean "Regulator support for LTC2974, LTC2978, LTC3880, and LTC3883"
+> > +	default n
 > 
-> This case is a false negative of "warn only once for a process", as there may
-> be a different process that is going to hog the cpu.  Resolve this by
-> saving/checking the task pointer of the hogging process and use that to reset
-> soft_watchdog_warn too.
+> No need to say default n here, it's the default default.
 > 
-> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-
-
-Hi Ingo & Don
-
-Ping...
-
-This patch is using the task pointer to check cases that softlockup can
-not reset itself, and has been tested.
-
-thanks
-chai wen
-
-> ---
->  kernel/watchdog.c |   16 +++++++++++++++-
->  1 files changed, 15 insertions(+), 1 deletions(-)
+> > +	depends on SENSORS_LTC2978
+> > +	select REGULATOR
 > 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 0037db6..2e55620 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -42,6 +42,7 @@ static DEFINE_PER_CPU(bool, softlockup_touch_sync);
->  static DEFINE_PER_CPU(bool, soft_watchdog_warn);
->  static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts);
->  static DEFINE_PER_CPU(unsigned long, soft_lockup_hrtimer_cnt);
-> +static DEFINE_PER_CPU(struct task_struct *, softlockup_task_ptr_saved);
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  static DEFINE_PER_CPU(bool, hard_watchdog_warn);
->  static DEFINE_PER_CPU(bool, watchdog_nmi_touch);
-> @@ -328,8 +329,20 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  			return HRTIMER_RESTART;
->  
->  		/* only warn once */
-> -		if (__this_cpu_read(soft_watchdog_warn) == true)
-> +		if (__this_cpu_read(soft_watchdog_warn) == true) {
-> +			/*
-> +			 * Handle the case where multiple processes are
-> +			 * causing softlockups but the duration is small
-> +			 * enough, the softlockup detector can not reset
-> +			 * itself in time.  Use task pointers to detect this.
-> +			 */
-> +			if (__this_cpu_read(softlockup_task_ptr_saved) !=
-> +			    current) {
-> +				__this_cpu_write(soft_watchdog_warn, false);
-> +				__touch_watchdog();
-> +			}
->  			return HRTIMER_RESTART;
-> +		}
->  
->  		if (softlockup_all_cpu_backtrace) {
->  			/* Prevent multiple soft-lockup reports if one cpu is already
-> @@ -345,6 +358,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  		pr_emerg("BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
->  			smp_processor_id(), duration,
->  			current->comm, task_pid_nr(current));
-> +		__this_cpu_write(softlockup_task_ptr_saved, current);
->  		print_modules();
->  		print_irqtrace_events(current);
->  		if (regs)
+> I'd expect a depends here.
+> 
+> > +#include <linux/regulator/driver.h>
+> > +#include <linux/regulator/machine.h>
+> 
+> If you need machine.h that's suspicious...  why do you need it?
+> 
+> > +static int ltc2978_write_pmbus_operation(struct regulator_dev *rdev, u8 value)
+> > +{
+> > +	struct device *dev = rdev_get_dev(rdev);
+> > +	struct i2c_client *client = to_i2c_client(dev->parent);
+> > +	int ret;
+> > +
+> > +	ret = pmbus_set_page(client, 0xff);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	return i2c_smbus_write_byte_data(client, PMBUS_OPERATION, value);
+> > +}
+> 
+> This all looks very much like pmbus could use regmap and then the regmap
+> helpers.  I'd not insist on it though.  What I would however suggest is
+
+Not unless regmap got extended recently to support quick, byte, and word
+smbus accesses at the same time.
+
+Guenter
+
+> that these functions should all be helpers which read the specific
+> page, addresses and bits to write from the driver structure - I bet the
+> code is going to be identical for most pmbus using regulators and so it
+> makes sense to share it like we do with the generic regmap functions.
+> 
+> That means that any good practice can be deployed more easily and any
+> API updates only need to update the helpers.
+> 
+> > +static struct regulator_init_data ltc2978_regulator_init = {
+> > +	.constraints = {
+> > +		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+> > +	},
+> > +};
+> 
+> You should not be forcing this on, you don't know what's safe on any
+> given board.  Allow the board to specify constraints then it has
+> control.
 
 
-
--- 
-Regards
-
-Chai Wen
