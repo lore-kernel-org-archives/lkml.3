@@ -1,81 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104AbaHVNqd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 09:46:33 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:12271 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756478AbaHVNqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 09:46:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 22 Aug 2014 06:32:36 -0700
-Message-ID: <53F7499D.7070103@nvidia.com>
-Date: Fri, 22 Aug 2014 19:16:05 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH] tps65910: Work around silicon erratum SWCZ010
-References: <1408709666-5927-1-git-send-email-arnout@mind.be>
-In-Reply-To: <1408709666-5927-1-git-send-email-arnout@mind.be>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756490AbaHVNsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 09:48:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22563 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756390AbaHVNsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 09:48:37 -0400
+From: harald@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: Harald Hoyer <harald@redhat.com>
+Subject: [PATCH] efi_high_alloc: use EFI_ALLOCATE_MAX_ADDRESS
+Date: Fri, 22 Aug 2014 15:48:23 +0200
+Message-Id: <1408715303-2215-1-git-send-email-harald@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 22 August 2014 05:44 PM, Arnout Vandecappelle (Essensium/Mind) 
-wrote:
->  From http://www.ti.com/lit/pdf/SWCZ010 :
->
-> Glitch on SDA-SCL not managed correctly by the I2C IP
->
-> Impact:
-> The standard specifies that the I2C transfer should restart on a start
-> event in all cases. The current design does not support two consecutive
-> Start conditions. This can cause the first real access after such a
-> glitch to be corrupted.
->
-> Description:
-> An unexpected glitch on SDA and SCL can generate a wrong start event.
-> In the current design, the SCL line must toggle two times to detect a
-> new start event and completely restart the I2C access; hence the real
-> start event is not detected in the case of a single SCL toggle.
->
-> Workaround:
-> Repeat I2C access.
->
-> The first access to the tps65910 that we do is when loading the regmap
-> in the probe function. If there has been a glitch during boot and the
-> erratum is triggered, then the regmap loading will fail with -REMOTEIO
-> since the I2C transfer is not ACKed by the tps65910.
->
-> A simple retry will work around it, because a subsequent I2C start
-> condition is detected properly by the tps65910.
->
-> Signed-off-by: Arnout Vandecappelle (Essensium/Mind) <arnout@mind.be>
-> ---
-> This patch is based on v3.17-rc1.
-> Build-tested with omap2plus_defconfig.
-> Runtime tested based on v3.4.97 with a custom config.
-> ---
->   drivers/mfd/tps65910.c | 12 +++++++++++-
->   1 file changed, 11 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-> index f243e75..cc1ca33 100644
-> --- a/drivers/mfd/tps65910.c
-> +++ b/drivers/mfd/tps65910.c
-> @@ -487,8 +487,18 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
->   	tps65910->id = chip_id;
->   
+From: Harald Hoyer <harald@redhat.com>
 
-I think one dummy read of any register unconditionally before regmap 
-init will resolve this issue.
-Similar issue we face with Palmas TPS65913 and TI recommended to use 
-dummy read before any valid transfer.
+On my Lenovo T420s with 4GB memory, efi_high_alloc() was checking the
+following memory regions:
+
+0x0000000000100000 - 0x0000000020000000
+0x0000000020200000 - 0x0000000040000000
+0x0000000040200000 - 0x00000000d2c02000
+0x00000000d6e9f000 - 0x000000011e600000
+
+and decided to allocate 2649 pages at address 0x11dba7000.
+As I understand this is the physical address and this machine only
+has 4GB mem!!
+
+Nevertheless, unpacking of the initramfs later on failed.
+This was mainly caused by commit 4bf7111f50167133a71c23530ca852a41355e739,
+which enables loading the initramfs above 4G addresses.
+
+With this patch efi_high_alloc() now uses EFI_ALLOCATE_MAX_ADDRESS.
+This returns 0x00000000d2c02000 on my machine and the resulting
+address at which the initramfs is loaded is then 0x00000000d21a9000,
+which seems to work fine.
+
+Signed-off-by: Harald Hoyer <harald@redhat.com>
+---
+ drivers/firmware/efi/libstub/efi-stub-helper.c | 75 ++++++--------------------
+ 1 file changed, 15 insertions(+), 60 deletions(-)
+
+diff --git a/drivers/firmware/efi/libstub/efi-stub-helper.c b/drivers/firmware/efi/libstub/efi-stub-helper.c
+index 32d5cca..700f2c4 100644
+--- a/drivers/firmware/efi/libstub/efi-stub-helper.c
++++ b/drivers/firmware/efi/libstub/efi-stub-helper.c
+@@ -118,82 +118,37 @@ efi_status_t efi_high_alloc(efi_system_table_t *sys_table_arg,
+ 			    unsigned long size, unsigned long align,
+ 			    unsigned long *addr, unsigned long max)
+ {
+-	unsigned long map_size, desc_size;
+-	efi_memory_desc_t *map;
+ 	efi_status_t status;
+ 	unsigned long nr_pages;
+ 	u64 max_addr = 0;
+-	int i;
+-
+-	status = efi_get_memory_map(sys_table_arg, &map, &map_size, &desc_size,
+-				    NULL, NULL);
+-	if (status != EFI_SUCCESS)
+-		goto fail;
+ 
+ 	/*
+ 	 * Enforce minimum alignment that EFI requires when requesting
+-	 * a specific address.  We are doing page-based allocations,
++	 * a specific address.	We are doing page-based allocations,
+ 	 * so we must be aligned to a page.
+ 	 */
+ 	if (align < EFI_PAGE_SIZE)
+ 		align = EFI_PAGE_SIZE;
+ 
+-	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+-again:
+-	for (i = 0; i < map_size / desc_size; i++) {
+-		efi_memory_desc_t *desc;
+-		unsigned long m = (unsigned long)map;
+-		u64 start, end;
+-
+-		desc = (efi_memory_desc_t *)(m + (i * desc_size));
+-		if (desc->type != EFI_CONVENTIONAL_MEMORY)
+-			continue;
+-
+-		if (desc->num_pages < nr_pages)
+-			continue;
+-
+-		start = desc->phys_addr;
+-		end = start + desc->num_pages * (1UL << EFI_PAGE_SHIFT);
+-
+-		if ((start + size) > end || (start + size) > max)
+-			continue;
+-
+-		if (end - size > max)
+-			end = max;
+-
+-		if (round_down(end - size, align) < start)
+-			continue;
+-
+-		start = round_down(end - size, align);
+-
+-		/*
+-		 * Don't allocate at 0x0. It will confuse code that
+-		 * checks pointers against NULL.
+-		 */
+-		if (start == 0x0)
+-			continue;
++	nr_pages = round_up(size, align) / EFI_PAGE_SIZE;
++	max_addr = round_down(round_down((max_addr-size), align) + size, EFI_PAGE_SIZE);
+ 
+-		if (start > max_addr)
+-			max_addr = start;
+-	}
++	/*
++	 * In case align > EFI_PAGE_SIZE, we need a little more space,
++	 * to round_up() later
++	 */
++	if (align > EFI_PAGE_SIZE)
++		nr_pages += round_up(align, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+ 
+-	if (!max_addr)
+-		status = EFI_NOT_FOUND;
+-	else {
+-		status = efi_call_early(allocate_pages,
+-					EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+-					nr_pages, &max_addr);
+-		if (status != EFI_SUCCESS) {
+-			max = max_addr;
+-			max_addr = 0;
+-			goto again;
+-		}
++	status = efi_call_early(allocate_pages,
++				EFI_ALLOCATE_MAX_ADDRESS, EFI_LOADER_DATA,
++				nr_pages, &max_addr);
+ 
+-		*addr = max_addr;
++	if (status == EFI_SUCCESS) {
++		*addr = max_addr - nr_pages * EFI_PAGE_SIZE;
++		*addr = round_up(*addr, align);
+ 	}
+ 
+-	efi_call_early(free_pool, map);
+-fail:
+ 	return status;
+ }
+ 
+-- 
+2.1.0
 
