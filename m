@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbaHVPvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 11:51:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55554 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932249AbaHVPu3 (ORCPT
+	id S932498AbaHVPwj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 11:52:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33941 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932198AbaHVPwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 11:50:29 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        sergei.shtylyov@cogentembedded.com, yoshihiro.shimoda.uh@renesas.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 6/9] usb: allow to supply the PHY in the drivers when using HCD
-Date: Fri, 22 Aug 2014 17:50:17 +0200
-Message-Id: <1408722621-3635-7-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1408722621-3635-1-git-send-email-antoine.tenart@free-electrons.com>
+	Fri, 22 Aug 2014 11:52:36 -0400
+Date: Fri, 22 Aug 2014 10:51:40 -0500
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tim Niemeyer <tim.niemeyer@corscience.de>
+Cc: Felipe Balbi <balbi@ti.com>, stable@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, jslaby@suse.cz,
+        grant.likely@linaro.org, linux-bluetooth@vger.kernel.org,
+        andreas@biessmann.de
+Subject: Re: [PATCH] bluetooth: hci_ldisc: fix deadlock condition
+Message-ID: <20140822155140.GA18880@kroah.com>
+References: <1398265117-11793-2-git-send-email-balbi@ti.com>
+ <1408715107-21299-1-git-send-email-tim.niemeyer@corscience.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408715107-21299-1-git-send-email-tim.niemeyer@corscience.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modify the generic code handling PHYs to allow them to be
-supplied from the drivers. This adds checks to ensure no PHY was already
-there when looking for one in the generic code. This also makes sure we
-do not modify its state in the generic HCD functions, it was provided by
-the driver.
+On Fri, Aug 22, 2014 at 03:45:07PM +0200, Tim Niemeyer wrote:
+> This Patch was applied to 3.10 and 3.2. It's probably missed on 3.4.
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/core/hcd.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Does it apply there?
 
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 6619239baf6d..dc0e46e5e618 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2646,7 +2646,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 		}
- 	}
- 
--	if (IS_ENABLED(CONFIG_GENERIC_PHY)) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && !hcd->phy) {
- 		struct phy *phy = phy_get(hcd->self.controller, "usb");
- 
- 		if (IS_ERR(phy)) {
-@@ -2666,6 +2666,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 				goto err_phy;
- 			}
- 			hcd->phy = phy;
-+			hcd->remove_phy = 1;
- 		}
- 	}
- 
-@@ -2812,7 +2813,7 @@ err_allocate_root_hub:
- err_register_bus:
- 	hcd_buffer_destroy(hcd);
- err_create_buf:
--	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
- 		phy_power_off(hcd->phy);
- 		phy_exit(hcd->phy);
- 		phy_put(hcd->phy);
-@@ -2896,7 +2897,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
- 	usb_deregister_bus(&hcd->self);
- 	hcd_buffer_destroy(hcd);
- 
--	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
-+	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
- 		phy_power_off(hcd->phy);
- 		phy_exit(hcd->phy);
- 		phy_put(hcd->phy);
--- 
-1.9.1
+What is the git id of the commit?
 
+thanks,
+
+greg k-h
