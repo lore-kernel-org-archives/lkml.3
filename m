@@ -1,223 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750965AbaHVSrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 14:47:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53092 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734AbaHVSrM (ORCPT
+	id S1751279AbaHVSro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 14:47:44 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:50626 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaHVSrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 14:47:12 -0400
-Date: Fri, 22 Aug 2014 11:47:11 -0700 (PDT)
-Message-Id: <20140822.114711.856705392345846995.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 22 Aug 2014 11:47:12 -0700 (PDT)
+	Fri, 22 Aug 2014 14:47:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFdhcLQXHoCT2tee8f1hb-XOsh4G5SQUGfhXtobNYjDq6MS9Ug@mail.gmail.com>
+References: <1408668134-21696-1-git-send-email-minchan@kernel.org>
+ <1408668134-21696-4-git-send-email-minchan@kernel.org> <CAFdhcLQXHoCT2tee8f1hb-XOsh4G5SQUGfhXtobNYjDq6MS9Ug@mail.gmail.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 22 Aug 2014 14:47:21 -0400
+X-Google-Sender-Auth: yWw_y1dgmUN6d3p_yGl9GGlpkjQ
+Message-ID: <CALZtONAqvXgEE93Q_ya+MPbP+1-BTZZB9k4fOofTg-Qzdpjb7g@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] zram: zram memory size limitation
+To: David Horner <ds2horner@gmail.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 22, 2014 at 6:55 AM, David Horner <ds2horner@gmail.com> wrote:
+> On Thu, Aug 21, 2014 at 8:42 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> Since zram has no control feature to limit memory usage,
+>> it makes hard to manage system memrory.
+>>
+>> This patch adds new knob "mem_limit" via sysfs to set up the
+>> a limit so that zram could fail allocation once it reaches
+>> the limit.
+>>
+>> In addition, user could change the limit in runtime so that
+>> he could manage the memory more dynamically.
+>>
+> - Default is no limit so it doesn't break old behavior.
+> + Initial state is no limit so it doesn't break old behavior.
+>
+> I understand your previous post now.
 
-Here are some bug fixes that have piled up during ksummit/linuxcon.
+Yes by "default" I meant the initial value.
 
-1) Fix endian problems in ibmveth, from Anton Blanchard.
+>
+> I was saying that setting to either a null value or garbage
+>  (which is interpreted as zero by memparse(buf, NULL);)
+> removes the limit.
+>
+> I think this is "surprise" behaviour and rather the null case should
+> return  -EINVAL
+> The test below should be "good enough" though not catching all garbage.
 
-2) IPV6 routing code does GFP_KERNEL allocation in atomic, fix from Benjamin Block.
+I'm not sure of the specifics of memparse, but if it returns 0 for
+non-numeric strings (which i assume it does, since there's no method
+for reporting errors) I agree that should return -EINVAL instead of
+clearing the mem_limit.
 
-3) SCTP association fixes from Daniel Borkmann.
-
-4) When multiple VLAN headers are present we have to make sure the second
-   and subsequent ones are pullable in the SKB otherwise we blindly dereference
-   garbage.  From Jiri Benc.
-
-5) The argument adjustment of the signature of hlist_add_after*()
-   introduced a regression in the batman-adv code, fix from Sven
-   Eckelmann.
-
-6) Fix TX hang handling to avoid a panic in i40e, from Anjali Singhai Jain.
-
-7) PTP flag test is inverted in i40e driver, from Jesse Brandeburg.
-
-8) ATM LEC driver needs to hold RTNL mutex over MTU changes, from Chas
-   Williams.
-
-9) Truncate packets larger then the TPACKET_V3 format configured
-   buffers, otherwise we overwrite past the end of said buffers.  From
-   Eric Dumazet.
-
-10) Fix endianness bugs in qlcnic firmware handling, from Rajesh
-    Borundia and Shahed Shaikh.
-
-11) CXGB4 sometimes doesn't get all of the TX completion events it
-    should resulting in SKBs getting stuck in the TX queue, from
-    Hariprasad Shenai.
-
-12) When the FEC chip's PTP clock is disabled, you can't access the
-    register.  Add necessary checks to avoid the resulting hang,
-    from Fugang Duan.
-
-Please pull, thanks a lot!
-
-The following changes since commit c9d26423e56ce1ab4d786f92aebecf859d419293:
-
-  Merge tag 'pm+acpi-3.17-rc1-2' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm (2014-08-14 18:13:46 -0600)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
-
-for you to fetch changes up to faaa55241f3a6fb5bbe5b075d0595199821eb585:
-
-  drivers: isdn: eicon: xdi_msg.h: Fix typo in #ifndef (2014-08-22 11:31:30 -0700)
-
-----------------------------------------------------------------
-Alan Ott (1):
-      MAINTAINERS: Add section for MRF24J40 IEEE 802.15.4 radio driver
-
-Alexander Stein (1):
-      can: flexcan: Disable error interrupt when bus error reporting is disabled
-
-Anish Bhatt (1):
-      cxgb4: Fix race condition in cleanup
-
-Anjali Singhai Jain (2):
-      i40e: Fix for recent kernel panic
-      i40e: Fix a few potential VF dereferences
-
-Anton Blanchard (1):
-      ibmveth: Fix endian issues with rx_no_buffer statistic
-
-Benjamin Block (1):
-      net: ipv6: fib: don't sleep inside atomic lock
-
-Dan Carpenter (1):
-      can: c_can: checking IS_ERR() instead of NULL
-
-Daniel Borkmann (2):
-      net: sctp: spare unnecessary comparison in sctp_trans_elect_best
-      net: sctp: fix suboptimal edge-case on non-active active/retrans path selection
-
-Dariusz Marcinkiewicz (1):
-      MAINTAINERS: add entry for ec_bhf driver
-
-David S. Miller (6):
-      Merge branch 'bcm7xxx'
-      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
-      Merge branch 'cbq-fixes'
-      tipc: Fix build.
-      Merge branch 'qlcnic'
-      Merge tag 'linux-can-fixes-for-3.17-20140821' of git://gitorious.org/linux-can/linux-can
-
-Eric Dumazet (1):
-      packet: handle too big packets for PACKET_V3
-
-Erik Hugne (1):
-      tipc: fix message importance range check
-
-Florian Fainelli (3):
-      net: phy: bcm7xxx: remove 28nm wildcard entry
-      net: phy: bcm7xxx: re-advertise all supported modes out of suspend
-      net: phy: bcm7xxx: remove suspend callback for 28nm PHYs
-
-Gwenhael Goavec-Merou (1):
-      net: phy: smsc: move smsc_phy_config_init reset part in a soft_reset function
-
-Hariprasad Shenai (1):
-      cxgb4: Free completed tx skbs promptly
-
-Iyappan Subramanian (1):
-      net: xgene: fix possible NULL dereference in xgene_enet_free_desc_rings()
-
-Jesse Brandeburg (1):
-      i40e: fix PTP bug
-
-Jiri Benc (1):
-      openvswitch: fix panic with multiple vlan headers
-
-Jitendra Kalsaria (1):
-      qlcnic: Fix flash access interface to application
-
-Mirza Krak (1):
-      can: sja1000: Validate initialization state in start method
-
-Nimrod Andy (1):
-      net: fec: ptp: avoid register access when ipg clock is disabled
-
-Rajesh Borundia (1):
-      qlcnic: Fix endianess issue in FW dump template header
-
-Rasmus Villemoes (2):
-      net: ethernet: broadcom: bnx2x: Remove redundant #ifdef
-      drivers: isdn: eicon: xdi_msg.h: Fix typo in #ifndef
-
-Sebastian Andrzej Siewior (1):
-      can: flexcan: handle state passive -> warning transition
-
-Shahed Shaikh (1):
-      qlcnic: Fix endianess issue in firmware load from file operation
-
-Sven Eckelmann (1):
-      batman-adv: Fix parameter order of hlist_add_behind
-
-Vasily Averin (2):
-      cbq: incorrectly low bandwidth setting blocks limited traffic
-      cbq: now_rt removal
-
-Vlad Yasevich (1):
-      macvlan: Allow setting multicast filter on all macvlan types
-
-Yuval Mintz (1):
-      bnx2x: Revert UNDI flushing mechanism
-
-chas williams - CONTRACTOR (1):
-      lec: Use rtnl lock/unlock when updating MTU
-
-zhuyj (1):
-      sctp: not send SCTP_PEER_ADDR_CHANGE notifications with failed probe
-
- MAINTAINERS                                           | 12 ++++++++
- drivers/isdn/hardware/eicon/xdi_msg.h                 |  2 +-
- drivers/net/can/c_can/c_can_platform.c                |  2 +-
- drivers/net/can/flexcan.c                             |  9 ++++++
- drivers/net/can/sja1000/sja1000.c                     | 62 ++++++++++++++++++++------------------
- drivers/net/ethernet/apm/xgene/xgene_enet_main.c      | 20 ++++++++-----
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c       |  4 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c      | 92 +++++++++++----------------------------------------------
- drivers/net/ethernet/chelsio/cxgb4/cxgb4.h            |  1 +
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c       | 32 +++++++++++---------
- drivers/net/ethernet/chelsio/cxgb4/sge.c              |  3 +-
- drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h         |  1 +
- drivers/net/ethernet/chelsio/cxgb4vf/sge.c            |  3 +-
- drivers/net/ethernet/freescale/fec.h                  |  5 +++-
- drivers/net/ethernet/freescale/fec_main.c             | 18 +++++++++--
- drivers/net/ethernet/freescale/fec_ptp.c              | 33 ++++++++++++++-------
- drivers/net/ethernet/ibm/ibmveth.c                    | 18 ++++++++---
- drivers/net/ethernet/intel/i40e/i40e_ptp.c            |  2 +-
- drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c    | 44 +++++++++++++++++++--------
- drivers/net/ethernet/qlogic/qlcnic/qlcnic.h           | 15 +++++++++-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_hw.c   |  6 ++--
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_init.c | 35 +++++++++++++++-------
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_minidump.c  | 57 +++++++++++++++++++++++++++++++++++
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c     | 16 +++++++++-
- drivers/net/macvlan.c                                 | 10 +++++--
- drivers/net/phy/bcm7xxx.c                             | 42 +++++++++++++-------------
- drivers/net/phy/smsc.c                                | 33 +++++++++++++--------
- include/linux/brcmphy.h                               |  1 -
- net/atm/lec.c                                         |  2 ++
- net/batman-adv/fragmentation.c                        |  2 +-
- net/ipv6/ip6_fib.c                                    |  2 +-
- net/openvswitch/actions.c                             |  5 ++++
- net/packet/af_packet.c                                | 17 +++++++++++
- net/packet/internal.h                                 |  1 +
- net/sched/sch_cbq.c                                   | 48 +++++++++---------------------
- net/sctp/associola.c                                  | 12 ++++----
- net/tipc/port.h                                       |  5 +++-
- net/tipc/socket.c                                     |  2 +-
- 38 files changed, 413 insertions(+), 261 deletions(-)
+>
+>>
+>> Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> ---
+>>  Documentation/ABI/testing/sysfs-block-zram | 10 ++++++++
+>>  Documentation/blockdev/zram.txt            | 24 ++++++++++++++---
+>>  drivers/block/zram/zram_drv.c              | 41 ++++++++++++++++++++++++++++++
+>>  drivers/block/zram/zram_drv.h              |  5 ++++
+>>  4 files changed, 76 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+>> index 70ec992514d0..b8c779d64968 100644
+>> --- a/Documentation/ABI/testing/sysfs-block-zram
+>> +++ b/Documentation/ABI/testing/sysfs-block-zram
+>> @@ -119,3 +119,13 @@ Description:
+>>                 efficiency can be calculated using compr_data_size and this
+>>                 statistic.
+>>                 Unit: bytes
+>> +
+>> +What:          /sys/block/zram<id>/mem_limit
+>> +Date:          August 2014
+>> +Contact:       Minchan Kim <minchan@kernel.org>
+>> +Description:
+>> +               The mem_limit file is read/write and specifies the amount
+>> +               of memory to be able to consume memory to store store
+>> +               compressed data. The limit could be changed in run time
+>> -               and "0" is default which means disable the limit.
+>> +               and "0" means disable the limit. No limit is the initial state.
+>
+> there should be no default in the API.
+>
+>> +               Unit: bytes
+>> diff --git a/Documentation/blockdev/zram.txt b/Documentation/blockdev/zram.txt
+>> index 0595c3f56ccf..82c6a41116db 100644
+>> --- a/Documentation/blockdev/zram.txt
+>> +++ b/Documentation/blockdev/zram.txt
+>> @@ -74,14 +74,30 @@ There is little point creating a zram of greater than twice the size of memory
+>>  since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
+>>  size of the disk when not in use so a huge zram is wasteful.
+>>
+>> -5) Activate:
+>> +5) Set memory limit: Optional
+>> +       Set memory limit by writing the value to sysfs node 'mem_limit'.
+>> +       The value can be either in bytes or you can use mem suffixes.
+>> +       In addition, you could change the value in runtime.
+>> +       Examples:
+>> +           # limit /dev/zram0 with 50MB memory
+>> +           echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
+>> +
+>> +           # Using mem suffixes
+>> +           echo 256K > /sys/block/zram0/mem_limit
+>> +           echo 512M > /sys/block/zram0/mem_limit
+>> +           echo 1G > /sys/block/zram0/mem_limit
+>> +
+>> +           # To disable memory limit
+>> +           echo 0 > /sys/block/zram0/mem_limit
+>> +
+>> +6) Activate:
+>>         mkswap /dev/zram0
+>>         swapon /dev/zram0
+>>
+>>         mkfs.ext4 /dev/zram1
+>>         mount /dev/zram1 /tmp
+>>
+>> -6) Stats:
+>> +7) Stats:
+>>         Per-device statistics are exported as various nodes under
+>>         /sys/block/zram<id>/
+>>                 disksize
+>> @@ -96,11 +112,11 @@ size of the disk when not in use so a huge zram is wasteful.
+>>                 compr_data_size
+>>                 mem_used_total
+>>
+>> -7) Deactivate:
+>> +8) Deactivate:
+>>         swapoff /dev/zram0
+>>         umount /dev/zram1
+>>
+>> -8) Reset:
+>> +9) Reset:
+>>         Write any positive value to 'reset' sysfs node
+>>         echo 1 > /sys/block/zram0/reset
+>>         echo 1 > /sys/block/zram1/reset
+>> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+>> index f0b8b30a7128..370c355eb127 100644
+>> --- a/drivers/block/zram/zram_drv.c
+>> +++ b/drivers/block/zram/zram_drv.c
+>> @@ -122,6 +122,33 @@ static ssize_t max_comp_streams_show(struct device *dev,
+>>         return scnprintf(buf, PAGE_SIZE, "%d\n", val);
+>>  }
+>>
+>> +static ssize_t mem_limit_show(struct device *dev,
+>> +               struct device_attribute *attr, char *buf)
+>> +{
+>> +       u64 val;
+>> +       struct zram *zram = dev_to_zram(dev);
+>> +
+>> +       down_read(&zram->init_lock);
+>> +       val = zram->limit_pages;
+>> +       up_read(&zram->init_lock);
+>> +
+>> +       return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
+>> +}
+>> +
+>> +static ssize_t mem_limit_store(struct device *dev,
+>> +               struct device_attribute *attr, const char *buf, size_t len)
+>> +{
+>> +       u64 limit;
+>> +       struct zram *zram = dev_to_zram(dev);
+>> +
+>> +       limit = memparse(buf, NULL);
+>
+>             if (limit = 0 && buf != "0")
+>                   return  -EINVAL
+>
+>> +       down_write(&zram->init_lock);
+>> +       zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
+>> +       up_write(&zram->init_lock);
+>> +
+>> +       return len;
+>> +}
+>> +
+>>  static ssize_t max_comp_streams_store(struct device *dev,
+>>                 struct device_attribute *attr, const char *buf, size_t len)
+>>  {
+>> @@ -513,6 +540,14 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>>                 ret = -ENOMEM;
+>>                 goto out;
+>>         }
+>> +
+>> +       if (zram->limit_pages &&
+>> +               zs_get_total_pages(meta->mem_pool) > zram->limit_pages) {
+>> +               zs_free(meta->mem_pool, handle);
+>> +               ret = -ENOMEM;
+>> +               goto out;
+>> +       }
+>> +
+>>         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
+>>
+>>         if ((clen == PAGE_SIZE) && !is_partial_io(bvec)) {
+>> @@ -617,6 +652,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+>>         struct zram_meta *meta;
+>>
+>>         down_write(&zram->init_lock);
+>> +
+>> +       zram->limit_pages = 0;
+>> +
+>>         if (!init_done(zram)) {
+>>                 up_write(&zram->init_lock);
+>>                 return;
+>> @@ -857,6 +895,8 @@ static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
+>>  static DEVICE_ATTR(reset, S_IWUSR, NULL, reset_store);
+>>  static DEVICE_ATTR(orig_data_size, S_IRUGO, orig_data_size_show, NULL);
+>>  static DEVICE_ATTR(mem_used_total, S_IRUGO, mem_used_total_show, NULL);
+>> +static DEVICE_ATTR(mem_limit, S_IRUGO | S_IWUSR, mem_limit_show,
+>> +               mem_limit_store);
+>>  static DEVICE_ATTR(max_comp_streams, S_IRUGO | S_IWUSR,
+>>                 max_comp_streams_show, max_comp_streams_store);
+>>  static DEVICE_ATTR(comp_algorithm, S_IRUGO | S_IWUSR,
+>> @@ -885,6 +925,7 @@ static struct attribute *zram_disk_attrs[] = {
+>>         &dev_attr_orig_data_size.attr,
+>>         &dev_attr_compr_data_size.attr,
+>>         &dev_attr_mem_used_total.attr,
+>> +       &dev_attr_mem_limit.attr,
+>>         &dev_attr_max_comp_streams.attr,
+>>         &dev_attr_comp_algorithm.attr,
+>>         NULL,
+>> diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
+>> index e0f725c87cc6..b7aa9c21553f 100644
+>> --- a/drivers/block/zram/zram_drv.h
+>> +++ b/drivers/block/zram/zram_drv.h
+>> @@ -112,6 +112,11 @@ struct zram {
+>>         u64 disksize;   /* bytes */
+>>         int max_comp_streams;
+>>         struct zram_stats stats;
+>> +       /*
+>> +        * the number of pages zram can consume for storing compressed data
+>> +        */
+>> +       unsigned long limit_pages;
+>> +
+>>         char compressor[10];
+>>  };
+>>  #endif
+>> --
+>> 2.0.0
+>>
