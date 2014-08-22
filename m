@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaHVHdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 03:33:12 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:43403 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640AbaHVHdK (ORCPT
+	id S1755974AbaHVHdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 03:33:52 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:55502 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779AbaHVHdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 03:33:10 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: David Miller <davem@davemloft.net>
-Cc: ariel.elior@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ethernet: broadcom: bnx2x: Remove redundant #ifdef
-Organization: D03
-References: <1408540489-1795-1-git-send-email-linux@rasmusvillemoes.dk>
-	<20140821.213750.2151406448495608410.davem@davemloft.net>
-X-Hashcash: 1:20:140822:linux-kernel@vger.kernel.org::VthQ13rZa0knu59q:0000000000000000000000000000000000HOE
-X-Hashcash: 1:20:140822:netdev@vger.kernel.org::uYMpy6QTp/IY9gqb:0000000000000000000000000000000000000002E0J
-X-Hashcash: 1:20:140822:davem@davemloft.net::nO+MQpi9Xxbftp0c:0000000000000000000000000000000000000000004ZvF
-X-Hashcash: 1:20:140822:ariel.elior@qlogic.com::fbp19yeEMWsK9TEE:000000000000000000000000000000000000000AH+I
-Date: Fri, 22 Aug 2014 09:33:07 +0200
-In-Reply-To: <20140821.213750.2151406448495608410.davem@davemloft.net> (David
-	Miller's message of "Thu, 21 Aug 2014 21:37:50 -0700 (PDT)")
-Message-ID: <87mwaxrnbg.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 22 Aug 2014 03:33:49 -0400
+Date: Fri, 22 Aug 2014 00:33:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Harini Katakam <harinik@xilinx.com>
+Cc: wim@iguana.be, grant.likely@linaro.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        michals@xilinx.com, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, harinikatakamlinux@gmail.com,
+        svemula@xilinx.com, anirudh@xilinx.com
+Subject: Re: [PATCH v4 1/2] watchdog: Add Cadence WDT driver
+Message-ID: <20140822073344.GA23635@roeck-us.net>
+References: <1406788855-19074-1-git-send-email-harinik@xilinx.com>
+ <20140821185722.GA17481@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140821185722.GA17481@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
+On Thu, Aug 21, 2014 at 11:57:22AM -0700, Guenter Roeck wrote:
+> On Thu, Jul 31, 2014 at 12:10:54PM +0530, Harini Katakam wrote:
+> > Add Cadence WDT driver. This is used by Xilinx Zynq.
+> > 
+> > Signed-off-by: Harini Katakam <harinik@xilinx.com>
+> 
+> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
-> From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> Date: Wed, 20 Aug 2014 15:14:49 +0200
->
->> Nothing defines _ASM_GENERIC_INT_L64_H, it is a weird way to check for
->> 64 bit longs, and u64 should be printed using %llx anyway.
->> 
->> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
->
-> It's not correct and will warn on some platforms where "u64" is just
-> a plain "unsigned long".
->
-> Ie. all of those which use include/asm-generic/int-l64.h
+Hah, that was too fast. The driver causes build errors for a number or
+architectures, including x86_64.
 
-Of which there are none; that file no longer exists (as I said, nothing
-defines that macro). Please see 0c79a8e2 ("asm/types.h: Remove
-include/asm-generic/int-l64.h") and 2a7930bd
-("Documentation/printk-formats.txt: No casts needed for u64/s64").
+drivers/watchdog/cadence_wdt.c: In function 'cdns_wdt_writereg':
+drivers/watchdog/cadence_wdt.c:93:2: error: implicit declaration of function
+'writel_relaxed' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[2]: *** [drivers/watchdog/cadence_wdt.o] Error 1
+make[1]: *** [drivers/watchdog] Error 2
 
-Thanks,
-Rasmus
+Please make sure that the driver is only configurable for architectures
+supporting writel_relaxed.
+
+Thanks,,
+Guenter
