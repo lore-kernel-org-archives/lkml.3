@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaHVUcy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 16:32:54 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65106 "EHLO mga01.intel.com"
+	id S1751868AbaHVUc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 16:32:59 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:46568 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745AbaHVUcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 16:32:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,383,1406617200"; 
-   d="scan'208";a="588688292"
-Date: Fri, 22 Aug 2014 14:32:41 -0600 (MDT)
-From: Keith Busch <keith.busch@intel.com>
-X-X-Sender: vmware@localhost.localdom
-To: Keith Busch <keith.busch@intel.com>
-cc: Christoph Hellwig <hch@infradead.org>, linux-nvme@lists.infradead.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk, willy@linux.intel.com,
-        nilesh.choudhury@oracle.com, indraneel.m@samsung.com,
-        shiro.itou@outlook.com
-Subject: Re: [PATCH] fs/block_dev.c: Use hd_part to find block inodes
-In-Reply-To: <alpine.LRH.2.03.1408221341280.4696@AMR>
-Message-ID: <alpine.LRH.2.03.1408221429020.4696@AMR>
-References: <1408724896-3671-1-git-send-email-keith.busch@intel.com> <20140822174848.GA11819@infradead.org> <alpine.LRH.2.03.1408221341280.4696@AMR>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	id S1751745AbaHVUcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 16:32:55 -0400
+Date: Fri, 22 Aug 2014 14:32:41 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Scot Doyle <lkml14@scotdoyle.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        Stefan Berger <stefanb@linux.vnet.ibm.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tpm_tis: Verify ACPI-specified interrupt
+Message-ID: <20140822203241.GB1733@obsidianresearch.com>
+References: <alpine.LNX.2.11.1408220043560.1360@localhost.localdomain>
+ <20140822160626.GA8477@obsidianresearch.com>
+ <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.11.1408221924070.1046@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Aug 2014, Keith Busch wrote:
-> On Fri, 22 Aug 2014, Christoph Hellwig wrote:
->> On Fri, Aug 22, 2014 at 10:28:16AM -0600, Keith Busch wrote:
->>> When using the GENHD_FL_EXT_DEVT disk flags, a newly added device may
->>> be assigned the same major/minor as one that was previously removed but
->>> opened, and the pesky userspace refuses to close it!
->> 
->> Which means life time rules for those dev_t allocations are broken.
->> Please fix it to not release the dev_t until the device isn't referenced
->> at all.
->
-> Okay, thanks. So a proper fix would not let extended devt minors get
-> reused while still referenced, so we can't release it unconditionally
-> from del_gendisk(). I think the following does that, but I had to add
-> a reference counter to gendisk.
+On Fri, Aug 22, 2014 at 08:17:27PM +0000, Scot Doyle wrote:
+> On Fri, 22 Aug 2014, Jason Gunthorpe wrote:
+> > On Fri, Aug 22, 2014 at 12:58:41AM +0000, Scot Doyle wrote:
+> >> Some machines, such as the Acer C720 and Toshiba CB35, have TPMs
+> >> that do not use interrupts while also having an ACPI TPM entry
+> >
+> > How do these machines work in Windows?
+> 
+> I don't know. Since they're Chromebooks (booted in legacy mode running 
+> SeaBIOS instead of depthcharge or whatever ChromeOS uses), I think they're 
+> mostly used to run Linux.
 
-Sorry for the rapid churn; I hadn't followed the function pointers through
-to discover the correct place to release the devt. This one's much simpler:
----
-diff --git a/block/genhd.c b/block/genhd.c
-index 791f419..321f1fd 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -665,7 +665,6 @@ void del_gendisk(struct gendisk *disk)
-  		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
-  	pm_runtime_set_memalloc_noio(disk_to_dev(disk), false);
-  	device_del(disk_to_dev(disk));
--	blk_free_devt(disk_to_dev(disk)->devt);
-  }
-  EXPORT_SYMBOL(del_gendisk);
+I remain somewhat confused - there have already been TPM patches for
+Chromebooks from Google - presumably the TPM actually does work
+fine. Make sure you are using a Linux with the ATMEL timeout fix, that
+is particularly applicable to Chromebooks IIRC.
 
-@@ -1098,6 +1097,7 @@ static void disk_release(struct device *dev)
-  {
-  	struct gendisk *disk = dev_to_disk(dev);
+And again, the driver uses interrupts when booting, so I'm somewhat
+confused what the problem is. I wouldn't think the driver would
+successfully attach if interrupts were enabled but the interrupt
+didn't work? Can you elaborate on what is going on during boot with
+the interrupt, and the boot time GET_DURATIONS and TPM_STARTUP
+sequences?
 
-+	blk_free_devt(dev->devt);
-  	disk_release_events(disk);
-  	kfree(disk->random);
-  	disk_replace_part_tbl(disk, NULL);
---
+Perhaps the driver is timing out all commands and going ahead and
+attaching anyhow? If this is the case I think we'd get a good result
+if we just fixed that and had the driver simply not attach. Then your
+resume will not be broken.
+
+> > I'd be more comfortable with some kind of ACPI black list or patch or
+> > something? What is normal for handling broken ACPI?
+> 
+> I would be more comfortable with this general approach as well. However, 
+> I've had to submit several patches for individual Chromebooks related to 
+> backlight control since the VBT also is misconfigured. Would it be 
+> possible to find a blacklist mechanism that didn't require identifying 
+> each Chromebook separately, since they seem to have this issue on an 
+> ongoing basis?
+
+So, if you are booting the Chromebook in some weird way, is this a
+problem that can be addressed by patching SeaBIOS instead of the
+kernel? The internet says the SeaBIOS payload is replaceable on the
+Chromebook.
+
+Can it fix the ACPI tables to be correct before lauching Linux?
+
+> A more general approach might be to verify the ACPI interrupt for 
+> systems matching the first three identifiers.
+
+Testing the interrupt and failing driver attach if it doesn't work
+seems very reasonable to me, I would view that as a bug fix in the driver.
+
+Jason
