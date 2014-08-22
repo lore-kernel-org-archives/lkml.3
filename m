@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaHVTOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 15:14:43 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:38399 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbaHVTOl (ORCPT
+	id S1751441AbaHVTP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 15:15:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46671 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaHVTP1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 15:14:41 -0400
-Date: Fri, 22 Aug 2014 22:14:31 +0300
-From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-To: chunkeey@googlemail.com, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: paulmck@linux.vnet.ibm.com
-Subject: [PATCH v2] carl9170: Remove redundant protection check
-Message-ID: <20140822191431.GA5827@ada>
+	Fri, 22 Aug 2014 15:15:27 -0400
+Date: Fri, 22 Aug 2014 12:15:20 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [V0 PATCH 0/2] AMD PVH domU support
+Message-ID: <20140822121520.66d3c072@mantra.us.oracle.com>
+In-Reply-To: <53F74BC9.6060207@citrix.com>
+References: <1408587400-18663-1-git-send-email-mukesh.rathor@oracle.com>
+	<53F74B29.4090601@citrix.com>
+	<53F74BC9.6060207@citrix.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The carl9170_op_ampdu_action() function is used only by the mac80211
-framework.
-Since the mac80211 already takes care of checks and properly serializing
-calls to the driver's function there is no need for the driver to do the same
-thing.
+On Fri, 22 Aug 2014 14:55:21 +0100
+David Vrabel <david.vrabel@citrix.com> wrote:
 
-Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
----
-Changes in v2:
- - Change subject line from
-   "carl9170: Replace rcu_dereference() with rcu_access_pointer()"
-   to
-   "carl9170: Remove redundant protection check"
- - Update the commit message according to the modifications
- - Delete the lines of interest at the suggestion and explanations of
-   Christian Lamparter <chunkeey@googlemail.com>
+> On 22/08/14 14:52, David Vrabel wrote:
+> > On 21/08/14 03:16, Mukesh Rathor wrote:
+> >> Hi,
+> >>
+> >> Here's first stab at AMD PVH domU support. Pretty much the only
+> >> thing needed is EFER bits set. Please review.
+> > 
+> > I'm not going to accept this until there is some ABI documentation
+> > stating explicitly what state non-boot CPUs will be in.
+> 
+> Also the boot CPU.
+> 
+> David
 
- drivers/net/wireless/ath/carl9170/main.c | 6 ------
- 1 file changed, 6 deletions(-)
+Sure, but looks like Roger already beat me to it... 
 
-diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
-index 12018ff..6758b9a 100644
---- a/drivers/net/wireless/ath/carl9170/main.c
-+++ b/drivers/net/wireless/ath/carl9170/main.c
-@@ -1430,12 +1430,6 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
- 		if (!sta_info->ht_sta)
- 			return -EOPNOTSUPP;
- 
--		rcu_read_lock();
--		if (rcu_access_pointer(sta_info->agg[tid])) {
--			rcu_read_unlock();
--			return -EBUSY;
--		}
--
- 		tid_info = kzalloc(sizeof(struct carl9170_sta_tid),
- 				   GFP_ATOMIC);
- 		if (!tid_info) {
--- 
-1.9.1
+>From Roger's "very initial PVH design document" :
 
+And finally on `EFER` the following features are enabled:
+
+  * LME (bit 8): Long mode enable.
+  * LMA (bit 10): Long mode active.
+
+
+LMK if anything additional needs to be done.
+
+Mukesh
