@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaHWMMW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 08:12:22 -0400
-Received: from exprod7og126.obsmtp.com ([64.18.2.206]:58133 "EHLO
-	exprod7og126.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaHWMMT (ORCPT
+	id S1752607AbaHWMMZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 08:12:25 -0400
+Received: from exprod7og115.obsmtp.com ([64.18.2.217]:48708 "EHLO
+	exprod7og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398AbaHWMMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 08:12:19 -0400
+	Sat, 23 Aug 2014 08:12:22 -0400
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
 X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 To: jejb@kernel.org, hch@infradead.org
@@ -14,53 +14,163 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH v1 0/8][SCSI] mpt3sas: Phase2 and Phase3 mpt3sas driver patch set
-Date: Sat, 23 Aug 2014 17:41:34 +0530
-Message-Id: <1408795902-10523-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH v1 1/8][SCSI] mpt3sas: MPI2.5 Rev G (2.5.2) specifications
+Date: Sat, 23 Aug 2014 17:41:35 +0530
+Message-Id: <1408795902-10523-2-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
+In-Reply-To: <1408795902-10523-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+References: <1408795902-10523-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just resending the complete Phase2 and Phase3
-mpt3sas driver patch set Reviewed by the Martin K. Petersen.
-This will make easy for Christoph to pick up this patch set for next kernel release.
+Below is the change set in MPI2.5 Rev G specification and 2.00.31 header files
+1) Added SCSIStatusQualifier to SCSI IO Error Reply message.
+2) Added ATA Security Freeze Lock to IO Unit Page 1 Flags field.
+3) Added Allow Protection Information bit for IR Volume Create.
 
-Thanks Martin for reviewing this patch set and helping me for tuning this patch set.
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+---
+ drivers/scsi/mpt3sas/mpi/mpi2.h      | 6 ++++--
+ drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h | 8 ++++++--
+ drivers/scsi/mpt3sas/mpi/mpi2_init.h | 6 ++++--
+ drivers/scsi/mpt3sas/mpi/mpi2_raid.h | 6 +++++-
+ 4 files changed, 19 insertions(+), 7 deletions(-)
 
-Sreekanth Reddy (8):
-  [SCSI] mpt3sas: MPI2.5 Rev G (2.5.2) specifications
-  [SCSI] mpt3sas: Clear PFA Status on SGPIO when PFA Drive is Removed or
-    Replaced
-  [SCSI] mpt3sas: Bump mpt3sas driver version to 03.100.00.00
-  [SCSI] mpt3sas: MPI2.5 Rev H (2.5.3) specifications
-  [SCSI] mpt3sas: Copyright in driver sources is updated for year the
-    2014.
-  [SCSI] mpt3sas: Added OEM branding Strings
-  [SCSI] mpt3sas: Added Reply Descriptor Post Queue (RDPQ) Array support
-  [SCSI] mpt3sas: Bump mpt3sas driver version to 04.100.00.00
-
- drivers/scsi/mpt3sas/Kconfig                |   2 +-
- drivers/scsi/mpt3sas/mpi/mpi2.h             |   8 +-
- drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h        |  18 +-
- drivers/scsi/mpt3sas/mpi/mpi2_init.h        |   8 +-
- drivers/scsi/mpt3sas/mpi/mpi2_ioc.h         |  64 ++++++-
- drivers/scsi/mpt3sas/mpi/mpi2_raid.h        |   8 +-
- drivers/scsi/mpt3sas/mpi/mpi2_sas.h         |   8 +-
- drivers/scsi/mpt3sas/mpi/mpi2_tool.h        |  45 ++++-
- drivers/scsi/mpt3sas/mpi/mpi2_type.h        |   2 +-
- drivers/scsi/mpt3sas/mpt3sas_base.c         | 280 ++++++++++++++++++++++------
- drivers/scsi/mpt3sas/mpt3sas_base.h         |  49 ++++-
- drivers/scsi/mpt3sas/mpt3sas_config.c       |   2 +-
- drivers/scsi/mpt3sas/mpt3sas_ctl.c          |   2 +-
- drivers/scsi/mpt3sas/mpt3sas_ctl.h          |   2 +-
- drivers/scsi/mpt3sas/mpt3sas_debug.h        |   2 +-
- drivers/scsi/mpt3sas/mpt3sas_scsih.c        |  69 +++++--
- drivers/scsi/mpt3sas/mpt3sas_transport.c    |   2 +-
- drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c |   2 +-
- drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h |   2 +-
- 19 files changed, 470 insertions(+), 105 deletions(-)
-
+diff --git a/drivers/scsi/mpt3sas/mpi/mpi2.h b/drivers/scsi/mpt3sas/mpi/mpi2.h
+index 20da8f9..dc143dd 100644
+--- a/drivers/scsi/mpt3sas/mpi/mpi2.h
++++ b/drivers/scsi/mpt3sas/mpi/mpi2.h
+@@ -8,7 +8,7 @@
+  *                 scatter/gather formats.
+  * Creation Date:  June 21, 2006
+  *
+- * mpi2.h Version:  02.00.29
++ * mpi2.h Version:  02.00.31
+  *
+  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
+  *       prefix are for use only on MPI v2.5 products, and must not be used
+@@ -86,6 +86,8 @@
+  * 11-27-12  02.00.28  Bumped MPI2_HEADER_VERSION_UNIT.
+  * 12-20-12  02.00.29  Bumped MPI2_HEADER_VERSION_UNIT.
+  *                     Added MPI25_SUP_REPLY_POST_HOST_INDEX_OFFSET.
++ * 04-09-13  02.00.30  Bumped MPI2_HEADER_VERSION_UNIT.
++ * 04-17-13  02.00.31  Bumped MPI2_HEADER_VERSION_UNIT.
+  * --------------------------------------------------------------------------
+  */
+ 
+@@ -119,7 +121,7 @@
+ #define MPI2_VERSION_02_05                  (0x0205)
+ 
+ /*Unit and Dev versioning for this MPI header set */
+-#define MPI2_HEADER_VERSION_UNIT            (0x1D)
++#define MPI2_HEADER_VERSION_UNIT            (0x1F)
+ #define MPI2_HEADER_VERSION_DEV             (0x00)
+ #define MPI2_HEADER_VERSION_UNIT_MASK       (0xFF00)
+ #define MPI2_HEADER_VERSION_UNIT_SHIFT      (8)
+diff --git a/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h b/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
+index 889aa70..5b0e5c1 100644
+--- a/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
++++ b/drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h
+@@ -6,7 +6,7 @@
+  *         Title:  MPI Configuration messages and pages
+  * Creation Date:  November 10, 2006
+  *
+- *   mpi2_cnfg.h Version:  02.00.24
++ *   mpi2_cnfg.h Version:  02.00.25
+  *
+  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
+  *       prefix are for use only on MPI v2.5 products, and must not be used
+@@ -160,6 +160,9 @@
+  * 12-20-12  02.00.24  Marked MPI2_SASIOUNIT1_CONTROL_CLEAR_AFFILIATION as
+  *                     obsolete for MPI v2.5 and later.
+  *                     Added some defines for 12G SAS speeds.
++ * 04-09-13  02.00.25  Added MPI2_IOUNITPAGE1_ATA_SECURITY_FREEZE_LOCK.
++ *                     Fixed MPI2_IOUNITPAGE5_DMA_CAP_MASK_MAX_REQUESTS to
++ *                     match the specification.
+  * --------------------------------------------------------------------------
+  */
+ 
+@@ -792,6 +795,7 @@ typedef struct _MPI2_CONFIG_PAGE_IO_UNIT_1 {
+ #define MPI2_IOUNITPAGE1_PAGEVERSION                    (0x04)
+ 
+ /*IO Unit Page 1 Flags defines */
++#define MPI2_IOUNITPAGE1_ATA_SECURITY_FREEZE_LOCK       (0x00004000)
+ #define MPI25_IOUNITPAGE1_NEW_DEVICE_FAST_PATH_DISABLE  (0x00002000)
+ #define MPI25_IOUNITPAGE1_DISABLE_FAST_PATH             (0x00001000)
+ #define MPI2_IOUNITPAGE1_ENABLE_HOST_BASED_DISCOVERY    (0x00000800)
+@@ -870,7 +874,7 @@ typedef struct _MPI2_CONFIG_PAGE_IO_UNIT_5 {
+ #define MPI2_IOUNITPAGE5_PAGEVERSION                    (0x00)
+ 
+ /*defines for IO Unit Page 5 DmaEngineCapabilities field */
+-#define MPI2_IOUNITPAGE5_DMA_CAP_MASK_MAX_REQUESTS      (0xFF00)
++#define MPI2_IOUNITPAGE5_DMA_CAP_MASK_MAX_REQUESTS      (0xFFFF0000)
+ #define MPI2_IOUNITPAGE5_DMA_CAP_SHIFT_MAX_REQUESTS     (16)
+ 
+ #define MPI2_IOUNITPAGE5_DMA_CAP_EEDP                   (0x0008)
+diff --git a/drivers/scsi/mpt3sas/mpi/mpi2_init.h b/drivers/scsi/mpt3sas/mpi/mpi2_init.h
+index f7928bf..b3e3331 100644
+--- a/drivers/scsi/mpt3sas/mpi/mpi2_init.h
++++ b/drivers/scsi/mpt3sas/mpi/mpi2_init.h
+@@ -6,7 +6,7 @@
+  *         Title:  MPI SCSI initiator mode messages and structures
+  * Creation Date:  June 23, 2006
+  *
+- * mpi2_init.h Version:  02.00.14
++ * mpi2_init.h Version:  02.00.15
+  *
+  * NOTE: Names (typedefs, defines, etc.) beginning with an MPI25 or Mpi25
+  *       prefix are for use only on MPI v2.5 products, and must not be used
+@@ -44,6 +44,8 @@
+  *                     Priority to match SAM-4.
+  *                     Added EEDPErrorOffset to MPI2_SCSI_IO_REPLY.
+  * 07-10-12  02.00.14  Added MPI2_SCSIIO_CONTROL_SHIFT_DATADIRECTION.
++ * 04-09-13  02.00.15  Added SCSIStatusQualifier field to MPI2_SCSI_IO_REPLY,
++ *                     replacing the Reserved4 field.
+  * --------------------------------------------------------------------------
+  */
+ 
+@@ -347,7 +349,7 @@ typedef struct _MPI2_SCSI_IO_REPLY {
+ 	U32 SenseCount;		/*0x18 */
+ 	U32 ResponseInfo;	/*0x1C */
+ 	U16 TaskTag;		/*0x20 */
+-	U16 Reserved4;		/*0x22 */
++	U16 SCSIStatusQualifier; /* 0x22 */
+ 	U32 BidirectionalTransferCount;	/*0x24 */
+ 	U32 EEDPErrorOffset;	/*0x28 *//*MPI 2.5 only; Reserved in MPI 2.0*/
+ 	U32 Reserved6;		/*0x2C */
+diff --git a/drivers/scsi/mpt3sas/mpi/mpi2_raid.h b/drivers/scsi/mpt3sas/mpi/mpi2_raid.h
+index 7176523..fbe3aae 100644
+--- a/drivers/scsi/mpt3sas/mpi/mpi2_raid.h
++++ b/drivers/scsi/mpt3sas/mpi/mpi2_raid.h
+@@ -6,7 +6,7 @@
+  *         Title:  MPI Integrated RAID messages and structures
+  * Creation Date:  April 26, 2007
+  *
+- *   mpi2_raid.h Version:  02.00.09
++ *   mpi2_raid.h Version:  02.00.10
+  *
+  * Version History
+  * ---------------
+@@ -30,6 +30,7 @@
+  * 02-06-12  02.00.08  Added MPI2_RAID_ACTION_PHYSDISK_HIDDEN.
+  * 07-26-12  02.00.09  Added ElapsedSeconds field to MPI2_RAID_VOL_INDICATOR.
+  *                     Added MPI2_RAID_VOL_FLAGS_ELAPSED_SECONDS_VALID define.
++ * 04-17-13  02.00.10  Added MPI25_RAID_ACTION_ADATA_ALLOW_PI.
+  * --------------------------------------------------------------------------
+  */
+ 
+@@ -46,6 +47,9 @@
+ * RAID Action messages
+ ****************************************************************************/
+ 
++/* ActionDataWord defines for use with MPI2_RAID_ACTION_CREATE_VOLUME action */
++#define MPI25_RAID_ACTION_ADATA_ALLOW_PI            (0x80000000)
++
+ /*ActionDataWord defines for use with MPI2_RAID_ACTION_DELETE_VOLUME action */
+ #define MPI2_RAID_ACTION_ADATA_KEEP_LBA0            (0x00000000)
+ #define MPI2_RAID_ACTION_ADATA_ZERO_LBA0            (0x00000001)
 -- 
 2.0.2
 
