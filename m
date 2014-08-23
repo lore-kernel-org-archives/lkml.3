@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaHWPKV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 11:10:21 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60101 "EHLO
+	id S1751879AbaHWPPE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 11:15:04 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49363 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaHWPKU (ORCPT
+	with ESMTP id S1751403AbaHWPPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 11:10:20 -0400
+	Sat, 23 Aug 2014 11:15:01 -0400
 X-Originating-IP: 108.223.40.66
-Message-ID: <53F8AED8.8010908@roeck-us.net>
-Date: Sat, 23 Aug 2014 08:10:16 -0700
+Message-ID: <53F8AFEE.2070608@roeck-us.net>
+Date: Sat, 23 Aug 2014 08:14:54 -0700
 From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, atull@opensource.altera.com
-CC: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v2 2/2] pmbus: ltc2978: add regulator gating
-References: <1408741894-24879-1-git-send-email-atull@opensource.altera.com> <1408741894-24879-3-git-send-email-atull@opensource.altera.com> <20140822214546.GD24407@sirena.org.uk>
-In-Reply-To: <20140822214546.GD24407@sirena.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
+References: <cover.1408535000.git.jslaby@suse.cz> <20140820165459.GA21275@roeck-us.net> <20140820195436.GA22902@roeck-us.net> <53F5A864.5040206@suse.cz>
+In-Reply-To: <53F5A864.5040206@suse.cz>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 02:45 PM, Mark Brown wrote:
-> On Fri, Aug 22, 2014 at 04:11:34PM -0500, atull@opensource.altera.com wrote:
->> From: Alan Tull <atull@opensource.altera.com>
+On 08/21/2014 01:05 AM, Jiri Slaby wrote:
+> On 08/20/2014, 09:54 PM, Guenter Roeck wrote:
+>> On Wed, Aug 20, 2014 at 09:54:59AM -0700, Guenter Roeck wrote:
+>>> On Wed, Aug 20, 2014 at 01:43:51PM +0200, Jiri Slaby wrote:
+>>>> This is the start of the stable review cycle for the 3.12.27 release.
+>>>> There are 104 patches in this series, all will be posted as a response
+>>>> to this one.  If anyone has any issues with these being applied, please
+>>>> let me know.
+>>>>
+>>>> Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
+>>>> Anything received after that time might be too late.
+>>>>
+>>> Build results look good:
+>>> 	total: 135 pass: 135 fail: 0
+>>>
+>>> qemu tests passed except for sparc64 which hangs during boot, both for SMP and
+>>> non-SMP builds. I'll try to bisect as soon as I have a somewhat stable internet
+>>> connection.
+>>>
+>> Bisect result:
 >>
->> Add regulator with support for enabling or disabling all
->> supplies.
+>> # bad: [c07d9e5da83f1470ccc58d37fe222dab36dbca67] drivers/rtc/interface.c: fix infinite loop in initializing the alarm
+>> # good: [d83a3234d2e1e2a55e7f2430fc9ca29a9bd315e7] Linux 3.12.26
+>> git bisect start 'HEAD' 'v3.12.26'
+>> # bad: [0d543dade2be5f0ddb268c6d6ea0e86938e3bf42] sparc64: Add membar to Niagara2 memcpy code.
+>> git bisect bad 0d543dade2be5f0ddb268c6d6ea0e86938e3bf42
+>> # good: [6e1af05639abfc6f1841e6bf8b5c8492971ed1f2] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
+>> git bisect good 6e1af05639abfc6f1841e6bf8b5c8492971ed1f2
+>> # good: [6a25e8f778995cabb0cfe2acb3247e3b42dec35f] macvlan: Initialize vlan_features to turn on offload support.
+>> git bisect good 6a25e8f778995cabb0cfe2acb3247e3b42dec35f
+>> # good: [bf42f839476f1f447ca696fbbab7e741861d9d7d] sparc64: Fix executable bit testing in set_pmd_at() paths.
+>> git bisect good bf42f839476f1f447ca696fbbab7e741861d9d7d
+>> # bad: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
+>> git bisect bad 6acda98c75b536deaba1bf21f93411fcc484fbb5
+>> # good: [a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6] sparc64: Fix top-level fault handling bugs.
+>> git bisect good a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6
+>> # first bad commit: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
+>>
+>> Reverting the offending patch ('Add basic validations ...') fixes the problem.
 >
-> Reviwed-by: Mark Brown <broonie@linaro.org>
+> Hi,
 >
-> though it still looks like you should be able to create generic
-> functions for the operations.
+> thanks for the work!
 >
-Sorry I didn't have time to review the code myself. I'll have
-to check the datasheet about turning regulators on and off.
-Using page 0xff for the lm2978 looks wrong, as the chip supports
-up to 8 channels which should be controlled separately
-(I would assume) instead of turning them all on and off in
-one go. Maybe I am missing something, but my assumption would
-have been to have a separate regulator for each channel, and
-that each channel would have its own regulator which would be
-turned on and off separately. So I don't really understand the
-change between v1 and v2 of the core patch, which dropped the
-per-channel regulators. Someone will have to explain to me
-why that makes sense, especially since it means that I won't
-be able to use the regulator expansion in my system (which
-would require per-channel regulators, and which does not always
-have all channels enabled on a given chip).
+> Just note on patches, in 3.12, there are all 3.10 patches plus these three:
+> +sparc64-add-basic-validations-to-pud-pmd-_bad.patch
+> +sparc64-fix-executable-bit-testing-in-set_pmd_at-paths.patch
+> +sparc64-give-more-detailed-information-in-pgd-pmd-_error-and-kill-pte_error.patch
+>
+> where the third adds only printouts.
+>
+> These 3.14 patches are not applied to 3.12:
+> +sparc64-don-t-use-_page_present-in-pte_modify-mask.patch
+> +sparc64-fix-bugs-in-get_user_pages_fast-wrt.-thp.patch
+> +sparc64-fix-huge-pmd-invalidation.patch
+> +sparc64-fix-hex-values-in-comment-above-pte_modify.patch
+> +sparc64-fix-range-check-in-kern_addr_valid.patch
+> +sparc64-use-ilog2_4mb-instead-of-constant-22.patch
+>
+> The last three are just cosmetical in 3.12. And I do not immediately see
+> in the rest, how they could improve the state. So I am going to remove
+> the add-basic-validations patch from 3.12.
+>
 
-In respect to generic functions, that really depends on the scope
-of the regulators. As written, where all regulators are turned on
-in a single operation, per-chip functions are needed. I thought
-we would only need per-chip configuration values, but that only
-applies if regulators are turned on one by one, not all in one go.
+Build and tests now look good.
 
-Either case, a wrapper for ltc2978_write_pmbus_operation needs to
-be added to pmbus_core.c as pmbus_write_byte_data and exported
-(as a separate patch). For paged reads, the existing
-pmbus_read_byte_data should be used. In general, avoid direct
-accesses to paged registers and use API functions instead
-if possible.
-
-Thanks,
 Guenter
+
 
