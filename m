@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaHWShX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 14:37:23 -0400
+	id S1752221AbaHWShV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 14:37:21 -0400
 Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:62560
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751376AbaHWShC (ORCPT
+	by vger.kernel.org with ESMTP id S1751537AbaHWShA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 14:37:02 -0400
+	Sat, 23 Aug 2014 14:37:00 -0400
 X-IronPort-AV: E=Sophos;i="5.04,387,1406584800"; 
-   d="scan'208";a="76200908"
+   d="scan'208";a="76200904"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Ralf Baechle <ralf@linux-mips.org>
+To: Maik Broemme <mbroemme@plusserver.de>
 Cc: joe@perches.com, kernel-janitors@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] MIPS: BCM63xx: delete double assignment
-Date: Sat, 23 Aug 2014 20:33:25 +0200
-Message-Id: <1408818808-18850-5-git-send-email-Julia.Lawall@lip6.fr>
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/7] video: fbdev: intelfb: delete double assignment
+Date: Sat, 23 Aug 2014 20:33:23 +0200
+Message-Id: <1408818808-18850-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,8 +27,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Delete successive assignments to the same location.  In each case, the
-duplicated assignment is modified to be in line with other nearby code.
+Delete successive assignments to the same location.
+
+In the second case, = is converted to |=, which looks appropriate based on
+the values involved.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -45,31 +49,30 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 The patches in this series do not depend on each other.
 
-Not compiled.  This patch changes the semantics of the code.
+This changes the behavior of the code in the second case and is not tested.
 
- arch/mips/bcm63xx/irq.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/fbdev/intelfb/intelfbhw.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/mips/bcm63xx/irq.c b/arch/mips/bcm63xx/irq.c
-index 37eb2d1..b94bf44 100644
---- a/arch/mips/bcm63xx/irq.c
-+++ b/arch/mips/bcm63xx/irq.c
-@@ -434,7 +434,7 @@ static void bcm63xx_init_irq(void)
- 		irq_stat_addr[0] += PERF_IRQSTAT_3368_REG;
- 		irq_mask_addr[0] += PERF_IRQMASK_3368_REG;
- 		irq_stat_addr[1] = 0;
--		irq_stat_addr[1] = 0;
-+		irq_mask_addr[1] = 0;
- 		irq_bits = 32;
- 		ext_irq_count = 4;
- 		ext_irq_cfg_reg1 = PERF_EXTIRQ_CFG_REG_3368;
-@@ -443,7 +443,7 @@ static void bcm63xx_init_irq(void)
- 		irq_stat_addr[0] += PERF_IRQSTAT_6328_REG(0);
- 		irq_mask_addr[0] += PERF_IRQMASK_6328_REG(0);
- 		irq_stat_addr[1] += PERF_IRQSTAT_6328_REG(1);
--		irq_stat_addr[1] += PERF_IRQMASK_6328_REG(1);
-+		irq_mask_addr[1] += PERF_IRQMASK_6328_REG(1);
- 		irq_bits = 64;
- 		ext_irq_count = 4;
- 		is_ext_irq_cascaded = 1;
+diff --git a/drivers/video/fbdev/intelfb/intelfbhw.c b/drivers/video/fbdev/intelfb/intelfbhw.c
+index fbad61d..d31ed4e 100644
+--- a/drivers/video/fbdev/intelfb/intelfbhw.c
++++ b/drivers/video/fbdev/intelfb/intelfbhw.c
+@@ -1191,7 +1191,6 @@ int intelfbhw_mode_to_hw(struct intelfb_info *dinfo,
+ 	vsync_end = vsync_start + var->vsync_len;
+ 	vtotal = vsync_end + var->upper_margin;
+ 	vblank_start = vactive;
+-	vblank_end = vtotal;
+ 	vblank_end = vsync_end + 1;
+ 
+ 	DBG_MSG("V: act %d, ss %d, se %d, tot %d bs %d, be %d\n",
+@@ -1859,7 +1858,7 @@ void intelfbhw_cursor_init(struct intelfb_info *dinfo)
+ 		tmp = INREG(CURSOR_CONTROL);
+ 		tmp &= ~(CURSOR_FORMAT_MASK | CURSOR_GAMMA_ENABLE |
+ 			 CURSOR_ENABLE | CURSOR_STRIDE_MASK);
+-		tmp = CURSOR_FORMAT_3C;
++		tmp |= CURSOR_FORMAT_3C;
+ 		OUTREG(CURSOR_CONTROL, tmp);
+ 		OUTREG(CURSOR_A_BASEADDR, dinfo->cursor.offset << 12);
+ 		tmp = (64 << CURSOR_SIZE_H_SHIFT) |
 
