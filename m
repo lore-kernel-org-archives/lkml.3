@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaHWSj1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 14:39:27 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:48310
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751478AbaHWShA (ORCPT
+	id S1751989AbaHWTEy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 15:04:54 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:63165 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaHWTEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 14:37:00 -0400
-X-IronPort-AV: E=Sophos;i="5.04,387,1406584800"; 
-   d="scan'208";a="76200903"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Antonino Daplas <adaplas@gmail.com>
-Cc: joe@perches.com, kernel-janitors@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] video: fbdev: riva: delete double assignment
-Date: Sat, 23 Aug 2014 20:33:22 +0200
-Message-Id: <1408818808-18850-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
+	Sat, 23 Aug 2014 15:04:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Corey Minyard <minyard@acm.org>
+Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ipmi: work around gcc-4.9 build warning
+Date: Sat, 23 Aug 2014 21:04:48 +0200
+Message-ID: <58708252.p9ogO3naVQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-26-generic; KDE/4.11.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:yBPxYo/cwdvtH7niZ0rS1jB1PHGIW9Qt3KMzlMpaOIw
+ MqAzyJahLEUcxCz6ADOvLl5R7NfXo8dF2pKlNwQtrJyzyOr/8o
+ 3jMLxMf389ui7vZyrX5tMOQSLMrCyoUCmqdPNyeu1zT+Mqktzr
+ 33UZ6poGQ95OX9J0pnwze/wdX+pPrq8FqwcYP2cw1bdiRzDYHC
+ CtQuiQ4OlK8++ONRXvtm05RrqIm/gJHxj0VhUpPwquNVzXvi8x
+ pDWHZRM9jXumJu/Vn4Le2+1pXSJC49BpLEWuUZSKQJ8W9ActrD
+ M0aBi/r/WwhKnN/ATHi09ylNJucyw7XzUkBClZSiCLlFwv8AWr
+ rtHv8YFg3y621LMr6hKU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Building ipmi on arm with gcc-4.9 results in this warning
+for an allmodconfig build:
 
-Delete successive assignments to the same location.
+drivers/char/ipmi/ipmi_si_intf.c: In function 'ipmi_thread':
+include/linux/time.h:28:5: warning: 'busy_until.tv_sec' may be used uninitialized in this function [-Wmaybe-uninitialized]
+  if (lhs->tv_sec > rhs->tv_sec)
+     ^
+drivers/char/ipmi/ipmi_si_intf.c:1007:18: note: 'busy_until.tv_sec' was declared here
+  struct timespec busy_until;
+                  ^
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+The warning is bogus and this case can not occur. Apparently
+this is a false positive resulting from gcc getting a little
+smarter about tracking assignments but not smart enough. Marking
+the ipmi_thread_busy_wait function as inline gives the gcc
+optimization logic enough information to figure out for itself
+that the case cannot happen, which gets rid of the warning
+without adding any fake initialization.
 
-// <smpl>
-@@
-expression i;
-@@
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-*i = ...;
- i = ...;
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-The patches in this series do not depend on each other.
-
- drivers/video/fbdev/riva/riva_hw.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/video/fbdev/riva/riva_hw.c b/drivers/video/fbdev/riva/riva_hw.c
-index 78fdbf5..8bdf37f 100644
---- a/drivers/video/fbdev/riva/riva_hw.c
-+++ b/drivers/video/fbdev/riva/riva_hw.c
-@@ -430,7 +430,6 @@ static char nv3_arb(nv3_fifo_info * res_info, nv3_sim_state * state,  nv3_arb_in
-     int mmisses, gmisses, vmisses, eburst_size, mburst_size;
-     int refresh_cycle;
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 5d665680ae33..539ff0db52fc 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -965,9 +965,9 @@ static inline int ipmi_si_is_busy(struct timespec *ts)
+ 	return ts->tv_nsec != -1;
+ }
  
--    refresh_cycle = 0;
-     refresh_cycle = 2*(state->mclk_khz/state->pclk_khz) + 5;
-     mmisses = 2;
-     if (state->mem_aligned) gmisses = 2;
+-static int ipmi_thread_busy_wait(enum si_sm_result smi_result,
+-				 const struct smi_info *smi_info,
+-				 struct timespec *busy_until)
++static inline int ipmi_thread_busy_wait(enum si_sm_result smi_result,
++					const struct smi_info *smi_info,
++					struct timespec *busy_until)
+ {
+ 	unsigned int max_busy_us = 0;
+ 
 
