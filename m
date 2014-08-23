@@ -1,112 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039AbaHWXQB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 19:16:01 -0400
-Received: from mail-oa0-f73.google.com ([209.85.219.73]:61760 "EHLO
-	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653AbaHWXP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 19:15:59 -0400
-Date: Sat, 23 Aug 2014 19:15:57 -0400
-From: Peter Feiner <pfeiner@google.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/3] mm: softdirty: enable write notifications on VMAs
- after VM_SOFTDIRTY cleared
-Message-ID: <20140823231557.GA12184@google.com>
-References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
- <1408831921-10168-1-git-send-email-pfeiner@google.com>
- <1408831921-10168-2-git-send-email-pfeiner@google.com>
- <20140823230011.GA26483@node.dhcp.inet.fi>
+	id S1752084AbaHWXaS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 19:30:18 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:60423 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751653AbaHWXaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 19:30:15 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: rui.zhang@intel.com, eduardo.valentin@ti.com, rdunlap@infradead.org,
+        cf@rock-chips.com, grant.linkely@linaro.org, robh+dt@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, zyw@rock-chips.com, huangtao@rock-chips.com,
+        xjq@rock-chips.com, addy.ke@rock-chips.com, dianders@chromium.org,
+        zhaoyifeng <zyf@rock-chips.com>
+Subject: Re: [PATCH 1/2] dt-bindings: document Rockchip thermal
+Date: Sun, 24 Aug 2014 01:03:05 +0200
+Message-ID: <1504889.nDzfjZj9xp@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1408752934-18318-2-git-send-email-caesar.wang@rock-chips.com>
+References: <1408752934-18318-1-git-send-email-caesar.wang@rock-chips.com> <1408752934-18318-2-git-send-email-caesar.wang@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140823230011.GA26483@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 24, 2014 at 02:00:11AM +0300, Kirill A. Shutemov wrote:
-> On Sat, Aug 23, 2014 at 06:11:59PM -0400, Peter Feiner wrote:
-> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > index dfc791c..f1a5382 100644
-> > --- a/fs/proc/task_mmu.c
-> > +++ b/fs/proc/task_mmu.c
-> > @@ -851,8 +851,23 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
-> >  			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
-> >  				continue;
-> >  			if (type == CLEAR_REFS_SOFT_DIRTY) {
-> > -				if (vma->vm_flags & VM_SOFTDIRTY)
-> > +				if (vma->vm_flags & VM_SOFTDIRTY) {
+Hi Caesar,
+
+Am Samstag, 23. August 2014, 08:15:33 schrieb Caesar Wang:
+> This add the necessary binding documentation for the thermal
+> found on Rockchip SoCs
 > 
-> Why do we need the branch here. Does it save us anything?
-> Looks like we can update vm_flags and enable writenotify unconditionally.
-> Indentation level is high enough already.
-
-You're right, we don't need the branch here. I'll change for v3.
-
-> >  					vma->vm_flags &= ~VM_SOFTDIRTY;
-> > +					/*
-> > +					 * We don't have a write lock on
-> > +					 * mm->mmap_sem, so we race with the
-> > +					 * fault handler reading vm_page_prot.
-> > +					 * Therefore writable PTEs (that won't
-> > +					 * have soft-dirty set) can be created
-> > +					 * for read faults. However, since the
-> > +					 * PTE lock is held while vm_page_prot
-> > +					 * is read and while we write protect
-> > +					 * PTEs during our walk, any writable
-> > +					 * PTEs that slipped through will be
-> > +					 * write protected.
-> > +					 */
+> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> ---
+>  .../bindings/thermal/rockchip-thermal.txt          |   33
+> ++++++++++++++++++++ 1 file changed, 33 insertions(+)
+>  create mode 100644
+> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
 > 
-> Hm.. Isn't this yet another bug?
-> Updating vma->vm_flags without down_write(&mm->mmap_sem) looks troublesome
-> to me. Am I wrong?
+> diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new file
+> mode 100644
+> index 0000000..b556eae
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> @@ -0,0 +1,33 @@
+> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
+> +
+> +Required properties:
+> +- compatible : "rockchip,rk3288-tsadc"
+> +- reg : physical base address of the controller and length of memory mapped
+> +  region.
+> +- interrupts : The interrupt number to the cpu. The interrupt specifier
+> format +  depends on the interrupt controller.
+> +- clocks : Must contain an entry for each entry in clock-names.
+> +- clock-names : Shall be "tsadc_clk" for the transfer-clock, and
+> "tsadc_pclk" for +    the peripheral clock.
+> +Optional properties:
+> +- clock-frequency : Thermal sensor's clock frequency.
 
-As I said in the comment, it looks fishy but we're still fixing the bug. That
-is, no writable PTEs will sneak by that don't have soft-dirty set.
+see comment in patch2, this should probably use assigned-rate if at all 
+necessary (and the assigned-rate is not necessary to document here)
 
-I was originally going to submit something that dropped the mmap_sem and
-re-took it in write mode before manipulating vm_page_prot. The control flow was
-slightly hairy, so I convinced myself that the race is benign :-)
 
-If I'm right and the race is benign, it still might be worth having the more
-straightforward & obviously correct implementation since this isn't performance
-critical code.
+> +- pinctrl-names : Should contain only one value - "default".
+> +- pinctrl-0 : Should contain only one value - &tsadc_int.
 
-> > +/* Enable write notifications without blowing away special flags. */
-> > +static inline void vma_enable_writenotify(struct vm_area_struct *vma)
-> > +{
-> > +	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
-> > +	                                  vm_get_page_prot(vma->vm_flags &
-> > +					                   ~VM_SHARED));
-> 
-> I think this way is more readable:
-> 
-> 	pgprot_t newprot;
-> 	newprot = vm_get_page_prot(vma->vm_flags & ~VM_SHARED);
-> 	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot, newprot);
-> 
+in general pinctrl settings are just board-specific settings and do not
+need to be part of the binding documentation.
+And in this case, are you sure that the tsadc uses some pin as interrupt?
+Because in the TRM the TS-ADC interrupt is number 69 of the GIC itself
+and not some pin accessible via pinctrl.
 
-Looks good. I'll update.
 
-> > +}
-> > +
-> > +/* Disable write notifications without blowing away special flags. */
-> > +static inline void vma_disable_writenotify(struct vm_area_struct *vma)
-> > +{
-> > +	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
-> > +	                                  vm_get_page_prot(vma->vm_flags));
-> 
-> ditto.
+> +- passive-temp : Temperature of trip 0.
+> +- critical-temp : Temperature of trip 1.
+> +- force-shut-temp : Temperature of force shut down.
 
-I'll change this too.
+please use the generic trip-points described in
+Documentation/devicetree/bindings/thermal/thermal.txt
+for this, instead of defining new properties
 
-Peter
+
+Heiko
+
+> +Example:
+> +
+> +tsadc: tsadc@ff280000 {
+> +	compatible = "rockchip,rk3288-tsadc";
+> +	reg = <0xff280000 0x100>;
+> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+> +	clock-frequency = <10000>;
+> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
+> +	clock-names = "tsadc_clk", "tsadc_pclk";
+> +	pinctrl-names = "default";
+> +	pinctrl-1 = <&tsadc_int>;
+> +	passive-temp = <80>;
+> +	critical-temp = <100>;
+> +	force-shut-temp = <120>;
+> +};
+
