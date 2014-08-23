@@ -1,163 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaHWAVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 20:21:54 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:46665 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaHWAVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 20:21:52 -0400
+	id S1752620AbaHWAXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 20:23:30 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38518 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752365AbaHWAX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 20:23:29 -0400
+Date: Fri, 22 Aug 2014 17:23:21 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        ak@linux.intel.com, peterz@infradead.org, eranian@google.com,
+        dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v2 00/14] Add support for parameterized events from sysfs
+Message-ID: <20140823002321.GA22172@us.ibm.com>
+References: <1408087583-32239-1-git-send-email-sukadev@linux.vnet.ibm.com>
+ <20140820141545.GA3242@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.11.1408191835200.3003@eggly.anvils>
-References: <alpine.LSU.2.11.1408161946450.1064@eggly.anvils>
- <1408453101-30290-1-git-send-email-vdonnefort@gmail.com> <1408453101-30290-2-git-send-email-vdonnefort@gmail.com>
- <alpine.LSU.2.11.1408191835200.3003@eggly.anvils>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 22 Aug 2014 17:21:30 -0700
-Message-ID: <CAK5ve-Kc8mjdbN0Nn-pGVjp2pj6ZV_FCBpeOtO5N92CkJZX3=g@mail.gmail.com>
-Subject: Re: [PATCH] leds: make led_blink_set IRQ safe
-To: Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>
-Cc: Vincent Donnefort <vdonnefort@gmail.com>, Valdis.Kletnieks@vt.edu,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820141545.GA3242@krava.brq.redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082300-5806-0000-0000-00000048EB85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 6:51 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Tue, 19 Aug 2014, Vincent Donnefort wrote:
->
->> This patch introduces a work which take care of reseting the blink workqueue and
->> avoid calling the cancel_delayed_work_sync function which may sleep, from an IRQ
->> context.
->>
+Jiri Olsa [jolsa@redhat.com] wrote:
 
-Vincent, I'm just wandering can we use cancel_delayed_work() instead
-of sync version here.
-cancel_delayed_work() can be called from IRQ context.
+<snip>
+| > Description of the sysfs contents when events are parameterized (copied from an
+| > included patch):
+| > 
+| > 	Examples:
+| > 
+| > 		domain=0x1,offset=0x8,starting_index=phys_cpu
+| > 
+| > 	In the case of the last example, a value replacing "phys_cpu"
+| > 	would need to be provided by the user selecting the particular
+| > 	event. This is refered to as "event parameterization". All
+| > 	non-numerical values indicate an event parameter.
+| > 
+| > Notes on how perf-list displays parameterized events (and how to use them,
+| > again culled from an included patch):
+| > 
+| > 	PARAMETERIZED EVENTS
+| > 	--------------------
+| > 
+| > 	Some pmu events listed by 'perf-list' will be displayed with '?' in
+| > 	them. For example:
+| > 
+| > 	  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
+| > 
+| > 	This means that when provided as an event, a value for
+| > 	phys_processor_idx must also be supplied. For example:
+| > 
+| > 	  perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
+| 
+| hi,
+| is the reason for this to document this field for event
+| in "events/<event>" file?
 
->> Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
->
-> Thanks.  It does work for me.  Though the problem was more general than
-> stated above: not just a problem in IRQ context, but in any atomic context.
->
-> I don't suppose it has any effect on Valdis's lockdep issue, which I
-> didn't get to see myself; but we should let Valdis report back on that.
->
-> May I (most ungratefully!) say that your patch doesn't fill me with
-> confidence that it's the right solution: adding yet another work_struct
-> to get around the issue seemed dubious to me, I wonder if it might expose
-> new races.
->
+We are trying to document that for the parameters that have the ? in
+perf list, the parameter must be specified otherwise the event will
+not be recognized.
 
-I agree with Hugh about this new cancel work_struct. But if we revert
-it back, I saw led_blink_set() will call del_timer_sync() which might
-also sleep and can't be used in IRQ context. Looks like we can't call
-led_blink_set() in any IRQ/atomic context.
+| 
+| Because once you have the field (phys_processor_idx) defined in
+| "formats/phys_processor_idx" you should be able to use it as in
+| your example:
+| 
+|    perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/'
+| 
+| without any changes
 
-> But rest assured that I know nothing about this, and I'm not at all
-> qualified to review your patch: I hope Bryan and others will do so.
->
+For some events 'starting_index' refers to physical processor index
+as shown in the sysfs entry:
 
-Let me invite Tejun to give some advice on how to solve this problem.
+	$ cd /sys/bus/event_source/devices/hv_gpci/events
+ 	$ cat dispatch_timebase_by_processor_processor_time_in_timebase_cycles
+	request=0x10,starting_index=phys_processor_idx,counter_info_version=0x8,length=8,offset=0
 
-Tejun, Vincent's commit 8b37e1bef5a6b60e949e28a4db3006e4b00bd758
-convert a timer into work_struct, but Hugh found it will cause
-sleeping BUGs [1]. Could you give some opinion about that?
+and 'perf list' for this entry shows 'starting_index' with a ?
+indicating it is a requireed parameter.
+
+IIUC, rather than have the user specify a value for 'phys_processor_idx'
+
+	-e hv_gpci/dtbp_ptitc,phys_processor_idx=4/'
+
+we would use following right ?
+
+	-e hv_gpci/dtbp_ptitc,starting_index=4/'
+
+If so, I think the interface change makes sense.  perf list would also
+show 'starting_index=?' for the event. 
+
+But in the sysfs entry, rather than show 'starting_index=?', should we
+leave it as:
+
+	'starting_index=phys_processor_idx' 
+
+For some events 'startind_index' refers to a physical processor id
+and for others it is virtual processor id. So, showing phys_processor_idx
+could serve as a hint.
+
+Michael, Cody, Ingo, Peter, let me know if you agree or have other
+comments on the inteface.
 
 Thanks,
--Bryan
 
-[1]: https://lkml.org/lkml/2014/8/16/128
+Sukadev
 
 
->
->>
->> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
->> index 129729d..0971554 100644
->> --- a/drivers/leds/led-class.c
->> +++ b/drivers/leds/led-class.c
->> @@ -148,6 +148,24 @@ static void led_work_function(struct work_struct *ws)
->>                          msecs_to_jiffies(delay));
->>  }
->>
->> +static void reset_blink_work_delayed(struct work_struct *ws)
->> +{
->> +     struct led_classdev *led_cdev =
->> +             container_of(ws, struct led_classdev, reset_blink_work);
->> +
->> +     cancel_delayed_work_sync(&led_cdev->blink_work);
->> +
->> +     if (!led_cdev->blink_delay_on) {
->> +             __led_set_brightness(led_cdev, LED_OFF);
->> +             return;
->> +     } else if (!led_cdev->blink_delay_off) {
->> +             __led_set_brightness(led_cdev, led_cdev->blink_brightness);
->> +             return;
->> +     }
->> +
->> +     queue_delayed_work(system_wq, &led_cdev->blink_work, 1);
->> +}
->> +
->>  static void set_brightness_delayed(struct work_struct *ws)
->>  {
->>       struct led_classdev *led_cdev =
->> @@ -234,6 +252,7 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
->>       INIT_WORK(&led_cdev->set_brightness_work, set_brightness_delayed);
->>
->>       INIT_DELAYED_WORK(&led_cdev->blink_work, led_work_function);
->> +     INIT_WORK(&led_cdev->reset_blink_work, reset_blink_work_delayed);
->>
->>  #ifdef CONFIG_LEDS_TRIGGERS
->>       led_trigger_set_default(led_cdev);
->> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
->> index 4bb1168..959510a 100644
->> --- a/drivers/leds/led-core.c
->> +++ b/drivers/leds/led-core.c
->> @@ -40,19 +40,7 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
->>       led_cdev->blink_delay_on = delay_on;
->>       led_cdev->blink_delay_off = delay_off;
->>
->> -     /* never on - just set to off */
->> -     if (!delay_on) {
->> -             __led_set_brightness(led_cdev, LED_OFF);
->> -             return;
->> -     }
->> -
->> -     /* never off - just set to brightness */
->> -     if (!delay_off) {
->> -             __led_set_brightness(led_cdev, led_cdev->blink_brightness);
->> -             return;
->> -     }
->> -
->> -     queue_delayed_work(system_wq, &led_cdev->blink_work, 1);
->> +     schedule_work(&led_cdev->reset_blink_work);
->>  }
->>
->>
->> @@ -76,8 +64,6 @@ void led_blink_set(struct led_classdev *led_cdev,
->>                  unsigned long *delay_on,
->>                  unsigned long *delay_off)
->>  {
->> -     cancel_delayed_work_sync(&led_cdev->blink_work);
->> -
->>       led_cdev->flags &= ~LED_BLINK_ONESHOT;
->>       led_cdev->flags &= ~LED_BLINK_ONESHOT_STOP;
->>
->> diff --git a/include/linux/leds.h b/include/linux/leds.h
->> index 6a599dc..6e5523d 100644
->> --- a/include/linux/leds.h
->> +++ b/include/linux/leds.h
->> @@ -69,6 +69,7 @@ struct led_classdev {
->>
->>       unsigned long            blink_delay_on, blink_delay_off;
->>       struct delayed_work      blink_work;
->> +     struct work_struct       reset_blink_work;
->>       int                      blink_brightness;
->>
->>       struct work_struct      set_brightness_work;
->> --
->> 1.9.1
->>
->>
+
+| 
+| thanks,
+| jirka
+
