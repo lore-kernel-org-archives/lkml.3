@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaHWO6v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 10:58:51 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57080 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaHWO6t (ORCPT
+	id S1751846AbaHWO7T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 10:59:19 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:62453 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaHWO7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 10:58:49 -0400
-Date: Sat, 23 Aug 2014 09:57:37 -0500
-From: Mark Brown <broonie@kernel.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
-        a.zummo@towertech.it, mturquette@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
-        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
-        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
-        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
-        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com
-Message-ID: <20140823145737.GJ24407@sirena.org.uk>
-References: <1408791890-17328-1-git-send-email-zyw@rock-chips.com>
+	Sat, 23 Aug 2014 10:59:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Gorski <jogo@openwrt.org>
+Cc: Olof Johansson <olof@lixom.net>, Andrew Bresticker <abrestic@chromium.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+Date: Sat, 23 Aug 2014 16:59:04 +0200
+Message-ID: <64044023.tHj6rvEyXT@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-26-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAOiHx=noe=614vv4GyhuvfoAYj0jYDhO5vX+7M2RbQBpE-uPnQ@mail.gmail.com>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org> <201408231556.42571.arnd@arndb.de> <CAOiHx=noe=614vv4GyhuvfoAYj0jYDhO5vX+7M2RbQBpE-uPnQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nnmy4NBWOJNeUHwN"
-Content-Disposition: inline
-In-Reply-To: <1408791890-17328-1-git-send-email-zyw@rock-chips.com>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 208.59.64.2
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 4/5] Regulator: RK808: Add regulator driver for RK808
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:MBYTySjxA2D/clWyPFYjtm74J4lB0LGeTuFXVerBMxe
+ Y5Q/P6ttBckbjY84xcOcKMQOzwNAP0WWyQguVINukXiRvyufDu
+ Tl2542AffJaQ2O3NvXdcTIsgyMiZp0E2PyqvUmg2E1aENrfKEJ
+ r8lIbnL47OL5FqwMHVTuMxBz6YU8Y7ECV1WFPSGlGEULZ0SYbE
+ SZ7N5PrdWA23tNI1x5AGoUfTO+BzREckYNM/LcavF60xRM6UG7
+ gWcnDBBsP976JQPt5rdNncVhCAJur9x7hx3Lc4wMAsRmOQZFia
+ C9Ab8YmctjeWdH5dKsm34P1pD8MOxcD/5x2yuCJZyfoafv12t8
+ TrB9bYjdmCPSMsiYfxPU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Saturday 23 August 2014 16:48:52 Jonas Gorski wrote:
+> On Sat, Aug 23, 2014 at 3:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > Another argument is that we plan to actually move all the dts files out of
+> > the kernel into a separate project in the future. We really don't want to
+> > have the churn of moving all the files now when they get deleted in one
+> > of the next merge windows.
+> >
+> > I don't know if we talked about whether that move should be done for
+> > all architectures at the same time. If that is the plan, I think it
+> > would be best to not move the MIPS files at all but also wait until
+> > they can get removed from the kernel tree.
+> 
+> I wonder how this is supposed to work with dtbs that are currently
+> expected to be built into the kernel?
 
---nnmy4NBWOJNeUHwN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Most architectures use appended dtb blobs to work around legacy boot
+loaders that are lacking native dtb support. For these, combining the
+kernel and dtb is part of the installation or system image creation
+process, not part of the kernel build.
 
-On Sat, Aug 23, 2014 at 07:04:50PM +0800, Chris Zhong wrote:
-> The regulator module consists of 4 DCDCs, 8 LDOs and 2 switches.
-> The output voltages are configurable and are meant to supply power
-> to the main processor and other components
+For the architectures that currently link the dtb into the kernel,
+(arc, metag, openrisc, xtensa), I suppose the best way is to move
+to use the same method as the other architectures. This also solves
+the problem of building a kernel that runs on multiple machines.
 
-To repeat what I said on your previous posting: this driver has already
-been applied, if there are any changes required please send incremental
-patches against what is in the tree.
-
---nnmy4NBWOJNeUHwN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJT+KveAAoJELSic+t+oim9UWIP/RSS2tR8pzsmhs80DGkmfrn3
-z2DBXCyGWbwhiinyj2B8aj6NtWJ9PS/QYjiG7RkISggWyS/+6FgL0crQnvCpyNTR
-wIdb1W7uC9R73LiKqpPg3T0mTbCXAraQyMOBmDrBMA2va9hogwtXvQuncwm1iY0P
-C9GWJIUXvVhSbKWbv+7ISW67PEYRhHqpGkwFkPfWlZxpgPAtovbpnKg+5DhyvWo3
-WUVfUkY2udANH0I2gZQLxfT5TkBEPoXaJxodhWlP275GIoIvJuMFCGYf4jrVKgc2
-sPoCK3iKQvKNC5jrCWsfO1eLfkJGwzf8ZM1FzDneH+o6apBXnzwvacsxbrkiYyW2
-ZUKnEuYqlnad38heTSzeWZ5gSaCqtUKbssqr9p3hmmMlTV8D8bAjkHSgq3mMxSj+
-pvrciwX6DR5HGuwPn2NGSZuvby4wh4f4QJFPdtaLSy8aSq2mGKnH+HFPGvj2kmRQ
-8jK6/0pOXmNrGciBYq1lEgnXguTzAgsklCmKrJMpAfHv/opUp+5CypfGbjph2Key
-ktN9ICH9PUCwSVBN3EpQwM7RhI6eXh6hiwHAYGag9Npziy42yK1rU1iGy59zOpQ2
-ctP7LbTriOFux/goET4L7+wRX9VMZIJZxG9qxp6SUzD4JVZbNXkWuVxXII8hQOvW
-zyXQjGomQIqkvm+vdaAl
-=bBta
------END PGP SIGNATURE-----
-
---nnmy4NBWOJNeUHwN--
+	Arnd
