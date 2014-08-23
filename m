@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674AbaHWAJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 20:09:30 -0400
-Received: from max.feld.cvut.cz ([147.32.192.36]:34201 "EHLO max.feld.cvut.cz"
+	id S1752652AbaHWAJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 20:09:29 -0400
+Received: from max.feld.cvut.cz ([147.32.192.36]:34202 "EHLO max.feld.cvut.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752490AbaHWAJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752341AbaHWAJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 22 Aug 2014 20:09:25 -0400
 From: Michal Sojka <sojka@merica.cz>
 To: linux-usb@vger.kernel.org
@@ -13,9 +13,9 @@ Cc: Michal Sojka <sojka@merica.cz>, Bryan Wu <cooloney@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Linux LED Subsystem <linux-leds@vger.kernel.org>,
         linux-kernel@vger.kernel.org, michal.vokac@comap.cz
-Subject: [PATCH v2 3/3] usb: Add LED trigger for USB gadget activity
-Date: Sat, 23 Aug 2014 02:08:22 +0200
-Message-Id: <1408752502-4162-4-git-send-email-sojka@merica.cz>
+Subject: [PATCH v2 2/3] usb: Add LED trigger for USB host activity
+Date: Sat, 23 Aug 2014 02:08:21 +0200
+Message-Id: <1408752502-4162-3-git-send-email-sojka@merica.cz>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1408752502-4162-1-git-send-email-sojka@merica.cz>
 References: <87ha149j2z.fsf@steelpick.2x.cz>
@@ -24,70 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch, USB gadget activity can be signaled by blinking a LED.
+With this patch, USB host activity can be signaled by blinking a LED.
 
-Since there is no generic code where to put the trigger for all USB
-controllers, each USB controller needs to call the trigger individually.
-This patch adds the call only for the musb controller where I can test
-it.
+This should work with all host controllers. Tested only with musb.
 
 Signed-off-by: Michal Sojka <sojka@merica.cz>
 ---
- drivers/usb/gadget/Kconfig      | 12 ++++++++++++
- drivers/usb/gadget/udc/Makefile |  5 ++++-
- drivers/usb/gadget/udc/led.c    | 38 ++++++++++++++++++++++++++++++++++++++
- drivers/usb/musb/musb_gadget.c  |  5 +++--
- include/linux/usb/gadget.h      | 10 ++++++++++
- 5 files changed, 67 insertions(+), 3 deletions(-)
- create mode 100644 drivers/usb/gadget/udc/led.c
+ drivers/usb/core/Kconfig  |  9 +++++++++
+ drivers/usb/core/Makefile |  1 +
+ drivers/usb/core/hcd.c    |  2 ++
+ drivers/usb/core/led.c    | 38 ++++++++++++++++++++++++++++++++++++++
+ include/linux/usb/hcd.h   |  6 ++++++
+ 5 files changed, 56 insertions(+)
+ create mode 100644 drivers/usb/core/led.c
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 5c822af..612c859 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -127,6 +127,18 @@ config USB_GADGET_STORAGE_NUM_BUFFERS
- 	   a module parameter as well.
- 	   If unsure, say 2.
+diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+index 1060657..8295f65 100644
+--- a/drivers/usb/core/Kconfig
++++ b/drivers/usb/core/Kconfig
+@@ -90,3 +90,12 @@ config USB_OTG_FSM
+ 	  Implements OTG Finite State Machine as specified in On-The-Go
+ 	  and Embedded Host Supplement to the USB Revision 2.0 Specification.
  
-+config USB_GADGET_LED
-+	bool "USB Gadget LED Trigger"
-+	depends on (USB_MUSB_GADGET || USB_MUSB_DUAL_ROLE)
++config USB_HOST_LED
++	bool "USB Host LED Trigger"
 +	depends on LEDS_CLASS
 +	select LEDS_TRIGGERS
 +	help
-+	  This option adds a LED trigger for USB gadgets. The trigger will
-+	  only work with supported USB device controllers.
++	  This option adds a LED trigger for USB host controllers.
 +
 +	  Say Y here if you are working on a system with led-class supported
-+	  LEDs and you want to use them as USB gadget activity indicators.
-+
- source "drivers/usb/gadget/udc/Kconfig"
++	  LEDs and you want to use them as USB host activity indicators.
+diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
+index 2f6f932..324c8c9 100644
+--- a/drivers/usb/core/Makefile
++++ b/drivers/usb/core/Makefile
+@@ -9,5 +9,6 @@ usbcore-y += port.o
  
- #
-diff --git a/drivers/usb/gadget/udc/Makefile b/drivers/usb/gadget/udc/Makefile
-index 4096122..acbe3ca 100644
---- a/drivers/usb/gadget/udc/Makefile
-+++ b/drivers/usb/gadget/udc/Makefile
-@@ -1,7 +1,10 @@
- #
- # USB peripheral controller drivers
- #
--obj-$(CONFIG_USB_GADGET)	+= udc-core.o
-+obj-$(CONFIG_USB_GADGET)	+= udc.o
-+udc-y				:= udc-core.o
-+udc-$(CONFIG_USB_GADGET_LED)	+= led.o
-+
- obj-$(CONFIG_USB_DUMMY_HCD)	+= dummy_hcd.o
- obj-$(CONFIG_USB_NET2272)	+= net2272.o
- obj-$(CONFIG_USB_NET2280)	+= net2280.o
-diff --git a/drivers/usb/gadget/udc/led.c b/drivers/usb/gadget/udc/led.c
+ usbcore-$(CONFIG_PCI)		+= hcd-pci.o
+ usbcore-$(CONFIG_ACPI)		+= usb-acpi.o
++usbcore-$(CONFIG_USB_HOST_LED)	+= led.o
+ 
+ obj-$(CONFIG_USB)		+= usbcore.o
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 487abcf..46d9f3a 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1664,6 +1664,8 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
+ 	usbmon_urb_complete(&hcd->self, urb, status);
+ 	usb_anchor_suspend_wakeups(anchor);
+ 	usb_unanchor_urb(urb);
++	if (status == 0)
++		usb_hcd_led_activity();
+ 
+ 	/* pass ownership to the completion handler */
+ 	urb->status = status;
+diff --git a/drivers/usb/core/led.c b/drivers/usb/core/led.c
 new file mode 100644
-index 0000000..29a8b3f
+index 0000000..49ff76c
 --- /dev/null
-+++ b/drivers/usb/gadget/udc/led.c
++++ b/drivers/usb/core/led.c
 @@ -0,0 +1,38 @@
 +/*
-+ * LED Trigger for USB Gadget Activity
++ * LED Trigger for USB Host Activity
 + *
 + * Copyright 2014 Michal Sojka <sojka@merica.cz>
 + *
@@ -101,67 +100,46 @@ index 0000000..29a8b3f
 +#include <linux/kernel.h>
 +#include <linux/init.h>
 +#include <linux/leds.h>
++#include <linux/usb/hcd.h>
 +
 +#define BLINK_DELAY 30
 +
-+DEFINE_LED_TRIGGER(ledtrig_usbgadget);
-+static unsigned long usbgadget_blink_delay = BLINK_DELAY;
++DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
++static unsigned long usb_hcd_blink_delay = BLINK_DELAY;
 +
-+void usb_gadget_led_activity(void)
++void usb_hcd_led_activity(void)
 +{
-+	led_trigger_blink_oneshot(ledtrig_usbgadget,
-+				  &usbgadget_blink_delay, &usbgadget_blink_delay, 0);
++	led_trigger_blink_oneshot(ledtrig_usb_hcd,
++				  &usb_hcd_blink_delay, &usb_hcd_blink_delay, 0);
 +}
-+EXPORT_SYMBOL(usb_gadget_led_activity);
 +
-+int __init ledtrig_usbgadget_init(void)
++int __init ledtrig_usb_hcd_init(void)
 +{
-+	led_trigger_register_simple("usb-gadget", &ledtrig_usbgadget);
++	led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
 +	return 0;
 +}
 +
-+void __exit ledtrig_usbgadget_exit(void)
++void __exit ledtrig_usb_hcd_exit(void)
 +{
-+	led_trigger_unregister_simple(ledtrig_usbgadget);
++	led_trigger_unregister_simple(ledtrig_usb_hcd);
 +}
-diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-index d4aa779..0bf06f9 100644
---- a/drivers/usb/musb/musb_gadget.c
-+++ b/drivers/usb/musb/musb_gadget.c
-@@ -167,11 +167,12 @@ __acquires(ep->musb->lock)
- 	if (!dma_mapping_error(&musb->g.dev, request->dma))
- 		unmap_dma_buffer(req, musb);
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index b43f0fe..eb5fa0f 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -700,6 +700,12 @@ extern struct rw_semaphore ehci_cf_port_reset_rwsem;
+ #define USB_EHCI_LOADED		2
+ extern unsigned long usb_hcds_loaded;
  
--	if (request->status == 0)
-+	if (request->status == 0) {
- 		dev_dbg(musb->controller, "%s done request %p,  %d/%d\n",
- 				ep->end_point.name, request,
- 				req->request.actual, req->request.length);
--	else
-+		usb_gadget_led_activity();
-+	} else
- 		dev_dbg(musb->controller, "%s request %p, %d/%d fault %d\n",
- 				ep->end_point.name, request,
- 				req->request.actual, req->request.length,
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index c3a6185..69bd9bc 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -1025,4 +1025,14 @@ extern struct usb_ep *usb_ep_autoconfig_ss(struct usb_gadget *,
- 
- extern void usb_ep_autoconfig_reset(struct usb_gadget *);
- 
-+/*-------------------------------------------------------------------------*/
-+
-+/* LED trigger */
-+
-+#ifdef CONFIG_USB_GADGET_LED
-+extern void usb_gadget_led_activity(void);
++#ifdef CONFIG_USB_HOST_LED
++extern void usb_hcd_led_activity(void);
 +#else
-+static inline void usb_gadget_led_activity(void) {}
++static inline void usb_hcd_led_activity(void) {}
 +#endif
 +
- #endif /* __LINUX_USB_GADGET_H */
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __USB_CORE_HCD_H */
 -- 
 2.1.0
 
