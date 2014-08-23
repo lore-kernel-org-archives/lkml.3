@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819AbaHWRkU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 13:40:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34421 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaHWRkT (ORCPT
+	id S1751986AbaHWRnO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 13:43:14 -0400
+Received: from mail.thorsten-knabe.de ([212.60.139.226]:51714 "EHLO
+	mail.thorsten-knabe.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419AbaHWRnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 13:40:19 -0400
-Message-ID: <53F8D1FE.5050205@infradead.org>
-Date: Sat, 23 Aug 2014 10:40:14 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
+	Sat, 23 Aug 2014 13:43:13 -0400
+Message-ID: <53F8D2A7.70204@thorsten-knabe.de>
+Date: Sat, 23 Aug 2014 19:43:03 +0200
+From: Thorsten Knabe <linux@thorsten-knabe.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: =?windows-1252?Q?Fejes_J=F3zsef?= <jozsef.fejes@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-stable@vger.kernel.org,
-        "David E. Box" <david.e.box@linux.intel.com>
-Subject: Re: Problem with commit: x86, iosf: Make IOSF driver modular and
- usable by more drivers
-References: <CALU-w9-ZjjnrYW5HxRCe-HGZWSK0JMwNU_zcSbKXM4JgGyLdbw@mail.gmail.com>
-In-Reply-To: <CALU-w9-ZjjnrYW5HxRCe-HGZWSK0JMwNU_zcSbKXM4JgGyLdbw@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Richard Weinberger <richard@nod.at>
+CC: linux-kernel@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
+        Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] UML: UBD: Fix for processes stuck in D state forever
+ in UserModeLinux
+References: <53F89B7A.1040406@thorsten-knabe.de> <53F8B48D.8060209@nod.at>
+In-Reply-To: <53F8B48D.8060209@nod.at>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Spam-Report: Content analysis details:   (-1.8 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.8 DKIM_ADSP_ALL          No valid author signature, domain signs all mail
+ -0.7 RP_MATCHES_RCVD        Envelope sender domain matches handover relay domain
+ -1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23/14 02:31, Fejes József wrote:
-> Hi,
+Hi Richard.
+
+On 08/23/2014 05:34 PM, Richard Weinberger wrote:
+> Hi!
 > 
-> I think there's a problem with commit
-> 6b8f0c8780c71d78624f736d7849645b64cc88b7: config IOSF_MBI is
-> automatically a module and I cannot change that.
+> Am 23.08.2014 15:47, schrieb Thorsten Knabe:
+>> From: Thorsten Knabe <linux@thorsten-knabe.de>
+>>
+>> UML: UBD: Fix for processes stuck in D state forever in UserModeLinux.
+>>
+>> Starting with Linux 3.12 processes get stuck in D state forever in
+>> UserModeLinux under sync heavy workloads. This bug was introduced by
+>> commit 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport).
+>> Fix bug by adding a check if FLUSH request was successfully submitted to
+>> the I/O thread and keeping the FLUSH request on the request queue on
+>> submission failures.
+>>
+>> Fixes: 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport)
+>> Signed-off-by: Thorsten Knabe <linux@thorsten-knabe.de>
 > 
-> I've been using 3.15.* stable kernels. I have module support enabled,
-> but I build everything into the kernel, so I don't actually have any
-> modules built. I just upgraded to 3.16.1, and found out that I now
-> have this one module. I cannot find it in the menu, so I edited the
-> .config file by hand, but it changes back from =y to =m. Could you
-> please look into fixing it, and push it to 3.16.* stable branch?
+> Thanks a lot for hunting this issue down.
+> 
+>> ---
+>> Patch applies to 3.16.1.
+>>
+>> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+>> index 3716e69..b7d2840 100644
+>> --- a/arch/um/drivers/ubd_kern.c
+>> +++ b/arch/um/drivers/ubd_kern.c
+>> @@ -1277,7 +1277,7 @@ static void do_ubd_request(struct request_queue *q)
+>>
+>>  	while(1){
+>>  		struct ubd *dev = q->queuedata;
+>> -		if(dev->end_sg == 0){
+>> +		if(dev->request == NULL){
+> 
+> Why do we need this specific change?
 
-[adding David E. Box to email]
+This change is required, because for FLUSH requests dev->end_sg is
+initialized to 0 by blk_rq_map_sg() a few lines above, as FLUSH requests
+have no data blocks attached to themselves.
 
-This is a mainline issue, not just a -stable issue.
-Once fixed in mainline (if ever), then that fix can be added to -stable.
+Checking for dev->end_sg == 0 would then replace a not yet submitted
+FLUSH request by the next request on the next iteration of the while
+loop, also the FLUSH request was scheduled for resubmission to the I/O
+thread.
 
-Fejes, you could just disable module support and then iosf_mbi would be built
-into the kernel.  But as a loadable module, it won't waste memory if it's
-not needed.
+Kind regards
+Thorsten
 
-David, any other suggestions?
-Why can't the users of IOSF_MBI just select it?  That's what many other
-drivers do when they need to be sure that some functionality is present.
-
-I'm surprised that someone else (e.g. Linus) has not complained about the
-'default m' for this driver.
+> 
+> Thanks,
+> //richard
+> 
 
 
 -- 
-~Randy
+___
+ |        | /                 E-Mail: linux@thorsten-knabe.de
+ |horsten |/\nabe                WWW: http://linux.thorsten-knabe.de
