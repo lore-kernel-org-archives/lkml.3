@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370AbaHWSh0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 14:37:26 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:29333
+	id S1752312AbaHWShX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 14:37:23 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:62560
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751950AbaHWShC (ORCPT
+	by vger.kernel.org with ESMTP id S1751376AbaHWShC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 23 Aug 2014 14:37:02 -0400
 X-IronPort-AV: E=Sophos;i="5.04,387,1406584800"; 
-   d="scan'208";a="76200909"
+   d="scan'208";a="76200908"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ralf Baechle <ralf@linux-mips.org>
 Cc: joe@perches.com, kernel-janitors@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] wusb: delete double assignment
-Date: Sat, 23 Aug 2014 20:33:26 +0200
-Message-Id: <1408818808-18850-6-git-send-email-Julia.Lawall@lip6.fr>
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/7] MIPS: BCM63xx: delete double assignment
+Date: Sat, 23 Aug 2014 20:33:25 +0200
+Message-Id: <1408818808-18850-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -25,7 +25,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Delete successive assignments to the same location.
+Delete successive assignments to the same location.  In each case, the
+duplicated assignment is modified to be in line with other nearby code.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -44,20 +45,31 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 The patches in this series do not depend on each other.
 
- drivers/usb/wusbcore/crypto.c |    2 --
- 1 file changed, 2 deletions(-)
+Not compiled.  This patch changes the semantics of the code.
 
-diff --git a/drivers/usb/wusbcore/crypto.c b/drivers/usb/wusbcore/crypto.c
-index 9a95b2d..50ce80d 100644
---- a/drivers/usb/wusbcore/crypto.c
-+++ b/drivers/usb/wusbcore/crypto.c
-@@ -222,8 +222,6 @@ static int wusb_ccm_mac(struct crypto_blkcipher *tfm_cbc,
- 	WARN_ON(sizeof(ax) != sizeof(struct aes_ccm_block));
- 
- 	result = -ENOMEM;
--	zero_padding = sizeof(struct aes_ccm_block)
--		- blen % sizeof(struct aes_ccm_block);
- 	zero_padding = blen % sizeof(struct aes_ccm_block);
- 	if (zero_padding)
- 		zero_padding = sizeof(struct aes_ccm_block) - zero_padding;
+ arch/mips/bcm63xx/irq.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/mips/bcm63xx/irq.c b/arch/mips/bcm63xx/irq.c
+index 37eb2d1..b94bf44 100644
+--- a/arch/mips/bcm63xx/irq.c
++++ b/arch/mips/bcm63xx/irq.c
+@@ -434,7 +434,7 @@ static void bcm63xx_init_irq(void)
+ 		irq_stat_addr[0] += PERF_IRQSTAT_3368_REG;
+ 		irq_mask_addr[0] += PERF_IRQMASK_3368_REG;
+ 		irq_stat_addr[1] = 0;
+-		irq_stat_addr[1] = 0;
++		irq_mask_addr[1] = 0;
+ 		irq_bits = 32;
+ 		ext_irq_count = 4;
+ 		ext_irq_cfg_reg1 = PERF_EXTIRQ_CFG_REG_3368;
+@@ -443,7 +443,7 @@ static void bcm63xx_init_irq(void)
+ 		irq_stat_addr[0] += PERF_IRQSTAT_6328_REG(0);
+ 		irq_mask_addr[0] += PERF_IRQMASK_6328_REG(0);
+ 		irq_stat_addr[1] += PERF_IRQSTAT_6328_REG(1);
+-		irq_stat_addr[1] += PERF_IRQMASK_6328_REG(1);
++		irq_mask_addr[1] += PERF_IRQMASK_6328_REG(1);
+ 		irq_bits = 64;
+ 		ext_irq_count = 4;
+ 		is_ext_irq_cascaded = 1;
 
