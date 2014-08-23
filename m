@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaHWAwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 20:52:53 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:51060 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752445AbaHWAww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 20:52:52 -0400
-Message-ID: <53F7E5DF.3090809@interlog.com>
-Date: Fri, 22 Aug 2014 20:52:47 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752626AbaHWBQD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 21:16:03 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:44318 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaHWBQB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 21:16:01 -0400
 MIME-Version: 1.0
-To: Tony Battersby <tonyb@cybernetics.com>, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][SCSI] scsi-mq: fix requests that use a separate CDB buffer
-References: <53F79FC3.6040907@cybernetics.com>
-In-Reply-To: <53F79FC3.6040907@cybernetics.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <cover.1406757779.git.luto@amacapital.net>
+References: <cover.1406757779.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 22 Aug 2014 18:15:39 -0700
+Message-ID: <CALCETrW9uC25yCMHSGYag=52DH363T=ThRCdKPETfYou2boGRA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] x86: PER_CPU segment improvements
+To: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-08-22 03:53 PM, Tony Battersby wrote:
-> This patch fixes code such as the following with scsi-mq enabled:
+On Wed, Jul 30, 2014 at 3:07 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> x86 sets up a per-cpu GDT entry so that vgetcpu can use LSL on it
+> to determine the CPU number and node.
+
+hpa, if/when you apply this, can you put it onto a fresh branch based
+on something at least as new as 3.17-rc1?  It should apply cleanly
+regardless, but the nine followup patches that I want to send also
+depend on cleanup that isn't in tip/x86/vdso.
+
+Thanks,
+Andy
+
 >
->      rq = blk_get_request(...);
->      blk_rq_set_block_pc(rq);
+> This series, in little baby steps, cleans up that code and sets
+> the accessed and 32-bit flags on the segment.
 >
->      rq->cmd = my_cmd_buffer; /* separate CDB buffer */
+> The accessed bit prevents user code from setting the accessed bit
+> on its own, and making the segment 32-bit prevents concerns about
+> shenanigans involving CPU oddities with 16-bit data segments.
 >
->      blk_execute_rq_nowait(...);
+> The latter isn't a real problem -- if it were a 16-bit read/write
+> segment, it could be used to bypass espfix64, but fortunately
+> RO segments can't be loaded into SS.
 >
-> Code like this appears in e.g. sg_start_req() in drivers/scsi/sg.c (for
-> large CDBs only).  Without this patch, scsi_mq_prep_fn() will set
-> rq->cmd back to rq->__cmd, causing the wrong CDB to be sent to the device.
-
-Still looking at this one. 'sg_write_same --32' is my
-tool of choice. The target is scsi_debug which needs
-dif=2 (because mkp read the draft and only allows
-WRITE SAME(32) when the protection_level=2). Turned
-on command tracing and this is what I saw:
-
-sd 7:0:0:0: scsi_debug: cmd 9e 10 00 00 00 00 00 00 00 00 00 00 00 20 00 00
-sd 7:0:0:0: scsi_debug: cmd 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 08 
-24 6b d3 00 88 ff ff 20 00 c7 e8 00 00 00 00
-
-So the WS(32) command did get through, it is the second
-command that arrived on its tail that is a worry. So yes,
-IMO it is broken.
-
-
-Now the >16 byte cdb length in the sg driver
-introduced in lk 3.17-rc1 was copied directly
-from the bsg driver which has had that capability
-for some time. Since your patch touches two files
-in drivers/block I'm wondering the bsg driver's
- >16 byte cdb length capability is broken in
-lk 3.16 ?
-
-Doug Gilbert
+> Changes from v1:
+>  - Fix patch 2's changelog.
+>  - Learn to spell "Not a system segment".
+>
+> Andy Lutomirski (3):
+>   x86,vdso: Change the PER_CPU segment to use struct desc_struct
+>   x86,vdso: Make the PER_CPU segment start out accessed
+>   x86,vdso: Make the PER_CPU segment 32 bits
+>
+>  arch/x86/kernel/vsyscall_64.c | 19 ++++++++++++-------
+>  1 file changed, 12 insertions(+), 7 deletions(-)
+>
+> --
+> 1.9.3
+>
 
 
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
