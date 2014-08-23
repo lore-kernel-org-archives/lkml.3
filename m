@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaHWFfK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 01:35:10 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:28655 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751976AbaHWFfI (ORCPT
+	id S1752423AbaHWFiS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 01:38:18 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:15009
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751976AbaHWFiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 01:35:08 -0400
+	Sat, 23 Aug 2014 01:38:17 -0400
 X-IronPort-AV: E=Sophos;i="5.04,385,1406584800"; 
-   d="scan'208";a="90757710"
+   d="scan'208";a="76057248"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: mmarek@suse.cz, Gilles.Muller@lip6.fr, nicolas.palix@imag.fr,
         cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
         u.kleine-koenig@pengutronix.de
-Cc: kernel-janitors@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: =?y?q?=5BPATCH=5D=20coccinelle=3A=20misc=3A=20semantic=20patch=20to=20delete=20overly=20complex=20return=20code=20processing?=
-Date: Sat, 23 Aug 2014 07:31:37 +0200
-Message-Id: <1408771897-28778-1-git-send-email-Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org
+Subject: =?y?q?=5BPATCH=20v2=5D=20coccinelle=3A=20misc=3A=20semantic=20patch=20to=20delete=20overly=20complex=20return=20code=20processing?=
+Date: Sat, 23 Aug 2014 07:34:45 +0200
+Message-Id: <1408772085-28818-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=y
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 This semantic patch simplifies cases where the effect of the processing of
 a function call's return code is just to return the result of the function
@@ -34,9 +34,11 @@ longer used.
 
 This was proposed by Uwe Kleine-König.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
+v2: wrong email address
+
  scripts/coccinelle/misc/simple_return.cocci |  180 ++++++++++++++++++++++++++++
  1 file changed, 180 insertions(+)
 
