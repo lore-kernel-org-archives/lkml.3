@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaHWDKw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 23:10:52 -0400
-Received: from sauhun.de ([89.238.76.85]:43143 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853AbaHWDKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 23:10:50 -0400
-Date: Fri, 22 Aug 2014 22:10:42 -0500
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linus.walleij@linaro.org
-Subject: Re: [PATCH v3 0/7] i2c: Relax mandatory I2C ID table passing
-Message-ID: <20140823031042.GB1305@katana>
-References: <1403265753-25851-1-git-send-email-lee.jones@linaro.org>
- <20140717102342.GD30888@lee--X1>
- <20140717130306.GG2740@katana>
- <20140820160157.GO4266@lee--X1>
+	id S1752146AbaHWDzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 23:55:41 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:55734 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaHWDzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 23:55:40 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olof@lixom.net>, afaerber@suse.de,
+        Ajay Kumar <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ARM: exynos_defconfig: Enable options for display panel support
+References: <1408749185-14133-1-git-send-email-javier.martinez@collabora.co.uk>
+Date: Fri, 22 Aug 2014 20:55:37 -0700
+In-Reply-To: <1408749185-14133-1-git-send-email-javier.martinez@collabora.co.uk>
+	(Javier Martinez Canillas's message of "Sat, 23 Aug 2014 01:13:05
+	+0200")
+Message-ID: <7h4mx37tc6.fsf@paris.lan>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8GpibOaaTibBMecb"
-Content-Disposition: inline
-In-Reply-To: <20140820160157.GO4266@lee--X1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Javier Martinez Canillas <javier.martinez@collabora.co.uk> writes:
 
---8GpibOaaTibBMecb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Many Exynos devices have a display panel, most of them just have
+> a simple panel while others have more complex configurations that
+> requires an embedded DisplayPort (eDP) to LVDS display bridge.
+>
+> This patch enables the following features to support both setups:
+>
+> - Direct Rendering Manager (DRM)
+> - DRM bridge registration and lookup framework
+> - Parade ps8622/ps8625 eDP/LVDS bridge
+> - NXP ptn3460 eDP/LVDS bridge
+> - Exynos Fully Interactive Mobile Display controller (FIMD)
+> - Panel registration and lookup framework
+> - Simple panels
+> - Backlight and LCD device support
+>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+>
+> Some of the options enabled here (e.g: the eDP/LVDS bridges)
+> are still not merged in mainline so this patch depends on
+> the following posted patches that were still not merged:
+>
+> "drm/bridge: Modify drm_bridge core to support driver model" [0]
+> "drm/bridge: Add i2c based driver for ptn3460 bridge" [1]
+> "drm/bridge: Add i2c based driver for ps8622/ps8625 bridge" [2]
+>
+> But I wanted to post anyways to make easier for others to
+> figure out what are the needed options to have the display
+> working on their Exynos machines.
 
-> > Sure thing, yet I won't make it for 3.17, sadly :( It has high priority
-> > for 3.18, though.
->=20
-> Do you want me to re-send now the -rc1 had been released?
+Great, thanks for this!  I spent/wasted quite a bit of time trying to
+figure out which options I needed to enable to get basic display support
+working.
+>
+> In order to test the display panel on the Peach machines,
+> the following patches are also needed:
+>
+> "ARM: dts: Add DT changes for display on peach_pit" [3]
+> "ARM: dts: Add DT changes for display on peach_pi" [4]
 
-I think this version will do for an initial review.
+Tested-by: Kevin Hilman <khilman@linaro.org>
+
+On v3.17-rc1 along with these DT patches abvoe on exynos5800/chromebook2
+(peach-pi).
 
 Thanks,
 
-   Wolfram
-
-
---8GpibOaaTibBMecb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJT+AYyAAoJEBQN5MwUoCm2TccQAKwd+cUED1/bT34c07NNyjsm
-UYddu2RtUXNrPFBwyaVBI0/JgecmnSrz0FF/7JE9IE8bbhYrf/CNl8Rd5TvFVCf4
-xb7E2wLF8E+pj9FQ0Vj/rp2PBEnWlLmpd8xjmJis1y7azNGMB1LqlKDPBGqHuHtJ
-44GeH+R5J651CszkRbzFgNbKq4uBtlHQ1jBVltGGEMkjY86FfKinoSxc4fyFnBIr
-frjByS8FJUSmtJw3OC1PYTCnO9NbuAh7TB/Mt9wrA9oQCt9p8FdEPutzPvmStUwl
-NM9rYJ0aq4pK3ieqUsn1nTDtFeia9H+IqaiYLGou0/+iZcpODRNs0PJOIhIkZ5t2
-5JWGnLBX2zh5TzKeZYIvMdvzvbmTYafBzOiUyAvgKno5uaxe49QKkj6cEtgJKX7W
-o/tsHjH9GsYKCszxaVN7BVcd9NK1/x41xYjjkyn/l1W8uCgVa8EkL+9zKMWYSpBy
-q8p7YoBRhn0W70Mr6wZCHBmffI2/clLjRF/ikf1B4Okw8Btuwy2BOkmbAeHI3tyF
-dowjxaf31M+kH/h2JUN6atJwHAoZfDeKrJS/++9LpW7z4+/Nb18M76UFpIOLLxm8
-qS0BX0bLYiXJ3LFJOsav0DKrlKY8KZDAhlVfFi86kKhsBLK+Z1BDPEEYN2g2MYsr
-AcBjwWIPR16Zg9E1pLHh
-=0JtU
------END PGP SIGNATURE-----
-
---8GpibOaaTibBMecb--
+Kevin
