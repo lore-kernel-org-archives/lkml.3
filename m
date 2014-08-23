@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaHWHhm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 03:37:42 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:40850 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333AbaHWHhk (ORCPT
+	id S1752536AbaHWHoM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 03:44:12 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:56872 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333AbaHWHoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 03:37:40 -0400
+	Sat, 23 Aug 2014 03:44:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <53F78B66.6040202@redhat.com>
-References: <CAG-aW04-=7rvPjLGqAWZ2oWT4K4EZ5gc96ZWpBo101u=f2+6EQ@mail.gmail.com>
- <CAG-aW06pKUeCddJCAN7cDDcs-T2jmjV33zxdh-jyVSx1uhq2Ww@mail.gmail.com>
- <CAKszPgvjBE5y35guVRXu7kp3nVZa4KPgh=AezVL-UXq=idRc-Q@mail.gmail.com>
- <53EC8579.1030008@redhat.com> <20140814220740.GA32475@xanatos>
- <CAKszPgservaZfMsV=c7c3yuPtm6cc2J14auDkG-pE-JPdrEXtQ@mail.gmail.com> <53F78B66.6040202@redhat.com>
-From: Claudio Bizzarri <claudio.bizzarri@gmail.com>
-Date: Sat, 23 Aug 2014 09:37:19 +0200
-Message-ID: <CAKszPgs3ULrDDTo=W+MsD-5PCd9yVNj3uxJ3LtGM9QTMT346aQ@mail.gmail.com>
-Subject: Re: Kernel 3.16.0 USB crash
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: "Nyman, Mathias" <mathias.nyman@intel.com>, Matt <jackdachef@gmail.com>,
-        Gerd Hoffmann <kraxel@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
+From: Pranith Kumar <pranith@gatech.edu>
+Date: Sat, 23 Aug 2014 03:43:38 -0400
+X-Google-Sender-Auth: KbILDCe1nuKyA1On_aBbeSTFXls
+Message-ID: <CAJhHMCC6XUo0erp6mPyjiz5614DQq_+gfVaLR5s9YZkP=jPVCw@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Amit Shah <amit.shah@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Silas Boyd-Wickizer <sbw@mit.edu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, thank you Hans.
+On Fri, Aug 22, 2014 at 5:53 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>
+> Hmmm...  Please try replacing the synchronize_rcu() in
+> __sysrq_swap_key_ops() with (say) schedule_timeout_interruptible(HZ / 10).
+> I bet that gets rid of the hang.  (And also introduces a low-probability
+> bug, but should be OK for testing.)
+>
+> The other thing to try is to revert your patch that turned my event
+> traces into printk()s, then put an ftrace_dump(DUMP_ALL); just after
+> the synchronize_rcu() -- that might make it so that the ftrace data
+> actually gets dumped out.
+>
 
-When I connect my external USB disk I've 30 seconds before my laptop
-freezes: with top command I cannot view nothing: no abnormal cpu
-usage, no any strange memory usage.
-If I remove disk before 30 seconds my HP EliteBook 850G1 keeps working
-as usual. Can I use these 30 seconds to extract some informations that
-help to determine what's the problem? How?
-/var/log/syslog and dmesg haven't any messages.
+I was able to reproduce this error on my Ubuntu 14.04 machine. I think
+I found the root cause of the problem after several kvm runs.
 
-System lock is complete: also key CAPS LOCK does not work anymore.
+The problem is that earlier we were waiting on nocb_head and now we
+are waiting on nocb_leader_wake.
 
-I've tried without X: when computer locks  3 lines appear on console
-that are not registered on syslog, I've copied them on paper.
+So there are a lot of nocb callbacks which are enqueued before the
+nocb thread is spawned. This sets up nocb_head to be non-null, because
+of which the nocb kthread used to wake up immediately after sleeping.
 
-[ 1200.352042] IP: [<ffffffff8179393f>] _raw_spin_lock_irqsave+ 0x01f/0x060
-[ 1200.352045] PGD 0
-[ 1200.352048] Oops: 0002 [#1] SMP
+Now that we have switched to nocb_leader_wake, this is not being set
+when there are pending callbacks, unless the callbacks overflow the
+qhimark. The pending callbacks were around 7000 when the boot hangs.
 
-Ciao,
-Claudio
+So setting the qhimark using the boot parameter rcutree.qhimark=5000
+is one way to allow us to boot past the point by forcefully waking up
+the nocb kthread. I am not sure this is fool-proof.
 
-2014-08-22 20:26 GMT+02:00 Hans de Goede <hdegoede@redhat.com>:
->...
-> There is no need to try my patch, since the descriptors already limit
-> qdepth to 32. No idea what is going on here then.
+Another option to start the nocb kthreads with nocb_leader_wake set,
+so that it can handle any pending callbacks. The following patch also
+allows us to boot properly.
+
+Phew! Let me know if this makes any sense :)
+
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 00dc411..4c397aa 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2386,6 +2386,9 @@ static int rcu_nocb_kthread(void *arg)
+        struct rcu_head **tail;
+        struct rcu_data *rdp = arg;
+
++       if (rdp->nocb_leader == rdp)
++               rdp->nocb_leader_wake = true;
++
+        /* Each pass through this loop invokes one batch of callbacks */
+        for (;;) {
+                /* Wait for callbacks. */
+
+
+-- 
+Pranith
