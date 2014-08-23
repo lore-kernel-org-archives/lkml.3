@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbaHWLZa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 07:25:30 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:21752 "EHLO
+	id S1752762AbaHWLZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 07:25:28 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:1746 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752505AbaHWLY6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752517AbaHWLY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 07:24:58 -0400
+	Sat, 23 Aug 2014 07:24:59 -0400
 X-IronPort-AV: E=Sophos;i="5.04,386,1406584800"; 
-   d="scan'208";a="90829921"
+   d="scan'208";a="90829922"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: David Airlie <airlied@linux.ie>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Cc: josh@joshtriplett.org, kernel-janitors@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/9] drm: use c99 initializers in structures
-Date: Sat, 23 Aug 2014 13:20:28 +0200
-Message-Id: <1408792831-25615-7-git-send-email-Julia.Lawall@lip6.fr>
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 7/9] OMAPDSS: DSI: use c99 initializers in structures
+Date: Sat, 23 Aug 2014 13:20:29 +0200
+Message-Id: <1408792831-25615-8-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -59,104 +61,37 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 The patches in this series do not depend on each other.
 
- drivers/gpu/drm/sti/sti_vtac.c |   12 ++++++++++--
- drivers/gpu/drm/drm_edid.c     |   34 +++++++++++++++++++++++++---------
- 2 files changed, 35 insertions(+), 11 deletions(-)
+Not compiled.
 
-diff --git a/drivers/gpu/drm/sti/sti_vtac.c b/drivers/gpu/drm/sti/sti_vtac.c
-index 82a51d4..4576536 100644
---- a/drivers/gpu/drm/sti/sti_vtac.c
-+++ b/drivers/gpu/drm/sti/sti_vtac.c
-@@ -56,8 +56,16 @@ struct sti_vtac_mode {
- 	u32 phyts_per_pixel;
- };
- 
--static const struct sti_vtac_mode vtac_mode_main = {0x2, 0x2, VTAC_5_PPP};
--static const struct sti_vtac_mode vtac_mode_aux = {0x1, 0x0, VTAC_17_PPP};
-+static const struct sti_vtac_mode vtac_mode_main = {
-+	.vid_in_width = 0x2,
-+	.phyts_width = 0x2,
-+	.phyts_per_pixel = VTAC_5_PPP
-+};
-+static const struct sti_vtac_mode vtac_mode_aux = {
-+	.vid_in_width = 0x1,
-+	.phyts_width = 0x0,
-+	.phyts_per_pixel = VTAC_17_PPP
-+};
- 
- /**
-  * VTAC structure
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index 1dbf3bc..a28c330 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -2103,7 +2103,11 @@ static int
- add_inferred_modes(struct drm_connector *connector, struct edid *edid)
+ drivers/video/fbdev/omap2/dss/dsi.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/fbdev/omap2/dss/dsi.c b/drivers/video/fbdev/omap2/dss/dsi.c
+index 56b9244..b6f6ae1 100644
+--- a/drivers/video/fbdev/omap2/dss/dsi.c
++++ b/drivers/video/fbdev/omap2/dss/dsi.c
+@@ -2571,7 +2571,10 @@ static int dsi_sync_vc_vp(struct platform_device *dsidev, int channel)
  {
- 	struct detailed_mode_closure closure = {
--		connector, edid, 0, 0, 0
-+		.connector = connector,
-+		.edid = edid,
-+		.preferred = 0,
-+		.quirks = 0,
-+		.modes = 0
- 	};
+ 	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
+ 	DECLARE_COMPLETION_ONSTACK(completion);
+-	struct dsi_packet_sent_handler_data vp_data = { dsidev, &completion };
++	struct dsi_packet_sent_handler_data vp_data = {
++		.dsidev = dsidev,
++		.completion = &completion
++	};
+ 	int r = 0;
+ 	u8 bit;
  
- 	if (version_greater(edid, 1, 0))
-@@ -2169,7 +2173,11 @@ add_established_modes(struct drm_connector *connector, struct edid *edid)
- 		((edid->established_timings.mfg_rsvd & 0x80) << 9);
- 	int i, modes = 0;
- 	struct detailed_mode_closure closure = {
--		connector, edid, 0, 0, 0
-+		.connector = connector,
-+		.edid = edid,
-+		.preferred = 0,
-+		.quirks = 0,
-+		.modes = 0
- 	};
- 
- 	for (i = 0; i <= EDID_EST_TIMINGS; i++) {
-@@ -2227,7 +2235,11 @@ add_standard_modes(struct drm_connector *connector, struct edid *edid)
+@@ -2617,7 +2620,10 @@ static void dsi_packet_sent_handler_l4(void *data, u32 mask)
+ static int dsi_sync_vc_l4(struct platform_device *dsidev, int channel)
  {
- 	int i, modes = 0;
- 	struct detailed_mode_closure closure = {
--		connector, edid, 0, 0, 0
-+		.connector = connector,
-+		.edid = edid,
-+		.preferred = 0,
-+		.quirks = 0,
-+		.modes = 0
- 	};
+ 	DECLARE_COMPLETION_ONSTACK(completion);
+-	struct dsi_packet_sent_handler_data l4_data = { dsidev, &completion };
++	struct dsi_packet_sent_handler_data l4_data = {
++		.dsidev = dsidev,
++		.completion = &completion
++	};
+ 	int r = 0;
  
- 	for (i = 0; i < EDID_STD_TIMINGS; i++) {
-@@ -2313,7 +2325,11 @@ static int
- add_cvt_modes(struct drm_connector *connector, struct edid *edid)
- {	
- 	struct detailed_mode_closure closure = {
--		connector, edid, 0, 0, 0
-+		.connector = connector,
-+		.edid = edid,
-+		.preferred = 0,
-+		.quirks = 0,
-+		.modes = 0
- 	};
- 
- 	if (version_greater(edid, 1, 2))
-@@ -2357,11 +2373,11 @@ add_detailed_modes(struct drm_connector *connector, struct edid *edid,
- 		   u32 quirks)
- {
- 	struct detailed_mode_closure closure = {
--		connector,
--		edid,
--		1,
--		quirks,
--		0
-+		.connector = connector,
-+		.edid = edid,
-+		.preferred = 1,
-+		.quirks = quirks,
-+		.modes = 0
- 	};
- 
- 	if (closure.preferred && !version_greater(edid, 1, 3))
+ 	r = dsi_register_isr_vc(dsidev, channel, dsi_packet_sent_handler_l4,
 
