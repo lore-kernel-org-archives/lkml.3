@@ -1,33 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaHWEta (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 00:49:30 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47600 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996AbaHWEt3 (ORCPT
+	id S1752303AbaHWFfK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 01:35:10 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:28655 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751976AbaHWFfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 00:49:29 -0400
+	Sat, 23 Aug 2014 01:35:08 -0400
+X-IronPort-AV: E=Sophos;i="5.04,385,1406584800"; 
+   d="scan'208";a="90757710"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: mmarek@suse.cz, Gilles.Muller@lip6.fr, nicolas.palix@imag.fr,
+        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
+        u.kleine-koenig@pengutronix.de
+Cc: kernel-janitors@vger.kernel.org, Julia Lawall <julia@diku.dk>
+Subject: =?y?q?=5BPATCH=5D=20coccinelle=3A=20misc=3A=20semantic=20patch=20to=20delete=20overly=20complex=20return=20code=20processing?=
+Date: Sat, 23 Aug 2014 07:31:37 +0200
+Message-Id: <1408771897-28778-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-In-Reply-To: <1408715952-19573-1-git-send-email-harald@redhat.com>
-References: <1408715952-19573-1-git-send-email-harald@redhat.com>
-Date: Fri, 22 Aug 2014 21:49:28 -0700
-X-Google-Sender-Auth: ZBA88r3Qq_KtKtnk580e61BqOfY
-Message-ID: <CAE9FiQXM=iw8vth6xiGNkUDJ0WYBXfVxtPFr8XjZSU+PVeDPdw@mail.gmail.com>
-Subject: Re: [PATCH] early microcode: extend the ramdisk address to 64bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: harald@redhat.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=y
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 6:59 AM,  <harald@redhat.com> wrote:
-> From: Harald Hoyer <harald@redhat.com>
->
-> commit 4bf7111f50167133a71c23530ca852a41355e739 enabled loading of the
-> initramfs above 4G addresses. So I was wondering, if the early microcode
-> code might want to honor the upper 32bit of the 64bit address.
->
+From: Julia Lawall <julia@diku.dk>
 
-https://lkml.org/lkml/2014/6/11/27
+This semantic patch simplifies cases where the effect of the processing of
+a function call's return code is just to return the result of the function
+directly.  It may also delete a local return flag variable, if this is no
+longer used.
+
+This was proposed by Uwe Kleine-König.
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ scripts/coccinelle/misc/simple_return.cocci |  180 ++++++++++++++++++++++++++++
+ 1 file changed, 180 insertions(+)
+
+diff --git a/scripts/coccinelle/misc/simple_return.cocci b/scripts/coccinelle/misc/simple_return.cocci
+new file mode 100644
+index 0000000..47f7084
+--- /dev/null
++++ b/scripts/coccinelle/misc/simple_return.cocci
+@@ -0,0 +1,180 @@
++/// Simplify a trivial if-return sequence.  Possibly combine with a
++/// preceding function call.
++//
++// Confidence: High
++// Copyright: (C) 2014 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2014 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments:
++// Options: --no-includes --include-headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++@r depends on patch@
++local idexpression e;
++identifier i,f,fn;
++@@
++
++fn(...) { <...
++- e@i =
+++ return
++    f(...);
++-if (i != 0) return i;
++-return 0;
++...> }
++
++@depends on patch@
++identifier r.i;
++type t;
++@@
++
++-t i;
++ ... when != i
++
++@depends on patch@
++expression e;
++@@
++
++-if (e != 0)
++   return e;
++-return 0;
++
++// -----------------------------------------------------------------------
++
++@s1 depends on context || org || report@
++local idexpression e;
++identifier i,f,fn;
++position p,p1,p2;
++@@
++
++fn(...) { <...
++* e@i@p = f(...);
++  if (\(i@p1 != 0\|i@p2 < 0\))
++     return i;
++  return 0;
++...> }
++
++@s2 depends on context || org || report forall@
++identifier s1.i;
++type t;
++position q,s1.p;
++expression e,f;
++@@
++
++* t i@q;
++  ... when != i
++  e@p = f(...);
++
++@s3 depends on context || org || report@
++expression e;
++position p1!=s1.p1;
++position p2!=s1.p2;
++@@
++
++*if (\(e@p1 != 0\|e@p2 < 0\))
++   return e;
++ return 0;
++
++// -----------------------------------------------------------------------
++
++@script:python depends on org@
++p << s1.p;
++p1 << s1.p1;
++q << s2.q;
++@@
++
++cocci.print_main("decl",q)
++cocci.print_secs("use",p)
++cocci.include_match(False)
++
++@script:python depends on org@
++p << s1.p;
++p2 << s1.p2;
++q << s2.q;
++@@
++
++cocci.print_main("decl",q)
++cocci.print_secs("use with questionable test",p)
++cocci.include_match(False)
++
++@script:python depends on org@
++p << s1.p;
++p1 << s1.p1;
++@@
++
++cocci.print_main("use",p)
++
++@script:python depends on org@
++p << s1.p;
++p2 << s1.p2;
++@@
++
++cocci.print_main("use with questionable test",p)
++
++@script:python depends on org@
++p << s3.p1;
++@@
++
++cocci.print_main("test",p)
++
++@script:python depends on org@
++p << s3.p2;
++@@
++
++cocci.print_main("questionable test",p)
++
++// -----------------------------------------------------------------------
++
++@script:python depends on report@
++p << s1.p;
++p1 << s1.p1;
++q << s2.q;
++@@
++
++msg = "WARNING: end returns can be simpified and declaration on line %s can be dropped" % (q[0].line)
++coccilib.report.print_report(p[0],msg)
++cocci.include_match(False)
++
++@script:python depends on report@
++p << s1.p;
++p1 << s1.p1;
++q << s2.q
++;
++@@
++
++msg = "WARNING: end returns may be simpified if negative or 0 value and declaration on line %s can be dropped" % (q[0].line)
++coccilib.report.print_report(p[0],msg)
++cocci.include_match(False)
++
++@script:python depends on report@
++p << s1.p;
++p1 << s1.p1;
++@@
++
++msg = "WARNING: end returns can be simpified"
++coccilib.report.print_report(p[0],msg)
++
++@script:python depends on report@
++p << s1.p;
++p2 << s1.p2;
++@@
++
++msg = "WARNING: end returns can be simpified if negative or 0 value"
++coccilib.report.print_report(p[0],msg)
++
++@script:python depends on report@
++p << s3.p1;
++@@
++
++msg = "WARNING: end returns can be simpified"
++coccilib.report.print_report(p[0],msg)
++
++@script:python depends on report@
++p << s3.p2;
++@@
++
++msg = "WARNING: end returns can be simpified if tested value is negative or 0"
++coccilib.report.print_report(p[0],msg)
+
