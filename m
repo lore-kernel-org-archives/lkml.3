@@ -1,96 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaHWPPE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 11:15:04 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49363 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbaHWPPB (ORCPT
+	id S1752072AbaHWPRD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 11:17:03 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:60348 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411AbaHWPRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 11:15:01 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53F8AFEE.2070608@roeck-us.net>
-Date: Sat, 23 Aug 2014 08:14:54 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 23 Aug 2014 11:17:00 -0400
+X-Originating-IP: 50.43.15.134
+Date: Sat, 23 Aug 2014 08:16:49 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: David Airlie <airlied@linux.ie>, kernel-janitors@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/9] drm: use c99 initializers in structures
+Message-ID: <20140823151648.GA2074@thin>
+References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1408792831-25615-7-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH 3.12 000/104] 3.12.27-stable review
-References: <cover.1408535000.git.jslaby@suse.cz> <20140820165459.GA21275@roeck-us.net> <20140820195436.GA22902@roeck-us.net> <53F5A864.5040206@suse.cz>
-In-Reply-To: <53F5A864.5040206@suse.cz>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408792831-25615-7-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/21/2014 01:05 AM, Jiri Slaby wrote:
-> On 08/20/2014, 09:54 PM, Guenter Roeck wrote:
->> On Wed, Aug 20, 2014 at 09:54:59AM -0700, Guenter Roeck wrote:
->>> On Wed, Aug 20, 2014 at 01:43:51PM +0200, Jiri Slaby wrote:
->>>> This is the start of the stable review cycle for the 3.12.27 release.
->>>> There are 104 patches in this series, all will be posted as a response
->>>> to this one.  If anyone has any issues with these being applied, please
->>>> let me know.
->>>>
->>>> Responses should be made by Fri Aug 22 13:43:20 CEST 2014.
->>>> Anything received after that time might be too late.
->>>>
->>> Build results look good:
->>> 	total: 135 pass: 135 fail: 0
->>>
->>> qemu tests passed except for sparc64 which hangs during boot, both for SMP and
->>> non-SMP builds. I'll try to bisect as soon as I have a somewhat stable internet
->>> connection.
->>>
->> Bisect result:
->>
->> # bad: [c07d9e5da83f1470ccc58d37fe222dab36dbca67] drivers/rtc/interface.c: fix infinite loop in initializing the alarm
->> # good: [d83a3234d2e1e2a55e7f2430fc9ca29a9bd315e7] Linux 3.12.26
->> git bisect start 'HEAD' 'v3.12.26'
->> # bad: [0d543dade2be5f0ddb268c6d6ea0e86938e3bf42] sparc64: Add membar to Niagara2 memcpy code.
->> git bisect bad 0d543dade2be5f0ddb268c6d6ea0e86938e3bf42
->> # good: [6e1af05639abfc6f1841e6bf8b5c8492971ed1f2] staging: vt6655: Fix Warning on boot handle_irq_event_percpu.
->> git bisect good 6e1af05639abfc6f1841e6bf8b5c8492971ed1f2
->> # good: [6a25e8f778995cabb0cfe2acb3247e3b42dec35f] macvlan: Initialize vlan_features to turn on offload support.
->> git bisect good 6a25e8f778995cabb0cfe2acb3247e3b42dec35f
->> # good: [bf42f839476f1f447ca696fbbab7e741861d9d7d] sparc64: Fix executable bit testing in set_pmd_at() paths.
->> git bisect good bf42f839476f1f447ca696fbbab7e741861d9d7d
->> # bad: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
->> git bisect bad 6acda98c75b536deaba1bf21f93411fcc484fbb5
->> # good: [a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6] sparc64: Fix top-level fault handling bugs.
->> git bisect good a91ce41d405b3cc59d6666ec91a5a3235f9cbcf6
->> # first bad commit: [6acda98c75b536deaba1bf21f93411fcc484fbb5] sparc64: Add basic validations to {pud,pmd}_bad().
->>
->> Reverting the offending patch ('Add basic validations ...') fixes the problem.
->
-> Hi,
->
-> thanks for the work!
->
-> Just note on patches, in 3.12, there are all 3.10 patches plus these three:
-> +sparc64-add-basic-validations-to-pud-pmd-_bad.patch
-> +sparc64-fix-executable-bit-testing-in-set_pmd_at-paths.patch
-> +sparc64-give-more-detailed-information-in-pgd-pmd-_error-and-kill-pte_error.patch
->
-> where the third adds only printouts.
->
-> These 3.14 patches are not applied to 3.12:
-> +sparc64-don-t-use-_page_present-in-pte_modify-mask.patch
-> +sparc64-fix-bugs-in-get_user_pages_fast-wrt.-thp.patch
-> +sparc64-fix-huge-pmd-invalidation.patch
-> +sparc64-fix-hex-values-in-comment-above-pte_modify.patch
-> +sparc64-fix-range-check-in-kern_addr_valid.patch
-> +sparc64-use-ilog2_4mb-instead-of-constant-22.patch
->
-> The last three are just cosmetical in 3.12. And I do not immediately see
-> in the rest, how they could improve the state. So I am going to remove
-> the add-basic-validations patch from 3.12.
->
+On Sat, Aug 23, 2014 at 01:20:28PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Use c99 initializers for structures.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @decl@
+> identifier i1,fld;
+> type T;
+> field list[n] fs;
+> @@
+> 
+> struct i1 {
+>  fs
+>  T fld;
+>  ...};
+> 
+> @bad@
+> identifier decl.i1,i2;
+> expression e;
+> initializer list[decl.n] is;
+> @@
+> 
+> struct i1 i2 = { is,
+> + .fld = e
+> - e
+>  ,...};
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Build and tests now look good.
+For this patch, I think it would make sense to drop
+initializations of preferred/quirks/modes to 0, since a designated
+initializer may skip fields to leave them initialized to 0.
 
-Guenter
+With that change:
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-
+> 
+>  drivers/gpu/drm/sti/sti_vtac.c |   12 ++++++++++--
+>  drivers/gpu/drm/drm_edid.c     |   34 +++++++++++++++++++++++++---------
+>  2 files changed, 35 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/sti/sti_vtac.c b/drivers/gpu/drm/sti/sti_vtac.c
+> index 82a51d4..4576536 100644
+> --- a/drivers/gpu/drm/sti/sti_vtac.c
+> +++ b/drivers/gpu/drm/sti/sti_vtac.c
+> @@ -56,8 +56,16 @@ struct sti_vtac_mode {
+>  	u32 phyts_per_pixel;
+>  };
+>  
+> -static const struct sti_vtac_mode vtac_mode_main = {0x2, 0x2, VTAC_5_PPP};
+> -static const struct sti_vtac_mode vtac_mode_aux = {0x1, 0x0, VTAC_17_PPP};
+> +static const struct sti_vtac_mode vtac_mode_main = {
+> +	.vid_in_width = 0x2,
+> +	.phyts_width = 0x2,
+> +	.phyts_per_pixel = VTAC_5_PPP
+> +};
+> +static const struct sti_vtac_mode vtac_mode_aux = {
+> +	.vid_in_width = 0x1,
+> +	.phyts_width = 0x0,
+> +	.phyts_per_pixel = VTAC_17_PPP
+> +};
+>  
+>  /**
+>   * VTAC structure
+> diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+> index 1dbf3bc..a28c330 100644
+> --- a/drivers/gpu/drm/drm_edid.c
+> +++ b/drivers/gpu/drm/drm_edid.c
+> @@ -2103,7 +2103,11 @@ static int
+>  add_inferred_modes(struct drm_connector *connector, struct edid *edid)
+>  {
+>  	struct detailed_mode_closure closure = {
+> -		connector, edid, 0, 0, 0
+> +		.connector = connector,
+> +		.edid = edid,
+> +		.preferred = 0,
+> +		.quirks = 0,
+> +		.modes = 0
+>  	};
+>  
+>  	if (version_greater(edid, 1, 0))
+> @@ -2169,7 +2173,11 @@ add_established_modes(struct drm_connector *connector, struct edid *edid)
+>  		((edid->established_timings.mfg_rsvd & 0x80) << 9);
+>  	int i, modes = 0;
+>  	struct detailed_mode_closure closure = {
+> -		connector, edid, 0, 0, 0
+> +		.connector = connector,
+> +		.edid = edid,
+> +		.preferred = 0,
+> +		.quirks = 0,
+> +		.modes = 0
+>  	};
+>  
+>  	for (i = 0; i <= EDID_EST_TIMINGS; i++) {
+> @@ -2227,7 +2235,11 @@ add_standard_modes(struct drm_connector *connector, struct edid *edid)
+>  {
+>  	int i, modes = 0;
+>  	struct detailed_mode_closure closure = {
+> -		connector, edid, 0, 0, 0
+> +		.connector = connector,
+> +		.edid = edid,
+> +		.preferred = 0,
+> +		.quirks = 0,
+> +		.modes = 0
+>  	};
+>  
+>  	for (i = 0; i < EDID_STD_TIMINGS; i++) {
+> @@ -2313,7 +2325,11 @@ static int
+>  add_cvt_modes(struct drm_connector *connector, struct edid *edid)
+>  {	
+>  	struct detailed_mode_closure closure = {
+> -		connector, edid, 0, 0, 0
+> +		.connector = connector,
+> +		.edid = edid,
+> +		.preferred = 0,
+> +		.quirks = 0,
+> +		.modes = 0
+>  	};
+>  
+>  	if (version_greater(edid, 1, 2))
+> @@ -2357,11 +2373,11 @@ add_detailed_modes(struct drm_connector *connector, struct edid *edid,
+>  		   u32 quirks)
+>  {
+>  	struct detailed_mode_closure closure = {
+> -		connector,
+> -		edid,
+> -		1,
+> -		quirks,
+> -		0
+> +		.connector = connector,
+> +		.edid = edid,
+> +		.preferred = 1,
+> +		.quirks = quirks,
+> +		.modes = 0
+>  	};
+>  
+>  	if (closure.preferred && !version_greater(edid, 1, 3))
+> 
