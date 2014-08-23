@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427AbaHWSh1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 14:37:27 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:48310
+	id S1752370AbaHWSh0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 14:37:26 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:29333
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751988AbaHWShD (ORCPT
+	by vger.kernel.org with ESMTP id S1751950AbaHWShC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 14:37:03 -0400
+	Sat, 23 Aug 2014 14:37:02 -0400
 X-IronPort-AV: E=Sophos;i="5.04,387,1406584800"; 
-   d="scan'208";a="76200910"
+   d="scan'208";a="76200909"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Thomas Winischhofer <thomas@winischhofer.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: joe@perches.com, kernel-janitors@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] video: fbdev: sis: delete double assignment
-Date: Sat, 23 Aug 2014 20:33:27 +0200
-Message-Id: <1408818808-18850-7-git-send-email-Julia.Lawall@lip6.fr>
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] wusb: delete double assignment
+Date: Sat, 23 Aug 2014 20:33:26 +0200
+Message-Id: <1408818808-18850-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1408818808-18850-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -27,8 +25,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Delete successive assignments to the same location.  The second assignment
-is changed to update a different field, as done in other nearby code.
+Delete successive assignments to the same location.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -47,22 +44,20 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 The patches in this series do not depend on each other.
 
-This changes the semantics of the code and is not tested.
+ drivers/usb/wusbcore/crypto.c |    2 --
+ 1 file changed, 2 deletions(-)
 
- drivers/video/fbdev/sis/init301.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/video/fbdev/sis/init301.c b/drivers/video/fbdev/sis/init301.c
-index a89e3ca..295e0de 100644
---- a/drivers/video/fbdev/sis/init301.c
-+++ b/drivers/video/fbdev/sis/init301.c
-@@ -1714,7 +1714,7 @@ SiS_GetLCDResInfo(struct SiS_Private *SiS_Pr, unsigned short ModeNo, unsigned sh
- 			       SiS_Pr->PanelVCLKIdx315 = VCLK81_315; /* ? */
- 			    } else {
- 			       SiS_Pr->PanelHT   = 1688; SiS_Pr->PanelVT   =  802;
--			       SiS_Pr->PanelHRS  =   48; SiS_Pr->PanelHRS  =  112;
-+			       SiS_Pr->PanelHRS  =   48; SiS_Pr->PanelHRE  =  112;
- 			       SiS_Pr->PanelVRS  =    3; SiS_Pr->PanelVRE  =    6;
- 			       SiS_Pr->PanelVCLKIdx300 = VCLK81_300;
- 			       SiS_Pr->PanelVCLKIdx315 = VCLK81_315;
+diff --git a/drivers/usb/wusbcore/crypto.c b/drivers/usb/wusbcore/crypto.c
+index 9a95b2d..50ce80d 100644
+--- a/drivers/usb/wusbcore/crypto.c
++++ b/drivers/usb/wusbcore/crypto.c
+@@ -222,8 +222,6 @@ static int wusb_ccm_mac(struct crypto_blkcipher *tfm_cbc,
+ 	WARN_ON(sizeof(ax) != sizeof(struct aes_ccm_block));
+ 
+ 	result = -ENOMEM;
+-	zero_padding = sizeof(struct aes_ccm_block)
+-		- blen % sizeof(struct aes_ccm_block);
+ 	zero_padding = blen % sizeof(struct aes_ccm_block);
+ 	if (zero_padding)
+ 		zero_padding = sizeof(struct aes_ccm_block) - zero_padding;
 
