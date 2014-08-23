@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaHVX5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 19:57:48 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:57741 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757AbaHVX5q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 19:57:46 -0400
-From: Spencer Baugh <sbaugh@andrew.cmu.edu>
-To: gregkh@linuxfoundation.org
-Cc: Spencer Baugh <sbaugh@andrew.cmu.edu>, Oleg Drokin <oleg.drokin@intel.com>,
-        Niu Yawei <yawei.niu@intel.com>, Masanari Iida <standby24x7@gmail.com>,
-        Alex Zhuravlev <alexey.zhuravlev@intel.com>,
-        Hongchao Zhang <hongchao.zhang@intel.com>,
-        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] staging: fix style in lustre_import.h
-Date: Fri, 22 Aug 2014 19:57:40 -0400
-Message-Id: <1408751862-31454-1-git-send-email-sbaugh@andrew.cmu.edu>
-X-Mailer: git-send-email 2.0.4
+	id S1752474AbaHWAGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 20:06:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41651 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751748AbaHWAGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 20:06:20 -0400
+Message-ID: <53F7DAF8.4060702@suse.com>
+Date: Fri, 22 Aug 2014 20:06:16 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Antti Palosaari <crope@iki.fi>
+Subject: Re: [PATCH] Kconfig: do not select SPI bus on sub-driver auto-select
+References: <1408726929-3924-1-git-send-email-crope@iki.fi> <53F77835.7050406@suse.com> <53F7D374.3050804@infradead.org>
+In-Reply-To: <53F7D374.3050804@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes style errors and warnings reported by
-scripts/checkpatch.pl
+On Fri Aug 22 19:34:12 2014, Randy Dunlap wrote:
+> On 08/22/14 10:04, Jeff Mahoney wrote:
+>> On Fri Aug 22 13:02:09 2014, Antti Palosaari wrote:
+>>> We should not select SPI bus when sub-driver auto-select is
+>>> selected. That option is meant for auto-selecting all possible
+>>> ancillary drivers used for selected board driver. Ancillary
+>>> drivers should define needed dependencies itself.
+>>>
+>>> I2C and I2C_MUX are still selected here for a reason described on
+>>> commit 347f7a3763601d7b466898d1f10080b7083ac4a3
+>>>
+>>> Reverts commit e4462ffc1602d9df21c00a0381dca9080474e27a
+>>>
+>>> Reported-by: Jeff Mahoney <jeffm@suse.com>
+>>> Signed-off-by: Antti Palosaari <crope@iki.fi>
+>>> ---
+>>>  drivers/media/Kconfig | 1 -
+>>>  1 file changed, 1 deletion(-)
+>>>
+>>> diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
+>>> index f60bad4..3c89fcb 100644
+>>> --- a/drivers/media/Kconfig
+>>> +++ b/drivers/media/Kconfig
+>>> @@ -182,7 +182,6 @@ config MEDIA_SUBDRV_AUTOSELECT
+>>>  	depends on HAS_IOMEM
+>>>  	select I2C
+>>>  	select I2C_MUX
+>>> -	select SPI
+>>>  	default y
+>>>  	help
+>>>  	  By default, a media driver auto-selects all possible ancillary
+>>
+>> FWIW, in the patch I used locally, I also did a 'select SPI' in the
+>> MSI2500 driver since it wouldn't otherwise be obvious that a USB device
+>> depends on SPI.
+>
+> It already has depends on SPI.  That should be enough.
+>
 
-Signed-off-by: Spencer Baugh <sbaugh@andrew.cmu.edu>
+Yeah. My point was more that if you want support for that device, you'd 
+have to know it uses SPI internally already.
 
----
- .../staging/lustre/lustre/include/lustre_import.h   | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+-Jeff
 
-diff --git a/drivers/staging/lustre/lustre/include/lustre_import.h b/drivers/staging/lustre/lustre/include/lustre_import.h
-index 8304a55..b39b283 100644
---- a/drivers/staging/lustre/lustre/include/lustre_import.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_import.h
-@@ -103,15 +103,15 @@ enum lustre_imp_state {
- };
- 
- /** Returns test string representation of numeric import state \a state */
--static inline char * ptlrpc_import_state_name(enum lustre_imp_state state)
-+static inline char *ptlrpc_import_state_name(enum lustre_imp_state state)
- {
--	static char* import_state_names[] = {
-+	static char *import_state_names[] = {
- 		"<UNKNOWN>", "CLOSED",  "NEW", "DISCONN",
- 		"CONNECTING", "REPLAY", "REPLAY_LOCKS", "REPLAY_WAIT",
- 		"RECOVER", "FULL", "EVICTED",
- 	};
- 
--	LASSERT (state <= LUSTRE_IMP_EVICTED);
-+	LASSERT(state <= LUSTRE_IMP_EVICTED);
- 	return import_state_names[state];
- }
- 
-@@ -302,12 +302,12 @@ struct obd_import {
- 	int		       imp_connect_error;
- 
- 	__u32		     imp_msg_magic;
--	__u32		     imp_msghdr_flags;       /* adjusted based on server capability */
-+	__u32		     imp_msghdr_flags;   /* adjusted based on server capability */
- 
--	struct ptlrpc_request_pool *imp_rq_pool;	  /* emergency request pool */
-+	struct ptlrpc_request_pool *imp_rq_pool; /* emergency request pool */
- 
- 	struct imp_at	     imp_at;		 /* adaptive timeout data */
--	time_t		    imp_last_reply_time;    /* for health check */
-+	time_t		    imp_last_reply_time; /* for health check */
- };
- 
- typedef void (*obd_import_callback)(struct obd_import *imp, void *closure,
-@@ -346,21 +346,24 @@ static inline unsigned int at_timeout2est(unsigned int val)
- 	return (max((val << 2) / 5, 5U) - 4);
- }
- 
--static inline void at_reset(struct adaptive_timeout *at, int val) {
-+static inline void at_reset(struct adaptive_timeout *at, int val)
-+{
- 	spin_lock(&at->at_lock);
- 	at->at_current = val;
- 	at->at_worst_ever = val;
- 	at->at_worst_time = get_seconds();
- 	spin_unlock(&at->at_lock);
- }
--static inline void at_init(struct adaptive_timeout *at, int val, int flags) {
-+static inline void at_init(struct adaptive_timeout *at, int val, int flags)
-+{
- 	memset(at, 0, sizeof(*at));
- 	spin_lock_init(&at->at_lock);
- 	at->at_flags = flags;
- 	at_reset(at, val);
- }
- extern unsigned int at_min;
--static inline int at_get(struct adaptive_timeout *at) {
-+static inline int at_get(struct adaptive_timeout *at)
-+{
- 	return (at->at_current > at_min) ? at->at_current : at_min;
- }
- int at_measured(struct adaptive_timeout *at, unsigned int val);
--- 
-2.0.4
-
+--
+Jeff Mahoney
+SUSE Labs
