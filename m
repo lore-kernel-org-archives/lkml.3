@@ -1,134 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaHWPFb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 11:05:31 -0400
-Received: from exprod7og120.obsmtp.com ([64.18.2.18]:50137 "EHLO
-	exprod7og120.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977AbaHWPF2 (ORCPT
+	id S1751806AbaHWPKV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 11:10:21 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60101 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaHWPKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 11:05:28 -0400
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-To: jejb@kernel.org, hch@infradead.org
-Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
-        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
-        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: Re: [RESEND][PATCH 08/10] [scsi] mpt2sas: Get IOC_FACTS information using  handshake protocol only after HBA card gets into READY or Operational state.
-Date: Sat, 23 Aug 2014 20:34:54 +0530
-Message-Id: <1408806294-14597-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-X-Mailer: git-send-email 2.0.2
+	Sat, 23 Aug 2014 11:10:20 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <53F8AED8.8010908@roeck-us.net>
+Date: Sat, 23 Aug 2014 08:10:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>, atull@opensource.altera.com
+CC: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v2 2/2] pmbus: ltc2978: add regulator gating
+References: <1408741894-24879-1-git-send-email-atull@opensource.altera.com> <1408741894-24879-3-git-send-email-atull@opensource.altera.com> <20140822214546.GD24407@sirena.org.uk>
+In-Reply-To: <20140822214546.GD24407@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver initialization fails if driver tries to send IOC facts request message when the IOC is in reset or in a fault state.
+On 08/22/2014 02:45 PM, Mark Brown wrote:
+> On Fri, Aug 22, 2014 at 04:11:34PM -0500, atull@opensource.altera.com wrote:
+>> From: Alan Tull <atull@opensource.altera.com>
+>>
+>> Add regulator with support for enabling or disabling all
+>> supplies.
+>
+> Reviwed-by: Mark Brown <broonie@linaro.org>
+>
+> though it still looks like you should be able to create generic
+> functions for the operations.
+>
+Sorry I didn't have time to review the code myself. I'll have
+to check the datasheet about turning regulators on and off.
+Using page 0xff for the lm2978 looks wrong, as the chip supports
+up to 8 channels which should be controlled separately
+(I would assume) instead of turning them all on and off in
+one go. Maybe I am missing something, but my assumption would
+have been to have a separate regulator for each channel, and
+that each channel would have its own regulator which would be
+turned on and off separately. So I don't really understand the
+change between v1 and v2 of the core patch, which dropped the
+per-channel regulators. Someone will have to explain to me
+why that makes sense, especially since it means that I won't
+be able to use the regulator expansion in my system (which
+would require per-channel regulators, and which does not always
+have all channels enabled on a given chip).
 
-This patch will make sure that
- 1.Driver to send IOC facts request message only if HBA is in operational or ready state.
- 2.If IOC is in fault state, a diagnostic reset would be issued.
- 3.If IOC is in reset state then driver will wait for 10 seconds to exit out of reset state.
-   If the HBA continues to be in reset state, then the HBA wouldn't be claimed by the driver.
+In respect to generic functions, that really depends on the scope
+of the regulators. As written, where all regulators are turned on
+in a single operation, per-chip functions are needed. I thought
+we would only need per-chip configuration values, but that only
+applies if regulators are turned on one by one, not all in one go.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
----
- drivers/scsi/mpt2sas/mpt2sas_base.c | 68 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
+Either case, a wrapper for ltc2978_write_pmbus_operation needs to
+be added to pmbus_core.c as pmbus_write_byte_data and exported
+(as a separate patch). For paged reads, the existing
+pmbus_read_byte_data should be used. In general, avoid direct
+accesses to paged registers and use API functions instead
+if possible.
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index bc37979..0a27d80 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -95,6 +95,9 @@ MODULE_PARM_DESC(disable_discovery, " disable discovery ");
- static int
- _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
- 
-+static int
-+_base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
-+
- /**
-  * _scsih_set_fwfault_debug - global setting of ioc->fwfault_debug.
-  *
-@@ -3459,6 +3462,64 @@ _base_get_port_facts(struct MPT2SAS_ADAPTER *ioc, int port, int sleep_flag)
- }
- 
- /**
-+ * _base_wait_for_iocstate - Wait until the card is in READY or OPERATIONAL
-+ * @ioc: per adapter object
-+ * @timeout:
-+ * @sleep_flag: CAN_SLEEP or NO_SLEEP
-+ *
-+ * Returns 0 for success, non-zero for failure.
-+ */
-+static int
-+_base_wait_for_iocstate(struct MPT2SAS_ADAPTER *ioc, int timeout,
-+	int sleep_flag)
-+{
-+	u32 ioc_state, doorbell;
-+	int rc;
-+
-+	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
-+	    __func__));
-+
-+	if (ioc->pci_error_recovery)
-+		return 0;
-+
-+	doorbell = mpt2sas_base_get_iocstate(ioc, 0);
-+	ioc_state = doorbell & MPI2_IOC_STATE_MASK;
-+	dhsprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: ioc_state(0x%08x)\n",
-+	    ioc->name, __func__, ioc_state));
-+
-+	switch (ioc_state) {
-+	case MPI2_IOC_STATE_READY:
-+	case MPI2_IOC_STATE_OPERATIONAL:
-+		return 0;
-+	}
-+
-+	if (doorbell & MPI2_DOORBELL_USED) {
-+		dhsprintk(ioc, printk(MPT2SAS_INFO_FMT
-+		    "unexpected doorbell activ!e\n", ioc->name));
-+		goto issue_diag_reset;
-+	}
-+
-+	if (ioc_state == MPI2_IOC_STATE_FAULT) {
-+		mpt2sas_base_fault_info(ioc, doorbell &
-+		    MPI2_DOORBELL_DATA_MASK);
-+		goto issue_diag_reset;
-+	}
-+
-+	ioc_state = _base_wait_on_iocstate(ioc, MPI2_IOC_STATE_READY,
-+	    timeout, sleep_flag);
-+	if (ioc_state) {
-+		printk(MPT2SAS_ERR_FMT
-+		    "%s: failed going to ready state (ioc_state=0x%x)\n",
-+		    ioc->name, __func__, ioc_state);
-+		return -EFAULT;
-+	}
-+
-+ issue_diag_reset:
-+	rc = _base_diag_reset(ioc, sleep_flag);
-+	return rc;
-+}
-+
-+/**
-  * _base_get_ioc_facts - obtain ioc facts reply and save in ioc
-  * @ioc: per adapter object
-  * @sleep_flag: CAN_SLEEP or NO_SLEEP
-@@ -3476,6 +3537,13 @@ _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
- 	    __func__));
- 
-+	r = _base_wait_for_iocstate(ioc, 10, sleep_flag);
-+	if (r) {
-+		printk(MPT2SAS_ERR_FMT "%s: failed getting to correct state\n",
-+			ioc->name, __func__);
-+		return r;
-+	}
-+
- 	mpi_reply_sz = sizeof(Mpi2IOCFactsReply_t);
- 	mpi_request_sz = sizeof(Mpi2IOCFactsRequest_t);
- 	memset(&mpi_request, 0, mpi_request_sz);
--- 
-2.0.2
+Thanks,
+Guenter
 
