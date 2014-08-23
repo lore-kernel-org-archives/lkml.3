@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaHWOVk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 10:21:40 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62435 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683AbaHWOVd (ORCPT
+	id S1752752AbaHWOVr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 10:21:47 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46384 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683AbaHWOVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 10:21:33 -0400
+	Sat, 23 Aug 2014 10:21:45 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 19/20] staging: rtl8188eu: Rename HalHWImg8188E_RF.c to rf_cfg.c
-Date: Sat, 23 Aug 2014 19:48:40 +0530
-Message-Id: <1408803521-13715-19-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 20/20] staging: rtl8188eu: Rename HalHWImg8188E_MAC.c to mac_cfg.c
+Date: Sat, 23 Aug 2014 19:48:41 +0530
+Message-Id: <1408803521-13715-20-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1408803521-13715-1-git-send-email-navin.patidar@gmail.com>
 References: <1408803521-13715-1-git-send-email-navin.patidar@gmail.com>
@@ -24,32 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/Makefile               |    2 +-
- drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c |  320 ----------------------
- drivers/staging/rtl8188eu/hal/rf_cfg.c           |  320 ++++++++++++++++++++++
- 3 files changed, 321 insertions(+), 321 deletions(-)
- delete mode 100644 drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
- create mode 100644 drivers/staging/rtl8188eu/hal/rf_cfg.c
+ drivers/staging/rtl8188eu/Makefile                |    2 +-
+ drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c |  133 ---------------------
+ drivers/staging/rtl8188eu/hal/mac_cfg.c           |  133 +++++++++++++++++++++
+ 3 files changed, 134 insertions(+), 134 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c
+ create mode 100644 drivers/staging/rtl8188eu/hal/mac_cfg.c
 
 diff --git a/drivers/staging/rtl8188eu/Makefile b/drivers/staging/rtl8188eu/Makefile
-index 600ca8e..412a056 100644
+index 412a056..20225b3 100644
 --- a/drivers/staging/rtl8188eu/Makefile
 +++ b/drivers/staging/rtl8188eu/Makefile
-@@ -20,7 +20,7 @@ r8188eu-y :=				\
+@@ -18,7 +18,7 @@ r8188eu-y :=				\
+ 		core/rtw_wlan_util.o	\
+ 		core/rtw_xmit.o		\
  		hal/fw.o	\
- 		hal/HalHWImg8188E_MAC.o	\
+-		hal/HalHWImg8188E_MAC.o	\
++		hal/mac_cfg.o \
  		hal/bb_cfg.o \
--		hal/HalHWImg8188E_RF.o	\
-+		hal/rf_cfg.o \
+ 		hal/rf_cfg.o \
  		hal/HalPhyRf_8188e.o	\
- 		hal/HalPwrSeqCmd.o	\
- 		hal/Hal8188EPwrSeq.o	\
-diff --git a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c b/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
+diff --git a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c b/drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c
 deleted file mode 100644
-index ddc2f55..0000000
---- a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
+index 7d22dd1..0000000
+--- a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_MAC.c
 +++ /dev/null
-@@ -1,320 +0,0 @@
+@@ -1,133 +0,0 @@
 -/******************************************************************************
 -*
 -* Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
@@ -71,311 +71,124 @@ index ddc2f55..0000000
 -******************************************************************************/
 -
 -#include "odm_precomp.h"
+-#include <rtw_iol.h>
 -
--#include <phy.h>
+-/* MAC_REG.TXT */
 -
--static bool check_condition(struct adapter *adapt, const u32  condition)
--{
--	struct odm_dm_struct *odm = &GET_HAL_DATA(adapt)->odmpriv;
--	u32 _board = odm->BoardType;
--	u32 _platform = odm->SupportPlatform;
--	u32 _interface = odm->SupportInterface;
--	u32 cond = condition;
--
--	if (condition == 0xCDCDCDCD)
--		return true;
--
--	cond = condition & 0x000000FF;
--	if ((_board == cond) && cond != 0x00)
--		return false;
--
--	cond = condition & 0x0000FF00;
--	cond = cond >> 8;
--	if ((_interface & cond) == 0 && cond != 0x07)
--		return false;
--
--	cond = condition & 0x00FF0000;
--	cond = cond >> 16;
--	if ((_platform & cond) == 0 && cond != 0x0F)
--		return false;
--	return true;
--}
--
--/* RadioA_1T.TXT */
--
--static u32 Array_RadioA_1T_8188E[] = {
--		0x000, 0x00030000,
--		0x008, 0x00084000,
--		0x018, 0x00000407,
--		0x019, 0x00000012,
--		0x01E, 0x00080009,
--		0x01F, 0x00000880,
--		0x02F, 0x0001A060,
--		0x03F, 0x00000000,
--		0x042, 0x000060C0,
--		0x057, 0x000D0000,
--		0x058, 0x000BE180,
--		0x067, 0x00001552,
--		0x083, 0x00000000,
--		0x0B0, 0x000FF8FC,
--		0x0B1, 0x00054400,
--		0x0B2, 0x000CCC19,
--		0x0B4, 0x00043003,
--		0x0B6, 0x0004953E,
--		0x0B7, 0x0001C718,
--		0x0B8, 0x000060FF,
--		0x0B9, 0x00080001,
--		0x0BA, 0x00040000,
--		0x0BB, 0x00000400,
--		0x0BF, 0x000C0000,
--		0x0C2, 0x00002400,
--		0x0C3, 0x00000009,
--		0x0C4, 0x00040C91,
--		0x0C5, 0x00099999,
--		0x0C6, 0x000000A3,
--		0x0C7, 0x00088820,
--		0x0C8, 0x00076C06,
--		0x0C9, 0x00000000,
--		0x0CA, 0x00080000,
--		0x0DF, 0x00000180,
--		0x0EF, 0x000001A0,
--		0x051, 0x0006B27D,
--		0xFF0F041F, 0xABCD,
--		0x052, 0x0007E4DD,
--		0xCDCDCDCD, 0xCDCD,
--		0x052, 0x0007E49D,
--		0xFF0F041F, 0xDEAD,
--		0x053, 0x00000073,
--		0x056, 0x00051FF3,
--		0x035, 0x00000086,
--		0x035, 0x00000186,
--		0x035, 0x00000286,
--		0x036, 0x00001C25,
--		0x036, 0x00009C25,
--		0x036, 0x00011C25,
--		0x036, 0x00019C25,
--		0x0B6, 0x00048538,
--		0x018, 0x00000C07,
--		0x05A, 0x0004BD00,
--		0x019, 0x000739D0,
--		0x034, 0x0000ADF3,
--		0x034, 0x00009DF0,
--		0x034, 0x00008DED,
--		0x034, 0x00007DEA,
--		0x034, 0x00006DE7,
--		0x034, 0x000054EE,
--		0x034, 0x000044EB,
--		0x034, 0x000034E8,
--		0x034, 0x0000246B,
--		0x034, 0x00001468,
--		0x034, 0x0000006D,
--		0x000, 0x00030159,
--		0x084, 0x00068200,
--		0x086, 0x000000CE,
--		0x087, 0x00048A00,
--		0x08E, 0x00065540,
--		0x08F, 0x00088000,
--		0x0EF, 0x000020A0,
--		0x03B, 0x000F02B0,
--		0x03B, 0x000EF7B0,
--		0x03B, 0x000D4FB0,
--		0x03B, 0x000CF060,
--		0x03B, 0x000B0090,
--		0x03B, 0x000A0080,
--		0x03B, 0x00090080,
--		0x03B, 0x0008F780,
--		0x03B, 0x000722B0,
--		0x03B, 0x0006F7B0,
--		0x03B, 0x00054FB0,
--		0x03B, 0x0004F060,
--		0x03B, 0x00030090,
--		0x03B, 0x00020080,
--		0x03B, 0x00010080,
--		0x03B, 0x0000F780,
--		0x0EF, 0x000000A0,
--		0x000, 0x00010159,
--		0x018, 0x0000F407,
--		0xFFE, 0x00000000,
--		0xFFE, 0x00000000,
--		0x01F, 0x00080003,
--		0xFFE, 0x00000000,
--		0xFFE, 0x00000000,
--		0x01E, 0x00000001,
--		0x01F, 0x00080000,
--		0x000, 0x00033E60,
+-static u32 array_MAC_REG_8188E[] = {
+-		0x026, 0x00000041,
+-		0x027, 0x00000035,
+-		0x428, 0x0000000A,
+-		0x429, 0x00000010,
+-		0x430, 0x00000000,
+-		0x431, 0x00000001,
+-		0x432, 0x00000002,
+-		0x433, 0x00000004,
+-		0x434, 0x00000005,
+-		0x435, 0x00000006,
+-		0x436, 0x00000007,
+-		0x437, 0x00000008,
+-		0x438, 0x00000000,
+-		0x439, 0x00000000,
+-		0x43A, 0x00000001,
+-		0x43B, 0x00000002,
+-		0x43C, 0x00000004,
+-		0x43D, 0x00000005,
+-		0x43E, 0x00000006,
+-		0x43F, 0x00000007,
+-		0x440, 0x0000005D,
+-		0x441, 0x00000001,
+-		0x442, 0x00000000,
+-		0x444, 0x00000015,
+-		0x445, 0x000000F0,
+-		0x446, 0x0000000F,
+-		0x447, 0x00000000,
+-		0x458, 0x00000041,
+-		0x459, 0x000000A8,
+-		0x45A, 0x00000072,
+-		0x45B, 0x000000B9,
+-		0x460, 0x00000066,
+-		0x461, 0x00000066,
+-		0x480, 0x00000008,
+-		0x4C8, 0x000000FF,
+-		0x4C9, 0x00000008,
+-		0x4CC, 0x000000FF,
+-		0x4CD, 0x000000FF,
+-		0x4CE, 0x00000001,
+-		0x4D3, 0x00000001,
+-		0x500, 0x00000026,
+-		0x501, 0x000000A2,
+-		0x502, 0x0000002F,
+-		0x503, 0x00000000,
+-		0x504, 0x00000028,
+-		0x505, 0x000000A3,
+-		0x506, 0x0000005E,
+-		0x507, 0x00000000,
+-		0x508, 0x0000002B,
+-		0x509, 0x000000A4,
+-		0x50A, 0x0000005E,
+-		0x50B, 0x00000000,
+-		0x50C, 0x0000004F,
+-		0x50D, 0x000000A4,
+-		0x50E, 0x00000000,
+-		0x50F, 0x00000000,
+-		0x512, 0x0000001C,
+-		0x514, 0x0000000A,
+-		0x516, 0x0000000A,
+-		0x525, 0x0000004F,
+-		0x550, 0x00000010,
+-		0x551, 0x00000010,
+-		0x559, 0x00000002,
+-		0x55D, 0x000000FF,
+-		0x605, 0x00000030,
+-		0x608, 0x0000000E,
+-		0x609, 0x0000002A,
+-		0x620, 0x000000FF,
+-		0x621, 0x000000FF,
+-		0x622, 0x000000FF,
+-		0x623, 0x000000FF,
+-		0x624, 0x000000FF,
+-		0x625, 0x000000FF,
+-		0x626, 0x000000FF,
+-		0x627, 0x000000FF,
+-		0x652, 0x00000020,
+-		0x63C, 0x0000000A,
+-		0x63D, 0x0000000A,
+-		0x63E, 0x0000000E,
+-		0x63F, 0x0000000E,
+-		0x640, 0x00000040,
+-		0x66E, 0x00000005,
+-		0x700, 0x00000021,
+-		0x701, 0x00000043,
+-		0x702, 0x00000065,
+-		0x703, 0x00000087,
+-		0x708, 0x00000021,
+-		0x709, 0x00000043,
+-		0x70A, 0x00000065,
+-		0x70B, 0x00000087,
 -};
 -
--#define READ_NEXT_PAIR(v1, v2, i)	\
--do {								\
--	i += 2; v1 = array[i];			\
--	v2 = array[i+1];				\
--} while (0)
--
--#define RFREG_OFFSET_MASK 0xfffff
--#define B3WIREADDREAALENGTH 0x400
--#define B3WIREDATALENGTH 0x800
--#define BRFSI_RFENV 0x10
--
--static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath,u32 addr, u32 mask, u32 data)
--{
--	if (addr == 0xfe) {
--		mdelay(50);
--	} else if (addr == 0xfd) {
--		mdelay(5);
--	} else if (addr == 0xfc) {
--		mdelay(1);
--	} else if (addr == 0xfb) {
--		udelay(50);
--	} else if (addr == 0xfa) {
--		udelay(5);
--	} else if (addr == 0xf9) {
--		udelay(1);
--	} else {
--		phy_set_rf_reg(adapt, rfpath, addr, mask, data);
--		udelay(1);
--	}
--}
--
--static void rtl8188e_config_rf_reg(struct adapter *adapt,
--	u32 addr, u32 data)
--{
--	u32 content = 0x1000; /*RF Content: radio_a_txt*/
--	u32 maskforphyset = (u32)(content & 0xE000);
--
--	rtl_rfreg_delay(adapt, RF90_PATH_A, addr| maskforphyset,
--			RFREG_OFFSET_MASK,
--			data);
--}
--
--static bool rtl88e_phy_config_rf_with_headerfile(struct adapter *adapt)
+-bool rtl88eu_phy_mac_config(struct adapter *adapt)
 -{
 -	u32 i;
--	u32 array_len = sizeof(Array_RadioA_1T_8188E)/sizeof(u32);
--	u32 *array = Array_RadioA_1T_8188E;
+-	u32 arraylength;
+-	u32 *ptrarray;
 -
--	for (i = 0; i < array_len; i += 2) {
--		u32 v1 = array[i];
--		u32 v2 = array[i+1];
+-	arraylength = sizeof(array_MAC_REG_8188E)/sizeof(u32);
+-	ptrarray = array_MAC_REG_8188E;
 -
--		if (v1 < 0xCDCDCDCD) {
--			rtl8188e_config_rf_reg(adapt, v1, v2);
--			continue;
--		} else {
--			if (!check_condition(adapt, array[i])) {
--				READ_NEXT_PAIR(v1, v2, i);
--				while (v2 != 0xDEAD && v2 != 0xCDEF &&
--				       v2 != 0xCDCD && i < array_len - 2)
--					READ_NEXT_PAIR(v1, v2, i);
--					i -= 2;
--			} else {
--				READ_NEXT_PAIR(v1, v2, i);
--				while (v2 != 0xDEAD && v2 != 0xCDEF &&
--				       v2 != 0xCDCD && i < array_len - 2) {
--						rtl8188e_config_rf_reg(adapt, v1, v2);
--						READ_NEXT_PAIR(v1, v2, i);
--				}
+-	for (i = 0; i < arraylength; i = i + 2)
+-		usb_write8(adapt, ptrarray[i], (u8) ptrarray[i + 1]);
 -
--				while (v2 != 0xDEAD && i < array_len - 2)
--					READ_NEXT_PAIR(v1, v2, i);
--			}
--		}
--	}
+-	usb_write8(adapt, REG_MAX_AGGR_NUM, MAX_AGGR_NUM);
 -	return true;
 -}
--
--static bool rf6052_conf_para(struct adapter *adapt)
--{
--	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
--	u32 u4val = 0;
--	u8 rfpath;
--	bool rtstatus = true;
--	struct bb_reg_def *pphyreg;
--
--	for (rfpath = 0; rfpath < hal_data->NumTotalRFPath; rfpath++) {
--		pphyreg = &hal_data->PHYRegDef[rfpath];
--
--		switch (rfpath) {
--		case RF90_PATH_A:
--		case RF90_PATH_C:
--			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
--						 BRFSI_RFENV);
--			break;
--		case RF90_PATH_B:
--		case RF90_PATH_D:
--			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
--						 BRFSI_RFENV << 16);
--			break;
--		}
--
--		phy_set_bb_reg(adapt, pphyreg->rfintfe, BRFSI_RFENV << 16, 0x1);
--		udelay(1);
--
--		phy_set_bb_reg(adapt, pphyreg->rfintfo, BRFSI_RFENV, 0x1);
--		udelay(1);
--
--		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
--			      B3WIREADDREAALENGTH, 0x0);
--		udelay(1);
--
--		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
--			       B3WIREDATALENGTH, 0x0);
--		udelay(1);
--
--		switch (rfpath) {
--		case RF90_PATH_A:
--			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
--			break;
--		case RF90_PATH_B:
--			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
--			break;
--		case RF90_PATH_C:
--			break;
--		case RF90_PATH_D:
--			break;
--		}
--
--		switch (rfpath) {
--		case RF90_PATH_A:
--		case RF90_PATH_C:
--			phy_set_bb_reg(adapt, pphyreg->rfintfs,
--				       BRFSI_RFENV, u4val);
--			break;
--		case RF90_PATH_B:
--		case RF90_PATH_D:
--			phy_set_bb_reg(adapt, pphyreg->rfintfs,
--				       BRFSI_RFENV << 16, u4val);
--			break;
--		}
--
--		if (rtstatus != true)
--			return false;
--	}
--
--	return rtstatus;
--}
--
--static bool rtl88e_phy_rf6052_config(struct adapter *adapt)
--{
--	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
--
--	if (hal_data->rf_type == RF_1T1R)
--		hal_data->NumTotalRFPath = 1;
--	else
--		hal_data->NumTotalRFPath = 2;
--
--	return rf6052_conf_para(adapt);
--}
--
--bool rtl88eu_phy_rf_config(struct adapter *adapt)
--{
--	return rtl88e_phy_rf6052_config(adapt);
--}
-diff --git a/drivers/staging/rtl8188eu/hal/rf_cfg.c b/drivers/staging/rtl8188eu/hal/rf_cfg.c
+diff --git a/drivers/staging/rtl8188eu/hal/mac_cfg.c b/drivers/staging/rtl8188eu/hal/mac_cfg.c
 new file mode 100644
-index 0000000..ddc2f55
+index 0000000..7d22dd1
 --- /dev/null
-+++ b/drivers/staging/rtl8188eu/hal/rf_cfg.c
-@@ -0,0 +1,320 @@
++++ b/drivers/staging/rtl8188eu/hal/mac_cfg.c
+@@ -0,0 +1,133 @@
 +/******************************************************************************
 +*
 +* Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
@@ -397,304 +210,117 @@ index 0000000..ddc2f55
 +******************************************************************************/
 +
 +#include "odm_precomp.h"
++#include <rtw_iol.h>
 +
-+#include <phy.h>
++/* MAC_REG.TXT */
 +
-+static bool check_condition(struct adapter *adapt, const u32  condition)
-+{
-+	struct odm_dm_struct *odm = &GET_HAL_DATA(adapt)->odmpriv;
-+	u32 _board = odm->BoardType;
-+	u32 _platform = odm->SupportPlatform;
-+	u32 _interface = odm->SupportInterface;
-+	u32 cond = condition;
-+
-+	if (condition == 0xCDCDCDCD)
-+		return true;
-+
-+	cond = condition & 0x000000FF;
-+	if ((_board == cond) && cond != 0x00)
-+		return false;
-+
-+	cond = condition & 0x0000FF00;
-+	cond = cond >> 8;
-+	if ((_interface & cond) == 0 && cond != 0x07)
-+		return false;
-+
-+	cond = condition & 0x00FF0000;
-+	cond = cond >> 16;
-+	if ((_platform & cond) == 0 && cond != 0x0F)
-+		return false;
-+	return true;
-+}
-+
-+/* RadioA_1T.TXT */
-+
-+static u32 Array_RadioA_1T_8188E[] = {
-+		0x000, 0x00030000,
-+		0x008, 0x00084000,
-+		0x018, 0x00000407,
-+		0x019, 0x00000012,
-+		0x01E, 0x00080009,
-+		0x01F, 0x00000880,
-+		0x02F, 0x0001A060,
-+		0x03F, 0x00000000,
-+		0x042, 0x000060C0,
-+		0x057, 0x000D0000,
-+		0x058, 0x000BE180,
-+		0x067, 0x00001552,
-+		0x083, 0x00000000,
-+		0x0B0, 0x000FF8FC,
-+		0x0B1, 0x00054400,
-+		0x0B2, 0x000CCC19,
-+		0x0B4, 0x00043003,
-+		0x0B6, 0x0004953E,
-+		0x0B7, 0x0001C718,
-+		0x0B8, 0x000060FF,
-+		0x0B9, 0x00080001,
-+		0x0BA, 0x00040000,
-+		0x0BB, 0x00000400,
-+		0x0BF, 0x000C0000,
-+		0x0C2, 0x00002400,
-+		0x0C3, 0x00000009,
-+		0x0C4, 0x00040C91,
-+		0x0C5, 0x00099999,
-+		0x0C6, 0x000000A3,
-+		0x0C7, 0x00088820,
-+		0x0C8, 0x00076C06,
-+		0x0C9, 0x00000000,
-+		0x0CA, 0x00080000,
-+		0x0DF, 0x00000180,
-+		0x0EF, 0x000001A0,
-+		0x051, 0x0006B27D,
-+		0xFF0F041F, 0xABCD,
-+		0x052, 0x0007E4DD,
-+		0xCDCDCDCD, 0xCDCD,
-+		0x052, 0x0007E49D,
-+		0xFF0F041F, 0xDEAD,
-+		0x053, 0x00000073,
-+		0x056, 0x00051FF3,
-+		0x035, 0x00000086,
-+		0x035, 0x00000186,
-+		0x035, 0x00000286,
-+		0x036, 0x00001C25,
-+		0x036, 0x00009C25,
-+		0x036, 0x00011C25,
-+		0x036, 0x00019C25,
-+		0x0B6, 0x00048538,
-+		0x018, 0x00000C07,
-+		0x05A, 0x0004BD00,
-+		0x019, 0x000739D0,
-+		0x034, 0x0000ADF3,
-+		0x034, 0x00009DF0,
-+		0x034, 0x00008DED,
-+		0x034, 0x00007DEA,
-+		0x034, 0x00006DE7,
-+		0x034, 0x000054EE,
-+		0x034, 0x000044EB,
-+		0x034, 0x000034E8,
-+		0x034, 0x0000246B,
-+		0x034, 0x00001468,
-+		0x034, 0x0000006D,
-+		0x000, 0x00030159,
-+		0x084, 0x00068200,
-+		0x086, 0x000000CE,
-+		0x087, 0x00048A00,
-+		0x08E, 0x00065540,
-+		0x08F, 0x00088000,
-+		0x0EF, 0x000020A0,
-+		0x03B, 0x000F02B0,
-+		0x03B, 0x000EF7B0,
-+		0x03B, 0x000D4FB0,
-+		0x03B, 0x000CF060,
-+		0x03B, 0x000B0090,
-+		0x03B, 0x000A0080,
-+		0x03B, 0x00090080,
-+		0x03B, 0x0008F780,
-+		0x03B, 0x000722B0,
-+		0x03B, 0x0006F7B0,
-+		0x03B, 0x00054FB0,
-+		0x03B, 0x0004F060,
-+		0x03B, 0x00030090,
-+		0x03B, 0x00020080,
-+		0x03B, 0x00010080,
-+		0x03B, 0x0000F780,
-+		0x0EF, 0x000000A0,
-+		0x000, 0x00010159,
-+		0x018, 0x0000F407,
-+		0xFFE, 0x00000000,
-+		0xFFE, 0x00000000,
-+		0x01F, 0x00080003,
-+		0xFFE, 0x00000000,
-+		0xFFE, 0x00000000,
-+		0x01E, 0x00000001,
-+		0x01F, 0x00080000,
-+		0x000, 0x00033E60,
++static u32 array_MAC_REG_8188E[] = {
++		0x026, 0x00000041,
++		0x027, 0x00000035,
++		0x428, 0x0000000A,
++		0x429, 0x00000010,
++		0x430, 0x00000000,
++		0x431, 0x00000001,
++		0x432, 0x00000002,
++		0x433, 0x00000004,
++		0x434, 0x00000005,
++		0x435, 0x00000006,
++		0x436, 0x00000007,
++		0x437, 0x00000008,
++		0x438, 0x00000000,
++		0x439, 0x00000000,
++		0x43A, 0x00000001,
++		0x43B, 0x00000002,
++		0x43C, 0x00000004,
++		0x43D, 0x00000005,
++		0x43E, 0x00000006,
++		0x43F, 0x00000007,
++		0x440, 0x0000005D,
++		0x441, 0x00000001,
++		0x442, 0x00000000,
++		0x444, 0x00000015,
++		0x445, 0x000000F0,
++		0x446, 0x0000000F,
++		0x447, 0x00000000,
++		0x458, 0x00000041,
++		0x459, 0x000000A8,
++		0x45A, 0x00000072,
++		0x45B, 0x000000B9,
++		0x460, 0x00000066,
++		0x461, 0x00000066,
++		0x480, 0x00000008,
++		0x4C8, 0x000000FF,
++		0x4C9, 0x00000008,
++		0x4CC, 0x000000FF,
++		0x4CD, 0x000000FF,
++		0x4CE, 0x00000001,
++		0x4D3, 0x00000001,
++		0x500, 0x00000026,
++		0x501, 0x000000A2,
++		0x502, 0x0000002F,
++		0x503, 0x00000000,
++		0x504, 0x00000028,
++		0x505, 0x000000A3,
++		0x506, 0x0000005E,
++		0x507, 0x00000000,
++		0x508, 0x0000002B,
++		0x509, 0x000000A4,
++		0x50A, 0x0000005E,
++		0x50B, 0x00000000,
++		0x50C, 0x0000004F,
++		0x50D, 0x000000A4,
++		0x50E, 0x00000000,
++		0x50F, 0x00000000,
++		0x512, 0x0000001C,
++		0x514, 0x0000000A,
++		0x516, 0x0000000A,
++		0x525, 0x0000004F,
++		0x550, 0x00000010,
++		0x551, 0x00000010,
++		0x559, 0x00000002,
++		0x55D, 0x000000FF,
++		0x605, 0x00000030,
++		0x608, 0x0000000E,
++		0x609, 0x0000002A,
++		0x620, 0x000000FF,
++		0x621, 0x000000FF,
++		0x622, 0x000000FF,
++		0x623, 0x000000FF,
++		0x624, 0x000000FF,
++		0x625, 0x000000FF,
++		0x626, 0x000000FF,
++		0x627, 0x000000FF,
++		0x652, 0x00000020,
++		0x63C, 0x0000000A,
++		0x63D, 0x0000000A,
++		0x63E, 0x0000000E,
++		0x63F, 0x0000000E,
++		0x640, 0x00000040,
++		0x66E, 0x00000005,
++		0x700, 0x00000021,
++		0x701, 0x00000043,
++		0x702, 0x00000065,
++		0x703, 0x00000087,
++		0x708, 0x00000021,
++		0x709, 0x00000043,
++		0x70A, 0x00000065,
++		0x70B, 0x00000087,
 +};
 +
-+#define READ_NEXT_PAIR(v1, v2, i)	\
-+do {								\
-+	i += 2; v1 = array[i];			\
-+	v2 = array[i+1];				\
-+} while (0)
-+
-+#define RFREG_OFFSET_MASK 0xfffff
-+#define B3WIREADDREAALENGTH 0x400
-+#define B3WIREDATALENGTH 0x800
-+#define BRFSI_RFENV 0x10
-+
-+static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath,u32 addr, u32 mask, u32 data)
-+{
-+	if (addr == 0xfe) {
-+		mdelay(50);
-+	} else if (addr == 0xfd) {
-+		mdelay(5);
-+	} else if (addr == 0xfc) {
-+		mdelay(1);
-+	} else if (addr == 0xfb) {
-+		udelay(50);
-+	} else if (addr == 0xfa) {
-+		udelay(5);
-+	} else if (addr == 0xf9) {
-+		udelay(1);
-+	} else {
-+		phy_set_rf_reg(adapt, rfpath, addr, mask, data);
-+		udelay(1);
-+	}
-+}
-+
-+static void rtl8188e_config_rf_reg(struct adapter *adapt,
-+	u32 addr, u32 data)
-+{
-+	u32 content = 0x1000; /*RF Content: radio_a_txt*/
-+	u32 maskforphyset = (u32)(content & 0xE000);
-+
-+	rtl_rfreg_delay(adapt, RF90_PATH_A, addr| maskforphyset,
-+			RFREG_OFFSET_MASK,
-+			data);
-+}
-+
-+static bool rtl88e_phy_config_rf_with_headerfile(struct adapter *adapt)
++bool rtl88eu_phy_mac_config(struct adapter *adapt)
 +{
 +	u32 i;
-+	u32 array_len = sizeof(Array_RadioA_1T_8188E)/sizeof(u32);
-+	u32 *array = Array_RadioA_1T_8188E;
++	u32 arraylength;
++	u32 *ptrarray;
 +
-+	for (i = 0; i < array_len; i += 2) {
-+		u32 v1 = array[i];
-+		u32 v2 = array[i+1];
++	arraylength = sizeof(array_MAC_REG_8188E)/sizeof(u32);
++	ptrarray = array_MAC_REG_8188E;
 +
-+		if (v1 < 0xCDCDCDCD) {
-+			rtl8188e_config_rf_reg(adapt, v1, v2);
-+			continue;
-+		} else {
-+			if (!check_condition(adapt, array[i])) {
-+				READ_NEXT_PAIR(v1, v2, i);
-+				while (v2 != 0xDEAD && v2 != 0xCDEF &&
-+				       v2 != 0xCDCD && i < array_len - 2)
-+					READ_NEXT_PAIR(v1, v2, i);
-+					i -= 2;
-+			} else {
-+				READ_NEXT_PAIR(v1, v2, i);
-+				while (v2 != 0xDEAD && v2 != 0xCDEF &&
-+				       v2 != 0xCDCD && i < array_len - 2) {
-+						rtl8188e_config_rf_reg(adapt, v1, v2);
-+						READ_NEXT_PAIR(v1, v2, i);
-+				}
++	for (i = 0; i < arraylength; i = i + 2)
++		usb_write8(adapt, ptrarray[i], (u8) ptrarray[i + 1]);
 +
-+				while (v2 != 0xDEAD && i < array_len - 2)
-+					READ_NEXT_PAIR(v1, v2, i);
-+			}
-+		}
-+	}
++	usb_write8(adapt, REG_MAX_AGGR_NUM, MAX_AGGR_NUM);
 +	return true;
-+}
-+
-+static bool rf6052_conf_para(struct adapter *adapt)
-+{
-+	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
-+	u32 u4val = 0;
-+	u8 rfpath;
-+	bool rtstatus = true;
-+	struct bb_reg_def *pphyreg;
-+
-+	for (rfpath = 0; rfpath < hal_data->NumTotalRFPath; rfpath++) {
-+		pphyreg = &hal_data->PHYRegDef[rfpath];
-+
-+		switch (rfpath) {
-+		case RF90_PATH_A:
-+		case RF90_PATH_C:
-+			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
-+						 BRFSI_RFENV);
-+			break;
-+		case RF90_PATH_B:
-+		case RF90_PATH_D:
-+			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
-+						 BRFSI_RFENV << 16);
-+			break;
-+		}
-+
-+		phy_set_bb_reg(adapt, pphyreg->rfintfe, BRFSI_RFENV << 16, 0x1);
-+		udelay(1);
-+
-+		phy_set_bb_reg(adapt, pphyreg->rfintfo, BRFSI_RFENV, 0x1);
-+		udelay(1);
-+
-+		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
-+			      B3WIREADDREAALENGTH, 0x0);
-+		udelay(1);
-+
-+		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
-+			       B3WIREDATALENGTH, 0x0);
-+		udelay(1);
-+
-+		switch (rfpath) {
-+		case RF90_PATH_A:
-+			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
-+			break;
-+		case RF90_PATH_B:
-+			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
-+			break;
-+		case RF90_PATH_C:
-+			break;
-+		case RF90_PATH_D:
-+			break;
-+		}
-+
-+		switch (rfpath) {
-+		case RF90_PATH_A:
-+		case RF90_PATH_C:
-+			phy_set_bb_reg(adapt, pphyreg->rfintfs,
-+				       BRFSI_RFENV, u4val);
-+			break;
-+		case RF90_PATH_B:
-+		case RF90_PATH_D:
-+			phy_set_bb_reg(adapt, pphyreg->rfintfs,
-+				       BRFSI_RFENV << 16, u4val);
-+			break;
-+		}
-+
-+		if (rtstatus != true)
-+			return false;
-+	}
-+
-+	return rtstatus;
-+}
-+
-+static bool rtl88e_phy_rf6052_config(struct adapter *adapt)
-+{
-+	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
-+
-+	if (hal_data->rf_type == RF_1T1R)
-+		hal_data->NumTotalRFPath = 1;
-+	else
-+		hal_data->NumTotalRFPath = 2;
-+
-+	return rf6052_conf_para(adapt);
-+}
-+
-+bool rtl88eu_phy_rf_config(struct adapter *adapt)
-+{
-+	return rtl88e_phy_rf6052_config(adapt);
 +}
 -- 
 1.7.10.4
