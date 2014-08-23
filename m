@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbaHWOpe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 10:45:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63497 "EHLO mx1.redhat.com"
+	id S1751721AbaHWOqJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 10:46:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65203 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851AbaHWOpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 10:45:33 -0400
-Date: Sat, 23 Aug 2014 16:42:46 +0200
+	id S1750935AbaHWOqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 10:46:07 -0400
+Date: Sat, 23 Aug 2014 16:43:27 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>
@@ -22,24 +22,77 @@ Cc: Manfred Spraul <manfred@colorfullife.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] ipc/shm: fix the historical/wrong mm->start_stack check
-Message-ID: <20140823144246.GA6281@redhat.com>
+Subject: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack check
+Message-ID: <20140823144327.GA6299@redhat.com>
+References: <20140823144246.GA6281@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140823144246.GA6281@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/23, Oleg Nesterov wrote:
->
-> But for what? Ignoring the (I think buggy) check in do_shmat() ->start_stack
-> is simply unused, we only report it via /proc/.
+The ->start_stack check in do_shmat() looks ugly and simply wrong.
 
-Really, I think do_shmat() should not abuse ->start_stack. Not only it is
-wrong and unneeded afaics, do_shmat() is the only user of ->start_stack,
-this adds more confusion.
+1. ->start_stack is only valid right after exec(), the application
+   can switch to another stack and even unmap this area.
 
-Oleg.
+2. The reason for this check is not clear at all. The application
+   should know what it does. And why 4 pages? And why in fact it
+   requires 5 pages?
+
+3. This wrongly assumes that the stack can only grown down.
+
+Personally I think we should simply kill this check, but I did not
+dare to do this. So the patch only fixes the 1st problem (mostly to
+avoid the usage of mm->start_stack) and ignores VM_GROWSUP.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ ipc/shm.c |   23 ++++++++++++++---------
+ 1 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 7fc9f9f..5c35fd4 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -1166,19 +1166,24 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 
+ 	down_write(&current->mm->mmap_sem);
+ 	if (addr && !(shmflg & SHM_REMAP)) {
+-		err = -EINVAL;
+-		if (addr + size < addr)
+-			goto invalid;
++		unsigned long end = addr + size;
++		struct vm_area_struct *vma;
+ 
+-		if (find_vma_intersection(current->mm, addr, addr + size))
++		err = -EINVAL;
++		if (end < addr)
+ 			goto invalid;
+ 		/*
+-		 * If shm segment goes below stack, make sure there is some
+-		 * space left for the stack to grow (at least 4 pages).
++		 * Ensure this segment doesn't overlap with the next vma.
++		 * If it is stack, make sure there is some space left for
++		 * the stack to grow, at least 4 pages. (Why?)
+ 		 */
+-		if (addr < current->mm->start_stack &&
+-		    addr > current->mm->start_stack - size - PAGE_SIZE * 5)
+-			goto invalid;
++		vma = find_vma(current->mm, addr);
++		if (vma) {
++			if (vma->vm_flags & VM_GROWSDOWN)
++				end += PAGE_SIZE * 4; /* can't overflow */
++			if (end > vma->vm_start)
++				goto invalid;
++		}
+ 	}
+ 
+ 	addr = do_mmap_pgoff(file, addr, size, prot, flags, 0, &populate);
+-- 
+1.5.5.1
+
 
