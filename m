@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359AbaHWGKo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 02:10:44 -0400
-Received: from blu004-omc4s33.hotmail.com ([65.55.111.172]:49665 "EHLO
-	BLU004-OMC4S33.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752189AbaHWGKm (ORCPT
+	id S1752451AbaHWGbs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 02:31:48 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50413 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210AbaHWGbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 02:10:42 -0400
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Aug 2014 02:10:42 EDT
-X-TMN: [B8an5Ah4CUEQTEQW5J+pvbMOr97XnCKk]
-X-Originating-Email: [ganesh.rapolu@hotmail.com]
-Message-ID: <BLU436-SMTP214DCCF4135E3E81A493210E2D10@phx.gbl>
-From: Ganesh Rapolu <ganesh.rapolu@hotmail.com>
-To: rdunlap@infradead.org
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ganesh Rapolu <ganesh.rapolu@hotmail.com>
-Subject: [PATCH] DOCUMENTATION: Fixed typo in an example in memory-barriers.txt
-Date: Fri, 22 Aug 2014 23:05:08 -0700
-X-Mailer: git-send-email 2.1.0
-X-OriginalArrivalTime: 23 Aug 2014 06:05:34.0638 (UTC) FILETIME=[40AC64E0:01CFBE98]
+	Sat, 23 Aug 2014 02:31:46 -0400
+Date: Fri, 22 Aug 2014 23:31:13 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Florian Fainelli <f.fainelli@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
+Message-ID: <20140823063113.GC23715@localhost>
+References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
+ <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
+ <CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the first example in the memory-barriers.txt file, CPU 2 is assigned to
-run (x = B; y = A;). However, the rest of the example proceeds as if CPU 2 had been
-running (x = A; y = B;) as shown by the descriptions of the possible executions:
+On Fri, Aug 22, 2014 at 02:10:23PM -0700, Andrew Bresticker wrote:
+> On Fri, Aug 22, 2014 at 1:42 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> >
+> > On Aug 21, 2014 3:05 PM, "Andrew Bresticker" <abrestic@chromium.org> wrote:
+> > >
+> > > To be consistent with other architectures and to avoid unnecessary
+> > > makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
+> > > and build them with a common makefile.
+> >
+> > I recall reading that the ARM organization for DTS files was a bit unfortunate
+> > and should have been something like:
+> >
+> > arch/arm/boot/dts/<vendor>/
+> >
+> > Is this something we should do for the MIPS and update the other architectures
+> > to follow that scheme?
+> 
+> I recall reading that as well and that it would be adopted for ARM64,
+> but that hasn't seemed to have happened.  Perhaps Olof (CC'ed) will no
+> more.
 
-	STORE A=3,	STORE B=4,	x=LOAD A->3,	y=LOAD B->4
-	STORE A=3,	STORE B=4,	y=LOAD B->4,	x=LOAD A->3
-	STORE A=3,	x=LOAD A->3,	STORE B=4,	y=LOAD B->4
-	STORE A=3,	x=LOAD A->3,	y=LOAD B->2,	STORE B=4
-	STORE A=3,	y=LOAD B->2,	STORE B=4,	x=LOAD A->3
-	STORE A=3,	y=LOAD B->2,	x=LOAD A->3,	STORE B=4
-	STORE B=4,	STORE A=3,	x=LOAD A->3,	y=LOAD B->4
-	STORE B=4, ...
-	...
+Yeah, I highly recommend having a directory per vendor. We didn't on ARM,
+and the amount of files in that directory is becoming pretty
+insane. Moving to a subdirectory structure later gets messy which is
+why we've been holding off on it.
 
-The change was merely to make the inital evironment consistent with what happens in the
-rest of the example.
 
-Signed-off-by: Ganesh Rapolu <ganesh.rapolu@hotmail.com>
----
- Documentation/memory-barriers.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index a4de88f..9a46bbe 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -115,8 +115,8 @@ For example, consider the following sequence of events:
- 	CPU 1		CPU 2
- 	===============	===============
- 	{ A == 1; B == 2 }
--	A = 3;		x = B;
--	B = 4;		y = A;
-+	A = 3;		x = A;
-+	B = 4;		y = B;
- 
- The set of accesses as seen by the memory system in the middle can be arranged
- in 24 different combinations:
--- 
-2.0.4
-
+-Olof
