@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaHWOVe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 10:21:34 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:42861 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaHWOV1 (ORCPT
+	id S1752725AbaHWOVk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 10:21:40 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62435 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683AbaHWOVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 10:21:27 -0400
+	Sat, 23 Aug 2014 10:21:33 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 18/20] staging: rtl8188eu: Rename HalHWImg8188E_BB.c to bb_cfg.c
-Date: Sat, 23 Aug 2014 19:48:39 +0530
-Message-Id: <1408803521-13715-18-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 19/20] staging: rtl8188eu: Rename HalHWImg8188E_RF.c to rf_cfg.c
+Date: Sat, 23 Aug 2014 19:48:40 +0530
+Message-Id: <1408803521-13715-19-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1408803521-13715-1-git-send-email-navin.patidar@gmail.com>
 References: <1408803521-13715-1-git-send-email-navin.patidar@gmail.com>
@@ -25,31 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
  drivers/staging/rtl8188eu/Makefile               |    2 +-
- drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c |  715 ----------------------
- drivers/staging/rtl8188eu/hal/bb_cfg.c           |  715 ++++++++++++++++++++++
- 3 files changed, 716 insertions(+), 716 deletions(-)
- delete mode 100644 drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c
- create mode 100644 drivers/staging/rtl8188eu/hal/bb_cfg.c
+ drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c |  320 ----------------------
+ drivers/staging/rtl8188eu/hal/rf_cfg.c           |  320 ++++++++++++++++++++++
+ 3 files changed, 321 insertions(+), 321 deletions(-)
+ delete mode 100644 drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
+ create mode 100644 drivers/staging/rtl8188eu/hal/rf_cfg.c
 
 diff --git a/drivers/staging/rtl8188eu/Makefile b/drivers/staging/rtl8188eu/Makefile
-index 7886ea0..600ca8e 100644
+index 600ca8e..412a056 100644
 --- a/drivers/staging/rtl8188eu/Makefile
 +++ b/drivers/staging/rtl8188eu/Makefile
-@@ -19,7 +19,7 @@ r8188eu-y :=				\
- 		core/rtw_xmit.o		\
+@@ -20,7 +20,7 @@ r8188eu-y :=				\
  		hal/fw.o	\
  		hal/HalHWImg8188E_MAC.o	\
--		hal/HalHWImg8188E_BB.o	\
-+		hal/bb_cfg.o \
- 		hal/HalHWImg8188E_RF.o	\
+ 		hal/bb_cfg.o \
+-		hal/HalHWImg8188E_RF.o	\
++		hal/rf_cfg.o \
  		hal/HalPhyRf_8188e.o	\
  		hal/HalPwrSeqCmd.o	\
-diff --git a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c b/drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c
+ 		hal/Hal8188EPwrSeq.o	\
+diff --git a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c b/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
 deleted file mode 100644
-index 80e8cc9..0000000
---- a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_BB.c
+index ddc2f55..0000000
+--- a/drivers/staging/rtl8188eu/hal/HalHWImg8188E_RF.c
 +++ /dev/null
-@@ -1,715 +0,0 @@
+@@ -1,320 +0,0 @@
 -/******************************************************************************
 -*
 -* Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
@@ -74,365 +74,152 @@ index 80e8cc9..0000000
 -
 -#include <phy.h>
 -
--#define read_next_pair(array, v1, v2, i)		\
--	 do {						\
--		 i += 2;				\
--		 v1 = array[i];				\
--		 v2 = array[i+1];			\
--	 } while (0)
--
--
--/* AGC_TAB_1T.TXT */
--
--static u32 array_agc_tab_1t_8188e[] = {
--		0xC78, 0xFB000001,
--		0xC78, 0xFB010001,
--		0xC78, 0xFB020001,
--		0xC78, 0xFB030001,
--		0xC78, 0xFB040001,
--		0xC78, 0xFB050001,
--		0xC78, 0xFA060001,
--		0xC78, 0xF9070001,
--		0xC78, 0xF8080001,
--		0xC78, 0xF7090001,
--		0xC78, 0xF60A0001,
--		0xC78, 0xF50B0001,
--		0xC78, 0xF40C0001,
--		0xC78, 0xF30D0001,
--		0xC78, 0xF20E0001,
--		0xC78, 0xF10F0001,
--		0xC78, 0xF0100001,
--		0xC78, 0xEF110001,
--		0xC78, 0xEE120001,
--		0xC78, 0xED130001,
--		0xC78, 0xEC140001,
--		0xC78, 0xEB150001,
--		0xC78, 0xEA160001,
--		0xC78, 0xE9170001,
--		0xC78, 0xE8180001,
--		0xC78, 0xE7190001,
--		0xC78, 0xE61A0001,
--		0xC78, 0xE51B0001,
--		0xC78, 0xE41C0001,
--		0xC78, 0xE31D0001,
--		0xC78, 0xE21E0001,
--		0xC78, 0xE11F0001,
--		0xC78, 0x8A200001,
--		0xC78, 0x89210001,
--		0xC78, 0x88220001,
--		0xC78, 0x87230001,
--		0xC78, 0x86240001,
--		0xC78, 0x85250001,
--		0xC78, 0x84260001,
--		0xC78, 0x83270001,
--		0xC78, 0x82280001,
--		0xC78, 0x6B290001,
--		0xC78, 0x6A2A0001,
--		0xC78, 0x692B0001,
--		0xC78, 0x682C0001,
--		0xC78, 0x672D0001,
--		0xC78, 0x662E0001,
--		0xC78, 0x652F0001,
--		0xC78, 0x64300001,
--		0xC78, 0x63310001,
--		0xC78, 0x62320001,
--		0xC78, 0x61330001,
--		0xC78, 0x46340001,
--		0xC78, 0x45350001,
--		0xC78, 0x44360001,
--		0xC78, 0x43370001,
--		0xC78, 0x42380001,
--		0xC78, 0x41390001,
--		0xC78, 0x403A0001,
--		0xC78, 0x403B0001,
--		0xC78, 0x403C0001,
--		0xC78, 0x403D0001,
--		0xC78, 0x403E0001,
--		0xC78, 0x403F0001,
--		0xC78, 0xFB400001,
--		0xC78, 0xFB410001,
--		0xC78, 0xFB420001,
--		0xC78, 0xFB430001,
--		0xC78, 0xFB440001,
--		0xC78, 0xFB450001,
--		0xC78, 0xFB460001,
--		0xC78, 0xFB470001,
--		0xC78, 0xFB480001,
--		0xC78, 0xFA490001,
--		0xC78, 0xF94A0001,
--		0xC78, 0xF84B0001,
--		0xC78, 0xF74C0001,
--		0xC78, 0xF64D0001,
--		0xC78, 0xF54E0001,
--		0xC78, 0xF44F0001,
--		0xC78, 0xF3500001,
--		0xC78, 0xF2510001,
--		0xC78, 0xF1520001,
--		0xC78, 0xF0530001,
--		0xC78, 0xEF540001,
--		0xC78, 0xEE550001,
--		0xC78, 0xED560001,
--		0xC78, 0xEC570001,
--		0xC78, 0xEB580001,
--		0xC78, 0xEA590001,
--		0xC78, 0xE95A0001,
--		0xC78, 0xE85B0001,
--		0xC78, 0xE75C0001,
--		0xC78, 0xE65D0001,
--		0xC78, 0xE55E0001,
--		0xC78, 0xE45F0001,
--		0xC78, 0xE3600001,
--		0xC78, 0xE2610001,
--		0xC78, 0xC3620001,
--		0xC78, 0xC2630001,
--		0xC78, 0xC1640001,
--		0xC78, 0x8B650001,
--		0xC78, 0x8A660001,
--		0xC78, 0x89670001,
--		0xC78, 0x88680001,
--		0xC78, 0x87690001,
--		0xC78, 0x866A0001,
--		0xC78, 0x856B0001,
--		0xC78, 0x846C0001,
--		0xC78, 0x676D0001,
--		0xC78, 0x666E0001,
--		0xC78, 0x656F0001,
--		0xC78, 0x64700001,
--		0xC78, 0x63710001,
--		0xC78, 0x62720001,
--		0xC78, 0x61730001,
--		0xC78, 0x60740001,
--		0xC78, 0x46750001,
--		0xC78, 0x45760001,
--		0xC78, 0x44770001,
--		0xC78, 0x43780001,
--		0xC78, 0x42790001,
--		0xC78, 0x417A0001,
--		0xC78, 0x407B0001,
--		0xC78, 0x407C0001,
--		0xC78, 0x407D0001,
--		0xC78, 0x407E0001,
--		0xC78, 0x407F0001,
--};
--
--static bool set_baseband_agc_config(struct adapter *adapt)
+-static bool check_condition(struct adapter *adapt, const u32  condition)
 -{
--	u32 i;
--	u32 arraylen = sizeof(array_agc_tab_1t_8188e)/sizeof(u32);
--	u32 *array = array_agc_tab_1t_8188e;
+-	struct odm_dm_struct *odm = &GET_HAL_DATA(adapt)->odmpriv;
+-	u32 _board = odm->BoardType;
+-	u32 _platform = odm->SupportPlatform;
+-	u32 _interface = odm->SupportInterface;
+-	u32 cond = condition;
 -
--	for (i = 0; i < arraylen; i += 2) {
--		u32 v1 = array[i];
--		u32 v2 = array[i+1];
+-	if (condition == 0xCDCDCDCD)
+-		return true;
 -
--		if (v1 < 0xCDCDCDCD){
--			phy_set_bb_reg(adapt, v1, bMaskDWord, v2);
--			udelay(1);
--		}
--	}
+-	cond = condition & 0x000000FF;
+-	if ((_board == cond) && cond != 0x00)
+-		return false;
+-
+-	cond = condition & 0x0000FF00;
+-	cond = cond >> 8;
+-	if ((_interface & cond) == 0 && cond != 0x07)
+-		return false;
+-
+-	cond = condition & 0x00FF0000;
+-	cond = cond >> 16;
+-	if ((_platform & cond) == 0 && cond != 0x0F)
+-		return false;
 -	return true;
 -}
 -
--/*  PHY_REG_1T.TXT  */
+-/* RadioA_1T.TXT */
 -
--static u32 array_phy_reg_1t_8188e[] = {
--		0x800, 0x80040000,
--		0x804, 0x00000003,
--		0x808, 0x0000FC00,
--		0x80C, 0x0000000A,
--		0x810, 0x10001331,
--		0x814, 0x020C3D10,
--		0x818, 0x02200385,
--		0x81C, 0x00000000,
--		0x820, 0x01000100,
--		0x824, 0x00390204,
--		0x828, 0x00000000,
--		0x82C, 0x00000000,
--		0x830, 0x00000000,
--		0x834, 0x00000000,
--		0x838, 0x00000000,
--		0x83C, 0x00000000,
--		0x840, 0x00010000,
--		0x844, 0x00000000,
--		0x848, 0x00000000,
--		0x84C, 0x00000000,
--		0x850, 0x00000000,
--		0x854, 0x00000000,
--		0x858, 0x569A11A9,
--		0x85C, 0x01000014,
--		0x860, 0x66F60110,
--		0x864, 0x061F0649,
--		0x868, 0x00000000,
--		0x86C, 0x27272700,
--		0x870, 0x07000760,
--		0x874, 0x25004000,
--		0x878, 0x00000808,
--		0x87C, 0x00000000,
--		0x880, 0xB0000C1C,
--		0x884, 0x00000001,
--		0x888, 0x00000000,
--		0x88C, 0xCCC000C0,
--		0x890, 0x00000800,
--		0x894, 0xFFFFFFFE,
--		0x898, 0x40302010,
--		0x89C, 0x00706050,
--		0x900, 0x00000000,
--		0x904, 0x00000023,
--		0x908, 0x00000000,
--		0x90C, 0x81121111,
--		0x910, 0x00000002,
--		0x914, 0x00000201,
--		0xA00, 0x00D047C8,
--		0xA04, 0x80FF000C,
--		0xA08, 0x8C838300,
--		0xA0C, 0x2E7F120F,
--		0xA10, 0x9500BB78,
--		0xA14, 0x1114D028,
--		0xA18, 0x00881117,
--		0xA1C, 0x89140F00,
--		0xA20, 0x1A1B0000,
--		0xA24, 0x090E1317,
--		0xA28, 0x00000204,
--		0xA2C, 0x00D30000,
--		0xA70, 0x101FBF00,
--		0xA74, 0x00000007,
--		0xA78, 0x00000900,
--		0xA7C, 0x225B0606,
--		0xA80, 0x218075B1,
--		0xB2C, 0x80000000,
--		0xC00, 0x48071D40,
--		0xC04, 0x03A05611,
--		0xC08, 0x000000E4,
--		0xC0C, 0x6C6C6C6C,
--		0xC10, 0x08800000,
--		0xC14, 0x40000100,
--		0xC18, 0x08800000,
--		0xC1C, 0x40000100,
--		0xC20, 0x00000000,
--		0xC24, 0x00000000,
--		0xC28, 0x00000000,
--		0xC2C, 0x00000000,
--		0xC30, 0x69E9AC47,
--		0xC34, 0x469652AF,
--		0xC38, 0x49795994,
--		0xC3C, 0x0A97971C,
--		0xC40, 0x1F7C403F,
--		0xC44, 0x000100B7,
--		0xC48, 0xEC020107,
--		0xC4C, 0x007F037F,
--		0xC50, 0x69553420,
--		0xC54, 0x43BC0094,
--		0xC58, 0x00013169,
--		0xC5C, 0x00250492,
--		0xC60, 0x00000000,
--		0xC64, 0x7112848B,
--		0xC68, 0x47C00BFF,
--		0xC6C, 0x00000036,
--		0xC70, 0x2C7F000D,
--		0xC74, 0x020610DB,
--		0xC78, 0x0000001F,
--		0xC7C, 0x00B91612,
--		0xC80, 0x390000E4,
--		0xC84, 0x20F60000,
--		0xC88, 0x40000100,
--		0xC8C, 0x20200000,
--		0xC90, 0x00091521,
--		0xC94, 0x00000000,
--		0xC98, 0x00121820,
--		0xC9C, 0x00007F7F,
--		0xCA0, 0x00000000,
--		0xCA4, 0x000300A0,
--		0xCA8, 0x00000000,
--		0xCAC, 0x00000000,
--		0xCB0, 0x00000000,
--		0xCB4, 0x00000000,
--		0xCB8, 0x00000000,
--		0xCBC, 0x28000000,
--		0xCC0, 0x00000000,
--		0xCC4, 0x00000000,
--		0xCC8, 0x00000000,
--		0xCCC, 0x00000000,
--		0xCD0, 0x00000000,
--		0xCD4, 0x00000000,
--		0xCD8, 0x64B22427,
--		0xCDC, 0x00766932,
--		0xCE0, 0x00222222,
--		0xCE4, 0x00000000,
--		0xCE8, 0x37644302,
--		0xCEC, 0x2F97D40C,
--		0xD00, 0x00000740,
--		0xD04, 0x00020401,
--		0xD08, 0x0000907F,
--		0xD0C, 0x20010201,
--		0xD10, 0xA0633333,
--		0xD14, 0x3333BC43,
--		0xD18, 0x7A8F5B6F,
--		0xD2C, 0xCC979975,
--		0xD30, 0x00000000,
--		0xD34, 0x80608000,
--		0xD38, 0x00000000,
--		0xD3C, 0x00127353,
--		0xD40, 0x00000000,
--		0xD44, 0x00000000,
--		0xD48, 0x00000000,
--		0xD4C, 0x00000000,
--		0xD50, 0x6437140A,
--		0xD54, 0x00000000,
--		0xD58, 0x00000282,
--		0xD5C, 0x30032064,
--		0xD60, 0x4653DE68,
--		0xD64, 0x04518A3C,
--		0xD68, 0x00002101,
--		0xD6C, 0x2A201C16,
--		0xD70, 0x1812362E,
--		0xD74, 0x322C2220,
--		0xD78, 0x000E3C24,
--		0xE00, 0x2D2D2D2D,
--		0xE04, 0x2D2D2D2D,
--		0xE08, 0x0390272D,
--		0xE10, 0x2D2D2D2D,
--		0xE14, 0x2D2D2D2D,
--		0xE18, 0x2D2D2D2D,
--		0xE1C, 0x2D2D2D2D,
--		0xE28, 0x00000000,
--		0xE30, 0x1000DC1F,
--		0xE34, 0x10008C1F,
--		0xE38, 0x02140102,
--		0xE3C, 0x681604C2,
--		0xE40, 0x01007C00,
--		0xE44, 0x01004800,
--		0xE48, 0xFB000000,
--		0xE4C, 0x000028D1,
--		0xE50, 0x1000DC1F,
--		0xE54, 0x10008C1F,
--		0xE58, 0x02140102,
--		0xE5C, 0x28160D05,
--		0xE60, 0x00000008,
--		0xE68, 0x001B25A4,
--		0xE6C, 0x00C00014,
--		0xE70, 0x00C00014,
--		0xE74, 0x01000014,
--		0xE78, 0x01000014,
--		0xE7C, 0x01000014,
--		0xE80, 0x01000014,
--		0xE84, 0x00C00014,
--		0xE88, 0x01000014,
--		0xE8C, 0x00C00014,
--		0xED0, 0x00C00014,
--		0xED4, 0x00C00014,
--		0xED8, 0x00C00014,
--		0xEDC, 0x00000014,
--		0xEE0, 0x00000014,
--		0xEEC, 0x01C00014,
--		0xF14, 0x00000003,
--		0xF4C, 0x00000000,
--		0xF00, 0x00000300,
+-static u32 Array_RadioA_1T_8188E[] = {
+-		0x000, 0x00030000,
+-		0x008, 0x00084000,
+-		0x018, 0x00000407,
+-		0x019, 0x00000012,
+-		0x01E, 0x00080009,
+-		0x01F, 0x00000880,
+-		0x02F, 0x0001A060,
+-		0x03F, 0x00000000,
+-		0x042, 0x000060C0,
+-		0x057, 0x000D0000,
+-		0x058, 0x000BE180,
+-		0x067, 0x00001552,
+-		0x083, 0x00000000,
+-		0x0B0, 0x000FF8FC,
+-		0x0B1, 0x00054400,
+-		0x0B2, 0x000CCC19,
+-		0x0B4, 0x00043003,
+-		0x0B6, 0x0004953E,
+-		0x0B7, 0x0001C718,
+-		0x0B8, 0x000060FF,
+-		0x0B9, 0x00080001,
+-		0x0BA, 0x00040000,
+-		0x0BB, 0x00000400,
+-		0x0BF, 0x000C0000,
+-		0x0C2, 0x00002400,
+-		0x0C3, 0x00000009,
+-		0x0C4, 0x00040C91,
+-		0x0C5, 0x00099999,
+-		0x0C6, 0x000000A3,
+-		0x0C7, 0x00088820,
+-		0x0C8, 0x00076C06,
+-		0x0C9, 0x00000000,
+-		0x0CA, 0x00080000,
+-		0x0DF, 0x00000180,
+-		0x0EF, 0x000001A0,
+-		0x051, 0x0006B27D,
+-		0xFF0F041F, 0xABCD,
+-		0x052, 0x0007E4DD,
+-		0xCDCDCDCD, 0xCDCD,
+-		0x052, 0x0007E49D,
+-		0xFF0F041F, 0xDEAD,
+-		0x053, 0x00000073,
+-		0x056, 0x00051FF3,
+-		0x035, 0x00000086,
+-		0x035, 0x00000186,
+-		0x035, 0x00000286,
+-		0x036, 0x00001C25,
+-		0x036, 0x00009C25,
+-		0x036, 0x00011C25,
+-		0x036, 0x00019C25,
+-		0x0B6, 0x00048538,
+-		0x018, 0x00000C07,
+-		0x05A, 0x0004BD00,
+-		0x019, 0x000739D0,
+-		0x034, 0x0000ADF3,
+-		0x034, 0x00009DF0,
+-		0x034, 0x00008DED,
+-		0x034, 0x00007DEA,
+-		0x034, 0x00006DE7,
+-		0x034, 0x000054EE,
+-		0x034, 0x000044EB,
+-		0x034, 0x000034E8,
+-		0x034, 0x0000246B,
+-		0x034, 0x00001468,
+-		0x034, 0x0000006D,
+-		0x000, 0x00030159,
+-		0x084, 0x00068200,
+-		0x086, 0x000000CE,
+-		0x087, 0x00048A00,
+-		0x08E, 0x00065540,
+-		0x08F, 0x00088000,
+-		0x0EF, 0x000020A0,
+-		0x03B, 0x000F02B0,
+-		0x03B, 0x000EF7B0,
+-		0x03B, 0x000D4FB0,
+-		0x03B, 0x000CF060,
+-		0x03B, 0x000B0090,
+-		0x03B, 0x000A0080,
+-		0x03B, 0x00090080,
+-		0x03B, 0x0008F780,
+-		0x03B, 0x000722B0,
+-		0x03B, 0x0006F7B0,
+-		0x03B, 0x00054FB0,
+-		0x03B, 0x0004F060,
+-		0x03B, 0x00030090,
+-		0x03B, 0x00020080,
+-		0x03B, 0x00010080,
+-		0x03B, 0x0000F780,
+-		0x0EF, 0x000000A0,
+-		0x000, 0x00010159,
+-		0x018, 0x0000F407,
+-		0xFFE, 0x00000000,
+-		0xFFE, 0x00000000,
+-		0x01F, 0x00080003,
+-		0xFFE, 0x00000000,
+-		0xFFE, 0x00000000,
+-		0x01E, 0x00000001,
+-		0x01F, 0x00080000,
+-		0x000, 0x00033E60,
 -};
 -
--static void rtl_bb_delay(struct adapter *adapt, u32 addr, u32 data)
+-#define READ_NEXT_PAIR(v1, v2, i)	\
+-do {								\
+-	i += 2; v1 = array[i];			\
+-	v2 = array[i+1];				\
+-} while (0)
+-
+-#define RFREG_OFFSET_MASK 0xfffff
+-#define B3WIREADDREAALENGTH 0x400
+-#define B3WIREDATALENGTH 0x800
+-#define BRFSI_RFENV 0x10
+-
+-static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath,u32 addr, u32 mask, u32 data)
 -{
 -	if (addr == 0xfe) {
--		msleep(50);
+-		mdelay(50);
 -	} else if (addr == 0xfd) {
 -		mdelay(5);
 -	} else if (addr == 0xfc) {
@@ -444,333 +231,151 @@ index 80e8cc9..0000000
 -	} else if (addr == 0xf9) {
 -		udelay(1);
 -	} else {
--		phy_set_bb_reg(adapt, addr, bMaskDWord, data);
--		/*  Add 1us delay between BB/RF register setting. */
+-		phy_set_rf_reg(adapt, rfpath, addr, mask, data);
 -		udelay(1);
 -	}
 -}
 -
--static bool set_baseband_phy_config(struct adapter *adapt)
+-static void rtl8188e_config_rf_reg(struct adapter *adapt,
+-	u32 addr, u32 data)
+-{
+-	u32 content = 0x1000; /*RF Content: radio_a_txt*/
+-	u32 maskforphyset = (u32)(content & 0xE000);
+-
+-	rtl_rfreg_delay(adapt, RF90_PATH_A, addr| maskforphyset,
+-			RFREG_OFFSET_MASK,
+-			data);
+-}
+-
+-static bool rtl88e_phy_config_rf_with_headerfile(struct adapter *adapt)
 -{
 -	u32 i;
--	u32 arraylen = sizeof(array_phy_reg_1t_8188e)/sizeof(u32);
--	u32 *array = array_phy_reg_1t_8188e;
+-	u32 array_len = sizeof(Array_RadioA_1T_8188E)/sizeof(u32);
+-	u32 *array = Array_RadioA_1T_8188E;
 -
--	for (i = 0; i < arraylen; i += 2) {
+-	for (i = 0; i < array_len; i += 2) {
 -		u32 v1 = array[i];
 -		u32 v2 = array[i+1];
 -
--		if (v1 < 0xCDCDCDCD)
--			rtl_bb_delay(adapt, v1, v2);
+-		if (v1 < 0xCDCDCDCD) {
+-			rtl8188e_config_rf_reg(adapt, v1, v2);
+-			continue;
+-		} else {
+-			if (!check_condition(adapt, array[i])) {
+-				READ_NEXT_PAIR(v1, v2, i);
+-				while (v2 != 0xDEAD && v2 != 0xCDEF &&
+-				       v2 != 0xCDCD && i < array_len - 2)
+-					READ_NEXT_PAIR(v1, v2, i);
+-					i -= 2;
+-			} else {
+-				READ_NEXT_PAIR(v1, v2, i);
+-				while (v2 != 0xDEAD && v2 != 0xCDEF &&
+-				       v2 != 0xCDCD && i < array_len - 2) {
+-						rtl8188e_config_rf_reg(adapt, v1, v2);
+-						READ_NEXT_PAIR(v1, v2, i);
+-				}
+-
+-				while (v2 != 0xDEAD && i < array_len - 2)
+-					READ_NEXT_PAIR(v1, v2, i);
+-			}
+-		}
 -	}
 -	return true;
 -}
 -
--/*  PHY_REG_PG.TXT  */
--
--static u32 array_phy_reg_pg_8188e[] = {
--		0xE00, 0xFFFFFFFF, 0x06070809,
--		0xE04, 0xFFFFFFFF, 0x02020405,
--		0xE08, 0x0000FF00, 0x00000006,
--		0x86C, 0xFFFFFF00, 0x00020400,
--		0xE10, 0xFFFFFFFF, 0x08090A0B,
--		0xE14, 0xFFFFFFFF, 0x01030607,
--		0xE18, 0xFFFFFFFF, 0x08090A0B,
--		0xE1C, 0xFFFFFFFF, 0x01030607,
--		0xE00, 0xFFFFFFFF, 0x00000000,
--		0xE04, 0xFFFFFFFF, 0x00000000,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x00000000,
--		0xE14, 0xFFFFFFFF, 0x00000000,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x02020202,
--		0xE04, 0xFFFFFFFF, 0x00020202,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x04040404,
--		0xE14, 0xFFFFFFFF, 0x00020404,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x02020202,
--		0xE04, 0xFFFFFFFF, 0x00020202,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x04040404,
--		0xE14, 0xFFFFFFFF, 0x00020404,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x00000000,
--		0xE04, 0xFFFFFFFF, 0x00000000,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x00000000,
--		0xE14, 0xFFFFFFFF, 0x00000000,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x02020202,
--		0xE04, 0xFFFFFFFF, 0x00020202,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x04040404,
--		0xE14, 0xFFFFFFFF, 0x00020404,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x00000000,
--		0xE04, 0xFFFFFFFF, 0x00000000,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x00000000,
--		0xE14, 0xFFFFFFFF, 0x00000000,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x00000000,
--		0xE04, 0xFFFFFFFF, 0x00000000,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x00000000,
--		0xE14, 0xFFFFFFFF, 0x00000000,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x00000000,
--		0xE04, 0xFFFFFFFF, 0x00000000,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x00000000,
--		0xE14, 0xFFFFFFFF, 0x00000000,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x00000000,
--		0xE04, 0xFFFFFFFF, 0x00000000,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x00000000,
--		0xE14, 0xFFFFFFFF, 0x00000000,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--		0xE00, 0xFFFFFFFF, 0x00000000,
--		0xE04, 0xFFFFFFFF, 0x00000000,
--		0xE08, 0x0000FF00, 0x00000000,
--		0x86C, 0xFFFFFF00, 0x00000000,
--		0xE10, 0xFFFFFFFF, 0x00000000,
--		0xE14, 0xFFFFFFFF, 0x00000000,
--		0xE18, 0xFFFFFFFF, 0x00000000,
--		0xE1C, 0xFFFFFFFF, 0x00000000,
--
--};
--
--static void store_pwrindex_offset(struct adapter *Adapter, u32 regaddr, u32 bitmask, u32 data)
+-static bool rf6052_conf_para(struct adapter *adapt)
 -{
--	struct hal_data_8188e *hal_data = GET_HAL_DATA(Adapter);
--
--	if (regaddr == rTxAGC_A_Rate18_06)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][0] = data;
--	if (regaddr == rTxAGC_A_Rate54_24)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][1] = data;
--	if (regaddr == rTxAGC_A_CCK1_Mcs32)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][6] = data;
--	if (regaddr == rTxAGC_B_CCK11_A_CCK2_11 && bitmask == 0xffffff00)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][7] = data;
--	if (regaddr == rTxAGC_A_Mcs03_Mcs00)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][2] = data;
--	if (regaddr == rTxAGC_A_Mcs07_Mcs04)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][3] = data;
--	if (regaddr == rTxAGC_A_Mcs11_Mcs08)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][4] = data;
--	if (regaddr == rTxAGC_A_Mcs15_Mcs12) {
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][5] = data;
--		if (hal_data->rf_type == RF_1T1R)
--			hal_data->pwrGroupCnt++;
--	}
--	if (regaddr == rTxAGC_B_Rate18_06)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][8] = data;
--	if (regaddr == rTxAGC_B_Rate54_24)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][9] = data;
--	if (regaddr == rTxAGC_B_CCK1_55_Mcs32)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][14] = data;
--	if (regaddr == rTxAGC_B_CCK11_A_CCK2_11 && bitmask == 0x000000ff)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][15] = data;
--	if (regaddr == rTxAGC_B_Mcs03_Mcs00)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][10] = data;
--	if (regaddr == rTxAGC_B_Mcs07_Mcs04)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][11] = data;
--	if (regaddr == rTxAGC_B_Mcs11_Mcs08)
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][12] = data;
--	if (regaddr == rTxAGC_B_Mcs15_Mcs12) {
--		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][13] = data;
--		if (hal_data->rf_type != RF_1T1R)
--			hal_data->pwrGroupCnt++;
--	}
--}
--
--static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask ,u32 data)
--{
--	if (addr == 0xfe) {
--		msleep(50);
--	} else if (addr == 0xfd) {
--		mdelay(5);
--	} else if (addr == 0xfc) {
--		mdelay(1);
--	} else if (addr == 0xfb) {
--		udelay(50);
--	} else if (addr == 0xfa) {
--		udelay(5);
--	} else if (addr == 0xf9) {
--		udelay(1);
--	} else{
--		store_pwrindex_offset(adapt, addr, bit_mask, data);
--	}
--}
--
--static bool config_bb_with_pgheader(struct adapter *adapt)
--{
--	u32 i = 0;
--	u32 arraylen = sizeof(array_phy_reg_pg_8188e) / sizeof(u32);
--	u32 *array = array_phy_reg_pg_8188e;
--
--	for (i = 0; i < arraylen; i += 3) {
--		u32 v1 = array[i];
--		u32 v2 = array[i+1];
--		u32 v3 = array[i+2];
--
--		if (v1 < 0xCDCDCDCD)
--			rtl_addr_delay(adapt, v1, v2, v3);
--	}
--	return true;
--}
--
--static void rtl88e_phy_init_bb_rf_register_definition(struct adapter *Adapter)
--{
--	struct hal_data_8188e		*hal_data = GET_HAL_DATA(Adapter);
--
--	hal_data->PHYRegDef[RF_PATH_A].rfintfs = rFPGA0_XAB_RFInterfaceSW;
--	hal_data->PHYRegDef[RF_PATH_B].rfintfs = rFPGA0_XAB_RFInterfaceSW;
--	hal_data->PHYRegDef[RF_PATH_C].rfintfs = rFPGA0_XCD_RFInterfaceSW;
--	hal_data->PHYRegDef[RF_PATH_D].rfintfs = rFPGA0_XCD_RFInterfaceSW;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfintfi = rFPGA0_XAB_RFInterfaceRB;
--	hal_data->PHYRegDef[RF_PATH_B].rfintfi = rFPGA0_XAB_RFInterfaceRB;
--	hal_data->PHYRegDef[RF_PATH_C].rfintfi = rFPGA0_XCD_RFInterfaceRB;
--	hal_data->PHYRegDef[RF_PATH_D].rfintfi = rFPGA0_XCD_RFInterfaceRB;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfintfo = rFPGA0_XA_RFInterfaceOE;
--	hal_data->PHYRegDef[RF_PATH_B].rfintfo = rFPGA0_XB_RFInterfaceOE;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfintfe = rFPGA0_XA_RFInterfaceOE;
--	hal_data->PHYRegDef[RF_PATH_B].rfintfe = rFPGA0_XB_RFInterfaceOE;
--
--	hal_data->PHYRegDef[RF_PATH_A].rf3wireOffset = rFPGA0_XA_LSSIParameter;
--	hal_data->PHYRegDef[RF_PATH_B].rf3wireOffset = rFPGA0_XB_LSSIParameter;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfLSSI_Select = rFPGA0_XAB_RFParameter;
--	hal_data->PHYRegDef[RF_PATH_B].rfLSSI_Select = rFPGA0_XAB_RFParameter;
--	hal_data->PHYRegDef[RF_PATH_C].rfLSSI_Select = rFPGA0_XCD_RFParameter;
--	hal_data->PHYRegDef[RF_PATH_D].rfLSSI_Select = rFPGA0_XCD_RFParameter;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfTxGainStage = rFPGA0_TxGainStage;
--	hal_data->PHYRegDef[RF_PATH_B].rfTxGainStage = rFPGA0_TxGainStage;
--	hal_data->PHYRegDef[RF_PATH_C].rfTxGainStage = rFPGA0_TxGainStage;
--	hal_data->PHYRegDef[RF_PATH_D].rfTxGainStage = rFPGA0_TxGainStage;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfHSSIPara1 = rFPGA0_XA_HSSIParameter1;
--	hal_data->PHYRegDef[RF_PATH_B].rfHSSIPara1 = rFPGA0_XB_HSSIParameter1;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfHSSIPara2 = rFPGA0_XA_HSSIParameter2;
--	hal_data->PHYRegDef[RF_PATH_B].rfHSSIPara2 = rFPGA0_XB_HSSIParameter2;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfSwitchControl = rFPGA0_XAB_SwitchControl;
--	hal_data->PHYRegDef[RF_PATH_B].rfSwitchControl = rFPGA0_XAB_SwitchControl;
--	hal_data->PHYRegDef[RF_PATH_C].rfSwitchControl = rFPGA0_XCD_SwitchControl;
--	hal_data->PHYRegDef[RF_PATH_D].rfSwitchControl = rFPGA0_XCD_SwitchControl;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfAGCControl1 = rOFDM0_XAAGCCore1;
--	hal_data->PHYRegDef[RF_PATH_B].rfAGCControl1 = rOFDM0_XBAGCCore1;
--	hal_data->PHYRegDef[RF_PATH_C].rfAGCControl1 = rOFDM0_XCAGCCore1;
--	hal_data->PHYRegDef[RF_PATH_D].rfAGCControl1 = rOFDM0_XDAGCCore1;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfAGCControl2 = rOFDM0_XAAGCCore2;
--	hal_data->PHYRegDef[RF_PATH_B].rfAGCControl2 = rOFDM0_XBAGCCore2;
--	hal_data->PHYRegDef[RF_PATH_C].rfAGCControl2 = rOFDM0_XCAGCCore2;
--	hal_data->PHYRegDef[RF_PATH_D].rfAGCControl2 = rOFDM0_XDAGCCore2;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfRxIQImbalance = rOFDM0_XARxIQImbalance;
--	hal_data->PHYRegDef[RF_PATH_B].rfRxIQImbalance = rOFDM0_XBRxIQImbalance;
--	hal_data->PHYRegDef[RF_PATH_C].rfRxIQImbalance = rOFDM0_XCRxIQImbalance;
--	hal_data->PHYRegDef[RF_PATH_D].rfRxIQImbalance = rOFDM0_XDRxIQImbalance;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfRxAFE = rOFDM0_XARxAFE;
--	hal_data->PHYRegDef[RF_PATH_B].rfRxAFE = rOFDM0_XBRxAFE;
--	hal_data->PHYRegDef[RF_PATH_C].rfRxAFE = rOFDM0_XCRxAFE;
--	hal_data->PHYRegDef[RF_PATH_D].rfRxAFE = rOFDM0_XDRxAFE;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfTxIQImbalance = rOFDM0_XATxIQImbalance;
--	hal_data->PHYRegDef[RF_PATH_B].rfTxIQImbalance = rOFDM0_XBTxIQImbalance;
--	hal_data->PHYRegDef[RF_PATH_C].rfTxIQImbalance = rOFDM0_XCTxIQImbalance;
--	hal_data->PHYRegDef[RF_PATH_D].rfTxIQImbalance = rOFDM0_XDTxIQImbalance;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfTxAFE = rOFDM0_XATxAFE;
--	hal_data->PHYRegDef[RF_PATH_B].rfTxAFE = rOFDM0_XBTxAFE;
--	hal_data->PHYRegDef[RF_PATH_C].rfTxAFE = rOFDM0_XCTxAFE;
--	hal_data->PHYRegDef[RF_PATH_D].rfTxAFE = rOFDM0_XDTxAFE;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfLSSIReadBack = rFPGA0_XA_LSSIReadBack;
--	hal_data->PHYRegDef[RF_PATH_B].rfLSSIReadBack = rFPGA0_XB_LSSIReadBack;
--	hal_data->PHYRegDef[RF_PATH_C].rfLSSIReadBack = rFPGA0_XC_LSSIReadBack;
--	hal_data->PHYRegDef[RF_PATH_D].rfLSSIReadBack = rFPGA0_XD_LSSIReadBack;
--
--	hal_data->PHYRegDef[RF_PATH_A].rfLSSIReadBackPi = TransceiverA_HSPI_Readback;
--	hal_data->PHYRegDef[RF_PATH_B].rfLSSIReadBackPi = TransceiverB_HSPI_Readback;
--}
--
--static bool config_parafile(struct adapter *adapt)
--{
--	struct eeprom_priv *pEEPROM = GET_EEPROM_EFUSE_PRIV(adapt);
 -	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
+-	u32 u4val = 0;
+-	u8 rfpath;
+-	bool rtstatus = true;
+-	struct bb_reg_def *pphyreg;
 -
--	set_baseband_phy_config(adapt);
+-	for (rfpath = 0; rfpath < hal_data->NumTotalRFPath; rfpath++) {
+-		pphyreg = &hal_data->PHYRegDef[rfpath];
 -
--	/* If EEPROM or EFUSE autoload OK, We must config by PHY_REG_PG.txt */
--	if (!pEEPROM->bautoload_fail_flag) {
--		hal_data->pwrGroupCnt = 0;
--		config_bb_with_pgheader(adapt);
+-		switch (rfpath) {
+-		case RF90_PATH_A:
+-		case RF90_PATH_C:
+-			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
+-						 BRFSI_RFENV);
+-			break;
+-		case RF90_PATH_B:
+-		case RF90_PATH_D:
+-			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
+-						 BRFSI_RFENV << 16);
+-			break;
+-		}
+-
+-		phy_set_bb_reg(adapt, pphyreg->rfintfe, BRFSI_RFENV << 16, 0x1);
+-		udelay(1);
+-
+-		phy_set_bb_reg(adapt, pphyreg->rfintfo, BRFSI_RFENV, 0x1);
+-		udelay(1);
+-
+-		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
+-			      B3WIREADDREAALENGTH, 0x0);
+-		udelay(1);
+-
+-		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
+-			       B3WIREDATALENGTH, 0x0);
+-		udelay(1);
+-
+-		switch (rfpath) {
+-		case RF90_PATH_A:
+-			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
+-			break;
+-		case RF90_PATH_B:
+-			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
+-			break;
+-		case RF90_PATH_C:
+-			break;
+-		case RF90_PATH_D:
+-			break;
+-		}
+-
+-		switch (rfpath) {
+-		case RF90_PATH_A:
+-		case RF90_PATH_C:
+-			phy_set_bb_reg(adapt, pphyreg->rfintfs,
+-				       BRFSI_RFENV, u4val);
+-			break;
+-		case RF90_PATH_B:
+-		case RF90_PATH_D:
+-			phy_set_bb_reg(adapt, pphyreg->rfintfs,
+-				       BRFSI_RFENV << 16, u4val);
+-			break;
+-		}
+-
+-		if (rtstatus != true)
+-			return false;
 -	}
--	set_baseband_agc_config(adapt);
--	return true;
--}
--
--bool rtl88eu_phy_bb_config(struct adapter *adapt)
--{
--	int rtstatus = true;
--	struct hal_data_8188e	*hal_data = GET_HAL_DATA(adapt);
--	u32 regval;
--	u8 crystal_cap;
--
--	rtl88e_phy_init_bb_rf_register_definition(adapt);
--
--	/*  Enable BB and RF */
--	regval = usb_read16(adapt, REG_SYS_FUNC_EN);
--	usb_write16(adapt, REG_SYS_FUNC_EN, (u16)(regval|BIT13|BIT0|BIT1));
--
--	usb_write8(adapt, REG_RF_CTRL, RF_EN|RF_RSTB|RF_SDMRSTB);
--
--	usb_write8(adapt, REG_SYS_FUNC_EN, FEN_USBA | FEN_USBD | FEN_BB_GLB_RSTn | FEN_BBRSTB);
--
--	/*  Config BB and AGC */
--	rtstatus = config_parafile(adapt);
--
--	/*  write 0x24[16:11] = 0x24[22:17] = crystal_cap */
--	crystal_cap = hal_data->CrystalCap & 0x3F;
--	phy_set_bb_reg(adapt, REG_AFE_XTAL_CTRL, 0x7ff800, (crystal_cap | (crystal_cap << 6)));
 -
 -	return rtstatus;
 -}
-diff --git a/drivers/staging/rtl8188eu/hal/bb_cfg.c b/drivers/staging/rtl8188eu/hal/bb_cfg.c
+-
+-static bool rtl88e_phy_rf6052_config(struct adapter *adapt)
+-{
+-	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
+-
+-	if (hal_data->rf_type == RF_1T1R)
+-		hal_data->NumTotalRFPath = 1;
+-	else
+-		hal_data->NumTotalRFPath = 2;
+-
+-	return rf6052_conf_para(adapt);
+-}
+-
+-bool rtl88eu_phy_rf_config(struct adapter *adapt)
+-{
+-	return rtl88e_phy_rf6052_config(adapt);
+-}
+diff --git a/drivers/staging/rtl8188eu/hal/rf_cfg.c b/drivers/staging/rtl8188eu/hal/rf_cfg.c
 new file mode 100644
-index 0000000..80e8cc9
+index 0000000..ddc2f55
 --- /dev/null
-+++ b/drivers/staging/rtl8188eu/hal/bb_cfg.c
-@@ -0,0 +1,715 @@
++++ b/drivers/staging/rtl8188eu/hal/rf_cfg.c
+@@ -0,0 +1,320 @@
 +/******************************************************************************
 +*
 +* Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
@@ -795,365 +400,152 @@ index 0000000..80e8cc9
 +
 +#include <phy.h>
 +
-+#define read_next_pair(array, v1, v2, i)		\
-+	 do {						\
-+		 i += 2;				\
-+		 v1 = array[i];				\
-+		 v2 = array[i+1];			\
-+	 } while (0)
-+
-+
-+/* AGC_TAB_1T.TXT */
-+
-+static u32 array_agc_tab_1t_8188e[] = {
-+		0xC78, 0xFB000001,
-+		0xC78, 0xFB010001,
-+		0xC78, 0xFB020001,
-+		0xC78, 0xFB030001,
-+		0xC78, 0xFB040001,
-+		0xC78, 0xFB050001,
-+		0xC78, 0xFA060001,
-+		0xC78, 0xF9070001,
-+		0xC78, 0xF8080001,
-+		0xC78, 0xF7090001,
-+		0xC78, 0xF60A0001,
-+		0xC78, 0xF50B0001,
-+		0xC78, 0xF40C0001,
-+		0xC78, 0xF30D0001,
-+		0xC78, 0xF20E0001,
-+		0xC78, 0xF10F0001,
-+		0xC78, 0xF0100001,
-+		0xC78, 0xEF110001,
-+		0xC78, 0xEE120001,
-+		0xC78, 0xED130001,
-+		0xC78, 0xEC140001,
-+		0xC78, 0xEB150001,
-+		0xC78, 0xEA160001,
-+		0xC78, 0xE9170001,
-+		0xC78, 0xE8180001,
-+		0xC78, 0xE7190001,
-+		0xC78, 0xE61A0001,
-+		0xC78, 0xE51B0001,
-+		0xC78, 0xE41C0001,
-+		0xC78, 0xE31D0001,
-+		0xC78, 0xE21E0001,
-+		0xC78, 0xE11F0001,
-+		0xC78, 0x8A200001,
-+		0xC78, 0x89210001,
-+		0xC78, 0x88220001,
-+		0xC78, 0x87230001,
-+		0xC78, 0x86240001,
-+		0xC78, 0x85250001,
-+		0xC78, 0x84260001,
-+		0xC78, 0x83270001,
-+		0xC78, 0x82280001,
-+		0xC78, 0x6B290001,
-+		0xC78, 0x6A2A0001,
-+		0xC78, 0x692B0001,
-+		0xC78, 0x682C0001,
-+		0xC78, 0x672D0001,
-+		0xC78, 0x662E0001,
-+		0xC78, 0x652F0001,
-+		0xC78, 0x64300001,
-+		0xC78, 0x63310001,
-+		0xC78, 0x62320001,
-+		0xC78, 0x61330001,
-+		0xC78, 0x46340001,
-+		0xC78, 0x45350001,
-+		0xC78, 0x44360001,
-+		0xC78, 0x43370001,
-+		0xC78, 0x42380001,
-+		0xC78, 0x41390001,
-+		0xC78, 0x403A0001,
-+		0xC78, 0x403B0001,
-+		0xC78, 0x403C0001,
-+		0xC78, 0x403D0001,
-+		0xC78, 0x403E0001,
-+		0xC78, 0x403F0001,
-+		0xC78, 0xFB400001,
-+		0xC78, 0xFB410001,
-+		0xC78, 0xFB420001,
-+		0xC78, 0xFB430001,
-+		0xC78, 0xFB440001,
-+		0xC78, 0xFB450001,
-+		0xC78, 0xFB460001,
-+		0xC78, 0xFB470001,
-+		0xC78, 0xFB480001,
-+		0xC78, 0xFA490001,
-+		0xC78, 0xF94A0001,
-+		0xC78, 0xF84B0001,
-+		0xC78, 0xF74C0001,
-+		0xC78, 0xF64D0001,
-+		0xC78, 0xF54E0001,
-+		0xC78, 0xF44F0001,
-+		0xC78, 0xF3500001,
-+		0xC78, 0xF2510001,
-+		0xC78, 0xF1520001,
-+		0xC78, 0xF0530001,
-+		0xC78, 0xEF540001,
-+		0xC78, 0xEE550001,
-+		0xC78, 0xED560001,
-+		0xC78, 0xEC570001,
-+		0xC78, 0xEB580001,
-+		0xC78, 0xEA590001,
-+		0xC78, 0xE95A0001,
-+		0xC78, 0xE85B0001,
-+		0xC78, 0xE75C0001,
-+		0xC78, 0xE65D0001,
-+		0xC78, 0xE55E0001,
-+		0xC78, 0xE45F0001,
-+		0xC78, 0xE3600001,
-+		0xC78, 0xE2610001,
-+		0xC78, 0xC3620001,
-+		0xC78, 0xC2630001,
-+		0xC78, 0xC1640001,
-+		0xC78, 0x8B650001,
-+		0xC78, 0x8A660001,
-+		0xC78, 0x89670001,
-+		0xC78, 0x88680001,
-+		0xC78, 0x87690001,
-+		0xC78, 0x866A0001,
-+		0xC78, 0x856B0001,
-+		0xC78, 0x846C0001,
-+		0xC78, 0x676D0001,
-+		0xC78, 0x666E0001,
-+		0xC78, 0x656F0001,
-+		0xC78, 0x64700001,
-+		0xC78, 0x63710001,
-+		0xC78, 0x62720001,
-+		0xC78, 0x61730001,
-+		0xC78, 0x60740001,
-+		0xC78, 0x46750001,
-+		0xC78, 0x45760001,
-+		0xC78, 0x44770001,
-+		0xC78, 0x43780001,
-+		0xC78, 0x42790001,
-+		0xC78, 0x417A0001,
-+		0xC78, 0x407B0001,
-+		0xC78, 0x407C0001,
-+		0xC78, 0x407D0001,
-+		0xC78, 0x407E0001,
-+		0xC78, 0x407F0001,
-+};
-+
-+static bool set_baseband_agc_config(struct adapter *adapt)
++static bool check_condition(struct adapter *adapt, const u32  condition)
 +{
-+	u32 i;
-+	u32 arraylen = sizeof(array_agc_tab_1t_8188e)/sizeof(u32);
-+	u32 *array = array_agc_tab_1t_8188e;
++	struct odm_dm_struct *odm = &GET_HAL_DATA(adapt)->odmpriv;
++	u32 _board = odm->BoardType;
++	u32 _platform = odm->SupportPlatform;
++	u32 _interface = odm->SupportInterface;
++	u32 cond = condition;
 +
-+	for (i = 0; i < arraylen; i += 2) {
-+		u32 v1 = array[i];
-+		u32 v2 = array[i+1];
++	if (condition == 0xCDCDCDCD)
++		return true;
 +
-+		if (v1 < 0xCDCDCDCD){
-+			phy_set_bb_reg(adapt, v1, bMaskDWord, v2);
-+			udelay(1);
-+		}
-+	}
++	cond = condition & 0x000000FF;
++	if ((_board == cond) && cond != 0x00)
++		return false;
++
++	cond = condition & 0x0000FF00;
++	cond = cond >> 8;
++	if ((_interface & cond) == 0 && cond != 0x07)
++		return false;
++
++	cond = condition & 0x00FF0000;
++	cond = cond >> 16;
++	if ((_platform & cond) == 0 && cond != 0x0F)
++		return false;
 +	return true;
 +}
 +
-+/*  PHY_REG_1T.TXT  */
++/* RadioA_1T.TXT */
 +
-+static u32 array_phy_reg_1t_8188e[] = {
-+		0x800, 0x80040000,
-+		0x804, 0x00000003,
-+		0x808, 0x0000FC00,
-+		0x80C, 0x0000000A,
-+		0x810, 0x10001331,
-+		0x814, 0x020C3D10,
-+		0x818, 0x02200385,
-+		0x81C, 0x00000000,
-+		0x820, 0x01000100,
-+		0x824, 0x00390204,
-+		0x828, 0x00000000,
-+		0x82C, 0x00000000,
-+		0x830, 0x00000000,
-+		0x834, 0x00000000,
-+		0x838, 0x00000000,
-+		0x83C, 0x00000000,
-+		0x840, 0x00010000,
-+		0x844, 0x00000000,
-+		0x848, 0x00000000,
-+		0x84C, 0x00000000,
-+		0x850, 0x00000000,
-+		0x854, 0x00000000,
-+		0x858, 0x569A11A9,
-+		0x85C, 0x01000014,
-+		0x860, 0x66F60110,
-+		0x864, 0x061F0649,
-+		0x868, 0x00000000,
-+		0x86C, 0x27272700,
-+		0x870, 0x07000760,
-+		0x874, 0x25004000,
-+		0x878, 0x00000808,
-+		0x87C, 0x00000000,
-+		0x880, 0xB0000C1C,
-+		0x884, 0x00000001,
-+		0x888, 0x00000000,
-+		0x88C, 0xCCC000C0,
-+		0x890, 0x00000800,
-+		0x894, 0xFFFFFFFE,
-+		0x898, 0x40302010,
-+		0x89C, 0x00706050,
-+		0x900, 0x00000000,
-+		0x904, 0x00000023,
-+		0x908, 0x00000000,
-+		0x90C, 0x81121111,
-+		0x910, 0x00000002,
-+		0x914, 0x00000201,
-+		0xA00, 0x00D047C8,
-+		0xA04, 0x80FF000C,
-+		0xA08, 0x8C838300,
-+		0xA0C, 0x2E7F120F,
-+		0xA10, 0x9500BB78,
-+		0xA14, 0x1114D028,
-+		0xA18, 0x00881117,
-+		0xA1C, 0x89140F00,
-+		0xA20, 0x1A1B0000,
-+		0xA24, 0x090E1317,
-+		0xA28, 0x00000204,
-+		0xA2C, 0x00D30000,
-+		0xA70, 0x101FBF00,
-+		0xA74, 0x00000007,
-+		0xA78, 0x00000900,
-+		0xA7C, 0x225B0606,
-+		0xA80, 0x218075B1,
-+		0xB2C, 0x80000000,
-+		0xC00, 0x48071D40,
-+		0xC04, 0x03A05611,
-+		0xC08, 0x000000E4,
-+		0xC0C, 0x6C6C6C6C,
-+		0xC10, 0x08800000,
-+		0xC14, 0x40000100,
-+		0xC18, 0x08800000,
-+		0xC1C, 0x40000100,
-+		0xC20, 0x00000000,
-+		0xC24, 0x00000000,
-+		0xC28, 0x00000000,
-+		0xC2C, 0x00000000,
-+		0xC30, 0x69E9AC47,
-+		0xC34, 0x469652AF,
-+		0xC38, 0x49795994,
-+		0xC3C, 0x0A97971C,
-+		0xC40, 0x1F7C403F,
-+		0xC44, 0x000100B7,
-+		0xC48, 0xEC020107,
-+		0xC4C, 0x007F037F,
-+		0xC50, 0x69553420,
-+		0xC54, 0x43BC0094,
-+		0xC58, 0x00013169,
-+		0xC5C, 0x00250492,
-+		0xC60, 0x00000000,
-+		0xC64, 0x7112848B,
-+		0xC68, 0x47C00BFF,
-+		0xC6C, 0x00000036,
-+		0xC70, 0x2C7F000D,
-+		0xC74, 0x020610DB,
-+		0xC78, 0x0000001F,
-+		0xC7C, 0x00B91612,
-+		0xC80, 0x390000E4,
-+		0xC84, 0x20F60000,
-+		0xC88, 0x40000100,
-+		0xC8C, 0x20200000,
-+		0xC90, 0x00091521,
-+		0xC94, 0x00000000,
-+		0xC98, 0x00121820,
-+		0xC9C, 0x00007F7F,
-+		0xCA0, 0x00000000,
-+		0xCA4, 0x000300A0,
-+		0xCA8, 0x00000000,
-+		0xCAC, 0x00000000,
-+		0xCB0, 0x00000000,
-+		0xCB4, 0x00000000,
-+		0xCB8, 0x00000000,
-+		0xCBC, 0x28000000,
-+		0xCC0, 0x00000000,
-+		0xCC4, 0x00000000,
-+		0xCC8, 0x00000000,
-+		0xCCC, 0x00000000,
-+		0xCD0, 0x00000000,
-+		0xCD4, 0x00000000,
-+		0xCD8, 0x64B22427,
-+		0xCDC, 0x00766932,
-+		0xCE0, 0x00222222,
-+		0xCE4, 0x00000000,
-+		0xCE8, 0x37644302,
-+		0xCEC, 0x2F97D40C,
-+		0xD00, 0x00000740,
-+		0xD04, 0x00020401,
-+		0xD08, 0x0000907F,
-+		0xD0C, 0x20010201,
-+		0xD10, 0xA0633333,
-+		0xD14, 0x3333BC43,
-+		0xD18, 0x7A8F5B6F,
-+		0xD2C, 0xCC979975,
-+		0xD30, 0x00000000,
-+		0xD34, 0x80608000,
-+		0xD38, 0x00000000,
-+		0xD3C, 0x00127353,
-+		0xD40, 0x00000000,
-+		0xD44, 0x00000000,
-+		0xD48, 0x00000000,
-+		0xD4C, 0x00000000,
-+		0xD50, 0x6437140A,
-+		0xD54, 0x00000000,
-+		0xD58, 0x00000282,
-+		0xD5C, 0x30032064,
-+		0xD60, 0x4653DE68,
-+		0xD64, 0x04518A3C,
-+		0xD68, 0x00002101,
-+		0xD6C, 0x2A201C16,
-+		0xD70, 0x1812362E,
-+		0xD74, 0x322C2220,
-+		0xD78, 0x000E3C24,
-+		0xE00, 0x2D2D2D2D,
-+		0xE04, 0x2D2D2D2D,
-+		0xE08, 0x0390272D,
-+		0xE10, 0x2D2D2D2D,
-+		0xE14, 0x2D2D2D2D,
-+		0xE18, 0x2D2D2D2D,
-+		0xE1C, 0x2D2D2D2D,
-+		0xE28, 0x00000000,
-+		0xE30, 0x1000DC1F,
-+		0xE34, 0x10008C1F,
-+		0xE38, 0x02140102,
-+		0xE3C, 0x681604C2,
-+		0xE40, 0x01007C00,
-+		0xE44, 0x01004800,
-+		0xE48, 0xFB000000,
-+		0xE4C, 0x000028D1,
-+		0xE50, 0x1000DC1F,
-+		0xE54, 0x10008C1F,
-+		0xE58, 0x02140102,
-+		0xE5C, 0x28160D05,
-+		0xE60, 0x00000008,
-+		0xE68, 0x001B25A4,
-+		0xE6C, 0x00C00014,
-+		0xE70, 0x00C00014,
-+		0xE74, 0x01000014,
-+		0xE78, 0x01000014,
-+		0xE7C, 0x01000014,
-+		0xE80, 0x01000014,
-+		0xE84, 0x00C00014,
-+		0xE88, 0x01000014,
-+		0xE8C, 0x00C00014,
-+		0xED0, 0x00C00014,
-+		0xED4, 0x00C00014,
-+		0xED8, 0x00C00014,
-+		0xEDC, 0x00000014,
-+		0xEE0, 0x00000014,
-+		0xEEC, 0x01C00014,
-+		0xF14, 0x00000003,
-+		0xF4C, 0x00000000,
-+		0xF00, 0x00000300,
++static u32 Array_RadioA_1T_8188E[] = {
++		0x000, 0x00030000,
++		0x008, 0x00084000,
++		0x018, 0x00000407,
++		0x019, 0x00000012,
++		0x01E, 0x00080009,
++		0x01F, 0x00000880,
++		0x02F, 0x0001A060,
++		0x03F, 0x00000000,
++		0x042, 0x000060C0,
++		0x057, 0x000D0000,
++		0x058, 0x000BE180,
++		0x067, 0x00001552,
++		0x083, 0x00000000,
++		0x0B0, 0x000FF8FC,
++		0x0B1, 0x00054400,
++		0x0B2, 0x000CCC19,
++		0x0B4, 0x00043003,
++		0x0B6, 0x0004953E,
++		0x0B7, 0x0001C718,
++		0x0B8, 0x000060FF,
++		0x0B9, 0x00080001,
++		0x0BA, 0x00040000,
++		0x0BB, 0x00000400,
++		0x0BF, 0x000C0000,
++		0x0C2, 0x00002400,
++		0x0C3, 0x00000009,
++		0x0C4, 0x00040C91,
++		0x0C5, 0x00099999,
++		0x0C6, 0x000000A3,
++		0x0C7, 0x00088820,
++		0x0C8, 0x00076C06,
++		0x0C9, 0x00000000,
++		0x0CA, 0x00080000,
++		0x0DF, 0x00000180,
++		0x0EF, 0x000001A0,
++		0x051, 0x0006B27D,
++		0xFF0F041F, 0xABCD,
++		0x052, 0x0007E4DD,
++		0xCDCDCDCD, 0xCDCD,
++		0x052, 0x0007E49D,
++		0xFF0F041F, 0xDEAD,
++		0x053, 0x00000073,
++		0x056, 0x00051FF3,
++		0x035, 0x00000086,
++		0x035, 0x00000186,
++		0x035, 0x00000286,
++		0x036, 0x00001C25,
++		0x036, 0x00009C25,
++		0x036, 0x00011C25,
++		0x036, 0x00019C25,
++		0x0B6, 0x00048538,
++		0x018, 0x00000C07,
++		0x05A, 0x0004BD00,
++		0x019, 0x000739D0,
++		0x034, 0x0000ADF3,
++		0x034, 0x00009DF0,
++		0x034, 0x00008DED,
++		0x034, 0x00007DEA,
++		0x034, 0x00006DE7,
++		0x034, 0x000054EE,
++		0x034, 0x000044EB,
++		0x034, 0x000034E8,
++		0x034, 0x0000246B,
++		0x034, 0x00001468,
++		0x034, 0x0000006D,
++		0x000, 0x00030159,
++		0x084, 0x00068200,
++		0x086, 0x000000CE,
++		0x087, 0x00048A00,
++		0x08E, 0x00065540,
++		0x08F, 0x00088000,
++		0x0EF, 0x000020A0,
++		0x03B, 0x000F02B0,
++		0x03B, 0x000EF7B0,
++		0x03B, 0x000D4FB0,
++		0x03B, 0x000CF060,
++		0x03B, 0x000B0090,
++		0x03B, 0x000A0080,
++		0x03B, 0x00090080,
++		0x03B, 0x0008F780,
++		0x03B, 0x000722B0,
++		0x03B, 0x0006F7B0,
++		0x03B, 0x00054FB0,
++		0x03B, 0x0004F060,
++		0x03B, 0x00030090,
++		0x03B, 0x00020080,
++		0x03B, 0x00010080,
++		0x03B, 0x0000F780,
++		0x0EF, 0x000000A0,
++		0x000, 0x00010159,
++		0x018, 0x0000F407,
++		0xFFE, 0x00000000,
++		0xFFE, 0x00000000,
++		0x01F, 0x00080003,
++		0xFFE, 0x00000000,
++		0xFFE, 0x00000000,
++		0x01E, 0x00000001,
++		0x01F, 0x00080000,
++		0x000, 0x00033E60,
 +};
 +
-+static void rtl_bb_delay(struct adapter *adapt, u32 addr, u32 data)
++#define READ_NEXT_PAIR(v1, v2, i)	\
++do {								\
++	i += 2; v1 = array[i];			\
++	v2 = array[i+1];				\
++} while (0)
++
++#define RFREG_OFFSET_MASK 0xfffff
++#define B3WIREADDREAALENGTH 0x400
++#define B3WIREDATALENGTH 0x800
++#define BRFSI_RFENV 0x10
++
++static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath,u32 addr, u32 mask, u32 data)
 +{
 +	if (addr == 0xfe) {
-+		msleep(50);
++		mdelay(50);
 +	} else if (addr == 0xfd) {
 +		mdelay(5);
 +	} else if (addr == 0xfc) {
@@ -1165,326 +557,144 @@ index 0000000..80e8cc9
 +	} else if (addr == 0xf9) {
 +		udelay(1);
 +	} else {
-+		phy_set_bb_reg(adapt, addr, bMaskDWord, data);
-+		/*  Add 1us delay between BB/RF register setting. */
++		phy_set_rf_reg(adapt, rfpath, addr, mask, data);
 +		udelay(1);
 +	}
 +}
 +
-+static bool set_baseband_phy_config(struct adapter *adapt)
++static void rtl8188e_config_rf_reg(struct adapter *adapt,
++	u32 addr, u32 data)
++{
++	u32 content = 0x1000; /*RF Content: radio_a_txt*/
++	u32 maskforphyset = (u32)(content & 0xE000);
++
++	rtl_rfreg_delay(adapt, RF90_PATH_A, addr| maskforphyset,
++			RFREG_OFFSET_MASK,
++			data);
++}
++
++static bool rtl88e_phy_config_rf_with_headerfile(struct adapter *adapt)
 +{
 +	u32 i;
-+	u32 arraylen = sizeof(array_phy_reg_1t_8188e)/sizeof(u32);
-+	u32 *array = array_phy_reg_1t_8188e;
++	u32 array_len = sizeof(Array_RadioA_1T_8188E)/sizeof(u32);
++	u32 *array = Array_RadioA_1T_8188E;
 +
-+	for (i = 0; i < arraylen; i += 2) {
++	for (i = 0; i < array_len; i += 2) {
 +		u32 v1 = array[i];
 +		u32 v2 = array[i+1];
 +
-+		if (v1 < 0xCDCDCDCD)
-+			rtl_bb_delay(adapt, v1, v2);
++		if (v1 < 0xCDCDCDCD) {
++			rtl8188e_config_rf_reg(adapt, v1, v2);
++			continue;
++		} else {
++			if (!check_condition(adapt, array[i])) {
++				READ_NEXT_PAIR(v1, v2, i);
++				while (v2 != 0xDEAD && v2 != 0xCDEF &&
++				       v2 != 0xCDCD && i < array_len - 2)
++					READ_NEXT_PAIR(v1, v2, i);
++					i -= 2;
++			} else {
++				READ_NEXT_PAIR(v1, v2, i);
++				while (v2 != 0xDEAD && v2 != 0xCDEF &&
++				       v2 != 0xCDCD && i < array_len - 2) {
++						rtl8188e_config_rf_reg(adapt, v1, v2);
++						READ_NEXT_PAIR(v1, v2, i);
++				}
++
++				while (v2 != 0xDEAD && i < array_len - 2)
++					READ_NEXT_PAIR(v1, v2, i);
++			}
++		}
 +	}
 +	return true;
 +}
 +
-+/*  PHY_REG_PG.TXT  */
-+
-+static u32 array_phy_reg_pg_8188e[] = {
-+		0xE00, 0xFFFFFFFF, 0x06070809,
-+		0xE04, 0xFFFFFFFF, 0x02020405,
-+		0xE08, 0x0000FF00, 0x00000006,
-+		0x86C, 0xFFFFFF00, 0x00020400,
-+		0xE10, 0xFFFFFFFF, 0x08090A0B,
-+		0xE14, 0xFFFFFFFF, 0x01030607,
-+		0xE18, 0xFFFFFFFF, 0x08090A0B,
-+		0xE1C, 0xFFFFFFFF, 0x01030607,
-+		0xE00, 0xFFFFFFFF, 0x00000000,
-+		0xE04, 0xFFFFFFFF, 0x00000000,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x00000000,
-+		0xE14, 0xFFFFFFFF, 0x00000000,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x02020202,
-+		0xE04, 0xFFFFFFFF, 0x00020202,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x04040404,
-+		0xE14, 0xFFFFFFFF, 0x00020404,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x02020202,
-+		0xE04, 0xFFFFFFFF, 0x00020202,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x04040404,
-+		0xE14, 0xFFFFFFFF, 0x00020404,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x00000000,
-+		0xE04, 0xFFFFFFFF, 0x00000000,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x00000000,
-+		0xE14, 0xFFFFFFFF, 0x00000000,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x02020202,
-+		0xE04, 0xFFFFFFFF, 0x00020202,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x04040404,
-+		0xE14, 0xFFFFFFFF, 0x00020404,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x00000000,
-+		0xE04, 0xFFFFFFFF, 0x00000000,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x00000000,
-+		0xE14, 0xFFFFFFFF, 0x00000000,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x00000000,
-+		0xE04, 0xFFFFFFFF, 0x00000000,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x00000000,
-+		0xE14, 0xFFFFFFFF, 0x00000000,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x00000000,
-+		0xE04, 0xFFFFFFFF, 0x00000000,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x00000000,
-+		0xE14, 0xFFFFFFFF, 0x00000000,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x00000000,
-+		0xE04, 0xFFFFFFFF, 0x00000000,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x00000000,
-+		0xE14, 0xFFFFFFFF, 0x00000000,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+		0xE00, 0xFFFFFFFF, 0x00000000,
-+		0xE04, 0xFFFFFFFF, 0x00000000,
-+		0xE08, 0x0000FF00, 0x00000000,
-+		0x86C, 0xFFFFFF00, 0x00000000,
-+		0xE10, 0xFFFFFFFF, 0x00000000,
-+		0xE14, 0xFFFFFFFF, 0x00000000,
-+		0xE18, 0xFFFFFFFF, 0x00000000,
-+		0xE1C, 0xFFFFFFFF, 0x00000000,
-+
-+};
-+
-+static void store_pwrindex_offset(struct adapter *Adapter, u32 regaddr, u32 bitmask, u32 data)
++static bool rf6052_conf_para(struct adapter *adapt)
 +{
-+	struct hal_data_8188e *hal_data = GET_HAL_DATA(Adapter);
-+
-+	if (regaddr == rTxAGC_A_Rate18_06)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][0] = data;
-+	if (regaddr == rTxAGC_A_Rate54_24)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][1] = data;
-+	if (regaddr == rTxAGC_A_CCK1_Mcs32)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][6] = data;
-+	if (regaddr == rTxAGC_B_CCK11_A_CCK2_11 && bitmask == 0xffffff00)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][7] = data;
-+	if (regaddr == rTxAGC_A_Mcs03_Mcs00)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][2] = data;
-+	if (regaddr == rTxAGC_A_Mcs07_Mcs04)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][3] = data;
-+	if (regaddr == rTxAGC_A_Mcs11_Mcs08)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][4] = data;
-+	if (regaddr == rTxAGC_A_Mcs15_Mcs12) {
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][5] = data;
-+		if (hal_data->rf_type == RF_1T1R)
-+			hal_data->pwrGroupCnt++;
-+	}
-+	if (regaddr == rTxAGC_B_Rate18_06)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][8] = data;
-+	if (regaddr == rTxAGC_B_Rate54_24)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][9] = data;
-+	if (regaddr == rTxAGC_B_CCK1_55_Mcs32)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][14] = data;
-+	if (regaddr == rTxAGC_B_CCK11_A_CCK2_11 && bitmask == 0x000000ff)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][15] = data;
-+	if (regaddr == rTxAGC_B_Mcs03_Mcs00)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][10] = data;
-+	if (regaddr == rTxAGC_B_Mcs07_Mcs04)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][11] = data;
-+	if (regaddr == rTxAGC_B_Mcs11_Mcs08)
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][12] = data;
-+	if (regaddr == rTxAGC_B_Mcs15_Mcs12) {
-+		hal_data->MCSTxPowerLevelOriginalOffset[hal_data->pwrGroupCnt][13] = data;
-+		if (hal_data->rf_type != RF_1T1R)
-+			hal_data->pwrGroupCnt++;
-+	}
-+}
-+
-+static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask ,u32 data)
-+{
-+	if (addr == 0xfe) {
-+		msleep(50);
-+	} else if (addr == 0xfd) {
-+		mdelay(5);
-+	} else if (addr == 0xfc) {
-+		mdelay(1);
-+	} else if (addr == 0xfb) {
-+		udelay(50);
-+	} else if (addr == 0xfa) {
-+		udelay(5);
-+	} else if (addr == 0xf9) {
-+		udelay(1);
-+	} else{
-+		store_pwrindex_offset(adapt, addr, bit_mask, data);
-+	}
-+}
-+
-+static bool config_bb_with_pgheader(struct adapter *adapt)
-+{
-+	u32 i = 0;
-+	u32 arraylen = sizeof(array_phy_reg_pg_8188e) / sizeof(u32);
-+	u32 *array = array_phy_reg_pg_8188e;
-+
-+	for (i = 0; i < arraylen; i += 3) {
-+		u32 v1 = array[i];
-+		u32 v2 = array[i+1];
-+		u32 v3 = array[i+2];
-+
-+		if (v1 < 0xCDCDCDCD)
-+			rtl_addr_delay(adapt, v1, v2, v3);
-+	}
-+	return true;
-+}
-+
-+static void rtl88e_phy_init_bb_rf_register_definition(struct adapter *Adapter)
-+{
-+	struct hal_data_8188e		*hal_data = GET_HAL_DATA(Adapter);
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfintfs = rFPGA0_XAB_RFInterfaceSW;
-+	hal_data->PHYRegDef[RF_PATH_B].rfintfs = rFPGA0_XAB_RFInterfaceSW;
-+	hal_data->PHYRegDef[RF_PATH_C].rfintfs = rFPGA0_XCD_RFInterfaceSW;
-+	hal_data->PHYRegDef[RF_PATH_D].rfintfs = rFPGA0_XCD_RFInterfaceSW;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfintfi = rFPGA0_XAB_RFInterfaceRB;
-+	hal_data->PHYRegDef[RF_PATH_B].rfintfi = rFPGA0_XAB_RFInterfaceRB;
-+	hal_data->PHYRegDef[RF_PATH_C].rfintfi = rFPGA0_XCD_RFInterfaceRB;
-+	hal_data->PHYRegDef[RF_PATH_D].rfintfi = rFPGA0_XCD_RFInterfaceRB;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfintfo = rFPGA0_XA_RFInterfaceOE;
-+	hal_data->PHYRegDef[RF_PATH_B].rfintfo = rFPGA0_XB_RFInterfaceOE;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfintfe = rFPGA0_XA_RFInterfaceOE;
-+	hal_data->PHYRegDef[RF_PATH_B].rfintfe = rFPGA0_XB_RFInterfaceOE;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rf3wireOffset = rFPGA0_XA_LSSIParameter;
-+	hal_data->PHYRegDef[RF_PATH_B].rf3wireOffset = rFPGA0_XB_LSSIParameter;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfLSSI_Select = rFPGA0_XAB_RFParameter;
-+	hal_data->PHYRegDef[RF_PATH_B].rfLSSI_Select = rFPGA0_XAB_RFParameter;
-+	hal_data->PHYRegDef[RF_PATH_C].rfLSSI_Select = rFPGA0_XCD_RFParameter;
-+	hal_data->PHYRegDef[RF_PATH_D].rfLSSI_Select = rFPGA0_XCD_RFParameter;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfTxGainStage = rFPGA0_TxGainStage;
-+	hal_data->PHYRegDef[RF_PATH_B].rfTxGainStage = rFPGA0_TxGainStage;
-+	hal_data->PHYRegDef[RF_PATH_C].rfTxGainStage = rFPGA0_TxGainStage;
-+	hal_data->PHYRegDef[RF_PATH_D].rfTxGainStage = rFPGA0_TxGainStage;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfHSSIPara1 = rFPGA0_XA_HSSIParameter1;
-+	hal_data->PHYRegDef[RF_PATH_B].rfHSSIPara1 = rFPGA0_XB_HSSIParameter1;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfHSSIPara2 = rFPGA0_XA_HSSIParameter2;
-+	hal_data->PHYRegDef[RF_PATH_B].rfHSSIPara2 = rFPGA0_XB_HSSIParameter2;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfSwitchControl = rFPGA0_XAB_SwitchControl;
-+	hal_data->PHYRegDef[RF_PATH_B].rfSwitchControl = rFPGA0_XAB_SwitchControl;
-+	hal_data->PHYRegDef[RF_PATH_C].rfSwitchControl = rFPGA0_XCD_SwitchControl;
-+	hal_data->PHYRegDef[RF_PATH_D].rfSwitchControl = rFPGA0_XCD_SwitchControl;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfAGCControl1 = rOFDM0_XAAGCCore1;
-+	hal_data->PHYRegDef[RF_PATH_B].rfAGCControl1 = rOFDM0_XBAGCCore1;
-+	hal_data->PHYRegDef[RF_PATH_C].rfAGCControl1 = rOFDM0_XCAGCCore1;
-+	hal_data->PHYRegDef[RF_PATH_D].rfAGCControl1 = rOFDM0_XDAGCCore1;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfAGCControl2 = rOFDM0_XAAGCCore2;
-+	hal_data->PHYRegDef[RF_PATH_B].rfAGCControl2 = rOFDM0_XBAGCCore2;
-+	hal_data->PHYRegDef[RF_PATH_C].rfAGCControl2 = rOFDM0_XCAGCCore2;
-+	hal_data->PHYRegDef[RF_PATH_D].rfAGCControl2 = rOFDM0_XDAGCCore2;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfRxIQImbalance = rOFDM0_XARxIQImbalance;
-+	hal_data->PHYRegDef[RF_PATH_B].rfRxIQImbalance = rOFDM0_XBRxIQImbalance;
-+	hal_data->PHYRegDef[RF_PATH_C].rfRxIQImbalance = rOFDM0_XCRxIQImbalance;
-+	hal_data->PHYRegDef[RF_PATH_D].rfRxIQImbalance = rOFDM0_XDRxIQImbalance;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfRxAFE = rOFDM0_XARxAFE;
-+	hal_data->PHYRegDef[RF_PATH_B].rfRxAFE = rOFDM0_XBRxAFE;
-+	hal_data->PHYRegDef[RF_PATH_C].rfRxAFE = rOFDM0_XCRxAFE;
-+	hal_data->PHYRegDef[RF_PATH_D].rfRxAFE = rOFDM0_XDRxAFE;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfTxIQImbalance = rOFDM0_XATxIQImbalance;
-+	hal_data->PHYRegDef[RF_PATH_B].rfTxIQImbalance = rOFDM0_XBTxIQImbalance;
-+	hal_data->PHYRegDef[RF_PATH_C].rfTxIQImbalance = rOFDM0_XCTxIQImbalance;
-+	hal_data->PHYRegDef[RF_PATH_D].rfTxIQImbalance = rOFDM0_XDTxIQImbalance;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfTxAFE = rOFDM0_XATxAFE;
-+	hal_data->PHYRegDef[RF_PATH_B].rfTxAFE = rOFDM0_XBTxAFE;
-+	hal_data->PHYRegDef[RF_PATH_C].rfTxAFE = rOFDM0_XCTxAFE;
-+	hal_data->PHYRegDef[RF_PATH_D].rfTxAFE = rOFDM0_XDTxAFE;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfLSSIReadBack = rFPGA0_XA_LSSIReadBack;
-+	hal_data->PHYRegDef[RF_PATH_B].rfLSSIReadBack = rFPGA0_XB_LSSIReadBack;
-+	hal_data->PHYRegDef[RF_PATH_C].rfLSSIReadBack = rFPGA0_XC_LSSIReadBack;
-+	hal_data->PHYRegDef[RF_PATH_D].rfLSSIReadBack = rFPGA0_XD_LSSIReadBack;
-+
-+	hal_data->PHYRegDef[RF_PATH_A].rfLSSIReadBackPi = TransceiverA_HSPI_Readback;
-+	hal_data->PHYRegDef[RF_PATH_B].rfLSSIReadBackPi = TransceiverB_HSPI_Readback;
-+}
-+
-+static bool config_parafile(struct adapter *adapt)
-+{
-+	struct eeprom_priv *pEEPROM = GET_EEPROM_EFUSE_PRIV(adapt);
 +	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
++	u32 u4val = 0;
++	u8 rfpath;
++	bool rtstatus = true;
++	struct bb_reg_def *pphyreg;
 +
-+	set_baseband_phy_config(adapt);
++	for (rfpath = 0; rfpath < hal_data->NumTotalRFPath; rfpath++) {
++		pphyreg = &hal_data->PHYRegDef[rfpath];
 +
-+	/* If EEPROM or EFUSE autoload OK, We must config by PHY_REG_PG.txt */
-+	if (!pEEPROM->bautoload_fail_flag) {
-+		hal_data->pwrGroupCnt = 0;
-+		config_bb_with_pgheader(adapt);
++		switch (rfpath) {
++		case RF90_PATH_A:
++		case RF90_PATH_C:
++			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
++						 BRFSI_RFENV);
++			break;
++		case RF90_PATH_B:
++		case RF90_PATH_D:
++			u4val = phy_query_bb_reg(adapt, pphyreg->rfintfs,
++						 BRFSI_RFENV << 16);
++			break;
++		}
++
++		phy_set_bb_reg(adapt, pphyreg->rfintfe, BRFSI_RFENV << 16, 0x1);
++		udelay(1);
++
++		phy_set_bb_reg(adapt, pphyreg->rfintfo, BRFSI_RFENV, 0x1);
++		udelay(1);
++
++		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
++			      B3WIREADDREAALENGTH, 0x0);
++		udelay(1);
++
++		phy_set_bb_reg(adapt, pphyreg->rfHSSIPara2,
++			       B3WIREDATALENGTH, 0x0);
++		udelay(1);
++
++		switch (rfpath) {
++		case RF90_PATH_A:
++			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
++			break;
++		case RF90_PATH_B:
++			rtstatus = rtl88e_phy_config_rf_with_headerfile(adapt);
++			break;
++		case RF90_PATH_C:
++			break;
++		case RF90_PATH_D:
++			break;
++		}
++
++		switch (rfpath) {
++		case RF90_PATH_A:
++		case RF90_PATH_C:
++			phy_set_bb_reg(adapt, pphyreg->rfintfs,
++				       BRFSI_RFENV, u4val);
++			break;
++		case RF90_PATH_B:
++		case RF90_PATH_D:
++			phy_set_bb_reg(adapt, pphyreg->rfintfs,
++				       BRFSI_RFENV << 16, u4val);
++			break;
++		}
++
++		if (rtstatus != true)
++			return false;
 +	}
-+	set_baseband_agc_config(adapt);
-+	return true;
-+}
-+
-+bool rtl88eu_phy_bb_config(struct adapter *adapt)
-+{
-+	int rtstatus = true;
-+	struct hal_data_8188e	*hal_data = GET_HAL_DATA(adapt);
-+	u32 regval;
-+	u8 crystal_cap;
-+
-+	rtl88e_phy_init_bb_rf_register_definition(adapt);
-+
-+	/*  Enable BB and RF */
-+	regval = usb_read16(adapt, REG_SYS_FUNC_EN);
-+	usb_write16(adapt, REG_SYS_FUNC_EN, (u16)(regval|BIT13|BIT0|BIT1));
-+
-+	usb_write8(adapt, REG_RF_CTRL, RF_EN|RF_RSTB|RF_SDMRSTB);
-+
-+	usb_write8(adapt, REG_SYS_FUNC_EN, FEN_USBA | FEN_USBD | FEN_BB_GLB_RSTn | FEN_BBRSTB);
-+
-+	/*  Config BB and AGC */
-+	rtstatus = config_parafile(adapt);
-+
-+	/*  write 0x24[16:11] = 0x24[22:17] = crystal_cap */
-+	crystal_cap = hal_data->CrystalCap & 0x3F;
-+	phy_set_bb_reg(adapt, REG_AFE_XTAL_CTRL, 0x7ff800, (crystal_cap | (crystal_cap << 6)));
 +
 +	return rtstatus;
++}
++
++static bool rtl88e_phy_rf6052_config(struct adapter *adapt)
++{
++	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
++
++	if (hal_data->rf_type == RF_1T1R)
++		hal_data->NumTotalRFPath = 1;
++	else
++		hal_data->NumTotalRFPath = 2;
++
++	return rf6052_conf_para(adapt);
++}
++
++bool rtl88eu_phy_rf_config(struct adapter *adapt)
++{
++	return rtl88e_phy_rf6052_config(adapt);
 +}
 -- 
 1.7.10.4
