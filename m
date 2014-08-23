@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaHWTJi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 15:09:38 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:57051 "EHLO smtp.infotech.no"
+	id S1751855AbaHWTb4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 15:31:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52463 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957AbaHWTJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 15:09:37 -0400
-Message-ID: <53F8E6EC.5060702@interlog.com>
-Date: Sat, 23 Aug 2014 15:09:32 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751143AbaHWTbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 15:31:55 -0400
+Date: Sat, 23 Aug 2014 21:29:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: + prctl-pr_set_mm-introduce-pr_set_mm_map-operation-v3.patch
+	added to -mm tree
+Message-ID: <20140823192915.GA27507@redhat.com>
+References: <20140822192241.GA26512@redhat.com> <20140822201550.GA25918@moon> <20140823115302.GA27587@redhat.com> <20140823122214.GF25918@moon> <20140823131412.GA31685@redhat.com> <20140823133001.GA966@redhat.com> <20140823141820.GG25918@moon> <20140823153222.GA6559@redhat.com> <20140823163322.GI25918@moon>
 MIME-Version: 1.0
-To: Tony Battersby <tonyb@cybernetics.com>, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][SCSI] scsi-mq: fix requests that use a separate CDB buffer
-References: <53F79FC3.6040907@cybernetics.com>
-In-Reply-To: <53F79FC3.6040907@cybernetics.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140823163322.GI25918@moon>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-08-22 03:53 PM, Tony Battersby wrote:
-> This patch fixes code such as the following with scsi-mq enabled:
+On 08/23, Cyrill Gorcunov wrote:
 >
->      rq = blk_get_request(...);
->      blk_rq_set_block_pc(rq);
+> On Sat, Aug 23, 2014 at 05:32:22PM +0200, Oleg Nesterov wrote:
+> >
+> > And btw, where do you see RLIMIT_STACK in do_shmat() ?
 >
->      rq->cmd = my_cmd_buffer; /* separate CDB buffer */
->
->      blk_execute_rq_nowait(...);
->
-> Code like this appears in e.g. sg_start_req() in drivers/scsi/sg.c (for
-> large CDBs only).  Without this patch, scsi_mq_prep_fn() will set
-> rq->cmd back to rq->__cmd, causing the wrong CDB to be sent to the device.
->
-> Signed-off-by: Tony Battersby <tonyb@cybernetics.com>
+> Indirectly, though start_stack pointer. We assign it in setup_arg_pages taking into
+> account RLIMIT_STACK value, then do_shmat operates with start_stack pointer,
+> thus when we setup some new value into start_stack we at least should
+> not exceed old RLIMIT_STACK?
 
-Tested-by: Douglas Gilbert <dgilbert@interlog.com>
+Still can't understand how do_shmat() connects to RLIMIT_STACK, even
+indirectly. setup_arg_pages() obviously uses RLIMIT_STACK, but with or
+without the patch I sent do_shmat() behaviour does not depend on
+RLIMIT_STACK at all.
 
+> > > arg_start, arg_end, env_start, env_end
+> > >        really point to existing VMAs, strictly speaking the probgram can unmap
+> > >        all own VMAs except executable one and continue running without problem
+> > >        but this is not that practical I think and at first iteration I prefer
+> > >        more severe tests here on VMAs
+> >
+> > But, again, for what? There are only used to report this info via /proc/.
+>
+> Because it's close to how loading elf proceeds. This prctl is like emulating
+> micro-elf loader ;) Indeed there is no problem for kernel if all these members
+> are pointing to some already umapped VMAs,
 
-Patch tested on lk 3.17-rc1 with the sg driver using
-the READ(32) command.
+Yes. And whatever checks you add into prctl(), an application can simply
+do mmap() before prctl() just to fool it, and unmap (say) arg_start right
+after that.
 
-> For inclusion in 3.17 only.
+> but earlier we required cap-sysadmin
+> to be grated so that if someone calls for this prctl he must be knowing what
+> he is doing, and if some other unpredicted change in kernel code cause this
+> prctl to panic the kernel such action could be initiated by sysadmin only,
+> not regular user. Now I've released the security requirement so I thought
+> let be more paranoid and require all VMAs to present, all rlimits to be
+> in good shape and such even if the members we're modifying are used for
+> procfs statistics output mostly, we always have a way to relax this tests
+> but not the reverse. That was the main idea ;)
 
-May want to check if blk-mq work in lk 3.16 and earlier
-breaks the bsg driver's capability to send SCSI cdbs
-that are longer than 16 bytes.
+Following this logic you should also verify that KSTK_ESP(group_leader)
+falls into ->start_stack area or return an error otherwise.
 
-> diff -urpN linux-3.17.0-rc1-a/block/blk-core.c linux-3.17.0-rc1-b/block/blk-core.c
-> --- linux-3.17.0-rc1-a/block/blk-core.c	2014-08-16 12:40:26.000000000 -0400
-> +++ linux-3.17.0-rc1-b/block/blk-core.c	2014-08-22 14:03:33.000000000 -0400
-> @@ -1252,7 +1252,6 @@ void blk_rq_set_block_pc(struct request
->   	rq->__sector = (sector_t) -1;
->   	rq->bio = rq->biotail = NULL;
->   	memset(rq->__cmd, 0, sizeof(rq->__cmd));
-> -	rq->cmd = rq->__cmd;
->   }
->   EXPORT_SYMBOL(blk_rq_set_block_pc);
->
-> diff -urpN linux-3.17.0-rc1-a/block/blk-mq.c linux-3.17.0-rc1-b/block/blk-mq.c
-> --- linux-3.17.0-rc1-a/block/blk-mq.c	2014-08-16 12:40:26.000000000 -0400
-> +++ linux-3.17.0-rc1-b/block/blk-mq.c	2014-08-22 14:02:32.000000000 -0400
-> @@ -172,6 +172,8 @@ static void blk_mq_rq_ctx_init(struct re
->   	/* tag was already set */
->   	rq->errors = 0;
->
-> +	rq->cmd = rq->__cmd;
-> +
->   	rq->extra_len = 0;
->   	rq->sense_len = 0;
->   	rq->resid_len = 0;
-> diff -urpN linux-3.17.0-rc1-a/drivers/scsi/scsi_lib.c linux-3.17.0-rc1-b/drivers/scsi/scsi_lib.c
-> --- linux-3.17.0-rc1-a/drivers/scsi/scsi_lib.c	2014-08-16 12:40:26.000000000 -0400
-> +++ linux-3.17.0-rc1-b/drivers/scsi/scsi_lib.c	2014-08-22 14:02:32.000000000 -0400
-> @@ -1808,7 +1808,6 @@ static int scsi_mq_prep_fn(struct reques
->
->   	cmd->tag = req->tag;
->
-> -	req->cmd = req->__cmd;
->   	cmd->cmnd = req->cmd;
->   	cmd->prot_op = SCSI_PROT_NORMAL;
->
->
-> --
+As for elf loader, of course it sets ->start_stack/etc correctly and they
+can't point to nowehere, but this is only because it actually creates these
+segments. And I guess the c/r tools should do this "correctly" too, but
+prctl() itself can never verify this.
 
+OK, lets look at this from another angle. Suppose that an application switches
+to another stack and unmaps ->start_stack area. Now, how are you going to
+restore it correctly if ->start_stack points to nowhere? Are you going
+to "fix" ->start_stack? I do not think this would be correct. Or, are you
+going to create the additional vma just to make prctl() happy?
+
+Oleg.
 
