@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989AbaHWTEy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 15:04:54 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:63165 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaHWTEx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 15:04:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Corey Minyard <minyard@acm.org>
-Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ipmi: work around gcc-4.9 build warning
-Date: Sat, 23 Aug 2014 21:04:48 +0200
-Message-ID: <58708252.p9ogO3naVQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-26-generic; KDE/4.11.5; x86_64; ; )
+	id S1751950AbaHWTJi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 15:09:38 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:57051 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957AbaHWTJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 15:09:37 -0400
+Message-ID: <53F8E6EC.5060702@interlog.com>
+Date: Sat, 23 Aug 2014 15:09:32 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:yBPxYo/cwdvtH7niZ0rS1jB1PHGIW9Qt3KMzlMpaOIw
- MqAzyJahLEUcxCz6ADOvLl5R7NfXo8dF2pKlNwQtrJyzyOr/8o
- 3jMLxMf389ui7vZyrX5tMOQSLMrCyoUCmqdPNyeu1zT+Mqktzr
- 33UZ6poGQ95OX9J0pnwze/wdX+pPrq8FqwcYP2cw1bdiRzDYHC
- CtQuiQ4OlK8++ONRXvtm05RrqIm/gJHxj0VhUpPwquNVzXvi8x
- pDWHZRM9jXumJu/Vn4Le2+1pXSJC49BpLEWuUZSKQJ8W9ActrD
- M0aBi/r/WwhKnN/ATHi09ylNJucyw7XzUkBClZSiCLlFwv8AWr
- rtHv8YFg3y621LMr6hKU=
-X-UI-Out-Filterresults: notjunk:1;
+To: Tony Battersby <tonyb@cybernetics.com>, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][SCSI] scsi-mq: fix requests that use a separate CDB buffer
+References: <53F79FC3.6040907@cybernetics.com>
+In-Reply-To: <53F79FC3.6040907@cybernetics.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building ipmi on arm with gcc-4.9 results in this warning
-for an allmodconfig build:
+On 14-08-22 03:53 PM, Tony Battersby wrote:
+> This patch fixes code such as the following with scsi-mq enabled:
+>
+>      rq = blk_get_request(...);
+>      blk_rq_set_block_pc(rq);
+>
+>      rq->cmd = my_cmd_buffer; /* separate CDB buffer */
+>
+>      blk_execute_rq_nowait(...);
+>
+> Code like this appears in e.g. sg_start_req() in drivers/scsi/sg.c (for
+> large CDBs only).  Without this patch, scsi_mq_prep_fn() will set
+> rq->cmd back to rq->__cmd, causing the wrong CDB to be sent to the device.
+>
+> Signed-off-by: Tony Battersby <tonyb@cybernetics.com>
 
-drivers/char/ipmi/ipmi_si_intf.c: In function 'ipmi_thread':
-include/linux/time.h:28:5: warning: 'busy_until.tv_sec' may be used uninitialized in this function [-Wmaybe-uninitialized]
-  if (lhs->tv_sec > rhs->tv_sec)
-     ^
-drivers/char/ipmi/ipmi_si_intf.c:1007:18: note: 'busy_until.tv_sec' was declared here
-  struct timespec busy_until;
-                  ^
+Tested-by: Douglas Gilbert <dgilbert@interlog.com>
 
-The warning is bogus and this case can not occur. Apparently
-this is a false positive resulting from gcc getting a little
-smarter about tracking assignments but not smart enough. Marking
-the ipmi_thread_busy_wait function as inline gives the gcc
-optimization logic enough information to figure out for itself
-that the case cannot happen, which gets rid of the warning
-without adding any fake initialization.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Patch tested on lk 3.17-rc1 with the sg driver using
+the READ(32) command.
 
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index 5d665680ae33..539ff0db52fc 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -965,9 +965,9 @@ static inline int ipmi_si_is_busy(struct timespec *ts)
- 	return ts->tv_nsec != -1;
- }
- 
--static int ipmi_thread_busy_wait(enum si_sm_result smi_result,
--				 const struct smi_info *smi_info,
--				 struct timespec *busy_until)
-+static inline int ipmi_thread_busy_wait(enum si_sm_result smi_result,
-+					const struct smi_info *smi_info,
-+					struct timespec *busy_until)
- {
- 	unsigned int max_busy_us = 0;
- 
+> For inclusion in 3.17 only.
+
+May want to check if blk-mq work in lk 3.16 and earlier
+breaks the bsg driver's capability to send SCSI cdbs
+that are longer than 16 bytes.
+
+> diff -urpN linux-3.17.0-rc1-a/block/blk-core.c linux-3.17.0-rc1-b/block/blk-core.c
+> --- linux-3.17.0-rc1-a/block/blk-core.c	2014-08-16 12:40:26.000000000 -0400
+> +++ linux-3.17.0-rc1-b/block/blk-core.c	2014-08-22 14:03:33.000000000 -0400
+> @@ -1252,7 +1252,6 @@ void blk_rq_set_block_pc(struct request
+>   	rq->__sector = (sector_t) -1;
+>   	rq->bio = rq->biotail = NULL;
+>   	memset(rq->__cmd, 0, sizeof(rq->__cmd));
+> -	rq->cmd = rq->__cmd;
+>   }
+>   EXPORT_SYMBOL(blk_rq_set_block_pc);
+>
+> diff -urpN linux-3.17.0-rc1-a/block/blk-mq.c linux-3.17.0-rc1-b/block/blk-mq.c
+> --- linux-3.17.0-rc1-a/block/blk-mq.c	2014-08-16 12:40:26.000000000 -0400
+> +++ linux-3.17.0-rc1-b/block/blk-mq.c	2014-08-22 14:02:32.000000000 -0400
+> @@ -172,6 +172,8 @@ static void blk_mq_rq_ctx_init(struct re
+>   	/* tag was already set */
+>   	rq->errors = 0;
+>
+> +	rq->cmd = rq->__cmd;
+> +
+>   	rq->extra_len = 0;
+>   	rq->sense_len = 0;
+>   	rq->resid_len = 0;
+> diff -urpN linux-3.17.0-rc1-a/drivers/scsi/scsi_lib.c linux-3.17.0-rc1-b/drivers/scsi/scsi_lib.c
+> --- linux-3.17.0-rc1-a/drivers/scsi/scsi_lib.c	2014-08-16 12:40:26.000000000 -0400
+> +++ linux-3.17.0-rc1-b/drivers/scsi/scsi_lib.c	2014-08-22 14:02:32.000000000 -0400
+> @@ -1808,7 +1808,6 @@ static int scsi_mq_prep_fn(struct reques
+>
+>   	cmd->tag = req->tag;
+>
+> -	req->cmd = req->__cmd;
+>   	cmd->cmnd = req->cmd;
+>   	cmd->prot_op = SCSI_PROT_NORMAL;
+>
+>
+> --
+
 
