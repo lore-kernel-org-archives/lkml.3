@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaHWRZE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 13:25:04 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:45779 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372AbaHWRZA (ORCPT
+	id S1751998AbaHWRZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 13:25:26 -0400
+Received: from fallback3.mail.ru ([94.100.181.189]:41434 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819AbaHWRZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 13:25:00 -0400
-Date: Sat, 23 Aug 2014 13:24:56 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Vincent Donnefort <vdonnefort@gmail.com>,
-        Valdis.Kletnieks@vt.edu,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] leds: make led_blink_set IRQ safe
-Message-ID: <20140823172456.GH13540@mtj.dyndns.org>
-References: <alpine.LSU.2.11.1408161946450.1064@eggly.anvils>
- <1408453101-30290-1-git-send-email-vdonnefort@gmail.com>
- <1408453101-30290-2-git-send-email-vdonnefort@gmail.com>
- <alpine.LSU.2.11.1408191835200.3003@eggly.anvils>
- <CAK5ve-Kc8mjdbN0Nn-pGVjp2pj6ZV_FCBpeOtO5N92CkJZX3=g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-Kc8mjdbN0Nn-pGVjp2pj6ZV_FCBpeOtO5N92CkJZX3=g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 23 Aug 2014 13:25:24 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?R3VlbnRlciBSb2Vjaw==?= <linux@roeck-us.net>
+Cc: =?UTF-8?B?RXZnZW55IEJvZ2Vy?= <boger@contactless.ru>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gQWRkIHN1cHBvcnQgZm9yIGFsd2F5cyBlbmFibGVkIHdh?=
+ =?UTF-8?B?dGNoZG9nIHRpbWVycw==?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [5.18.98.7]
+Date: Sat, 23 Aug 2014 21:25:02 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1408814702.730436497@f133.i.mail.ru>
+X-Cloud-Ids: 
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <53F8CC58.2030406@roeck-us.net>
+References: <1408236338-12555-1-git-send-email-boger@contactless.ru>
+ <53F8CC58.2030406@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7NHPWgj019217
 
-Hello,
-
-On Fri, Aug 22, 2014 at 05:21:30PM -0700, Bryan Wu wrote:
-> On Tue, Aug 19, 2014 at 6:51 PM, Hugh Dickins <hughd@google.com> wrote:
-> > On Tue, 19 Aug 2014, Vincent Donnefort wrote:
+Sat, 23 Aug 2014 10:16:08 -0700 Ğ¾Ñ‚ Guenter Roeck <linux@roeck-us.net>:
+> On 08/16/2014 05:45 PM, Evgeny Boger wrote:
+> > From: Evgeny Boger <boger@contactless.ru>
 > >
-> >> This patch introduces a work which take care of reseting the blink workqueue and
-> >> avoid calling the cancel_delayed_work_sync function which may sleep, from an IRQ
-> >> context.
-> >>
+> > Add option to use with watchdog timers which are always enabled
+> > in hardware, i.e. there is no way to enable/disable it via GPIO pin.
+> > The driver will start pinging WDT immediately upon loading
+> > and will continue to do so even after stopping the watchdog.
+> >
+> The headline needs a reference to the affected driver.
 > 
-> Vincent, I'm just wandering can we use cancel_delayed_work() instead
-> of sync version here.
-> cancel_delayed_work() can be called from IRQ context.
-
-But it doesn't wait for the currently running one to finish.  It
-should wait, right?
-
-> > May I (most ungratefully!) say that your patch doesn't fill me with
-> > confidence that it's the right solution: adding yet another work_struct
-> > to get around the issue seemed dubious to me, I wonder if it might expose
-> > new races.
+> Also, please copy the dt mailing list and maintainers.
 > 
-> I agree with Hugh about this new cancel work_struct. But if we revert
-> it back, I saw led_blink_set() will call del_timer_sync() which might
-> also sleep and can't be used in IRQ context. Looks like we can't call
-> led_blink_set() in any IRQ/atomic context.
+> > Signed-off-by: Evgeny Boger <boger@contactless.ru>
+> > ---
+> >   .../devicetree/bindings/watchdog/gpio-wdt.txt      | 14 ++++++-
+> >   drivers/watchdog/gpio_wdt.c                        | 45 +++++++++++++++++-----
+> >   2 files changed, 48 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+> > index 37afec1..1f8ca46 100644
+> > --- a/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+> > +++ b/Documentation/devicetree/bindings/watchdog/gpio-wdt.txt
+> > @@ -12,8 +12,11 @@ Required Properties:
+> >       the opposite level disables the WDT. Active level is determined
+> >       by the GPIO flags.
+> >   - hw_margin_ms: Maximum time to reset watchdog circuit (milliseconds).
+> > +- always-enabled: Use with wathdog timer which is always enabled
+ 
+Similar to NOWAYOUT?
 
-del_timer_sync() doesn't block but it does run from bh.  It naturally
-can't be waited from an IRQ context.  It may be sitting on top of a
-running instance.
+---
 
-> > But rest assured that I know nothing about this, and I'm not at all
-> > qualified to review your patch: I hope Bryan and others will do so.
-> 
-> Let me invite Tejun to give some advice on how to solve this problem.
-> 
-> Tejun, Vincent's commit 8b37e1bef5a6b60e949e28a4db3006e4b00bd758
-> convert a timer into work_struct, but Hugh found it will cause
-> sleeping BUGs [1]. Could you give some opinion about that?
-
-Not knowing the code base, I'm not sure how helpful I can be but if
-something wants to synchronize against another thing which can block,
-that something needs to be able to block too.  There's no way around
-it and it holds the same for timers.  As long as all the work items
-are properly shut down at the end, there's nothing wrong with using
-multiple of them even when they form a dependency chain.
-
-Heh, I think I need more specific questions to be actually useful. :)
-
-Thanks.
-
--- 
-tejun
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
