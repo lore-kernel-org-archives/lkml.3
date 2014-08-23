@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaHWLZf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 07:25:35 -0400
-Received: from mail.schreyben.de ([176.9.239.78]:40160 "EHLO mail.schreyben.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642AbaHWLZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 07:25:04 -0400
-X-Greylist: delayed 349 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Aug 2014 07:25:04 EDT
-Message-ID: <53F878AD.1000408@schreyben.de>
-Date: Sat, 23 Aug 2014 13:19:09 +0200
-From: Schrey <debian-kernel@schreyben.de>
-Organization: unorganised, like, totally.
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: linux-stable: backport usb related commit to 3.10 and 3.12?
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752824AbaHWLZd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 07:25:33 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:1746 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752479AbaHWLY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 07:24:58 -0400
+X-IronPort-AV: E=Sophos;i="5.04,386,1406584800"; 
+   d="scan'208";a="90829918"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: josh@joshtriplett.org, kernel-janitors@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/9] pwm: lpss: use c99 initializers in structures
+Date: Sat, 23 Aug 2014 13:20:25 +0200
+Message-Id: <1408792831-25615-4-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-On an administered server, I noticed that there's a constant load
-around 0.70 when running kernels 3.10 and 3.12, even if
-the system is doing nothing, and in single user mode.
-Culprit seems to be the process 'khubd'.
-No such effect when running kernels 3.4 or 3.14.
+Use c99 initializers for structures.
 
-I reverse bisected linux-stable and found that the following commit
-fixes it for me, for both kernel 3.10 and 3.12:
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-[08d1dec6f4054e3613f32051d9b149d4203ce0d2] usb:hub set hub->change_bits 
-when over-current happens
+// <smpl>
+@decl@
+identifier i1,fld;
+type T;
+field list[n] fs;
+@@
 
+struct i1 {
+ fs
+ T fld;
+ ...};
 
-Could that commit be backported to the stable 3.10 and 3.12 series?
+@bad@
+identifier decl.i1,i2;
+expression e;
+initializer list[decl.n] is;
+@@
 
-(Disclaimer: I'm not a programmer, but I'd be happy to help with any 
-testing involved)
+struct i1 i2 = { is,
++ .fld = e
+- e
+ ,...};
+// </smpl>
 
-Regards
-Ingmar
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
---------------------------------------------------------------------------
+---
+The patches in this series do not depend on each other.
 
-$ git diff ac5166bcdb43889a5bd837f5076b78049e1f8bca 
-08d1dec6f4054e3613f32051d9b149d4203ce0d2
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index c1422a0..babba88 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -1147,7 +1147,8 @@ static void hub_activate(struct usb_hub *hub, enum 
-hub_activation_type type)
-                         /* Tell khubd to disconnect the device or
-                          * check for a new connection
-                          */
--                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
-+                       if (udev || (portstatus & 
-USB_PORT_STAT_CONNECTION) ||
-+                           (portstatus & USB_PORT_STAT_OVERCURRENT))
-                                 set_bit(port1, hub->change_bits);
+ drivers/pwm/pwm-lpss.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-                 } else if (portstatus & USB_PORT_STAT_ENABLE) {
-
-
--- 
-this space for rent
+diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
+index 4df994f..441a046 100644
+--- a/drivers/pwm/pwm-lpss.c
++++ b/drivers/pwm/pwm-lpss.c
+@@ -45,7 +45,7 @@ struct pwm_lpss_boardinfo {
+ 
+ /* BayTrail */
+ static const struct pwm_lpss_boardinfo byt_info = {
+-	25000000
++	.clk_rate = 25000000
+ };
+ 
+ static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
 
