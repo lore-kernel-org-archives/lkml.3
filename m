@@ -1,205 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480AbaHWJwm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 05:52:42 -0400
-Received: from max.feld.cvut.cz ([147.32.192.36]:38429 "EHLO max.feld.cvut.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160AbaHWJwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 05:52:40 -0400
-From: Michal Sojka <sojka@merica.cz>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, michal.vokac@comap.cz
-Subject: Re: [PATCH v2 2/3] usb: Add LED trigger for USB host activity
-In-Reply-To: <CAK5ve-LgeZcR+NHZoLo=rVKCk8TfRjRy-u7KwKRYs1weW==Nqw@mail.gmail.com>
-References: <87ha149j2z.fsf@steelpick.2x.cz> <1408752502-4162-1-git-send-email-sojka@merica.cz> <1408752502-4162-3-git-send-email-sojka@merica.cz> <CAK5ve-LgeZcR+NHZoLo=rVKCk8TfRjRy-u7KwKRYs1weW==Nqw@mail.gmail.com>
-User-Agent: Notmuch/0.18.1+70~ge8d943c (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sat, 23 Aug 2014 11:52:26 +0200
-Message-ID: <87egw7a5yd.fsf@steelpick.2x.cz>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752567AbaHWJ5h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 05:57:37 -0400
+Received: from azrael.mastersword.de ([5.9.54.215]:53742 "EHLO
+	mail.mastersword.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334AbaHWJ5f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 05:57:35 -0400
+X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Aug 2014 05:57:34 EDT
+Message-ID: <1408787426.28950.41.camel@redi7>
+Subject: Re: [PATCH] bluetooth: hci_ldisc: fix deadlock condition
+From: Tim Niemeyer <tim.niemeyer@mastersword.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tim Niemeyer <tim.niemeyer@corscience.de>, Felipe Balbi <balbi@ti.com>,
+        stable@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, jslaby@suse.cz,
+        grant.likely@linaro.org, linux-bluetooth@vger.kernel.org,
+        andreas@biessmann.de
+Date: Sat, 23 Aug 2014 11:50:26 +0200
+In-Reply-To: <20140822155140.GA18880@kroah.com>
+References: <1398265117-11793-2-git-send-email-balbi@ti.com>
+	 <1408715107-21299-1-git-send-email-tim.niemeyer@corscience.de>
+	 <20140822155140.GA18880@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-Tl0AkOFJRvT8Gx8qyy+w"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan,
 
-thanks for the review. See some comments below.
+--=-Tl0AkOFJRvT8Gx8qyy+w
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Aug 23 2014, Bryan Wu wrote:
-> On Fri, Aug 22, 2014 at 5:08 PM, Michal Sojka <sojka@merica.cz> wrote:
->> With this patch, USB host activity can be signaled by blinking a LED.
->>
->> This should work with all host controllers. Tested only with musb.
->>
->> Signed-off-by: Michal Sojka <sojka@merica.cz>
->> ---
->>  drivers/usb/core/Kconfig  |  9 +++++++++
->>  drivers/usb/core/Makefile |  1 +
->>  drivers/usb/core/hcd.c    |  2 ++
->>  drivers/usb/core/led.c    | 38 ++++++++++++++++++++++++++++++++++++++
->>  include/linux/usb/hcd.h   |  6 ++++++
->>  5 files changed, 56 insertions(+)
->>  create mode 100644 drivers/usb/core/led.c
->>
->> diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
->> index 1060657..8295f65 100644
->> --- a/drivers/usb/core/Kconfig
->> +++ b/drivers/usb/core/Kconfig
->> @@ -90,3 +90,12 @@ config USB_OTG_FSM
->>           Implements OTG Finite State Machine as specified in On-The-Go
->>           and Embedded Host Supplement to the USB Revision 2.0 Specification.
->>
->> +config USB_HOST_LED
->> +       bool "USB Host LED Trigger"
->> +       depends on LEDS_CLASS
->> +       select LEDS_TRIGGERS
->> +       help
->> +         This option adds a LED trigger for USB host controllers.
->> +
->> +         Say Y here if you are working on a system with led-class supported
->> +         LEDs and you want to use them as USB host activity indicators.
->> diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
->> index 2f6f932..324c8c9 100644
->> --- a/drivers/usb/core/Makefile
->> +++ b/drivers/usb/core/Makefile
->> @@ -9,5 +9,6 @@ usbcore-y += port.o
->>
->>  usbcore-$(CONFIG_PCI)          += hcd-pci.o
->>  usbcore-$(CONFIG_ACPI)         += usb-acpi.o
->> +usbcore-$(CONFIG_USB_HOST_LED) += led.o
->>
->>  obj-$(CONFIG_USB)              += usbcore.o
->> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
->> index 487abcf..46d9f3a 100644
->> --- a/drivers/usb/core/hcd.c
->> +++ b/drivers/usb/core/hcd.c
->> @@ -1664,6 +1664,8 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
->>         usbmon_urb_complete(&hcd->self, urb, status);
->>         usb_anchor_suspend_wakeups(anchor);
->>         usb_unanchor_urb(urb);
->> +       if (status == 0)
->> +               usb_hcd_led_activity();
->>
->>         /* pass ownership to the completion handler */
->>         urb->status = status;
->> diff --git a/drivers/usb/core/led.c b/drivers/usb/core/led.c
->> new file mode 100644
->> index 0000000..49ff76c
->> --- /dev/null
->> +++ b/drivers/usb/core/led.c
->> @@ -0,0 +1,38 @@
->> +/*
->> + * LED Trigger for USB Host Activity
->> + *
->> + * Copyright 2014 Michal Sojka <sojka@merica.cz>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/kernel.h>
->> +#include <linux/init.h>
->> +#include <linux/leds.h>
->> +#include <linux/usb/hcd.h>
->> +
->> +#define BLINK_DELAY 30
->> +
->> +DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
->
-> Add one more trigger named ledtrig_usb_gadget
->
->> +static unsigned long usb_hcd_blink_delay = BLINK_DELAY;
->> +
->> +void usb_hcd_led_activity(void)
->
-> Give an input parameter like emum usb_led_event.
-> USB_LED_EVENT_HOST = 0
-> USB_LED_EVENT_GADGET = 1
->
->
->> +{
->
-> Add case for USB_LED_EVENT_HOST:
->> +       led_trigger_blink_oneshot(ledtrig_usb_hcd,
->> +                                 &usb_hcd_blink_delay, &usb_hcd_blink_delay, 0);
->
-> Add case for USB_LED_EVENT_GADGET:
->  led_trigger_blink_oneshot(ledtrig_usb_gadget,
->                              &usb_gadget_blink_delay,
-> &usb_gadget_blink_delay, 0);
->
->> +}
->> +
->> +int __init ledtrig_usb_hcd_init(void)
->> +{
->> +       led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
-> register one more trigger for gadget.
+Hi
 
-This way, the code will be full of #ifdefs. Is the following really what
-you want? If you want to have it without #ifdefs, then I don't think it
-is a good idea to offer users the usb-gadget trigger on systems without
-usb gadget support.
+Am Freitag, den 22.08.2014, 10:51 -0500 schrieb Greg KH:
+> On Fri, Aug 22, 2014 at 03:45:07PM +0200, Tim Niemeyer wrote:
+> > This Patch was applied to 3.10 and 3.2. It's probably missed on 3.4.
+>=20
+> Does it apply there?
+The original patch applies not cleanly on 3.4. The init_work is not
+available there.
 
-#define BLINK_DELAY 30
+I backported it and it's the same result as the backport from Andreas.
+He tested the patch on 3.4.87. The attached patch of my last mail
+applies.
 
-static unsigned long usb_blink_delay = BLINK_DELAY;
+> What is the git id of the commit?
+Sorry, missed it:
 
-enum usb_led_event {
-	USB_LED_EVENT_HOST = 0,
-	USB_LED_EVENT_GADGET = 1,
-};
+commit da64c27d3c93ee9f89956b9de86c4127eb244494 upstream
+commit a22d29e6e5757b1daed7d0b409a815eb33f66e4e stable-3.10
+commit 87520218746b8d973670e37237666f174590898c stable-3.2
 
-#ifdef CONFIG_USB_GADGET_LED
-DEFINE_LED_TRIGGER(ledtrig_usbgadget);
-#endif
-#ifdef CONFIG_USB_HOST_LED
-DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
-#endif
+Tim
 
-void usb_led_activity(enum usb_led_event ev)
-{
-	struct led_trigger *trig;
+--=-Tl0AkOFJRvT8Gx8qyy+w
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-	switch (ev) {
-#ifdef CONFIG_USB_GADGET_LED
-	case USB_LED_EVENT_GADGET: trig = ledtrig_usb_gadget; break;
-#endif
-#ifdef CONFIG_USB_HOST_LED
-	case USB_LED_EVENT_HOST:   trig = ledtrig_usb_hcd; break;
-#endif
-	default:;
-	}
-	led_trigger_blink_oneshot(trig, &usb_blink_delay, &usb_blink_delay, 0);
-}
-EXPORT_SYMBOL(usb_led_activity);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAABAgAGBQJT+GPiAAoJELKJ8occyPNxgo0P/0UGwmyZZmxPcIAU7y96257D
+onr4hDttLeCd0gS20/x2oUS8XIugbNNjWsz0TNalhTb6DHdOM1cKchyXyd0sgwgP
+aRBzoIpEn47csBNK6illq+poTFy9FKguy3f7B6t/ho+gva1ljr5W8UB+emXuEVL0
+ioALxyvXIzLxZKuenqcdjToLTI+/L2Wmr+G/Hh2S4L1rh29NwJcU0KzLprFKcLUn
+1Hedwnf0rCasLfSGq2z6OVUC9vLZ+CAjtXy8RlAbiUb+61adgKcdpRgc1tkae4E0
+u7VqHNd3IV285mBgbjUi/DpILntKmbeQaLxFyQ/tdpC8tWpgBgsXcT7pm8oCBf67
+z41s1y1F6pR+iaGYyeQ20qV9IbR/6T0f0i2R1m5p/BQ7+0bHtjb0fowvqtICAAbp
+PmiOHzeZNvDJR/2QR4XiisCeZPdKpfCOixVruMN7ztcal4YD3D08vM0DFlK2/P8N
+7zhFxKGPY/aarm+QzIMwlFIPeK987P4bwvyAUpFqg/gJjdvwcoKgsCrl3VY/rd8f
+7MqCzVcD3kUWjldjTotdIc8wX+TeBol2hnQvVvP0+2dlxljHTS7YpyfLnWik490c
+sBUwUL/LNfBI2Orp2Ro4ubikygqH/9lkGuwHXEzPoHFtwxB+QIu/X0AVqb50M1v0
+18LmXnmibepPVmlYH3CJ
+=wVoQ
+-----END PGP SIGNATURE-----
 
-int __init ledtrig_usb_init(void)
-{
-#ifdef CONFIG_USB_GADGET_LED
-	led_trigger_register_simple("usb-gadget", &ledtrig_usbgadget);
-#endif
-#ifdef CONFIG_USB_HOST_LED
-	led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
-#endif
-	return 0;
-}
+--=-Tl0AkOFJRvT8Gx8qyy+w--
 
-void __exit ledtrig_usb_exit(void)
-{
-#ifdef CONFIG_USB_GADGET_LED
-	led_trigger_unregister_simple(ledtrig_usbgadget);
-#endif
-#ifdef CONFIG_USB_HOST_LED
-	led_trigger_unregister_simple(ledtrig_usb_hcd);
-#endif
-}
-
-
--Michal
