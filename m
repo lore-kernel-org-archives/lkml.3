@@ -1,104 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947AbaHWCOu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 22:14:50 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:54405 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733AbaHWCOt convert rfc822-to-8bit (ORCPT
+	id S1752003AbaHWC0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 22:26:18 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:64508 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761AbaHWC0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 22:14:49 -0400
+	Fri, 22 Aug 2014 22:26:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <87mwb0fixy.fsf@matterhorn.verdurent.com>
-References: <87mwb0fixy.fsf@matterhorn.verdurent.com>
-Date: Fri, 22 Aug 2014 19:14:46 -0700
-Message-ID: <CAMHCuPWeMwjJO+xzmQrZFmEMdx3+yF=zkove8brWX4rQiti50w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] (Resend) Tools to analyse PM and scheduling behaviour
-From: Sundar <sunder.svit@gmail.com>
-To: Amit Kucheria <amit.kucheria@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Paul McKenney <Paul.McKenney@us.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Juri Lelli <juri.lelli@arm.com>, sched-tools@linaro.org,
-        len.brown@intel.com, mark.gross@intel.com
+In-Reply-To: <20140822075041.GT4266@lee--X1>
+References: <1407796988-25872-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<1407796988-25872-3-git-send-email-bjorn.andersson@sonymobile.com>
+	<20140821132204.GH4266@lee--X1>
+	<20140822012748.GB12494@sonymobile.com>
+	<20140822075041.GT4266@lee--X1>
+Date: Fri, 22 Aug 2014 19:26:14 -0700
+Message-ID: <CAJAp7OgmBUfNOZNbD0jW_fgO+rO=02PmEU64=c2ty6-2ENkBww@mail.gmail.com>
+Subject: Re: [PATCH v5 2/3] mfd: qcom-rpm: Driver for the Qualcomm RPM
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amit,
-
-On Tue, Aug 19, 2014 at 11:11 AM, Amit Kucheria
-<amit.kucheria@linaro.org> wrote:
+On Fri, Aug 22, 2014 at 12:50 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 21 Aug 2014, Bjorn Andersson wrote:
+>> On Thu 21 Aug 06:22 PDT 2014, Lee Jones wrote:
+>> > > +struct qcom_rpm *dev_get_qcom_rpm(struct device *dev)
+>> > > +{
+>> > > + return dev_get_drvdata(dev);
+>> > > +}
+>> > > +EXPORT_SYMBOL(dev_get_qcom_rpm);
+>> >
+>> > No need for this at all.  Use dev_get_drvdata() direct instead.
+>> >
+>>
+>> I see that others have put this as static inline in the header file, so I will
+>> follow that. I don't want to expose this directly in the implementation of the
+>> clients.
+>>
+>> Let me know if you object.
 >
-> We’re soliciting early feedback from community on the direction of idlestat
+> I do (unless you convince me otherwise).  Why is this a good idea and
+> why 'exposing' this directly is a bad one?  At the moment this looks
+> to me like abstraction for the sake of abstraction.
+>
 
-Nice :)
+There's no other reason for it than to abstract because "it's nice",
+so I'll change it.
 
-> Idlestat Details
-> ----------------
-> Idlestat uses FTRACE to capture traces related to C-state and P-state
-> transitions of the CPU and wakeups (IRQ, IPI) on the system and then
-> post-processes the data to print statistics. It is designed to be used
-> non-interactively. Idlestat can deduce the idle time for a cluster as an
-> intersection between the idle times of all the cpus belonging to the same
-> cluster. This data is useful to analyse and optimise scheduling behaviour.
-> The tool will also list how many times the menu governor mis-predicts
-> target residency in a C-state.
+>> > > + res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> > > + rpm->status_regs = devm_ioremap_resource(&pdev->dev, res);
+>> > > + rpm->ctrl_regs = rpm->status_regs + 0x400;
+>> > > + rpm->req_regs = rpm->status_regs + 0x600;
+>> > > + if (IS_ERR(rpm->status_regs))
+>> > > +         return PTR_ERR(rpm->status_regs);
+>> >
+>> > You should probably do this _before_ using it above.
+>>
+>> There's no difference in behaviour, but it just feels cleaner than:
+>>
+>> res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> rpm->status_regs = devm_ioremap_resource(&pdev->dev, res);
+>> if (IS_ERR(rpm->status_regs))
+>>       return PTR_ERR(rpm->status_regs);
+>> rpm->ctrl_regs = rpm->status_regs + 0x400;
+>> rpm->req_regs = rpm->status_regs + 0x600;
+>>
+>> If you don't like it, I'll change it.
+>
+> There is a difference.  In the current implementation you're doing math
+> with a possible error code and assigning rubbish to rpm->ctrl_regs and
+> rpm->req_regs.
+>
 
-We discussed this in the energy aware scheduling workshop this week @
-the Kernel Summit. A few notes:
+Unfortunately, I still don't understand what practical drawback this
+has, but I will of course change it per your request.
 
-1. We need to really understand the co-relation of this tool w.r.t
-actual hardware states.
-It is usually likely that the software "thinks" it is in a low power
-state, but the actual
-hardware might not be. What is the coverage for these kind of cases here.
+> [...]
+>
+>> > > +MODULE_DESCRIPTION("Qualcomm Resource Power Manager driver");
+>> > > +MODULE_LICENSE("GPL v2");
+>> >
+>> > No one authored this driver?
+>> >
+>>
+>> Thought that was optional, will update.
+>
+> It's also helpful.  Can you place an Author: line in the header(s) too.
+>
 
-2. I understand that C/P states are a direct metric of how well the
-workload behaved w.r.t power;
-but I am not sure that relates to a direct measure of how the
-scheduler performed. The C/P states
-could be maintained whilst giving away performance or power at the
-expense of additional components
-on the SoC and platform like DDR IOs, fabric states etc.
+Will do.
 
-Quick Summary of what I discussed with Daniel @ the workshop about idlestat:
-
-1. There might be usually platform specific tools to get residencies
-for P/C states.
-PowerTop & Turbostat are two that first come to mind. Any specific
-item apart from prediction logic
-that idlestat differs from these two?
-
-2. To me debugging performance or power, C/P states provide the
-direction that something is wrong.
-But they still dont tell me "what" is wrong "if" the issue is somehow
-in the kernel as opposed to a more
-easily fixable software code (traceable at hardware/software level for
-best optimizations). How do I
-conclude that my scheduler is the culprit apart from the points where
-it took a decision to select the
-right idle states based on predicted sleep times? In my opinion, that
-would boil down to if the scheduler
-was invoking too much load balancing calls, moving my threads across
-cores too much, data being
-thrashed across caches, cores too much etc.
-
-I think a tool for scheduler metrics must be based on more inner
-details like the above, finally culminating
-into C/P states. as opposed to C/P states being the metric to be relied.
-
-Let me know your thoughts.
-
-Cheers!
-
--- these are my personal thoughts and do not represent my employers'
+Regards,
+Bjorn
