@@ -1,86 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaHWA2e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 22 Aug 2014 20:28:34 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:50981 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752356AbaHWA2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 22 Aug 2014 20:28:33 -0400
-Message-ID: <53F7E02B.4070606@interlog.com>
-Date: Fri, 22 Aug 2014 20:28:27 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752654AbaHWAav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 22 Aug 2014 20:30:51 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46164 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476AbaHWAat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 22 Aug 2014 20:30:49 -0400
 MIME-Version: 1.0
-To: Tony Battersby <tonyb@cybernetics.com>, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@fb.com>
-CC: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH][SCSI] fix regression in SCSI_IOCTL_SEND_COMMAND
-References: <53F79FBF.4090000@cybernetics.com>
-In-Reply-To: <53F79FBF.4090000@cybernetics.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1408752502-4162-3-git-send-email-sojka@merica.cz>
+References: <87ha149j2z.fsf@steelpick.2x.cz> <1408752502-4162-1-git-send-email-sojka@merica.cz>
+ <1408752502-4162-3-git-send-email-sojka@merica.cz>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Fri, 22 Aug 2014 17:30:27 -0700
+Message-ID: <CAK5ve-LgeZcR+NHZoLo=rVKCk8TfRjRy-u7KwKRYs1weW==Nqw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] usb: Add LED trigger for USB host activity
+To: Michal Sojka <sojka@merica.cz>
+Cc: linux-usb@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, michal.vokac@comap.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-08-22 03:53 PM, Tony Battersby wrote:
-> blk_rq_set_block_pc() memsets rq->cmd to 0, so it should come
-> immediately after blk_get_request() to avoid overwriting the
-> user-supplied CDB.  Also check for failure to allocate rq.
+On Fri, Aug 22, 2014 at 5:08 PM, Michal Sojka <sojka@merica.cz> wrote:
+> With this patch, USB host activity can be signaled by blinking a LED.
 >
-> Fixes: f27b087b81b7 ("block: add blk_rq_set_block_pc()")
-> Cc: <stable@vger.kernel.org> # 3.16.x
-> Signed-off-by: Tony Battersby <tonyb@cybernetics.com>
+> This should work with all host controllers. Tested only with musb.
+>
+> Signed-off-by: Michal Sojka <sojka@merica.cz>
+> ---
+>  drivers/usb/core/Kconfig  |  9 +++++++++
+>  drivers/usb/core/Makefile |  1 +
+>  drivers/usb/core/hcd.c    |  2 ++
+>  drivers/usb/core/led.c    | 38 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/usb/hcd.h   |  6 ++++++
+>  5 files changed, 56 insertions(+)
+>  create mode 100644 drivers/usb/core/led.c
+>
+> diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+> index 1060657..8295f65 100644
+> --- a/drivers/usb/core/Kconfig
+> +++ b/drivers/usb/core/Kconfig
+> @@ -90,3 +90,12 @@ config USB_OTG_FSM
+>           Implements OTG Finite State Machine as specified in On-The-Go
+>           and Embedded Host Supplement to the USB Revision 2.0 Specification.
+>
+> +config USB_HOST_LED
+> +       bool "USB Host LED Trigger"
+> +       depends on LEDS_CLASS
+> +       select LEDS_TRIGGERS
+> +       help
+> +         This option adds a LED trigger for USB host controllers.
+> +
+> +         Say Y here if you are working on a system with led-class supported
+> +         LEDs and you want to use them as USB host activity indicators.
+> diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
+> index 2f6f932..324c8c9 100644
+> --- a/drivers/usb/core/Makefile
+> +++ b/drivers/usb/core/Makefile
+> @@ -9,5 +9,6 @@ usbcore-y += port.o
+>
+>  usbcore-$(CONFIG_PCI)          += hcd-pci.o
+>  usbcore-$(CONFIG_ACPI)         += usb-acpi.o
+> +usbcore-$(CONFIG_USB_HOST_LED) += led.o
+>
+>  obj-$(CONFIG_USB)              += usbcore.o
+> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+> index 487abcf..46d9f3a 100644
+> --- a/drivers/usb/core/hcd.c
+> +++ b/drivers/usb/core/hcd.c
+> @@ -1664,6 +1664,8 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
+>         usbmon_urb_complete(&hcd->self, urb, status);
+>         usb_anchor_suspend_wakeups(anchor);
+>         usb_unanchor_urb(urb);
+> +       if (status == 0)
+> +               usb_hcd_led_activity();
+>
+>         /* pass ownership to the completion handler */
+>         urb->status = status;
+> diff --git a/drivers/usb/core/led.c b/drivers/usb/core/led.c
+> new file mode 100644
+> index 0000000..49ff76c
+> --- /dev/null
+> +++ b/drivers/usb/core/led.c
+> @@ -0,0 +1,38 @@
+> +/*
+> + * LED Trigger for USB Host Activity
+> + *
+> + * Copyright 2014 Michal Sojka <sojka@merica.cz>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/leds.h>
+> +#include <linux/usb/hcd.h>
+> +
+> +#define BLINK_DELAY 30
+> +
+> +DEFINE_LED_TRIGGER(ledtrig_usb_hcd);
 
-Tested-by: Douglas Gilbert <dgilbert@interlog.com>
+Add one more trigger named ledtrig_usb_gadget
 
-> For inclusion in 3.17 and 3.16.x.
->
-> Note: I don't have any programs that use this ioctl, so this patch is
-> compile-tested only.
+> +static unsigned long usb_hcd_blink_delay = BLINK_DELAY;
+> +
+> +void usb_hcd_led_activity(void)
 
-To test this ioctl one option is to get the sg3_utils
-package and build scsi_ioctl.c in the examples
-directory with 'make scsi_ioctl'.
+Give an input parameter like emum usb_led_event.
+USB_LED_EVENT_HOST = 0
+USB_LED_EVENT_GADGET = 1
 
-In lk 3.17-rc1, scsi_ioctl indicates that
-SCSI_IOCTL_SEND_COMMAND is not working. In my test applying
-this patch fixes the regression.
 
-> --- linux-3.17.0-rc1-a/block/scsi_ioctl.c	2014-08-16 12:40:26.000000000 -0400
-> +++ linux-3.17.0-rc1-b/block/scsi_ioctl.c	2014-08-22 14:15:34.000000000 -0400
-> @@ -448,6 +448,11 @@ int sg_scsi_ioctl(struct request_queue *
->   	}
+> +{
+
+Add case for USB_LED_EVENT_HOST:
+> +       led_trigger_blink_oneshot(ledtrig_usb_hcd,
+> +                                 &usb_hcd_blink_delay, &usb_hcd_blink_delay, 0);
+
+Add case for USB_LED_EVENT_GADGET:
+ led_trigger_blink_oneshot(ledtrig_usb_gadget,
+                             &usb_gadget_blink_delay,
+&usb_gadget_blink_delay, 0);
+
+> +}
+> +
+> +int __init ledtrig_usb_hcd_init(void)
+> +{
+> +       led_trigger_register_simple("usb-host", &ledtrig_usb_hcd);
+register one more trigger for gadget.
+
+> +       return 0;
+> +}
+> +
+> +void __exit ledtrig_usb_hcd_exit(void)
+> +{
+> +       led_trigger_unregister_simple(ledtrig_usb_hcd);
+unregister one more trigger for gadget.
+
+> +}
+> diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+> index b43f0fe..eb5fa0f 100644
+> --- a/include/linux/usb/hcd.h
+> +++ b/include/linux/usb/hcd.h
+> @@ -700,6 +700,12 @@ extern struct rw_semaphore ehci_cf_port_reset_rwsem;
+>  #define USB_EHCI_LOADED                2
+>  extern unsigned long usb_hcds_loaded;
 >
->   	rq = blk_get_request(q, in_len ? WRITE : READ, __GFP_WAIT);
-> +	if (!rq) {
-> +		err = -ENOMEM;
-> +		goto error;
-> +	}
-> +	blk_rq_set_block_pc(rq);
+> +#ifdef CONFIG_USB_HOST_LED
+> +extern void usb_hcd_led_activity(void);
+
+User can call usb_led_activity(USB_LED_EVENT_HOST);
+or usb_led_activity(USB_LED_EVENT_GADGET);
+
+> +#else
+> +static inline void usb_hcd_led_activity(void) {}
+> +#endif
+> +
+>  #endif /* __KERNEL__ */
 >
->   	cmdlen = COMMAND_SIZE(opcode);
->
-> @@ -501,7 +506,6 @@ int sg_scsi_ioctl(struct request_queue *
->   	memset(sense, 0, sizeof(sense));
->   	rq->sense = sense;
->   	rq->sense_len = 0;
-> -	blk_rq_set_block_pc(rq);
->
->   	blk_execute_rq(q, disk, rq, 0);
->
-> @@ -521,7 +525,8 @@ out:
->   	
->   error:
->   	kfree(buffer);
-> -	blk_put_request(rq);
-> +	if (rq)
-> +		blk_put_request(rq);
->   	return err;
->   }
->   EXPORT_SYMBOL_GPL(sg_scsi_ioctl);
->
+>  #endif /* __USB_CORE_HCD_H */
 > --
-
+> 2.1.0
+>
