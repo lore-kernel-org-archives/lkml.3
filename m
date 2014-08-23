@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaHWLZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 07:25:28 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:1746 "EHLO
+	id S1752731AbaHWLZZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 07:25:25 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:1748 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752517AbaHWLY7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752484AbaHWLY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 07:24:59 -0400
+	Sat, 23 Aug 2014 07:24:58 -0400
 X-IronPort-AV: E=Sophos;i="5.04,386,1406584800"; 
-   d="scan'208";a="90829922"
+   d="scan'208";a="90829920"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: josh@joshtriplett.org, kernel-janitors@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] OMAPDSS: DSI: use c99 initializers in structures
-Date: Sat, 23 Aug 2014 13:20:29 +0200
-Message-Id: <1408792831-25615-8-git-send-email-Julia.Lawall@lip6.fr>
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/9] lustre: obdclass: use c99 initializers in structures
+Date: Sat, 23 Aug 2014 13:20:27 +0200
+Message-Id: <1408792831-25615-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -61,37 +59,40 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 The patches in this series do not depend on each other.
 
-Not compiled.
+ drivers/staging/lustre/lustre/obdclass/obd_mount.c      |   10 ++++++++--
+ drivers/staging/lustre/lustre/obdclass/lprocfs_status.c |    5 ++++-
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
- drivers/video/fbdev/omap2/dss/dsi.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/video/fbdev/omap2/dss/dsi.c b/drivers/video/fbdev/omap2/dss/dsi.c
-index 56b9244..b6f6ae1 100644
---- a/drivers/video/fbdev/omap2/dss/dsi.c
-+++ b/drivers/video/fbdev/omap2/dss/dsi.c
-@@ -2571,7 +2571,10 @@ static int dsi_sync_vc_vp(struct platform_device *dsidev, int channel)
+diff --git a/drivers/staging/lustre/lustre/obdclass/obd_mount.c b/drivers/staging/lustre/lustre/obdclass/obd_mount.c
+index d972f71..54ba8df 100644
+--- a/drivers/staging/lustre/lustre/obdclass/obd_mount.c
++++ b/drivers/staging/lustre/lustre/obdclass/obd_mount.c
+@@ -1276,7 +1276,10 @@ EXPORT_SYMBOL(lustre_register_kill_super_cb);
+ struct dentry *lustre_mount(struct file_system_type *fs_type, int flags,
+ 				const char *devname, void *data)
  {
- 	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
- 	DECLARE_COMPLETION_ONSTACK(completion);
--	struct dsi_packet_sent_handler_data vp_data = { dsidev, &completion };
-+	struct dsi_packet_sent_handler_data vp_data = {
-+		.dsidev = dsidev,
-+		.completion = &completion
+-	struct lustre_mount_data2 lmd2 = { data, NULL };
++	struct lustre_mount_data2 lmd2 = {
++		.lmd2_data = data,
++		.lmd2_mnt = NULL
 +	};
- 	int r = 0;
- 	u8 bit;
  
-@@ -2617,7 +2620,10 @@ static void dsi_packet_sent_handler_l4(void *data, u32 mask)
- static int dsi_sync_vc_l4(struct platform_device *dsidev, int channel)
+ 	return mount_nodev(fs_type, flags, &lmd2, lustre_fill_super);
+ }
+diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+index 8309d4c..1c5c1c9 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
++++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+@@ -1572,7 +1572,10 @@ lproc_exp_hash_seq_show(struct seq_file *m, void *unused)
  {
- 	DECLARE_COMPLETION_ONSTACK(completion);
--	struct dsi_packet_sent_handler_data l4_data = { dsidev, &completion };
-+	struct dsi_packet_sent_handler_data l4_data = {
-+		.dsidev = dsidev,
-+		.completion = &completion
+ 	struct nid_stat *stats = (struct nid_stat *)m->private;
+ 	struct obd_device *obd = stats->nid_obd;
+-	struct exp_hash_cb_data cb_data = {m, true};
++	struct exp_hash_cb_data cb_data = {
++		.m = m,
++		.first = true
 +	};
- 	int r = 0;
  
- 	r = dsi_register_isr_vc(dsidev, channel, dsi_packet_sent_handler_l4,
+ 	cfs_hash_for_each_key(obd->obd_nid_hash, &stats->nid,
+ 			      lprocfs_exp_print_hash, &cb_data);
 
