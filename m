@@ -1,76 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaHWTuR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 15:50:17 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:35115 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957AbaHWTuO (ORCPT
+	id S1751809AbaHWT6Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 15:58:24 -0400
+Received: from [180.250.213.76] ([180.250.213.76]:61200 "EHLO
+	mail.ntbprov.go.id" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbaHWT6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 15:50:14 -0400
+	Sat, 23 Aug 2014 15:58:23 -0400
+X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Sat, 23 Aug 2014 15:58:23 EDT
+Date: Sun, 24 Aug 2014 03:52:00 +0800 (CIT)
+From: Ong Eng <noe@ntbprov.go.id>
+Reply-To: Ong Eng <ongenghuat005@gmail.com>
+Message-ID: <977353957.27516.1408823520261.JavaMail.zimbra@ntbprov.go.id>
+Subject: Your Co-Partnership.
 MIME-Version: 1.0
-In-Reply-To: <20140823063113.GC23715@localhost>
-References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
-	<CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
-	<CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com>
-	<20140823063113.GC23715@localhost>
-Date: Sat, 23 Aug 2014 21:50:11 +0200
-X-Google-Sender-Auth: rNQdmktVYSNXvhAu2XFEG2WUeDI
-Message-ID: <CAMuHMdXudu0kuOkKN8JCrWZSrQ4awKHhHU0E2ss++ProP0rteQ@mail.gmail.com>
-Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.71.216.223]
+X-Mailer: Zimbra 8.0.6_GA_5922 (zclient/8.0.6_GA_5922)
+Thread-Topic: Your Co-Partnership.
+Thread-Index: MuYGSkgWhqQQ5vRb+i3TMGv2iO4SNg==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 23, 2014 at 8:31 AM, Olof Johansson <olof@lixom.net> wrote:
->> > arch/arm/boot/dts/<vendor>/
->> >
->> > Is this something we should do for the MIPS and update the other architectures
->> > to follow that scheme?
->>
->> I recall reading that as well and that it would be adopted for ARM64,
->> but that hasn't seemed to have happened.  Perhaps Olof (CC'ed) will no
->> more.
->
-> Yeah, I highly recommend having a directory per vendor. We didn't on ARM,
-> and the amount of files in that directory is becoming pretty
-> insane. Moving to a subdirectory structure later gets messy which is
-> why we've been holding off on it.
 
-It would mean we can change our scripts to operate on "interesting"
-DTS files from
 
-     do-something-with $(git grep -l $vendor, -- arch/arm/boot/dts)
-
-to
-
-    do-something-with arch/arm/boot/dts/$vendor/*
-
-which is easier to type...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Help me buy equipments in your country:Email:ongenghuat005@gmail.com
