@@ -1,789 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaHWXcS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 19:32:18 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:60455 "EHLO gloria.sntech.de"
+	id S1752082AbaHWXly (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 19:41:54 -0400
+Received: from mta-out1.inet.fi ([62.71.2.228]:60656 "EHLO kirsi1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaHWXcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 19:32:16 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: rui.zhang@intel.com, eduardo.valentin@ti.com, rdunlap@infradead.org,
-        cf@rock-chips.com, grant.linkely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, zyw@rock-chips.com, huangtao@rock-chips.com,
-        xjq@rock-chips.com, addy.ke@rock-chips.com, dianders@chromium.org,
-        zhaoyifeng <zyf@rock-chips.com>
-Subject: Re: [PATCH 2/2] thermal: rockchip: add driver for Rockchip thermal
-Date: Sun, 24 Aug 2014 01:33:40 +0200
-Message-ID: <1992815.E6aCHrrhbE@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1408752934-18318-3-git-send-email-caesar.wang@rock-chips.com>
-References: <1408752934-18318-1-git-send-email-caesar.wang@rock-chips.com> <1408752934-18318-3-git-send-email-caesar.wang@rock-chips.com>
+	id S1751653AbaHWXlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 19:41:53 -0400
+Date: Sun, 24 Aug 2014 02:00:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Peter Feiner <pfeiner@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 1/3] mm: softdirty: enable write notifications on VMAs
+ after VM_SOFTDIRTY cleared
+Message-ID: <20140823230011.GA26483@node.dhcp.inet.fi>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
+ <1408831921-10168-1-git-send-email-pfeiner@google.com>
+ <1408831921-10168-2-git-send-email-pfeiner@google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1408831921-10168-2-git-send-email-pfeiner@google.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, 23. August 2014, 08:15:34 schrieb Caesar Wang:
-> Thermal is TS-ADC Controller module supports user-defined mode and automatic
-> mode.
+On Sat, Aug 23, 2014 at 06:11:59PM -0400, Peter Feiner wrote:
+> For VMAs that don't want write notifications, PTEs created for read
+> faults have their write bit set. If the read fault happens after
+> VM_SOFTDIRTY is cleared, then the PTE's softdirty bit will remain
+> clear after subsequent writes.
 > 
-> User-defined mode refers,TSADC all the control signals entirely by software
-> writing to register for direct control.
+> Here's a simple code snippet to demonstrate the bug:
 > 
-> Automaic mode refers to the module automatically poll TSADC output,and the
-> results Were checked.
+>   char* m = mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE,
+>                  MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+>   system("echo 4 > /proc/$PPID/clear_refs"); /* clear VM_SOFTDIRTY */
+>   assert(*m == '\0');     /* new PTE allows write access */
+>   assert(!soft_dirty(x));
+>   *m = 'x';               /* should dirty the page */
+>   assert(soft_dirty(x));  /* fails */
 > 
-> If you find that the temperature High in a period of time, an interrupt is
-> generated to the processor down-measures taken;if the temperature over a
-> period of time High, the resulting TSHUT gave CRU module,let it reset the
-> entire chip, or via GPIO give PMIC.
+> With this patch, write notifications are enabled when VM_SOFTDIRTY is
+> cleared. Furthermore, to avoid faults, write notifications are
+> disabled when VM_SOFTDIRTY is reset.
 > 
-> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> Signed-off-by: Peter Feiner <pfeiner@google.com>
 > ---
->  drivers/thermal/Kconfig            |    9 +
->  drivers/thermal/Makefile           |    1 +
->  drivers/thermal/rockchip_thermal.c |  659
-> ++++++++++++++++++++++++++++++++++++ 3 files changed, 669 insertions(+)
->  create mode 100644 drivers/thermal/rockchip_thermal.c
+>  v1 -> v2: Instead of checking VM_SOFTDIRTY in the fault handler, enable write
+>            notifications on vm_page_prot when we clear VM_SOFTDIRTY.
 > 
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index 74226dc..43d2400 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -141,6 +141,15 @@ config SPEAR_THERMAL
->  	  Enable this to plug the SPEAr thermal sensor driver into the Linux
->  	  thermal framework.
+>  fs/proc/task_mmu.c | 17 ++++++++++++++++-
+>  include/linux/mm.h | 15 +++++++++++++++
+>  mm/mmap.c          | 10 +++++++++-
+>  3 files changed, 40 insertions(+), 2 deletions(-)
 > 
-> +config ROCKCHIP_THERMAL
-> +	tristate "Rockchip thermal driver"
-> +	depends on ARCH_ROCKCHIP
-> +	help
-> +	  Support for Temperature Sensor ADC (TS-ADC) found on Rockchip SoCs.
-> +	  It supports one critical trip point and one passive trip point.  The
-> +	  cpufreq is used as the cooling device to throttle CPUs when the
-> +	  passive trip is crossed.
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index dfc791c..f1a5382 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -851,8 +851,23 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+>  			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+>  				continue;
+>  			if (type == CLEAR_REFS_SOFT_DIRTY) {
+> -				if (vma->vm_flags & VM_SOFTDIRTY)
+> +				if (vma->vm_flags & VM_SOFTDIRTY) {
+
+Why do we need the branch here. Does it save us anything?
+Looks like we can update vm_flags and enable writenotify unconditionally.
+Indentation level is high enough already.
+
+>  					vma->vm_flags &= ~VM_SOFTDIRTY;
+> +					/*
+> +					 * We don't have a write lock on
+> +					 * mm->mmap_sem, so we race with the
+> +					 * fault handler reading vm_page_prot.
+> +					 * Therefore writable PTEs (that won't
+> +					 * have soft-dirty set) can be created
+> +					 * for read faults. However, since the
+> +					 * PTE lock is held while vm_page_prot
+> +					 * is read and while we write protect
+> +					 * PTEs during our walk, any writable
+> +					 * PTEs that slipped through will be
+> +					 * write protected.
+> +					 */
+
+Hm.. Isn't this yet another bug?
+Updating vma->vm_flags without down_write(&mm->mmap_sem) looks troublesome
+to me. Am I wrong?
+
+> +					vma_enable_writenotify(vma);
+> +				}
+>  			}
+>  			walk_page_range(vma->vm_start, vma->vm_end,
+>  					&clear_refs_walk);
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 8981cc8..5f26634 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1946,6 +1946,21 @@ static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
+>  }
+>  #endif
+>  
+> +/* Enable write notifications without blowing away special flags. */
+> +static inline void vma_enable_writenotify(struct vm_area_struct *vma)
+> +{
+> +	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
+> +	                                  vm_get_page_prot(vma->vm_flags &
+> +					                   ~VM_SHARED));
+
+I think this way is more readable:
+
+	pgprot_t newprot;
+	newprot = vm_get_page_prot(vma->vm_flags & ~VM_SHARED);
+	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot, newprot);
+
+> +}
 > +
->  config RCAR_THERMAL
->  	tristate "Renesas R-Car thermal driver"
->  	depends on ARCH_SHMOBILE || COMPILE_TEST
-> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-> index 419c3cd..009a457 100644
-> --- a/drivers/thermal/Makefile
-> +++ b/drivers/thermal/Makefile
-> @@ -20,6 +20,7 @@ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
+> +/* Disable write notifications without blowing away special flags. */
+> +static inline void vma_disable_writenotify(struct vm_area_struct *vma)
+> +{
+> +	vma->vm_page_prot = pgprot_modify(vma->vm_page_prot,
+> +	                                  vm_get_page_prot(vma->vm_flags));
+
+ditto.
+
+> +}
+> +
+>  #ifdef CONFIG_NUMA_BALANCING
+>  unsigned long change_prot_numa(struct vm_area_struct *vma,
+>  			unsigned long start, unsigned long end);
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index c1f2ea4..abcac32 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -1549,8 +1549,16 @@ munmap_back:
+>  	 * Can we just expand an old mapping?
+>  	 */
+>  	vma = vma_merge(mm, prev, addr, addr + len, vm_flags, NULL, file, pgoff, NULL);
+> -	if (vma)
+> +	if (vma) {
+> +		if (!vma_wants_writenotify(vma)) {
+> +			/*
+> +			 * We're going to reset VM_SOFTDIRTY, so we can disable
+> +			 * write notifications.
+> +			 */
+> +			vma_disable_writenotify(vma);
+> +		}
+>  		goto out;
+> +	}
+>  
+>  	/*
+>  	 * Determine the object being mapped and call the appropriate
+> -- 
+> 2.1.0.rc2.206.gedb03e5
 > 
->  # platform thermal drivers
->  obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
-> +obj-$(CONFIG_ROCKCHIP_THERMAL) 	+= rockchip_thermal.o
->  obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
->  obj-$(CONFIG_KIRKWOOD_THERMAL)  += kirkwood_thermal.o
->  obj-y				+= samsung/
-> diff --git a/drivers/thermal/rockchip_thermal.c
-> b/drivers/thermal/rockchip_thermal.c new file mode 100644
-> index 0000000..93adb61
-> --- /dev/null
-> +++ b/drivers/thermal/rockchip_thermal.c
-> @@ -0,0 +1,659 @@
-> +/*
-> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> + * Author: Rockchip, Inc.
 
-no need for a duplicate Author mark
-
-
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-> for + * more details.
-> + *
-> +*/
-> +
-> +#include <linux/clk.h>
-> +#include <linux/io.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/cpu_cooling.h>
-> +#include "thermal_core.h"
-> +
-> +enum rockchip_thermal_trip {
-> +	ROCKCHIP_TRIP_PASSIVE,
-> +	ROCKCHIP_TRIP_CRITICAL,
-> +	ROCKCHIP_TRIP_NUM,
-> +};
-> +
-> +struct rockchip_thermal_data {
-> +	struct rockchip_tsadc_platform_data *pdata;
-> +	struct thermal_zone_device *tz;
-> +	struct thermal_cooling_device *cdev;
-> +	enum thermal_device_mode mode;
-> +	void __iomem *regs;
-> +
-> +	signed long temp_passive;
-> +	signed long temp_critical;
-> +	signed long temp_force_shut;
-> +	signed long alarm_temp;
-> +	signed long last_temp;
-> +	bool irq_enabled;
-> +	int irq;
-> +	struct clk *tsadc_clk;
-> +	struct clk *tsadc_pclk;
-> +};
-> +
-> +struct rockchip_tsadc_platform_data {
-> +	u8 irq_en;
-> +	signed long temp_passive;
-> +	signed long temp_critical;
-> +	signed long temp_force_shut;
-> +	int passive_delay;
-> +	int polling_delay;
-> +
-> +	int (*irq_handle)(void __iomem *reg);
-> +	int (*initialize)(void __iomem *reg, signed long temp_force_shut);
-> +	int (*control)(void __iomem *reg, bool on);
-> +	u32 (*code_to_temp)(int temp);
-> +	u32 (*temp_to_code)(int temp);
-> +	void (*set_alarm_temp)(void __iomem *regs, signed long temp);
-> +};
-> +
-> +/*TSADC V2 Sensor info define:*/
-> +#define TSADC_AUTO_CON			0x04
-> +#define TSADC_INT_EN			0x08
-> +#define TSADC_INT_PD			0x0c
-> +#define TSADC_DATA1				0x24
-> +#define TSADC_COMP1_INT			0x34
-> +#define TSADC_COMP1_SHUT		0x44
-> +#define TSADC_AUTO_PERIOD		0x68
-> +#define TSADC_AUTO_PERIOD_HT	0x6c
-> +
-> +#define TSADC_AUTO_SRC1_EN			(1 << 5)
-> +#define TSADC_AUTO_EN				(1 << 0)
-> +#define TSADC_AUTO_DISABLE			~(1 << 0)
-> +#define TSADC_AUTO_STAS_BUSY		(1 << 16)
-> +#define TSADC_AUTO_STAS_BUSY_MASK	(1 << 16)
-> +#define TSADC_SHUT_2GPIO_SRC1_EN	(1 << 5)
-> +#define TSADC_INT_SRC1_EN			(1 << 1)
-> +#define TSADC_SHUT_SRC1_STATUS		(1 << 5)
-> +#define TSADC_INT_SRC1_STATUS		(1 << 1)
-> +
-> +#define TSADC_DATA_MASK					0xfff
-> +#define TSADC_HIGHT_INT_DEBOUNCE		0x60
-> +#define TSADC_HIGHT_TSHUT_DEBOUNCE		0x64
-> +#define TSADC_HIGHT_INT_DEBOUNCE_TIME	0x0a
-> +#define TSADC_HIGHT_TSHUT_DEBOUNCE_TIME	0x0a
-> +#define TSADC_AUTO_PERIOD_TIME			0x03e8
-> +#define TSADC_AUTO_PERIOD_HT_TIME		0x64
-
-You could name them TSADCV2_xxxxx, as the variant found for example in the
-rk3066 differs a lot.
-
-
-> +
-> +struct tsadc_table {
-> +	int code;
-> +	int temp;
-> +};
-> +
-> +static const struct tsadc_table v2_code_table[] = {
-> +	{TSADC_DATA_MASK, -40},
-> +	{3800, -40},
-> +	{3792, -35},
-> +	{3783, -30},
-> +	{3774, -25},
-> +	{3765, -20},
-> +	{3756, -15},
-> +	{3747, -10},
-> +	{3737, -5},
-> +	{3728, 0},
-> +	{3718, 5},
-> +	{3708, 10},
-> +	{3698, 15},
-> +	{3688, 20},
-> +	{3678, 25},
-> +	{3667, 30},
-> +	{3656, 35},
-> +	{3645, 40},
-> +	{3634, 45},
-> +	{3623, 50},
-> +	{3611, 55},
-> +	{3600, 60},
-> +	{3588, 65},
-> +	{3575, 70},
-> +	{3563, 75},
-> +	{3550, 80},
-> +	{3537, 85},
-> +	{3524, 90},
-> +	{3510, 95},
-> +	{3496, 100},
-> +	{3482, 105},
-> +	{3467, 110},
-> +	{3452, 115},
-> +	{3437, 120},
-> +	{3421, 125},
-> +	{0, 125},
-> +};
-> +
-> +static int rk_tsadcv2_irq_handle(void __iomem *regs)
-> +{
-> +	u32 val;
-> +
-> +	val = readl_relaxed(regs + TSADC_INT_PD);
-> +	writel_relaxed(val & ~(1 << 8), regs + TSADC_INT_PD);
-> +
-> +	return 0;
-> +}
-> +
-> +static u32 rk_tsadcv2_temp_to_code(int temp)
-> +{
-> +	u32 code = 0;
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(v2_code_table) - 1; i++) {
-> +		if (temp <= v2_code_table[i].temp && temp >
-> +		    v2_code_table[i - 1].temp)
-> +			code = v2_code_table[i].code;
-> +	}
-> +	return code;
-> +}
-> +
-> +static u32 rk_tsadcv2_code_to_temp(int code)
-> +{
-> +	u32 temp = 0;
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(v2_code_table) - 1; i++) {
-> +		if (code <= v2_code_table[i].code && code >
-> +		    v2_code_table[i + 1].code)
-> +			temp = v2_code_table[i].temp;
-> +	}
-> +	return temp;
-> +}
-> +
-> +int rk_tsadcv2_initialize(void __iomem *regs, signed long temp_force_shut)
-> +{
-> +	int shutdown_value;
-> +
-> +	shutdown_value = rk_tsadcv2_temp_to_code(temp_force_shut);
-> +	/* Enable measurements at ~ 10 Hz */
-> +	writel_relaxed(0, regs + TSADC_AUTO_CON);
-> +	writel_relaxed(TSADC_AUTO_PERIOD_TIME, regs + TSADC_AUTO_PERIOD);
-> +	writel_relaxed(TSADC_AUTO_PERIOD_HT_TIME, regs + TSADC_AUTO_PERIOD_HT);
-> +	writel_relaxed(shutdown_value, regs + TSADC_COMP1_SHUT);
-> +	writel_relaxed(TSADC_HIGHT_INT_DEBOUNCE_TIME, regs +
-> +		       TSADC_HIGHT_INT_DEBOUNCE);
-> +	writel_relaxed(TSADC_HIGHT_TSHUT_DEBOUNCE_TIME, regs +
-> +		       TSADC_HIGHT_TSHUT_DEBOUNCE);
-> +	writel_relaxed(TSADC_SHUT_2GPIO_SRC1_EN | TSADC_INT_SRC1_EN, regs +
-> +		       TSADC_INT_EN);
-> +	writel_relaxed(TSADC_AUTO_SRC1_EN | TSADC_AUTO_EN, regs +
-> +		       TSADC_AUTO_CON);
-> +	return 0;
-> +}
-> +
-> +static int rk_tsadcv2_control(void __iomem *regs, bool on)
-> +{
-> +	u32 val;
-> +
-> +	if (on) {
-> +		val = readl_relaxed(regs + TSADC_AUTO_CON);
-> +		writel_relaxed(val | TSADC_AUTO_EN, regs + TSADC_AUTO_CON);
-> +	} else {
-> +		val = readl_relaxed(regs + TSADC_AUTO_CON);
-> +		writel_relaxed(val & TSADC_AUTO_DISABLE, regs + TSADC_AUTO_CON);
-> +	}
-> +	return 0;
-> +}
-> +
-> +static void rk_tsadcv2_alarm_temp(void __iomem *regs, signed long
-> alarm_temp) +{
-> +	int alarm_value;
-> +
-> +	alarm_value = rk_tsadcv2_temp_to_code(alarm_temp);
-> +	writel_relaxed(alarm_value, regs + TSADC_COMP1_INT);
-> +}
-> +
-> +struct rockchip_tsadc_platform_data const rk3288_tsadc_data = {
-> +	.irq_en = 1,
-> +	.temp_passive = 85000,
-> +	.temp_critical = 100000,
-> +	.temp_force_shut = 120000,
-> +	.passive_delay = 2000,
-> +	.polling_delay = 1000,
-> +	.irq_handle = rk_tsadcv2_irq_handle,
-> +	.initialize = rk_tsadcv2_initialize,
-> +	.control = rk_tsadcv2_control,
-> +	.code_to_temp = rk_tsadcv2_code_to_temp,
-> +	.temp_to_code = rk_tsadcv2_temp_to_code,
-> +	.set_alarm_temp = rk_tsadcv2_alarm_temp,
-> +};
-> +
-> +static const struct of_device_id of_rockchip_thermal_match[] = {
-> +	{
-> +	 .compatible = "rockchip,rk3288-tsadc",
-> +	 .data = (void *)&rk3288_tsadc_data,
-
-the indentation is off here
-
-
-> +	 },
-> +	{ /* end */ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, of_rockchip_thermal_match);
-> +
-> +static void rockchip_set_alarm_temp(struct rockchip_thermal_data *data,
-> +				    signed long alarm_temp)
-> +{
-> +	struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
-> +
-> +	data->alarm_temp = alarm_temp;
-> +	if (p_tsadc_data->set_alarm_temp)
-> +		p_tsadc_data->set_alarm_temp(data->regs, alarm_temp);
-> +}
-> +
-> +static int rockchip_get_temp(struct thermal_zone_device *tz,
-> +			     unsigned long *temp)
-> +{
-> +	struct rockchip_thermal_data *data = tz->devdata;
-> +	struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
-> +	u32 val;
-> +
-> +	val = readl_relaxed(data->regs + TSADC_DATA1);
-> +	*temp = p_tsadc_data->code_to_temp(val);
-> +
-> +	/* Update alarm value to next higher trip point */
-> +	if (data->alarm_temp == data->temp_passive && *temp >=
-> +	    data->temp_passive)
-> +		rockchip_set_alarm_temp(data, data->temp_critical);
-> +
-> +	if (data->alarm_temp == data->temp_critical && *temp <
-> +	    data->temp_passive) {
-> +		rockchip_set_alarm_temp(data, data->temp_passive);
-> +		dev_dbg(&tz->device, "thermal alarm off: T < %lu\n",
-> +			data->alarm_temp / 1000);
-> +	}
-> +
-> +	if (*temp != data->last_temp) {
-> +		dev_dbg(&tz->device, "millicelsius: %ld\n", *temp);
-> +		data->last_temp = *temp;
-> +	}
-> +
-> +	/* Reenable alarm IRQ if temperature below alarm temperature */
-> +	if (!data->irq_enabled && *temp < data->alarm_temp) {
-> +		data->irq_enabled = true;
-> +		enable_irq(data->irq);
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int rockchip_thermal_initialize(struct rockchip_thermal_data *data)
-> +{
-> +	struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
-> +
-> +	if (p_tsadc_data->initialize)
-> +		p_tsadc_data->initialize(data->regs, data->temp_force_shut);
-> +	rockchip_set_alarm_temp(data, data->temp_passive);
-> +	return 0;
-> +}
-> +
-> +static void rockchip_thermal_control(struct rockchip_thermal_data *data,
-> +				     bool on)
-> +{
-> +	struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
-> +
-> +	if (p_tsadc_data->control)
-> +		p_tsadc_data->control(data->regs, on);
-> +
-> +	if (on) {
-> +		data->irq_enabled = true;
-> +		data->mode = THERMAL_DEVICE_ENABLED;
-> +	} else {
-> +		data->irq_enabled = false;
-> +		data->mode = THERMAL_DEVICE_DISABLED;
-> +	}
-> +}
-> +
-> +static int rockchip_get_mode(struct thermal_zone_device *tz,
-> +			     enum thermal_device_mode *mode)
-> +{
-> +	struct rockchip_thermal_data *data = tz->devdata;
-> +
-> +	*mode = data->mode;
-> +	return 0;
-> +}
-> +
-> +static int rockchip_set_mode(struct thermal_zone_device *tz,
-> +			     enum thermal_device_mode mode)
-> +{
-> +	struct rockchip_thermal_data *data = tz->devdata;
-> +	struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
-> +
-> +	if (mode == THERMAL_DEVICE_ENABLED) {
-> +		tz->polling_delay = p_tsadc_data->polling_delay;
-> +		tz->passive_delay = p_tsadc_data->passive_delay;
-> +		rockchip_thermal_control(data, true);
-> +		if (!data->irq_enabled) {
-> +			data->irq_enabled = true;
-> +			enable_irq(data->irq);
-> +		}
-> +	} else {
-> +		rockchip_thermal_control(data, false);
-> +		tz->polling_delay = 0;
-> +		tz->passive_delay = 0;
-> +		if (data->irq_enabled) {
-> +			disable_irq(data->irq);
-> +			data->irq_enabled = false;
-> +		}
-> +	}
-> +
-> +	data->mode = mode;
-> +	thermal_zone_device_update(tz);
-> +	return 0;
-> +}
-> +
-> +static int rockchip_get_trip_type(struct thermal_zone_device *tz, int trip,
-> +				  enum thermal_trip_type *type)
-> +{
-> +	*type = (trip == ROCKCHIP_TRIP_PASSIVE) ? THERMAL_TRIP_PASSIVE :
-> +	    THERMAL_TRIP_CRITICAL;
-> +	return 0;
-> +}
-> +
-> +static int rockchip_get_crit_temp(struct thermal_zone_device *tz,
-> +				  unsigned long *temp)
-> +{
-> +	struct rockchip_thermal_data *data = tz->devdata;
-> +
-> +	*temp = data->temp_critical;
-> +	return 0;
-> +}
-> +
-> +static int rockchip_get_trip_temp(struct thermal_zone_device *tz, int trip,
-> +				  unsigned long *temp)
-> +{
-> +	struct rockchip_thermal_data *data = tz->devdata;
-> +
-> +	*temp = (trip == ROCKCHIP_TRIP_PASSIVE) ? data->temp_passive :
-> +	    data->temp_critical;
-> +	return 0;
-> +}
-> +
-> +static int rockchip_set_trip_temp(struct thermal_zone_device *tz, int trip,
-> +				  unsigned long temp)
-> +{
-> +	struct rockchip_thermal_data *data = tz->devdata;
-> +
-> +	if (trip == ROCKCHIP_TRIP_CRITICAL)
-> +		return -EPERM;
-> +
-> +	data->temp_passive = temp;
-> +	rockchip_set_alarm_temp(data, temp);
-> +	return 0;
-> +}
-> +
-> +static int rockchip_bind(struct thermal_zone_device *tz,
-> +			 struct thermal_cooling_device *cdev)
-> +{
-> +	int ret;
-> +
-> +	ret = thermal_zone_bind_cooling_device(tz, ROCKCHIP_TRIP_PASSIVE, cdev,
-> +					       THERMAL_NO_LIMIT,
-> +					       THERMAL_NO_LIMIT);
-> +	if (ret) {
-> +		dev_err(&tz->device, "binding zone %s with cdev %s failed:%d\n",
-> +			tz->type, cdev->type, ret);
-> +		return ret;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int rockchip_unbind(struct thermal_zone_device *tz,
-> +			   struct thermal_cooling_device *cdev)
-> +{
-> +	int ret;
-> +
-> +	ret = thermal_zone_unbind_cooling_device(tz,
-> +						 ROCKCHIP_TRIP_PASSIVE, cdev);
-> +	if (ret) {
-> +		dev_err(&tz->device,
-> +			"unbinding zone %s with cdev %s failed:%d\n", tz->type,
-> +			cdev->type, ret);
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct thermal_zone_device_ops rockchip_tz_ops = {
-> +	.bind = rockchip_bind,
-> +	.unbind = rockchip_unbind,
-> +	.get_temp = rockchip_get_temp,
-> +	.get_mode = rockchip_get_mode,
-> +	.set_mode = rockchip_set_mode,
-> +	.get_trip_type = rockchip_get_trip_type,
-> +	.get_trip_temp = rockchip_get_trip_temp,
-> +	.get_crit_temp = rockchip_get_crit_temp,
-> +	.set_trip_temp = rockchip_set_trip_temp,
-> +};
-> +
-> +static irqreturn_t rockchip_thermal_alarm_irq(int irq, void *dev)
-> +{
-> +	struct rockchip_thermal_data *data = dev;
-> +
-> +	disable_irq_nosync(irq);
-> +	data->irq_enabled = false;
-> +
-> +	return IRQ_WAKE_THREAD;
-> +}
-> +
-> +static irqreturn_t rockchip_thermal_alarm_irq_thread(int irq, void *dev)
-> +{
-> +	struct rockchip_thermal_data *data = data;
-> +	struct rockchip_tsadc_platform_data *p_tsadc_data = data->pdata;
-> +
-> +	dev_dbg(&data->tz->device, "THERMAL ALARM: T > %lu\n",
-> +		data->alarm_temp / 1000);
-> +
-> +	if (p_tsadc_data->irq_en && p_tsadc_data->irq_handle)
-> +		p_tsadc_data->irq_handle(data->regs);
-> +
-> +	thermal_zone_device_update(data->tz);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int rockchip_thermal_probe(struct platform_device *pdev)
-> +{
-> +	struct rockchip_thermal_data *data;
-> +	struct rockchip_tsadc_platform_data *p_tsadc_data;
-> +	struct cpumask clip_cpus;
-> +	struct resource *res;
-> +	const struct of_device_id *match;
-> +	int ret;
-> +	int rate, temp;
-> +
-> +	data = devm_kzalloc(&pdev->dev, sizeof(struct rockchip_thermal_data),
-> +			    GFP_KERNEL);
-> +
-> +	if (!data)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	data->regs = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(data->regs)) {
-> +		dev_err(&pdev->dev, "Could not get tsadc source, %p\n",
-> +			data->regs);
-> +		return PTR_ERR(data->regs);
-> +	}
-> +
-> +	match = of_match_node(of_rockchip_thermal_match, pdev->dev.of_node);
-> +	if (!match)
-> +		return -ENOMEM;
-> +	data->pdata = (struct rockchip_tsadc_platform_data *)match->data;
-> +	if (!data->pdata)
-> +		return -ENOMEM;
-> +	p_tsadc_data = data->pdata;
-> +
-> +	data->tsadc_clk = devm_clk_get(&pdev->dev, "tsadc_clk");
-> +	if (IS_ERR(data->tsadc_clk)) {
-> +		dev_err(&pdev->dev, "failed to get tsadc clock\n");
-> +		ret = PTR_ERR(data->tsadc_clk);
-> +		return -EPERM;
-> +	}
-> +
-> +	if (of_property_read_u32(pdev->dev.of_node, "clock-frequency", &rate)) {
-> +		dev_err(&pdev->dev,
-> +			"Missing clock-frequency property in the DT.\n");
-> +		return -EPERM;
-> +	}
-> +
-> +	ret = clk_set_rate(data->tsadc_clk, rate);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "failed to set adc clk\n");
-> +		return -EPERM;
-> +	}
-
-If necessary to set at all, the rate should be set via the new
-assigned-rate property
-
-
-> +	clk_prepare_enable(data->tsadc_clk);
-> +
-> +	data->tsadc_pclk = devm_clk_get(&pdev->dev, "tsadc_pclk");
-> +	if (IS_ERR(data->tsadc_pclk)) {
-> +		dev_err(&pdev->dev, "failed to get tsadc pclk\n");
-> +		ret = PTR_ERR(data->tsadc_pclk);
-> +		return -EPERM;
-> +	}
-> +	clk_prepare_enable(data->tsadc_pclk);
-> +
-> +	platform_set_drvdata(pdev, data);
-> +
-> +	if (of_property_read_u32(pdev->dev.of_node, "passive-temp", &temp)) {
-> +		dev_warn(&pdev->dev,
-> +			 "Missing default passive temp property in the DT.\n");
-> +		data->temp_passive = p_tsadc_data->temp_passive;
-> +	} else {
-> +		data->temp_passive = temp;
-> +	}
-> +
-> +	if (of_property_read_u32(pdev->dev.of_node, "critical-temp", &temp)) {
-> +		dev_warn(&pdev->dev,
-> +			 "Missing default critical temp property in the DT.\n");
-> +		data->temp_critical = p_tsadc_data->temp_critical;
-> +	} else {
-> +		data->temp_critical = temp;
-> +	}
-> +
-> +	if (of_property_read_u32(pdev->dev.of_node, "force-shut-temp", &temp)) {
-> +		dev_warn(&pdev->dev,
-> +			 "Missing default force shut down temp property in the DT.\n");
-> +		data->temp_force_shut = p_tsadc_data->temp_force_shut;
-> +	} else {
-> +		data->temp_force_shut = temp;
-> +	}
-
-use the generic trip-points, as explained in the binding-patch.
-
-
-> +
-> +	cpumask_set_cpu(0, &clip_cpus);
-> +	data->cdev = cpufreq_cooling_register(&clip_cpus);
-
-of_cpufreq_cooling_register(pdev->dev.of_node, &clip_cpus);
-
-
-> +	if (IS_ERR(data->cdev)) {
-> +		ret = PTR_ERR(data->cdev);
-> +		dev_err(&pdev->dev,
-> +			"failed to register cpufreq cooling device: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	data->tz = thermal_zone_device_register("rockchip_thermal",
-> +						ROCKCHIP_TRIP_NUM,
-> +						0, data,
-> +						&rockchip_tz_ops, NULL,
-> +						p_tsadc_data->passive_delay,
-> +						p_tsadc_data->polling_delay);
-> +
-> +	if (IS_ERR(data->tz)) {
-> +		ret = PTR_ERR(data->tz);
-> +		dev_err(&pdev->dev,
-> +			"failed to register thermal zone device %d\n", ret);
-> +		cpufreq_cooling_unregister(data->cdev);
-> +		return ret;
-> +	}
-> +
-> +	if (p_tsadc_data->irq_en) {
-> +		data->irq = platform_get_irq(pdev, 0);
-> +		if (data->irq < 0)
-> +			return data->irq;
-> +
-> +		ret = devm_request_threaded_irq(&pdev->dev, data->irq,
-> +						rockchip_thermal_alarm_irq,
-> +					rockchip_thermal_alarm_irq_thread,
-> +						0, "rockchip_thermal", data);
-> +		if (ret < 0) {
-> +			dev_err(&pdev->dev,
-> +				"failed to request tsadc irq: %d\n", ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	rockchip_thermal_initialize(data);
-> +	rockchip_thermal_control(data, true);
-> +	return 0;
-> +}
-> +
-> +static int rockchip_thermal_remove(struct platform_device *pdev)
-> +{
-> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
-> +
-> +	rockchip_thermal_control(data, false);
-> +
-> +	thermal_zone_device_unregister(data->tz);
-> +
-> +	if (!IS_ERR(data->tsadc_clk))
-> +		clk_disable_unprepare(data->tsadc_clk);
-> +
-> +	if (!IS_ERR(data->tsadc_pclk))
-> +		clk_disable_unprepare(data->tsadc_pclk);
-> +
-> +	cpufreq_cooling_unregister(data->cdev);
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int rockchip_thermal_suspend(struct device *dev)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
-> +
-> +	rockchip_thermal_control(data, false);
-> +	return 0;
-> +}
-> +
-> +static int rockchip_thermal_resume(struct device *dev)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct rockchip_thermal_data *data = platform_get_drvdata(pdev);
-> +
-> +	rockchip_thermal_initialize(data);
-> +	rockchip_thermal_control(data, true);
-> +
-> +	return 0;
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(rockchip_thermal_pm_ops,
-> +			 rockchip_thermal_suspend, rockchip_thermal_resume);
-> +
-> +#define ROCKCHIP_TMU_PM	(&rockchip_thermal_pm_ops)
-> +#else
-> +#define ROCKCHIP_TMU_PM	NULL
-> +#endif
-
-simply do your
-
-static SIMPLE_DEV_PM_OPS(rockchip_thermal_pm_ops,
-			 rockchip_thermal_suspend, rockchip_thermal_resume);
-
-outside the CONFIG_PM_SLEEP ifdef, as SIMPLE_DEV_PM_OPS already contains
-a stub for !CONFIG_PM_SLEEP so you can remove your ROCKCHIP_TMU_PM as the 
-rockchip_thermal_pm_ops will always be defined to something.
-
-
-> +
-> +static struct platform_driver rockchip_thermal_driver = {
-> +	.driver = {
-> +		   .name = "rockchip-thermal",
-> +		   .owner = THIS_MODULE,
-> +		   .pm = ROCKCHIP_TMU_PM,
-> +		   .of_match_table = of_rockchip_thermal_match,
-> +		   },
-> +	.probe = rockchip_thermal_probe,
-> +	.remove = rockchip_thermal_remove,
-> +};
-> +
-> +module_platform_driver(rockchip_thermal_driver);
-> +
-> +MODULE_DESCRIPTION("ROCKCHIP THERMAL Driver");
-> +MODULE_AUTHOR("Rockchip, Inc.");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:rockchip-thermal");
-
+-- 
+ Kirill A. Shutemov
