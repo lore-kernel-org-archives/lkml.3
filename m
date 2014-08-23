@@ -1,90 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104AbaHWMWT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 08:22:19 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:58111 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085AbaHWMWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 08:22:17 -0400
-Date: Sat, 23 Aug 2014 16:22:14 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Julien Tinnes <jln@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: + prctl-pr_set_mm-introduce-pr_set_mm_map-operation-v3.patch
- added to -mm tree
-Message-ID: <20140823122214.GF25918@moon>
-References: <20140822192241.GA26512@redhat.com>
- <20140822201550.GA25918@moon>
- <20140823115302.GA27587@redhat.com>
+	id S1750898AbaHWNAL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 09:00:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14444 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750734AbaHWNAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 09:00:09 -0400
+Date: Sat, 23 Aug 2014 14:59:48 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCHv2] perf tools: Add +field argument support for --sort option
+Message-ID: <20140823125948.GA1193@krava.brq.redhat.com>
+References: <1408715919-25990-1-git-send-email-jolsa@kernel.org>
+ <1408715919-25990-3-git-send-email-jolsa@kernel.org>
+ <20140822151651.GC3473@kernel.org>
+ <20140822152354.GB22315@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140823115302.GA27587@redhat.com>
+In-Reply-To: <20140822152354.GB22315@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 23, 2014 at 01:53:02PM +0200, Oleg Nesterov wrote:
-> >
-> > It should protect from allocation/devetion/mergin of another vma. IOW when
-> > I lookup for vma I need to be sure it exist and won't disappear at least
-> > while I validate it.
+On Fri, Aug 22, 2014 at 05:23:55PM +0200, Jiri Olsa wrote:
+> On Fri, Aug 22, 2014 at 12:16:51PM -0300, Arnaldo Carvalho de Melo wrote:
 > 
-> plus you need mmap_sem (at least for reading) when you update mm_struct,
-> this is clear.
+> SNIP
 > 
-> My question was why the whole function should be called under mmap_sem?
-> It could take it only around find_vma() + check(RLIMIT_STACK) ?
-
-Stricktly speaking yes, but don't forget we might need to update
-exe::file as well which requires lock to be taken. So it is simplier
-to take the read-lock for the whole function.
-
-> In fact I do not think we need this vma_stack/RLIMIT_STACK check at all.
-> It buys nithing and looks strange. RLIMIT_STACK is mostly for self-debugging,
-> to catch the, say, unlimited recursion. An application can trivially
-> create a stack region of arbitrary size. I'd seriously suggest to remove it.
-
-Look, allocate stack for self is not a problem (we do this for our parasite
-code which executes inside dumpee address space) but RLIMIT_STACK check is
-present in ipc shmem so I think we still need this check in a sake of
-consistency. (note this code doesn't require any special caps so I need
-to use as much checks/tests as possible).
-
+> > >  }
+> > >  
+> > > +static int setup_sort_order(void)
+> > > +{
+> > > +#define BUF_MAX 4096
+> > 
+> > This is an arbitrary value, and you will use this just here, so you
+> > could just have used a number and later used sizeof(buf).
+> > 
+> > Anyway, what bothers me is the use of yet another static buffer.
+> > 
+> > The thing to use here is asprintf, that will do it all for you, format
+> > _and_ allocate a buffer the size you need.
+> > 
+> > > +	static char buf[BUF_MAX];
+> > > +
+> > > +	if (!sort_order || is_strict_order(sort_order))
+> > > +		return 0;
+> > > +
+> > > +	if (!strlen(sort_order + 1)) {
+> > > +		error("Invalid --fields key: `+'");
+> > > +		return -EINVAL;
+> > > +	}
+> > > +
+> > > +	scnprintf(buf, BUF_MAX, "%s,%s",
+> > > +		  get_default_sort_order(),
+> > > +		  sort_order + 1);
+> > > +
+> > > +	sort_order = buf;
+> > 
+> > I.e. it would be better to have this as:
+> > 
+> > 	char *new_sort_order;
+> > 
+> > 	if (sort_order[1] == '\0') {
+> > 		error("Invalid --fields key: `+'");
+> > 		return -EINVAL;
+> > 	}
+> > 
+> > 	if (asprintf(&new_sort_order, "%s,%s",
+> > 		     get_default_sort_order(), sort_order + 1) < 0) {
+> > 		error("Not enough memory to set up --sort");
+> > 		return -ENOMEM;
+> > 	}
 > 
-> > > > +	if (prctl_map.auxv_size) {
-> > > > +		/* Last entry must be AT_NULL as specification requires */
-> > > > +		user_auxv[AT_VECTOR_SIZE - 2] = AT_NULL;
-> > > > +		user_auxv[AT_VECTOR_SIZE - 1] = AT_NULL;
-> > > > +
-> > > > +		task_lock(current);
-> > > > +		memcpy(mm->saved_auxv, user_auxv, sizeof(user_auxv));
-> > > > +		task_unlock(current);
-> > >
-> > > Again, could you explain this task_lock() ?
-> >
-> > It is used for serialization access to saved_auxv, ie when we fill it
-> > with new data the other reader (via procfs interface) should wait until
-> > we finish.
+> ok, will check the asprintf
 > 
-> But proc_pid_auxv() doesn't take this lock? And even if it did, this lock
-> can't help. task_lock() is per-thread, and multiple threads (including
-> CLONE_VM tasks, vfork() for example) can share the same ->mm.
+> > 		
+> > 	sort_order = new_sort_order;
+> > 
+> > > +	return 0;
+> > 
+> > 
+> > Also please fix the error message, there is a cut'n'paste error there :-)
 > 
-> This certainly doesn't look right.
+> aargh right ;-)
+> 
+> I'll send v2
 
-It takes this lock but indeed this won't help much. Looks like I need
-to use cred_guard_mutex instead of task_lock here, no?
+attached v2 with changes suggested above:
+  - use dynamic memory instead static buffer
+  - fix error message typo
+
+thanks,
+jirka
+
+
+---
+Adding support to add field(s) to default sort order
+via using the '+' prefix, like for report:
+
+  $ perf report
+  Samples: 2K of event 'cycles', Event count (approx.): 882172583
+  Overhead  Command          Shared Object                Symbol
+     7.39%  swapper          [kernel.kallsyms]            [k] intel_idle
+     1.97%  firefox          libpthread-2.17.so           [.] pthread_mutex_lock
+     1.39%  firefox          [snd_hda_intel]              [k] azx_get_position
+     1.11%  firefox          libpthread-2.17.so           [.] pthread_mutex_unlock
+
+  $ perf report -s +cpu
+  Samples: 2K of event 'cycles', Event count (approx.): 882172583
+  Overhead  Command          Shared Object                Symbol                      CPU
+     2.89%  swapper          [kernel.kallsyms]            [k] intel_idle              000
+     2.61%  swapper          [kernel.kallsyms]            [k] intel_idle              002
+     1.20%  swapper          [kernel.kallsyms]            [k] intel_idle              001
+     0.82%  firefox          libpthread-2.17.so           [.] pthread_mutex_lock      002
+
+Works in general for commands using --sort option.
+
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/sort.c | 37 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 36 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 1958637cf136..289df9d1e65a 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1446,12 +1446,47 @@ static const char *get_default_sort_order(void)
+ 	return default_sort_orders[sort__mode];
+ }
+ 
++static int setup_sort_order(void)
++{
++	char *new_sort_order;
++
++	/*
++	 * Append '+'-prefixed sort order to the default sort
++	 * order string.
++	 */
++	if (!sort_order || is_strict_order(sort_order))
++		return 0;
++
++	if (sort_order[1] == '\0') {
++		error("Invalid --sort key: `+'");
++		return -EINVAL;
++	}
++
++	/*
++	 * We allocate new sort_order string, but we never free it,
++	 * because it's checked over the rest of the code.
++	 */
++	if (asprintf(&new_sort_order, "%s,%s",
++		     get_default_sort_order(), sort_order + 1) < 0) {
++		error("Not enough memory to set up --sort");
++		return -ENOMEM;
++	}
++
++	sort_order = new_sort_order;
++	return 0;
++}
++
+ static int __setup_sorting(void)
+ {
+ 	char *tmp, *tok, *str;
+-	const char *sort_keys = sort_order;
++	const char *sort_keys;
+ 	int ret = 0;
+ 
++	ret = setup_sort_order();
++	if (ret)
++		return ret;
++
++	sort_keys = sort_order;
+ 	if (sort_keys == NULL) {
+ 		if (is_strict_order(field_order)) {
+ 			/*
+-- 
+1.8.3.1
+
