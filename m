@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaHWGbs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 02:31:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50413 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752210AbaHWGbq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 02:31:46 -0400
-Date: Fri, 22 Aug 2014 23:31:13 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Florian Fainelli <f.fainelli@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        David Daney <david.daney@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, John Crispin <blogic@openwrt.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Jayachandran C <jchandra@broadcom.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 0/7] MIPS: Move device-tree files to a common location
-Message-ID: <20140823063113.GC23715@localhost>
-References: <1408651466-8334-1-git-send-email-abrestic@chromium.org>
- <CAGVrzcZobuL4z0WNX+Sz4p_uwaPL-S5yvEmgRUwZPJi4+qq0tg@mail.gmail.com>
- <CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com>
+	id S1752465AbaHWGhT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 02:37:19 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51485 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752233AbaHWGhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 02:37:17 -0400
+Date: Sat, 23 Aug 2014 08:37:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: x86-ml <x86@kernel.org>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] microcode cleanups
+Message-ID: <20140823063702.GA1724@nazgul.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAL1qeaGb-o0P7x4nZPJ+dGfoSKz+2ANrB0gGrBi19TtPxVTAZQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 02:10:23PM -0700, Andrew Bresticker wrote:
-> On Fri, Aug 22, 2014 at 1:42 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> >
-> > On Aug 21, 2014 3:05 PM, "Andrew Bresticker" <abrestic@chromium.org> wrote:
-> > >
-> > > To be consistent with other architectures and to avoid unnecessary
-> > > makefile duplication, move all MIPS device-trees to arch/mips/boot/dts
-> > > and build them with a common makefile.
-> >
-> > I recall reading that the ARM organization for DTS files was a bit unfortunate
-> > and should have been something like:
-> >
-> > arch/arm/boot/dts/<vendor>/
-> >
-> > Is this something we should do for the MIPS and update the other architectures
-> > to follow that scheme?
-> 
-> I recall reading that as well and that it would be adopted for ARM64,
-> but that hasn't seemed to have happened.  Perhaps Olof (CC'ed) will no
-> more.
+Hi guys,
 
-Yeah, I highly recommend having a directory per vendor. We didn't on ARM,
-and the amount of files in that directory is becoming pretty
-insane. Moving to a subdirectory structure later gets messy which is
-why we've been holding off on it.
+please pull a bunch of cleanups to the microcode loader machinery, from
+Henrique de Moraes Holschuh.
 
+Thanks.
 
--Olof
+--
+The following changes since commit 9a3c4145af32125c5ee39c0272662b47307a8323:
+
+  Linux 3.16-rc6 (2014-07-20 21:04:16 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/microcode_cleanups
+
+for you to fetch changes up to ebc14ddcc9454c02439b67f6536628289faaa26e:
+
+  x86, microcode, intel: Fix total_size computation (2014-07-28 16:08:02 +0200)
+
+----------------------------------------------------------------
+A bunch of cleanups from Henrique.
+
+----------------------------------------------------------------
+Henrique de Moraes Holschuh (5):
+      x86, microcode, amd: Fix missing static declaration
+      x86, microcode, intel: Add missing static declarations
+      x86, microcode, intel: Fix typos
+      x86, microcode, intel: Rename apply_microcode and declare it static
+      x86, microcode, intel: Fix total_size computation
+
+ arch/x86/include/asm/microcode_intel.h      |  2 +-
+ arch/x86/kernel/cpu/microcode/amd_early.c   |  2 +-
+ arch/x86/kernel/cpu/microcode/intel.c       |  4 ++--
+ arch/x86/kernel/cpu/microcode/intel_early.c | 10 +++++-----
+ 4 files changed, 9 insertions(+), 9 deletions(-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
