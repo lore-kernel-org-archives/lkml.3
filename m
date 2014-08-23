@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866AbaHWL1l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 07:27:41 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:21752 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752520AbaHWLY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 07:24:59 -0400
-X-IronPort-AV: E=Sophos;i="5.04,386,1406584800"; 
-   d="scan'208";a="90829924"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: josh@joshtriplett.org, kernel-janitors@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] rtc: use c99 initializers in structures
-Date: Sat, 23 Aug 2014 13:20:31 +0200
-Message-Id: <1408792831-25615-10-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1408792831-25615-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1752112AbaHWLzr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 07:55:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751683AbaHWLzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 07:55:45 -0400
+Date: Sat, 23 Aug 2014 13:53:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: + prctl-pr_set_mm-introduce-pr_set_mm_map-operation-v3.patch
+	added to -mm tree
+Message-ID: <20140823115302.GA27587@redhat.com>
+References: <20140822192241.GA26512@redhat.com> <20140822201550.GA25918@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822201550.GA25918@moon>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 08/23, Cyrill Gorcunov wrote:
+>
+> On Fri, Aug 22, 2014 at 09:22:41PM +0200, Oleg Nesterov wrote:
+> > Hi Cyrill,
+> >
+> > I think the patch is fine but I can't understand the usage of mmap_sem
+> > and alloc_lock,
+> >
+> > > +	stack_vma = find_vma(mm, (unsigned long)prctl_map->start_stack);
+> >
+> > OK, find_vma() needs mmap_sem. But otherwise, why this should be called
+> > under down_read(&mm->mmap_sem) ? What this lock tries to protect?
+>
+> It should protect from allocation/devetion/mergin of another vma. IOW when
+> I lookup for vma I need to be sure it exist and won't disappear at least
+> while I validate it.
 
-Use c99 initializers for structures.
+plus you need mmap_sem (at least for reading) when you update mm_struct,
+this is clear.
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+My question was why the whole function should be called under mmap_sem?
+It could take it only around find_vma() + check(RLIMIT_STACK) ?
 
-// <smpl>
-@decl@
-identifier i1,fld;
-type T;
-field list[n] fs;
-@@
+In fact I do not think we need this vma_stack/RLIMIT_STACK check at all.
+It buys nithing and looks strange. RLIMIT_STACK is mostly for self-debugging,
+to catch the, say, unlimited recursion. An application can trivially
+create a stack region of arbitrary size. I'd seriously suggest to remove it.
 
-struct i1 {
- fs
- T fld;
- ...};
+> > > +	if (prctl_map.auxv_size) {
+> > > +		/* Last entry must be AT_NULL as specification requires */
+> > > +		user_auxv[AT_VECTOR_SIZE - 2] = AT_NULL;
+> > > +		user_auxv[AT_VECTOR_SIZE - 1] = AT_NULL;
+> > > +
+> > > +		task_lock(current);
+> > > +		memcpy(mm->saved_auxv, user_auxv, sizeof(user_auxv));
+> > > +		task_unlock(current);
+> >
+> > Again, could you explain this task_lock() ?
+>
+> It is used for serialization access to saved_auxv, ie when we fill it
+> with new data the other reader (via procfs interface) should wait until
+> we finish.
 
-@bad@
-identifier decl.i1,i2;
-expression e;
-initializer list[decl.n] is;
-@@
+But proc_pid_auxv() doesn't take this lock? And even if it did, this lock
+can't help. task_lock() is per-thread, and multiple threads (including
+CLONE_VM tasks, vfork() for example) can share the same ->mm.
 
-struct i1 i2 = { is,
-+ .fld = e
-- e
- ,...};
-// </smpl>
+This certainly doesn't look right.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-The patches in this series do not depend on each other.
-
- drivers/rtc/rtc-pcf8583.c |   18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/rtc/rtc-pcf8583.c b/drivers/rtc/rtc-pcf8583.c
-index c263984..5911a6d 100644
---- a/drivers/rtc/rtc-pcf8583.c
-+++ b/drivers/rtc/rtc-pcf8583.c
-@@ -176,7 +176,11 @@ static int pcf8583_rtc_read_time(struct device *dev, struct rtc_time *tm)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	unsigned char ctrl, year[2];
--	struct rtc_mem mem = { CMOS_YEAR, sizeof(year), year };
-+	struct rtc_mem mem = {
-+		.loc = CMOS_YEAR,
-+		.nr = sizeof(year),
-+		.data = year
-+	};
- 	int real_year, year_offset, err;
- 
- 	/*
-@@ -222,8 +226,16 @@ static int pcf8583_rtc_set_time(struct device *dev, struct rtc_time *tm)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 	unsigned char year[2], chk;
--	struct rtc_mem cmos_year  = { CMOS_YEAR, sizeof(year), year };
--	struct rtc_mem cmos_check = { CMOS_CHECKSUM, 1, &chk };
-+	struct rtc_mem cmos_year  = {
-+		.loc = CMOS_YEAR,
-+		.nr = sizeof(year),
-+		.data = year
-+	};
-+	struct rtc_mem cmos_check = {
-+		.loc = CMOS_CHECKSUM,
-+		.nr = 1,
-+		.data = &chk
-+	};
- 	unsigned int proper_year = tm->tm_year + 1900;
- 	int ret;
- 
+Oleg.
 
