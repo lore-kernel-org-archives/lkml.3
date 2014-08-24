@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaHXUWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:22:20 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41508 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276AbaHXUWP (ORCPT
+	id S1753737AbaHXUWd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:22:33 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:64144 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692AbaHXUW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:22:15 -0400
+	Sun, 24 Aug 2014 16:22:26 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 net-next 13/29] bpf: verifier (add branch/goto checks)
-Date: Sun, 24 Aug 2014 13:21:14 -0700
-Message-Id: <1408911690-7598-14-git-send-email-ast@plumgrid.com>
+Subject: [PATCH v5 net-next 17/29] bpf: split eBPF out of NET
+Date: Sun, 24 Aug 2014 13:21:18 -0700
+Message-Id: <1408911690-7598-18-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
 References: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
@@ -31,220 +31,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check that control flow graph of eBPF program is a directed acyclic graph
-
-check_cfg() does:
-- detect loops
-- detect unreachable instructions
-- check that program terminates with BPF_EXIT insn
-- check that all branches are within program boundary
+let eBPF have its own CONFIG_BPF, so that tracing and other subsystems don't
+need to depend on all of NET
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- kernel/bpf/verifier.c |  183 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 183 insertions(+)
+ arch/Kconfig      |    4 ++++
+ kernel/Makefile   |    2 +-
+ kernel/bpf/core.c |   12 ++++++++++++
+ net/Kconfig       |    1 +
+ 4 files changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index 28ce2cfa49db..454079b145b2 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -332,6 +332,185 @@ static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
- 	return (struct bpf_map *) (unsigned long) imm64;
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 0eae9df35b88..98cb1838c8ff 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -333,6 +333,10 @@ config SECCOMP_FILTER
+ 
+ 	  See Documentation/prctl/seccomp_filter.txt for details.
+ 
++config BPF
++	select NLATTR
++	boolean
++
+ config HAVE_CC_STACKPROTECTOR
+ 	bool
+ 	help
+diff --git a/kernel/Makefile b/kernel/Makefile
+index dc5c77544fd6..17ea6d4a9a24 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -86,7 +86,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
+ obj-$(CONFIG_TRACEPOINTS) += trace/
+ obj-$(CONFIG_IRQ_WORK) += irq_work.o
+ obj-$(CONFIG_CPU_PM) += cpu_pm.o
+-obj-$(CONFIG_NET) += bpf/
++obj-$(CONFIG_BPF) += bpf/
+ 
+ obj-$(CONFIG_PERF_EVENTS) += events/
+ 
+diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+index 0434c2170f2b..c17ba0ef3dcf 100644
+--- a/kernel/bpf/core.c
++++ b/kernel/bpf/core.c
+@@ -537,3 +537,15 @@ void bpf_prog_free(struct bpf_prog *fp)
+ 	bpf_jit_free(fp);
  }
- 
-+/* non-recursive DFS pseudo code
-+ * 1  procedure DFS-iterative(G,v):
-+ * 2      label v as discovered
-+ * 3      let S be a stack
-+ * 4      S.push(v)
-+ * 5      while S is not empty
-+ * 6            t <- S.pop()
-+ * 7            if t is what we're looking for:
-+ * 8                return t
-+ * 9            for all edges e in G.adjacentEdges(t) do
-+ * 10               if edge e is already labelled
-+ * 11                   continue with the next edge
-+ * 12               w <- G.adjacentVertex(t,e)
-+ * 13               if vertex w is not discovered and not explored
-+ * 14                   label e as tree-edge
-+ * 15                   label w as discovered
-+ * 16                   S.push(w)
-+ * 17                   continue at 5
-+ * 18               else if vertex w is discovered
-+ * 19                   label e as back-edge
-+ * 20               else
-+ * 21                   // vertex w is explored
-+ * 22                   label e as forward- or cross-edge
-+ * 23           label t as explored
-+ * 24           S.pop()
-+ *
-+ * convention:
-+ * 0x10 - discovered
-+ * 0x11 - discovered and fall-through edge labelled
-+ * 0x12 - discovered and fall-through and branch edges labelled
-+ * 0x20 - explored
+ EXPORT_SYMBOL_GPL(bpf_prog_free);
++
++/* To emulate LD_ABS/LD_IND instructions __sk_run_filter() may call
++ * skb_copy_bits(), so provide a weak definition for it in NET-less config.
++ * seccomp_check_filter() verifies that seccomp filters are not using
++ * LD_ABS/LD_IND instructions. Other BPF users (like tracing filters)
++ * must not use these instructions unless ctx==skb
 + */
-+
-+enum {
-+	DISCOVERED = 0x10,
-+	EXPLORED = 0x20,
-+	FALLTHROUGH = 1,
-+	BRANCH = 2,
-+};
-+
-+#define PUSH_INT(I) \
-+	do { \
-+		if (cur_stack >= insn_cnt) { \
-+			ret = -E2BIG; \
-+			goto free_st; \
-+		} \
-+		stack[cur_stack++] = I; \
-+	} while (0)
-+
-+#define PEEK_INT() \
-+	({ \
-+		int _ret; \
-+		if (cur_stack == 0) \
-+			_ret = -1; \
-+		else \
-+			_ret = stack[cur_stack - 1]; \
-+		_ret; \
-+	 })
-+
-+#define POP_INT() \
-+	({ \
-+		int _ret; \
-+		if (cur_stack == 0) \
-+			_ret = -1; \
-+		else \
-+			_ret = stack[--cur_stack]; \
-+		_ret; \
-+	 })
-+
-+#define PUSH_INSN(T, W, E) \
-+	do { \
-+		int w = W; \
-+		if (E == FALLTHROUGH && st[T] >= (DISCOVERED | FALLTHROUGH)) \
-+			break; \
-+		if (E == BRANCH && st[T] >= (DISCOVERED | BRANCH)) \
-+			break; \
-+		if (w < 0 || w >= insn_cnt) { \
-+			verbose("jump out of range from insn %d to %d\n", T, w); \
-+			ret = -EINVAL; \
-+			goto free_st; \
-+		} \
-+		if (st[w] == 0) { \
-+			/* tree-edge */ \
-+			st[T] = DISCOVERED | E; \
-+			st[w] = DISCOVERED; \
-+			PUSH_INT(w); \
-+			goto peek_stack; \
-+		} else if ((st[w] & 0xF0) == DISCOVERED) { \
-+			verbose("back-edge from insn %d to %d\n", T, w); \
-+			ret = -EINVAL; \
-+			goto free_st; \
-+		} else if (st[w] == EXPLORED) { \
-+			/* forward- or cross-edge */ \
-+			st[T] = DISCOVERED | E; \
-+		} else { \
-+			verbose("insn state internal bug\n"); \
-+			ret = -EFAULT; \
-+			goto free_st; \
-+		} \
-+	} while (0)
-+
-+/* non-recursive depth-first-search to detect loops in BPF program
-+ * loop == back-edge in directed graph
-+ */
-+static int check_cfg(struct verifier_env *env)
++int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
++			 int len)
 +{
-+	struct bpf_insn *insns = env->prog->insnsi;
-+	int insn_cnt = env->prog->len;
-+	int cur_stack = 0;
-+	int *stack;
-+	int ret = 0;
-+	int *st;
-+	int i, t;
-+
-+	st = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
-+	if (!st)
-+		return -ENOMEM;
-+
-+	stack = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
-+	if (!stack) {
-+		kfree(st);
-+		return -ENOMEM;
-+	}
-+
-+	st[0] = DISCOVERED; /* mark 1st insn as discovered */
-+	PUSH_INT(0);
-+
-+peek_stack:
-+	while ((t = PEEK_INT()) != -1) {
-+		if (BPF_CLASS(insns[t].code) == BPF_JMP) {
-+			u8 opcode = BPF_OP(insns[t].code);
-+
-+			if (opcode == BPF_EXIT) {
-+				goto mark_explored;
-+			} else if (opcode == BPF_CALL) {
-+				PUSH_INSN(t, t + 1, FALLTHROUGH);
-+			} else if (opcode == BPF_JA) {
-+				if (BPF_SRC(insns[t].code) != BPF_K) {
-+					ret = -EINVAL;
-+					goto free_st;
-+				}
-+				/* unconditional jump with single edge */
-+				PUSH_INSN(t, t + insns[t].off + 1, FALLTHROUGH);
-+			} else {
-+				/* conditional jump with two edges */
-+				PUSH_INSN(t, t + 1, FALLTHROUGH);
-+				PUSH_INSN(t, t + insns[t].off + 1, BRANCH);
-+			}
-+		} else {
-+			/* all other non-branch instructions with single
-+			 * fall-through edge
-+			 */
-+			PUSH_INSN(t, t + 1, FALLTHROUGH);
-+		}
-+
-+mark_explored:
-+		st[t] = EXPLORED;
-+		if (POP_INT() == -1) {
-+			verbose("pop_int internal bug\n");
-+			ret = -EFAULT;
-+			goto free_st;
-+		}
-+	}
-+
-+
-+	for (i = 0; i < insn_cnt; i++) {
-+		if (st[i] != EXPLORED) {
-+			verbose("unreachable insn %d\n", i);
-+			ret = -EINVAL;
-+			goto free_st;
-+		}
-+	}
-+
-+free_st:
-+	kfree(st);
-+	kfree(stack);
-+	return ret;
++	return -EFAULT;
 +}
-+
- /* look for pseudo eBPF instructions that access map FDs and
-  * replace them with actual map pointers
-  */
-@@ -482,6 +661,10 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
- 	if (ret < 0)
- 		goto skip_full_check;
- 
-+	ret = check_cfg(env);
-+	if (ret < 0)
-+		goto skip_full_check;
-+
- 	/* ret = do_check(env); */
- 
- skip_full_check:
+diff --git a/net/Kconfig b/net/Kconfig
+index 4051fdfa4367..9a99e16d6f28 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -6,6 +6,7 @@ menuconfig NET
+ 	bool "Networking support"
+ 	select NLATTR
+ 	select GENERIC_NET_UTILS
++	select BPF
+ 	---help---
+ 	  Unless you really know what you are doing, you should say Y here.
+ 	  The reason is that some programs need kernel networking support even
 -- 
 1.7.9.5
 
