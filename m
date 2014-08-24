@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaHXTVc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 15:21:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50488 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704AbaHXTVa (ORCPT
+	id S1753411AbaHXTWz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 15:22:55 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:34372 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaHXTWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 15:21:30 -0400
-Date: Sun, 24 Aug 2014 14:20:50 -0500
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB fixes for v3.17-rc2
-Message-ID: <20140824192050.GA9092@kroah.com>
-References: <1408554814-24715-1-git-send-email-balbi@ti.com>
+	Sun, 24 Aug 2014 15:22:54 -0400
+Date: Sun, 24 Aug 2014 23:22:51 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Peter Feiner <pfeiner@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Jamie Liu <jamieliu@google.com>, Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3] mm: softdirty: enable write notifications on VMAs
+ after VM_SOFTDIRTY cleared
+Message-ID: <20140824192251.GL25918@moon>
+References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
+ <1408844584-30380-1-git-send-email-pfeiner@google.com>
+ <20140824075924.GA27392@node.dhcp.inet.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1408554814-24715-1-git-send-email-balbi@ti.com>
+In-Reply-To: <20140824075924.GA27392@node.dhcp.inet.fi>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 12:13:34PM -0500, Felipe Balbi wrote:
-> Hi Greg,
+On Sun, Aug 24, 2014 at 10:59:24AM +0300, Kirill A. Shutemov wrote:
+...
+> > diff --git a/mm/mmap.c b/mm/mmap.c
+> > index c1f2ea4..1b61fbc 100644
+> > --- a/mm/mmap.c
+> > +++ b/mm/mmap.c
+> > @@ -1470,6 +1470,10 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
+> >  	if (vma->vm_ops && vma->vm_ops->page_mkwrite)
+> >  		return 1;
+> >  
+> > +	/* Do we need to track softdirty? */
+> > +	if (!(vm_flags & VM_SOFTDIRTY))
 > 
-> Here's my first set of fixes for this merge window. All patches have soaked in
-> mailing list for a while, and what I could, I tested on the platforms I have.
+> This will give false-positive if CONFIG_MEM_SOFT_DIRTY is disabled, since
+> VM_SOFTDIRTY is 0 in this case:
 > 
-> Please consider merging on top of your usb-linus branch.
+> 	if (IS_ENABLED(CONFIG_MEM_SOFT_DIRTY) && !(vm_flags & VM_SOFTDIRTY))
 > 
-> cheers
+> Otherwise looks good to me.
 > 
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> 
->   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.17-rc2
+> Suggested-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-Pulled and pushed out, thanks.
+Really sorry for delay. Thanks a huge, guys!
 
-greg k-h
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
