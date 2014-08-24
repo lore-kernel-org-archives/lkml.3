@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681AbaHXLOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 07:14:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24306 "EHLO mx1.redhat.com"
+	id S1752705AbaHXLQm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 07:16:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:44497 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752376AbaHXLOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 07:14:06 -0400
-Date: Sun, 24 Aug 2014 13:14:21 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Pankaj Gupta <pagupta@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, dgibson@redhat.com, vfalico@gmail.com,
-        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org
-Subject: Re: [RFC 2/4] tuntap: Publish tuntap maximum number of queues as
- module_param
-Message-ID: <20140824111421.GC9561@redhat.com>
-References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
- <1408369040-1216-3-git-send-email-pagupta@redhat.com>
- <20140820105817.GB1916@nanopsycho.orion>
- <20140820111724.GE17371@redhat.com>
- <53F575F8.7000208@redhat.com>
- <175719847.27217377.1408708342392.JavaMail.zimbra@redhat.com>
+	id S1752430AbaHXLQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 07:16:41 -0400
+Date: Sun, 24 Aug 2014 08:16:35 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Michael Ellerman <michaele@au1.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
+Message-ID: <20140824111635.GA2817@kernel.org>
+References: <1408724968-3441-1-git-send-email-acme@kernel.org>
+ <20140824101123.GB1309@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <175719847.27217377.1408708342392.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20140824101123.GB1309@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 07:52:22AM -0400, Pankaj Gupta wrote:
-> 
-> > 
-> > On 08/20/2014 07:17 PM, Michael S. Tsirkin wrote:
-> > > On Wed, Aug 20, 2014 at 12:58:17PM +0200, Jiri Pirko wrote:
-> > >> > Mon, Aug 18, 2014 at 03:37:18PM CEST, pagupta@redhat.com wrote:
-> > >>> > > This patch publishes maximum number of tun/tap queues allocated as a
-> > >>> > > read_only module parameter which a user space application like
-> > >>> > > libvirt
-> > >>> > > can make use of to limit maximum number of queues. Value of read_only
-> > >>> > > module parameter can be writable only at module load time. If no
-> > >>> > > value is set
-> > >>> > > at module load time a default value 256 is used which is equal to
-> > >>> > > maximum number
-> > >>> > > of vCPUS allowed by KVM.
-> > >>> > >
-> > >>> > > Administrator can specify maximum number of queues only at the driver
-> > >>> > > module load time.
-> > >>> > >
-> > >>> > >Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-> > >>> > >---
-> > >>> > > drivers/net/tun.c |   13 +++++++++++--
-> > >>> > > 1 files changed, 11 insertions(+), 2 deletions(-)
-> > >>> > >
-> > >>> > >diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > >>> > >index acaaf67..1f518e2 100644
-> > >>> > >--- a/drivers/net/tun.c
-> > >>> > >+++ b/drivers/net/tun.c
-> > >>> > >@@ -119,6 +119,9 @@ struct tap_filter {
-> > >>> > > 
-> > >>> > > #define TUN_FLOW_EXPIRE (3 * HZ)
-> > >>> > > 
-> > >>> > >+static int max_tap_queues = MAX_TAP_QUEUES;
-> > >>> > >+module_param(max_tap_queues, int, S_IRUGO);
-> > >> > 
-> > >> > Please do not introduce new module paramaters. Please other ways to
-> > >> > interchange values with userspace.
-> > > I suggested this initially, but thinking more about it, I agree.
-> > >
-> > > It's a global limit (necessary to limit memory utilization by
-> > > userspace), but it should be possible to change it
-> > > after module load.
-> > 
-> > How about pass this limit through ifr during TUNSETIFF, then
-> > alloc_netdev_mq() can use this limit.
-> 
-> Any other ideas/comments from the experts. Or shall I re-repost other patches 
-> in the series except this patch until we agree on one.
-> 
-> > 
+Em Sun, Aug 24, 2014 at 12:11:24PM +0200, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+> > o Kernel fix to properly handle exited tasks, by returning POLLHUP values
+> >   on perf event file descriptors. Tooling changes will come next, but were
+> >   tested with this kernel fix. (Jiri Olsa)
+ 
+> So the signoffs are really weird (and invalid) here:
+ 
+> commit ce1d77c667e40631d6673717e65e72f72265bf10
+> Author: Jiri Olsa <jolsa@kernel.org>
+> Date:   Fri Aug 15 16:24:45 2014 -0300
+ 
+>     perf top: Use set_term_quiet() instead of open coded equivalent
+ 
+> ...    
+>     Cc: Jiri Olsa <jolsa@kernel.org>
+>     Cc: Namhyung Kim <namhyung@kernel.org>
+>     Cc: Paul Mackerras <paulus@samba.org>
+>     Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>     Link: http://lkml.kernel.org/n/tip-h7n9te70flmaqfnj6l06ay6r@git.kernel.org
+>     [ Yanked this out of a patch containing this and some other change ]
+>     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+ 
+> and in 7713886adc15 and f017bf0a8d92 - results of a rebase gone wrong?
 
-It's kind of useless without a way for userspace to discover
-how many queues it can create, no?
+Should be ok now, I recreated the perf-core-for-mingo signed tag, please
+let me know if there are still any problems,
 
+Thanks!
+
+- Arnaldo
