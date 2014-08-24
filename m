@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508AbaHXUlB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:41:01 -0400
-Received: from www.sr71.net ([198.145.64.142]:38175 "EHLO blackbird.sr71.net"
+	id S1753400AbaHXUpB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:45:01 -0400
+Received: from verein.lst.de ([213.95.11.211]:39188 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144AbaHXUlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:41:00 -0400
-Message-ID: <53FA4DDA.8020106@sr71.net>
-Date: Sun, 24 Aug 2014 13:40:58 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752965AbaHXUpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 16:45:00 -0400
+Date: Sun, 24 Aug 2014 22:44:54 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Hannes Reinecke <hare@suse.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Doug Gilbert <dgilbert@interlog.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: scsi logging future directions, was Re: [RFC PATCH -logging 00/10]
+	scsi/constants: Output continuous error messages on trace
+Message-ID: <20140824204454.GA11423@lst.de>
+References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <94D0CD8314A33A4D9D801C0FE68B402958C1A9E5@G9W0745.americas.hpqcorp.net>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, dave.hansen@linux.intel.com,
-        peterz@infradead.org, mingo@redhat.com, ak@linux.intel.com,
-        tim.c.chen@linux.intel.com, akpm@linux-foundation.org, cl@linux.com,
-        penberg@kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        lauraa@codeaurora.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] [v3] warn on performance-impacting configs aka. TAINT_PERFORMANCE
-References: <20140821202424.7ED66A50@viggo.jf.intel.com> <20140822072023.GA7218@gmail.com> <53F75B91.2040100@sr71.net> <20140824144946.GC9455@gmail.com>
-In-Reply-To: <20140824144946.GC9455@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958C1A9E5@G9W0745.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/24/2014 07:49 AM, Ingo Molnar wrote:
->>>> > >> +	buf_left = buf_len;
->>>> > >> +	for (i = 0; i < ARRAY_SIZE(perfomance_killing_configs); i++) {
->>>> > >> +		buf_written += snprintf(buf + buf_written, buf_left,
->>>> > >> +					"%s%s\n", config_prefix,
->>>> > >> +					perfomance_killing_configs[i]);
->>>> > >> +		buf_left = buf_len - buf_written;
-...
->>> > > Also, do you want to check buf_left and break out early from 
->>> > > the loop if it goes non-positive?
->> > 
->> > You're slowly inflating my patch for no practical gain. :)
-> AFAICS it's a potential memory corruption and security bug, 
-> should the array ever grow large enough to overflow the passed
-> in buffer size.
+On Fri, Aug 22, 2014 at 12:39:59AM +0000, Elliott, Robert (Server Storage) wrote:
+> If you trigger hundreds of errors (e.g., hot remove a device
+> during heavy IO), then all the prints to the linux serial console
+> bog down the system, causing timeouts in commands to other
+> devices and soft lockups for applications.
+> 
+> Some changes that would help are:
+> 1. Put them under SCSI logging level control
+> 2. Use printk_ratelimited so an excessive number are trimmed
+> 
+> Would you like to include something like this in your
+> patch set?
 
-Let's say there is 1 "buf_left" and I attempt a 100-byte snprintf().
-Won't snprintf() return 1, and buf_written will then equal buf_len?
-buf_left=0 at that point, and will get passed in to the next snprintf()
-as the buffer length.  I'm expecting snprintf() to just return 0 when it
-gets a 0 for its 'size'.
+I think we should come to an agreement where we want to go with scsi
+logging first before doing various smaller adjustments.  (Although your
+example is one that's urgent enough that I'd like to put it in ASAP,
+I had issues with it a few times).
 
-Exhausting the buffer will, at worst, mean a bunch of useless calls to
-snprintf() that do nothing, but I don't think it will run over the end
-of the buffer.
+I had a chat with Martin at Linuxcon about these issues, and we were
+both in favor of getting rid of the old scsi logging mechansisms and
+instead replace it by an extended version of the scsi tracepoints that
+cover all places, and dump all data from the old logging mechanism
+that people find useful.
 
-Or am I missing something?
+In a few places we'd still want to log normal dev_printk style errors,
+and the I/O completion is one of them, even if they really need to be
+ratelimited and condensed.
+
+If someone has arguments in favour of keeping the old logging code
+I'd love to hear them, but in practive the traceevent code has huge
+benefits:
+
+ - almost zero overhead if disabled
+ - can easily be used without any tools through configs, but can be used
+   even better with tools like trace-cmd or perf
+ - allows both fine and coarse grained selections of events to trace
+ - allows to capture statistics on each trace point without event enabling the
+   output
+ - doesn't have any of the console lockup problems.
+
