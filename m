@@ -1,235 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaHXDjp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 23:39:45 -0400
-Received: from message.langara.bc.ca ([142.35.159.25]:65067 "EHLO
-	message.langara.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869AbaHXDjo (ORCPT
+	id S1752414AbaHXDkN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 23:40:13 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:47287 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011AbaHXDkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 23:39:44 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-Content-type: text/plain; charset=us-ascii
-From: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
-To: Steven Stewart-Gallus <sstewartgallus00@mylangara.bc.ca>
-Cc: akpm@linux-foundation.org, davidlohr@hp.com, linux-kernel@vger.kernel.org,
-        manfred@colorfullife.com, bfields@redhat.com, dledford@redhat.com
-Message-id: <fb54ebb04006.53f95e80@langara.bc.ca>
-Date: Sun, 24 Aug 2014 03:39:44 +0000 (GMT)
-X-Mailer: Sun Java(tm) System Messenger Express 6.3-6.03 (built Mar 14 2008;
- 32bit)
-Content-language: en
-Subject: Re: [PATCH] V1 2/2] ipc: let message queues use SIGEV_THREAD_ID with
- mq_notify
-X-Accept-Language: en
-In-reply-to: <fc15e6ee2a3f.53f95da3@langara.bc.ca>
-References: <fb54e896348f.53f95d2f@langara.bc.ca>
- <fc15e6ee2a3f.53f95da3@langara.bc.ca>
+	Sat, 23 Aug 2014 23:40:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140824032339.GK2663@linux.vnet.ibm.com>
+References: <CAJhHMCC6XUo0erp6mPyjiz5614DQq_+gfVaLR5s9YZkP=jPVCw@mail.gmail.com>
+ <20140823165121.GJ2663@linux.vnet.ibm.com> <CAJhHMCCntYQy624Kwb5bs7MAKKYrSRbG0SezxgbQfHwYA2C40w@mail.gmail.com>
+ <20140824032339.GK2663@linux.vnet.ibm.com>
+From: Pranith Kumar <pranith@gatech.edu>
+Date: Sat, 23 Aug 2014 23:39:39 -0400
+X-Google-Sender-Auth: Z4Wfg_hGvCUgonCnXcY-FeoyEsw
+Message-ID: <CAJhHMCC8C5bekoDvQs=7vcRichkmFrHK7TshuoAHFE0-7d+mtA@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Amit Shah <amit.shah@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Silas Boyd-Wickizer <sbw@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any one who wants a quick way to test the changes can use the
-following hacky program that works as an init program.
-
-Thank you,
-Steven Stewart-Gallus
-
-#include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <mqueue.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/reboot.h>
-#include <sys/syscall.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
-/* GLibc does not expose sigev_notify_thread_id so we hack it in manually */
-
-#ifndef __ARCH_SIGEV_PREAMBLE_SIZE
-#define __ARCH_SIGEV_PREAMBLE_SIZE (sizeof(int) * 2 + sizeof(sigval_t))
-#endif
-
-#define SIGEV_MAX_SIZE	64
-#define SIGEV_PAD_SIZE	((SIGEV_MAX_SIZE - __ARCH_SIGEV_PREAMBLE_SIZE)	\
-			 / sizeof(int))
-
-struct my_sigevent {
-	sigval_t sigev_value;
-	int sigev_signo;
-	int sigev_notify;
-	union {
-		int _pad[SIGEV_PAD_SIZE];
-		int _tid;
-
-		struct {
-			void (*_function)(sigval_t);
-			void *_attribute;	/* really pthread_attr_t */
-		} _sigev_thread;
-	} _sigev_un;
-};
-
-#define sigev_notify_function	_sigev_un._sigev_thread._function
-#define sigev_notify_attributes	_sigev_un._sigev_thread._attribute
-#define sigev_notify_thread_id	 _sigev_un._tid
+On Sat, Aug 23, 2014 at 11:23 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Sat, Aug 23, 2014 at 08:26:10PM -0400, Pranith Kumar wrote:
+>> On Sat, Aug 23, 2014 at 12:51 PM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>>
+>> > It might well!  Another possibility is that the early_initcall function
+>> > doing the synchronize_rcu() is happening before the early_initcall
+>> > creating the RCU grace-period kthreads.
+>> >
+>> > Seems like we need to close both holes.  Let's see how your patch works
+>> > for Amit, and I am testing a patch for the possible early_initcall
+>> > ordering issue.
+>>
+>> I checked the init call which is calling synchronize_rcu():
+>> subsys_initcall(pm_sysrq_init); this is being called after
+>> early_initcall.
+>>
+>> The order of initcalls is early, core, postcore, arch, subsys, fs,
+>> device, late. So I guess that is ok.
+>>
+>> I wonder why it was not showing up in 12.04. I have a dual boot. Will
+>> test it out and see if I can find something.
+>
+> Me, I am wondering about 7,000 callbacks being registered during early
+> boot time.  ;-)
+>
 
 
+This is the backtrace for most of the callbacks:
 
-struct message {
-	int number;
-};
-
-static mqd_t mq;
-
-static pid_t gettid(void)
-{
-	return syscall(__NR_gettid);
-}
-
-static void * start_routine(void * arg)
-{
-	{
-		struct message message = {
-			.number = 4
-		};
-		if (-1 == mq_send(mq, (char*)&message, sizeof message, 0)) {
-			perror("mq_send");
-			_Exit(EXIT_FAILURE);
-		}
-	}
-
-	{
-		struct message message = {
-			.number = 5
-		};
-		if (-1 == mq_send(mq, (char*)&message, sizeof message, 0)) {
-			perror("mq_send");
-			_Exit(EXIT_FAILURE);
-		}
-	}
-
-	{
-		struct message message = {
-			.number = 0
-		};
-		if (-1 == mq_send(mq, (char*)&message, sizeof message, 0)) {
-			perror("mq_send");
-			_Exit(EXIT_FAILURE);
-		}
-	}
-
-	return NULL;
-}
-
-int main(int argc, char *argv[])
-{
-	int errnum;
-
-	/* Fork to allow signals to be received */
-	{
-		pid_t child = fork();
-		if (-1 == child) {
-			perror("fork");
-			return EXIT_FAILURE;
-		}
-
-		if (child != 0) {
-			siginfo_t info;
-			do {
-				errnum = -1 == waitid(P_PID, child, &info, WEXITED) ? errno : 0;
-			} while (EINTR == errnum);
-			if (errnum != 0) {
-				assert(errnum != EINVAL);
-				assert(errnum != ECHILD);
-				assert(false);
-			}
-			reboot(RB_POWER_OFF);
-		}
-	}
-
-	{
-		struct mq_attr attr = { 0 };
-		attr.mq_maxmsg = 8U;
-		attr.mq_msgsize = sizeof (struct message);
-		mq = mq_open("/foo", O_RDWR | O_CREAT | O_EXCL | O_NONBLOCK, 0, &attr);
-	}
-	if (-1 == mq) {
-		perror("mq_open");
-		return EXIT_FAILURE;
-	}
+[    4.612103] ------------[ cut here ]------------
+[    4.613340] WARNING: CPU: 0 PID: 0 at kernel/rcu/tree_plugin.h:2115
+__call_rcu_nocb_enqueue+0x58/0x283()
+[    4.615975] Modules linked in:
+[    4.616000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W     3.16.0+ #76
+[    4.616000] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996),
+BIOS Bochs 01/01/2011
+[    4.616000]  0000000000000000 ffffffff81803c20 ffffffff813c5213
+0000000000000000
+[    4.616000]  ffffffff81803c58 ffffffff810388aa ffffffff8108aac8
+ffff88001f9cce40
+[    4.616000]  ffff88001f5b6c08 0000000000000000 0000000000000286
+ffffffff81803c68
+[    4.616000] Call Trace:
+[    4.616000]  [<ffffffff813c5213>] dump_stack+0x4e/0x7a
+[    4.616000]  [<ffffffff810388aa>] warn_slowpath_common+0x7f/0x98
+[    4.616000]  [<ffffffff8108aac8>] ? __call_rcu_nocb_enqueue+0x58/0x283
+[    4.616000]  [<ffffffff81038976>] warn_slowpath_null+0x1a/0x1c
+[    4.616000]  [<ffffffff8108aac8>] __call_rcu_nocb_enqueue+0x58/0x283
+[    4.616000]  [<ffffffff81129f3a>] ? unreferenced_object+0x4f/0x4f
+[    4.616000]  [<ffffffff8108d913>] __call_rcu+0xcd/0x32b
+[    4.616000]  [<ffffffff8108de66>] call_rcu+0x1b/0x1d
+[    4.616000]  [<ffffffff8112a301>] put_object+0x41/0x44
+[    4.616000]  [<ffffffff8112a70a>] delete_object_full+0x29/0x2c
+[    4.616000]  [<ffffffff813c2166>] kmemleak_free+0x25/0x43
+[    4.616000]  [<ffffffff81120cca>] slab_free_hook+0x1d/0x63
+[    4.616000]  [<ffffffff811228c6>] kmem_cache_free+0x52/0x154
+[    4.616000]  [<ffffffff8124aa01>] ? acpi_os_release_object+0xe/0x12
+[    4.616000]  [<ffffffff8124aa01>] acpi_os_release_object+0xe/0x12
+[    4.616000]  [<ffffffff8126c567>] acpi_ps_free_op+0x25/0x27
+[    4.616000]  [<ffffffff8126b81f>] acpi_ps_create_op+0x135/0x209
+[    4.616000]  [<ffffffff8126b1f2>] acpi_ps_parse_loop+0x1d3/0x575
+[    4.616000]  [<ffffffff8126bff2>] acpi_ps_parse_aml+0xa0/0x277
+[    4.616000]  [<ffffffff81267d7f>] acpi_ns_one_complete_parse+0xfc/0x11b
+[    4.616000]  [<ffffffff81267dd1>] acpi_ns_parse_table+0x33/0x38
+[    4.616000]  [<ffffffff81267755>] acpi_ns_load_table+0x4c/0x8b
+[    4.616000]  [<ffffffff81ad6797>] acpi_load_tables+0x9d/0x15d
+[    4.616000]  [<ffffffff81ad5b44>] acpi_early_init+0x73/0xfe
+[    4.616000]  [<ffffffff81aa5e8e>] start_kernel+0x3a9/0x40a
+[    4.616000]  [<ffffffff81aa5120>] ? early_idt_handlers+0x120/0x120
+[    4.616000]  [<ffffffff81aa54ba>] x86_64_start_reservations+0x2a/0x2c
+[    4.616000]  [<ffffffff81aa55f8>] x86_64_start_kernel+0x13c/0x149
+[    4.616000] ---[ end trace 8dbfee90ca96696c ]---
 
 
-	sigset_t rtset;
-	sigemptyset(&rtset);
-	sigaddset(&rtset, SIGRTMIN);
-	pthread_sigmask(SIG_BLOCK, &rtset, NULL);
-
-	pthread_t worker;
-	if ((errnum = pthread_create(&worker, NULL, start_routine, NULL)) != 0) {
-		errno = errnum;
-		perror("pthread_create");
-		return EXIT_FAILURE;
-	}
-
-	for (;;) {
-		{
-			struct my_sigevent sev = { 0 };
-
-			sev.sigev_notify = SIGEV_THREAD_ID;
-			sev.sigev_signo = SIGRTMIN;
-
-			sev.sigev_notify_thread_id = gettid();
-
-			if (-1 == mq_notify(mq,(struct sigevent*) &sev)) {
-				perror("mq_notify");
-				return EXIT_FAILURE;
-			}
-		}
-
-		for (;;) {
-			struct message message;
-			if (-1 == mq_receive(mq, (char*)&message, sizeof message, 0)) {
-				errnum = errno;
-			} else {
-				errnum = 0;
-			}
-
-			if (EAGAIN == errnum) {
-				break;
-			}
-
-			if (errnum != 0) {
-				errno = errnum;
-				perror("mq_receive");
-				return EXIT_FAILURE;
-			}
-
-			printf("received: %u\n", message.number);
-
-			if (0 == message.number) {
-				goto exit_loop;
-			}
-		}
-
-		{
-			int xx;
-			if (-1 == sigwait(&rtset, &xx)) {
-				perror("sigwait");
-				return EXIT_FAILURE;
-			}
-		}
-
-		/* Flush pending signals */
-		pthread_sigmask(SIG_UNBLOCK, &rtset, NULL);
-		pthread_sigmask(SIG_BLOCK, &rtset, NULL);
-	}
-exit_loop:
-	return EXIT_SUCCESS;
-}
-
+-- 
+Pranith
