@@ -1,70 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaHXSZL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 14:25:11 -0400
-Received: from infra.glanzmann.de ([88.198.249.254]:34606 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaHXSZJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 14:25:09 -0400
-Date: Sun, 24 Aug 2014 20:25:06 +0200
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: WARNING: CPU: 0 PID: 197 at fs/proc/generic.c:521
- remove_proc_entry+0x142/0x159()
-Message-ID: <20140824182506.GC24125@glanzmann.de>
-Mail-Followup-To: Thomas Glanzmann <thomas@glanzmann.de>,
-	Trond Myklebust <trond.myklebust@primarydata.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Al Viro <viro@zeniv.linux.org.uk>
-References: <20140822195440.GD12398@glanzmann.de>
- <CAHQdGtQOypEzD=72Q9ynC8x1bQKh6KM5aJFc1ghRhQihxcxnoA@mail.gmail.com>
+	id S1753130AbaHXSjK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 14:39:10 -0400
+Received: from smtp.newterm.pl ([79.187.237.18]:38071 "EHLO apollo.newterm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517AbaHXSjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 14:39:07 -0400
+Date: Sun, 24 Aug 2014 20:40:16 +0200
+From: Dariusz Marcinkiewicz <reksio@newterm.pl>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] net: ec_bhf: remove excessive debug messages
+Message-ID: <20140824184016.GA6591@newterm.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CAHQdGtQOypEzD=72Q9ynC8x1bQKh6KM5aJFc1ghRhQihxcxnoA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Trond,
+This cuts down the number of debug information spit out by
+the driver.
 
-> > [  227.620134] ------------[ cut here ]------------
-> > [  227.620152] WARNING: CPU: 0 PID: 197 at fs/proc/generic.c:510 remove_proc_entry+0xde/0x159()
-> > [  227.620163] name 'fs/nfsfs'
-> > [  227.620170] Modules linked in: ip6table_filter ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables parport_pc ppdev lp parport autofs4 ecb btusb bluetooth uinput hid_generic usbhid hid deflate ctr twofish_generic twofish_x86_64_3way xts lrw gf128mul glue_helper twofish_x86_64 twofish_common blowfish_generic blowfish_x86_64 blowfish_common des_generic cbc xcbc rmd160 sha512_generic hmac crypto_null af_key xfrm_algo nfsd auth_rpcgss oid_registry nfs_acl nfs lockd fscache sunrpc nouveau video mxm_wmi wmi i2c_algo_bit drm_kms_helper ttm drm loop snd_hda_codec_realtek snd_hda_codec_generic arc4 b43 rng_core bcma mac80211 cfg80211 rfkill evdev coretemp kvm_intel ssb applesmc pcspkr input_polldev kvm pcmcia pcmcia_core mmc_core snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_midi snd_seq_midi_event snd_rawmidi snd_seq snd_seq_device snd_timer snd soundcore ohci_pci ohci_hcd ehci_pci ehci_hcd shpchp usbcore usb_common i2c_nforce2 acpi_cpufreq button processor thermal_sys ext4 crc16 jbd2 mbcache xor raid6_pq dm_mod netconsole configfs sg sd_mod crc_t10dif crct10dif_common sr_mod cdrom ata_generic firewire_ohci ahci libahci libata microcode firewire_core crc_itu_t scsi_mod forcedeth
-> > [  227.620691] CPU: 0 PID: 197 Comm: kworker/u4:4 Tainted: G        W      3.17.0-rc1+ #182
-> > [  227.620697] Hardware name: Apple Inc. Macmini3,1/Mac-F22C86C8, BIOS     MM31.88Z.0081.B06.0904271717 04/27/09
-> > [  227.620706] Workqueue: netns cleanup_net
-> > [  227.620712]  0000000000000000 0000000000000009 ffffffff81398aee ffff8800b92cbcf8
-> > [  227.620731]  ffffffff8103d10f 0000000000000246 ffffffff81162299 ffff8800a7ccd240
-> > [  227.620743]  0000000000000000 ffffffffa0679108 ffff88013b298b70 ffffffffa067910b
-> > [  227.620760] Call Trace:
-> > [  227.620771]  [<ffffffff81398aee>] ? dump_stack+0x41/0x51
-> > [  227.620780]  [<ffffffff8103d10f>] ? warn_slowpath_common+0x78/0x90
-> > [  227.620787]  [<ffffffff81162299>] ? remove_proc_entry+0xde/0x159
-> > [  227.620800]  [<ffffffff8103d1bf>] ? warn_slowpath_fmt+0x45/0x4a
-> > [  227.620806]  [<ffffffff81162299>] ? remove_proc_entry+0xde/0x159
-> > [  227.620823]  [<ffffffffa06681d6>] ? nfs_net_exit+0x9/0x12 [nfs]
-> > [  227.620828]  [<ffffffff812dcc39>] ? ops_exit_list+0x27/0x48
-> > [  227.620837]  [<ffffffff812dd450>] ? cleanup_net+0xe5/0x182
-> > [  227.620843]  [<ffffffff8104e683>] ? process_one_work+0x168/0x26a
-> > [  227.620850]  [<ffffffff8104e96a>] ? worker_thread+0x1c0/0x28d
-> > [  227.620856]  [<ffffffff8104e7aa>] ? process_scheduled_works+0x25/0x25
-> > [  227.620863]  [<ffffffff810520ee>] ? kthread+0x99/0xa1
-> > [  227.620870]  [<ffffffff81052055>] ? __kthread_parkme+0x58/0x58
-> > [  227.620878]  [<ffffffff8139cdec>] ? ret_from_fork+0x7c/0xb0
-> > [  227.620884]  [<ffffffff81052055>] ? __kthread_parkme+0x58/0x58
-> > [  227.620890] ---[ end trace 8bd56692dd859f1c ]---
-> > [  227.788111] ------------[ cut here ]------------
+Signed-off-by: Dariusz Marcinkiewicz <reksio@newterm.pl>
+---
 
-> See the thread on
-> http://lkml.kernel.org/r/1408217806-25877-1-git-send-email-xiyou.wangcong@gmail.com
+Changes since v1:
+	* as suggested by Dave Miller, I am simply ditching all
+	  debugfs stuff
 
-Thank you. I'll keep an eye on it and see if it is fixed in the next RC.
+ drivers/net/ethernet/ec_bhf.c |  101 ++++-------------------------------------
+ 1 file changed, 10 insertions(+), 91 deletions(-)
 
-Cheers,
-        Thomas
+diff --git a/drivers/net/ethernet/ec_bhf.c b/drivers/net/ethernet/ec_bhf.c
+index 056b44b..d101750 100644
+--- a/drivers/net/ethernet/ec_bhf.c
++++ b/drivers/net/ethernet/ec_bhf.c
+@@ -1,5 +1,5 @@
+  /*
+- * drivers/net/ethernet/beckhoff/ec_bhf.c
++ * drivers/net/ethernet/ec_bhf.c
+  *
+  * Copyright (C) 2014 Darek Marcinkiewicz <reksio@newterm.pl>
+  *
+@@ -18,9 +18,6 @@
+  * Those can be found on Bechhoff CX50xx industrial PCs.
+  */
+ 
+-#if 0
+-#define DEBUG
+-#endif
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+@@ -74,6 +71,8 @@
+ 
+ #define DMA_WINDOW_SIZE_MASK	0xfffffffc
+ 
++#define ETHERCAT_MASTER_ID	0x14
++
+ static struct pci_device_id ids[] = {
+ 	{ PCI_DEVICE(0x15ec, 0x5000), },
+ 	{ 0, }
+@@ -131,7 +130,6 @@ struct bhf_dma {
+ 
+ struct ec_bhf_priv {
+ 	struct net_device *net_dev;
+-
+ 	struct pci_dev *dev;
+ 
+ 	void __iomem *io;
+@@ -162,32 +160,6 @@ struct ec_bhf_priv {
+ 
+ #define PRIV_TO_DEV(priv) (&(priv)->dev->dev)
+ 
+-#define ETHERCAT_MASTER_ID	0x14
+-
+-static void ec_bhf_print_status(struct ec_bhf_priv *priv)
+-{
+-	struct device *dev = PRIV_TO_DEV(priv);
+-
+-	dev_dbg(dev, "Frame error counter: %d\n",
+-		ioread8(priv->mac_io + MAC_FRAME_ERR_CNT));
+-	dev_dbg(dev, "RX error counter: %d\n",
+-		ioread8(priv->mac_io + MAC_RX_ERR_CNT));
+-	dev_dbg(dev, "CRC error counter: %d\n",
+-		ioread8(priv->mac_io + MAC_CRC_ERR_CNT));
+-	dev_dbg(dev, "TX frame counter: %d\n",
+-		ioread32(priv->mac_io + MAC_TX_FRAME_CNT));
+-	dev_dbg(dev, "RX frame counter: %d\n",
+-		ioread32(priv->mac_io + MAC_RX_FRAME_CNT));
+-	dev_dbg(dev, "TX fifo level: %d\n",
+-		ioread8(priv->mac_io + MAC_TX_FIFO_LVL));
+-	dev_dbg(dev, "Dropped frames: %d\n",
+-		ioread8(priv->mac_io + MAC_DROPPED_FRMS));
+-	dev_dbg(dev, "Connected with CCAT slot: %d\n",
+-		ioread8(priv->mac_io + MAC_CONNECTED_CCAT_FLAG));
+-	dev_dbg(dev, "Link status: %d\n",
+-		ioread8(priv->mii_io + MII_LINK_STATUS));
+-}
+-
+ static void ec_bhf_reset(struct ec_bhf_priv *priv)
+ {
+ 	iowrite8(0, priv->mac_io + MAC_FRAME_ERR_CNT);
+@@ -210,8 +182,6 @@ static void ec_bhf_send_packet(struct ec_bhf_priv *priv, struct tx_desc *desc)
+ 	u32 addr = (u8 *)desc - priv->tx_buf.buf;
+ 
+ 	iowrite32((ALIGN(len, 8) << 24) | addr, priv->fifo_io + FIFO_TX_REG);
+-
+-	dev_dbg(PRIV_TO_DEV(priv), "Done sending packet\n");
+ }
+ 
+ static int ec_bhf_desc_sent(struct tx_desc *desc)
+@@ -244,7 +214,6 @@ static void ec_bhf_add_rx_desc(struct ec_bhf_priv *priv, struct rx_desc *desc)
+ static void ec_bhf_process_rx(struct ec_bhf_priv *priv)
+ {
+ 	struct rx_desc *desc = &priv->rx_descs[priv->rx_dnext];
+-	struct device *dev = PRIV_TO_DEV(priv);
+ 
+ 	while (ec_bhf_pkt_received(desc)) {
+ 		int pkt_size = (le16_to_cpu(desc->header.len) &
+@@ -253,20 +222,16 @@ static void ec_bhf_process_rx(struct ec_bhf_priv *priv)
+ 		struct sk_buff *skb;
+ 
+ 		skb = netdev_alloc_skb_ip_align(priv->net_dev, pkt_size);
+-		dev_dbg(dev, "Received packet, size: %d\n", pkt_size);
+-
+ 		if (skb) {
+ 			memcpy(skb_put(skb, pkt_size), data, pkt_size);
+ 			skb->protocol = eth_type_trans(skb, priv->net_dev);
+-			dev_dbg(dev, "Protocol type: %x\n", skb->protocol);
+-
+ 			priv->stat_rx_bytes += pkt_size;
+ 
+ 			netif_rx(skb);
+ 		} else {
+-			dev_err_ratelimited(dev,
+-				"Couldn't allocate a skb_buff for a packet of size %u\n",
+-				pkt_size);
++			dev_err_ratelimited(PRIV_TO_DEV(priv),
++					    "Couldn't allocate a skb_buff for a packet of size %u\n",
++					    pkt_size);
+ 		}
+ 
+ 		desc->header.recv = 0;
+@@ -276,7 +241,6 @@ static void ec_bhf_process_rx(struct ec_bhf_priv *priv)
+ 		priv->rx_dnext = (priv->rx_dnext + 1) % priv->rx_dcount;
+ 		desc = &priv->rx_descs[priv->rx_dnext];
+ 	}
+-
+ }
+ 
+ static enum hrtimer_restart ec_bhf_timer_fun(struct hrtimer *timer)
+@@ -299,14 +263,7 @@ static int ec_bhf_setup_offsets(struct ec_bhf_priv *priv)
+ 	unsigned block_count, i;
+ 	void __iomem *ec_info;
+ 
+-	dev_dbg(dev, "Info block:\n");
+-	dev_dbg(dev, "Type of function: %x\n", (unsigned)ioread16(priv->io));
+-	dev_dbg(dev, "Revision of function: %x\n",
+-		(unsigned)ioread16(priv->io + INFO_BLOCK_REV));
+-
+ 	block_count = ioread8(priv->io + INFO_BLOCK_BLK_CNT);
+-	dev_dbg(dev, "Number of function blocks: %x\n", block_count);
+-
+ 	for (i = 0; i < block_count; i++) {
+ 		u16 type = ioread16(priv->io + i * INFO_BLOCK_SIZE +
+ 				    INFO_BLOCK_TYPE);
+@@ -317,29 +274,17 @@ static int ec_bhf_setup_offsets(struct ec_bhf_priv *priv)
+ 		dev_err(dev, "EtherCAT master with DMA block not found\n");
+ 		return -ENODEV;
+ 	}
+-	dev_dbg(dev, "EtherCAT master with DMA block found at pos: %d\n", i);
+ 
+ 	ec_info = priv->io + i * INFO_BLOCK_SIZE;
+-	dev_dbg(dev, "EtherCAT master revision: %d\n",
+-		ioread16(ec_info + INFO_BLOCK_REV));
+ 
+ 	priv->tx_dma_chan = ioread8(ec_info + INFO_BLOCK_TX_CHAN);
+-	dev_dbg(dev, "EtherCAT master tx dma channel: %d\n",
+-		priv->tx_dma_chan);
+-
+ 	priv->rx_dma_chan = ioread8(ec_info + INFO_BLOCK_RX_CHAN);
+-	dev_dbg(dev, "EtherCAT master rx dma channel: %d\n",
+-		 priv->rx_dma_chan);
+ 
+ 	priv->ec_io = priv->io + ioread32(ec_info + INFO_BLOCK_OFFSET);
+ 	priv->mii_io = priv->ec_io + ioread32(priv->ec_io + EC_MII_OFFSET);
+ 	priv->fifo_io = priv->ec_io + ioread32(priv->ec_io + EC_FIFO_OFFSET);
+ 	priv->mac_io = priv->ec_io + ioread32(priv->ec_io + EC_MAC_OFFSET);
+ 
+-	dev_dbg(dev,
+-		"EtherCAT block addres: %p, fifo address: %p, mii address: %p, mac address: %p\n",
+-		priv->ec_io, priv->fifo_io, priv->mii_io, priv->mac_io);
+-
+ 	return 0;
+ }
+ 
+@@ -350,8 +295,6 @@ static netdev_tx_t ec_bhf_start_xmit(struct sk_buff *skb,
+ 	struct tx_desc *desc;
+ 	unsigned len;
+ 
+-	dev_dbg(PRIV_TO_DEV(priv), "Starting xmit\n");
+-
+ 	desc = &priv->tx_descs[priv->tx_dnext];
+ 
+ 	skb_copy_and_csum_dev(skb, desc->data);
+@@ -366,15 +309,12 @@ static netdev_tx_t ec_bhf_start_xmit(struct sk_buff *skb,
+ 	priv->tx_dnext = (priv->tx_dnext + 1) % priv->tx_dcount;
+ 
+ 	if (!ec_bhf_desc_sent(&priv->tx_descs[priv->tx_dnext])) {
+-		/* Make sure that update updates to tx_dnext are perceived
++		/* Make sure that updates to tx_dnext are perceived
+ 		 * by timer routine.
+ 		 */
+ 		smp_wmb();
+ 
+ 		netif_stop_queue(net_dev);
+-
+-		dev_dbg(PRIV_TO_DEV(priv), "Stopping netif queue\n");
+-		ec_bhf_print_status(priv);
+ 	}
+ 
+ 	priv->stat_tx_bytes += len;
+@@ -397,7 +337,6 @@ static int ec_bhf_alloc_dma_mem(struct ec_bhf_priv *priv,
+ 
+ 	mask = ioread32(priv->dma_io + offset);
+ 	mask &= DMA_WINDOW_SIZE_MASK;
+-	dev_dbg(dev, "Read mask %x for channel %d\n", mask, channel);
+ 
+ 	/* We want to allocate a chunk of memory that is:
+ 	 * - aligned to the mask we just read
+@@ -408,12 +347,10 @@ static int ec_bhf_alloc_dma_mem(struct ec_bhf_priv *priv,
+ 	buf->len = min_t(int, ~mask + 1, size);
+ 	buf->alloc_len = 2 * buf->len;
+ 
+-	dev_dbg(dev, "Allocating %d bytes for channel %d",
+-		(int)buf->alloc_len, channel);
+ 	buf->alloc = dma_alloc_coherent(dev, buf->alloc_len, &buf->alloc_phys,
+ 					GFP_KERNEL);
+ 	if (buf->alloc == NULL) {
+-		dev_info(dev, "Failed to allocate buffer\n");
++		dev_err(dev, "Failed to allocate buffer\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -422,8 +359,6 @@ static int ec_bhf_alloc_dma_mem(struct ec_bhf_priv *priv,
+ 
+ 	iowrite32(0, priv->dma_io + offset + 4);
+ 	iowrite32(buf->buf_phys, priv->dma_io + offset);
+-	dev_dbg(dev, "Buffer: %x and read from dev: %x",
+-		(unsigned)buf->buf_phys, ioread32(priv->dma_io + offset));
+ 
+ 	return 0;
+ }
+@@ -433,7 +368,7 @@ static void ec_bhf_setup_tx_descs(struct ec_bhf_priv *priv)
+ 	int i = 0;
+ 
+ 	priv->tx_dcount = priv->tx_buf.len / sizeof(struct tx_desc);
+-	priv->tx_descs = (struct tx_desc *) priv->tx_buf.buf;
++	priv->tx_descs = (struct tx_desc *)priv->tx_buf.buf;
+ 	priv->tx_dnext = 0;
+ 
+ 	for (i = 0; i < priv->tx_dcount; i++)
+@@ -445,7 +380,7 @@ static void ec_bhf_setup_rx_descs(struct ec_bhf_priv *priv)
+ 	int i;
+ 
+ 	priv->rx_dcount = priv->rx_buf.len / sizeof(struct rx_desc);
+-	priv->rx_descs = (struct rx_desc *) priv->rx_buf.buf;
++	priv->rx_descs = (struct rx_desc *)priv->rx_buf.buf;
+ 	priv->rx_dnext = 0;
+ 
+ 	for (i = 0; i < priv->rx_dcount; i++) {
+@@ -469,8 +404,6 @@ static int ec_bhf_open(struct net_device *net_dev)
+ 	struct device *dev = PRIV_TO_DEV(priv);
+ 	int err = 0;
+ 
+-	dev_info(dev, "Opening device\n");
+-
+ 	ec_bhf_reset(priv);
+ 
+ 	err = ec_bhf_alloc_dma_mem(priv, &priv->rx_buf, priv->rx_dma_chan,
+@@ -481,20 +414,13 @@ static int ec_bhf_open(struct net_device *net_dev)
+ 	}
+ 	ec_bhf_setup_rx_descs(priv);
+ 
+-	dev_info(dev, "RX buffer allocated, address: %x\n",
+-		 (unsigned)priv->rx_buf.buf_phys);
+-
+ 	err = ec_bhf_alloc_dma_mem(priv, &priv->tx_buf, priv->tx_dma_chan,
+ 				   FIFO_SIZE * sizeof(struct tx_desc));
+ 	if (err) {
+ 		dev_err(dev, "Failed to allocate tx buffer\n");
+ 		goto error_rx_free;
+ 	}
+-	dev_dbg(dev, "TX buffer allocated, addres: %x\n",
+-		(unsigned)priv->tx_buf.buf_phys);
+-
+ 	iowrite8(0, priv->mii_io + MII_MAC_FILT_FLAG);
+-
+ 	ec_bhf_setup_tx_descs(priv);
+ 
+ 	netif_start_queue(net_dev);
+@@ -504,10 +430,6 @@ static int ec_bhf_open(struct net_device *net_dev)
+ 	hrtimer_start(&priv->hrtimer, ktime_set(0, polling_frequency),
+ 		      HRTIMER_MODE_REL);
+ 
+-	dev_info(PRIV_TO_DEV(priv), "Device open\n");
+-
+-	ec_bhf_print_status(priv);
+-
+ 	return 0;
+ 
+ error_rx_free:
+@@ -640,9 +562,6 @@ static int ec_bhf_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 
+ 	memcpy_fromio(net_dev->dev_addr, priv->mii_io + MII_MAC_ADDR, 6);
+ 
+-	dev_dbg(&dev->dev, "CX5020 Ethercat master address: %pM\n",
+-		net_dev->dev_addr);
+-
+ 	err = register_netdev(net_dev);
+ 	if (err < 0)
+ 		goto err_free_net_dev;
+-- 
+1.7.10.4
+
