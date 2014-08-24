@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882AbaHXRSN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 13:18:13 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:54292 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbaHXRSM (ORCPT
+	id S1752816AbaHXRbF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 13:31:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33254 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaHXRbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 13:18:12 -0400
+	Sun, 24 Aug 2014 13:31:03 -0400
+Date: Sun, 24 Aug 2014 10:31:01 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Naresh Kumar Inna <naresh@chelsio.com>,
+        Arvind Bhushan <arvindb@chelsio.com>,
+        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [PATCH v3 00/13] scsi: Use pci_enable_msix_range() instead of
+ pci_enable_msix()
+Message-ID: <20140824173101.GA24145@infradead.org>
+References: <cover.1408335523.git.agordeev@redhat.com>
+ <20140819170047.GA7237@infradead.org>
+ <20140820191416.GA1886@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+ydwtq7-O4+5jtu_zZEFGM7Nbq7pGqGG=UgZBnDzg58QsgMoA@mail.gmail.com>
-References: <CA+ydwtoGKP622R5XSSSvibd_5PtsQxtsijrdD23c-7waQvjC=g@mail.gmail.com>
-	<CANq1E4TZPZQSP2wWLG2LJmf1YXyRnv0rtMyKGkjsfSV50RDSnA@mail.gmail.com>
-	<CA+ydwtq7-O4+5jtu_zZEFGM7Nbq7pGqGG=UgZBnDzg58QsgMoA@mail.gmail.com>
-Date: Sun, 24 Aug 2014 19:18:11 +0200
-Message-ID: <CANq1E4S97B_RA+WQbsHe8JQsVnqTS3g6=uR3EQFN9n9bptFV2w@mail.gmail.com>
-Subject: Re: drm_mode_create_dumb_ioctl: divide error
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tommi Rantala <tt.rantala@gmail.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        trinity@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820191416.GA1886@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+I've applied all other patches except for the lpfc one now.
 
-On Sun, Aug 24, 2014 at 7:12 PM, Tommi Rantala <tt.rantala@gmail.com> wrote:
-> (gdb) info locals
-> cpp = 0
-> stride = 0
-> size = <optimized out>
->
-> (gdb) print /x *(struct drm_mode_create_dumb *)data
-> $13 = {
->   height = 0xffffffff,
->   width = 0xffffffff,
->   bpp = 0xffffffff,
->   flags = 0xffffffff,
->   handle = 0xffffffff,
->   pitch = 0xffffffff,
->   size = 0xffffffffffffffff
-> }
-
-Thanks a lot for digging into this. Looks like DIV_ROUND_UP() can
-overflow... *check*
-Yes, it's defined as:
-        #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-
-Kinda unexpected that a function called "DIV" can overflow, but makes
-sense here. Obvious fix is to test "cpp" for zero. I will send it to
-dri-devel.
-
-Thanks!
-David
+Thanks again!
