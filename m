@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaHXMLT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 08:11:19 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752392AbaHXMLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 08:11:16 -0400
-Message-ID: <53F9D661.8080100@nod.at>
-Date: Sun, 24 Aug 2014 14:11:13 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752655AbaHXM0m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 08:26:42 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:33947 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491AbaHXM0j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 08:26:39 -0400
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1747D7F3@AcuExch.aculab.com>
+References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com> <20140820105710.GC17371@redhat.com> <OFBE98487F.0F49BDD7-ONC2257D3B.004C908C-C2257D3B.004F09FD@il.ibm.com> <063D6719AE5E284EB5DD2968C1650D6D1747D7F3@AcuExch.aculab.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "abel.gordon@gmail.com" <abel.gordon@gmail.com>,
+        Alex Glikson <GLIKSON@il.ibm.com>, Eran Raichstein <ERANRA@il.ibm.com>,
+        Joel Nider <JOELN@il.ibm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
 MIME-Version: 1.0
-To: Thorsten Knabe <linux@thorsten-knabe.de>
-CC: linux-kernel@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
-        Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] UML: UBD: Fix for processes stuck in D state forever
- in UserModeLinux
-References: <53F89B7A.1040406@thorsten-knabe.de> <53F8B48D.8060209@nod.at> <53F8D2A7.70204@thorsten-knabe.de>
-In-Reply-To: <53F8D2A7.70204@thorsten-knabe.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: RE: [PATCH] vhost: Add polling mode
+X-KeepSent: 3F9F58DB:FFDF5B60-C2257D3E:00443320;
+ type=4; name=$KeepSent
+X-Mailer: IBM Notes Release 9.0.1SHF211 December 19, 2013
+From: Razya Ladelsky <RAZYA@il.ibm.com>
+Message-ID: <OF3F9F58DB.FFDF5B60-ONC2257D3E.00443320-C2257D3E.004449BE@il.ibm.com>
+Date: Sun, 24 Aug 2014 15:26:34 +0300
+X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5IF1HF3|November 07, 2013) at
+ 24/08/2014 15:26:34,
+	Serialize complete at 24/08/2014 15:26:34
+Content-Type: text/plain; charset="US-ASCII"
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082412-4966-0000-0000-0000011C3657
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 23.08.2014 19:43, schrieb Thorsten Knabe:
-> Hi Richard.
-> 
-> On 08/23/2014 05:34 PM, Richard Weinberger wrote:
->> Hi!
->>
->> Am 23.08.2014 15:47, schrieb Thorsten Knabe:
->>> From: Thorsten Knabe <linux@thorsten-knabe.de>
->>>
->>> UML: UBD: Fix for processes stuck in D state forever in UserModeLinux.
->>>
->>> Starting with Linux 3.12 processes get stuck in D state forever in
->>> UserModeLinux under sync heavy workloads. This bug was introduced by
->>> commit 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport).
->>> Fix bug by adding a check if FLUSH request was successfully submitted to
->>> the I/O thread and keeping the FLUSH request on the request queue on
->>> submission failures.
->>>
->>> Fixes: 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport)
->>> Signed-off-by: Thorsten Knabe <linux@thorsten-knabe.de>
->>
->> Thanks a lot for hunting this issue down.
->>
->>> ---
->>> Patch applies to 3.16.1.
->>>
->>> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
->>> index 3716e69..b7d2840 100644
->>> --- a/arch/um/drivers/ubd_kern.c
->>> +++ b/arch/um/drivers/ubd_kern.c
->>> @@ -1277,7 +1277,7 @@ static void do_ubd_request(struct request_queue *q)
->>>
->>>  	while(1){
->>>  		struct ubd *dev = q->queuedata;
->>> -		if(dev->end_sg == 0){
->>> +		if(dev->request == NULL){
->>
->> Why do we need this specific change?
-> 
-> This change is required, because for FLUSH requests dev->end_sg is
-> initialized to 0 by blk_rq_map_sg() a few lines above, as FLUSH requests
-> have no data blocks attached to themselves.
+David Laight <David.Laight@ACULAB.COM> wrote on 21/08/2014 05:29:41 PM:
 
-You meant "below"? Looks like I really miss something here.
-At the bottom of the while(1) loop we have
-                dev->end_sg = 0;
-                dev->request = NULL;
+> From: David Laight <David.Laight@ACULAB.COM>
+> To: Razya Ladelsky/Haifa/IBM@IBMIL, "Michael S. Tsirkin" 
+<mst@redhat.com>
+> Cc: "abel.gordon@gmail.com" <abel.gordon@gmail.com>, Alex Glikson/
+> Haifa/IBM@IBMIL, Eran Raichstein/Haifa/IBM@IBMIL, Joel Nider/Haifa/
+> IBM@IBMIL, "kvm@vger.kernel.org" <kvm@vger.kernel.org>, "linux-
+> kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 
+> "netdev@vger.kernel.org" <netdev@vger.kernel.org>, 
+> "virtualization@lists.linux-foundation.org" 
+> <virtualization@lists.linux-foundation.org>, Yossi 
+Kuperman1/Haifa/IBM@IBMIL
+> Date: 21/08/2014 05:31 PM
+> Subject: RE: [PATCH] vhost: Add polling mode
+> 
+> From: Razya Ladelsky
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote on 20/08/2014 01:57:10 PM:
+> > 
+> > > > Results:
+> > > >
+> > > > Netperf, 1 vm:
+> > > > The polling patch improved throughput by ~33% (1516 MB/sec -> 
+> 2046 MB/sec).
+> > > > Number of exits/sec decreased 6x.
+> > > > The same improvement was shown when I tested with 3 vms running 
+netperf
+> > > > (4086 MB/sec -> 5545 MB/sec).
+> > > >
+> > > > filebench, 1 vm:
+> > > > ops/sec improved by 13% with the polling patch. Number of exits
+> > > > was reduced by 31%.
+> > > > The same experiment with 3 vms running filebench showed similar 
+numbers.
+> > > >
+> > > > Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
+> > >
+> > > This really needs more thourough benchmarking report, including
+> > > system data.  One good example for a related patch:
+> > > http://lwn.net/Articles/551179/
+> > > though for virtualization, we need data about host as well, and if 
+you
+> > > want to look at streaming benchmarks, you need to test different 
+message
+> > > sizes and measure packet size.
+> > >
+> > 
+> > Hi Michael,
+> > I have already tried running netperf with several message sizes:
+> > 64,128,256,512,600,800...
+> > But the results are inconsistent even in the baseline/unpatched
+> > configuration.
+> > For smaller msg sizes, I get consistent numbers. However, at some 
+point,
+> > when I increase the msg size
+> > I get unstable results. For example, for a 512B msg, I get two 
+scenarios:
+> > vm utilization 100%, vhost utilization 75%, throughput ~6300
+> > vm utilization 80%, vhost utilization 13%, throughput ~9400 (line 
+rate)
+> > 
+> > I don't know why vhost is behaving that way for certain message sizes.
+> > Do you have any insight to why this is happening?
+> 
+> Have you tried looking at the actual ethernet packet sizes.
+> It may well jump between using small packets (the size of the writes)
+> and full sized ones.
 
+I will check it,
 Thanks,
-//richard
+Razya
+
+> 
+> If you are trying to measure ethernet packet 'cost' you need to use UDP.
+> However that probably uses different code paths.
+> 
+>    David
+> 
+> 
+> 
+
