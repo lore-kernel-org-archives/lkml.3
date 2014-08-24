@@ -1,93 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaHXUZv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:25:51 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:41406 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756AbaHXUWh (ORCPT
+	id S1754038AbaHXU0C (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:26:02 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:62362 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908AbaHXUZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:22:37 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 net-next 21/29] tracing: allow eBPF programs to call ktime_get_ns() and get_current()
-Date: Sun, 24 Aug 2014 13:21:22 -0700
-Message-Id: <1408911690-7598-22-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
-References: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
+	Sun, 24 Aug 2014 16:25:59 -0400
+Date: Sun, 24 Aug 2014 22:25:53 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20140824202553.GA17519@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- include/uapi/linux/bpf.h |    2 ++
- kernel/trace/bpf_trace.c |   20 ++++++++++++++++++++
- 2 files changed, 22 insertions(+)
+Linus,
 
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 5adaad826471..e866a2fcba8b 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -416,6 +416,8 @@ enum bpf_func_id {
- 	BPF_FUNC_memcmp,          /* int bpf_memcmp(void *unsafe_ptr, void *safe_ptr, int size) */
- 	BPF_FUNC_dump_stack,      /* void bpf_dump_stack(void) */
- 	BPF_FUNC_printk,          /* int bpf_printk(const char *fmt, int fmt_size, ...) */
-+	BPF_FUNC_ktime_get_ns,    /* u64 bpf_ktime_get_ns(void) */
-+	BPF_FUNC_get_current,     /* struct task_struct *bpf_get_current(void) */
- 	__BPF_FUNC_MAX_ID,
- };
+Please pull the latest perf-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+
+   # HEAD: b3f207855f57b9c8f43a547a801340bb5cbc59e5 perf: Handle compat ioctl
+
+A kprobes and a perf compat ioctl fix.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Masami Hiramatsu (1):
+      kprobes: Skip kretprobe hit in NMI context to avoid deadlock
+
+Pawel Moll (1):
+      perf: Handle compat ioctl
+
+
+ kernel/events/core.c | 23 ++++++++++++++++++++++-
+ kernel/kprobes.c     | 13 ++++++++++++-
+ 2 files changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1cf24b3e42ec..f9c1ed002dbc 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -41,6 +41,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/module.h>
+ #include <linux/mman.h>
++#include <linux/compat.h>
  
-diff --git a/kernel/trace/bpf_trace.c b/kernel/trace/bpf_trace.c
-index ff98be5a24d6..a98e13e1131b 100644
---- a/kernel/trace/bpf_trace.c
-+++ b/kernel/trace/bpf_trace.c
-@@ -114,6 +114,16 @@ static u64 bpf_printk(u64 r1, u64 fmt_size, u64 r3, u64 r4, u64 r5)
- 			      mod_l[2] ? r5 : (u32) r5);
+ #include "internal.h"
+ 
+@@ -3717,6 +3718,26 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	return 0;
  }
  
-+static u64 bpf_ktime_get_ns(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
++#ifdef CONFIG_COMPAT
++static long perf_compat_ioctl(struct file *file, unsigned int cmd,
++				unsigned long arg)
 +{
-+	return ktime_get_ns();
++	switch (_IOC_NR(cmd)) {
++	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
++	case _IOC_NR(PERF_EVENT_IOC_ID):
++		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
++		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
++			cmd &= ~IOCSIZE_MASK;
++			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
++		}
++		break;
++	}
++	return perf_ioctl(file, cmd, arg);
 +}
++#else
++# define perf_compat_ioctl NULL
++#endif
 +
-+static u64 bpf_get_current(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5)
-+{
-+	return (u64) (long) current;
-+}
-+
- static struct bpf_func_proto tracing_filter_funcs[] = {
- #define FETCH(SIZE)				\
- 	[BPF_FUNC_fetch_##SIZE] = {		\
-@@ -169,6 +179,16 @@ static struct bpf_func_proto tracing_filter_funcs[] = {
- 		.arg1_type = ARG_CONST_MAP_PTR,
- 		.arg2_type = ARG_PTR_TO_MAP_KEY,
- 	},
-+	[BPF_FUNC_ktime_get_ns] = {
-+		.func = bpf_ktime_get_ns,
-+		.gpl_only = true,
-+		.ret_type = RET_INTEGER,
-+	},
-+	[BPF_FUNC_get_current] = {
-+		.func = bpf_get_current,
-+		.gpl_only = true,
-+		.ret_type = RET_INTEGER,
-+	},
+ int perf_event_task_enable(void)
+ {
+ 	struct perf_event *event;
+@@ -4222,7 +4243,7 @@ static const struct file_operations perf_fops = {
+ 	.read			= perf_read,
+ 	.poll			= perf_poll,
+ 	.unlocked_ioctl		= perf_ioctl,
+-	.compat_ioctl		= perf_ioctl,
++	.compat_ioctl		= perf_compat_ioctl,
+ 	.mmap			= perf_mmap,
+ 	.fasync			= perf_fasync,
  };
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 734e9a7d280b..3995f546d0f3 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1778,7 +1778,18 @@ static int pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
+ 	unsigned long hash, flags = 0;
+ 	struct kretprobe_instance *ri;
  
- static const struct bpf_func_proto *tracing_filter_func_proto(enum bpf_func_id func_id)
--- 
-1.7.9.5
-
+-	/*TODO: consider to only swap the RA after the last pre_handler fired */
++	/*
++	 * To avoid deadlocks, prohibit return probing in NMI contexts,
++	 * just skip the probe and increase the (inexact) 'nmissed'
++	 * statistical counter, so that the user is informed that
++	 * something happened:
++	 */
++	if (unlikely(in_nmi())) {
++		rp->nmissed++;
++		return 0;
++	}
++
++	/* TODO: consider to only swap the RA after the last pre_handler fired */
+ 	hash = hash_ptr(current, KPROBE_HASH_BITS);
+ 	raw_spin_lock_irqsave(&rp->lock, flags);
+ 	if (!hlist_empty(&rp->free_instances)) {
