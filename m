@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948AbaHXO4e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 10:56:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34002 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918AbaHXO4a (ORCPT
+	id S1752977AbaHXO4k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 10:56:40 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:59546 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952AbaHXO4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 10:56:30 -0400
-Date: Sun, 24 Aug 2014 07:56:17 -0700
-From: tip-bot for Henrique de Moraes Holschuh <tipbot@zytor.com>
-Message-ID: <tip-532ed3740c1ed1583ea3fa6de9410edf0d508563@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hmh@hmh.eng.br, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, hmh@hmh.eng.br,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
-References: <1406146251-8540-1-git-send-email-hmh@hmh.eng.br>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86, microcode, intel:
-  Rename apply_microcode and declare it static
-Git-Commit-ID: 532ed3740c1ed1583ea3fa6de9410edf0d508563
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Sun, 24 Aug 2014 10:56:37 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-mm@kvack.org
+Subject: [PATCH 2/2] mm: use memblock_alloc_range()
+Date: Sun, 24 Aug 2014 23:56:03 +0900
+Message-Id: <1408892163-8073-2-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408892163-8073-1-git-send-email-akinobu.mita@gmail.com>
+References: <1408892163-8073-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  532ed3740c1ed1583ea3fa6de9410edf0d508563
-Gitweb:     http://git.kernel.org/tip/532ed3740c1ed1583ea3fa6de9410edf0d508563
-Author:     Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-AuthorDate: Thu, 24 Jul 2014 15:23:21 -0300
-Committer:  Borislav Petkov <bp@suse.de>
-CommitDate: Fri, 25 Jul 2014 17:57:51 +0200
+Replace memblock_find_in_range() and memblock_reserve() with
+memblock_alloc_range().
 
-x86, microcode, intel: Rename apply_microcode and declare it static
-
-Rename apply_microcode() in microcode/intel.c to
-apply_microcode_intel(), and declare it as static. This is a cosmetic
-fix to silence a warning issued by sparse.
-
-Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Link: http://lkml.kernel.org/r/1406146251-8540-1-git-send-email-hmh@hmh.eng.br
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-mm@kvack.org
 ---
- arch/x86/kernel/cpu/microcode/intel.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/memblock.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
-index a276fa7..c6826d1 100644
---- a/arch/x86/kernel/cpu/microcode/intel.c
-+++ b/arch/x86/kernel/cpu/microcode/intel.c
-@@ -127,7 +127,7 @@ static int get_matching_mc(struct microcode_intel *mc_intel, int cpu)
- 	return get_matching_microcode(csig, cpf, mc_intel, crev);
- }
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 6d2f219..4d98d93 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -1151,21 +1151,16 @@ static void * __init memblock_virt_alloc_internal(
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, nid);
  
--int apply_microcode(int cpu)
-+static int apply_microcode_intel(int cpu)
- {
- 	struct microcode_intel *mc_intel;
- 	struct ucode_cpu_info *uci;
-@@ -314,7 +314,7 @@ static struct microcode_ops microcode_intel_ops = {
- 	.request_microcode_user		  = request_microcode_user,
- 	.request_microcode_fw             = request_microcode_fw,
- 	.collect_cpu_info                 = collect_cpu_info,
--	.apply_microcode                  = apply_microcode,
-+	.apply_microcode                  = apply_microcode_intel,
- 	.microcode_fini_cpu               = microcode_fini_cpu,
- };
+-	if (!align)
+-		align = SMP_CACHE_BYTES;
+-
+ 	if (max_addr > memblock.current_limit)
+ 		max_addr = memblock.current_limit;
  
+ again:
+-	alloc = memblock_find_in_range_node(size, align, min_addr, max_addr,
+-					    nid);
++	alloc = memblock_alloc_range_nid(size, align, min_addr, max_addr, nid);
+ 	if (alloc)
+ 		goto done;
+ 
+ 	if (nid != NUMA_NO_NODE) {
+-		alloc = memblock_find_in_range_node(size, align, min_addr,
+-						    max_addr,  NUMA_NO_NODE);
++		alloc = memblock_alloc_range(size, align, min_addr, max_addr);
+ 		if (alloc)
+ 			goto done;
+ 	}
+@@ -1178,7 +1173,6 @@ again:
+ 	}
+ 
+ done:
+-	memblock_reserve(alloc, size);
+ 	ptr = phys_to_virt(alloc);
+ 	memset(ptr, 0, size);
+ 
+-- 
+1.9.1
+
