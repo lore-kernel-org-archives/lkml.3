@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195AbaHXTEM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 15:04:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48368 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435AbaHXTEL (ORCPT
+	id S1753354AbaHXTTI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 15:19:08 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:61979 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704AbaHXTTG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 15:04:11 -0400
-Date: Sun, 24 Aug 2014 12:04:08 -0700 (PDT)
-Message-Id: <20140824.120408.894996451904247807.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: Knut_Petersen@t-online.de, tianyu.lan@intel.com,
-        rafael.j.wysocki@intel.com, trenn@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Bug 3.14.17] inconsistent lock state
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFwNrUvZYDOPHK0WS8p+t3PFyRjfoSw1HGUGxPvEiO7HmQ@mail.gmail.com>
-References: <53F9CC77.70009@t-online.de>
-	<CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>
-	<CA+55aFwNrUvZYDOPHK0WS8p+t3PFyRjfoSw1HGUGxPvEiO7HmQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 24 Aug 2014 12:04:10 -0700 (PDT)
+	Sun, 24 Aug 2014 15:19:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPWNY8V4pfazk4Hw9qu07cAQZywC-GS7eyS+54fazXZaKMjMQw@mail.gmail.com>
+References: <53E62EEF.9040801@gmail.com>
+	<53F752A2.7080604@redhat.com>
+	<CAPWNY8V4pfazk4Hw9qu07cAQZywC-GS7eyS+54fazXZaKMjMQw@mail.gmail.com>
+Date: Sun, 24 Aug 2014 22:19:04 +0300
+Message-ID: <CAPWNY8V=T=Y5uPX9J_qjdkTJRnctDs-PoTQP7LEX_cKQEn0_Zg@mail.gmail.com>
+Subject: Re: Loading initrd above 4G causes freeze on boot
+From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
+To: Harald Hoyer <harald@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-efi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 24 Aug 2014 11:49:31 -0700
+On Fri, Aug 22, 2014 at 5:43 PM, Mantas Mikulėnas <grawity@gmail.com> wrote:
+>
+> On Fri, Aug 22, 2014 at 5:24 PM, Harald Hoyer <harald@redhat.com> wrote:
+> > On 09.08.2014 16:23, Mantas Mikulėnas wrote:
+> >> As of commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"),
+> >> the kernel freezes at the earliest possible moment when trying to boot
+> >> via UEFI on my Asus laptop. (It still boots via BIOS.)
+> >>
+> >> If I revert that commit on current master (c309bfa9b481), it boots
+> >> correctly again [although I see "setup_efi_pci() failed" being printed].
+> >>
+> >> (Seems like it freezes when handle_cmdline_files() attempts to read
+> >> the last chunk of the initramfs -- the last call to efi_file_read()
+> >> never returns. Figuring out why that happens is beyond me, though.)
+> >>
+> >
+> > I fixed my issue with: https://lkml.org/lkml/2014/8/22/232
+>
+> ...Well. If that's the _physical_ address, then I suppose it wouldn't
+> have worked on my 4 GB laptop either way. (I thought UEFI already used
+> some sort of virtual memory, so I never even thought to mention
+> this... Oh well.)
+>
+> Though if that's the case, then I'm wondering why it would be affected
+> by the read size? Shouldn't it have crashed either as soon as the high
+> address was used, or never at all? (I really don't know much about
+> memory at this level. Sorry.)
+>
+> > Care to test?
+>
+> Will try later today.
 
-> On Sun, Aug 24, 2014 at 10:50 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Sun, Aug 24, 2014 at 4:28 AM, Knut Petersen
->> <Knut_Petersen@t-online.de> wrote:
->>>
->>> Since months the postmaster wantonly blocks all mail traffic from the
->>> biggest german ISP t-online.de to all vger.kernel.org mailing lists,
->>> therefore I could not cc lkml.
->>
->> Hmm.
-> 
-> Looks like t-online used to have serious spam problems, with lots of
-> bad users etc.
-> 
-> Judging by googling, that _seems_ to have been fixed, and maybe vger
-> should unblock it again. Davem?
+Finally got around to testing it, and yes, your patch fixes the initrd
+boot for me.
 
-It's not that they are a source of SPAM, but rather their problem is
-their content filter, about %30 of lkml postings get bounced back to
-postmaster.
-
-I really don't want t-online accounts subscribing to the mailing
-lists, there are many alternative email services people could use
-instead.
+-- 
+Mantas Mikulėnas <grawity@gmail.com>
