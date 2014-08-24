@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966AbaHXRJT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 13:09:19 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:63954 "EHLO
+	id S1752794AbaHXRJQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 13:09:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:54846 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752675AbaHXRIy (ORCPT
+	by vger.kernel.org with ESMTP id S1752409AbaHXRIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 13:08:54 -0400
-Message-Id: <20140824170850.144108032@goodmis.org>
+	Sun, 24 Aug 2014 13:08:53 -0400
+Message-Id: <20140824170849.971161471@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Sun, 24 Aug 2014 13:08:12 -0400
+Date: Sun, 24 Aug 2014 13:08:11 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>
-Subject: [PATCH 4/5] ftrace: Fix function_profiler and function tracer together
+Subject: [PATCH 3/5] ftrace: Fix up trampoline accounting with looping on hash ops
 References: <20140824170808.753599145@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0004-ftrace-Fix-function_profiler-and-function-tracer-tog.patch
+Content-Disposition: inline; filename=0003-ftrace-Fix-up-trampoline-accounting-with-looping-on-.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,150 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The latest rewrite of ftrace removed the separate ftrace_ops of
-the function tracer and the function graph tracer and had them
-share the same ftrace_ops. This simplified the accounting by removing
-the multiple layers of functions called, where the global_ops func
-would call a special list that would iterate over the other ops that
-were registered within it (like function and function graph), which
-itself was registered to the ftrace ops list of all functions
-currently active. If that sounds confusing, the code that implemented
-it was also confusing and its removal is a good thing.
+Now that a ftrace_hash can be shared by multiple ftrace_ops, they can dec
+the rec->flags by more than once (one per those that share the ftrace_hash).
+This means that the tramp_hash may not have a hash item when it was added.
 
-The problem with this change was that it assumed that the function
-and function graph tracer can never be used at the same time.
-This is mostly true, but there is an exception. That is when the
-function profiler uses the function graph tracer to profile.
-The function profiler can be activated the same time as the function
-tracer, and this breaks the assumption and the result is that ftrace
-will crash (it detects the error and shuts itself down, it does not
-cause a kernel oops).
+For example, if two ftrace_ops share a hash for a ftrace record, and the
+first ops has a trampoline, when it adds itself it will set the rec->flags
+TRAMP flag and increments its nr_trampolines counter. When the second ops
+is added, it must clear that tramp flag but also decrement the other ops
+that shares its hash. As the update to the function callbacks has not yet
+been performed, the other ops will not have the tramp hash set yet and it
+can not be used to know to decrement its nr_trampolines.
 
-To solve this issue, a previous change allowed the hash tables
-for the functions traced by a ftrace_ops to be a pointer and let
-multiple ftrace_ops share the same hash. This allows the function
-and function_graph tracer to have separate ftrace_ops, but still
-share the hash, which is what is done.
+Luckily, the tramp_hash does not need to be used. As the ftrace_mutex is
+held, a ops with a trampoline to a record during an update of another ops
+that shares the record will have its func_hash pointing to it. Since a
+trampoline can only be set for a record if only one ops is attached to it,
+we can just check if the record has a trampoline (the FTRACE_FL_TRAMP flag
+is set) and then find the ops that has this record in its hashes.
 
-Now the function and function graph tracers have separate ftrace_ops
-again, and the function tracer can be run while the function_profile
-is active.
+Also added some output to help debug when things go wrong.
 
-Cc: stable@vger.kernel.org # 3.16 (apply after 3.17-rc4 is out)
+Cc: stable@vger.kernel.org # 3.16+ (apply after 3.17-rc4 is out)
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 60 ++++++++++++++++++++++++++++++++-------------------
- 1 file changed, 38 insertions(+), 22 deletions(-)
+ kernel/trace/ftrace.c | 43 ++++++++++++++++++++++++++++---------------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 92376aeac4a7..08aca65d709a 100644
+index 37f9e90d241c..92376aeac4a7 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -68,8 +68,12 @@
- #define INIT_OPS_HASH(opsname)	\
- 	.func_hash		= &opsname.local_hash,			\
- 	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
-+#define ASSIGN_OPS_HASH(opsname, val) \
-+	.func_hash		= val, \
-+	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
- #else
- #define INIT_OPS_HASH(opsname)
-+#define ASSIGN_OPS_HASH(opsname, val)
- #endif
- 
- static struct ftrace_ops ftrace_list_end __read_mostly = {
-@@ -4663,7 +4667,6 @@ void __init ftrace_init(void)
- static struct ftrace_ops global_ops = {
- 	.func			= ftrace_stub,
- 	.flags			= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_INITIALIZED,
--	INIT_OPS_HASH(global_ops)
- };
- 
- static int __init ftrace_nodyn_init(void)
-@@ -5197,6 +5200,17 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
- 
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 
-+static struct ftrace_ops graph_ops = {
-+	.func			= ftrace_stub,
-+	.flags			= FTRACE_OPS_FL_RECURSION_SAFE |
-+				   FTRACE_OPS_FL_INITIALIZED |
-+				   FTRACE_OPS_FL_STUB,
-+#ifdef FTRACE_GRAPH_TRAMP_ADDR
-+	.trampoline		= FTRACE_GRAPH_TRAMP_ADDR,
-+#endif
-+	ASSIGN_OPS_HASH(graph_ops, &global_ops.local_hash)
-+};
-+
- static int ftrace_graph_active;
- 
- int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
-@@ -5359,12 +5373,28 @@ static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
-  */
- static void update_function_graph_func(void)
+@@ -1507,25 +1507,38 @@ static bool test_rec_ops_needs_regs(struct dyn_ftrace *rec)
+ static void ftrace_remove_tramp(struct ftrace_ops *ops,
+ 				struct dyn_ftrace *rec)
  {
--	if (ftrace_ops_list == &ftrace_list_end ||
--	    (ftrace_ops_list == &global_ops &&
--	     global_ops.next == &ftrace_list_end))
--		ftrace_graph_entry = __ftrace_graph_entry;
--	else
-+	struct ftrace_ops *op;
-+	bool do_test = false;
+-	struct ftrace_func_entry *entry;
+-
+-	entry = ftrace_lookup_ip(ops->tramp_hash, rec->ip);
+-	if (!entry)
++	/* If TRAMP is not set, no ops should have a trampoline for this */
++	if (!(rec->flags & FTRACE_FL_TRAMP))
+ 		return;
+ 
++	rec->flags &= ~FTRACE_FL_TRAMP;
 +
-+	/*
-+	 * The graph and global ops share the same set of functions
-+	 * to test. If any other ops is on the list, then
-+	 * the graph tracing needs to test if its the function
-+	 * it should call.
-+	 */
-+	do_for_each_ftrace_op(op, ftrace_ops_list) {
-+		if (op != &global_ops && op != &graph_ops &&
-+		    op != &ftrace_list_end) {
-+			do_test = true;
-+			/* in double loop, break out with goto */
-+			goto out;
-+		}
-+	} while_for_each_ftrace_op(op);
-+ out:
-+	if (do_test)
- 		ftrace_graph_entry = ftrace_graph_entry_test;
-+	else
-+		ftrace_graph_entry = __ftrace_graph_entry;
++	if ((!ftrace_hash_empty(ops->func_hash->filter_hash) &&
++	     !ftrace_lookup_ip(ops->func_hash->filter_hash, rec->ip)) ||
++	    ftrace_lookup_ip(ops->func_hash->notrace_hash, rec->ip))
++		return;
+ 	/*
+ 	 * The tramp_hash entry will be removed at time
+ 	 * of update.
+ 	 */
+ 	ops->nr_trampolines--;
+-	rec->flags &= ~FTRACE_FL_TRAMP;
  }
  
- static struct notifier_block ftrace_suspend_notifier = {
-@@ -5405,16 +5435,7 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 	ftrace_graph_entry = ftrace_graph_entry_test;
- 	update_function_graph_func();
+-static void ftrace_clear_tramps(struct dyn_ftrace *rec)
++static void ftrace_clear_tramps(struct dyn_ftrace *rec, struct ftrace_ops *ops)
+ {
+ 	struct ftrace_ops *op;
  
--	/* Function graph doesn't use the .func field of global_ops */
--	global_ops.flags |= FTRACE_OPS_FL_STUB;
++	/* If TRAMP is not set, no ops should have a trampoline for this */
++	if (!(rec->flags & FTRACE_FL_TRAMP))
++		return;
++
+ 	do_for_each_ftrace_op(op, ftrace_ops_list) {
++		/*
++		 * This function is called to clear other tramps
++		 * not the one that is being updated.
++		 */
++		if (op == ops)
++			continue;
+ 		if (op->nr_trampolines)
+ 			ftrace_remove_tramp(op, rec);
+ 	} while_for_each_ftrace_op(op);
+@@ -1626,13 +1639,10 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
+ 				/*
+ 				 * If we are adding another function callback
+ 				 * to this function, and the previous had a
+-				 * trampoline used, then we need to go back to
+-				 * the default trampoline.
++				 * custom trampoline in use, then we need to go
++				 * back to the default trampoline.
+ 				 */
+-				rec->flags &= ~FTRACE_FL_TRAMP;
 -
--#ifdef CONFIG_DYNAMIC_FTRACE
--	/* Optimize function graph calling (if implemented by arch) */
--	if (FTRACE_GRAPH_TRAMP_ADDR != 0)
--		global_ops.trampoline = FTRACE_GRAPH_TRAMP_ADDR;
--#endif
--
--	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
-+	ret = ftrace_startup(&graph_ops, FTRACE_START_FUNC_RET);
+-				/* remove trampolines from any ops for this rec */
+-				ftrace_clear_tramps(rec);
++				ftrace_clear_tramps(rec, ops);
+ 			}
  
- out:
- 	mutex_unlock(&ftrace_lock);
-@@ -5432,12 +5453,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
- 	__ftrace_graph_entry = ftrace_graph_entry_stub;
--	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
--	global_ops.flags &= ~FTRACE_OPS_FL_STUB;
--#ifdef CONFIG_DYNAMIC_FTRACE
--	if (FTRACE_GRAPH_TRAMP_ADDR != 0)
--		global_ops.trampoline = 0;
--#endif
-+	ftrace_shutdown(&graph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ 			/*
+@@ -1935,8 +1945,8 @@ unsigned long ftrace_get_addr_new(struct dyn_ftrace *rec)
+ 	if (rec->flags & FTRACE_FL_TRAMP) {
+ 		ops = ftrace_find_tramp_ops_new(rec);
+ 		if (FTRACE_WARN_ON(!ops || !ops->trampoline)) {
+-			pr_warning("Bad trampoline accounting at: %p (%pS)\n",
+-				    (void *)rec->ip, (void *)rec->ip);
++			pr_warn("Bad trampoline accounting at: %p (%pS) (%lx)\n",
++				(void *)rec->ip, (void *)rec->ip, rec->flags);
+ 			/* Ftrace is shutting down, return anything */
+ 			return (unsigned long)FTRACE_ADDR;
+ 		}
+@@ -2266,7 +2276,10 @@ static int ftrace_save_ops_tramp_hash(struct ftrace_ops *ops)
+ 	} while_for_each_ftrace_rec();
  
+ 	/* The number of recs in the hash must match nr_trampolines */
+-	FTRACE_WARN_ON(ops->tramp_hash->count != ops->nr_trampolines);
++	if (FTRACE_WARN_ON(ops->tramp_hash->count != ops->nr_trampolines))
++		pr_warn("count=%ld trampolines=%d\n",
++			ops->tramp_hash->count,
++			ops->nr_trampolines);
+ 
+ 	return 0;
+ }
 -- 
 2.0.1
 
