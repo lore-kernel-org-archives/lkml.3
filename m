@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaHXHUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 03:20:16 -0400
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:64985 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaHXHUO (ORCPT
+	id S1752389AbaHXIBS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 04:01:18 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:57204 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073AbaHXIBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 03:20:14 -0400
+	Sun, 24 Aug 2014 04:01:17 -0400
+Message-ID: <53F99CF3.8080905@gmail.com>
+Date: Sun, 24 Aug 2014 16:06:11 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Date: Sun, 24 Aug 2014 09:20:13 +0200
-Message-ID: <CACRpkdYvtj_W0bX0FRcs2c1DE9ORv-rA5JWUGkoHpRfi2zcmRQ@mail.gmail.com>
-Subject: [GIT PULL] GPIO fixes for the v3.17 series
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Simek <monstr@monstr.eu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Eager <eager@eagerm.com>
+Subject: Re: [PATCH] arch/microblaze/include/asm/entry.h: Include "linux/linkage.h"
+ to avoid compiling issue
+References: <53E22E85.9010205@gmail.com> <53F371A0.8060700@gmail.com>
+In-Reply-To: <53F371A0.8060700@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hello All:
 
-here are some post-rc1 GPIO fixes I've collected, nothing
-special apart from the Zynq fix which is for a new driver.
-Please pull them in!
+Is microblaze for Linux upstream kernel still alive?
 
-Yours,
-Linus Walleij
+Before I get confirmation, I should do nothing for microblaze to avoid
+sending spams to kernel mailing list.
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+Thanks.
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.17-2
+On 8/19/14 23:47, Chen Gang wrote:
+> Hello maintainers:
+> 
+> Please help check the related 2 patches when you have time.
+> 
+> Thanks.
+> 
+> On 08/06/2014 09:32 PM, Chen Gang wrote:
+>> "entry.h" needs 'asmlinkage', and "asm/linkage.h" does not provide it.
+>> So need include "linux/linkage.h" to use generic one instead of.
+>>
+>> The related error (with allmodconfig under microblaze):
+>>
+>>     CC [M]  drivers/net/ethernet/emulex/benet/be_main.o
+>>   In file included from ./arch/microblaze/include/asm/processor.h:17:0,
+>>                    from include/linux/prefetch.h:14,
+>>                    from drivers/net/ethernet/emulex/benet/be_main.c:18:
+>>   ./arch/microblaze/include/asm/entry.h:33:19: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'void'
+>>    extern asmlinkage void do_notify_resume(struct pt_regs *regs, int in_syscall);
+>>                      ^
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  arch/microblaze/include/asm/entry.h | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/microblaze/include/asm/entry.h b/arch/microblaze/include/asm/entry.h
+>> index b4a4cb1..596e485 100644
+>> --- a/arch/microblaze/include/asm/entry.h
+>> +++ b/arch/microblaze/include/asm/entry.h
+>> @@ -15,6 +15,7 @@
+>>  
+>>  #include <asm/percpu.h>
+>>  #include <asm/ptrace.h>
+>> +#include <linux/linkage.h>
+>>  
+>>  /*
+>>   * These are per-cpu variables required in entry.S, among other
+>>
+> 
+> 
 
-for you to fetch changes up to 8117bd531501ec329e4c9ea96fb7f9d5504c82f5:
+-- 
+Chen Gang
 
-  gpio-lynxpoint: enable input sensing in resume (2014-08-21 07:44:57 -0500)
-
-----------------------------------------------------------------
-Fixes for the v3.17 series:
-
-- A largeish fix for the IRQ handling in the new Zynq driver.
-  The quite verbose commit message gives the exact details.
-- Move some defines for gpiod flags outside an ifdef to make
-  stub functions work again.
-- Various minor fixes that we can accept for -rc1.
-
-----------------------------------------------------------------
-Julia Lawall (2):
-      gpiolib: devres: use correct structure type name in sizeof
-      gpio: delete unneeded test before of_node_put
-
-Lars-Peter Clausen (1):
-      gpio: zynq: Fix IRQ handlers
-
-Linus Walleij (1):
-      gpio: move GPIOD flags outside #ifdef
-
-Markus Mayer (1):
-      MAINTAINERS: Change maintainer for gpio-bcm-kona.c
-
-Mathias Nyman (1):
-      gpio-lynxpoint: enable input sensing in resume
-
- MAINTAINERS                   |  2 +-
- drivers/gpio/devres.c         |  2 +-
- drivers/gpio/gpio-lynxpoint.c | 18 ++++++++++++++++++
- drivers/gpio/gpio-zynq.c      | 36 ++++++++++++++++++++++++++++--------
- drivers/gpio/gpiolib-of.c     |  4 +---
- include/linux/gpio/consumer.h |  4 ++--
- 6 files changed, 51 insertions(+), 15 deletions(-)
+Open, share, and attitude like air, water, and life which God blessed
