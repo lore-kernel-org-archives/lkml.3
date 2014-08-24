@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaHXOqG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 10:46:06 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43957 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510AbaHXOqF (ORCPT
+	id S1752770AbaHXOr7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 10:47:59 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:60549 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510AbaHXOr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 10:46:05 -0400
-Date: Sun, 24 Aug 2014 16:45:59 +0200
+	Sun, 24 Aug 2014 10:47:58 -0400
+Date: Sun, 24 Aug 2014 16:47:51 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL] nohz: Fix double clock write on idle ticks
-Message-ID: <20140824144559.GA9455@gmail.com>
-References: <1408727373-8166-1-git-send-email-frederic@kernel.org>
- <20140824100734.GA1309@gmail.com>
- <CAFTL4hz8OELwXZ603UUWZQwOQE677CBeS37rB9F1OYNuM9ByOA@mail.gmail.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Michael Ellerman <michaele@au1.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
+Message-ID: <20140824144751.GB9455@gmail.com>
+References: <1408724968-3441-1-git-send-email-acme@kernel.org>
+ <20140824101123.GB1309@gmail.com>
+ <20140824111635.GA2817@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFTL4hz8OELwXZ603UUWZQwOQE677CBeS37rB9F1OYNuM9ByOA@mail.gmail.com>
+In-Reply-To: <20140824111635.GA2817@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-> Le dimanche 24 août 2014, Ingo Molnar <mingo@kernel.org> a écrit :
+> Em Sun, Aug 24, 2014 at 12:11:24PM +0200, Ingo Molnar escreveu:
+> > * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+> > > o Kernel fix to properly handle exited tasks, by returning POLLHUP values
+> > >   on perf event file descriptors. Tooling changes will come next, but were
+> > >   tested with this kernel fix. (Jiri Olsa)
+>  
+> > So the signoffs are really weird (and invalid) here:
+>  
+> > commit ce1d77c667e40631d6673717e65e72f72265bf10
+> > Author: Jiri Olsa <jolsa@kernel.org>
+> > Date:   Fri Aug 15 16:24:45 2014 -0300
+>  
+> >     perf top: Use set_term_quiet() instead of open coded equivalent
+>  
+> > ...    
+> >     Cc: Jiri Olsa <jolsa@kernel.org>
+> >     Cc: Namhyung Kim <namhyung@kernel.org>
+> >     Cc: Paul Mackerras <paulus@samba.org>
+> >     Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >     Link: http://lkml.kernel.org/n/tip-h7n9te70flmaqfnj6l06ay6r@git.kernel.org
+> >     [ Yanked this out of a patch containing this and some other change ]
+> >     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+>  
+> > and in 7713886adc15 and f017bf0a8d92 - results of a rebase gone wrong?
 > 
-> > * Frederic Weisbecker <fweisbec@gmail.com <javascript:;>> wrote:
-> >
-> > > From: Frederic Weisbecker <fweisbec@gmail.com <javascript:;>>
-> > >
-> > > Ingo,
-> > >
-> > > Please pull the nohz/drop-double-write-v3 branch that can be found at:
-> > >
-> > > git://
-> > git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > >       nohz/drop-double-write-v3
-> > >
-> > > Although the 1st patch fixes a bug, it was a longstanding issue so
-> > > that branch doesn't need to be applied in 3.17. The next merge window
-> > > looks better.
-> > >
-> > > --
-> > > The tick reschedules itself unconditionally. It's relevant in periodic
-> > > mode but not in dynticks mode where it results in spurious double clock
-> > > writes and even spurious periodic behaviour for low-res case.
-> > >
-> > > This set fixes that:
-> > >
-> > > * 1st patch removes low-res periodic tick rescheduling in nohz mode.
-> > > This fixes spurious periodic behaviour.
-> > >
-> > > * 2nd patch does the same for high-res mode. Here there is no such
-> > > spurious periodic behaviour but it still spares a double clock write
-> > > in some cases.
-> > > ---
-> > >
-> > >
-> > > Thanks,
-> > >       Frederic
-> > > ---
-> > >
-> > > Viresh Kumar (2):
-> > >       nohz: Fix spurious periodic tick behaviour in low-res dynticks mode
-> > >       nohz: Avoid tick's double reprogramming in highres mode
-> > >
-> > >
-> > >  kernel/time/tick-sched.c | 8 ++++++++
-> > >  1 file changed, 8 insertions(+)
-> >
-> > > These fixes are pretty small - any objections
-> 
-> > against putting it into
-> > > timers/urgent and including it in v3.17?
-> 
-> 
-> OK sounds good to me. They are easily reverted if any problem arises.
+> Should be ok now, I recreated the perf-core-for-mingo signed tag, please
+> let me know if there are still any problems,
 
-On a second thought, 'spurious periodic behavior' is really just 
-sub-optimal full-nohz behavior - it's not an outright 
-user-noticeable bug, correct?
-
-Thanks,
+Looks good now. Pulled, thanks a lot Arnaldo!
 
 	Ingo
