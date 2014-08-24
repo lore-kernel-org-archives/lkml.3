@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaHXSLn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 14:11:43 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:39949 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751148AbaHXSLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 14:11:41 -0400
-Date: Sun, 24 Aug 2014 14:11:40 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dan Aloni <dan@kernelim.com>, "security@kernel.org" <security@kernel.org>,
-        linux-aio@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: Revert "aio: fix aio request leak when events are reaped by user space"
-Message-ID: <20140824181140.GD4376@kvack.org>
-References: <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org> <20140819163733.GA10132@gmail.com> <20140819165404.GD13858@kvack.org> <20140819171426.GA11811@gmail.com> <20140820004651.GJ13858@kvack.org> <20140822160111.GD20391@kvack.org> <20140822161502.GA30392@gmail.com> <20140822162630.GF20391@kvack.org> <20140822185110.GA2333@gmail.com> <CA+55aFzZbRkEh_MbB-XmurVP-4seMP3z9tbq+YQOhkjtDNTzfg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzZbRkEh_MbB-XmurVP-4seMP3z9tbq+YQOhkjtDNTzfg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1753215AbaHXSN4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 14:13:56 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:37525 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751682AbaHXSNz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 14:13:55 -0400
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [Bug 3.14.17] inconsistent lock state
+Date: Sun, 24 Aug 2014 20:13:51 +0200
+User-Agent: KMail/1.13.7 (Linux/3.16.1; KDE/4.14.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Thomas Renninger <trenn@suse.de>
+References: <53F9CC77.70009@t-online.de> <CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>
+In-Reply-To: <CA+55aFwZP1gyf=mvTrKjWwj6YE6=5y1+aZdmsNMHUp6d3dckXw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201408242013.51749.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 02:43:56PM -0700, Linus Torvalds wrote:
-> Ugh.
+On Sunday 24 of August 2014, Linus Torvalds wrote:
+> On Sun, Aug 24, 2014 at 4:28 AM, Knut Petersen
 > 
-> Ben, at this point my gut feel is that we should just revert the
-> original "fix", and you should take a much deeper look at this all.
-> The original "fix" was more broken then the leak it purported to fix,
-> and now the patch to fix your fix has gone through two iterations and
-> *still* Dan is finding bugs in it.  I'm getting the feeling that this
-> code needs more thinking than you are actually putting into it.
+> <Knut_Petersen@t-online.de> wrote:
+> > Since months the postmaster wantonly blocks all mail traffic from the
+> > biggest german ISP t-online.de to all vger.kernel.org mailing lists,
+> > therefore I could not cc lkml.
+> 
+> Hmm.
 
-That's why I had't sent it out as an official [PATCH] just yet.  I think 
-things worked out okay since the untested patch I sent out pointed Dan in 
-the right direction and he was able to put some effort into it while I 
-didn't have to immediate time to do so.  I just put in a few hours to 
-polish off the final details on this fix now, and it should be coming your 
-way as soon as I get an ack back from Dan.  Hopefully Kent can review it 
-as well, since I had to modify the approach to try to retain the advantages 
-of his batched reqs_available handling and avoid bouncing the cacheline 
-ctx->completion_lock is on during io_submit().  Cheers,
+What is worse postmasters attitude is like this:
 
-		-ben
+"We are under no obligation to explain why you were banned nor to remove
+the ban.
 
->                 Linus
+If you don't like this, you can run your own list server and on it determine
+your own set of policies."
+
+ps. that was citation from vger postmaster David Miller
 
 -- 
-"Thought is the essence of where you are now."
+Arkadiusz Miśkiewicz, arekm / maven.pl
