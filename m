@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaHXRIy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 13:08:54 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:47726 "EHLO
+	id S1753067AbaHXRJV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 13:09:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:54846 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752318AbaHXRIv (ORCPT
+	by vger.kernel.org with ESMTP id S1752841AbaHXRIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 13:08:51 -0400
-Message-Id: <20140824170808.753599145@goodmis.org>
+	Sun, 24 Aug 2014 13:08:54 -0400
+Message-Id: <20140824170850.349336650@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Sun, 24 Aug 2014 13:08:08 -0400
+Date: Sun, 24 Aug 2014 13:08:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 0/5] [GIT PULL] ftrace: Fix issue between function tracer and function profiler
-X-RR-Connecting-IP: 107.14.168.118:25
+Subject: [PATCH 5/5] ftrace: Use current addr when converting to nop in
+ __ftrace_replace_code()
+References: <20140824170808.753599145@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0005-ftrace-Use-current-addr-when-converting-to-nop-in-__.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Linus,
+In __ftrace_replace_code(), when converting the call to a nop in a function
+it needs to compare against the "curr" (current) value of the ftrace ops, and
+not the "new" one. It currently does not affect x86 which is the only arch
+to do the trampolines with function graph tracer, but when other archs that do
+depend on this code implement the function graph trampoline, it can crash.
 
-The rewrite of the ftrace code that makes it possible to allow for
-separate trampolines had a design flaw with the interaction between
-the function and function_graph tracers.
+Here's an example when ARM uses the trampolines (in the future):
 
-The main flaw was the simplification of the use of multiple tracers having
-the same filter (like function and function_graph, that use the
-set_ftrace_filter file to filter their code). The design assumed that the
-two tracers could never run simultaneously as only one tracer can be
-used at a time. The problem with this assumption was that the function
-profiler could be implemented on top of the function graph tracer, and
-the function profiler could run at the same time as the function tracer.
-This caused the assumption to be broken and when ftrace detected this
-failed assumpiton it would spit out a nasty warning and shut itself down.
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 9 at kernel/trace/ftrace.c:1716 ftrace_bug+0x17c/0x1f4()
+ Modules linked in: omap_rng rng_core ipv6
+ CPU: 0 PID: 9 Comm: migration/0 Not tainted 3.16.0-test-10959-gf0094b28f303-dirty #52
+ [<c02188f4>] (unwind_backtrace) from [<c021343c>] (show_stack+0x20/0x24)
+ [<c021343c>] (show_stack) from [<c095a674>] (dump_stack+0x78/0x94)
+ [<c095a674>] (dump_stack) from [<c02532a0>] (warn_slowpath_common+0x7c/0x9c)
+ [<c02532a0>] (warn_slowpath_common) from [<c02532ec>] (warn_slowpath_null+0x2c/0x34)
+ [<c02532ec>] (warn_slowpath_null) from [<c02cbac4>] (ftrace_bug+0x17c/0x1f4)
+ [<c02cbac4>] (ftrace_bug) from [<c02cc44c>] (ftrace_replace_code+0x80/0x9c)
+ [<c02cc44c>] (ftrace_replace_code) from [<c02cc658>] (ftrace_modify_all_code+0xb8/0x164)
+ [<c02cc658>] (ftrace_modify_all_code) from [<c02cc718>] (__ftrace_modify_code+0x14/0x1c)
+ [<c02cc718>] (__ftrace_modify_code) from [<c02c7244>] (multi_cpu_stop+0xf4/0x134)
+ [<c02c7244>] (multi_cpu_stop) from [<c02c6e90>] (cpu_stopper_thread+0x54/0x130)
+ [<c02c6e90>] (cpu_stopper_thread) from [<c0271cd4>] (smpboot_thread_fn+0x1ac/0x1bc)
+ [<c0271cd4>] (smpboot_thread_fn) from [<c026ddf0>] (kthread+0xe0/0xfc)
+ [<c026ddf0>] (kthread) from [<c020f318>] (ret_from_fork+0x14/0x20)
+ ---[ end trace dc9ce72c5b617d8f ]---
+[   65.047264] ftrace failed to modify [<c0208580>] asm_do_IRQ+0x10/0x1c
+[   65.054070]  actual: 85:1b:00:eb
 
-Instead of using a single ftrace_ops that switches between the function
-and function_graph callbacks, the two tracers can again use their own
-ftrace_ops. But instead of having a complex hierarchy of ftrace_ops,
-the filter fields are placed in its own structure and the ftrace_ops
-can carefully use the same filter. This change took a bit to be able
-to allow for this and currently only the global_ops can share the same
-filter, but this new design can easily be modified to allow for any
-ftrace_ops to share its filter with another ftrace_ops.
+Fixes: 7413af1fb70e7 "ftrace: Make get_ftrace_addr() and get_ftrace_addr_old() global"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-The first four patches deal with the change of allowing the ftrace_ops
-to share the filter (and this needs to go to 3.16 as well).
-
-The fifth patch fixes a bug that was also caused by the new changes
-but only for archs other than x86, and only if those archs implement
-a direct call to the function_graph tracer which they do not do yet
-but will in the future. It does not need to go to stable, but needs
-to be fixed before the other archs update their code to allow direct
-calls to the function_graph trampoline.
-
-Please pull the latest trace-fixes-v3.17-rc1 tree, which can be found at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-v3.17-rc1
-
-Tag SHA1: 12ecec5f97f49cca5f959c484a6ad1450eb759a6
-Head SHA1: 39b5552cd5090d4c210d278cd2732f493075f033
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 08aca65d709a..5916a8e59e87 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2017,7 +2017,7 @@ __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
+ 		return ftrace_make_call(rec, ftrace_addr);
+ 
+ 	case FTRACE_UPDATE_MAKE_NOP:
+-		return ftrace_make_nop(NULL, rec, ftrace_addr);
++		return ftrace_make_nop(NULL, rec, ftrace_old_addr);
+ 
+ 	case FTRACE_UPDATE_MODIFY_CALL:
+ 		return ftrace_modify_call(rec, ftrace_old_addr, ftrace_addr);
+-- 
+2.0.1
 
 
-Steven Rostedt (Red Hat) (5):
-      ftrace: Allow ftrace_ops to use the hashes from other ops
-      ftrace: Update all ftrace_ops for a ftrace_hash_ops update
-      ftrace: Fix up trampoline accounting with looping on hash ops
-      ftrace: Fix function_profiler and function tracer together
-      ftrace: Use current addr when converting to nop in __ftrace_replace_code()
-
-----
- include/linux/ftrace.h |  14 ++-
- kernel/trace/ftrace.c  | 246 +++++++++++++++++++++++++++++++------------------
- 2 files changed, 168 insertions(+), 92 deletions(-)
