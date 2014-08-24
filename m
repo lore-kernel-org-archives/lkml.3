@@ -1,89 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaHXX2Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 19:28:16 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:42091 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144AbaHXX2N (ORCPT
+	id S1754027AbaHXXhS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 19:37:18 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:39282 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144AbaHXXhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 19:28:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140822130640.GM13147@bart.dudau.co.uk>
-References: <1407860725-25202-1-git-send-email-Liviu.Dudau@arm.com>
- <1407860725-25202-5-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJm6qWNdrJ2F8xddFUj46y42n6hQVu1nkTaA-5Tbg--XQ@mail.gmail.com>
- <20140822130640.GM13147@bart.dudau.co.uk>
-From: Rob Herring <robherring2@gmail.com>
-Date: Sun, 24 Aug 2014 18:27:48 -0500
-Message-ID: <CAL_JsqLGa3em5Phct-H0Q=vB5AnA78h19uA=4xi3xHA1rCVq+A@mail.gmail.com>
-Subject: Re: [PATCH v9 04/12] PCI: OF: Fix the conversion of IO ranges into IO resources.
-To: Liviu Dudau <liviu@dudau.co.uk>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 24 Aug 2014 19:37:16 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: rtl8821ae: Fix spaces required around that '<' errors
+Date: Sun, 24 Aug 2014 18:34:43 -0500
+Message-Id: <1408923283-3572-1-git-send-email-gdonald@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 8:06 AM, Liviu Dudau <liviu@dudau.co.uk> wrote:
-> On Thu, Aug 21, 2014 at 11:08:48PM -0500, Rob Herring wrote:
->> On Tue, Aug 12, 2014 at 11:25 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
->> > The ranges property for a host bridge controller in DT describes
->> > the mapping between the PCI bus address and the CPU physical address.
->> > The resources framework however expects that the IO resources start
->> > at a pseudo "port" address 0 (zero) and have a maximum size of IO_SPACE_LIMIT.
->> > The conversion from pci ranges to resources failed to take that into account.
->> >
->> > In the process move the function into drivers/of/address.c as it now
->> > depends on pci_address_to_pio() code and make it return an error code.
->> >
->> > Cc: Grant Likely <grant.likely@linaro.org>
->> > Cc: Rob Herring <robh+dt@kernel.org>
->>
->> Humm, this says I'm cc'ed, but I'm not which defeats the point of
->> recording the Cc's in the commit.
->
-> Appologies, I've screwed up my git send-email arguments.
->
->>
->> I still have the same concerns that this will break existing users.
->> Are you sure integrator is the only platform affected?
->
-> microblaze and powerpc have their similar handcoded routine for parsing ranges
-> where they pre-compute the io_base and adjust the values again when registering
-> resources. I'm not absolutely sure they are not broken as I lack the appropriate
-> platforms to test (I've been asking for an FPGA engineer to build me a microblaze
-> image with all the bits included but haven't received anything yet and it is
-> possible Xilinx has now shifted their interests towards ARM + PCI as the ML605
-> board that I have seems to have been discontinued).
+Fix checkpatch.pl spaces required around that '<' errors
 
-I will settle for "I've read through the $arch code and believe they
-are not broken". It is unrealistic for you to test on everything.
+Signed-off-by: Greg Donald <gdonald@gmail.com>
+---
+ drivers/staging/rtl8821ae/btcoexist/halbtc8723b2ant.c |  2 +-
+ drivers/staging/rtl8821ae/rtl8821ae/phy.c             | 18 +++++++++---------
+ drivers/staging/rtl8821ae/rtl8821ae/rf.c              |  2 +-
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
-> mips is doing the same thing and I believe is not affected, pci-host-generic.c
-> was adjusting the returned values afterwards so that will not be needed and Lorenzo
-> has a patch for the driver to adapt it to this series anyway.
->
-> pcie-designware.c also recalculates the io.start and io.end values, so that's fine
-> for now. The only ones that I believe are still affected are pci-tegra.c and
-> pcie-rcar.c for which I will need to provide a patch similar to integrator unless
-> the code gets converted to the new range parsing.
+diff --git a/drivers/staging/rtl8821ae/btcoexist/halbtc8723b2ant.c b/drivers/staging/rtl8821ae/btcoexist/halbtc8723b2ant.c
+index da3f62d..edcf8dd 100644
+--- a/drivers/staging/rtl8821ae/btcoexist/halbtc8723b2ant.c
++++ b/drivers/staging/rtl8821ae/btcoexist/halbtc8723b2ant.c
+@@ -1323,7 +1323,7 @@ static void halbtc8723b2ant_set_ant_path(struct btc_coexist *btcoexist,
+ 	btcoexist->btc_get(btcoexist, BTC_GET_BL_EXT_SWITCH, &pg_ext_switch);
+ 	btcoexist->btc_get(btcoexist, BTC_GET_U4_WIFI_FW_VER, &fw_ver);
+ 
+-	if ((fw_ver<0xc0000) || pg_ext_switch)
++	if ((fw_ver < 0xc0000) || pg_ext_switch)
+ 		use_ext_switch = true;
+ 
+ 	if (init_hwcfg) {
+diff --git a/drivers/staging/rtl8821ae/rtl8821ae/phy.c b/drivers/staging/rtl8821ae/rtl8821ae/phy.c
+index 1dd3301..c56936d 100644
+--- a/drivers/staging/rtl8821ae/rtl8821ae/phy.c
++++ b/drivers/staging/rtl8821ae/rtl8821ae/phy.c
+@@ -1252,7 +1252,7 @@ static bool _rtl8812ae_phy_config_mac_with_headerfile(struct ieee80211_hw *hw)
+ 	for (i = 0; i < arraylength; i += 2) {
+ 		v1 = ptrarray[i];
+ 		v2 = (u8) ptrarray[i + 1];
+-		if (v1<0xCDCDCDCD) {
++		if (v1 < 0xCDCDCDCD) {
+ 			rtl_write_byte(rtlpriv, v1, (u8) v2);
+ 		} else {
+ 			if (!_rtl8821ae_check_condition(hw,v1)) {
+@@ -1296,7 +1296,7 @@ static bool _rtl8821ae_phy_config_mac_with_headerfile(struct ieee80211_hw *hw)
+ 	for (i = 0; i < arraylength; i += 2) {
+ 		v1 = ptrarray[i];
+ 		v2 = (u8) ptrarray[i + 1];
+-		if (v1<0xCDCDCDCD) {
++		if (v1 < 0xCDCDCDCD) {
+ 			rtl_write_byte(rtlpriv, v1, (u8) v2);
+ 			continue;
+ 		} else {
+@@ -1342,7 +1342,7 @@ static bool _rtl8812ae_phy_config_bb_with_headerfile(struct ieee80211_hw *hw,
+ 		for (i = 0; i < arraylen; i += 2) {
+ 			v1 = array_table[i];
+ 			v2 = array_table[i+1];
+-			if (v1<0xCDCDCDCD) {
++			if (v1 < 0xCDCDCDCD) {
+ 				_rtl8812ae_config_bb_reg(hw, v1, v2);
+ 				continue;
+ 			} else {/*This line is the start line of branch.*/
+@@ -1431,7 +1431,7 @@ static bool _rtl8821ae_phy_config_bb_with_headerfile(struct ieee80211_hw *hw,
+ 		for (i = 0; i < arraylen; i += 2) {
+ 			v1 = array_table[i];
+ 			v2 = array_table[i+1];
+-			if (v1<0xCDCDCDCD) {
++			if (v1 < 0xCDCDCDCD) {
+ 				_rtl8821ae_config_bb_reg(hw, v1, v2);
+ 				continue;
+ 			} else {/*This line is the start line of branch.*/
+@@ -1566,7 +1566,7 @@ static bool _rtl8812ae_phy_config_bb_with_pgheaderfile(struct ieee80211_hw *hw,
+ 			v5 = phy_regarray_table_pg[i+4];
+ 			v6 = phy_regarray_table_pg[i+5];
+ 
+-			if (v1<0xCDCDCDCD) {
++			if (v1 < 0xCDCDCDCD) {
+ 				if ( (v4 == 0xfe) || (v4 == 0xffe))
+ 					mdelay(50);
+ 				else
+@@ -1617,7 +1617,7 @@ static bool _rtl8821ae_phy_config_bb_with_pgheaderfile(struct ieee80211_hw *hw,
+ 			v5 = phy_regarray_table_pg[i+4];
+ 			v6 = phy_regarray_table_pg[i+5];
+ 
+-			if (v1<0xCDCDCDCD) {
++			if (v1 < 0xCDCDCDCD) {
+ 				if (v4 == 0xfe)
+ 					mdelay(50);
+ 				else if (v4 == 0xfd)
+@@ -1682,7 +1682,7 @@ bool rtl8812ae_phy_config_rf_with_headerfile(struct ieee80211_hw * hw,
+ 		for (i = 0; i < radioa_arraylen_a; i = i + 2) {
+ 			v1 = radioa_array_table_a[i];
+ 			v2 = radioa_array_table_a[i+1];
+-			if (v1<0xcdcdcdcd) {
++			if (v1 < 0xcdcdcdcd) {
+ 				_rtl8821ae_config_rf_radio_a(hw,v1,v2);
+ 				continue;
+ 			}else{/*This line is the start line of branch.*/
+@@ -1714,7 +1714,7 @@ bool rtl8812ae_phy_config_rf_with_headerfile(struct ieee80211_hw * hw,
+ 		for (i = 0; i < radioa_arraylen_b; i = i + 2) {
+ 			v1 = radioa_array_table_b[i];
+ 			v2 = radioa_array_table_b[i+1];
+-			if (v1<0xcdcdcdcd) {
++			if (v1 < 0xcdcdcdcd) {
+ 				_rtl8821ae_config_rf_radio_b(hw,v1,v2);
+ 				continue;
+ 			}else{/*This line is the start line of branch.*/
+@@ -1779,7 +1779,7 @@ bool rtl8821ae_phy_config_rf_with_headerfile(struct ieee80211_hw * hw,
+ 		for (i = 0; i < radioa_arraylen; i = i + 2) {
+ 			v1 = radioa_array_table[i];
+ 			v2 = radioa_array_table[i+1];
+-			if (v1<0xcdcdcdcd) {
++			if (v1 < 0xcdcdcdcd) {
+ 				_rtl8821ae_config_rf_radio_a(hw,v1,v2);
+ 			}else{/*This line is the start line of branch.*/
+ 				if(!_rtl8821ae_check_condition(hw,v1)){
+diff --git a/drivers/staging/rtl8821ae/rtl8821ae/rf.c b/drivers/staging/rtl8821ae/rtl8821ae/rf.c
+index 87c1c97..8662961 100644
+--- a/drivers/staging/rtl8821ae/rtl8821ae/rf.c
++++ b/drivers/staging/rtl8821ae/rtl8821ae/rf.c
+@@ -211,7 +211,7 @@ static void _rtl8821ae_get_txpower_writeval_by_regulatory(struct ieee80211_hw *h
+ 			if (rtlphy->pwrgroup_cnt == 1)
+ 				chnlgroup = 0;
+ 			else {
+-				if(channel<3)
++				if (channel < 3)
+ 					chnlgroup = 0;
+ 				else if (channel <6)
+ 					chnlgroup = 1;
+-- 
+1.9.1
 
-Well, the latter would be nice, but they certainly have to be fixed.
-Now that I think about it, this needs to be handled in a bisectable
-way. So I think you need to fix all affected platforms in this patch
-rather than a separate patch as you have done.
-
-Rob
