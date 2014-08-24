@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400AbaHXUpB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:45:01 -0400
-Received: from verein.lst.de ([213.95.11.211]:39188 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752965AbaHXUpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:45:00 -0400
-Date: Sun, 24 Aug 2014 22:44:54 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Hannes Reinecke <hare@suse.de>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Doug Gilbert <dgilbert@interlog.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: scsi logging future directions, was Re: [RFC PATCH -logging 00/10]
-	scsi/constants: Output continuous error messages on trace
-Message-ID: <20140824204454.GA11423@lst.de>
-References: <20140808115004.6768.97014.stgit@yuno-kbuild.novalocal> <94D0CD8314A33A4D9D801C0FE68B402958C1A9E5@G9W0745.americas.hpqcorp.net>
+	id S1753439AbaHXVSP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 17:18:15 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:33577 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117AbaHXVSO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 17:18:14 -0400
+From: =?utf-8?Q?G=C3=BCnther?= Noack <guenther@unix-ag.uni-kl.de>
+To: Daniel Kurtz <djkurtz@chromium.org>, Inki Dae <inki.dae@samsung.com>,
+        Siarhei Siamashka <siarhei.siamashka@gmail.com>,
+        =?utf-8?Q?G=C3=BCnther?= Noack <me@guenthernoack.de>
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>
+Subject: Re: [PATCH] drm/exynos/fbdev: set smem_len for fbdev
+In-Reply-To: <1408891857-14258-1-git-send-email-djkurtz@chromium.org>
+References: <1408891857-14258-1-git-send-email-djkurtz@chromium.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.1 (armv7l-unknown-linux-gnueabihf)
+Date: Sun, 24 Aug 2014 23:18:27 +0200
+Message-ID: <87siklzivw.fsf@sushi.unix-ag.uni-kl.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958C1A9E5@G9W0745.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 12:39:59AM +0000, Elliott, Robert (Server Storage) wrote:
-> If you trigger hundreds of errors (e.g., hot remove a device
-> during heavy IO), then all the prints to the linux serial console
-> bog down the system, causing timeouts in commands to other
-> devices and soft lockups for applications.
-> 
-> Some changes that would help are:
-> 1. Put them under SCSI logging level control
-> 2. Use printk_ratelimited so an excessive number are trimmed
-> 
-> Would you like to include something like this in your
-> patch set?
 
-I think we should come to an agreement where we want to go with scsi
-logging first before doing various smaller adjustments.  (Although your
-example is one that's urgent enough that I'd like to put it in ASAP,
-I had issues with it a few times).
+This patch works on my hardware.  Xorg starts up fine with fbdev now.
+Thanks for the fix!
 
-I had a chat with Martin at Linuxcon about these issues, and we were
-both in favor of getting rid of the old scsi logging mechansisms and
-instead replace it by an extended version of the scsi tracepoints that
-cover all places, and dump all data from the old logging mechanism
-that people find useful.
+--Günther
 
-In a few places we'd still want to log normal dev_printk style errors,
-and the I/O completion is one of them, even if they really need to be
-ratelimited and condensed.
+Daniel Kurtz <djkurtz@chromium.org> writes:
 
-If someone has arguments in favour of keeping the old logging code
-I'd love to hear them, but in practive the traceevent code has huge
-benefits:
-
- - almost zero overhead if disabled
- - can easily be used without any tools through configs, but can be used
-   even better with tools like trace-cmd or perf
- - allows both fine and coarse grained selections of events to trace
- - allows to capture statistics on each trace point without event enabling the
-   output
- - doesn't have any of the console lockup problems.
-
+> Commit [0] stopped setting fix.smem_start and fix.smem_len when creating
+> the fbdev.
+>
+> [0] 2f1eab8d8ab59e799f7d51d62410b398607a7bc3
+>   drm/exynos/fbdev: don't set fix.smem/mmio_{start,len}
+>
+> However, smem_len is used by some userland applications to calculate the
+> size for mmap.  In particular, it is used by xf86-video-fbdev:
+>
+> http://cgit.freedesktop.org/xorg/xserver/tree/hw/xfree86/fbdevhw/fbdevhw.c?id=xorg-server-1.15.99.903#n571
+>
+> So, let's restore setting the smem_len to unbreak things for these users.
+>
+> Note: we are still leaving smem_start set to 0.
+>
+> Reported-by: Siarhei Siamashka <siarhei.siamashka@gmail.com>
+> Reported-by: Günther Noack <me@guenthernoack.de>
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+> I am able to compile test this change, but would appreciate help testing it
+> on a system that uses xf86-video-fbdev.
+>
+> Thanks!
+>
+>  drivers/gpu/drm/exynos/exynos_drm_fbdev.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+> index 5a7cd8b..f865736 100644
+> --- a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+> +++ b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
+> @@ -125,6 +125,7 @@ static int exynos_drm_fbdev_update(struct drm_fb_helper *helper,
+>  
+>  	fbi->screen_base = buffer->kvaddr;
+>  	fbi->screen_size = size;
+> +	fbi->fix.smem_len = size;
+>  
+>  	return 0;
+>  }
+> -- 
+> 2.1.0.rc2.206.gedb03e5
