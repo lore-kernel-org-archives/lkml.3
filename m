@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449AbaHXTuc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 15:50:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12128 "EHLO mx1.redhat.com"
+	id S1753469AbaHXTux (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 15:50:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46594 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753394AbaHXTuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 15:50:04 -0400
-Date: Sun, 24 Aug 2014 21:47:47 +0200
+	id S1753368AbaHXTuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 15:50:01 -0400
+Date: Sun, 24 Aug 2014 21:47:36 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -16,9 +16,9 @@ To: Al Viro <viro@ZenIV.linux.org.uk>,
 Cc: Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] x86, fpu: sanitize the usage of use_eager_fpu() in
-	switch_fpu_prepare()
-Message-ID: <20140824194747.GA27458@redhat.com>
+Subject: [PATCH 2/5] x86, fpu: don't drop_fpu() in __restore_xstate_sig()
+	if use_eager_fpu()
+Message-ID: <20140824194736.GA27441@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,58 +28,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-switch_fpu_prepare() calls use_eager_fpu() 3 times, and every call
-is confusing.
+__restore_xstate_sig() calls math_state_restore() with preemption
+enabled, not good. But this is minor, the main problem is that this
+drop_fpu/set_used_math/math_state_restore sequence creates the nasty
+"use_eager_fpu() && !used_math()" special case which complicates other
+FPU paths.
 
-1st: "tsk_used_math(new) && use_eager_fpu()" is pointless, eagerfpu
-     means that used_math() is also true.
+Change __restore_xstate_sig() to switch to swapper's fpu state, copy
+the user state to the thread's fpu state, and switch fpu->state back
+after sanitize_restored_xstate().
 
-2nd: !fpu.preload && use_eager_fpu() is not possible, we do not need
-     to check use_eager_fpu() before use_eager_fpu(). IOW, !preload
-     alway means !use_eager_fpu(), so this check only adds more
-     confusion.
+Without use_eager_fpu() fpu->state is null in between but this is fine
+because in this case we rely on clear_used_math()/set_used_math(), so
+this doesn't differ from !fpu_allocated() case.
 
-3rd: If __thread_has_fpu(old) == F then use_eager_fpu() is false too,
-     no need to check it before fpu_lazy_restore(). IOW, the "else"
-     branch is simply impossible if use_eager_fpu().
+Note: with or without this patch, perhaps it makes sense to send SEGV
+if __copy_from_user() fails.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/include/asm/fpu-internal.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/kernel/xsave.c |   36 ++++++++++++++++++++++--------------
+ 1 files changed, 22 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index ae6bd35..7b95a87 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -424,8 +424,8 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
- 	 * If the task has used the math, pre-load the FPU on xsave processors
- 	 * or if the past 5 consecutive context-switches used math.
- 	 */
--	fpu.preload = tsk_used_math(new) && (use_eager_fpu() ||
--					     new->thread.fpu_counter > 5);
-+	fpu.preload = use_eager_fpu() ||
-+			(tsk_used_math(new) && new->thread.fpu_counter > 5);
- 	if (__thread_has_fpu(old)) {
- 		if (!__save_init_fpu(old))
- 			cpu = ~0;
-@@ -437,14 +437,14 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
- 			new->thread.fpu_counter++;
- 			__thread_set_has_fpu(new);
- 			prefetch(new->thread.fpu.state);
--		} else if (!use_eager_fpu())
-+		} else
- 			stts();
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 74d4129..51be404 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -325,6 +325,22 @@ static inline int restore_user_xstate(void __user *buf, u64 xbv, int fx_only)
+ 		return frstor_user(buf);
+ }
+ 
++static void switch_fpu_xstate(struct task_struct *tsk, union thread_xstate *xstate)
++{
++	preempt_disable();
++	__drop_fpu(tsk);
++	tsk->thread.fpu_counter = 0;
++	tsk->thread.fpu.state = xstate;
++	/* use_eager_fpu() => xstate != NULL */
++	if (use_eager_fpu())
++		math_state_restore();
++	else if (xstate)
++		set_used_math();
++	else
++		clear_used_math();
++	preempt_enable();
++}
++
+ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ {
+ 	int ia32_fxstate = (buf != buf_fx);
+@@ -377,28 +393,20 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 		union thread_xstate *xstate = tsk->thread.fpu.state;
+ 		struct user_i387_ia32_struct env;
+ 		int err = 0;
+-
+ 		/*
+-		 * Drop the current fpu which clears used_math(). This ensures
+-		 * that any context-switch during the copy of the new state,
+-		 * avoids the intermediate state from getting restored/saved.
+-		 * Thus avoiding the new restored state from getting corrupted.
+-		 * We will be ready to restore/save the state only after
+-		 * set_used_math() is again set.
++		 * Ensure that that any context-switch during the copy of
++		 * the new state, avoids the intermediate state from getting
++		 * restored/saved.
+ 		 */
+-		drop_fpu(tsk);
+-
++		switch_fpu_xstate(tsk, init_task.thread.fpu.state);
+ 		if (__copy_from_user(&xstate->xsave, buf_fx, state_size) ||
+ 		    __copy_from_user(&env, buf, sizeof(env))) {
++		    	fpu_finit(&tsk->thread.fpu);
+ 			err = -1;
+ 		} else {
+ 			sanitize_restored_xstate(xstate, &env, xstate_bv, fx_only);
+-			set_used_math();
+ 		}
+-
+-		if (use_eager_fpu())
+-			math_state_restore();
+-
++		switch_fpu_xstate(tsk, xstate);
+ 		return err;
  	} else {
- 		old->thread.fpu_counter = 0;
- 		old->thread.fpu.last_cpu = ~0;
- 		if (fpu.preload) {
- 			new->thread.fpu_counter++;
--			if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
-+			if (fpu_lazy_restore(new, cpu))
- 				fpu.preload = 0;
- 			else
- 				prefetch(new->thread.fpu.state);
+ 		/*
 -- 
 1.5.5.1
 
