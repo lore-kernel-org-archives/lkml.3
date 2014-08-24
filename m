@@ -1,51 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaHXQmF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 12:42:05 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:57490 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476AbaHXQmD (ORCPT
+	id S1752622AbaHXRIx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 13:08:53 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:14246 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752116AbaHXRIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 12:42:03 -0400
-Message-ID: <53FA15D5.1030206@dev.mellanox.co.il>
-Date: Sun, 24 Aug 2014 19:41:57 +0300
-From: Sagi Grimberg <sagig@dev.mellanox.co.il>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sun, 24 Aug 2014 13:08:51 -0400
+Message-Id: <20140824170849.801726356@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Sun, 24 Aug 2014 13:08:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>
+Subject: [PATCH 2/5] ftrace: Update all ftrace_ops for a ftrace_hash_ops update
+References: <20140824170808.753599145@goodmis.org>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Bart Van Assche <bvanassche@fusionio.com>,
-        Robert Elliott <Elliott@hp.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        Or Gerlitz <ogerlitz@mellanox.com>, Oren Duer <oren@mellanox.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-fsdevel@vger.kernel.org,
-        Max Gurtovoy <maxg@mellanox.com>
-Subject: Re: Performance degradation in IO writes vs. reads (was scsi-mq V2)
-References: <1403715121-1201-1-git-send-email-hch@lst.de> <20140708144829.GA5539@infradead.org> <53C39F36.9010003@dev.mellanox.co.il> <53F5E6C9.1020207@dev.mellanox.co.il> <20140821130315.GB1567@infradead.org> <53F5FBF8.9040700@dev.mellanox.co.il>
-In-Reply-To: <53F5FBF8.9040700@dev.mellanox.co.il>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-ftrace-Update-all-ftrace_ops-for-a-ftrace_hash_ops-u.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/21/2014 5:02 PM, Sagi Grimberg wrote:
-> On 8/21/2014 4:03 PM, Christoph Hellwig wrote:
->> On Thu, Aug 21, 2014 at 03:32:09PM +0300, Sagi Grimberg wrote:
->>> So I just got back to checking this issue of *extremely low* IO write
->>> performance I got in 3.16-rc2.
->>
->> Please test with 3.16 final.  There once issue each in aio and dio
->> that caused bad I/O performance regression that were only fixed last
->> minute in the 3.16 cycle.
->>
->
-> I'll do that now.
->
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Indeed this issue is resolved in 3.16. Sorry for the false alarm...
-Thanks Christoph.
+When updating what an ftrace_ops traces, if it is registered (that is,
+actively tracing), and that ftrace_ops uses the shared global_ops
+local_hash, then we need to update all tracers that are active and
+also share the global_ops' ftrace_hash_ops.
 
-Sagi.
+Cc: stable@vger.kernel.org # 3.16 (apply after 3.17-rc4 is out)
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c | 43 +++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 39 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index c92757adba79..37f9e90d241c 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1292,9 +1292,9 @@ alloc_and_copy_ftrace_hash(int size_bits, struct ftrace_hash *hash)
+ }
+ 
+ static void
+-ftrace_hash_rec_disable(struct ftrace_ops *ops, int filter_hash);
++ftrace_hash_rec_disable_modify(struct ftrace_ops *ops, int filter_hash);
+ static void
+-ftrace_hash_rec_enable(struct ftrace_ops *ops, int filter_hash);
++ftrace_hash_rec_enable_modify(struct ftrace_ops *ops, int filter_hash);
+ 
+ static int
+ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+@@ -1346,13 +1346,13 @@ update:
+ 	 * Remove the current set, update the hash and add
+ 	 * them back.
+ 	 */
+-	ftrace_hash_rec_disable(ops, enable);
++	ftrace_hash_rec_disable_modify(ops, enable);
+ 
+ 	old_hash = *dst;
+ 	rcu_assign_pointer(*dst, new_hash);
+ 	free_ftrace_hash_rcu(old_hash);
+ 
+-	ftrace_hash_rec_enable(ops, enable);
++	ftrace_hash_rec_enable_modify(ops, enable);
+ 
+ 	return 0;
+ }
+@@ -1686,6 +1686,41 @@ static void ftrace_hash_rec_enable(struct ftrace_ops *ops,
+ 	__ftrace_hash_rec_update(ops, filter_hash, 1);
+ }
+ 
++static void ftrace_hash_rec_update_modify(struct ftrace_ops *ops,
++					  int filter_hash, int inc)
++{
++	struct ftrace_ops *op;
++
++	__ftrace_hash_rec_update(ops, filter_hash, inc);
++
++	if (ops->func_hash != &global_ops.local_hash)
++		return;
++
++	/*
++	 * If the ops shares the global_ops hash, then we need to update
++	 * all ops that are enabled and use this hash.
++	 */
++	do_for_each_ftrace_op(op, ftrace_ops_list) {
++		/* Already done */
++		if (op == ops)
++			continue;
++		if (op->func_hash == &global_ops.local_hash)
++			__ftrace_hash_rec_update(op, filter_hash, inc);
++	} while_for_each_ftrace_op(op);
++}
++
++static void ftrace_hash_rec_disable_modify(struct ftrace_ops *ops,
++					   int filter_hash)
++{
++	ftrace_hash_rec_update_modify(ops, filter_hash, 0);
++}
++
++static void ftrace_hash_rec_enable_modify(struct ftrace_ops *ops,
++					  int filter_hash)
++{
++	ftrace_hash_rec_update_modify(ops, filter_hash, 1);
++}
++
+ static void print_ip_ins(const char *fmt, unsigned char *p)
+ {
+ 	int i;
+-- 
+2.0.1
+
+
