@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaHXPAh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 11:00:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34231 "EHLO
+	id S1753396AbaHXPA4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 11:00:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34252 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaHXPAb (ORCPT
+	with ESMTP id S1752951AbaHXPAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 11:00:31 -0400
-Date: Sun, 24 Aug 2014 08:00:12 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-2f3f9bcf000b2043a480e7cc0cae582559fb0f13@git.kernel.org>
+	Sun, 24 Aug 2014 11:00:52 -0400
+Date: Sun, 24 Aug 2014 08:00:28 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-39ee533fcc7feb5b7938a3973a2bf5ad79bb595b@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
+        hpa@zytor.com, mingo@kernel.org, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, jean.pihet@linaro.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1408715919-25990-2-git-send-email-jolsa@kernel.org>
-References: <1408715919-25990-2-git-send-email-jolsa@kernel.org>
+        linux-kernel@vger.kernel.org, acme@redhat.com, andi@firstfloor.org,
+        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1408666401-594-1-git-send-email-namhyung@kernel.org>
+References: <1408666401-594-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add +field argument support for --field option
-Git-Commit-ID: 2f3f9bcf000b2043a480e7cc0cae582559fb0f13
+Subject: [tip:perf/core] perf hists browser:
+  Consolidate callchain print functions in TUI
+Git-Commit-ID: 39ee533fcc7feb5b7938a3973a2bf5ad79bb595b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,144 +38,324 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2f3f9bcf000b2043a480e7cc0cae582559fb0f13
-Gitweb:     http://git.kernel.org/tip/2f3f9bcf000b2043a480e7cc0cae582559fb0f13
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Fri, 22 Aug 2014 15:58:38 +0200
+Commit-ID:  39ee533fcc7feb5b7938a3973a2bf5ad79bb595b
+Gitweb:     http://git.kernel.org/tip/39ee533fcc7feb5b7938a3973a2bf5ad79bb595b
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Fri, 22 Aug 2014 09:13:21 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Sun, 24 Aug 2014 08:11:19 -0300
 
-perf tools: Add +field argument support for --field option
+perf hists browser: Consolidate callchain print functions in TUI
 
-Adding support to add field(s) to default field order via using the '+'
-prefix, like for report:
+Currently there're two callchain print functions in TUI - one for the
+hists browser and another for file dump.  They do almost same job so
+it'd be better consolidate the codes.
 
-  $ perf report
-  Samples: 10  of event 'cycles', Event count (approx.): 4463799
-  Overhead  Command  Shared Object      Symbol
-    32.40%  ls       [kernel.kallsyms]  [k] filemap_fault
-    28.19%  ls       [kernel.kallsyms]  [k] get_page_from_freelist
-    23.38%  ls       [kernel.kallsyms]  [k] enqueue_entity
-    15.04%  ls       [kernel.kallsyms]  [k] mmap_region
+To do that, provide two callbacks to the generic logic - one for
+printing and another for checking whether it should stop.
 
-  $ perf report -F +period,sample
-  Samples: 10  of event 'cycles', Event count (approx.): 4463799
-  Overhead        Period       Samples  Command  Shared Object      Symbol
-    32.40%       1446493             1  ls       [kernel.kallsyms]  [k] filemap_fault
-    28.19%       1258486             1  ls       [kernel.kallsyms]  [k] get_page_from_freelist
-    23.38%       1043754             1  ls       [kernel.kallsyms]  [k] enqueue_entity
-    15.04%        671160             1  ls       [kernel.kallsyms]  [k] mmap_region
-
-Works in general for commands using --field option.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1408715919-25990-2-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1408666401-594-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/hist.c   |  4 ++--
- tools/perf/util/sort.c | 24 +++++++++++++++++++-----
- tools/perf/util/sort.h |  1 +
- 3 files changed, 22 insertions(+), 7 deletions(-)
+ tools/perf/ui/browsers/hists.c | 203 ++++++++++++++++-------------------------
+ 1 file changed, 80 insertions(+), 123 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 75eb6ac..2af1837 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -452,7 +452,7 @@ void perf_hpp__init(void)
- 	/*
- 	 * If user specified field order, no need to setup default fields.
- 	 */
--	if (field_order)
-+	if (is_strict_order(field_order))
- 		return;
- 
- 	if (symbol_conf.cumulate_callchain) {
-@@ -519,7 +519,7 @@ void perf_hpp__column_disable(unsigned col)
- 
- void perf_hpp__cancel_cumulate(void)
- {
--	if (field_order)
-+	if (is_strict_order(field_order))
- 		return;
- 
- 	perf_hpp__column_disable(PERF_HPP__OVERHEAD_ACC);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index b4a805e..1958637 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1453,7 +1453,7 @@ static int __setup_sorting(void)
- 	int ret = 0;
- 
- 	if (sort_keys == NULL) {
--		if (field_order) {
-+		if (is_strict_order(field_order)) {
- 			/*
- 			 * If user specified field order but no sort order,
- 			 * we'll honor it and not add default sort orders.
-@@ -1639,23 +1639,36 @@ static void reset_dimensions(void)
- 		memory_sort_dimensions[i].taken = 0;
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 519353d..d4cef68 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -477,20 +477,37 @@ static char *callchain_list__sym_name(struct callchain_list *cl,
+ 	return bf;
  }
  
-+bool is_strict_order(const char *order)
++struct callchain_print_arg {
++	/* for hists browser */
++	off_t	row_offset;
++	bool	is_current_entry;
++
++	/* for file dump */
++	FILE	*fp;
++	int	printed;
++};
++
++typedef void (*print_callchain_entry_fn)(struct hist_browser *browser,
++					 struct callchain_list *chain,
++					 const char *str, int offset,
++					 unsigned short row,
++					 struct callchain_print_arg *arg);
++
+ static void hist_browser__show_callchain_entry(struct hist_browser *browser,
+ 					       struct callchain_list *chain,
+-					       unsigned short row, int offset,
+-					       char folded_sign, const char *str,
+-					       bool *is_current_entry)
++					       const char *str, int offset,
++					       unsigned short row,
++					       struct callchain_print_arg *arg)
+ {
+ 	int color, width;
++	char folded_sign = callchain_list__folded(chain);
+ 
+ 	color = HE_COLORSET_NORMAL;
+ 	width = browser->b.width - (offset + 2);
+ 	if (ui_browser__is_current_entry(&browser->b, row)) {
+ 		browser->selection = &chain->ms;
+ 		color = HE_COLORSET_SELECTED;
+-		*is_current_entry = true;
++		arg->is_current_entry = true;
+ 	}
+ 
+ 	ui_browser__set_color(&browser->b, color);
+@@ -500,12 +517,41 @@ static void hist_browser__show_callchain_entry(struct hist_browser *browser,
+ 	slsmg_write_nstring(str, width);
+ }
+ 
++static void hist_browser__fprintf_callchain_entry(struct hist_browser *b __maybe_unused,
++						  struct callchain_list *chain,
++						  const char *str, int offset,
++						  unsigned short row __maybe_unused,
++						  struct callchain_print_arg *arg)
 +{
-+	return order && (*order != '+');
++	char folded_sign = callchain_list__folded(chain);
++
++	arg->printed += fprintf(arg->fp, "%*s%c %s\n", offset, " ",
++				folded_sign, str);
 +}
 +
- static int __setup_output_field(void)
++typedef bool (*check_output_full_fn)(struct hist_browser *browser,
++				     unsigned short row);
++
++static bool hist_browser__check_output_full(struct hist_browser *browser,
++					    unsigned short row)
++{
++	return browser->b.rows == row;
++}
++
++static bool hist_browser__check_dump_full(struct hist_browser *browser __maybe_unused,
++					  unsigned short row __maybe_unused)
++{
++	return false;
++}
++
+ #define LEVEL_OFFSET_STEP 3
+ 
+ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 					struct rb_root *root, int level,
+-					unsigned short row, off_t *row_offset,
+-					u64 total, bool *is_current_entry)
++					unsigned short row, u64 total,
++					print_callchain_entry_fn print,
++					struct callchain_print_arg *arg,
++					check_output_full_fn is_output_full)
  {
--	char *tmp, *tok, *str;
--	int ret = 0;
-+	char *tmp, *tok, *str, *strp;
-+	int ret = -EINVAL;
+ 	struct rb_node *node;
+ 	int first_row = row, offset = level * LEVEL_OFFSET_STEP;
+@@ -532,8 +578,8 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 				extra_offset = LEVEL_OFFSET_STEP;
  
- 	if (field_order == NULL)
- 		return 0;
+ 			folded_sign = callchain_list__folded(chain);
+-			if (*row_offset != 0) {
+-				--*row_offset;
++			if (arg->row_offset != 0) {
++				arg->row_offset--;
+ 				goto do_next;
+ 			}
  
- 	reset_dimensions();
+@@ -550,13 +596,11 @@ static int hist_browser__show_callchain(struct hist_browser *browser,
+ 					str = alloc_str;
+ 			}
  
--	str = strdup(field_order);
-+	strp = str = strdup(field_order);
- 	if (str == NULL) {
- 		error("Not enough memory to setup output fields");
- 		return -ENOMEM;
- 	}
- 
--	for (tok = strtok_r(str, ", ", &tmp);
-+	if (!is_strict_order(field_order))
-+		strp++;
+-			hist_browser__show_callchain_entry(browser, chain, row,
+-							   offset + extra_offset,
+-							   folded_sign, str,
+-							   is_current_entry);
++			print(browser, chain, str, offset + extra_offset, row, arg);
 +
-+	if (!strlen(strp)) {
-+		error("Invalid --fields key: `+'");
-+		goto out;
-+	}
-+
-+	for (tok = strtok_r(strp, ", ", &tmp);
- 			tok; tok = strtok_r(NULL, ", ", &tmp)) {
- 		ret = output_field_add(tok);
- 		if (ret == -EINVAL) {
-@@ -1667,6 +1680,7 @@ static int __setup_output_field(void)
+ 			free(alloc_str);
+ 
+-			if (++row == browser->b.rows)
++			if (is_output_full(browser, ++row))
+ 				goto out;
+ do_next:
+ 			if (folded_sign == '+')
+@@ -572,12 +616,10 @@ do_next:
+ 				new_total = total;
+ 
+ 			row += hist_browser__show_callchain(browser, &child->rb_root,
+-							    new_level,
+-							    row, row_offset,
+-							    new_total,
+-							    is_current_entry);
++							    new_level, row, new_total,
++							    print, arg, is_output_full);
  		}
+-		if (row == browser->b.rows)
++		if (is_output_full(browser, row))
+ 			break;
+ 		node = next;
+ 	}
+@@ -757,16 +799,20 @@ static int hist_browser__show_entry(struct hist_browser *browser,
+ 
+ 	if (folded_sign == '-' && row != browser->b.rows) {
+ 		u64 total = hists__total_period(entry->hists);
++		struct callchain_print_arg arg = {
++			.row_offset = row_offset,
++			.is_current_entry = current_entry,
++		};
+ 
+ 		if (symbol_conf.cumulate_callchain)
+ 			total = entry->stat_acc->period;
+ 
+ 		printed += hist_browser__show_callchain(browser,
+-							&entry->sorted_chain,
+-							1, row, &row_offset,
+-							total, &current_entry);
++					&entry->sorted_chain, 1, row, total,
++					hist_browser__show_callchain_entry, &arg,
++					hist_browser__check_output_full);
+ 
+-		if (current_entry)
++		if (arg.is_current_entry)
+ 			browser->he_selection = entry;
  	}
  
-+out:
- 	free(str);
- 	return ret;
+@@ -1022,110 +1068,21 @@ do_offset:
+ 	}
  }
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 041f0c9..c03e4ff 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -218,4 +218,5 @@ void perf_hpp__set_elide(int idx, bool elide);
  
- int report_parse_ignore_callees_opt(const struct option *opt, const char *arg, int unset);
+-static int hist_browser__fprintf_callchain_node_rb_tree(struct hist_browser *browser,
+-							struct callchain_node *chain_node,
+-							u64 total, int level,
+-							FILE *fp)
+-{
+-	struct rb_node *node;
+-	int offset = level * LEVEL_OFFSET_STEP;
+-	u64 new_total;
+-	int printed = 0;
+-
+-	if (callchain_param.mode == CHAIN_GRAPH_REL)
+-		new_total = chain_node->children_hit;
+-	else
+-		new_total = total;
+-
+-	node = rb_first(&chain_node->rb_root);
+-	while (node) {
+-		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
+-		struct rb_node *next = rb_next(node);
+-		u64 cumul = callchain_cumul_hits(child);
+-		struct callchain_list *chain;
+-		char folded_sign = ' ';
+-		int first = true;
+-		int extra_offset = 0;
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			char bf[1024], *alloc_str;
+-			const char *str;
+-			bool was_first = first;
+-
+-			if (first)
+-				first = false;
+-			else
+-				extra_offset = LEVEL_OFFSET_STEP;
+-
+-			folded_sign = callchain_list__folded(chain);
+-
+-			alloc_str = NULL;
+-			str = callchain_list__sym_name(chain, bf, sizeof(bf),
+-						       browser->show_dso);
+-			if (was_first) {
+-				double percent = cumul * 100.0 / new_total;
+-
+-				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
+-					str = "Not enough memory!";
+-				else
+-					str = alloc_str;
+-			}
+-
+-			printed += fprintf(fp, "%*s%c %s\n", offset + extra_offset, " ", folded_sign, str);
+-			free(alloc_str);
+-			if (folded_sign == '+')
+-				break;
+-		}
+-
+-		if (folded_sign == '-') {
+-			const int new_level = level + (extra_offset ? 2 : 1);
+-			printed += hist_browser__fprintf_callchain_node_rb_tree(browser, child, new_total,
+-										new_level, fp);
+-		}
+-
+-		node = next;
+-	}
+-
+-	return printed;
+-}
+-
+-static int hist_browser__fprintf_callchain_node(struct hist_browser *browser,
+-						struct callchain_node *node,
+-						int level, FILE *fp)
+-{
+-	struct callchain_list *chain;
+-	int offset = level * LEVEL_OFFSET_STEP;
+-	char folded_sign = ' ';
+-	int printed = 0;
+-
+-	list_for_each_entry(chain, &node->val, list) {
+-		char bf[1024], *s;
+-
+-		folded_sign = callchain_list__folded(chain);
+-		s = callchain_list__sym_name(chain, bf, sizeof(bf), browser->show_dso);
+-		printed += fprintf(fp, "%*s%c %s\n", offset, " ", folded_sign, s);
+-	}
+-
+-	if (folded_sign == '-')
+-		printed += hist_browser__fprintf_callchain_node_rb_tree(browser, node,
+-									browser->hists->stats.total_period,
+-									level + 1,  fp);
+-	return printed;
+-}
+-
+ static int hist_browser__fprintf_callchain(struct hist_browser *browser,
+-					   struct rb_root *chain, int level, FILE *fp)
++					   struct hist_entry *he, FILE *fp)
+ {
+-	struct rb_node *nd;
+-	int printed = 0;
+-
+-	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
++	u64 total = hists__total_period(he->hists);
++	struct callchain_print_arg arg  = {
++		.fp = fp,
++	};
  
-+bool is_strict_order(const char *order);
- #endif	/* __PERF_SORT_H */
+-		printed += hist_browser__fprintf_callchain_node(browser, node, level, fp);
+-	}
++	if (symbol_conf.cumulate_callchain)
++		total = he->stat_acc->period;
+ 
+-	return printed;
++	hist_browser__show_callchain(browser, &he->sorted_chain, 1, 0, total,
++				     hist_browser__fprintf_callchain_entry, &arg,
++				     hist_browser__check_dump_full);
++	return arg.printed;
+ }
+ 
+ static int hist_browser__fprintf_entry(struct hist_browser *browser,
+@@ -1164,7 +1121,7 @@ static int hist_browser__fprintf_entry(struct hist_browser *browser,
+ 	printed += fprintf(fp, "%s\n", rtrim(s));
+ 
+ 	if (folded_sign == '-')
+-		printed += hist_browser__fprintf_callchain(browser, &he->sorted_chain, 1, fp);
++		printed += hist_browser__fprintf_callchain(browser, he, fp);
+ 
+ 	return printed;
+ }
