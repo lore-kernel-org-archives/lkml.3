@@ -1,80 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795AbaHXOb0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 10:31:26 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52719 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687AbaHXObY convert rfc822-to-8bit (ORCPT
+	id S1752786AbaHXOgg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 10:36:36 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60550 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaHXOge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 10:31:24 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Robert Baldyga <r.baldyga@samsung.com>, balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
-        andrzej.p@samsung.com, k.opasiak@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: Re: [PATCH v5 3/3] usb: gadget: f_fs: virtual endpoint address mapping
-In-Reply-To: <1408622959-4096-4-git-send-email-r.baldyga@samsung.com>
-Organization: http://mina86.com/
-References: <1408622959-4096-1-git-send-email-r.baldyga@samsung.com> <1408622959-4096-4-git-send-email-r.baldyga@samsung.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140824:gregkh@linuxfoundation.org::yhG7yRzz3fXBujzQ:000000000000000000000000000000000000bEn
-X-Hashcash: 1:20:140824:r.baldyga@samsung.com::8Nb/vFHZTYs/oxu6:00000000000000000000000000000000000000000lhQ
-X-Hashcash: 1:20:140824:andrzej.p@samsung.com::UuBeYhfeIw3rAFb3:00000000000000000000000000000000000000000i9K
-X-Hashcash: 1:20:140824:linux-usb@vger.kernel.org::UMHZsTUePNRtGlda:0000000000000000000000000000000000001PMh
-X-Hashcash: 1:20:140824:r.baldyga@samsung.com::Mpt8ga0P249g/ywM:0000000000000000000000000000000000000000366H
-X-Hashcash: 1:20:140824:m.szyprowski@samsung.com::xtQs0PSau/r6REb4:00000000000000000000000000000000000003x8s
-X-Hashcash: 1:20:140824:k.opasiak@samsung.com::6O6wmaVpPqbC8+aT:00000000000000000000000000000000000000006fNq
-X-Hashcash: 1:20:140824:balbi@ti.com::VPb5zUycFRU6GMHo:000008+Ge
-X-Hashcash: 1:20:140824:linux-kernel@vger.kernel.org::spgNbA6rKOSJKl7z:000000000000000000000000000000000BSFd
-Date: Sun, 24 Aug 2014 16:31:20 +0200
-Message-ID: <xa1tmwauufgn.fsf@mina86.com>
+	Sun, 24 Aug 2014 10:36:34 -0400
+Date: Sun, 24 Aug 2014 07:36:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <pranith@gatech.edu>
+Cc: Amit Shah <amit.shah@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Silas Boyd-Wickizer <sbw@mit.edu>
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+Message-ID: <20140824143627.GL2663@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAJhHMCC6XUo0erp6mPyjiz5614DQq_+gfVaLR5s9YZkP=jPVCw@mail.gmail.com>
+ <20140823165121.GJ2663@linux.vnet.ibm.com>
+ <CAJhHMCCntYQy624Kwb5bs7MAKKYrSRbG0SezxgbQfHwYA2C40w@mail.gmail.com>
+ <20140824032339.GK2663@linux.vnet.ibm.com>
+ <CAJhHMCC8C5bekoDvQs=7vcRichkmFrHK7TshuoAHFE0-7d+mtA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJhHMCC8C5bekoDvQs=7vcRichkmFrHK7TshuoAHFE0-7d+mtA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14082414-9332-0000-0000-000001C8CEBF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 21 2014, Robert Baldyga <r.baldyga@samsung.com> wrote:
-> This patch introduces virtual endpoint address mapping. It separates
-> function logic form physical endpoint addresses making it more hardware
-> independent.
->
-> Following modifications changes user space API, so to enable them user
-> have to switch on the FUNCTIONFS_VIRTUAL_ADDR flag in descriptors.
->
-> Endpoints are now refered using virtual endpoint addresses chosen by
-> user in endpoint descpriptors. This applies to each context when endpoint
-> address can be used:
-> - when accessing endpoint files in FunctionFS filesystemi (in file name),
-> - in setup requests directed to specific endpoint (in wIndex field),
-> - in descriptors returned by FUNCTIONFS_ENDPOINT_DESC ioctl.
->
-> In endpoint file names the endpoint address number is formatted as
-> double-digit hexadecimal value ("ep%02x") which has few advantages -
-> it is easy to parse, allows to easly recognize endpoint direction basing
-> on its name (IN endpoint number starts with digit 8, and OUT with 0)
-> which can be useful for debugging purpose, and it makes easier to introduce
-> further features allowing to use each endpoint number in both directions
-> to have more endpoints available for function if hardware supports this
-> (for example we could have ep01 which is endpoint 1 with OUT direction,
-> and ep81 which is endpoint 1 with IN direction).
->
-> Physical endpoint address can be still obtained using ioctl named
-> FUNCTIONFS_ENDPOINT_REVMAP, but now it's not neccesary to handle
-> USB transactions properly.
->
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+On Sat, Aug 23, 2014 at 11:39:39PM -0400, Pranith Kumar wrote:
+> On Sat, Aug 23, 2014 at 11:23 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Sat, Aug 23, 2014 at 08:26:10PM -0400, Pranith Kumar wrote:
+> >> On Sat, Aug 23, 2014 at 12:51 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >>
+> >> > It might well!  Another possibility is that the early_initcall function
+> >> > doing the synchronize_rcu() is happening before the early_initcall
+> >> > creating the RCU grace-period kthreads.
+> >> >
+> >> > Seems like we need to close both holes.  Let's see how your patch works
+> >> > for Amit, and I am testing a patch for the possible early_initcall
+> >> > ordering issue.
+> >>
+> >> I checked the init call which is calling synchronize_rcu():
+> >> subsys_initcall(pm_sysrq_init); this is being called after
+> >> early_initcall.
+> >>
+> >> The order of initcalls is early, core, postcore, arch, subsys, fs,
+> >> device, late. So I guess that is ok.
+> >>
+> >> I wonder why it was not showing up in 12.04. I have a dual boot. Will
+> >> test it out and see if I can find something.
+> >
+> > Me, I am wondering about 7,000 callbacks being registered during early
+> > boot time.  ;-)
+> 
+> This is the backtrace for most of the callbacks:
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Thank you for the info!
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+And that explains why acpi=off helped the people running 14.04.
+
+							Thanx, Paul
+
+> [    4.612103] ------------[ cut here ]------------
+> [    4.613340] WARNING: CPU: 0 PID: 0 at kernel/rcu/tree_plugin.h:2115
+> __call_rcu_nocb_enqueue+0x58/0x283()
+> [    4.615975] Modules linked in:
+> [    4.616000] CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W     3.16.0+ #76
+> [    4.616000] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996),
+> BIOS Bochs 01/01/2011
+> [    4.616000]  0000000000000000 ffffffff81803c20 ffffffff813c5213
+> 0000000000000000
+> [    4.616000]  ffffffff81803c58 ffffffff810388aa ffffffff8108aac8
+> ffff88001f9cce40
+> [    4.616000]  ffff88001f5b6c08 0000000000000000 0000000000000286
+> ffffffff81803c68
+> [    4.616000] Call Trace:
+> [    4.616000]  [<ffffffff813c5213>] dump_stack+0x4e/0x7a
+> [    4.616000]  [<ffffffff810388aa>] warn_slowpath_common+0x7f/0x98
+> [    4.616000]  [<ffffffff8108aac8>] ? __call_rcu_nocb_enqueue+0x58/0x283
+> [    4.616000]  [<ffffffff81038976>] warn_slowpath_null+0x1a/0x1c
+> [    4.616000]  [<ffffffff8108aac8>] __call_rcu_nocb_enqueue+0x58/0x283
+> [    4.616000]  [<ffffffff81129f3a>] ? unreferenced_object+0x4f/0x4f
+> [    4.616000]  [<ffffffff8108d913>] __call_rcu+0xcd/0x32b
+> [    4.616000]  [<ffffffff8108de66>] call_rcu+0x1b/0x1d
+> [    4.616000]  [<ffffffff8112a301>] put_object+0x41/0x44
+> [    4.616000]  [<ffffffff8112a70a>] delete_object_full+0x29/0x2c
+> [    4.616000]  [<ffffffff813c2166>] kmemleak_free+0x25/0x43
+> [    4.616000]  [<ffffffff81120cca>] slab_free_hook+0x1d/0x63
+> [    4.616000]  [<ffffffff811228c6>] kmem_cache_free+0x52/0x154
+> [    4.616000]  [<ffffffff8124aa01>] ? acpi_os_release_object+0xe/0x12
+> [    4.616000]  [<ffffffff8124aa01>] acpi_os_release_object+0xe/0x12
+> [    4.616000]  [<ffffffff8126c567>] acpi_ps_free_op+0x25/0x27
+> [    4.616000]  [<ffffffff8126b81f>] acpi_ps_create_op+0x135/0x209
+> [    4.616000]  [<ffffffff8126b1f2>] acpi_ps_parse_loop+0x1d3/0x575
+> [    4.616000]  [<ffffffff8126bff2>] acpi_ps_parse_aml+0xa0/0x277
+> [    4.616000]  [<ffffffff81267d7f>] acpi_ns_one_complete_parse+0xfc/0x11b
+> [    4.616000]  [<ffffffff81267dd1>] acpi_ns_parse_table+0x33/0x38
+> [    4.616000]  [<ffffffff81267755>] acpi_ns_load_table+0x4c/0x8b
+> [    4.616000]  [<ffffffff81ad6797>] acpi_load_tables+0x9d/0x15d
+> [    4.616000]  [<ffffffff81ad5b44>] acpi_early_init+0x73/0xfe
+> [    4.616000]  [<ffffffff81aa5e8e>] start_kernel+0x3a9/0x40a
+> [    4.616000]  [<ffffffff81aa5120>] ? early_idt_handlers+0x120/0x120
+> [    4.616000]  [<ffffffff81aa54ba>] x86_64_start_reservations+0x2a/0x2c
+> [    4.616000]  [<ffffffff81aa55f8>] x86_64_start_kernel+0x13c/0x149
+> [    4.616000] ---[ end trace 8dbfee90ca96696c ]---
+> 
+> 
+> -- 
+> Pranith
+> 
+
