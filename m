@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091AbaHXAQS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 23 Aug 2014 20:16:18 -0400
-Received: from mta-out1.inet.fi ([62.71.2.232]:48024 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834AbaHXAQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 23 Aug 2014 20:16:17 -0400
-Date: Sun, 24 Aug 2014 02:50:58 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Peter Feiner <pfeiner@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/3] mm: softdirty: enable write notifications on VMAs
- after VM_SOFTDIRTY cleared
-Message-ID: <20140823235058.GA27234@node.dhcp.inet.fi>
-References: <1408571182-28750-1-git-send-email-pfeiner@google.com>
- <1408831921-10168-1-git-send-email-pfeiner@google.com>
- <1408831921-10168-2-git-send-email-pfeiner@google.com>
- <20140823230011.GA26483@node.dhcp.inet.fi>
+	id S1752070AbaHXA0n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 23 Aug 2014 20:26:43 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:52339 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830AbaHXA0m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 23 Aug 2014 20:26:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140823230011.GA26483@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20140823165121.GJ2663@linux.vnet.ibm.com>
+References: <CAJhHMCC6XUo0erp6mPyjiz5614DQq_+gfVaLR5s9YZkP=jPVCw@mail.gmail.com>
+ <20140823165121.GJ2663@linux.vnet.ibm.com>
+From: Pranith Kumar <pranith@gatech.edu>
+Date: Sat, 23 Aug 2014 20:26:10 -0400
+X-Google-Sender-Auth: et_wCakIh3ktvg-7nqfw3ejK31U
+Message-ID: <CAJhHMCCntYQy624Kwb5bs7MAKKYrSRbG0SezxgbQfHwYA2C40w@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 1/2] rcu: Parallelize and economize NOCB
+ kthread wakeups
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Amit Shah <amit.shah@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        David Howells <dhowells@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, dvhart@linux.intel.com,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Silas Boyd-Wickizer <sbw@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 24, 2014 at 02:00:11AM +0300, Kirill A. Shutemov wrote:
-> On Sat, Aug 23, 2014 at 06:11:59PM -0400, Peter Feiner wrote:
-> > For VMAs that don't want write notifications, PTEs created for read
-> > faults have their write bit set. If the read fault happens after
-> > VM_SOFTDIRTY is cleared, then the PTE's softdirty bit will remain
-> > clear after subsequent writes.
-> > 
-> > Here's a simple code snippet to demonstrate the bug:
-> > 
-> >   char* m = mmap(NULL, getpagesize(), PROT_READ | PROT_WRITE,
-> >                  MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-> >   system("echo 4 > /proc/$PPID/clear_refs"); /* clear VM_SOFTDIRTY */
-> >   assert(*m == '\0');     /* new PTE allows write access */
-> >   assert(!soft_dirty(x));
-> >   *m = 'x';               /* should dirty the page */
-> >   assert(soft_dirty(x));  /* fails */
-> > 
-> > With this patch, write notifications are enabled when VM_SOFTDIRTY is
-> > cleared. Furthermore, to avoid faults, write notifications are
-> > disabled when VM_SOFTDIRTY is reset.
-> > 
-> > Signed-off-by: Peter Feiner <pfeiner@google.com>
+On Sat, Aug 23, 2014 at 12:51 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
 
-One more case to consider: mprotect() which doesn't trigger successful
-vma_merge() will not set VM_SOFTDIRTY and will not enable write-protect on
-the vma.
+> It might well!  Another possibility is that the early_initcall function
+> doing the synchronize_rcu() is happening before the early_initcall
+> creating the RCU grace-period kthreads.
+>
+> Seems like we need to close both holes.  Let's see how your patch works
+> for Amit, and I am testing a patch for the possible early_initcall
+> ordering issue.
 
-It's probably better to take VM_SOFTDIRTY into account in
-vma_wants_writenotify() and re-think logic in other corners.
+I checked the init call which is calling synchronize_rcu():
+subsys_initcall(pm_sysrq_init); this is being called after
+early_initcall.
+
+The order of initcalls is early, core, postcore, arch, subsys, fs,
+device, late. So I guess that is ok.
+
+I wonder why it was not showing up in 12.04. I have a dual boot. Will
+test it out and see if I can find something.
 
 -- 
- Kirill A. Shutemov
+Pranith
