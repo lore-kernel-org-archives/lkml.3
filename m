@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780AbaHXWfI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 18:35:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25090 "EHLO mx1.redhat.com"
+	id S1753756AbaHXWfH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 18:35:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47148 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616AbaHXWep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 18:34:45 -0400
+	id S1753599AbaHXWeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 18:34:44 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH V4 4/4] audit: avoid double copying the audit_exe path string
-Date: Sun, 24 Aug 2014 18:34:08 -0400
-Message-Id: <efc570502156e69fb349d064d7cb9be3ea24c4cc.1408918472.git.rgb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, sgrubb@redhat.com,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH V4 3/4] audit: convert audit_exe to audit_fsnotify
+Date: Sun, 24 Aug 2014 18:34:07 -0400
+Message-Id: <472bb029c1796773e3b6f46b7ad925dd96815e02.1408918472.git.rgb@redhat.com>
 In-Reply-To: <cover.1408918472.git.rgb@redhat.com>
 References: <cover.1408918472.git.rgb@redhat.com>
 In-Reply-To: <cover.1408918472.git.rgb@redhat.com>
@@ -20,84 +21,283 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make this interface consistent with watch and filter key, avoiding the extra
-string copy and simply consume the new string pointer.
+From: Eric Paris <eparis@redhat.com>
 
+Instead of just hard coding the ino and dev of the executable we care
+about at the moment the rule is inserted into the kernel, use the new
+audit_fsnotify infrastructure.  This means that if the inode in question
+is unlinked and creat'd (aka updated) the rule will just continue to
+work.
+
+RGB: Put audit_alloc_mark() arguments in same order as watch, tree and inode.
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- kernel/audit_exe.c      |    5 ++++-
- kernel/audit_fsnotify.c |   12 ++----------
- kernel/auditfilter.c    |    2 +-
- 3 files changed, 7 insertions(+), 12 deletions(-)
+ include/linux/audit.h   |    2 +-
+ kernel/audit.h          |   34 +++---------------
+ kernel/audit_exe.c      |   87 ++++++----------------------------------------
+ kernel/audit_fsnotify.c |    2 +-
+ kernel/auditfilter.c    |   15 +++++---
+ 5 files changed, 29 insertions(+), 111 deletions(-)
 
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 227171c..f2a8044 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -59,7 +59,7 @@ struct audit_krule {
+ 	struct audit_field	*inode_f; /* quick access to an inode field */
+ 	struct audit_watch	*watch;	/* associated watch */
+ 	struct audit_tree	*tree;	/* associated watched tree */
+-	struct audit_exe	*exe;
++	struct audit_fsnotify_mark	*exe;
+ 	struct list_head	rlist;	/* entry in audit_{watch,tree}.rules list */
+ 	struct list_head	list;	/* for AUDIT_LIST* purposes only */
+ 	u64			prio;
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 1eed1ed..7bf3138 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -57,7 +57,6 @@ enum audit_state {
+ /* Rule lists */
+ struct audit_watch;
+ struct audit_fsnotify_mark;
+-struct audit_exe;
+ struct audit_tree;
+ struct audit_chunk;
+ 
+@@ -284,16 +283,13 @@ extern void audit_remove_watch_rule(struct audit_krule *krule);
+ extern char *audit_watch_path(struct audit_watch *watch);
+ extern int audit_watch_compare(struct audit_watch *watch, unsigned long ino, dev_t dev);
+ 
+-struct audit_fsnotify_mark *audit_alloc_mark(char *pathname, int len, struct audit_krule *krule);
++struct audit_fsnotify_mark *audit_alloc_mark(struct audit_krule *krule, char *pathname, int len);
+ char *audit_mark_path(struct audit_fsnotify_mark *mark);
+ void audit_remove_mark(struct audit_fsnotify_mark *audit_mark);
+ int audit_mark_compare(struct audit_fsnotify_mark *mark, unsigned long ino, dev_t dev);
+ 
+-int audit_make_exe_rule(struct audit_krule *krule, char *pathname, int len, u32 op);
+-void audit_remove_exe_rule(struct audit_krule *krule);
+-char *audit_exe_path(struct audit_exe *exe);
+ int audit_dup_exe(struct audit_krule *new, struct audit_krule *old);
+-int audit_exe_compare(struct task_struct *tsk, struct audit_exe *exe);
++int audit_exe_compare(struct task_struct *tsk, struct audit_fsnotify_mark *mark);
+ 
+ #else
+ #define audit_put_watch(w) {}
+@@ -320,36 +316,18 @@ static inline void audit_remove_mark(struct audit_fsnotify_mark *audit_mark)
+ 	BUG();
+ }
+ 
+-static inline int audit_mark_compare(struct audit_fsnotify_mark *mark, unsigned long ino, dev_t dev)
++static inline int audit_exe_compare(struct task_struct *tsk, struct audit_fsnotify_mark *mark)
+ {
+ 	BUG();
+-	return 0;
+-}
+-
+-static inline int audit_make_exe_rule(struct audit_krule *krule, char *pathname, int len, u32 op)
+-{
+ 	return -EINVAL;
+ }
+-static inline void audit_remove_exe_rule(struct audit_krule *krule)
+-{
+-	BUG();
+-	return 0;
+-}
+-static inline char *audit_exe_path(struct audit_exe *exe)
+-{
+-	BUG();
+-	return "";
+-}
++
+ static inline int audit_dup_exe(struct audit_krule *new, struct audit_krule *old)
+ {
+ 	BUG();
+-	return -EINVAL
+-}
+-static inline int audit_exe_compare(struct task_struct *tsk, struct audit_exe *exe)
+-{
+-	BUG();
+-	return 0;
++	return -EINVAL;
+ }
++
+ #endif /* CONFIG_AUDIT_WATCH */
+ 
+ #ifdef CONFIG_AUDIT_TREE
 diff --git a/kernel/audit_exe.c b/kernel/audit_exe.c
-index 0c7ee8d..ff6e3d6 100644
+index ec3231b..0c7ee8d 100644
 --- a/kernel/audit_exe.c
 +++ b/kernel/audit_exe.c
-@@ -27,10 +27,13 @@ int audit_dup_exe(struct audit_krule *new, struct audit_krule *old)
- 	struct audit_fsnotify_mark *audit_mark;
- 	char *pathname;
+@@ -17,93 +17,30 @@
  
--	pathname = audit_mark_path(old->exe);
-+	pathname = kstrdup(audit_mark_path(old->exe), GFP_KERNEL);
-+	if (!pathname)
-+		return -ENOMEM;
+ #include <linux/kernel.h>
+ #include <linux/audit.h>
+-#include <linux/mutex.h>
+ #include <linux/fs.h>
+ #include <linux/namei.h>
+ #include <linux/slab.h>
+ #include "audit.h"
  
- 	audit_mark = audit_alloc_mark(new, pathname, strlen(pathname));
- 	if (IS_ERR(audit_mark))
-+		kfree(pathname);
- 		return PTR_ERR(audit_mark);
- 	new->exe = audit_mark;
+-struct audit_exe {
+-	char *pathname;
+-	unsigned long ino;
+-	dev_t dev;
+-};
+-
+-/* Translate a watch string to kernel respresentation. */
+-int audit_make_exe_rule(struct audit_krule *krule, char *pathname, int len, u32 op)
+-{
+-	struct audit_exe *exe;
+-	struct path path;
+-	struct dentry *dentry;
+-	unsigned long ino;
+-	dev_t dev;
+-
+-	if (pathname[0] != '/' || pathname[len-1] == '/')
+-		return -EINVAL;
+-
+-	dentry = kern_path_locked(pathname, &path);
+-	if (IS_ERR(dentry))
+-		return PTR_ERR(dentry);
+-	mutex_unlock(&path.dentry->d_inode->i_mutex);
+-
+-	if (!dentry->d_inode)
+-		return -ENOENT;
+-	dev = dentry->d_inode->i_sb->s_dev;
+-	ino = dentry->d_inode->i_ino;
+-	dput(dentry);
+-
+-	exe = kmalloc(sizeof(*exe), GFP_KERNEL);
+-	if (!exe)
+-		return -ENOMEM;
+-	exe->ino = ino;
+-	exe->dev = dev;
+-	exe->pathname = pathname;
+-	krule->exe = exe;
+-
+-	return 0;
+-}
+-
+-void audit_remove_exe_rule(struct audit_krule *krule)
+-{
+-	struct audit_exe *exe;
+-
+-	exe = krule->exe;
+-	krule->exe = NULL;
+-	kfree(exe->pathname);
+-	kfree(exe);
+-}
+-
+-char *audit_exe_path(struct audit_exe *exe)
+-{
+-	return exe->pathname;
+-}
+-
+ int audit_dup_exe(struct audit_krule *new, struct audit_krule *old)
+ {
+-	struct audit_exe *exe;
+-
+-	exe = kmalloc(sizeof(*exe), GFP_KERNEL);
+-	if (!exe)
+-		return -ENOMEM;
++	struct audit_fsnotify_mark *audit_mark;
++	char *pathname;
  
+-	exe->pathname = kstrdup(old->exe->pathname, GFP_KERNEL);
+-	if (!exe->pathname) {
+-		kfree(exe);
+-		return -ENOMEM;
+-	}
++	pathname = audit_mark_path(old->exe);
+ 
+-	exe->ino = old->exe->ino;
+-	exe->dev = old->exe->dev;
+-	new->exe = exe;
++	audit_mark = audit_alloc_mark(new, pathname, strlen(pathname));
++	if (IS_ERR(audit_mark))
++		return PTR_ERR(audit_mark);
++	new->exe = audit_mark;
+ 
+ 	return 0;
+ }
+ 
+-int audit_exe_compare(struct task_struct *tsk, struct audit_exe *exe)
++int audit_exe_compare(struct task_struct *tsk, struct audit_fsnotify_mark *mark)
+ {
+-	if (tsk->mm->exe_file->f_inode->i_ino != exe->ino)
+-		return 0;
+-	if (tsk->mm->exe_file->f_inode->i_sb->s_dev != exe->dev)
+-		return 0;
+-	return 1;
++	unsigned long ino = tsk->mm->exe_file->f_inode->i_ino;
++	dev_t dev = tsk->mm->exe_file->f_inode->i_sb->s_dev;
++
++	return audit_mark_compare(mark, ino, dev);
+ }
 diff --git a/kernel/audit_fsnotify.c b/kernel/audit_fsnotify.c
-index 704ce46..07b33f7 100644
+index 3492b9c..704ce46 100644
 --- a/kernel/audit_fsnotify.c
 +++ b/kernel/audit_fsnotify.c
-@@ -94,7 +94,6 @@ struct audit_fsnotify_mark *audit_alloc_mark(struct audit_krule *krule, char *pa
- 	struct dentry *dentry;
- 	struct inode *inode;
- 	unsigned long ino;
--	char *local_pathname;
- 	dev_t dev;
- 	int ret;
+@@ -87,7 +87,7 @@ int audit_mark_compare(struct audit_fsnotify_mark *mark, unsigned long ino, dev_
+ 	return (mark->ino == ino) && (mark->dev == dev);
+ }
  
-@@ -115,20 +114,13 @@ struct audit_fsnotify_mark *audit_alloc_mark(struct audit_krule *krule, char *pa
- 		ino = dentry->d_inode->i_ino;
- 	}
- 
--	audit_mark = ERR_PTR(-ENOMEM);
--	local_pathname = kstrdup(pathname, GFP_KERNEL);
--	if (!local_pathname)
--		goto out;
--
- 	audit_mark = kzalloc(sizeof(*audit_mark), GFP_KERNEL);
--	if (unlikely(!audit_mark)) {
--		kfree(local_pathname);
-+	if (unlikely(!audit_mark))
- 		goto out;
--	}
- 
- 	fsnotify_init_mark(&audit_mark->mark, audit_free_fsnotify_mark);
- 	audit_mark->mark.mask = AUDIT_FS_EVENTS;
--	audit_mark->path = local_pathname;
-+	audit_mark->path = pathname;
- 	audit_mark->ino = ino;
- 	audit_mark->dev = dev;
- 	audit_mark->rule = krule;
+-struct audit_fsnotify_mark *audit_alloc_mark(char *pathname, int len, struct audit_krule *krule)
++struct audit_fsnotify_mark *audit_alloc_mark(struct audit_krule *krule, char *pathname, int len)
+ {
+ 	struct audit_fsnotify_mark *audit_mark;
+ 	struct path path;
 diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index 149588d..ff99749 100644
+index 0fe1f72..149588d 100644
 --- a/kernel/auditfilter.c
 +++ b/kernel/auditfilter.c
-@@ -563,8 +563,8 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+@@ -413,6 +413,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 	size_t remain = datasz - sizeof(struct audit_rule_data);
+ 	int i;
+ 	char *str;
++	struct audit_fsnotify_mark *audit_mark;
+ 
+ 	entry = audit_to_entry_common(data);
+ 	if (IS_ERR(entry))
+@@ -561,11 +562,13 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 			}
  			entry->rule.buflen += f->val;
  
- 			audit_mark = audit_alloc_mark(&entry->rule, str, f->val);
--			kfree(str);
- 			if (IS_ERR(audit_mark)) {
-+				kfree(str);
- 				err = PTR_ERR(audit_mark);
+-			err = audit_make_exe_rule(&entry->rule, str, f->val, f->op);
+-			if (err) {
+-				kfree(str);
++			audit_mark = audit_alloc_mark(&entry->rule, str, f->val);
++			kfree(str);
++			if (IS_ERR(audit_mark)) {
++				err = PTR_ERR(audit_mark);
  				goto exit_free;
  			}
++			entry->rule.exe = audit_mark;
+ 			break;
+ 		}
+ 	}
+@@ -648,7 +651,7 @@ static struct audit_rule_data *audit_krule_to_data(struct audit_krule *krule)
+ 		case AUDIT_EXE:
+ 		case AUDIT_EXE_CHILDREN:
+ 			data->buflen += data->values[i] =
+-				audit_pack_string(&bufp, audit_exe_path(krule->exe));
++				audit_pack_string(&bufp, audit_mark_path(krule->exe));
+ 			break;
+ 		default:
+ 			data->values[i] = f->val;
+@@ -708,8 +711,8 @@ static int audit_compare_rule(struct audit_krule *a, struct audit_krule *b)
+ 		case AUDIT_EXE:
+ 		case AUDIT_EXE_CHILDREN:
+ 			/* both paths exist based on above type compare */
+-			if (strcmp(audit_exe_path(a->exe),
+-				   audit_exe_path(b->exe)))
++			if (strcmp(audit_mark_path(a->exe),
++				   audit_mark_path(b->exe)))
+ 				return 1;
+ 			break;
+ 		case AUDIT_UID:
 -- 
 1.7.1
 
