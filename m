@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaHXVSP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 17:18:15 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:33577 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117AbaHXVSO convert rfc822-to-8bit (ORCPT
+	id S1753489AbaHXVVH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 17:21:07 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:32879 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205AbaHXVVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 17:18:14 -0400
-From: =?utf-8?Q?G=C3=BCnther?= Noack <guenther@unix-ag.uni-kl.de>
-To: Daniel Kurtz <djkurtz@chromium.org>, Inki Dae <inki.dae@samsung.com>,
-        Siarhei Siamashka <siarhei.siamashka@gmail.com>,
-        =?utf-8?Q?G=C3=BCnther?= Noack <me@guenthernoack.de>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Daniel Kurtz <djkurtz@chromium.org>
-Subject: Re: [PATCH] drm/exynos/fbdev: set smem_len for fbdev
-In-Reply-To: <1408891857-14258-1-git-send-email-djkurtz@chromium.org>
-References: <1408891857-14258-1-git-send-email-djkurtz@chromium.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.1 (armv7l-unknown-linux-gnueabihf)
-Date: Sun, 24 Aug 2014 23:18:27 +0200
-Message-ID: <87siklzivw.fsf@sushi.unix-ag.uni-kl.de>
+	Sun, 24 Aug 2014 17:21:05 -0400
+Date: Sun, 24 Aug 2014 23:20:55 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 4/4] r8152: support firmware files
+Message-ID: <20140824212055.GA30857@electric-eye.fr.zoreil.com>
+References: <1394712342-15778-16-Taiwan-albertk@realtek.com>
+ <1394712342-15778-20-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394712342-15778-20-Taiwan-albertk@realtek.com>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hayes Wang <hayeswang@realtek.com> :
+> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+> index 937d132..63542cc 100644
+> --- a/drivers/net/usb/r8152.c
+> +++ b/drivers/net/usb/r8152.c
+[...]
+> +static void rtl_request_firmware(struct r8152 *tp)
+> +{
+> +	char *fw_name = NULL;
+> +
+> +	if (tp->rtl_fw.fw)
+> +		goto out_request;
+> +
+> +	switch (tp->version) {
+> +	case RTL_VER_01:
+> +		fw_name = "rtl_nic/rtl8152-1.fw";
+> +		break;
+> +	case RTL_VER_02:
+> +		fw_name = "rtl_nic/rtl8152-2.fw";
+> +		break;
+> +	case RTL_VER_03:
+> +		fw_name = "rtl_nic/rtl8153-1.fw";
+> +		break;
+> +	case RTL_VER_04:
+> +		fw_name = "rtl_nic/rtl8153-2.fw";
+> +		break;
+> +	case RTL_VER_05:
+> +		fw_name = "rtl_nic/rtl8153-3.fw";
+> +		break;
 
-This patch works on my hardware.  Xorg starts up fine with fbdev now.
-Thanks for the fix!
+The driver should use MODULE_FIRMWARE() for these files.
 
---Günther
-
-Daniel Kurtz <djkurtz@chromium.org> writes:
-
-> Commit [0] stopped setting fix.smem_start and fix.smem_len when creating
-> the fbdev.
->
-> [0] 2f1eab8d8ab59e799f7d51d62410b398607a7bc3
->   drm/exynos/fbdev: don't set fix.smem/mmio_{start,len}
->
-> However, smem_len is used by some userland applications to calculate the
-> size for mmap.  In particular, it is used by xf86-video-fbdev:
->
-> http://cgit.freedesktop.org/xorg/xserver/tree/hw/xfree86/fbdevhw/fbdevhw.c?id=xorg-server-1.15.99.903#n571
->
-> So, let's restore setting the smem_len to unbreak things for these users.
->
-> Note: we are still leaving smem_start set to 0.
->
-> Reported-by: Siarhei Siamashka <siarhei.siamashka@gmail.com>
-> Reported-by: Günther Noack <me@guenthernoack.de>
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
-> I am able to compile test this change, but would appreciate help testing it
-> on a system that uses xf86-video-fbdev.
->
-> Thanks!
->
->  drivers/gpu/drm/exynos/exynos_drm_fbdev.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
-> index 5a7cd8b..f865736 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_fbdev.c
-> @@ -125,6 +125,7 @@ static int exynos_drm_fbdev_update(struct drm_fb_helper *helper,
->  
->  	fbi->screen_base = buffer->kvaddr;
->  	fbi->screen_size = size;
-> +	fbi->fix.smem_len = size;
->  
->  	return 0;
->  }
-> -- 
-> 2.1.0.rc2.206.gedb03e5
+-- 
+Ueimor
