@@ -1,105 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbaHXNce (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 09:32:34 -0400
-Received: from smtp-out-152.synserver.de ([212.40.185.152]:1045 "EHLO
-	smtp-out-151.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752710AbaHXNcd (ORCPT
+	id S1752734AbaHXNvN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 09:51:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52987 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490AbaHXNvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 09:32:33 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 17816
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] regmap: Fix regcache debugfs initialization
-Date: Sun, 24 Aug 2014 15:32:27 +0200
-Message-Id: <1408887148-7627-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Sun, 24 Aug 2014 09:51:10 -0400
+From: "Yaniv Gardi" <ygardi@codeaurora.org>
+To: "'Dan Aloni'" <dan@kernelim.com>
+Cc: <James.Bottomley@HansenPartnership.com>, <hch@infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <santoshsy@gmail.com>,
+        <linux-scsi-owner@vger.kernel.org>, <subhashj@codeaurora.org>,
+        <noag@codeaurora.org>, <draviv@codeaurora.org>,
+        "'Rob Herring'" <robh+dt@kernel.org>,
+        "'Pawel Moll'" <pawel.moll@arm.com>,
+        "'Mark Rutland'" <mark.rutland@arm.com>,
+        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
+        "'Kumar Gala'" <galak@codeaurora.org>,
+        "'Vinayak Holikatti'" <vinholikatti@gmail.com>,
+        "'James E.J. Bottomley'" <JBottomley@parallels.com>,
+        "'Grant Likely'" <grant.likely@linaro.org>,
+        "'Sujit Reddy Thumma'" <sthumma@codeaurora.org>,
+        "'Sahitya Tummala'" <stummala@codeaurora.org>,
+        "'open list:OPEN FIRMWARE AND...'" <devicetree@vger.kernel.org>
+References: <1408026157-26972-1-git-send-email-ygardi@codeaurora.org> <20140816173325.GA3961@gmail.com>
+In-Reply-To: <20140816173325.GA3961@gmail.com>
+Subject: RE: [PATCH v3] scsi: ufs-msm: add UFS controller support for Qualcomm MSM chips
+Date: Sun, 24 Aug 2014 16:51:00 +0300
+Message-ID: <000601cfbfa2$7482f3a0$5d88dae0$@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQGmbnJkym8fGbEmJpP01Dk4Mc0xfQEgLmwfnClmFcA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6cfec04bcc05 ("regmap: Separate regmap dev initialization") moved the
-regmap debugfs initialization after regcache initialization. This means
-that the regmap debugfs directory is not created yet when the cache
-initialization runs and so any debugfs files registered by the regcache are
-created in the debugfs root directory rather than the debugfs directory of
-the regmap instance. Fix this by adding a separate callback for the
-regcache debugfs initialization which will be called after the parent
-debugfs entry has been created.
+Thanks Dan,
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/base/regmap/internal.h        | 3 +++
- drivers/base/regmap/regcache-rbtree.c | 9 +++------
- drivers/base/regmap/regmap-debugfs.c  | 3 +++
- 3 files changed, 9 insertions(+), 6 deletions(-)
+Your quick glance did spotted a good catch. This variable if un-necessary,
+A new version will be uploaded soon
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 7d13269..bfc90b8 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -146,6 +146,9 @@ struct regcache_ops {
- 	enum regcache_type type;
- 	int (*init)(struct regmap *map);
- 	int (*exit)(struct regmap *map);
-+#ifdef CONFIG_DEBUG_FS
-+	void (*debugfs_init)(struct regmap *map);
-+#endif
- 	int (*read)(struct regmap *map, unsigned int reg, unsigned int *value);
- 	int (*write)(struct regmap *map, unsigned int reg, unsigned int value);
- 	int (*sync)(struct regmap *map, unsigned int min, unsigned int max);
-diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
-index 6a7e4fa..f3e8fe0 100644
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -194,10 +194,6 @@ static void rbtree_debugfs_init(struct regmap *map)
- {
- 	debugfs_create_file("rbtree", 0400, map->debugfs, map, &rbtree_fops);
- }
--#else
--static void rbtree_debugfs_init(struct regmap *map)
--{
--}
- #endif
- 
- static int regcache_rbtree_init(struct regmap *map)
-@@ -222,8 +218,6 @@ static int regcache_rbtree_init(struct regmap *map)
- 			goto err;
- 	}
- 
--	rbtree_debugfs_init(map);
--
- 	return 0;
- 
- err:
-@@ -532,6 +526,9 @@ struct regcache_ops regcache_rbtree_ops = {
- 	.name = "rbtree",
- 	.init = regcache_rbtree_init,
- 	.exit = regcache_rbtree_exit,
-+#ifdef CONFIG_DEBUG_FS
-+	.debugfs_init = rbtree_debugfs_init,
-+#endif
- 	.read = regcache_rbtree_read,
- 	.write = regcache_rbtree_write,
- 	.sync = regcache_rbtree_sync,
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 45d812c..65ea7b2 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -538,6 +538,9 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
- 
- 		next = rb_next(&range_node->node);
- 	}
-+
-+	if (map->cache_ops && map->cache_ops->debugfs_init)
-+		map->cache_ops->debugfs_init(map);
- }
- 
- void regmap_debugfs_exit(struct regmap *map)
--- 
-1.8.0
+Thanks,
+Yaniv
+
+
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org
+[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Dan Aloni
+Sent: Saturday, August 16, 2014 8:33 PM
+To: Yaniv Gardi
+Cc: James.Bottomley@HansenPartnership.com; hch@infradead.org;
+linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org;
+linux-arm-msm@vger.kernel.org; santoshsy@gmail.com;
+linux-scsi-owner@vger.kernel.org; subhashj@codeaurora.org;
+noag@codeaurora.org; draviv@codeaurora.org; Rob Herring; Pawel Moll; Mark
+Rutland; Ian Campbell; Kumar Gala; Vinayak Holikatti; James E.J. Bottomley;
+Grant Likely; Sujit Reddy Thumma; Sahitya Tummala; open list:OPEN FIRMWARE
+AND...
+Subject: Re: [PATCH v3] scsi: ufs-msm: add UFS controller support for
+Qualcomm MSM chips
+
+On Thu, Aug 14, 2014 at 05:22:18PM +0300, Yaniv Gardi wrote:
+> diff --git a/drivers/scsi/ufs/ufs-msm.h b/drivers/scsi/ufs/ufs-msm.h 
+> new file mode 100644 index 0000000..6e93f1e
+> --- /dev/null
+> +++ b/drivers/scsi/ufs/ufs-msm.h
+> @@ -0,0 +1,158 @@
+[...]
+> +};
+> +
+> +static LIST_HEAD(phy_list);
+> +
+
+Just noticed this via a quick glance - Seems that this variable is not
+referenced by any of the compilation units, what's the purpose of it?
+And as a static global in a shared private, each of the including
+compilation units gets a copy, which I am not sure was intended anyway.
+
+--
+Dan Aloni
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the
+body of a message to majordomo@vger.kernel.org More majordomo info at
+http://vger.kernel.org/majordomo-info.html
 
