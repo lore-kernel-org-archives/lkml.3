@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaHXM0m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 08:26:42 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:33947 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaHXM0j (ORCPT
+	id S1752649AbaHXMqx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 08:46:53 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:53254 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443AbaHXMqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 08:26:39 -0400
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1747D7F3@AcuExch.aculab.com>
-References: <1407659404-razya@il.ibm.com> <20140810083035.0CF58380729@moren.haifa.ibm.com> <20140820105710.GC17371@redhat.com> <OFBE98487F.0F49BDD7-ONC2257D3B.004C908C-C2257D3B.004F09FD@il.ibm.com> <063D6719AE5E284EB5DD2968C1650D6D1747D7F3@AcuExch.aculab.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "abel.gordon@gmail.com" <abel.gordon@gmail.com>,
-        Alex Glikson <GLIKSON@il.ibm.com>, Eran Raichstein <ERANRA@il.ibm.com>,
-        Joel Nider <JOELN@il.ibm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Yossi Kuperman1 <YOSSIKU@il.ibm.com>
+	Sun, 24 Aug 2014 08:46:52 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Subject: Linux UDF support
+Date: Sun, 24 Aug 2014 14:46:46 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13.0-32-generic; KDE/4.13.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Subject: RE: [PATCH] vhost: Add polling mode
-X-KeepSent: 3F9F58DB:FFDF5B60-C2257D3E:00443320;
- type=4; name=$KeepSent
-X-Mailer: IBM Notes Release 9.0.1SHF211 December 19, 2013
-From: Razya Ladelsky <RAZYA@il.ibm.com>
-Message-ID: <OF3F9F58DB.FFDF5B60-ONC2257D3E.00443320-C2257D3E.004449BE@il.ibm.com>
-Date: Sun, 24 Aug 2014 15:26:34 +0300
-X-MIMETrack: Serialize by Router on D06ML319/06/M/IBM(Release 8.5.3FP5IF1HF3|November 07, 2013) at
- 24/08/2014 15:26:34,
-	Serialize complete at 24/08/2014 15:26:34
-Content-Type: text/plain; charset="US-ASCII"
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14082412-4966-0000-0000-0000011C3657
+Content-Type: multipart/signed;
+  boundary="nextPart3750701.zjykjTNZe1";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201408241446.47042@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Laight <David.Laight@ACULAB.COM> wrote on 21/08/2014 05:29:41 PM:
+--nextPart3750701.zjykjTNZe1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-> From: David Laight <David.Laight@ACULAB.COM>
-> To: Razya Ladelsky/Haifa/IBM@IBMIL, "Michael S. Tsirkin" 
-<mst@redhat.com>
-> Cc: "abel.gordon@gmail.com" <abel.gordon@gmail.com>, Alex Glikson/
-> Haifa/IBM@IBMIL, Eran Raichstein/Haifa/IBM@IBMIL, Joel Nider/Haifa/
-> IBM@IBMIL, "kvm@vger.kernel.org" <kvm@vger.kernel.org>, "linux-
-> kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, 
-> "netdev@vger.kernel.org" <netdev@vger.kernel.org>, 
-> "virtualization@lists.linux-foundation.org" 
-> <virtualization@lists.linux-foundation.org>, Yossi 
-Kuperman1/Haifa/IBM@IBMIL
-> Date: 21/08/2014 05:31 PM
-> Subject: RE: [PATCH] vhost: Add polling mode
-> 
-> From: Razya Ladelsky
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote on 20/08/2014 01:57:10 PM:
-> > 
-> > > > Results:
-> > > >
-> > > > Netperf, 1 vm:
-> > > > The polling patch improved throughput by ~33% (1516 MB/sec -> 
-> 2046 MB/sec).
-> > > > Number of exits/sec decreased 6x.
-> > > > The same improvement was shown when I tested with 3 vms running 
-netperf
-> > > > (4086 MB/sec -> 5545 MB/sec).
-> > > >
-> > > > filebench, 1 vm:
-> > > > ops/sec improved by 13% with the polling patch. Number of exits
-> > > > was reduced by 31%.
-> > > > The same experiment with 3 vms running filebench showed similar 
-numbers.
-> > > >
-> > > > Signed-off-by: Razya Ladelsky <razya@il.ibm.com>
-> > >
-> > > This really needs more thourough benchmarking report, including
-> > > system data.  One good example for a related patch:
-> > > http://lwn.net/Articles/551179/
-> > > though for virtualization, we need data about host as well, and if 
-you
-> > > want to look at streaming benchmarks, you need to test different 
-message
-> > > sizes and measure packet size.
-> > >
-> > 
-> > Hi Michael,
-> > I have already tried running netperf with several message sizes:
-> > 64,128,256,512,600,800...
-> > But the results are inconsistent even in the baseline/unpatched
-> > configuration.
-> > For smaller msg sizes, I get consistent numbers. However, at some 
-point,
-> > when I increase the msg size
-> > I get unstable results. For example, for a 512B msg, I get two 
-scenarios:
-> > vm utilization 100%, vhost utilization 75%, throughput ~6300
-> > vm utilization 80%, vhost utilization 13%, throughput ~9400 (line 
-rate)
-> > 
-> > I don't know why vhost is behaving that way for certain message sizes.
-> > Do you have any insight to why this is happening?
-> 
-> Have you tried looking at the actual ethernet packet sizes.
-> It may well jump between using small packets (the size of the writes)
-> and full sized ones.
+Hi,
 
-I will check it,
-Thanks,
-Razya
+I would like to know what is state of linux UDF driver. It is=20
+experimental or is now suitable for storing data?
 
-> 
-> If you are trying to measure ethernet packet 'cost' you need to use UDP.
-> However that probably uses different code paths.
-> 
->    David
-> 
-> 
-> 
+According to wikipedia [1] UDF has open specification format and=20
+can be used also for HDDs (not only optical discs).
 
+In OS support table is written that all major and other minor OSs=20
+support UDF FS (without needs for additional programs).
+
+So it looks like UDF is good candidate for multi OS filesystem.=20
+Are there any disadvantages for using UDF on e.g USB flash disk?=20
+(when I want read/write support on Linux, Windows 7 and Mac OS X)
+
+Because lot of manuals say that FAT32 (or NTFS) is only one=20
+solution for using USB flash disk on more OS.
+
+On wikipedia there is one note about linux: Write support is only=20
+up to UDF version 2.01. Is this restriction still valid?
+
+What will happen if I try to mount FS with UDF version 2.60 in=20
+R/W mode on linux? It will fallback to R/O mode? Or newly written=20
+files will be in previous (2.01) versions?
+
+And last question: Is there some fsck tool for UDF? Or at least=20
+tool which print if FS is in inconsistent state?
+
+[1] - http://en.wikipedia.org/wiki/Universal_Disk_Format
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart3750701.zjykjTNZe1
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlP53rYACgkQi/DJPQPkQ1KZ+gCdF846p+74tWq0M3J88CT5y4bS
+rTgAoMuaF2YJeD0Aqh8GfiwrKknEAh+m
+=cbtf
+-----END PGP SIGNATURE-----
+
+--nextPart3750701.zjykjTNZe1--
