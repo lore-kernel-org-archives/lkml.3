@@ -1,209 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450AbaHXUce (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:32:34 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:33257 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394AbaHXUVp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:21:45 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 net-next 02/29] net: filter: add "load 64-bit immediate" eBPF instruction
-Date: Sun, 24 Aug 2014 13:21:03 -0700
-Message-Id: <1408911690-7598-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
-References: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
+	id S1753543AbaHXUii (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:38:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29722 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750AbaHXUig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 16:38:36 -0400
+Date: Sun, 24 Aug 2014 16:38:27 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-api@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        linux-audit@redhat.com, serge@hallyn.com
+Subject: Re: [PATCH V4 1/8] namespaces: assign each namespace instance a
+ serial number
+Message-ID: <20140824203827.GI9003@madcap2.tricolour.ca>
+References: <cover.1408581429.git.rgb@redhat.com>
+ <cover.1408581429.git.rgb@redhat.com>
+ <d5bfd81a219c5c45c910494d6a3478ce83052e1f.1408581429.git.rgb@redhat.com>
+ <87ioljs968.fsf@x220.int.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ioljs968.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add BPF_LD_IMM64 instruction to load 64-bit immediate value into a register.
-All previous instructions were 8-byte. This is first 16-byte instruction.
-Two consecutive 'struct bpf_insn' blocks are interpreted as single instruction:
-insn[0].code = BPF_LD | BPF_DW | BPF_IMM
-insn[0].dst_reg = destination register
-insn[0].imm = lower 32-bit
-insn[1].code = 0
-insn[1].imm = upper 32-bit
-All unused fields must be zero.
+On 14/08/23, Eric W. Biederman wrote:
+> Richard Guy Briggs <rgb@redhat.com> writes:
+> 
+> > Generate and assign a serial number per namespace instance since boot.
+> >
+> > Use a serial number per namespace (unique across one boot of one kernel)
+> > instead of the inode number (which is claimed to have had the right to change
+> > reserved and is not necessarily unique if there is more than one proc fs) to
+> > uniquely identify it per kernel boot.
+> 
+> This approach is just broken.
+> 
+> For this to work with migration (aka criu) you need to implement a
+> namespace of namespaces.  You haven't done this, and therefore
+> such an interface will break existing userspace.
+> 
+> Inside of audit I can understand not caring about these issues,
+> but you go foward and expose these serial numbers in proc,
+> and generally make this infrastructure available to others.
+> 
+> The deep issue with migration is that we move tasks from one machine
+> from another and on the destination machine we need to have all of the
+> same global identifiers for software to function properly.
+> 
+> My weasel words around the proc inode numbers is to preserve to allow us
+> room to be able to restore those ids if it every becomes relevant for
+> migration.
 
-Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM
-which loads 32-bit immediate value into a register.
+What do you do if the inode number is already in use on the target host?
 
-x64 JITs it as single 'movabsq %rax, imm64'
-arm64 may JIT as sequence of four 'movk x0, #imm16, lsl #shift' insn
+> That is the proc inode numbers (technically) live in a pid namespace,
+> (aka a mount of proc).  So depending on the pid namespace you are in
+> or the mount of proc you look in the numbers could change.
+> 
+> Qualifications like that must exist to have a prayer of ever supporting
+> process migration in the crazy corner cases where people start caring
+> about inode numbers.
+> 
+> We currently don't and inode numbers for a namespace will never change
+> after a namespace is created.  So I think you really are ok using the
+> proc inode numbers.  I am happy declaring by fiat that the inode numbers
+> that audit uses are the numbers connected to the initial pid namespace.
 
-Note that old eBPF programs are binary compatible with new interpreter.
+But once a namespace/container is migrated, it is a different audit that
+is looking at it (unless we create an audit manager or entity that
+functions at the level of a container manager), so audit should not care.
 
-In the following patches this instruction is used to store eBPF map pointers:
- BPF_LD_IMM64(R1, const_imm_map_ptr)
- BPF_CALL(BPF_FUNC_map_lookup_elem)
-and verifier is introduced to check validity of the programs.
+> At a fairly basic level anything that is used to identify namespaces for
+> any general purpose use needs to have most if not all of the same
+> properties of the proc inode numbers.  The most important of which is
+> being tied to some context/namespace so there is a ability if we ever
+> need it to migrate those numbers from one machine to another.
 
-Later LLVM compiler is using this insn as generic load of 64-bit immediate
-constant and as a load of map pointer with relocation.
+Sooo...  does it make any sense to have those inode or serial numbers be
+blank inside the namespace/container itself, but only visible to its
+manager outside the container (unless it is the initial namespace)?
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- Documentation/networking/filter.txt |    8 +++++++-
- arch/x86/net/bpf_jit_comp.c         |   17 +++++++++++++++++
- include/linux/filter.h              |   18 ++++++++++++++++++
- kernel/bpf/core.c                   |    5 +++++
- lib/test_bpf.c                      |   21 +++++++++++++++++++++
- 5 files changed, 68 insertions(+), 1 deletion(-)
+> Eric
+> 
+> > diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> > index 8e78110..93cb380 100644
+> > --- a/kernel/nsproxy.c
+> > +++ b/kernel/nsproxy.c
+> > @@ -41,6 +41,23 @@ struct nsproxy init_nsproxy = {
+> >  #endif
+> >  };
+> >  
+> > +/**
+> > + * ns_serial - compute a serial number for the namespace
+> > + *
+> > + * Compute a serial number for the namespace to uniquely identify it in
+> > + * audit records.
+> > + */
+> > +long long ns_serial(void)
+> > +{
+> > +	static atomic64_t serial = ATOMIC_INIT(4); /* reserved for IPC, UTS, user, PID */
+> > +	long long ret;
+> > +
+> > +	ret = atomic64_add_return(1, &serial);
+> > +	BUG_ON(!ret);
+> > +
+> > +	return ret;
+> > +}
+> > +
+> >  static inline struct nsproxy *create_nsproxy(void)
+> >  {
+> >  	struct nsproxy *nsproxy;
+> 
+> --
+> Linux-audit mailing list
+> Linux-audit@redhat.com
+> https://www.redhat.com/mailman/listinfo/linux-audit
 
-diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
-index c48a9704bda8..81916ab5d96f 100644
---- a/Documentation/networking/filter.txt
-+++ b/Documentation/networking/filter.txt
-@@ -951,7 +951,7 @@ Size modifier is one of ...
- 
- Mode modifier is one of:
- 
--  BPF_IMM  0x00  /* classic BPF only, reserved in eBPF */
-+  BPF_IMM  0x00  /* used for 32-bit mov in classic BPF and 64-bit in eBPF */
-   BPF_ABS  0x20
-   BPF_IND  0x40
-   BPF_MEM  0x60
-@@ -995,6 +995,12 @@ BPF_XADD | BPF_DW | BPF_STX: lock xadd *(u64 *)(dst_reg + off16) += src_reg
- Where size is one of: BPF_B or BPF_H or BPF_W or BPF_DW. Note that 1 and
- 2 byte atomic increments are not supported.
- 
-+eBPF has one 16-byte instruction: BPF_LD | BPF_DW | BPF_IMM which consists
-+of two consecutive 'struct bpf_insn' 8-byte blocks and interpreted as single
-+instruction that loads 64-bit immediate value into a dst_reg.
-+Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM which loads
-+32-bit immediate value into a register.
-+
- Testing
- -------
- 
-diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
-index b08a98c59530..98837147ee57 100644
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -393,6 +393,23 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
- 			EMIT1_off32(add_1reg(0xB8, dst_reg), imm32);
- 			break;
- 
-+		case BPF_LD | BPF_IMM | BPF_DW:
-+			if (insn[1].code != 0 || insn[1].src_reg != 0 ||
-+			    insn[1].dst_reg != 0 || insn[1].off != 0) {
-+				/* verifier must catch invalid insns */
-+				pr_err("invalid BPF_LD_IMM64 insn\n");
-+				return -EINVAL;
-+			}
-+
-+			/* movabsq %rax, imm64 */
-+			EMIT2(add_1mod(0x48, dst_reg), add_1reg(0xB8, dst_reg));
-+			EMIT(insn[0].imm, 4);
-+			EMIT(insn[1].imm, 4);
-+
-+			insn++;
-+			i++;
-+			break;
-+
- 			/* dst %= src, dst /= src, dst %= imm32, dst /= imm32 */
- 		case BPF_ALU | BPF_MOD | BPF_X:
- 		case BPF_ALU | BPF_DIV | BPF_X:
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index a5227ab8ccb1..f3262b598262 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -161,6 +161,24 @@ enum {
- 		.off   = 0,					\
- 		.imm   = IMM })
- 
-+/* BPF_LD_IMM64 macro encodes single 'load 64-bit immediate' insn */
-+#define BPF_LD_IMM64(DST, IMM)					\
-+	BPF_LD_IMM64_RAW(DST, 0, IMM)
-+
-+#define BPF_LD_IMM64_RAW(DST, SRC, IMM)				\
-+	((struct bpf_insn) {					\
-+		.code  = BPF_LD | BPF_DW | BPF_IMM,		\
-+		.dst_reg = DST,					\
-+		.src_reg = SRC,					\
-+		.off   = 0,					\
-+		.imm   = (__u32) (IMM) }),			\
-+	((struct bpf_insn) {					\
-+		.code  = 0, /* zero is reserved opcode */	\
-+		.dst_reg = 0,					\
-+		.src_reg = 0,					\
-+		.off   = 0,					\
-+		.imm   = ((__u64) (IMM)) >> 32 })
-+
- /* Short form of mov based on type, BPF_X: dst_reg = src_reg, BPF_K: dst_reg = imm32 */
- 
- #define BPF_MOV64_RAW(TYPE, DST, SRC, IMM)			\
-diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
-index 7f0dbcbb34af..0434c2170f2b 100644
---- a/kernel/bpf/core.c
-+++ b/kernel/bpf/core.c
-@@ -180,6 +180,7 @@ static unsigned int __bpf_prog_run(void *ctx, const struct bpf_insn *insn)
- 		[BPF_LD | BPF_IND | BPF_W] = &&LD_IND_W,
- 		[BPF_LD | BPF_IND | BPF_H] = &&LD_IND_H,
- 		[BPF_LD | BPF_IND | BPF_B] = &&LD_IND_B,
-+		[BPF_LD | BPF_IMM | BPF_DW] = &&LD_IMM_DW,
- 	};
- 	void *ptr;
- 	int off;
-@@ -239,6 +240,10 @@ select_insn:
- 	ALU64_MOV_K:
- 		DST = IMM;
- 		CONT;
-+	LD_IMM_DW:
-+		DST = (u64) (u32) insn[0].imm | ((u64) (u32) insn[1].imm) << 32;
-+		insn++;
-+		CONT;
- 	ALU64_ARSH_X:
- 		(*(s64 *) &DST) >>= SRC;
- 		CONT;
-diff --git a/lib/test_bpf.c b/lib/test_bpf.c
-index 8c66c6aace04..46ab1a7ef135 100644
---- a/lib/test_bpf.c
-+++ b/lib/test_bpf.c
-@@ -1735,6 +1735,27 @@ static struct bpf_test tests[] = {
- 		{ },
- 		{ { 1, 0 } },
- 	},
-+	{
-+		"load 64-bit immediate",
-+		.u.insns_int = {
-+			BPF_LD_IMM64(R1, 0x567800001234L),
-+			BPF_MOV64_REG(R2, R1),
-+			BPF_MOV64_REG(R3, R2),
-+			BPF_ALU64_IMM(BPF_RSH, R2, 32),
-+			BPF_ALU64_IMM(BPF_LSH, R3, 32),
-+			BPF_ALU64_IMM(BPF_RSH, R3, 32),
-+			BPF_ALU64_IMM(BPF_MOV, R0, 0),
-+			BPF_JMP_IMM(BPF_JEQ, R2, 0x5678, 1),
-+			BPF_EXIT_INSN(),
-+			BPF_JMP_IMM(BPF_JEQ, R3, 0x1234, 1),
-+			BPF_EXIT_INSN(),
-+			BPF_ALU64_IMM(BPF_MOV, R0, 1),
-+			BPF_EXIT_INSN(),
-+		},
-+		INTERNAL,
-+		{ },
-+		{ { 0, 1 } }
-+	},
- };
- 
- static struct net_device dev;
--- 
-1.7.9.5
+- RGB
 
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
