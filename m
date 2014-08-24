@@ -1,126 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186AbaHXU2j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:28:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753929AbaHXU2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:28:36 -0400
-Date: Sun, 24 Aug 2014 16:28:26 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in
- proc
-Message-ID: <20140824202826.GH9003@madcap2.tricolour.ca>
-References: <cover.1408581429.git.rgb@redhat.com>
- <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
- <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
- <20140822015803.GG20529@madcap2.tricolour.ca>
- <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
+	id S1754228AbaHXU3F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:29:05 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:52794 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754196AbaHXU3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 16:29:00 -0400
+Date: Sun, 24 Aug 2014 22:28:53 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86 fixes
+Message-ID: <20140824202853.GA17622@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/08/24, Andy Lutomirski wrote:
-> On Thu, Aug 21, 2014 at 6:58 PM, Richard Guy Briggs <rgb@redhat.com> wrote:
-> > On 14/08/21, Andy Lutomirski wrote:
-> >> On Aug 20, 2014 8:12 PM, "Richard Guy Briggs" <rgb@redhat.com> wrote:
-> >> > Expose the namespace instace serial numbers in the proc filesystem at
-> >> > /proc/<pid>/ns/<ns>_snum.  The link text gives the serial number in hex.
-> >>
-> >> What's the use case?
-> >>
-> >> I understand the utility of giving unique numbers to the audit code,
-> >> but I don't think this part is necessary for that, and I'd like to
-> >> understand what else will use this before committing to a duplicative
-> >> API like this.
-> >
-> > How does a container manager get those numbers?  It could provoke a task
-> > to cause an audit event that emits a NS_INFO message, or it could run a
-> > task in that container to report its namespace serial numbers directly
-> > from its /proc mount.
-> 
-> Why does a container manager need them?  Is there any reason that
-> keeping them entirely contained within the audit system would be a
-> problem?
+Linus,
 
-The audit system is currently per-kernel.  If a container is migrated
-from one kernel to another, the first audit system is no longer able to
-monitor or care about it.  It is the container manager's scope that has
-the capability to monitor and care about it.
+Please pull the latest x86-urgent-for-linus git tree from:
 
-This might be a good argument to augment the audit system as we
-currently know it to be able to do this across kernels, but that isn't
-currently the case.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-> > The discussion in this thread touches on the use cases:
-> >         https://lkml.org/lkml/2014/4/22/662
-> >
-> >> Note that this API is thoroughly incompatible with CRIU.  If we do
-> >> this, someone will ask for a namespace number namespace, and that way
-> >> lies madness.
-> >
-> > I had a very brief look at CRIU, but not enough to understand the issue.
-> > Others have hinted at this problem.
-> >
-> > Do you have a suggestion of a different approach that would be
-> > compatible with CRIU?
-> >
-> > I'd originally considered some sort of UUID that would be globally
-> > unique, but that would be very hard to devise or guarantee, and besides,
-> > namespaces aren't only used by containers and could be shared in other
-> > ways.  Tracking the usage and migration of namespaces should be the task
-> > of an upper layer.
-> 
-> CRIU wants to save the complete state of a namespace and then restore
-> it.  For that to work, any information exposed to things in the
-> namespace *cannot* be globally unique or unique per boot, since CRIU
-> needs to arrange for that information to match whatever it was when
-> CRIU saved it.
+   # HEAD: 80b304fd00e8b667775ff791121b61ecd7cd0c03 Merge tag 'efi-urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi into x86/urgent
 
-So are you agreeing with Eric Biederman's idea that its proc inode
-number should be initially assigned serially, but reserve the right to
-be settable on a restore of a namespace from another host?  What if that
-inode number collides with an existing one?
+A couple of EFI fixes, plus misc fixes all around the map.
 
-Does CRIU have no lattitude at all to be able to track a new namespace
-ID?
+  out-of-topic modifications in x86-urgent-for-linus:
+  -----------------------------------------------------
+  arch/arm64/kernel/efi.c            # 6a7519e81321: efi/arm64: Store Runtime Ser
+  drivers/firmware/efi/vars.c        # aee530cfecf4: firmware: Do not use WARN_ON
 
-> Also, I think that code running in a namespace has no business even
-> knowing a unique identity of that namespace from the perspective of
-> the host.
+ Thanks,
 
-Too late.  There is already the namespace proc inode numbers.  That
-number is almost completely meaningless to the code running inside the
-container/namespace.
+	Ingo
 
-> Here's a specific use case for *not* exposing this: Tor.  Ideally, Tor
-> clients would run in a namespace that does not know about any global
-> identity.  That means no IP addresses, but it also means no global
-> namespace serial numbers.
+------------------>
+Dave Hansen (1):
+      x86/mm: Fix RCU splat from new TLB tracepoints
 
-Well, it already has an IP address (which might be masqueraded by the
-host or another upstream router) and a namespace inode number.
+Guenter Roeck (1):
+      firmware: Do not use WARN_ON(!spin_is_locked())
 
-I'm not aware of support for anonymous namespaces, let along anonymous
-containers yet.
+Jeremiah Mahler (2):
+      x86/mm: Fix sparse 'tlb_single_page_flush_ceiling' warning and make the variable read-mostly
+      x86/doc: Fix the 'tlb_single_page_flush_ceiling' sysconfig path
 
-> --Andy
+Semen Protsenko (1):
+      efi/arm64: Store Runtime Services revision
 
-- RGB
+Stefan Bader (1):
+      x86_32, entry: Clean up sysenter_badsys declaration
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+
+ Documentation/x86/tlb.txt   |  2 +-
+ arch/arm64/kernel/efi.c     |  2 ++
+ arch/x86/kernel/entry_32.S  |  2 +-
+ arch/x86/mm/tlb.c           | 10 ++++++++--
+ drivers/firmware/efi/vars.c |  8 ++++----
+ 5 files changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/x86/tlb.txt b/Documentation/x86/tlb.txt
+index 2b3a82e69151..39d172326703 100644
+--- a/Documentation/x86/tlb.txt
++++ b/Documentation/x86/tlb.txt
+@@ -35,7 +35,7 @@ invlpg instruction (or instructions _near_ it) show up high in
+ profiles.  If you believe that individual invalidations being
+ called too often, you can lower the tunable:
+ 
+-	/sys/debug/kernel/x86/tlb_single_page_flush_ceiling
++	/sys/kernel/debug/x86/tlb_single_page_flush_ceiling
+ 
+ This will cause us to do the global flush for more cases.
+ Lowering it to 0 will disable the use of the individual flushes.
+diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
+index e72f3100958f..5dbb7bd3b838 100644
+--- a/arch/arm64/kernel/efi.c
++++ b/arch/arm64/kernel/efi.c
+@@ -463,6 +463,8 @@ static int __init arm64_enter_virtual_mode(void)
+ 	efi_native_runtime_setup();
+ 	set_bit(EFI_RUNTIME_SERVICES, &efi.flags);
+ 
++	efi.runtime_version = efi.systab->hdr.revision;
++
+ 	return 0;
+ 
+ err_unmap:
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 47c410d99f5d..4b0e1dfa2226 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -683,7 +683,7 @@ END(syscall_badsys)
+ sysenter_badsys:
+ 	movl $-ENOSYS,%eax
+ 	jmp sysenter_after_call
+-END(syscall_badsys)
++END(sysenter_badsys)
+ 	CFI_ENDPROC
+ 
+ .macro FIXUP_ESPFIX_STACK
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 1fe33987de02..ee61c36d64f8 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -49,7 +49,13 @@ void leave_mm(int cpu)
+ 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+ 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+ 		load_cr3(swapper_pg_dir);
+-		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
++		/*
++		 * This gets called in the idle path where RCU
++		 * functions differently.  Tracing normally
++		 * uses RCU, so we have to call the tracepoint
++		 * specially here.
++		 */
++		trace_tlb_flush_rcuidle(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
+@@ -174,7 +180,7 @@ void flush_tlb_current_task(void)
+  *
+  * This is in units of pages.
+  */
+-unsigned long tlb_single_page_flush_ceiling = 33;
++static unsigned long tlb_single_page_flush_ceiling __read_mostly = 33;
+ 
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
+index f0a43646a2f3..5abe943e3404 100644
+--- a/drivers/firmware/efi/vars.c
++++ b/drivers/firmware/efi/vars.c
+@@ -481,7 +481,7 @@ EXPORT_SYMBOL_GPL(efivar_entry_remove);
+  */
+ static void efivar_entry_list_del_unlock(struct efivar_entry *entry)
+ {
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
+ 
+ 	list_del(&entry->list);
+ 	spin_unlock_irq(&__efivars->lock);
+@@ -507,7 +507,7 @@ int __efivar_entry_delete(struct efivar_entry *entry)
+ 	const struct efivar_operations *ops = __efivars->ops;
+ 	efi_status_t status;
+ 
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
+ 
+ 	status = ops->set_variable(entry->var.VariableName,
+ 				   &entry->var.VendorGuid,
+@@ -667,7 +667,7 @@ struct efivar_entry *efivar_entry_find(efi_char16_t *name, efi_guid_t guid,
+ 	int strsize1, strsize2;
+ 	bool found = false;
+ 
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
+ 
+ 	list_for_each_entry_safe(entry, n, head, list) {
+ 		strsize1 = ucs2_strsize(name, 1024);
+@@ -739,7 +739,7 @@ int __efivar_entry_get(struct efivar_entry *entry, u32 *attributes,
+ 	const struct efivar_operations *ops = __efivars->ops;
+ 	efi_status_t status;
+ 
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
+ 
+ 	status = ops->get_variable(entry->var.VariableName,
+ 				   &entry->var.VendorGuid,
