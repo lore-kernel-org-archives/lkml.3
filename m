@@ -1,110 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaHXNaT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 09:30:19 -0400
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:33435 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494AbaHXNaR (ORCPT
+	id S1752740AbaHXNce (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 09:32:34 -0400
+Received: from smtp-out-152.synserver.de ([212.40.185.152]:1045 "EHLO
+	smtp-out-151.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752710AbaHXNcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 09:30:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <53F8AED8.8010908@roeck-us.net>
-References: <1408741894-24879-1-git-send-email-atull@opensource.altera.com>
-	<1408741894-24879-3-git-send-email-atull@opensource.altera.com>
-	<20140822214546.GD24407@sirena.org.uk>
-	<53F8AED8.8010908@roeck-us.net>
-Date: Sun, 24 Aug 2014 08:30:16 -0500
-Message-ID: <CANk1AXTt1fo5M+QrDEa44t=z-PKvweDXQ3fi9fAJSKbznW-giA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] pmbus: ltc2978: add regulator gating
-From: Alan Tull <delicious.quinoa@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Mark Brown <broonie@kernel.org>, atull <atull@opensource.altera.com>,
-        jdelvare@suse.de, lm-sensors@lm-sensors.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Content-Type: text/plain; charset=UTF-8
+	Sun, 24 Aug 2014 09:32:33 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 17816
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] regmap: Fix regcache debugfs initialization
+Date: Sun, 24 Aug 2014 15:32:27 +0200
+Message-Id: <1408887148-7627-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 23, 2014 at 10:10 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On 08/22/2014 02:45 PM, Mark Brown wrote:
->>
->> On Fri, Aug 22, 2014 at 04:11:34PM -0500, atull@opensource.altera.com
->> wrote:
->>>
->>> From: Alan Tull <atull@opensource.altera.com>
->>>
->>> Add regulator with support for enabling or disabling all
->>> supplies.
->>
->>
->> Reviwed-by: Mark Brown <broonie@linaro.org>
->>
->> though it still looks like you should be able to create generic
->> functions for the operations.
->>
-> Sorry I didn't have time to review the code myself. I'll have
-> to check the datasheet about turning regulators on and off.
-> Using page 0xff for the lm2978 looks wrong, as the chip supports
-> up to 8 channels which should be controlled separately
-> (I would assume) instead of turning them all on and off in
-> one go. Maybe I am missing something, but my assumption would
-> have been to have a separate regulator for each channel, and
-> that each channel would have its own regulator which would be
-> turned on and off separately. So I don't really understand the
-> change between v1 and v2 of the core patch, which dropped the
-> per-channel regulators. Someone will have to explain to me
-> why that makes sense, especially since it means that I won't
-> be able to use the regulator expansion in my system (which
-> would require per-channel regulators, and which does not always
-> have all channels enabled on a given chip).
+Commit 6cfec04bcc05 ("regmap: Separate regmap dev initialization") moved the
+regmap debugfs initialization after regcache initialization. This means
+that the regmap debugfs directory is not created yet when the cache
+initialization runs and so any debugfs files registered by the regcache are
+created in the debugfs root directory rather than the debugfs directory of
+the regmap instance. Fix this by adding a separate callback for the
+regcache debugfs initialization which will be called after the parent
+debugfs entry has been created.
 
-The LTC2978 spec says that the OPERATION command register "responds to
-the global page command (PAGE=0xFF)."  I originally took it to mean
-that it *only* responds to 0xFF.  Now I get that yes I could turn
-on/off each of 8 channels separately.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/base/regmap/internal.h        | 3 +++
+ drivers/base/regmap/regcache-rbtree.c | 9 +++------
+ drivers/base/regmap/regmap-debugfs.c  | 3 +++
+ 3 files changed, 9 insertions(+), 6 deletions(-)
 
-I will make the change have one regulator for each supply.  It would
-be useful to still have a global regulator for turning them all on/off
-together if that is not completely odious.
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 7d13269..bfc90b8 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -146,6 +146,9 @@ struct regcache_ops {
+ 	enum regcache_type type;
+ 	int (*init)(struct regmap *map);
+ 	int (*exit)(struct regmap *map);
++#ifdef CONFIG_DEBUG_FS
++	void (*debugfs_init)(struct regmap *map);
++#endif
+ 	int (*read)(struct regmap *map, unsigned int reg, unsigned int *value);
+ 	int (*write)(struct regmap *map, unsigned int reg, unsigned int value);
+ 	int (*sync)(struct regmap *map, unsigned int min, unsigned int max);
+diff --git a/drivers/base/regmap/regcache-rbtree.c b/drivers/base/regmap/regcache-rbtree.c
+index 6a7e4fa..f3e8fe0 100644
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -194,10 +194,6 @@ static void rbtree_debugfs_init(struct regmap *map)
+ {
+ 	debugfs_create_file("rbtree", 0400, map->debugfs, map, &rbtree_fops);
+ }
+-#else
+-static void rbtree_debugfs_init(struct regmap *map)
+-{
+-}
+ #endif
+ 
+ static int regcache_rbtree_init(struct regmap *map)
+@@ -222,8 +218,6 @@ static int regcache_rbtree_init(struct regmap *map)
+ 			goto err;
+ 	}
+ 
+-	rbtree_debugfs_init(map);
+-
+ 	return 0;
+ 
+ err:
+@@ -532,6 +526,9 @@ struct regcache_ops regcache_rbtree_ops = {
+ 	.name = "rbtree",
+ 	.init = regcache_rbtree_init,
+ 	.exit = regcache_rbtree_exit,
++#ifdef CONFIG_DEBUG_FS
++	.debugfs_init = rbtree_debugfs_init,
++#endif
+ 	.read = regcache_rbtree_read,
+ 	.write = regcache_rbtree_write,
+ 	.sync = regcache_rbtree_sync,
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 45d812c..65ea7b2 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -538,6 +538,9 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
+ 
+ 		next = rb_next(&range_node->node);
+ 	}
++
++	if (map->cache_ops && map->cache_ops->debugfs_init)
++		map->cache_ops->debugfs_init(map);
+ }
+ 
+ void regmap_debugfs_exit(struct regmap *map)
+-- 
+1.8.0
 
->
-> In respect to generic functions, that really depends on the scope
-> of the regulators. As written, where all regulators are turned on
-> in a single operation, per-chip functions are needed. I thought
-> we would only need per-chip configuration values, but that only
-> applies if regulators are turned on one by one, not all in one go.
-
-For all the parts supported by ltc2978.c, a banked write of 0x80 to
-the OPERATION register turns a regulator on, writing 0x00 turns it
-off.  I'm not sure how universal that is for other PMBUS parts.  I
-will look at the PMBUS specs when I get back to the office Tuesday.
-
-I'll look into it and see if I can push almost all of this code into
-pmbus_core.c and just have per-chip config values in
-pmbus_driver_info.   If many PMBUS parts have the same scheme (0x80 or
-0x00 written to OPERATION register as a banked write) then  a flag bit
-that is turned on in pmbus_driver_info could enable this scheme for
-this chip.  If it is a different register or different on/off values,
-then I'll need to add those to pmbus_driver_info.
->
-> Either case, a wrapper for ltc2978_write_pmbus_operation needs to
-> be added to pmbus_core.c as pmbus_write_byte_data and exported
-> (as a separate patch). For paged reads, the existing
-> pmbus_read_byte_data should be used. In general, avoid direct
-> accesses to paged registers and use API functions instead
-> if possible.
-
-OK.  Will add pmbus_write_byte_data as a separate patch and use the
-existing pmbus_read_byte_data.
-
-Thanks for the review!
-
-Alan
-
->
-> Thanks,
-> Guenter
->
