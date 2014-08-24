@@ -1,104 +1,392 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbaHXWen (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 18:34:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42758 "EHLO mx1.redhat.com"
+	id S1753670AbaHXWet (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 18:34:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45923 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281AbaHXWem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 18:34:42 -0400
+	id S1753281AbaHXWen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 18:34:43 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH V4 0/4] audit by executable name
-Date: Sun, 24 Aug 2014 18:34:04 -0400
-Message-Id: <cover.1408918472.git.rgb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, sgrubb@redhat.com, rgb@redhat.com,
+        pmoody@google.com
+Subject: [PATCH V4 1/4] audit: implement audit by executable
+Date: Sun, 24 Aug 2014 18:34:05 -0400
+Message-Id: <0e5d35a224cc1745ab810b0cc6e56d0c526cdcfa.1408918472.git.rgb@redhat.com>
+In-Reply-To: <cover.1408918472.git.rgb@redhat.com>
+References: <cover.1408918472.git.rgb@redhat.com>
+In-Reply-To: <cover.1408918472.git.rgb@redhat.com>
+References: <cover.1408918472.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a part of Peter Moody, my and Eric Paris' work to implement
-audit by executable name.
+From: Eric Paris <eparis@redhat.com>
 
-Please see the accompanying userspace patch:
-	https://www.redhat.com/archives/linux-audit/2014-May/msg00019.html
-The userspace interface is not expected to change appreciably unless something
-important has been overlooked.  Setting and deleting rules works as expected.
-	
-If the path does not exist at rule creation time, it will be re-evaluated every
-time there is a change to the parent directory at which point the change in
-device and inode will be noted.
+This patch implements the ability to filter on the executable.  It is
+clearly incomplete!  This patch adds the inode/dev of the executable at
+the moment the rule is loaded.  It does not update if the executable is
+updated/moved/whatever.  That should be added.  But at this moment, this
+patch works.
 
-
-Here's a test run:
-
-# /usr/local/sbin/auditctl -a always,exit -F dir=/tmp -F exe=/bin/touch -F key=touch_tmp
-# /usr/local/sbin/ausearch --start recent -k touch_tmp
-time->Mon Jun 30 14:15:06 2014
-type=CONFIG_CHANGE msg=audit(1404152106.683:149): auid=0 ses=1 subj=unconfined_u :unconfined_r:auditctl_t:s0-s0:c0.c1023 op="add rule" key="touch_tmp" list=4 res =1
-
-# /usr/local/sbin/auditctl -l
--a always,exit -S all -F dir=/tmp -F exe=/bin/touch -F key=touch_tmp
-
-# touch /tmp/test
-
-# /usr/local/sbin/ausearch --start recent -k touch_tmp
-time->Wed Jul  2 12:18:47 2014
-type=UNKNOWN[1327] msg=audit(1404317927.319:132): proctitle=746F756368002F746D702F74657374
-type=PATH msg=audit(1404317927.319:132): item=1 name="/tmp/test" inode=25997 dev=00:20 mode=0100644 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:user_tmp_t:s0 nametype=CREATE
-type=PATH msg=audit(1404317927.319:132): item=0 name="/tmp/" inode=11144 dev=00:20 mode=041777 ouid=0 ogid=0 rdev=00:00 obj=system_u:object_r:tmp_t:s0 nametype=PARENT
-type=CWD msg=audit(1404317927.319:132):  cwd="/root"
-type=SYSCALL msg=audit(1404317927.319:132): arch=c000003e syscall=2 success=yes exit=3 a0=7ffffa403dd5 a1=941 a2=1b6 a3=34b65b2c6c items=2 ppid=4321 pid=6436 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=ttyS0 ses=1 comm="touch" exe="/usr/bin/touch" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 key="touch_tmp"
-
-
-Revision history:
-v4: Re-order and squash down fixups
-    Fix audit_dup_exe() to copy pathname string before calling audit_alloc_mark().
-
-v3: Rationalize and rename some function names and clean up get/put and free code.
-    Rename several "watch" references to "mark".
-    Rename audit_remove_rule() to audit_remove_mark_rule().
-    Let audit_free_rule() take care of calling audit_remove_mark().
-    Put audit_alloc_mark() arguments in same order as watch, tree and inode.
-    Move the access to the entry for audit_match_signal() to the beginning
-     of the function in case the entry found is the same one passed in.
-     This will enable it to be used by audit_remove_mark_rule().
-    https://www.redhat.com/archives/linux-audit/2014-July/msg00000.html
-
-v2: Misguided attempt to add in audit_exe similar to watches
-    https://www.redhat.com/archives/linux-audit/2014-June/msg00066.html
-
-v1.5: eparis' switch to fsnotify
-    https://www.redhat.com/archives/linux-audit/2014-May/msg00046.html
-    https://www.redhat.com/archives/linux-audit/2014-May/msg00066.html
-
-v1: Change to path interface instead of inode
-    https://www.redhat.com/archives/linux-audit/2014-May/msg00017.html
-
-v0: Peter Moodie's original patches
-    https://www.redhat.com/archives/linux-audit/2012-August/msg00033.html
-
-
-Next step:
-Get full-path notify working.
-
-
-Eric Paris (3):
-  audit: implement audit by executable
-  audit: clean simple fsnotify implementation
-  audit: convert audit_exe to audit_fsnotify
-
-Richard Guy Briggs (1):
-  audit: avoid double copying the audit_exe path string
-
+Based-on-user-interface-by: Richard Guy Briggs <rgb@redhat.com>
+Cc: rgb@redhat.com
+Based-on-idea-by: Peter Moody <pmoody@google.com>
+Cc: pmoody@google.com
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
  include/linux/audit.h      |    1 +
  include/uapi/linux/audit.h |    2 +
  kernel/Makefile            |    2 +-
- kernel/audit.h             |   39 +++++++
- kernel/audit_exe.c         |   49 +++++++++
- kernel/audit_fsnotify.c    |  237 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/auditfilter.c       |   51 +++++++++-
- kernel/auditsc.c           |   16 +++
- 8 files changed, 394 insertions(+), 3 deletions(-)
+ kernel/audit.h             |   32 +++++++++++++
+ kernel/audit_exe.c         |  109 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/auditfilter.c       |   44 ++++++++++++++++++
+ kernel/auditsc.c           |   16 ++++++
+ 7 files changed, 205 insertions(+), 1 deletions(-)
  create mode 100644 kernel/audit_exe.c
- create mode 100644 kernel/audit_fsnotify.c
+
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 22cfddb..227171c 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -59,6 +59,7 @@ struct audit_krule {
+ 	struct audit_field	*inode_f; /* quick access to an inode field */
+ 	struct audit_watch	*watch;	/* associated watch */
+ 	struct audit_tree	*tree;	/* associated watched tree */
++	struct audit_exe	*exe;
+ 	struct list_head	rlist;	/* entry in audit_{watch,tree}.rules list */
+ 	struct list_head	list;	/* for AUDIT_LIST* purposes only */
+ 	u64			prio;
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 573dc36..f4a72b9 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -266,6 +266,8 @@
+ #define AUDIT_OBJ_UID	109
+ #define AUDIT_OBJ_GID	110
+ #define AUDIT_FIELD_COMPARE	111
++#define AUDIT_EXE	112
++#define AUDIT_EXE_CHILDREN	113
+ 
+ #define AUDIT_ARG0      200
+ #define AUDIT_ARG1      (AUDIT_ARG0+1)
+diff --git a/kernel/Makefile b/kernel/Makefile
+index bc010ee..a1d5715 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -61,7 +61,7 @@ obj-$(CONFIG_SMP) += stop_machine.o
+ obj-$(CONFIG_KPROBES_SANITY_TEST) += test_kprobes.o
+ obj-$(CONFIG_AUDIT) += audit.o auditfilter.o
+ obj-$(CONFIG_AUDITSYSCALL) += auditsc.o
+-obj-$(CONFIG_AUDIT_WATCH) += audit_watch.o
++obj-$(CONFIG_AUDIT_WATCH) += audit_watch.o audit_exe.o
+ obj-$(CONFIG_AUDIT_TREE) += audit_tree.o
+ obj-$(CONFIG_GCOV_KERNEL) += gcov/
+ obj-$(CONFIG_KPROBES) += kprobes.o
+diff --git a/kernel/audit.h b/kernel/audit.h
+index 7bb6573..c975569 100644
+--- a/kernel/audit.h
++++ b/kernel/audit.h
+@@ -56,6 +56,7 @@ enum audit_state {
+ 
+ /* Rule lists */
+ struct audit_watch;
++struct audit_exe;
+ struct audit_tree;
+ struct audit_chunk;
+ 
+@@ -280,6 +281,13 @@ extern int audit_add_watch(struct audit_krule *krule, struct list_head **list);
+ extern void audit_remove_watch_rule(struct audit_krule *krule);
+ extern char *audit_watch_path(struct audit_watch *watch);
+ extern int audit_watch_compare(struct audit_watch *watch, unsigned long ino, dev_t dev);
++
++int audit_make_exe_rule(struct audit_krule *krule, char *pathname, int len, u32 op);
++void audit_remove_exe_rule(struct audit_krule *krule);
++char *audit_exe_path(struct audit_exe *exe);
++int audit_dup_exe(struct audit_krule *new, struct audit_krule *old);
++int audit_exe_compare(struct task_struct *tsk, struct audit_exe *exe);
++
+ #else
+ #define audit_put_watch(w) {}
+ #define audit_get_watch(w) {}
+@@ -289,6 +297,30 @@ extern int audit_watch_compare(struct audit_watch *watch, unsigned long ino, dev
+ #define audit_watch_path(w) ""
+ #define audit_watch_compare(w, i, d) 0
+ 
++static inline int audit_make_exe_rule(struct audit_krule *krule, char *pathname, int len, u32 op)
++{
++	return -EINVAL;
++}
++static inline void audit_remove_exe_rule(struct audit_krule *krule)
++{
++	BUG();
++	return 0;
++}
++static inline char *audit_exe_path(struct audit_exe *exe)
++{
++	BUG();
++	return "";
++}
++static inline int audit_dup_exe(struct audit_krule *new, struct audit_krule *old)
++{
++	BUG();
++	return -EINVAL
++}
++static inline int audit_exe_compare(struct task_struct *tsk, struct audit_exe *exe)
++{
++	BUG();
++	return 0;
++}
+ #endif /* CONFIG_AUDIT_WATCH */
+ 
+ #ifdef CONFIG_AUDIT_TREE
+diff --git a/kernel/audit_exe.c b/kernel/audit_exe.c
+new file mode 100644
+index 0000000..ec3231b
+--- /dev/null
++++ b/kernel/audit_exe.c
+@@ -0,0 +1,109 @@
++/* audit_exe.c -- filtering of audit events
++ *
++ * Copyright 2014 Red Hat, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/kernel.h>
++#include <linux/audit.h>
++#include <linux/mutex.h>
++#include <linux/fs.h>
++#include <linux/namei.h>
++#include <linux/slab.h>
++#include "audit.h"
++
++struct audit_exe {
++	char *pathname;
++	unsigned long ino;
++	dev_t dev;
++};
++
++/* Translate a watch string to kernel respresentation. */
++int audit_make_exe_rule(struct audit_krule *krule, char *pathname, int len, u32 op)
++{
++	struct audit_exe *exe;
++	struct path path;
++	struct dentry *dentry;
++	unsigned long ino;
++	dev_t dev;
++
++	if (pathname[0] != '/' || pathname[len-1] == '/')
++		return -EINVAL;
++
++	dentry = kern_path_locked(pathname, &path);
++	if (IS_ERR(dentry))
++		return PTR_ERR(dentry);
++	mutex_unlock(&path.dentry->d_inode->i_mutex);
++
++	if (!dentry->d_inode)
++		return -ENOENT;
++	dev = dentry->d_inode->i_sb->s_dev;
++	ino = dentry->d_inode->i_ino;
++	dput(dentry);
++
++	exe = kmalloc(sizeof(*exe), GFP_KERNEL);
++	if (!exe)
++		return -ENOMEM;
++	exe->ino = ino;
++	exe->dev = dev;
++	exe->pathname = pathname;
++	krule->exe = exe;
++
++	return 0;
++}
++
++void audit_remove_exe_rule(struct audit_krule *krule)
++{
++	struct audit_exe *exe;
++
++	exe = krule->exe;
++	krule->exe = NULL;
++	kfree(exe->pathname);
++	kfree(exe);
++}
++
++char *audit_exe_path(struct audit_exe *exe)
++{
++	return exe->pathname;
++}
++
++int audit_dup_exe(struct audit_krule *new, struct audit_krule *old)
++{
++	struct audit_exe *exe;
++
++	exe = kmalloc(sizeof(*exe), GFP_KERNEL);
++	if (!exe)
++		return -ENOMEM;
++
++	exe->pathname = kstrdup(old->exe->pathname, GFP_KERNEL);
++	if (!exe->pathname) {
++		kfree(exe);
++		return -ENOMEM;
++	}
++
++	exe->ino = old->exe->ino;
++	exe->dev = old->exe->dev;
++	new->exe = exe;
++
++	return 0;
++}
++
++int audit_exe_compare(struct task_struct *tsk, struct audit_exe *exe)
++{
++	if (tsk->mm->exe_file->f_inode->i_ino != exe->ino)
++		return 0;
++	if (tsk->mm->exe_file->f_inode->i_sb->s_dev != exe->dev)
++		return 0;
++	return 1;
++}
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index 8e9bc9c..558c51f 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -390,6 +390,13 @@ static int audit_field_valid(struct audit_entry *entry, struct audit_field *f)
+ 		if (f->val > AUDIT_MAX_FIELD_COMPARE)
+ 			return -EINVAL;
+ 		break;
++	case AUDIT_EXE:
++	case AUDIT_EXE_CHILDREN:
++		if (f->op != Audit_equal)
++			return -EINVAL;
++		if (entry->rule.listnr != AUDIT_FILTER_EXIT)
++			return -EINVAL;
++		break;
+ 	};
+ 	return 0;
+ }
+@@ -541,6 +548,23 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 			entry->rule.buflen += f->val;
+ 			entry->rule.filterkey = str;
+ 			break;
++		case AUDIT_EXE:
++		case AUDIT_EXE_CHILDREN:
++			if (entry->rule.exe || f->val > PATH_MAX)
++				goto exit_free;
++			str = audit_unpack_string(&bufp, &remain, f->val);
++			if (IS_ERR(str)) {
++				err = PTR_ERR(str);
++				goto exit_free;
++			}
++			entry->rule.buflen += f->val;
++
++			err = audit_make_exe_rule(&entry->rule, str, f->val, f->op);
++			if (err) {
++				kfree(str);
++				goto exit_free;
++			}
++			break;
+ 		}
+ 	}
+ 
+@@ -619,6 +643,11 @@ static struct audit_rule_data *audit_krule_to_data(struct audit_krule *krule)
+ 			data->buflen += data->values[i] =
+ 				audit_pack_string(&bufp, krule->filterkey);
+ 			break;
++		case AUDIT_EXE:
++		case AUDIT_EXE_CHILDREN:
++			data->buflen += data->values[i] =
++				audit_pack_string(&bufp, audit_exe_path(krule->exe));
++			break;
+ 		default:
+ 			data->values[i] = f->val;
+ 		}
+@@ -674,6 +703,13 @@ static int audit_compare_rule(struct audit_krule *a, struct audit_krule *b)
+ 			if (strcmp(a->filterkey, b->filterkey))
+ 				return 1;
+ 			break;
++		case AUDIT_EXE:
++		case AUDIT_EXE_CHILDREN:
++			/* both paths exist based on above type compare */
++			if (strcmp(audit_exe_path(a->exe),
++				   audit_exe_path(b->exe)))
++				return 1;
++			break;
+ 		case AUDIT_UID:
+ 		case AUDIT_EUID:
+ 		case AUDIT_SUID:
+@@ -795,6 +831,11 @@ struct audit_entry *audit_dupe_rule(struct audit_krule *old)
+ 				err = -ENOMEM;
+ 			else
+ 				new->filterkey = fk;
++			break;
++		case AUDIT_EXE:
++		case AUDIT_EXE_CHILDREN:
++			err = audit_dup_exe(new, old);
++			break;
+ 		}
+ 		if (err) {
+ 			audit_free_rule(entry);
+@@ -966,6 +1007,9 @@ static inline int audit_del_rule(struct audit_entry *entry)
+ 	if (e->rule.tree)
+ 		audit_remove_tree_rule(&e->rule);
+ 
++	if (e->rule.exe)
++		audit_remove_exe_rule(&e->rule);
++
+ 	list_del_rcu(&e->list);
+ 	list_del(&e->rule.list);
+ 	call_rcu(&e->rcu, audit_free_rule_rcu);
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index f251a5e..2513726 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -48,6 +48,7 @@
+ #include <asm/types.h>
+ #include <linux/atomic.h>
+ #include <linux/fs.h>
++#include <linux/dcache.h>
+ #include <linux/namei.h>
+ #include <linux/mm.h>
+ #include <linux/export.h>
+@@ -70,6 +71,7 @@
+ #include <linux/capability.h>
+ #include <linux/fs_struct.h>
+ #include <linux/compat.h>
++#include <linux/sched.h>
+ #include <linux/ctype.h>
+ 
+ #include "audit.h"
+@@ -471,6 +473,20 @@ static int audit_filter_rules(struct task_struct *tsk,
+ 				result = audit_comparator(ctx->ppid, f->op, f->val);
+ 			}
+ 			break;
++		case AUDIT_EXE:
++			result = audit_exe_compare(tsk, rule->exe);
++			break;
++		case AUDIT_EXE_CHILDREN:
++		{
++			struct task_struct *ptsk;
++			for (ptsk = tsk; ptsk->parent->pid > 0; ptsk = find_task_by_vpid(ptsk->parent->pid)) {
++				if (audit_exe_compare(ptsk, rule->exe)) {
++					++result;
++					break;
++				}
++			}
++		}
++			break;
+ 		case AUDIT_UID:
+ 			result = audit_uid_comparator(cred->uid, f->op, f->uid);
+ 			break;
+-- 
+1.7.1
 
