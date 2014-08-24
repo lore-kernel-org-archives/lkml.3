@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634AbaHXMB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 08:01:27 -0400
-Received: from purkki.adurom.net ([80.68.90.206]:33120 "EHLO purkki.adurom.net"
+	id S1752639AbaHXMLT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 08:11:19 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302AbaHXMBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 08:01:25 -0400
-From: Kalle Valo <kvalo@adurom.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: net: wireless: Add include guards
-References: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
-Date: Sun, 24 Aug 2014 15:01:22 +0300
-In-Reply-To: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
-	(Rasmus Villemoes's message of "Fri, 22 Aug 2014 14:26:54 +0200")
-Message-ID: <87ppfq85bh.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1752392AbaHXMLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 08:11:16 -0400
+Message-ID: <53F9D661.8080100@nod.at>
+Date: Sun, 24 Aug 2014 14:11:13 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Thorsten Knabe <linux@thorsten-knabe.de>
+CC: linux-kernel@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
+        Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] UML: UBD: Fix for processes stuck in D state forever
+ in UserModeLinux
+References: <53F89B7A.1040406@thorsten-knabe.de> <53F8B48D.8060209@nod.at> <53F8D2A7.70204@thorsten-knabe.de>
+In-Reply-To: <53F8D2A7.70204@thorsten-knabe.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
+Am 23.08.2014 19:43, schrieb Thorsten Knabe:
+> Hi Richard.
+> 
+> On 08/23/2014 05:34 PM, Richard Weinberger wrote:
+>> Hi!
+>>
+>> Am 23.08.2014 15:47, schrieb Thorsten Knabe:
+>>> From: Thorsten Knabe <linux@thorsten-knabe.de>
+>>>
+>>> UML: UBD: Fix for processes stuck in D state forever in UserModeLinux.
+>>>
+>>> Starting with Linux 3.12 processes get stuck in D state forever in
+>>> UserModeLinux under sync heavy workloads. This bug was introduced by
+>>> commit 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport).
+>>> Fix bug by adding a check if FLUSH request was successfully submitted to
+>>> the I/O thread and keeping the FLUSH request on the request queue on
+>>> submission failures.
+>>>
+>>> Fixes: 805f11a0d5 (um: ubd: Add REQ_FLUSH suppport)
+>>> Signed-off-by: Thorsten Knabe <linux@thorsten-knabe.de>
+>>
+>> Thanks a lot for hunting this issue down.
+>>
+>>> ---
+>>> Patch applies to 3.16.1.
+>>>
+>>> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+>>> index 3716e69..b7d2840 100644
+>>> --- a/arch/um/drivers/ubd_kern.c
+>>> +++ b/arch/um/drivers/ubd_kern.c
+>>> @@ -1277,7 +1277,7 @@ static void do_ubd_request(struct request_queue *q)
+>>>
+>>>  	while(1){
+>>>  		struct ubd *dev = q->queuedata;
+>>> -		if(dev->end_sg == 0){
+>>> +		if(dev->request == NULL){
+>>
+>> Why do we need this specific change?
+> 
+> This change is required, because for FLUSH requests dev->end_sg is
+> initialized to 0 by blk_rq_map_sg() a few lines above, as FLUSH requests
+> have no data blocks attached to themselves.
 
-> The files ray_cs.h and rayctl.h both contain two thirds of what
-> appears to be an include guard using the macro name RAYLINK_H (both
-> lack the #define). Since RAYLINK_H is not defined anywhere, the
-> guards using different macro names.
->
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  drivers/net/wireless/ray_cs.h | 5 +++--
->  drivers/net/wireless/rayctl.h | 5 +++--
+You meant "below"? Looks like I really miss something here.
+At the bottom of the while(1) loop we have
+                dev->end_sg = 0;
+                dev->request = NULL;
 
-As this a change to ray_cs driver, please use prefix "ray_cs:" and drop
-that "drivers: net: wireless:".
-
--- 
-Kalle Valo
+Thanks,
+//richard
