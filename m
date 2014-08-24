@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaHXLQm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 07:16:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:44497 "EHLO mail.kernel.org"
+	id S1752634AbaHXMB1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 08:01:27 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:33120 "EHLO purkki.adurom.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430AbaHXLQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 07:16:41 -0400
-Date: Sun, 24 Aug 2014 08:16:35 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Joe Mario <jmario@redhat.com>, Michael Ellerman <michaele@au1.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: [GIT PULL 00/16] perf/core improvements and fixes
-Message-ID: <20140824111635.GA2817@kernel.org>
-References: <1408724968-3441-1-git-send-email-acme@kernel.org>
- <20140824101123.GB1309@gmail.com>
+	id S1752302AbaHXMBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 08:01:25 -0400
+From: Kalle Valo <kvalo@adurom.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: net: wireless: Add include guards
+References: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
+Date: Sun, 24 Aug 2014 15:01:22 +0300
+In-Reply-To: <1408710414-13810-1-git-send-email-linux@rasmusvillemoes.dk>
+	(Rasmus Villemoes's message of "Fri, 22 Aug 2014 14:26:54 +0200")
+Message-ID: <87ppfq85bh.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140824101123.GB1309@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Aug 24, 2014 at 12:11:24PM +0200, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
-> > o Kernel fix to properly handle exited tasks, by returning POLLHUP values
-> >   on perf event file descriptors. Tooling changes will come next, but were
-> >   tested with this kernel fix. (Jiri Olsa)
- 
-> So the signoffs are really weird (and invalid) here:
- 
-> commit ce1d77c667e40631d6673717e65e72f72265bf10
-> Author: Jiri Olsa <jolsa@kernel.org>
-> Date:   Fri Aug 15 16:24:45 2014 -0300
- 
->     perf top: Use set_term_quiet() instead of open coded equivalent
- 
-> ...    
->     Cc: Jiri Olsa <jolsa@kernel.org>
->     Cc: Namhyung Kim <namhyung@kernel.org>
->     Cc: Paul Mackerras <paulus@samba.org>
->     Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->     Link: http://lkml.kernel.org/n/tip-h7n9te70flmaqfnj6l06ay6r@git.kernel.org
->     [ Yanked this out of a patch containing this and some other change ]
->     Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
- 
-> and in 7713886adc15 and f017bf0a8d92 - results of a rebase gone wrong?
+Rasmus Villemoes <linux@rasmusvillemoes.dk> writes:
 
-Should be ok now, I recreated the perf-core-for-mingo signed tag, please
-let me know if there are still any problems,
+> The files ray_cs.h and rayctl.h both contain two thirds of what
+> appears to be an include guard using the macro name RAYLINK_H (both
+> lack the #define). Since RAYLINK_H is not defined anywhere, the
+> guards using different macro names.
+>
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  drivers/net/wireless/ray_cs.h | 5 +++--
+>  drivers/net/wireless/rayctl.h | 5 +++--
 
-Thanks!
+As this a change to ray_cs driver, please use prefix "ray_cs:" and drop
+that "drivers: net: wireless:".
 
-- Arnaldo
+-- 
+Kalle Valo
