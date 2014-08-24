@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067AbaHXRJV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 13:09:21 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:54846 "EHLO
+	id S1752966AbaHXRJT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 13:09:19 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:63954 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752841AbaHXRIy (ORCPT
+	by vger.kernel.org with ESMTP id S1752675AbaHXRIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 24 Aug 2014 13:08:54 -0400
-Message-Id: <20140824170850.349336650@goodmis.org>
+Message-Id: <20140824170850.144108032@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Sun, 24 Aug 2014 13:08:13 -0400
+Date: Sun, 24 Aug 2014 13:08:12 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 5/5] ftrace: Use current addr when converting to nop in
- __ftrace_replace_code()
+        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>
+Subject: [PATCH 4/5] ftrace: Fix function_profiler and function tracer together
 References: <20140824170808.753599145@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0005-ftrace-Use-current-addr-when-converting-to-nop-in-__.patch
+Content-Disposition: inline; filename=0004-ftrace-Fix-function_profiler-and-function-tracer-tog.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,54 +28,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-In __ftrace_replace_code(), when converting the call to a nop in a function
-it needs to compare against the "curr" (current) value of the ftrace ops, and
-not the "new" one. It currently does not affect x86 which is the only arch
-to do the trampolines with function graph tracer, but when other archs that do
-depend on this code implement the function graph trampoline, it can crash.
+The latest rewrite of ftrace removed the separate ftrace_ops of
+the function tracer and the function graph tracer and had them
+share the same ftrace_ops. This simplified the accounting by removing
+the multiple layers of functions called, where the global_ops func
+would call a special list that would iterate over the other ops that
+were registered within it (like function and function graph), which
+itself was registered to the ftrace ops list of all functions
+currently active. If that sounds confusing, the code that implemented
+it was also confusing and its removal is a good thing.
 
-Here's an example when ARM uses the trampolines (in the future):
+The problem with this change was that it assumed that the function
+and function graph tracer can never be used at the same time.
+This is mostly true, but there is an exception. That is when the
+function profiler uses the function graph tracer to profile.
+The function profiler can be activated the same time as the function
+tracer, and this breaks the assumption and the result is that ftrace
+will crash (it detects the error and shuts itself down, it does not
+cause a kernel oops).
 
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 9 at kernel/trace/ftrace.c:1716 ftrace_bug+0x17c/0x1f4()
- Modules linked in: omap_rng rng_core ipv6
- CPU: 0 PID: 9 Comm: migration/0 Not tainted 3.16.0-test-10959-gf0094b28f303-dirty #52
- [<c02188f4>] (unwind_backtrace) from [<c021343c>] (show_stack+0x20/0x24)
- [<c021343c>] (show_stack) from [<c095a674>] (dump_stack+0x78/0x94)
- [<c095a674>] (dump_stack) from [<c02532a0>] (warn_slowpath_common+0x7c/0x9c)
- [<c02532a0>] (warn_slowpath_common) from [<c02532ec>] (warn_slowpath_null+0x2c/0x34)
- [<c02532ec>] (warn_slowpath_null) from [<c02cbac4>] (ftrace_bug+0x17c/0x1f4)
- [<c02cbac4>] (ftrace_bug) from [<c02cc44c>] (ftrace_replace_code+0x80/0x9c)
- [<c02cc44c>] (ftrace_replace_code) from [<c02cc658>] (ftrace_modify_all_code+0xb8/0x164)
- [<c02cc658>] (ftrace_modify_all_code) from [<c02cc718>] (__ftrace_modify_code+0x14/0x1c)
- [<c02cc718>] (__ftrace_modify_code) from [<c02c7244>] (multi_cpu_stop+0xf4/0x134)
- [<c02c7244>] (multi_cpu_stop) from [<c02c6e90>] (cpu_stopper_thread+0x54/0x130)
- [<c02c6e90>] (cpu_stopper_thread) from [<c0271cd4>] (smpboot_thread_fn+0x1ac/0x1bc)
- [<c0271cd4>] (smpboot_thread_fn) from [<c026ddf0>] (kthread+0xe0/0xfc)
- [<c026ddf0>] (kthread) from [<c020f318>] (ret_from_fork+0x14/0x20)
- ---[ end trace dc9ce72c5b617d8f ]---
-[   65.047264] ftrace failed to modify [<c0208580>] asm_do_IRQ+0x10/0x1c
-[   65.054070]  actual: 85:1b:00:eb
+To solve this issue, a previous change allowed the hash tables
+for the functions traced by a ftrace_ops to be a pointer and let
+multiple ftrace_ops share the same hash. This allows the function
+and function_graph tracer to have separate ftrace_ops, but still
+share the hash, which is what is done.
 
-Fixes: 7413af1fb70e7 "ftrace: Make get_ftrace_addr() and get_ftrace_addr_old() global"
+Now the function and function graph tracers have separate ftrace_ops
+again, and the function tracer can be run while the function_profile
+is active.
+
+Cc: stable@vger.kernel.org # 3.16 (apply after 3.17-rc4 is out)
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/ftrace.c | 60 ++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 38 insertions(+), 22 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 08aca65d709a..5916a8e59e87 100644
+index 92376aeac4a7..08aca65d709a 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -2017,7 +2017,7 @@ __ftrace_replace_code(struct dyn_ftrace *rec, int enable)
- 		return ftrace_make_call(rec, ftrace_addr);
+@@ -68,8 +68,12 @@
+ #define INIT_OPS_HASH(opsname)	\
+ 	.func_hash		= &opsname.local_hash,			\
+ 	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
++#define ASSIGN_OPS_HASH(opsname, val) \
++	.func_hash		= val, \
++	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
+ #else
+ #define INIT_OPS_HASH(opsname)
++#define ASSIGN_OPS_HASH(opsname, val)
+ #endif
  
- 	case FTRACE_UPDATE_MAKE_NOP:
--		return ftrace_make_nop(NULL, rec, ftrace_addr);
-+		return ftrace_make_nop(NULL, rec, ftrace_old_addr);
+ static struct ftrace_ops ftrace_list_end __read_mostly = {
+@@ -4663,7 +4667,6 @@ void __init ftrace_init(void)
+ static struct ftrace_ops global_ops = {
+ 	.func			= ftrace_stub,
+ 	.flags			= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_INITIALIZED,
+-	INIT_OPS_HASH(global_ops)
+ };
  
- 	case FTRACE_UPDATE_MODIFY_CALL:
- 		return ftrace_modify_call(rec, ftrace_old_addr, ftrace_addr);
+ static int __init ftrace_nodyn_init(void)
+@@ -5197,6 +5200,17 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
+ 
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 
++static struct ftrace_ops graph_ops = {
++	.func			= ftrace_stub,
++	.flags			= FTRACE_OPS_FL_RECURSION_SAFE |
++				   FTRACE_OPS_FL_INITIALIZED |
++				   FTRACE_OPS_FL_STUB,
++#ifdef FTRACE_GRAPH_TRAMP_ADDR
++	.trampoline		= FTRACE_GRAPH_TRAMP_ADDR,
++#endif
++	ASSIGN_OPS_HASH(graph_ops, &global_ops.local_hash)
++};
++
+ static int ftrace_graph_active;
+ 
+ int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
+@@ -5359,12 +5373,28 @@ static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
+  */
+ static void update_function_graph_func(void)
+ {
+-	if (ftrace_ops_list == &ftrace_list_end ||
+-	    (ftrace_ops_list == &global_ops &&
+-	     global_ops.next == &ftrace_list_end))
+-		ftrace_graph_entry = __ftrace_graph_entry;
+-	else
++	struct ftrace_ops *op;
++	bool do_test = false;
++
++	/*
++	 * The graph and global ops share the same set of functions
++	 * to test. If any other ops is on the list, then
++	 * the graph tracing needs to test if its the function
++	 * it should call.
++	 */
++	do_for_each_ftrace_op(op, ftrace_ops_list) {
++		if (op != &global_ops && op != &graph_ops &&
++		    op != &ftrace_list_end) {
++			do_test = true;
++			/* in double loop, break out with goto */
++			goto out;
++		}
++	} while_for_each_ftrace_op(op);
++ out:
++	if (do_test)
+ 		ftrace_graph_entry = ftrace_graph_entry_test;
++	else
++		ftrace_graph_entry = __ftrace_graph_entry;
+ }
+ 
+ static struct notifier_block ftrace_suspend_notifier = {
+@@ -5405,16 +5435,7 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 	ftrace_graph_entry = ftrace_graph_entry_test;
+ 	update_function_graph_func();
+ 
+-	/* Function graph doesn't use the .func field of global_ops */
+-	global_ops.flags |= FTRACE_OPS_FL_STUB;
+-
+-#ifdef CONFIG_DYNAMIC_FTRACE
+-	/* Optimize function graph calling (if implemented by arch) */
+-	if (FTRACE_GRAPH_TRAMP_ADDR != 0)
+-		global_ops.trampoline = FTRACE_GRAPH_TRAMP_ADDR;
+-#endif
+-
+-	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
++	ret = ftrace_startup(&graph_ops, FTRACE_START_FUNC_RET);
+ 
+ out:
+ 	mutex_unlock(&ftrace_lock);
+@@ -5432,12 +5453,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
+ 	__ftrace_graph_entry = ftrace_graph_entry_stub;
+-	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
+-	global_ops.flags &= ~FTRACE_OPS_FL_STUB;
+-#ifdef CONFIG_DYNAMIC_FTRACE
+-	if (FTRACE_GRAPH_TRAMP_ADDR != 0)
+-		global_ops.trampoline = 0;
+-#endif
++	ftrace_shutdown(&graph_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ 
 -- 
 2.0.1
 
