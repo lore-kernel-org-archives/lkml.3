@@ -1,124 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078AbaHXX6E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 19:58:04 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54021 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466AbaHXX6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 19:58:02 -0400
-X-Original-SENDERIP: 10.177.222.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 25 Aug 2014 08:58:48 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
-        seungho1.park@lge.com, Luigi Semenzato <semenzato@google.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        David Horner <ds2horner@gmail.com>
-Subject: Re: [PATCH v4 0/4] zram memory control enhance
-Message-ID: <20140824235848.GK17372@bbox>
-References: <1408668134-21696-1-git-send-email-minchan@kernel.org>
- <CALZtONChBVQKzROJ9zR=nXYEHSWRcmegh_w9P34FfCz9c47Mnw@mail.gmail.com>
+	id S1754100AbaHYAAX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 20:00:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48399 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753515AbaHYAAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 20:00:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,393,1406617200"; 
+   d="scan'208";a="562864281"
+Date: Sun, 24 Aug 2014 16:57:42 -0700
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Fejes =?iso-8859-1?Q?J=F3zsef?= <jozsef.fejes@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-stable@vger.kernel.org
+Subject: Re: Problem with commit: x86, iosf: Make IOSF driver modular and
+ usable by more drivers
+Message-ID: <20140824235742.GA2711@pathfinder>
+References: <CALU-w9-ZjjnrYW5HxRCe-HGZWSK0JMwNU_zcSbKXM4JgGyLdbw@mail.gmail.com>
+ <53F8D1FE.5050205@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CALZtONChBVQKzROJ9zR=nXYEHSWRcmegh_w9P34FfCz9c47Mnw@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53F8D1FE.5050205@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan,
-
-On Fri, Aug 22, 2014 at 03:15:36PM -0400, Dan Streetman wrote:
-> On Thu, Aug 21, 2014 at 8:42 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > Currently, zram has no feature to limit memory so theoretically
-> > zram can deplete system memory.
-> > Users have asked for a limit several times as even without exhaustion
-> > zram makes it hard to control memory usage of the platform.
-> > This patchset adds the feature.
-> >
-> > Patch 1 makes zs_get_total_size_bytes faster because it would be
-> > used frequently in later patches for the new feature.
-> >
-> > Patch 2 changes zs_get_total_size_bytes's return unit from bytes
-> > to page so that zsmalloc doesn't need unnecessary operation(ie,
-> > << PAGE_SHIFT).
-> >
-> > Patch 3 adds new feature. I added the feature into zram layer,
-> > not zsmalloc because limiation is zram's requirement, not zsmalloc
-> > so any other user using zsmalloc(ie, zpool) shouldn't affected
-> > by unnecessary branch of zsmalloc. In future, if every users
-> > of zsmalloc want the feature, then, we could move the feature
-> > from client side to zsmalloc easily but vice versa would be
-> > painful.
-> >
-> > Patch 4 adds news facility to report maximum memory usage of zram
-> > so that this avoids user polling frequently via /sys/block/zram0/
-> > mem_used_total and ensures transient max are not missed.
+On Sat, Aug 23, 2014 at 10:40:14AM -0700, Randy Dunlap wrote:
+> On 08/23/14 02:31, Fejes József wrote:
+> > Hi,
+> > 
+> > I think there's a problem with commit
+> > 6b8f0c8780c71d78624f736d7849645b64cc88b7: config IOSF_MBI is
+> > automatically a module and I cannot change that.
+> > 
+> > I've been using 3.15.* stable kernels. I have module support enabled,
+> > but I build everything into the kernel, so I don't actually have any
+> > modules built. I just upgraded to 3.16.1, and found out that I now
+> > have this one module. I cannot find it in the menu, so I edited the
+> > .config file by hand, but it changes back from =y to =m. Could you
+> > please look into fixing it, and push it to 3.16.* stable branch?
 > 
-> FWIW, with the minor update to checking the memparse in patch 3 David
-> mentioned, feel free to add to all the patches:
-
-I replied David's reply, it's not critical for the goal
-of this patchset. And if we should fix, it should be memparse and handle
-all of cases, not just only null case.
-So I will take your Reviewed-by except 3 patch. :)
-
+> [adding David E. Box to email]
 > 
-> Reviewed-by: Dan Streetman <ddstreet@ieee.org>
-
-Thanks!
-
+> This is a mainline issue, not just a -stable issue.
+> Once fixed in mainline (if ever), then that fix can be added to -stable.
 > 
-> >
-> > * From v3
-> >  * get_zs_total_size_byte function name change - Dan
-> >  * clarifiction of the document - Dan
-> >  * atomic account instead of introducing new lock in zsmalloc - David
-> >  * remove unnecessary atomic instruction in updating max - David
-> >
-> > * From v2
-> >  * introduce helper funcntion to update max_used_pages
-> >    for readability - David
-> >  * avoid unncessary zs_get_total_size call in updating loop
-> >    for max_used_pages - David
-> >
-> > * From v1
-> >  * rebased on next-20140815
-> >  * fix up race problem - David, Dan
-> >  * reset mem_used_max as current total_bytes, rather than 0 - David
-> >  * resetting works with only "0" write for extensiblilty - David, Dan
-> >
-> > Minchan Kim (4):
-> >   zsmalloc: move pages_allocated to zs_pool
-> >   zsmalloc: change return value unit of  zs_get_total_size_bytes
-> >   zram: zram memory size limitation
-> >   zram: report maximum used memory
-> >
-> >  Documentation/ABI/testing/sysfs-block-zram |  20 ++++++
-> >  Documentation/blockdev/zram.txt            |  25 +++++--
-> >  drivers/block/zram/zram_drv.c              | 101 ++++++++++++++++++++++++++++-
-> >  drivers/block/zram/zram_drv.h              |   6 ++
-> >  include/linux/zsmalloc.h                   |   2 +-
-> >  mm/zsmalloc.c                              |  30 ++++-----
-> >  6 files changed, 158 insertions(+), 26 deletions(-)
-> >
-> > --
-> > 2.0.0
-> >
+> Fejes, you could just disable module support and then iosf_mbi would be built
+> into the kernel.  But as a loadable module, it won't waste memory if it's
+> not needed.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> David, any other suggestions?
+> Why can't the users of IOSF_MBI just select it? That's what many other
+> drivers do when they need to be sure that some functionality is present.
 
--- 
-Kind regards,
-Minchan Kim
+They could, but it's only required on SoC's. Some registers, while available
+through an MSR on x86 core systems, are only available through the sideband on
+x86 SoC's. So these drivers would waste space on core platforms. There is no
+Kconfig option that builds exclusively for x86 SoC's.
+
+> I'm surprised that someone else (e.g. Linus) has not complained about the
+> 'default m' for this driver.
+
+I'll just move to prompt for selection. I was advised against this early on
+since the driver doesn't have a hook to userspace. Unfortunantely I didn't
+question this and locked myself into pursuing the 'default m' option as a way to
+make sure the IOSF_MBI was available for the drivers that will use it. That was
+obviosuly a mistake.
+
+Dave
