@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaHXUbs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:31:48 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:52321 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479AbaHXUVx (ORCPT
+	id S1754428AbaHXUcI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:32:08 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:44060 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441AbaHXUVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:21:53 -0400
+	Sun, 24 Aug 2014 16:21:51 -0400
 From: Alexei Starovoitov <ast@plumgrid.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Ingo Molnar <mingo@kernel.org>,
@@ -21,9 +21,9 @@ Cc: Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 net-next 05/29] bpf: enable bpf syscall on x64 and i386
-Date: Sun, 24 Aug 2014 13:21:06 -0700
-Message-Id: <1408911690-7598-6-git-send-email-ast@plumgrid.com>
+Subject: [PATCH v5 net-next 04/29] bpf: introduce syscall(BPF, ...) and BPF maps
+Date: Sun, 24 Aug 2014 13:21:05 -0700
+Message-Id: <1408911690-7598-5-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
 References: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
@@ -31,78 +31,383 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-done as separate commit to ease conflict resolution
+BPF syscall is a demux for different BPF releated commands.
+
+'maps' is a generic storage of different types for sharing data between kernel
+and userspace.
+
+The maps can be created from user space via BPF syscall:
+- create a map with given type and attributes
+  fd = bpf_map_create(map_type, struct nlattr *attr, int len)
+  returns fd or negative error
+
+- close(fd) deletes the map
+
+Next patch allows userspace programs to populate/read maps that eBPF programs
+are concurrently updating.
+
+maps can have different types: hash, bloom filter, radix-tree, etc.
+
+The map is defined by:
+  . type
+  . max number of elements
+  . key size in bytes
+  . value size in bytes
+
+This patch establishes core infrastructure for BPF maps.
+Next patches implement lookup/update and hashtable type.
+More map types can be added in the future.
+
+syscall is using type-length-value style of passing arguments to be backwards
+compatible with future extensions to map attributes. Different map types may
+use different attributes as well.
+The concept of type-lenght-value is borrowed from netlink, but netlink itself
+is not applicable here, since BPF programs and maps can be used in NET-less
+configurations.
 
 Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- arch/x86/syscalls/syscall_32.tbl  |    1 +
- arch/x86/syscalls/syscall_64.tbl  |    1 +
- include/linux/syscalls.h          |    3 ++-
- include/uapi/asm-generic/unistd.h |    4 +++-
- kernel/sys_ni.c                   |    3 +++
- 5 files changed, 10 insertions(+), 2 deletions(-)
+ Documentation/networking/filter.txt |   71 ++++++++++++++++
+ include/linux/bpf.h                 |   42 ++++++++++
+ include/uapi/linux/bpf.h            |   24 ++++++
+ kernel/bpf/Makefile                 |    2 +-
+ kernel/bpf/syscall.c                |  156 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 294 insertions(+), 1 deletion(-)
+ create mode 100644 include/linux/bpf.h
+ create mode 100644 kernel/bpf/syscall.c
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index 028b78168d85..9fe1b5d002f0 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -363,3 +363,4 @@
- 354	i386	seccomp			sys_seccomp
- 355	i386	getrandom		sys_getrandom
- 356	i386	memfd_create		sys_memfd_create
-+357	i386	bpf			sys_bpf
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 35dd922727b9..281150b539a2 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -327,6 +327,7 @@
- 318	common	getrandom		sys_getrandom
- 319	common	memfd_create		sys_memfd_create
- 320	common	kexec_file_load		sys_kexec_file_load
-+321	common	bpf			sys_bpf
+diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
+index 81916ab5d96f..27a0a6c6acb4 100644
+--- a/Documentation/networking/filter.txt
++++ b/Documentation/networking/filter.txt
+@@ -1001,6 +1001,77 @@ instruction that loads 64-bit immediate value into a dst_reg.
+ Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM which loads
+ 32-bit immediate value into a register.
  
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 0f86d85a9ce4..61bc112b9fa5 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -875,5 +875,6 @@ asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
- 			    const char __user *uargs);
- asmlinkage long sys_getrandom(char __user *buf, size_t count,
- 			      unsigned int flags);
--
-+asmlinkage long sys_bpf(int cmd, unsigned long arg2, unsigned long arg3,
-+			unsigned long arg4, unsigned long arg5);
- #endif
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 11d11bc5c78f..22749c134117 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -705,9 +705,11 @@ __SYSCALL(__NR_seccomp, sys_seccomp)
- __SYSCALL(__NR_getrandom, sys_getrandom)
- #define __NR_memfd_create 279
- __SYSCALL(__NR_memfd_create, sys_memfd_create)
-+#define __NR_bpf 280
-+__SYSCALL(__NR_bpf, sys_bpf)
- 
- #undef __NR_syscalls
--#define __NR_syscalls 280
-+#define __NR_syscalls 281
- 
- /*
-  * All syscalls below here should go away really,
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 391d4ddb6f4b..b4b5083f5f5e 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -218,3 +218,6 @@ cond_syscall(sys_kcmp);
- 
- /* operate on Secure Computing state */
- cond_syscall(sys_seccomp);
++eBPF maps
++---------
++'maps' is a generic storage of different types for sharing data between kernel
++and userspace.
 +
-+/* access BPF programs and maps */
-+cond_syscall(sys_bpf);
++The maps are accessed from user space via BPF syscall, which has commands:
++- create a map with given type and attributes
++  map_fd = bpf_map_create(map_type, struct nlattr *attr, int len)
++  returns process-local file descriptor or negative error
++
++- lookup key in a given map
++  err = bpf_map_lookup_elem(int fd, void *key, void *value)
++  returns zero and stores found elem into value or negative error
++
++- create or update key/value pair in a given map
++  err = bpf_map_update_elem(int fd, void *key, void *value)
++  returns zero or negative error
++
++- find and delete element by key in a given map
++  err = bpf_map_delete_elem(int fd, void *key)
++
++- to delete map: close(fd)
++  Exiting process will delete maps automatically
++
++userspace programs uses this API to create/populate/read maps that eBPF programs
++are concurrently updating.
++
++maps can have different types: hash, array, bloom filter, radix-tree, etc.
++
++The map is defined by:
++  . type
++  . max number of elements
++  . key size in bytes
++  . value size in bytes
++
++The maps are accesible from eBPF program with API:
++  void * bpf_map_lookup_elem(u32 map_fd, void *key);
++  int bpf_map_update_elem(u32 map_fd, void *key, void *value);
++  int bpf_map_delete_elem(u32 map_fd, void *key);
++
++The kernel replaces process-local map_fd with kernel internal map pointer,
++while loading eBPF program.
++
++If eBPF verifier is configured to recognize extra calls in the program
++bpf_map_lookup_elem() and bpf_map_update_elem() then access to maps looks like:
++  ...
++  ptr_to_value = bpf_map_lookup_elem(map_fd, key)
++  access memory range [ptr_to_value, ptr_to_value + value_size_in_bytes)
++  ...
++  prepare key2 and value2 on stack of key_size and value_size
++  err = bpf_map_update_elem(map_fd, key2, value2)
++  ...
++
++eBPF program cannot create or delete maps
++(such calls will be unknown to verifier)
++
++During program loading the refcnt of used maps is incremented, so they don't get
++deleted while program is running
++
++bpf_map_update_elem() can fail if maximum number of elements reached.
++if key2 already exists, bpf_map_update_elem() replaces it with value2 atomically
++
++bpf_map_lookup_elem() returns NULL or ptr_to_value, so program must do
++if (ptr_to_value != NULL) check before accessing it.
++NULL means that element with given 'key' was not found.
++
++The verifier will check that the program accesses map elements within specified
++size. It will not let programs pass junk values to bpf_map_*_elem() functions,
++so these functions (implemented in C inside kernel) can safely access
++the pointers in all cases.
++
+ Testing
+ -------
+ 
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+new file mode 100644
+index 000000000000..607ca53fe2af
+--- /dev/null
++++ b/include/linux/bpf.h
+@@ -0,0 +1,42 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ */
++#ifndef _LINUX_BPF_H
++#define _LINUX_BPF_H 1
++
++#include <uapi/linux/bpf.h>
++#include <linux/workqueue.h>
++
++struct bpf_map;
++struct nlattr;
++
++/* map is generic key/value storage optionally accesible by eBPF programs */
++struct bpf_map_ops {
++	/* funcs callable from userspace (via syscall) */
++	struct bpf_map *(*map_alloc)(struct nlattr *attrs[BPF_MAP_ATTR_MAX + 1]);
++	void (*map_free)(struct bpf_map *);
++};
++
++struct bpf_map {
++	atomic_t refcnt;
++	enum bpf_map_type map_type;
++	u32 key_size;
++	u32 value_size;
++	u32 max_entries;
++	struct bpf_map_ops *ops;
++	struct work_struct work;
++};
++
++struct bpf_map_type_list {
++	struct list_head list_node;
++	struct bpf_map_ops *ops;
++	enum bpf_map_type type;
++};
++
++void bpf_register_map_type(struct bpf_map_type_list *tl);
++void bpf_map_put(struct bpf_map *map);
++
++#endif /* _LINUX_BPF_H */
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index 45a09b46c578..de21c8ecf0bb 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -318,4 +318,28 @@ struct bpf_insn {
+ 	__s32	imm;		/* signed immediate constant */
+ };
+ 
++/* BPF syscall commands */
++enum bpf_cmd {
++	/* create a map with given type and attributes
++	 * fd = bpf_map_create(bpf_map_type, struct nlattr *attr, int len)
++	 * returns fd or negative error
++	 * map is deleted when fd is closed
++	 */
++	BPF_MAP_CREATE,
++};
++
++enum bpf_map_attributes {
++	BPF_MAP_UNSPEC,
++	BPF_MAP_KEY_SIZE,	/* size of key in bytes */
++	BPF_MAP_VALUE_SIZE,	/* size of value in bytes */
++	BPF_MAP_MAX_ENTRIES,	/* maximum number of entries in a map */
++	__BPF_MAP_ATTR_MAX,
++};
++#define BPF_MAP_ATTR_MAX (__BPF_MAP_ATTR_MAX - 1)
++#define BPF_MAP_MAX_ATTR_SIZE 65535
++
++enum bpf_map_type {
++	BPF_MAP_TYPE_UNSPEC,
++};
++
+ #endif /* _UAPI__LINUX_BPF_H__ */
+diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+index 6a71145e2769..e9f7334ed07a 100644
+--- a/kernel/bpf/Makefile
++++ b/kernel/bpf/Makefile
+@@ -1 +1 @@
+-obj-y := core.o
++obj-y := core.o syscall.o
+diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
+new file mode 100644
+index 000000000000..04cdf7948f8f
+--- /dev/null
++++ b/kernel/bpf/syscall.c
+@@ -0,0 +1,156 @@
++/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of version 2 of the GNU General Public
++ * License as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ */
++#include <linux/bpf.h>
++#include <linux/syscalls.h>
++#include <net/netlink.h>
++#include <linux/anon_inodes.h>
++
++static LIST_HEAD(bpf_map_types);
++
++static struct bpf_map *find_and_alloc_map(enum bpf_map_type type,
++					  struct nlattr *tb[BPF_MAP_ATTR_MAX + 1])
++{
++	struct bpf_map_type_list *tl;
++	struct bpf_map *map;
++
++	list_for_each_entry(tl, &bpf_map_types, list_node) {
++		if (tl->type == type) {
++			map = tl->ops->map_alloc(tb);
++			if (IS_ERR(map))
++				return map;
++			map->ops = tl->ops;
++			map->map_type = type;
++			return map;
++		}
++	}
++	return ERR_PTR(-EINVAL);
++}
++
++/* boot time registration of different map implementations */
++void bpf_register_map_type(struct bpf_map_type_list *tl)
++{
++	list_add(&tl->list_node, &bpf_map_types);
++}
++
++/* called from workqueue */
++static void bpf_map_free_deferred(struct work_struct *work)
++{
++	struct bpf_map *map = container_of(work, struct bpf_map, work);
++
++	/* implementation dependent freeing */
++	map->ops->map_free(map);
++}
++
++/* decrement map refcnt and schedule it for freeing via workqueue
++ * (unrelying map implementation ops->map_free() might sleep)
++ */
++void bpf_map_put(struct bpf_map *map)
++{
++	if (atomic_dec_and_test(&map->refcnt)) {
++		INIT_WORK(&map->work, bpf_map_free_deferred);
++		schedule_work(&map->work);
++	}
++}
++
++static int bpf_map_release(struct inode *inode, struct file *filp)
++{
++	struct bpf_map *map = filp->private_data;
++
++	bpf_map_put(map);
++	return 0;
++}
++
++static const struct file_operations bpf_map_fops = {
++        .release = bpf_map_release,
++};
++
++static const struct nla_policy map_policy[BPF_MAP_ATTR_MAX + 1] = {
++	[BPF_MAP_KEY_SIZE]    = { .type = NLA_U32 },
++	[BPF_MAP_VALUE_SIZE]  = { .type = NLA_U32 },
++	[BPF_MAP_MAX_ENTRIES] = { .type = NLA_U32 },
++};
++
++/* called via syscall */
++static int map_create(enum bpf_map_type type, struct nlattr __user *uattr, int len)
++{
++	struct nlattr *tb[BPF_MAP_ATTR_MAX + 1];
++	struct bpf_map *map;
++	struct nlattr *attr;
++	int err;
++
++	if (len <= 0 || len > BPF_MAP_MAX_ATTR_SIZE)
++		return -EINVAL;
++
++	attr = kmalloc(len, GFP_USER);
++	if (!attr)
++		return -ENOMEM;
++
++	/* copy map attributes from user space */
++	err = -EFAULT;
++	if (copy_from_user(attr, uattr, len) != 0)
++		goto free_attr;
++
++	/* perform basic validation */
++	err = nla_parse(tb, BPF_MAP_ATTR_MAX, attr, len, map_policy);
++	if (err < 0)
++		goto free_attr;
++
++	/* find map type and init map: hashtable vs rbtree vs bloom vs ... */
++	map = find_and_alloc_map(type, tb);
++	if (IS_ERR(map)) {
++		err = PTR_ERR(map);
++		goto free_attr;
++	}
++
++	atomic_set(&map->refcnt, 1);
++
++	err = anon_inode_getfd("bpf-map", &bpf_map_fops, map, O_RDWR | O_CLOEXEC);
++
++	if (err < 0)
++		/* failed to allocate fd */
++		goto free_map;
++
++	/* user supplied array of map attributes is no longer needed */
++	kfree(attr);
++
++	return err;
++
++free_map:
++	map->ops->map_free(map);
++free_attr:
++	kfree(attr);
++	return err;
++}
++
++SYSCALL_DEFINE5(bpf, int, cmd, unsigned long, arg2, unsigned long, arg3,
++		unsigned long, arg4, unsigned long, arg5)
++{
++	/* eBPF syscall is limited to root temporarily. This restriction will
++	 * be lifted when verifier has enough mileage and security audit is
++	 * clean. Note that tracing/networking analytics use cases will be
++	 * turning off 'secure' mode of verifier, since they need to pass
++	 * kernel data back to user space
++	 */
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	if (arg5 != 0)
++		return -EINVAL;
++
++	switch (cmd) {
++	case BPF_MAP_CREATE:
++		return map_create((enum bpf_map_type) arg2,
++				  (struct nlattr __user *) arg3, (int) arg4);
++	default:
++		return -EINVAL;
++	}
++}
 -- 
 1.7.9.5
 
