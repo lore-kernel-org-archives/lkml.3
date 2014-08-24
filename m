@@ -1,201 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaHXVwz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 17:52:55 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:58971 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419AbaHXVwf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 17:52:35 -0400
-Date: Fri, 22 Aug 2014 16:55:28 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Dudley Du <dudley.dulixin@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Benson Leung <bleung@google.com>,
-        Patrik Fimml <patrikf@google.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dudley Du <dudl@cypress.com>
-Subject: Re: [PATCH v4 6/14] input: cyapa: add gen3 trackpad device basic
- functions support
-Message-ID: <20140822235528.GB24242@core.coreip.homeip.net>
-References: <53c7730a.a10d450a.407e.4c90@mx.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53c7730a.a10d450a.407e.4c90@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753595AbaHXWen (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 18:34:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753281AbaHXWem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 18:34:42 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com
+Subject: [PATCH V4 0/4] audit by executable name
+Date: Sun, 24 Aug 2014 18:34:04 -0400
+Message-Id: <cover.1408918472.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 17, 2014 at 02:53:48PM +0800, Dudley Du wrote:
-> Based on the cyapa core, add the gen3 trackpad device's basic functions
-> supported, so gen3 trackpad device can work with kernel input system.
-> The basic function is absolutely same as previous cyapa driver only
-> support gen3 trackpad device.
-> TEST=test on Chromebooks.
-> 
-> Signed-off-by: Dudley Du <dudl@cypress.com>
-> ---
->  drivers/input/mouse/Makefile     |    2 +-
->  drivers/input/mouse/cyapa.c      |   96 ++++-
->  drivers/input/mouse/cyapa.h      |    1 +
->  drivers/input/mouse/cyapa_gen3.c |  784 ++++++++++++++++++++++++++++++++++++++
->  4 files changed, 881 insertions(+), 2 deletions(-)
->  create mode 100644 drivers/input/mouse/cyapa_gen3.c
-> 
-> diff --git a/drivers/input/mouse/Makefile b/drivers/input/mouse/Makefile
-> index 8608eb7..63b42e0 100644
-> --- a/drivers/input/mouse/Makefile
-> +++ b/drivers/input/mouse/Makefile
-> @@ -35,4 +35,4 @@ psmouse-$(CONFIG_MOUSE_PS2_TRACKPOINT)	+= trackpoint.o
->  psmouse-$(CONFIG_MOUSE_PS2_TOUCHKIT)	+= touchkit_ps2.o
->  psmouse-$(CONFIG_MOUSE_PS2_CYPRESS)	+= cypress_ps2.o
->  
-> -cyapatp-y := cyapa.o
-> +cyapatp-y := cyapa.o cyapa_gen3.o
-> diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-> index ae24b02..5c62503 100644
-> --- a/drivers/input/mouse/cyapa.c
-> +++ b/drivers/input/mouse/cyapa.c
-> @@ -113,6 +113,15 @@ ssize_t cyapa_i2c_write(struct cyapa *cyapa, u8 reg,
->  
->  void cyapa_default_irq_handler(struct cyapa *cyapa)
->  {
-> +	bool cont;
-> +
-> +	/* Interrupt triggerred by command response in detecting. */
-> +	cont = true;
-> +	if (cyapa_gen3_ops.irq_cmd_handler)
-> +		cont = cyapa_gen3_ops.irq_cmd_handler(cyapa);
+This is a part of Peter Moody, my and Eric Paris' work to implement
+audit by executable name.
 
-Why not simply
-
-	cont = cyapa->ops->irq_cmd_handler(cyapa)?
+Please see the accompanying userspace patch:
+	https://www.redhat.com/archives/linux-audit/2014-May/msg00019.html
+The userspace interface is not expected to change appreciably unless something
+important has been overlooked.  Setting and deleting rules works as expected.
+	
+If the path does not exist at rule creation time, it will be re-evaluated every
+time there is a change to the parent directory at which point the change in
+device and inode will be noted.
 
 
-> +	if (!cont)
-> +		return;
-> +
->  	/*
->  	 * Do redetecting when device states is still unknown and
->  	 * interrupt envent is received from device.
-> @@ -252,6 +261,9 @@ static int cyapa_check_is_operational(struct cyapa *cyapa)
->  		return ret;
->  
->  	switch (cyapa->gen) {
-> +	case CYAPA_GEN3:
-> +		cyapa->ops = &cyapa_gen3_ops;
-> +		break;
->  	default:
->  		cyapa->ops = &cyapa_default_ops;
->  		cyapa->gen = CYAPA_GEN_UNKNOWN;
-> @@ -314,9 +326,85 @@ out:
->   */
->  static int cyapa_get_state(struct cyapa *cyapa)
->  {
-> +	int ret;
-> +	u8 status[BL_STATUS_SIZE];
-> +	u8 cmd[32];
-> +	/* The i2c address of gen4 and gen5 trackpad device must be even. */
-> +	bool even_addr = ((cyapa->client->addr & 0x0001) == 0);
-> +	bool smbus = false;
-> +	int retries = 2;
-> +
->  	cyapa->state = CYAPA_STATE_NO_DEVICE;
->  
-> -	return -ENODEV;
-> +	/*
-> +	 * Get trackpad status by reading 3 registers starting from 0.
-> +	 * If the device is in the bootloader, this will be BL_HEAD.
-> +	 * If the device is in operation mode, this will be the DATA regs.
-> +	 *
-> +	 */
-> +	ret = cyapa_i2c_reg_read_block(cyapa, BL_HEAD_OFFSET, BL_STATUS_SIZE,
-> +				       status);
-> +
-> +	/*
-> +	 * On smbus systems in OP mode, the i2c_reg_read will fail with
-> +	 * -ETIMEDOUT.  In this case, try again using the smbus equivalent
-> +	 * command.  This should return a BL_HEAD indicating CYAPA_STATE_OP.
-> +	 */
-> +	if (cyapa->smbus && (ret == -ETIMEDOUT || ret == -ENXIO)) {
-> +		if (!even_addr)
-> +			ret = cyapa_read_block(cyapa,
-> +					CYAPA_CMD_BL_STATUS, status);
-> +		smbus = true;
-> +	}
-> +	if (ret != BL_STATUS_SIZE)
-> +		goto error;
-> +
-> +	/*
-> +	 * Detect trackpad protocol based on characristic registers and bits.
-> +	 */
-> +	do {
-> +		cyapa->status[REG_OP_STATUS] = status[REG_OP_STATUS];
-> +		cyapa->status[REG_BL_STATUS] = status[REG_BL_STATUS];
-> +		cyapa->status[REG_BL_ERROR] = status[REG_BL_ERROR];
-> +
-> +		if (cyapa->gen == CYAPA_GEN_UNKNOWN ||
-> +				cyapa->gen == CYAPA_GEN3) {
-> +			ret = cyapa_gen3_ops.state_parse(cyapa,
-> +					status, BL_STATUS_SIZE);
-> +			if (ret == 0)
-> +				goto out_detected;
-> +		}
-> +
-> +		/*
-> +		 * Cannot detect communication protocol based on current
-> +		 * charateristic registers and bits.
-> +		 * So write error command to do further detection.
-> +		 * this method only valid on I2C bus.
-> +		 * for smbus interface, it won't have overwrite issue.
-> +		 */
-> +		if (!smbus) {
-> +			cmd[0] = 0x00;
-> +			cmd[1] = 0x00;
-> +			ret = cyapa_i2c_write(cyapa, 0, 2, cmd);
-> +			if (ret)
-> +				goto error;
-> +
-> +			msleep(50);
-> +
-> +			ret = cyapa_i2c_read(cyapa, BL_HEAD_OFFSET,
-> +					BL_STATUS_SIZE, status);
-> +			if (ret < 0)
-> +				goto error;
-> +		}
-> +	} while (--retries > 0 && !smbus);
-> +
-> +	goto error;
-> +
-> +out_detected:
-> +	return 0;
-> +
-> +error:
-> +	return (ret < 0) ? ret : -EAGAIN;
->  }
->  
->  /*
-> @@ -994,11 +1082,17 @@ static void cyapa_detect_and_start(void *data, async_cookie_t cookie)
->  
->  static int cyapa_tp_modules_init(struct cyapa *cyapa)
->  {
-> +	if (cyapa_gen3_ops.initialize)
-> +		return cyapa_gen3_ops.initialize(cyapa);
+Here's a test run:
 
-Same here.
+# /usr/local/sbin/auditctl -a always,exit -F dir=/tmp -F exe=/bin/touch -F key=touch_tmp
+# /usr/local/sbin/ausearch --start recent -k touch_tmp
+time->Mon Jun 30 14:15:06 2014
+type=CONFIG_CHANGE msg=audit(1404152106.683:149): auid=0 ses=1 subj=unconfined_u :unconfined_r:auditctl_t:s0-s0:c0.c1023 op="add rule" key="touch_tmp" list=4 res =1
 
-> +
->  	return 0;
->  }
->  
->  static int cyapa_tp_modules_uninit(struct cyapa *cyapa)
->  {
-> +	if (cyapa_gen3_ops.uninitialize)
-> +		return cyapa_gen3_ops.uninitialize(cyapa);
+# /usr/local/sbin/auditctl -l
+-a always,exit -S all -F dir=/tmp -F exe=/bin/touch -F key=touch_tmp
 
-And here.
+# touch /tmp/test
 
-Thanks.
+# /usr/local/sbin/ausearch --start recent -k touch_tmp
+time->Wed Jul  2 12:18:47 2014
+type=UNKNOWN[1327] msg=audit(1404317927.319:132): proctitle=746F756368002F746D702F74657374
+type=PATH msg=audit(1404317927.319:132): item=1 name="/tmp/test" inode=25997 dev=00:20 mode=0100644 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:user_tmp_t:s0 nametype=CREATE
+type=PATH msg=audit(1404317927.319:132): item=0 name="/tmp/" inode=11144 dev=00:20 mode=041777 ouid=0 ogid=0 rdev=00:00 obj=system_u:object_r:tmp_t:s0 nametype=PARENT
+type=CWD msg=audit(1404317927.319:132):  cwd="/root"
+type=SYSCALL msg=audit(1404317927.319:132): arch=c000003e syscall=2 success=yes exit=3 a0=7ffffa403dd5 a1=941 a2=1b6 a3=34b65b2c6c items=2 ppid=4321 pid=6436 auid=0 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=ttyS0 ses=1 comm="touch" exe="/usr/bin/touch" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 key="touch_tmp"
 
--- 
-Dmitry
+
+Revision history:
+v4: Re-order and squash down fixups
+    Fix audit_dup_exe() to copy pathname string before calling audit_alloc_mark().
+
+v3: Rationalize and rename some function names and clean up get/put and free code.
+    Rename several "watch" references to "mark".
+    Rename audit_remove_rule() to audit_remove_mark_rule().
+    Let audit_free_rule() take care of calling audit_remove_mark().
+    Put audit_alloc_mark() arguments in same order as watch, tree and inode.
+    Move the access to the entry for audit_match_signal() to the beginning
+     of the function in case the entry found is the same one passed in.
+     This will enable it to be used by audit_remove_mark_rule().
+    https://www.redhat.com/archives/linux-audit/2014-July/msg00000.html
+
+v2: Misguided attempt to add in audit_exe similar to watches
+    https://www.redhat.com/archives/linux-audit/2014-June/msg00066.html
+
+v1.5: eparis' switch to fsnotify
+    https://www.redhat.com/archives/linux-audit/2014-May/msg00046.html
+    https://www.redhat.com/archives/linux-audit/2014-May/msg00066.html
+
+v1: Change to path interface instead of inode
+    https://www.redhat.com/archives/linux-audit/2014-May/msg00017.html
+
+v0: Peter Moodie's original patches
+    https://www.redhat.com/archives/linux-audit/2012-August/msg00033.html
+
+
+Next step:
+Get full-path notify working.
+
+
+Eric Paris (3):
+  audit: implement audit by executable
+  audit: clean simple fsnotify implementation
+  audit: convert audit_exe to audit_fsnotify
+
+Richard Guy Briggs (1):
+  audit: avoid double copying the audit_exe path string
+
+ include/linux/audit.h      |    1 +
+ include/uapi/linux/audit.h |    2 +
+ kernel/Makefile            |    2 +-
+ kernel/audit.h             |   39 +++++++
+ kernel/audit_exe.c         |   49 +++++++++
+ kernel/audit_fsnotify.c    |  237 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/auditfilter.c       |   51 +++++++++-
+ kernel/auditsc.c           |   16 +++
+ 8 files changed, 394 insertions(+), 3 deletions(-)
+ create mode 100644 kernel/audit_exe.c
+ create mode 100644 kernel/audit_fsnotify.c
+
