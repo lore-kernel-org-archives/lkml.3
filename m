@@ -1,197 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaHXVga (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 17:36:30 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59436 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753286AbaHXVg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 17:36:29 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch] mm: remove noisy remainder of the scan_unevictable interface
-Date: Sun, 24 Aug 2014 17:36:22 -0400
-Message-Id: <1408916182-20880-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.0.4
+	id S1753558AbaHXVig (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 17:38:36 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57294 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaHXVie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 17:38:34 -0400
+Message-ID: <53FA5B55.4000603@gmail.com>
+Date: Sun, 24 Aug 2014 23:38:29 +0200
+From: Marcin Jabrzyk <marcin.jabrzyk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: mathieu.poirier@linaro.org, linus.walleij@linaro.org, will.deacon@arm.com,
+        linux@arm.linux.org.uk, 00regkh@linuxfoundation.org
+CC: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
+        jonas.svennebring@avagotech.com, james.king@linaro.org,
+        panchaxari.prasannamurthy@linaro.org, kaixu.xia@linaro.org,
+        r.sengupta@samsung.com, robbelibobban@gmail.com,
+        Tony.Armitstead@arm.com, daniel.thompson@linaro.org,
+        patches@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/11 v4] coresight: adding support for beagle and beagleXM
+References: <1408554231-24321-1-git-send-email-mathieu.poirier@linaro.org> <1408554231-24321-10-git-send-email-mathieu.poirier@linaro.org>
+In-Reply-To: <1408554231-24321-10-git-send-email-mathieu.poirier@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The deprecation warnings for the scan_unevictable interface triggers
-by scripts doing `sysctl -a | grep something else'.  This is annoying
-and not helpful.
+Hi,
 
-The interface has been defunct since 264e56d8247e ("mm: disable user
-interface to manually rescue unevictable pages"), which was in 2011,
-and there haven't been any reports of usecases for it, only reports
-that the deprecation warnings are annying.  It's unlikely that anybody
-is using this interface specifically at this point, so remove it.
+W dniu 20.08.2014 o 19:03, mathieu.poirier@linaro.org pisze:
+> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+>
+> Currently supporting ETM and ETB.  Support for TPIU
+> and SDTI are yet to be added.
+Did you tried running the drivers on board or are there any special
+preparation needed?
+I've BeagleBoard-xM Rev. C applied your patches and enabled the
+functions the in menuconfig.
+But on dmesg I see that:
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- Documentation/ABI/stable/sysfs-devices-node |  8 ----
- drivers/base/node.c                         |  3 --
- include/linux/swap.h                        | 16 --------
- kernel/sysctl.c                             |  7 ----
- mm/vmscan.c                                 | 63 -----------------------------
- 5 files changed, 97 deletions(-)
+[    0.685028] of_amba_device_create(): amba_device_add() failed (-19)
+for /etb@5401b000
+[    0.685119] of_amba_device_create(): amba_device_add() failed (-19)
+for /etm@54010000
 
-diff --git a/Documentation/ABI/stable/sysfs-devices-node b/Documentation/ABI/stable/sysfs-devices-node
-index ce259c13c36a..5b2d0f08867c 100644
---- a/Documentation/ABI/stable/sysfs-devices-node
-+++ b/Documentation/ABI/stable/sysfs-devices-node
-@@ -85,14 +85,6 @@ Description:
- 		will be compacted. When it completes, memory will be freed
- 		into blocks which have as many contiguous pages as possible
- 
--What:		/sys/devices/system/node/nodeX/scan_unevictable_pages
--Date:		October 2008
--Contact:	Lee Schermerhorn <lee.schermerhorn@hp.com>
--Description:
--		When set, it triggers scanning the node's unevictable lists
--		and move any pages that have become evictable onto the respective
--		zone's inactive list. See mm/vmscan.c
--
- What:		/sys/devices/system/node/nodeX/hugepages/hugepages-<size>/
- Date:		December 2009
- Contact:	Lee Schermerhorn <lee.schermerhorn@hp.com>
-diff --git a/drivers/base/node.c b/drivers/base/node.c
-index c6d3ae05f1ca..52ed9f64bf9c 100644
---- a/drivers/base/node.c
-+++ b/drivers/base/node.c
-@@ -289,8 +289,6 @@ static int register_node(struct node *node, int num, struct node *parent)
- 		device_create_file(&node->dev, &dev_attr_distance);
- 		device_create_file(&node->dev, &dev_attr_vmstat);
- 
--		scan_unevictable_register_node(node);
--
- 		hugetlb_register_node(node);
- 
- 		compaction_register_node(node);
-@@ -314,7 +312,6 @@ void unregister_node(struct node *node)
- 	device_remove_file(&node->dev, &dev_attr_distance);
- 	device_remove_file(&node->dev, &dev_attr_vmstat);
- 
--	scan_unevictable_unregister_node(node);
- 	hugetlb_unregister_node(node);		/* no-op, if memoryless node */
- 
- 	device_unregister(&node->dev);
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index f94614a2668a..37a585beef5c 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -356,22 +356,6 @@ static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
- extern int page_evictable(struct page *page);
- extern void check_move_unevictable_pages(struct page **, int nr_pages);
- 
--extern unsigned long scan_unevictable_pages;
--extern int scan_unevictable_handler(struct ctl_table *, int,
--					void __user *, size_t *, loff_t *);
--#ifdef CONFIG_NUMA
--extern int scan_unevictable_register_node(struct node *node);
--extern void scan_unevictable_unregister_node(struct node *node);
--#else
--static inline int scan_unevictable_register_node(struct node *node)
--{
--	return 0;
--}
--static inline void scan_unevictable_unregister_node(struct node *node)
--{
--}
--#endif
--
- extern int kswapd_run(int nid);
- extern void kswapd_stop(int nid);
- #ifdef CONFIG_MEMCG
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 75875a741b5e..91180987e40e 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1460,13 +1460,6 @@ static struct ctl_table vm_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
--	{
--		.procname	= "scan_unevictable_pages",
--		.data		= &scan_unevictable_pages,
--		.maxlen		= sizeof(scan_unevictable_pages),
--		.mode		= 0644,
--		.proc_handler	= scan_unevictable_handler,
--	},
- #ifdef CONFIG_MEMORY_FAILURE
- 	{
- 		.procname	= "memory_failure_early_kill",
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f1609423821b..d40b8ce3fb0b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3792,66 +3792,3 @@ void check_move_unevictable_pages(struct page **pages, int nr_pages)
- 	}
- }
- #endif /* CONFIG_SHMEM */
--
--static void warn_scan_unevictable_pages(void)
--{
--	printk_once(KERN_WARNING
--		    "%s: The scan_unevictable_pages sysctl/node-interface has been "
--		    "disabled for lack of a legitimate use case.  If you have "
--		    "one, please send an email to linux-mm@kvack.org.\n",
--		    current->comm);
--}
--
--/*
-- * scan_unevictable_pages [vm] sysctl handler.  On demand re-scan of
-- * all nodes' unevictable lists for evictable pages
-- */
--unsigned long scan_unevictable_pages;
--
--int scan_unevictable_handler(struct ctl_table *table, int write,
--			   void __user *buffer,
--			   size_t *length, loff_t *ppos)
--{
--	warn_scan_unevictable_pages();
--	proc_doulongvec_minmax(table, write, buffer, length, ppos);
--	scan_unevictable_pages = 0;
--	return 0;
--}
--
--#ifdef CONFIG_NUMA
--/*
-- * per node 'scan_unevictable_pages' attribute.  On demand re-scan of
-- * a specified node's per zone unevictable lists for evictable pages.
-- */
--
--static ssize_t read_scan_unevictable_node(struct device *dev,
--					  struct device_attribute *attr,
--					  char *buf)
--{
--	warn_scan_unevictable_pages();
--	return sprintf(buf, "0\n");	/* always zero; should fit... */
--}
--
--static ssize_t write_scan_unevictable_node(struct device *dev,
--					   struct device_attribute *attr,
--					const char *buf, size_t count)
--{
--	warn_scan_unevictable_pages();
--	return 1;
--}
--
--
--static DEVICE_ATTR(scan_unevictable_pages, S_IRUGO | S_IWUSR,
--			read_scan_unevictable_node,
--			write_scan_unevictable_node);
--
--int scan_unevictable_register_node(struct node *node)
--{
--	return device_create_file(&node->dev, &dev_attr_scan_unevictable_pages);
--}
--
--void scan_unevictable_unregister_node(struct node *node)
--{
--	device_remove_file(&node->dev, &dev_attr_scan_unevictable_pages);
--}
--#endif
--- 
-2.0.4
+There are no nodes according coresight in /sys/kernel/debug/ .
+
+Best regards,
+Marcin
+
+>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> ---
+>  arch/arm/boot/dts/omap3-beagle-xm.dts | 28 ++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/omap3-beagle.dts    | 28 ++++++++++++++++++++++++++++
+>  2 files changed, 56 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+> index 1becefc..eec73d8 100644
+> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+> @@ -145,6 +145,34 @@
+>  			};
+>  		};
+>  	};
+> +
+> +	etb@5401b000 {
+> +		compatible = "arm,coresight-etb10", "arm,primecell";
+> +		reg = <0x5401b000 0x1000>;
+> +
+> +		coresight-default-sink;
+> +		clocks = <&emu_src_ck>;
+> +		clock-names = "apb_pclk";
+> +		port {
+> +			etb_in: endpoint {
+> +				slave-mode;
+> +				remote-endpoint = <&etm_out>;
+> +			};
+> +		};
+> +	};
+> +
+> +	etm@54010000 {
+> +		compatible = "arm,coresight-etm3x", "arm,primecell";
+> +		reg = <0x54010000 0x1000>;
+> +
+> +		clocks = <&emu_src_ck>;
+> +		clock-names = "apb_pclk";
+> +		port {
+> +			etm_out: endpoint {
+> +				remote-endpoint = <&etb_in>;
+> +			};
+> +		};
+> +	};
+>  };
+>  
+>  &omap3_pmx_wkup {
+> diff --git a/arch/arm/boot/dts/omap3-beagle.dts b/arch/arm/boot/dts/omap3-beagle.dts
+> index 3c3e6da..a151daf 100644
+> --- a/arch/arm/boot/dts/omap3-beagle.dts
+> +++ b/arch/arm/boot/dts/omap3-beagle.dts
+> @@ -140,6 +140,34 @@
+>  			};
+>  		};
+>  	};
+> +
+> +	etb@540000000 {
+> +		compatible = "arm,coresight-etb10", "arm,primecell";
+> +		reg = <0x5401b000 0x1000>;
+> +
+> +		coresight-default-sink;
+> +		clocks = <&emu_src_ck>;
+> +		clock-names = "apb_pclk";
+> +		port {
+> +			etb_in: endpoint {
+> +				slave-mode;
+> +				remote-endpoint = <&etm_out>;
+> +			};
+> +		};
+> +	};
+> +
+> +	etm@54010000 {
+> +		compatible = "arm,coresight-etm3x", "arm,primecell";
+> +		reg = <0x54010000 0x1000>;
+> +
+> +		clocks = <&emu_src_ck>;
+> +		clock-names = "apb_pclk";
+> +		port {
+> +			etm_out: endpoint {
+> +				remote-endpoint = <&etb_in>;
+> +			};
+> +		};
+> +	};
+>  };
+>  
+>  &omap3_pmx_wkup {
 
