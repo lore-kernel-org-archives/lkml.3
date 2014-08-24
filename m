@@ -1,118 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265AbaHXSlN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 14:41:13 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:39299 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851AbaHXSky (ORCPT
+	id S1753310AbaHXSs1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 14:48:27 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:38528 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517AbaHXSs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 14:40:54 -0400
-Date: Sun, 24 Aug 2014 11:40:35 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, kgene.kim@gmail.com, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: SoC fixes for 3.17-rc
-Message-ID: <20140824184035.GA13254@localhost>
+	Sun, 24 Aug 2014 14:48:26 -0400
+Date: Sun, 24 Aug 2014 21:48:21 +0300
+From: Dan Aloni <dan@kernelim.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, security@kernel.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org,
+        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
+        stable@vger.kernel.org
+Subject: Re: Revert "aio: fix aio request leak when events are reaped by user
+ space"
+Message-ID: <20140824184821.GA5449@gmail.com>
+References: <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org>
+ <20140819163733.GA10132@gmail.com>
+ <20140819165404.GD13858@kvack.org>
+ <20140819171426.GA11811@gmail.com>
+ <20140820004651.GJ13858@kvack.org>
+ <20140822160111.GD20391@kvack.org>
+ <20140822161502.GA30392@gmail.com>
+ <20140822162630.GF20391@kvack.org>
+ <20140822185110.GA2333@gmail.com>
+ <20140824180531.GC4376@kvack.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140824180531.GC4376@kvack.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Aug 24, 2014 at 02:05:31PM -0400, Benjamin LaHaise wrote:
+> On Fri, Aug 22, 2014 at 09:51:10PM +0300, Dan Aloni wrote:
+> > Ben, seems that the test program needs some twidling to make the bug
+> > appear still by setting MAX_IOS to 256 (and it still passes on a
+> > kernel with the original patch reverted). Under this condition the
+> > ring buffer size remains 128 (here, 32*4 CPUs), and it is overrun on
+> > the second attempt.
+> 
+> Thanks for checking that.  I've made some further changes to your test 
+> program to be able to support both userspace event reaping and using the 
+> io_getevents() syscall.  I also added a --max-ios= parameter to allow 
+> using different values of MAX_IOS for testing.  A copy of the modified 
+> source is available at http://www.kvack.org/~bcrl/20140824-aio_bug.c .  
+> With this version of the patch, both means of reaping events now work 
+> corectly.  The aio_bug.c code still needs to be added to libaio's set 
+> of tests, but that's a separate email.
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+I like your extension to the test program. I have a suggestion for
+the integration inside libaio's harness, since the original issue
+depended on the size of the ring buffer, let's have max_ios be picked
+from {ring->nr + 1, ring->nr - 1, ring->nr}*{1,2,3,4} for the various
+test cases. I guess Jeff who is maintaining it will have some ideas
+too.
+ 
+>[snip] 
+> If you can have a quick look and acknowledge with your Signed-off-by, I'll 
+> add it to the commit and send a pull request.  With these changes and the 
+> modified aio_bug.c, the test passes using various random values for 
+> max_ios, as well as both with and without --user_getevents validating that
+> both regressions involved have now been fixed.
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+I haven't tested it yet due to lack of more time today (will give it a
+try tomorrow), but I've reviewed and didn't find any problem.
 
-are available in the git repository at:
+Signed-off-by: Dan Aloni <dan@kernelim.com>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
+> 
+> ...
+> > BTW, I am not an expert on this code so I am still not sure that
+> > 'ctx->completed_events' wouldn't get wrong if for instance - one SMP
+> > core does userspace event reaping and another calls io_submit(). Do
+> > you think it would work alright in that case?
+> 
+> This should be SMP safe: both ctx->completed_events and ctx->tail are 
+> protected ctx->completion_lock.  Additionally, possible races with 
+> grabbing the value of ring->head should also be safe, and I added a 
+> comment explaining why.  Does that address your concerns?  Cheers,
 
-for you to fetch changes up to bf87bb12bd7062bf577163f3f6d765debbae6200:
+Yes, thanks.
 
-  bus: arm-ccn: Fix warning message (2014-08-24 11:28:30 -0700)
-
-----------------------------------------------------------------
-ARM: SoC fixes for 3.17-rc
-
-A collection of fixes from this week, it's been pretty quiet and nothing
-really stands out as particularly noteworthy here -- mostly minor fixes
-across the field:
-
-- ODROID booting was fixed due to PMIC interrupts missing in DT
-- A collection of i.MX fixes
-- Minor Tegra fix for regulators
-- Rockchip fix and addition of SoC-specific mailing list to make it
-  easier to find posted patches.
-
-----------------------------------------------------------------
-Anson Huang (1):
-      ARM: imx: correct gpu2d_axi and gpu3d_axi clock setting
-
-Arnd Bergmann (1):
-      ARM: imx6: fix SMP compilation again
-
-Bill Pringlemeir (1):
-      ARM: dts: vf610-twr: Fix pinctrl_esdhc1 pin definitions.
-
-Chen-Yu Tsai (1):
-      ARM: dt: sun6i: Add #address-cells and #size-cells to i2c controller nodes
-
-Daniel Drake (2):
-      ARM: dts: Enable PMIC interrupts on ODROID
-      ARM: dts: ODROID i2c improvements
-
-Fugang Duan (1):
-      ARM: dts: imx6sx: fix the pad setting for uart CTS_B
-
-Geert Uytterhoeven (1):
-      ARM: shmobile: koelsch: Remove non-existent i2c6 pinmux
-
-Heiko Stuebner (2):
-      ARM: dts: rockchip: readd missing mmc0 pinctrl settings
-      MAINTAINERS: add new Rockchip SoC list
-
-Lothar Waßmann (1):
-      ARM: dts: i.MX53: fix apparent bug in VPU clks
-
-Marcel Ziswiler (1):
-      ARM: tegra: apalis/colibri t30: fix on-module 5v0 supplies
-
-Olof Johansson (3):
-      Merge tag 'imx-fixes-3.17' of git://git.kernel.org/.../shawnguo/linux into fixes
-      Merge tag 'sunxi-dt-for-3.17-2' of git://git.kernel.org/.../mripard/linux into fixes
-      Merge tag 'v3.17-rockchip-fixes1' of git://git.kernel.org/.../mmind/linux-rockchip into fixes
-
-Pawel Moll (1):
-      bus: arm-ccn: Fix warning message
-
-Shawn Guo (2):
-      ARM: imx: fix TLB missing of IOMUXC base address during suspend
-      ARM: imx: remove unnecessary ARCH_HAS_OPP select
-
-Silvio Fricke (1):
-      ARM: dts: imx6: edmqmx6: change enet reset pin
-
- MAINTAINERS                                     |    1 +
- arch/arm/boot/dts/exynos4412-odroid-common.dtsi |   13 ++++++++++++
- arch/arm/boot/dts/imx53.dtsi                    |    2 +-
- arch/arm/boot/dts/imx6q-dmo-edmqmx6.dts         |    3 ++-
- arch/arm/boot/dts/imx6sx-pinfunc.h              |   26 +++++++++++------------
- arch/arm/boot/dts/r8a7791-koelsch.dts           |    7 ------
- arch/arm/boot/dts/rk3066a-bqcurie2.dts          |    2 ++
- arch/arm/boot/dts/rk3188-radxarock.dts          |    2 ++
- arch/arm/boot/dts/sun6i-a31.dtsi                |    8 +++++++
- arch/arm/boot/dts/tegra30-apalis.dtsi           |   11 +++++++++-
- arch/arm/boot/dts/tegra30-colibri.dtsi          |   11 +++++++++-
- arch/arm/boot/dts/vf610-twr.dts                 |    2 +-
- arch/arm/mach-imx/Kconfig                       |    2 --
- arch/arm/mach-imx/Makefile                      |    2 ++
- arch/arm/mach-imx/clk-imx6q.c                   |   10 +++++++--
- arch/arm/mach-imx/suspend-imx6.S                |    2 ++
- drivers/bus/arm-ccn.c                           |    2 +-
- 17 files changed, 76 insertions(+), 30 deletions(-)
+-- 
+Dan Aloni
