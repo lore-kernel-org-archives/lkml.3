@@ -1,176 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbaHXU3F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:29:05 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:52794 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196AbaHXU3A (ORCPT
+	id S1754272AbaHXU3c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:29:32 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54125 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603AbaHXUWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:29:00 -0400
-Date: Sun, 24 Aug 2014 22:28:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes
-Message-ID: <20140824202853.GA17622@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 24 Aug 2014 16:22:12 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 net-next 12/29] bpf: handle pseudo BPF_LD_IMM64 insn
+Date: Sun, 24 Aug 2014 13:21:13 -0700
+Message-Id: <1408911690-7598-13-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
+References: <1408911690-7598-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+eBPF programs passed from userspace are using pseudo BPF_LD_IMM64 instructions
+to refer to process-local map_fd. Scan the program for such instructions and
+if FDs are valid, convert them to 'struct bpf_map' pointers which will be used
+by verifier to check access to maps in bpf_map_lookup/update() calls.
+If program passes verifier, convert pseudo BPF_LD_IMM64 into generic by dropping
+BPF_PSEUDO_MAP_FD flag.
 
-Please pull the latest x86-urgent-for-linus git tree from:
+Note that eBPF interpreter is generic and knows nothing about pseudo insns.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ include/uapi/linux/bpf.h |    6 ++
+ kernel/bpf/verifier.c    |  147 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 153 insertions(+)
 
-   # HEAD: 80b304fd00e8b667775ff791121b61ecd7cd0c03 Merge tag 'efi-urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi into x86/urgent
-
-A couple of EFI fixes, plus misc fixes all around the map.
-
-  out-of-topic modifications in x86-urgent-for-linus:
-  -----------------------------------------------------
-  arch/arm64/kernel/efi.c            # 6a7519e81321: efi/arm64: Store Runtime Ser
-  drivers/firmware/efi/vars.c        # aee530cfecf4: firmware: Do not use WARN_ON
-
- Thanks,
-
-	Ingo
-
------------------->
-Dave Hansen (1):
-      x86/mm: Fix RCU splat from new TLB tracepoints
-
-Guenter Roeck (1):
-      firmware: Do not use WARN_ON(!spin_is_locked())
-
-Jeremiah Mahler (2):
-      x86/mm: Fix sparse 'tlb_single_page_flush_ceiling' warning and make the variable read-mostly
-      x86/doc: Fix the 'tlb_single_page_flush_ceiling' sysconfig path
-
-Semen Protsenko (1):
-      efi/arm64: Store Runtime Services revision
-
-Stefan Bader (1):
-      x86_32, entry: Clean up sysenter_badsys declaration
-
-
- Documentation/x86/tlb.txt   |  2 +-
- arch/arm64/kernel/efi.c     |  2 ++
- arch/x86/kernel/entry_32.S  |  2 +-
- arch/x86/mm/tlb.c           | 10 ++++++++--
- drivers/firmware/efi/vars.c |  8 ++++----
- 5 files changed, 16 insertions(+), 8 deletions(-)
-
-diff --git a/Documentation/x86/tlb.txt b/Documentation/x86/tlb.txt
-index 2b3a82e69151..39d172326703 100644
---- a/Documentation/x86/tlb.txt
-+++ b/Documentation/x86/tlb.txt
-@@ -35,7 +35,7 @@ invlpg instruction (or instructions _near_ it) show up high in
- profiles.  If you believe that individual invalidations being
- called too often, you can lower the tunable:
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index d280acad4b28..2f4d92df4fbe 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -176,6 +176,12 @@ enum {
+ 		.off   = 0,					\
+ 		.imm   = ((__u64) (IMM)) >> 32 })
  
--	/sys/debug/kernel/x86/tlb_single_page_flush_ceiling
-+	/sys/kernel/debug/x86/tlb_single_page_flush_ceiling
- 
- This will cause us to do the global flush for more cases.
- Lowering it to 0 will disable the use of the individual flushes.
-diff --git a/arch/arm64/kernel/efi.c b/arch/arm64/kernel/efi.c
-index e72f3100958f..5dbb7bd3b838 100644
---- a/arch/arm64/kernel/efi.c
-+++ b/arch/arm64/kernel/efi.c
-@@ -463,6 +463,8 @@ static int __init arm64_enter_virtual_mode(void)
- 	efi_native_runtime_setup();
- 	set_bit(EFI_RUNTIME_SERVICES, &efi.flags);
- 
-+	efi.runtime_version = efi.systab->hdr.revision;
++#define BPF_PSEUDO_MAP_FD	1
 +
- 	return 0;
++/* pseudo BPF_LD_IMM64 insn used to refer to process-local map_fd */
++#define BPF_LD_MAP_FD(DST, MAP_FD)				\
++	BPF_LD_IMM64_RAW(DST, BPF_PSEUDO_MAP_FD, MAP_FD)
++
+ /* Short form of mov based on type, BPF_X: dst_reg = src_reg, BPF_K: dst_reg = imm32 */
  
- err_unmap:
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 47c410d99f5d..4b0e1dfa2226 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -683,7 +683,7 @@ END(syscall_badsys)
- sysenter_badsys:
- 	movl $-ENOSYS,%eax
- 	jmp sysenter_after_call
--END(syscall_badsys)
-+END(sysenter_badsys)
- 	CFI_ENDPROC
+ #define BPF_MOV64_RAW(TYPE, DST, SRC, IMM)			\
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index 2484a3387ca2..28ce2cfa49db 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -144,10 +144,15 @@
+  * load/store to bpf_context are checked against known fields
+  */
  
- .macro FIXUP_ESPFIX_STACK
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 1fe33987de02..ee61c36d64f8 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -49,7 +49,13 @@ void leave_mm(int cpu)
- 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
- 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
- 		load_cr3(swapper_pg_dir);
--		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
-+		/*
-+		 * This gets called in the idle path where RCU
-+		 * functions differently.  Tracing normally
-+		 * uses RCU, so we have to call the tracepoint
-+		 * specially here.
-+		 */
-+		trace_tlb_flush_rcuidle(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
++#define MAX_USED_MAPS 64 /* max number of maps accessed by one eBPF program */
++
+ /* single container for all structs
+  * one verifier_env per bpf_check() call
+  */
+ struct verifier_env {
++	struct bpf_prog *prog;		/* eBPF program being verified */
++	struct bpf_map *used_maps[MAX_USED_MAPS]; /* array of map's used by eBPF program */
++	u32 used_map_cnt;		/* number of used maps */
+ };
+ 
+ /* verbose verifier prints what it's seeing
+@@ -319,6 +324,115 @@ static void print_bpf_insn(struct bpf_insn *insn)
  	}
  }
- EXPORT_SYMBOL_GPL(leave_mm);
-@@ -174,7 +180,7 @@ void flush_tlb_current_task(void)
-  *
-  * This is in units of pages.
-  */
--unsigned long tlb_single_page_flush_ceiling = 33;
-+static unsigned long tlb_single_page_flush_ceiling __read_mostly = 33;
  
- void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, unsigned long vmflag)
-diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
-index f0a43646a2f3..5abe943e3404 100644
---- a/drivers/firmware/efi/vars.c
-+++ b/drivers/firmware/efi/vars.c
-@@ -481,7 +481,7 @@ EXPORT_SYMBOL_GPL(efivar_entry_remove);
-  */
- static void efivar_entry_list_del_unlock(struct efivar_entry *entry)
++/* return the map pointer stored inside BPF_LD_IMM64 instruction */
++static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
++{
++	u64 imm64 = ((u64) (u32) insn[0].imm) | ((u64) (u32) insn[1].imm) << 32;
++
++	return (struct bpf_map *) (unsigned long) imm64;
++}
++
++/* look for pseudo eBPF instructions that access map FDs and
++ * replace them with actual map pointers
++ */
++static int replace_map_fd_with_map_ptr(struct verifier_env *env)
++{
++	struct bpf_insn *insn = env->prog->insnsi;
++	int insn_cnt = env->prog->len;
++	int i, j;
++
++	for (i = 0; i < insn_cnt; i++, insn++) {
++		if (insn[0].code == (BPF_LD | BPF_IMM | BPF_DW)) {
++			struct bpf_map *map;
++			struct fd f;
++
++			if (i == insn_cnt - 1 || insn[1].code != 0 ||
++			    insn[1].dst_reg != 0 || insn[1].src_reg != 0 ||
++			    insn[1].off != 0) {
++				verbose("invalid bpf_ld_imm64 insn\n");
++				return -EINVAL;
++			}
++
++			if (insn->src_reg == 0)
++				/* valid generic load 64-bit imm */
++				goto next_insn;
++
++			if (insn->src_reg != BPF_PSEUDO_MAP_FD) {
++				verbose("unrecognized bpf_ld_imm64 insn\n");
++				return -EINVAL;
++			}
++
++			f = fdget(insn->imm);
++
++			map = bpf_map_get(f);
++			if (IS_ERR(map)) {
++				verbose("fd %d is not pointing to valid bpf_map\n",
++					insn->imm);
++				fdput(f);
++				return PTR_ERR(map);
++			}
++
++			/* store map pointer inside BPF_LD_IMM64 instruction */
++			insn[0].imm = (u32) (unsigned long) map;
++			insn[1].imm = ((u64) (unsigned long) map) >> 32;
++
++			/* check whether we recorded this map already */
++			for (j = 0; j < env->used_map_cnt; j++)
++				if (env->used_maps[j] == map) {
++					fdput(f);
++					goto next_insn;
++				}
++
++			if (env->used_map_cnt >= MAX_USED_MAPS) {
++				fdput(f);
++				return -E2BIG;
++			}
++
++			/* remember this map */
++			env->used_maps[env->used_map_cnt++] = map;
++
++			/* hold the map. If the program is rejected by verifier,
++			 * the map will be released by release_maps() or it
++			 * will be used by the valid program until it's unloaded
++			 * and all maps are released in free_bpf_prog_info()
++			 */
++			atomic_inc(&map->refcnt);
++
++			fdput(f);
++next_insn:
++			insn++;
++			i++;
++		}
++	}
++
++	/* now all pseudo BPF_LD_IMM64 instructions load valid
++	 * 'struct bpf_map *' into a register instead of user map_fd.
++	 * These pointers will be used later by verifier to validate map access.
++	 */
++	return 0;
++}
++
++/* drop refcnt of maps used by the rejected program */
++static void release_maps(struct verifier_env *env)
++{
++	int i;
++
++	for (i = 0; i < env->used_map_cnt; i++)
++		bpf_map_put(env->used_maps[i]);
++}
++
++/* convert pseudo BPF_LD_IMM64 into generic BPF_LD_IMM64 */
++static void convert_pseudo_ld_imm64(struct verifier_env *env)
++{
++	struct bpf_insn *insn = env->prog->insnsi;
++	int insn_cnt = env->prog->len;
++	int i;
++
++	for (i = 0; i < insn_cnt; i++, insn++)
++		if (insn->code == (BPF_LD | BPF_IMM | BPF_DW))
++			insn->src_reg = 0;
++}
++
+ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
  {
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
+ 	void __user *log_ubuf = NULL;
+@@ -335,6 +449,8 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ 	if (!env)
+ 		return -ENOMEM;
  
- 	list_del(&entry->list);
- 	spin_unlock_irq(&__efivars->lock);
-@@ -507,7 +507,7 @@ int __efivar_entry_delete(struct efivar_entry *entry)
- 	const struct efivar_operations *ops = __efivars->ops;
- 	efi_status_t status;
++	env->prog = prog;
++
+ 	/* grab the mutex to protect few globals used by verifier */
+ 	mutex_lock(&bpf_verifier_lock);
  
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
+@@ -362,8 +478,14 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ 		log_level = 0;
+ 	}
  
- 	status = ops->set_variable(entry->var.VariableName,
- 				   &entry->var.VendorGuid,
-@@ -667,7 +667,7 @@ struct efivar_entry *efivar_entry_find(efi_char16_t *name, efi_guid_t guid,
- 	int strsize1, strsize2;
- 	bool found = false;
++	ret = replace_map_fd_with_map_ptr(env);
++	if (ret < 0)
++		goto skip_full_check;
++
+ 	/* ret = do_check(env); */
  
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
++skip_full_check:
++
+ 	if (log_level && log_len >= log_size - 1) {
+ 		BUG_ON(log_len >= log_size);
+ 		/* verifier log exceeded user supplied buffer */
+@@ -377,11 +499,36 @@ int bpf_check(struct bpf_prog *prog, struct nlattr *tb[BPF_PROG_ATTR_MAX + 1])
+ 		goto free_log_buf;
+ 	}
  
- 	list_for_each_entry_safe(entry, n, head, list) {
- 		strsize1 = ucs2_strsize(name, 1024);
-@@ -739,7 +739,7 @@ int __efivar_entry_get(struct efivar_entry *entry, u32 *attributes,
- 	const struct efivar_operations *ops = __efivars->ops;
- 	efi_status_t status;
++	if (ret == 0 && env->used_map_cnt) {
++		/* if program passed verifier, update used_maps in bpf_prog_info */
++		prog->info->used_maps = kmalloc_array(env->used_map_cnt,
++						      sizeof(env->used_maps[0]),
++						      GFP_KERNEL);
++
++		if (!prog->info->used_maps) {
++			ret = -ENOMEM;
++			goto free_log_buf;
++		}
++
++		memcpy(prog->info->used_maps, env->used_maps,
++		       sizeof(env->used_maps[0]) * env->used_map_cnt);
++		prog->info->used_map_cnt = env->used_map_cnt;
++
++		/* program is valid. Convert pseudo bpf_ld_imm64 into generic
++		 * bpf_ld_imm64 instructions
++		 */
++		convert_pseudo_ld_imm64(env);
++	}
  
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
- 
- 	status = ops->get_variable(entry->var.VariableName,
- 				   &entry->var.VendorGuid,
+ free_log_buf:
+ 	if (log_level)
+ 		vfree(log_buf);
+ free_env:
++	if (!prog->info->used_maps)
++		/* if we didn't copy map pointers into bpf_prog_info, release
++		 * them now. Otherwise free_bpf_prog_info() will release them.
++		 */
++		release_maps(env);
+ 	kfree(env);
+ 	mutex_unlock(&bpf_verifier_lock);
+ 	return ret;
+-- 
+1.7.9.5
+
