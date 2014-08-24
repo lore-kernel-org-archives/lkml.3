@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238AbaHXUFm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 16:05:42 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:43316 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706AbaHXUFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 16:05:40 -0400
+	id S1753318AbaHXUJM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 16:09:12 -0400
+Received: from mx13.mfdns.com ([222.76.219.121]:49327 "HELO mx13.mfdns.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750915AbaHXUJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 16:09:10 -0400
+X-Greylist: delayed 161919 seconds by postgrey-1.27 at vger.kernel.org; Sun, 24 Aug 2014 16:09:10 EDT
+Date: Mon, 25 Aug 2014 04:08:58 +0800
+From: "John" <grace@kingsfang.com>
+Reply-To: john@kingsfang.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Inkjet Printer ink
+Message-ID: <201408250408583261234@kingsfang.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-In-Reply-To: <20140824194736.GA27441@redhat.com>
-References: <20140824194700.GA27281@redhat.com>
-	<20140824194736.GA27441@redhat.com>
-Date: Sun, 24 Aug 2014 13:05:39 -0700
-X-Google-Sender-Auth: CUCe9gsXwf1Pw-sCZeeYzZz8hII
-Message-ID: <CA+55aFyQzvvmWUDA01x69vYkrwUG07q9P3Mv5KaT31pOFsBZGQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] x86, fpu: don't drop_fpu() in __restore_xstate_sig()
- if use_eager_fpu()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7OK9H6R022395
 
-I really dislike this one.
+Dear Sir, 
 
-If I read it right, you now do *two* math_state_restore calls for each
-FPU signal state restore. That's potentially quite expensive.
+  This is Kingsfang(Xiamen)Import&Export Co.,Ltd here.
+  Our company mainly focus on the production of replacement of inkjet printer ink,such as Imaje, Domino, Videojet, Linx, Willet, Hitachi, KGK and so on, we have our own factory.
+  For all the ink products got the SGS approval every year. Some have passed non-halogen request.
 
-Also, you can actually end up with multiple threads pointing to the
-same math state in init_task.thread.fpu.state, right? Why is that any
-better than just having the save state temporarily contain garbage?
+  Are you interested our product?
 
-The other patches look sane, this one I really don't like. You may
-have good reasons for it, but it's disgusting.
+  Waiting for your reply.
 
-           Linus
-
-On Sun, Aug 24, 2014 at 12:47 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> __restore_xstate_sig() calls math_state_restore() with preemption
-> enabled, not good. But this is minor, [...]
+Saleskingsfang
+Kingsfang(Xiamen)Import&Export Co.,Ltd
+Tel: +86-592-6058718
+Email:Smile@kingsfang.com
+Website: www.kingsfang.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
