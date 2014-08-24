@@ -1,227 +1,576 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765AbaHXWnp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 18:43:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60016 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753682AbaHXWnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 18:43:32 -0400
-From: NeilBrown <neilb@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 25 Aug 2014 08:42:36 +1000
-Subject: [PATCH 1/6] autofs4: allow RCU-walk to walk through autofs4.
-Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Kent <raven@themaw.net>
-Message-ID: <20140824224235.16196.27684.stgit@notabene.brown>
-In-Reply-To: <20140824223628.16196.5795.stgit@notabene.brown>
-References: <20140824223628.16196.5795.stgit@notabene.brown>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1753735AbaHXWvk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 18:51:40 -0400
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:63927 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515AbaHXWvj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 18:51:39 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Xenia Ragiadakou <burzalodowa@gmail.com>, Ana Rey <anarey@gmail.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Chaitanya Hazarey <c@24.io>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: rtl8192u: Fix switch and case should be at the same indent errors
+Date: Sun, 24 Aug 2014 17:51:32 -0500
+Message-Id: <1408920692-25704-1-git-send-email-gdonald@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any attempt to look up a pathname that passes though an
-autofs4 mount is currently forced out of RCU-walk into
-REF-walk.
+Fix checkpatch.pl switch and case should be at the same indent errors
 
-This can significantly hurt performance of many-thread work
-loads on many-core systems, especially if the automounted
-filesystem supports RCU-walk but doesn't get to benefit from
-it.
-
-So if autofs4_d_manage is called with rcu_walk set, only
-fail with -ECHILD if it is necessary to wait longer than
-a spinlock.
-
-Reviewed-by: Ian Kent <raven@themaw.net>
-Tested-by: Ian Kent <raven@themaw.net>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Greg Donald <gdonald@gmail.com>
 ---
- fs/autofs4/autofs_i.h  |    2 +-
- fs/autofs4/dev-ioctl.c |    2 +-
- fs/autofs4/expire.c    |    4 +++-
- fs/autofs4/root.c      |   44 +++++++++++++++++++++++++++++---------------
- 4 files changed, 34 insertions(+), 18 deletions(-)
+ drivers/staging/rtl8192u/r8192U_core.c | 510 ++++++++++++++++-----------------
+ 1 file changed, 252 insertions(+), 258 deletions(-)
 
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 9e359fb20c0a..2f1032f12d91 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -148,7 +148,7 @@ void autofs4_free_ino(struct autofs_info *);
- 
- /* Expiration */
- int is_autofs4_dentry(struct dentry *);
--int autofs4_expire_wait(struct dentry *dentry);
-+int autofs4_expire_wait(struct dentry *dentry, int rcu_walk);
- int autofs4_expire_run(struct super_block *, struct vfsmount *,
- 			struct autofs_sb_info *,
- 			struct autofs_packet_expire __user *);
-diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-index 5b570b6efa28..aaf96cb25452 100644
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -450,7 +450,7 @@ static int autofs_dev_ioctl_requester(struct file *fp,
- 	ino = autofs4_dentry_ino(path.dentry);
- 	if (ino) {
- 		err = 0;
--		autofs4_expire_wait(path.dentry);
-+		autofs4_expire_wait(path.dentry, 0);
- 		spin_lock(&sbi->fs_lock);
- 		param->requester.uid = from_kuid_munged(current_user_ns(), ino->uid);
- 		param->requester.gid = from_kgid_munged(current_user_ns(), ino->gid);
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index a7be57e39be7..7e2f22ce6954 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -467,7 +467,7 @@ found:
- 	return expired;
- }
- 
--int autofs4_expire_wait(struct dentry *dentry)
-+int autofs4_expire_wait(struct dentry *dentry, int rcu_walk)
- {
- 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
- 	struct autofs_info *ino = autofs4_dentry_ino(dentry);
-@@ -477,6 +477,8 @@ int autofs4_expire_wait(struct dentry *dentry)
- 	spin_lock(&sbi->fs_lock);
- 	if (ino->flags & AUTOFS_INF_EXPIRING) {
- 		spin_unlock(&sbi->fs_lock);
-+		if (rcu_walk)
-+			return -ECHILD;
- 
- 		DPRINTK("waiting for expire %p name=%.*s",
- 			 dentry, dentry->d_name.len, dentry->d_name.name);
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index cdb25ebccc4c..2296c8301b66 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -210,7 +210,8 @@ next:
- 	return NULL;
- }
- 
--static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
-+static struct dentry *autofs4_lookup_expiring(struct dentry *dentry,
-+					      bool rcu_walk)
- {
- 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
- 	struct dentry *parent = dentry->d_parent;
-@@ -229,6 +230,11 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
- 		struct dentry *expiring;
- 		struct qstr *qstr;
- 
-+		if (rcu_walk) {
-+			spin_unlock(&sbi->lookup_lock);
-+			return ERR_PTR(-ECHILD);
-+		}
-+
- 		ino = list_entry(p, struct autofs_info, expiring);
- 		expiring = ino->dentry;
- 
-@@ -264,13 +270,15 @@ next:
- 	return NULL;
- }
- 
--static int autofs4_mount_wait(struct dentry *dentry)
-+static int autofs4_mount_wait(struct dentry *dentry, bool rcu_walk)
- {
- 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
- 	struct autofs_info *ino = autofs4_dentry_ino(dentry);
- 	int status = 0;
- 
- 	if (ino->flags & AUTOFS_INF_PENDING) {
-+		if (rcu_walk)
-+			return -ECHILD;
- 		DPRINTK("waiting for mount name=%.*s",
- 			dentry->d_name.len, dentry->d_name.name);
- 		status = autofs4_wait(sbi, dentry, NFY_MOUNT);
-@@ -280,20 +288,22 @@ static int autofs4_mount_wait(struct dentry *dentry)
- 	return status;
- }
- 
--static int do_expire_wait(struct dentry *dentry)
-+static int do_expire_wait(struct dentry *dentry, bool rcu_walk)
- {
- 	struct dentry *expiring;
- 
--	expiring = autofs4_lookup_expiring(dentry);
-+	expiring = autofs4_lookup_expiring(dentry, rcu_walk);
-+	if (IS_ERR(expiring))
-+		return PTR_ERR(expiring);
- 	if (!expiring)
--		return autofs4_expire_wait(dentry);
-+		return autofs4_expire_wait(dentry, rcu_walk);
- 	else {
- 		/*
- 		 * If we are racing with expire the request might not
- 		 * be quite complete, but the directory has been removed
- 		 * so it must have been successful, just wait for it.
- 		 */
--		autofs4_expire_wait(expiring);
-+		autofs4_expire_wait(expiring, 0);
- 		autofs4_del_expiring(expiring);
- 		dput(expiring);
- 	}
-@@ -345,7 +355,7 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
- 	 * and the directory was removed, so just go ahead and try
- 	 * the mount.
- 	 */
--	status = do_expire_wait(dentry);
-+	status = do_expire_wait(dentry, 0);
- 	if (status && status != -EAGAIN)
- 		return NULL;
- 
-@@ -353,7 +363,7 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
- 	spin_lock(&sbi->fs_lock);
- 	if (ino->flags & AUTOFS_INF_PENDING) {
- 		spin_unlock(&sbi->fs_lock);
--		status = autofs4_mount_wait(dentry);
-+		status = autofs4_mount_wait(dentry, 0);
- 		if (status)
- 			return ERR_PTR(status);
- 		goto done;
-@@ -394,7 +404,7 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index eb96bed..3707d03 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -1071,83 +1071,83 @@ static void rtl8192_config_rate(struct net_device *dev, u16 *rate_config)
+ 	for (i = 0; i < net->rates_len; i++) {
+ 		basic_rate = net->rates[i]&0x7f;
+ 		switch (basic_rate) {
+-			case MGN_1M:
+-				*rate_config |= RRSR_1M;
+-				break;
+-			case MGN_2M:
+-				*rate_config |= RRSR_2M;
+-				break;
+-			case MGN_5_5M:
+-				*rate_config |= RRSR_5_5M;
+-				break;
+-			case MGN_11M:
+-				*rate_config |= RRSR_11M;
+-				break;
+-			case MGN_6M:
+-				*rate_config |= RRSR_6M;
+-				break;
+-			case MGN_9M:
+-				*rate_config |= RRSR_9M;
+-				break;
+-			case MGN_12M:
+-				*rate_config |= RRSR_12M;
+-				break;
+-			case MGN_18M:
+-				*rate_config |= RRSR_18M;
+-				break;
+-			case MGN_24M:
+-				*rate_config |= RRSR_24M;
+-				break;
+-			case MGN_36M:
+-				*rate_config |= RRSR_36M;
+-				break;
+-			case MGN_48M:
+-				*rate_config |= RRSR_48M;
+-				break;
+-			case MGN_54M:
+-				*rate_config |= RRSR_54M;
+-				break;
++		case MGN_1M:
++			*rate_config |= RRSR_1M;
++			break;
++		case MGN_2M:
++			*rate_config |= RRSR_2M;
++			break;
++		case MGN_5_5M:
++			*rate_config |= RRSR_5_5M;
++			break;
++		case MGN_11M:
++			*rate_config |= RRSR_11M;
++			break;
++		case MGN_6M:
++			*rate_config |= RRSR_6M;
++			break;
++		case MGN_9M:
++			*rate_config |= RRSR_9M;
++			break;
++		case MGN_12M:
++			*rate_config |= RRSR_12M;
++			break;
++		case MGN_18M:
++			*rate_config |= RRSR_18M;
++			break;
++		case MGN_24M:
++			*rate_config |= RRSR_24M;
++			break;
++		case MGN_36M:
++			*rate_config |= RRSR_36M;
++			break;
++		case MGN_48M:
++			*rate_config |= RRSR_48M;
++			break;
++		case MGN_54M:
++			*rate_config |= RRSR_54M;
++			break;
  		}
- 		ino->flags |= AUTOFS_INF_PENDING;
- 		spin_unlock(&sbi->fs_lock);
--		status = autofs4_mount_wait(dentry);
-+		status = autofs4_mount_wait(dentry, 0);
- 		spin_lock(&sbi->fs_lock);
- 		ino->flags &= ~AUTOFS_INF_PENDING;
- 		if (status) {
-@@ -430,21 +440,25 @@ static int autofs4_d_manage(struct dentry *dentry, bool rcu_walk)
- 		return 0;
  	}
+ 	for (i = 0; i < net->rates_ex_len; i++) {
+ 		basic_rate = net->rates_ex[i]&0x7f;
+ 		switch (basic_rate) {
+-			case MGN_1M:
+-				*rate_config |= RRSR_1M;
+-				break;
+-			case MGN_2M:
+-				*rate_config |= RRSR_2M;
+-				break;
+-			case MGN_5_5M:
+-				*rate_config |= RRSR_5_5M;
+-				break;
+-			case MGN_11M:
+-				*rate_config |= RRSR_11M;
+-				break;
+-			case MGN_6M:
+-				*rate_config |= RRSR_6M;
+-				break;
+-			case MGN_9M:
+-				*rate_config |= RRSR_9M;
+-				break;
+-			case MGN_12M:
+-				*rate_config |= RRSR_12M;
+-				break;
+-			case MGN_18M:
+-				*rate_config |= RRSR_18M;
+-				break;
+-			case MGN_24M:
+-				*rate_config |= RRSR_24M;
+-				break;
+-			case MGN_36M:
+-				*rate_config |= RRSR_36M;
+-				break;
+-			case MGN_48M:
+-				*rate_config |= RRSR_48M;
+-				break;
+-			case MGN_54M:
+-				*rate_config |= RRSR_54M;
+-				break;
++		case MGN_1M:
++			*rate_config |= RRSR_1M;
++			break;
++		case MGN_2M:
++			*rate_config |= RRSR_2M;
++			break;
++		case MGN_5_5M:
++			*rate_config |= RRSR_5_5M;
++			break;
++		case MGN_11M:
++			*rate_config |= RRSR_11M;
++			break;
++		case MGN_6M:
++			*rate_config |= RRSR_6M;
++			break;
++		case MGN_9M:
++			*rate_config |= RRSR_9M;
++			break;
++		case MGN_12M:
++			*rate_config |= RRSR_12M;
++			break;
++		case MGN_18M:
++			*rate_config |= RRSR_18M;
++			break;
++		case MGN_24M:
++			*rate_config |= RRSR_24M;
++			break;
++		case MGN_36M:
++			*rate_config |= RRSR_36M;
++			break;
++		case MGN_48M:
++			*rate_config |= RRSR_48M;
++			break;
++		case MGN_54M:
++			*rate_config |= RRSR_54M;
++			break;
+ 		}
+ 	}
+ }
+@@ -1371,98 +1371,98 @@ static u8 MRateToHwRate8190Pci(u8 rate)
+ 	u8  ret = DESC90_RATE1M;
  
--	/* We need to sleep, so we need pathwalk to be in ref-mode */
--	if (rcu_walk)
--		return -ECHILD;
--
- 	/* Wait for pending expires */
--	do_expire_wait(dentry);
-+	if (do_expire_wait(dentry, rcu_walk) == -ECHILD)
-+		return -ECHILD;
+ 	switch (rate) {
+-		case MGN_1M:
+-			ret = DESC90_RATE1M;
+-			break;
+-		case MGN_2M:
+-			ret = DESC90_RATE2M;
+-			break;
+-		case MGN_5_5M:
+-			ret = DESC90_RATE5_5M;
+-			break;
+-		case MGN_11M:
+-			ret = DESC90_RATE11M;
+-			break;
+-		case MGN_6M:
+-			ret = DESC90_RATE6M;
+-			break;
+-		case MGN_9M:
+-			ret = DESC90_RATE9M;
+-			break;
+-		case MGN_12M:
+-			ret = DESC90_RATE12M;
+-			break;
+-		case MGN_18M:
+-			ret = DESC90_RATE18M;
+-			break;
+-		case MGN_24M:
+-			ret = DESC90_RATE24M;
+-			break;
+-		case MGN_36M:
+-			ret = DESC90_RATE36M;
+-			break;
+-		case MGN_48M:
+-			ret = DESC90_RATE48M;
+-			break;
+-		case MGN_54M:
+-			ret = DESC90_RATE54M;
+-			break;
++	case MGN_1M:
++		ret = DESC90_RATE1M;
++		break;
++	case MGN_2M:
++		ret = DESC90_RATE2M;
++		break;
++	case MGN_5_5M:
++		ret = DESC90_RATE5_5M;
++		break;
++	case MGN_11M:
++		ret = DESC90_RATE11M;
++		break;
++	case MGN_6M:
++		ret = DESC90_RATE6M;
++		break;
++	case MGN_9M:
++		ret = DESC90_RATE9M;
++		break;
++	case MGN_12M:
++		ret = DESC90_RATE12M;
++		break;
++	case MGN_18M:
++		ret = DESC90_RATE18M;
++		break;
++	case MGN_24M:
++		ret = DESC90_RATE24M;
++		break;
++	case MGN_36M:
++		ret = DESC90_RATE36M;
++		break;
++	case MGN_48M:
++		ret = DESC90_RATE48M;
++		break;
++	case MGN_54M:
++		ret = DESC90_RATE54M;
++		break;
  
- 	/*
- 	 * This dentry may be under construction so wait on mount
- 	 * completion.
- 	 */
--	status = autofs4_mount_wait(dentry);
-+	status = autofs4_mount_wait(dentry, rcu_walk);
- 	if (status)
- 		return status;
+-		// HT rate since here
+-		case MGN_MCS0:
+-			ret = DESC90_RATEMCS0;
+-			break;
+-		case MGN_MCS1:
+-			ret = DESC90_RATEMCS1;
+-			break;
+-		case MGN_MCS2:
+-			ret = DESC90_RATEMCS2;
+-			break;
+-		case MGN_MCS3:
+-			ret = DESC90_RATEMCS3;
+-			break;
+-		case MGN_MCS4:
+-			ret = DESC90_RATEMCS4;
+-			break;
+-		case MGN_MCS5:
+-			ret = DESC90_RATEMCS5;
+-			break;
+-		case MGN_MCS6:
+-			ret = DESC90_RATEMCS6;
+-			break;
+-		case MGN_MCS7:
+-			ret = DESC90_RATEMCS7;
+-			break;
+-		case MGN_MCS8:
+-			ret = DESC90_RATEMCS8;
+-			break;
+-		case MGN_MCS9:
+-			ret = DESC90_RATEMCS9;
+-			break;
+-		case MGN_MCS10:
+-			ret = DESC90_RATEMCS10;
+-			break;
+-		case MGN_MCS11:
+-			ret = DESC90_RATEMCS11;
+-			break;
+-		case MGN_MCS12:
+-			ret = DESC90_RATEMCS12;
+-			break;
+-		case MGN_MCS13:
+-			ret = DESC90_RATEMCS13;
+-			break;
+-		case MGN_MCS14:
+-			ret = DESC90_RATEMCS14;
+-			break;
+-		case MGN_MCS15:
+-			ret = DESC90_RATEMCS15;
+-			break;
+-		case (0x80|0x20):
+-			ret = DESC90_RATEMCS32;
+-			break;
++	/* HT rate since here */
++	case MGN_MCS0:
++		ret = DESC90_RATEMCS0;
++		break;
++	case MGN_MCS1:
++		ret = DESC90_RATEMCS1;
++		break;
++	case MGN_MCS2:
++		ret = DESC90_RATEMCS2;
++		break;
++	case MGN_MCS3:
++		ret = DESC90_RATEMCS3;
++		break;
++	case MGN_MCS4:
++		ret = DESC90_RATEMCS4;
++		break;
++	case MGN_MCS5:
++		ret = DESC90_RATEMCS5;
++		break;
++	case MGN_MCS6:
++		ret = DESC90_RATEMCS6;
++		break;
++	case MGN_MCS7:
++		ret = DESC90_RATEMCS7;
++		break;
++	case MGN_MCS8:
++		ret = DESC90_RATEMCS8;
++		break;
++	case MGN_MCS9:
++		ret = DESC90_RATEMCS9;
++		break;
++	case MGN_MCS10:
++		ret = DESC90_RATEMCS10;
++		break;
++	case MGN_MCS11:
++		ret = DESC90_RATEMCS11;
++		break;
++	case MGN_MCS12:
++		ret = DESC90_RATEMCS12;
++		break;
++	case MGN_MCS13:
++		ret = DESC90_RATEMCS13;
++		break;
++	case MGN_MCS14:
++		ret = DESC90_RATEMCS14;
++		break;
++	case MGN_MCS15:
++		ret = DESC90_RATEMCS15;
++		break;
++	case (0x80|0x20):
++		ret = DESC90_RATEMCS32;
++		break;
  
-+	if (rcu_walk)
-+		/* it is always safe to return 0 as the worst that
-+		 * will happen is we retry in REF-walk mode.
-+		 * Better than always taking a lock.
-+		 */
-+		return 0;
-+
- 	spin_lock(&sbi->fs_lock);
- 	/*
- 	 * If the dentry has been selected for expire while we slept
-
+-		default:
+-			break;
++	default:
++		break;
+ 	}
+ 	return ret;
+ }
+@@ -4314,102 +4314,96 @@ UpdateReceivedRateHistogramStatistics8190(struct net_device *dev,
+ 		preamble_guardinterval = 0;// long
+ 
+ 	switch (stats->rate) {
+-		//
+-		// CCK rate
+-		//
+-		case MGN_1M:
+-			rateIndex = 0;
+-			break;
+-		case MGN_2M:
+-			rateIndex = 1;
+-			break;
+-		case MGN_5_5M:
+-			rateIndex = 2;
+-			break;
+-		case MGN_11M:
+-			rateIndex = 3;
+-			break;
+-		//
+-		// Legacy OFDM rate
+-		//
+-		case MGN_6M:
+-			rateIndex = 4;
+-			break;
+-		case MGN_9M:
+-			rateIndex = 5;
+-			break;
+-		case MGN_12M:
+-			rateIndex = 6;
+-			break;
+-		case MGN_18M:
+-			rateIndex = 7;
+-			break;
+-		case MGN_24M:
+-			rateIndex = 8;
+-			break;
+-		case MGN_36M:
+-			rateIndex = 9;
+-			break;
+-		case MGN_48M:
+-			rateIndex = 10;
+-			break;
+-		case MGN_54M:
+-			rateIndex = 11;
+-			break;
+-		//
+-		// 11n High throughput rate
+-		//
+-		case MGN_MCS0:
+-			rateIndex = 12;
+-			break;
+-		case MGN_MCS1:
+-			rateIndex = 13;
+-			break;
+-		case MGN_MCS2:
+-			rateIndex = 14;
+-			break;
+-		case MGN_MCS3:
+-			rateIndex = 15;
+-			break;
+-		case MGN_MCS4:
+-			rateIndex = 16;
+-			break;
+-		case MGN_MCS5:
+-			rateIndex = 17;
+-			break;
+-		case MGN_MCS6:
+-			rateIndex = 18;
+-			break;
+-		case MGN_MCS7:
+-			rateIndex = 19;
+-			break;
+-		case MGN_MCS8:
+-			rateIndex = 20;
+-			break;
+-		case MGN_MCS9:
+-			rateIndex = 21;
+-			break;
+-		case MGN_MCS10:
+-			rateIndex = 22;
+-			break;
+-		case MGN_MCS11:
+-			rateIndex = 23;
+-			break;
+-		case MGN_MCS12:
+-			rateIndex = 24;
+-			break;
+-		case MGN_MCS13:
+-			rateIndex = 25;
+-			break;
+-		case MGN_MCS14:
+-			rateIndex = 26;
+-			break;
+-		case MGN_MCS15:
+-			rateIndex = 27;
+-			break;
+-		default:
+-			rateIndex = 28;
+-			break;
++	/* CCK rate */
++	case MGN_1M:
++		rateIndex = 0;
++		break;
++	case MGN_2M:
++		rateIndex = 1;
++		break;
++	case MGN_5_5M:
++		rateIndex = 2;
++		break;
++	case MGN_11M:
++		rateIndex = 3;
++		break;
++	/* Legacy OFDM rate */
++	case MGN_6M:
++		rateIndex = 4;
++		break;
++	case MGN_9M:
++		rateIndex = 5;
++		break;
++	case MGN_12M:
++		rateIndex = 6;
++		break;
++	case MGN_18M:
++		rateIndex = 7;
++		break;
++	case MGN_24M:
++		rateIndex = 8;
++		break;
++	case MGN_36M:
++		rateIndex = 9;
++		break;
++	case MGN_48M:
++		rateIndex = 10;
++		break;
++	case MGN_54M:
++		rateIndex = 11;
++		break;
++	/* 11n High throughput rate */
++	case MGN_MCS0:
++		rateIndex = 12;
++		break;
++	case MGN_MCS1:
++		rateIndex = 13;
++		break;
++	case MGN_MCS2:
++		rateIndex = 14;
++		break;
++	case MGN_MCS3:
++		rateIndex = 15;
++		break;
++	case MGN_MCS4:
++		rateIndex = 16;
++		break;
++	case MGN_MCS5:
++		rateIndex = 17;
++		break;
++	case MGN_MCS6:
++		rateIndex = 18;
++		break;
++	case MGN_MCS7:
++		rateIndex = 19;
++		break;
++	case MGN_MCS8:
++		rateIndex = 20;
++		break;
++	case MGN_MCS9:
++		rateIndex = 21;
++		break;
++	case MGN_MCS10:
++		rateIndex = 22;
++		break;
++	case MGN_MCS11:
++		rateIndex = 23;
++		break;
++	case MGN_MCS12:
++		rateIndex = 24;
++		break;
++	case MGN_MCS13:
++		rateIndex = 25;
++		break;
++	case MGN_MCS14:
++		rateIndex = 26;
++		break;
++	case MGN_MCS15:
++		rateIndex = 27;
++		break;
++	default:
++		rateIndex = 28;
++		break;
+ 	}
+ 	priv->stats.received_preamble_GI[preamble_guardinterval][rateIndex]++;
+ 	priv->stats.received_rate_histogram[0][rateIndex]++; //total
+-- 
+1.9.1
 
