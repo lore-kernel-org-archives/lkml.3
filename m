@@ -1,38 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaHXRbF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 13:31:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33254 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552AbaHXRbD (ORCPT
+	id S1752877AbaHXRmF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 13:42:05 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:41240 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbaHXRmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 13:31:03 -0400
-Date: Sun, 24 Aug 2014 10:31:01 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        Naresh Kumar Inna <naresh@chelsio.com>,
-        Arvind Bhushan <arvindb@chelsio.com>,
-        Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: Re: [PATCH v3 00/13] scsi: Use pci_enable_msix_range() instead of
- pci_enable_msix()
-Message-ID: <20140824173101.GA24145@infradead.org>
-References: <cover.1408335523.git.agordeev@redhat.com>
- <20140819170047.GA7237@infradead.org>
- <20140820191416.GA1886@agordeev.usersys.redhat.com>
+	Sun, 24 Aug 2014 13:42:03 -0400
+Message-ID: <53FA23E5.5010603@colorfullife.com>
+Date: Sun, 24 Aug 2014 19:41:57 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140820191416.GA1886@agordeev.usersys.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack
+ check
+References: <20140823144246.GA6281@redhat.com> <20140823144327.GA6299@redhat.com>
+In-Reply-To: <20140823144327.GA6299@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've applied all other patches except for the lpfc one now.
+On 08/23/2014 04:43 PM, Oleg Nesterov wrote:
+> The ->start_stack check in do_shmat() looks ugly and simply wrong.
+>
+> 1. ->start_stack is only valid right after exec(), the application
+>     can switch to another stack and even unmap this area.
+>
+> 2. The reason for this check is not clear at all. The application
+>     should know what it does. And why 4 pages? And why in fact it
+>     requires 5 pages?
+>
+> 3. This wrongly assumes that the stack can only grown down.
+>
+> Personally I think we should simply kill this check, but I did not
+> dare to do this. So the patch only fixes the 1st problem (mostly to
+> avoid the usage of mm->start_stack) and ignores VM_GROWSUP.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Manfred Spraul <manfred@colorfullife.com>
+> [snip]
 
-Thanks again!
+> +		if (vma) {
+> +			if (vma->vm_flags & VM_GROWSDOWN)
+> +				end += PAGE_SIZE * 4; /* can't overflow */
+Why is an overflow impossible?
+> +			if (end > vma->vm_start)
+> +				goto invalid;
+> +		}
+>   	}
+>   
+>   	addr = do_mmap_pgoff(file, addr, size, prot, flags, 0, &populate);
+--
+     Manfred
