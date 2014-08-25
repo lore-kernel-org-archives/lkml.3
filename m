@@ -1,251 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642AbaHYNlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:41:24 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61778 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262AbaHYNlU (ORCPT
+	id S932676AbaHYNle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:41:34 -0400
+Received: from regular1.263xmail.com ([211.150.99.135]:46978 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091AbaHYNlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:41:20 -0400
-From: Guodong Xu <guodong.xu@linaro.org>
-To: lee.jones@linaro.org, sameo@linux.intel.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
+	Mon, 25 Aug 2014 09:41:32 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-ABS-CHECKED: 4
+X-KSVirus-check: 0
+X-RL-SENDER: zyw@rock-chips.com
+X-FST-TO: robh+dt@kernel.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: zyw@rock-chips.com
+X-UNIQUE-TAG: <2f2dfe4b806af76d02a6b60dccb4b6e1>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Chris Zhong <zyw@rock-chips.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, grant.likely@linaro.org, khilman@linaro.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, zhangnian@huawei.com
-Cc: Guodong Xu <guodong.xu@linaro.org>
-Subject: [PATCH 2/3] mfd: Add hi6421 PMIC core driver
-Date: Mon, 25 Aug 2014 21:39:41 +0800
-Message-Id: <1408973982-2072-3-git-send-email-guodong.xu@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
-References: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        broonie@kernel.org, a.zummo@towertech.it, mturquette@linaro.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, dianders@chromium.org, heiko@sntech.de,
+        olof@lixom.net, sonnyrao@chromium.org, dtor@chromium.org,
+        javier.martinez@collabora.co.uk, kever.yang@rock-chips.com,
+        Chris Zhong <zyw@rock-chips.com>
+Subject: [PATCH v5 5/5] clk: RK808: Add clkout driver for RK808
+Date: Mon, 25 Aug 2014 21:39:22 +0800
+Message-Id: <1408973962-23883-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds driver to support HiSilicon Hi6421 PMIC. Hi6421 includes multi-
-functions, such as regulators, codec, ADCs, Coulomb counter, etc.
-This driver includes core APIs _only_.
+Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 
-Drivers for individul components, like voltage regulators, are
-implemented in corresponding driver directories and files.
-
-Registers in Hi6421 are memory mapped, so using regmap-mmio API.
-
-Signed-off-by: Guodong Xu <guodong.xu@linaro.org>
 ---
- drivers/mfd/Kconfig             |  13 +++++
- drivers/mfd/Makefile            |   1 +
- drivers/mfd/hi6421-pmic-core.c  | 112 ++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/hi6421-pmic.h |  42 +++++++++++++++
- 4 files changed, 168 insertions(+)
- create mode 100644 drivers/mfd/hi6421-pmic-core.c
- create mode 100644 include/linux/mfd/hi6421-pmic.h
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index de5abf2..2de4919 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -210,6 +210,19 @@ config MFD_MC13XXX_I2C
- 	help
- 	  Select this if your MC13xxx is connected via an I2C bus.
+Changes in v5:
+Advices by Mark Brown
+- add description about regulator valid name.
+- add a header file "rockchip,rk808".
+
+Changes in v4:
+Advices by Doug
+- add a "#clock-cells" propertiy
+- update the example
+
+Changes in v3: None
+Changes in v2: None
+
+ drivers/clk/Kconfig     |    9 +++
+ drivers/clk/Makefile    |    1 +
+ drivers/clk/clk-rk808.c |  164 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 174 insertions(+)
+ create mode 100644 drivers/clk/clk-rk808.c
+
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index cfd3af7..84e0590 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -38,6 +38,15 @@ config COMMON_CLK_MAX77686
+ 	---help---
+ 	  This driver supports Maxim 77686 crystal oscillator clock. 
  
-+config MFD_HI6421_PMIC
-+	tristate "HiSilicon Hi6421 PMU/Codec IC"
-+	depends on OF
-+	select MFD_CORE
-+	select REGMAP_MMIO
-+	help
-+	  Add support for HiSilicon Hi6421 PMIC. Hi6421 includes multi-
-+	  functions, such as regulators, RTC, codec, Coulomb counter, etc.
-+	  This driver includes core APIs _only_. You have to select
-+	  individul components like voltage regulators under corresponding
-+	  menus in order to enable them.
-+	  We communicate with the Hi6421 via memory-mapped I/O.
++config COMMON_CLK_RK808
++	tristate "Clock driver for RK808"
++	depends on MFD_RK808
++	---help---
++	  This driver supports RK808 crystal oscillator clock. These
++	  multi-function devices have two fixed-rate oscillators,
++	  clocked at 32KHz each. Clkout1 is always on, Clkout2 can off
++	  by control register.
 +
- config HTC_EGPIO
- 	bool "HTC EGPIO support"
- 	depends on GPIOLIB && ARM
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index f001487..dc59efd 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
- obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-+obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
- 
- intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
- obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-diff --git a/drivers/mfd/hi6421-pmic-core.c b/drivers/mfd/hi6421-pmic-core.c
+ config COMMON_CLK_SI5351
+ 	tristate "Clock driver for SiLabs 5351A/B/C"
+ 	depends on I2C
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index f537a0b..99f53d5 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -28,6 +28,7 @@ obj-$(CONFIG_ARCH_NOMADIK)		+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_NSPIRE)		+= clk-nspire.o
+ obj-$(CONFIG_COMMON_CLK_PALMAS)		+= clk-palmas.o
+ obj-$(CONFIG_CLK_PPC_CORENET)		+= clk-ppc-corenet.o
++obj-$(CONFIG_COMMON_CLK_RK808)		+= clk-rk808.o
+ obj-$(CONFIG_COMMON_CLK_S2MPS11)	+= clk-s2mps11.o
+ obj-$(CONFIG_COMMON_CLK_SI5351)		+= clk-si5351.o
+ obj-$(CONFIG_COMMON_CLK_SI570)		+= clk-si570.o
+diff --git a/drivers/clk/clk-rk808.c b/drivers/clk/clk-rk808.c
 new file mode 100644
-index 0000000..c6cba8f
+index 0000000..a8f8d81
 --- /dev/null
-+++ b/drivers/mfd/hi6421-pmic-core.c
-@@ -0,0 +1,112 @@
++++ b/drivers/clk/clk-rk808.c
+@@ -0,0 +1,164 @@
 +/*
-+ * Device driver for Hi6421 IC
++ * Clkout driver for Rockchip RK808
 + *
-+ * Copyright (c) <2011-2014> HiSilicon Technologies Co., Ltd.
-+ *              http://www.hisilicon.com
-+ * Copyright (c) <2013-2014> Linaro Ltd.
-+ *              http://www.linaro.org
++ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
 + *
-+ * Author: Guodong Xu <guodong.xu@linaro.org>
++ * Author: Chris Zhong <zyw@rock-chips.com>
++ * Author: Zhang Qing <zhangqing@rock-chips.com>
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
 + *
 + * This program is distributed in the hope it will be useful, but WITHOUT
 + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
 + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 + * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + */
 +
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/mfd/core.h>
++#include <linux/clk.h>
++#include <linux/clk-provider.h>
 +#include <linux/module.h>
-+#include <linux/of.h>
++#include <linux/slab.h>
 +#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/hi6421-pmic.h>
++#include <linux/mfd/rk808.h>
++#include <linux/i2c.h>
 +
-+static struct of_device_id of_hi6421_pmic_match_tbl[] = {
-+	{ .compatible = "hisilicon,hi6421-pmic", },
-+	{ },
++struct rk808_clkout {
++	struct rk808 *rk808;
++	struct clk_onecell_data clk_data;
++	struct clk_hw		clkout1_hw;
++	struct clk_hw		clkout2_hw;
 +};
 +
-+static const struct mfd_cell hi6421_devs[] = {
-+	{ .name = "hi6421-regulator", },
-+};
-+
-+static struct regmap_config hi6421_regmap_config = {
-+	.reg_bits = 32,
-+	.reg_stride = 4,
-+	.val_bits = 8,
-+	.max_register = HI6421_REG_TO_BUS_ADDR(HI6421_REG_MAX),
-+};
-+
-+static int hi6421_pmic_probe(struct platform_device *pdev)
++static unsigned long rk808_clkout_recalc_rate(struct clk_hw *hw,
++					      unsigned long parent_rate)
 +{
-+	struct hi6421_pmic *pmic;
-+	struct resource *res;
-+	void __iomem *base;
-+	int ret;
++	return 32768;
++}
 +
-+	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
-+	if (!pmic)
++static int rk808_clkout1_is_prepared(struct clk_hw *hw)
++{
++	return 1;
++}
++
++static int rk808_clkout2_control(struct clk_hw *hw, bool enable)
++{
++	struct rk808_clkout *rk808_clkout = container_of(hw,
++							 struct rk808_clkout,
++							 clkout2_hw);
++	struct rk808 *rk808 = rk808_clkout->rk808;
++
++	return regmap_update_bits(rk808->regmap, RK808_CLK32OUT_REG,
++				  CLK32KOUT2_EN, enable ? CLK32KOUT2_EN : 0);
++}
++
++static int rk808_clkout2_prepare(struct clk_hw *hw)
++{
++	return rk808_clkout2_control(hw, 1);
++}
++
++static void rk808_clkout2_unprepare(struct clk_hw *hw)
++{
++	rk808_clkout2_control(hw, 0);
++}
++
++static int rk808_clkout2_is_prepared(struct clk_hw *hw)
++{
++	struct rk808_clkout *rk808_clkout = container_of(hw,
++							 struct rk808_clkout,
++							 clkout2_hw);
++	struct rk808 *rk808 = rk808_clkout->rk808;
++	uint32_t val;
++
++	int ret = regmap_read(rk808->regmap, RK808_CLK32OUT_REG, &val);
++
++	if (ret < 0)
++		return ret;
++
++	return (val & CLK32KOUT2_EN) ? 1 : 0;
++}
++
++static const struct clk_ops rk808_clkout1_ops = {
++	.is_prepared = rk808_clkout1_is_prepared,
++	.recalc_rate = rk808_clkout_recalc_rate,
++};
++
++static const struct clk_ops rk808_clkout2_ops = {
++	.prepare = rk808_clkout2_prepare,
++	.unprepare = rk808_clkout2_unprepare,
++	.is_prepared = rk808_clkout2_is_prepared,
++	.recalc_rate = rk808_clkout_recalc_rate,
++};
++
++static int rk808_clkout_probe(struct platform_device *pdev)
++{
++	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
++	struct i2c_client *client = rk808->i2c;
++	struct device_node *node = client->dev.of_node;
++	struct clk_init_data init = {};
++	struct clk **clk_table;
++	struct rk808_clkout *rk808_clkout;
++
++	rk808_clkout = devm_kzalloc(&client->dev,
++				    sizeof(*rk808_clkout), GFP_KERNEL);
++	if (!rk808_clkout)
 +		return -ENOMEM;
 +
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
++	rk808_clkout->rk808 = rk808;
 +
-+	pmic->regmap = devm_regmap_init_mmio_clk(&pdev->dev, NULL, base,
-+						 &hi6421_regmap_config);
-+	if (IS_ERR(pmic->regmap)) {
-+		dev_err(&pdev->dev,
-+			"regmap init failed: %ld\n", PTR_ERR(pmic->regmap));
-+		return PTR_ERR(pmic->regmap);
-+	}
++	clk_table = devm_kzalloc(&client->dev,
++				 2*sizeof(struct clk *), GFP_KERNEL);
++	if (!clk_table)
++		return -ENOMEM;
 +
-+	/* set over-current protection debounce 8ms */
-+	regmap_update_bits(pmic->regmap, HI6421_OCP_DEB_CTRL_REG,
-+		(HI6421_OCP_DEB_SEL_MASK | HI6421_OCP_EN_DEBOUNCE_MASK |
-+		 HI6421_OCP_AUTO_STOP_MASK),
-+		(HI6421_OCP_DEB_SEL_8MS | HI6421_OCP_EN_DEBOUNCE_ENABLE));
++	init.flags = CLK_IS_ROOT;
++	init.parent_names = NULL;
++	init.num_parents = 0;
++	init.name = "rk808-clkout1";
++	init.ops = &rk808_clkout1_ops;
++	rk808_clkout->clkout1_hw.init = &init;
 +
-+	pmic->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, pmic);
++	/* optional override of the clockname */
++	of_property_read_string_index(node, "clock-output-names",
++				      0, &init.name);
 +
-+	ret = mfd_add_devices(&pdev->dev, 0, hi6421_devs,
-+			ARRAY_SIZE(hi6421_devs), NULL, 0, NULL);
-+	if (ret) {
-+		dev_err(&pdev->dev, "add mfd devices failed: %d\n", ret);
-+		return ret;
-+	}
++	clk_table[0] = devm_clk_register(&client->dev,
++					 &rk808_clkout->clkout1_hw);
++	if (IS_ERR(clk_table[0]))
++		return PTR_ERR(clk_table[0]);
 +
-+	return 0;
++	init.name = "rk808-clkout2";
++	init.ops = &rk808_clkout2_ops;
++	rk808_clkout->clkout2_hw.init = &init;
++
++	/* optional override of the clockname */
++	of_property_read_string_index(node, "clock-output-names",
++				      1, &init.name);
++
++	clk_table[1] = devm_clk_register(&client->dev,
++					 &rk808_clkout->clkout2_hw);
++	if (IS_ERR(clk_table[1]))
++		return PTR_ERR(clk_table[1]);
++
++	rk808_clkout->clk_data.clks = clk_table;
++	rk808_clkout->clk_data.clk_num = 2;
++
++	return of_clk_add_provider(node, of_clk_src_onecell_get, clk_table);
 +}
 +
-+static int hi6421_pmic_remove(struct platform_device *pdev)
-+{
-+	mfd_remove_devices(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver hi6421_pmic_driver = {
-+	.driver = {
-+		.name	= "hi6421_pmic",
-+		.of_match_table = of_hi6421_pmic_match_tbl,
++static struct platform_driver rk808_clkout_driver = {
++	.probe = rk808_clkout_probe,
++	.driver		= {
++		.name	= "rk808-clkout",
++		.owner	= THIS_MODULE,
 +	},
-+	.probe	= hi6421_pmic_probe,
-+	.remove	= hi6421_pmic_remove,
-+};
-+module_platform_driver(hi6421_pmic_driver);
-+
-+MODULE_AUTHOR("Guodong Xu <guodong.xu@linaro.org>");
-+MODULE_DESCRIPTION("Hi6421 PMIC driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/hi6421-pmic.h b/include/linux/mfd/hi6421-pmic.h
-new file mode 100644
-index 0000000..2f9fe01
---- /dev/null
-+++ b/include/linux/mfd/hi6421-pmic.h
-@@ -0,0 +1,42 @@
-+/*
-+ * Header file for device driver Hi6421 PMIC
-+ *
-+ * Copyright (c) <2011-2014> HiSilicon Technologies Co., Ltd.
-+ *              http://www.hisilicon.com
-+ * Copyright (c) <2013-2014> Linaro Ltd.
-+ *              http://www.linaro.org
-+ *
-+ * Author: Guodong Xu <guodong.xu@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef	__HI6421_PMIC_H
-+#define	__HI6421_PMIC_H
-+
-+/* Hi6421 registers are mapped to memory bus in 4 bytes stride */
-+#define HI6421_REG_TO_BUS_ADDR(x)	(x << 2)
-+
-+/* Hi6421 maximum register number */
-+#define HI6421_REG_MAX			0xFF
-+
-+/* Hi6421 OCP (over current protection) and DEB (debounce) control register */
-+#define	HI6421_OCP_DEB_CTRL_REG		HI6421_REG_TO_BUS_ADDR(0x51)
-+#define	HI6421_OCP_DEB_SEL_MASK		0x0C
-+#define HI6421_OCP_DEB_SEL_8MS		0x00
-+#define HI6421_OCP_DEB_SEL_16MS		0x04
-+#define HI6421_OCP_DEB_SEL_32MS		0x08
-+#define HI6421_OCP_DEB_SEL_64MS		0x0C
-+#define HI6421_OCP_EN_DEBOUNCE_MASK	0x02
-+#define HI6421_OCP_EN_DEBOUNCE_ENABLE	0x02
-+#define HI6421_OCP_AUTO_STOP_MASK	0x01
-+#define HI6421_OCP_AUTO_STOP_ENABLE	0x01
-+
-+struct hi6421_pmic {
-+	struct device		*dev;
-+	struct regmap		*regmap;
 +};
 +
-+#endif		/* __HI6421_PMIC_H */
++module_platform_driver(rk808_clkout_driver);
++
++MODULE_DESCRIPTION("Clkout driver for the rk808 series PMICs");
++MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
++MODULE_AUTHOR("Zhang Qing <zhanqging@rock-chips.com>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:rk808-clkout");
 -- 
-1.9.1
+1.7.9.5
+
 
