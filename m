@@ -1,94 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933339AbaHYTDl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 15:03:41 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49626 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933313AbaHYTDi (ORCPT
+	id S1756467AbaHYTGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 15:06:07 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:33801 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068AbaHYTGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 15:03:38 -0400
-Date: Mon, 25 Aug 2014 14:03:12 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Linus Walleij <linus.walleij@linaro.org>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <devicetree@vger.kernel.org>, Dave Gerlach <d-gerlach@ti.com>
-Subject: Re: [PATCH 1/3] pinctrl: bindings: Add OMAP pinctrl binding
-Message-ID: <20140825190311.GA21871@kahuna>
-References: <1408716062-26055-1-git-send-email-nm@ti.com>
- <1408716062-26055-2-git-send-email-nm@ti.com>
- <20140825172506.GM17254@atomide.com>
+	Mon, 25 Aug 2014 15:06:04 -0400
+Date: Mon, 25 Aug 2014 12:05:59 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Andreas Werner <andreas.werner@men.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        Jean Delvare <jdelvare@suse.de>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH v4 3/4] drivers/leds/leds-menf21bmc: introduce MEN
+ 14F021P00 BMC LED driver
+Message-ID: <20140825190559.GA29112@roeck-us.net>
+References: <cover.1407918792.git.andreas.werner@men.de>
+ <b3c6bc75345ba821572b22e05432960f7867bdbb.1407918792.git.andreas.werner@men.de>
+ <CAK5ve-KCv=kfkJK-x5m1sFiSBVH9FMUys_tLw5Cup=3rHLZxYQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140825172506.GM17254@atomide.com>
+In-Reply-To: <CAK5ve-KCv=kfkJK-x5m1sFiSBVH9FMUys_tLw5Cup=3rHLZxYQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10:25-20140825, Tony Lindgren wrote:
-> * Nishanth Menon <nm@ti.com> [140822 07:03]:
-> > Add basic skeleton of OMAP pinctrl bindings. This is compatible with
-> > pinctrl,single bindings and is meant purely as a reference point.
-> > 
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
+On Mon, Aug 25, 2014 at 11:53:32AM -0700, Bryan Wu wrote:
+> On Wed, Aug 13, 2014 at 1:40 AM, Andreas Werner <andreas.werner@men.de> wrote:
+> > Added driver to support the 14F021P00 BMC LEDs.
+> > The BMC is a Board Management Controller including four LEDs which
+> > can be switched on and off.
+> >
+> > Signed-off-by: Andreas Werner <andreas.werner@men.de>
+> > ---
+> >  drivers/leds/Kconfig          |   6 ++
+> >  drivers/leds/Makefile         |   1 +
+> >  drivers/leds/leds-menf21bmc.c | 131 ++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 138 insertions(+)
+> >  create mode 100644 drivers/leds/leds-menf21bmc.c
+> >
+> > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> > index 27cf0cd..d38ff3f 100644
+> > --- a/drivers/leds/Kconfig
+> > +++ b/drivers/leds/Kconfig
+> > @@ -458,6 +458,12 @@ config LEDS_OT200
+> >           This option enables support for the LEDs on the Bachmann OT200.
+> >           Say Y to enable LEDs on the Bachmann OT200.
+> >
+> > +config LEDS_MENF21BMC
+> > +       tristate "LED support for the MEN 14F021P00 BMC"
+> > +       depends on LEDS_CLASS && MFD_MENF21BMC
+> > +       help
+> > +         Say Y here to include support for the MEN 14F021P00 BMC LEDs.
+> > +
+> >  comment "LED driver for blink(1) USB RGB LED is under Special HID drivers (HID_THINGM)"
+> >
+> >  config LEDS_BLINKM
+> > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> > index 3c03666..cadc433 100644
+> > --- a/drivers/leds/Makefile
+> > +++ b/drivers/leds/Makefile
+> > @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_MAX8997)            += leds-max8997.o
+> >  obj-$(CONFIG_LEDS_LM355x)              += leds-lm355x.o
+> >  obj-$(CONFIG_LEDS_BLINKM)              += leds-blinkm.o
+> >  obj-$(CONFIG_LEDS_VERSATILE)           += leds-versatile.o
+> > +obj-$(CONFIG_LEDS_MENF21BMC)           += leds-menf21bmc.o
+> >
+> >  # LED SPI Drivers
+> >  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
+> > diff --git a/drivers/leds/leds-menf21bmc.c b/drivers/leds/leds-menf21bmc.c
+> > new file mode 100644
+> > index 0000000..4621f72
+> > --- /dev/null
+> > +++ b/drivers/leds/leds-menf21bmc.c
+> > @@ -0,0 +1,131 @@
+> > +/*
+> > + *  MEN 14F021P00 Board Management Controller (BMC) LEDs Driver.
+> > + *
+> > + *  This is the core LED driver of the MEN 14F021P00 BMC.
+> > + *  There are four LEDs available which can be switched on and off.
+> > + *  STATUS LED, HOT SWAP LED, USER LED 1, USER LED 2
+> > + *
+> > + *  Copyright (C) 2014 MEN Mikro Elektronik Nuernberg GmbH
+> > + *
+> > + *  This program is free software; you can redistribute  it and/or modify it
+> > + *  under  the terms of  the GNU General  Public License as published by the
+> > + *  Free Software Foundation;  either version 2 of the  License, or (at your
+> > + *  option) any later version.
+> > + */
+> > +
+> > +#include <linux/module.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/leds.h>
+> > +#include <linux/i2c.h>
+> > +
+> > +#define BMC_CMD_LED_GET_SET    0xA0
+> > +#define BMC_BIT_LED_STATUS     BIT(0)
+> > +#define BMC_BIT_LED_HOTSWAP    BIT(1)
+> > +#define BMC_BIT_LED_USER1      BIT(2)
+> > +#define BMC_BIT_LED_USER2      BIT(3)
+> > +
+> > +struct menf21bmc_led {
+> > +       struct led_classdev cdev;
+> > +       u8 led_bit;
+> > +       const char *name;
+> > +       struct i2c_client *i2c_client;
+> > +};
+> > +
+> > +static struct menf21bmc_led leds[] = {
+> > +       {
+> > +               .name = "menf21bmc:led_status",
+> > +               .led_bit = BMC_BIT_LED_STATUS,
+> > +       },
+> > +       {
+> > +               .name = "menf21bmc:led_hotswap",
+> > +               .led_bit = BMC_BIT_LED_HOTSWAP,
+> > +       },
+> > +       {
+> > +               .name = "menf21bmc:led_user1",
+> > +               .led_bit = BMC_BIT_LED_USER1,
+> > +       },
+> > +       {
+> > +               .name = "menf21bmc:led_user2",
+> > +               .led_bit = BMC_BIT_LED_USER2,
+> > +       }
+> > +};
+> > +
+> > +static DEFINE_MUTEX(led_lock);
+> > +
+> > +static void
+> > +menf21bmc_led_set(struct led_classdev *led_cdev, enum led_brightness value)
+> > +{
+> > +       int led_val;
+> > +       struct menf21bmc_led *led = container_of(led_cdev,
+> > +                                       struct menf21bmc_led, cdev);
+> > +
+> > +       mutex_lock(&led_lock);
+> > +       led_val = i2c_smbus_read_byte_data(led->i2c_client,
+> > +                                               BMC_CMD_LED_GET_SET);
+> > +       if (led_val < 0)
+> > +               goto err_out;
+> > +
+> > +       if (value == LED_OFF)
+> > +               led_val &= ~led->led_bit;
+> > +       else
+> > +               led_val |= led->led_bit;
+> > +
+> > +       i2c_smbus_write_byte_data(led->i2c_client,
+> > +                                       BMC_CMD_LED_GET_SET, led_val);
+> > +err_out:
+> > +       mutex_unlock(&led_lock);
+> > +}
+> > +
+> > +static int menf21bmc_led_probe(struct platform_device *pdev)
+> > +{
+> > +       int i;
+> > +       int ret;
+> > +       struct i2c_client *i2c_client = to_i2c_client(pdev->dev.parent);
+> > +
+> > +       for (i = 0; i < ARRAY_SIZE(leds); i++) {
+> > +               leds[i].cdev.name = leds[i].name;
+> > +               leds[i].cdev.brightness_set = menf21bmc_led_set;
+> > +               leds[i].i2c_client = i2c_client;
+> > +               ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
+> > +               if (ret < 0)
+> > +                       goto err_free_leds;
+> > +       }
+> > +       dev_info(&pdev->dev, "MEN 140F21P00 BMC LED device enabled\n");
+> > +
+> > +       return 0;
+> > +
+> > +err_free_leds:
+> > +       dev_err(&pdev->dev, "failed to register LED device\n");
+> > +
+> > +       for (i = i - 1; i >= 0; i--)
+> > +               led_classdev_unregister(&leds[i].cdev);
+> > +
+> > +       return ret;
+> > +}
+> > +
+> > +static int menf21bmc_led_remove(struct platform_device *pdev)
+> > +{
+> > +       int i;
+> > +
+> > +       for (i = 0; i < ARRAY_SIZE(leds); i++)
+> > +               led_classdev_unregister(&leds[i].cdev);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static struct platform_driver menf21bmc_led = {
+> > +       .probe          = menf21bmc_led_probe,
+> > +       .remove         = menf21bmc_led_remove,
+> > +       .driver         = {
+> > +               .name           = "menf21bmc_led",
+> > +               .owner          = THIS_MODULE,
+> > +       },
+> > +};
+> > +
 > 
-> Looks like you have ti,omap2420-padconf and ti,omap2430-padconf missing
-> but after adding those too:
+> I still think this driver should be an I2C driver which is simply than
+> a platform driver.
+> Did I miss some discussion about this in our email?
 > 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+It is not possible to instantiate multiple drivers (watchdog, hwmon, led
+in this case) with a single i2c chip.
 
-I now see why I missed them:
-arch/arm/boot/dts/omap2420.dtsi:                        compatible = "ti,omap2420-padconf", "pinctrl-single";
-arch/arm/boot/dts/omap2430.dtsi:                        compatible = "ti,omap2430-padconf", "pinctrl-single";
-
-These are the only two references to the compatible, there is no driver
-matching being done, had missed it hence :( - Updated revision below
-(with your ack). Unless there are anymore review comments OR you'd want
-me to explicitly, I dont plan on reposting the following again.
-
----8<---
->From 74121c6a2524048eb02c3b33a25e13261edd2e99 Mon Sep 17 00:00:00 2001
-From: Nishanth Menon <nm@ti.com>
-Date: Thu, 22 May 2014 23:32:09 -0500
-Subject: [PATCH V2] pinctrl: bindings: Add OMAP pinctrl binding
-
-Add basic skeleton of OMAP pinctrl bindings. This is compatible with
-pinctrl,single bindings and is meant purely as a reference point.
-
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- .../bindings/pinctrl/ti,omap-pinctrl.txt           |   11 +++++++++++
- 1 file changed, 11 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-
-diff --git a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-new file mode 100644
-index 0000000..b3b57fc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-@@ -0,0 +1,11 @@
-+OMAP Pinctrl definitions
-+
-+Required properties:
-+- compatible : Should be one of:
-+  "ti,omap2420-padconf" - OMAP2420 compatible pinctrl
-+  "ti,omap2430-padconf" - OMAP2430 compatible pinctrl
-+  "ti,omap3-padconf" - OMAP3 compatible pinctrl
-+  "ti,omap4-padconf" - OMAP4 compatible pinctrl
-+  "ti,omap5-padconf" - OMAP5 compatible pinctrl
-+
-+See Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt for further details.
--- 
-1.7.9.5
-
--- 
-Regards,
-Nishanth Menon
+Thanks,
+Guenter
