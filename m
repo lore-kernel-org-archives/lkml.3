@@ -1,118 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416AbaHYGwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 02:52:39 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:18456 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093AbaHYGwh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 02:52:37 -0400
-X-AuditID: cbfee690-f79ce6d00000115a-27-53fadd2a22c4
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: "'Brian Foster'" <bfoster@redhat.com>
-Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-fsdevel@vger.kernel.org,
-        "=?iso-8859-2?Q?'Luk=E1=B9_Czerner'?=" <lczerner@redhat.com>,
-        "'linux-ext4'" <linux-ext4@vger.kernel.org>
-References: <004301cfb2c6$6ef2d330$4cd87990$@samsung.com>
- <20140822120659.GF3152@laptop.bfoster>
-In-reply-to: <20140822120659.GF3152@laptop.bfoster>
-Subject: RE: [PATCH v5 2/10] xfs: Add support FALLOC_FL_INSERT_RANGE for
- fallocate
-Date: Mon, 25 Aug 2014 15:52:26 +0900
-Message-id: <001901cfc031$2140a950$63c1fbf0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=iso-8859-2
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQH4GbaBpWRVdUyOkzDMM+qmsuCaGAJIM1vgm33n5UA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsWyRsSkWFfr7q9gg7arkhbvPldZbDl2j9Fi
-	2YPNLBYz591hs9iz9ySLxeVdc9gsWnt+slss6rvF6MDhcWqRhEfTmaPMHqsvbGX0eL/vKpvH
-	501yAaxRXDYpqTmZZalF+nYJXBkLuvezFdzkr/iw16uBcRdPFyMnh4SAicSHJbuYIGwxiQv3
-	1rN1MXJxCAksZZRYe34vK0zRrv8rmCES0xkldq86xwjh/GWU6PpzBSjDwcEmoC3xZ4soSIOI
-	gLrEnXkTWEBqmAVamCRWHF7FDpIQEkiSuLbmL9g6TgFjibZLD8A2CAuESJxuWMMGYrMIqEq8
-	6tgPVs8rYCnx+MZsKFtQ4sfkeywgu5gFdCS+TooACTMLyEtsXvOWGeJQBYkdZ18zQtxgJdHQ
-	+5IdokZEYt+Ld2A3Swh8ZJe4/G8KI8QuAYlvkw+BzZQQkJXYdABqjqTEwRU3WCYwSsxCsnkW
-	wuZZSDbPQrJhASPLKkbR1ILkguKk9CITveLE3OLSvHS95PzcTYzACD7979mEHYz3DlgfYhTg
-	YFTi4V3B+StYiDWxrLgy9xCjKdBBE5mlRJPzgWkiryTe0NjMyMLUxNTYyNzSTEmc97XUz2Ah
-	gfTEktTs1NSC1KL4otKc1OJDjEwcnFINjNNyzzPMvrDhxU4xzWf7PfOWrDV/NEfI4NTOSzdD
-	u9hjFqdUav1g4VFgLilt9xFZ+LpwDlO8A8d0HtUbi1TLBJeYdmwwnxB3MPnOUkbWCOb5fg5B
-	7iwH3v9eP6vG69arhYX3t108VKs2Z6LMxYhepwPFArMkFL4VBfKVu092uOVw4MukxLbARUos
-	xRmJhlrMRcWJAN+c9sXbAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEKsWRmVeSWpSXmKPExsVy+t9jQV2tu7+CDX4eE7R497nKYsuxe4wW
-	yx5sZrGYOe8Om8WevSdZLC7vmsNm0drzk91iUd8tRgcOj1OLJDyazhxl9lh9YSujx/t9V9k8
-	Pm+SC2CNamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXL
-	zAE6RUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOYsaB7P1vBTf6KD3u9
-	Ghh38XQxcnJICJhI7Pq/ghnCFpO4cG89WxcjF4eQwHRGid2rzjFCOH8ZJbr+XAGq4uBgE9CW
-	+LNFFKRBREBd4s68CSwgNcwCLUwSKw6vYgdJCAkkSVxb85cJxOYUMJZou/SAFcQWFgiRON2w
-	hg3EZhFQlXjVsR+snlfAUuLxjdlQtqDEj8n3WEB2MQvoSHydFAESZhaQl9i85i3UoQoSO86+
-	ZoS4wUqiofclO0SNiMS+F+8YJzAKzUIyaRbCpFlIJs1C0rGAkWUVo2hqQXJBcVJ6rpFecWJu
-	cWleul5yfu4mRnB6eCa9g3FVg8UhRgEORiUe3pWcv4KFWBPLiitzDzFKcDArifBOOQ4U4k1J
-	rKxKLcqPLyrNSS0+xGgK9OdEZinR5Hxg6soriTc0NjEzsjQyN7QwMjZXEuc92GodKCSQnliS
-	mp2aWpBaBNPHxMEp1cCob8O0IOjYggj5m92dTH+/bSrqZv5r7KL6SEWiYOP2yQJv4rftXLEh
-	nW/pGV+vc87OYT1W0ypPS1/QzTk9tXLb3L+cB94UX97lN+P4BhvL0z+Fdom8S6zgyk5c/sNT
-	f6bw+huqk5PPbxdW6Hlrcvjz0S+3fhrGWnzbwqPAVPDG2Lzqu1LIaw4vJZbijERDLeai4kQA
-	t28YjiUDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754356AbaHYG7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 02:59:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41787 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883AbaHYG7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 02:59:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
+   d="scan'208";a="562960237"
+Message-ID: <53FADE71.8070006@intel.com>
+Date: Mon, 25 Aug 2014 09:57:53 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/10] perf evlist: Introduce perf_evlist__filter_pollfd
+ method
+References: <1408741190-5123-1-git-send-email-acme@kernel.org> <1408741190-5123-2-git-send-email-acme@kernel.org>
+In-Reply-To: <1408741190-5123-2-git-send-email-acme@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi Namjae,
-Hi Brian.
+On 08/22/2014 11:59 PM, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> To remove all entries in evlist->pollfd[] that have revents matching at
+> least one of the bits in the specified mask.
+> 
+> It'll adjust evlist->nr_fds to the number of unfiltered fds and will
+> return this value, as a convenience and to avoid requiring direct access
+> to internal state of perf_evlist objects.
+> 
+> This will be used after polling the evlist fds so that we remove fds
+> that were closed by the kernel.
+> 
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Don Zickus <dzickus@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Link: http://lkml.kernel.org/n/tip-ki3oqbfjg84si3f9amhyqvzb@git.kernel.org
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/perf/util/evlist.c | 16 ++++++++++++++++
+>  tools/perf/util/evlist.h |  2 ++
+>  2 files changed, 18 insertions(+)
+> 
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index a3e28b49128a..bd7896073d10 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -428,6 +428,22 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
+>  	evlist->nr_fds++;
+>  }
+>  
+> +int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask)
+> +{
+> +	int fd = 0, nr_fds = 0;
+> +
+> +	while (fd < evlist->nr_fds) {
 
-Thanks for your mail :)
-> 
-> Sorry for finding things so late, but it looks like this suffers from
-> the same couple bugs we've recently discovered with the collapse range
-> patches. See the following for a couple fixes that have been proposed
-> recently:
-> 
-> http://oss.sgi.com/archives/xfs/2014-08/msg00292.html
-> 
-> This one helps prevent scenarios where we try to cancel a transaction
-> that is dirty. This leads to a shutdown on XFS. The idea is basically to
-> avoid logging until we actually make a change, so errors hit early in
-> the function (before we change anything) won't lead to an abort in the
-> error path. It looks like the bmap split and shift functions in this
-> patch could use the very same attention.
-Okay, I will add this commit to insert range patch.
+A for loop is clearer e.g.
 
-> 
-> http://oss.sgi.com/archives/xfs/2014-08/index.html
-> 
-> This one deals with a problem with the high level shift algorithm. The
-> problem with the algorithm here is that 'current_ext' can change
-> unexpectedly once we release the ilock due to writeback on parts of the
-> file before the range being collapsed/inserted. E.g., it is not a stable
-> index once ilock is dropped. The temporary solution is to flush the
-> entire file, since we have the iolock during the entire operation and
-> nothing else can dirty the file. The better fix is to track via an
-> offset across iterations of the shift, rather than the extent count
-> (iirc, xfs_bunmapi() and other bmap functions provide examples of this
-> kind of algorithm).
-Okay, I will check your points.
+	for (fd = 0; fd < evlist->nr_fds; fd++) {
 
-> 
-> Brian
-> 
-> P.S., It's probably a good idea to remove my r-b tag on the next post as
-> well to avoid confusion and remind me that I need to take another look
-> at this. ;) Thanks again.
-Okay, I will remove it.
 
-Thanks Brian!
-> 
+> +		if ((evlist->pollfd[fd].revents & revents_and_mask) == 0)
+> +			++nr_fds;
+> +
+> +		if (++fd != nr_fds)
+> +			evlist->pollfd[nr_fds] = evlist->pollfd[fd];
 
-> > --
-> > 1.7.11-rc0
-> >
-> > _______________________________________________
-> > xfs mailing list
-> > xfs@oss.sgi.com
-> > http://oss.sgi.com/mailman/listinfo/xfs
+That looks like it will go off the end of the array.  Shouldn't it be:
+
+		if ((evlist->pollfd[fd].revents & revents_and_mask) == 0) {
+			if (fd != nr_fds)
+				evlist->pollfd[nr_fds] = evlist->pollfd[fd];
+			nr_fds += 1;
+		}
+
+> +	}
+> +
+> +	evlist->nr_fds = nr_fds;
+> +	return nr_fds;
+> +}
+> +
+>  static void perf_evlist__id_hash(struct perf_evlist *evlist,
+>  				 struct perf_evsel *evsel,
+>  				 int cpu, int thread, u64 id)
+> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+> index 106de53a6a74..1082420951f9 100644
+> --- a/tools/perf/util/evlist.h
+> +++ b/tools/perf/util/evlist.h
+> @@ -84,6 +84,8 @@ void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
+>  
+>  void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
+>  
+> +int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask);
+> +
+>  struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
+>  
+>  struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id);
+> 
 
