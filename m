@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933520AbaHYVRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 17:17:32 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:38380 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755006AbaHYVRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 17:17:31 -0400
+	id S1756617AbaHYVS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 17:18:28 -0400
+Received: from 8bytes.org ([81.169.241.247]:51474 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453AbaHYVS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 17:18:27 -0400
+Date: Mon, 25 Aug 2014 23:18:23 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Cho KyongHo <pullip.cho@samsung.com>,
+        Thierry Reding <treding@nvidia.com>, Olof Johansson <olof@lixom.net>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Rob Herring <robh@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 04/29] drivers: base: add notifier for failed driver bind
+Message-ID: <20140825211823.GH16329@8bytes.org>
+References: <1407235677-26324-1-git-send-email-m.szyprowski@samsung.com>
+ <1407235677-26324-5-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1409000826.3033.32.camel@deadeye.wl.decadent.org.uk>
-References: <1927160445.21851828.1408504000719.JavaMail.zimbra@redhat.com>
-	<1408576235.2618.47.camel@deadeye.wl.decadent.org.uk>
-	<1859750321.23735105.1408945864304.JavaMail.zimbra@redhat.com>
-	<1409000826.3033.32.camel@deadeye.wl.decadent.org.uk>
-Date: Mon, 25 Aug 2014 17:17:30 -0400
-Message-ID: <CAHQdGtT0WhB38XYToS8ceiepW2v_stKZcVYsktBG26iBS4KHAg@mail.gmail.com>
-Subject: Re: [PATCH v2] nfs: remove redundant slash from nfs_path
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Xiong Zhou <xzhou@redhat.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1407235677-26324-5-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 5:07 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
-> On Mon, 2014-08-25 at 01:51 -0400, Xiong Zhou wrote:
->> When export root dir(/) via nfs, and mount a particular dir under root, eg
->> /nfsexport, there will be defect double slash output in /proc/mounts, like
->> localhost://nfsexport. While this patch change it to localhost:/nfsexport.
->>
->> Signed-off-by: Xiong Zhou <xzhou@redhat.com>
->> ---
->>  fs/nfs/namespace.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/fs/nfs/namespace.c b/fs/nfs/namespace.c
->> index b5a0afc..24f954e 100644
->> --- a/fs/nfs/namespace.c
->> +++ b/fs/nfs/namespace.c
->> @@ -98,7 +98,7 @@ rename_retry:
->>               return end;
->>       }
->>       namelen = strlen(base);
->> -     if (flags & NFS_PATH_CANONICAL) {
->> +     if ((flags & NFS_PATH_CANONICAL) || *end == '/') {
->>               /* Strip off excess slashes in base string */
->>               while (namelen > 0 && base[namelen - 1] == '/')
->>                       namelen--;
->
-> I think this makes sense, though I'm not sure I completely understand
-> this function. :-/
->
+On Tue, Aug 05, 2014 at 12:47:32PM +0200, Marek Szyprowski wrote:
+> +	if (failed && dev->bus)
+> +		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+> +					     BUS_NOTIFY_DRVBIND_FAILED, dev);
+> +
 
-It breaks the function's guarantee concerning NFS_PATH_CANONICAL; that
-"if unset, the original name is returned verbatim".
+Why can't you just use the notifier for BUS_NOTIFY_UNBIND_DRIVER or
+BUS_NOTIFY_UNBOUND_DRIVER when something goes wrong in driver
+initialization?
 
--- 
-Trond Myklebust
 
-Linux NFS client maintainer, PrimaryData
+	Joerg
 
-trond.myklebust@primarydata.com
