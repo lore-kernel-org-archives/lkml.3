@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356AbaHYNMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:12:55 -0400
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:43418 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754526AbaHYNMx (ORCPT
+	id S932386AbaHYNOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:14:04 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:46886 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932235AbaHYNOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:12:53 -0400
-X-Sasl-enc: FR5tmmTjOXWQBoUXXidQDiEEHRwSV5W2zCJpDKcL6CWR 1408972372
-Message-ID: <1408972370.8545.12.camel@localhost>
-Subject: Re: [PATCH 0/2] Add TLS record layer encryption module
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Cristian Stoica <cristian.stoica@freescale.com>
-Cc: herbert@gondor.apana.org.au, linux-crypto@vger.kernel.org,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Mon, 25 Aug 2014 15:12:50 +0200
-In-Reply-To: <1406626353-23309-1-git-send-email-cristian.stoica@freescale.com>
-References: <1406626353-23309-1-git-send-email-cristian.stoica@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Aug 2014 09:14:02 -0400
+Date: Mon, 25 Aug 2014 08:13:58 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        Tejun Heo <htejun@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm/slab: use percpu allocator for cpu cache
+In-Reply-To: <20140825082615.GA13475@js1304-P5Q-DELUXE>
+Message-ID: <alpine.DEB.2.11.1408250809420.17236@gentwo.org>
+References: <1408608675-20420-1-git-send-email-iamjoonsoo.kim@lge.com> <alpine.DEB.2.11.1408210918050.32524@gentwo.org> <20140825082615.GA13475@js1304-P5Q-DELUXE>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 25 Aug 2014, Joonsoo Kim wrote:
 
-On Di, 2014-07-29 at 12:32 +0300, Cristian Stoica wrote:
-> This set of patches introduces support for TLS 1.0 record layer
-> encryption/decryption with a corresponding algorithm called
-> tls10(hmac(<hash>),cbc(<cipher>)).
-> 
-> Similarly to authenc.c on which it is based, this module mixes the base
-> algorithms in software to produce an algorithm that does record layer
-> encryption and decryption for TLS1.0.
-> Any combination of hw and sw base algorithms is possible, but the purpose
-> is to take advantage of hardware acceleration for TLS record layer offloading
-> when hardware acceleration is present.
-> 
-> This is a software alternative to forthcoming Freescale caam patches that
-> will add support for one-pass hardware-only TLS record layer offloading.
-> 
-> Performance figures depend largely on several factors including hardware
-> support and record layer size. For user-space applications the
-> kernel/user-space interface is also important. That said, we have done several
-> performance tests using openssl and cryptodev on Freescale QorIQ platforms.
-> On P4080, for a single stream of records larger than 512 bytes, the performance
-> improved from about 22Mbytes/s to 64Mbytes/s while also reducing CPU load.
-> 
-> The purpose of this module is to enable TLS kernel offloading on hw platforms
-> that have acceleration for AES/SHA1 but do not have direct support for TLS
-> record layer.
-> 
-> (minor dependency on pending patch
->   crypto: testmgr.c: white space fix-ups on test_aead)
-> 
-> Cristian Stoica (2):
->   crypto: add support for TLS 1.0 record encryption
->   crypto: add TLS 1.0 test vectors for AES-CBC-HMAC-SHA1
-> 
->  crypto/Kconfig           |  20 ++
->  crypto/Makefile          |   1 +
->  crypto/authenc.c         |   5 +-
->  crypto/tcrypt.c          |   5 +
->  crypto/testmgr.c         |  41 +++-
->  crypto/testmgr.h         | 217 +++++++++++++++++++
->  crypto/tls.c             | 528 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/crypto/authenc.h |   3 +
->  8 files changed, 808 insertions(+), 12 deletions(-)
->  create mode 100644 crypto/tls.c
-> 
+> On Thu, Aug 21, 2014 at 09:21:30AM -0500, Christoph Lameter wrote:
+> > On Thu, 21 Aug 2014, Joonsoo Kim wrote:
+> >
+> > > So, this patch try to use percpu allocator in SLAB. This simplify
+> > > initialization step in SLAB so that we could maintain SLAB code more
+> > > easily.
+> >
+> > I thought about this a couple of times but the amount of memory used for
+> > the per cpu arrays can be huge. In contrast to slub which needs just a
+> > few pointers, slab requires one pointer per object that can be in the
+> > local cache. CC Tj.
+> >
+> > Lets say we have 300 caches and we allow 1000 objects to be cached per
+> > cpu. That is 300k pointers per cpu. 1.2M on 32 bit. 2.4M per cpu on
+> > 64bit.
+>
+> Amount of memory we need to keep pointers for object is same in any case.
 
-Maybe could you add netdev@vger.kernel.org to Cc on your next
-submission?
+What case? SLUB uses a linked list and therefore does not have these
+storage requirements.
 
-It would be great if this feature would be made available in some way
-that user space does TLS handshaking over a socket and symmetric keys
-could later be installed via e.g. setsockopt and kernel offloads tls
-processing over this socket.
+> I know that percpu allocator occupy vmalloc space, so maybe we could
+> exhaust vmalloc space on 32 bit. 64 bit has no problem on it.
+> How many cores does largest 32 bit system have? Is it possible
+> to exhaust vmalloc space if we use percpu allocator?
 
-Alert message handling seems problematic, though and might require some
-out-of-band interface.
+There were NUMA systems on x86 a while back (not sure if they still
+exists) with 128 or so processors.
 
-Thanks,
-Hannes
+Some people boot 32 bit kernels on contemporary servers. The Intel ones
+max out at 18 cores (36 hyperthreaded). I think they support up to 8
+scokets. So 8 * 36?
 
+
+Its different on other platforms with much higher numbers. Power can
+easily go up to hundreds of hardware threads and SGI Altixes 7 yearsago
+where at 8000 or so.
 
