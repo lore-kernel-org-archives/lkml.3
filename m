@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026AbaHYPL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 11:11:59 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:45232 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739AbaHYPL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 11:11:58 -0400
-Date: Mon, 25 Aug 2014 11:11:56 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Cc: Dan Aloni <dan@kernelim.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "security@kernel.org" <security@kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mateusz Guzik <mguzik@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>, Jeff Moyer <jmoyer@redhat.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: Revert "aio: fix aio request leak when events are reaped by user space"
-Message-ID: <20140825151156.GE20070@kvack.org>
-References: <cover.1403632276.git.bcrl@kvack.org> <f8567a3845ac05bb28f3c1b478ef752762bd39ef.1403632276.git.bcrl@kvack.org> <20140819163733.GA10132@gmail.com> <20140819165404.GD13858@kvack.org> <20140819171426.GA11811@gmail.com> <20140820004651.GJ13858@kvack.org> <20140822160111.GD20391@kvack.org> <20140822161502.GA30392@gmail.com> <20140822162630.GF20391@kvack.org> <94D0CD8314A33A4D9D801C0FE68B402958C22133@G9W0745.americas.hpqcorp.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958C22133@G9W0745.americas.hpqcorp.net>
-User-Agent: Mutt/1.4.2.2i
+	id S932955AbaHYPMq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 11:12:46 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47103 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586AbaHYPMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 11:12:44 -0400
+Message-ID: <53FB5268.1010209@parallels.com>
+Date: Mon, 25 Aug 2014 19:12:40 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Anand Avati <avati@gluster.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] fuse: wait for end of IO on release
+References: <20140821160304.11005.15166.stgit@localhost.localdomain>	<20140821160823.11005.32693.stgit@localhost.localdomain> <CAJfpegu6ZDNK9LyG6Vi2_hRMAW7cisTYZ_7wgT9foYOpbZRoqg@mail.gmail.com>
+In-Reply-To: <CAJfpegu6ZDNK9LyG6Vi2_hRMAW7cisTYZ_7wgT9foYOpbZRoqg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.22.200]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 03:06:12PM +0000, Elliott, Robert (Server Storage) wrote:
-> Using this version of the patch, I ran into this crash after 36
-> hours of scsi-mq testing over the weekend.
-...
-> 
->         local_irq_save(flags);
->         kcpu = this_cpu_ptr(ctx->cpu);
->         kcpu->reqs_available += nr;
-> 
->         while (kcpu->reqs_available >= ctx->req_batch * 2) {
+On 08/22/2014 06:00 PM, Miklos Szeredi wrote:
+> On Thu, Aug 21, 2014 at 6:08 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
+>> There are two types of I/O activity that can be "in progress" at the time
+>> of fuse_release() execution: asynchronous read-ahead and write-back. The
+>> patch ensures that they are completed before fuse_release_common sends
+>> FUSE_RELEASE to userspace.
+>>
+>> So far as fuse_release() waits for end of async I/O, its callbacks
+>> (fuse_readpages_end and fuse_writepage_finish) calling fuse_file_put cannot
+>> be the last holders of fuse file anymore. To emphasize the fact, the patch
+>> replaces fuse_file_put with __fuse_file_put there.
+> 1) spinlock around __fuse_file_put() is unnecessary,
+> wake_up/wait_event will provide the necessary synchronization.
+Yes, I agree.
 
-This crash is not particularly useful, as that version of the patch was 
-buggy and could result in reqs_available getting corrupted (ie, it could 
-overflow), which could lead to the system getting stuck for a significant 
-amount of time in put_reqs_available().  In other words, the crash you 
-reported matches the known problem with that patch.
+> 2) can't we always wait for I/O and just make the actual RELEASE
+> message sync or async based on the flag?
+> 3) and can't we merge the fuseblk case into this as well?
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+I think this is doable, but the same argument that Anand suggested for 
+doing sync release selectively:
+
+> In a real world scenario you may want to perform synchronous release 
+> selectively. As such performance over lots of small files is generally 
+> slow because of context switches, and a synchronous release adds an 
+> extra switch.
+
+is applicable here: if an application opened a file read-only and read a 
+block initiating read-ahead, it's not obvious why the app doing close(2) 
+should always wait for the end of that read-ahead. For some fs it's 
+desirable, for others is not. Let's fuse daemon decide which behaviour 
+is preferable.
+
+Thanks,
+Maxim
