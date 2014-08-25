@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592AbaHYNvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:51:48 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:33623 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526AbaHYNvr (ORCPT
+	id S932625AbaHYNxR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:53:17 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:40599 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755AbaHYNxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:51:47 -0400
+	Mon, 25 Aug 2014 09:53:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1408972519.20683.41.camel@joe-AO725>
-References: <1408966502-22350-1-git-send-email-gdonald@gmail.com> <1408972519.20683.41.camel@joe-AO725>
-From: Greg Donald <gdonald@gmail.com>
-Date: Mon, 25 Aug 2014 08:51:25 -0500
-Message-ID: <CAO+WgCY8Ugv17WMEe0TEn0ruf9HAF=uNZ12OKjZmehsO6kvZ1Q@mail.gmail.com>
-Subject: Re: [PATCH] drivers: staging: rtl8821ae: Fix spaces required around
- that '?' errors
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140825102445.1ff19682@free-electrons.com>
+References: <1408554231-24321-1-git-send-email-mathieu.poirier@linaro.org>
+	<1408554231-24321-2-git-send-email-mathieu.poirier@linaro.org>
+	<20140825102445.1ff19682@free-electrons.com>
+Date: Mon, 25 Aug 2014 07:53:15 -0600
+Message-ID: <CANLsYkzvS8YTACjWSqfALM20C=J_i_94=JaQZaSFeWEUtPpkuQ@mail.gmail.com>
+Subject: Re: [PATCH 01/11 v4] coresight: add CoreSight core layer framework
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        00regkh@linuxfoundation.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        Robert Marklund <robbelibobban@gmail.com>, Al Grant <Al.Grant@arm.com>,
+        Patch Tracking <patches@linaro.org>,
+        Marcin Jabrzyk <marcin.jabrzyk@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Panchaxari Prasannamurthy Tumkur 
+	<panchaxari.prasannamurthy@linaro.org>,
+        "r.sengupta@samsung.com" <r.sengupta@samsung.com>,
+        Tony Armitstead <Tony.Armitstead@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        James King <james.king@linaro.org>,
+        Pratik Patel <pratikp@codeaurora.org>,
+        Vikas Varshney <varshney@ti.com>,
+        Jonas Svennebring <jonas.svennebring@avagotech.com>,
+        Kaixu Xia <kaixu.xia@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 8:15 AM, Joe Perches <joe@perches.com> wrote:
-> On Mon, 2014-08-25 at 06:35 -0500, Greg Donald wrote:
->> Fix checkpatch.pl spaces required around that '?' errors
+On 25 August 2014 02:24, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
+> Hello,
 >
-> It'd be better to convert all parts of the
-> ternary at the same time.
-
-Wouldn't "at the same time" be in direct conflict with the "only do
-one thing per patch" rule?
-
->                     (force_exec ? "force to" : ""), ((dec_bt_pwr) ? "ON" : "OFF")));
+> On Wed, 20 Aug 2014 11:03:41 -0600, mathieu.poirier@linaro.org wrote:
 >
-> etc...
+>> diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+>> new file mode 100644
+>> index 0000000..fef87bc
+>> --- /dev/null
+>> +++ b/drivers/coresight/Makefile
+>> @@ -0,0 +1,9 @@
+>> +#
+>> +# Makefile for CoreSight drivers.
+>> +#
+>> +obj-$(CONFIG_CORESIGHT) += coresight.o
+>> +obj-$(CONFIG_OF) += of_coresight.o
+>> +obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
+>> +                                        coresight-etb10.o coresight-funnel.o \
+>> +                                        coresight-replicator.o
+>> +obj-$(CONFIG_CORESIGHT_SOURCE_ETM3X) += coresight-etm3x.o coresight-etm-cp14.o
 >
-> A subsequent change might be to remove the unnecessary
-> parentheses like:
+> I believe this is a bit messed up with PATCH 02/11. Here you're adding
+> references to many files that aren't part of this patch, but are added
+> in subsequent patches. PATCH 02/11 removes those lines and replaces
+> them by the correct values. Surely an interactive rebase conflict that
+> was not solved properly.
+
+Yeah, that's messed up.  Thanks for pointing it out.
+
+Mathieu
+
 >
->                     force_exec ? "force to" : "", dec_bt_pwr ? "ON" : "OFF");
-
-I understand.  It's very likely I'll submit such a patch in the future.
-
-I'm currently attempting to keep my cleanups to a single error/warning
-type so I get as much done as possible per patch while also keeping
-the patch easy to review.  Is this wrong?
-
-
--- 
-Greg Donald
+> Thomas
+> --
+> Thomas Petazzoni, CTO, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
