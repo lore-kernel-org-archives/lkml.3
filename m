@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007AbaHYRib (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:38:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60323 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755946AbaHYRia (ORCPT
+	id S933118AbaHYRkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:40:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37992 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933017AbaHYRkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:38:30 -0400
-Date: Mon, 25 Aug 2014 10:37:48 -0700
-From: gregkh <gregkh@linuxfoundation.org>
-To: sanjeev sharma <sanjeevsharmaengg@gmail.com>
-Cc: Valentina Manea <valentina.manea.m@gmail.com>, tulinizer@gmail.com,
-        stern@rowland.harvard.edu, mail@beyermatthias.de, hdegoede@redhat.com,
-        f.manzan@gmail.com, kurt@garloff.de, linux-usb@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, firefly@lists.rosedu.org,
-        andy.grover@gmail.com, max@vozeler.com, shuahkhan@gmail.com
-Subject: Re: [PATCH 4/4] MAINTAINERS: Add an entry for USB/IP driver
-Message-ID: <20140825173748.GB19352@kroah.com>
-References: <1408509062-1375-1-git-send-email-valentina.manea.m@gmail.com>
- <1408509062-1375-5-git-send-email-valentina.manea.m@gmail.com>
- <CAGUYZuSMYQL4ur8sXn_sqdKXxYfYRqsz4kCxsmRY1C0dDbbB2Q@mail.gmail.com>
+	Mon, 25 Aug 2014 13:40:08 -0400
+Message-ID: <53FB7511.9090205@wwwdotorg.org>
+Date: Mon, 25 Aug 2014 11:40:33 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGUYZuSMYQL4ur8sXn_sqdKXxYfYRqsz4kCxsmRY1C0dDbbB2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mikko Perttunen <mperttunen@nvidia.com>, pdeschrijver@nvidia.com,
+        pgaikwad@nvidia.com, mturquette@linaro.org, thierry.reding@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 0/8] Tegra124 EMC (external memory controller) support
+References: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
+In-Reply-To: <1405088313-20048-1-git-send-email-mperttunen@nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 20, 2014 at 12:44:45PM +0530, sanjeev sharma wrote:
-> Hello Valentina,
-> 
-> I have started looking into USB IP Project and this look's very interesting and
-> Do we have anything left in this Project apart from reviewing user-land
-> protocol ?
+On 07/11/2014 08:18 AM, Mikko Perttunen wrote:
+> Hi everyone,
+>
+> this series adds support for the EMC (external memory controller) clock
+> in the Tegra124 system-on-chip. The series has been tested on Jetson TK1.
+>
+> The first two patches remove the old "emc_mux" and "emc" clocks from the
+> clock tree and the device tree bindings. This is, of course, not backwards
+> compatible, but as these clocks have never been useful for anything
+> (apart from maybe reading the boot rate of the EMC clock). If this is still
+> not acceptable, the second patch can be dropped.
+...
 
-What do you mean by this?  Does the code not work properly for you?
-
-confused,
-
-greg k-h
+Mikko, this series had some comments, especially on the DT binding 
+(patch 5/8) and how the MC/EMC drivers interact. Is there an updated 
+version of the series? Or, is the series replaced by Tomeu Vizoso's work?
