@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924AbaHYOnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:43:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7595 "EHLO mx1.redhat.com"
+	id S932971AbaHYOnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:43:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9503 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754586AbaHYOnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:43:39 -0400
-Date: Mon, 25 Aug 2014 16:41:11 +0200
+	id S932949AbaHYOnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 10:43:51 -0400
+Date: Mon, 25 Aug 2014 16:26:41 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Suresh Siddha <sbsiddha@gmail.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
         Bean Anderson <bean@azulsystems.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
         the arch/x86 maintainers <x86@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 2/5] x86, fpu: don't drop_fpu() in
 	__restore_xstate_sig() if use_eager_fpu()
-Message-ID: <20140825144111.GB31880@redhat.com>
+Message-ID: <20140825142641.GA31880@redhat.com>
 References: <20140824194700.GA27281@redhat.com> <20140824194736.GA27441@redhat.com> <CA+55aFyQzvvmWUDA01x69vYkrwUG07q9P3Mv5KaT31pOFsBZGQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,9 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> fix Suresh's email...
-
-(Damn, really fix this time, sorry for resend)
+fix Suresh's email...
 
 And the patch is buggy, fpu_finit(&tsk->thread.fpu) if __copy_from_user()
 fails is obviously wrong, but this is fixable.
