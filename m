@@ -1,129 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917AbaHYOFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:05:38 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:46736 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932510AbaHYOFf (ORCPT
+	id S932849AbaHYOEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:04:52 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:40351 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932274AbaHYOEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:05:35 -0400
-Message-ID: <53FB42A7.3030505@gmail.com>
-Date: Mon, 25 Aug 2014 10:05:27 -0400
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 25 Aug 2014 10:04:49 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: Linux UDF support
-References: <201408241446.47042@pali> <53FB2FD9.7060406@gmail.com> <201408251524.05443@pali>
-In-Reply-To: <201408251524.05443@pali>
-x-hashcash: 1:21:140825:pali.rohar@gmail.com::2fefbefe48b8ed433673a5f2bfd8ae00:8da2e253c2df640d
-x-hashcash: 1:21:140825:jack@suse.cz::1c933e10daaa9200308bdb1571d926ce:7471439c1f776b1f
-x-hashcash: 1:21:140825:linux-kernel@vger.kernel.org::d4b09cba31e6f078ff0a36239a09954e:8a6adcffb066dc20
-x-stampprotocols: hashcash:1:17;mbound:0:10:3000:5000
+In-Reply-To: <53FB3A86.2060203@6wind.com>
+References: <cover.1408581429.git.rgb@redhat.com> <cd6cd0622ce677b639afae18a69ff79c72490bab.1408581429.git.rgb@redhat.com>
+ <CALCETrUnzG1V8w+H9ctAJP+Hvo8LQax=dhLG4bBpBKmVi+C1cQ@mail.gmail.com>
+ <20140822015803.GG20529@madcap2.tricolour.ca> <CALCETrUkFD0iNi1SV_6ypN5Kf4GYybT5tzjRjRQuLzT9iBnQAg@mail.gmail.com>
+ <53FB3A86.2060203@6wind.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 25 Aug 2014 07:04:28 -0700
+Message-ID: <CALCETrW1Lv0qeccMjNHSEzgtiaNN3NgJVR1dFjjR_dw5KVVnqA@mail.gmail.com>
+Subject: Re: [PATCH V4 3/8] namespaces: expose ns instance serial numbers in proc
+To: nicolas.dichtel@6wind.com
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, linux-audit@redhat.com,
+        Linux API <linux-api@vger.kernel.org>,
+        Richard Guy Briggs <rgb@redhat.com>, netdev <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-25 09:24, Pali Rohár wrote:
-> Hi,
-> 
-> On Monday 25 August 2014 14:45:13 Austin S Hemmelgarn wrote:
->> On 2014-08-24 08:46, Pali Rohár wrote:
->>> Hi,
->>>
->>> I would like to know what is state of linux UDF driver. It
->>> is experimental or is now suitable for storing data?
->>
->> I know that read support works for every version I have
->> tested, but I've only tested it reading data from DVD's and
->> Blu-Ray discs, so I don't know how well it works for other
->> purposes.
->>
-> 
-> Ok. I'm thinking about using UDF on HDD and usb flash disks (not 
-> on optical medium). And here I need write support too.
-> 
->>> According to wikipedia [1] UDF has open specification format
->>> and can be used also for HDDs (not only optical discs).
->>>
->>> In OS support table is written that all major and other
->>> minor OSs support UDF FS (without needs for additional
->>> programs).
->>>
->>> So it looks like UDF is good candidate for multi OS
->>> filesystem. Are there any disadvantages for using UDF on
->>> e.g USB flash disk? (when I want read/write support on
->>> Linux, Windows 7 and Mac OS X)
->>
->> If you are going to go that way, make sure to use the Spared
->> Build, as otherwise you will run in to the same media
->> wear-out issues that NTFS and FAT have.  Also, keep in mind
->> that pre-Vista Windows and pre-10.4 OSX don't have very good
->> support for the newer formats.
->>
-> 
-> What is Spared Build? And how to use it?
-Sparse Build is one of the extensions that was added in 1.50.  It
-provides a table indicating sectors that have worn out and therefore
-should be left unused.  The general idea is that rewritable media is
-almost always limited in the number of writes it can handle to a given
-location, and when you exceed that number, you get data corruption at
-that location.  This is usually most noticeable on flash media, but it
-happens on {CD,DVD,BD}-RW discs and hard drives as well.  FAT has no
-provisions for handling this, and NTFS and ext4 just return the
-corrupted data.  UDF however, has sufficient error correction ability
-(because it was designed with optical media in mind) that it can usually
-detect the corruption, recover the corrupted data, and then if you are
-using the Sparse Build format, mark that block as unusable, and write
-the new data out elsewhere.
-> 
-> Problem with NTFS is that linux driver has write support marked 
-> as experimental. FAT has problems with big files and for exFAT 
-> there is no driver in linux kernel yet...
-> 
-For NTFS, you should be using NTFS-3G, not the kernel driver, and I
-personally wouldn't trust the OS X driver for NTFS for anything beyond
-read-only usage (I only barely trust NTFS-3G as it is, and have about as
-much trust in the Linux kernel driver for it as I would in somebody
-trying to convince me that arsenic is good for you).  And for exFAT
-there is FUSE module.  I haven't tested either for much other than
-read-only scenarios, but I can confirm that they are great for data
-recovery.
->>> Because lot of manuals say that FAT32 (or NTFS) is only one
->>> solution for using USB flash disk on more OS.
->>>
->>> On wikipedia there is one note about linux: Write support is
->>> only up to UDF version 2.01. Is this restriction still
->>> valid?
->>
->> I do know that we support reading UDF 2.60 (I've used linux to
->> read Blu-Ray discs), but I have no idea about write support
->> for versions above 2.01.
->>
->>> What will happen if I try to mount FS with UDF version 2.60
->>> in R/W mode on linux? It will fallback to R/O mode? Or
->>> newly written files will be in previous (2.01) versions?
->>>
->>> And last question: Is there some fsck tool for UDF? Or at
->>> least tool which print if FS is in inconsistent state?
->>
->> Most Linux distributions have a package called udftools, the
->> upstream URL given by portage is
->> http://sf.net/projects/linux-udf/
->>
-> 
-> That project does not have udf fsck tool :-(
-IIRC, there are a lot of issues that UDF will recover from gracefully.
-It has ridiculously good error correction abilities, and the newer
-versions even have the option of duplicate copies of filesystem metadata
-to provide even more resilience.
-> 
->>> [1] - http://en.wikipedia.org/wiki/Universal_Disk_Format
-> 
-> Ok, I will wait for response from maintainer Jan, he probably 
-> would know more...
-> 
+On Aug 25, 2014 6:30 AM, "Nicolas Dichtel" <nicolas.dichtel@6wind.com> wrote:
+>> CRIU wants to save the complete state of a namespace and then restore
+>> it.  For that to work, any information exposed to things in the
+>> namespace *cannot* be globally unique or unique per boot, since CRIU
+>> needs to arrange for that information to match whatever it was when
+>> CRIU saved it.
+>
+> How are ifindex of network devices managed? These ifindexes are unique per boot,
+> thus can change depending on the order in which netdev are created.
+> These ifindexes are unique per boot and exposed to userspace ...
+>
 
+This does not appear to be true.
+
+$ sudo unshare --net
+# ip link add veth0 type veth peer name veth1
+# ip link
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: veth1: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+DEFAULT group default qlen 1000
+    link/ether 06:0d:59:c7:a6:a8 brd ff:ff:ff:ff:ff:ff
+3: veth0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode
+DEFAULT group default qlen 1000
+    link/ether b2:5c:8b:f2:12:28 brd ff:ff:ff:ff:ff:ff
+# logout
+$ ip link
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+3: em1: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc pfifo_fast
+state DOWN qlen 1000
+
+>
+>>
+>> Also, I think that code running in a namespace has no business even
+>> knowing a unique identity of that namespace from the perspective of
+>> the host.
+>
+> Another scenario is when you have virtual network devices across two netns. You
+> need to identify the peer netns to have a netlink message which is fully interpretable by the userspace.
+
+Let me try again, with emphasis in the right place.
+
+I think that *code running in a namespace* has no business even
+knowing a unique identity of *that namespace* from the perspective of
+the host.
+
+In your example, if there's a veth device between netns A and netns B,
+then code *in netns A* has no business knowing the identity of its
+veth peer if its peer (B) is a sibling or ancestor.  It also IMO has
+no business knowing the identity of its own netns (A) other than as
+"my netns".
+
+If A and B are siblings, then their parent needs to know where that
+veth device goes, but I think this is already the case to a sufficient
+extent today.
+
+I feel like this discussion is falling into a common trap of new API
+discussions.  Can one of you who wants this API please articulate,
+with a reasonably precise example, what it is that you want to do, why
+you can't easily do it already, and how this API helps?  I currently
+understand how the API creates problems, but I don't understand how it
+solves any problems, and I will NAK it (and I suspect that Eric will,
+too, which is pretty much fatal) unless that changes.
+
+Thanks,
+Andy
+
+>
+>
+> Regards,
+> Nicolas
