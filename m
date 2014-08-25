@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137AbaHYKzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 06:55:45 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:55762 "EHLO
+	id S932167AbaHYKzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 06:55:52 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55773 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110AbaHYKzn (ORCPT
+	with ESMTP id S932110AbaHYKzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 06:55:43 -0400
-Subject: [RFC PATCH 2/5] module: Unlink module with RCU synchronizing
- instead of stop_machine
+	Mon, 25 Aug 2014 06:55:49 -0400
+Subject: [RFC PATCH 3/5] lib/bug: Use RCU list ops for module_bug_list
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Lucas De Marchi <lucas.demarchi@intel.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Josh Poimboeuf <jpoimboe@redhat.com>
-Date: Mon, 25 Aug 2014 10:55:34 +0000
-Message-ID: <20140825105534.21089.94907.stgit@kbuild-fedora.novalocal>
+Date: Mon, 25 Aug 2014 10:55:41 +0000
+Message-ID: <20140825105541.21089.19536.stgit@kbuild-fedora.novalocal>
 In-Reply-To: <20140825105520.21089.26870.stgit@kbuild-fedora.novalocal>
 References: <20140825105520.21089.26870.stgit@kbuild-fedora.novalocal>
 User-Agent: StGit/0.17-dirty
@@ -26,50 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlink module from module list with RCU synchronizing instead
-of using stop_machine(). Since module list is already protected
-by rcu, we don't need stop_machine() anymore.
+Actually since module_bug_list should be used in BUG context,
+we may not need this. But for someone who want to use this
+from normal context, this makes module_bug_list an RCU list.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- kernel/module.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ kernel/module.c |    5 +++--
+ lib/bug.c       |   20 ++++++++++++++------
+ 2 files changed, 17 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/module.c b/kernel/module.c
-index 4c8a4f1..84b068d 100644
+index 84b068d..3bd0dc9 100644
 --- a/kernel/module.c
 +++ b/kernel/module.c
-@@ -1697,18 +1697,6 @@ static void mod_sysfs_teardown(struct module *mod)
- 	mod_sysfs_fini(mod);
- }
- 
--/*
-- * unlink the module with the whole machine is stopped with interrupts off
-- * - this defends against kallsyms not taking locks
-- */
--static int __unlink_module(void *_mod)
--{
--	struct module *mod = _mod;
--	list_del(&mod->list);
--	module_bug_cleanup(mod);
--	return 0;
--}
--
- #ifdef CONFIG_DEBUG_SET_MODULE_RONX
- /*
-  * LKM RO/NX protection: protect module's text/ro-data
-@@ -1858,7 +1846,11 @@ static void free_module(struct module *mod)
- 
- 	/* Now we can delete it from the lists */
+@@ -1848,9 +1848,10 @@ static void free_module(struct module *mod)
  	mutex_lock(&module_mutex);
--	stop_machine(__unlink_module, mod, NULL);
-+	/* Unlink carefully: kallsyms could be walking list. */
-+	list_del_rcu(&mod->list);
-+	/* Wait for RCU synchronizing before releasing mod->list. */
+ 	/* Unlink carefully: kallsyms could be walking list. */
+ 	list_del_rcu(&mod->list);
+-	/* Wait for RCU synchronizing before releasing mod->list. */
+-	synchronize_rcu();
++	/* Remove this module from bug list, this uses list_del_rcu */
+ 	module_bug_cleanup(mod);
++	/* Wait for RCU synchronizing before releasing mod->list and buglist. */
 +	synchronize_rcu();
-+	module_bug_cleanup(mod);
  	mutex_unlock(&module_mutex);
  
  	/* This may be NULL, but that's OK */
+diff --git a/lib/bug.c b/lib/bug.c
+index d1d7c78..0c3bd95 100644
+--- a/lib/bug.c
++++ b/lib/bug.c
+@@ -64,16 +64,22 @@ static LIST_HEAD(module_bug_list);
+ static const struct bug_entry *module_find_bug(unsigned long bugaddr)
+ {
+ 	struct module *mod;
++	const struct bug_entry *bug = NULL;
+ 
+-	list_for_each_entry(mod, &module_bug_list, bug_list) {
+-		const struct bug_entry *bug = mod->bug_table;
++	rcu_read_lock();
++	list_for_each_entry_rcu(mod, &module_bug_list, bug_list) {
+ 		unsigned i;
+ 
++		bug = mod->bug_table;
+ 		for (i = 0; i < mod->num_bugs; ++i, ++bug)
+ 			if (bugaddr == bug_addr(bug))
+-				return bug;
++				goto out;
+ 	}
+-	return NULL;
++	bug = NULL;
++out:
++	rcu_read_unlock();
++
++	return bug;
+ }
+ 
+ void module_bug_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
+@@ -99,13 +105,15 @@ void module_bug_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
+ 	 * Strictly speaking this should have a spinlock to protect against
+ 	 * traversals, but since we only traverse on BUG()s, a spinlock
+ 	 * could potentially lead to deadlock and thus be counter-productive.
++	 * Thus, this uses RCU to safely manipulate the bug list, since BUG
++	 * must run in non-interruptive state.
+ 	 */
+-	list_add(&mod->bug_list, &module_bug_list);
++	list_add_rcu(&mod->bug_list, &module_bug_list);
+ }
+ 
+ void module_bug_cleanup(struct module *mod)
+ {
+-	list_del(&mod->bug_list);
++	list_del_rcu(&mod->bug_list);
+ }
+ 
+ #else
 
 
