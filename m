@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009AbaHYP1f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 11:27:35 -0400
-Received: from relay.parallels.com ([195.214.232.42]:48995 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942AbaHYP1d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 11:27:33 -0400
-Message-ID: <53FB55E3.1050806@parallels.com>
-Date: Mon, 25 Aug 2014 19:27:31 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S932960AbaHYP1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 11:27:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60644 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755906AbaHYP1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 11:27:19 -0400
+From: Dan Murphy <dmurphy@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <dmitry.torokhov@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <sergei.shtylyov@cogentembedded.com>, Dan Murphy <dmurphy@ti.com>
+Subject: [PATCH v2 1/2] doc: dt/bindings: input: introduce TI DRV2667 haptic driver description
+Date: Mon, 25 Aug 2014 10:26:51 -0500
+Message-ID: <1408980413-8763-1-git-send-email-dmurphy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] fuse: enable close_wait synchronous release
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>	<20140821160855.11005.86653.stgit@localhost.localdomain> <CAJfpegteyt_+g59skASpubFBSgs-c8XoOG-3Y+coKyr1nvyKfw@mail.gmail.com>
-In-Reply-To: <CAJfpegteyt_+g59skASpubFBSgs-c8XoOG-3Y+coKyr1nvyKfw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.200]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 06:04 PM, Miklos Szeredi wrote:
-> On Thu, Aug 21, 2014 at 6:09 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
->> The patch enables the feature by passing 'true' to fuse_file_put in
->> fuse_release_common.
->>
->> Previously, this was safe only in special cases when we sure that
->> multi-threaded userspace won't deadlock if we'll synchronously send
->> FUSE_RELEASE in the context of read-ahead or write-back callback. Now, it's
->> always safe because callbacks don't send requests to userspace anymore.
-> But we do want to make this privileged, as there are unlikely but
-> possible DoS scenarios with a sync release.
+DRV2667 is a haptic/vibrator driver for Linear Resonant Actuators.
+Adding dt binding for this part
 
-The latest patch of the set implements DISABLE_SYNC_RELEASE mount 
-option. We can instrument fusermount to use the option by default for 
-unprivileged mounts (allowing system administrator to configure it like 
-"user_allow_other"). Do you have a better way to implement DoS 
-protection in mind?
+Signed-off-by: Dan Murphy <dmurphy@ti.com>
+---
 
-Thanks,
-Maxim
+v2 - Removed extra tabs, changed node to function not device
+added vbat-supply, and removed confusing description - https://patchwork.kernel.org/patch/4759381/
+
+ .../devicetree/bindings/input/ti,drv2667.txt       |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/input/ti,drv2667.txt
+
+diff --git a/Documentation/devicetree/bindings/input/ti,drv2667.txt b/Documentation/devicetree/bindings/input/ti,drv2667.txt
+new file mode 100644
+index 0000000..996382c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/input/ti,drv2667.txt
+@@ -0,0 +1,17 @@
++* Texas Instruments - drv2667 Haptics driver
++
++Required properties:
++	- compatible - "ti,drv2667" - DRV2667
++	- reg -  I2C slave address
++	- vbat-supply - Required supply regulator
++
++Example:
++
++haptics: haptics@59 {
++	compatible = "ti,drv2667";
++	reg = <0x59>;
++	vbat-supply = <&vbat>;
++};
++
++For more product information please see the link below:
++http://www.ti.com/product/drv2667
+-- 
+1.7.9.5
+
