@@ -1,295 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109AbaHYKev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 06:34:51 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:63184 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894AbaHYKeu (ORCPT
+	id S1755200AbaHYKhb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 06:37:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:57567 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445AbaHYKh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 06:34:50 -0400
-Date: Mon, 25 Aug 2014 11:34:47 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: harald@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] efi_high_alloc: use EFI_ALLOCATE_MAX_ADDRESS
-Message-ID: <20140825103447.GP29733@console-pimps.org>
-References: <1408715303-2215-1-git-send-email-harald@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408715303-2215-1-git-send-email-harald@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Aug 2014 06:37:28 -0400
+X-AuditID: cbfee68f-f797f6d000001173-81-53fb11e513ed
+Message-id: <53FB11E5.2070503@samsung.com>
+Date: Mon, 25 Aug 2014 19:37:25 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, eduardo.valentin@ti.com,
+        amit.daniel@samsung.com, rui.zhang@intel.com, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, kgene.kim@samsung.com, pawel.moll@arm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eduardo Valentin <edubezval@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, kyungmin.park@samsung.com,
+        robh+dt@kernel.org, galak@codeaurora.org, ch.naveen@samsung.com
+Subject: Re: [PATCHv4 2/4] thermal: exynos: Add support for many TRIMINFO_CTRL
+ registers
+References: <1408951825-2639-1-git-send-email-cw00.choi@samsung.com>
+ <1408951825-2639-3-git-send-email-cw00.choi@samsung.com>
+ <5071235.4ralWIzmJe@amdc1032>
+In-reply-to: <5071235.4ralWIzmJe@amdc1032>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsWyRsSkRPeZ4O9gg477zBYNV0MsNs5Yz2px
+	9/lhRov5R86xWqzZ/5PJYv6Va6wW/W8Wslr0LrjKZnG26Q27xabHQLHLu+awWXzuPcJoMeP8
+	PiaLpdcvMllMmL6WxaJ17xF2iycP+9gcBD3WzFvD6HG5r5fJY+esu+wei/e8ZPLYtKqTzWPz
+	knqPvi2rGD2O39jO5PF5k1wAZxSXTUpqTmZZapG+XQJXxv8fR5kKdltU7D/wmKWB8bFeFyMn
+	h4SAicTmk6+ZIGwxiQv31rN1MXJxCAksZZS4O38dO0zRmc7zrBCJRYwSU6afZIdwXjNK9F38
+	xQJSxSugJTF5xyxmEJtFQFXi/a3zYGPZgOL7X9xgA7FFBcIkVk6/AlUvKPFj8j0wW0TAQmLt
+	ircsIEOZBbYzS2z+/ZsVJCEsECWxY8YGZoht8xkllnd2gSU4gab+bj4PNpVZQEdif+s0KFte
+	YvOat2ANEgJrOSSa1n+COklA4tvkQ0ArOIASshKbDjBD/CYpcXDFDZYJjGKzkBw1C8nYWUjG
+	LmBkXsUomlqQXFCclF5krFecmFtcmpeul5yfu4kRmARO/3vWv4Px7gHrQ4wCHIxKPLwrOH8F
+	C7EmlhVX5h5iNAW6YiKzlGhyPjDV5JXEGxqbGVmYmpgaG5lbmimJ8y6U+hksJJCeWJKanZpa
+	kFoUX1Sak1p8iJGJg1OqgTEy1nln8/LgbRcz4kXuX3it975rifSDv1OfnDzNkF2lUC3lKmrS
+	9OyrX/C8sr+WN3mDpGc6TvmzUPrFJl+rlo+ibz+4nVztICLZeuF04U2Z7HSmoz8ZtHtn20ht
+	dCrSsEz/HlZb134mYJfekQiD1Su53id9mb3DdMu+93EtJXYZk+XC2gLXWiuxFGckGmoxFxUn
+	AgBudSnz/QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAd2ngr+DDQ4+NrVouBpisXHGelaL
+	u88PM1rMP3KO1WLN/p9MFvOvXGO16H+zkNWid8FVNouzTW/YLTY9Bopd3jWHzeJz7xFGixnn
+	9zFZLL1+kcliwvS1LBate4+wWzx52MfmIOixZt4aRo/Lfb1MHjtn3WX3WLznJZPHplWdbB6b
+	l9R79G1Zxehx/MZ2Jo/Pm+QCOKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
+	lRTyEnNTbZVcfAJ03TJzgH5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
+	MGb8/3GUqWC3RcX+A49ZGhgf63UxcnJICJhInOk8zwphi0lcuLeerYuRi0NIYBGjxJTpJ9kh
+	nNeMEn0Xf7GAVPEKaElM3jGLGcRmEVCVeH/rPBOIzQYU3//iBhuILSoQJrFy+hWoekGJH5Pv
+	gdkiAhYSa1e8ZQEZyiywnVli8+/fYKuFBaIkdszYwAyxbT6jxPLOLrAEJ9DU383nwaYyC+hI
+	7G+dBmXLS2xe85Z5AqPALCRLZiEpm4WkbAEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M
+	4BTzTHoH46oGi0OMAhyMSjy8Kzl/BQuxJpYVV+YeYpTgYFYS4dX4AxTiTUmsrEotyo8vKs1J
+	LT7EaAoMg4nMUqLJ+cD0l1cSb2hsYmZkaWRuaGFkbK4kznuw1TpQSCA9sSQ1OzW1ILUIpo+J
+	g1OqgXFT51x15UklsVyPXrvc/Oh/fMdMfinFzWwvxB/N3XBff+bTAKWSKz9aUlVWs2WpXLjz
+	R40r95K0zdaVUcHSAUnzbWfMCPrr1MHf4tqwQbt+k7HqgrCKzVyPn0jFznV5cGXK5vKDmXz6
+	NvOaxUwOH9rkHXro6ccz651XKfdLcbdy5hufXbJoqaoSS3FGoqEWc1FxIgC0YXt7RwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding linux-efi to Cc)
+Hi Bartlomiej,
 
-On Fri, 22 Aug, at 03:48:23PM, harald@redhat.com wrote:
-> From: Harald Hoyer <harald@redhat.com>
+On 08/25/2014 07:15 PM, Bartlomiej Zolnierkiewicz wrote:
 > 
-> On my Lenovo T420s with 4GB memory, efi_high_alloc() was checking the
-> following memory regions:
+> Hi,
 > 
-> 0x0000000000100000 - 0x0000000020000000
-> 0x0000000020200000 - 0x0000000040000000
-> 0x0000000040200000 - 0x00000000d2c02000
-> 0x00000000d6e9f000 - 0x000000011e600000
+> On Monday, August 25, 2014 04:30:23 PM Chanwoo Choi wrote:
+>> This patch support many TRIMINFO_CTRL registers if specific Exynos SoC
+>> has one more TRIMINFO_CTRL registers. Also this patch uses proper 'RELOAD'
+>> shift/mask bit operation to set RELOAD feature instead of static value.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Zhang Rui <rui.zhang@intel.com>
+>> Cc: Eduardo Valentin <edubezval@gmail.com>
+>> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> ---
+>>  drivers/thermal/samsung/exynos_thermal_common.h |  1 +
+>>  drivers/thermal/samsung/exynos_tmu.c            | 23 ++++++++++++++++++++---
+>>  drivers/thermal/samsung/exynos_tmu.h            |  9 +++++++--
+>>  drivers/thermal/samsung/exynos_tmu_data.c       |  5 ++++-
+>>  drivers/thermal/samsung/exynos_tmu_data.h       |  3 +++
+>>  5 files changed, 35 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
+>> index 3eb2ed9..b211976 100644
+>> --- a/drivers/thermal/samsung/exynos_thermal_common.h
+>> +++ b/drivers/thermal/samsung/exynos_thermal_common.h
+>> @@ -28,6 +28,7 @@
+>>  #define MAX_TRIP_COUNT	8
+>>  #define MAX_COOLING_DEVICE 4
+>>  #define MAX_THRESHOLD_LEVS 5
+>> +#define MAX_TRIMINFO_CTRL_REG	2
+>>  
+>>  #define ACTIVE_INTERVAL 500
+>>  #define IDLE_INTERVAL 10000
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+>> index acbff14..7234f38 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu.c
+>> @@ -147,7 +147,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+>>  	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+>>  	struct exynos_tmu_platform_data *pdata = data->pdata;
+>>  	const struct exynos_tmu_registers *reg = pdata->registers;
+>> -	unsigned int status, trim_info = 0, con;
+>> +	unsigned int status, trim_info = 0, con, ctrl;
+>>  	unsigned int rising_threshold = 0, falling_threshold = 0;
+>>  	int ret = 0, threshold_code, i, trigger_levs = 0;
+>>  
+>> @@ -164,8 +164,25 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+>>  		}
+>>  	}
+>>  
+>> -	if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
+>> -		__raw_writel(1, data->base + reg->triminfo_ctrl);
+>> +	if (TMU_SUPPORTS(pdata, TRIM_RELOAD)) {
+>> +		if (reg->triminfo_ctrl_count > MAX_TRIMINFO_CTRL_REG) {
 > 
-> and decided to allocate 2649 pages at address 0x11dba7000.
-> As I understand this is the physical address and this machine only
-> has 4GB mem!!
- 
-Yeah, but RAM doesn't necessarily start at the physical address
-0x000000000000. Nor is it necessarily contiguous.
-
-In other words, it's perfectly legitimate to allocate at physical
-addresses above 0x10000000 if the above memory map tells us RAM lives
-there.
-
-> Nevertheless, unpacking of the initramfs later on failed.
-> This was mainly caused by commit 4bf7111f50167133a71c23530ca852a41355e739,
-> which enables loading the initramfs above 4G addresses.
+> Please remove this check and MAX_TRIMINFO_CTRL_REG define.
 > 
-> With this patch efi_high_alloc() now uses EFI_ALLOCATE_MAX_ADDRESS.
-> This returns 0x00000000d2c02000 on my machine and the resulting
-> address at which the initramfs is loaded is then 0x00000000d21a9000,
-> which seems to work fine.
+> We do not want such runtime checks for development time errors.
 
-Well yeah, that makes sense because you've obviously got a buggy EFI
-firmware that doesn't load things correctly above 4GB. It turns out that
-this is a common bug.
+OK, I'll remove it.
 
-Can you try the following patch and see whether booting with
-efi=nochunk results in a functioning initramfs? I've had some success
-with disabling the chunking workaround when reading files in the EFI
-boot stub. Also, including a copy of a dmesg would be helpful.
+> 
+>> +			ret = -EINVAL;
+>> +			goto out;
+>> +		}
+>> +
+>> +		for (i = 0; i < reg->triminfo_ctrl_count; i++) {
+>> +			if (pdata->triminfo_reload[i]) {
+>> +				ctrl = readl(data->base +
+>> +						reg->triminfo_ctrl[i]);
+>> +				ctrl &= ~(reg->triminfo_reload_mask <<
+>> +						reg->triminfo_reload_shift);
+>> +				ctrl |= pdata->triminfo_reload[i] <<
+>> +						reg->triminfo_reload_shift;
+> 
+> triminfo_reload_shift and triminfo_reload_mask variables have always
+> the same values when this code is run so there is no need for them.
 
----
+I don't understand. Do you mean that timinfo_reload_{shift/mask} variable is un-needed?
+If you possible, I need more detailed comment.
 
->From 1c24a2bef39f041eb578189207240d0457ef0ac3 Mon Sep 17 00:00:00 2001
-From: Matt Fleming <matt.fleming@intel.com>
-Date: Tue, 5 Aug 2014 11:52:11 +0100
-Subject: [PATCH] efi: Add efi= parameter parsing to the EFI boot stub
+> 
+> They should be added only when needed instead of doing it now.
+> 
+>> +				__raw_writel(ctrl, data->base +
+>> +						reg->triminfo_ctrl[i]);
+>> +			}
+>> +		}
+>> +	}
+>>  
+>>  	if (pdata->cal_mode == HW_MODE)
+>>  		goto skip_calib_data;
+>> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+>> index 1b4a644..d7674ad 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu.h
+>> +++ b/drivers/thermal/samsung/exynos_tmu.h
+>> @@ -85,8 +85,11 @@ enum soc_type {
+>>   * @triminfo_25_shift: shift bit of the 25 C trim value in triminfo_data reg.
+>>   * @triminfo_85_shift: shift bit of the 85 C trim value in triminfo_data reg.
+>>   * @triminfo_ctrl: trim info controller register.
+>> + * @triminfo_ctrl_count: the number of trim info controller register.
+>>   * @triminfo_reload_shift: shift of triminfo reload enable bit in triminfo_ctrl
+>>  	reg.
+>> + * @triminfo_reload_mask: mask of triminfo reload enable bit in triminfo_ctrl
+>> +	reg.
+>>   * @tmu_ctrl: TMU main controller register.
+>>   * @test_mux_addr_shift: shift bits of test mux address.
+>>   * @buf_vref_sel_shift: shift bits of reference voltage in tmu_ctrl register.
+>> @@ -151,9 +154,10 @@ struct exynos_tmu_registers {
+>>  	u32	triminfo_25_shift;
+>>  	u32	triminfo_85_shift;
+>>  
+>> -	u32	triminfo_ctrl;
+>> -	u32	triminfo_ctrl1;
+>> +	u32	triminfo_ctrl[MAX_TRIMINFO_CTRL_REG];
+>> +	u32	triminfo_ctrl_count;
+>>  	u32	triminfo_reload_shift;
+>> +	u32	triminfo_reload_mask;
+>>  
+>>  	u32	tmu_ctrl;
+>>  	u32     test_mux_addr_shift;
+>> @@ -295,6 +299,7 @@ struct exynos_tmu_platform_data {
+>>  	u8 second_point_trim;
+>>  	u8 default_temp_offset;
+>>  	u8 test_mux;
+>> +	u8 triminfo_reload[MAX_TRIMINFO_CTRL_REG];
+>>  
+>>  	enum calibration_type cal_type;
+>>  	enum calibration_mode cal_mode;
+>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+>> index aa8e0de..754c638 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+>> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+>> @@ -184,8 +184,10 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+>>  	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+>>  	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+>>  	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+>> -	.triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
+>> +	.triminfo_ctrl[0] = EXYNOS_TMU_TRIMINFO_CON,
+>> +	.triminfo_ctrl_count = 1,
+>>  	.triminfo_reload_shift = EXYNOS_TRIMINFO_RELOAD_SHIFT,
+>> +	.triminfo_reload_mask = EXYNOS_TRIMINFO_RELOAD_MASK,
+>>  	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+>>  	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+>>  	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+>> @@ -252,6 +254,7 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+>>  		.temp_level = 95, \
+>>  	}, \
+>>  	.freq_tab_count = 2, \
+>> +	.triminfo_reload[0] = EXYNOS_TRIMINFO_RELOAD_ENABLE, \
+>>  	.registers = &exynos4412_tmu_registers, \
+>>  	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_TRIM_RELOAD | \
+>>  			TMU_SUPPORT_FALLING_TRIP | TMU_SUPPORT_READY_STATUS | \
+>> diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
+>> index 401bab7..87454f63 100644
+>> --- a/drivers/thermal/samsung/exynos_tmu_data.h
+>> +++ b/drivers/thermal/samsung/exynos_tmu_data.h
+>> @@ -64,6 +64,9 @@
+>>  #define EXYNOS_EMUL_CON		0x80
+>>  
+>>  #define EXYNOS_TRIMINFO_RELOAD_SHIFT	0
+>> +#define EXYNOS_TRIMINFO_RELOAD_MASK	0x1
+>> +#define EXYNOS_TRIMINFO_RELOAD_ENABLE	1
+>> +#define EXYNOS_TRIMINFO_RELOAD_DISABLE	0
+> 
+> This define is never used please remove it.
 
-We need a way to customize the behaviour of the EFI boot stub, in
-particular, we need a way to disable the "chunking" workaround, used
-when reading files from the EFI System Partition.
+OK, I'll remove it. Thanks.
 
-One of my machines doesn't cope well when reading files in 1MB chunks to
-a buffer above the 4GB mark - it appears that the "chunking" bug
-workaround triggers another firmware bug. This was only discovered with
-commit 4bf7111f5016 ("x86/efi: Support initrd loaded above 4G"), and
-that commit is perfectly valid. The symptom I observed was a corrupt
-initrd rather than any kind of crash.
-
-efi= is now used to specify EFI parameters in two very different
-execution environments, the EFI boot stub and during kernel boot.
-
-There is also a slight performance optimization by enabling efi=nochunk,
-but that's offset by the fact that you're more likely to run into
-firmware issues, at least on x86. This is the rationale behind leaving
-the workaround enabled by default.
-
-Also provide some documentation for EFI_READ_CHUNK_SIZE and why we're
-using the current value of 1MB.
-
-Tested-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: Roy Franz <roy.franz@linaro.org>
-Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Borislav Petkov <bp@suse.de>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- Documentation/kernel-parameters.txt            |  5 ++-
- arch/x86/boot/compressed/eboot.c               |  4 ++
- arch/x86/platform/efi/efi.c                    | 19 +++++++-
- drivers/firmware/efi/libstub/arm-stub.c        |  4 ++
- drivers/firmware/efi/libstub/efi-stub-helper.c | 62 +++++++++++++++++++++++++-
- include/linux/efi.h                            |  2 +
- 6 files changed, 91 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 6eaa9cdb7094..7c5fc8ec9be8 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -981,10 +981,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Format: {"off" | "on" | "skip[mbr]"}
- 
- 	efi=		[EFI]
--			Format: { "old_map" }
-+			Format: { "old_map", "nochunk" }
- 			old_map [X86-64]: switch to the old ioremap-based EFI
- 			runtime services mapping. 32-bit still uses this one by
- 			default.
-+			nochunk: disable reading files in "chunks" in the EFI
-+			boot stub, as chunking can cause problems with some
-+			firmware implementations.
- 
- 	efi_no_storage_paranoia [EFI; X86]
- 			Using this parameter you can use more than 50% of
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index f277184e2ac1..f4bdab1dbf66 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -1100,6 +1100,10 @@ struct boot_params *make_boot_params(struct efi_config *c)
- 	else
- 		initrd_addr_max = hdr->initrd_addr_max;
- 
-+	status = efi_parse_options(cmdline_ptr);
-+	if (status != EFI_SUCCESS)
-+		goto fail2;
-+
- 	status = handle_cmdline_files(sys_table, image,
- 				      (char *)(unsigned long)hdr->cmd_line_ptr,
- 				      "initrd=", initrd_addr_max,
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 850da94fef30..a1f745b0bf1d 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -943,8 +943,23 @@ static int __init parse_efi_cmdline(char *str)
- 	if (*str == '=')
- 		str++;
- 
--	if (!strncmp(str, "old_map", 7))
--		set_bit(EFI_OLD_MEMMAP, &efi.flags);
-+	while (*str) {
-+		if (!strncmp(str, "old_map", 7)) {
-+			set_bit(EFI_OLD_MEMMAP, &efi.flags);
-+			str += strlen("old_map");
-+		}
-+
-+		/*
-+		 * Skip any options we don't understand. Presumably
-+		 * they apply to the EFI boot stub.
-+		 */
-+		while (*str && *str != ',')
-+			str++;
-+
-+		/* If we hit a delimiter, skip it */
-+		if (*str == ',')
-+			str++;
-+	}
- 
- 	return 0;
- }
-diff --git a/drivers/firmware/efi/libstub/arm-stub.c b/drivers/firmware/efi/libstub/arm-stub.c
-index 480339b6b110..75ee05964cbc 100644
---- a/drivers/firmware/efi/libstub/arm-stub.c
-+++ b/drivers/firmware/efi/libstub/arm-stub.c
-@@ -226,6 +226,10 @@ unsigned long __init efi_entry(void *handle, efi_system_table_t *sys_table,
- 		goto fail_free_image;
- 	}
- 
-+	status = efi_parse_options(cmdline_ptr);
-+	if (status != EFI_SUCCESS)
-+		pr_efi_err(sys_table, "Failed to parse EFI cmdline options\n");
-+
- 	/*
- 	 * Unauthenticated device tree data is a security hazard, so
- 	 * ignore 'dtb=' unless UEFI Secure Boot is disabled.
-diff --git a/drivers/firmware/efi/libstub/efi-stub-helper.c b/drivers/firmware/efi/libstub/efi-stub-helper.c
-index 32d5cca30f49..a920fec8fe88 100644
---- a/drivers/firmware/efi/libstub/efi-stub-helper.c
-+++ b/drivers/firmware/efi/libstub/efi-stub-helper.c
-@@ -15,8 +15,23 @@
- 
- #include "efistub.h"
- 
-+/*
-+ * Some firmware implementations have problems reading files in one go.
-+ * A read chunk size of 1MB seems to work for most platforms.
-+ *
-+ * Unfortunately, reading files in chunks triggers *other* bugs on some
-+ * platforms, so we provide a way to disable this workaround, which can
-+ * be done by passing "efi=nochunk" on the EFI boot stub command line.
-+ *
-+ * If you experience issues with initrd images being corrupt it's worth
-+ * trying efi=nochunk, but chunking is enabled by default because there
-+ * are far more machines that require the workaround than those that
-+ * break with it enabled.
-+ */
- #define EFI_READ_CHUNK_SIZE	(1024 * 1024)
- 
-+static unsigned long __chunk_size = EFI_READ_CHUNK_SIZE;
-+
- struct file_info {
- 	efi_file_handle_t *handle;
- 	u64 size;
-@@ -281,6 +296,49 @@ void efi_free(efi_system_table_t *sys_table_arg, unsigned long size,
- 	efi_call_early(free_pages, addr, nr_pages);
- }
- 
-+/*
-+ * Parse the ASCII string 'cmdline' for EFI options, denoted by the efi=
-+ * option, e.g. efi=nochunk.
-+ *
-+ * It should be noted that efi= is parsed in two very different
-+ * environments, first in the early boot environment of the EFI boot
-+ * stub, and subsequently during the kernel boot.
-+ */
-+efi_status_t efi_parse_options(char *cmdline)
-+{
-+	char *str;
-+
-+	/*
-+	 * If no EFI parameters were specified on the cmdline we've got
-+	 * nothing to do.
-+	 */
-+	str = strstr(cmdline, "efi=");
-+	if (!str)
-+		return EFI_SUCCESS;
-+
-+	/* Skip ahead to first argument */
-+	str += strlen("efi=");
-+
-+	/*
-+	 * Remember, because efi= is also used by the kernel we need to
-+	 * skip over arguments we don't understand.
-+	 */
-+	while (*str) {
-+		if (!strncmp(str, "nochunk", 7)) {
-+			str += strlen("nochunk");
-+			__chunk_size = -1UL;
-+		}
-+
-+		/* Group words together, delimited by "," */
-+		while (*str && *str != ',')
-+			str++;
-+
-+		if (*str == ',')
-+			str++;
-+	}
-+
-+	return EFI_SUCCESS;
-+}
- 
- /*
-  * Check the cmdline for a LILO-style file= arguments.
-@@ -423,8 +481,8 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 			size = files[j].size;
- 			while (size) {
- 				unsigned long chunksize;
--				if (size > EFI_READ_CHUNK_SIZE)
--					chunksize = EFI_READ_CHUNK_SIZE;
-+				if (size > __chunk_size)
-+					chunksize = __chunk_size;
- 				else
- 					chunksize = size;
- 
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index efc681fd5895..0d37d3372d99 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -1208,4 +1208,6 @@ efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 				  unsigned long *load_addr,
- 				  unsigned long *load_size);
- 
-+efi_status_t efi_parse_options(char *cmdline);
-+
- #endif /* _LINUX_EFI_H */
--- 
-1.9.3
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Beset Regards,
+Chanwoo CHoi
