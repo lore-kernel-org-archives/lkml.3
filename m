@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175AbaHYFvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 01:51:11 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:56827 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496AbaHYFvK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 01:51:10 -0400
-Date: Mon, 25 Aug 2014 01:51:04 -0400 (EDT)
-From: Xiong Zhou <xzhou@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>,
-        trond myklebust <trond.myklebust@primarydata.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <1859750321.23735105.1408945864304.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1408576235.2618.47.camel@deadeye.wl.decadent.org.uk>
-References: <1927160445.21851828.1408504000719.JavaMail.zimbra@redhat.com> <1408576235.2618.47.camel@deadeye.wl.decadent.org.uk>
-Subject: [PATCH v2] nfs: remove redundant slash from nfs_path
+	id S1754222AbaHYGF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 02:05:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753430AbaHYGF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 02:05:58 -0400
+Date: Mon, 25 Aug 2014 14:07:13 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: lv.zheng@intel.com, matt.fleming@intel.com, linux-efi@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@acpica.org, lenb@kernel.org, rafael.j.wysocki@intel.com,
+        robert.moore@intel.com
+Subject: Re: kernel boot fail with efi earlyprintk (bisected)
+Message-ID: <20140825060713.GA4011@darkstar.nay.redhat.com>
+References: <20140819081658.GA1795@darkstar.nay.redhat.com>
+ <20140821205224.GJ29733@console-pimps.org>
+ <20140822100258.GA1877@darkstar.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.6]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: remove redundant slash from nfs_path
-Thread-Index: Hrl83+PzPAP2g54HV/l5w2MFXq6GGQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140822100258.GA1877@darkstar.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When export root dir(/) via nfs, and mount a particular dir under root, eg
-/nfsexport, there will be defect double slash output in /proc/mounts, like
-localhost://nfsexport. While this patch change it to localhost:/nfsexport.
+On 08/22/14 at 06:02pm, Dave Young wrote:
+> On 08/21/14 at 09:52pm, Matt Fleming wrote:
+> > On Tue, 19 Aug, at 04:16:58PM, Dave Young wrote:
+> > > Hi,
+> > > 
+> > > 3.16 kernel boot fail with earlyprintk=efi on my laptop.
+> > > It keeps scrolling at the bottom line of screen.
+> > > 
+> > > Bisected, the first bad commit is below:
+> > > commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
+> > > Author: Lv Zheng <lv.zheng@intel.com>
+> > > Date:   Fri Apr 4 12:38:57 2014 +0800
+> > > 
+> > >     ACPICA: Tables: Fix table checksums verification before installation.
+> > > 
+> > > 
+> > > I did some debugging by enabling both serial and efi earlyprintk, below is
+> > > some debug dmesg, seems early_ioremap fails in scroll up function due to
+> > > no free slot, but I'm still not sure if the debug info is right or not.
+> > 
+> > Thanks Dave, your callstack seems to make sense.
+> > 
+> > Can you also enable early_ioremap_debug so that we can figure out where
+> > all the FIXMAP slots are going?
+> 
+> With early_ioremap_debug enabled, there will be a lot of "dropped printk", so
+> I can not get any useful information.
+> 
+> Will try to do more debug.
 
-Signed-off-by: Xiong Zhou <xzhou@redhat.com>
----
- fs/nfs/namespace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+early_ioremap_debug does not work because we are debugging early_printk but
+early_ioremap_debug itself will print warning message at the same time.
 
-diff --git a/fs/nfs/namespace.c b/fs/nfs/namespace.c
-index b5a0afc..24f954e 100644
---- a/fs/nfs/namespace.c
-+++ b/fs/nfs/namespace.c
-@@ -98,7 +98,7 @@ rename_retry:
- 		return end;
- 	}
- 	namelen = strlen(base);
--	if (flags & NFS_PATH_CANONICAL) {
-+	if ((flags & NFS_PATH_CANONICAL) || *end == '/') {
- 		/* Strip off excess slashes in base string */
- 		while (namelen > 0 && base[namelen - 1] == '/')
- 			namelen--;
--- 
-1.8.3.1
+Tried what Lv mentioned, increasing the early ioremap slots does help.
 
+Thanks
+Dave
