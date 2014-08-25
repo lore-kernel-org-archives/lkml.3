@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaHYJ3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:29:14 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45073 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaHYJ3M (ORCPT
+	id S1754712AbaHYJ3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:29:21 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58694 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040AbaHYJ3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:29:12 -0400
-X-AuditID: cbfee68d-f79c46d000000b84-09-53fb01e57b45
+	Mon, 25 Aug 2014 05:29:17 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-0b-53fb01e5b8a1
 From: Inha Song <ideal.song@samsung.com>
 To: broonie@kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -17,37 +17,40 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         alsa-devel@alsa-project.org, cw00.choi@samsung.com,
         Inha Song <ideal.song@samsung.com>
-Subject: [alsa-devel] [RESEND PATCH v4 0/2] mfd: arizona: add support for
- INn_MODE register
-Date: Mon, 25 Aug 2014 18:25:38 +0900
-Message-id: <1408958740-1037-1-git-send-email-ideal.song@samsung.com>
+Subject: [alsa-devel] [RESEND PATCH v4 1/2] mfd: arizona: Add support for
+ INn_Mode register control
+Date: Mon, 25 Aug 2014 18:25:39 +0900
+Message-id: <1408958740-1037-2-git-send-email-ideal.song@samsung.com>
 X-Mailer: git-send-email 2.0.0.390.gcb682f8
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42JZI2JSqPuU8XewwZNXhhZXLh5ispj68Amb
-	xb8pN9gtrn95zmox/8g5Vov+NwtZLXb9vc9oce7VSkaL+1+PMlpc3jWHzWLp9YtMFsvf/mez
-	mDB9LYtF694j7Banu1kd+D02fG5i81gzbw2jx+W+XiaPlcu/sHlsWtXJ5nHn2h42j3knAz1e
-	TvzN5tG3ZRWjx+dNcgFcUVw2Kak5mWWpRfp2CVwZrzYvZSnYxFax5e0T9gbGRtYuRk4OCQET
-	icO7e5kgbDGJC/fWs4HYQgJLGSX+XCmDqfl08Rl7FyMXUHw6o8Sv/mOMEM4cJomLP3awg1Sx
-	CWhIfP+8mRnEFgGadHtOJzNIEbNAB7PElG27GEESwgKxEt/WNLCA2CwCqhKX/2wFa+YVcJXY
-	+ewgM8Q6bYl9DTPZQJolBG6xS+xaco4RokFA4tvkQ0DNHEAJWYlNB6DqJSUOrrjBMoFRcAEj
-	wypG0dSC5ILipPQiQ73ixNzi0rx0veT83E2MwLg5/e9Z7w7G2wesDzEKcDAq8fCu4PwVLMSa
-	WFZcmXuI0RRow0RmKdHkfGB05pXEGxqbGVmYmpgaG5lbmimJ8ypK/QwWEkhPLEnNTk0tSC2K
-	LyrNSS0+xMjEwSnVwFgneyjmxs7j9UwuvyomOd07zVl9/K2YYuUvm4L/TNbvZ8mJSFZpxm36
-	4JJxXer8nn38MROCZfdMdVt6fINEw6QLybemHtjPcKLFf7tbd7PqyXtTryT/W7l/WneECO+b
-	+P9rQzdKsdlXbJkS8KCtrPKt/ua881On5/75rxG0/+SXPfzLN5b+r9yqxFKckWioxVxUnAgA
-	/PoPVJYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t9jQd2njL+DDXZu0LS4cvEQk8XUh0/Y
+In-reply-to: <1408958740-1037-1-git-send-email-ideal.song@samsung.com>
+References: <1408958740-1037-1-git-send-email-ideal.song@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsWyRsSkUPcp4+9gg08XzS2uXDzEZDH14RM2
+	i39TbrBbXP/ynNVi/pFzrBb9bxayWuz6e5/R4tyrlYwW978eZbS4vGsOm8XS6xeZLJa//c9m
+	MWH6WhaL1r1H2C1Od7M68Hts+NzE5rFm3hpGj8t9vUweK5d/YfPYtKqTzePOtT1sHvNOBnq8
+	nPibzaNvyypGj8+b5AK4orhsUlJzMstSi/TtErgyjlxuZS94yF0x6/0c9gbGm5xdjJwcEgIm
+	Ei93/2GBsMUkLtxbz9bFyMUhJLCUUWJiz0v2LkYOsKLHnbUQ8emMEqe+bGCCcOYwSVz8sYMd
+	pJtNQEPi++fNzCC2CNCk23M6mUGKmAU6mCWmbNvFCDJJWCBVouuZGEgNi4CqxI93y5hAbF4B
+	V4nJz96yQlyhLbGvYSYbiM0p4CaxZ/0xsPlCQDUbFk8Du05C4C+7xJotsxghBglIfJt8iAXi
+	UlmJTQeYIeZIShxccYNlAqPwAkaGVYyiqQXJBcVJ6UWGesWJucWleel6yfm5mxiBUXb637Pe
+	HYy3D1gfYhTgYFTi4V3B+StYiDWxrLgy9xCjKdCGicxSosn5wFjOK4k3NDYzsjA1MTU2Mrc0
+	UxLnVZT6GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBseqzvhqjWYEN37wJbDl+2Uzpzls+
+	OvFYhGXM+Hz2f9ia4A0lYsfKePZGzWrqKGgqiTjTy8Wtu1yO+f1kmz239k14fiDZi/t569Jr
+	i+MfBmZqXmqKyMs+dXXTgvRDjKw/V96KqHtqJGfVlGZcWzY9bNkka9+q+z6Mb75cM3t5Of5L
+	/Z93KxiuK7EUZyQaajEXFScCAJC7uv2tAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd2njL+DDd6dM7C4cvEQk8XUh0/Y
 	LP5NucFucf3Lc1aL+UfOsVr0v1nIarHr731Gi3OvVjJa3P96lNHi8q45bBZLr19kslj+9j+b
 	xYTpa1ksWvceYbc43c3qwO+x4XMTm8eaeWsYPS739TJ5rFz+hc1j06pONo871/awecw7Gejx
 	cuJvNo++LasYPT5vkgvgimpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshL
-	zE21VXLxCdB1y8wBekNJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmPFq
-	81KWgk1sFVvePmFvYGxk7WLk5JAQMJH4dPEZO4QtJnHh3nq2LkYuDiGB6YwSv/qPMUI4c5gk
-	Lv7YAVbFJqAh8f3zZmYQWwSo4/acTmaQImaBDmaJKdt2MYIkhAViJb6taWABsVkEVCUu/9kK
-	1swr4Cqx89lBZoh12hL7GmayTWDkXsDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOC6f
-	Se1gXNlgcYhRgINRiYd3JeevYCHWxLLiytxDjBIczEoivBp/gEK8KYmVValF+fFFpTmpxYcY
-	TYG2T2SWEk3OB6aMvJJ4Q2MTMyNLI3NDCyNjcyVx3gOt1oFCAumJJanZqakFqUUwfUwcnFIN
-	jOf1rsXX7d7zpTXG0qY6YYP9s7S7irLbfSvZlp0UL/E7fODUM1OTFeWPLgiuncAoEXZ8zvln
-	b4I/p3y7WKh/wm5y7JOjh/aU5TBVqO5ceoy5SOC+Rs8ZD4fdqe4X1j9P9CxO/qmfs+lRxIr4
-	dZLPpNsXL42riL8VMLkkM+O/gPEi1nc/bK24dZVYijMSDbWYi4oTAW2B6PfhAgAA
+	zE21VXLxCdB1y8wBekNJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmHHk
+	cit7wUPuilnv57A3MN7k7GLk4JAQMJF43FnbxcgJZIpJXLi3nq2LkYtDSGA6o8SpLxuYIJw5
+	TBIXf+xgB6liE9CQ+P55MzOILQLUcXtOJzNIEbNAB7PElG27GEGmCgukSnQ9EwOpYRFQlfjx
+	bhkTiM0r4Cox+dlbVoht2hL7GmaygdicAm4Se9YfA5svBFSzYfE0tgmMvAsYGVYxiqYWJBcU
+	J6XnGuoVJ+YWl+al6yXn525iBMfwM6kdjCsbLA4xCnAwKvHwruT8FSzEmlhWXJl7iFGCg1lJ
+	hFfjD1CINyWxsiq1KD++qDQntfgQoynQVROZpUST84HpJa8k3tDYxMzI0sjc0MLI2FxJnPdA
+	q3WgkEB6YklqdmpqQWoRTB8TB6dUA+N2rRzVL7I75ZdM2/fmQkfUI5FPQhvNhCWfHH2ntVy2
+	NuWxZ+nHaGv5f+luH3ct4C6W81rw+LTgzp8n2/87nJkcGm8fd60ta07g4d8z975YonFsl9nn
+	cotMro7QhkMmM7bUeivPdV/zkOn6hMg/X6rPxq5IMQ5Ypmmy6NXMHrbXgpNX5KaW//mpxFKc
+	kWioxVxUnAgAfzG8KvcCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -55,31 +58,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series add support for INn_MODE register control using platform data.
-Each input signal path can be configurated either as a Analogue or Digital using
-the INn_MODE registers.
+Some boards need to set the INn_MODE[1:0] register to change
+the input signal patch. This wlf,inmode property is optional.
+If present, values must be specified less than or equal to
+the number of input singals. If values less than the number
+of input signals, elements that has not been specifed are set
+to 0 by default.
 
-Changes for v4
-- Update document content for more clarity
+Example:
+   - wlf,inmode = <2 0 2>;	/* IN1, IN3 use DMIC */
 
-Changes for v3
-- Change to use of_property_read_u32_array
-- Fix a few typos
-- Update commit message
+Signed-off-by: Inha Song <ideal.song@samsung.com>
+Reviewed-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-Changes for v2
-- Change to support
-- Update commit message
-- Update document content for more clarity
-
-Inha Song (2):
-  mfd: arizona: Add support for INn_Mode register control
-  mfd: arizona: Update DT binding to support INn_MODE init_data
-
- Documentation/devicetree/bindings/mfd/arizona.txt | 7 +++++++
- drivers/mfd/arizona-core.c                        | 8 +++++++-
- 2 files changed, 14 insertions(+), 1 deletion(-)
-
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 10a0cb9..81e6db8 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -534,7 +534,7 @@ EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
+ static int arizona_of_get_core_pdata(struct arizona *arizona)
+ {
+ 	struct arizona_pdata *pdata = &arizona->pdata;
+-	int ret, i;
++	int ret, i, proplen;
+ 
+ 	pdata->reset = arizona_of_get_named_gpio(arizona, "wlf,reset", true);
+ 
+@@ -560,6 +560,12 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
+ 			ret);
+ 	}
+ 
++	proplen = of_property_count_u32_elems(arizona->dev->of_node,
++					      "wlf,inmode");
++	if (proplen > 0 && proplen <= ARRAY_SIZE(arizona->pdata.inmode))
++		of_property_read_u32_array(arizona->dev->of_node, "wlf,inmode",
++					   arizona->pdata.inmode, proplen);
++
+ 	return 0;
+ }
+ 
 -- 
 2.0.0.390.gcb682f8
 
