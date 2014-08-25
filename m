@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545AbaHYNlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:41:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50673 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262AbaHYNk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:40:57 -0400
-Message-ID: <53FB3CE7.9060609@suse.cz>
-Date: Mon, 25 Aug 2014 15:40:55 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Boaz Harrosh <boaz@plexistor.com>, Stable Tree <stable@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] Makefile: One last adjustment to relative paths
-References: <53FAF8BF.3010008@plexistor.com>
-In-Reply-To: <53FAF8BF.3010008@plexistor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932590AbaHYNlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:41:17 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:35403 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262AbaHYNlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 09:41:13 -0400
+From: Guodong Xu <guodong.xu@linaro.org>
+To: lee.jones@linaro.org, sameo@linux.intel.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, grant.likely@linaro.org, khilman@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, zhangnian@huawei.com
+Cc: Guodong Xu <guodong.xu@linaro.org>
+Subject: [PATCH 1/3] Documentation: mfd: add docs for hi6421 dt
+Date: Mon, 25 Aug 2014 21:39:40 +0800
+Message-Id: <1408973982-2072-2-git-send-email-guodong.xu@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
+References: <1408973982-2072-1-git-send-email-guodong.xu@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-08-25 10:50, Boaz Harrosh wrote:
-> the simple fix is to have "Entering directory" print full path.
-> 
-> [Stable needed for 3.16]
-> CC: Stable Tree <stable@vger.kernel.org>
-> Signed-off-by: Boaz Harrosh <boaz@plexistor.com>
-> ---
->  Makefile | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/Makefile b/Makefile
-> index 6b27741..973c48f 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -178,7 +178,7 @@ $(filter-out _all sub-make $(CURDIR)/Makefile, $(MAKECMDGOALS)) _all: sub-make
->   quiet_echodir := @echo
->  silent_echodir := @:
->  sub-make: FORCE
-> -	$($(quiet)echodir) "make[1]: Entering directory \`$(KBUILD_OUTPUT)'"
-> +	$($(quiet)echodir) "make[1]: Entering directory \`$(CURDIR)/$(KBUILD_OUTPUT)'"
+Add documentation for HiSilicon Hi6421 PMIC dt binding.
 
-KBUILD_OUTPUT is converted to an absolute path a few lines earlier:
+Signed-off-by: Guodong Xu <guodong.xu@linaro.org>
+---
+ Documentation/devicetree/bindings/mfd/hi6421.txt | 38 ++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/hi6421.txt
 
-KBUILD_OUTPUT := $(shell mkdir -p $(KBUILD_OUTPUT) && cd $(KBUILD_OUTPUT) \
-								&& /bin/pwd)
+diff --git a/Documentation/devicetree/bindings/mfd/hi6421.txt b/Documentation/devicetree/bindings/mfd/hi6421.txt
+new file mode 100644
+index 0000000..0d5a446
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/hi6421.txt
+@@ -0,0 +1,38 @@
++* HI6421 Multi-Functional Device (MFD), by HiSilicon Ltd.
++
++Required parent device properties:
++- compatible	: contains "hisilicon,hi6421-pmic";
++- reg		: register range space of hi6421;
++
++Supported Hi6421 sub-devices include:
++
++Device                     IRQ Names              Supply Names   Description
++------                     ---------              ------------   -----------
++regulators               :  None                 : None         : Regulators
++
++Required child device properties:
++None.
++
++Example:
++	hi6421 {
++		compatible = "hisilicon,hi6421-pmic";
++		reg = <0xfcc00000 0x0180>; /* 0x60 << 2 */
++
++		regulators {
++			// supply for MLC NAND/ eMMC
++			hi6421_vout0_reg: hi6421_vout0 {
++				regulator-name = "VOUT0";
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <2850000>;
++			};
++
++			// supply for 26M Oscillator
++			hi6421_vout1_reg: hi6421_vout1 {
++				regulator-name = "VOUT1";
++				regulator-min-microvolt = <1700000>;
++				regulator-max-microvolt = <2000000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++		};
++	};
+-- 
+1.9.1
 
-So I don't understand why are you getting a message with a relative
-path. I get an absolute path as expected here:
-$ mkdir aaa
-$ make O=aaa defconfig
-make[1]: Entering directory `/home/mmarek/linux-2.6/aaa'
-...
-
-Michal
