@@ -1,96 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaHYHbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 03:31:44 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:42444 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001AbaHYHaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 03:30:39 -0400
-X-AuditID: cbfee691-f79546d0000011a1-db-53fae61bb060
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: eduardo.valentin@ti.com, amit.daniel@samsung.com, rui.zhang@intel.com
-Cc: kgene.kim@samsung.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, galak@codeaurora.org, ch.naveen@samsung.com,
-        kyungmin.park@samsung.com, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Subject: [PATCHv4 4/4] thermal: exynos: Remove duplicate code when reading
- triminfo register of Exynos5440
-Date: Mon, 25 Aug 2014 16:30:25 +0900
-Message-id: <1408951825-2639-5-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1408951825-2639-1-git-send-email-cw00.choi@samsung.com>
-References: <1408951825-2639-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsWyRsSkQFf62a9gg+8HlCwaroZY3H1+mNHi
-	+pfnrBbzj5xjtViz/yeTxfwr11gt+t8sZLXoXXCVzeJs0xt2i02PgWKXd81hs/jce4TRYsb5
-	fUwWS69fZLKYMH0ti0Xr3iPsFk8e9rE5CHqsmbeG0eNyXy+Tx85Zd9k9Fu95yeSxaVUnm8fm
-	JfUefVtWMXocv7GdyePzJrkAzigum5TUnMyy1CJ9uwSujMWTb7AUXOKsWL5qM0sD4x/2LkYO
-	DgkBE4ndTRxdjJxAppjEhXvr2UBsIYGljBIv+1Qg4iYSTbtfMHcxcgHFpzNKfJz+gg3CaWKS
-	OPbwCztIFZuAlsT+FzfAukUEPCXmLmxhAiliFpjCLHGq4ygrSEJYIEfi1p3nLCA2i4CqxNfH
-	t5hAbF4BF4mmppPMEOvkJD7seQR2HaeAq8TZRXYQF7lI/J22BuwKCYG/7BJX311nhZgjIPFt
-	8iEWiG9kJTYdgBojKXFwxQ2WCYzCCxgZVjGKphYkFxQnpReZ6hUn5haX5qXrJefnbmIERtvp
-	f88m7mC8f8D6EKMAB6MSD+8Kzl/BQqyJZcWVuYcYTYE2TGSWEk3OB8Z0Xkm8obGZkYWpiamx
-	kbmlmZI4r470z2AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjBXRzE6/lum9XGf18EDo36Ns
-	5rzvbe+qfL+Rns9v92r1ozXWCfcnv78k+lDk4+fLskxqxx+drDu4kbfiaokkz/IPu5suHd3S
-	8DqmIPr3vee9Ky5ovJkg/TerN3KOx7Nl9q0hm8r9u8re8bzekHx8sUf9M2/fixJe3w/rPjdP
-	3Zb7+PO+BR5T2CuVWIozEg21mIuKEwFy3jfxsQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jQV3pZ7+CDe5Mk7JouBpicff5YUaL
-	61+es1rMP3KO1WLN/p9MFvOvXGO16H+zkNWid8FVNouzTW/YLTY9Bopd3jWHzeJz7xFGixnn
-	9zFZLL1+kcliwvS1LBate4+wWzx52MfmIOixZt4aRo/Lfb1MHjtn3WX3WLznJZPHplWdbB6b
-	l9R79G1Zxehx/MZ2Jo/Pm+QCOKMaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
-	lRTyEnNTbZVcfAJ03TJzgH5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
-	MGYsnnyDpeASZ8XyVZtZGhj/sHcxcnJICJhINO1+wQxhi0lcuLeerYuRi0NIYDqjxMfpL6Cc
-	JiaJYw+/gHWwCWhJ7H9xgw3EFhHwlJi7sIUJpIhZYAqzxKmOo6wgCWGBHIlbd56zgNgsAqoS
-	Xx/fYgKxeQVcJJqaTkKtk5P4sOcR0FAODk4BV4mzi+xAwkJAJX+nrWGewMi7gJFhFaNoakFy
-	QXFSeq6hXnFibnFpXrpecn7uJkZwPD+T2sG4ssHiEKMAB6MSD+9Kzl/BQqyJZcWVuYcYJTiY
-	lUR4pxwHCvGmJFZWpRblxxeV5qQWH2I0BTpqIrOUaHI+MNXklcQbGpuYGVkamRtaGBmbK4nz
-	Hmi1DhQSSE8sSc1OTS1ILYLpY+LglGpgnLjtA9M0g5NfdWbdmaYfv8d0ZcPDayXhYZPmbZB+
-	0sDZ/r0lf8+pZdYTDk1MeHvvnuyjNYq/Ngdc3b8tokl+v8tz7qDiz07JlatDj+VEmD91v8qR
-	vzB2ipiKmY91Uaxna8lO9x6bkIx+iyCxpWod2wIdJnxpX/7S78Yek78bP1fOZ/i6J/ySixJL
-	cUaioRZzUXEiALf1WnH9AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754512AbaHYHka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 03:40:30 -0400
+Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:33722
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753549AbaHYHk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 03:40:29 -0400
+Date: Mon, 25 Aug 2014 15:40:20 +0800
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3 3/3] ARM: clk-imx6q: Add missing lvds and anaclk clock
+ to the clock tree
+Message-ID: <20140825073957.GA7740@audiosh1>
+References: <cover.1407481023.git.shengjiu.wang@freescale.com>
+ <9ecf6480464cffb3b4347ad3fd8ec5f07462a0fc.1407481023.git.shengjiu.wang@freescale.com>
+ <20140809135841.GB8849@dragon> <20140811030935.GB13158@audiosh1>
+ <20140818060521.GA2114@dragon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140818060521.GA2114@dragon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(6009001)(199003)(51704005)(35774003)(24454002)(189002)(93886004)(81156004)(4396001)(85306004)(68736004)(80022001)(104016003)(81342001)(64706001)(54356999)(90102001)(26826002)(20776003)(84676001)(44976005)(92566001)(77982001)(85852003)(92726001)(21056001)(79102001)(69596002)(47776003)(99396002)(81542001)(6806004)(74502001)(83322001)(31966008)(74662001)(46102001)(50986999)(33716001)(33656002)(97736001)(46406003)(107046002)(102836001)(83072002)(97756001)(105606002)(106466001)(95666004)(76482001)(86362001)(83506001)(76176999)(23726002)(50466002)(110136001)(87936001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR03MB346;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03142412E2
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove simply duplicate code when reading triminfo register of Exynos5440.
+On Mon, Aug 18, 2014 at 02:06:07PM +0800, Shawn Guo wrote:
+> On Mon, Aug 11, 2014 at 11:09:36AM +0800, Shengjiu Wang wrote:
+> > On Sat, Aug 09, 2014 at 09:58:42PM +0800, Shawn Guo wrote:
+> > > On Fri, Aug 08, 2014 at 03:02:49PM +0800, Shengjiu Wang wrote:
+> > > > @@ -176,8 +182,12 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
+> > > >  	 * the "output_enable" bit as a gate, even though it's really just
+> > > >  	 * enabling clock output.
+> > > >  	 */
+> > > > -	clk[IMX6QDL_CLK_LVDS1_GATE] = imx_clk_gate("lvds1_gate", "lvds1_sel", base + 0x160, 10);
+> > > > -	clk[IMX6QDL_CLK_LVDS2_GATE] = imx_clk_gate("lvds2_gate", "lvds2_sel", base + 0x160, 11);
+> > > > +	clk[IMX6QDL_CLK_LVDS1_GATE] = imx_clk_gate2("lvds1_gate", "lvds1_sel", base + 0x160, 10);
+> > > > +	clk[IMX6QDL_CLK_LVDS2_GATE] = imx_clk_gate2("lvds2_gate", "lvds2_sel", base + 0x160, 11);
+> > > 
+> > > I do not think you can simply change to use imx_clk_gate2() here.  It's
+> > > designed for those CCGR gate clocks, each of which is controlled by two
+> > > bits.
+> > > 
+> > > Shawn
+> > >
+> > As Lucas Stach's suggestion, we need to do add some method for mutually exclusive clock, 
+> > lvds1_gate with lvds1_in, lvds2_gate with lvds2_in. I add imx_clk_gate2_exclusive() function in clk-gate2.c.
+> > So I change imx_clk_gate() to imx_clk_gate2() here.
+> > As you said, this is not good solution.
+> 
+> It's not just a "not good" solution but wrong and broken one.  The net
+> result of that is if you call clk_enable() on lvds1_gate, both bit 10
+> and 11 will be set.
+> 
+> > So I need your suggestion, how can I do?
+> 
+> I guess we will need a new clock type to handle such mutually exclusive
+> clocks, rather than patching clk-gate2.
+> 
+Could you please help to implement this feature?
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <edubezval@gmail.com>
-Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Reviewed-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
----
- drivers/thermal/samsung/exynos_tmu.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Furthermore, I'd like to drop patch 2 and patch 3, wait the implementation from
+you.
 
-diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 7234f38..caeb445 100644
---- a/drivers/thermal/samsung/exynos_tmu.c
-+++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -195,15 +195,13 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 		 */
- 		switch (data->id) {
- 		case 0:
-+		case 2:
- 			trim_info = readl(data->base +
- 			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
- 			break;
- 		case 1:
- 			trim_info = readl(data->base + reg->triminfo_data);
- 			break;
--		case 2:
--			trim_info = readl(data->base -
--			EXYNOS5440_EFUSE_SWAP_OFFSET + reg->triminfo_data);
- 		}
- 	} else {
- 		/* On exynos5420 the triminfo register is in the shared space */
--- 
-1.8.0
+Could you please review the patch 1?  do you have any comments?
 
+Wang Shengjiu
+
+> > First, is it allowable that to add imx_clk_gate2_exclusive() function, is there a more better way?
+> 
+> Again, this is completely wrong.
+> 
+> > second, or should I change the clk-gate.c to add exclusive control?
+> 
+> If such mutually exclusive clocks are somehow common across different
+> clock controllers, we can propose to change clk-gate.c for handling
+> them.  But I'm not sure this is a common case.
+> 
+> Shawn
