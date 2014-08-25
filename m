@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933208AbaHYRAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:00:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932952AbaHYRAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:00:12 -0400
-Date: Mon, 25 Aug 2014 12:59:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Geoff Levand <geoff@infradead.org>
-Cc: Eric Biederman <ebiederm@xmission.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] kexec: minor fixups and enhancements
-Message-ID: <20140825165916.GC14379@redhat.com>
-References: <cover.1408731991.git.geoff@infradead.org>
+	id S933227AbaHYRBQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:01:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59707 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526AbaHYRBO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 13:01:14 -0400
+Date: Mon, 25 Aug 2014 10:00:33 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: Re: [3.8.y.z extended stable] Linux 3.8.13.28 stable review
+Message-ID: <20140825170033.GA18021@kroah.com>
+References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1408731991.git.geoff@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 06:39:47PM +0000, Geoff Levand wrote:
-> Hi,
+On Mon, Aug 25, 2014 at 09:54:46AM -0700, Kamal Mostafa wrote:
+> This is the start of the review cycle for the Linux 3.8.13.28 stable kernel.
 > 
-> Here are a few minor fixups and enhancements for kexec support. 
-> 
-> Patch 3 and 4 that add preprocessor macros for the kimage list flags are
-> ones that I use in the arm64 kexec support I am working on, so it would
-> be nice for those to go in.
-> 
-> Please consider.
+>  ** NOTE: This will be the last Linux 3.8.y.z extended stable version
+>  ** to be released and supported by me and the Ubuntu Kernel team.
 
-Hi Geoff,
+I know this is the last release, but I have gotten some complaints by
+people who are confused by the numbering scheme you are using for the
+Canonical stable kernel releases.  Can you please use the EXTRAVERSION
+field with a "-something" tag in it to differenciate from the "normal"
+kernel.org stable releases?
 
-Does arm64 has secureboot? If yes, then it might make sense to
-enable the new syscall kexec_file_load() on arm64 instead of trying
-to make old syscall work first.
+A simple "-ubuntu" or "-canonical" or "-fuzzy_bunnies" marking would be
+fine, or whatever you want to pick.
 
-Thanks
-Vivek
+Everyone used to do this a long time ago when we had lots of different
+kernel releases / trees floating around in the pre-git days, which made
+things much easier to figure out where the trees came from.
 
-> 
-> -Geoff
->     
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> 
->   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> 
-> are available in the git repository at:
-> 
->   git://git.linaro.org/people/geoff.levand/linux-kexec.git for-kexec
-> 
-> for you to fetch changes up to dc3c63e69815e00dce5454bd50e2991e9ea33f64:
-> 
->   powerpc/kexec: Use global IND_FLAGS macro (2014-08-22 11:15:18 -0700)
-> 
-> ----------------------------------------------------------------
-> Geoff Levand (5):
->       kexec: Fix make headers_check
->       kexec: Simplify conditional
->       kexec: Add bit definitions for kimage entry flags
->       kexec: Add IND_FLAGS macro
->       powerpc/kexec: Use global IND_FLAGS macro
-> 
->  arch/powerpc/kernel/machine_kexec_64.c |  2 --
->  include/linux/kexec.h                  | 20 ++++++++++++++++----
->  include/uapi/linux/kexec.h             |  6 ------
->  kernel/kexec.c                         | 17 ++++++++++-------
->  4 files changed, 26 insertions(+), 19 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+thanks,
+
+greg k-h
