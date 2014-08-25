@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaHYE5v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 00:57:51 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:47762 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780AbaHYE5t (ORCPT
+	id S1754167AbaHYFBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 01:01:32 -0400
+Received: from v070544.home.net.pl ([79.96.77.186]:60899 "HELO
+	v070544.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751197AbaHYFBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 00:57:49 -0400
-Date: Sun, 24 Aug 2014 21:57:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: Tree for Aug 23
-Message-ID: <20140825045741.GA29723@roeck-us.net>
-References: <20140823080422.7895575c@canb.auug.org.au>
+	Mon, 25 Aug 2014 01:01:31 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Aug 2014 01:01:30 EDT
+From: "=?UTF-8?B?U3lzdGVtIEFkbWlu?=" <zsszaleczemale@oswiata.org.pl>
+Date: Mon, 25 Aug 2014 06:54:50 +0200
+Subject: Skrzynka pocztowa zostala tymczasowo zawieszona!!!
+Content-Type: text/plain; charset=UTF-8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140823080422.7895575c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: home.pl my.webmail/2.1
+Reply-To: noreply@webmaster.pl
+Message-ID: <9dd99c4b841be511c214687bf5bc1a18.qmail@home.pl>
+User-Agent: home.pl my.webmail/2.1
+X-Priority: 3
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7P51cGC024281
 
-On Sat, Aug 23, 2014 at 08:04:22AM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20140822:
-> 
-> The mfd tree gained a build failure so I used the version from
-> next-20140822.
-> 
-> The usb-gadget tree gained a conflict against the usb-gadget-fixes tree.
-> 
-> The pwm tree gained a build failure for which I reverted a couple of
-> commits.
-> 
-> The staging tree still had its build failure for which I applied a
-> fix patch.
-> 
-> Non-merge commits (relative to Linus' tree): 1435
->  1372 files changed, 34371 insertions(+), 25442 deletions(-)
-> 
 
-Images build from this tree crash in mips, mips64, and sparc64 qemu tests
-with memory allocation errors. For mips, bisect points to commit ef31563e950c
-(locking,arch,mips: Fold atomic_ops).
+-- 
+Szanowny konto uzytkownika e-mail,
+ 
+        
+        Niedawno wykryto nietypowe dzialania z konta e-mail, wiec skrzynka 
+pocztowa zostala czasowo zawieszona przez administratora systemu, nalezy 
+odzyskac swoje konto, klikajac na ponizszy link lub skopiuj do przegladarki:
+ 
 
-# bad: [eeed658b5a92d957aab7bdb7c469a90016420c7d] Add linux-next specific files for 20140823
-# good: [7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9] Linux 3.17-rc1
-git bisect start 'HEAD' 'v3.17-rc1'
-# good: [a364ac83d553cd223cf1b898a738594f866242ac] Merge remote-tracking branch 'input/next'
-git bisect good a364ac83d553cd223cf1b898a738594f866242ac
-# bad: [6804e0868ce1f5f55a16270de65587e35b80231e] Merge remote-tracking branch 'usb-gadget/next'
-git bisect bad 6804e0868ce1f5f55a16270de65587e35b80231e
-# bad: [8590e100eca66f5763b4c8a5775e38e4a0c9939d] Merge branch 'x86/xsave'
-git bisect bad 8590e100eca66f5763b4c8a5775e38e4a0c9939d
-# good: [e71e79457b79a52827039d9d7f253321bfd342bd] perf symbols: Don't demangle parameters and such by default
-git bisect good e71e79457b79a52827039d9d7f253321bfd342bd
-# bad: [100b1cb29333c8ac37e68025b291e4b273c8ad43] Merge branch 'locking/core'
-git bisect bad 100b1cb29333c8ac37e68025b291e4b273c8ad43
-# bad: [c6470150dff9aff682063890c9b8eac71b695def] locking,arch,sh: Fold atomic_ops
-git bisect bad c6470150dff9aff682063890c9b8eac71b695def
-# good: [50f853e38b0b90a5703ab14b70e20eb5a8ccd5de] locking,arch,hexagon: Fold atomic_ops
-git bisect good 50f853e38b0b90a5703ab14b70e20eb5a8ccd5de
-# good: [d6dfe2509da935a15583cace7cd3837b1e8addef] locking,arch,metag: Fold atomic_ops
-git bisect good d6dfe2509da935a15583cace7cd3837b1e8addef
-# bad: [e69a0ef76627005e3e83d0e086e6bb1d247bb65b] locking,arch,mn10300: Fold atomic_ops
-git bisect bad e69a0ef76627005e3e83d0e086e6bb1d247bb65b
-# bad: [ef31563e950c60bb41b97c2b61c32de874f3c949] locking,arch,mips: Fold atomic_ops
-git bisect bad ef31563e950c60bb41b97c2b61c32de874f3c949
-# first bad commit: [ef31563e950c60bb41b97c2b61c32de874f3c949] locking,arch,mips: Fold atomic_ops
+http://systemadministratorpoczta.webs.com/
 
-Reverting the first bad commit fixes the problem for mips and mips64.
 
-For sparc64, given the above, I did not bother to bisect, but just reverted
-commit 4f3316c (locking,arch,sparc: Fold atomic_ops). This fixes the problem
-for sparc64.
+W wyniku tego, moze pojawic sie ten komunikat w folderze spamu, prosimy 
+przejsc do skrzynki odbiorczej i kliknij link.
+ 
 
-Guenter
+Przepraszamy za niedogodnosci.
+Administrator systemuÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
