@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092AbaHYQ6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 12:58:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59871 "EHLO
+	id S933152AbaHYQ6G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 12:58:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59869 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756066AbaHYQzX (ORCPT
+	with ESMTP id S1755413AbaHYQzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Aug 2014 12:55:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 09/13] mnt: Move the test for MNT_LOCK_READONLY from change_mount_flags into do_remount
-Date: Mon, 25 Aug 2014 09:54:55 -0700
-Message-Id: <1408985699-31838-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 08/13] mnt: Only change user settable mount flags in remount
+Date: Mon, 25 Aug 2014 09:54:54 -0700
+Message-Id: <1408985699-31838-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408985699-31838-1-git-send-email-kamal@canonical.com>
 References: <1408985699-31838-1-git-send-email-kamal@canonical.com>
@@ -29,54 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 07b645589dcda8b7a5249e096fece2a67556f0f4 upstream.
+commit a6138db815df5ee542d848318e5dae681590fccd upstream.
 
-There are no races as locked mount flags are guaranteed to never change.
+Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
+read-only bind mount read-only in a user namespace the
+MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
+to the remount a read-only mount read-write.
 
-Moving the test into do_remount makes it more visible, and ensures all
-filesystem remounts pass the MNT_LOCK_READONLY permission check.  This
-second case is not an issue today as filesystem remounts are guarded
-by capable(CAP_DAC_ADMIN) and thus will always fail in less privileged
-mount namespaces, but it could become an issue in the future.
+Correct this by replacing the mask of mount flags to preserve
+with a mask of mount flags that may be changed, and preserve
+all others.   This ensures that any future bugs with this mask and
+remount will fail in an easy to detect way where new mount flags
+simply won't change.
 
 Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/namespace.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ fs/namespace.c        | 2 +-
+ include/linux/mount.h | 4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/fs/namespace.c b/fs/namespace.c
-index ddbd5bc..9171ac3 100644
+index 5dd7709..ddbd5bc 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -1740,9 +1740,6 @@ static int change_mount_flags(struct vfsmount *mnt, int ms_flags)
- 	if (readonly_request == __mnt_is_readonly(mnt))
- 		return 0;
+@@ -1782,7 +1782,7 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
+ 		err = do_remount_sb(sb, flags, data, 0);
+ 	if (!err) {
+ 		br_write_lock(&vfsmount_lock);
+-		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
++		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
+ 		mnt->mnt.mnt_flags = mnt_flags;
+ 		br_write_unlock(&vfsmount_lock);
+ 	}
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 73005f9..16fc05d 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -42,7 +42,9 @@ struct mnt_namespace;
+  * flag, consider how it interacts with shared mounts.
+  */
+ #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
+-#define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
++#define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
++				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
++				 | MNT_READONLY)
  
--	if (mnt->mnt_flags & MNT_LOCK_READONLY)
--		return -EPERM;
--
- 	if (readonly_request)
- 		error = mnt_make_readonly(real_mount(mnt));
- 	else
-@@ -1771,6 +1768,16 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
- 	if (path->dentry != path->mnt->mnt_root)
- 		return -EINVAL;
  
-+	/* Don't allow changing of locked mnt flags.
-+	 *
-+	 * No locks need to be held here while testing the various
-+	 * MNT_LOCK flags because those flags can never be cleared
-+	 * once they are set.
-+	 */
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_READONLY) &&
-+	    !(mnt_flags & MNT_READONLY)) {
-+		return -EPERM;
-+	}
- 	err = security_sb_remount(sb, data);
- 	if (err)
- 		return err;
+ #define MNT_INTERNAL	0x4000
 -- 
 1.9.1
 
