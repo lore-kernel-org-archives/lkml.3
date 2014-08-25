@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281AbaHYOul (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 10:50:41 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:52015 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932911AbaHYOui (ORCPT
+	id S933067AbaHYOqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 10:46:16 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:52181 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932697AbaHYOqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 10:50:38 -0400
-Date: Mon, 25 Aug 2014 10:50:35 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroup: fix a typo in comment.
-Message-ID: <20140825145035.GB21688@htj.dyndns.org>
-References: <1408966072-2142-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408966072-2142-1-git-send-email-yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 25 Aug 2014 10:46:10 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, olof@lixom.net
+Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [RESEND PATCH 0/4] Enables STMicroelectronics Flexgen Clock support
+Date: Mon, 25 Aug 2014 16:44:44 +0200
+Message-Id: <1408977888-10473-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.27,0.0.0000
+ definitions=2014-08-25_01:2014-08-25,2014-08-24,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 25, 2014 at 07:27:52PM +0800, Dongsheng Yang wrote:
-> There is no function named cgroup_enable_task_cg_links().
-> Instead, the correct function name in this comment should
-> be cgroup_enabled_task_cg_lists().
-> 
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+These patches enables clock drivers for STih407 boards.
 
-Applied to cgroup/for-3.18.
+Gabriel Fernandez (4):
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgen A0
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgen C0
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgen D0/D2/D3
+  ARM: STi: DT: STiH407: 407 DT Entry for clockgenA9
 
-Thanks.
+ arch/arm/boot/dts/stih407-clock.dtsi     | 295 ++++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/stih407.dtsi           |  18 +-
+ include/dt-bindings/clock/stih407-clks.h |  11 ++
+ 3 files changed, 307 insertions(+), 17 deletions(-)
+ create mode 100644 include/dt-bindings/clock/stih407-clks.h
 
 -- 
-tejun
+1.9.1
+
