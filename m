@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189AbaHYROm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:14:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58988 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaHYROk (ORCPT
+	id S932976AbaHYRQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:16:13 -0400
+Received: from eddie.linux-mips.org ([148.251.95.138]:41842 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932187AbaHYRQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:14:40 -0400
-Message-ID: <53FB6EF1.4020805@infradead.org>
-Date: Mon, 25 Aug 2014 10:14:25 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Mon, 25 Aug 2014 13:16:12 -0400
+Date: Mon, 25 Aug 2014 19:16:00 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org, Chris Zankel <chris@zankel.net>,
+        Marc Gauthier <marc@cadence.com>, linux-mm@kvack.org,
+        linux-arch@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Steven Hill <Steven.Hill@imgtec.com>
+Subject: Re: [PATCH v4 0/2] mm/highmem: make kmap cache coloring aware
+Message-ID: <20140825171600.GH25892@linux-mips.org>
+References: <1406941899-19932-1-git-send-email-jcmvbkbc@gmail.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: Proofread documentation
-References: <1408956471-16579-1-git-send-email-geert+renesas@glider.be>	<53FB6B26.3030906@infradead.org> <CAMuHMdXOf8L5QpLdtpxkW1x7iA1hCGMuK+h_7NsKS0VvZDy6Mw@mail.gmail.com>
-In-Reply-To: <CAMuHMdXOf8L5QpLdtpxkW1x7iA1hCGMuK+h_7NsKS0VvZDy6Mw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1406941899-19932-1-git-send-email-jcmvbkbc@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/25/14 10:10, Geert Uytterhoeven wrote:
-> Hi Randy,
-> 
-> On Mon, Aug 25, 2014 at 6:58 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
->>> -The load_uA value can be determined from the consumers datasheet. e.g.most
->>> -datasheets have tables showing the max current consumed in certain situations.
->>> +The load_uA value can be determined from the consumer's datasheet. e.g. most
->>
->> Prefer:                                                               E.g.
-> 
-> Me too. But the regulator docs consistently use full stops followed by
-> lower-case abbreviations everywhere, so I kept them.
+On Sat, Aug 02, 2014 at 05:11:37AM +0400, Max Filippov wrote:
 
-oh.  oh well, OK.
-Thanks.
+> this series adds mapping color control to the generic kmap code, allowing
+> architectures with aliasing VIPT cache to use high memory. There's also
+> use example of this new interface by xtensa.
 
->> otherwise,
->> Acked-by: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Thanks!
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
+I haven't actually ported this to MIPS but it certainly appears to be
+the right framework to get highmem aliases handled on MIPS, too.
 
+Though I still consider increasing PAGE_SIZE to 16k the preferable
+solution because it will entirly do away with cache aliases.
 
--- 
-~Randy
+Thanks,
+
+  Ralf
