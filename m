@@ -1,157 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945AbaHYNh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:37:27 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61308 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557AbaHYNhZ (ORCPT
+	id S1755990AbaHYNiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:38:04 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:43533 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951AbaHYNh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:37:25 -0400
-Date: Mon, 25 Aug 2014 15:37:16 +0200
+	Mon, 25 Aug 2014 09:37:59 -0400
+Date: Mon, 25 Aug 2014 15:37:53 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Jon Loeliger <jdl@jdl.com>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Alexander Holler <holler@ahsoftware.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+To: Richard Weinberger <richard@nod.at>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 0/9] dt: dependencies (for deterministic driver
- initialization order based on the DT)
-Message-ID: <20140825133714.GH4163@ulmo.nvidia.com>
-References: <1399913280-6915-1-git-send-email-holler@ahsoftware.de>
- <20140514141914.446F7C4153D@trevor.secretlab.ca>
- <20140821140211.GD19293@ulmo.nvidia.com>
- <53F64624.5000403@ahsoftware.de>
- <20140822131919.GX21734@leverpostej>
- <20140825093931.GB2399@ulmo>
- <E1XLu15-0002DP-6o@jdl.com>
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-ia64@vger.kernel.org,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        sparclinux@vger.kernel.org, "x86@kernel.org" <x86@kernel.org>,
+        linux-serial@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/8] asm-generic/io.h overhaul
+Message-ID: <20140825133752.GI4163@ulmo.nvidia.com>
+References: <1407925738-26170-1-git-send-email-thierry.reding@gmail.com>
+ <CAFLxGvyyW5J0En1bFwonZiMwoJK+XDgtHvC2PQOhqgvyF4F-uQ@mail.gmail.com>
+ <20140825122734.GD4163@ulmo.nvidia.com>
+ <53FB3189.10109@nod.at>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Yia77v5a8fyVHJSl"
+	protocol="application/pgp-signature"; boundary="D6z0c4W1rkZNF4Vu"
 Content-Disposition: inline
-In-Reply-To: <E1XLu15-0002DP-6o@jdl.com>
+In-Reply-To: <53FB3189.10109@nod.at>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Yia77v5a8fyVHJSl
+--D6z0c4W1rkZNF4Vu
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Aug 25, 2014 at 08:08:59AM -0500, Jon Loeliger wrote:
+On Mon, Aug 25, 2014 at 02:52:25PM +0200, Richard Weinberger wrote:
+> Am 25.08.2014 14:27, schrieb Thierry Reding:
+> > On Mon, Aug 25, 2014 at 01:53:30PM +0200, Richard Weinberger wrote:
+> >> On Wed, Aug 13, 2014 at 12:28 PM, Thierry Reding
+> >> <thierry.reding@gmail.com> wrote:
+> >>> From: Thierry Reding <treding@nvidia.com>
+> >>>
+> >>> Hi,
+> >>>
+> >>> Here is the fourth version of a series that started out as an attempt=
+ to
+> >>> provide string versions of the read*() and write*() accessors to more
+> >>> architectures so that drivers can use them portably. The series has
+> >>> since evolved into a more general cleanup of asm-generic/io.h and the
+> >>> functions defined therein.
+> >>>
+> >>> Patch 1 is trivial and removes a redundant redefinition of PCI_IOBASE
+> >>> from the asm/io.h header on ARC. Patches 2 and 3 remove unnecessary
+> >>> volatile keywoards from some functions, which is a prerequisite to cl=
+ean
+> >>> up some of the functions in subsequent patches.
+> >>>
+> >>> The xlate_dev_{kmem,mem}_ptr() functions are used to map memory when =
+the
+> >>> /dev/mem device is accessed. Patches 4 and 5 use more consistent data
+> >>> types for these functions, which will get a "standard" prototype in t=
+he
+> >>> asm-generic/io.h header in a subsequent patch.
+> >>>
+> >>> Patch 6 is the bulk of this series. It implements the string variants=
+ of
+> >>> the read*() and write*() accessors and cleans up various other parts =
+of
+> >>> the asm-generic/io.h header file. Macros are converted to static inli=
+ne
+> >>> functions for better type checking. Overriding generic implementations
+> >>> in architectures is handled more consistently.
+> >>>
+> >>> Patches 7 and 8, finally, make use of the asm-generic/io.h header on =
+the
+> >>> 32-bit and 64-bit ARM architectures.
+> >>>
+> >>> This is compile- and runtime-tested on 32-bit and 64-bit ARM and comp=
+ile
+> >>> tested on IA64, Microblaze, s390, SPARC, x86 and Xtensa. For ARC,
+> >>> Blackfin, Metag, OpenRISC, Score and Unicore32 which also use
+> >>> asm-generic/io.h I couldn't find or build a cross-compiler that would
+> >>> run on my system. But by code inspection they shouldn't break with th=
+is
+> >>> patch.
+> >>>
+> >>> To ensure bisectability I built multi_v7_defconfig on 32-bit ARM and =
+the
+> >>> defconfig for 64-bit ARM, IA64, Microblaze, s390, SPARC, x86 and Xten=
+sa
+> >>> after each commit and verified that the series does not introduce any
+> >>> build errors or warnings.
+> >>>
+> >>> Provided there are no objections to the patches there's still the mat=
+ter
+> >>> of how to merge them. Patch 6 depends on patches 1-5 to avoid warnings
+> >>> and/or errors during the build. Patches 7 and 8 depend on patch 6. In=
+ my
+> >>> opinion it doesn't make much sense to split them up, so I guess we'll
+> >>> need a volunteer to take them all into one tree. Ideally that tree wo=
+uld
+> >>> feed into linux-next so that we can get as much build and test-covera=
+ge
+> >>> as possible during the 3.17 release cycle so that these patches can go
+> >>> into 3.18.
+> >>>
+> >>> Arnd, I'm opportunistically sending this To: you in the hopes that you
+> >>> can take it into your asm-generic tree which seems like the best fit =
+for
+> >>> this.
+> >>
+> >> Do you have a git tree for that?
+> >> Would be nice for testing UML, it depends also on generic io.
 > >=20
+> > Yes, it's all here:
+> >=20
+> > 	https://github.com/thierryreding/linux.git staging/asm-generic-io
+> >=20
+> > That branch is based on today's linux-next (next-20140825).
 >=20
-> > Anyway, instead of going back and forth between "deferred probe is good"
-> > and "deferred probe is bad", how about we do something useful now and
-> > concentrate on how to make use of the information we have in DT with the
-> > goal to reduce the number of cases where deferred probing is required?
->=20
-> Good idea.
->=20
-> The proposal on the table is to allow the probe code
-> to make a topological sort of the devices based on
-> dependency information either implied, explicitly stated
-> or both.  That is likely a fundamentally correct approach.
->=20
-> I believe some of the issues that need to be resolved are:
->=20
->     1) What constitutes a dependency?
->     2) How is that dependency expressed?
->     3) How do we add missing dependencies?
->     4) Backward compatability problems.
->=20
-> There are other questions, of course.  Is it a topsort
-> per bus?  Are there required "early devices"?  Should
-> the inter-node dependencies be expressed at each node,
-> or in a separate hierarchy within the DTS?  Others.
+> Looks good, UML builds and boots fine here.
 
-I think Grant already objected to the idea of explicitly adding
-dependency information into the device tree sources. Rather, if I
-understand correctly, we should be using the information readily
-available (phandle references) as much as possible before resorting to
-additional properties.
-
-So far we've been operating under the assumption that a dependency is
-modeled as a phandle reference and that the dependent would contain the
-phandle reference to the dependency. That's for example how clocks and
-regulators (to name only a few) work. A simplified example would look
-like this:
-
-	clock: clock@... {
-		...
-		#clock-cells =3D <1>;
-		...
-	};
-
-	pmic: pmic@... {
-		regulators {
-			vdd_foo: ldo0 {
-				...
-			};
-
-			vdd_bar: ldo1 {
-				...
-			};
-	};
-
-	device@... {
-		vdd-supply =3D <&vdd_foo>;
-		clocks =3D <&clock 0>;
-	};
-
-	device@... {
-		vdd-supply =3D <&vdd_bar>;
-		clocks =3D <&clock 1>;
-	};
-
-There are somewhat standardized bindings for the above and especially
-for bindings of the type that clocks implement this is trivial. We can
-simply iterate over each (phandle, specifier) tuple and check that the
-corresponding clock provider can be resolved (which typically means that
-it's been registered with the common clock framework).
-
-For regulators (and regulator-like bindings) the problem is somewhat
-more difficult because they property names are not standardized. One way
-to solve this would be to look for property names with a -supply suffix,
-but that could obviously lead to false positives. One alternative that I
-think could eliminate this would be to explicitly list dependencies in
-drivers. This would allow core code to step through such a list and
-resolve the (phandle, specifier) tuples.
-
-Clocks are usually not a problem with deferred probing since they often
-are registered early anyway. Regulators on the other hand seem to be a
-fairly common trigger, though, so they seem like a good candidate to
-focus on.
+Excellent, thanks for testing.
 
 Thierry
 
---Yia77v5a8fyVHJSl
+--D6z0c4W1rkZNF4Vu
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJT+zwKAAoJEN0jrNd/PrOhEHAP/2LOTwqOB67r0CMRmD+VbVPm
-lNYbCbmt26pO7Ffzp7g5YpjlOLxCgr1CJJZY/mNDjuTp1L7sl7UfqCvFLf923ylE
-Hid2X/vOC5r4yJZj6FoBnoVf2AbSM6q3pEhVtV71/C5H9DU2ineOOVvusAg6l2xg
-dyFFm6hXzVP29aMo/drnoKD25cxN4vbBDcBUu7PF/Hac7sxda9fQGfT3LgFaP854
-XyMrOCKdvvSWlH5t3TbC4fWGO8+PUHylvGtzzNeUKe+MqPWDWloZjjSqvQqOdpIY
-QRYhPfJFC1iYJ6E/rnnh83t81MbOqeWBsm18lT9NybFahaKNLtwakloUBT8kliF2
-0RXzJxItoSWw/5pH6luLUTmJBjfmdG+E66NCjJPDraqAFY3sV9nNCn6SA7gHEjRT
-LjZeSG78i5XT7IAK0oZQ2OvALZ9hQBTx/gY5FMM5GlaTEA91ET2QD8FaBVNy+47J
-6V9dZKtuSUNOeq+Sm4Ev9ErTiImb8L7UQQTEzxs0ha2VytjW/QE97aiZor0FxOuQ
-7J1ybO/kufp9WHN5xoHBmmqJ02udM6YDn+eSGuz2bFik9/QZ82om++kzENIEpCeP
-PZ/T/AiR+/BH5FNGx2ACimimbHX7skh4xbAFU6a25zxuV8HGfiYaY8lW22h7kqGb
-RPboH/5+MSZgFBbby3Zx
-=gFqf
+iQIcBAEBAgAGBQJT+zwwAAoJEN0jrNd/PrOhM74P/RHwzwkWYaRikhqvRspDINeq
+GdhqxZBdnSO9z/rve+wSTc7QSSMHi63xRy1JIqJ2kWhdTz1KSu8VbTQl/BsUx52u
+M9x992vmoXViW5+KQWli2Q4S9uUbCjUgJdU7u8CqOUvEx+N05dgv5VwCRwS3ZsdI
+dzZr10A36mzleYKAAjt2ckvV+ppMWSACDJsPy+HU8MqkRFS4u66IVESvnvVhq5YO
+wHONAU37xdtgij9jvlPz0mqxdAeCacTeZGH3ahEvzlj96x2ryWs26cOIkbgyW00K
+7JjhMA7Ie/ndVal6JjE1jKsXmyuIfW6rq2obpyc+4ACUXZ676sp8r+1z6tTX/1k7
+v2F4lj16dgh/jaEO9Mgv+e7oVrEu1PhsCG91d1UcwHweRoOWZM1iK1tBdYYqa4CE
+jQdXkZcmOrbeuhEfznOsy9ggLxMGlmFTzlitZOqWbCF0FY44yWxGulBqg+v7WwPm
+/lfXhmIiqg79mDTmJgaR7SMw43y/cu2gk9VUPass58uW0ry5CVqBAU3XZi25W++w
+BcLHjIFayoyctYcAvVGEfDNBUffVObVEp8NJjqCh1ngJrBOO8asYu2dK0NVUuSok
+vnrzKoeYFIavo+u+vpZAMLjRjRdDbyKTfNfDYmAFT1ERNi/JyHSvey0uBWnRhEum
+XcXEBj2dACyCi2Au+eFt
+=Jr4q
 -----END PGP SIGNATURE-----
 
---Yia77v5a8fyVHJSl--
+--D6z0c4W1rkZNF4Vu--
