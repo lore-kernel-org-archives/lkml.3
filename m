@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaHYFBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 01:01:32 -0400
-Received: from v070544.home.net.pl ([79.96.77.186]:60899 "HELO
+	id S1752561AbaHYFFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 01:05:17 -0400
+Received: from v070544.home.net.pl ([79.96.77.186]:60743 "HELO
 	v070544.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751197AbaHYFBb (ORCPT
+	with SMTP id S1751561AbaHYFFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 01:01:31 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Aug 2014 01:01:30 EDT
+	Mon, 25 Aug 2014 01:05:16 -0400
 From: "=?UTF-8?B?U3lzdGVtIEFkbWlu?=" <zsszaleczemale@oswiata.org.pl>
-Date: Mon, 25 Aug 2014 06:54:50 +0200
+Date: Mon, 25 Aug 2014 07:05:14 +0200
 Subject: Skrzynka pocztowa zostala tymczasowo zawieszona!!!
 Content-Type: text/plain; charset=UTF-8
 MIME-Version: 1.0
 X-Mailer: home.pl my.webmail/2.1
 Reply-To: noreply@webmaster.pl
-Message-ID: <9dd99c4b841be511c214687bf5bc1a18.qmail@home.pl>
+Message-ID: <688bba468b70220ceb2b25d23ed4d2df.qmail@home.pl>
 User-Agent: home.pl my.webmail/2.1
 X-Priority: 3
 To: unlisted-recipients:; (no To-header on input)
@@ -23,7 +22,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7P51cGC024281
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s7P55N2G024301
 
 
 -- 
