@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522AbaHYN2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 09:28:53 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:51158 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490AbaHYN2u (ORCPT
+	id S932633AbaHYN3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 09:29:43 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:58718 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932497AbaHYN2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 09:28:50 -0400
+	Mon, 25 Aug 2014 09:28:52 -0400
 From: Eric Auger <eric.auger@linaro.org>
 To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
         marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
@@ -16,9 +16,9 @@ To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
 Cc: linux-kernel@vger.kernel.org, patches@linaro.org, will.deacon@arm.com,
         a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
         john.liuli@huawei.com
-Subject: [RFC 6/9] KVM: KVM-VFIO: allow arch specific implementation
-Date: Mon, 25 Aug 2014 15:27:41 +0200
-Message-Id: <1408973264-30384-7-git-send-email-eric.auger@linaro.org>
+Subject: [RFC 7/9] KVM: KVM-VFIO: add new VFIO external API hooks
+Date: Mon, 25 Aug 2014 15:27:42 +0200
+Message-Id: <1408973264-30384-8-git-send-email-eric.auger@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
 References: <1408973264-30384-1-git-send-email-eric.auger@linaro.org>
@@ -26,104 +26,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-introduce a new option __KVM_HAVE_ARCH_KVM_VFIO option.
-When set the generic KVM-VFIO code calls architecture dependent
-code.
-
-the architecture dependent hooks are
-- kvm_arch_vfio_has_attr
-- kvm_arch_vfio_set_attr
-- kvm_arch_vfio_init
-- kvm_arch_vfio_destroy
+add functions that implement the gateway to the extended
+external VFIO API:
+- kvm_vfio_device_get_external_user
+- kvm_vfio_device_put_external_user
+- kvm_vfio_external_get_type
+- kvm_vfio_external_get_base_device
 
 Signed-off-by: Eric Auger <eric.auger@linaro.org>
 ---
- include/linux/kvm_host.h | 30 ++++++++++++++++++++++++++++++
- virt/kvm/vfio.c          |  9 +++++++++
- 2 files changed, 39 insertions(+)
+ arch/arm/include/asm/kvm_host.h |  6 ++++
+ virt/kvm/vfio.c                 | 62 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 68 insertions(+)
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a4c33b3..c4ce4af 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -1075,6 +1075,36 @@ extern struct kvm_device_ops kvm_vfio_ops;
- extern struct kvm_device_ops kvm_arm_vgic_v2_ops;
- extern struct kvm_device_ops kvm_flic_ops;
+diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+index 6dfb404..62cbf5b 100644
+--- a/arch/arm/include/asm/kvm_host.h
++++ b/arch/arm/include/asm/kvm_host.h
+@@ -171,6 +171,12 @@ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+ unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
+ int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
  
-+#ifdef __KVM_HAVE_ARCH_KVM_VFIO
++struct vfio_device;
++struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep);
++void kvm_vfio_device_put_external_user(struct vfio_device *vdev);
++int kvm_vfio_external_get_type(struct vfio_device *vdev);
++struct device *kvm_vfio_external_get_base_device(struct vfio_device *vdev);
 +
-+int kvm_arch_vfio_has_attr(struct kvm_device *dev,
-+			   struct kvm_device_attr *attr);
-+int kvm_arch_vfio_set_attr(struct kvm_device *dev,
-+			   struct kvm_device_attr *attr);
-+int kvm_arch_vfio_init(struct kvm_device *dev);
-+
-+void kvm_arch_vfio_destroy(struct kvm_device *dev);
-+
-+#else
-+static inline int kvm_arch_vfio_has_attr(struct kvm_device *dev,
-+				  struct kvm_device_attr *attr)
-+{
-+	return -ENXIO;
-+}
-+static inline int kvm_arch_vfio_set_attr(struct kvm_device *dev,
-+				  struct kvm_device_attr *attr)
-+{
-+	return -ENXIO;
-+}
-+static inline int kvm_arch_vfio_init(struct kvm_device *dev)
-+{
-+	return 0;
-+}
-+static inline void kvm_arch_vfio_destroy(struct kvm_device *dev)
-+{
-+}
-+#endif
-+
- #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
- 
- static inline void kvm_vcpu_set_in_spin_loop(struct kvm_vcpu *vcpu, bool val)
+ /* We do not have shadow page tables, hence the empty hooks */
+ static inline int kvm_age_hva(struct kvm *kvm, unsigned long hva)
+ {
 diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
-index ba1a93f..89d3b75 100644
+index 89d3b75..f1c4e35 100644
 --- a/virt/kvm/vfio.c
 +++ b/virt/kvm/vfio.c
-@@ -207,6 +207,8 @@ static int kvm_vfio_set_attr(struct kvm_device *dev,
- 	switch (attr->group) {
- 	case KVM_DEV_VFIO_GROUP:
- 		return kvm_vfio_set_group(dev, attr->attr, attr->addr);
-+	default:
-+		return kvm_arch_vfio_set_attr(dev, attr);
- 	}
+@@ -59,6 +59,67 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
+ 	symbol_put(vfio_group_put_external_user);
+ }
  
- 	return -ENXIO;
-@@ -224,6 +226,9 @@ static int kvm_vfio_has_attr(struct kvm_device *dev,
- 		}
- 
- 		break;
++struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep)
++{
++	struct vfio_device *vdev;
++	struct vfio_device *(*fn)(struct file *);
 +
-+	default:
-+		kvm_arch_vfio_has_attr(dev, attr);
- 	}
- 
- 	return -ENXIO;
-@@ -234,6 +239,8 @@ static void kvm_vfio_destroy(struct kvm_device *dev)
- 	struct kvm_vfio *kv = dev->private;
- 	struct kvm_vfio_group *kvg, *tmp;
- 
-+	kvm_arch_vfio_destroy(dev);
++	fn = symbol_get(vfio_device_get_external_user);
++	if (!fn)
++		return ERR_PTR(-EINVAL);
 +
- 	list_for_each_entry_safe(kvg, tmp, &kv->group_list, node) {
- 		kvm_vfio_group_put_external_user(kvg->vfio_group);
- 		list_del(&kvg->node);
-@@ -265,6 +272,8 @@ static int kvm_vfio_create(struct kvm_device *dev, u32 type)
- 
- 	dev->private = kv;
- 
-+	kvm_arch_vfio_init(dev);
++	vdev = fn(filep);
 +
++	symbol_put(vfio_device_get_external_user);
++
++	return vdev;
++}
++
++void kvm_vfio_device_put_external_user(struct vfio_device *vdev)
++{
++	void (*fn)(struct vfio_device *);
++
++	fn = symbol_get(vfio_device_put_external_user);
++	if (!fn)
++		return;
++
++	fn(vdev);
++
++	symbol_put(vfio_device_put_external_user);
++}
++
++int kvm_vfio_external_get_type(struct vfio_device *vdev)
++{
++	int (*fn)(struct vfio_device *);
++	int ret;
++
++	fn = symbol_get(vfio_external_get_type);
++	if (!fn)
++		return -EINVAL;
++
++	ret = fn(vdev);
++
++	symbol_put(vfio_external_get_type);
++
++	return ret;
++}
++
++struct device *kvm_vfio_external_get_base_device(struct vfio_device *vdev)
++{
++	struct device *(*fn)(struct vfio_device *);
++	struct device *dev;
++
++	fn = symbol_get(vfio_external_get_base_device);
++	if (!fn)
++		return NULL;
++
++	dev = fn(vdev);
++
++	symbol_put(vfio_external_get_base_device);
++
++	return dev;
++}
++
+ static bool kvm_vfio_group_is_coherent(struct vfio_group *vfio_group)
+ {
+ 	long (*fn)(struct vfio_group *, unsigned long);
+@@ -277,6 +338,7 @@ static int kvm_vfio_create(struct kvm_device *dev, u32 type)
  	return 0;
  }
  
++
+ struct kvm_device_ops kvm_vfio_ops = {
+ 	.name = "kvm-vfio",
+ 	.create = kvm_vfio_create,
 -- 
 1.9.1
 
