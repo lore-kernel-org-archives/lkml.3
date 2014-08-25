@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaHYP4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 11:56:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57387 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754766AbaHYP4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 11:56:23 -0400
-Date: Mon, 25 Aug 2014 12:56:13 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/10] perf pollfd series
-Message-ID: <20140825155613.GA2849@kernel.org>
-References: <1408741190-5123-1-git-send-email-acme@kernel.org>
- <20140825110431.GC11611@krava.brq.redhat.com>
+	id S1756029AbaHYP62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 11:58:28 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54124 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754715AbaHYP61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 11:58:27 -0400
+Message-ID: <53FB5D20.8040806@parallels.com>
+Date: Mon, 25 Aug 2014 19:58:24 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140825110431.GC11611@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Anand Avati <avati@gluster.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/6] fuse: fix synchronous case of fuse_file_put()
+References: <20140821160304.11005.15166.stgit@localhost.localdomain>	<20140821160916.11005.37344.stgit@localhost.localdomain> <CAJfpegsWoaqR1vQRq8QpYdwUX9Ace9XTe77eOkOUy2VyHUeEdQ@mail.gmail.com>
+In-Reply-To: <CAJfpegsWoaqR1vQRq8QpYdwUX9Ace9XTe77eOkOUy2VyHUeEdQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.22.200]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 25, 2014 at 01:04:31PM +0200, Jiri Olsa escreveu:
-> fdarray name seems too generic for this object, fdpoll looks
-> more suitable.. also given that the file name is poll.[ch] ;-)
+On 08/22/2014 06:08 PM, Miklos Szeredi wrote:
+> On Thu, Aug 21, 2014 at 6:09 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
+>> If fuse_file_put() is called with sync==true, the user may be blocked for
+>> a while, until userspace ACKs our FUSE_RELEASE request. This blocking must be
+>> uninterruptible. Otherwise request could be interrupted, but file association
+>> in user space remains.
+>>
+>> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+>> ---
+>>   fs/fuse/file.c |    4 ++++
+>>   1 file changed, 4 insertions(+)
+>>
+>> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+>> index cd55488..b92143a 100644
+>> --- a/fs/fuse/file.c
+>> +++ b/fs/fuse/file.c
+>> @@ -136,6 +136,10 @@ static void fuse_file_put(struct fuse_file *ff, bool sync)
+>>                          path_put(&req->misc.release.path);
+>>                          fuse_put_request(ff->fc, req);
+>>                  } else if (sync) {
+>> +                       /* Must force. Otherwise request could be interrupted,
+>> +                        * but file association in user space remains.
+>> +                        */
+>> +                       req->force = 1;
+>>                          req->background = 0;
+>>                          fuse_request_send(ff->fc, req);
+>>                          path_put(&req->misc.release.path);
+>>
+>
+> Some thought needs to go into this:  if RELEASE is interrupted, then
+> we should possibly allow that, effectively backgrounding the request.
+>
+> The synchronous nature is just an optimization and we really don't
+> know where we are being interrupted, possibly in a place which very
+> much *should* allow interruption.
 
-I thought about 'struct pollfds', then thought that having 'poll' in the
-name of the class and in its main routine, i.e. pollfds__poll, would be
-too much.
+A fuse daemon who explicitly enables the feature (synchronous release) 
+would definitely want non-interruptible behaviour of last fput. 
+Otherwise, it would face the same problem that the feature tries to 
+resolve: an application was killed and exited, but there is no way to 
+determine why actual processing of RELEASE will be completed.
 
-I thought of it as an extensible array of file descriptors that right
-now has just poll related operations, but could have some other
-operations, perhaps the associated mmaps in evlist, for instance.
+As for fuseblk mounts, I'm not so sure. I believed the lack of force=1 
+was a bug and my patch fixes it. If you think it's safer to preserve old 
+behaviour, I could set "force" conditionally. May be you could explain 
+in more details why you think we should allow interruption somewhere. 
+Any examples or use cases? Btw, fuse_flush also uses force=1. Do you 
+concerns deal with it as well?
 
-I ended up using poll.[ch] because struct pollfd came from poll.h, but
-yeah, that is inconsistent with poll being just one of the operations
-for an extensible array of file descriptors, so it should be renamed
-accordingly to 'fdarray.[ch]'.
+>
+> Also fuse really should distinguish fatal and non-fatal interruptions
+> and handle them accordingly...
 
-That was my reasoning.
+Do you think it's worthy to elaborate this in the scope of "synchronous 
+release" feature?
 
-I'm looking at the other comments, would send a fix for what Adrian
-commented but thought about an optimization, will do that after lunch,
-hopefully food will prevent me from adding more bugs 8-)
-
-> anyway, except for what I've already commented:
-
-> Acked-by: Jiri Olsa <jolsa@kernel.org>
-
-Thanks!
-
-- Arnaldo
+Thanks,
+Maxim
