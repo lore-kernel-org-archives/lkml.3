@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaHYBhg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Aug 2014 21:37:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15226 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753635AbaHYBhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Aug 2014 21:37:34 -0400
-Date: Mon, 25 Aug 2014 11:37:40 +1000
-From: David Gibson <dgibson@redhat.com>
-To: Pankaj Gupta <pagupta@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        jasowang@redhat.com, mst@redhat.com, vfalico@gmail.com,
-        edumazet@google.com, vyasevic@redhat.com, hkchu@google.com,
-        wuzhy@linux.vnet.ibm.com, xemul@parallels.com, therbert@google.com,
-        bhutchings@solarflare.com, xii@google.com, stephen@networkplumber.org
-Subject: Re: [RFC 4/4] tuntap: Increase the number of queues in tun
-Message-Id: <20140825113740.d2bf59c3784ebab592bdf6e9@redhat.com>
-In-Reply-To: <1408369040-1216-5-git-send-email-pagupta@redhat.com>
-References: <1408369040-1216-1-git-send-email-pagupta@redhat.com>
-	<1408369040-1216-5-git-send-email-pagupta@redhat.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__25_Aug_2014_11_37_40_+1000_MLrG1N.BdfWdLhV6"
+	id S1753609AbaHYBke (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Aug 2014 21:40:34 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63513 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088AbaHYBkd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Aug 2014 21:40:33 -0400
+Date: Sun, 24 Aug 2014 18:38:44 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Julien Tinnes <jln@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ipc/shm: fix the historical/wrong mm->start_stack
+ check
+In-Reply-To: <20140823155832.GA9406@redhat.com>
+Message-ID: <alpine.LSU.2.11.1408241818530.8474@eggly.anvils>
+References: <20140823144246.GA6281@redhat.com> <20140823144327.GA6299@redhat.com> <20140823152240.GH25918@moon> <20140823155832.GA9406@redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Aug_2014_11_37_40_+1000_MLrG1N.BdfWdLhV6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 23 Aug 2014, Oleg Nesterov wrote:
+> On 08/23, Cyrill Gorcunov wrote:
+> >
+> > On Sat, Aug 23, 2014 at 04:43:27PM +0200, Oleg Nesterov wrote:
+> > > The ->start_stack check in do_shmat() looks ugly and simply wrong.
+> > >
+> > > 1. ->start_stack is only valid right after exec(), the application
+> > >    can switch to another stack and even unmap this area.
+> > >
+> > > 2. The reason for this check is not clear at all. The application
+> > >    should know what it does. And why 4 pages? And why in fact it
+> > >    requires 5 pages?
+> > >
+> > > 3. This wrongly assumes that the stack can only grown down.
+> > >
+> > > Personally I think we should simply kill this check, but I did not
+> > > dare to do this. So the patch only fixes the 1st problem (mostly to
+> > > avoid the usage of mm->start_stack) and ignores VM_GROWSUP.
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
 
-On Mon, 18 Aug 2014 19:07:20 +0530
-Pankaj Gupta <pagupta@redhat.com> wrote:
+Yes, much better to use find_vma than have this strange stray use
+of unreliable start_stack.
 
-> Networking under kvm works best if we allocate a per-vCPU RX and TX
-> queue in a virtual NIC. This requires a per-vCPU queue on the host side.
->=20
-> It is now safe to increase the maximum number of queues.
-> Preceding patches:
-> 	net: allow large number of rx queues
->   	tuntap: Reduce the size of tun_struct by using flex array
-> 	tuntap: Publish tuntap max queue length as module_param
->=20
-> 	made sure this won't cause failures due to high order memory
-> allocations. Increase it to 256: this is the max number of vCPUs
-> KVM supports.
->=20
-> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
 
-Reviewed-by: David Gibson <dgibson@redhat.com>
+though like Manfred I didn't quite see how overflow was impossible
+on unfamiliar architectures.
 
---=20
-David Gibson <dgibson@redhat.com>
+> 
+> Thanks!
+> 
+> > I don't understand this check either, the comment above it says nothing
+> > but only commits what code is doing not explaining why.
+> 
+> Yes, and this check predates the git history. I even looked into
+> git://git.kernel.org/pub/scm/linux/kernel/git/tglx/history.git but this
+> change was added by the huge "v2.5.0.7 -> v2.5.0.8" update in 2002,
+> and obviously without any explanation (apart from "fix up proper shmat
+> semantics", but this connects SHM_REMAP itself).
 
---Signature=_Mon__25_Aug_2014_11_37_40_+1000_MLrG1N.BdfWdLhV6
-Content-Type: application/pgp-signature
+I'd say it comes earlier, from Christoph Rohland's 2.4.17-pre7's
+"Add missing checks on shmat()", though I didn't find more than that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+We can all understand wanting to leave a gap below the growsdown stack,
+but of course could argue about growsup and 1 or 4 or 5 or whatever:
+okay that we're all more interested in just removing that start_stack.
 
-iQIcBAEBAgAGBQJT+pNlAAoJEGw4ysog2bOSCkcQAMeq9Zt58PYJVO2TjQalLuiM
-ek8X1bGgCGeKHJjRqBkzs6vmkLBPF5xzUZWdJvwEykWMcXQiwL8hWibBJcftt03O
-HoqGpAxGc8jawAgxYL8nGrocdAkzTo5wAgDZLUdOI+cMDNK4O0r8bzMwHQ779Lcp
-VqZjPrJyu0vBeoOjE8nWc+nHz/zy9Z9kiq0VrIlPMmdQ9mzPnFXMRvYExYLWIQGV
-dR/oyjW2Wi1msypfF+dVK22VjLkBaW1lnvzRL7FeiKEptBIKuQQnrYVxeYkrwLrV
-S2gGpMQbuuC0EHra5Z3gCRaEYJdpIof38PDh0tv3ypant8dXrXXZfG0qKqr96LXt
-xZB+JeiCg19z6cFU/wIPT4dDnKEgR68yceGiizNFyuBjw+G0ynFotVEbhWdaB4fP
-N6/iVO0v/WNndwUMQEfo5uIlYIfBZQIRTAx/hkR788kevgCiTeRWrotk9YYD7aE2
-6iZ/F9YjGqSn3JCjOt7qDSPwwnZUYFdr90ruC2S6qTEXDc8zsHg8mCgS279Hqk/L
-Eex790ZXLrcor0X5DEfVbGg6tRRUPUp78ku6t/Oj6SvcWZSFeZetawxIApltT2Je
-gI/7eJ/WReZ4rsjZtusoVTjAXZzz73b7NZKrClo0KCc+kCfIxpWgKL9Jg1hvYBET
-yvVGmI8/rztqt3kQ29PS
-=PDAl
------END PGP SIGNATURE-----
-
---Signature=_Mon__25_Aug_2014_11_37_40_+1000_MLrG1N.BdfWdLhV6--
+Hugh
