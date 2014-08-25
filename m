@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179AbaHYJDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 05:03:11 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:65247 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaHYJDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 05:03:10 -0400
-Message-ID: <53FAFBBC.3070100@huawei.com>
-Date: Mon, 25 Aug 2014 17:02:52 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Rostislav Lisovy <lisovy@gmail.com>, Sasha Levin <sashal@kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>, Bjorn Helgaas <bhelgaas@google.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Nicholas Krause <xerofoify@gmail.com>
-Subject: Re: [PATCH] ARM: PCI: Use PCI_CLASS_* defines for PCI class
-References: <1406904671-19197-1-git-send-email-lisovy@gmail.com>	 <53DE3629.2020706@kernel.org> <1407144668.21386.8.camel@umadbro> <1408955976.8665.23.camel@umadbro>
-In-Reply-To: <1408955976.8665.23.camel@umadbro>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+	id S1754639AbaHYJDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 05:03:35 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47085 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753337AbaHYJDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Aug 2014 05:03:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,395,1406617200"; 
+   d="scan'208";a="472265597"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Helge Deller <deller@gmx.de>,
+        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v3 0/5] fs/seq_file: introduce seq_hex_dump() helper
+Date: Mon, 25 Aug 2014 12:03:10 +0300
+Message-Id: <1408957395-404-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/8/25 16:39, Rostislav Lisovy wrote:
-> On Mon, 2014-08-04 at 11:31 +0200, Rostislav Lisovy wrote:
->> On Sun, 2014-08-03 at 09:16 -0400, Sasha Levin wrote:
->>>> -     /* FIXME: add defines for class 0x68000 and 0x80103 */
->>>>       if ((dev->class >> 8) == PCI_CLASS_BRIDGE_HOST ||
->>>> -         dev->class == 0x68000 ||
->>>> -         dev->class == 0x80103) {
->>>> +         dev->class == (PCI_CLASS_BRIDGE_OTHER << 8) ||
->>>> +         dev->class == ((PCI_CLASS_SYSTEM_DMA << 8) | 0x03)) {
->>>>               for (i = 0; i < PCI_NUM_RESOURCES; i++) {
->>>>                       dev->resource[i].start = 0;
->>>>                       dev->resource[i].end   = 0;
->>>>
->>>
->>> Care to explain how your new code is equivalent to the old one?
->>
->> The header file include/linux/pci_ids.h defines
->> #define PCI_CLASS_BRIDGE_OTHER          0x0680
->> #define PCI_CLASS_SYSTEM_DMA            0x0801
->>
->> ((struct pci_dev*)dev)->class
->> corresponds to the 3 bytes Class code in the PCI Configuration space
->> header -- 1B Base class, 1B Sub-class, 1B Reg-level interface.
->>
->> In that case
->> (PCI_CLASS_BRIDGE_OTHER << 8)
->> is equivalent to 0x68000 (imagine the leading zero)
->> and
->> ((PCI_CLASS_SYSTEM_DMA << 8) | 0x03))
->> is equivalent to 0x80103.
->>
-> 
-> Just a kind reminder in case anyone is interested in reviewing and
-> accepting the patch.
+This introduces a new helper and switches current users to use it.
 
-Reviewed-by : Yijing Wang <wangyijing@huawei.com>
+parisc and s390 weren't tested anyhow, the others are compile tested.
 
-> 
-> Best regards;
-> Rostislav Lisovy
-> 
-> 
-> 
-> .
-> 
+Changelog v3:
+- append Mauro's Ack
+- rebase on top of recent linux-next
 
+Changelog v2:
+- append Acked-by and Reviewed-by tags
+- update commit messages in patches 3/5. and 5/5
+- update line size to be 32 bytes instead of 16 in patch 3/5
+- Joe found that output is changed in patch 4/5, thus I update commit message
+  there
+
+Andy Shevchenko (5):
+  seq_file: provide an analogue of print_hex_dump()
+  saa7164: convert to seq_hex_dump()
+  crypto: qat - use seq_hex_dump() to dump buffers
+  parisc: use seq_hex_dump() to dump buffers
+  [S390] zcrypt: use seq_hex_dump() to dump buffers
+
+ .../crypto/qat/qat_common/adf_transport_debug.c    | 16 ++--------
+ drivers/media/pci/saa7164/saa7164-core.c           | 31 +++----------------
+ drivers/parisc/ccio-dma.c                          | 14 ++-------
+ drivers/parisc/sba_iommu.c                         | 11 ++-----
+ drivers/s390/crypto/zcrypt_api.c                   | 10 +------
+ fs/seq_file.c                                      | 35 ++++++++++++++++++++++
+ include/linux/seq_file.h                           |  4 +++
+ 7 files changed, 52 insertions(+), 69 deletions(-)
 
 -- 
-Thanks!
-Yijing
+2.1.0
 
