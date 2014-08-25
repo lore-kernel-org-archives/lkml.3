@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195AbaHYR0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Aug 2014 13:26:43 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59026 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932212AbaHYR0l (ORCPT
+	id S1756279AbaHYR3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Aug 2014 13:29:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56595 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316AbaHYR3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Aug 2014 13:26:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/lms9glozYxYRsALtXL5+P
-Date: Mon, 25 Aug 2014 10:26:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        devicetree@vger.kernel.org, Dave Gerlach <d-gerlach@ti.com>
-Subject: Re: [PATCH 3/3] pinctrl: single: AM437x: Add pinctrl compatibility
-Message-ID: <20140825172632.GO17254@atomide.com>
-References: <1408716062-26055-1-git-send-email-nm@ti.com>
- <1408716062-26055-4-git-send-email-nm@ti.com>
+	Mon, 25 Aug 2014 13:29:18 -0400
+Message-ID: <53FB7288.9050002@wwwdotorg.org>
+Date: Mon, 25 Aug 2014 11:29:44 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408716062-26055-4-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: Move AHB Kconfig to drivers/amba
+References: <1406643934-16301-1-git-send-email-thierry.reding@gmail.com> <53D7C9EE.60503@wwwdotorg.org>
+In-Reply-To: <53D7C9EE.60503@wwwdotorg.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140822 07:03]:
-> From: Keerthy <j-keerthy@ti.com>
-> 
-> AM437x pinctrl definitions now differ from traditional 16 bit OMAP pin
-> ctrl definitions, in that all 32 bits are used to describe a single pin
-> 
-> Also the location of wakeupenable and event bits have changed.
-> 
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> [nm@ti.com: minor updates]
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+On 07/29/2014 10:21 AM, Stephen Warren wrote:
+> On 07/29/2014 08:25 AM, Thierry Reding wrote:
+>> From: Thierry Reding <treding@nvidia.com>
+>>
+>> This will allow the Kconfig option to be shared among 32-bit and 64-bit
+>> ARM.
+>
+> This seems fine to me. I'd expect to apply it for 3.18, provided I get
+> an ack from Russell as drivers/amba maintainer (hence CCing him without
+> trimming the quote).
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+Russell,
 
-> ---
->  .../bindings/pinctrl/ti,omap-pinctrl.txt           |    1 +
->  drivers/pinctrl/pinctrl-single.c                   |    7 +++++++
->  2 files changed, 8 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-> index d45386d..af225fe 100644
-> --- a/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-> +++ b/Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
-> @@ -6,5 +6,6 @@ Required properties:
->    "ti,omap4-padconf" - OMAP4 compatible pinctrl
->    "ti,omap5-padconf" - OMAP5 compatible pinctrl
->    "ti,dra7-padconf" - DRA7 compatible pinctrl
-> +  "ti,am437-padconf" - AM437x compatible pinctrl
->  
->  See Documentation/devicetree/bindings/pinctrl/pinctrl-single.txt for further details.
-> diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
-> index 598d600..784de13 100644
-> --- a/drivers/pinctrl/pinctrl-single.c
-> +++ b/drivers/pinctrl/pinctrl-single.c
-> @@ -1987,6 +1987,12 @@ static const struct pcs_soc_data pinctrl_single_dra7 = {
->  	.irq_status_mask = (1 << 25),	/* WAKEUPEVENT */
->  };
->  
-> +static const struct pcs_soc_data pinctrl_single_am437x = {
-> +	.flags = PCS_QUIRK_SHARED_IRQ,
-> +	.irq_enable_mask = (1 << 29),   /* OMAP_WAKEUP_EN */
-> +	.irq_status_mask = (1 << 30),   /* OMAP_WAKEUP_EVENT */
-> +};
-> +
->  static const struct pcs_soc_data pinctrl_single = {
->  };
->  
-> @@ -1999,6 +2005,7 @@ static struct of_device_id pcs_of_match[] = {
->  	{ .compatible = "ti,omap4-padconf", .data = &pinctrl_single_omap_wkup },
->  	{ .compatible = "ti,omap5-padconf", .data = &pinctrl_single_omap_wkup },
->  	{ .compatible = "ti,dra7-padconf", .data = &pinctrl_single_dra7 },
-> +	{ .compatible = "ti,am437-padconf", .data = &pinctrl_single_am437x },
->  	{ .compatible = "pinctrl-single", .data = &pinctrl_single },
->  	{ .compatible = "pinconf-single", .data = &pinconf_single },
->  	{ },
-> -- 
-> 1.7.9.5
-> 
+Are you OK with this patch? If so, if you could ack it so I can apply 
+it, that would be great.
+
+Thanks.
+
+>> Signed-off-by: Thierry Reding <treding@nvidia.com>
+>> ---
+>>   arch/arm/mach-tegra/Kconfig |  8 --------
+>>   drivers/amba/Kconfig        | 11 +++++++++++
+>>   2 files changed, 11 insertions(+), 8 deletions(-)
+>>   create mode 100644 drivers/amba/Kconfig
+>>
+>> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+>> index 052fba07a3cb..fae2eb2f52ea 100644
+>> --- a/arch/arm/mach-tegra/Kconfig
+>> +++ b/arch/arm/mach-tegra/Kconfig
+>> @@ -64,12 +64,4 @@ config ARCH_TEGRA_124_SOC
+>>         Support for NVIDIA Tegra T124 processor family, based on the
+>>         ARM CortexA15MP CPU
+>>
+>> -config TEGRA_AHB
+>> -    bool "Enable AHB driver for NVIDIA Tegra SoCs"
+>> -    default y
+>> -    help
+>> -      Adds AHB configuration functionality for NVIDIA Tegra SoCs,
+>> -      which controls AHB bus master arbitration and some
+>> -      performance parameters(priority, prefech size).
+>> -
+>>   endif
+>> diff --git a/drivers/amba/Kconfig b/drivers/amba/Kconfig
+>> new file mode 100644
+>> index 000000000000..3f7350a03708
+>> --- /dev/null
+>> +++ b/drivers/amba/Kconfig
+>> @@ -0,0 +1,11 @@
+>> +if ARM_AMBA
+>> +
+>> +config TEGRA_AHB
+>> +    bool "Enable AHB driver for NVIDIA Tegra SoCs"
+>> +    default y if ARCH_TEGRA
+>> +    help
+>> +      Adds AHB configuration functionality for NVIDIA Tegra SoCs,
+>> +      which controls AHB bus master arbitration and some performance
+>> +      parameters (priority, prefetch size).
+>> +
+>> +endif
+>>
+>
+
